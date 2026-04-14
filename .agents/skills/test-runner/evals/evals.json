@@ -1,0 +1,71 @@
+{
+  "skill_name": "test-runner",
+  "version": "1.0.0",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I have a Python project with pytest tests failing. How do I run just the failing test and debug it? The test is in tests/test_api.py::test_login",
+      "expected_output": "Provides pytest commands to run specific test with verbose output, debugging options (--pdb), and strategies to isolate and diagnose the failure.",
+      "assertions": [
+        "Provides command to run specific test",
+        "Includes verbose flag (-v)",
+        "Mentions debug options (--pdb)",
+        "Suggests isolation strategies",
+        "Includes environment verification steps"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "My Jest tests are passing locally but failing in CI with timeout errors. What should I check and how can I debug this?",
+      "expected_output": "Identifies likely causes (environment differences, timing issues, dependencies) and provides debugging strategies including CI environment matching, timeout adjustments, and parallel execution configuration.",
+      "assertions": [
+        "Identifies environment differences as likely cause",
+        "Suggests timeout adjustments",
+        "Mentions CI environment matching",
+        "Provides parallel execution guidance",
+        "Suggests caching/cleanup steps"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "I need to set up test coverage reporting for a Go project in GitHub Actions. What commands and configuration do I need?",
+      "expected_output": "Provides complete GitHub Actions workflow with go test -coverprofile, coverage report generation, and artifact upload steps.",
+      "assertions": [
+        "Includes go test -coverprofile command",
+        "Shows go tool cover for HTML report",
+        "Provides GitHub Actions workflow YAML",
+        "Mentions artifact upload",
+        "Includes coverage thresholds or reporting"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "My Rust tests are failing with 'panic: runtime error'. How do I get more information about where the panic occurred?",
+      "expected_output": "Explains how to use RUST_BACKTRACE=1 environment variable, run specific test with backtrace, and interpret panic messages to identify nil pointer or bounds issues.",
+      "assertions": [
+        "Mentions RUST_BACKTRACE environment variable",
+        "Shows command with backtrace enabled",
+        "Explains panic message interpretation",
+        "Suggests checking nil pointers",
+        "Provides debugging workflow"
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "I suspect some tests in my test suite are flaky. How can I detect which tests are flaky and what should I do about them?",
+      "expected_output": "Provides strategies to detect flaky tests (repeated runs, pattern analysis), quarantine approaches, and best practices for handling flakiness.",
+      "assertions": [
+        "Suggests running tests multiple times",
+        "Mentions pattern analysis (timing, state, async)",
+        "Provides quarantine strategy",
+        "Suggests marking/skip options",
+        "Includes root cause analysis steps"
+      ],
+      "files": []
+    }
+  ]
+}

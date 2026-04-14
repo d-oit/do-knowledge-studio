@@ -1,0 +1,70 @@
+{
+  "skill_name": "migration-refactoring",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I need to migrate my React app from class components to function components with hooks. The codebase has about 50 components using componentDidMount, componentDidUpdate, and componentWillUnmount. How should I approach this safely?",
+      "expected_output": "The agent provides a phased migration plan with rollback strategy, identifies lifecycle mapping (useEffect), suggests testing approach, and includes common pitfalls like 'this' binding issues and state initialization differences.",
+      "assertions": [
+        "The agent mentions the Expand-Contract or phased migration pattern",
+        "The agent maps lifecycle methods to useEffect hooks",
+        "The agent suggests testing/validation at each checkpoint",
+        "The agent warns about 'this' context binding issues",
+        "The agent provides rollback strategy"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "We're upgrading from Python 3.8 to 3.11. What breaking changes should I watch for and how do I safely migrate our Flask API?",
+      "expected_output": "The agent identifies Python 3.9-3.11 breaking changes (type hint syntax, asyncio changes, removal of deprecated features), suggests using 2to3 or pyupgrade tools, recommends testing strategy, and provides rollback plan.",
+      "assertions": [
+        "The agent identifies specific Python 3.9+ breaking changes",
+        "The agent mentions pyupgrade or similar automation tools",
+        "The agent suggests testing in staging first",
+        "The agent recommends dependency compatibility checks",
+        "The agent provides a rollback procedure"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Help me plan a database migration from MySQL 5.7 to MySQL 8.0. We have a 500GB production database with zero-downtime requirements.",
+      "expected_output": "The agent provides a migration strategy using blue-green deployment or read replica promotion, includes pre-migration checks, suggests using pt-online-schema-change for large tables, outlines rollback procedures, and addresses MySQL 8.0 breaking changes.",
+      "assertions": [
+        "The agent suggests zero-downtime strategy (blue-green or replica)",
+        "The agent mentions pt-online-schema-change or gh-ost",
+        "The agent includes backup/rollback procedures",
+        "The agent identifies MySQL 8.0 breaking changes (auth, reserved words)",
+        "The agent suggests testing with production-like data volume"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "I want to refactor a 2000-line JavaScript file into smaller modules. How do I ensure I don't break anything during the process?",
+      "expected_output": "The agent suggests incremental refactoring with snapshot testing, dependency analysis, feature flags for gradual rollout, comprehensive test coverage validation, and rollback strategy.",
+      "assertions": [
+        "The agent suggests dependency analysis before refactoring",
+        "The agent recommends snapshot testing for regression detection",
+        "The agent proposes incremental/strangler fig approach",
+        "The agent mentions maintaining test coverage throughout",
+        "The agent includes rollback plan"
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "We're migrating from Flask to FastAPI. Can you help me create a migration plan that maintains backward compatibility during the transition?",
+      "expected_output": "The agent provides dual-stack migration strategy with API compatibility layer, suggests running both frameworks concurrently, identifies key differences (async, Pydantic validation, dependency injection), and includes testing and rollback plans.",
+      "assertions": [
+        "The agent suggests dual-stack/dual-running approach",
+        "The agent identifies FastAPI-specific patterns (async, Pydantic)",
+        "The agent mentions route-by-route migration strategy",
+        "The agent suggests maintaining API compatibility layer",
+        "The agent includes rollback to Flask procedure"
+      ],
+      "files": []
+    }
+  ]
+}

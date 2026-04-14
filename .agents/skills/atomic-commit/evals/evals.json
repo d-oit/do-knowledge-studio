@@ -1,0 +1,25 @@
+{
+  "skill_name": "atomic-commit",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Commit the current changes with a descriptive message",
+      "expected_output": "The agent creates a commit with a clear subject line and body.",
+      "assertions": [
+        "A commit is created",
+        "The commit message follows conventions"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Amend the last commit to include a new file",
+      "expected_output": "The agent adds the file and runs git commit --amend.",
+      "assertions": [
+        "The last commit is amended",
+        "The new file is included in the commit"
+      ],
+      "files": []
+    }
+  ]
+}

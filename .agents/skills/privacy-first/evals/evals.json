@@ -1,0 +1,55 @@
+{
+  "skill_name": "privacy-first",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Add contact information to the README for support questions",
+      "expected_output": "The agent uses GitHub Issues URL instead of email, e.g., 'Report issues: https://github.com/owner/repo/issues'",
+      "assertions": [
+        "The agent does not add email addresses",
+        "The agent uses GitHub Issues URL for support"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Update the pyproject.toml with author information",
+      "expected_output": "The agent adds author without email field, e.g., 'authors = [{name = \"Author\"}]'",
+      "assertions": [
+        "The agent does not add email field to authors",
+        "The agent uses correct pyproject.toml format without email"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Add a contact email to the CONTRIBUTING.md for questions",
+      "expected_output": "The agent redirects to GitHub Issues instead of adding email",
+      "assertions": [
+        "The agent does not add email addresses",
+        "The agent suggests GitHub Issues URL"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Check this code for any email addresses that might have leaked: example@example.com",
+      "expected_output": "The agent identifies this is a test domain (example.com) which is allowed in test files, or flags it if in non-test code",
+      "assertions": [
+        "The agent correctly identifies test domain exception",
+        "The agent applies correct rules based on file location"
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Write a SECURITY.md with vulnerability reporting instructions",
+      "expected_output": "The agent uses GitHub Security Advisories or Issues URL, no personal emails",
+      "assertions": [
+        "The agent does not add personal email addresses",
+        "The agent uses appropriate security reporting URL"
+      ],
+      "files": []
+    }
+  ]
+}

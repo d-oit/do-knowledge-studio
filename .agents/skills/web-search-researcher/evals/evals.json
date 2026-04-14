@@ -1,0 +1,61 @@
+{
+  "skill_name": "web-search-researcher",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Research the latest best practices for Rust error handling in 2026",
+      "expected_output": "The agent follows the progressive strategy: analyzes the query, performs searches with 'Rust error handling best practices 2026', prioritizes official docs (blog.rust-lang.org) and expert blogs, synthesizes findings with source links.",
+      "files": [],
+      "assertions": [
+        "The agent includes the year in search queries",
+        "The agent prioritizes official docs first",
+        "The agent provides source links with findings",
+        "The agent notes any gaps in information"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Find the official documentation for Stripe webhook signature verification",
+      "expected_output": "The agent searches 'Stripe webhook signature site:stripe.com' or 'Stripe webhook signature official docs', fetches the official Stripe documentation, and provides the relevant code example.",
+      "files": [],
+      "assertions": [
+        "The agent uses site: operator for official docs",
+        "The agent prioritizes official documentation",
+        "The agent includes the URL to the official docs"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Compare Redis vs Memcached for session caching",
+      "expected_output": "The agent searches for comparisons, fetches multiple authoritative sources, presents findings organized by criteria (performance, features, complexity), and notes any conflicting information.",
+      "files": [],
+      "assertions": [
+        "The agent fetches multiple sources for comparison",
+        "The agent organizes findings by criteria",
+        "The agent notes source quality and any conflicts"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "What source priority should I use when researching technical topics?",
+      "expected_output": "The agent explains the source priority: Official docs (3 stars) fetch first, Expert blogs/SO (2 stars) if needed, Generic tutorials (1 star) skip, AI farms (never).",
+      "files": [],
+      "assertions": [
+        "The agent lists the source priority tiers",
+        "The agent explains why official docs come first",
+        "The agent mentions avoiding AI farm content"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "My search returned outdated results from 2022. How do I get more current information?",
+      "expected_output": "The agent suggests: add the current year to the search query, use 'after:' operator, check publication dates, look for changelog updates.",
+      "files": [],
+      "assertions": [
+        "The agent suggests adding year to search query",
+        "The agent mentions the after: operator",
+        "The agent recommends checking publication dates"
+      ]
+    }
+  ]
+}

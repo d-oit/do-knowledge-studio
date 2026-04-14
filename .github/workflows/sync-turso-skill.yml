@@ -1,0 +1,66 @@
+---
+name: Sync Turso Skill
+
+"on":
+  schedule:
+    - cron: '0 6 * * 1'  # Every Monday at 06:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+
+      - name: Fetch latest Turso release and llms.txt
+        run: |
+          LATEST_RELEASE=$(curl -s https://api.github.com/repos/tursodatabase/turso/releases/latest | jq -r .tag_name)
+          curl -s https://docs.turso.tech/llms.txt -o /tmp/llms.txt
+          echo "LATEST_RELEASE=$LATEST_RELEASE" >> $GITHUB_ENV
+
+      - name: Compare llms.txt with cached version
+        id: check_changes
+        run: |
+          if [ ! -f .agents/skills/turso-db/references/llms.txt ]; then
+            echo "Initial fetch of llms.txt"
+            mkdir -p .agents/skills/turso-db/references
+            cp /tmp/llms.txt .agents/skills/turso-db/references/llms.txt
+            echo "changed=true" >> $GITHUB_OUTPUT
+          elif ! cmp -s /tmp/llms.txt .agents/skills/turso-db/references/llms.txt; then
+            echo "llms.txt has changed"
+            cp /tmp/llms.txt .agents/skills/turso-db/references/llms.txt
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "No changes in llms.txt"
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update Skill Version
+        if: steps.check_changes.outputs.changed == 'true'
+        run: |
+          sed -i "s/^version: .*/version: ${LATEST_RELEASE#v}/" .agents/skills/turso-db/SKILL.md
+
+      - name: Create Pull Request
+        if: steps.check_changes.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e  # v7.0.8
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "feat(turso-db): sync with latest Turso docs (${{ env.LATEST_RELEASE }})"
+          branch: sync-turso-skill
+          title: "feat(turso-db): sync with latest Turso docs (${{ env.LATEST_RELEASE }})"
+          body: |
+            This PR updates the `turso-db` skill with the latest Turso documentation and API surface.
+
+            - Fetched from: https://docs.turso.tech/llms.txt
+            - Turso Release: ${{ env.LATEST_RELEASE }}
+            - Release URL: https://github.com/tursodatabase/turso/releases/tag/${{ env.LATEST_RELEASE }}
+
+            Please review the changes and adapt the skill content if necessary.
+          labels: |
+            automation
+            skill-update

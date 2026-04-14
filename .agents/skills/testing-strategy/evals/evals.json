@@ -1,0 +1,70 @@
+{
+  "skill_name": "testing-strategy",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Help me design a testing strategy for a new payment processing microservice. We need high confidence before production deployment.",
+      "expected_output": "The agent proposes comprehensive testing pyramid with unit tests for business logic, integration tests for database/payment gateway interactions, contract tests for API boundaries, E2E tests for critical payment flows, and property-based tests for financial calculations.",
+      "assertions": [
+        "The agent recommends test pyramid (unit/integration/E2E)",
+        "The agent suggests contract testing for APIs",
+        "The agent mentions property-based testing for calculations",
+        "The agent includes load testing for payment throughput",
+        "The agent suggests security testing for PCI compliance"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Write a property-based test in Python using Hypothesis that verifies our sorting function always returns a sorted list and maintains the same elements.",
+      "expected_output": "The agent provides Hypothesis test with @given decorator using st.lists(), asserts sorted(result) == result for ordering, asserts sorted(input) == sorted(result) for element preservation, includes edge cases (empty, single element, duplicates).",
+      "assertions": [
+        "The agent uses @given decorator with strategies",
+        "The agent tests sort order property",
+        "The agent tests element preservation property",
+        "The agent includes edge cases in strategy",
+        "The code is valid Python/Hypothesis syntax"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Set up visual regression testing for our React component library using Playwright. We want to catch unintended UI changes.",
+      "expected_output": "The agent provides Playwright configuration with screenshot testing, suggests component-level screenshots, includes device/viewport configurations, mentions masking dynamic content (timestamps), and sets up CI integration with artifact storage for diffs.",
+      "assertions": [
+        "The agent suggests Playwright or Storybook/Chromatic",
+        "The agent includes screenshot comparison configuration",
+        "The agent mentions masking dynamic content",
+        "The agent suggests multiple viewport sizes",
+        "The agent includes CI integration steps"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Create a load testing scenario with k6 for an API endpoint that needs to handle 1000 requests per second with p95 latency under 200ms.",
+      "expected_output": "The agent provides k6 JavaScript test with stages for ramp-up and sustained load, sets thresholds for p95 < 200ms and error rate < 1%, includes realistic user scenario (GET + POST requests), adds sleep between requests to simulate real users.",
+      "assertions": [
+        "The agent uses k6 with proper stages configuration",
+        "The agent sets p95 threshold <= 200ms",
+        "The agent includes error rate threshold",
+        "The agent simulates realistic user behavior",
+        "The code is valid k6 JavaScript"
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "My test suite has become flaky and slow. How do I identify and fix the problematic tests while maintaining coverage?",
+      "expected_output": "The agent suggests identifying flaky tests through retry analysis, recommends parallelization and job splitting for speed, suggests test categorization (unit vs slow integration), proposes test data optimization with factories, and recommends coverage tracking to ensure fixes don't drop coverage.",
+      "assertions": [
+        "The agent suggests flaky test detection method",
+        "The agent recommends parallelization strategies",
+        "The agent proposes test categorization/splitting",
+        "The agent mentions test data factory optimization",
+        "The agent includes coverage monitoring approach"
+      ],
+      "files": []
+    }
+  ]
+}

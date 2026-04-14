@@ -1,0 +1,61 @@
+{
+  "skill_name": "github-readme",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create a README.md for my new Python CLI tool called 'dataflow' that processes CSV files",
+      "expected_output": "The agent creates a README with: project name and tagline, visual badges, quick start section (install + first usage), what is this section, core concepts, usage examples, contributing, license. Follows progressive disclosure structure.",
+      "assertions": [
+        "The README has an H1 with project name and a one-sentence tagline",
+        "The README includes a Quick Start section with install and first usage",
+        "The README includes a 'What Is This?' or similar explanation section",
+        "All images (if any) have alt text"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Improve my existing README - it's just a wall of text with no structure",
+      "expected_output": "The agent restructures the README with: proper headings hierarchy, bullet points, code blocks with language tags, quick start section, and progressive disclosure.",
+      "assertions": [
+        "The agent restructures with proper heading hierarchy (H1 \u2192 H2 \u2192 H3)",
+        "The agent breaks up walls of text into sections",
+        "The agent adds a quick start or installation section"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Does my README pass the 5-second test? Here's the current version: 'My Project is a versatile, powerful framework for building scalable applications.'",
+      "expected_output": "The agent evaluates against the 5-second rule: can a stranger understand the purpose in 5 seconds? Likely flags 'versatile, powerful framework' as vague and suggests a more specific tagline.",
+      "assertions": [
+        "The agent applies the 5-second test criteria",
+        "The agent identifies vague or generic language",
+        "The agent suggests a more specific, benefit-focused tagline"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Add accessibility improvements to my README",
+      "expected_output": "The agent checks for: alt text on images, semantic heading order, descriptive link text, code blocks with language specified, and screen reader friendly emoji usage.",
+      "assertions": [
+        "The agent checks for alt text on images",
+        "The agent verifies heading hierarchy",
+        "The agent ensures descriptive link text (not 'click here')"
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Write a README for a Rust library with API documentation links",
+      "expected_output": "The agent creates a README following the template, including documentation section with links to docs.rs, API reference, and examples. Uses Rust-specific installation (cargo add).",
+      "assertions": [
+        "The README includes Rust-specific install instructions (cargo add)",
+        "The README includes a Documentation section with doc links",
+        "The README follows the standard structure template"
+      ],
+      "files": []
+    }
+  ]
+}

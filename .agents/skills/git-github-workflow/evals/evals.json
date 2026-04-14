@@ -1,0 +1,27 @@
+{
+  "skill_name": "git-github-workflow",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create a new branch `feature/awesome` and push it to the remote repository.",
+      "expected_output": "The agent uses git commands to create a local branch and push it to the origin.",
+      "files": [],
+      "assertions": [
+        "The agent runs `git checkout -b feature/awesome` or equivalent",
+        "The agent runs `git push -u origin feature/awesome` or equivalent",
+        "The output confirms the branch was created and pushed"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Review the last 3 commits and create a PR to the `main` branch with a summary of changes.",
+      "expected_output": "The agent inspects the git log, summarizes the changes, and uses the GitHub CLI (`gh pr create`) or describes the PR creation process.",
+      "files": [],
+      "assertions": [
+        "The agent reads the commit history (e.g., `git log -n 3`)",
+        "The agent provides a concise summary of the changes",
+        "The agent attempts to create a PR or provides the `gh` command to do so"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "skill_name": "secure-invite-and-access",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Design an authentication system for a web app using JWT sessions with refresh tokens.",
+      "expected_output": "The agent covers session issuing, refresh flow, revoke on logout, expiry metadata, trace IDs, secure password hashing, and audit logging.",
+      "files": [],
+      "assertions": [
+        "The agent includes a refresh token mechanism",
+        "The agent mentions token expiry and revocation on logout",
+        "The agent recommends secure password hashing (Argon2id or bcrypt)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "How do I generate signed URLs for temporary file access that expire after 15 minutes?",
+      "expected_output": "The agent covers signed URL generation with TTL, verification on access, expiration handling, and generic error messages.",
+      "files": [],
+      "assertions": [
+        "The agent includes TTL/expiration in the signed URL design",
+        "The agent verifies signature before serving content",
+        "The agent uses generic access-denied error messages (no info leakage)"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Prevent email enumeration on my login endpoint. Attackers can tell if an email exists by the error message.",
+      "expected_output": "The agent recommends generic error messages, same response time for valid/invalid emails, and rate limiting on login attempts.",
+      "files": [],
+      "assertions": [
+        "The agent recommends using generic 'invalid credentials' message",
+        "The agent mentions timing attack prevention",
+        "The agent suggests rate limiting on login attempts"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Design an audit logging strategy for authentication events.",
+      "expected_output": "The agent covers logging create/update/revoke/grant events with actor identity, trace IDs, structured format, and retention policy.",
+      "files": [],
+      "assertions": [
+        "The agent logs all auth event types (login, logout, grant, revoke)",
+        "The agent includes actor identity and trace IDs in log entries",
+        "The agent mentions log retention policy"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Implement role-based access control with admin, editor, and viewer roles.",
+      "expected_output": "The agent covers role definitions, permission checks, capability flags, audit logging for permission grants, and generic access-denied responses.",
+      "files": [],
+      "assertions": [
+        "The agent defines role hierarchy with distinct capabilities",
+        "The agent implements permission/capability checks",
+        "The agent mentions audit logging for permission changes"
+      ]
+    }
+  ]
+}

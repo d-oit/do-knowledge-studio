@@ -1,0 +1,60 @@
+{
+  "skill_name": "triz-solver",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I'm building a caching layer. It improves performance but makes the data stale and adds complexity. How should I think about this?",
+      "expected_output": "The agent applies TRIZ contradiction-first protocol: identifies contradiction as 'Performance (improve) vs Maintainability/Consistency (worsen)'. Suggests resolution via Segmentation (#1) - cache with TTL per data type, separating fast reads from consistency requirements.",
+      "files": [],
+      "assertions": [
+        "The agent identifies the contradiction explicitly (improving X worsens Y)",
+        "The agent references a TRIZ principle (e.g., Segmentation, Dynamics)",
+        "The agent validates that no new contradictions are introduced"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Our authentication is either too strict (users complain) or too lenient (security risk). We can't find a middle ground.",
+      "expected_output": "The agent applies TRIZ: identifies contradiction as 'Security (improve) vs Usability (worsen)'. Applies Inversion (#12) or Condition Separation: risk-based authentication that only challenges suspicious sessions. Both parameters improved without compromise.",
+      "files": [],
+      "assertions": [
+        "The agent identifies the Security vs Usability contradiction",
+        "The agent suggests a separation strategy (time, space, or condition)",
+        "The agent references a specific TRIZ principle"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "What would the ideal solution look like for this API that needs to be both fast and handle complex queries?",
+      "expected_output": "The agent applies the Ideal Final Result (IFR): 'The ideal solution returns results instantly with zero latency while supporting arbitrary query complexity'. Then identifies constraints and asks which are real vs assumed.",
+      "files": [],
+      "assertions": [
+        "The agent defines the IFR without implementation details",
+        "The agent identifies constraints preventing the ideal state",
+        "The agent distinguishes real vs assumed constraints"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "I keep adding more configuration options but the system is getting too complex. What's the right way to handle this?",
+      "expected_output": "The agent identifies contradiction: Flexibility (improve) vs Simplicity (worsen). Applies Universality (#6) - sensible defaults that cover 80% of cases, with advanced config only where needed. Or Nesting (#7) - hierarchical config.",
+      "files": [],
+      "assertions": [
+        "The agent identifies the Flexibility vs Simplicity contradiction",
+        "The agent suggests defaults-first or hierarchical approach",
+        "The agent references a TRIZ principle"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "We're stuck. Every approach to the database migration has a major downside. How do I break out of this?",
+      "expected_output": "The agent applies TRIZ Inversion (#12) or Another Dimension (#17): try the opposite approach (e.g., backward migration instead of forward), or add an abstraction layer (adapter pattern) that handles both old and new schemas.",
+      "files": [],
+      "assertions": [
+        "The agent suggests trying an inverted or fundamentally different approach",
+        "The agent references a specific TRIZ principle (Inversion, Another Dimension, etc.)",
+        "The agent provides a concrete strategy, not just 'think differently'"
+      ]
+    }
+  ]
+}

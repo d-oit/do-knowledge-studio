@@ -1,0 +1,16 @@
+# Research Queries
+# Format: query|context|priority
+
+# Web Doc Resolver optimization research
+Web Doc Resolver cascade strategy optimization|api-docs|high
+web research token optimization techniques|reference|high
+web resolver quality scoring algorithm|reference|medium
+multi-agent swarm coordination patterns|tutorial|medium
+git worktree best practices|tutorial|low
+GitHub Actions optimization strategies|api-docs|medium
+
+# AI agent development research
+AI agent web research patterns 2024|reference|high
+LLM token optimization strategies|reference|high
+web doc resolver routing memory|api-docs|medium
+content validation pipeline design|api-docs|medium

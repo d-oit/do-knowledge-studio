@@ -1,0 +1,59 @@
+# PR Labeler Configuration
+# See: https://github.com/actions/labeler
+---
+
+# Documentation changes
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+          - 'agents-docs/**/*'
+          - 'docs/**/*'
+
+# Skill changes
+skills:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.agents/skills/**/*'
+          - '.claude/skills/**/*'
+          - '.gemini/skills/**/*'
+          - '.qwen/skills/**/*'
+          - '.cursor/skills/**/*'
+          - '.windsurf/skills/**/*'
+
+# Script changes
+scripts:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'scripts/**/*'
+          - '**/*.sh'
+
+# CI/CD changes
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/workflows/**/*'
+          - '.github/labeler.yml'
+          - '.pre-commit-config.yaml'
+
+# Configuration changes
+config:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'AGENTS.md'
+          - 'CLAUDE.md'
+          - 'GEMINI.md'
+          - 'QWEN.md'
+          - '**/*.json'
+          - '**/*.yaml'
+          - '**/*.yml'
+          - '!.github/workflows/**/*'
+
+# Test changes
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'tests/**/*'
+          - '**/*.test.*'
+          - '**/*.spec.*'
+          - '**/evals/**/*'

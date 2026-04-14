@@ -1,0 +1,69 @@
+{
+  "skill_name": "docs-hook",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I just committed some documentation changes. How do I sync them to the agents-docs folder using the docs hook?",
+      "expected_output": "The agent explains using the docs-sync.sh script, provides the command to run it with commit refs, explains the git hook integration option, and describes what gets synced.",
+      "assertions": [
+        "The agent references the docs-sync.sh script",
+        "The agent provides command syntax (./scripts/docs-sync.sh)",
+        "The agent mentions pre-commit/post-commit hooks",
+        "The agent explains what files get synced",
+        "The agent mentions the agents-docs target directory"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Set up automatic documentation sync so that whenever I commit markdown files, they automatically sync to the agents-docs folder.",
+      "expected_output": "The agent provides instructions for setting up post-commit git hook, gives the hook script content, explains how to make it executable, and mentions manual sync as fallback.",
+      "assertions": [
+        "The agent mentions post-commit hook",
+        "The agent provides hook script content",
+        "The agent explains chmod +x for the hook",
+        "The agent gives exact .git/hooks/post-commit path",
+        "The agent mentions manual sync option"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "What files does the docs hook sync and where does it put them?",
+      "expected_output": "The agent explains that skill docs go to agents-docs/skills/, reference docs go to agents-docs/references/, excludes README.md at root, and updates the skill index when skills change.",
+      "assertions": [
+        "The agent explains skill doc destination (agents-docs/skills/)",
+        "The agent mentions reference docs destination",
+        "The agent notes README.md stays at root",
+        "The agent explains the index auto-update",
+        "The agent mentions skipped files (deleted, already in docs)"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "How do I configure the docs hook to use a custom docs directory instead of agents-docs?",
+      "expected_output": "The agent explains the DOCS_DIR environment variable, shows example command with custom directory, and mentions the script respects this configuration.",
+      "assertions": [
+        "The agent mentions DOCS_DIR environment variable",
+        "The agent provides example with custom path",
+        "The agent explains the default is agents-docs",
+        "The agent mentions script behavior with custom dir"
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "I ran the docs sync but I'm not sure if it worked. How can I verify the sync completed successfully?",
+      "expected_output": "The agent explains checking the output summary (synced/skipped counts), suggests checking git status for uncommitted changes in agents-docs/, and mentions the script exit code indicates success/failure.",
+      "assertions": [
+        "The agent mentions output summary with counts",
+        "The agent suggests git status check",
+        "The agent explains exit code behavior",
+        "The agent mentions color-coded output (if terminal)",
+        "The agent notes the agents-docs directory content"
+      ],
+      "files": []
+    }
+  ]
+}

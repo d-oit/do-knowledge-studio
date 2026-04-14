@@ -1,0 +1,53 @@
+{
+  "skill_name": "turso-db",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "How do I connect to a Turso database in Node.js with sync enabled? Show me the code.",
+      "expected_output": "The agent provides a code snippet using `@tursodatabase/sync`, showing the `connect` function with `url`, `authToken`, and `path` parameters, and explains how to perform push/pull operations.",
+      "assertions": [
+        "The output uses the `@tursodatabase/sync` package.",
+        "The code includes `connect({ path, url, authToken })`.",
+        "The agent mentions that sync is explicit (manual push/pull).",
+        "The agent warns against opening the synced database with other tools."
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "I want to use vector search in Turso. How do I create an index for cosine distance on a 1536-dimension embedding?",
+      "expected_output": "The agent explains that Turso supports native vector search, recommends using `vector32` for ML embeddings, and provides the `CREATE INDEX` syntax using the `USING fts` or similar native vector indexing if available, or at least shows how to query with `vector_distance_cos`.",
+      "assertions": [
+        "The agent identifies `vector32` as the correct type for float embeddings.",
+        "The output includes an example of `vector_distance_cos`.",
+        "The agent mentions that lower distance means more similar.",
+        "The agent includes an `ORDER BY distance ASC` clause."
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "How can I track all changes to my 'orders' table in real-time using Turso?",
+      "expected_output": "The agent recommends using Change Data Capture (CDC), provides the `PRAGMA capture_data_changes_conn('full')` command, and explains how to query the `turso_cdc` table.",
+      "assertions": [
+        "The agent mentions `PRAGMA capture_data_changes_conn`.",
+        "The output explains different CDC modes (id, before, after, full).",
+        "The agent shows how to query the `turso_cdc` table.",
+        "The agent notes that changes to the CDC table itself are also logged."
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Is Turso compatible with SQLite? What are the main differences I should be aware of?",
+      "expected_output": "The agent confirms compatibility but lists critical constraints: no multi-process access, no WITHOUT ROWID tables, no VACUUM, and WAL as the only journal mode.",
+      "assertions": [
+        "The agent confirms SQLite compatibility (fork of SQLite).",
+        "The output mentions 'No multi-process access'.",
+        "The output mentions 'No WITHOUT ROWID tables'.",
+        "The output mentions 'WAL is the default and only supported mode'."
+      ],
+      "files": []
+    }
+  ]
+}

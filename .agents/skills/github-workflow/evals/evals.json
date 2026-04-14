@@ -1,0 +1,25 @@
+{
+  "skill_name": "github-workflow",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create a new GitHub Action workflow for testing",
+      "expected_output": "A .github/workflows/ file is created with valid YAML.",
+      "assertions": [
+        "A workflow file is created",
+        "The YAML is valid"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Add a job to run linting in the existing workflow",
+      "expected_output": "The workflow file is updated with a new job that runs lint commands.",
+      "assertions": [
+        "A new job is added to the workflow",
+        "The job contains linting steps"
+      ],
+      "files": []
+    }
+  ]
+}

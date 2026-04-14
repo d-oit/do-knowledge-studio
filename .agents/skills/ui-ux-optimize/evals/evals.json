@@ -1,0 +1,93 @@
+{
+  "skill_name": "ui-ux-optimize",
+  "version": "2.0",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Design a mobile casual web game UI with a task/quest system. Fun, not corporate.",
+      "expected_output": "Swarm produces: research_context with game trends, warm purple+amber tokens (no Inter/blue), bottom tab nav (Quests/Map/Inventory/Profile), quest list as hub, 3 variants, anti-slop translations, score >= 60/66.",
+      "files": [],
+      "assertions": [
+        "research_context includes at least 2 domain trends",
+        "All colors use semantic token names",
+        "'fun' translated to specific token values",
+        "'not corporate' produces exclusion list",
+        "Navigation has specific item names",
+        "HUD scoped to in-quest only",
+        "3 variants with token diffs",
+        "Responsive defined for 375px and 768px",
+        "Anti-slop audit passes",
+        "Quality score >= 60/66"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Redesign my SaaS dashboard. It feels generic and boring.",
+      "expected_output": "Swarm produces: research_context with SaaS trends, tokens avoiding monoculture, sidebar nav, responsive specs, anti-slop translations of 'generic' and 'boring'.",
+      "files": [],
+      "assertions": [
+        "research_context references 2+ SaaS patterns",
+        "'generic' translated to specific precedent or tokens",
+        "Typography not Inter/DM Sans without justification",
+        "Dashboard not using 6+ metric card grid",
+        "All 4 breakpoints defined",
+        "Quality score >= 60/66"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Create a mobile e-commerce checkout flow. Clean, fast, trustworthy.",
+      "expected_output": "Swarm produces: research_context with checkout UX best practices, trust-inducing tokens, step progression navigation, form error states.",
+      "files": [],
+      "assertions": [
+        "'clean' translated to spacing tokens",
+        "'fast' translated to skeleton strategy",
+        "'trustworthy' translated to color roles and type weight",
+        "Step progression indicator defined",
+        "Error states for form validation",
+        "Tap targets >=44px",
+        "Quality score >= 60/66"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Design a competitive FPS game HUD. Maximize information density without clutter.",
+      "expected_output": "Swarm produces: research_context with FPS HUD conventions, high-density HUD tokens, specific element positions, 'without clutter' translated to constraint.",
+      "files": [],
+      "assertions": [
+        "HUD elements have specific positions",
+        "Font weight >=700 for HUD",
+        "Safe zones defined",
+        "'without clutter' translated to specific constraint",
+        "Color roles distinguish team/enemy/objective",
+        "Quality score >= 60/66"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Make my food delivery app feel premium and delightful.",
+      "expected_output": "Swarm produces: research_context with premium delivery UX, elevation+serif+gold tokens, spring animations for delight.",
+      "files": [],
+      "assertions": [
+        "'premium' translated to elevation+serif+gold",
+        "'delightful' translated to spring animation tokens",
+        "Not generic orange/green defaults",
+        "Motion tokens include spring easing",
+        "Quality score >= 60/66"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Design a responsive admin panel for managing IoT devices. Tablet and desktop.",
+      "expected_output": "Swarm produces: research_context with IoT admin patterns, sidebar nav, data table scroll behavior, mono role for device IDs.",
+      "files": [],
+      "assertions": [
+        "Sidebar nav persistent on desktop, collapsible on tablet",
+        "Data table horizontal scroll defined for tablet",
+        "Responsive for 768px, 1024px, 1440px",
+        "Typography includes mono role",
+        "Quality score >= 60/66"
+      ]
+    }
+  ]
+}

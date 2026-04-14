@@ -1,0 +1,27 @@
+{
+  "skill_name": "learn",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I want to learn how to use the `memory-context` skill in this repo. Can you help me?",
+      "expected_output": "The agent identifies that `memory-context` is a local skill, reads its `SKILL.md` and any reference files, and explains how to use it with specific examples.",
+      "files": [],
+      "assertions": [
+        "The agent mentions reading .agents/skills/memory-context/SKILL.md",
+        "The agent explains the difference between Tier 1 and Tier 2 retrieval",
+        "The agent provides a command-line example or realistic prompt"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "How do I add a new entry to the `lessons.jsonl` file properly?",
+      "expected_output": "The agent explains the dual-write pattern: verbose logs in `agents-docs/LESSONS.md` and distilled notes in the relevant `AGENTS.md`.",
+      "files": [],
+      "assertions": [
+        "The agent mentions both LESSONS.md and AGENTS.md",
+        "The agent describes the auto-indexing into lessons.jsonl",
+        "The agent warns against manual edits to lessons.jsonl if applicable"
+      ]
+    }
+  ]
+}

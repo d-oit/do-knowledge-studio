@@ -1,0 +1,60 @@
+{
+  "skill_name": "database-schema-migrations",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Write a migration to add a 'status' column to the orders table with a default value of 'pending'. The table has 2 million rows.",
+      "expected_output": "The agent uses expand-contract pattern: add nullable column first, backfill in batches, then add default/constraint. Uses IF NOT EXISTS.",
+      "files": [],
+      "assertions": [
+        "The agent uses CREATE/ALTER with IF NOT EXISTS for idempotency",
+        "The agent addresses the large table concern with batch backfill strategy",
+        "The agent uses expand-contract pattern (nullable first, then constrain)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I need to rename the 'user_name' column to 'display_name' in the users table without downtime.",
+      "expected_output": "The agent uses expand-contract: add new column, dual-write, backfill existing data, drop old column. No direct RENAME to avoid locks.",
+      "files": [],
+      "assertions": [
+        "The agent avoids direct RENAME (causes table lock)",
+        "The agent uses gradual migration with dual-write strategy",
+        "The agent includes rollback/deletion steps for the old column"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Write an idempotent migration to create a tags table with a many-to-many relationship to resources.",
+      "expected_output": "The agent creates tags and resource_tags junction tables with IF NOT EXISTS, FK constraints, and indexes on junction columns.",
+      "files": [],
+      "assertions": [
+        "The migration is idempotent (safe to re-run with IF NOT EXISTS)",
+        "The agent creates a junction table for the many-to-many relationship",
+        "The agent adds indexes on foreign key columns in the junction table"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Design a migration to add a composite unique index on (owner_id, slug) for the resources table.",
+      "expected_output": "The agent creates UNIQUE INDEX IF NOT EXISTS and addresses pre-existing duplicates before adding the constraint.",
+      "files": [],
+      "assertions": [
+        "The agent uses CREATE UNIQUE INDEX IF NOT EXISTS",
+        "The agent addresses pre-existing duplicate handling before adding constraint",
+        "The agent mentions data cleanup as a prerequisite step"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "My migration failed halfway through. How do I recover and ensure data consistency?",
+      "expected_output": "The agent recommends checking migration history table, verifying partial changes, using transaction boundaries, and manual verification steps.",
+      "files": [],
+      "assertions": [
+        "The agent mentions checking the migration history table",
+        "The agent discusses transaction boundaries and partial change handling",
+        "The agent recommends manual verification of data consistency"
+      ]
+    }
+  ]
+}

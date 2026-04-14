@@ -1,0 +1,60 @@
+{
+  "skill_name": "security-code-auditor",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Audit this Python script for security vulnerabilities: import os; def run_command(user_input): os.system('ls ' + user_input)",
+      "expected_output": "The agent identifies the OS command injection vulnerability, explains why os.system with user input is dangerous, and suggests using subprocess with proper argument escaping or input validation.",
+      "files": [],
+      "assertions": [
+        "The agent identifies the OS command injection vulnerability",
+        "The agent explains the risk of passing user input to os.system",
+        "The agent provides a secure alternative (subprocess or input validation)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Do a security review of my Node.js application that stores passwords in plaintext",
+      "expected_output": "The agent identifies the critical plaintext password storage issue, references OWASP guidelines, recommends bcrypt/argon2 hashing, and provides implementation guidance.",
+      "files": [],
+      "assertions": [
+        "The agent flags plaintext password storage as critical severity",
+        "The agent references password hashing best practices",
+        "The agent recommends specific hashing libraries (bcrypt, argon2, or pbkdf2)"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Check my API for OWASP Top 10 vulnerabilities",
+      "expected_output": "The agent systematically checks for injection, broken authentication, sensitive data exposure, XXE, broken access control, security misconfiguration, XSS, insecure deserialization, known vulnerabilities, and insufficient logging.",
+      "files": [],
+      "assertions": [
+        "The agent covers multiple OWASP Top 10 categories",
+        "The agent provides specific checks for each category",
+        "The agent includes actionable remediation steps"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Security assessment: I have JWT tokens that never expire in my authentication system",
+      "expected_output": "The agent identifies the JWT token expiration issue as a security risk, explains session management best practices, and recommends implementing token expiration and refresh mechanisms.",
+      "files": [],
+      "assertions": [
+        "The agent identifies non-expiring JWTs as a security vulnerability",
+        "The agent explains the risks (replay attacks, token theft)",
+        "The agent recommends token expiration and refresh token patterns"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Review my docker-compose.yml for security misconfigurations: services: db: { image: mysql:5.7, environment: { MYSQL_ROOT_PASSWORD: admin123 } }",
+      "expected_output": "The agent identifies hardcoded credentials, outdated MySQL version with known CVEs, and missing security configurations. Recommends environment variables, latest stable image, and security options.",
+      "files": [],
+      "assertions": [
+        "The agent flags hardcoded passwords as a security issue",
+        "The agent warns about outdated MySQL 5.7 with security vulnerabilities",
+        "The agent recommends using environment variables for secrets"
+      ]
+    }
+  ]
+}

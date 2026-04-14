@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+# Post-Tool Hook - Runs after tool calls complete
+# Use for notifications, logging, or triggering workflows
+#
+# Install: Place in .claude/hooks/post-tool.sh and make executable
+# chmod +x .claude/hooks/post-tool.sh
+#
+# Input: JSON via stdin with tool name, params, and result
+
+set -euo pipefail
+
+# Read input from stdin
+input=$(cat)
+
+# Parse tool info (requires jq)
+if command -v jq &> /dev/null; then
+    tool=$(echo "$input" | jq -r '.tool // empty')
+    success=$(echo "$input" | jq -r '.success // false')
+    file_path=$(echo "$input" | jq -r '.params.file_path // empty')
+else
+    # Fallback: simple grep
+    tool=$(echo "$input" | grep -o '"tool"[[:space:]]*:[[:space:]]*"[^"]*"' | cut -d'"' -f4)
+    success="true"  # Assume success if we can't parse
+fi
+
+# --- Logging ---
+log_file="${LOG_FILE:-.claude/hooks/tool-log.jsonl}"
+timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+# Log tool usage
+echo "{\"timestamp\":\"$timestamp\",\"tool\":\"$tool\",\"success\":$success,\"file\":\"$file_path\"}" >> "$log_file"
+
+# --- Notifications ---
+
+# Notify on file writes
+if [ "$tool" = "Write" ] && [ "$success" = "true" ]; then
+    if [ -n "$file_path" ]; then
+        echo "TOOL: Write completed: $file_path"
+        
+        # Optional: Send Slack notification
+        if [ -n "${SLACK_WEBHOOK_URL:-}" ]; then
+            curl -s -X POST "$SLACK_WEBHOOK_URL" \
+                -H 'Content-Type: application/json' \
+                -d "{\"text\":\"File written: $file_path\"}" &
+        fi
+        
+        # Optional: Create GitHub issue on test failure
+        if [[ "$file_path" == *test* ]]; then
+            echo "TEST FILE: Consider running tests after test file modification"
+        fi
+    fi
+fi
+
+# Notify on Bash command execution
+if [ "$tool" = "Bash" ] && [ "$success" = "true" ]; then
+    command=$(echo "$input" | grep -o '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | cut -d'"' -f4)
+    
+    # Log significant commands
+    if [[ "$command" == *"git commit"* ]] || [[ "$command" == *"git push"* ]]; then
+        echo "GIT OPERATION: $command"
+    fi
+    
+    if [[ "$command" == *"deploy"* ]] || [[ "$command" == *"release"* ]]; then
+        echo "DEPLOYMENT: $command"
+        
+        # Optional: Send deployment notification
+        if [ -n "${DEPLOY_WEBHOOK_URL:-}" ]; then
+            curl -s -X POST "$DEPLOY_WEBHOOK_URL" \
+                -H 'Content-Type: application/json' \
+                -d "{\"text\":\"Deployment triggered: $command\"}" &
+        fi
+    fi
+fi
+
+# --- Quality Triggers ---
+
+# After Write to source file, suggest running quality gate
+if [ "$tool" = "Write" ] && [ "$success" = "true" ]; then
+    if [[ "$file_path" == *.rs ]] || [[ "$file_path" == *.ts ]] || [[ "$file_path" == *.py ]]; then
+        echo "HINT: Consider running ./scripts/quality_gate.sh after source changes"
+    fi
+fi
+
+# After Bash test command, suggest commit if passed
+if [ "$tool" = "Bash" ] && [ "$success" = "true" ]; then
+    if [[ "$command" == *"test"* ]] || [[ "$command" == *"pytest"* ]] || [[ "$command" == *"cargo test"* ]]; then
+        echo "HINT: Tests passed. Ready to commit with: git commit -m \"...\""
+    fi
+fi
+
+exit 0

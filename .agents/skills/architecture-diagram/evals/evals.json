@@ -1,0 +1,49 @@
+{
+  "skill_name": "architecture-diagram",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Update the architecture diagram for this project",
+      "expected_output": "The agent runs the generate_diagram.py script from the skill, outputs an SVG to docs/architecture.svg, and reports the number of skills, agents, and commands discovered.",
+      "files": [],
+      "assertions": [
+        "The agent locates the project root",
+        "The agent runs the bundled generate_diagram.py script",
+        "The agent reports the output path and component counts"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "The architecture SVG is out of date after adding new skills. Regenerate it.",
+      "expected_output": "The agent re-runs the diagram generator, discovers the new skills, and reports what changed.",
+      "files": [],
+      "assertions": [
+        "The agent runs the diagram generator",
+        "The agent reports discovered component counts",
+        "The agent notes if counts differ from previous state"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Can you create a custom architecture diagram with a title 'My Project' and pipeline stages for build, test, deploy?",
+      "expected_output": "The agent explains how to use docs/diagram-config.json with custom title and pipeline_stages, then generates the diagram.",
+      "files": [],
+      "assertions": [
+        "The agent mentions the diagram-config.json customization option",
+        "The agent shows the config format with title and pipeline_stages",
+        "The agent runs the generator"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Generate the architecture diagram and embed it in the README",
+      "expected_output": "The agent generates the SVG, then adds a markdown image reference ![Architecture](docs/architecture.svg) to the README.",
+      "files": ["README.md"],
+      "assertions": [
+        "The agent generates the SVG diagram",
+        "The agent adds or updates the image reference in README",
+        "The image path is relative and correct"
+      ]
+    }
+  ]
+}

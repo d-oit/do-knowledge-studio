@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+# Stop Hook - Runs after every agent stop
+# Exit 0 = silent success, Exit 2 = surface errors to agent
+#
+# Install: Place in .claude/hooks/stop.sh and make executable
+# chmod +x .claude/hooks/stop.sh
+
+set -euo pipefail
+
+cd "$CLAUDE_PROJECT_DIR"
+
+# --- Configuration ---
+SKIP_LEAN=false  # Set to true to skip lint/typecheck
+
+# --- Helper Functions ---
+log_error() {
+    echo "ERROR: $1" >&2
+}
+
+log_info() {
+    if [ "${VERBOSE:-false}" = "true" ]; then
+        echo "INFO: $1"
+    fi
+}
+
+# --- Typecheck & Lint ---
+run_typecheck() {
+    local output
+    local failed=0
+
+    # Rust
+    if [ -f "Cargo.toml" ]; then
+        log_info "Running Rust checks..."
+        if ! output=$(cargo fmt --check 2>&1); then
+            log_error "cargo fmt failed"
+            echo "$output" >&2
+            failed=1
+        fi
+
+        if [ "$SKIP_LEAN" != "true" ]; then
+            if ! output=$(cargo clippy --all-targets -- -D warnings 2>&1); then
+                log_error "cargo clippy failed"
+                echo "$output" >&2
+                failed=1
+            fi
+        fi
+    fi
+
+    # TypeScript
+    if [ -f "package.json" ]; then
+        log_info "Running TypeScript checks..."
+        if command -v pnpm &> /dev/null; then
+            if ! output=$(pnpm lint 2>&1); then
+                log_error "pnpm lint failed"
+                echo "$output" >&2
+                failed=1
+            fi
+            if ! output=$(pnpm typecheck 2>&1); then
+                log_error "pnpm typecheck failed"
+                echo "$output" >&2
+                failed=1
+            fi
+        fi
+    fi
+
+    # Python
+    if [ -f "requirements.txt" ] || [ -f "pyproject.toml" ]; then
+        log_info "Running Python checks..."
+        if command -v ruff &> /dev/null; then
+            if ! output=$(ruff check . 2>&1); then
+                log_error "ruff check failed"
+                echo "$output" >&2
+                failed=1
+            fi
+        fi
+        if command -v black &> /dev/null; then
+            if ! output=$(black --check . 2>&1); then
+                log_error "black check failed"
+                echo "$output" >&2
+                failed=1
+            fi
+        fi
+    fi
+
+    # Go
+    if [ -f "go.mod" ]; then
+        log_info "Running Go checks..."
+        if ! output=$(gofmt -l . 2>&1); then
+            log_error "gofmt found unformatted files"
+            echo "$output" >&2
+            failed=1
+        fi
+        if ! output=$(go vet ./... 2>&1); then
+            log_error "go vet failed"
+            echo "$output" >&2
+            failed=1
+        fi
+    fi
+
+    return $failed
+}
+
+# --- Main ---
+main() {
+    local failed=0
+
+    # Run typecheck/lint
+    if ! run_typecheck; then
+        failed=1
+    fi
+
+    # Run skill validation (always)
+    if [ -f "./scripts/validate-skills.sh" ]; then
+        if ! ./scripts/validate-skills.sh; then
+            failed=1
+        fi
+    fi
+
+    # Exit with appropriate code
+    if [ $failed -ne 0 ]; then
+        exit 2  # Surface errors to agent
+    fi
+
+    exit 0  # Silent success
+}
+
+main "$@"

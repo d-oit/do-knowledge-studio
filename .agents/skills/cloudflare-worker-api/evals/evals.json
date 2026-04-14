@@ -1,0 +1,60 @@
+{
+  "skill_name": "cloudflare-worker-api",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create API routes for a resource management system with CRUD endpoints for /api/resources.",
+      "expected_output": "The agent creates typed route handlers with Zod validation on inputs, consistent response format, and organized route file structure.",
+      "files": [],
+      "assertions": [
+        "All routes have Zod validation schemas for input",
+        "Error responses follow consistent format { success, error }",
+        "Route file structure is organized by resource"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "How do I handle CORS for my Worker API that serves a React frontend at https://myapp.com?",
+      "expected_output": "The agent configures CORS headers with specific origin (not wildcard), handles OPTIONS preflight requests, and sets appropriate methods.",
+      "files": [],
+      "assertions": [
+        "The agent sets Access-Control-Allow-Origin to the specific origin (not wildcard)",
+        "The agent handles OPTIONS preflight requests",
+        "The agent sets Access-Control-Allow-Methods and Allow-Headers"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I need a signed URL endpoint for secure file downloads that expire after 15 minutes.",
+      "expected_output": "The agent implements signed URL generation with TTL, signature verification middleware, and generic error messages on invalid signatures.",
+      "files": [],
+      "assertions": [
+        "The agent includes TTL/expiration in the signed URL design",
+        "The agent verifies signatures before serving content",
+        "The agent uses generic 'invalid or expired' error messages"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Add rate limiting to my public API endpoints but not authenticated ones.",
+      "expected_output": "The agent implements rate limiting middleware applied only to public routes, with different limits for anonymous vs authenticated requests.",
+      "files": [],
+      "assertions": [
+        "The agent distinguishes public vs protected routes for rate limiting",
+        "The agent applies rate limiting only to public/anonymous endpoints",
+        "The agent mentions rate limit headers in responses"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Review my Worker route that accepts user input and stores it in a database. Here's my code: export default { async fetch(request) { const body = await request.json(); return db.insert('users', body); }}",
+      "expected_output": "The agent flags missing Zod validation, SQL injection risk from raw body, no error handling, and missing consistent response format.",
+      "files": [],
+      "assertions": [
+        "The agent flags the lack of input validation (Zod schemas)",
+        "The agent mentions SQL injection or unsafe database query risk",
+        "The agent recommends adding error handling and consistent response format"
+      ]
+    }
+  ]
+}

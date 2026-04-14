@@ -1,0 +1,60 @@
+{
+  "skill_name": "testdata-builders",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create a builder for a User entity with id, email, name, role, and createdAt fields.",
+      "expected_output": "The agent creates a makeUser function with overrides/Partial pattern, deterministic defaults for all fields, and exported types.",
+      "files": [],
+      "assertions": [
+        "The agent uses the overrides/Partial pattern for customization",
+        "All builder defaults are deterministic (no Math.random())",
+        "The agent exports types alongside the builder function"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I need test data for a User with an Organization and Projects relationship.",
+      "expected_output": "The agent creates related entity builders, maintains referential integrity between entities, and uses consistent naming conventions.",
+      "files": [],
+      "assertions": [
+        "The agent creates builders for related entities (Organization, Projects)",
+        "The agent maintains referential integrity between entities",
+        "The agent uses consistent naming across related builders"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "My tests are flaky because builder data changes between runs. How do I fix this?",
+      "expected_output": "The agent identifies randomness as the root cause and recommends seeded or fixed values, stable timestamps, and eliminating Math.random().",
+      "files": [],
+      "assertions": [
+        "The agent identifies randomness as the cause of flaky tests",
+        "The agent recommends fixed defaults or seeded random values",
+        "The agent suggests using fixed timestamps instead of Date.now()"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "We added a new 'locale' field to User. How should I update the test builder?",
+      "expected_output": "The agent updates builder defaults with locale field, mentions CI validation, and keeping type definitions in sync.",
+      "files": [],
+      "assertions": [
+        "The agent adds the locale field to builder defaults",
+        "The agent mentions updating the exported type definition",
+        "The agent mentions CI should fail if builder is out of sync with schema"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Create a seeded random ID generator for test builders that produces the same output each run.",
+      "expected_output": "The agent creates a deterministic ID generator that accepts a seed parameter, produces reproducible output, and integrates with the builder pattern.",
+      "files": [],
+      "assertions": [
+        "The generator accepts a seed parameter for reproducibility",
+        "The output is deterministic given the same seed",
+        "The agent shows how to integrate it with builder defaults"
+      ]
+    }
+  ]
+}

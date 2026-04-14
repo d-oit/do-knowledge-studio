@@ -1,0 +1,62 @@
+{
+  "skill_name": "iterative-refinement",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Fix all failing tests until they pass",
+      "expected_output": "The agent sets up an iterative loop: success criteria = all tests passing, max iterations ~8. Each iteration: fix failures → re-run tests → check if all pass → continue or stop. Reports metrics per iteration.",
+      "files": [],
+      "assertions": [
+        "The agent defines clear success criteria (all tests passing)",
+        "The agent sets a max iteration limit",
+        "The agent tracks metrics per iteration (e.g., 42/50 → 48/50 → 50/50)",
+        "The agent stops when criteria are met"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Clean up all linter warnings in my Python project",
+      "expected_output": "The agent iterates: run linter → fix warnings → re-run → repeat until 0 warnings. Tracks warning count per iteration.",
+      "files": [],
+      "assertions": [
+        "The agent runs the linter as a validator",
+        "The agent tracks warning count across iterations",
+        "The agent uses automated validation over manual inspection"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Optimize this API endpoint until response time is under 100ms",
+      "expected_output": "The agent iterates: benchmark → optimize → re-benchmark → check target. Includes convergence detection (stop if improvement < 10% over 3 iterations).",
+      "files": [],
+      "assertions": [
+        "The agent defines success criteria with specific target (< 100ms)",
+        "The agent uses benchmarking as validation",
+        "The agent mentions convergence detection",
+        "The agent tracks response time metrics per iteration"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "My code has been stuck at 75% test coverage for 3 iterations. What should I do?",
+      "expected_output": "The agent identifies this as a stuck state: analyze why progress stopped (diminishing returns), try different approach (target uncovered branches), consider if 75% is acceptable, or adjust strategy.",
+      "files": [],
+      "assertions": [
+        "The agent identifies the stuck state pattern",
+        "The agent suggests analyzing why progress stopped",
+        "The agent recommends trying a different approach or accepting convergence"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Run a quality improvement loop on my codebase: lint, format, test",
+      "expected_output": "The agent sets up a multi-validator loop: run linter → fix → run formatter → fix → run tests → fix → repeat. Uses hybrid termination (criteria + convergence).",
+      "files": [],
+      "assertions": [
+        "The agent sets up multiple validators in sequence",
+        "The agent defines clear success criteria for each validator",
+        "The agent reports metrics per iteration"
+      ]
+    }
+  ]
+}

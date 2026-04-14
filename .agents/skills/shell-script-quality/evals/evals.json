@@ -1,0 +1,61 @@
+{
+  "skill_name": "shell-script-quality",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Check my bash script scripts/deploy.sh for errors",
+      "expected_output": "The agent runs shellcheck on the script, reports any warnings or errors, and suggests fixes for common issues like SC2086 (unquoted variables), SC2155 (declare and assign separately), SC2181 (check exit code directly).",
+      "assertions": [
+        "The agent runs shellcheck on the script",
+        "The agent reports specific warning codes and explanations",
+        "The agent suggests concrete fixes"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Write BATS tests for my helper script that has a validate_input function",
+      "expected_output": "The agent creates a .bats file with setup(), @test blocks for valid and invalid inputs, using run and checking $status and $output. Uses $BATS_TEST_DIRNAME for paths.",
+      "files": [],
+      "assertions": [
+        "The agent creates a properly structured .bats file",
+        "The agent uses @test blocks with descriptive names",
+        "The agent tests both success and failure cases",
+        "The agent uses $BATS_TEST_DIRNAME for relative paths"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Create a new bash script following best practices",
+      "expected_output": "The agent creates a script with: shebang (#!/bin/bash), set -euo pipefail, SCRIPT_DIR using BASH_SOURCE, error_exit function, main() function, execution guard.",
+      "files": [],
+      "assertions": [
+        "The script starts with #!/bin/bash and set -euo pipefail",
+        "The script defines SCRIPT_DIR portably",
+        "The script has a main function with execution guard"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Set up a GitHub Actions workflow for shellcheck and BATS",
+      "expected_output": "The agent creates a workflow YAML with shellcheck step (ludeeus/action-shellcheck) and BATS step (install + run tests).",
+      "files": [],
+      "assertions": [
+        "The agent creates a valid GitHub Actions workflow YAML",
+        "The workflow includes a shellcheck step",
+        "The workflow includes a BATS test step"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "My script has ShellCheck warning SC1090 about sourced file not being found. How do I fix this?",
+      "expected_output": "The agent explains adding # shellcheck source=path/to/file.sh directive before the source command, or using .shellcheckrc with source-path=SCRIPTDIR.",
+      "files": [],
+      "assertions": [
+        "The agent identifies SC1090 as a sourced-file warning",
+        "The agent suggests the shellcheck source directive or .shellcheckrc configuration",
+        "The agent provides a concrete fix example"
+      ]
+    }
+  ]
+}

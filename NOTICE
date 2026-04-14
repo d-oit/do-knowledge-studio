@@ -1,0 +1,99 @@
+GitHub Template AI Agents
+Copyright 2025 AI Agent Template Contributors
+
+This product is licensed under the MIT License.
+
+If you use this software in a product, an acknowledgment in the product
+documentation would be appreciated but is not required.
+
+================================================================================
+
+THIRD-PARTY COMPONENTS
+
+This software includes or references the following third-party components:
+
+---
+
+Testing Frameworks
+
+BATS (Bash Automated Testing System)
+  Copyright: 2011-2017 Sam Stephenson, 2018 bats-core organization
+  License: MIT License
+  Source: https://github.com/bats-core/bats-core
+  Usage: Shell script testing framework
+
+pytest
+  Copyright: 2010-2025 pytest dev team
+  License: MIT License
+  Source: https://github.com/pytest-dev/pytest
+  Usage: Python testing framework
+
+---
+
+Linting and Code Quality Tools
+
+ShellCheck
+  Copyright: 2012-2025 Vidar Holen and contributors
+  License: GNU General Public License v3.0 (GPL-3.0+)
+  Source: https://github.com/koalaman/shellcheck
+  Usage: Shell script static analysis
+
+ruff
+  Copyright: 2022-2025 Astral Software Inc.
+  License: MIT License
+  Source: https://github.com/astral-sh/ruff
+  Usage: Python linting and formatting
+
+black
+  Copyright: 2018-2025 Łukasz Langa and contributors
+  License: MIT License
+  Source: https://github.com/psf/black
+  Usage: Python code formatting
+
+---
+
+CI/CD and Automation Tools
+
+GitHub Actions (actions/checkout, actions/setup-node, actions/setup-python,
+                actions/setup-go)
+  Copyright: GitHub, Inc.
+  License: MIT License
+  Source: https://github.com/actions
+  Usage: Continuous integration workflows
+
+dtolnay/rust-toolchain
+  Copyright: David Tolnay
+  License: MIT License OR Apache-2.0 License
+  Source: https://github.com/dtolnay/rust-toolchain
+  Usage: Rust toolchain setup in CI
+
+reviewdog/action-actionlint
+  Copyright: 2020-2025 reviewdog contributors
+  License: MIT License
+  Source: https://github.com/reviewdog/action-actionlint
+  Usage: GitHub Actions workflow linting
+
+ludeeus/action-shellcheck
+  Copyright: 2019-2025 Joakim Sørensen
+  License: MIT License
+  Source: https://github.com/ludeeus/action-shellcheck
+  Usage: ShellCheck integration for GitHub Actions
+
+---
+
+Development Dependencies
+
+@opencode-ai/plugin
+  Copyright: OpenCode AI
+  License: Proprietary (npm package)
+  Usage: OpenCode agent plugin (optional dependency)
+
+================================================================================
+
+For full license text of the above third-party components, please refer to
+their respective source repositories or the LICENSE files included with each
+project.
+
+This NOTICE file is provided in accordance with common open source attribution
+best practices, following the style guidelines of the Apache License 2.0,
+even though this project itself is licensed under the MIT License.

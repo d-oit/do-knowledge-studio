@@ -1,0 +1,60 @@
+{
+  "skill_name": "reader-ui-ux",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Build a responsive reader layout with a mobile drawer navigation and desktop side panel.",
+      "expected_output": "The agent implements viewport-specific layout rules: mobile drawer, tablet hybrid, desktop persistent sidebar. Uses deliberate spacing and backgrounds.",
+      "files": [],
+      "assertions": [
+        "The agent implements different layouts for mobile/tablet/desktop viewports",
+        "The agent uses responsive breakpoints deliberately",
+        "The agent addresses spacing and background styling (not flat white default)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Add localization support to our reader app with English, German, and French.",
+      "expected_output": "The agent adds strings to locale catalogs (en/de/fr), ensures fallback behavior, implements locale switcher UI, and updates Accept-Language header.",
+      "files": [],
+      "assertions": [
+        "The agent uses a locale catalog system for translations",
+        "The agent includes fallback handling for missing translations",
+        "The agent mentions a locale switcher UI component"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Make our comment panel accessible for keyboard-only users and screen readers.",
+      "expected_output": "The agent implements focus management with focus traps, ARIA labels on interactive elements, keyboard navigation, and screen reader announcements.",
+      "files": [],
+      "assertions": [
+        "The agent implements focus trap within the comment panel",
+        "The agent adds ARIA labels to interactive elements",
+        "The agent implements keyboard navigation (tab, escape, enter)"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Optimize a reader component that re-renders too frequently when scrolling through a document.",
+      "expected_output": "The agent uses React.memo/useMemo, implements selector pattern to avoid prop drilling, and uses AbortController for async cleanup on unmount.",
+      "files": [],
+      "assertions": [
+        "The agent uses React.memo or useMemo for render optimization",
+        "The agent implements selector pattern to avoid unnecessary re-renders",
+        "The agent mentions AbortController for async cleanup on unmount"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Add error handling to our reader UI so users see friendly messages instead of blank screens when something goes wrong.",
+      "expected_output": "The agent implements ErrorBoundary wrapper, inline user-friendly error alerts, error state UI components, and trace ID logging for observability.",
+      "files": [],
+      "assertions": [
+        "The agent implements a Global ErrorBoundary wrapper",
+        "The agent shows user-friendly inline error alerts",
+        "The agent mentions trace ID logging for error observability"
+      ]
+    }
+  ]
+}

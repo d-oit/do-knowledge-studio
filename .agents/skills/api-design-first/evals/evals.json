@@ -1,0 +1,64 @@
+{
+  "skill_name": "api-design-first",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Design a REST API for an e-commerce product catalog with categories and reviews",
+      "expected_output": "The agent creates a comprehensive OpenAPI 3.0 specification with endpoints for products, categories, and reviews, proper HTTP methods, status codes, and request/response schemas.",
+      "files": [],
+      "assertions": [
+        "The agent creates an OpenAPI 3.0 specification",
+        "The design includes proper resource naming (nouns, not verbs)",
+        "The design includes GET, POST, PUT/PATCH, DELETE for relevant resources",
+        "The design includes proper HTTP status codes and error responses"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Create an API spec for user authentication with login, logout, and password reset",
+      "expected_output": "The agent designs secure authentication endpoints with proper request/response models, token handling, and security considerations without exposing sensitive patterns.",
+      "files": [],
+      "assertions": [
+        "The agent includes /auth/login and /auth/logout endpoints",
+        "The agent includes password reset flow with proper security",
+        "The agent uses POST for state-changing operations",
+        "The agent avoids exposing real secret patterns in examples"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I need to version my existing API - what strategy should I use?",
+      "expected_output": "The agent explains different API versioning strategies (URL path, header, query param), their pros/cons, and provides recommendations based on the use case.",
+      "files": [],
+      "assertions": [
+        "The agent describes at least 2 versioning strategies",
+        "The agent explains pros and cons of each approach",
+        "The agent provides a recommendation with justification"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Design pagination for my API that returns a list of 10,000 orders",
+      "expected_output": "The agent implements cursor-based or offset pagination with metadata (page, per_page, total), links (next, prev, first, last), and proper response structure.",
+      "files": [],
+      "assertions": [
+        "The agent includes pagination metadata in responses",
+        "The agent includes navigation links (next, prev, etc.)",
+        "The agent recommends appropriate page sizes",
+        "The agent considers performance with large datasets"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Write OpenAPI documentation for a file upload endpoint that accepts images up to 10MB",
+      "expected_output": "The agent creates a proper OpenAPI spec with multipart/form-data content type, file parameter, size limits, supported formats, and appropriate error responses.",
+      "files": [],
+      "assertions": [
+        "The agent uses multipart/form-data for file uploads",
+        "The agent includes file size constraints (10MB limit)",
+        "The agent specifies supported image formats",
+        "The agent includes 413 Payload Too Large error handling"
+      ]
+    }
+  ]
+}

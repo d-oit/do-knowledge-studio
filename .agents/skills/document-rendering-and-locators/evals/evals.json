@@ -1,0 +1,60 @@
+{
+  "skill_name": "document-rendering-and-locators",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Design a locator schema for persisting user highlights in a document reader.",
+      "expected_output": "The agent creates a multi-signal locator with position, text excerpt, chapter reference, and DOM fallback. Includes serialization format with stable casing.",
+      "files": [],
+      "assertions": [
+        "The locator includes both position and text excerpt fields",
+        "The agent includes a chapter/section reference for stability",
+        "The agent mentions a fallback mechanism when primary locator fails"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Users report their highlights drift when the document is re-rendered. How do I fix annotation anchoring?",
+      "expected_output": "The agent implements multi-level re-anchoring: exact match -> fuzzy text -> chapter fallback -> user notice. Warns user when anchor degrades.",
+      "files": [],
+      "assertions": [
+        "The agent implements a multi-level fallback re-anchoring strategy",
+        "The agent warns the user when falling back to degraded anchor",
+        "The agent addresses content change handling"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Implement event cleanup for a document reader component in React.",
+      "expected_output": "The agent implements cleanup in useEffect return, removes listeners on unmount, and prevents memory leaks from accumulated handlers.",
+      "files": [],
+      "assertions": [
+        "The agent implements cleanup function in useEffect return",
+        "The agent removes event handlers on component unmount",
+        "The agent mentions preventing listener accumulation/memory leaks"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "How do I lazy-load a large document in a web reader without blocking the UI?",
+      "expected_output": "The agent lazy-loads document assets, shows loading state, reuses single rendition instance, and handles progressive rendering.",
+      "files": [],
+      "assertions": [
+        "The agent lazy-loads document assets rather than loading all at once",
+        "The agent shows a loading state during document fetch",
+        "The agent mentions reusing a single rendition instance"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Add telemetry for document load failures with trace IDs.",
+      "expected_output": "The agent logs error events with trace IDs, categorizes failure types, and shows user-friendly error messages.",
+      "files": [],
+      "assertions": [
+        "The agent includes trace IDs in telemetry log entries",
+        "The agent categorizes document load failure types",
+        "The agent shows a user-friendly error notification on failure"
+      ]
+    }
+  ]
+}

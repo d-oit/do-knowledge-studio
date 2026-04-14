@@ -1,0 +1,61 @@
+{
+  "skill_name": "skill-evaluator",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Evaluate the structure of my skill at .agents/skills/my-skill/",
+      "expected_output": "The agent runs the check_structure.py script or manually checks: SKILL.md exists, evals/evals.json exists and is valid JSON, no nested duplicates, eval cases have required fields. Reports PASS/NEEDS_WORK/FAIL.",
+      "files": [],
+      "assertions": [
+        "The agent checks for SKILL.md existence",
+        "The agent checks for evals/evals.json",
+        "The agent reports a verdict (PASS, NEEDS_WORK, or FAIL)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Run a live evaluation of the triz-solver skill using one of its eval prompts",
+      "expected_output": "The agent loads the triz-solver skill, runs one eval prompt through it, grades the output against assertions with evidence, and provides a verdict.",
+      "files": [],
+      "assertions": [
+        "The agent loads the target skill",
+        "The agent runs a representative eval prompt",
+        "The agent grades against assertions with evidence",
+        "The agent provides a clear verdict"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Compare the triz-analysis skill with and without the skill loaded (baseline comparison)",
+      "expected_output": "The agent runs the same prompt twice: once with the skill loaded, once without. Compares pass rate, missing details, format compliance.",
+      "files": [],
+      "assertions": [
+        "The agent runs the same prompt with and without the skill",
+        "The agent compares results systematically",
+        "The agent reports differences in output quality"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Is the assertion 'The output is good' a valid eval assertion?",
+      "expected_output": "The agent identifies this as a BAD assertion - too subjective. Good assertions are concrete and checkable like 'The answer cites the exact minimum cover dimensions'.",
+      "files": [],
+      "assertions": [
+        "The agent identifies the assertion as subjective/invalid",
+        "The agent explains that assertions must be concrete and checkable",
+        "The agent provides an example of a good assertion"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "My skill at .agents/skills/epub-validation/ has no evals directory. What should I add?",
+      "expected_output": "The agent explains what evals/evals.json should contain: an array of eval cases with id, prompt, expected_output, files, and assertions fields. Provides guidance on realistic prompts and concrete assertions.",
+      "files": [],
+      "assertions": [
+        "The agent explains the evals.json structure",
+        "The agent mentions required fields (id, prompt, expected_output)",
+        "The agent explains assertions should be concrete and checkable"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "skill_name": "codeberg-api",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "List all repositories for user 'alice' on Codeberg",
+      "expected_output": "The agent runs the forgejo_api.py script with repos --owner alice, or uses curl against the Codeberg API. Returns the list of repositories.",
+      "files": [],
+      "assertions": [
+        "The agent uses the correct API endpoint or bundled script",
+        "The agent targets codeberg.org base URL",
+        "The command syntax is correct"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Read the README.md from myrepo owned by bob on Codeberg, branch main",
+      "expected_output": "The agent uses get-file command with --owner bob --repo myrepo --path README.md --branch main, or curls the contents API endpoint.",
+      "files": [],
+      "assertions": [
+        "The agent uses the correct API endpoint for file contents",
+        "The agent includes owner, repo, path, and branch parameters",
+        "The agent handles base64 decoding if needed"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Create a new issue in myrepo: title 'Bug: login fails' body 'Users cannot log in with SSO'",
+      "expected_output": "The agent uses create-issue command or POST to /repos/{owner}/{repo}/issues with the correct JSON body.",
+      "files": [],
+      "assertions": [
+        "The agent uses the correct HTTP method (POST) or CLI command",
+        "The agent includes title and body in the request",
+        "The agent mentions FORGEJO_TOKEN requirement for write operations"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "What scopes does my Forgejo token need to create issues and write files?",
+      "expected_output": "The agent references the scopes table: write:issue for managing issues, write:repository for writing files.",
+      "files": [],
+      "assertions": [
+        "The agent mentions write:issue scope",
+        "The agent mentions write:repository scope",
+        "The agent explains the token is set via FORGEJO_TOKEN env var"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "I got a 409 error when trying to update a file. What went wrong?",
+      "expected_output": "The agent explains that 409 Conflict means SHA mismatch - the file was updated since last read. Solution: fetch current SHA first, then retry with correct SHA.",
+      "files": [],
+      "assertions": [
+        "The agent identifies 409 as SHA mismatch / conflict",
+        "The agent explains the need to fetch current SHA before updating",
+        "The agent references the error handling table"
+      ]
+    }
+  ]
+}

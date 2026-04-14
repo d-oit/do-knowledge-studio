@@ -1,0 +1,70 @@
+{
+  "skill_name": "code-review-assistant",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review this PR diff: A new file auth.js was added with 150 lines implementing JWT authentication. It includes login, logout, and token refresh functions but no test files were added.",
+      "expected_output": "The agent identifies missing test coverage as a warning, flags auth.js as high-risk file, suggests reviewing security practices (secret storage, token validation), recommends specific test cases for auth flows, and provides constructive feedback on the implementation.",
+      "assertions": [
+        "The agent flags missing test files",
+        "The agent categorizes auth.js as high-risk",
+        "The agent suggests security-specific checks",
+        "The agent recommends specific test scenarios",
+        "The agent provides actionable feedback"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "A PR changed 3 files: README.md (updated installation instructions), package.json (added lodash dependency), and .github/workflows/ci.yml (added Node 20 to test matrix). Should this be auto-approved?",
+      "expected_output": "The agent analyzes that all changes are low-risk (docs, dependency addition with no breaking changes, CI matrix expansion), suggests auto-approval criteria check, flags dependency addition for security review, recommends approval with minor dependency scrutiny.",
+      "assertions": [
+        "The agent categorizes files by risk level",
+        "The agent considers auto-approval criteria",
+        "The agent flags dependency changes",
+        "The agent identifies no blocking issues",
+        "The agent provides clear recommendation"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Review code changes that include a new API endpoint /api/users that directly concatenates user input into a SQL query string. What's your assessment?",
+      "expected_output": "The agent immediately flags SQL injection vulnerability as blocking issue, explains the risk, suggests parameterized queries or ORM usage, provides code example of the fix, and requests changes before approval.",
+      "assertions": [
+        "The agent identifies SQL injection vulnerability",
+        "The agent marks it as blocking severity",
+        "The agent explains the security risk",
+        "The agent suggests parameterized queries",
+        "The agent provides corrected code example"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "A developer submitted a PR with 25 files changed and 2000 lines modified implementing a new feature. What's the best review approach?",
+      "expected_output": "The agent flags large PR as needing extra scrutiny, suggests breaking into smaller PRs for future, recommends focused review on critical paths first, suggests incremental review approach, and provides summary of change categories.",
+      "assertions": [
+        "The agent flags large change set (>20 files)",
+        "The agent suggests smaller PRs in future",
+        "The agent recommends focused review strategy",
+        "The agent categorizes changes by risk/pattern",
+        "The agent provides time estimate for review"
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Generate a review summary for a PR that refactors a 500-line function into 5 smaller functions with clear names, adds comprehensive tests, and improves documentation. No security-sensitive code was modified.",
+      "expected_output": "The agent generates positive review summary highlighting the refactoring quality, praises test coverage addition, acknowledges documentation improvements, suggests minor optional improvements, and recommends approval.",
+      "assertions": [
+        "The agent generates structured review summary",
+        "The agent highlights positive refactoring aspects",
+        "The agent acknowledges test coverage",
+        "The agent provides specific praise points",
+        "The agent recommends approval with clear reasoning"
+      ],
+      "files": []
+    }
+  ]
+}

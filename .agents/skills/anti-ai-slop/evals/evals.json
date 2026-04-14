@@ -1,0 +1,60 @@
+{
+  "skill_name": "anti-ai-slop",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Audit this landing page copy for AI slop patterns: 'Supercharge your workflow with our powerful AI-powered solution. Transform the way you work with seamless, intuitive features. Get started for free today!'",
+      "expected_output": "The agent identifies: 'Supercharge' as corporate superlative, 'powerful' as AI corporate superlative, 'seamless' as AI corporate superlative, 'intuitive' as AI corporate superlative, 'Transform the way you' as hero headline formula, 'Get started for free' as meaningless CTA. Provides specific replacements.",
+      "files": [],
+      "assertions": [
+        "The agent identifies 'Supercharge' as corporate superlative",
+        "The agent identifies 'Get started for free' as meaningless CTA",
+        "The agent provides specific replacement copy"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "This UI has a purple gradient hero, glassmorphism cards, and uses Inter font. How can I make it feel less generic?",
+      "expected_output": "The agent identifies: purple gradient hero as 'purple gradient hero' pattern, glassmorphism as 'glassmorphism cards' pattern, Inter font as 'Inter / DM Sans / Space Grotesk' pattern. Provides specific alternatives.",
+      "files": [],
+      "assertions": [
+        "The agent names the purple gradient pattern",
+        "The agent names the glassmorphism pattern",
+        "The agent names the font pattern",
+        "The agent provides design alternatives"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Make this error message feel less AI-generated: 'We encountered an error. We apologize for the inconvenience. Please try again later.'",
+      "expected_output": "The agent identifies: 'We apologize for the inconvenience' as empathy performance, generic 'please try again later'. Provides specific fix explaining what happened and what to do.",
+      "files": [],
+      "assertions": [
+        "The agent identifies the empathy performance pattern",
+        "The agent provides a specific replacement with actionable guidance"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Review this form UX: 8-field signup form, empty state says 'No items yet! Click + to add', toast notifications for every action",
+      "expected_output": "The agent identifies: 8+ fields as 'Form with 8+ fields to get started', generic empty state as 'Generic empty states', toast notifications for everything as 'Toast notifications for everything'. Provides fixes.",
+      "files": [],
+      "assertions": [
+        "The agent identifies the 8-field form pattern",
+        "The agent identifies the generic empty state pattern",
+        "The agent identifies the toast notification pattern"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Write a product feature announcement that doesn't sound like AI slop",
+      "expected_output": "The agent produces copy that: avoids corporate superlatives, avoids hero headline formula, provides specific concrete details, uses direct language without hollow affirmations.",
+      "files": [],
+      "assertions": [
+        "The output avoids 'supercharge', 'seamless', 'powerful', 'transform'",
+        "The output provides specific concrete details",
+        "The output uses direct language"
+      ]
+    }
+  ]
+}

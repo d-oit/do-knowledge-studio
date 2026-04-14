@@ -1,0 +1,21 @@
+# Core dependencies
+requests>=2.31.0
+
+# Optional API integrations (all optional - free tier or no key required)
+exa-py>=1.0.0  # Exa API for highlights - free tier available
+tavily-python>=0.3.0  # Tavily search API - free tier available
+firecrawl-py>=0.0.5  # Firecrawl extraction - free tier available
+mistralai>=2.0.0  # Mistral agent-browser skill fallback - free tier available
+ddgs>=6.0.0  # DuckDuckGo search - FREE, no API key required
+httpx>=0.27.0  # optional faster async client (used by Jina if available)
+diskcache>=5.6.0  # Disk-based caching
+
+# Development dependencies
+pytest>=7.4.0
+pytest-cov>=4.1.0
+black>=23.0.0
+ruff>=0.1.0
+mypy>=1.5.0
+
+# Type hints
+types-requests>=2.31.0

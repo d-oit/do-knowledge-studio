@@ -1,0 +1,7 @@
+# .gemini/config.yaml
+code_review:
+  comment_severity_threshold: LOW  # Force Jules to care about minor issues
+  disable: false
+pull_request_opened:
+  code_review: true
+  summary: true

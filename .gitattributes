@@ -1,0 +1,205 @@
+# =============================================================================
+# .gitattributes — generic template
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Default: normalise line endings to LF on commit across all platforms
+# ---------------------------------------------------------------------------
+* text=auto eol=lf
+
+# ---------------------------------------------------------------------------
+# Source code — explicit text, enforce LF
+# ---------------------------------------------------------------------------
+*.rs        text eol=lf
+*.py        text eol=lf
+*.js        text eol=lf
+*.mjs       text eol=lf
+*.cjs       text eol=lf
+*.ts        text eol=lf
+*.tsx       text eol=lf
+*.jsx       text eol=lf
+*.go        text eol=lf
+*.java      text eol=lf
+*.c         text eol=lf
+*.h         text eol=lf
+*.cpp       text eol=lf
+*.hpp       text eol=lf
+*.cs        text eol=lf
+*.rb        text eol=lf
+*.php       text eol=lf
+*.swift     text eol=lf
+*.kt        text eol=lf
+*.scala     text eol=lf
+*.sh        text eol=lf
+*.bash      text eol=lf
+*.zsh       text eol=lf
+*.fish      text eol=lf
+*.ps1       text eol=lf
+*.sql       text eol=lf
+*.graphql   text eol=lf
+*.gql       text eol=lf
+*.proto     text eol=lf
+*.patch     text eol=lf
+
+# ---------------------------------------------------------------------------
+# Infrastructure / build
+# ---------------------------------------------------------------------------
+Dockerfile          text eol=lf
+*.dockerfile        text eol=lf
+Makefile            text eol=lf
+*.mk                text eol=lf
+*.tf                text eol=lf
+*.tfvars            text eol=lf
+*.hcl               text eol=lf
+
+# ---------------------------------------------------------------------------
+# Data / config — text, LF
+# ---------------------------------------------------------------------------
+*.json      text eol=lf
+*.jsonc     text eol=lf
+*.yaml      text eol=lf
+*.yml       text eol=lf
+*.toml      text eol=lf
+*.xml       text eol=lf
+*.csv       text eol=lf
+*.tsv       text eol=lf
+*.env       text eol=lf
+*.env.*     text eol=lf
+*.ini       text eol=lf
+*.cfg       text eol=lf
+*.conf      text eol=lf
+.editorconfig   text eol=lf
+.nvmrc          text eol=lf
+.tool-versions  text eol=lf
+
+# ---------------------------------------------------------------------------
+# Lock files — text, LF, no diff, merge with ours to avoid conflicts
+# ---------------------------------------------------------------------------
+*.lock              text eol=lf -diff merge=ours
+package-lock.json   text eol=lf -diff merge=ours
+yarn.lock           text eol=lf -diff merge=ours
+pnpm-lock.yaml      text eol=lf -diff merge=ours
+Cargo.lock          text eol=lf -diff merge=ours
+
+# ---------------------------------------------------------------------------
+# Markup / docs — text, LF
+# ---------------------------------------------------------------------------
+*.md        text eol=lf
+*.mdx       text eol=lf
+*.txt       text eol=lf
+*.rst       text eol=lf
+*.html      text eol=lf
+*.htm       text eol=lf
+*.css       text eol=lf
+*.scss      text eol=lf
+*.less      text eol=lf
+*.svg       text eol=lf
+
+# Changelog — union merge to reduce conflicts on concurrent contributions
+CHANGELOG.md    text eol=lf merge=union
+
+# ---------------------------------------------------------------------------
+# Binary — do not touch line endings or diffs
+# ---------------------------------------------------------------------------
+# Images
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.webp      binary
+*.ico       binary
+*.bmp       binary
+*.tiff      binary
+
+# Fonts
+*.ttf       binary
+*.otf       binary
+*.woff      binary
+*.woff2     binary
+*.eot       binary
+
+# Archives
+*.zip       binary
+*.tar       binary
+*.gz        binary
+*.bz2       binary
+*.xz        binary
+*.7z        binary
+*.rar       binary
+
+# Compiled / native
+*.wasm      binary
+*.exe       binary
+*.dll       binary
+*.so        binary
+*.dylib     binary
+*.a         binary
+*.o         binary
+*.class     binary
+*.pyc       binary
+*.jar       binary
+
+# Documents
+*.pdf       binary
+
+# Databases
+*.db        binary
+*.sqlite    binary
+*.sqlite3   binary
+
+# Media
+*.mp4       binary
+*.mp3       binary
+*.wav       binary
+*.ogg       binary
+
+# ---------------------------------------------------------------------------
+# GitHub linguist — docs (excluded from language statistics)
+# ---------------------------------------------------------------------------
+SECURITY.md             linguist-documentation=true
+CONTRIBUTING.md         linguist-documentation=true
+CHANGELOG.md            linguist-documentation=true
+README.md               linguist-documentation=true
+NOTICE                  linguist-documentation=true
+AGENTS.md               linguist-documentation=true
+CLAUDE.md               linguist-documentation=true
+GEMINI.md               linguist-documentation=true
+markdownlint.toml       linguist-documentation=true
+opencode.json           linguist-documentation=true
+docs/**                 linguist-documentation=true
+agents-docs/**          linguist-documentation=true
+scripts/**              linguist-documentation=true
+.agents/**              linguist-documentation=true
+.claude/**              linguist-documentation=true
+.gemini/**              linguist-documentation=true
+.opencode/**            linguist-documentation=true
+
+# ---------------------------------------------------------------------------
+# GitHub linguist — generated (excluded from language statistics)
+# ---------------------------------------------------------------------------
+.github/**              linguist-generated=true
+*.lock                  linguist-generated=true
+package-lock.json       linguist-generated=true
+yarn.lock               linguist-generated=true
+pnpm-lock.yaml          linguist-generated=true
+Cargo.lock              linguist-generated=true
+
+# ---------------------------------------------------------------------------
+# export-ignore — excluded from `git archive` / release tarballs
+# ---------------------------------------------------------------------------
+.github             export-ignore
+.gitattributes      export-ignore
+.gitignore          export-ignore
+.editorconfig       export-ignore
+.agents             export-ignore
+.claude             export-ignore
+.gemini             export-ignore
+.opencode           export-ignore
+CONTRIBUTING.md     export-ignore
+SECURITY.md         export-ignore
+CHANGELOG.md        export-ignore
+NOTICE              export-ignore
+markdownlint.toml   export-ignore
+opencode.json       export-ignore
+scripts             export-ignore
+agents-docs         export-ignore

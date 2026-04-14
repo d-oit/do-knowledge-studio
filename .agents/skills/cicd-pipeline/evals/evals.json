@@ -1,0 +1,70 @@
+{
+  "skill_name": "cicd-pipeline",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create a GitHub Actions workflow for a Node.js project that runs tests on every PR and deploys to staging automatically when merged to main.",
+      "expected_output": "The agent provides GitHub Actions YAML with trigger on push/PR, node matrix strategy, caching for npm dependencies, test job with coverage, staging deployment job with environment protection, and proper job dependencies (needs: test).",
+      "assertions": [
+        "The agent uses actions/setup-node with version matrix",
+        "The agent includes npm ci caching strategy",
+        "The agent runs tests on PR trigger",
+        "The agent deploys to staging on main merge",
+        "The agent uses 'needs' for job dependencies"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Design a blue-green deployment pipeline for a Kubernetes application with automatic rollback on health check failure.",
+      "expected_output": "The agent provides pipeline with blue-green service configuration, health check implementation, traffic switching mechanism, automatic rollback trigger on failure detection, and monitoring/notifications.",
+      "assertions": [
+        "The agent describes blue-green deployment strategy",
+        "The agent includes health check verification",
+        "The agent has traffic switching mechanism",
+        "The agent implements automatic rollback",
+        "The agent includes post-deployment monitoring"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Set up security scanning in our CI pipeline to detect vulnerabilities in dependencies and secrets in code before deployment.",
+      "expected_output": "The agent suggests Trivy for dependency scanning, GitLeaks for secrets detection, SAST with SonarQube/CodeQL, integrates all into CI workflow with SARIF output for GitHub Security tab, and sets up failure criteria.",
+      "assertions": [
+        "The agent mentions Trivy or similar dependency scanner",
+        "The agent includes secrets detection (GitLeaks/truffleHog)",
+        "The agent suggests SAST integration",
+        "The agent uses SARIF format for GitHub integration",
+        "The agent configures scan failure thresholds"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Optimize our slow CI pipeline that takes 45 minutes. It runs all tests sequentially and rebuilds Docker images every time.",
+      "expected_output": "The agent suggests job parallelization and matrix splitting, recommends Docker layer caching with buildx, suggests test categorization (fast/slow split), proposes caching for dependencies and build artifacts, recommends conditional job execution.",
+      "assertions": [
+        "The agent suggests parallel job execution",
+        "The agent recommends Docker layer caching",
+        "The agent proposes test splitting strategies",
+        "The agent mentions artifact caching",
+        "The agent includes conditional job skipping"
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Create a multi-environment promotion workflow for dev -> staging -> production with required approvals for production.",
+      "expected_output": "The agent provides GitHub Actions workflow with environment-specific jobs, environment protection rules for production approval, promotion logic between environments, rollback capability, and deployment verification steps.",
+      "assertions": [
+        "The agent defines dev/staging/prod job progression",
+        "The agent uses GitHub environment protection",
+        "The agent requires manual approval for production",
+        "The agent includes promotion gates between stages",
+        "The agent provides rollback procedures"
+      ],
+      "files": []
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "skill_name": "agent-coordination",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I have 3 independent API endpoints to test and also need a code review of the shared middleware. How should I structure this?",
+      "expected_output": "The agent recommends parallel execution for the 3 independent API tests, and either parallel with the middleware review or sequential if the middleware affects the tests. References the coordination strategies (Parallel, Sequential, Swarm, Hybrid).",
+      "files": [],
+      "assertions": [
+        "The agent identifies the tasks as having some independence",
+        "The agent recommends a coordination strategy (parallel or hybrid)",
+        "The agent mentions quality gates between phases"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I need to implement a new feature, write tests for it, and then do a security review. The feature depends on an existing auth module. What's the best approach?",
+      "expected_output": "The agent recommends sequential execution: implement feature (depending on auth module) → write tests → security review. May suggest parallel for independent test writing.",
+      "files": [],
+      "assertions": [
+        "The agent identifies the dependency on the auth module",
+        "The agent recommends sequential or hybrid strategy",
+        "The agent maps tasks to appropriate agents (feature-implementer, test-runner, security-auditor)"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "My codebase has 5 separate modules that each need linter fixes. How do I speed this up?",
+      "expected_output": "The agent recommends parallel execution with 5 homogeneous agents (same type, different inputs) for maximum speedup. References the speedup formula.",
+      "files": [],
+      "assertions": [
+        "The agent identifies the tasks as independent",
+        "The agent recommends parallel execution",
+        "The agent mentions using multiple agents of the same type"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "We found a performance regression but aren't sure which component caused it. What coordination strategy should we use?",
+      "expected_output": "The agent recommends swarm coordination: multiple agents investigate different perspectives (profiler, code-reviewer for recent changes, benchmark runner) in parallel, then synthesize findings.",
+      "files": [],
+      "assertions": [
+        "The agent recommends swarm or multi-perspective investigation",
+        "The agent suggests parallel investigation from different angles",
+        "The agent mentions synthesis of findings"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "I need to refactor a legacy module. It has tests, but I want to make sure nothing breaks. How should I coordinate the work?",
+      "expected_output": "The agent recommends iterative or sequential coordination: run existing tests → refactor → re-run tests → code review. Quality gates between phases.",
+      "files": [],
+      "assertions": [
+        "The agent includes test verification before and after refactoring",
+        "The agent mentions quality gates",
+        "The agent assigns appropriate agents (refactorer, test-runner, code-reviewer)"
+      ]
+    }
+  ]
+}

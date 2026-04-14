@@ -1,0 +1,70 @@
+{
+  "skill_name": "database-devops",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Design a database schema for an e-commerce application with users, products, orders, and inventory. We expect 10,000 orders per day and need to support multi-tenancy.",
+      "expected_output": "The agent designs normalized schema (3NF) with proper indexes, suggests soft delete pattern, includes audit trail columns, recommends multi-tenancy strategy (tenant_id column or schema per tenant), and addresses performance with indexing and partitioning strategies.",
+      "assertions": [
+        "The agent designs normalized schema with proper relationships",
+        "The agent suggests multi-tenancy approach",
+        "The agent includes indexing strategy for performance",
+        "The agent mentions soft delete or audit trail patterns",
+        "The agent considers scalability (10K orders/day)"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "I need to add a 'normalized_email' column to my users table with 1 million rows without locking the table. What's the safest approach?",
+      "expected_output": "The agent suggests expand-contract pattern with nullable column addition, backfill in batches, add constraint after population, and mentions pt-online-schema-change or similar tools for zero-downtime alterations.",
+      "assertions": [
+        "The agent suggests expand-contract migration pattern",
+        "The agent mentions nullable column initially",
+        "The agent suggests batch backfill strategy",
+        "The agent mentions pt-online-schema-change or gh-ost",
+        "The agent warns about adding NOT NULL constraint only after backfill"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Optimize this slow query: SELECT * FROM orders o JOIN users u ON o.user_id = u.id WHERE u.email LIKE '%@gmail.com%' AND o.created_at > '2024-01-01' ORDER BY o.total DESC",
+      "expected_output": "The agent identifies N+1 pattern issues, suggests covering indexes (composite index on email + created_at), recommends rewriting LIKE with prefix search or using trigram indexes, suggests selective column retrieval instead of SELECT *, and analyzes EXPLAIN plan.",
+      "assertions": [
+        "The agent suggests composite index strategy",
+        "The agent recommends replacing SELECT * with specific columns",
+        "The agent addresses LIKE '%...@gmail.com%' performance issue",
+        "The agent suggests EXPLAIN ANALYZE for verification",
+        "The agent mentions covering indexes for ORDER BY"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Create a Terraform configuration for a PostgreSQL RDS instance with read replica, backup retention, and encryption for production use.",
+      "expected_output": "The agent provides Terraform configuration with proper instance sizing, storage settings, backup retention (7+ days), encryption enabled, multi-AZ for HA, read replica configuration, parameter group settings, and security groups.",
+      "assertions": [
+        "The agent includes backup_retention_period >= 7",
+        "The agent enables storage_encrypted",
+        "The agent configures multi_az for high availability",
+        "The agent includes read replica resource",
+        "The agent adds deletion_protection for production"
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Design a backup and disaster recovery strategy for a PostgreSQL database that's critical to our business. We need point-in-time recovery capability.",
+      "expected_output": "The agent suggests continuous archiving with WAL, automated daily backups with pg_basebackup, offsite storage (S3), point-in-time recovery procedure, regular restore testing schedule, and documented RTO/RPO targets.",
+      "assertions": [
+        "The agent mentions WAL archiving for PITR",
+        "The agent suggests automated backup scripts",
+        "The agent includes offsite/encrypted storage",
+        "The agent provides PITR recovery procedure",
+        "The agent recommends regular restore testing"
+      ],
+      "files": []
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "skill_name": "agents-md",
+  "version": "1.0.0",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create an AGENTS.md file for a new React web project. Include named constants, setup commands, code style, testing strategy, and quality gate.",
+      "expected_output": "Complete AGENTS.md with: named constants section (MAX_FILE_SIZE, TIMEOUT), setup commands (pnpm install, dev, build), code style guidelines, testing strategy matrix with commands, quality gate checklist, and pre-existing issue policy.",
+      "assertions": [
+        "Contains '## Named Constants' section",
+        "Defines readonly constants",
+        "Contains '## Setup Commands' section",
+        "Contains '## Code Style' section",
+        "Contains testing commands",
+        "Contains '## Quality Gate' or quality check section",
+        "Contains '## Pre-existing Issue Policy' or similar"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Convert this basic AGENTS.md to production-ready with all advanced patterns: # AGENTS.md\n## Setup\n- Install: npm install\n- Test: npm test",
+      "expected_output": "Enhanced AGENTS.md with: named constants defined at top, pre-existing issue policy section, detailed quality gate commands, testing strategy matrix, security scanning section, and clear success criteria.",
+      "assertions": [
+        "Named constants section added",
+        "Pre-existing issue policy included",
+        "Quality gate commands are specific (not just 'run tests')",
+        "Testing strategy includes multiple test types",
+        "Security considerations included",
+        "Code style is specific (not generic)"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Add nested AGENTS.md structure for a monorepo with frontend, backend, and shared packages. Show the directory structure and example package-level AGENTS.md files.",
+      "expected_output": "Complete monorepo AGENTS.md structure showing: root AGENTS.md with @AGENTS.md references, directory tree, example frontend/AGENTS.md with React-specific instructions, example backend/AGENTS.md with API-specific instructions, and precedence rules documentation.",
+      "assertions": [
+        "Shows directory structure with packages/",
+        "Contains '@AGENTS.md' reference pattern",
+        "Includes frontend-specific configuration example",
+        "Includes backend-specific configuration example",
+        "Documents precedence rules (closest wins)",
+        "Mentions monorepo organization"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Create an AGENTS.md for a Python data science project with specific patterns: Jupyter notebooks, pandas, scikit-learn. Include testing strategy for data validation.",
+      "expected_output": "Python-specific AGENTS.md with: named constants, virtualenv/pip setup commands, Python code style (black, isort, flake8), data science testing strategy (data validation, model tests), quality gate with mypy, pip-audit, and notebook-specific instructions.",
+      "assertions": [
+        "Contains Python-specific setup (pip, virtualenv)",
+        "Includes data science tools (jupyter, pandas, sklearn)",
+        "Has Python code style (black, isort, flake8)",
+        "Testing includes data validation",
+        "Quality gate includes mypy type checking",
+        "Security includes pip-audit"
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Fix this problematic AGENTS.md that has issues: no constants (uses '500' as magic number), vague commands ('run tests'), no pre-existing issue policy, no quality gate.",
+      "expected_output": "Corrected AGENTS.md with: named constants replacing magic numbers, specific test commands with flags, added pre-existing issue policy section, comprehensive quality gate with type checking and linting, and security scanning.",
+      "assertions": [
+        "Magic numbers replaced with named constants",
+        "Test commands are specific with flags",
+        "Pre-existing issue policy added",
+        "Quality gate section added with multiple checks",
+        "Security scanning included",
+        "No vague instructions like 'run tests'"
+      ],
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "Create AGENTS.md with atomic commit workflow for a team that needs zero-tolerance CI policy. Include rollback procedures and phase descriptions.",
+      "expected_output": "Comprehensive atomic commit AGENTS.md with: named constants, setup commands, detailed atomic workflow (5 phases: pre-commit, commit, push, PR, verify), rollback procedures, zero-tolerance policy documentation, timeout configuration, and dry-run options.",
+      "assertions": [
+        "Contains '## Atomic Commit' or workflow section",
+        "Documents multiple phases (at least 3)",
+        "Includes rollback procedures",
+        "Mentions zero-tolerance policy",
+        "Has timeout or timing configuration",
+        "Includes dry-run or validation options"
+      ],
+      "files": []
+    }
+  ]
+}

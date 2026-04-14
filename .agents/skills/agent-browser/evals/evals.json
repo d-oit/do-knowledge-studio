@@ -1,0 +1,60 @@
+{
+  "skill_name": "agent-browser",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Open https://example.com/login, fill in the email field with 'test@example.com', and submit the form.",
+      "expected_output": "The agent uses open, snapshot for refs, fill by ref, click by ref, and closes session. Uses snapshot before interaction, uses refs not selectors, mentions session cleanup.",
+      "files": [],
+      "assertions": [
+        "The agent runs snapshot before attempting to interact",
+        "The agent uses element refs (e.g., @e1) not CSS selectors",
+        "The agent mentions closing the session when done"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Extract all product names and prices from an e-commerce listing page at https://shop.example.com/products.",
+      "expected_output": "The agent navigates, snapshots, uses 'get text' or '--json' extraction. Uses data extraction commands, doesn't hardcode refs, re-snapshots if pagination needed.",
+      "files": [],
+      "assertions": [
+        "The agent uses snapshot or data extraction commands",
+        "The agent does not hardcode element refs",
+        "The agent mentions re-snapshotting for pagination"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "The browser keeps timing out when I try to load a heavy site. How do I fix this?",
+      "expected_output": "The agent suggests 'wait 2000' instead of 'networkidle', checks for dialogs, mentions analytics/websocket interference.",
+      "files": [],
+      "assertions": [
+        "The agent identifies 'networkidle' as problematic on dynamic sites",
+        "The agent suggests using 'wait 2000' instead",
+        "The agent mentions checking for pending dialogs"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Automate filling out a multi-step registration form with 4 pages.",
+      "expected_output": "The agent uses batch commands for efficiency, re-snapshots between page navigations, warns about ref invalidation after navigation.",
+      "files": [],
+      "assertions": [
+        "The agent re-snapshots after each navigation/page change",
+        "The agent uses batch for 2+ sequential commands",
+        "The agent warns that refs are invalidated after navigation"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "I need to log into my app and then take a screenshot of the dashboard after login.",
+      "expected_output": "The agent opens URL, snapshots, identifies login form, fills credentials, clicks submit, waits for load, takes screenshot, and closes session.",
+      "files": [],
+      "assertions": [
+        "The agent uses correct command sequence: open -> snapshot -> fill -> click -> wait -> screenshot",
+        "The agent uses a named session",
+        "The agent closes the session at the end"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "skill_name": "intent-classifier",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I have these tasks: 'create a new skill for kubernetes', 'audit my code', and 'design an api'. Which skills should I use?",
+      "expected_output": "The agent correctly classifies and routes: skill-creator for kubernetes skill, security-code-auditor for code audit, and api-design-first for API design.",
+      "files": [],
+      "assertions": [
+        "The agent maps 'create a new skill' to skill-creator",
+        "The agent maps 'audit my code' to security-code-auditor",
+        "The agent maps 'design an api' to api-design-first"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Classify this request: 'I need to check my Python application for SQL injection and other security issues'",
+      "expected_output": "The agent identifies the primary intent as security auditing with confidence > 0.7, matching keywords like 'check', 'security issues', and 'SQL injection'.",
+      "files": [],
+      "assertions": [
+        "The agent identifies 'security-code-auditor' as the top match",
+        "The confidence score is >= 0.7",
+        "The agent cites matching keywords from the description"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Route this to the appropriate skill: 'Create OpenAPI 3.0 spec for my user management endpoints with proper REST conventions'",
+      "expected_output": "The agent routes to api-design-first based on keywords 'OpenAPI', 'REST', and 'endpoints', with high confidence.",
+      "files": [],
+      "assertions": [
+        "The agent selects api-design-first",
+        "The agent matches keywords: OpenAPI, REST, spec",
+        "The agent provides confidence scoring"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "A user asked: 'How do I write better code?' - which skill should handle this?",
+      "expected_output": "The agent recognizes low confidence (< 0.3) for all specific skills and recommends general assistance since the request is vague and doesn't match any specific skill triggers.",
+      "files": [],
+      "assertions": [
+        "The agent returns low confidence scores for all specific skills",
+        "The agent recommends general assistance or asking for clarification",
+        "The agent does not force-match to an inappropriate skill"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Build a workflow that first audits security, then creates API documentation for the fixed code",
+      "expected_output": "The agent recognizes a multi-intent request and proposes a sequential workflow: security-code-auditor first, then api-design-first after fixes are applied.",
+      "files": [],
+      "assertions": [
+        "The agent identifies multiple intents in the request",
+        "The agent proposes a sequential skill chain",
+        "The agent correctly orders dependencies (audit before docs)"
+      ]
+    }
+  ]
+}

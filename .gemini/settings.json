@@ -1,0 +1,50 @@
+{
+  "general": {
+    "vimMode": true,
+    "preferredEditor": "code",
+    "approvalMode": "auto_edit",
+    "checkpointing": {
+      "enabled": true
+    },
+    "sessionRetention": {
+      "enabled": true,
+      "maxAge": "30d",
+      "maxCount": 100
+    }
+  },
+  "model": {
+    "compressionThreshold": 0.5,
+    "maxSessionTurns": 50,
+    "disableLoopDetection": false
+  },
+  "ui": {
+    "theme": "GitHub",
+    "hideBanner": true,
+    "hideTips": false,
+    "customWittyPhrases": [
+      "You forget a thousand things every day. Make sure this is one of ’em",
+      "Connecting to AGI"
+    ]
+  },
+  "privacy": {
+    "usageStatisticsEnabled": true
+  },
+  "context": {
+    "fileName": [
+      "AGENTS.md",
+      ".gemini/config.yaml"
+    ],
+    "includeDirectories": [],
+    "loadFromIncludeDirectories": true,
+    "fileFiltering": {
+      "respectGitIgnore": true
+    }
+  },
+  "advanced": {
+    "excludedEnvVars": [
+      "DEBUG",
+      "DEBUG_MODE",
+      "NODE_ENV"
+    ]
+  }
+}

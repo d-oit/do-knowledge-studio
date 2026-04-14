@@ -1,0 +1,60 @@
+{
+  "skill_name": "dogfood",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Dogfood vercel.com and report your findings.",
+      "expected_output": "The agent initializes with defaults, follows the 6-step workflow, systematically explores, documents 5-10 issues with evidence, and produces a structured report with severity counts.",
+      "files": [],
+      "assertions": [
+        "The agent uses default output directory and session name derived from domain",
+        "The agent follows the 6-step workflow (initialize, orient, explore, document, wrap up)",
+        "The agent produces a structured report with severity counts"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "QA the billing page of https://saas-app.example.com. Focus on the checkout flow.",
+      "expected_output": "The agent navigates to billing, tests checkout workflow, checks console errors, documents issues with repro evidence including screenshots.",
+      "files": [],
+      "assertions": [
+        "The agent focuses on the specified scope (billing/checkout)",
+        "The agent checks the browser console for errors",
+        "The agent documents issues with repro steps and screenshots"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "We found a bug where the save button doesn't work on the settings page. Can you investigate and reproduce it?",
+      "expected_output": "The agent navigates to settings, attempts save, records repro video for interactive issue, documents with evidence, checks console for errors.",
+      "files": [],
+      "assertions": [
+        "The agent verifies reproducibility before collecting evidence",
+        "The agent records a repro video for this interactive issue",
+        "The agent checks the browser console for errors"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Do a quick smoke test of our landing page at http://localhost:3000 for obvious visual issues.",
+      "expected_output": "The agent orients with snapshot + screenshot, checks for typos/visual glitches/console errors, documents static issues with annotated screenshots.",
+      "files": [],
+      "assertions": [
+        "The agent takes an initial annotated screenshot",
+        "The agent checks the console for errors",
+        "The agent documents any static issues found with screenshots"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Find issues in our new dashboard. I'll provide login credentials. Sign in as admin@example.com with password 'test123'.",
+      "expected_output": "The agent authenticates with provided credentials, saves auth state, explores dashboard features systematically, documents findings with evidence.",
+      "files": [],
+      "assertions": [
+        "The agent saves auth state after successful login",
+        "The agent explores systematically rather than randomly clicking",
+        "The agent documents issues with repro evidence"
+      ]
+    }
+  ]
+}

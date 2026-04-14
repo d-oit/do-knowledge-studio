@@ -1,0 +1,81 @@
+{
+  "skill_name": "accessibility-auditor",
+  "version": "1.0.0",
+  "evals": [
+    {
+      "id": "wcag-aa-compliance-audit",
+      "prompt": "Audit this HTML for WCAG 2.2 AA compliance:\n\n```html\n<nav>\n  <a href=\"#\">Home</a>\n  <a href=\"#\">Products</a>\n  <a href=\"#\">Contact</a>\n</nav>\n<main>\n  <h1>Welcome</h1>\n  <img src=\"hero.jpg\">\n  <form>\n    <input type=\"email\" placeholder=\"Enter email\">\n    <button style=\"color: #888; background: #fff;\">Submit</button>\n  </form>\n</main>\n```",
+      "expected_output": "Audit report identifying specific WCAG violations",
+      "assertions": [
+        "Identifies missing alt text on hero image (1.1.1)",
+        "Flags email input without label (3.3.2, 1.3.1)",
+        "Reports insufficient color contrast on button (1.4.3)",
+        "Notes missing skip link (2.4.1)",
+        "Provides specific severity levels (Critical/High/Medium)",
+        "Includes before/after code examples for fixes"
+      ],
+      "weight": 1.0,
+      "files": []
+    },
+    {
+      "id": "aria-validation-modal",
+      "prompt": "Check this modal dialog for ARIA accessibility:\n\n```html\n<div class=\"modal\">\n  <h2>Confirm Delete</h2>\n  <p>Are you sure you want to delete this item?</p>\n  <button>Cancel</button>\n  <button class=\"danger\">Delete</button>\n</div>\n```",
+      "expected_output": "ARIA remediation recommendations",
+      "assertions": [
+        "Identifies missing role=\"dialog\" (4.1.2)",
+        "Recommends aria-modal=\"true\"",
+        "Notes missing aria-labelledby for title",
+        "Suggests focus trap implementation (2.1.2)",
+        "Recommends Escape key handler",
+        "Provides corrected HTML with ARIA attributes"
+      ],
+      "weight": 1.0,
+      "files": []
+    },
+    {
+      "id": "keyboard-navigation-test",
+      "prompt": "Audit this navigation for keyboard accessibility:\n\n```html\n<div class=\"dropdown\">\n  <span>Menu</span>\n  <div class=\"items\">\n    <a href=\"/profile\">Profile</a>\n    <a href=\"/settings\">Settings</a>\n    <a href=\"/logout\">Logout</a>\n  </div>\n</div>\n```",
+      "expected_output": "Keyboard navigation remediation guide",
+      "assertions": [
+        "Identifies non-focusable dropdown trigger (2.1.1)",
+        "Recommends button element or tabindex=\"0\"",
+        "Suggests Enter/Space activation",
+        "Recommends arrow key navigation for items",
+        "Notes Escape key to close dropdown",
+        "Suggests focus indicator styling (2.4.7)"
+      ],
+      "weight": 1.0,
+      "files": []
+    },
+    {
+      "id": "color-contrast-check",
+      "prompt": "Check color contrast compliance for these styles:\n\n```css\n/* Primary button */\n.btn-primary {\n  color: #ffffff;\n  background-color: #007bff;\n}\n\n/* Secondary text */\n.text-muted {\n  color: #6c757d;\n  background: #ffffff;\n}\n\n/* Error message */\n.error {\n  color: #dc3545;\n  background: #f8d7da;\n}\n```",
+      "expected_output": "Contrast ratio analysis with WCAG compliance status",
+      "assertions": [
+        "Calculates contrast ratios for each color pair",
+        "Compares against WCAG AA (4.5:1) and AAA (7:1) thresholds",
+        "Identifies .text-muted fails AA for small text (1.4.3)",
+        "Reports .error has sufficient contrast",
+        "Suggests darker color for .text-muted to meet AA",
+        "Provides specific color codes that pass"
+      ],
+      "weight": 1.0,
+      "files": []
+    },
+    {
+      "id": "screen-reader-form",
+      "prompt": "Audit this form for screen reader compatibility:\n\n```html\n<form>\n  <div>\n    <span>Username</span>\n    <input type=\"text\" id=\"user\">\n  </div>\n  <div>\n    <input type=\"checkbox\">\n    <span>Subscribe to newsletter</span>\n  </div>\n  <div>\n    <select>\n      <option>USA</option>\n      <option>Canada</option>\n    </select>\n  </div>\n  <button>Submit</button>\n</form>\n```",
+      "expected_output": "Screen reader accessibility fixes",
+      "assertions": [
+        "Identifies span instead of label for username (1.3.1, 3.3.2)",
+        "Notes checkbox without label association",
+        "Recommends aria-label for select (or visible label)",
+        "Suggests fieldset/legend for grouped controls",
+        "Recommends aria-describedby for error messages",
+        "Provides corrected HTML with proper labeling"
+      ],
+      "weight": 1.0,
+      "files": []
+    }
+  ]
+}

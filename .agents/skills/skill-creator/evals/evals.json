@@ -1,0 +1,72 @@
+{
+  "skill_name": "skill-creator",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create a new skill called 'docker-helper' for managing Docker containers",
+      "expected_output": "The agent creates the skill directory with SKILL.md containing proper frontmatter (name, description with trigger keywords), step-by-step instructions, and references to detailed docs. Creates evals/evals.json with test cases.",
+      "files": [],
+      "assertions": [
+        "The agent creates a SKILL.md with valid frontmatter (name and description fields)",
+        "The description includes 'Use when...' trigger phrases",
+        "The SKILL.md body is under 250 lines",
+        "The agent creates evals/evals.json with at least 2 test cases"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "The description for my 'git-flow' skill isn't triggering correctly. It only fires 30% of the time when users ask about git workflows.",
+      "expected_output": "The agent analyzes the description, suggests making it more imperative and specific, adding trigger keywords, and testing with eval queries. May suggest broadening scope or adding context.",
+      "files": [],
+      "assertions": [
+        "The agent analyzes the current description for trigger accuracy",
+        "The agent suggests specific improvements to the description",
+        "The agent mentions testing with eval queries"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Write eval test cases for my existing skill",
+      "expected_output": "The agent creates evals/evals.json with realistic prompts, expected outputs, and checkable assertions. Includes variety: formal/casual, terse/context-heavy, near-miss queries.",
+      "files": [],
+      "assertions": [
+        "The agent creates evals with id, prompt, expected_output, and assertions fields",
+        "The prompts are realistic and varied",
+        "The assertions are concrete and checkable (not subjective)"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "What fields are required in the SKILL.md frontmatter?",
+      "expected_output": "The agent lists: name (required, max 64 chars, lowercase/hyphens) and description (required, max 1024 chars). Optional: license, compatibility, metadata, allowed-tools.",
+      "files": [],
+      "assertions": [
+        "The agent lists name as required with constraints",
+        "The agent lists description as required with constraints",
+        "The agent mentions the 250-line SKILL.md body limit"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Review my skill's References section - it uses @references/filename.md and markdown links [text](reference/file.md). Is this correct?",
+      "expected_output": "The agent identifies the incorrect formats and explains the correct format: use backticks without @ prefix (e.g., `reference/filename.md` - Description). No markdown links, no @ prefix.",
+      "files": ["evals/bad-references-input.md"],
+      "assertions": [
+        "The agent identifies @references/ as incorrect format",
+        "The agent identifies markdown links as incorrect format",
+        "The agent explains correct format is backtick-wrapped reference path with description"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "I want to create a skill for EPUB validation. What should I include in the description to make it trigger reliably?",
+      "expected_output": "The agent suggests using imperative phrasing ('Use this skill when...'), focusing on user intent (validating EPUBs), listing specific trigger scenarios (EPUB upload, validation errors, format checks), and keeping it concise.",
+      "files": [],
+      "assertions": [
+        "The agent suggests imperative phrasing ('Use when...')",
+        "The agent mentions listing trigger scenarios",
+        "The agent mentions keeping description under 1024 chars"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "skill_name": "do-web-doc-resolver",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Resolve this URL to markdown: https://docs.rs/tokio",
+      "expected_output": "Markdown documentation extracted from the tokio docs URL, with quality score and source provider info.",
+      "assertions": [
+        "Output contains markdown content",
+        "Output includes source provider name",
+        "Output includes quality score between 0.0 and 1.0",
+        "Content is at least 100 characters"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Search for information about Rust async runtime comparison",
+      "expected_output": "Markdown content about Rust async runtimes from a web search provider.",
+      "assertions": [
+        "Output contains markdown content about Rust",
+        "Output mentions async or runtime",
+        "Output includes source provider name",
+        "Content is at least 200 characters"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Resolve https://github.com/rust-lang/rust with max 2000 chars",
+      "expected_output": "Truncated markdown from GitHub page, under 2000 chars.",
+      "assertions": [
+        "Output contains markdown content",
+        "Content is under 3000 characters (truncation working)",
+        "Output includes source provider name"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Use the free profile to resolve a query about Python web frameworks",
+      "expected_output": "Markdown about Python web frameworks using only free providers.",
+      "assertions": [
+        "Output contains markdown content",
+        "Output mentions Python or web framework",
+        "Output includes source provider name",
+        "Provider used is a free provider (exa_mcp, jina, duckduckgo, llms_txt, or direct_fetch)"
+      ],
+      "files": []
+    }
+  ]
+}

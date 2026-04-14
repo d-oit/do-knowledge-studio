@@ -1,0 +1,50 @@
+{
+  "skill_name": "task-decomposition",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I need to add user authentication to my web app. Break this down for me.",
+      "expected_output": "The agent decomposes into sub-goals with dependencies: database schema (P0, no deps), API endpoints (P0, deps: schema), frontend forms (P1, deps: API), tests (P1, deps: API), docs (P2, deps: all). Identifies parallel opportunities.",
+      "files": [],
+      "assertions": [
+        "The agent identifies 3-7 components or sub-goals",
+        "The agent assigns priorities (P0/P1/P2)",
+        "The agent maps dependencies between tasks",
+        "The agent identifies tasks that can run in parallel"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Break down this request: 'Make our CI pipeline faster'",
+      "expected_output": "The agent decomposes: analyze current pipeline (P0), identify bottlenecks (P0, deps: analyze), optimize build steps (P1), add caching (P1), parallelize tests (P1), measure improvement (P2, deps: all optimizations).",
+      "files": [],
+      "assertions": [
+        "The agent first analyzes before optimizing",
+        "The agent breaks into atomic, testable tasks",
+        "The agent includes a measurement/validation step"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Are my tasks too big? I have 3 tasks: 'Build the app', 'Test everything', 'Deploy'",
+      "expected_output": "The agent identifies these as non-atomic tasks. 'Build the app' should be decomposed further (frontend, backend, etc). Criteria: single action, defined inputs/outputs, one agent, testable.",
+      "files": [],
+      "assertions": [
+        "The agent identifies the tasks as too large/vague",
+        "The agent explains atomic task criteria",
+        "The agent suggests how to decompose further"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "What dependency pattern should I use for: database migration, API update, frontend update, integration tests?",
+      "expected_output": "The agent maps: DB migration → API update → frontend update (sequential core), integration tests depend on all three. Pattern is converging (A, B, C → D).",
+      "files": [],
+      "assertions": [
+        "The agent identifies the dependency relationships",
+        "The agent uses a dependency pattern (sequential, parallel, or converging)",
+        "The agent correctly orders tasks by dependency"
+      ]
+    }
+  ]
+}

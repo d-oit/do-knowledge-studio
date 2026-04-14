@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+# Pre-Tool Hook - Runs before specific tool calls
+# Use to approve/deny destructive operations
+#
+# Install: Place in .claude/hooks/pre-tool.sh and make executable
+# chmod +x .claude/hooks/pre-tool.sh
+#
+# Input: JSON via stdin with tool name and params
+# Output: Exit 0 = allow, Exit 1 = deny
+
+set -euo pipefail
+
+# Read input from stdin
+input=$(cat)
+
+# Parse tool name (requires jq)
+if command -v jq &> /dev/null; then
+    tool=$(echo "$input" | jq -r '.tool // empty')
+    file_path=$(echo "$input" | jq -r '.params.file_path // empty')
+else
+    # Fallback: simple grep
+    tool=$(echo "$input" | grep -o '"tool"[[:space:]]*:[[:space:]]*"[^"]*"' | cut -d'"' -f4)
+    file_path=$(echo "$input" | grep -o '"file_path"[[:space:]]*:[[:space:]]*"[^"]*"' | cut -d'"' -f4)
+fi
+
+# --- Protected Patterns ---
+
+# Deny writes to critical files
+critical_files=(
+    ".env"
+    ".gitignore"
+    "VERSION"
+    ".claude/hooks/"
+    ".github/workflows/"
+)
+
+for pattern in "${critical_files[@]}"; do
+    if [[ "$file_path" == $pattern* ]]; then
+        echo "DENIED: Cannot modify critical file: $file_path" >&2
+        exit 1
+    fi
+done
+
+# Deny destructive Bash commands
+if [ "$tool" = "Bash" ]; then
+    command=$(echo "$input" | grep -o '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | cut -d'"' -f4)
+    
+    # Block dangerous commands
+    dangerous_patterns=(
+        "rm -rf /"
+        "rm -rf ~"
+        "dd if=/dev/zero"
+        ":(){:|:&};"
+        "mkfs"
+        "chmod -R 777"
+    )
+    
+    for pattern in "${dangerous_patterns[@]}"; do
+        if [[ "$command" == *"$pattern"* ]]; then
+            echo "DENIED: Dangerous command blocked: $command" >&2
+            exit 1
+        fi
+    done
+    
+    # Warn about destructive operations (but allow)
+    warning_patterns=(
+        "rm -rf"
+        "git push --force"
+        "DROP TABLE"
+        "DELETE FROM"
+    )
+    
+    for pattern in "${warning_patterns[@]}"; do
+        if [[ "$command" == *"$pattern"* ]]; then
+            echo "WARNING: Destructive operation detected: $command" >&2
+            # Continue (don't block)
+        fi
+    done
+fi
+
+# Allow by default
+exit 0

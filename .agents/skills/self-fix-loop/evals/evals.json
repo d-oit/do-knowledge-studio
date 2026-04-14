@@ -1,0 +1,27 @@
+{
+  "skill_name": "self-fix-loop",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I have a Python script `myscript.py` that is failing with a `TypeError`. Can you fix it using a self-correction loop?",
+      "expected_output": "The agent runs the script, captures the error, analyzes it, applies a fix, and verifies the fix by running the script again.",
+      "files": [],
+      "assertions": [
+        "The agent runs the script to reproduce the error",
+        "The agent applies a code change to address the TypeError",
+        "The agent verifies the fix with a subsequent run"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Run the `scripts/quality_gate.sh` and fix any linting errors it finds.",
+      "expected_output": "The agent runs the quality gate, identifies specific lint failures, fixes them, and repeats the process until the gate passes.",
+      "files": [],
+      "assertions": [
+        "The agent identifies a specific file with lint errors",
+        "The agent modifies the file to fix the lint error",
+        "The final output indicates that the quality gate now passes"
+      ]
+    }
+  ]
+}

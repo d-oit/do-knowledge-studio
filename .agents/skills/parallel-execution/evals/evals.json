@@ -1,0 +1,49 @@
+{
+  "skill_name": "parallel-execution",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I need to lint 3 Python files and test 2 JavaScript files. Can these run at the same time?",
+      "expected_output": "The agent identifies these as independent tasks (no data dependencies, no shared writes) and recommends parallel execution with a single message containing multiple Task calls for maximum speedup.",
+      "files": [],
+      "assertions": [
+        "The agent verifies task independence",
+        "The agent recommends parallel execution",
+        "The agent mentions single message with multiple Task tool calls"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Review the auth module, test the payment module, and profile the search module - all at once",
+      "expected_output": "The agent launches 3 heterogeneous agents (code-reviewer, test-runner, debugger) in parallel. Waits for all, validates results, aggregates.",
+      "files": [],
+      "assertions": [
+        "The agent identifies these as independent tasks",
+        "The agent assigns different agent types to each task",
+        "The agent mentions waiting for all agents to complete"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "How much speedup can I expect from parallelizing 3 tasks that take 10min, 15min, and 8min?",
+      "expected_output": "The agent calculates: Sequential = 10+15+8 = 33min, Parallel = max(10,15,8) = 15min, Speedup = 33/15 = 2.2x.",
+      "files": [],
+      "assertions": [
+        "The agent uses the correct speedup formula",
+        "The agent calculates sequential time correctly (33 min)",
+        "The agent calculates parallel time correctly (15 min)"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "One of my parallel agents failed. The others are still running. What do I do?",
+      "expected_output": "The agent explains independent failure handling: the failing agent doesn't stop others. Options: collect successes and report failure (best effort), retry the failed agent, or fail fast.",
+      "files": [],
+      "assertions": [
+        "The agent explains that independent failures don't cascade",
+        "The agent offers strategies: best effort, retry, or fail fast",
+        "The agent mentions collecting successful results"
+      ]
+    }
+  ]
+}

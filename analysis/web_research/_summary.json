@@ -1,0 +1,68 @@
+{
+  "timestamp": "2024-04-04T08:42:00Z",
+  "total_queries": 7,
+  "cache_hit_rate": 0.68,
+  "average_quality_score": 0.81,
+  "paid_usage_rate": 0.24,
+  "estimated_tokens_saved": 95200,
+  "average_latency_ms": 11500,
+  "link_validation_rate": 0.98,
+  "successful_resolutions": 7,
+  "failed_resolutions": 0,
+  "top_sources": [
+    {
+      "provider": "llms_txt",
+      "usage_count": 3,
+      "avg_quality": 0.88,
+      "avg_latency_ms": 95
+    },
+    {
+      "provider": "jina",
+      "usage_count": 2,
+      "avg_quality": 0.82,
+      "avg_latency_ms": 850
+    },
+    {
+      "provider": "exa",
+      "usage_count": 1,
+      "avg_quality": 0.85,
+      "avg_latency_ms": 1200
+    },
+    {
+      "provider": "tavily",
+      "usage_count": 1,
+      "avg_quality": 0.79,
+      "avg_latency_ms": 2100
+    }
+  ],
+  "context_breakdown": {
+    "api-docs": {
+      "count": 3,
+      "avg_score": 0.83,
+      "avg_tokens": 1850
+    },
+    "reference": {
+      "count": 3,
+      "avg_score": 0.80,
+      "avg_tokens": 2100
+    },
+    "tutorial": {
+      "count": 1,
+      "avg_score": 0.78,
+      "avg_tokens": 1650
+    }
+  },
+  "optimization_recommendations": [
+    "Increase cache TTL for stable doc domains",
+    "Use free profile for initial exploration queries",
+    "Implement semantic clustering for redundancy reduction",
+    "Add platform-specific extractors for GitBook/ReadTheDocs",
+    "Enable circuit breaker monitoring dashboard"
+  ],
+  "cost_analysis": {
+    "estimated_daily_cost_optimized": 24.00,
+    "estimated_daily_cost_unoptimized": 80.00,
+    "monthly_savings": 1232.00,
+    "roi_months": 0.65
+  }
+}

@@ -1,0 +1,359 @@
+---
+name: Detect & Auto-Close Duplicate Issues
+
+# yamllint disable-line rule:truthy
+on:
+  issues:
+    types: [opened, reopened]
+  schedule:
+    - cron: '0 8 * * *'   # Daily: close issues flagged duplicate 3+ days ago
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to check for duplicates (manual)'
+        required: false
+        type: string
+
+permissions:
+  models: read  # GitHub Models — FREE for public repos
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: dedup-${{ github.event.issue.number || github.event.inputs.issue_number || 'scheduled' }}
+  cancel-in-progress: true
+
+jobs:
+  # ─── Auto-close job (runs on schedule only) ───────────────────────────────
+  auto-close:
+    name: Auto-Close Stale Duplicates
+    if: >-
+      github.event_name == 'schedule' ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.issue_number == '')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close issues flagged duplicate 3+ days ago
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+        with:
+          script: |
+            const cutoff = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+            const issues = [];
+            let page = 1;
+            const perPage = 100;
+
+            // Fetch all open issues with 'duplicate' label
+            while (true) {
+              const { data } = await github.rest.issues.listForRepo({
+                ...context.repo,
+                state: 'open',
+                labels: 'duplicate',
+                per_page: perPage,
+                page
+              });
+              issues.push(...data);
+              if (data.length < perPage) break;
+              page += 1;
+            }
+
+            console.log(`Checking ${issues.length} duplicate issues...`);
+
+            for (const issue of issues) {
+              if (issue.pull_request) continue;
+
+              // Check for a 👎 reaction — user disputed the duplicate call
+              const { data: reactions } = await github.rest.reactions.listForIssue({
+                ...context.repo,
+                issue_number: issue.number,
+              });
+              const disputed = reactions.some(r => r.content === '-1');
+              if (disputed) {
+                console.log(`#${issue.number} disputed — skipping`);
+                continue;
+              }
+
+              // Find the bot comment that set the grace-period timer
+              const { data: comments } = await github.rest.issues.listComments({
+                ...context.repo,
+                issue_number: issue.number,
+              });
+              const flagComment = comments.find(
+                c => c.user.type === 'Bot' && c.body.includes('auto-closed in 3 days')
+              );
+
+              // If no bot comment found, fallback to updated_at (safety)
+              const flaggedAt = flagComment ? new Date(flagComment.created_at) : new Date(issue.updated_at);
+
+              if (flaggedAt > cutoff) {
+                console.log(`#${issue.number} flagged too recently (${flaggedAt.toISOString()}) — skipping`);
+                continue;
+              }
+
+              // Close the issue
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: issue.number,
+                body: '🤖 Closing as duplicate — grace period elapsed with no dispute.',
+              });
+              await github.rest.issues.update({
+                ...context.repo,
+                issue_number: issue.number,
+                state: 'closed',
+                state_reason: 'not_planned',
+              });
+
+              // Also close any cross-referenced PRs (logic from close-confirmed-duplicates.yml)
+              const { data: events } = await github.rest.issues.listEvents({
+                ...context.repo,
+                issue_number: issue.number,
+                per_page: 100
+              });
+
+              for (const event of events) {
+                if (event.event !== 'cross-referenced' || !event.source) continue;
+                const prNumber = event.source.issue?.number;
+                if (!prNumber) continue;
+
+                try {
+                  const { data: prData } = await github.rest.pulls.get({
+                    ...context.repo,
+                    pull_number: prNumber
+                  });
+
+                  if (prData.state === 'open') {
+                    await github.rest.pulls.update({
+                      ...context.repo,
+                      pull_number: prNumber,
+                      state: 'closed'
+                    });
+                    await github.rest.issues.createComment({
+                      ...context.repo,
+                      issue_number: prNumber,
+                      body: `🔒 PR closed — referenced issue #${issue.number} was auto-closed as a duplicate.`
+                    });
+                    console.log(`Closed PR #${prNumber} linked to #${issue.number}`);
+                  }
+                } catch (prError) {
+                  console.warn(`PR close failed for #${prNumber}: ${prError.message}`);
+                }
+              }
+              console.log(`Closed #${issue.number}`);
+            }
+
+  # ─── Detection job (runs on issue open/reopen + manual trigger) ───────────
+  dedup:
+    name: Detect Duplicate Issues
+    if: >-
+      (github.event_name == 'issues' && github.event.issue.user.type != 'Bot') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.issue_number != '')
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Detect duplicates via GitHub Models (no API key needed)
+      - name: Run LLM duplicate detection
+        uses: pelikhan/action-genai-issue-dedup@bdb3b5d9451c1090ffcdf123d7447a5e7c7a2528  # v0.0.19
+        id: dedup_llm
+        continue-on-error: true
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          issue_number: ${{ github.event.issue.number || github.event.inputs.issue_number }}
+          labels: "auto"      # auto-classify for better matching
+          count: "30"         # compare against last 30 issues
+          since: "180d"       # look back 6 months
+
+      # Step 2: Rule-based fallback — title similarity check
+      - name: Rule-based title similarity check
+        id: dedup_rulebased
+        # Skip if LLM already found a match
+        if: steps.dedup_llm.outputs.duplicate_of == ''
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number || github.event.inputs.issue_number }}
+        with:
+          script: |
+            const issueNumber = parseInt(process.env.ISSUE_NUMBER);
+            const { data: currentIssue } = await github.rest.issues.get({
+              ...context.repo,
+              issue_number: issueNumber
+            });
+
+            const currentTitle = currentIssue.title.toLowerCase();
+            const currentBody = (currentIssue.body || '').toLowerCase();
+            const currentLabels = (currentIssue.labels || [])
+              .map(l => (typeof l === 'string' ? l : l.name).toLowerCase());
+
+            // Fetch recent open issues for comparison
+            const { data: issues } = await github.rest.issues.listForRepo({
+              ...context.repo,
+              state: 'open',
+              per_page: 50,
+              sort: 'created',
+              direction: 'desc'
+            });
+
+            // Similarity functions
+            function jaccardSimilarity(a, b) {
+              const setA = new Set(a.split(/\s+/));
+              const setB = new Set(b.split(/\s+/));
+              const intersection = [...setA].filter(w => setB.has(w));
+              const union = new Set([...setA, ...setB]);
+              return union.size === 0 ? 0 : intersection.length / union.size;
+            }
+
+            function levenshteinRatio(a, b) {
+              const maxLen = Math.max(a.length, b.length);
+              if (maxLen === 0) return 1.0;
+              let matches = 0;
+              const minLen = Math.min(a.length, b.length);
+              for (let i = 0; i < minLen; i++) {
+                if (a[i] === b[i]) matches++;
+              }
+              return matches / maxLen;
+            }
+
+            function sharedKeywords(a, b) {
+              const wa = a.split(/\s+/).filter(w => w.length > 3);
+              const wb = b.split(/\s+/).filter(w => w.length > 3);
+              return wa.filter(w => wb.includes(w)).length;
+            }
+
+            function keyPhrases(text) {
+              const words = text.split(/\s+/).filter(w => w.length > 2);
+              const phrases = [];
+              for (let i = 0; i < words.length - 1; i++) {
+                phrases.push(words[i] + ' ' + words[i + 1]);
+              }
+              for (let i = 0; i < words.length - 2; i++) {
+                phrases.push(words[i] + ' ' + words[i + 1] + ' ' + words[i + 2]);
+              }
+              return phrases;
+            }
+
+            function bodyOverlap(bodyA, bodyB) {
+              if (!bodyA || !bodyB) return 0;
+              const wordsA = new Set(bodyA.split(/\s+/).filter(w => w.length > 4));
+              const wordsB = new Set(bodyB.split(/\s+/).filter(w => w.length > 4));
+              const shared = [...wordsA].filter(w => wordsB.has(w));
+              return shared.length / Math.max(wordsA.size, wordsB.size, 1);
+            }
+
+            let bestMatch = null;
+            let bestScore = 0;
+            const debug = [];
+
+            for (const issue of issues) {
+              if (issue.number === issueNumber) continue;
+              if (issue.pull_request) continue;
+
+              const otherTitle = issue.title.toLowerCase();
+              const otherBody = (issue.body || '').toLowerCase();
+
+              const jaccard = jaccardSimilarity(currentTitle, otherTitle);
+              const levenshtein = levenshteinRatio(currentTitle, otherTitle);
+              const kwCount = sharedKeywords(currentTitle, otherTitle);
+
+              const phrasesA = keyPhrases(currentTitle);
+              const phrasesB = keyPhrases(otherTitle);
+              const sharedPhrases = phrasesA.filter(p => phrasesB.includes(p));
+              const phraseScore = sharedPhrases.length * 0.15;
+
+              const bodyScore = bodyOverlap(currentBody, otherBody) * 0.5;
+
+              let score = 0;
+              if (jaccard >= 0.3) score += jaccard;
+              if (levenshtein >= 0.5) score += levenshtein * 0.5;
+              if (kwCount >= 2) score += Math.min(kwCount * 0.1, 0.4);
+              score += phraseScore;
+              score += bodyScore;
+
+              const otherLabels = issue.labels.map(l => (typeof l === 'string' ? l : l.name).toLowerCase());
+              const sharedLabels = currentLabels.filter(l => otherLabels.includes(l));
+              if (sharedLabels.length > 0) score += 0.1 * sharedLabels.length;
+
+              debug.push(`#${issue.number}: jaccard=${jaccard.toFixed(2)} lev=${levenshtein.toFixed(2)} ` +
+                `kw=${kwCount} phrases=${sharedPhrases.length} body=${bodyScore.toFixed(2)} ` +
+                `labels=${sharedLabels.length} total=${score.toFixed(2)}`);
+
+              if (score > bestScore) {
+                bestScore = score;
+                bestMatch = issue;
+              }
+            }
+
+            debug.forEach(d => console.log(d));
+
+            if (bestMatch && bestScore >= 0.4) {
+              core.setOutput('duplicate_of', bestMatch.number.toString());
+              core.setOutput('confidence', bestScore.toFixed(2));
+              console.log(`Rule-based match: #${issueNumber} ~ #${bestMatch.number} ` +
+                          `(score: ${bestScore.toFixed(2)})`);
+            } else {
+              console.log(`No rule-based duplicate found (best score: ${bestScore.toFixed(2)})`);
+            }
+
+      # Step 3: Resolve which method found the match + which issue it points to
+      - name: Resolve detection result
+        id: resolved
+        if: >-
+          steps.dedup_llm.outputs.duplicate_of != '' ||
+          steps.dedup_rulebased.outputs.duplicate_of != ''
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+        env:
+          LLM_RESULT: ${{ steps.dedup_llm.outputs.duplicate_of }}
+          RULE_RESULT: ${{ steps.dedup_rulebased.outputs.duplicate_of }}
+        with:
+          script: |
+            const llmResult = process.env.LLM_RESULT;
+            const ruleResult = process.env.RULE_RESULT;
+            if (llmResult) {
+              core.setOutput('duplicate_of', llmResult);
+              core.setOutput('method', 'llm');
+            } else {
+              core.setOutput('duplicate_of', ruleResult);
+              core.setOutput('method', 'rule-based');
+            }
+
+      # Step 4: If duplicate found — label + comment
+      - name: Label and comment if duplicate
+        if: steps.resolved.outputs.duplicate_of != ''
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+        env:
+          CANONICAL: ${{ steps.resolved.outputs.duplicate_of }}
+          METHOD: ${{ steps.resolved.outputs.method }}
+          ISSUE_NUMBER: ${{ github.event.issue.number || github.event.inputs.issue_number }}
+        with:
+          script: |
+            const canonical = process.env.CANONICAL;
+            const method = process.env.METHOD;
+            const current = parseInt(process.env.ISSUE_NUMBER);
+
+            await github.rest.issues.addLabels({
+              ...context.repo,
+              issue_number: current,
+              labels: ['duplicate']
+            });
+
+            const methodNote = method === 'llm'
+              ? '_Detected via semantic analysis (GitHub Models, free)_'
+              : '_Detected via title similarity analysis_';
+
+            const { data: comments } = await github.rest.issues.listComments({
+              ...context.repo,
+              issue_number: current,
+            });
+            const alreadyCommented = comments.some(
+              c => c.user.type === 'Bot' && c.body.includes('This looks like a duplicate')
+            );
+            if (alreadyCommented) {
+              console.log('Duplicate comment already posted, skipping.');
+              return;
+            }
+
+            await github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: current,
+              body: `👋 This looks like a duplicate of #${canonical}.\n\n` +
+                    `The canonical issue has broader scope and/or more tasks — ` +
+                    `please subscribe there for updates.\n\n` +
+                    `⏳ This issue will be **auto-closed in 3 days** unless ` +
+                    `you react with 👎 to dispute.\n\n` +
+                    `${methodNote}`
+            });

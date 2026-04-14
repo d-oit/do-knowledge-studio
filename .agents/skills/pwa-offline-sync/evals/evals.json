@@ -1,0 +1,60 @@
+{
+  "skill_name": "pwa-offline-sync",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Design a cache strategy for an offline-first note-taking app with notes, attachments, and user preferences.",
+      "expected_output": "The agent maps different cache policies per entity type: cache-first for static assets, network-first for notes, stale-while-revalidate for preferences. Mentions version management.",
+      "files": [],
+      "assertions": [
+        "The agent assigns different cache strategies per data type",
+        "The agent mentions cache and DB version bumping intentionally",
+        "The agent addresses attachment/large file caching strategy"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Implement a sync queue for offline writes with conflict resolution.",
+      "expected_output": "The agent designs a queue with mutation IDs for dedup, exponential backoff on retry, replay on reconnect, and conflict resolution strategy.",
+      "files": [],
+      "assertions": [
+        "The agent uses mutation IDs for deduplication",
+        "The agent implements exponential backoff for retries",
+        "The agent describes a conflict resolution strategy (last-write-wins or server-wins)"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Users can still see data after their access is revoked. How do I implement zombie detection?",
+      "expected_output": "The agent checks permissions before serving cached data, detects revocation, stops reads on revocation, and notifies the user.",
+      "files": [],
+      "assertions": [
+        "The agent checks permissions before serving cached/offline data",
+        "The agent implements revocation detection mechanism",
+        "The agent notifies the user when access is revoked"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "My service worker is causing memory leaks. How do I diagnose and fix this?",
+      "expected_output": "The agent checks for listener cleanup on service worker replace/activate, old cache cleanup, and proper event handler management.",
+      "files": [],
+      "assertions": [
+        "The agent recommends removing event handlers on service worker replacement",
+        "The agent mentions cleaning up old caches in the activate handler",
+        "The agent addresses the service worker lifecycle"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Design an IndexedDB schema for an offline app with sync progress tracking, annotation storage, and a permission cache.",
+      "expected_output": "The agent defines separate stores per entity (sync queue, annotations, permissions), includes version number, and addresses sync state persistence.",
+      "files": [],
+      "assertions": [
+        "The agent defines separate IndexedDB stores for each entity type",
+        "The agent includes a version number for the database schema",
+        "The agent addresses sync state/progress tracking in the schema"
+      ]
+    }
+  ]
+}

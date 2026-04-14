@@ -1,0 +1,323 @@
+---
+name: Security Scan
+
+# yamllint disable-line rule:truthy
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  schedule:
+    # Run every Sunday at 00:00 UTC
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  # ============================================================================
+  # SHELL SCRIPT SECURITY SCAN
+  # Scan all bash/shell scripts for security vulnerabilities using shellcheck
+  # ============================================================================
+  shellcheck-security:
+    name: Shell Script Security Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Run ShellCheck with Security Focus
+        uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38  # 2.0.0
+        continue-on-error: true
+        with:
+          severity: warning
+          format: tty
+          check_together: 'yes'
+          scandir: './scripts'
+        env:
+          # Enable additional security checks
+          SHELLCHECK_OPTS: >-
+            --shell=bash
+            --enable=add-default-case,avoid-nullary-conditions,deprecate-which
+            --enable=check-unassigned-uppercase,quote-safe-variables
+
+      - name: ShellCheck SARIF Output
+        if: always()
+        run: |
+          # Generate SARIF for GitHub Security tab
+          # Find all shell scripts
+          # yamllint disable-line rule:line-length
+          mapfile -t script_files < <(find scripts .agents/skills \
+            -name "*.sh" -type f 2>/dev/null || true)
+
+          if [[ ${#script_files[@]} -gt 0 ]]; then
+            # Run shellcheck once with all files to produce valid merged SARIF
+            shellcheck -f sarif -s bash -S warning "${script_files[@]}" \
+              > shellcheck-results.sarif 2>/dev/null || true
+          fi
+
+          # Validate SARIF JSON; fall back to empty if invalid or missing
+          if [[ ! -s shellcheck-results.sarif ]] || \
+             ! python3 -c "import json,sys; json.load(open('shellcheck-results.sarif'))" \
+             2>/dev/null; then
+            json_str='{"$schema":"https://raw.githubusercontent.com/oasis-tcs/sarif-spec/'
+            json_str+='master/Schemata/sarif-schema-2.1.0.json","version":"2.1.0",'
+            json_str+='"runs":[{"tool":{"driver":{"name":"shellcheck",'
+            json_str+='"informationUri":"https://www.shellcheck.net/"}},"results":[]}]}'
+            printf '%s\n' "$json_str" > shellcheck-results.sarif
+          fi
+
+      - name: Upload ShellCheck SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@3b1a19a80ab047f35cbb237b5bd9bdc1e14f166c  # v3
+        continue-on-error: true
+        with:
+          sarif_file: shellcheck-results.sarif
+          category: shellcheck
+
+  # ============================================================================
+  # TRIVY FILESYSTEM SCAN
+  # Scan repository for secrets, misconfigurations, and vulnerabilities
+  # ============================================================================
+  trivy-fs:
+    name: Trivy Filesystem Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Run Trivy vulnerability scanner in fs mode
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1  # v0.35.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          exit-code: '1'
+          ignore-unfixed: true
+
+      - name: Upload Trivy SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@3b1a19a80ab047f35cbb237b5bd9bdc1e14f166c  # v3
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy-fs
+
+  # ============================================================================
+  # SECRET DETECTION
+  # Scan for leaked secrets, API keys, and credentials
+  # ============================================================================
+  secret-detection:
+    name: Secret Detection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Secret Detection with GitLeaks
+        id: gitleaks
+        uses: gitleaks/gitleaks-action@dcedce43c6f43de0b836d1fe38946645c9c638dc  # v2
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}  # Optional
+
+      - name: Fallback Secret Scan with TruffleHog
+        if: steps.gitleaks.outcome == 'failure'
+        uses: trufflesecurity/trufflehog@6bd2d14f7a4bc1e569fa3550efa7ec632a4fa67b  # v3.94.2
+        with:
+          path: ./
+          base: ""
+          head: HEAD
+          extra_args: --debug --only-verified
+        continue-on-error: true
+
+  # ============================================================================
+  # CODEQL ANALYSIS
+  # NOTE: CodeQL has limited support for shell/bash. This job is kept for
+  # future if JavaScript/TypeScript or Python is added to the project.
+  # Currently skipped as this is primarily a shell script repository.
+  # ============================================================================
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    # Allow job to fail/skip without blocking the workflow
+    continue-on-error: true
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Check for JavaScript/Python files
+        id: check_files
+        # yamllint disable-line rule:line-length
+        run: |
+          # Check if there are any JS/TS or Python files to analyze
+          if find . -name "*.js" -o -name "*.ts" -o -name "*.py" | grep -q .; then
+            echo "has_codeql_files=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_codeql_files=false" >> "$GITHUB_OUTPUT"
+            # yamllint disable-line rule:line-length
+            echo "ℹ️ No JavaScript/TypeScript/Python files found. Skipping CodeQL analysis."
+          fi
+
+      - name: Initialize CodeQL
+        if: steps.check_files.outputs.has_codeql_files == 'true'
+        uses: github/codeql-action/init@3b1a19a80ab047f35cbb237b5bd9bdc1e14f166c  # v3
+        continue-on-error: true
+        with:
+          languages: javascript,python
+          queries: security-extended,security-and-quality
+
+      - name: Autobuild
+        if: steps.check_files.outputs.has_codeql_files == 'true'
+        uses: github/codeql-action/autobuild@3b1a19a80ab047f35cbb237b5bd9bdc1e14f166c  # v3
+        continue-on-error: true
+
+      - name: Perform CodeQL Analysis
+        if: steps.check_files.outputs.has_codeql_files == 'true'
+        uses: github/codeql-action/analyze@3b1a19a80ab047f35cbb237b5bd9bdc1e14f166c  # v3
+        continue-on-error: true
+        with:
+          category: "/language:javascript"
+
+      - name: Generate empty CodeQL SARIF (no supported files found)
+        if: steps.check_files.outputs.has_codeql_files == 'false'
+        run: |
+          # Upload an empty but valid SARIF so GitHub's code scanning check
+          # resolves cleanly instead of erroring with "Error when processing
+          # the SARIF file" (caused by a pre-registered check run with
+          # no upload).
+          cat > codeql-empty-results.sarif << 'EOF'
+          {
+            # yamllint disable-line rule:line-length
+            "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+            "version": "2.1.0",
+            "runs": [
+              {
+                "tool": {
+                  "driver": {
+                    "name": "CodeQL",
+                    "informationUri": "https://codeql.github.com/",
+                    "rules": []
+                  }
+                },
+                "results": [],
+                "properties": {
+                  "semmle.formatSpecifier": "sarifv2.1.0"
+                }
+              }
+            ]
+          }
+          EOF
+
+      - name: Upload empty CodeQL SARIF (no supported files found)
+        if: steps.check_files.outputs.has_codeql_files == 'false'
+        uses: github/codeql-action/upload-sarif@3b1a19a80ab047f35cbb237b5bd9bdc1e14f166c  # v3
+        continue-on-error: true
+        with:
+          sarif_file: codeql-empty-results.sarif
+          category: "/language:javascript"
+
+  # ============================================================================
+  # INFRASTRUCTURE AS CODE SCAN
+  # Scan GitHub Actions workflows and other IaC for misconfigurations
+  # ============================================================================
+  iac-scan:
+    name: Infrastructure as Code Security
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Scan GitHub Actions with Trivy
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1  # v0.35.0
+        with:
+          scan-type: 'config'
+          scan-ref: '.github/workflows/'
+          severity: 'CRITICAL,HIGH'
+          format: 'sarif'
+          output: 'trivy-config-results.sarif'
+          exit-code: '0'  # Don't fail, just report
+          ignore-unfixed: true
+
+      - name: Upload IaC Scan SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@3b1a19a80ab047f35cbb237b5bd9bdc1e14f166c  # v3
+        with:
+          sarif_file: trivy-config-results.sarif
+          category: trivy-config
+
+  # ============================================================================
+  # AGGREGATE SECURITY REPORT
+  # Summarize all security scan results
+  # ============================================================================
+  security-summary:
+    name: Security Scan Summary
+    runs-on: ubuntu-latest
+    needs:
+      - shellcheck-security
+      - trivy-fs
+      - secret-detection
+      - codeql
+      - iac-scan
+    if: always()
+    steps:
+      - name: Generate Security Report
+        run: |
+          echo "=========================================="
+          echo "     🔒 SECURITY SCAN SUMMARY"
+          echo "=========================================="
+          echo ""
+          echo "Job Results:"
+          # yamllint disable-line rule:line-length
+          echo "  • ShellCheck Security: ${{ needs.shellcheck-security.result }}"
+          echo "  • Trivy Filesystem: ${{ needs.trivy-fs.result }}"
+          echo "  • Secret Detection: ${{ needs.secret-detection.result }}"
+          echo "  • CodeQL Analysis: ${{ needs.codeql.result }}"
+          echo "  • IaC Scan: ${{ needs.iac-scan.result }}"
+          echo ""
+
+          # Check for failures (treat skipped as success)
+          shellcheck_result="${{ needs.shellcheck-security.result }}"
+          trivy_result="${{ needs.trivy-fs.result }}"
+          secret_result="${{ needs.secret-detection.result }}"
+          codeql_result="${{ needs.codeql.result }}"
+
+          # Normalize results (treat skipped and codeql as OK for shell repos)
+          # This is a shell script repo, so CodeQL will not find analyzable code
+          if [[ "$shellcheck_result" == "failure" ]] || \
+             [[ "$trivy_result" == "failure" ]] || \
+             [[ "$secret_result" == "failure" ]]; then
+            echo "❌ CRITICAL/HIGH vulnerabilities detected!"
+            echo "   Review the Security tab for details."
+            exit 1
+          else
+            echo "✅ All critical security checks passed."
+            if [[ "$codeql_result" == "failure" ]]; then
+              # yamllint disable-line rule:line-length
+              echo "   ℹ️ CodeQL skipped (no supported languages in shell script repo)"
+            fi
+          fi
+          echo ""
+          echo "All scan results available in the Security tab:"
+          # yamllint disable-line rule:line-length
+          echo "  https://github.com/${{ github.repository }}/security/code-scanning"

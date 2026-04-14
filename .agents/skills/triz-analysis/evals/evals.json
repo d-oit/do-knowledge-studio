@@ -1,0 +1,27 @@
+{
+  "skill_name": "triz-analysis",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Perform a TRIZ analysis on the problem of 'latency in semantic memory retrieval' and save it to the analysis directory.",
+      "expected_output": "The agent identifies the technical contradiction, maps it to the 40 principles, and saves a report to `analysis/triz-memory-latency-YYYY-MM-DD.md`.",
+      "files": [],
+      "assertions": [
+        "The agent identifies a technical contradiction (e.g., Speed vs. Complexity)",
+        "The agent proposes at least 2 TRIZ principles as solutions",
+        "A file is created in the `analysis/` directory with the correct naming convention"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Analyze the contradiction between 'instruction clarity' and 'SKILL.md file size' using TRIZ.",
+      "expected_output": "The agent performs the TRIZ mapping and suggests principles like 'Segmentation' or 'Another Dimension' to handle documentation growth.",
+      "files": [],
+      "assertions": [
+        "The agent maps the problem to the TRIZ contradiction matrix",
+        "The agent mentions specific principles like 'Segmentation' or 'Local Quality'",
+        "The output follows the required reporting structure"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "skill_name": "code-quality",
+  "version": "1.0.0",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review this Python code for quality issues: def calc(a, b): if a > 1000: return b * 0.1 else: return b * 0.2",
+      "expected_output": "Identifies magic numbers (1000, 0.1, 0.2), missing type hints, missing docstring, unclear function name, and suggests improvements with named constants.",
+      "assertions": [
+        "Identifies magic numbers (1000, 0.1, 0.2)",
+        "Suggests named constants",
+        "Notes missing type hints",
+        "Notes missing docstring",
+        "Suggests clearer function name"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Refactor this JavaScript to follow DRY principle: function getUserName() { return fetch('/api/user').then(r => r.json()).then(d => d.name); } function getUserEmail() { return fetch('/api/user').then(r => r.json()).then(d => d.email); }",
+      "expected_output": "Extracts common fetch logic into reusable function, handles errors properly, uses async/await for clarity.",
+      "assertions": [
+        "Extracts common fetch pattern",
+        "Eliminates code duplication",
+        "Adds error handling",
+        "Uses async/await",
+        "Maintains same functionality"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Identify code smells in this class: class Order { process() { validate(); save(); notify(); log(); } validate() { ... } save() { ... } notify() { ... } log() { ... } }",
+      "expected_output": "Identifies potential violations of Single Responsibility Principle - class handles validation, persistence, notification, and logging. Suggests extracting into separate classes/services.",
+      "assertions": [
+        "Identifies SRP violation",
+        "Notes multiple responsibilities",
+        "Suggests extraction strategies",
+        "Proposes service separation"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Review this Rust code for error handling: fn read_file(path: &str) -> String { std::fs::read_to_string(path).unwrap() }",
+      "expected_output": "Identifies unsafe unwrap() usage, suggests proper error handling with Result type, recommends custom error type or anyhow/thiserror.",
+      "assertions": [
+        "Identifies unwrap() anti-pattern",
+        "Suggests Result type",
+        "Recommends error propagation",
+        "Mentions error crates (anyhow/thiserror)"
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Check this Go code for quality: func process(items []Item) { for i := 0; i < len(items); i++ { handle(items[i]) } }",
+      "expected_output": "Identifies range loop opportunity, suggests idiomatic Go patterns, checks for error handling in handle function.",
+      "assertions": [
+        "Suggests range loop (for _, item := range items)",
+        "Notes idiom opportunity",
+        "Mentions error handling need",
+        "Suggests context propagation if applicable"
+      ],
+      "files": []
+    }
+  ]
+}

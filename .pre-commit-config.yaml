@@ -1,0 +1,51 @@
+# Pre-commit configuration for github-template-ai-agents
+# See: https://pre-commit.com/
+# Install: pip install pre-commit && pre-commit install
+
+repos:
+  # Generic checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-toml
+      - id: check-xml
+      - id: check-yaml
+      - id: destroyed-symlinks
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+      - id: trailing-whitespace
+
+  # Shell script checks
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+      - id: shellcheck
+        args: ['--severity=warning']
+        files: \.(sh|bash)$
+
+  # Markdown linting
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.39.0
+    hooks:
+      - id: markdownlint
+        args: ['--config', 'markdownlint.toml']
+
+  # Local hooks (custom quality gate)
+  - repo: local
+    hooks:
+      - id: quality-gate
+        name: Run quality gate
+        entry: ./scripts/quality_gate.sh
+        language: script
+        pass_filenames: false
+        always_run: true
+        verbose: true

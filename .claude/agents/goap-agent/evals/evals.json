@@ -1,0 +1,55 @@
+{
+  "agent_name": "goap-agent",
+  "agent_type": "claude",
+  "version": "1.0.0",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Plan a multi-step refactor of this codebase to extract a shared library from duplicated code in 3 modules",
+      "expected_output": "Multi-step plan with: goal decomposition, sub-agent assignments, dependency mapping, quality gates between phases",
+      "assertions": [
+        "Creates multi-step plan",
+        "Assigns sub-agents appropriately",
+        "Identifies dependencies between steps",
+        "Includes quality gates",
+        "Has rollback strategy"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Coordinate parallel tasks: run security audit, code review, and performance analysis simultaneously",
+      "expected_output": "Parallel execution plan with: agent selection for each task, execution strategy, result aggregation, conflict resolution",
+      "assertions": [
+        "Identifies parallelizable tasks",
+        "Selects appropriate agents",
+        "Defines execution strategy",
+        "Plans result synthesis",
+        "Handles potential conflicts"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Handle a failing sub-agent during execution - the security-auditor failed with an error",
+      "expected_output": "Failure handling strategy: error analysis, retry logic, fallback options, whether to continue or abort, rollback if needed",
+      "assertions": [
+        "Analyzes failure cause",
+        "Considers retry strategies",
+        "Defines fallback options",
+        "Decides continue/abort",
+        "Plans rollback if needed"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Manage a complex dependency chain where task B depends on A, task C depends on B, and task D depends on both A and C",
+      "expected_output": "Dependency graph with: execution order, parallel opportunities identified, critical path analysis, resource allocation",
+      "assertions": [
+        "Maps dependency graph",
+        "Determines execution order",
+        "Identifies parallel opportunities",
+        "Analyzes critical path",
+        "Allocates resources appropriately"
+      ]
+    }
+  ]
+}

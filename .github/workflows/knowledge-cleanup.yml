@@ -1,0 +1,99 @@
+---
+name: Knowledge Cleanup
+
+# yamllint disable-line rule:truthy
+on:
+  schedule:
+    - cron: '0 2 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  analyze-knowledge:
+    name: Identify Outdated Knowledge
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 100
+
+      - name: Find Stale Documentation
+        run: |
+          {
+            echo "# Knowledge Cleanup Analysis"
+            echo ""
+            echo "## Potentially Outdated Lessons"
+            echo "Lessons older than 90 days:"
+            echo ""
+
+            current_epoch=$(date +%s)
+            grep "^\\*\\*Date\\*\\*:" agents-docs/LESSONS.md | head -20 |
+              while IFS= read -r line; do
+              lesson_date=$(echo "$line" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}')
+              if [ -n "$lesson_date" ]; then
+                lesson_epoch=$(date -d "$lesson_date" +%s 2>/dev/null || echo 0)
+                days_old=$(( (current_epoch - lesson_epoch) / 86400 ))
+                if [ "$days_old" -gt 90 ]; then
+                  echo "- Lesson from $lesson_date (${days_old} days old)"
+                fi
+              fi
+            done
+
+            echo ""
+            echo "---"
+            echo ""
+            echo "## Cleanup Criteria"
+            echo ""
+            echo "Remove lessons that are:"
+            echo "1. Issue fully resolved (no longer relevant)"
+            echo "2. Superseded by newer lessons"
+            echo "3. No actual code changes resulted"
+            echo "4. Duplicates existing patterns"
+            echo ""
+            echo "⚠️ NEVER remove: Skills, scripts, or working code"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Create Knowledge Cleanup PR
+        uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0  # v8.1.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "docs: identify outdated knowledge for review"
+          title: "[Knowledge Cleanup] Review Outdated Lessons"
+          body: |
+            ## Knowledge Cleanup Report
+
+            Identifies documentation that may no longer provide value.
+
+            ### Criteria for Removal
+            A lesson should be removed if it:
+            - Issue is fully resolved (no longer relevant)
+            - Superseded by newer lessons with better solutions
+            - No actual code/files were modified
+            - Duplicates existing patterns
+
+            ### Safeguards
+            - ⚠️ NEVER remove: `.agents/skills/`
+            - ⚠️ NEVER remove: `scripts/`
+            - ⚠️ NEVER remove: Working code or tests
+            - ⚠️ ONLY remove: Outdated documentation
+
+            ### Review Process
+            1. Check workflow summary for identified lessons
+            2. Verify issues are truly resolved
+            3. Confirm newer lessons exist
+            4. Mark as deprecated before removal
+
+            Check the workflow summary for specific lessons to review.
+
+          draft: true
+          branch: automated/knowledge-cleanup-${{ github.run_number }}
+          delete-branch: true
+          labels: |
+            documentation
+            cleanup
+            knowledge
+            automated
