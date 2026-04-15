@@ -33,10 +33,27 @@ export class Repository {
         returnValue: 'resultRows',
         rowMode: 'object',
       });
-      return results.map((r) => this.parseMetadata<Entity>(r));
+      return (results as Record<string, unknown>[]).map((r) => this.parseMetadata<Entity>(r));
     } catch (err) {
       logger.error('Failed to fetch entities', err);
       throw new AppError('Failed to fetch entities', 'DB_ERROR', err);
+    }
+  }
+
+  async searchEntities(query: string): Promise<Entity[]> {
+    try {
+      const results = this.db.exec({
+        sql: `SELECT * FROM entities
+              WHERE name LIKE ? OR description LIKE ?
+              ORDER BY name ASC`,
+        bind: [`%${query}%`, `%${query}%`],
+        returnValue: 'resultRows',
+        rowMode: 'object',
+      });
+      return (results as Record<string, unknown>[]).map((r) => this.parseMetadata<Entity>(r));
+    } catch (err) {
+      logger.error('Failed to search entities', err);
+      throw new AppError('Failed to search entities', 'DB_ERROR', err);
     }
   }
 
@@ -131,7 +148,7 @@ export class Repository {
         returnValue: 'resultRows',
         rowMode: 'object',
       });
-      return results.map((r) => this.parseMetadata<Link>(r));
+      return (results as Record<string, unknown>[]).map((r) => this.parseMetadata<Link>(r));
     } catch (err) {
       logger.error('Failed to fetch links', err);
       throw new AppError('Failed to fetch links', 'DB_ERROR', err);

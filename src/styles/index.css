@@ -299,3 +299,117 @@ input:focus, select:focus {
   padding-top: var(--space-4);
   border-top: 1px solid var(--border-default);
 }
+
+/* Viz (Graph & MindMap) Styling */
+.viz-container {
+  width: 100%;
+  height: 70vh;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+}
+
+.graph-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  height: 100%;
+}
+
+.viz-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-2);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-base);
+}
+
+.selection-info {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.viz-toolbar button.active {
+  background: #eff6ff;
+  border-color: var(--interactive-primary);
+  color: var(--interactive-primary);
+}
+
+/* Extra status for Claim marks in Editor */
+.knowledge-claim {
+  background-color: #dcfce7;
+  border-bottom: 2px solid #10b981;
+  padding: 0 2px;
+  cursor: help;
+}
+
+/* Chat Search UI */
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: var(--space-3);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.input-wrapper input {
+  padding-left: var(--space-10);
+}
+
+.searching {
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+/* Mention Extension Styles */
+.entity-mention {
+  color: var(--interactive-primary);
+  font-weight: 600;
+  background: #eff6ff;
+  padding: 0 4px;
+  border-radius: var(--radius-sm);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.mention-tool {
+  position: relative;
+}
+
+.mention-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 10;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-base);
+  box-shadow: var(--shadow-md);
+  margin-top: var(--space-1);
+  min-width: 200px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.menu-item {
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+  font-size: 14px;
+  transition: background var(--motion-fast);
+}
+
+.menu-item:hover {
+  background: var(--bg-base);
+}
+
+.menu-item.disabled {
+  color: var(--text-muted);
+  cursor: default;
+}
