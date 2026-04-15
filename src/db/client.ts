@@ -40,6 +40,9 @@ export const initDb = async (): Promise<SQLiteDB> => {
     const schemaSql = await schemaResponse.text();
     db.exec(schemaSql);
 
+    // Enable foreign key support
+    db.exec('PRAGMA foreign_keys = ON;');
+
     return db;
   } catch (err) {
     logger.error('Failed to initialize database', err);
