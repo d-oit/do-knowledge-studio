@@ -188,3 +188,11 @@ Run every step. Swarm coordinates handoffs.
 | `scripts/validate-tokens.cjs` | Fast-fail: checks design docs + TOKENS export exist |
 | `scripts/check-output.cjs` | Eval assertion: contains/not_contains for code output |
 | `scripts/verify.py` | Browser verification: overlap, tap targets, scroll audit |
+
+## Knowledge Studio UI/UX Policy
+- **Visual Consistency**: Always use CSS variables from `src/styles/index.css`.
+- **Polish Checklist**:
+  1. Buttons must have hover/active states.
+  2. Form inputs must have focus rings.
+  3. Sidebar must collapse/expand correctly on mobile.
+  4. Use 4px grid for all spacing.
