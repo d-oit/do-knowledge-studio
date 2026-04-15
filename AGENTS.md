@@ -20,6 +20,12 @@
 - Run `pnpm lint`
 - Run `pnpm typecheck`
 
+## UI/UX Guardrails
+- **Design Tokens ONLY**: Use CSS variables defined in `src/styles/index.css` for all colors, spacing (4px grid), and typography. No raw hex or pixel values in components.
+- **Mobile First**: All layouts must be responsive. Use `@media` queries for tablet (768px) and desktop (1024px+).
+- **Interactive Targets**: Minimum tap target size of 44x44px for all buttons and links.
+- **No Unstyled Elements**: Every HTML element must have a corresponding class or semantic style defined in the design system.
+
 ## Directory Structure
 - `/src/db`: Schema and Repository (Repository Pattern).
 - `/src/features`: Domain components (Editor, Graph, MindMap, Chat).

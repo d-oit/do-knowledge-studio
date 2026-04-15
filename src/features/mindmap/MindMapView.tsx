@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import MindElixir from 'mind-elixir';
+import MindElixir, { type Options } from 'mind-elixir';
 import { Entity } from '../../lib/validation';
 
 interface Props {
@@ -13,23 +13,24 @@ const MindMapView: React.FC<Props> = ({ rootEntity, relatedEntities }) => {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const mind = new MindElixir({
+    const options: Options = {
       el: containerRef.current,
-      direction: MindElixir.SIDE,
-      data: {
-        nodeData: {
-          id: rootEntity.id ?? 'root',
-          topic: rootEntity.name,
-          root: true,
-          children: relatedEntities.map(e => ({
-            id: e.id ?? Math.random().toString(),
-            topic: e.name
-          }))
-        }
+      direction: 2, // SIDE
+    };
+
+    const mind = new MindElixir(options);
+
+    mind.init({
+      nodeData: {
+        id: rootEntity.id ?? 'root',
+        topic: rootEntity.name,
+        // root: true, // Type definition might not include this in some versions
+        children: relatedEntities.map(e => ({
+          id: e.id ?? Math.random().toString(),
+          topic: e.name
+        }))
       }
     });
-
-    mind.init();
   }, [rootEntity, relatedEntities]);
 
   return <div ref={containerRef} className="viz-container" />;

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { logger } from '../../lib/logger';
 import { repository } from '../../db/repository';
+import { useState } from 'react';
 
 const Editor: React.FC = () => {
   const [title, setTitle] = useState('');
@@ -66,7 +67,7 @@ const Editor: React.FC = () => {
       <div className="toolbar">
         <button onClick={() => editor?.chain().focus().toggleBold().run()}>B</button>
         <button onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}>H1</button>
-        <button onClick={handleSave} className="save-btn">Save to DB</button>
+        <button onClick={handleSave} className="primary">Save to DB</button>
       </div>
       <EditorContent editor={editor} className="tiptap-content" />
     </div>

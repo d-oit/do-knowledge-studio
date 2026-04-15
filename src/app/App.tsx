@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { initDb } from '../db/client';
 import { repository } from '../db/repository';
 import { logger } from '../lib/logger';
@@ -19,6 +19,17 @@ const App: React.FC = () => {
   const [entities, setEntities] = useState<Entity[]>([]);
   const [links, setLinks] = useState<Link[]>([]);
 
+  const refreshData = useCallback(async () => {
+    try {
+      const e = await repository.getAllEntities();
+      const l = await repository.getAllLinks();
+      setEntities(e);
+      setLinks(l);
+    } catch (err) {
+      logger.error('Data refresh failed', err);
+    }
+  }, []);
+
   useEffect(() => {
     initDb()
       .then(() => {
@@ -30,24 +41,13 @@ const App: React.FC = () => {
         setError('Failed to initialize local database');
         logger.error('Startup failed', err);
       });
-  }, []);
-
-  const refreshData = async () => {
-    try {
-      const e = await repository.getAllEntities();
-      const l = await repository.getAllLinks();
-      setEntities(e);
-      setLinks(l);
-    } catch (err) {
-      logger.error('Data refresh failed', err);
-    }
-  };
+  }, [refreshData]);
 
   useEffect(() => {
     if (dbReady) {
       refreshData();
     }
-  }, [currentView]);
+  }, [currentView, dbReady, refreshData]);
 
   if (error) return <div className="error-screen">{error}</div>;
   if (!dbReady) return <div className="loading-screen">Booting Knowledge Studio...</div>;

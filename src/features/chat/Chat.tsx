@@ -39,10 +39,15 @@ const Chat: React.FC = () => {
   return (
     <div className="chat-view">
       <div className="messages-list">
+        {messages.length === 0 && (
+          <div className="empty-chat">
+            <p>Ask anything about your local knowledge base.</p>
+          </div>
+        )}
         {messages.map((m, i) => (
           <div key={i} className={`message ${m.role}`}>
-            <strong>{m.role === 'user' ? 'You' : 'Studio'}:</strong>
-            <pre>{m.content}</pre>
+            <strong>{m.role === 'user' ? 'You' : 'Studio'}</strong>
+            <div className="msg-content">{m.content}</div>
           </div>
         ))}
       </div>
@@ -53,7 +58,7 @@ const Chat: React.FC = () => {
           placeholder="Ask your knowledge base..."
           onKeyDown={e => e.key === 'Enter' && handleSend()}
         />
-        <button onClick={handleSend}>Send</button>
+        <button className="primary" onClick={handleSend}>Send</button>
       </div>
     </div>
   );
