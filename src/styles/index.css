@@ -1,0 +1,87 @@
+:root {
+  --primary: #2563eb;
+  --bg: #ffffff;
+  --sidebar-bg: #f8fafc;
+  --border: #e2e8f0;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, sans-serif;
+  overflow: hidden;
+}
+
+.layout {
+  display: flex;
+  height: 100vh;
+}
+
+.sidebar {
+  width: 240px;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+.brand {
+  padding: 1.5rem;
+  font-weight: bold;
+  font-size: 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-links {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+}
+
+.nav-links li {
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.nav-links li:hover {
+  background: #f1f5f9;
+}
+
+.nav-links li.active {
+  background: #eff6ff;
+  color: var(--primary);
+  font-weight: 600;
+  border-right: 3px solid var(--primary);
+}
+
+.main-content {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+}
+
+.viz-container {
+  width: 100%;
+  height: 100%;
+  background: #fdfdfd;
+}
+
+.editor-container, .chat-view {
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.toolbar {
+  margin-bottom: 1rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.error-screen, .loading-screen {
+  display: flex;
+  height: 100vh;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
