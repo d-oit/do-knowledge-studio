@@ -1,6 +1,7 @@
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
-import { logger } from '../lib/logger';
-import { AppError } from '../lib/errors';
+import { logger } from '../lib/logger.js';
+import { AppError } from '../lib/errors.js';
+import * as fs from 'fs';
 
 export interface SQLiteDB {
   exec: (options: string | {
@@ -21,10 +22,22 @@ interface Sqlite3Static {
 
 let db: SQLiteDB | null = null;
 
+// Mocking fetch for CLI/Node environment if needed, or using fs
+const getSchema = async () => {
+    if (typeof fetch !== 'undefined') {
+        const schemaResponse = await fetch('/db/schema.sql');
+        if (schemaResponse.ok) return await schemaResponse.text();
+    }
+    // Fallback to local fs for CLI
+    return fs.readFileSync('./public/db/schema.sql', 'utf-8');
+};
+
 export const initDb = async (): Promise<SQLiteDB> => {
   if (db) return db;
 
   try {
+    // In CLI/Node, we might need a different approach if @sqlite.org/sqlite-wasm doesn't support Node.
+    // However, for this task, we will try to stay within the provided stack.
     const sqlite3 = await sqlite3InitModule() as unknown as Sqlite3Static;
 
     if (sqlite3.oo1.OpfsDb) {
@@ -35,9 +48,7 @@ export const initDb = async (): Promise<SQLiteDB> => {
       logger.warn('OPFS not available, using fallback storage');
     }
 
-    const schemaResponse = await fetch('/db/schema.sql');
-    if (!schemaResponse.ok) throw new Error('Failed to fetch schema');
-    const schemaSql = await schemaResponse.text();
+    const schemaSql = await getSchema();
     db.exec(schemaSql);
 
     // Enable foreign key support
@@ -52,7 +63,8 @@ export const initDb = async (): Promise<SQLiteDB> => {
 
 export const getDb = (): SQLiteDB => {
   if (!db) {
-    throw new AppError('Database not initialized', 'DB_NOT_READY');
+     // For CLI, we might need to auto-init or mock
+     throw new AppError('Database not initialized', 'DB_NOT_READY');
   }
   return db;
 };
