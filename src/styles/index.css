@@ -121,24 +121,38 @@ h1, h2, h3 {
 }
 
 .nav-links li {
-  padding: var(--space-3) var(--space-6);
-  cursor: pointer;
-  border-radius: var(--radius-base);
   margin-bottom: var(--space-1);
+}
+
+.nav-button {
+  width: 100%;
+  justify-content: flex-start;
+  padding: var(--space-3) var(--space-6);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-base);
   color: var(--text-secondary);
   font-weight: 500;
   transition: all var(--motion-fast);
+  text-align: left;
 }
 
-.nav-links li:hover {
+.nav-button:hover {
   background: var(--bg-base);
   color: var(--text-primary);
+  border-color: transparent;
 }
 
-.nav-links li.active {
+.nav-button.active {
   background: #eff6ff;
   color: var(--interactive-primary);
   font-weight: 600;
+  border-color: transparent;
+}
+
+.nav-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--border-focus);
 }
 
 /* Interactive Elements - Best Practice */
@@ -163,6 +177,11 @@ button {
 button:hover:not(:disabled) {
   background: var(--bg-base);
   border-color: var(--text-muted);
+}
+
+button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--border-focus);
 }
 
 button:active:not(:disabled) {

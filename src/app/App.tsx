@@ -57,10 +57,42 @@ const App: React.FC = () => {
       <nav className="sidebar">
         <div className="brand">Knowledge Studio</div>
         <ul className="nav-links">
-          <li className={currentView === 'editor' ? 'active' : ''} onClick={() => setCurrentView('editor')}>Editor</li>
-          <li className={currentView === 'graph' ? 'active' : ''} onClick={() => setCurrentView('graph')}>Graph</li>
-          <li className={currentView === 'mindmap' ? 'active' : ''} onClick={() => setCurrentView('mindmap')}>Mind Map</li>
-          <li className={currentView === 'chat' ? 'active' : ''} onClick={() => setCurrentView('chat')}>Chat</li>
+          <li>
+            <button
+              className={`nav-button ${currentView === 'editor' ? 'active' : ''}`}
+              onClick={() => setCurrentView('editor')}
+              aria-current={currentView === 'editor' ? 'page' : undefined}
+            >
+              Editor
+            </button>
+          </li>
+          <li>
+            <button
+              className={`nav-button ${currentView === 'graph' ? 'active' : ''}`}
+              onClick={() => setCurrentView('graph')}
+              aria-current={currentView === 'graph' ? 'page' : undefined}
+            >
+              Graph
+            </button>
+          </li>
+          <li>
+            <button
+              className={`nav-button ${currentView === 'mindmap' ? 'active' : ''}`}
+              onClick={() => setCurrentView('mindmap')}
+              aria-current={currentView === 'mindmap' ? 'page' : undefined}
+            >
+              Mind Map
+            </button>
+          </li>
+          <li>
+            <button
+              className={`nav-button ${currentView === 'chat' ? 'active' : ''}`}
+              onClick={() => setCurrentView('chat')}
+              aria-current={currentView === 'chat' ? 'page' : undefined}
+            >
+              Chat
+            </button>
+          </li>
         </ul>
       </nav>
       <main className="main-content">
