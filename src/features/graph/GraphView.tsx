@@ -38,22 +38,25 @@ const GraphView: React.FC<Props> = ({ entities, links }) => {
     const graph = new Graph();
 
     if (filteredData.entities.length === 0 && !focusMode) {
-      graph.addNode('1', { label: 'Node A', size: 10, color: '#2563eb', x: 0, y: 0 });
-      graph.addNode('2', { label: 'Node B', size: 10, color: '#2563eb', x: 1, y: 1 });
-      graph.addEdge('1', '2', { label: 'relates to', size: 2 });
+      // Show default placeholder if no data
+      graph.addNode('1', { label: 'Knowledge Studio', size: 10, color: '#2563eb', x: 0, y: 0 });
     } else {
       filteredData.entities.forEach((e, i) => {
         graph.addNode(e.id ?? String(i), {
           label: e.name,
-          size: e.id === selectedNode ? 15 : 10,
+          size: e.id === selectedNode ? 20 : 10,
           color: e.id === selectedNode ? '#ef4444' : '#2563eb',
-          x: Math.random(),
-          y: Math.random()
+          x: Math.cos((i * 2 * Math.PI) / filteredData.entities.length),
+          y: Math.sin((i * 2 * Math.PI) / filteredData.entities.length)
         });
       });
       filteredData.links.forEach((l) => {
         if (graph.hasNode(l.source_id) && graph.hasNode(l.target_id)) {
-          graph.addEdge(l.source_id, l.target_id, { label: l.relation });
+          graph.addEdge(l.source_id, l.target_id, {
+            label: l.relation,
+            size: 2,
+            color: '#94a3b8'
+          });
         }
       });
     }
@@ -62,7 +65,10 @@ const GraphView: React.FC<Props> = ({ entities, links }) => {
         sigmaInstance.current.kill();
     }
 
-    sigmaInstance.current = new Sigma(graph, containerRef.current);
+    sigmaInstance.current = new Sigma(graph, containerRef.current, {
+      renderEdgeLabels: true,
+      defaultEdgeType: 'arrow'
+    });
 
     sigmaInstance.current.on('clickNode', ({ node }) => {
       setSelectedNode(node);
@@ -70,6 +76,7 @@ const GraphView: React.FC<Props> = ({ entities, links }) => {
 
     sigmaInstance.current.on('clickStage', () => {
       setSelectedNode(null);
+      setFocusMode(false);
     });
 
     return () => {
@@ -95,7 +102,7 @@ const GraphView: React.FC<Props> = ({ entities, links }) => {
           </div>
         )}
       </div>
-      <div ref={containerRef} className="viz-container" />
+      <div ref={containerRef} className="viz-container" style={{ height: '600px', width: '100%' }} />
     </div>
   );
 };

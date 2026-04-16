@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
-import { repository } from '../../db/repository';
+import { searchKnowledge } from '../../lib/search';
 import { logger } from '../../lib/logger';
 import { Search } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+}
+
+interface SearchResult {
+  name: string;
+  description: string;
 }
 
 const Chat: React.FC = () => {
@@ -23,18 +28,19 @@ const Chat: React.FC = () => {
     setIsSearching(true);
 
     try {
-      const relevant = await repository.searchEntities(currentInput);
+      const results = await searchKnowledge(currentInput) as unknown as SearchResult[];
 
-      let response = `I found ${relevant.length} relevant entities in your local knowledge base.`;
-      if (relevant.length > 0) {
-        response += '\n\nResults:\n' + relevant.map(e => `- ${e.name} (${e.type})`).join('\n');
+      let response = `I found ${results.length} relevant items in your local knowledge base.`;
+      if (results.length > 0) {
+        response += '\n\nResults:\n' + results.slice(0, 5).map((r: SearchResult) => `- ${r.name}: ${r.description}`).join('\n');
+        if (results.length > 5) response += `\n\n(Plus ${results.length - 5} more...)`;
       } else {
         response += '\n\nTry searching for different keywords or create new entities in the Editor.';
       }
 
       setMessages(prev => [...prev, { role: 'assistant', content: response }]);
     } catch (err) {
-      logger.error('Chat context building failed', err);
+      logger.error('Chat search failed', err);
       setMessages(prev => [...prev, { role: 'assistant', content: 'Error retrieving local context.' }]);
     } finally {
       setIsSearching(false);
