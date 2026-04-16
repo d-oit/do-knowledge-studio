@@ -7,6 +7,7 @@
   --bg-surface: #ffffff;
   --bg-elevated: #ffffff;
   --bg-overlay: rgba(0, 0, 0, 0.4);
+  --bg-active: #eff6ff;
 
   --text-primary: #1e293b;
   --text-secondary: #475569;
@@ -126,6 +127,8 @@ h1, h2, h3 {
 
 .nav-button {
   width: 100%;
+  display: flex;
+  align-items: center;
   justify-content: flex-start;
   padding: var(--space-3) var(--space-6);
   background: transparent;
@@ -144,7 +147,7 @@ h1, h2, h3 {
 }
 
 .nav-button.active {
-  background: #eff6ff;
+  background: var(--bg-active);
   color: var(--interactive-primary);
   font-weight: 600;
   border-color: transparent;
