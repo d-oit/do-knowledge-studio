@@ -67,3 +67,41 @@ SKIP_LINKS=true ./scripts/quality_gate.sh
 ## Dependabot PRs
 
 Dependabot PRs are auto-merged via CI when all checks pass. Do not manually merge or close Dependabot PRs.
+
+## Swarm Worktree Workflow
+
+Use the swarm worktree workflow for complex analysis tasks requiring parallel web research.
+
+```bash
+# Execute full workflow with quality profile
+./scripts/swarm-worktree-web-research.sh "Analysis Topic"
+
+# Run with custom profile and clean up after
+./scripts/swarm-worktree-web-research.sh --profile balanced --cleanup "Topic"
+```
+
+The workflow performs:
+1. Environment validation
+2. Git worktree creation for context isolation
+3. Parallel web research with automated JSON/SHA256 hardening
+4. Multi-agent synthesis
+5. (Optional) GitHub Pull Request creation with Actions monitoring
+
+## Swarm Worktree Workflow
+
+Use the swarm worktree workflow for complex analysis tasks requiring parallel web research.
+
+```bash
+# Execute full workflow with quality profile
+./scripts/swarm-worktree-web-research.sh "Analysis Topic"
+
+# Run with custom profile and clean up after
+./scripts/swarm-worktree-web-research.sh --profile balanced --cleanup "Topic"
+```
+
+The workflow performs:
+1. Environment validation
+2. Git worktree creation for context isolation
+3. Parallel web research with automated JSON/SHA256 hardening
+4. Multi-agent synthesis
+5. (Optional) GitHub Pull Request creation with Actions monitoring

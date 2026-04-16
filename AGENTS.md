@@ -39,3 +39,4 @@
 
 ## Single Source of Truth
 This file (`AGENTS.md`) is the source of truth for all agents. Agent-specific instructions live in `.agents/`.
+- `swarm-worktree-web-research.sh <topic>`: Parallel web research workflow.
