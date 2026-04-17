@@ -7,7 +7,7 @@
 - [x] CLI Harness
 
 ## Phase 2: Integration
-- [ ] Tiptap claims extension (convert text to claims)
+- [x] Tiptap claims extension (convert text to claims)
 - [ ] Local search indexing
 - [ ] Graph neighborhood rendering
 

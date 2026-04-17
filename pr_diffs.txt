@@ -1,0 +1,113 @@
+PR 2:
+diff --git a/.pre-commit-config.yaml b/.pre-commit-config.yaml
+index 2d69c2a..a9cb753 100644
+--- a/.pre-commit-config.yaml
++++ b/.pre-commit-config.yaml
+@@ -5,7 +5,7 @@
+ repos:
+   # Generic checks
+   - repo: https://github.com/pre-commit/pre-commit-hooks
+-    rev: v4.5.0
++    rev: v6.0.0
+     hooks:
+       - id: check-added-large-files
+         args: ['--maxkb=500']
+PR 3:
+diff --git a/.pre-commit-config.yaml b/.pre-commit-config.yaml
+index 2d69c2a..e93fb8e 100644
+--- a/.pre-commit-config.yaml
++++ b/.pre-commit-config.yaml
+@@ -26,7 +26,7 @@ repos:
+
+   # Shell script checks
+   - repo: https://github.com/shellcheck-py/shellcheck-py
+-    rev: v0.10.0.1
++    rev: v0.11.0.1
+     hooks:
+       - id: shellcheck
+         args: ['--severity=warning']
+PR 4:
+diff --git a/.github/workflows/security-scan.yml b/.github/workflows/security-scan.yml
+index a45b6bd..a2bbce3 100644
+--- a/.github/workflows/security-scan.yml
++++ b/.github/workflows/security-scan.yml
+@@ -135,7 +135,7 @@ jobs:
+
+       - name: Fallback Secret Scan with TruffleHog
+         if: steps.gitleaks.outcome == 'failure'
+-        uses: trufflesecurity/trufflehog@6bd2d14f7a4bc1e569fa3550efa7ec632a4fa67b  # v3.94.2
++        uses: trufflesecurity/trufflehog@47e7b7cd74f578e1e3145d48f669f22fd1330ca6  # v3.94.3
+         with:
+           path: ./
+           base: ""
+PR 5:
+diff --git a/.github/workflows/stale.yml b/.github/workflows/stale.yml
+index 1092a84..0699360 100644
+--- a/.github/workflows/stale.yml
++++ b/.github/workflows/stale.yml
+@@ -16,7 +16,7 @@ jobs:
+   stale:
+     runs-on: ubuntu-latest
+     steps:
+-      - uses: actions/stale@28ca1036281a5e5922ead5184a1bbf96e5fc984e  # v9.0.0
++      - uses: actions/stale@b5d41d4e1d5dceea10e7104786b73624c18a190f  # v10.2.0
+         with:
+           repo-token: ${{ secrets.GITHUB_TOKEN }}
+           stale-issue-message: >
+PR 6:
+diff --git a/.github/workflows/yaml-lint.yml b/.github/workflows/yaml-lint.yml
+index b60d504..c3ce664 100644
+--- a/.github/workflows/yaml-lint.yml
++++ b/.github/workflows/yaml-lint.yml
+@@ -51,7 +51,7 @@ jobs:
+       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+
+       - name: Run actionlint
+-        uses: reviewdog/action-actionlint@e0207a28405ecad11953ba625a95d92f7889572a  # v1
++        uses: reviewdog/action-actionlint@6fb7acc99f4a1008869fa8a0f09cfca740837d9d  # v1
+         with:
+           fail_level: error
+           filter_mode: nofilter
+PR 7:
+diff --git a/.github/workflows/commitlint.yml b/.github/workflows/commitlint.yml
+index 188c96a..87b7602 100644
+--- a/.github/workflows/commitlint.yml
++++ b/.github/workflows/commitlint.yml
+@@ -20,7 +20,7 @@ jobs:
+     runs-on: ubuntu-latest
+     steps:
+       - name: Checkout repository
+-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
++        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+         with:
+           fetch-depth: 0
+
+PR 8:
+diff --git a/.github/workflows/commitlint.yml b/.github/workflows/commitlint.yml
+index 188c96a..908d740 100644
+--- a/.github/workflows/commitlint.yml
++++ b/.github/workflows/commitlint.yml
+@@ -25,6 +25,6 @@ jobs:
+           fetch-depth: 0
+
+       - name: Lint commit messages
+-        uses: wagoid/commitlint-github-action@6cf16efdf4da5277c791d335142c03a0bdf1766e  # v6.2.1
++        uses: wagoid/commitlint-github-action@b948419dd99f3fd78a6548d48f94e3df7f6bf3ed  # v6.2.1
+         with:
+           configFile: commitlint.config.cjs
+PR 10:
+diff --git a/package.json b/package.json
+index 8f7f0c8..13423e8 100644
+--- a/package.json
++++ b/package.json
+@@ -41,8 +41,8 @@
+     "eslint-plugin-react-refresh": "^0.4.6",
+     "ts-node": "^10.9.2",
+     "typescript": "^5.2.2",
+-    "vite": "^5.2.0",
++    "vite": "^8.0.8",
+     "vitest": "^1.4.0",
+-    "happy-dom": "^14.0.0"
++    "happy-dom": "^20.9.0"
+   }
+ }
