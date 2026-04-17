@@ -164,3 +164,10 @@ This project is licensed under the [MIT License](https://opensource.org/licenses
 ---
 
 **Built with AI agents. Maintained by humans.**
+
+## New Features (2024 Update)
+- **Local RAG**: Context-aware chat using Orama search index.
+- **FTS5 Search**: Blazing fast full-text search integrated into SQLite.
+- **Static Site Export**: Turn your knowledge base into a shareable static site.
+- **Enhanced Graph**: Focus mode for deep neighborhood exploration.
+- **Swarm Analysis**: Secure multi-agent parallel web research using git worktrees.

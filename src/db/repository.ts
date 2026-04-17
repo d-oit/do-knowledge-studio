@@ -42,14 +42,30 @@ export class Repository {
 
   async searchEntities(query: string): Promise<Entity[]> {
     try {
+      // Use FTS5 for search
       const results = this.db.exec({
-        sql: `SELECT * FROM entities
-              WHERE name LIKE ? OR description LIKE ?
-              ORDER BY name ASC`,
-        bind: [`%${query}%`, `%${query}%`],
+        sql: `SELECT DISTINCT e.* FROM entities e
+              JOIN search_idx s ON e.id = s.entity_id
+              WHERE search_idx MATCH ?
+              ORDER BY rank`,
+        bind: [query],
         returnValue: 'resultRows',
         rowMode: 'object',
       });
+
+      // Fallback to LIKE if FTS5 returns nothing or for simple queries
+      if (results.length === 0) {
+        const fallback = this.db.exec({
+          sql: `SELECT * FROM entities
+                WHERE name LIKE ? OR description LIKE ?
+                ORDER BY name ASC`,
+          bind: [`%${query}%`, `%${query}%`],
+          returnValue: 'resultRows',
+          rowMode: 'object',
+        });
+        return (fallback as Record<string, unknown>[]).map((r) => this.parseMetadata<Entity>(r));
+      }
+
       return (results as Record<string, unknown>[]).map((r) => this.parseMetadata<Entity>(r));
     } catch (err) {
       logger.error('Failed to search entities', err);
