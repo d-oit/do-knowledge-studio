@@ -56,15 +56,17 @@ const Chat: React.FC = () => {
           </div>
         ))}
         {isSearching && (
-          <div className="message assistant">
+          <div className="message assistant" aria-live="polite">
             <div className="msg-content searching">Searching local database...</div>
           </div>
         )}
       </div>
       <div className="chat-controls">
         <div className="input-wrapper">
-          <Search size={18} className="search-icon" />
+          <Search size={18} className="search-icon" aria-hidden="true" />
+          <label htmlFor="chat-input" className="sr-only">Search entities or ask questions</label>
           <input
+            id="chat-input"
             value={input}
             onChange={e => setInput(e.target.value)}
             placeholder="Search entities or ask questions..."

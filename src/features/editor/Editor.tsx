@@ -15,6 +15,14 @@ const Editor: React.FC = () => {
   const [type, setType] = useState('note');
   const [allEntities, setAllEntities] = useState<Entity[]>([]);
   const [showMentionMenu, setShowMentionMenu] = useState(false);
+  const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+
+  useEffect(() => {
+    if (status) {
+      const timer = setTimeout(() => setStatus(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [status]);
 
   useEffect(() => {
     repository.getAllEntities().then(setAllEntities).catch(err => logger.error('Failed to load entities for mentions', err));
@@ -93,12 +101,12 @@ const Editor: React.FC = () => {
       }
 
       logger.info('Entity, note, claims and links saved', { id: entity.id, claims: claims.length, links: mentions.length });
-      alert(`Saved successfully! (${claims.length} claims, ${mentions.length} links)`);
+      setStatus({ type: 'success', message: `Saved successfully! (${claims.length} claims, ${mentions.length} links)` });
       setTitle('');
       editor.commands.setContent('<p></p>');
     } catch (err) {
       logger.error('Failed to save entity', err);
-      alert('Save failed. See console for details.');
+      setStatus({ type: 'error', message: 'Save failed. See console for details.' });
     }
   };
 
@@ -110,14 +118,22 @@ const Editor: React.FC = () => {
 
   return (
     <div className="editor-container">
+      {status && (
+        <div className={`status-message ${status.type}`} role="alert">
+          {status.message}
+        </div>
+      )}
       <div className="entity-meta">
+        <label htmlFor="entity-title" className="sr-only">Entity Name</label>
         <input
+          id="entity-title"
           className="title-input"
           value={title}
           onChange={e => setTitle(e.target.value)}
           placeholder="Entity Name (e.g. TRIZ)"
         />
-        <select value={type} onChange={e => setType(e.target.value)}>
+        <label htmlFor="entity-type" className="sr-only">Entity Type</label>
+        <select id="entity-type" value={type} onChange={e => setType(e.target.value)}>
           <option value="note">Note</option>
           <option value="concept">Concept</option>
           <option value="person">Person</option>
@@ -128,12 +144,16 @@ const Editor: React.FC = () => {
         <button
           onClick={() => editor?.chain().focus().toggleBold().run()}
           className={editor?.isActive('bold') ? 'active' : ''}
+          aria-label="Toggle Bold"
+          title="Bold"
         >
           B
         </button>
         <button
           onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}
           className={editor?.isActive('heading', { level: 1 }) ? 'active' : ''}
+          aria-label="Toggle Heading 1"
+          title="Heading 1"
         >
           H1
         </button>
@@ -141,16 +161,18 @@ const Editor: React.FC = () => {
           onClick={() => editor?.chain().focus().toggleClaim().run()}
           className={editor?.isActive('claim') ? 'active' : ''}
           title="Mark as Claim"
+          aria-label="Mark as Claim"
         >
-          <CheckCircle size={16} /> Claim
+          <CheckCircle size={16} aria-hidden="true" /> Claim
         </button>
         <div className="mention-tool">
           <button
             onClick={() => setShowMentionMenu(!showMentionMenu)}
             className={editor?.isActive('mention') ? 'active' : ''}
             title="Link to Entity"
+            aria-label="Link to Entity"
           >
-            <AtSign size={16} /> Mention
+            <AtSign size={16} aria-hidden="true" /> Mention
           </button>
           {showMentionMenu && (
             <div className="mention-menu">
