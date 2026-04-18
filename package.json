@@ -2,6 +2,23 @@
   "name": "do-knowledge-studio",
   "private": true,
   "version": "0.1.0",
+  "description": "Local-first knowledge studio — rich text, knowledge graph, mind maps, SQLite WASM FTS5 search, Orama RAG & AI agent harness. No backend required.",
+  "keywords": [
+    "local-first",
+    "react",
+    "typescript",
+    "vite",
+    "sqlite-wasm",
+    "fts5",
+    "full-text-search",
+    "orama",
+    "tiptap",
+    "knowledge-graph",
+    "mind-map",
+    "sigma-js",
+    "ai-agents",
+    "triz"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",

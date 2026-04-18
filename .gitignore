@@ -42,6 +42,12 @@ reports/
 .env
 .env.*
 !.env.example
+*.local
+
+# Build artifacts
+dist/
+playwright-report/
+test-results/
 
 # OS
 .DS_Store

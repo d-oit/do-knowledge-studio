@@ -57,7 +57,7 @@ class StranglerRouter:
     def route_request(self, 
                       business_capability: str, 
                       context: Dict,
-                      routing_key: Optional[str] = None) -> any:
+                      routing_key: Optional[str] = None) -> object:
         """
         Route request based on migration phase and rollout percentage.
         Uses consistent hashing for stable user routing.
