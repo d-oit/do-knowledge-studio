@@ -59,6 +59,21 @@ export const initSearch = async () => {
   }
 };
 
+/**
+ * Hydrates the search index when idle or requested.
+ */
+export const hydrateOramaIndex = () => {
+  if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+    (window as { requestIdleCallback: (cb: () => void) => void }).requestIdleCallback(() => {
+      initSearch().catch(err => logger.error('Deferred Orama hydration failed', err));
+    });
+  } else {
+    setTimeout(() => {
+      initSearch().catch(err => logger.error('Fallback Orama hydration failed', err));
+    }, 1000);
+  }
+};
+
 export const searchKnowledge = async (query: string) => {
   if (!oramaDb) await initSearch();
 

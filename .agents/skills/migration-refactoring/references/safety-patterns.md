@@ -749,8 +749,8 @@ class ConsistencyViolation:
     table: str
     primary_key: str
     field: str
-    old_value: any
-    new_value: any
+    old_value: object
+    new_value: object
     timestamp: datetime
     severity: str
 
