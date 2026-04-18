@@ -1,95 +1,149 @@
-# GitHub Template AI Agents
+# do-knowledge-studio
 
-> Production-ready template for AI agent-powered development with Claude Code, Gemini CLI, OpenCode, Qwen Code, and more.
+> A local-first knowledge management studio — rich notes, knowledge graph, mind maps, full-text search, and AI agent integration in a single browser-based app.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Template Version](https://img.shields.io/badge/version-0.2.4-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-0.1.0-blue)](VERSION)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![Built with React](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org)
+[![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite)](https://vitejs.dev)
 
-**Quick Links**: [Quick Start](#-quick-start) · [Documentation](#-documentation) · [Contributing](#-contributing)
+**Quick Links**: [Quick Start](#-quick-start) · [Features](#-features) · [Architecture](#-architecture) · [AI Agents](#-ai-agent-integration) · [Contributing](#-contributing)
 
 ---
 
 ## What Is This?
 
-A unified harness for AI coding agents that provides consistent workflows across Claude Code, Gemini CLI, OpenCode, Qwen Code, Windsurf, Cursor, and Copilot Chat. Built for teams who want to scale AI-assisted development with quality gates, skills, and sub-agent patterns.
+**do-knowledge-studio** is a local-first, offline-capable knowledge management application built with React, TypeScript, and SQLite WASM. It combines a rich-text editor, an interactive knowledge graph, mind mapping, blazing-fast full-text search, and a static site export — all running entirely in the browser with no backend required.
 
-**Key Features**:
-- ✓ **Multi-Agent Support**: Works with 6+ AI coding tools simultaneously
-- ✓ **Skills System**: Reusable knowledge modules in canonical location
-- ✓ **Quality Gates**: Automatic lint, test, format before commits
-- ✓ **Context Discipline**: Prevents context rot with sub-agents and hooks
-- ✓ **Dependabot Integration**: Automated security and version updates
+It also ships with a production-ready **AI agent harness** supporting Claude Code, Gemini CLI, OpenCode, Qwen Code, Windsurf, and Cursor — making it a great base for AI-assisted personal knowledge management workflows.
 
-## Quick Start (2 Minutes)
+---
+
+## ✨ Features
+
+- **📝 Rich Text Editor** — TipTap-powered WYSIWYG editor with Markdown support and placeholder hints
+- **🗄️ Local SQLite Database** — Persistent, offline-first storage via `@sqlite.org/sqlite-wasm` with FTS5 full-text search
+- **🔍 Semantic & Full-Text Search** — Orama-powered in-browser search index for fast, context-aware retrieval
+- **🕸️ Knowledge Graph** — Interactive node-link graph built with Graphology + Sigma.js; focus mode for deep neighborhood exploration
+- **🧠 Mind Maps** — Visual mind mapping with Mind Elixir for brainstorming and concept structuring
+- **📤 Static Site Export** — Turn your knowledge base into a shareable, self-contained static site
+- **🤖 Multi-Agent AI Harness** — Unified workflow across 6+ AI coding tools with skills, quality gates, and sub-agent patterns
+- **🔬 Swarm Analysis** — Parallel AI-powered web research using git worktrees
+- **⚡ CLI** — TypeScript CLI for scripting and automation tasks
+- **🧪 Full Test Suite** — Vitest unit tests + Playwright end-to-end tests
+
+---
+
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- One or more AI coding CLI tools ([Claude Code](https://claude.ai/code), [Gemini CLI](https://gemini.google.com), [OpenCode](https://opencode.ai), [Qwen Code](https://github.com/QwenLM/Qwen-Coder))
-- Git 2.30+ ([install](https://git-scm.com))
+- **Node.js** 20+ ([install](https://nodejs.org))
+- A modern browser (Chrome, Firefox, Edge)
+- *(Optional)* An AI coding CLI: [Claude Code](https://claude.ai/code), [Gemini CLI](https://gemini.google.com), [OpenCode](https://opencode.ai), [Qwen Code](https://github.com/QwenLM/Qwen-Coder)
 
 ### Installation
 
 ```bash
-# Use this template on GitHub, then clone
-git clone https://github.com/your-org/your-project.git
-cd your-project
+git clone https://github.com/d-oit/do-knowledge-studio.git
+cd do-knowledge-studio
+npm install
 ```
 
-### Setup
+### Development
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+### Build
+
+```bash
+npm run build
+npm run preview
+```
+
+### Environment
+
+```bash
+cp .env.example .env
+# Edit .env as needed
+```
+
+---
+
+## 🏗️ Architecture
+
+```
+src/
+├── app/          # React app shell, routing, layout
+├── db/           # SQLite WASM database layer + FTS5 search
+├── features/     # Feature modules (editor, graph, mindmap, search, export)
+├── lib/          # Shared utilities and Orama search index
+└── main.tsx      # Entry point
+
+cli/              # TypeScript CLI for automation
+export/           # Static site export engine
+scripts/          # Setup and quality gate scripts
+tests/            # Playwright e2e tests
+```
+
+### Tech Stack
+
+| Layer | Technology |
+|---|---|
+| UI Framework | React 18 + TypeScript 5 |
+| Build Tool | Vite 8 |
+| Database | SQLite WASM (FTS5) |
+| Search | Orama 3 |
+| Rich Text | TipTap 2 |
+| Graph | Graphology + Sigma.js |
+| Mind Map | Mind Elixir 5 |
+| Validation | Zod |
+| Icons | Lucide React |
+| Unit Tests | Vitest 4 |
+| E2E Tests | Playwright |
+
+---
+
+## 🤖 AI Agent Integration
+
+This project ships with a unified AI agent harness that works across multiple tools:
+
+```
+AGENTS.md           # Single source of truth for all agents
+├── CLAUDE.md       # Claude Code overrides
+├── GEMINI.md       # Gemini CLI overrides
+├── QWEN.md         # Qwen Code overrides
+└── opencode.json   # OpenCode configuration
+```
+
+### Skills System
+
+Reusable knowledge modules live in `.agents/skills/` and are symlinked into each tool's config directory:
+
+```
+.agents/skills/         # Canonical skill source
+.claude/skills/         # Symlinks → ../../.agents/skills/
+.gemini/skills/         # Symlinks → ../../.agents/skills/
+.qwen/skills/           # Symlinks → ../../.agents/skills/
+```
+
+### Setup Agent Skills
 
 ```bash
 # Create skill symlinks (run once)
 ./scripts/setup-skills.sh
 
-# Install git pre-commit hook
-cp scripts/pre-commit-hook.sh .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
-```
-
-### Verify
-
-```bash
+# Validate setup
 ./scripts/validate-skills.sh
 ```
 
-Expected output:
-```
-✓ All skill symlinks intact
-✓ SKILL.md files valid
-```
-
-## Core Concepts
-
-### Single Source of Truth
-
-All agents read from `AGENTS.md` - CLI-specific files (`.claude.md`, `.gemini.md`) contain only overrides.
-
-```
-AGENTS.md → Single source of truth
-├── CLAUDE.md → Overrides only (@AGENTS.md)
-├── GEMINI.md → Overrides only (@AGENTS.md)
-└── opencode.json → Configuration
-```
-
-### Skills with Progressive Disclosure
-
-Skills live canonically in `.agents/skills/`. Claude Code, Gemini CLI, and Qwen Code use
-symlinks; OpenCode reads directly from `.agents/skills/`:
-
-```
-.agents/skills/           # Canonical source (single location)
-├── task-decomposition/
-├── shell-script-quality/
-└── github-readme/
-
-.claude/skills/           # Symlinks → ../../.agents/skills/
-.gemini/skills/           # Symlinks → ../../.agents/skills/
-.qwen/skills/             # Symlinks → ../../.agents/skills/
-```
-
 ### Sub-Agent Patterns
-
-Delegate isolated tasks to sub-agents for context isolation:
 
 ```mermaid
 graph LR
@@ -101,73 +155,75 @@ graph LR
     E --> F
 ```
 
-## Usage Examples
+---
 
-### Basic: Run with Claude Code
-
-```bash
-claude "Implement user authentication with OAuth2"
-```
-
-### Advanced: Multi-Agent Coordination
+## 🧪 Testing
 
 ```bash
-# Main agent decomposes task, delegates to sub-agents
-claude "/task-decomposition Implement the new API endpoint"
+# Unit tests
+npm run test
+
+# Watch mode
+npm run test:watch
+
+# End-to-end tests
+npm run test:e2e
+
+# Type checking
+npm run typecheck
+
+# Lint
+npm run lint
 ```
-
-### Quality Gate (Automatic)
-
-```bash
-# Pre-commit hook runs automatically
-git commit -m "feat: add user registration"
-
-# Or run manually
-./scripts/quality_gate.sh
-```
-
-## Documentation
-
-- 📚 **[AGENTS.md](AGENTS.md)** - Main agent instructions (single source of truth)
-- 📖 **[Quick Start](QUICKSTART.md)** - 5-minute setup guide
-- 🏗️ **[Harness Overview](agents-docs/HARNESS.md)** - Architecture and patterns
-- 🪝 **[Skills Guide](agents-docs/SKILLS.md)** - Creating reusable skills
-- 🤖 **[Sub-Agents](agents-docs/SUB-AGENTS.md)** - Context isolation patterns
-- 🔧 **[Hooks](agents-docs/HOOKS.md)** - Pre/post tool hooks
-- 📊 **[Context](agents-docs/CONTEXT.md)** - Back-pressure mechanisms
-- ⚙️ **[Configuration](agents-docs/CONFIG.md)** - Repository constants and utilities
-- 🔄 **[Migration](agents-docs/MIGRATION.md)** - Adopting in existing projects
-
-## Available Skills
-
-See `agents-docs/AVAILABLE_SKILLS.md` for the full auto-generated list of all available skills.
-
-Run `ls .agents/skills/` to see all skill directories, or check the [Available Skills](agents-docs/AVAILABLE_SKILLS.md) reference.
-
-## Contributing
-
-We welcome contributions! See our [Contributing Guide](CONTRIBUTING.md) for:
-- Development environment setup
-- Good first issues
-- Code style and testing requirements
-- Pull request process
-
-## Community
-
-- 🐛 [Issue Tracker](../../issues) - Report bugs
-- 📝 [Discussions](../../discussions) - Ask questions
-
-## License
-
-This project is licensed under the [MIT License](https://opensource.org/licenses/MIT) - see the LICENSE file for details.
 
 ---
 
-**Built with AI agents. Maintained by humans.**
+## ⚙️ CLI
 
-## New Features (2024 Update)
-- **Local RAG**: Context-aware chat using Orama search index.
-- **FTS5 Search**: Blazing fast full-text search integrated into SQLite.
-- **Static Site Export**: Turn your knowledge base into a shareable static site.
-- **Enhanced Graph**: Focus mode for deep neighborhood exploration.
-- **Swarm Analysis**: Secure multi-agent parallel web research using git worktrees.
+```bash
+npm run cli -- <command>
+```
+
+See `cli/` directory for available commands and scripting options.
+
+---
+
+## 📚 Documentation
+
+- 📖 **[AGENTS.md](AGENTS.md)** — AI agent instructions (single source of truth)
+- ⚡ **[QUICKSTART.md](QUICKSTART.md)** — 5-minute setup guide
+- 🏗️ **[Harness Overview](agents-docs/HARNESS.md)** — Architecture and patterns
+- 🪝 **[Skills Guide](agents-docs/SKILLS.md)** — Creating reusable skills
+- 🤖 **[Sub-Agents](agents-docs/SUB-AGENTS.md)** — Context isolation patterns
+- 🔧 **[Hooks](agents-docs/HOOKS.md)** — Pre/post tool hooks
+- 📊 **[Context](agents-docs/CONTEXT.md)** — Back-pressure mechanisms
+- ⚙️ **[Configuration](agents-docs/CONFIG.md)** — Repository constants and utilities
+- 🔄 **[Migration](agents-docs/MIGRATION.md)** — Adopting in existing projects
+- 🔒 **[Security](SECURITY.md)** — Security policy and reporting
+- 📝 **[Changelog](CHANGELOG.md)** — Release history
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
+
+- Development environment setup
+- Code style and testing requirements
+- Pull request process
+- Good first issues
+
+## Community
+
+- 🐛 [Issue Tracker](../../issues) — Report bugs
+- 💬 [Discussions](../../discussions) — Ask questions
+
+---
+
+## License
+
+Licensed under the [MIT License](LICENSE).
+
+---
+
+**Local-first. AI-assisted. Built to think.**
