@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import { initDb } from '../db/client';
 import { repository } from '../db/repository';
 import { logger } from '../lib/logger';
 import { Entity, Link } from '../lib/validation';
-import Editor from '../features/editor/Editor';
-import GraphView from '../features/graph/GraphView';
-import MindMapView from '../features/mindmap/MindMapView';
-import Chat from '../features/chat/Chat';
 import '../styles/index.css';
+
+const Editor = lazy(() => import('../features/editor/Editor'));
+const GraphView = lazy(() => import('../features/graph/GraphView'));
+const MindMapView = lazy(() => import('../features/mindmap/MindMapView'));
+const Chat = lazy(() => import('../features/chat/Chat'));
 
 type View = 'editor' | 'graph' | 'mindmap' | 'chat';
 
@@ -96,18 +97,20 @@ const App: React.FC = () => {
         </ul>
       </nav>
       <main className="main-content">
-        {currentView === 'editor' && <Editor />}
-        {currentView === 'graph' && <GraphView entities={entities} links={links} />}
-        {currentView === 'mindmap' && entities.length > 0 && (
-          <MindMapView
-            rootEntity={entities[0]}
-            relatedEntities={entities.slice(1, 10)}
-          />
-        )}
-        {currentView === 'mindmap' && entities.length === 0 && (
-           <div className="empty-state">No entities found. Create some in the Editor first.</div>
-        )}
-        {currentView === 'chat' && <Chat />}
+        <Suspense fallback={<div className="loading-screen">Loading view...</div>}>
+          {currentView === 'editor' && <Editor />}
+          {currentView === 'graph' && <GraphView entities={entities} links={links} />}
+          {currentView === 'mindmap' && entities.length > 0 && (
+            <MindMapView
+              rootEntity={entities[0]}
+              relatedEntities={entities.slice(1, 10)}
+            />
+          )}
+          {currentView === 'mindmap' && entities.length === 0 && (
+             <div className="empty-state">No entities found. Create some in the Editor first.</div>
+          )}
+          {currentView === 'chat' && <Chat />}
+        </Suspense>
       </main>
     </div>
   );
