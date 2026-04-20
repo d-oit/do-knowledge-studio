@@ -1,5 +1,6 @@
 ---
 name: stitch-design
+version: 0.1.0
 description: >
   Headless Stitch CLI / MCP skill for automated UI/UX design and rendering.
   Orchestrates responsive layouts across all breakpoints (mobile, tablet, desktop, large screens)

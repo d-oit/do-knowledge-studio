@@ -36,6 +36,8 @@
 - `triz-analysis`: Applying TRIZ to knowledge management.
 - `local-chat-policy`: Synthesis without data leakage using Orama search.
 - `validation-checklist`: Ensuring schema integrity.
+- `stitch-design`: Headless Stitch CLI/MCP for automated responsive UI design and rendering.
+- `jules-implement`: Repo-aware implementation agent with delta-based targeted research and validation.
 
 ## Single Source of Truth
 This file (`AGENTS.md`) is the source of truth for all agents. Agent-specific instructions live in `.agents/`.
