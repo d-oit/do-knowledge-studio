@@ -17,6 +17,8 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
           fetch-depth: 0
 
       - name: Propagate version to all files
@@ -34,5 +36,6 @@ jobs:
             echo "No version changes to commit"
           else
             git commit -m "chore: propagate version $VERSION to all files"
-            git push
+            # Explicitly provide token for push when persist-credentials is false
+            git push "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:${{ github.ref }}
           fi
