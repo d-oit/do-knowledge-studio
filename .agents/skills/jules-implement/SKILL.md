@@ -1,5 +1,6 @@
 ---
 name: jules-implement
+version: 0.1.0
 description: >
   Repository-aware implementation agent that handles delta-based targeted research,
   code generation, and validation of Stitch-rendered designs.
