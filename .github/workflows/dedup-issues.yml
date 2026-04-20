@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Close issues flagged duplicate 3+ days ago
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: |
             const cutoff = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
@@ -164,7 +164,7 @@ jobs:
         id: dedup_rulebased
         # Skip if LLM already found a match
         if: steps.dedup_llm.outputs.duplicate_of == ''
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         env:
           ISSUE_NUMBER: ${{ github.event.issue.number || github.event.inputs.issue_number }}
         with:
@@ -295,7 +295,7 @@ jobs:
         if: >-
           steps.dedup_llm.outputs.duplicate_of != '' ||
           steps.dedup_rulebased.outputs.duplicate_of != ''
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         env:
           LLM_RESULT: ${{ steps.dedup_llm.outputs.duplicate_of }}
           RULE_RESULT: ${{ steps.dedup_rulebased.outputs.duplicate_of }}
@@ -314,7 +314,7 @@ jobs:
       # Step 4: If duplicate found — label + comment
       - name: Label and comment if duplicate
         if: steps.resolved.outputs.duplicate_of != ''
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         env:
           CANONICAL: ${{ steps.resolved.outputs.duplicate_of }}
           METHOD: ${{ steps.resolved.outputs.method }}
