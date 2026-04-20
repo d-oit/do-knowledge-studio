@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "stitch": {
+      "command": "stitch-mcp",
+      "args": [],
+      "env": {
+        "GOOGLE_CLOUD_PROJECT": "do-knowledge-studio-dev"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "stitch-design",
+        "stitch-render",
+        "stitch-export"
+      ]
+    }
+  }
+}

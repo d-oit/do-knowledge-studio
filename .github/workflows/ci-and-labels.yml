@@ -28,6 +28,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
 
       - name: Ensure script is executable
         run: chmod +x scripts/gh-labels-creator.sh
@@ -44,6 +47,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
 
       - name: Setup skills
         run: ./scripts/setup-skills.sh
@@ -61,7 +67,7 @@ jobs:
         if: hashFiles('Cargo.toml') != ''
 
       - name: Setup Python (if requirements.txt or pyproject.toml exists)
-        uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55  # v5.5.0
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
           python-version: '3.11'
         if: >-
@@ -105,6 +111,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
 
       - name: Setup Node.js (if package.json exists)
         uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a  # v4.2.0
@@ -117,7 +126,7 @@ jobs:
         if: hashFiles('Cargo.toml') != ''
 
       - name: Setup Python (if requirements.txt or pyproject.toml exists)
-        uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55  # v5.5.0
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
           python-version: '3.11'
         if: >-
