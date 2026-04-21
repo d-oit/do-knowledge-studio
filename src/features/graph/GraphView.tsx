@@ -59,10 +59,50 @@ const GraphView: React.FC<Props> = ({
     };
   }, [entities, links, selectedNode, focusMode]);
 
+  const graph = useMemo(() => new Graph(), []);
+
+  // Initialize Sigma
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const graph = new Graph();
+    if (!sigmaInstance.current) {
+      sigmaInstance.current = new Sigma(graph, containerRef.current, {
+        renderEdgeLabels: true,
+        defaultEdgeType: 'arrow',
+        labelRenderedSizeThreshold: 10
+      });
+
+      const camera = sigmaInstance.current.getCamera();
+      camera.on('updated', () => {
+        const ratio = camera.ratio;
+        // LOD: Hide edge labels when zoomed out (ratio > 2)
+        const shouldRenderEdgeLabels = ratio < 2;
+        if (sigmaInstance.current && sigmaInstance.current.getSetting('renderEdgeLabels') !== shouldRenderEdgeLabels) {
+          sigmaInstance.current.setSetting('renderEdgeLabels', shouldRenderEdgeLabels);
+        }
+      });
+
+      sigmaInstance.current.on('clickNode', ({ node }) => {
+        setSelectedNode(node);
+      });
+
+      sigmaInstance.current.on('clickStage', () => {
+        setSelectedNode(null);
+        setFocusMode(false);
+      });
+    }
+
+    return () => {
+      if (sigmaInstance.current) {
+        sigmaInstance.current.kill();
+        sigmaInstance.current = null;
+      }
+    };
+  }, [graph]);
+
+  // Update Graph Data
+  useEffect(() => {
+    graph.clear();
 
     if (filteredData.entities.length === 0 && !focusMode) {
       // Show default placeholder if no data
@@ -88,27 +128,21 @@ const GraphView: React.FC<Props> = ({
       });
     }
 
-    if (sigmaInstance.current) {
-        sigmaInstance.current.kill();
-    }
+    sigmaInstance.current?.refresh();
+  }, [graph, filteredData, selectedNode, focusMode]);
 
-    sigmaInstance.current = new Sigma(graph, containerRef.current, {
-      renderEdgeLabels: true,
-      defaultEdgeType: 'arrow'
+  // Handle Resizing
+  useEffect(() => {
+    if (!containerRef.current || !sigmaInstance.current) return;
+
+    const observer = new ResizeObserver(() => {
+      sigmaInstance.current?.refresh();
     });
 
-    sigmaInstance.current.on('clickNode', ({ node }) => {
-      setSelectedNode(node);
-    });
-
-    sigmaInstance.current.on('clickStage', () => {
-      setSelectedNode(null);
-      setFocusMode(false);
-    });
+    observer.observe(containerRef.current);
 
     return () => {
-      sigmaInstance.current?.kill();
-      sigmaInstance.current = null;
+      observer.disconnect();
     };
   }, [filteredData, selectedNode, focusMode, setFocusMode, setSelectedNode]);
 
