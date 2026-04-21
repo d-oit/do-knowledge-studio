@@ -149,101 +149,6 @@ jobs:
           extra_args: --debug --only-verified
         continue-on-error: true
 
-  # ============================================================================
-  # CODEQL ANALYSIS
-  # NOTE: CodeQL has limited support for shell/bash. This job is kept for
-  # future if JavaScript/TypeScript or Python is added to the project.
-  # Currently skipped as this is primarily a shell script repository.
-  # ============================================================================
-  codeql:
-    name: CodeQL Analysis
-    runs-on: ubuntu-latest
-    # Allow job to fail/skip without blocking the workflow
-    continue-on-error: true
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          persist-credentials: false
-          fetch-depth: 0
-
-      - name: Check for JavaScript/Python files
-        id: check_files
-        # yamllint disable-line rule:line-length
-        run: |
-          # Check if there are any JS/TS or Python files to analyze
-          if find . -name "*.js" -o -name "*.ts" -o -name "*.py" | grep -q .; then
-            echo "has_codeql_files=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_codeql_files=false" >> "$GITHUB_OUTPUT"
-            # yamllint disable-line rule:line-length
-            echo "ℹ️ No JavaScript/TypeScript/Python files found. Skipping CodeQL analysis."
-          fi
-
-      - name: Initialize CodeQL
-        if: steps.check_files.outputs.has_codeql_files == 'true'
-        uses: github/codeql-action/init@3b1a19a80ab047f35cbb237b5bd9bdc1e14f166c  # v3
-        continue-on-error: true
-        with:
-          languages: javascript,python
-          queries: security-extended,security-and-quality
-
-      - name: Autobuild
-        if: steps.check_files.outputs.has_codeql_files == 'true'
-        uses: github/codeql-action/autobuild@3b1a19a80ab047f35cbb237b5bd9bdc1e14f166c  # v3
-        continue-on-error: true
-
-      - name: Perform CodeQL Analysis
-        if: steps.check_files.outputs.has_codeql_files == 'true'
-        uses: github/codeql-action/analyze@3b1a19a80ab047f35cbb237b5bd9bdc1e14f166c  # v3
-        continue-on-error: true
-        with:
-          category: "/language:javascript"
-
-      - name: Generate empty CodeQL SARIF (no supported files found)
-        if: steps.check_files.outputs.has_codeql_files == 'false'
-        run: |
-          # Upload an empty but valid SARIF so GitHub's code scanning check
-          # resolves cleanly instead of erroring with "Error when processing
-          # the SARIF file" (caused by a pre-registered check run with
-          # no upload).
-          cat > codeql-empty-results.sarif << 'EOF'
-          {
-            # yamllint disable-line rule:line-length
-            "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
-            "version": "2.1.0",
-            "runs": [
-              {
-                "tool": {
-                  "driver": {
-                    "name": "CodeQL",
-                    "informationUri": "https://codeql.github.com/",
-                    "rules": []
-                  }
-                },
-                "results": [],
-                "properties": {
-                  "semmle.formatSpecifier": "sarifv2.1.0"
-                }
-              }
-            ]
-          }
-          EOF
-
-      - name: Upload empty CodeQL SARIF (no supported files found)
-        if: steps.check_files.outputs.has_codeql_files == 'false'
-        uses: github/codeql-action/upload-sarif@3b1a19a80ab047f35cbb237b5bd9bdc1e14f166c  # v3
-        continue-on-error: true
-        with:
-          sarif_file: codeql-empty-results.sarif
-          category: "/language:javascript"
-
-  # ============================================================================
   # INFRASTRUCTURE AS CODE SCAN
   # Scan GitHub Actions workflows and other IaC for misconfigurations
   # ============================================================================
@@ -287,7 +192,6 @@ jobs:
       - shellcheck-security
       - trivy-fs
       - secret-detection
-      - codeql
       - iac-scan
     if: always()
     steps:
@@ -302,7 +206,6 @@ jobs:
           echo "  • ShellCheck Security: ${{ needs.shellcheck-security.result }}"
           echo "  • Trivy Filesystem: ${{ needs.trivy-fs.result }}"
           echo "  • Secret Detection: ${{ needs.secret-detection.result }}"
-          echo "  • CodeQL Analysis: ${{ needs.codeql.result }}"
           echo "  • IaC Scan: ${{ needs.iac-scan.result }}"
           echo ""
 
@@ -310,10 +213,7 @@ jobs:
           shellcheck_result="${{ needs.shellcheck-security.result }}"
           trivy_result="${{ needs.trivy-fs.result }}"
           secret_result="${{ needs.secret-detection.result }}"
-          codeql_result="${{ needs.codeql.result }}"
 
-          # Normalize results (treat skipped and codeql as OK for shell repos)
-          # This is a shell script repo, so CodeQL will not find analyzable code
           if [[ "$shellcheck_result" == "failure" ]] || \
              [[ "$trivy_result" == "failure" ]] || \
              [[ "$secret_result" == "failure" ]]; then
@@ -322,10 +222,6 @@ jobs:
             exit 1
           else
             echo "✅ All critical security checks passed."
-            if [[ "$codeql_result" == "failure" ]]; then
-              # yamllint disable-line rule:line-length
-              echo "   ℹ️ CodeQL skipped (no supported languages in shell script repo)"
-            fi
           fi
           echo ""
           echo "All scan results available in the Security tab:"

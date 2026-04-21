@@ -10,7 +10,7 @@ interface Message {
 
 interface SearchResult {
   name: string;
-  description: string;
+  excerpt: string;
 }
 
 const Chat: React.FC = () => {
@@ -32,7 +32,7 @@ const Chat: React.FC = () => {
 
       let response = `I found ${results.length} relevant items in your local knowledge base.`;
       if (results.length > 0) {
-        response += '\n\nResults:\n' + results.slice(0, 5).map((r: SearchResult) => `- ${r.name}: ${r.description}`).join('\n');
+        response += '\n\nResults:\n' + results.slice(0, 5).map((r: SearchResult) => `- ${r.name}: ${r.excerpt}`).join('\n');
         if (results.length > 5) response += `\n\n(Plus ${results.length - 5} more...)`;
       } else {
         response += '\n\nTry searching for different keywords or create new entities in the Editor.';

@@ -1,13 +1,13 @@
 import { create, insert, search, type Orama } from '@orama/orama';
 import { repository } from '../db/repository.js';
 import { logger } from './logger.js';
+import { compressText } from './nlp.js';
 
 interface SearchDoc {
   id: string;
   name: string;
   type: string;
-  description: string;
-  content: string;
+  excerpt: string;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -22,8 +22,7 @@ export const initSearch = async () => {
         id: 'string',
         name: 'string',
         type: 'string',
-        description: 'string',
-        content: 'string',
+        excerpt: 'string',
       },
     });
 
@@ -33,8 +32,7 @@ export const initSearch = async () => {
         id: entity.id!,
         name: entity.name,
         type: entity.type,
-        description: entity.description || '',
-        content: `${entity.name} ${entity.description || ''}`,
+        excerpt: compressText(`${entity.name} ${entity.description || ''}`),
       };
       await insert(oramaDb!, doc as unknown as Record<string, string>);
 
@@ -44,8 +42,7 @@ export const initSearch = async () => {
           id: claim.id!,
           name: entity.name,
           type: 'claim',
-          description: claim.statement,
-          content: claim.statement,
+          excerpt: compressText(claim.statement),
         };
         await insert(oramaDb!, claimDoc as unknown as Record<string, string>);
       }
@@ -79,7 +76,7 @@ export const searchKnowledge = async (query: string) => {
 
   const results = await search(oramaDb!, {
     term: query,
-    properties: ['name', 'description', 'content'],
+    properties: ['name', 'excerpt'],
   });
 
   return results.hits.map(hit => hit.document);

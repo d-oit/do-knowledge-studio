@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   auto-merge:
-    if: github.actor == 'dependabot[bot]'
+    if: github.actor == 'dependabot[bot]' || github.actor == 'google-labs-jules[bot]'
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
