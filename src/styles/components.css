@@ -1,0 +1,234 @@
+/* Navigation Styles */
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand {
+  padding: var(--space-6);
+  font-weight: 700;
+  font-size: var(--size-heading);
+  border-bottom: 1px solid var(--border-default);
+}
+
+.nav-links {
+  list-style: none;
+  padding: var(--space-2);
+  margin: 0;
+}
+
+.nav-links li {
+  margin-bottom: var(--space-1);
+}
+
+.nav-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: var(--space-3) var(--space-6);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-base);
+  color: var(--text-secondary);
+  font-weight: 500;
+  transition: all var(--motion-fast);
+  text-align: left;
+  min-height: 44px;
+}
+
+.nav-button:hover {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  border-color: transparent;
+}
+
+.nav-button.active {
+  background: var(--bg-active);
+  color: var(--interactive-primary);
+  font-weight: 600;
+  border-color: transparent;
+}
+
+/* Search Panel Styles */
+.search-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.search-header {
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--border-default);
+  display: flex;
+  gap: var(--space-2);
+}
+
+.search-results {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-2);
+}
+
+.search-result-item {
+  padding: var(--space-3);
+  border-radius: var(--radius-base);
+  cursor: pointer;
+  transition: background var(--motion-fast);
+}
+
+.search-result-item:hover {
+  background: var(--bg-base);
+}
+
+.result-type {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.result-name {
+  font-weight: 600;
+  margin-bottom: var(--space-1);
+}
+
+.result-description {
+  font-size: 13px;
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Mobile Overlays */
+.mobile-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-overlay);
+  z-index: 1000;
+}
+
+.mobile-drawer-content {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 280px;
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.drawer-extra-controls {
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--border-default);
+}
+
+.drawer-extra-controls h3 {
+  font-size: 14px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: var(--space-4);
+  letter-spacing: 0.05em;
+}
+
+.viz-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.drawer-header {
+  padding: var(--space-2) var(--space-4);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.mobile-search-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-surface);
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Interactive Elements - Best Practice */
+button {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-base);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  cursor: pointer;
+  min-height: 44px; /* A11y: minimum tap target */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  transition: all var(--motion-fast);
+}
+
+.icon-button {
+  padding: var(--space-2);
+  border: none;
+  background: transparent;
+  width: 44px;
+  height: 44px;
+}
+
+button:hover:not(:disabled) {
+  background: var(--bg-base);
+  border-color: var(--text-muted);
+}
+
+button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--border-focus);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--interactive-disabled);
+}
+
+button.primary {
+  background: var(--interactive-primary);
+  color: var(--text-inverse);
+  border: none;
+}
+
+button.primary:hover:not(:disabled) {
+  background: var(--interactive-hover);
+}
+
+input, select {
+  font-family: inherit;
+  font-size: 16px; /* Prevents auto-zoom on iOS */
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-base);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  min-height: 44px;
+  width: 100%;
+  transition: border-color var(--motion-fast);
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}

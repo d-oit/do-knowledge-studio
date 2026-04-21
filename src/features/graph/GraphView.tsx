@@ -1,19 +1,46 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import Sigma from 'sigma';
 import Graph from 'graphology';
 import { Entity, Link } from '../../lib/validation';
-import { Focus } from 'lucide-react';
+import { GraphControls } from './GraphControls';
 
 interface Props {
   entities: Entity[];
   links: Link[];
+  focusMode?: boolean;
+  onFocusModeChange?: (focus: boolean) => void;
+  selectedNode?: string | null;
+  onSelectedNodeChange?: (nodeId: string | null) => void;
+  hideToolbar?: boolean;
 }
 
-const GraphView: React.FC<Props> = ({ entities, links }) => {
+const GraphView: React.FC<Props> = ({
+  entities,
+  links,
+  focusMode: propsFocusMode,
+  onFocusModeChange,
+  selectedNode: propsSelectedNode,
+  onSelectedNodeChange,
+  hideToolbar
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const sigmaInstance = useRef<Sigma | null>(null);
-  const [selectedNode, setSelectedNode] = useState<string | null>(null);
-  const [focusMode, setFocusMode] = useState(false);
+
+  const [internalSelectedNode, setInternalSelectedNode] = useState<string | null>(null);
+  const [internalFocusMode, setInternalFocusMode] = useState(false);
+
+  const selectedNode = propsSelectedNode !== undefined ? propsSelectedNode : internalSelectedNode;
+  const focusMode = propsFocusMode !== undefined ? propsFocusMode : internalFocusMode;
+
+  const setSelectedNode = useCallback((node: string | null) => {
+    if (onSelectedNodeChange) onSelectedNodeChange(node);
+    else setInternalSelectedNode(node);
+  }, [onSelectedNodeChange]);
+
+  const setFocusMode = useCallback((focus: boolean) => {
+    if (onFocusModeChange) onFocusModeChange(focus);
+    else setInternalFocusMode(focus);
+  }, [onFocusModeChange]);
 
   const filteredData = useMemo(() => {
     if (!focusMode || !selectedNode) {
@@ -83,25 +110,20 @@ const GraphView: React.FC<Props> = ({ entities, links }) => {
       sigmaInstance.current?.kill();
       sigmaInstance.current = null;
     };
-  }, [filteredData, selectedNode, focusMode]);
+  }, [filteredData, selectedNode, focusMode, setFocusMode, setSelectedNode]);
 
   return (
     <div className="graph-container">
-      <div className="viz-toolbar">
-        <button
-          onClick={() => setFocusMode(!focusMode)}
-          className={focusMode ? 'active' : ''}
-          disabled={!selectedNode}
-          title={!selectedNode ? "Select a node first" : "Toggle Neighborhood Focus"}
-        >
-          <Focus size={16} /> {focusMode ? 'Show All' : 'Focus Neighborhood'}
-        </button>
-        {selectedNode && (
-          <div className="selection-info">
-            Selected: <strong>{entities.find(e => e.id === selectedNode)?.name}</strong>
-          </div>
-        )}
-      </div>
+      {!hideToolbar && (
+        <div className="viz-toolbar">
+          <GraphControls
+            focusMode={focusMode}
+            setFocusMode={setFocusMode}
+            hasSelection={!!selectedNode}
+            selectedName={entities.find(e => e.id === selectedNode)?.name}
+          />
+        </div>
+      )}
       <div ref={containerRef} className="viz-container" style={{ height: '600px', width: '100%' }} />
     </div>
   );

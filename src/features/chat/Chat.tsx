@@ -63,7 +63,7 @@ const Chat: React.FC = () => {
         ))}
         {isSearching && (
           <div className="message assistant" aria-live="polite">
-            <div className="msg-content searching">Searching local database...</div>
+            <div className="msg-content searching-status">Searching local database...</div>
           </div>
         )}
       </div>
@@ -75,7 +75,7 @@ const Chat: React.FC = () => {
             id="chat-input"
             value={input}
             onChange={e => setInput(e.target.value)}
-            placeholder="Search entities or ask questions..."
+            placeholder="Search or ask..."
             onKeyDown={e => e.key === 'Enter' && handleSend()}
             disabled={isSearching}
           />
