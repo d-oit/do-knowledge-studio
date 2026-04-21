@@ -3,14 +3,11 @@
 > A local-first knowledge management studio — rich notes, knowledge graph, mind maps, full-text search, and AI agent integration in a single browser-based app.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-<!-- AUTO-START:badges -->
-[![Version](https://img.shields.io/badge/version-0.2.4-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-0.1.0-blue)](VERSION)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![Built with React](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org)
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite)](https://vitejs.dev)
-[![Coverage](https://img.shields.io/badge/coverage-20.51%25-red)](coverage/index.html)
-<!-- AUTO-END:badges -->
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 **Quick Links**: [Quick Start](#-quick-start) · [Features](#-features) · [Architecture](#-architecture) · [AI Agents](#-ai-agent-integration) · [Contributing](#-contributing)
 
@@ -99,7 +96,6 @@ tests/            # Playwright e2e tests
 
 | Layer | Technology |
 |---|---|
-<!-- AUTO-START:tech-stack -->
 | UI Framework | React 18 + TypeScript 5 |
 | Build Tool | Vite 8 |
 | Database | SQLite WASM (FTS5) |
@@ -111,7 +107,6 @@ tests/            # Playwright e2e tests
 | Icons | Lucide React |
 | Unit Tests | Vitest 4 |
 | E2E Tests | Playwright |
-<!-- AUTO-END:tech-stack -->
 
 ---
 
