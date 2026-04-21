@@ -1,6 +1,7 @@
-import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import { logger } from '../lib/logger.js';
 import { AppError } from '../lib/errors.js';
+import { ConnectionPool } from './connection-pool.js';
+import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import * as fs from 'fs';
 
 export interface SQLiteDB {
@@ -9,18 +10,20 @@ export interface SQLiteDB {
     bind?: (string | number | boolean | null)[];
     returnValue?: string;
     rowMode?: string
-  }) => unknown[];
-  close: () => void;
+  }) => Promise<unknown> | unknown;
+  close: () => Promise<void> | void;
 }
 
 interface Sqlite3Static {
   oo1: {
-    DB: new (path: string, mode: string) => SQLiteDB;
-    OpfsDb?: new (path: string, mode: string) => SQLiteDB;
+    DB: new (path: string, mode: string) => {
+        exec: (options: unknown) => unknown;
+        close: () => void;
+    };
   };
 }
 
-let db: SQLiteDB | null = null;
+let instance: SQLiteDB | null = null;
 
 // Mocking fetch for CLI/Node environment if needed, or using fs
 const getSchema = async () => {
@@ -29,32 +32,39 @@ const getSchema = async () => {
         if (schemaResponse.ok) return await schemaResponse.text();
     }
     // Fallback to local fs for CLI
-    return fs.readFileSync('./public/db/schema.sql', 'utf-8');
+    try {
+      return fs.readFileSync('./public/db/schema.sql', 'utf-8');
+    } catch {
+      return '';
+    }
 };
 
+const isBrowser = typeof window !== 'undefined' && typeof Worker !== 'undefined';
+
 export const initDb = async (): Promise<SQLiteDB> => {
-  if (db) return db;
+  if (instance) return instance;
 
   try {
-    // In CLI/Node, we might need a different approach if @sqlite.org/sqlite-wasm doesn't support Node.
-    // However, for this task, we will try to stay within the provided stack.
-    const sqlite3 = await sqlite3InitModule() as unknown as Sqlite3Static;
+    const schemaSql = await getSchema();
 
-    if (sqlite3.oo1.OpfsDb) {
-      db = new sqlite3.oo1.OpfsDb('/studio.db', 'c');
-      logger.info('Connected to SQLite DB via OPFS');
+    if (isBrowser) {
+        const pool = new ConnectionPool();
+        await pool.init(schemaSql);
+        instance = pool;
     } else {
-      db = new sqlite3.oo1.DB('/studio.db', 'c');
-      logger.warn('OPFS not available, using fallback storage');
+        // CLI/Node fallback: Direct initialization
+        const sqlite3 = await sqlite3InitModule() as unknown as Sqlite3Static;
+        const db = new sqlite3.oo1.DB('/studio.db', 'c');
+        db.exec(schemaSql);
+        db.exec('PRAGMA foreign_keys = ON;');
+
+        instance = {
+            exec: (options: unknown) => db.exec(options),
+            close: () => db.close()
+        };
     }
 
-    const schemaSql = await getSchema();
-    db.exec(schemaSql);
-
-    // Enable foreign key support
-    db.exec('PRAGMA foreign_keys = ON;');
-
-    return db;
+    return instance!;
   } catch (err) {
     logger.error('Failed to initialize database', err);
     throw new AppError('Failed to initialize database', 'DB_INIT_FAILED', err);
@@ -62,9 +72,8 @@ export const initDb = async (): Promise<SQLiteDB> => {
 };
 
 export const getDb = (): SQLiteDB => {
-  if (!db) {
-     // For CLI, we might need to auto-init or mock
+  if (!instance) {
      throw new AppError('Database not initialized', 'DB_NOT_READY');
   }
-  return db;
+  return instance;
 };
