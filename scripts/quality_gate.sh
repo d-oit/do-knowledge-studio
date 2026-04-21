@@ -255,12 +255,21 @@ if [[ " ${DETECTED_LANGUAGES[*]} " =~ " typescript " ]]; then
         fi
 
         if [ "${SKIP_TESTS:-false}" != "true" ]; then
-            if ! OUTPUT=$(npm test 2>&1); then
+            if ! OUTPUT=$(npm test -- --coverage 2>&1); then
                 echo -e "${RED}  ✗ npm test failed${NC}"
                 echo "$OUTPUT" >&2
                 FAILED=1
             else
                 echo -e "${GREEN}  ✓ npm test passed${NC}"
+
+                # Update documentation after tests pass (so coverage is fresh)
+                echo -e "${BLUE}  Updating documentation...${NC}"
+                if ! npm run docs:update &>/dev/null; then
+                    echo -e "${RED}    ✗ docs:update failed${NC}"
+                    FAILED=1
+                else
+                    echo -e "${GREEN}    ✓ docs:update passed${NC}"
+                fi
             fi
         fi
     else
