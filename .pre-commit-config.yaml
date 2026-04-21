@@ -42,12 +42,6 @@ repos:
   # Local hooks (custom quality gate)
   - repo: local
     hooks:
-      - id: update-docs
-        name: Update documentation
-        entry: npm run docs:update
-        language: system
-        pass_filenames: false
-        always_run: true
       - id: quality-gate
         name: Run quality gate
         entry: ./scripts/quality_gate.sh
