@@ -46,6 +46,7 @@ reports/
 
 # Build artifacts
 dist/
+coverage/
 playwright-report/
 test-results/
 
