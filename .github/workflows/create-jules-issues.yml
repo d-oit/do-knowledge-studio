@@ -1,0 +1,301 @@
+---
+name: Create Jules Issues
+
+"on":
+  push:
+    branches:
+      - jules/create-issues-automation
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  create-issues:
+    name: Create Jules Issues
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Create issues
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Create jules label
+          gh label create "jules" --color "0052cc" --description "Issues related to Jules" --force || true
+
+          # Issue 1
+          BODY1=$(cat << 'EOM'
+          do-knowledge-studio combines SQLite WASM with FTS5, Orama search, graph rendering, mind maps, export logic, and
+          an AI harness in one browser-first app, so expensive work currently lives in a codebase with several
+          competing hot paths. The repo also already shows a recent shift toward a “single-worker queue” pattern in
+          recent performance work, which makes this a continuation of the current direction rather than a new
+          architectural detour.
+
+          We should introduce one browser-side job queue to coordinate heavyweight async work such as Orama refresh,
+          semantic enrichment, graph neighborhood recomputation, and export precomputation. The design should borrow
+          from rust-self-learning-memory, which uses async queue-based workers for pattern extraction and treats
+          expensive memory work as background processing rather than foreground request handling.
+
+          **Why:**
+          Synchronous or fragmented indexing/update paths can make note edits feel slower than raw query time would
+          suggest in a local-first app. A single coordinator also gives us one place for priority, cancellation,
+          coalescing, back-pressure, retries, and performance metrics.
+
+          **Scope:**
+          Start in src/db, src/features/search, src/features/graph, and export/, because the repo README maps those
+          as the main database, feature, and export areas. Add a shared queue/coordinator in src/lib or src/app
+          only if it can be reused across search, graph, and export without pulling UI concerns into the worker layer.
+
+          **Implementation notes:**
+          Use job types such as reindex-document, refresh-search-index, recompute-neighborhood, and prepare-export.
+          Coalesce repeated jobs for the same document or graph node so fast edit bursts do not create redundant work.
+          Prefer cancellation tokens and latest-write-wins behavior for search/index jobs that become stale before
+          execution.
+
+          **Acceptance criteria:**
+          - Editing a note no longer blocks on full downstream index and graph refresh work.
+          - Repeated edits to the same note collapse into one queued update.
+          - Export preparation and graph recomputation can run off the main user-edit path.
+          - Queue metrics are visible in development mode, including queued jobs, dropped/coalesced jobs, average
+          wait time, and average execution time.
+
+          **References:**
+          - https://github.com/d-oit/do-knowledge-studio/blob/main/README.md
+          - https://github.com/d-o-hub/rust-self-learning-memory
+          EOM
+          )
+          gh issue create --title "perf(search): unify expensive browser-side work behind a single job queue" \
+            --label "performance,search,architecture,jules" --body "$BODY1"
+
+          # Issue 2
+          BODY2=$(cat << 'EOM'
+          The current repo explicitly advertises both SQLite FTS5 and Orama-powered semantic/full-text search, which
+          makes duplicated indexing or parallel search paths a likely source of unnecessary cost. We should redesign
+          retrieval as a staged pipeline: exact recall with SQLite FTS5 first, semantic reranking or fallback with
+          Orama second, and graph-neighborhood expansion only when the user asks for related context.
+
+          This issue is inspired by rust-self-learning-memory, which ranks results using multiple signals such as
+          semantic similarity, context match, effectiveness, recency, and success rate rather than treating every
+          retrieval path as equally hot. do-knowledge-studio does not need the full episodic-memory stack, but it
+          can adopt the same idea of progressively more expensive retrieval stages.
+
+          **Why:**
+          Most note lookup flows likely need fast exact recall before they need semantic expansion or graph traversal.
+          Running all retrieval modes eagerly increases latency, storage churn, and maintenance complexity.
+
+          **Scope:**
+          Refactor the search flow in src/db, src/features/search, and any shared Orama utilities under src/lib.
+          Keep the API surface explicit so UI callers can choose between exact, semantic, and related modes instead
+          of always invoking the whole stack.
+
+          **Implementation notes:**
+          Introduce a ranked result object that tracks source stage, score, and expansion reason. Use FTS5 for
+          primary candidate generation, then rerank or enrich with Orama only when the query is broad, fuzzy, or
+          explicitly semantic. Trigger graph expansion only behind a UI affordance such as “show related notes” or
+          “expand context.”
+
+          **Acceptance criteria:**
+          - Search path is split into distinct stages with clear boundaries and tests.
+          - Basic exact-note queries do not invoke graph expansion by default.
+          - Semantic reranking is measurable and optional, not implicit for every query.
+          - Search docs explain when each stage runs and why.
+
+          **References:**
+          - https://github.com/d-oit/do-knowledge-studio/blob/main/README.md
+          - https://github.com/d-o-hub/rust-self-learning-memory#-pattern-recognition--semantic-search
+          EOM
+          )
+          gh issue create --title "perf(search): redesign retrieval as FTS5 -> semantic ranking -> optional expansion" \
+            --label "performance,search,enhancement,jules" --body "$BODY2"
+
+          # Issue 3
+          BODY3=$(cat << 'EOM'
+          The repo’s feature set spans TipTap editing, Graphology plus Sigma.js, Mind Elixir, static export, CLI support,
+          and an AI agent harness, but ordinary editing sessions will not need every subsystem at startup. We should
+          split the app into lazy feature islands so the default editing path loads the smallest practical shell,
+          while graph, mind map, export, and advanced AI surfaces load on demand.
+
+          **Why:**
+          Startup cost is one of the most likely user-visible pain points in a browser-only knowledge app with this
+          many subsystems. Reducing initial parse, instantiate, and hydration work should help first open, tab restore,
+          and lower-end device behavior.
+
+          **Scope:**
+          Audit route-level and feature-level imports in src/app, src/features, and main.tsx. Focus first on graph,
+          mind map, export, and any AI-specific UI, because those are the most obvious heavy feature areas named
+          in the README.
+
+          **Implementation notes:**
+          Use route-level or interaction-level dynamic imports. Keep editor and core note-list/search shell in the
+          initial bundle, and defer graph rendering libraries until the user opens graph mode. Add loading boundaries
+          that preserve responsiveness instead of blanking the whole app.
+
+          **Acceptance criteria:**
+          - Graph and mind-map libraries are not loaded during the default note-editing flow.
+          - Export UI and AI harness UI load only when opened.
+          - Build output includes a before/after bundle breakdown for the initial path versus deferred chunks.
+
+          **References:**
+          - https://github.com/d-oit/do-knowledge-studio/blob/main/README.md
+          EOM
+          )
+          gh issue create --title "perf(frontend): lazy-load graph, mind map, export, and AI-heavy feature islands" \
+            --label "performance,frontend,bundle-size,jules" --body "$BODY3"
+
+          # Issue 4
+          BODY4=$(cat << 'EOM'
+          do-knowledge-studio presents both a knowledge graph and mind maps as core capabilities, but they should
+          behave like secondary views over note data rather than always-on runtime obligations. We should explicitly
+          define graph and mind-map render budgets, cache policies, and activation rules so they do not silently
+          dominate memory and CPU in normal editing sessions.
+
+          This recommendation is aligned with the retrieval and caching posture visible in rust-self-learning-memory,
+          including retrieval caching, async processing, and recent performance work around lock and hot-path
+          efficiency. The adaptation here is browser-specific: optimize view activation and neighborhood computation
+          rather than backend retrieval locks.
+
+          **Why:**
+          Graph and mind-map visualizations can become expensive because they combine data prep, layout, render,
+          and interaction state. If they stay hot while the user is just editing notes, they create background cost
+          without foreground value.
+
+          **Scope:**
+          Audit src/features/graph and src/features/mindmap, plus any shared data adapters that compute relationships
+          or derived structures. Add explicit limits for neighborhood depth, rendered node count, and recomputation
+          triggers.
+
+          **Implementation notes:**
+          Only compute graph neighborhoods on entry to graph mode or on explicit refresh. Cache derived graph snapshots
+          for the current note or query session, and invalidate them only on relevant note/link changes. For large
+          note sets, render summarized neighborhoods first and allow manual expansion.
+
+          **Acceptance criteria:**
+          - Graph and mind map are cold until activated.
+          - Neighborhood computation has explicit caps and visible fallback behavior when limits are exceeded.
+          - Dev-mode metrics expose node count, edge count, layout time, and rerender count per session.
+
+          **References:**
+          - https://github.com/d-oit/do-knowledge-studio/blob/main/README.md
+          - https://github.com/d-o-hub/rust-self-learning-memory
+          EOM
+          )
+          gh issue create --title "perf(graph): make graph and mind map opt-in secondary views with render budgets" \
+            --label "performance,graph,ux,jules" --body "$BODY4"
+
+          # Issue 5
+          BODY5=$(cat << 'EOM'
+          The repo already has Vitest, Playwright, scripts, and a quality-gate surface, but there is no obvious
+          README-level performance benchmark suite for startup, search latency, reindex latency, and graph render cost.
+          We should add a small, reproducible benchmark harness so future optimization work is driven by measured
+          regressions and wins instead of impressionistic tuning.
+
+          This follows the spirit of rust-self-learning-memory, which includes benches, benchmark results, metrics,
+          and explicit quality-gate infrastructure. It also matches your prior benchmark preference for low-effort,
+          reproducible, token-cheap evaluation rather than heavyweight marketing-style benchmarking.
+
+          **Why:**
+          Without a baseline, queueing, lazy loading, and staged retrieval changes are hard to prioritize and easy to
+          regress. A focused benchmark suite also gives future AI-agent changes a stable target for validation.
+
+          **Scope:**
+          Add a lightweight benchmark folder or script flow for: cold start, warm start, exact search latency,
+          semantic search latency, note-save-to-index latency, graph open latency, and export preparation latency.
+          Store machine-readable results and a small markdown summary in-repo so regressions are diffable.
+
+          **Acceptance criteria:**
+          - Benchmarks run locally with one command.
+          - Output includes JSON or CSV plus a concise markdown report.
+          - CI can run a reduced benchmark smoke check without making routine PRs slow.
+          - README or agents-docs documents the benchmark workflow and target metrics.
+
+          **References:**
+          - https://github.com/d-oit/do-knowledge-studio
+          EOM
+          )
+          gh issue create --title "feat(observability): add performance benchmarks for core paths" \
+            --label "performance,benchmark,observability,jules" --body "$BODY5"
+
+          # Issue 6
+          BODY6=$(cat << 'EOM'
+          do-knowledge-studio already uses AGENTS.md as a single source of truth and keeps canonical skills in
+          .agents/skills/, while also maintaining multiple tool-specific directories such as .claude, .gemini,
+          .jules, .qwen, .windsurf, and others. We should extend the single-source-of-truth idea beyond skills and
+          generate or validate all agent-facing config surfaces from one canonical manifest.
+
+          This is directly reinforced by github-template-ai-agents, which centers its workflow on AGENTS.md,
+          canonical skills, symlinked tool directories, setup scripts, validation scripts, and quality gates.
+          The current do-knowledge-studio repo structure is already close to that pattern, which means the remaining
+          win is deduplication and drift prevention rather than a fresh migration.
+
+          **Why:**
+          Parallel agent config trees are easy to let drift, especially when the repo is moving quickly and has
+          active bot-assisted changes. Generating or validating these files reduces review noise and makes
+          agent-surface updates safer.
+
+          **Scope:**
+          Cover .agents, .claude, .gemini, .jules, .qwen, .windsurf, root agent docs like CLAUDE.md and GEMINI.md,
+          and any setup/validation scripts under scripts/. Keep tool-specific overrides possible, but force them
+          through a documented schema.
+
+          **Implementation notes:**
+          Create one manifest describing supported tools, symlink strategy, override files, and generated outputs.
+          Add a validation command that fails when generated files drift from the manifest. Prefer generation plus
+          check mode over fully hand-maintained duplication.
+
+          **Acceptance criteria:**
+          - One canonical manifest or schema exists for agent surfaces.
+          - Generated or validated outputs cover all supported tool directories currently present in the repo.
+          - CI fails when generated agent files are stale or inconsistent.
+          - Docs explain how to add a new agent tool without duplicating instructions manually.
+
+          **References:**
+          - https://github.com/d-oit/do-knowledge-studio/blob/main/README.md
+          - https://github.com/d-o-hub/github-template-ai-agents
+          EOM
+          )
+          gh issue create --title "chore(agents): generate all agent-facing config from one canonical manifest" \
+            --label "maintenance,agents,automation,jules" --body "$BODY6"
+
+          # Issue 7
+          BODY7=$(cat << 'EOM'
+          do-knowledge-studio includes unit tests, Playwright end-to-end tests, type checking, linting, scripts,
+          CLI code, export code, and agent-doc surfaces, which makes one-size-fits-all validation expensive. We should
+          split validation by change type so docs-only, agent-config-only, CLI-only, export-only, and frontend-runtime
+          changes do not all trigger the same full pipeline.
+
+          This is strongly supported by github-template-ai-agents, which emphasizes setup/validation scripts,
+          pre-commit hooks, quality gates, and optional local GitHub Actions rehearsal with act. That repo also has
+          recent script performance work around validation subshells and path logic, which is exactly the kind of
+          operational optimization this issue should aim for.
+
+          **Why:**
+          Scoped validation shortens local feedback loops and reduces CI waste without lowering standards. It matters
+          especially in this repo because product code, automation code, and agent-harness code live together.
+
+          **Scope:**
+          Define change buckets such as: docs/config only, agent surface only, frontend/runtime, graph/search/db,
+          CLI/export, and full-release validation. Wire those buckets into scripts/, .github/workflows/, and local
+          pre-commit or pre-push flows.
+
+          **Implementation notes:**
+          Keep fast defaults local, such as lint + typecheck + changed-area tests. Reserve full Playwright or broader
+          integration runs for affected areas, protected branches, or nightly validation. Add or document local act
+          rehearsal for workflow debugging before pushing.
+
+          **Acceptance criteria:**
+          - CI path filtering or script-level change detection is in place.
+          - Docs-only and agent-config-only changes skip irrelevant heavy test paths.
+          - A local workflow rehearsal command exists and is documented.
+          - Developers can run a “fast verify” path and a “full verify” path explicitly.
+
+          **References:**
+          - https://github.com/d-oit/do-knowledge-studio
+          - https://github.com/d-o-hub/github-template-ai-agents#optional-rehearse-github-actions-locally-with-act
+          EOM
+          )
+          gh issue create --title "ci(test): narrow validation scope by change type and add local act rehearsal" \
+            --label "ci,testing,developer-experience,jules" --body "$BODY7"
