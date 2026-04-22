@@ -9,6 +9,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import SidebarNav from '../components/SidebarNav';
 import Header from '../components/Header';
 import MobileDrawer from '../components/MobileDrawer';
+import JobMetrics from '../components/JobMetrics';
 import SearchPanel, { SearchResult } from '../features/search/SearchPanel';
 import { GraphControls } from '../features/graph/GraphControls';
 
@@ -145,6 +146,8 @@ const AppContent: React.FC = () => {
           />
         </div>
       )}
+
+      {import.meta.env.DEV && <JobMetrics />}
     </div>
   );
 };
