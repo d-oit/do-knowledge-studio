@@ -5,10 +5,11 @@ import { logger } from '../../lib/logger';
 const ExportPanel: React.FC = () => {
   useEffect(() => {
     jobCoordinator.registerHandler('prepare-export', async (payload) => {
-      logger.info(`Preparing export for format: ${payload.format}`);
+      const { format } = payload as { format: string };
+      logger.info(`Preparing export for format: ${format}`);
       // Simulate expensive work
       await new Promise(resolve => setTimeout(resolve, 2000));
-      logger.info(`Export prepared: ${payload.format}`);
+      logger.info(`Export prepared: ${format}`);
     });
   }, []);
 

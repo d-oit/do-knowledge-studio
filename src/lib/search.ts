@@ -53,7 +53,8 @@ export const initSearch = async () => {
 
     // Register job handlers
     jobCoordinator.registerHandler('reindex-document', async (payload) => {
-      await upsertToSearchIndex(payload.entityId);
+      const { entityId } = payload as { entityId: string };
+      await upsertToSearchIndex(entityId);
     });
 
     jobCoordinator.registerHandler('refresh-search-index', async () => {
