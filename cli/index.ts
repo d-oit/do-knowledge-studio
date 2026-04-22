@@ -27,9 +27,9 @@ program
          console.error('Directory not found');
          return;
      }
-     const files = fs.readdirSync(dir).filter((f: string) => f.endsWith('.md'));
+     const files = fs.readdirSync(dir).filter(f => f.endsWith('.md'));
      console.log(`Found ${files.length} markdown files.`);
-     files.forEach((f: string) => {
+     files.forEach(f => {
          const content = fs.readFileSync(path.join(dir, f), 'utf-8');
          const title = content.split('\n')[0].replace('# ', '').trim();
          console.log(`  Processed: ${title}`);

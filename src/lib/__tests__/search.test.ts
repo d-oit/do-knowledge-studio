@@ -44,7 +44,7 @@ describe('Search Pipeline', () => {
 
   it('should use semantic fallback when FTS5 returns nothing', async () => {
     vi.mocked(repository.searchFTS5).mockResolvedValue([]);
-    vi.mocked(search).mockResolvedValue({
+    vi.mocked(search).mockImplementation(async () => ({
       hits: [
         {
           document: { id: '2', name: 'Orama', type: 'tech', excerpt: 'Search engine' },
@@ -53,7 +53,7 @@ describe('Search Pipeline', () => {
       ],
       count: 1,
       elapsed: { raw: 0, formatted: '0ms' }
-    } as any);
+    } as never));
 
     const results = await searchKnowledge('Orama', { stages: ['fts5', 'semantic'] });
 

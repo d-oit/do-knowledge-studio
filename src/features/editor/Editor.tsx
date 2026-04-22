@@ -6,7 +6,6 @@ import { ClaimExtension } from './ClaimExtension';
 import { MentionExtension } from './MentionExtension';
 import { logger } from '../../lib/logger';
 import { repository } from '../../db/repository';
-import { jobCoordinator } from '../../lib/jobs';
 import { useState, useEffect } from 'react';
 import { CheckCircle, AtSign } from 'lucide-react';
 import { Entity } from '../../lib/validation';
@@ -102,10 +101,6 @@ const Editor: React.FC = () => {
       }
 
       logger.info('Entity, note, claims and links saved', { id: entity.id, claims: claims.length, links: mentions.length });
-
-      // Enqueue background work
-      jobCoordinator.enqueue('reindex-document', entity.id, { entityId: entity.id });
-
       setStatus({ type: 'success', message: `Saved successfully! (${claims.length} claims, ${mentions.length} links)` });
       setTitle('');
       editor.commands.setContent('<p></p>');
