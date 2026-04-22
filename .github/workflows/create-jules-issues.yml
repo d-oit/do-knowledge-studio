@@ -29,39 +29,40 @@ jobs:
 
           # Issue 1
           BODY1=$(cat << 'EOM'
-          do-knowledge-studio combines SQLite WASM with FTS5, Orama search, graph rendering, mind maps, export logic, and
-          an AI harness in one browser-first app, so expensive work currently lives in a codebase with several
-          competing hot paths. The repo also already shows a recent shift toward a “single-worker queue” pattern in
-          recent performance work, which makes this a continuation of the current direction rather than a new
-          architectural detour.
+          do-knowledge-studio combines SQLite WASM with FTS5, Orama search, graph rendering, mind maps, export
+          logic, and an AI harness in one browser-first app, so expensive work currently lives in a codebase
+          with several competing hot paths. The repo also already shows a recent shift toward a “single-worker
+          queue” pattern in recent performance work, which makes this a continuation of the current direction
+          rather than a new architectural detour.
 
-          We should introduce one browser-side job queue to coordinate heavyweight async work such as Orama refresh,
-          semantic enrichment, graph neighborhood recomputation, and export precomputation. The design should borrow
-          from rust-self-learning-memory, which uses async queue-based workers for pattern extraction and treats
-          expensive memory work as background processing rather than foreground request handling.
+          We should introduce one browser-side job queue to coordinate heavyweight async work such as Orama
+          refresh, semantic enrichment, graph neighborhood recomputation, and export precomputation. The design
+          should borrow from rust-self-learning-memory, which uses async queue-based workers for pattern extraction
+          and treats expensive memory work as background processing rather than foreground request handling.
 
           **Why:**
-          Synchronous or fragmented indexing/update paths can make note edits feel slower than raw query time would
-          suggest in a local-first app. A single coordinator also gives us one place for priority, cancellation,
-          coalescing, back-pressure, retries, and performance metrics.
+          Synchronous or fragmented indexing/update paths can make note edits feel slower than raw query time
+          would suggest in a local-first app. A single coordinator also gives us one place for priority,
+          cancellation, coalescing, back-pressure, retries, and performance metrics.
 
           **Scope:**
-          Start in src/db, src/features/search, src/features/graph, and export/, because the repo README maps those
-          as the main database, feature, and export areas. Add a shared queue/coordinator in src/lib or src/app
-          only if it can be reused across search, graph, and export without pulling UI concerns into the worker layer.
+          Start in src/db, src/features/search, src/features/graph, and export/, because the repo README maps
+          those as the main database, feature, and export areas. Add a shared queue/coordinator in src/lib or
+          src/app only if it can be reused across search, graph, and export without pulling UI concerns into
+          the worker layer.
 
           **Implementation notes:**
-          Use job types such as reindex-document, refresh-search-index, recompute-neighborhood, and prepare-export.
-          Coalesce repeated jobs for the same document or graph node so fast edit bursts do not create redundant work.
-          Prefer cancellation tokens and latest-write-wins behavior for search/index jobs that become stale before
-          execution.
+          Use job types such as reindex-document, refresh-search-index, recompute-neighborhood, and
+          prepare-export. Coalesce repeated jobs for the same document or graph node so fast edit bursts do not
+          create redundant work. Prefer cancellation tokens and latest-write-wins behavior for search/index jobs
+          that become stale before execution.
 
           **Acceptance criteria:**
           - Editing a note no longer blocks on full downstream index and graph refresh work.
           - Repeated edits to the same note collapse into one queued update.
           - Export preparation and graph recomputation can run off the main user-edit path.
-          - Queue metrics are visible in development mode, including queued jobs, dropped/coalesced jobs, average
-          wait time, and average execution time.
+          - Queue metrics are visible in development mode, including queued jobs, dropped/coalesced jobs,
+          average wait time, and average execution time.
 
           **References:**
           - https://github.com/d-oit/do-knowledge-studio/blob/main/README.md
@@ -73,10 +74,10 @@ jobs:
 
           # Issue 2
           BODY2=$(cat << 'EOM'
-          The current repo explicitly advertises both SQLite FTS5 and Orama-powered semantic/full-text search, which
-          makes duplicated indexing or parallel search paths a likely source of unnecessary cost. We should redesign
-          retrieval as a staged pipeline: exact recall with SQLite FTS5 first, semantic reranking or fallback with
-          Orama second, and graph-neighborhood expansion only when the user asks for related context.
+          The current repo explicitly advertises both SQLite FTS5 and Orama-powered semantic/full-text search,
+          which makes duplicated indexing or parallel search paths a likely source of unnecessary cost. We should
+          redesign retrieval as a staged pipeline: exact recall with SQLite FTS5 first, semantic reranking or
+          fallback with Orama second, and graph-neighborhood expansion only when the user asks for related context.
 
           This issue is inspired by rust-self-learning-memory, which ranks results using multiple signals such as
           semantic similarity, context match, effectiveness, recency, and success rate rather than treating every
@@ -84,19 +85,20 @@ jobs:
           can adopt the same idea of progressively more expensive retrieval stages.
 
           **Why:**
-          Most note lookup flows likely need fast exact recall before they need semantic expansion or graph traversal.
-          Running all retrieval modes eagerly increases latency, storage churn, and maintenance complexity.
+          Most note lookup flows likely need fast exact recall before they need semantic expansion or graph
+          traversal. Running all retrieval modes eagerly increases latency, storage churn, and maintenance
+          complexity.
 
           **Scope:**
           Refactor the search flow in src/db, src/features/search, and any shared Orama utilities under src/lib.
-          Keep the API surface explicit so UI callers can choose between exact, semantic, and related modes instead
-          of always invoking the whole stack.
+          Keep the API surface explicit so UI callers can choose between exact, semantic, and related modes
+          instead of always invoking the whole stack.
 
           **Implementation notes:**
           Introduce a ranked result object that tracks source stage, score, and expansion reason. Use FTS5 for
-          primary candidate generation, then rerank or enrich with Orama only when the query is broad, fuzzy, or
-          explicitly semantic. Trigger graph expansion only behind a UI affordance such as “show related notes” or
-          “expand context.”
+          primary candidate generation, then rerank or enrich with Orama only when the query is broad, fuzzy,
+          or explicitly semantic. Trigger graph expansion only behind a UI affordance such as “show related notes”
+          or “expand context.”
 
           **Acceptance criteria:**
           - Search path is split into distinct stages with clear boundaries and tests.
@@ -114,25 +116,25 @@ jobs:
 
           # Issue 3
           BODY3=$(cat << 'EOM'
-          The repo’s feature set spans TipTap editing, Graphology plus Sigma.js, Mind Elixir, static export, CLI support,
-          and an AI agent harness, but ordinary editing sessions will not need every subsystem at startup. We should
-          split the app into lazy feature islands so the default editing path loads the smallest practical shell,
-          while graph, mind map, export, and advanced AI surfaces load on demand.
+          The repo’s feature set spans TipTap editing, Graphology plus Sigma.js, Mind Elixir, static export, CLI
+          support, and an AI agent harness, but ordinary editing sessions will not need every subsystem at
+          startup. We should split the app into lazy feature islands so the default editing path loads the smallest
+          practical shell, while graph, mind map, export, and advanced AI surfaces load on demand.
 
           **Why:**
-          Startup cost is one of the most likely user-visible pain points in a browser-only knowledge app with this
-          many subsystems. Reducing initial parse, instantiate, and hydration work should help first open, tab restore,
-          and lower-end device behavior.
+          Startup cost is one of the most likely user-visible pain points in a browser-only knowledge app with
+          this many subsystems. Reducing initial parse, instantiate, and hydration work should help first open,
+          tab restore, and lower-end device behavior.
 
           **Scope:**
-          Audit route-level and feature-level imports in src/app, src/features, and main.tsx. Focus first on graph,
-          mind map, export, and any AI-specific UI, because those are the most obvious heavy feature areas named
-          in the README.
+          Audit route-level and feature-level imports in src/app, src/features, and main.tsx. Focus first on
+          graph, mind map, export, and any AI-specific UI, because those are the most obvious heavy feature areas
+          named in the README.
 
           **Implementation notes:**
           Use route-level or interaction-level dynamic imports. Keep editor and core note-list/search shell in the
-          initial bundle, and defer graph rendering libraries until the user opens graph mode. Add loading boundaries
-          that preserve responsiveness instead of blanking the whole app.
+          initial bundle, and defer graph rendering libraries until the user opens graph mode. Add loading
+          boundaries that preserve responsiveness instead of blanking the whole app.
 
           **Acceptance criteria:**
           - Graph and mind-map libraries are not loaded during the default note-editing flow.
@@ -164,14 +166,14 @@ jobs:
           without foreground value.
 
           **Scope:**
-          Audit src/features/graph and src/features/mindmap, plus any shared data adapters that compute relationships
-          or derived structures. Add explicit limits for neighborhood depth, rendered node count, and recomputation
-          triggers.
+          Audit src/features/graph and src/features/mindmap, plus any shared data adapters that compute
+          relationships or derived structures. Add explicit limits for neighborhood depth, rendered node count,
+          and recomputation triggers.
 
           **Implementation notes:**
-          Only compute graph neighborhoods on entry to graph mode or on explicit refresh. Cache derived graph snapshots
-          for the current note or query session, and invalidate them only on relevant note/link changes. For large
-          note sets, render summarized neighborhoods first and allow manual expansion.
+          Only compute graph neighborhoods on entry to graph mode or on explicit refresh. Cache derived graph
+          snapshots for the current note or query session, and invalidate them only on relevant note/link changes.
+          For large note sets, render summarized neighborhoods first and allow manual expansion.
 
           **Acceptance criteria:**
           - Graph and mind map are cold until activated.
@@ -189,9 +191,9 @@ jobs:
           # Issue 5
           BODY5=$(cat << 'EOM'
           The repo already has Vitest, Playwright, scripts, and a quality-gate surface, but there is no obvious
-          README-level performance benchmark suite for startup, search latency, reindex latency, and graph render cost.
-          We should add a small, reproducible benchmark harness so future optimization work is driven by measured
-          regressions and wins instead of impressionistic tuning.
+          README-level performance benchmark suite for startup, search latency, reindex latency, and graph render
+          cost. We should add a small, reproducible benchmark harness so future optimization work is driven by
+          measured regressions and wins instead of impressionistic tuning.
 
           This follows the spirit of rust-self-learning-memory, which includes benches, benchmark results, metrics,
           and explicit quality-gate infrastructure. It also matches your prior benchmark preference for low-effort,
@@ -228,8 +230,8 @@ jobs:
 
           This is directly reinforced by github-template-ai-agents, which centers its workflow on AGENTS.md,
           canonical skills, symlinked tool directories, setup scripts, validation scripts, and quality gates.
-          The current do-knowledge-studio repo structure is already close to that pattern, which means the remaining
-          win is deduplication and drift prevention rather than a fresh migration.
+          The current do-knowledge-studio repo structure is already close to that pattern, which means the
+          remaining win is deduplication and drift prevention rather than a fresh migration.
 
           **Why:**
           Parallel agent config trees are easy to let drift, especially when the repo is moving quickly and has
@@ -263,9 +265,9 @@ jobs:
           # Issue 7
           BODY7=$(cat << 'EOM'
           do-knowledge-studio includes unit tests, Playwright end-to-end tests, type checking, linting, scripts,
-          CLI code, export code, and agent-doc surfaces, which makes one-size-fits-all validation expensive. We should
-          split validation by change type so docs-only, agent-config-only, CLI-only, export-only, and frontend-runtime
-          changes do not all trigger the same full pipeline.
+          CLI code, export code, and agent-doc surfaces, which makes one-size-fits-all validation expensive. We
+          should split validation by change type so docs-only, agent-config-only, CLI-only, export-only, and
+          frontend-runtime changes do not all trigger the same full pipeline.
 
           This is strongly supported by github-template-ai-agents, which emphasizes setup/validation scripts,
           pre-commit hooks, quality gates, and optional local GitHub Actions rehearsal with act. That repo also has
@@ -273,8 +275,8 @@ jobs:
           operational optimization this issue should aim for.
 
           **Why:**
-          Scoped validation shortens local feedback loops and reduces CI waste without lowering standards. It matters
-          especially in this repo because product code, automation code, and agent-harness code live together.
+          Scoped validation shortens local feedback loops and reduces CI waste without lowering standards. It
+          matters especially in this repo because product code, automation code, and agent-harness code live together.
 
           **Scope:**
           Define change buckets such as: docs/config only, agent surface only, frontend/runtime, graph/search/db,
@@ -282,9 +284,9 @@ jobs:
           pre-commit or pre-push flows.
 
           **Implementation notes:**
-          Keep fast defaults local, such as lint + typecheck + changed-area tests. Reserve full Playwright or broader
-          integration runs for affected areas, protected branches, or nightly validation. Add or document local act
-          rehearsal for workflow debugging before pushing.
+          Keep fast defaults local, such as lint + typecheck + changed-area tests. Reserve full Playwright or
+          broader integration runs for affected areas, protected branches, or nightly validation. Add or document
+          local act rehearsal for workflow debugging before pushing.
 
           **Acceptance criteria:**
           - CI path filtering or script-level change detection is in place.
