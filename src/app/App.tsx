@@ -9,8 +9,8 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import SidebarNav from '../components/SidebarNav';
 import Header from '../components/Header';
 import MobileDrawer from '../components/MobileDrawer';
-import JobMetrics from '../components/JobMetrics';
-import SearchPanel, { SearchResult } from '../features/search/SearchPanel';
+import SearchPanel from '../features/search/SearchPanel';
+import { RankedResult } from '../lib/search';
 import { GraphControls } from '../features/graph/GraphControls';
 
 const Editor = lazy(() => import('../features/editor/Editor'));
@@ -34,7 +34,7 @@ const AppContent: React.FC = () => {
   const [graphFocusMode, setGraphFocusMode] = useState(false);
   const [graphSelectedNode, setGraphSelectedNode] = useState<string | null>(null);
 
-  const handleSearchResultClick = useCallback((result: SearchResult) => {
+  const handleSearchResultClick = useCallback((result: RankedResult) => {
     if (result.type === 'claim' || result.type === 'entity' || result.type === 'note' || result.type === 'concept' || result.type === 'person' || result.type === 'project') {
        setCurrentView('editor');
        // In a real app we would navigate to the specific entity.
@@ -146,8 +146,6 @@ const AppContent: React.FC = () => {
           />
         </div>
       )}
-
-      {import.meta.env.DEV && <JobMetrics />}
     </div>
   );
 };
