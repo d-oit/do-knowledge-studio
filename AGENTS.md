@@ -9,9 +9,15 @@
 - **Markdown is NOT canonical truth**: Use only for export/import.
 - **Strict TypeScript**: NO `any`.
 
+## Search Retrieval Pipeline
+The search system uses a staged pipeline for efficiency and relevance:
+1.  **Stage 1: FTS5 (Exact Recall)**: Uses SQLite FTS5 for fast, keyword-based candidate generation.
+2.  **Stage 2: Semantic (Orama)**: Triggered for broad queries or as a fallback/reranker to provide semantic similarity.
+3.  **Stage 3: Graph Expansion**: (Optional) Broadens context by including immediate neighbors from the knowledge graph.
+
 ## Project Stack
 - **DB**: SQLite WASM + OPFS (with FTS5)
-- **Search**: Orama (Local RAG)
+- **Search**: Staged Retrieval (SQLite FTS5 -> Orama Semantic -> Graph Expansion)
 - **Core**: React + Vite + TypeScript
 - **Visuals**: Sigma.js, Mind Elixir
 - **Editor**: Tiptap
