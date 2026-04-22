@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import Sigma from 'sigma';
 import Graph from 'graphology';
 import { Entity, Link } from '../../lib/validation';
@@ -51,7 +51,7 @@ const GraphView: React.FC<Props> = ({
       return;
     }
 
-    const jobId = jobCoordinator.enqueue('recompute-neighborhood', selectedNode, {
+    jobCoordinator.enqueue('recompute-neighborhood', selectedNode, {
       entities,
       links,
       selectedNode,
@@ -64,8 +64,8 @@ const GraphView: React.FC<Props> = ({
   }, [entities, links, selectedNode, focusMode]);
 
   useEffect(() => {
-    const handler = async (payload: any) => {
-      const { entities, links, selectedNode, focusMode } = payload;
+    const handler = async (payload: unknown) => {
+      const { entities, links, selectedNode } = payload as { entities: Entity[], links: Link[], selectedNode: string };
       const neighborIds = new Set<string>([selectedNode]);
       links.forEach((l: Link) => {
         if (l.source_id === selectedNode) neighborIds.add(l.target_id);

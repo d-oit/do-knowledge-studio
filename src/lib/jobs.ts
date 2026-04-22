@@ -6,7 +6,7 @@ export interface Job {
   id: string;
   type: JobType;
   targetId?: string;
-  payload?: any;
+  payload?: unknown;
   status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
   enqueuedAt: number;
   startedAt?: number;
@@ -25,7 +25,7 @@ export interface JobMetrics {
   avgExecutionTime: number;
 }
 
-export type JobHandler = (payload: any, signal?: AbortSignal) => Promise<any>;
+export type JobHandler = (payload: unknown, signal?: AbortSignal) => Promise<unknown>;
 
 export class JobCoordinator {
   private queue: Job[] = [];
@@ -52,7 +52,7 @@ export class JobCoordinator {
     logger.info(`Job handler registered for: ${type}`);
   }
 
-  enqueue(type: JobType, targetId?: string, payload?: any): string {
+  enqueue(type: JobType, targetId?: string, payload?: unknown): string {
     // Coalesce: if a job of the same type and targetId is already queued, update it
     if (targetId) {
       const existingJob = this.queue.find(j => j.type === type && j.targetId === targetId && j.status === 'queued');
@@ -108,8 +108,8 @@ export class JobCoordinator {
         this.currentJob.error = 'No handler registered';
         this.metrics.failedCount++;
       }
-    } catch (err: any) {
-      if (err.name === 'AbortError') {
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') {
         this.currentJob.status = 'cancelled';
         this.metrics.cancelledCount++;
       } else {
