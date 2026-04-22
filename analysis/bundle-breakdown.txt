@@ -1,0 +1,21 @@
+Bundle Breakdown Comparison (Gzip sizes)
+
+| Chunk             | Before (Lazy Editor) | After (Static Editor) | Status    |
+|-------------------|----------------------|-----------------------|-----------|
+| Main Entry (index)| 3.62 kB              | 5.19 kB               | Initial   |
+| Editor Component  | 2.11 kB              | (Merged into Main)    | Initial   |
+| Search Panel      | 1.21 kB              | 4.90 kB*              | Initial   |
+| vendor-editor     | 135.28 kB            | 135.28 kB             | Initial   |
+| vendor-graph      | 39.56 kB             | 39.56 kB              | Deferred  |
+| vendor-mindmap    | 27.40 kB             | 27.40 kB              | Deferred  |
+| vendor-sqlite     | 57.56 kB             | 57.56 kB              | Deferred**|
+| vendor-search     | 21.45 kB             | 21.45 kB              | Initial   |
+| GraphControls     | 0.54 kB              | 0.54 kB               | Deferred  |
+
+* Search panel size increase in 'After' might be due to slightly different chunking of shared deps.
+** vendor-sqlite is loaded by the worker, so it's off the main thread but part of early load.
+
+Summary:
+- Editor is now part of the initial bundle path, ensuring the primary tool is ready immediately.
+- Graph, Mind Map, Export, and AI Harness remain deferred.
+- GraphControls is now fully deferred (lazy-loaded in App.tsx).

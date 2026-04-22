@@ -11,9 +11,9 @@ import Header from '../components/Header';
 import MobileDrawer from '../components/MobileDrawer';
 import JobMetrics from '../components/JobMetrics';
 import SearchPanel, { SearchResult } from '../features/search/SearchPanel';
-import { GraphControls } from '../features/graph/GraphControls';
+import Editor from '../features/editor/Editor';
 
-const Editor = lazy(() => import('../features/editor/Editor'));
+const GraphControls = lazy(() => import('../features/graph/GraphControls'));
 const GraphView = lazy(() => import('../features/graph/GraphView'));
 const MindMapView = lazy(() => import('../features/mindmap/MindMapView'));
 const Chat = lazy(() => import('../features/chat/Chat'));
@@ -127,12 +127,14 @@ const AppContent: React.FC = () => {
         {currentView === 'graph' && (
           <div className="drawer-extra-controls">
             <h3>Graph Controls</h3>
-            <GraphControls
-              focusMode={graphFocusMode}
-              setFocusMode={setGraphFocusMode}
-              hasSelection={!!graphSelectedNode}
-              selectedName={entities.find(e => e.id === graphSelectedNode)?.name}
-            />
+            <Suspense fallback={<div>Loading controls...</div>}>
+              <GraphControls
+                focusMode={graphFocusMode}
+                setFocusMode={setGraphFocusMode}
+                hasSelection={!!graphSelectedNode}
+                selectedName={entities.find(e => e.id === graphSelectedNode)?.name}
+              />
+            </Suspense>
           </div>
         )}
       </MobileDrawer>
