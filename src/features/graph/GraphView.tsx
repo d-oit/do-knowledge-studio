@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import Sigma from 'sigma';
 import Graph from 'graphology';
 import { Entity, Link } from '../../lib/validation';
 import { GraphControls } from './GraphControls';
+import { jobCoordinator } from '../../lib/jobs';
 
 interface Props {
   entities: Entity[];
@@ -42,22 +43,43 @@ const GraphView: React.FC<Props> = ({
     else setInternalFocusMode(focus);
   }, [onFocusModeChange]);
 
-  const filteredData = useMemo(() => {
+  const [filteredData, setFilteredData] = useState({ entities, links });
+
+  useEffect(() => {
     if (!focusMode || !selectedNode) {
-      return { entities, links };
+      setFilteredData({ entities, links });
+      return;
     }
 
-    const neighborIds = new Set<string>([selectedNode]);
-    links.forEach(l => {
-      if (l.source_id === selectedNode) neighborIds.add(l.target_id);
-      if (l.target_id === selectedNode) neighborIds.add(l.source_id);
+    jobCoordinator.enqueue('recompute-neighborhood', selectedNode, {
+      entities,
+      links,
+      selectedNode,
+      focusMode
     });
 
-    return {
-      entities: entities.filter(e => neighborIds.has(e.id!)),
-      links: links.filter(l => neighborIds.has(l.source_id) && neighborIds.has(l.target_id))
-    };
+    // In a real app, we might want to subscribe to job completion.
+    // For this task, we'll implement a simple callback or just use the coordinator.
+    // Let's modify JobCoordinator to support results or just register a handler here.
   }, [entities, links, selectedNode, focusMode]);
+
+  useEffect(() => {
+    const handler = async (payload: unknown) => {
+      const { entities, links, selectedNode } = payload as { entities: Entity[], links: Link[], selectedNode: string };
+      const neighborIds = new Set<string>([selectedNode]);
+      links.forEach((l: Link) => {
+        if (l.source_id === selectedNode) neighborIds.add(l.target_id);
+        if (l.target_id === selectedNode) neighborIds.add(l.source_id);
+      });
+
+      setFilteredData({
+        entities: entities.filter((e: Entity) => neighborIds.has(e.id!)),
+        links: links.filter((l: Link) => neighborIds.has(l.source_id) && neighborIds.has(l.target_id))
+      });
+    };
+
+    jobCoordinator.registerHandler('recompute-neighborhood', handler);
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current) return;
