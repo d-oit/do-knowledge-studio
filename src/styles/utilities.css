@@ -1,0 +1,38 @@
+/* Accessibility Utilities */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.status-message {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-base);
+  margin-bottom: var(--space-4);
+  font-size: 14px;
+  font-weight: 500;
+  animation: slideIn var(--motion-fast);
+}
+
+.status-message.success {
+  background: #dcfce7;
+  color: var(--status-success);
+  border: 1px solid #bdf0d2;
+}
+
+.status-message.error {
+  background: #fee2e2;
+  color: var(--status-danger);
+  border: 1px solid #fecaca;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}

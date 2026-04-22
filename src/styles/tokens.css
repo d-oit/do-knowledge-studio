@@ -1,0 +1,87 @@
+/**
+ * Design Tokens (4px grid base)
+ */
+:root {
+  /* Colors - Semantic Roles */
+  --bg-base: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-elevated: #ffffff;
+  --bg-overlay: rgba(0, 0, 0, 0.4);
+  --bg-active: #eff6ff;
+
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-inverse: #ffffff;
+
+  --interactive-primary: #2563eb;
+  --interactive-hover: #1d4ed8;
+  --interactive-disabled: #cbd5e1;
+
+  --status-success: #10b981;
+  --status-warning: #f59e0b;
+  --status-danger: #ef4444;
+  --status-info: #3b82f6;
+
+  --border-default: #e2e8f0;
+  --border-focus: #3b82f6;
+  --border-error: #ef4444;
+
+  /* Spacing (4px grid) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-base: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* Typography */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --size-body: 16px;
+  --size-heading: 1.25rem;
+  --size-display: clamp(1.5rem, 5vw, 2.5rem);
+
+  /* Elevation */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
+
+  /* Motion */
+  --motion-fast: 100ms ease-out;
+  --motion-base: 200ms ease-in-out;
+
+  /* Layout Constants */
+  --sidebar-width: 260px;
+  --search-sidebar-width: 300px;
+  --header-height: 60px;
+}
+
+/* Base Styles */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--size-body);
+  color: var(--text-primary);
+  background: var(--bg-base);
+  line-height: 1.5;
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1, h2, h3 {
+  margin: 0;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
