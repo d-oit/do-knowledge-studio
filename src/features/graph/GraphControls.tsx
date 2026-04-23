@@ -8,7 +8,7 @@ interface GraphControlsProps {
   selectedName?: string;
 }
 
-export const GraphControls: React.FC<GraphControlsProps> = ({
+const GraphControls: React.FC<GraphControlsProps> = ({
   focusMode,
   setFocusMode,
   hasSelection,
@@ -32,3 +32,5 @@ export const GraphControls: React.FC<GraphControlsProps> = ({
     </div>
   );
 };
+
+export default GraphControls;

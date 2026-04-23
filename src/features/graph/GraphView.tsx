@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import Sigma from 'sigma';
 import Graph from 'graphology';
 import { Entity, Link } from '../../lib/validation';
-import { GraphControls } from './GraphControls';
+import GraphControls from './GraphControls';
 import { jobCoordinator } from '../../lib/jobs';
 
 interface Props {

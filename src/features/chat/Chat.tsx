@@ -1,16 +1,11 @@
 import React, { useState } from 'react';
-import { searchKnowledge } from '../../lib/search';
+import { searchKnowledge, SearchResult } from '../../lib/search';
 import { logger } from '../../lib/logger';
 import { Search } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
-}
-
-interface SearchResult {
-  name: string;
-  excerpt: string;
 }
 
 const Chat: React.FC = () => {
@@ -28,7 +23,7 @@ const Chat: React.FC = () => {
     setIsSearching(true);
 
     try {
-      const results = await searchKnowledge(currentInput) as unknown as SearchResult[];
+      const results = await searchKnowledge(currentInput);
 
       let response = `I found ${results.length} relevant items in your local knowledge base.`;
       if (results.length > 0) {
