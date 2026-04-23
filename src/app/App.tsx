@@ -12,6 +12,7 @@ import MobileDrawer from '../components/MobileDrawer';
 import JobMetrics from '../components/JobMetrics';
 import SearchPanel, { SearchResult } from '../features/search/SearchPanel';
 import Editor from '../features/editor/Editor';
+import { GraphControls } from '../features/graph/GraphControls';
 
 const GraphControls = lazy(() => import('../features/graph/GraphControls'));
 const GraphView = lazy(() => import('../features/graph/GraphView'));
@@ -148,8 +149,6 @@ const AppContent: React.FC = () => {
           />
         </div>
       )}
-
-      {import.meta.env.DEV && <JobMetrics />}
     </div>
   );
 };

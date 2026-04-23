@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import Sigma from 'sigma';
 import Graph from 'graphology';
 import { Entity, Link } from '../../lib/validation';
-import GraphControls from './GraphControls';
+import { GraphControls } from './GraphControls';
 import { jobCoordinator } from '../../lib/jobs';
 
 interface Props {
@@ -57,10 +57,6 @@ const GraphView: React.FC<Props> = ({
       selectedNode,
       focusMode
     });
-
-    // In a real app, we might want to subscribe to job completion.
-    // For this task, we'll implement a simple callback or just use the coordinator.
-    // Let's modify JobCoordinator to support results or just register a handler here.
   }, [entities, links, selectedNode, focusMode]);
 
   useEffect(() => {
