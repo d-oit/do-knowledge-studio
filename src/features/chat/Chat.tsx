@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
-import { searchKnowledge, type RankedResult } from '../../lib/search';
+import { searchKnowledge } from '../../lib/search';
 import { logger } from '../../lib/logger';
 import { Search } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+}
+
+interface SearchResult {
+  name: string;
+  excerpt: string;
 }
 
 const Chat: React.FC = () => {
@@ -23,12 +28,11 @@ const Chat: React.FC = () => {
     setIsSearching(true);
 
     try {
-      // For chat, we use all retrieval stages for maximum context
-      const results = await searchKnowledge(currentInput, { stages: ['fts5', 'semantic', 'graph'] });
+      const results = await searchKnowledge(currentInput) as unknown as SearchResult[];
 
       let response = `I found ${results.length} relevant items in your local knowledge base.`;
       if (results.length > 0) {
-        response += '\n\nResults:\n' + results.slice(0, 5).map((r: RankedResult) => `- ${r.name}: ${r.excerpt} (${r.stage})`).join('\n');
+        response += '\n\nResults:\n' + results.slice(0, 5).map((r: SearchResult) => `- ${r.name}: ${r.excerpt}`).join('\n');
         if (results.length > 5) response += `\n\n(Plus ${results.length - 5} more...)`;
       } else {
         response += '\n\nTry searching for different keywords or create new entities in the Editor.';

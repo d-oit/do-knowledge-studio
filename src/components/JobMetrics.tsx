@@ -1,43 +1,41 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { jobCoordinator, JobMetrics as Metrics } from '../lib/jobs';
+import React, { useState, useEffect } from 'react';
+import { jobCoordinator, JobMetrics as IJobMetrics } from '../lib/jobs';
 
 const JobMetrics: React.FC = () => {
-  const [metrics, setMetrics] = useState<Metrics>(jobCoordinator.getMetrics());
-  const renderCount = useRef(0);
-  renderCount.current++;
+  const [metrics, setMetrics] = useState<IJobMetrics>(jobCoordinator.getMetrics());
 
   useEffect(() => {
-    return jobCoordinator.subscribe(setMetrics);
-  }, []);
+    const interval = setInterval(() => {
+      setMetrics(jobCoordinator.getMetrics());
+    }, 1000);
 
-  if (process.env.NODE_ENV === 'production' && !import.meta.env?.DEV) return null;
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="job-metrics-panel" style={{
       position: 'fixed',
-      bottom: '1rem',
-      right: '1rem',
-      background: 'rgba(0,0,0,0.8)',
+      bottom: '10px',
+      right: '10px',
+      background: 'rgba(0, 0, 0, 0.8)',
       color: '#fff',
-      padding: '0.75rem',
-      borderRadius: '8px',
-      fontSize: '0.75rem',
+      padding: '10px',
+      borderRadius: '5px',
+      fontSize: '12px',
       zIndex: 9999,
-      fontFamily: 'monospace',
-      pointerEvents: 'none'
+      pointerEvents: 'none',
+      fontFamily: 'monospace'
     }}>
-      <div style={{ fontWeight: 'bold', marginBottom: '0.5rem', borderBottom: '1px solid #444' }}>
-        Background Jobs
-      </div>
-      <div>Queued: {metrics.queued}</div>
-      <div>Running: {metrics.running}</div>
-      <div>Completed: {metrics.completed}</div>
-      <div>Failed: {metrics.failed}</div>
-      <div>Cancelled: {metrics.cancelled}</div>
-      <div>Coalesced: {metrics.coalesced}</div>
-      <div>Avg Execution: {metrics.completed > 0 ? (metrics.totalExecutionTime / metrics.completed).toFixed(2) : 0}ms</div>
-      <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid #444' }}>
-        UI Renders: {renderCount.current}
+      <h4 style={{ margin: '0 0 5px 0', borderBottom: '1px solid #444' }}>Job Queue Metrics</h4>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px' }}>
+        <span>Queued:</span> <span>{metrics.queued}</span>
+        <span>Running:</span> <span>{metrics.running}</span>
+        <span>Completed:</span> <span>{metrics.completed}</span>
+        <span>Failed:</span> <span>{metrics.failed}</span>
+        <span>Cancelled:</span> <span>{metrics.cancelled}</span>
+        <span>Coalesced:</span> <span>{metrics.coalesced}</span>
+        <span>Avg Wait:</span> <span>{metrics.avgWaitTime.toFixed(0)}ms</span>
+        <span>Avg Exec:</span> <span>{metrics.avgExecutionTime.toFixed(0)}ms</span>
       </div>
     </div>
   );
