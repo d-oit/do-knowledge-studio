@@ -97,7 +97,10 @@ jobs:
     name: Quality Gate
     runs-on: ubuntu-latest
     needs: changes
-    if: needs.changes.outputs.any_code == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.agent == 'true'
+    if: >-
+      needs.changes.outputs.any_code == 'true' ||
+      needs.changes.outputs.docs == 'true' ||
+      needs.changes.outputs.agent == 'true'
     timeout-minutes: 10  # Fail fast instead of waiting 6 hours
     steps:
       - name: Checkout repository
