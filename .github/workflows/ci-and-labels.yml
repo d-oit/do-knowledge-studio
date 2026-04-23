@@ -34,7 +34,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
       - name: Path Filter
-        uses: dorny/paths-filter@de296997ff2c1fe9d5901306385a49449bc96a09  # v3.0.2
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36  # v3.0.2
         id: filter
         with:
           filters: |
@@ -97,7 +97,7 @@ jobs:
     name: Quality Gate
     runs-on: ubuntu-latest
     needs: changes
-    if: needs.changes.outputs.any_code == 'true' || needs.changes.outputs.docs == 'true'
+    if: needs.changes.outputs.any_code == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.agent == 'true'
     timeout-minutes: 10  # Fail fast instead of waiting 6 hours
     steps:
       - name: Checkout repository
@@ -157,7 +157,7 @@ jobs:
 
       - name: Run quality gate
         run: |
-          SKIP_GLOBAL_HOOKS_CHECK=true ./scripts/quality_gate.sh
+          SKIP_GLOBAL_HOOKS_CHECK=true ./scripts/quality_gate.sh --changed
 
   test:
     name: Run Tests
