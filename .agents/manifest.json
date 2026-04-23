@@ -1,0 +1,55 @@
+{
+  "version": "1.0.0",
+  "canonical_skills": ".agents/skills",
+  "global_docs": [
+    "AGENTS.md",
+    "README.md"
+  ],
+  "tools": {
+    "claude": {
+      "directory": ".claude",
+      "skills_directory": ".claude/skills",
+      "docs": [
+        "CLAUDE.md"
+      ],
+      "symlink_strategy": "relative"
+    },
+    "gemini": {
+      "directory": ".gemini",
+      "skills_directory": ".gemini/skills",
+      "docs": [
+        "GEMINI.md"
+      ],
+      "symlink_strategy": "relative"
+    },
+    "qwen": {
+      "directory": ".qwen",
+      "skills_directory": ".qwen/skills",
+      "docs": [
+        "QWEN.md"
+      ],
+      "symlink_strategy": "relative"
+    },
+    "cursor": {
+      "directory": ".cursor",
+      "skills_directory": ".cursor/skills",
+      "symlink_strategy": "directory"
+    },
+    "windsurf": {
+      "directory": ".windsurf",
+      "skills_directory": ".windsurf/skills",
+      "symlink_strategy": "directory"
+    },
+    "opencode": {
+      "directory": ".opencode",
+      "docs": [
+        "opencode.json"
+      ],
+      "symlink_strategy": "none"
+    },
+    "jules": {
+      "directory": ".jules",
+      "symlink_strategy": "none"
+    }
+  }
+}

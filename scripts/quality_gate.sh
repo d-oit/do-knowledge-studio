@@ -163,6 +163,14 @@ if [[ "$SCOPE" == "all" || "$SCOPE" == "agent" || "${HAS_AGENT:-false}" == "true
     echo ""
 fi
 
+# --- Always: validate agent-facing surfaces ---
+echo -e "${BLUE}Validating agent-facing surfaces...${NC}"
+if ! ./scripts/agent-surface.py validate; then
+    FAILED=1
+fi
+echo ""
+
+>>>>>>> origin/main
 # --- Validate reference links in SKILL.md files ---
 if [[ "$SCOPE" == "all" || "$SCOPE" == "agent" || "$SCOPE" == "docs" || "${HAS_AGENT:-false}" == "true" || "${HAS_DOCS:-false}" == "true" ]]; then
     echo -e "${BLUE}Validating reference links in SKILL.md files...${NC}"
