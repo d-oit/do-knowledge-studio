@@ -12,6 +12,9 @@ import MobileDrawer from '../components/MobileDrawer';
 import JobMetrics from '../components/JobMetrics';
 import SearchPanel, { SearchResult } from '../features/search/SearchPanel';
 import Editor from '../features/editor/Editor';
+import { RankedResult } from '../lib/search';
+import { GraphControls } from '../features/graph/GraphControls';
+import JobMetrics from '../components/JobMetrics';
 
 const GraphControls = lazy(() => import('../features/graph/GraphControls'));
 const GraphView = lazy(() => import('../features/graph/GraphView'));
@@ -34,7 +37,7 @@ const AppContent: React.FC = () => {
   const [graphFocusMode, setGraphFocusMode] = useState(false);
   const [graphSelectedNode, setGraphSelectedNode] = useState<string | null>(null);
 
-  const handleSearchResultClick = useCallback((result: SearchResult) => {
+  const handleSearchResultClick = useCallback((result: RankedResult) => {
     if (result.type === 'claim' || result.type === 'entity' || result.type === 'note' || result.type === 'concept' || result.type === 'person' || result.type === 'project') {
        setCurrentView('editor');
        // In a real app we would navigate to the specific entity.
@@ -64,7 +67,7 @@ const AppContent: React.FC = () => {
   }, [dbReady, refreshData]);
 
   useEffect(() => {
-    if (dbReady) {
+    if (dbReady && (currentView === 'graph' || currentView === 'mindmap')) {
       refreshData();
     }
   }, [currentView, dbReady, refreshData]);
@@ -101,7 +104,7 @@ const AppContent: React.FC = () => {
             {dbReady && currentView === 'mindmap' && entities.length > 0 && (
               <MindMapView
                 rootEntity={entities[0]}
-                relatedEntities={entities.slice(1, 10)}
+                relatedEntities={entities.slice(1, 100)}
               />
             )}
             {dbReady && currentView === 'mindmap' && entities.length === 0 && (

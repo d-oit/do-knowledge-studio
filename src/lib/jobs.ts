@@ -1,18 +1,6 @@
 import { logger } from './logger';
 
-export type JobType = 'reindex-document' | 'refresh-search-index' | 'recompute-neighborhood' | 'prepare-export';
-
-export interface Job {
-  id: string;
-  type: JobType;
-  targetId?: string;
-  payload?: unknown;
-  status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
-  enqueuedAt: number;
-  startedAt?: number;
-  completedAt?: number;
-  error?: string;
-}
+export type JobStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
 
 export interface JobMetrics {
   queued: number;
@@ -21,129 +9,109 @@ export interface JobMetrics {
   failed: number;
   cancelled: number;
   coalesced: number;
-  avgWaitTime: number;
-  avgExecutionTime: number;
+  totalExecutionTime: number;
 }
 
-export type JobHandler = (payload: unknown, signal?: AbortSignal) => Promise<unknown>;
+export interface Job<T = unknown> {
+  id: string;
+  type: string;
+  payload: unknown;
+  execute: (signal: AbortSignal) => Promise<T>;
+  onComplete?: (result: T) => void;
+  onError?: (error: Error) => void;
+  coalesceKey?: string;
+}
 
-export class JobCoordinator {
-  private queue: Job[] = [];
-  private currentJob: Job | null = null;
-  private abortController: AbortController | null = null;
-
-  private metrics = {
-    completedCount: 0,
-    failedCount: 0,
-    cancelledCount: 0,
-    coalescedCount: 0,
-    totalWaitTime: 0,
+/* eslint-disable @typescript-eslint/no-explicit-any */
+class JobCoordinator {
+  private queue: Job<any>[] = [];
+  private activeJobs = new Map<string, { job: Job<any>; controller: AbortController }>();
+  private metrics: JobMetrics = {
+    queued: 0,
+    running: 0,
+    completed: 0,
+    failed: 0,
+    cancelled: 0,
+    coalesced: 0,
     totalExecutionTime: 0,
   };
+  private listeners: ((metrics: JobMetrics) => void)[] = [];
 
-  private handlers: Map<JobType, JobHandler> = new Map();
+  enqueue<T>(job: Job<T>) {
+    if (job.coalesceKey) {
+      const existingIndex = this.queue.findIndex(j => j.coalesceKey === job.coalesceKey);
+      if (existingIndex !== -1) {
+        this.queue.splice(existingIndex, 1);
+        this.metrics.coalesced++;
+      }
 
-  constructor() {
-    this.processQueue = this.processQueue.bind(this);
-  }
-
-  registerHandler(type: JobType, handler: JobHandler) {
-    this.handlers.set(type, handler);
-    logger.info(`Job handler registered for: ${type}`);
-  }
-
-  enqueue(type: JobType, targetId?: string, payload?: unknown): string {
-    // Coalesce: if a job of the same type and targetId is already queued, update it
-    if (targetId) {
-      const existingJob = this.queue.find(j => j.type === type && j.targetId === targetId && j.status === 'queued');
-      if (existingJob) {
-        existingJob.payload = payload;
-        // Keep original enqueuedAt to track total wait time accurately,
-        // OR update it if we consider it a "new" request.
-        // The requirement says "fast edit bursts do not create redundant work".
-        // Updating the payload is the key.
-        this.metrics.coalescedCount++;
-        return existingJob.id;
+      const activeJob = this.activeJobs.get(job.coalesceKey);
+      if (activeJob) {
+        activeJob.controller.abort();
+        this.activeJobs.delete(job.coalesceKey);
+        this.metrics.cancelled++;
+        this.metrics.running--;
       }
     }
 
-    const job: Job = {
-      id: crypto.randomUUID(),
-      type,
-      targetId,
-      payload,
-      status: 'queued',
-      enqueuedAt: Date.now(),
-    };
-
     this.queue.push(job);
-
-    // Trigger queue processing
-    setTimeout(this.processQueue, 0);
-
-    return job.id;
+    this.metrics.queued++;
+    this.notify();
+    this.processQueue();
   }
 
   private async processQueue() {
-    if (this.currentJob || this.queue.length === 0) return;
+    if (this.queue.length === 0 || this.activeJobs.size >= 4) return;
 
-    this.currentJob = this.queue.shift()!;
-    this.currentJob.status = 'running';
-    this.currentJob.startedAt = Date.now();
+    const job = this.queue.shift()!;
+    this.metrics.queued--;
+    this.metrics.running++;
+    this.notify();
 
-    const waitTime = this.currentJob.startedAt - this.currentJob.enqueuedAt;
-    this.metrics.totalWaitTime += waitTime;
+    const controller = new AbortController();
+    const key = job.coalesceKey || job.id;
+    this.activeJobs.set(key, { job, controller });
 
-    this.abortController = new AbortController();
-
+    const startTime = performance.now();
     try {
-      const handler = this.handlers.get(this.currentJob.type);
-      if (handler) {
-        await handler(this.currentJob.payload, this.abortController.signal);
-        this.currentJob.status = 'completed';
-        this.metrics.completedCount++;
-      } else {
-        logger.warn(`No handler registered for job type: ${this.currentJob.type}`);
-        this.currentJob.status = 'failed';
-        this.currentJob.error = 'No handler registered';
-        this.metrics.failedCount++;
+      const result = await job.execute(controller.signal);
+      if (!controller.signal.aborted) {
+        this.metrics.completed++;
+        job.onComplete?.(result);
       }
-    } catch (err: unknown) {
+    } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {
-        this.currentJob.status = 'cancelled';
-        this.metrics.cancelledCount++;
+        // Handled as cancellation
       } else {
-        logger.error(`Job failed: ${this.currentJob.type}`, err);
-        this.currentJob.status = 'failed';
-        this.currentJob.error = err instanceof Error ? err.message : String(err);
-        this.metrics.failedCount++;
+        logger.error(`Job ${job.id} (${job.type}) failed`, err);
+        this.metrics.failed++;
+        job.onError?.(err as Error);
       }
     } finally {
-      this.currentJob.completedAt = Date.now();
-      const executionTime = this.currentJob.completedAt - this.currentJob.startedAt;
-      this.metrics.totalExecutionTime += executionTime;
-
-      this.currentJob = null;
-      this.abortController = null;
-      setTimeout(this.processQueue, 0);
+      if (!controller.signal.aborted) {
+        this.activeJobs.delete(key);
+        this.metrics.running--;
+      }
+      this.metrics.totalExecutionTime += performance.now() - startTime;
+      this.notify();
+      this.processQueue();
     }
   }
 
-  getMetrics(): JobMetrics {
-    const finishedCount = this.metrics.completedCount + this.metrics.failedCount;
-    const avgWaitTime = finishedCount > 0 ? this.metrics.totalWaitTime / finishedCount : 0;
-    const avgExecutionTime = finishedCount > 0 ? this.metrics.totalExecutionTime / finishedCount : 0;
-
-    return {
-      queued: this.queue.length,
-      running: this.currentJob ? 1 : 0,
-      completed: this.metrics.completedCount,
-      failed: this.metrics.failedCount,
-      cancelled: this.metrics.cancelledCount,
-      coalesced: this.metrics.coalescedCount,
-      avgWaitTime,
-      avgExecutionTime,
+  subscribe(listener: (metrics: JobMetrics) => void) {
+    this.listeners.push(listener);
+    listener({ ...this.metrics });
+    return () => {
+      this.listeners = this.listeners.filter(l => l !== listener);
     };
+  }
+
+  private notify() {
+    this.listeners.forEach(l => l({ ...this.metrics }));
+  }
+
+  getMetrics() {
+    return { ...this.metrics };
   }
 }
 
