@@ -55,6 +55,13 @@ for skill_path in "$SKILLS_SRC"/*/; do
         continue
     fi
 
+    # Check 1b: Must start with ---
+    first=$(head -1 "$skill_path/SKILL.md")
+    if [[ "$first" != "---" ]]; then
+        echo -e "  ${RED}✗${NC} $skill_name: SKILL.md must start with '---'" >&2
+        FAILED=1
+    fi
+
     # Check 2: SKILL.md must have YAML frontmatter with name and description
     if ! grep -q "^name:" "$skill_path/SKILL.md" 2>/dev/null; then
         echo -e "  ${RED}✗${NC} $skill_name: SKILL.md missing 'name:' in frontmatter" >&2
