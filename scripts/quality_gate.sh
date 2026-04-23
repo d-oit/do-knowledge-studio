@@ -63,9 +63,9 @@ if ! ./scripts/validate-github-actions-shas.sh; then
 fi
 echo ""
 
-# --- Always: validate skill symlinks ---
-echo -e "${BLUE}Validating skill symlinks...${NC}"
-if ! ./scripts/validate-skills.sh; then
+# --- Always: validate agent-facing surfaces ---
+echo -e "${BLUE}Validating agent-facing surfaces...${NC}"
+if ! ./scripts/agent-surface.py validate; then
     FAILED=1
 fi
 echo ""
