@@ -12,6 +12,7 @@ import MobileDrawer from '../components/MobileDrawer';
 import SearchPanel from '../features/search/SearchPanel';
 import { RankedResult } from '../lib/search';
 import { GraphControls } from '../features/graph/GraphControls';
+import JobMetrics from '../components/JobMetrics';
 
 const Editor = lazy(() => import('../features/editor/Editor'));
 const GraphView = lazy(() => import('../features/graph/GraphView'));
@@ -64,7 +65,7 @@ const AppContent: React.FC = () => {
   }, [dbReady, refreshData]);
 
   useEffect(() => {
-    if (dbReady) {
+    if (dbReady && (currentView === 'graph' || currentView === 'mindmap')) {
       refreshData();
     }
   }, [currentView, dbReady, refreshData]);
@@ -101,7 +102,7 @@ const AppContent: React.FC = () => {
             {dbReady && currentView === 'mindmap' && entities.length > 0 && (
               <MindMapView
                 rootEntity={entities[0]}
-                relatedEntities={entities.slice(1, 10)}
+                relatedEntities={entities.slice(1, 100)}
               />
             )}
             {dbReady && currentView === 'mindmap' && entities.length === 0 && (
@@ -146,6 +147,8 @@ const AppContent: React.FC = () => {
           />
         </div>
       )}
+
+      {import.meta.env.DEV && <JobMetrics />}
     </div>
   );
 };
