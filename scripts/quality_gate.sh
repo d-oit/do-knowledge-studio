@@ -154,9 +154,9 @@ if [[ "$SCOPE" == "all" || "$SCOPE" == "tooling" || "${HAS_TOOLING:-false}" == "
     echo ""
 fi
 
-# --- Always: validate skill symlinks ---
+# --- Always: validate skill symlinks and format ---
 if [[ "$SCOPE" == "all" || "$SCOPE" == "agent" || "${HAS_AGENT:-false}" == "true" ]]; then
-    echo -e "${BLUE}Validating skill symlinks...${NC}"
+    echo -e "${BLUE}Validating skill symlinks and format...${NC}"
     if ! ./scripts/validate-skills.sh; then
         FAILED=1
     fi
@@ -168,16 +168,9 @@ echo -e "${BLUE}Validating agent-facing surfaces...${NC}"
 if ! ./scripts/agent-surface.py validate; then
     FAILED=1
 fi
+echo ""
 
-# --- Validate SKILL.md format ---
-if [[ "$SCOPE" == "all" || "$SCOPE" == "agent" || "${HAS_AGENT:-false}" == "true" ]]; then
-    echo -e "${BLUE}Validating SKILL.md format...${NC}"
-    if ! ./scripts/validate-skill-format.sh; then
-        FAILED=1
-    fi
-    echo ""
-fi
-
+>>>>>>> origin/main
 # --- Validate reference links in SKILL.md files ---
 if [[ "$SCOPE" == "all" || "$SCOPE" == "agent" || "$SCOPE" == "docs" || "${HAS_AGENT:-false}" == "true" || "${HAS_DOCS:-false}" == "true" ]]; then
     echo -e "${BLUE}Validating reference links in SKILL.md files...${NC}"
