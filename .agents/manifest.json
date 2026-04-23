@@ -33,12 +33,12 @@
     "cursor": {
       "directory": ".cursor",
       "skills_directory": ".cursor/skills",
-      "symlink_strategy": "relative"
+      "symlink_strategy": "directory"
     },
     "windsurf": {
       "directory": ".windsurf",
       "skills_directory": ".windsurf/skills",
-      "symlink_strategy": "relative"
+      "symlink_strategy": "directory"
     },
     "opencode": {
       "directory": ".opencode",
