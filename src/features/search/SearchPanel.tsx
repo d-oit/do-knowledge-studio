@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { searchKnowledge } from '../../lib/search';
+import { searchKnowledge, SearchResult } from '../../lib/search';
 import { logger } from '../../lib/logger';
 import { Search, X } from 'lucide-react';
 
@@ -7,13 +7,6 @@ interface SearchPanelProps {
   onClose?: () => void;
   isMobile?: boolean;
   onResultClick?: (result: SearchResult) => void;
-}
-
-export interface SearchResult {
-  id: string;
-  name: string;
-  type: string;
-  description: string;
 }
 
 const SearchPanel: React.FC<SearchPanelProps> = ({ onClose, isMobile, onResultClick }) => {
@@ -26,7 +19,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ onClose, isMobile, onResultCl
       if (query.trim().length > 1) {
         setIsSearching(true);
         try {
-          const res = await searchKnowledge(query) as unknown as SearchResult[];
+          const res = await searchKnowledge(query);
           setResults(res);
         } catch (err) {
           logger.error('Search failed', err);
@@ -76,7 +69,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ onClose, isMobile, onResultCl
           >
             <div className="result-type">{result.type}</div>
             <div className="result-name">{result.name}</div>
-            <div className="result-description">{result.description}</div>
+            <div className="result-description">{result.excerpt}</div>
           </div>
         ))}
       </div>

@@ -52,6 +52,11 @@ export class JobCoordinator {
     logger.info(`Job handler registered for: ${type}`);
   }
 
+  unregisterHandler(type: JobType) {
+    this.handlers.delete(type);
+    logger.info(`Job handler unregistered for: ${type}`);
+  }
+
   enqueue(type: JobType, targetId?: string, payload?: unknown): string {
     // Coalesce: if a job of the same type and targetId is already queued, update it
     if (targetId) {

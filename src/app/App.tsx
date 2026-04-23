@@ -3,16 +3,16 @@ import { DbProvider, useDb } from '../db/DbProvider';
 import { repository } from '../db/repository';
 import { logger } from '../lib/logger';
 import { hydrateOramaIndex } from '../lib/search';
+import { SearchResult } from '../lib/search';
 import { Entity, Link } from '../lib/validation';
 import '../styles/index.css';
 import LoadingSpinner from '../components/LoadingSpinner';
 import SidebarNav from '../components/SidebarNav';
 import Header from '../components/Header';
 import MobileDrawer from '../components/MobileDrawer';
-import JobMetrics from '../components/JobMetrics';
-import SearchPanel, { SearchResult } from '../features/search/SearchPanel';
+import SearchPanel from '../features/search/SearchPanel';
+import ErrorBoundary from '../components/ErrorBoundary';
 import Editor from '../features/editor/Editor';
-import { GraphControls } from '../features/graph/GraphControls';
 
 const GraphControls = lazy(() => import('../features/graph/GraphControls'));
 const GraphView = lazy(() => import('../features/graph/GraphView'));
@@ -86,32 +86,34 @@ const AppContent: React.FC = () => {
 
         <main className="main-content">
           {!dbReady && <div className="loading-screen">Booting Knowledge Studio...</div>}
-          <Suspense fallback={<LoadingSpinner />}>
-            {dbReady && currentView === 'editor' && <Editor />}
-            {dbReady && currentView === 'graph' && (
-              <GraphView
-                entities={entities}
-                links={links}
-                focusMode={graphFocusMode}
-                onFocusModeChange={setGraphFocusMode}
-                selectedNode={graphSelectedNode}
-                onSelectedNodeChange={setGraphSelectedNode}
-                hideToolbar={window.innerWidth < 768}
-              />
-            )}
-            {dbReady && currentView === 'mindmap' && entities.length > 0 && (
-              <MindMapView
-                rootEntity={entities[0]}
-                relatedEntities={entities.slice(1, 10)}
-              />
-            )}
-            {dbReady && currentView === 'mindmap' && entities.length === 0 && (
-               <div className="empty-state">No entities found. Create some in the Editor first.</div>
-            )}
-            {dbReady && currentView === 'chat' && <Chat />}
-            {dbReady && currentView === 'export' && <ExportPanel />}
-            {dbReady && currentView === 'ai' && <AIHarness />}
-          </Suspense>
+          <ErrorBoundary fallback={<div className="error-state">Failed to load component. Please refresh.</div>}>
+            <Suspense fallback={<LoadingSpinner />}>
+              {dbReady && currentView === 'editor' && <Editor />}
+              {dbReady && currentView === 'graph' && (
+                <GraphView
+                  entities={entities}
+                  links={links}
+                  focusMode={graphFocusMode}
+                  onFocusModeChange={setGraphFocusMode}
+                  selectedNode={graphSelectedNode}
+                  onSelectedNodeChange={setGraphSelectedNode}
+                  hideToolbar={window.innerWidth < 768}
+                />
+              )}
+              {dbReady && currentView === 'mindmap' && entities.length > 0 && (
+                <MindMapView
+                  rootEntity={entities[0]}
+                  relatedEntities={entities.slice(1, 10)}
+                />
+              )}
+              {dbReady && currentView === 'mindmap' && entities.length === 0 && (
+                 <div className="empty-state">No entities found. Create some in the Editor first.</div>
+              )}
+              {dbReady && currentView === 'chat' && <Chat />}
+              {dbReady && currentView === 'export' && <ExportPanel />}
+              {dbReady && currentView === 'ai' && <AIHarness />}
+            </Suspense>
+          </ErrorBoundary>
         </main>
 
         <aside className="search-sidebar">

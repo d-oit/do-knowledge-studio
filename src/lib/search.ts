@@ -155,7 +155,14 @@ export const hydrateOramaIndex = () => {
   }
 };
 
-export const searchKnowledge = async (query: string) => {
+export interface SearchResult {
+  id: string;
+  name: string;
+  type: string;
+  excerpt: string;
+}
+
+export const searchKnowledge = async (query: string): Promise<SearchResult[]> => {
   if (!oramaDb) await initSearch();
 
   const results = await search(oramaDb!, {
@@ -163,5 +170,13 @@ export const searchKnowledge = async (query: string) => {
     properties: ['name', 'excerpt'],
   });
 
-  return results.hits.map(hit => hit.document);
+  return results.hits.map(hit => {
+    const doc = hit.document as unknown as SearchDoc;
+    return {
+      id: doc.id,
+      name: doc.name,
+      type: doc.type,
+      excerpt: doc.excerpt,
+    };
+  });
 };
