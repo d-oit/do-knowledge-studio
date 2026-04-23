@@ -42,9 +42,18 @@ export class Repository {
 
   async searchEntities(query: string): Promise<Entity[]> {
     try {
-      const results = await this.searchFTS5(query);
+      // Use FTS5 for search
+      const results = await this.db.exec({
+        sql: `SELECT DISTINCT e.* FROM entities e
+              JOIN search_idx s ON e.id = s.entity_id
+              WHERE search_idx MATCH ?
+              ORDER BY rank`,
+        bind: [query],
+        returnValue: 'resultRows',
+        rowMode: 'object',
+      }) as Record<string, unknown>[];
 
-      // If FTS5 yields no results, do a simple LIKE fallback
+      // Fallback to LIKE if FTS5 returns nothing or for simple queries
       if (results.length === 0) {
         const fallback = await this.db.exec({
           sql: `SELECT * FROM entities
@@ -57,73 +66,10 @@ export class Repository {
         return fallback.map((r) => this.parseMetadata<Entity>(r));
       }
 
-      // Map FTS5 results back to entities
-      // Since searchFTS5 might return same entity multiple times (one for each claim), we deduplicate
-      const entityIds = [...new Set(results.map(r => r.id))];
-      const entities = await Promise.all(entityIds.map(id => this.getEntityById(id)));
-      return entities.filter((e): e is Entity => !!e);
+      return results.map((r) => this.parseMetadata<Entity>(r));
     } catch (err) {
       logger.error('Failed to search entities', err);
       throw new AppError('Failed to search entities', 'DB_ERROR', err);
-    }
-  }
-
-  async getEntityById(id: string): Promise<Entity | null> {
-    try {
-      const result = await this.db.exec({
-        sql: `SELECT * FROM entities WHERE id = ?`,
-        bind: [id],
-        returnValue: 'resultRows',
-        rowMode: 'object',
-      }) as Record<string, unknown>[];
-      return result[0] ? this.parseMetadata<Entity>(result[0]) : null;
-    } catch (err) {
-      logger.error('Failed to fetch entity', err);
-      return null;
-    }
-  }
-
-  async searchFTS5(query: string): Promise<{ id: string; name: string; type: string; excerpt: string; score: number }[]> {
-    try {
-      // SQLite FTS5 'rank' is lower for better matches, so we'll invert it for score or just pass it as is.
-      // We join with entities to get metadata.
-      const results = await this.db.exec({
-        sql: `SELECT e.id, e.name, e.type,
-                     COALESCE(s.statement, e.description) as excerpt,
-                     s.rank as score
-              FROM search_idx s
-              JOIN entities e ON s.entity_id = e.id
-              WHERE search_idx MATCH ?
-              ORDER BY rank
-              LIMIT 50`,
-        bind: [query],
-        returnValue: 'resultRows',
-        rowMode: 'object',
-      }) as { id: string; name: string; type: string; excerpt: string; score: number }[];
-
-      return results;
-    } catch (err) {
-      logger.error('FTS5 search failed', err);
-      return [];
-    }
-  }
-
-  async getRelatedEntities(id: string): Promise<Entity[]> {
-    try {
-      const results = await this.db.exec({
-        sql: `SELECT e.* FROM entities e
-              JOIN links l ON (e.id = l.target_id AND l.source_id = ?)
-                           OR (e.id = l.source_id AND l.target_id = ?)
-              WHERE e.id != ?
-              GROUP BY e.id`,
-        bind: [id, id, id],
-        returnValue: 'resultRows',
-        rowMode: 'object',
-      }) as Record<string, unknown>[];
-      return results.map((r) => this.parseMetadata<Entity>(r));
-    } catch (err) {
-      logger.error('Failed to fetch related entities', err);
-      return [];
     }
   }
 
