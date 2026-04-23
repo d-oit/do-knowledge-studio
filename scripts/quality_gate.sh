@@ -43,7 +43,96 @@ FAILED=0
 # We use this array to conditionally run only relevant checks
 DETECTED_LANGUAGES=()
 
-echo "Running quality gate..."
+# Scopes for validation
+VALID_SCOPES=("all" "docs" "agent" "frontend" "cli" "export" "tooling")
+SCOPE=""
+FAST_MODE=false
+CHANGED_ONLY=false
+
+# Simple argument parsing
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --scope)
+            SCOPE="$2"
+            shift 2
+            ;;
+        --fast)
+            FAST_MODE=true
+            shift
+            ;;
+        --changed)
+            CHANGED_ONLY=true
+            shift
+            ;;
+        --help)
+            echo "Usage: $0 [--scope <scope>] [--fast] [--changed]"
+            echo "Scopes: ${VALID_SCOPES[*]}"
+            exit 0
+            ;;
+        *)
+            echo "Unknown argument: $1"
+            exit 1
+            ;;
+    esac
+done
+
+# Validate scope
+if [[ -n "$SCOPE" ]] && [[ ! " ${VALID_SCOPES[*]} " =~ " ${SCOPE} " ]]; then
+    echo -e "${RED}Error: Invalid scope '${SCOPE}'. Valid scopes are: ${VALID_SCOPES[*]}${NC}"
+    exit 1
+fi
+
+# Set default scope to "all" if not provided and not in changed-only mode
+if [[ -z "$SCOPE" ]] && [ "$CHANGED_ONLY" = false ]; then
+    SCOPE="all"
+fi
+
+# Detect changed scope if requested
+if [ "$CHANGED_ONLY" = true ]; then
+    if ! command -v git &> /dev/null; then
+        echo -e "${YELLOW}Warning: git not found, defaulting to scope 'all'${NC}"
+    else
+        echo -e "${BLUE}Detecting changed files...${NC}"
+        # Get changed files against main or develop
+        BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
+        BASE_BRANCH=${BASE_BRANCH:-main}
+
+        CHANGED_FILES=$(git diff --name-only "$BASE_BRANCH" 2>/dev/null || git diff --name-only HEAD~1 2>/dev/null || echo "")
+
+        if [ -z "$CHANGED_FILES" ]; then
+            echo -e "${GREEN}No changes detected.${NC}"
+            exit 0
+        fi
+
+        # Mapping patterns to scopes
+        HAS_DOCS=false
+        HAS_AGENT=false
+        HAS_FRONTEND=false
+        HAS_CLI=false
+        HAS_EXPORT=false
+        HAS_TOOLING=false
+
+        while IFS= read -r file; do
+            [[ "$file" =~ \.md$ ]] || [[ "$file" =~ ^agents-docs/ ]] && HAS_DOCS=true
+            [[ "$file" =~ ^\.agents/ ]] || [[ "$file" =~ ^AGENTS\.md$ ]] || [[ "$file" =~ ^scripts/validate-(skills|skill-format|links)\.sh$ ]] && HAS_AGENT=true
+            [[ "$file" =~ ^src/ ]] || [[ "$file" =~ ^public/ ]] || [[ "$file" =~ ^index\.html$ ]] || [[ "$file" =~ ^vite\.config\.ts$ ]] && HAS_FRONTEND=true
+            [[ "$file" =~ ^cli/ ]] && HAS_CLI=true
+            [[ "$file" =~ ^export/ ]] && HAS_EXPORT=true
+            [[ "$file" =~ ^scripts/ ]] || [[ "$file" =~ ^\.github/ ]] || [[ "$file" =~ ^package\.json$ ]] && HAS_TOOLING=true
+        done <<< "$CHANGED_FILES"
+
+        # If multiple scopes changed, we might want to run all or a subset
+        # For simplicity, if anything besides docs changed, we might skip doc-only logic
+        # But here we'll just refine what to run below.
+    fi
+fi
+
+if [ "$FAST_MODE" = true ]; then
+    echo -e "${YELLOW}Running in FAST mode (skipping heavy tests)${NC}"
+    SKIP_TESTS=true
+fi
+
+echo "Running quality gate (Scope: $SCOPE)..."
 echo ""
 
 # --- Validate git hooks configuration (prevent global hooks from overriding local) ---
@@ -57,32 +146,40 @@ if [ "${SKIP_GLOBAL_HOOKS_CHECK:-false}" != "true" ]; then
 fi
 
 # --- Validate GitHub Actions SHAs ---
-echo -e "${BLUE}Validating GitHub Actions SHAs...${NC}"
-if ! ./scripts/validate-github-actions-shas.sh; then
-    FAILED=1
+if [[ "$SCOPE" == "all" || "$SCOPE" == "tooling" || "${HAS_TOOLING:-false}" == "true" ]]; then
+    echo -e "${BLUE}Validating GitHub Actions SHAs...${NC}"
+    if ! ./scripts/validate-github-actions-shas.sh; then
+        FAILED=1
+    fi
+    echo ""
 fi
-echo ""
 
 # --- Always: validate skill symlinks ---
-echo -e "${BLUE}Validating skill symlinks...${NC}"
-if ! ./scripts/validate-skills.sh; then
-    FAILED=1
+if [[ "$SCOPE" == "all" || "$SCOPE" == "agent" || "${HAS_AGENT:-false}" == "true" ]]; then
+    echo -e "${BLUE}Validating skill symlinks...${NC}"
+    if ! ./scripts/validate-skills.sh; then
+        FAILED=1
+    fi
+    echo ""
 fi
-echo ""
 
 # --- Validate SKILL.md format ---
-echo -e "${BLUE}Validating SKILL.md format...${NC}"
-if ! ./scripts/validate-skill-format.sh; then
-    FAILED=1
+if [[ "$SCOPE" == "all" || "$SCOPE" == "agent" || "${HAS_AGENT:-false}" == "true" ]]; then
+    echo -e "${BLUE}Validating SKILL.md format...${NC}"
+    if ! ./scripts/validate-skill-format.sh; then
+        FAILED=1
+    fi
+    echo ""
 fi
-echo ""
 
 # --- Validate reference links in SKILL.md files ---
-echo -e "${BLUE}Validating reference links in SKILL.md files...${NC}"
-if ! ./scripts/validate-links.sh; then
-    FAILED=1
+if [[ "$SCOPE" == "all" || "$SCOPE" == "agent" || "$SCOPE" == "docs" || "${HAS_AGENT:-false}" == "true" || "${HAS_DOCS:-false}" == "true" ]]; then
+    echo -e "${BLUE}Validating reference links in SKILL.md files...${NC}"
+    if ! ./scripts/validate-links.sh; then
+        FAILED=1
+    fi
+    echo ""
 fi
-echo ""
 
 # --- Auto-detect project languages ---
 # We detect languages by checking for ecosystem-specific marker files.
@@ -157,7 +254,7 @@ echo ""
 # Why capture output? We want clean "pass/fail" output first, with details on failure only
 
 # Rust checks
-if [[ " ${DETECTED_LANGUAGES[*]} " =~ " rust " ]]; then
+if [[ " ${DETECTED_LANGUAGES[*]} " =~ " rust " ]] && [[ "$SCOPE" == "all" || "${HAS_TOOLING:-false}" == "true" ]]; then
     echo -e "${BLUE}Running Rust checks...${NC}"
 
     if command -v cargo &> /dev/null; then
@@ -202,7 +299,7 @@ fi
 
 # TypeScript / JavaScript checks
 # Prefers pnpm (faster, disk efficient) but falls back to npm if pnpm unavailable
-if [[ " ${DETECTED_LANGUAGES[*]} " =~ " typescript " ]]; then
+if [[ " ${DETECTED_LANGUAGES[*]} " =~ " typescript " ]] && [[ "$SCOPE" == "all" || "$SCOPE" == "frontend" || "$SCOPE" == "cli" || "$SCOPE" == "export" || "$SCOPE" == "tooling" || "${HAS_FRONTEND:-false}" == "true" || "${HAS_CLI:-false}" == "true" || "${HAS_EXPORT:-false}" == "true" || "${HAS_TOOLING:-false}" == "true" ]]; then
     echo -e "${BLUE}Running TypeScript/JavaScript checks...${NC}"
 
     # Check for pnpm first (preferred package manager)
@@ -272,7 +369,7 @@ fi
 # Python checks
 # Uses ruff (modern, fast Python linter) and black (strict formatter)
 # Falls back to warnings if tools not installed (Python dev tools are optional)
-if [[ " ${DETECTED_LANGUAGES[*]} " =~ " python " ]]; then
+if [[ " ${DETECTED_LANGUAGES[*]} " =~ " python " ]] && [[ "$SCOPE" == "all" || "$SCOPE" == "agent" || "${HAS_AGENT:-false}" == "true" ]]; then
     echo -e "${BLUE}Running Python checks...${NC}"
 
     # ruff: Extremely fast Python linter written in Rust
@@ -323,7 +420,7 @@ fi
 
 # Go checks
 # Standard Go toolchain provides everything needed: gofmt, go vet, go test
-if [[ " ${DETECTED_LANGUAGES[*]} " =~ " go " ]]; then
+if [[ " ${DETECTED_LANGUAGES[*]} " =~ " go " ]] && [[ "$SCOPE" == "all" ]]; then
     echo -e "${BLUE}Running Go checks...${NC}"
 
     if command -v go &> /dev/null; then
@@ -365,7 +462,7 @@ fi
 
 # Shell script checks
 # Uses shellcheck (static analysis for bash/sh) and BATS (Bash Automated Testing System)
-if [[ " ${DETECTED_LANGUAGES[*]} " =~ " shell " ]]; then
+if [[ " ${DETECTED_LANGUAGES[*]} " =~ " shell " ]] && [[ "$SCOPE" == "all" || "$SCOPE" == "tooling" || "$SCOPE" == "agent" || "${HAS_TOOLING:-false}" == "true" || "${HAS_AGENT:-false}" == "true" ]]; then
     echo -e "${BLUE}Running Shell script checks...${NC}"
 
     if command -v shellcheck &> /dev/null; then
@@ -418,7 +515,7 @@ fi
 
 # Markdown checks (if markdownlint is available)
 # markdownlint enforces consistent Markdown style across the repo
-if [[ " ${DETECTED_LANGUAGES[*]} " =~ " markdown " ]]; then
+if [[ " ${DETECTED_LANGUAGES[*]} " =~ " markdown " ]] && [[ "$SCOPE" == "all" || "$SCOPE" == "docs" || "$SCOPE" == "agent" || "${HAS_DOCS:-false}" == "true" || "${HAS_AGENT:-false}" == "true" ]]; then
     echo -e "${BLUE}Running Markdown checks...${NC}"
 
     if command -v markdownlint &> /dev/null; then

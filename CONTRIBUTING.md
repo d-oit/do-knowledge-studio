@@ -99,11 +99,31 @@ Updated to checkout@v4 and setup-python@v5 for reliability.
 ### 5. Run Quality Gate
 
 ```bash
-# Run full quality gate
+# Use the verification entry point (recommended)
+./scripts/verify.sh --fast    # For quick local checks
+./scripts/verify.sh --full    # Before pushing to remote
+
+# Run specific scopes
+./scripts/verify.sh --scope docs
+./scripts/verify.sh --scope frontend
+
+# Run full quality gate directly
 ./scripts/quality_gate.sh
 
 # Or skip tests for quick check
 SKIP_TESTS=true ./scripts/quality_gate.sh
+```
+
+### Local GitHub Actions Rehearsal
+
+To debug CI workflows locally before pushing, you can use `act`:
+
+```bash
+# List all available jobs
+./scripts/rehearse.sh --list
+
+# Run a specific job (e.g., quality-gate)
+./scripts/rehearse.sh quality-gate
 ```
 
 **Quality gate checks:**
