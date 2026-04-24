@@ -26,8 +26,8 @@ echo "Propagating version $VERSION..."
 # Pattern: version-0.X.Y in badges, Template version: X.Y.Z in text
 FILES_TO_UPDATE=(
     "README.md"
-    "QUICKSTART.md"
     "agents-docs/MIGRATION.md"
+    "package.json"
 )
 
 UPDATED=0
