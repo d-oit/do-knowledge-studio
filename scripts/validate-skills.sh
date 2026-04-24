@@ -8,4 +8,3 @@ cd "$REPO_ROOT"
 
 echo "Validating skills via agent-surface.py..."
 ./scripts/agent-surface.py validate
->>>>>>> origin/main
