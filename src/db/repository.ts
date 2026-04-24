@@ -40,6 +40,22 @@ export class Repository {
     }
   }
 
+  async getEntityByName(name: string): Promise<Entity | null> {
+    try {
+      const results = await this.db.exec({
+        sql: `SELECT * FROM entities WHERE name = ?`,
+        bind: [name],
+        returnValue: 'resultRows',
+        rowMode: 'object',
+      }) as Record<string, unknown>[];
+      if (results.length === 0) return null;
+      return this.parseMetadata<Entity>(results[0]);
+    } catch (err) {
+      logger.error('Failed to fetch entity by name', err);
+      throw new AppError('Failed to fetch entity by name', 'DB_ERROR', err);
+    }
+  }
+
   async searchEntities(query: string): Promise<Entity[]> {
     try {
       // Use FTS5 for search
