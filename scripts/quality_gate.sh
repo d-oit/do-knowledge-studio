@@ -170,7 +170,6 @@ if ! ./scripts/agent-surface.py validate; then
 fi
 echo ""
 
->>>>>>> origin/main
 # --- Validate reference links in SKILL.md files ---
 if [[ "$SCOPE" == "all" || "$SCOPE" == "agent" || "$SCOPE" == "docs" || "${HAS_AGENT:-false}" == "true" || "${HAS_DOCS:-false}" == "true" ]]; then
     echo -e "${BLUE}Validating reference links in SKILL.md files...${NC}"
