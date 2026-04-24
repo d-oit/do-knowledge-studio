@@ -1,5 +1,7 @@
 import { logger } from '../lib/logger';
 
+const DEFAULT_TIMEOUT_MS = 30000; // 30 seconds default timeout
+
 /**
  * Connection Manager for SQLite WASM Worker
  * Manages a single Web Worker and queues requests to ensure sequential processing
@@ -12,6 +14,7 @@ interface PoolRequest {
   payload: unknown;
   resolve: (value: unknown) => void;
   reject: (reason?: unknown) => void;
+  timeout?: ReturnType<typeof setTimeout>;
 }
 
 export class ConnectionPool {
@@ -20,10 +23,19 @@ export class ConnectionPool {
   private queue: PoolRequest[] = [];
   private workerUrl: URL;
   private initialized = false;
+  private timeoutMs = DEFAULT_TIMEOUT_MS;
 
   constructor() {
     // We use a relative path that Vite will handle
     this.workerUrl = new URL('./db-worker.ts', import.meta.url);
+  }
+
+  /**
+   * Set custom timeout for queries (in milliseconds)
+   */
+  setTimeout(ms: number): void {
+    this.timeoutMs = Math.max(1000, Math.min(ms, 120000)); // 1s - 2min bounds
+    logger.info(`Connection pool timeout set to ${this.timeoutMs}ms`);
   }
 
   async init(schema?: string): Promise<void> {
@@ -88,8 +100,17 @@ export class ConnectionPool {
     if (!w) return Promise.reject(new Error('Worker not initialized'));
 
     return new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        w.terminate();
+        this.worker = null;
+        this.initialized = false;
+        logger.error(`Worker timeout after ${this.timeoutMs}ms for request ${id}`);
+        reject(new Error(`Database operation timed out after ${this.timeoutMs}ms`));
+      }, this.timeoutMs);
+
       const handler = (event: MessageEvent) => {
         if (event.data.id === id) {
+          clearTimeout(timeoutId);
           w.removeEventListener('message', handler);
           if (event.data.success) {
             resolve(event.data.data);

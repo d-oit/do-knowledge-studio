@@ -13,9 +13,16 @@ interface SearchDocument {
   keywords: string;
 }
 
-// Use Orama<any> due to complex Orama 3 type system - proper typing requires schema literal types
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let oramaDb: Orama<any> | null = null;
+type OramaSchema = typeof searchSchema;
+const searchSchema = {
+  id: 'string',
+  type: 'string',
+  title: 'string',
+  content: 'string',
+  keywords: 'string',
+} as const;
+
+let oramaDb: Orama<OramaSchema> | null = null;
 const oramaIdMap = new Map<string, string>(); // entityId → oramaInternalId
 
 const addEntityToIndex = async (entity: Entity, claims: Claim[]): Promise<void> => {
@@ -29,7 +36,7 @@ const addEntityToIndex = async (entity: Entity, claims: Claim[]): Promise<void> 
     keywords: entity.type,
   };
 
-  const entityResult = await insert(oramaDb, entityDoc as unknown as Record<string, string>);
+  const entityResult = await insert(oramaDb, entityDoc);
   oramaIdMap.set(entity.id!, entityResult);
 
   for (const claim of claims) {
@@ -40,7 +47,7 @@ const addEntityToIndex = async (entity: Entity, claims: Claim[]): Promise<void> 
       content: compressText(claim.statement),
       keywords: [entity.id!, claim.source || 'unknown'].join(','),
     };
-    const claimResult = await insert(oramaDb, claimDoc as unknown as Record<string, string>);
+    const claimResult = await insert(oramaDb, claimDoc);
     oramaIdMap.set(claim.id!, claimResult);
   }
 };
@@ -164,7 +171,7 @@ export const searchKnowledge = async (query: string): Promise<SearchResult[]> =>
   });
 
   return results.hits.map(hit => {
-    const doc = hit.document as unknown as SearchResult;
+    const doc = hit.document;
     return {
       id: doc.id,
       title: doc.title,
