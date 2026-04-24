@@ -70,6 +70,12 @@
   padding: var(--space-2);
 }
 
+.results-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
 .search-result-item {
   padding: var(--space-3);
   border-radius: var(--radius-base);
@@ -189,9 +195,13 @@ button:hover:not(:disabled) {
   border-color: var(--text-muted);
 }
 
-button:focus-visible {
+button:focus-visible,
+[role="button"]:focus-visible,
+[tabindex="0"]:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px var(--border-focus);
+  outline: 2px solid transparent;
+  outline-offset: 2px;
 }
 
 button:active:not(:disabled) {

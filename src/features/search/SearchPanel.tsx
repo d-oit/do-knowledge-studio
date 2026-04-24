@@ -34,12 +34,20 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ onClose, isMobile, onResultCl
     return () => clearTimeout(delayDebounceFn);
   }, [query]);
 
+  const handleKeyDown = (e: React.KeyboardEvent, result: SearchResult) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onResultClick?.(result);
+    }
+  };
+
   return (
     <div className={`search-panel ${isMobile ? 'mobile-modal' : 'sidebar-panel'}`}>
       <div className="search-header">
         <div className="input-wrapper">
           <Search size={18} className="search-icon" aria-hidden="true" />
           <input
+            type="search"
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -55,23 +63,35 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ onClose, isMobile, onResultCl
       </div>
 
       <div className="search-results">
-        {isSearching && <div className="searching-status">Searching...</div>}
+        <div aria-live="polite" className="sr-only">
+          {isSearching ? 'Searching...' : ''}
+          {!isSearching && query.length > 1 && results.length === 0 ? `No matches found for ${query}` : ''}
+          {!isSearching && results.length > 0 ? `Found ${results.length} results` : ''}
+        </div>
+
+        {isSearching && <div className="searching-status" aria-hidden="true">Searching...</div>}
         {!isSearching && query.length > 1 && results.length === 0 && (
-          <div className="no-results">No matches found for "{query}"</div>
+          <div className="no-results" aria-hidden="true">No matches found for "{query}"</div>
         )}
-        {results.map((result) => (
-          <div
-            key={`${result.type}-${result.id}`}
-            className="search-result-item"
-            onClick={() => onResultClick && onResultClick(result)}
-            role="button"
-            tabIndex={0}
-          >
-            <div className="result-type">{result.type}</div>
-            <div className="result-name">{result.name}</div>
-            <div className="result-description">{result.excerpt}</div>
-          </div>
-        ))}
+
+        {results.length > 0 && (
+          <ul className="results-list" aria-label="Search results">
+            {results.map((result) => (
+              <li
+                key={`${result.type}-${result.id}`}
+                className="search-result-item"
+                onClick={() => onResultClick?.(result)}
+                onKeyDown={(e) => handleKeyDown(e, result)}
+                role="button"
+                tabIndex={0}
+              >
+                <div className="result-type">{result.type}</div>
+                <div className="result-name">{result.name}</div>
+                <div className="result-description">{result.excerpt}</div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );
