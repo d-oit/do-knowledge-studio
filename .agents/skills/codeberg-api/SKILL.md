@@ -199,4 +199,4 @@ jobs:
 
 ## References
 
-- `agents-docs/SKILLS.md` - Skill authoring guide
+- `agents-docs/AVAILABLE_SKILLS.md` - Skill authoring guide

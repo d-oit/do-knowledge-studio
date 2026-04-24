@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Auto-generate AVAILABLE_SKILLS.md from skill definitions.
+"""Auto-generate AVAILABLE_AVAILABLE_SKILLS.md from skill definitions.
 
 Reads frontmatter from .agents/skills/*/SKILL.md and regenerates
-agents-docs/AVAILABLE_SKILLS.md. Run after adding/updating skills.
+agents-docs/AVAILABLE_AVAILABLE_SKILLS.md. Run after adding/updating skills.
 
 Usage: ./scripts/generate-available-skills.sh
 """
@@ -52,7 +52,7 @@ def extract_frontmatter(skill_file: Path) -> dict:
 def main() -> int:
     repo_root = Path(__file__).resolve().parent.parent
     skills_dir = repo_root / ".agents" / "skills"
-    output_file = repo_root / "agents-docs" / "AVAILABLE_SKILLS.md"
+    output_file = repo_root / "agents-docs" / "AVAILABLE_AVAILABLE_SKILLS.md"
 
     if not skills_dir.is_dir():
         print("Error: Skills directory not found", file=sys.stderr)
@@ -100,11 +100,11 @@ def main() -> int:
         "## Usage",
         "",
         "Skills are triggered automatically based on context or loaded explicitly.",
-        "See `agents-docs/SKILLS.md` for loading skills manually.",
+        "See `agents-docs/AVAILABLE_SKILLS.md` for loading skills manually.",
         "",
         "## See Also",
         "",
-        "- `agents-docs/SKILLS.md` - Skill authoring guide",
+        "- `agents-docs/AVAILABLE_SKILLS.md` - Skill authoring guide",
         "- `.agents/skills/skill-rules.json` - Skill validation rules",
     ])
 

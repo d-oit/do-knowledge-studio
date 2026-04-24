@@ -11,7 +11,22 @@ Retrieve semantically relevant past learnings, analysis outputs, and project kno
 ## Prerequisites
 
 ```bash
-cargo install chaotic_semantic_memory --features cli
+cargo install chaotic_semantic_memory --bin csm
+```
+
+The skill checks for `csm` availability and auto-installs if missing.
+
+## Install Check (Auto-Install)
+
+If `csm` is not found, install automatically:
+
+```bash
+if ! command -v csm &> /dev/null; then
+    echo "Installing csm CLI..."
+    cargo install chaotic_semantic_memory --bin csm
+    # Verify installation
+    csm --version
+fi
 ```
 
 ## When to Use

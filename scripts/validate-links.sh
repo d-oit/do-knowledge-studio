@@ -31,7 +31,7 @@ LINKS_CHECKED=0
 
 # Regex to match markdown links: [text](path)
 # Captures two groups: [1]=link text, [2]=link destination
-# Example: [SKILLS.md](agents-docs/SKILLS.md) -> BASH_REMATCH[1]=SKILLS.md, BASH_REMATCH[2]=agents-docs/SKILLS.md
+# Example: [AVAILABLE_SKILLS.md](agents-docs/AVAILABLE_SKILLS.md) -> BASH_REMATCH[1]=AVAILABLE_SKILLS.md, BASH_REMATCH[2]=agents-docs/AVAILABLE_SKILLS.md
 LINK_REGEX='\[([^]]+)\]\(([^)]+)\)'
 
 # Regex to detect deprecated @references format

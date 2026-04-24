@@ -3,16 +3,47 @@ import { repository } from '../db/repository.js';
 import { logger } from './logger.js';
 import { compressText } from './nlp.js';
 import { jobCoordinator } from './jobs.js';
+import type { Entity, Claim } from '../lib/validation.js';
 
-interface SearchDoc {
+interface SearchDocument {
   id: string;
-  name: string;
-  type: string;
-  excerpt: string;
+  type: 'entity' | 'claim';
+  title: string;
+  content: string;
+  keywords: string;
 }
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+// Use Orama<any> due to complex Orama 3 type system - proper typing requires schema literal types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let oramaDb: Orama<any> | null = null;
+const oramaIdMap = new Map<string, string>(); // entityId → oramaInternalId
+
+const addEntityToIndex = async (entity: Entity, claims: Claim[]): Promise<void> => {
+  if (!oramaDb) return;
+
+  const entityDoc: SearchDocument = {
+    id: entity.id!,
+    type: 'entity',
+    title: entity.name,
+    content: compressText(`${entity.name} ${entity.description || ''}`),
+    keywords: entity.type,
+  };
+
+  const entityResult = await insert(oramaDb, entityDoc as unknown as Record<string, string>);
+  oramaIdMap.set(entity.id!, entityResult);
+
+  for (const claim of claims) {
+    const claimDoc: SearchDocument = {
+      id: claim.id!,
+      type: 'claim',
+      title: entity.name,
+      content: compressText(claim.statement),
+      keywords: [entity.id!, claim.source || 'unknown'].join(','),
+    };
+    const claimResult = await insert(oramaDb, claimDoc as unknown as Record<string, string>);
+    oramaIdMap.set(claim.id!, claimResult);
+  }
+};
 
 export const initSearch = async () => {
   if (oramaDb) return oramaDb;
@@ -21,32 +52,17 @@ export const initSearch = async () => {
     oramaDb = await create({
       schema: {
         id: 'string',
-        name: 'string',
         type: 'string',
-        excerpt: 'string',
+        title: 'string',
+        content: 'string',
+        keywords: 'string',
       },
     });
 
     const entities = await repository.getAllEntities();
     for (const entity of entities) {
-      const doc: SearchDoc = {
-        id: entity.id!,
-        name: entity.name,
-        type: entity.type,
-        excerpt: compressText(`${entity.name} ${entity.description || ''}`),
-      };
-      await insert(oramaDb!, doc as unknown as Record<string, string>);
-
       const claims = await repository.getClaimsByEntityId(entity.id!);
-      for (const claim of claims) {
-        const claimDoc: SearchDoc = {
-          id: claim.id!,
-          name: entity.name,
-          type: 'claim',
-          excerpt: compressText(claim.statement),
-        };
-        await insert(oramaDb!, claimDoc as unknown as Record<string, string>);
-      }
+      await addEntityToIndex(entity, claims);
     }
 
     logger.info('Orama search index initialized');
@@ -59,6 +75,7 @@ export const initSearch = async () => {
 
     jobCoordinator.registerHandler('refresh-search-index', async () => {
       oramaDb = null;
+      oramaIdMap.clear();
       await initSearch();
     });
 
@@ -76,31 +93,14 @@ export const upsertToSearchIndex = async (entityId: string) => {
   if (!oramaDb) await initSearch();
 
   try {
-    // First remove existing
     await removeFromSearchIndex(entityId);
 
     const entities = await repository.getAllEntities();
     const entity = entities.find(e => e.id === entityId);
 
     if (entity) {
-      const doc: SearchDoc = {
-        id: entity.id!,
-        name: entity.name,
-        type: entity.type,
-        excerpt: compressText(`${entity.name} ${entity.description || ''}`),
-      };
-      await insert(oramaDb!, doc as unknown as Record<string, string>);
-
       const claims = await repository.getClaimsByEntityId(entity.id!);
-      for (const claim of claims) {
-        const claimDoc: SearchDoc = {
-          id: claim.id!,
-          name: entity.name,
-          type: 'claim',
-          excerpt: compressText(claim.statement),
-        };
-        await insert(oramaDb!, claimDoc as unknown as Record<string, string>);
-      }
+      await addEntityToIndex(entity, claims);
     }
   } catch (err) {
     logger.error(`Failed to upsert entity ${entityId} to search index`, err);
@@ -108,33 +108,26 @@ export const upsertToSearchIndex = async (entityId: string) => {
 };
 
 /**
- * Removes an entity from the search index.
+ * Removes an entity and its claims from the search index.
  */
 export const removeFromSearchIndex = async (entityId: string) => {
   if (!oramaDb) return;
 
   try {
-    // Orama remove requires the document ID.
-    // Since we don't store internal Orama IDs, we need to find them or
-    // use the 'id' property we defined in our schema.
-    // In Orama 3, remove can take an ID if it matches the primary key,
-    // but we didn't explicitly define a primary key.
-    // Let's assume 'id' in our schema is what we want to match.
+    const oramaInternalId = oramaIdMap.get(entityId);
+    if (oramaInternalId) {
+      await remove(oramaDb, oramaInternalId);
+      oramaIdMap.delete(entityId);
+    }
 
-    // Actually, we can use search to find the internal IDs if needed,
-    // but Orama's remove often works with the document ID if configured.
-    // For simplicity, we can also just rebuild if it's too complex,
-    // but the task asks for incremental.
-
-    // Try removing by our 'id' field
-    await remove(oramaDb!, entityId);
-
-    // Note: This might only remove the entity, not its claims.
-    // Our claims also have IDs, but they are not the entityId.
-    // We might need to find all documents with 'id' equal to entityId OR
-    // we need to change how we store claims.
-
-    // For now, let's keep it simple and at least remove the main entity.
+    const claims = await repository.getClaimsByEntityId(entityId);
+    for (const claim of claims) {
+      const claimOramaId = oramaIdMap.get(claim.id!);
+      if (claimOramaId) {
+        await remove(oramaDb, claimOramaId);
+        oramaIdMap.delete(claim.id!);
+      }
+    }
   } catch (err) {
     logger.error(`Failed to remove entity ${entityId} from search index`, err);
   }
@@ -157,9 +150,9 @@ export const hydrateOramaIndex = () => {
 
 export interface SearchResult {
   id: string;
-  name: string;
+  title: string;
   type: string;
-  excerpt: string;
+  content: string;
 }
 
 export const searchKnowledge = async (query: string): Promise<SearchResult[]> => {
@@ -167,16 +160,16 @@ export const searchKnowledge = async (query: string): Promise<SearchResult[]> =>
 
   const results = await search(oramaDb!, {
     term: query,
-    properties: ['name', 'excerpt'],
+    properties: ['title', 'content'],
   });
 
   return results.hits.map(hit => {
-    const doc = hit.document as unknown as SearchDoc;
+    const doc = hit.document as unknown as SearchResult;
     return {
       id: doc.id,
-      name: doc.name,
+      title: doc.title,
       type: doc.type,
-      excerpt: doc.excerpt,
+      content: doc.content,
     };
   });
 };

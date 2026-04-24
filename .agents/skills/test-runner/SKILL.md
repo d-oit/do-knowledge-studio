@@ -158,4 +158,4 @@ for i in {1..10}; do pytest || echo "Failed run $i"; done
 
 ## References
 
-- `agents-docs/SKILLS.md` - Skill framework guide
+- `agents-docs/AVAILABLE_SKILLS.md` - Skill framework guide

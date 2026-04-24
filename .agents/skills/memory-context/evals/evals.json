@@ -22,6 +22,35 @@
         "The agent mentions both AGENTS.md and SECURITY.md as sources",
         "The output includes an example of a pinned action"
       ]
+    },
+    {
+      "id": "install_cargo",
+      "prompt": "Verify skill documents cargo installation method",
+      "expected_output": "SKILL.md includes cargo install command",
+      "files": [".agents/skills/memory-context/SKILL.md"],
+      "assertions": [
+        "The file contains 'cargo install chaotic_semantic_memory'",
+        "The file documents auto-install check"
+      ]
+    },
+    {
+      "id": "auto_install",
+      "prompt": "Verify skill includes auto-install check for missing csm",
+      "expected_output": "SKILL.md includes code that checks for csm availability",
+      "files": [".agents/skills/memory-context/SKILL.md"],
+      "assertions": [
+        "The file contains 'command -v csm'",
+        "The file includes install logic when csm not found"
+      ]
+    },
+    {
+      "id": "csm_works",
+      "prompt": "Verify csm CLI is installed and working",
+      "expected_output": "csm --version returns version string",
+      "files": [],
+      "assertions": [
+        "csm --version returns 'csm' followed by version number"
+      ]
     }
   ]
 }

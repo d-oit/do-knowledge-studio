@@ -35,7 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated README.md version badge to 0.2.0
 - Updated all documentation to reference Qwen Code support
 - Improved CONTRIBUTING.md with comprehensive guide
-- Cleaned up AGENTS_REGISTRY.md formatting
+- Cleaned up AGENTS.md formatting
 
 ### Added
 - develop branch support in ci-and-labels.yml workflow
@@ -77,7 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Documentation:
   - `AGENTS.md` - Single source of truth
   - `agents-docs/HARNESS.md` - Harness engineering overview
-  - `agents-docs/SKILLS.md` - Skill authoring guide
+  - `agents-docs/AVAILABLE_SKILLS.md` - Skill authoring guide
   - `agents-docs/SUB-AGENTS.md` - Context isolation patterns
   - `agents-docs/HOOKS.md` - Hook configuration
   - `agents-docs/CONTEXT.md` - Context engineering & back-pressure

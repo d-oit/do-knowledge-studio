@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-# generate-available-skills.sh - Auto-generate AVAILABLE_SKILLS.md from skill definitions
+# generate-available-skills.sh - Auto-generate AVAILABLE_AVAILABLE_SKILLS.md from skill definitions
 #
 # Usage: ./scripts/generate-available-skills.sh
 #
 # Reads frontmatter from .agents/skills/*/SKILL.md and regenerates
-# agents-docs/AVAILABLE_SKILLS.md. Run after adding/updating skills.
+# agents-docs/AVAILABLE_AVAILABLE_SKILLS.md. Run after adding/updating skills.
 
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SKILLS_DIR="$REPO_ROOT/.agents/skills"
-OUTPUT_FILE="$REPO_ROOT/agents-docs/AVAILABLE_SKILLS.md"
+OUTPUT_FILE="$REPO_ROOT/agents-docs/AVAILABLE_AVAILABLE_SKILLS.md"
 
 # Collect skills by category
 declare -A CATEGORIES
@@ -92,11 +92,11 @@ done
     echo "## Usage"
     echo ""
     echo "Skills are triggered automatically based on context or loaded explicitly."
-    echo "See \`agents-docs/SKILLS.md\` for loading skills manually."
+    echo "See \`agents-docs/AVAILABLE_SKILLS.md\` for loading skills manually."
     echo ""
     echo "## See Also"
     echo ""
-    echo "- \`agents-docs/SKILLS.md\` - Skill authoring guide"
+    echo "- \`agents-docs/AVAILABLE_SKILLS.md\` - Skill authoring guide"
     echo "- \`.agents/skills/skill-rules.json\` - Skill validation rules"
 } > "$OUTPUT_FILE"
 

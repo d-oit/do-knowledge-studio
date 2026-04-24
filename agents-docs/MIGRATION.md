@@ -784,7 +784,7 @@ After migration:
 | [README.md](README.md) | Template overview |
 | [QUICKSTART.md](QUICKSTART.md) | 5-minute setup guide |
 | [AGENTS.md](AGENTS.md) | Agent instruction format |
-| [agents-docs/SKILLS.md](agents-docs/SKILLS.md) | Skill authoring guide |
+| [agents-docs/AVAILABLE_SKILLS.md](agents-docs/AVAILABLE_SKILLS.md) | Skill authoring guide |
 | [agents-docs/SUB-AGENTS.md](agents-docs/SUB-AGENTS.md) | Sub-agent patterns |
 | [agents-docs/HOOKS.md](agents-docs/HOOKS.md) | Hook configuration |
 

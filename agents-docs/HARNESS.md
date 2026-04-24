@@ -25,7 +25,7 @@ Throw away what does not help - more config is not always better.
 All skills live in `.agents/skills/`. Claude Code, Gemini CLI, and Qwen Code use symlinks
 (`.claude/skills/`, `.gemini/skills/`, `.qwen/skills/`) created by `./scripts/setup-skills.sh`.
 OpenCode reads skills directly from `.agents/skills/` - no symlinks needed.
-See `agents-docs/SKILLS.md`.
+See `agents-docs/AVAILABLE_SKILLS.md`.
 
 ## MCP Servers
 
@@ -48,7 +48,7 @@ See `agents-docs/SKILLS.md`.
 
 | Topic | File |
 |---|---|
-| Skills | `agents-docs/SKILLS.md` |
+| Skills | `agents-docs/AVAILABLE_SKILLS.md` |
 | Sub-Agents | `agents-docs/SUB-AGENTS.md` |
 | Hooks | `agents-docs/HOOKS.md` |
 | Back-Pressure | `agents-docs/CONTEXT.md` |

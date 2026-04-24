@@ -313,7 +313,7 @@ Despite clear AGENTS.md guidelines:
 | 13 | Add process timeouts to batch_resolve | Security | 20 min |
 | 14 | Consolidate knowledge-cleanup workflow | Architecture | 30 min |
 | 15 | Add mermaid diagrams to documentation | Architecture | 1 hour |
-| 16 | Reference new docs in AVAILABLE_SKILLS.md | Architecture | 15 min |
+| 16 | Reference new docs in AVAILABLE_AVAILABLE_SKILLS.md | Architecture | 15 min |
 
 ---
 

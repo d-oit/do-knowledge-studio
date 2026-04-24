@@ -26,8 +26,8 @@
 | Script | Purpose | Usage |
 |--------|---------|-------|
 | `update-agents-md.sh` | Regenerate skill table in AGENTS.md | `./scripts/update-agents-md.sh` |
-| `update-agents-registry.sh` | Update AGENTS_REGISTRY.md | `./scripts/update-agents-registry.sh` |
-| `generate-available-skills.py` | Auto-generate AVAILABLE_SKILLS.md | `./scripts/generate-available-skills.py` |
+| `update-agents-registry.sh` | Update AGENTS.md | `./scripts/update-agents-registry.sh` |
+| `generate-available-skills.py` | Auto-generate AVAILABLE_AVAILABLE_SKILLS.md | `./scripts/generate-available-skills.py` |
 | `generate-skills-readme.py` | Auto-generate .agents/skills/README.md | `./scripts/generate-skills-readme.py` |
 | `docs-sync.sh` | List changed markdown files (not actual sync) | `./scripts/docs-sync.sh` |
 

@@ -86,13 +86,13 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ onClose, isMobile, onResultCl
                 tabIndex={0}
               >
                 <div className="result-type">{result.type}</div>
-                <div className="result-name">{result.name}</div>
-                <div className="result-description">{result.excerpt}</div>
+                <div className="result-name">{result.title}</div>
+                <div className="result-description">{result.content}</div>
               </li>
             ))}
           </ul>
         )}
-      </div>
+</div>
     </div>
   );
 };

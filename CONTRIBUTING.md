@@ -49,7 +49,7 @@ git checkout -b fix/issue-123-bug-description
 
 **Before coding:**
 - Read [`AGENTS.md`](../../AGENTS.md) for project standards
-- Check [`agents-docs/SKILLS.md`](../../agents-docs/SKILLS.md) for skill authoring
+- Check [`agents-docs/AVAILABLE_AVAILABLE_SKILLS.md`](../../agents-docs/AVAILABLE_AVAILABLE_SKILLS.md) for skill authoring
 - Review [`agents-docs/HARNESS.md`](../../agents-docs/HARNESS.md) for architecture
 
 **While coding:**
@@ -242,7 +242,7 @@ SKIP_TESTS=true ./scripts/quality_gate.sh   # Skip tests
 AGENTS.md (single source of truth, concise)
 ├── agents-docs/ (detailed reference docs)
 │   ├── HARNESS.md
-│   ├── SKILLS.md
+│   ├── AVAILABLE_SKILLS.md
 │   ├── SUB-AGENTS.md
 │   ├── HOOKS.md
 │   └── CONTEXT.md

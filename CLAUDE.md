@@ -23,7 +23,7 @@ only symlinks. Run `./scripts/setup-skills.sh` once after cloning.
 
 Skills use progressive disclosure - `SKILL.md` is injected only when the agent
 decides the skill is needed. Do not pre-load all skills at session start.
-See `agents-docs/SKILLS.md`.
+See `agents-docs/AVAILABLE_AVAILABLE_SKILLS.md`.
 
 ### Custom Commands
 Project slash commands live in `.claude/commands/`. Use them for repeatable workflows.

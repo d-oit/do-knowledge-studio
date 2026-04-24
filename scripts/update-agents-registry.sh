@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Auto-update AGENTS_REGISTRY.md by scanning .claude/agents/ and .opencode/agents/ directories
+# Auto-update AGENTS.md by scanning .claude/agents/ and .opencode/agents/ directories
 # Run manually or set up as a file watcher
 # Usage: ./scripts/update-agents-registry.sh
 # Note: OpenCode agents live in .opencode/agents/ (real files, not symlinks)
@@ -9,7 +9,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
-REGISTRY_FILE="$REPO_ROOT/agents-docs/AGENTS_REGISTRY.md"
+REGISTRY_FILE="$REPO_ROOT/agents-docs/AGENTS.md"
 TEMP_FILE="$REPO_ROOT/agents-docs/.agents_registry_temp.md"
 
 # Trap to clean up temp files on exit or error
@@ -96,7 +96,7 @@ cat >> "$TEMP_FILE" << 'SKILLS_HEADER'
 ## Available Skills
 
 Skills are reusable knowledge modules with progressive disclosure.
-See [`agents-docs/SKILLS.md`](agents-docs/SKILLS.md) for authoring guide.
+See [`agents-docs/AVAILABLE_SKILLS.md`](agents-docs/AVAILABLE_SKILLS.md) for authoring guide.
 
 | Skill | Location | Description |
 |-------|----------|-------------|
@@ -198,7 +198,7 @@ npm install -g chokidar-cli
 
 # Watch for changes and update registry
 chokidar ".claude/agents/*.md" ".opencode/agents/*.md" ".agents/skills/*/SKILL.md" \
-  -c "./scripts/update-agents-registry.sh && git add AGENTS_REGISTRY.md"
+  -c "./scripts/update-agents-registry.sh && git add AGENTS.md"
 ```
 
 ### Git Hook (Post-Merge)
@@ -208,7 +208,7 @@ Add to `.git/hooks/post-merge`:
 ```bash
 #!/bin/bash
 ./scripts/update-agents-registry.sh
-git add AGENTS_REGISTRY.md
+git add AGENTS.md
 ```
 
 ---
@@ -223,7 +223,7 @@ sed -i "s/TIMESTAMP/$TIMESTAMP/" "$TEMP_FILE"
 mv "$TEMP_FILE" "$REGISTRY_FILE"
 
 echo ""
-echo "✓ agents-docs/AGENTS_REGISTRY.md updated successfully"
+echo "✓ agents-docs/AGENTS.md updated successfully"
 echo "  Timestamp: $TIMESTAMP"
 echo ""
 echo "Agents found:"
@@ -232,5 +232,5 @@ echo "  - OpenCode: $(find .opencode/agents -name '*.md' ! -type l 2>/dev/null |
 echo "  - Skills: $(find .agents/skills -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')"
 echo ""
 echo "To commit changes:"
-echo "  git add agents-docs/AGENTS_REGISTRY.md"
+echo "  git add agents-docs/AGENTS.md"
 echo "  git commit -m 'docs: update agents registry'"

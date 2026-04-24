@@ -50,7 +50,7 @@ fi
 #
 # WHY post-commit?
 #   This hook runs after a commit is created but before it's pushed.
-#   We use it to auto-update derived documentation (AGENTS.md, AGENTS_REGISTRY.md)
+#   We use it to auto-update derived documentation (AGENTS.md, AGENTS.md)
 #   when the source files (.agents/skills/*) change.
 #
 # THE amend --no-edit PATTERN:
@@ -97,11 +97,11 @@ echo "$CHANGED_FILES" | grep -q ".agents/skills/" && {
 # Update registry if agents changed  
 # The pattern matches files in .claude/, .opencode/, etc. agent directories
 echo "$CHANGED_FILES" | grep -qE "\.(claude|opencode)/agents/" && {
-    echo "Agents changed - updating AGENTS_REGISTRY.md..."
+    echo "Agents changed - updating AGENTS.md..."
     "$REPO_ROOT/scripts/update-agents-registry.sh"
-    git add agents-docs/AGENTS_REGISTRY.md
+    git add agents-docs/AGENTS.md
     if ! git commit --amend --no-edit 2>/dev/null; then
-        echo "Warning: Failed to amend commit with updated AGENTS_REGISTRY.md"
+        echo "Warning: Failed to amend commit with updated AGENTS.md"
     fi
 }
 
@@ -178,7 +178,7 @@ echo "Git hooks installed successfully!"
 echo ""
 echo "Hooks active:"
 echo "  - pre-commit: Runs quality gate before each commit"
-echo "  - post-commit: Auto-updates AGENTS.md and AGENTS_REGISTRY.md"
+echo "  - post-commit: Auto-updates AGENTS.md and AGENTS.md"
 echo ""
 echo "To verify:"
 echo "  ls -la .git/hooks/"

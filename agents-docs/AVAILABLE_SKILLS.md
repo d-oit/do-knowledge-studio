@@ -83,9 +83,9 @@
 ## Usage
 
 Skills are triggered automatically based on context or loaded explicitly.
-See `agents-docs/SKILLS.md` for loading skills manually.
+See `agents-docs/AVAILABLE_SKILLS.md` for loading skills manually.
 
 ## See Also
 
-- `agents-docs/SKILLS.md` - Skill authoring guide
+- `agents-docs/AVAILABLE_SKILLS.md` - Skill authoring guide
 - `.agents/skills/skill-rules.json` - Skill validation rules

@@ -21,7 +21,7 @@ Activate after completing a non-trivial task to capture insights that would othe
 - Execution paths that differ from what the code appears to do.
 - Non-obvious config, env vars, or flags (see `agents-docs/ENVIRONMENT_VARIABLES.md`).
 - Debugging breakthroughs where error messages were misleading.
-- Files that must change together (e.g., `AGENTS.md` + `agents-docs/AVAILABLE_SKILLS.md` when adding skills).
+- Files that must change together (e.g., `AGENTS.md` + `agents-docs/AVAILABLE_AVAILABLE_SKILLS.md` when adding skills).
 - Build/test commands not documented in README.
 - Architectural constraints discovered at runtime.
 

@@ -42,9 +42,6 @@
     },
     "opencode": {
       "directory": ".opencode",
-      "docs": [
-        "opencode.json"
-      ],
       "symlink_strategy": "none"
     },
     "jules": {

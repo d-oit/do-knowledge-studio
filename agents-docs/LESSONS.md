@@ -266,7 +266,7 @@ exit $EXIT_CODE
 
 **Root Cause**:
 1. **Focus on happy path**: Evals only test success scenarios
-2. **No eval guidance**: SKILLS.md lacks evaluation authoring guide
+2. **No eval guidance**: AVAILABLE_SKILLS.md lacks evaluation authoring guide
 3. **No quality gate**: CI doesn't validate eval coverage
 4. **Manual process**: No automation for eval structure
 
@@ -283,7 +283,7 @@ exit $EXIT_CODE
    - Include negative test cases
 
 3. **Create evals documentation**:
-   - Add section to `agents-docs/SKILLS.md`
+   - Add section to `agents-docs/AVAILABLE_SKILLS.md`
    - Document how to write comprehensive evals
 
 **Prevention**:

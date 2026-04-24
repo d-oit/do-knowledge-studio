@@ -17,9 +17,47 @@
 - **Editor**: Tiptap
 
 ## Quality Gate
-- Run `npm test` (Vitest)
+- Run `npm test` (Vitest - unit/integration)
+- Run `npm run test:e2e` (Playwright - E2E critical paths)
 - Run `npm run lint`
 - Run `npm run typecheck`
+
+### Testing Strategy (2026 Best Practices)
+
+**Test Pyramid**:
+- 70% Unit tests (Vitest - fast, isolated)
+- 20% Integration tests (Vitest + MSW - API/stores)
+- 10% E2E tests (Playwright - critical journeys)
+
+**Coverage Targets**:
+- Lines/Functions/Branches: 80% minimum
+- Critical paths (auth, entity CRUD, graph): 100% covered
+- Exclude: config, types, mocks, e2e tests
+
+**2026 Tool Stack**:
+- Unit/Integration: Vitest with v8 coverage
+- E2E: Playwright (cross-browser, component tests)
+- Mocking: vi.mock() for units, MSW for integration
+
+**Required Test Coverage**:
+- All repository CRUD operations
+- Validation schemas (Zod)
+- NLP utilities
+- Job queue/coalescing logic
+
+### E2E Test Requirements
+
+**Critical Journeys** (must cover):
+1. User can create/view/edit/delete entities
+2. User can add claims to entities
+3. User can search via chat (local RAG)
+4. Graph visualization renders and interacts
+5. Mind map creation and editing
+
+**Browser Matrix**:
+- Chromium (primary)
+- Mobile viewport (375px)
+- Tablet viewport (768px)
 
 ## UI/UX Guardrails
 - **Design Tokens ONLY**: Use CSS variables defined in `src/styles/index.css`.
@@ -33,15 +71,8 @@
 - `claim-create <entity> <statement>`: Add a claim via CLI.
 
 ## Skills
-- `triz-analysis`: Applying TRIZ to knowledge management.
-- `local-chat-policy`: Synthesis without data leakage using Orama search.
-- `validation-checklist`: Ensuring schema integrity.
-- `stitch-design`: Headless Stitch CLI/MCP for automated responsive UI design and rendering.
-- `jules-implement`: Repo-aware implementation agent with delta-based targeted research and validation.
 
-## Single Source of Truth
-This file (`AGENTS.md`) is the source of truth for all agents. Agent-specific instructions live in `.agents/`.
-- `swarm-worktree-web-research.sh <topic>`: Parallel web research workflow.
+The canonical skill source is `.agents/skills/`. See the full table below for all available skills.
 
 ### Available Skills
 
@@ -98,3 +129,9 @@ This file (`AGENTS.md`) is the source of truth for all agents. Agent-specific in
 | `ui-ux-optimize` | > | UI/UX |
 | `validation-checklist` | Maintain high data quality and schema adherence within the k | Quality |
 | `web-search-researcher` | Research topics using web search to find accurate, current i | Research |
+| `llm-provider-system` | Plugin system for OpenRouter/Kilo Gateway free LLM models | LLM Integration |
+
+## Single Source of Truth
+This file (`AGENTS.md`) is the source of truth for all agents. Agent-specific instructions live in `.agents/`.
+- `swarm-worktree-web-research.sh <topic>`: Parallel web research workflow.
+- `plans/`: Swarm analysis recommendations and implementation plans.

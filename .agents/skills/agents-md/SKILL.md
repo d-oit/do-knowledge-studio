@@ -65,7 +65,7 @@ npm audit
 - **Tier 2 (Professional):** Add quality gate, atomic commit, security
 - **Tier 3 (Enterprise):** Add skills, sub-agents, nested AGENTS.md
 
-See `agents-docs/SKILLS.md` for tier details.
+See `agents-docs/AVAILABLE_SKILLS.md` for tier details.
 
 ## Best Practices
 
@@ -90,6 +90,6 @@ See `agents-docs/SKILLS.md` for tier details.
 
 ## References
 
-- `agents-docs/SKILLS.md` - Skill framework
+- `agents-docs/AVAILABLE_SKILLS.md` - Skill framework
 - `agents-docs/SUB-AGENTS.md` - Sub-agent patterns
 - https://agents.md - Official spec

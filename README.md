@@ -193,7 +193,7 @@ See `cli/` directory for available commands and scripting options.
 - 📖 **[AGENTS.md](AGENTS.md)** — AI agent instructions (single source of truth)
 - ⚡ **[QUICKSTART.md](QUICKSTART.md)** — 5-minute setup guide
 - 🏗️ **[Harness Overview](agents-docs/HARNESS.md)** — Architecture and patterns
-- 🪝 **[Skills Guide](agents-docs/SKILLS.md)** — Creating reusable skills
+- 🪝 **[Skills Guide](agents-docs/AVAILABLE_AVAILABLE_SKILLS.md)** — Creating reusable skills
 - 🤖 **[Sub-Agents](agents-docs/SUB-AGENTS.md)** — Context isolation patterns
 - 🔧 **[Hooks](agents-docs/HOOKS.md)** — Pre/post tool hooks
 - 📊 **[Context](agents-docs/CONTEXT.md)** — Back-pressure mechanisms
