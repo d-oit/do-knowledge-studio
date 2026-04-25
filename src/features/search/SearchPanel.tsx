@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { searchKnowledge, RankedResult } from '../../lib/search';
+import { searchKnowledge, SearchResult } from '../../lib/search';
 import { logger } from '../../lib/logger';
 import { Search, X } from 'lucide-react';
 
 interface SearchPanelProps {
   onClose?: () => void;
   isMobile?: boolean;
-  onResultClick?: (result: RankedResult) => void;
+  onResultClick?: (result: SearchResult) => void;
 }
 
 const SearchPanel: React.FC<SearchPanelProps> = ({ onClose, isMobile, onResultClick }) => {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<RankedResult[]>([]);
+  const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
@@ -34,7 +34,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ onClose, isMobile, onResultCl
     return () => clearTimeout(delayDebounceFn);
   }, [query]);
 
-  const handleKeyDown = (e: React.KeyboardEvent, result: RankedResult) => {
+  const handleKeyDown = (e: React.KeyboardEvent, result: SearchResult) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       onResultClick?.(result);
@@ -86,13 +86,13 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ onClose, isMobile, onResultCl
                 tabIndex={0}
               >
                 <div className="result-type">{result.type}</div>
-                <div className="result-name">{result.name}</div>
-                <div className="result-description">{result.excerpt}</div>
+                <div className="result-name">{result.title}</div>
+                <div className="result-description">{result.content}</div>
               </li>
             ))}
           </ul>
         )}
-      </div>
+</div>
     </div>
   );
 };

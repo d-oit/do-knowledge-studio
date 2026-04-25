@@ -3,9 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { initDb } from '../src/db/client.js';
 import { repository } from '../src/db/repository.js';
-import type { Claim, Note } from '../src/lib/validation.js';
-import { escapeHtml } from '../src/lib/security.js';
-import { stripHtml } from '../src/lib/nlp.js';
+import type { Claim, Note } from '../src/lib/validation';
 
 const program = new Command();
 
@@ -147,7 +145,6 @@ async function exportSite(outDir: string) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline';">
   <title>Knowledge Base</title>
   <style>
     body { font-family: system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; line-height: 1.6; }
@@ -171,18 +168,17 @@ async function exportSite(outDir: string) {
     const safeId = entity.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
     
     html += `\n  <div class="entity" id="${safeId}">\n`;
-    html += `    <h2><a href="#${safeId}">${escapeHtml(entity.name)}</a></h2>\n`;
-    html += `    <span class="type">${escapeHtml(entity.type)}</span>\n`;
+    html += `    <h2><a href="#${safeId}">${entity.name}</a></h2>\n`;
+    html += `    <span class="type">${entity.type}</span>\n`;
     
     if (entity.description) {
-      const safeDesc = escapeHtml(stripHtml(entity.description));
-      html += `\n    <p>${safeDesc}</p>\n`;
+      html += `\n    <p>${entity.description}</p>\n`;
     }
     
     if (claims.length > 0) {
       html += `\n    <h3>Claims</h3>\n`;
       for (const claim of claims) {
-        html += `    <div class="claim">${escapeHtml(claim.statement)}`;
+        html += `    <div class="claim">${claim.statement}`;
         if (claim.confidence !== 1) html += ` <em>(confidence: ${claim.confidence})</em>`;
         html += `</div>\n`;
       }
