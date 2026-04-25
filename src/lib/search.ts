@@ -1,4 +1,4 @@
-import { create, insert, remove, search, type Orama } from '@orama/orama';
+import { create, insert, insertMultiple, remove, search, type Orama } from '@orama/orama';
 import { repository } from '../db/repository.js';
 import { logger } from './logger.js';
 import { compressText } from './nlp.js';
@@ -25,28 +25,31 @@ const searchSchema = {
 let oramaDb: Orama<OramaSchema> | null = null;
 const oramaIdMap = new Map<string, string>(); // entityId → oramaInternalId
 
+const prepareEntityDoc = (entity: Entity): SearchDocument => ({
+  id: entity.id!,
+  type: 'entity',
+  title: entity.name,
+  content: compressText(`${entity.name} ${entity.description || ''}`),
+  keywords: entity.type,
+});
+
+const prepareClaimDoc = (claim: Claim, entityName: string): SearchDocument => ({
+  id: claim.id!,
+  type: 'claim',
+  title: entityName,
+  content: compressText(claim.statement),
+  keywords: [claim.entity_id, claim.source || 'unknown'].join(','),
+});
+
 const addEntityToIndex = async (entity: Entity, claims: Claim[]): Promise<void> => {
   if (!oramaDb) return;
 
-  const entityDoc: SearchDocument = {
-    id: entity.id!,
-    type: 'entity',
-    title: entity.name,
-    content: compressText(`${entity.name} ${entity.description || ''}`),
-    keywords: entity.type,
-  };
-
+  const entityDoc = prepareEntityDoc(entity);
   const entityResult = await insert(oramaDb, entityDoc);
   oramaIdMap.set(entity.id!, entityResult);
 
   for (const claim of claims) {
-    const claimDoc: SearchDocument = {
-      id: claim.id!,
-      type: 'claim',
-      title: entity.name,
-      content: compressText(claim.statement),
-      keywords: [entity.id!, claim.source || 'unknown'].join(','),
-    };
+    const claimDoc = prepareClaimDoc(claim, entity.name);
     const claimResult = await insert(oramaDb, claimDoc);
     oramaIdMap.set(claim.id!, claimResult);
   }
@@ -66,13 +69,39 @@ export const initSearch = async () => {
       },
     });
 
-    const entities = await repository.getAllEntities();
+    const [entities, allClaims] = await Promise.all([
+      repository.getAllEntities(),
+      repository.getAllClaims(),
+    ]);
+
+    const claimsByEntity = allClaims.reduce((acc, claim) => {
+      if (!acc[claim.entity_id]) acc[claim.entity_id] = [];
+      acc[claim.entity_id].push(claim);
+      return acc;
+    }, {} as Record<string, Claim[]>);
+
+    const documents: SearchDocument[] = [];
+    const idList: string[] = [];
+
     for (const entity of entities) {
-      const claims = await repository.getClaimsByEntityId(entity.id!);
-      await addEntityToIndex(entity, claims);
+      documents.push(prepareEntityDoc(entity));
+      idList.push(entity.id!);
+
+      const claims = claimsByEntity[entity.id!] || [];
+      for (const claim of claims) {
+        documents.push(prepareClaimDoc(claim, entity.name));
+        idList.push(claim.id!);
+      }
     }
 
-    logger.info('Orama search index initialized');
+    if (documents.length > 0) {
+      const oramaIds = await insertMultiple(oramaDb, documents);
+      for (let i = 0; i < oramaIds.length; i++) {
+        oramaIdMap.set(idList[i], oramaIds[i]);
+      }
+    }
+
+    logger.info(`Orama search index initialized with ${documents.length} documents`);
 
     // Register job handlers
     jobCoordinator.registerHandler('reindex-document', async (payload) => {

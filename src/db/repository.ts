@@ -198,6 +198,20 @@ export class Repository {
     }
   }
 
+  async getAllClaims(): Promise<Claim[]> {
+    try {
+      const results = await this.db.exec({
+        sql: `SELECT * FROM claims`,
+        returnValue: 'resultRows',
+        rowMode: 'object',
+      }) as Claim[];
+      return results;
+    } catch (err) {
+      logger.error('Failed to fetch all claims', err);
+      throw new AppError('Failed to fetch all claims', 'DB_ERROR', err);
+    }
+  }
+
   // --- Notes ---
   async createNote(note: Omit<Note, 'id' | 'created_at' | 'updated_at'>): Promise<Note> {
     try {
