@@ -2,14 +2,14 @@ import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import { DbProvider, useDb } from '../db/DbProvider';
 import { repository } from '../db/repository';
 import { logger } from '../lib/logger';
-import { hydrateOramaIndex } from '../lib/search';
-import { SearchResult } from '../lib/search';
+import { hydrateOramaIndex, RankedResult } from '../lib/search';
 import { Entity, Link } from '../lib/validation';
 import '../styles/index.css';
 import LoadingSpinner from '../components/LoadingSpinner';
 import SidebarNav from '../components/SidebarNav';
 import Header from '../components/Header';
 import MobileDrawer from '../components/MobileDrawer';
+import BottomSheet from '../components/BottomSheet';
 import SearchPanel from '../features/search/SearchPanel';
 import ErrorBoundary from '../components/ErrorBoundary';
 import Editor from '../features/editor/Editor';
@@ -35,7 +35,7 @@ const AppContent: React.FC = () => {
   const [graphFocusMode, setGraphFocusMode] = useState(false);
   const [graphSelectedNode, setGraphSelectedNode] = useState<string | null>(null);
 
-  const handleSearchResultClick = useCallback((result: SearchResult) => {
+  const handleSearchResultClick = useCallback((result: RankedResult) => {
     if (result.type === 'claim' || result.type === 'entity' || result.type === 'note' || result.type === 'concept' || result.type === 'person' || result.type === 'project') {
        setCurrentView('editor');
        // In a real app we would navigate to the specific entity.
@@ -43,6 +43,14 @@ const AppContent: React.FC = () => {
     }
     setIsSearchOpen(false);
   }, []);
+
+  const [isAIBottomSheetOpen, setIsAIBottomSheetOpen] = useState(false);
+
+  useEffect(() => {
+    if (window.innerWidth < 768 && (currentView === 'ai' || currentView === 'chat')) {
+      setIsAIBottomSheetOpen(true);
+    }
+  }, [currentView]);
 
   const refreshData = useCallback(async () => {
     if (!dbReady) return;
@@ -142,15 +150,19 @@ const AppContent: React.FC = () => {
         )}
       </MobileDrawer>
 
-      {isSearchOpen && (
-        <div className="mobile-search-overlay">
-          <SearchPanel
-            isMobile
-            onClose={() => setIsSearchOpen(false)}
-            onResultClick={handleSearchResultClick}
-          />
-        </div>
-      )}
+      <BottomSheet isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)}>
+        <SearchPanel
+          isMobile
+          onClose={() => setIsSearchOpen(false)}
+          onResultClick={handleSearchResultClick}
+        />
+      </BottomSheet>
+
+      <BottomSheet isOpen={isAIBottomSheetOpen} onClose={() => setIsAIBottomSheetOpen(false)}>
+        <Suspense fallback={<LoadingSpinner />}>
+          {currentView === 'chat' ? <Chat /> : <AIHarness />}
+        </Suspense>
+      </BottomSheet>
     </div>
   );
 };
