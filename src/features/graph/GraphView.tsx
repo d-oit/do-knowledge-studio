@@ -178,7 +178,7 @@ const GraphView: React.FC<Props> = ({
           )}
         </div>
       )}
-      <div ref={containerRef} className="viz-container" style={{ height: '600px', width: '100%' }} />
+      <div ref={containerRef} className="viz-container" style={{ flex: 1, width: '100%' }} />
     </div>
   );
 };
