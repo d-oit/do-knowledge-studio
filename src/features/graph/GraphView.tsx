@@ -4,6 +4,8 @@ import Graph from 'graphology';
 import { Entity, Link } from '../../lib/validation';
 import GraphControls from './GraphControls';
 import { jobCoordinator } from '../../lib/jobs';
+import { repository } from '../../db/repository';
+import { ExternalLink } from 'lucide-react';
 
 interface Props {
   entities: Entity[];
@@ -133,6 +135,28 @@ const GraphView: React.FC<Props> = ({
     };
   }, [filteredData, selectedNode, focusMode, setFocusMode, setSelectedNode]);
 
+  const [linkedBlocks, setLinkedBlocks] = useState<Link[]>([]);
+
+  useEffect(() => {
+    if (selectedNode) {
+      repository.getAllLinks().then(allLinks => {
+        const blocks = allLinks.filter(l => l.target_id === selectedNode && (l.metadata as any)?.block_id);
+        setLinkedBlocks(blocks);
+      });
+    } else {
+      setLinkedBlocks([]);
+    }
+  }, [selectedNode]);
+
+  const jumpToBlock = (blockId: string) => {
+    const el = document.querySelector(`[data-block-id="${blockId}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('highlight-block');
+      setTimeout(() => el.classList.remove('highlight-block'), 2000);
+    }
+  };
+
   return (
     <div className="graph-container">
       {!hideToolbar && (
@@ -143,9 +167,18 @@ const GraphView: React.FC<Props> = ({
             hasSelection={!!selectedNode}
             selectedName={entities.find(e => e.id === selectedNode)?.name}
           />
+          {linkedBlocks.length > 0 && (
+            <div className="block-links-list">
+              {linkedBlocks.map(l => (
+                <button key={l.id} className="block-link-jump" onClick={() => jumpToBlock((l.metadata as any).block_id)}>
+                  <ExternalLink size={14} /> Jump to Block
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
-      <div ref={containerRef} className="viz-container" style={{ height: '600px', width: '100%' }} />
+      <div ref={containerRef} className="viz-container" style={{ flex: 1, width: '100%' }} />
     </div>
   );
 };
