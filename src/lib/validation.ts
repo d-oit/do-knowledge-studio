@@ -6,6 +6,7 @@ export const EntitySchema = z.object({
   type: z.string(),
   description: z.string().optional(),
   metadata: z.record(z.unknown()).optional(),
+  embedding: z.array(z.number()).optional(),
   created_at: z.string().datetime().optional(),
   updated_at: z.string().datetime().optional(),
 });
@@ -17,6 +18,7 @@ export const ClaimSchema = z.object({
   evidence: z.string().optional(),
   confidence: z.number().min(0).max(1).default(1),
   source: z.string().optional(),
+  embedding: z.array(z.number()).optional(),
   verification_status: z.enum(['unverified', 'verified', 'disputed']).default('unverified'),
   created_at: z.string().datetime().optional(),
   updated_at: z.string().datetime().optional(),
