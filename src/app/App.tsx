@@ -2,8 +2,7 @@ import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import { DbProvider, useDb } from '../db/DbProvider';
 import { repository } from '../db/repository';
 import { logger } from '../lib/logger';
-import { hydrateOramaIndex } from '../lib/search';
-import { SearchResult } from '../lib/search';
+import { hydrateOramaIndex, RankedResult } from '../lib/search';
 import { Entity, Link } from '../lib/validation';
 import '../styles/index.css';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -35,7 +34,7 @@ const AppContent: React.FC = () => {
   const [graphFocusMode, setGraphFocusMode] = useState(false);
   const [graphSelectedNode, setGraphSelectedNode] = useState<string | null>(null);
 
-  const handleSearchResultClick = useCallback((result: SearchResult) => {
+  const handleSearchResultClick = useCallback((result: RankedResult) => {
     if (result.type === 'claim' || result.type === 'entity' || result.type === 'note' || result.type === 'concept' || result.type === 'person' || result.type === 'project') {
        setCurrentView('editor');
        // In a real app we would navigate to the specific entity.

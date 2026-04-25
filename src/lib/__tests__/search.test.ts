@@ -22,7 +22,15 @@ vi.mock('../../db/repository', () => ({
 vi.mock('../logger', () => ({
   logger: {
     info: vi.fn(),
+    warn: vi.fn(),
     error: vi.fn(),
+  },
+}));
+
+vi.mock('../ai', () => ({
+  aiService: {
+    generateEmbedding: vi.fn().mockResolvedValue(new Array(1536).fill(0)),
+    extractKnowledge: vi.fn(),
   },
 }));
 
@@ -77,23 +85,23 @@ describe('search function', () => {
     expect(results).toEqual([]);
   });
 
-  it('should map hit document to SearchResult', async () => {
+  it('should map hit document to RankedResult', async () => {
     (search as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      hits: [{ document: { id: '1', title: 'T', type: 'e', content: 'c' } }],
+      hits: [{ document: { id: '1', title: 'T', type: 'e', content: 'c' }, score: 1.0 }],
     });
     const { searchKnowledge } = await import('../search');
     const results = await searchKnowledge('q');
     expect(results[0]).toHaveProperty('id', '1');
-    expect(results[0]).toHaveProperty('title', 'T');
+    expect(results[0]).toHaveProperty('name', 'T');
     expect(results[0]).toHaveProperty('type', 'e');
-    expect(results[0]).toHaveProperty('content', 'c');
+    expect(results[0]).toHaveProperty('excerpt', 'c');
   });
 
   it('should handle multiple hits', async () => {
     (search as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       hits: [
-        { document: { id: '1', title: 'A', type: 'e', content: 'c' } },
-        { document: { id: '2', title: 'B', type: 'e', content: 'c' } },
+        { document: { id: '1', title: 'A', type: 'e', content: 'c' }, score: 0.9 },
+        { document: { id: '2', title: 'B', type: 'e', content: 'c' }, score: 0.8 },
       ],
     });
     const { searchKnowledge } = await import('../search');
