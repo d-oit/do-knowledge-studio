@@ -17,6 +17,7 @@ export const ClaimSchema = z.object({
   evidence: z.string().optional(),
   confidence: z.number().min(0).max(1).default(1),
   source: z.string().optional(),
+  verification_status: z.enum(['unverified', 'verified', 'disputed']).default('unverified'),
   created_at: z.string().datetime().optional(),
   updated_at: z.string().datetime().optional(),
 });
@@ -40,7 +41,17 @@ export const LinkSchema = z.object({
   updated_at: z.string().datetime().optional(),
 });
 
+export const GraphSnapshotSchema = z.object({
+  id: z.string().uuid().optional(),
+  name: z.string().min(1, 'Name is required'),
+  nodes_json: z.string(),
+  edges_json: z.string(),
+  description: z.string().optional(),
+  created_at: z.string().datetime().optional(),
+});
+
 export type Entity = z.infer<typeof EntitySchema>;
 export type Claim = z.infer<typeof ClaimSchema>;
 export type Note = z.infer<typeof NoteSchema>;
 export type Link = z.infer<typeof LinkSchema>;
+export type GraphSnapshot = z.infer<typeof GraphSnapshotSchema>;

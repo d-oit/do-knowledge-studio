@@ -46,8 +46,18 @@ CREATE TABLE IF NOT EXISTS links (
     FOREIGN KEY (target_id) REFERENCES entities(id) ON DELETE CASCADE
 );
 
+-- Graph Snapshots: Saved states of the knowledge graph
+CREATE TABLE IF NOT EXISTS graph_snapshots (
+    id UUID PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6))),
+    name TEXT NOT NULL,
+    nodes_json TEXT NOT NULL,
+    edges_json TEXT NOT NULL,
+    description TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indices
-CREATE INDEX IF NOT EXISTS idx_entities_name ON entities(name);
+CREATE INDEX IF NOT EXISTS idx_graph_snapshots_created_at ON graph_snapshots(created_at);
 CREATE INDEX IF NOT EXISTS idx_claims_entity_id ON claims(entity_id);
 CREATE INDEX IF NOT EXISTS idx_links_source_id ON links(source_id);
 CREATE INDEX IF NOT EXISTS idx_links_target_id ON links(target_id);
