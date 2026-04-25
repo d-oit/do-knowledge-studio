@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { searchKnowledge, RankedResult } from '../../lib/search';
+import { searchKnowledge, SearchResult } from '../../lib/search';
 import { logger } from '../../lib/logger';
 import { Search } from 'lucide-react';
 
@@ -27,7 +27,7 @@ const Chat: React.FC = () => {
 
       let response = `I found ${results.length} relevant items in your local knowledge base.`;
       if (results.length > 0) {
-        response += '\n\nResults:\n' + results.slice(0, 5).map((r: RankedResult) => `- ${r.name} (${r.type}): ${r.excerpt}`).join('\n');
+        response += '\n\nResults:\n' + results.slice(0, 5).map((r: SearchResult) => `- ${r.title}: ${r.content}`).join('\n');
         if (results.length > 5) response += `\n\n(Plus ${results.length - 5} more...)`;
       } else {
         response += '\n\nTry searching for different keywords or create new entities in the Editor.';

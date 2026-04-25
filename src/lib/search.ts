@@ -3,17 +3,7 @@ import { repository } from '../db/repository.js';
 import { logger } from './logger.js';
 import { compressText } from './nlp.js';
 import { jobCoordinator } from './jobs.js';
-import { aiService } from './ai.js';
 import type { Entity, Claim } from '../lib/validation.js';
-
-export interface RankedResult {
-  id: string;
-  name: string;
-  type: string;
-  excerpt: string;
-  score: number;
-  stage: 'fts' | 'vector' | 'hybrid';
-}
 
 interface SearchDocument {
   id: string;
@@ -21,7 +11,6 @@ interface SearchDocument {
   title: string;
   content: string;
   keywords: string;
-  embedding: number[];
 }
 
 type OramaSchema = typeof searchSchema;
@@ -31,7 +20,6 @@ const searchSchema = {
   title: 'string',
   content: 'string',
   keywords: 'string',
-  embedding: 'vector[1536]',
 } as const;
 
 let oramaDb: Orama<OramaSchema> | null = null;
@@ -56,39 +44,12 @@ const prepareClaimDoc = (claim: Claim, entityName: string): SearchDocument => ({
 const addEntityToIndex = async (entity: Entity, claims: Claim[]): Promise<void> => {
   if (!oramaDb) return;
 
-  const entityContent = `${entity.name} ${entity.description || ''}`;
-  let entityEmbedding = entity.embedding;
-  if (!entityEmbedding) {
-    entityEmbedding = await aiService.generateEmbedding(entityContent);
-    await repository.updateEntityEmbedding(entity.id!, entityEmbedding);
-  }
-
-  const entityDoc: SearchDocument = {
-    id: entity.id!,
-    type: 'entity',
-    title: entity.name,
-    content: compressText(entityContent),
-    keywords: entity.type,
-    embedding: entityEmbedding,
-  };
-
+  const entityDoc = prepareEntityDoc(entity);
   const entityResult = await insert(oramaDb, entityDoc);
   oramaIdMap.set(entity.id!, entityResult);
 
   for (const claim of claims) {
-    let claimEmbedding = claim.embedding;
-    if (!claimEmbedding) {
-        claimEmbedding = await aiService.generateEmbedding(claim.statement);
-        await repository.updateClaimEmbedding(claim.id!, claimEmbedding);
-    }
-    const claimDoc: SearchDocument = {
-      id: claim.id!,
-      type: 'claim',
-      title: entity.name,
-      content: compressText(claim.statement),
-      keywords: [entity.id!, claim.source || 'unknown'].join(','),
-      embedding: claimEmbedding,
-    };
+    const claimDoc = prepareClaimDoc(claim, entity.name);
     const claimResult = await insert(oramaDb, claimDoc);
     oramaIdMap.set(claim.id!, claimResult);
   }
@@ -99,7 +60,13 @@ export const initSearch = async () => {
 
   try {
     oramaDb = await create({
-      schema: searchSchema,
+      schema: {
+        id: 'string',
+        type: 'string',
+        title: 'string',
+        content: 'string',
+        keywords: 'string',
+      },
     });
 
     const [entities, allClaims] = await Promise.all([
@@ -217,30 +184,28 @@ export const hydrateOramaIndex = () => {
   }
 };
 
-export const searchKnowledge = async (query: string): Promise<RankedResult[]> => {
-  if (!oramaDb) await initSearch();
+export interface SearchResult {
+  id: string;
+  title: string;
+  type: string;
+  content: string;
+}
 
-  const queryEmbedding = await aiService.generateEmbedding(query);
+export const searchKnowledge = async (query: string): Promise<SearchResult[]> => {
+  if (!oramaDb) await initSearch();
 
   const results = await search(oramaDb!, {
     term: query,
     properties: ['title', 'content'],
-    mode: 'hybrid',
-    vector: {
-      value: queryEmbedding,
-      property: 'embedding',
-    },
   });
 
   return results.hits.map(hit => {
     const doc = hit.document;
     return {
       id: doc.id,
-      name: doc.title,
+      title: doc.title,
       type: doc.type,
-      excerpt: doc.content,
-      score: hit.score,
-      stage: 'hybrid',
+      content: doc.content,
     };
   });
 };

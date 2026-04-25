@@ -5,7 +5,6 @@ CREATE TABLE IF NOT EXISTS entities (
     type TEXT NOT NULL,
     description TEXT,
     metadata TEXT, -- JSON string
-    embedding TEXT, -- JSON array of numbers
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -18,7 +17,6 @@ CREATE TABLE IF NOT EXISTS claims (
     evidence TEXT,
     confidence REAL DEFAULT 1.0,
     source TEXT,
-    embedding TEXT, -- JSON array of numbers
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (entity_id) REFERENCES entities(id) ON DELETE CASCADE

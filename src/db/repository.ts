@@ -18,17 +18,11 @@ export class Repository {
   // --- Entities ---
   async createEntity(entity: Omit<Entity, 'id' | 'created_at' | 'updated_at'>): Promise<Entity> {
     try {
-      const { name, type, description, metadata, embedding } = entity;
+      const { name, type, description, metadata } = entity;
       const result = await this.db.exec({
-        sql: `INSERT INTO entities (name, type, description, metadata, embedding)
-              VALUES (?, ?, ?, ?, ?) RETURNING *`,
-        bind: [
-          name,
-          type,
-          description ?? null,
-          metadata ? JSON.stringify(metadata) : null,
-          embedding ? JSON.stringify(embedding) : null
-        ],
+        sql: `INSERT INTO entities (name, type, description, metadata)
+              VALUES (?, ?, ?, ?) RETURNING *`,
+        bind: [name, type, description ?? null, metadata ? JSON.stringify(metadata) : null],
         returnValue: 'resultRows',
         rowMode: 'object',
       }) as Record<string, unknown>[];
@@ -109,23 +103,15 @@ export class Repository {
     },
   ): Promise<Claim> {
     try {
-      const { entity_id, statement, evidence, confidence, source, verification_status, embedding } = claim;
+      const { entity_id, statement, evidence, confidence, source, verification_status } = claim;
       const result = await this.db.exec({
-        sql: `INSERT INTO claims (entity_id, statement, evidence, confidence, source, verification_status, embedding)
-              VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING *`,
-        bind: [
-          entity_id,
-          statement,
-          evidence ?? null,
-          confidence,
-          source ?? null,
-          verification_status ?? 'unverified',
-          embedding ? JSON.stringify(embedding) : null
-        ],
+        sql: `INSERT INTO claims (entity_id, statement, evidence, confidence, source, verification_status)
+              VALUES (?, ?, ?, ?, ?, ?) RETURNING *`,
+        bind: [entity_id, statement, evidence ?? null, confidence, source ?? null, verification_status ?? 'unverified'],
         returnValue: 'resultRows',
         rowMode: 'object',
-      }) as (Claim & { embedding: string })[];
-      return this.parseEmbedding(result[0]);
+      }) as Claim[];
+      return result[0];
     } catch (err) {
       logger.error('Failed to create claim', err);
       throw new AppError('Failed to create claim', 'DB_ERROR', err);
@@ -194,28 +180,6 @@ export class Repository {
       if (err instanceof AppError) throw err;
       logger.error('Failed to update claim verification', err);
       throw new AppError('Failed to update claim verification', 'DB_ERROR', err);
-    }
-  }
-
-  async updateEntityEmbedding(id: string, embedding: number[]): Promise<void> {
-    try {
-      await this.db.exec({
-        sql: `UPDATE entities SET embedding = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-        bind: [JSON.stringify(embedding), id],
-      });
-    } catch (err) {
-      logger.error('Failed to update entity embedding', err);
-    }
-  }
-
-  async updateClaimEmbedding(id: string, embedding: number[]): Promise<void> {
-    try {
-      await this.db.exec({
-        sql: `UPDATE claims SET embedding = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-        bind: [JSON.stringify(embedding), id],
-      });
-    } catch (err) {
-      logger.error('Failed to update claim embedding', err);
     }
   }
 
@@ -313,21 +277,6 @@ export class Repository {
     }
   }
 
-  async getLinksByBlockId(blockId: string): Promise<Link[]> {
-    try {
-      const results = await this.db.exec({
-        sql: `SELECT * FROM links WHERE json_extract(metadata, '$.block_id') = ?`,
-        bind: [blockId],
-        returnValue: 'resultRows',
-        rowMode: 'object',
-      }) as Record<string, unknown>[];
-      return results.map((r) => this.parseMetadata<Link>(r));
-    } catch (err) {
-      logger.error('Failed to fetch links by block id', err);
-      throw new AppError('Failed to fetch links by block id', 'DB_ERROR', err);
-    }
-  }
-
   // --- Graph Snapshots ---
   async createSnapshot(
     name: string,
@@ -410,8 +359,8 @@ export class Repository {
     }
   }
 
-  private parseMetadata<T extends { metadata?: Record<string, unknown>; embedding?: any }>(row: unknown): T {
-    let r = row as any;
+  private parseMetadata<T extends { metadata?: Record<string, unknown> }>(row: unknown): T {
+    const r = row as T & { metadata?: string | Record<string, unknown> };
     if (r && typeof r.metadata === 'string') {
       try {
         r.metadata = JSON.parse(r.metadata) as Record<string, unknown>;
@@ -419,25 +368,7 @@ export class Repository {
         r.metadata = {};
       }
     }
-    if (r && typeof r.embedding === 'string') {
-      try {
-        r.embedding = JSON.parse(r.embedding);
-      } catch {
-        r.embedding = undefined;
-      }
-    }
     return r as T;
-  }
-
-  private parseEmbedding<T extends { embedding?: any }>(row: T & { embedding?: string }): T {
-    if (row && typeof row.embedding === 'string') {
-        try {
-            row.embedding = JSON.parse(row.embedding);
-        } catch {
-            row.embedding = undefined;
-        }
-    }
-    return row;
   }
 }
 

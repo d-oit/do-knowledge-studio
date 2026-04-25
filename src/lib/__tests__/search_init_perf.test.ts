@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { repository } from '../../db/repository.js';
 
 // We need to mock @orama/orama to avoid actual indexing overhead if we just want to measure the N+1 problem,
@@ -46,9 +46,9 @@ describe('Search Initialization Benchmark', () => {
       verification_status: 'unverified',
     }));
 
-    (repository.getAllEntities as any).mockResolvedValue(entities);
-    (repository.getAllClaims as any).mockResolvedValue(claims);
-    (repository.getClaimsByEntityId as any).mockImplementation((entityId: string) => {
+    (repository.getAllEntities as Mock).mockResolvedValue(entities);
+    (repository.getAllClaims as Mock).mockResolvedValue(claims);
+    (repository.getClaimsByEntityId as Mock).mockImplementation((entityId: string) => {
       return Promise.resolve(claims.filter(c => c.entity_id === entityId));
     });
 

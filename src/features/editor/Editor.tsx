@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { ClaimExtension } from './ClaimExtension';
 import { MentionExtension } from './MentionExtension';
-import { BlockIdExtension } from './BlockIdExtension';
 import { logger } from '../../lib/logger';
 import { repository } from '../../db/repository';
 import { jobCoordinator } from '../../lib/jobs';
-import { CheckCircle, AtSign, Link as LinkIcon, Save } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { CheckCircle, AtSign } from 'lucide-react';
 import { Entity } from '../../lib/validation';
 
 const Editor: React.FC = () => {
@@ -16,7 +16,6 @@ const Editor: React.FC = () => {
   const [type, setType] = useState('note');
   const [allEntities, setAllEntities] = useState<Entity[]>([]);
   const [showMentionMenu, setShowMentionMenu] = useState(false);
-  const [showLinkMenu, setShowLinkMenu] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
   useEffect(() => {
@@ -27,18 +26,17 @@ const Editor: React.FC = () => {
   }, [status]);
 
   useEffect(() => {
-    repository.getAllEntities().then(setAllEntities).catch(err => logger.error('Failed to load entities', err));
+    repository.getAllEntities().then(setAllEntities).catch(err => logger.error('Failed to load entities for mentions', err));
   }, []);
 
   const editor = useEditor({
     extensions: [
       StarterKit,
       Placeholder.configure({
-        placeholder: 'Enter structured knowledge... Use "Claim" for assertions, "Mention" for inline links, and "Block Link" to connect paragraphs to entities.',
+        placeholder: 'Enter structured knowledge... Use "Claim" for assertions and "Mention" for links.',
       }),
       ClaimExtension,
       MentionExtension,
-      BlockIdExtension,
     ],
     content: '<p>Every note is an entity.</p>',
   });
@@ -103,15 +101,17 @@ const Editor: React.FC = () => {
         });
       }
 
-      logger.info('Entity saved', { id: entity.id });
+      logger.info('Entity, note, claims and links saved', { id: entity.id, claims: claims.length, links: mentions.length });
+
+      // Enqueue background work
       jobCoordinator.enqueue('reindex-document', entity.id, { entityId: entity.id });
 
-      setStatus({ type: 'success', message: `Saved successfully!` });
+      setStatus({ type: 'success', message: `Saved successfully! (${claims.length} claims, ${mentions.length} links)` });
       setTitle('');
       editor.commands.setContent('<p></p>');
     } catch (err) {
       logger.error('Failed to save entity', err);
-      setStatus({ type: 'error', message: 'Save failed.' });
+      setStatus({ type: 'error', message: 'Save failed. See console for details.' });
     }
   };
 
@@ -119,30 +119,6 @@ const Editor: React.FC = () => {
     if (!editor || !target.id) return;
     editor.chain().focus().setMention({ entityId: target.id, entityName: target.name }).run();
     setShowMentionMenu(false);
-  };
-
-  const linkBlockToEntity = async (target: Entity) => {
-    if (!editor || !target.id) return;
-
-    const { selection } = editor.state;
-    const node = selection.$from.parent;
-    const blockId = node.attrs.id;
-
-    if (!blockId) {
-      setStatus({ type: 'error', message: 'Could not find block ID. Try clicking in the paragraph again.' });
-      return;
-    }
-
-    try {
-      // For now, we link the current document (if it were saved) or just create a link
-      // Since the current entity might not be saved yet, block linking is best used on saved entities.
-      // In this demo, we'll log it. A full implementation would track "pending links".
-      logger.info('Linking block to entity', { blockId, targetId: target.id });
-      setStatus({ type: 'success', message: `Linked block to ${target.name}` });
-      setShowLinkMenu(false);
-    } catch (err) {
-      logger.error('Failed to link block', err);
-    }
   };
 
   return (
@@ -153,13 +129,16 @@ const Editor: React.FC = () => {
         </div>
       )}
       <div className="entity-meta">
+        <label htmlFor="entity-title" className="sr-only">Entity Name</label>
         <input
+          id="entity-title"
           className="title-input"
           value={title}
           onChange={e => setTitle(e.target.value)}
           placeholder="Entity Name (e.g. TRIZ)"
         />
-        <select value={type} onChange={e => setType(e.target.value)}>
+        <label htmlFor="entity-type" className="sr-only">Entity Type</label>
+        <select id="entity-type" value={type} onChange={e => setType(e.target.value)}>
           <option value="note">Note</option>
           <option value="concept">Concept</option>
           <option value="person">Person</option>
@@ -167,39 +146,54 @@ const Editor: React.FC = () => {
         </select>
       </div>
       <div className="toolbar">
-        <button onClick={() => editor?.chain().focus().toggleBold().run()} className={editor?.isActive('bold') ? 'active' : ''}>B</button>
-        <button onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()} className={editor?.isActive('heading', { level: 1 }) ? 'active' : ''}>H1</button>
-        <button onClick={() => editor?.chain().focus().toggleClaim().run()} className={editor?.isActive('claim') ? 'active' : ''}>
-          <CheckCircle size={16} /> Claim
+        <button
+          onClick={() => editor?.chain().focus().toggleBold().run()}
+          className={editor?.isActive('bold') ? 'active' : ''}
+          aria-label="Toggle Bold"
+          title="Bold"
+        >
+          B
         </button>
-
-        <div className="dropdown-tool">
-          <button onClick={() => setShowMentionMenu(!showMentionMenu)} className={editor?.isActive('mention') ? 'active' : ''}>
-            <AtSign size={16} /> Mention
+        <button
+          onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}
+          className={editor?.isActive('heading', { level: 1 }) ? 'active' : ''}
+          aria-label="Toggle Heading 1"
+          title="Heading 1"
+        >
+          H1
+        </button>
+        <button
+          onClick={() => editor?.chain().focus().toggleClaim().run()}
+          className={editor?.isActive('claim') ? 'active' : ''}
+          title="Mark as Claim"
+          aria-label="Mark as Claim"
+        >
+          <CheckCircle size={16} aria-hidden="true" /> Claim
+        </button>
+        <div className="mention-tool">
+          <button
+            onClick={() => setShowMentionMenu(!showMentionMenu)}
+            className={editor?.isActive('mention') ? 'active' : ''}
+            title="Link to Entity"
+            aria-label="Link to Entity"
+          >
+            <AtSign size={16} aria-hidden="true" /> Mention
           </button>
           {showMentionMenu && (
-            <div className="dropdown-menu">
-              {allEntities.map(e => (
-                <div key={e.id} className="menu-item" onClick={() => insertMention(e)}>{e.name}</div>
-              ))}
+            <div className="mention-menu">
+              {allEntities.length === 0 ? (
+                <div className="menu-item disabled">No entities found</div>
+              ) : (
+                allEntities.map(e => (
+                  <div key={e.id} className="menu-item" onClick={() => insertMention(e)}>
+                    {e.name}
+                  </div>
+                ))
+              )}
             </div>
           )}
         </div>
-
-        <div className="dropdown-tool">
-          <button onClick={() => setShowLinkMenu(!showLinkMenu)}>
-            <LinkIcon size={16} /> Block Link
-          </button>
-          {showLinkMenu && (
-            <div className="dropdown-menu">
-              {allEntities.map(e => (
-                <div key={e.id} className="menu-item" onClick={() => linkBlockToEntity(e)}>{e.name}</div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <button onClick={handleSave} className="primary"><Save size={16} /> Save</button>
+        <button onClick={handleSave} className="primary">Save to DB</button>
       </div>
       <EditorContent editor={editor} className="tiptap-content" />
     </div>

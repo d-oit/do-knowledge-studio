@@ -2,17 +2,15 @@ import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import { DbProvider, useDb } from '../db/DbProvider';
 import { repository } from '../db/repository';
 import { logger } from '../lib/logger';
-import { hydrateOramaIndex, RankedResult } from '../lib/search';
+import { hydrateOramaIndex } from '../lib/search';
+import { SearchResult } from '../lib/search';
 import { Entity, Link } from '../lib/validation';
-import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from 'react-resizable-panels';
 import '../styles/index.css';
 import LoadingSpinner from '../components/LoadingSpinner';
 import SidebarNav from '../components/SidebarNav';
 import Header from '../components/Header';
 import MobileDrawer from '../components/MobileDrawer';
-import BottomSheet from '../components/BottomSheet';
 import SearchPanel from '../features/search/SearchPanel';
-import CommandPalette from '../features/search/CommandPalette';
 import ErrorBoundary from '../components/ErrorBoundary';
 import Editor from '../features/editor/Editor';
 
@@ -32,14 +30,12 @@ const AppContent: React.FC = () => {
   const [links, setLinks] = useState<Link[]>([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
-  const [rightSidebarTab, setRightSidebarTab] = useState<'search' | 'chat'>('search');
 
   // Shared state for GraphView mobile controls
   const [graphFocusMode, setGraphFocusMode] = useState(false);
   const [graphSelectedNode, setGraphSelectedNode] = useState<string | null>(null);
 
-  const handleSearchResultClick = useCallback((result: RankedResult) => {
+  const handleSearchResultClick = useCallback((result: SearchResult) => {
     if (result.type === 'claim' || result.type === 'entity' || result.type === 'note' || result.type === 'concept' || result.type === 'person' || result.type === 'project') {
        setCurrentView('editor');
        // In a real app we would navigate to the specific entity.
@@ -47,14 +43,6 @@ const AppContent: React.FC = () => {
     }
     setIsSearchOpen(false);
   }, []);
-
-  const [isAIBottomSheetOpen, setIsAIBottomSheetOpen] = useState(false);
-
-  useEffect(() => {
-    if (window.innerWidth < 768 && (currentView === 'ai' || currentView === 'chat')) {
-      setIsAIBottomSheetOpen(true);
-    }
-  }, [currentView]);
 
   const refreshData = useCallback(async () => {
     if (!dbReady) return;
@@ -82,18 +70,6 @@ const AppContent: React.FC = () => {
     }
   }, [currentView, dbReady, refreshData]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setIsCommandPaletteOpen(true);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
   if (error) return <div className="error-screen">{error}</div>;
 
   return (
@@ -104,112 +80,45 @@ const AppContent: React.FC = () => {
       />
 
       <div className="layout-body">
-        <PanelGroup orientation="horizontal" id="persistence" className="main-panel-group">
-          {/* Left Sidebar */}
-          <Panel
-            className="desktop-sidebar-panel"
-            defaultSize={15}
-            collapsible
-            minSize={10}
-            maxSize={20}
-          >
-            <SidebarNav currentView={currentView} setCurrentView={setCurrentView} />
-          </Panel>
+        <aside className="desktop-sidebar">
+          <SidebarNav currentView={currentView} setCurrentView={setCurrentView} />
+        </aside>
 
-          <PanelResizeHandle className="resize-handle" />
-
-          {/* Main Content Area */}
-          <Panel minSize={30}>
-            <div className="main-content-wrapper">
-              {!dbReady && <div className="loading-screen">Booting Knowledge Studio...</div>}
-              {dbReady && (
-                <PanelGroup orientation="horizontal" className="inner-panel-group">
-                  <Panel minSize={30}>
-                    <main className="main-scroll-area">
-                      <ErrorBoundary fallback={<div className="error-state">Failed to load editor.</div>}>
-                        <Suspense fallback={<LoadingSpinner />}>
-                          <Editor />
-                        </Suspense>
-                      </ErrorBoundary>
-                    </main>
-                  </Panel>
-
-                  <PanelResizeHandle className="resize-handle" />
-
-                  <Panel defaultSize={40} minSize={20}>
-                    <aside className="viz-panel">
-                      <ErrorBoundary fallback={<div className="error-state">Failed to load visualization.</div>}>
-                        <Suspense fallback={<LoadingSpinner />}>
-                          {currentView === 'graph' && (
-                            <GraphView
-                              entities={entities}
-                              links={links}
-                              focusMode={graphFocusMode}
-                              onFocusModeChange={setGraphFocusMode}
-                              selectedNode={graphSelectedNode}
-                              onSelectedNodeChange={setGraphSelectedNode}
-                              hideToolbar={window.innerWidth < 768}
-                            />
-                          )}
-                          {currentView === 'mindmap' && entities.length > 0 && (
-                            <MindMapView
-                              rootEntity={entities[0]}
-                              relatedEntities={entities.slice(1, 10)}
-                            />
-                          )}
-                          {currentView === 'mindmap' && entities.length === 0 && (
-                            <div className="empty-state">No entities found for Mind Map.</div>
-                          )}
-                          {currentView === 'export' && <ExportPanel />}
-                          {currentView === 'ai' && <AIHarness />}
-                          {currentView !== 'graph' && currentView !== 'mindmap' && currentView !== 'export' && currentView !== 'ai' && (
-                            <div className="viz-placeholder">
-                              <p>Select Graph, Mind Map, Export or AI view to see content here.</p>
-                            </div>
-                          )}
-                        </Suspense>
-                      </ErrorBoundary>
-                    </aside>
-                  </Panel>
-                </PanelGroup>
+        <main className="main-content">
+          {!dbReady && <div className="loading-screen">Booting Knowledge Studio...</div>}
+          <ErrorBoundary fallback={<div className="error-state">Failed to load component. Please refresh.</div>}>
+            <Suspense fallback={<LoadingSpinner />}>
+              {dbReady && currentView === 'editor' && <Editor />}
+              {dbReady && currentView === 'graph' && (
+                <GraphView
+                  entities={entities}
+                  links={links}
+                  focusMode={graphFocusMode}
+                  onFocusModeChange={setGraphFocusMode}
+                  selectedNode={graphSelectedNode}
+                  onSelectedNodeChange={setGraphSelectedNode}
+                  hideToolbar={window.innerWidth < 768}
+                />
               )}
-            </div>
-          </Panel>
+              {dbReady && currentView === 'mindmap' && entities.length > 0 && (
+                <MindMapView
+                  rootEntity={entities[0]}
+                  relatedEntities={entities.slice(1, 10)}
+                />
+              )}
+              {dbReady && currentView === 'mindmap' && entities.length === 0 && (
+                 <div className="empty-state">No entities found. Create some in the Editor first.</div>
+              )}
+              {dbReady && currentView === 'chat' && <Chat />}
+              {dbReady && currentView === 'export' && <ExportPanel />}
+              {dbReady && currentView === 'ai' && <AIHarness />}
+            </Suspense>
+          </ErrorBoundary>
+        </main>
 
-          <PanelResizeHandle className="resize-handle" />
-
-          {/* Right Sidebar */}
-          <Panel
-            className="utility-sidebar-panel"
-            defaultSize={20}
-            collapsible
-            minSize={15}
-            maxSize={30}
-          >
-            <div className="utility-sidebar">
-              <div className="utility-tabs">
-                <button
-                  className={rightSidebarTab === 'search' ? 'active' : ''}
-                  onClick={() => setRightSidebarTab('search')}
-                >
-                  Search
-                </button>
-                <button
-                  className={rightSidebarTab === 'chat' ? 'active' : ''}
-                  onClick={() => setRightSidebarTab('chat')}
-                >
-                  AI Chat
-                </button>
-              </div>
-              <div className="utility-content">
-                <Suspense fallback={<LoadingSpinner />}>
-                  {rightSidebarTab === 'search' && <SearchPanel onResultClick={handleSearchResultClick} />}
-                  {rightSidebarTab === 'chat' && <Chat />}
-                </Suspense>
-              </div>
-            </div>
-          </Panel>
-        </PanelGroup>
+        <aside className="search-sidebar">
+          <SearchPanel onResultClick={handleSearchResultClick} />
+        </aside>
       </div>
 
       <MobileDrawer isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)}>
@@ -233,19 +142,15 @@ const AppContent: React.FC = () => {
         )}
       </MobileDrawer>
 
-      <BottomSheet isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)}>
-        <SearchPanel
-          isMobile
-          onClose={() => setIsSearchOpen(false)}
-          onResultClick={handleSearchResultClick}
-        />
-      </BottomSheet>
-
-      <BottomSheet isOpen={isAIBottomSheetOpen} onClose={() => setIsAIBottomSheetOpen(false)}>
-        <Suspense fallback={<LoadingSpinner />}>
-          {currentView === 'chat' ? <Chat /> : <AIHarness />}
-        </Suspense>
-      </BottomSheet>
+      {isSearchOpen && (
+        <div className="mobile-search-overlay">
+          <SearchPanel
+            isMobile
+            onClose={() => setIsSearchOpen(false)}
+            onResultClick={handleSearchResultClick}
+          />
+        </div>
+      )}
     </div>
   );
 };
