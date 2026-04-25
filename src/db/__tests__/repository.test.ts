@@ -106,7 +106,7 @@ describe('Repository', () => {
 
       expect(mockExec).toHaveBeenCalledWith({
         sql: expect.stringContaining('INSERT INTO entities'),
-        bind: ['Test Entity', 'person', 'A test entity', '{"key":"value"}'],
+        bind: ['Test Entity', 'person', 'A test entity', '{"key":"value"}', null],
         returnValue: 'resultRows',
         rowMode: 'object',
       });
@@ -124,7 +124,7 @@ describe('Repository', () => {
 
       expect(mockExec).toHaveBeenCalledWith({
         sql: expect.stringContaining('INSERT INTO entities'),
-        bind: ['Test Entity', 'person', null, null],
+        bind: ['Test Entity', 'person', null, null, null],
         returnValue: 'resultRows',
         rowMode: 'object',
       });
@@ -265,7 +265,7 @@ describe('Repository', () => {
 
       expect(mockExec).toHaveBeenCalledWith({
         sql: expect.stringContaining('INSERT INTO claims'),
-        bind: ['550e8400-e29b-41d4-a716-446655440000', 'Test claim', 'Test evidence', 0.9, 'Test source', 'unverified'],
+        bind: ['550e8400-e29b-41d4-a716-446655440000', 'Test claim', 'Test evidence', 0.9, 'Test source', 'unverified', null],
         returnValue: 'resultRows',
         rowMode: 'object',
       });
@@ -284,7 +284,7 @@ describe('Repository', () => {
 
       expect(mockExec).toHaveBeenCalledWith({
         sql: expect.stringContaining('INSERT INTO claims'),
-        bind: ['550e8400-e29b-41d4-a716-446655440000', 'Test claim', null, 1, null, 'unverified'],
+        bind: ['550e8400-e29b-41d4-a716-446655440000', 'Test claim', null, 1, null, 'unverified', null],
         returnValue: 'resultRows',
         rowMode: 'object',
       });
