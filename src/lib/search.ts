@@ -44,7 +44,7 @@ const addEntityToIndex = async (entity: Entity, claims: Claim[]): Promise<void> 
   let entityEmbedding = entity.embedding;
   if (!entityEmbedding) {
     entityEmbedding = await aiService.generateEmbedding(entityContent);
-    // Note: In a full app, we would update the entity in the DB with the embedding here.
+    await repository.updateEntityEmbedding(entity.id!, entityEmbedding);
   }
 
   const entityDoc: SearchDocument = {
@@ -63,6 +63,7 @@ const addEntityToIndex = async (entity: Entity, claims: Claim[]): Promise<void> 
     let claimEmbedding = claim.embedding;
     if (!claimEmbedding) {
         claimEmbedding = await aiService.generateEmbedding(claim.statement);
+        await repository.updateClaimEmbedding(claim.id!, claimEmbedding);
     }
     const claimDoc: SearchDocument = {
       id: claim.id!,

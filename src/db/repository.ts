@@ -197,6 +197,28 @@ export class Repository {
     }
   }
 
+  async updateEntityEmbedding(id: string, embedding: number[]): Promise<void> {
+    try {
+      await this.db.exec({
+        sql: `UPDATE entities SET embedding = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        bind: [JSON.stringify(embedding), id],
+      });
+    } catch (err) {
+      logger.error('Failed to update entity embedding', err);
+    }
+  }
+
+  async updateClaimEmbedding(id: string, embedding: number[]): Promise<void> {
+    try {
+      await this.db.exec({
+        sql: `UPDATE claims SET embedding = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        bind: [JSON.stringify(embedding), id],
+      });
+    } catch (err) {
+      logger.error('Failed to update claim embedding', err);
+    }
+  }
+
   async getClaimsByEntityId(entity_id: string): Promise<Claim[]> {
     try {
       const results = await this.db.exec({
