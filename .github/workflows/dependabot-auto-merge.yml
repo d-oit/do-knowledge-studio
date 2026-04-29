@@ -20,7 +20,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const MAX_RETRIES = 60;  # Increased from 24 (now ~30 minutes)
+            const MAX_RETRIES = 60;  // Increased from 24 (now ~30 minutes)
             const POLL_INTERVAL_MS = 30000;
             for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
               const { data: status } = await github.rest.repos.getCombinedStatusForRef({
