@@ -88,7 +88,7 @@
 
 .message.user {
   align-self: flex-end;
-  background: #eff6ff;
+  background: var(--bg-subtle);
   color: var(--interactive-primary);
 }
 
@@ -139,15 +139,15 @@
 }
 
 .viz-toolbar button.active {
-  background: #eff6ff;
+  background: var(--bg-subtle);
   border-color: var(--interactive-primary);
   color: var(--interactive-primary);
 }
 
 /* Extra status for Claim marks in Editor */
 .knowledge-claim {
-  background-color: #dcfce7;
-  border-bottom: 2px solid #10b981;
+  background-color: var(--bg-subtle);
+  border-bottom: 2px solid var(--accent-claim);
   padding: 0 2px;
   cursor: help;
 }
@@ -188,7 +188,7 @@
 .entity-mention {
   color: var(--interactive-primary);
   font-weight: 600;
-  background: #eff6ff;
+  background: var(--bg-subtle);
   padding: 0 4px;
   border-radius: var(--radius-sm);
   text-decoration: underline;
