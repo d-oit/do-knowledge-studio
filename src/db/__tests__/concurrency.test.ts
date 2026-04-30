@@ -22,8 +22,12 @@ class MockWorker {
   addEventListener(type: string, handler: (ev: MessageEvent) => void) {
     if (type === 'message') this.onmessage = handler;
   }
-  removeEventListener() {}
-  terminate() {}
+  removeEventListener() {
+    // Mock cleanup
+  }
+  terminate() {
+    // Mock termination
+  }
 }
 
 vi.stubGlobal('Worker', MockWorker);
@@ -58,7 +62,8 @@ describe('ConnectionPool Concurrency & Queuing', () => {
     await pool.init();
 
     // Mock a failure on the first worker
-    const workerEntry = (pool as unknown as { workers: { worker: MockWorker }[] }).workers[0];
+    const poolState = pool as unknown as { workers: { worker: MockWorker }[] };
+    const workerEntry = poolState.workers[0];
     const worker = workerEntry.worker;
     const originalPostMessage = worker.postMessage;
     worker.postMessage = function(message: { id: string; type: string; payload: unknown }) {
@@ -89,7 +94,7 @@ describe('ConnectionPool Concurrency & Queuing', () => {
     const createdWorkers: MockWorker[] = [];
     const originalWorker = global.Worker;
     vi.stubGlobal('Worker', class extends MockWorker {
-      constructor(...args: any[]) {
+      constructor(..._args: unknown[]) {
         super();
         createdWorkers.push(this);
       }
@@ -104,12 +109,6 @@ describe('ConnectionPool Concurrency & Queuing', () => {
 
     await Promise.all(promises);
 
-    // Each worker should have been used at least once for 'exec'
-    createdWorkers.forEach(worker => {
-      // We can't easily spy on the already used workers if they were used for init
-      // But we can check if they were indeed created and were part of the pool
-    });
-
     expect(createdWorkers).toHaveLength(poolSize);
 
     vi.stubGlobal('Worker', originalWorker);
@@ -121,11 +120,14 @@ describe('ConnectionPool Concurrency & Queuing', () => {
     pool.setTimeout(100);
     await pool.init();
 
-    const workers = (pool as unknown as { workers: { worker: MockWorker }[] }).workers;
+    const poolState = pool as unknown as { workers: { worker: MockWorker }[] };
+    const workers = poolState.workers;
     const originalWorker = workers[0].worker;
 
     // Mock worker that never responds to trigger timeout
-    originalWorker.postMessage = () => {};
+    originalWorker.postMessage = () => {
+      // Intentional timeout trigger
+    };
 
     // This should timeout
     await expect(pool.exec('SELECT 1')).rejects.toThrow(/timed out/);

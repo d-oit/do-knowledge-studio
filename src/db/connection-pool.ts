@@ -43,9 +43,6 @@ export class ConnectionPool {
    * Set custom timeout for queries (in milliseconds)
    */
   setTimeout(ms: number): void {
-    // Clamping with a lower bound for safety, but allow 100ms for tests if needed
-    // Actually, keeping 1000ms as a sensible production minimum,
-    // but maybe the clamping is annoying for tests.
     this.timeoutMs = Math.max(100, Math.min(ms, 120000));
     logger.info(`Connection pool timeout set to ${this.timeoutMs}ms`);
   }
@@ -56,7 +53,7 @@ export class ConnectionPool {
     this.schema = schema;
     logger.info(`Initializing SQLite worker pool with size ${this.poolSize}`);
 
-    const initPromises = Array.from({ length: this.poolSize }).map(async (_, i) => {
+    const initPromises = Array.from({ length: this.poolSize }).map((_, i) => {
       const workerEntry = this.createWorker();
       this.workers.push(workerEntry);
       return this.initializeWorker(workerEntry, i);
@@ -107,7 +104,9 @@ export class ConnectionPool {
         await Promise.race([
           this.sendToWorker(entry, 'close', {}, crypto.randomUUID()),
           new Promise(resolve => setTimeout(resolve, 1000))
-        ]).catch(() => {});
+        ]).catch((err) => {
+           logger.debug('Worker close timed out or failed', err);
+        });
         entry.worker.terminate();
       }
     });
@@ -133,27 +132,29 @@ export class ConnectionPool {
     const availableWorkers = this.workers.filter(w => !w.busy && w.initialized);
 
     while (availableWorkers.length > 0 && this.queue.length > 0) {
-      const workerEntry = availableWorkers.shift()!;
-      const request = this.queue.shift()!;
+      const workerEntry = availableWorkers.shift();
+      const request = this.queue.shift();
 
-      workerEntry.busy = true;
+      if (workerEntry && request) {
+        workerEntry.busy = true;
 
-      this.sendToWorker(workerEntry, request.type, request.payload, request.id)
-        .then(result => {
-          workerEntry.busy = false;
-          request.resolve(result);
-          this.processQueue();
-        })
-        .catch(error => {
-          workerEntry.busy = false;
-          request.reject(error);
-          this.processQueue();
-        });
+        this.sendToWorker(workerEntry, request.type, request.payload, request.id)
+          .then(result => {
+            workerEntry.busy = false;
+            request.resolve(result);
+            this.processQueue();
+          })
+          .catch(error => {
+            workerEntry.busy = false;
+            request.reject(error);
+            this.processQueue();
+          });
+      }
     }
   }
 
   private sendToWorker(entry: WorkerEntry, type: string, payload: unknown, id: string): Promise<unknown> {
-    const w = entry.worker;
+    const worker = entry.worker;
 
     return new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => {
@@ -161,7 +162,7 @@ export class ConnectionPool {
         const index = this.workers.indexOf(entry);
         if (index !== -1) {
           logger.error(`Worker ${index} timeout after ${this.timeoutMs}ms for request ${id}. Replacing worker.`);
-          w.terminate();
+          worker.terminate();
 
           // Replace worker
           const newEntry = this.createWorker();
@@ -177,7 +178,7 @@ export class ConnectionPool {
       const handler = (event: MessageEvent) => {
         if (event.data.id === id) {
           clearTimeout(timeoutId);
-          w.removeEventListener('message', handler);
+          worker.removeEventListener('message', handler);
           if (event.data.success) {
             resolve(event.data.data);
           } else {
@@ -186,8 +187,8 @@ export class ConnectionPool {
         }
       };
 
-      w.addEventListener('message', handler);
-      w.postMessage({ id, type, payload });
+      worker.addEventListener('message', handler);
+      worker.postMessage({ id, type, payload });
     });
   }
 }
