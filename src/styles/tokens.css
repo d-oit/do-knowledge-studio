@@ -9,12 +9,6 @@
   --bg-overlay: rgba(0, 0, 0, 0.4);
   --bg-active: #eff6ff;
 
-  /* Surfaces (v2) */
-  --bg-canvas: var(--bg-base);
-  --bg-panel: var(--bg-surface);
-  --bg-subtle: var(--bg-active);
-  --bg-ink: var(--text-primary);
-
   --text-primary: #1e293b;
   --text-secondary: #475569;
   --text-muted: #94a3b8;
@@ -23,19 +17,6 @@
   --interactive-primary: #2563eb;
   --interactive-hover: #1d4ed8;
   --interactive-disabled: #cbd5e1;
-  --interactive-selected: var(--bg-active);
-
-  /* Focus Rings */
-  --focus-ring-color: var(--border-focus);
-  --focus-ring-width: 2px;
-  --focus-ring-offset: 2px;
-
-  /* Local-first accents */
-  --accent-local: var(--interactive-primary);
-  --accent-indexing: var(--status-info);
-  --accent-entity: var(--status-info);
-  --accent-claim: var(--status-success);
-  --accent-link: var(--interactive-primary);
 
   --status-success: #10b981;
   --status-warning: #f59e0b;
@@ -45,11 +26,6 @@
   --border-default: #e2e8f0;
   --border-focus: #3b82f6;
   --border-error: #ef4444;
-
-  /* Visualization */
-  --viz-node: var(--interactive-primary);
-  --viz-edge: var(--border-default);
-  --viz-background: var(--bg-surface);
 
   /* Spacing (4px grid) */
   --space-1: 4px;
@@ -71,36 +47,13 @@
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  --font-size-xs: 12px;
-  --font-size-sm: 14px;
-  --font-size-base: 16px;
-  --font-size-lg: 18px;
-  --font-size-xl: 20px;
-
-  --line-tight: 1.2;
-  --line-normal: 1.5;
-  --line-relaxed: 1.625;
-
-  --density-tight: var(--space-1);
-  --density-normal: var(--space-2);
-  --density-loose: var(--space-4);
-
-  --size-body: var(--font-size-base);
+  --size-body: 16px;
   --size-heading: 1.25rem;
   --size-display: clamp(1.5rem, 5vw, 2.5rem);
 
   /* Elevation */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
-  --shadow-overlay: 0 8px 32px rgba(0, 0, 0, 0.12);
-
-  /* Z-Index */
-  --z-base: 0;
-  --z-elevated: 10;
-  --z-drawer: 1000;
-  --z-modal: 1100;
-  --z-overlay: 1200;
-  --z-tooltip: 1300;
 
   /* Motion */
   --motion-fast: 100ms ease-out;
@@ -112,15 +65,7 @@
   --header-height: 60px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  :root {
-    --motion-fast: 0ms !important;
-    --motion-base: 0ms !important;
-  }
-}
-
 /* Base Styles */
-/* v2.0.1 */
 * {
   box-sizing: border-box;
 }
