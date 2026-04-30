@@ -113,7 +113,7 @@
   position: fixed;
   inset: 0;
   background: var(--bg-overlay);
-  z-index: 1000;
+  z-index: var(--z-drawer);
 }
 
 .mobile-drawer-content {
@@ -158,9 +158,77 @@
   position: fixed;
   inset: 0;
   background: var(--bg-surface);
-  z-index: 1100;
+  z-index: var(--z-modal);
   display: flex;
   flex-direction: column;
+}
+
+/* Common Components */
+.close-button {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-full);
+}
+
+.close-button:hover {
+  background: var(--bg-base);
+  color: var(--text-primary);
+}
+
+.title-input {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  border: none;
+  padding: var(--space-2) 0;
+  background: transparent;
+  width: 100%;
+}
+
+.title-input:focus {
+  outline: none;
+  box-shadow: none;
+  border-bottom: 2px solid var(--border-focus);
+}
+
+/* Modals */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+}
+
+.modal-content {
+  background: var(--bg-surface);
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-overlay);
+  max-width: 500px;
+  width: 90%;
+  position: relative;
+}
+
+.modal-meta {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--space-4);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
 }
 
 /* Interactive Elements - Best Practice */
@@ -197,11 +265,12 @@ button:hover:not(:disabled) {
 
 button:focus-visible,
 [role="button"]:focus-visible,
-[tabindex="0"]:focus-visible {
+[tabindex="0"]:focus-visible,
+.search-result-item:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--border-focus);
-  outline: 2px solid transparent;
-  outline-offset: 2px;
+  box-shadow: 0 0 0 var(--focus-ring-width) var(--focus-ring-color);
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-offset);
 }
 
 button:active:not(:disabled) {
@@ -214,14 +283,27 @@ button:disabled {
   background: var(--interactive-disabled);
 }
 
-button.primary {
+button.primary,
+.btn-primary {
   background: var(--interactive-primary);
   color: var(--text-inverse);
   border: none;
 }
 
-button.primary:hover:not(:disabled) {
+button.primary:hover:not(:disabled),
+.btn-primary:hover:not(:disabled) {
   background: var(--interactive-hover);
+}
+
+.btn-secondary {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--bg-base);
+  border-color: var(--text-muted);
 }
 
 input, select {
@@ -240,5 +322,5 @@ input, select {
 input:focus, select:focus {
   outline: none;
   border-color: var(--border-focus);
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 var(--focus-ring-width) var(--focus-ring-color);
 }
