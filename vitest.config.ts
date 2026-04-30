@@ -5,8 +5,9 @@ import path from 'path';
 export default defineConfig({
   plugins: [react()],
   test: {
-    environment: 'happy-dom',
+    environment: 'jsdom',
     globals: true,
+    setupFiles: ['src/test/setup.ts'],
     exclude: ['**/node_modules/**', '**/dist/**', '**/tests/e2e/**'],
     coverage: {
       provider: 'v8',
@@ -23,10 +24,10 @@ export default defineConfig({
         'src/lib/llm/**',
         'src/features/**',
       ],
-      branches: 50,
-      functions: 60,
-      lines: 50,
-      statements: 50,
+      branches: 70,
+      functions: 70,
+      lines: 70,
+      statements: 70,
     },
   },
   resolve: {

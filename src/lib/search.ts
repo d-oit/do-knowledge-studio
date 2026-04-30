@@ -13,7 +13,7 @@ interface SearchDocument {
   keywords: string;
 }
 
-type OramaSchema = typeof searchSchema;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const searchSchema = {
   id: 'string',
   type: 'string',
@@ -22,7 +22,7 @@ const searchSchema = {
   keywords: 'string',
 } as const;
 
-let oramaDb: Orama<OramaSchema> | null = null;
+let oramaDb: Orama<typeof searchSchema> | null = null;
 const oramaIdMap = new Map<string, string>(); // entityId → oramaInternalId
 
 const prepareEntityDoc = (entity: Entity): SearchDocument => ({
