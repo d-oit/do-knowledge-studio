@@ -22,8 +22,12 @@ class MockWorker {
   addEventListener(type: string, handler: (ev: MessageEvent) => void) {
     if (type === 'message') this.onmessage = handler;
   }
-  removeEventListener() {}
-  terminate() {}
+  removeEventListener() {
+    // Mock cleanup
+  }
+  terminate() {
+    // Mock termination
+  }
 }
 
 vi.stubGlobal('Worker', MockWorker);
@@ -32,8 +36,9 @@ vi.stubGlobal('crypto', {
 });
 
 describe('ConnectionPool Concurrency & Queuing', () => {
-  it('should queue concurrent requests and process them sequentially', async () => {
-    const pool = new ConnectionPool();
+  it('should queue concurrent requests and process them across multiple workers', async () => {
+    const poolSize = 4;
+    const pool = new ConnectionPool(poolSize);
 
     // Initializing
     await pool.init('CREATE TABLE test (id INT)');
@@ -53,11 +58,13 @@ describe('ConnectionPool Concurrency & Queuing', () => {
   });
 
   it('should handle errors from the worker', async () => {
-    const pool = new ConnectionPool();
+    const pool = new ConnectionPool(1);
     await pool.init();
 
-    // Mock a failure
-    const worker = (pool as unknown as { worker: MockWorker }).worker;
+    // Mock a failure on the first worker
+    const poolState = pool as unknown as { workers: { worker: MockWorker }[] };
+    const workerEntry = poolState.workers[0];
+    const worker = workerEntry.worker;
     const originalPostMessage = worker.postMessage;
     worker.postMessage = function(message: { id: string; type: string; payload: unknown }) {
         setTimeout(() => {
@@ -77,5 +84,62 @@ describe('ConnectionPool Concurrency & Queuing', () => {
     await expect(pool.exec('SELECT * FROM invalid')).rejects.toThrow('Database error');
 
     worker.postMessage = originalPostMessage;
+  });
+
+  it('should utilize all workers in the pool', async () => {
+    const poolSize = 3;
+    const pool = new ConnectionPool(poolSize);
+
+    // Track workers as they are created
+    const createdWorkers: MockWorker[] = [];
+    const originalWorker = global.Worker;
+    vi.stubGlobal('Worker', class extends MockWorker {
+      constructor(..._args: unknown[]) {
+        super();
+        createdWorkers.push(this);
+      }
+    });
+
+    await pool.init();
+
+    // Fire requests
+    const promises = Array.from({ length: poolSize }).map((_, i) =>
+      pool.exec(`SELECT ${i}`)
+    );
+
+    await Promise.all(promises);
+
+    expect(createdWorkers).toHaveLength(poolSize);
+
+    vi.stubGlobal('Worker', originalWorker);
+  });
+
+  it('should recover when a worker times out', async () => {
+    // Set a short timeout for testing
+    const pool = new ConnectionPool(1);
+    pool.setTimeout(100);
+    await pool.init();
+
+    const poolState = pool as unknown as { workers: { worker: MockWorker }[] };
+    const workers = poolState.workers;
+    const originalWorker = workers[0].worker;
+
+    // Mock worker that never responds to trigger timeout
+    originalWorker.postMessage = () => {
+      // Intentional timeout trigger
+    };
+
+    // This should timeout
+    await expect(pool.exec('SELECT 1')).rejects.toThrow(/timed out/);
+
+    // Give it a bit of time for the re-initialization to complete
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // The worker should have been replaced
+    expect(workers[0].worker).not.toBe(originalWorker);
+
+    // The new worker should be functional (it uses the default MockWorker behavior)
+    const result = await pool.exec('SELECT 2') as { result: string }[];
+    expect(result[0].result).toBe('ok');
   });
 });
