@@ -1,11 +1,12 @@
 import { logger } from '../lib/logger';
 
+export const DEFAULT_POOL_SIZE = 4;
 const DEFAULT_TIMEOUT_MS = 30000; // 30 seconds default timeout
 
 /**
- * Connection Manager for SQLite WASM Worker
- * Manages a single Web Worker and queues requests to ensure sequential processing
- * and keep the main thread responsive.
+ * Connection Manager for SQLite WASM Worker Pool
+ * Manages multiple Web Workers and queues requests to ensure efficient
+ * parallel processing while keeping the main thread responsive.
  */
 
 interface PoolRequest {
@@ -17,15 +18,23 @@ interface PoolRequest {
   timeout?: ReturnType<typeof setTimeout>;
 }
 
+interface WorkerEntry {
+  worker: Worker;
+  busy: boolean;
+  initialized: boolean;
+}
+
 export class ConnectionPool {
-  private worker: Worker | null = null;
-  private busy = false;
+  private workers: WorkerEntry[] = [];
   private queue: PoolRequest[] = [];
   private workerUrl: URL;
   private initialized = false;
   private timeoutMs = DEFAULT_TIMEOUT_MS;
+  private poolSize: number;
+  private schema: string | undefined;
 
-  constructor() {
+  constructor(poolSize: number = DEFAULT_POOL_SIZE) {
+    this.poolSize = Math.max(1, Math.min(poolSize, 16));
     // We use a relative path that Vite will handle
     this.workerUrl = new URL('./db-worker.ts', import.meta.url);
   }
@@ -34,20 +43,51 @@ export class ConnectionPool {
    * Set custom timeout for queries (in milliseconds)
    */
   setTimeout(ms: number): void {
-    this.timeoutMs = Math.max(1000, Math.min(ms, 120000)); // 1s - 2min bounds
+    // Clamping with a lower bound for safety, but allow 100ms for tests if needed
+    // Actually, keeping 1000ms as a sensible production minimum,
+    // but maybe the clamping is annoying for tests.
+    this.timeoutMs = Math.max(100, Math.min(ms, 120000));
     logger.info(`Connection pool timeout set to ${this.timeoutMs}ms`);
   }
 
   async init(schema?: string): Promise<void> {
     if (this.initialized) return;
 
-    logger.info('Initializing SQLite worker');
-    this.worker = new Worker(this.workerUrl, { type: 'module' });
+    this.schema = schema;
+    logger.info(`Initializing SQLite worker pool with size ${this.poolSize}`);
 
-    const id = crypto.randomUUID();
-    await this.sendToWorker('init', { schema }, id);
+    const initPromises = Array.from({ length: this.poolSize }).map(async (_, i) => {
+      const workerEntry = this.createWorker();
+      this.workers.push(workerEntry);
+      return this.initializeWorker(workerEntry, i);
+    });
+
+    await Promise.all(initPromises);
     this.initialized = true;
-    logger.info('SQLite worker initialized');
+    logger.info('SQLite worker pool initialized');
+  }
+
+  private createWorker(): WorkerEntry {
+    const worker = new Worker(this.workerUrl, { type: 'module' });
+    return {
+      worker,
+      busy: false,
+      initialized: false
+    };
+  }
+
+  private async initializeWorker(entry: WorkerEntry, index: number): Promise<void> {
+    const id = crypto.randomUUID();
+    try {
+      await this.sendToWorker(entry, 'init', { schema: this.schema }, id);
+      entry.initialized = true;
+      logger.info(`Worker ${index} initialized`);
+      // Trigger queue processing now that a new worker is available
+      this.processQueue();
+    } catch (err) {
+      logger.error(`Failed to initialize worker ${index}`, err);
+      throw err;
+    }
   }
 
   async exec(options: string | {
@@ -61,11 +101,21 @@ export class ConnectionPool {
   }
 
   async close(): Promise<void> {
-    if (!this.worker) return;
-    await this.enqueue('close', {});
-    this.worker.terminate();
-    this.worker = null;
+    const closePromises = this.workers.map(async (entry) => {
+      if (entry.worker) {
+        // Try to close gracefully, but don't wait too long
+        await Promise.race([
+          this.sendToWorker(entry, 'close', {}, crypto.randomUUID()),
+          new Promise(resolve => setTimeout(resolve, 1000))
+        ]).catch(() => {});
+        entry.worker.terminate();
+      }
+    });
+
+    await Promise.all(closePromises);
+    this.workers = [];
     this.initialized = false;
+    logger.info('SQLite worker pool closed');
   }
 
   private enqueue(type: PoolRequest['type'], payload: unknown): Promise<unknown> {
@@ -77,34 +127,50 @@ export class ConnectionPool {
   }
 
   private processQueue() {
-    if (this.busy || this.queue.length === 0 || !this.worker) return;
+    if (this.queue.length === 0) return;
 
-    const request = this.queue.shift()!;
-    this.busy = true;
+    // Find all available and initialized workers
+    const availableWorkers = this.workers.filter(w => !w.busy && w.initialized);
 
-    this.sendToWorker(request.type, request.payload, request.id)
-      .then(result => {
-        this.busy = false;
-        request.resolve(result);
-        this.processQueue();
-      })
-      .catch(error => {
-        this.busy = false;
-        request.reject(error);
-        this.processQueue();
-      });
+    while (availableWorkers.length > 0 && this.queue.length > 0) {
+      const workerEntry = availableWorkers.shift()!;
+      const request = this.queue.shift()!;
+
+      workerEntry.busy = true;
+
+      this.sendToWorker(workerEntry, request.type, request.payload, request.id)
+        .then(result => {
+          workerEntry.busy = false;
+          request.resolve(result);
+          this.processQueue();
+        })
+        .catch(error => {
+          workerEntry.busy = false;
+          request.reject(error);
+          this.processQueue();
+        });
+    }
   }
 
-  private sendToWorker(type: string, payload: unknown, id: string): Promise<unknown> {
-    const w = this.worker;
-    if (!w) return Promise.reject(new Error('Worker not initialized'));
+  private sendToWorker(entry: WorkerEntry, type: string, payload: unknown, id: string): Promise<unknown> {
+    const w = entry.worker;
 
     return new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => {
-        w.terminate();
-        this.worker = null;
-        this.initialized = false;
-        logger.error(`Worker timeout after ${this.timeoutMs}ms for request ${id}`);
+        // Find index of worker to replace it
+        const index = this.workers.indexOf(entry);
+        if (index !== -1) {
+          logger.error(`Worker ${index} timeout after ${this.timeoutMs}ms for request ${id}. Replacing worker.`);
+          w.terminate();
+
+          // Replace worker
+          const newEntry = this.createWorker();
+          this.workers[index] = newEntry;
+          this.initializeWorker(newEntry, index).catch(err => {
+             logger.error(`Failed to re-initialize replaced worker ${index}`, err);
+          });
+        }
+
         reject(new Error(`Database operation timed out after ${this.timeoutMs}ms`));
       }, this.timeoutMs);
 

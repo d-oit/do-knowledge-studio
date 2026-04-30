@@ -1,6 +1,6 @@
 import { logger } from '../lib/logger.js';
 import { AppError } from '../lib/errors.js';
-import { ConnectionPool } from './connection-pool.js';
+import { ConnectionPool, DEFAULT_POOL_SIZE } from './connection-pool.js';
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import * as fs from 'fs';
 
@@ -41,14 +41,15 @@ const getSchema = async () => {
 
 const isBrowser = typeof window !== 'undefined' && typeof Worker !== 'undefined';
 
-export const initDb = async (): Promise<SQLiteDB> => {
+export const initDb = async (options?: { poolSize?: number }): Promise<SQLiteDB> => {
   if (instance) return instance;
 
   try {
     const schemaSql = await getSchema();
 
     if (isBrowser) {
-        const pool = new ConnectionPool();
+        const poolSize = options?.poolSize ?? DEFAULT_POOL_SIZE;
+        const pool = new ConnectionPool(poolSize);
         await pool.init(schemaSql);
         instance = pool;
     } else {
