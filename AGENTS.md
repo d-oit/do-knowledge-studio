@@ -89,5 +89,14 @@ Follow this sequence for every change:
 
 *Note: Canonical skill source is `.agents/skills/`.*
 
+## Learnings
+- `@eslint/js@10` requires ESLint v10 — use `@eslint/js@^9` with ESLint v9
+- `eslint-plugin-react-hooks@5.x` required for ESLint v9 compat; v4.x has peer conflicts
+- Multiple `gh` accounts: use `gh auth switch --user <account>` before push to fix 403 errors
+- Vite 8 uses Rolldown: `build.rolldownOptions` + `codeSplitting.groups` (not `manualChunks`)
+- `PHASES.md` in root violates "Markdown is NOT canonical truth" — always place in `docs/`
+- `atomic-commit` expects feature branch — create branch before running if on main
+- Pre-existing typecheck errors (e.g., `GraphView.tsx`) are unrelated to config migrations
+
 ## Single Source of Truth
 This file is the canonical source for agent behavior. Detailed docs live in `docs/` and `agents-docs/`.

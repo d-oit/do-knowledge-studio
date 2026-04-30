@@ -13,24 +13,31 @@ export default defineConfig({
     exclude: ['@sqlite.org/sqlite-wasm'],
   },
   build: {
-    rollupOptions: {
+    rolldownOptions: {
       output: {
-        manualChunks(id) {
-          if (id.includes('sigma') || id.includes('graphology')) {
-            return 'vendor-graph';
-          }
-          if (id.includes('mind-elixir')) {
-            return 'vendor-mindmap';
-          }
-          if (id.includes('@tiptap')) {
-            return 'vendor-editor';
-          }
-          if (id.includes('@sqlite.org/sqlite-wasm')) {
-            return 'vendor-sqlite';
-          }
-          if (id.includes('@orama/orama')) {
-            return 'vendor-search';
-          }
+        codeSplitting: {
+          groups: [
+            {
+              name: 'vendor-graph',
+              test: /sigma|graphology/,
+            },
+            {
+              name: 'vendor-mindmap',
+              test: /mind-elixir/,
+            },
+            {
+              name: 'vendor-editor',
+              test: /@tiptap/,
+            },
+            {
+              name: 'vendor-sqlite',
+              test: /@sqlite\.org\/sqlite-wasm/,
+            },
+            {
+              name: 'vendor-search',
+              test: /@orama\/orama/,
+            },
+          ],
         },
       },
     },
