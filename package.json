@@ -49,7 +49,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
+    "@eslint/js": "^9.28.0",
     "@playwright/test": "^1.42.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@types/node": "^20.11.0",
@@ -60,7 +60,7 @@
     "eslint": "^9.39.4",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.6",
     "jsdom": "^29.1.1",
     "ts-node": "^10.9.2",
