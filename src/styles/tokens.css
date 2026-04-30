@@ -63,6 +63,11 @@
   --sidebar-width: 260px;
   --search-sidebar-width: 300px;
   --header-height: 60px;
+
+  /* Breakpoints */
+  --breakpoint-mobile: 768px;
+  --breakpoint-tablet: 1024px;
+  --breakpoint-desktop: 1200px;
 }
 
 /* Base Styles */

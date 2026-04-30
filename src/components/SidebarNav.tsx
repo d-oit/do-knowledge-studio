@@ -23,7 +23,7 @@ const SidebarNav: React.FC<SidebarNavProps> = ({ currentView, setCurrentView, on
   };
 
   return (
-    <nav className="sidebar-nav">
+    <nav className="sidebar-nav" aria-label="Main Menu">
       <div className="brand">Knowledge Studio</div>
       <ul className="nav-links">
         {(['editor', 'graph', 'mindmap', 'chat', 'export', 'ai'] as View[]).map((view) => (
