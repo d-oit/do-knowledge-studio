@@ -3,14 +3,21 @@
 A local-first knowledge management studio for structured data and synthesis. Built with React, SQLite WASM, and Orama search.
 
 ## Features
-
 - ✍️ **Structured Editor**: Tiptap-based editor with claims and entity mentions. (`src/features/editor/`)
 - 🕸️ **Knowledge Graph**: Interactive visualization of entities and links using Sigma.js. (`src/features/graph/`)
 - 🗺️ **Mind Maps**: Hierarchical organization via Mind Elixir. (`src/features/mindmap/`)
 - 🔍 **Local RAG**: Semantic search and chat powered by Orama. (`src/features/chat/`, `src/features/search/`)
 - 💾 **Local-first Storage**: SQLite WASM + OPFS for high-performance persistence. (`src/db/`)
 - 📦 **Static Export**: Export your knowledge base to a portable static site. (`src/features/export/`, `cli/`)
-- 🤖 **Agent Harness**: Integrated support for AI coding agents with a structured skill system. (`.agents/`)
+- 🤖 **Agent Harness**: Integrated support for AI coding agents with structured skill system. (`.agents/`)
+
+## Tech Stack
+- **Build**: Vite 8 (Rolldown + Oxc Minifier)
+- **Language**: TypeScript 5 + ESLint v9 flat config
+- **Runtime**: React 18 + SQLite WASM + OPFS
+- **Search**: Orama (Local RAG)
+- **Visuals**: Sigma.js, Mind Elixir, Tiptap
+- **Testing**: Vitest (jsdom) + Playwright
 
 ## Quick Start
 
@@ -60,7 +67,14 @@ Chat/Search <---> Orama Index
 - [Architecture Guide](docs/ARCHITECTURE.md)
 - [Setup & Deployment](docs/SETUP.md)
 - [Agent Workflow](AGENTS.md)
+- [Project Phases](docs/PHASES.md)
 - [Contributing](CONTRIBUTING.md)
+
+## Quality Gates
+
+```bash
+npm run typecheck && npm run lint && npm test && npm run test:e2e
+```
 
 ## License
 
