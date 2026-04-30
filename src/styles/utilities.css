@@ -21,18 +21,65 @@
 }
 
 .status-message.success {
-  background: #dcfce7;
+  background: var(--bg-subtle);
   color: var(--status-success);
-  border: 1px solid #bdf0d2;
+  border: 1px solid var(--border-default);
 }
 
 .status-message.error {
-  background: #fee2e2;
+  background: var(--bg-subtle);
   color: var(--status-danger);
-  border: 1px solid #fecaca;
+  border: 1px solid var(--border-error);
+}
+
+/* State-driven visibility */
+.error-screen,
+.error-state {
+  padding: var(--space-8);
+  text-align: center;
+  color: var(--status-danger);
+  background: var(--bg-surface);
+  border-radius: var(--radius-base);
+  border: 1px solid var(--border-error);
+  margin: var(--space-4);
+}
+
+.empty-state {
+  padding: var(--space-10);
+  text-align: center;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border-default);
+  border-top-color: var(--interactive-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 @keyframes slideIn {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-delay: -1ms !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    background-attachment: initial !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+  }
 }
