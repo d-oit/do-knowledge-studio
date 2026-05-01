@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 
 export const useEscapeKey = (onClose: () => void, active: boolean) => {
   useEffect(() => {
-    if (!active) return;
+    if (!active) return undefined;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -15,4 +15,6 @@ export const useEscapeKey = (onClose: () => void, active: boolean) => {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [onClose, active]);
+
+  return null;
 };
