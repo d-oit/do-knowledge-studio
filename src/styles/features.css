@@ -52,6 +52,26 @@
 .tiptap-content {
   min-height: 300px;
   outline: none;
+  padding: var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-base);
+  transition: all var(--motion-fast);
+}
+
+.tiptap-content:focus-within {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.toolbar-label {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .toolbar-label {
+    display: inline;
+    margin-left: var(--space-1);
+  }
 }
 
 .tiptap-content p {
@@ -195,6 +215,42 @@
   cursor: pointer;
 }
 
+.structure-preview {
+  margin-top: var(--space-8);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--border-default);
+}
+
+.structure-preview h4 {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-4);
+}
+
+.preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-4);
+}
+
+.preview-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.preview-item .label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.preview-item .value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
 .mention-tool {
   position: relative;
 }
@@ -224,8 +280,9 @@
   align-items: center;
 }
 
-.menu-item:hover {
-  background: var(--bg-base);
+.menu-item:hover, .menu-item.selected {
+  background: var(--bg-active);
+  color: var(--interactive-primary);
 }
 
 .menu-item.disabled {
