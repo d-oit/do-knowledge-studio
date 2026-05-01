@@ -580,6 +580,19 @@ button.primary:hover:not(:disabled) {
   background: var(--interactive-hover);
 }
 
+button.primary.saving {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+button.primary.saved {
+  background: var(--status-success);
+}
+
+button.primary.error {
+  background: var(--status-danger);
+}
+
 input, select {
   font-family: inherit;
   font-size: 16px; /* Prevents auto-zoom on iOS */
