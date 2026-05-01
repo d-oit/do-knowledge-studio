@@ -184,14 +184,16 @@ export const hydrateOramaIndex = () => {
   }
 };
 
-export interface SearchResult {
+export interface RankedResult {
   id: string;
-  title: string;
+  name: string;
   type: string;
-  content: string;
+  excerpt: string;
+  score: number;
+  stage: 'fts5' | 'orama' | 'graph';
 }
 
-export const searchKnowledge = async (query: string): Promise<SearchResult[]> => {
+export const searchKnowledge = async (query: string): Promise<RankedResult[]> => {
   if (!oramaDb) await initSearch();
 
   const results = await search(oramaDb!, {
@@ -203,9 +205,11 @@ export const searchKnowledge = async (query: string): Promise<SearchResult[]> =>
     const doc = hit.document;
     return {
       id: doc.id,
-      title: doc.title,
+      name: doc.title,
       type: doc.type,
-      content: doc.content,
+      excerpt: doc.content,
+      score: hit.score,
+      stage: 'orama',
     };
   });
 };
