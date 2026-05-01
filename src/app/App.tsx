@@ -13,6 +13,8 @@ import MobileDrawer from '../components/MobileDrawer';
 import SearchPanel from '../features/search/SearchPanel';
 import ErrorBoundary from '../components/ErrorBoundary';
 import Editor from '../features/editor/Editor';
+import { useMediaQuery } from '../hooks/useMediaQuery';
+import { MEDIA_QUERIES } from '../lib/constants';
 
 const GraphControls = lazy(() => import('../features/graph/GraphControls'));
 const GraphView = lazy(() => import('../features/graph/GraphView'));
@@ -70,21 +72,26 @@ const AppContent: React.FC = () => {
     }
   }, [currentView, dbReady, refreshData]);
 
+  const isMobile = useMediaQuery(MEDIA_QUERIES.MOBILE);
+
   if (error) return <div className="error-screen">{error}</div>;
 
   return (
     <div className="layout-container">
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
       <Header
         onMenuClick={() => setIsMenuOpen(true)}
         onSearchClick={() => setIsSearchOpen(true)}
       />
 
       <div className="layout-body">
-        <aside className="desktop-sidebar">
+        <aside className="desktop-sidebar" aria-label="Primary Navigation">
           <SidebarNav currentView={currentView} setCurrentView={setCurrentView} />
         </aside>
 
-        <main className="main-content">
+        <main id="main-content" className="main-content" aria-label="Main Workspace">
           {!dbReady && <div className="loading-screen">Booting Knowledge Studio...</div>}
           <ErrorBoundary fallback={<div className="error-state">Failed to load component. Please refresh.</div>}>
             <Suspense fallback={<LoadingSpinner />}>
@@ -97,7 +104,7 @@ const AppContent: React.FC = () => {
                   onFocusModeChange={setGraphFocusMode}
                   selectedNode={graphSelectedNode}
                   onSelectedNodeChange={setGraphSelectedNode}
-                  hideToolbar={window.innerWidth < 768}
+                  hideToolbar={isMobile}
                 />
               )}
               {dbReady && currentView === 'mindmap' && entities.length > 0 && (
@@ -116,7 +123,7 @@ const AppContent: React.FC = () => {
           </ErrorBoundary>
         </main>
 
-        <aside className="search-sidebar">
+        <aside className="search-sidebar" aria-label="Search and Discovery">
           <SearchPanel onResultClick={handleSearchResultClick} />
         </aside>
       </div>
