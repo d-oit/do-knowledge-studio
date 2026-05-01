@@ -7,9 +7,10 @@ interface SearchPanelProps {
   onClose?: () => void;
   isMobile?: boolean;
   onResultClick?: (result: RankedResult) => void;
+  ariaLabel?: string;
 }
 
-const SearchPanel: React.FC<SearchPanelProps> = ({ onClose, isMobile, onResultClick }) => {
+const SearchPanel: React.FC<SearchPanelProps> = ({ onClose, isMobile, onResultClick, ariaLabel }) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<RankedResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -77,7 +78,12 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ onClose, isMobile, onResultCl
   }, [selectedIndex]);
 
   return (
-    <div className={`search-panel ${isMobile ? 'mobile-modal' : 'sidebar-panel'}`}>
+    <div
+      className={`search-panel ${isMobile ? 'mobile-modal' : 'sidebar-panel'}`}
+      role={isMobile ? "dialog" : undefined}
+      aria-modal={isMobile ? "true" : undefined}
+      aria-label={isMobile ? (ariaLabel || "Search") : undefined}
+    >
       <div className="search-header">
         <div className="input-wrapper">
           <Search size={18} className="search-icon" aria-hidden="true" />
