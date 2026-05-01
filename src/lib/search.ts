@@ -190,10 +190,15 @@ export interface RankedResult {
   type: string;
   excerpt: string;
   score: number;
-  stage: 'fts5' | 'orama' | 'graph';
+  stage: 'exact' | 'fts5' | 'orama' | 'semantic' | 'graph';
 }
 
-export const searchKnowledge = async (query: string): Promise<RankedResult[]> => {
+export interface SearchOptions {
+  type?: string;
+  limit?: number;
+}
+
+export const searchKnowledge = async (query: string, options?: SearchOptions): Promise<RankedResult[]> => {
   if (!oramaDb) await initSearch();
 
   const results = await search(oramaDb!, {
@@ -201,7 +206,7 @@ export const searchKnowledge = async (query: string): Promise<RankedResult[]> =>
     properties: ['title', 'content'],
   });
 
-  return results.hits.map(hit => {
+  let mappedResults: RankedResult[] = results.hits.map(hit => {
     const doc = hit.document;
     return {
       id: doc.id,
@@ -209,7 +214,17 @@ export const searchKnowledge = async (query: string): Promise<RankedResult[]> =>
       type: doc.type,
       excerpt: doc.content,
       score: hit.score,
-      stage: 'orama',
+      stage: hit.score === 1 ? 'exact' : 'orama', // Heuristic for "exact"
     };
   });
+
+  if (options?.type && options.type !== 'all') {
+    mappedResults = mappedResults.filter(r => r.type.toLowerCase() === options.type?.toLowerCase());
+  }
+
+  if (options?.limit) {
+    mappedResults = mappedResults.slice(0, options.limit);
+  }
+
+  return mappedResults;
 };
