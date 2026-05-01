@@ -8,4 +8,9 @@ export const logger = {
   error: (msg: string, data?: unknown): void => {
     console.error(`[ERROR] ${msg}`, data ? JSON.stringify(data, null, 2) : '');
   },
+  debug: (msg: string, data?: unknown): void => {
+    if (import.meta.env.DEV) {
+      console.debug(`[DEBUG] ${msg}`, data ? JSON.stringify(data, null, 2) : '');
+    }
+  },
 };

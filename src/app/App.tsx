@@ -23,7 +23,7 @@ const Chat = lazy(() => import('../features/chat/Chat'));
 const ExportPanel = lazy(() => import('../features/export/ExportPanel'));
 const AIHarness = lazy(() => import('../features/ai/AIHarness'));
 
-type View = 'editor' | 'graph' | 'mindmap' | 'chat' | 'export' | 'ai';
+type View = 'editor' | 'graph' | 'mindmap' | 'chat' | 'export' | 'ai' | 'library' | 'search';
 
 const AppContent: React.FC = () => {
   const { dbReady, error } = useDb();
@@ -88,7 +88,11 @@ const AppContent: React.FC = () => {
 
       <div className="layout-body">
         <aside className="desktop-sidebar" aria-label="Primary Navigation">
-          <SidebarNav currentView={currentView} setCurrentView={setCurrentView} />
+          <SidebarNav
+            currentView={currentView}
+            setCurrentView={setCurrentView}
+            onSearchClick={() => setIsSearchOpen(true)}
+          />
         </aside>
 
         <main id="main-content" className="main-content" aria-label="Main Workspace">
@@ -96,6 +100,9 @@ const AppContent: React.FC = () => {
           <ErrorBoundary fallback={<div className="error-state">Failed to load component. Please refresh.</div>}>
             <Suspense fallback={<LoadingSpinner />}>
               {dbReady && currentView === 'editor' && <Editor />}
+              {dbReady && currentView === 'library' && (
+                <div className="empty-state">Library (Coming Soon)</div>
+              )}
               {dbReady && currentView === 'graph' && (
                 <GraphView
                   entities={entities}
@@ -132,6 +139,7 @@ const AppContent: React.FC = () => {
         <SidebarNav
           currentView={currentView}
           setCurrentView={setCurrentView}
+          onSearchClick={() => setIsSearchOpen(true)}
           onClose={() => setIsMenuOpen(false)}
         />
         {currentView === 'graph' && (
