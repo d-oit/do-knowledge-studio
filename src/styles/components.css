@@ -83,8 +83,14 @@
   transition: background var(--motion-fast);
 }
 
-.search-result-item:hover {
-  background: var(--bg-base);
+.search-result-item:hover,
+.search-result-item.selected {
+  background: var(--bg-active);
+  outline: none;
+}
+
+.search-result-item.selected {
+  box-shadow: inset 4px 0 0 var(--interactive-primary);
 }
 
 .result-type {
