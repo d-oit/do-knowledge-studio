@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Focus, Camera, Clock } from 'lucide-react';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 
 interface GraphNode {
   id: string;
@@ -35,6 +37,10 @@ const GraphControls: React.FC<GraphControlsProps> = ({
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [snapshotName, setSnapshotName] = useState('');
   const [snapshotDesc, setSnapshotDesc] = useState('');
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useFocusTrap(modalRef, showSaveModal);
+  useEscapeKey(() => setShowSaveModal(false), showSaveModal);
 
   const handleSaveSnapshot = async () => {
     if (!snapshotName.trim() || !onSaveSnapshot) return;
@@ -72,8 +78,15 @@ const GraphControls: React.FC<GraphControlsProps> = ({
 
       {showSaveModal && (
         <div className="modal-overlay" onClick={() => setShowSaveModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3><Camera size={16} /> Save Graph Snapshot</h3>
+          <div
+            ref={modalRef}
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-title"
+          >
+            <h3 id="modal-title"><Camera size={16} /> Save Graph Snapshot</h3>
             <p className="modal-meta">
               <Clock size={14} /> {new Date().toLocaleString()} | {nodes.length} nodes, {edges.length} edges
             </p>

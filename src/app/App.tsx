@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useCallback, Suspense, lazy, useRef } from 'react';
 import { DbProvider, useDb } from '../db/DbProvider';
 import { repository } from '../db/repository';
 import { logger } from '../lib/logger';
@@ -15,6 +15,8 @@ import ErrorBoundary from '../components/ErrorBoundary';
 import Editor from '../features/editor/Editor';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { MEDIA_QUERIES } from '../lib/constants';
+import { useFocusTrap } from '../hooks/useFocusTrap';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 const GraphControls = lazy(() => import('../features/graph/GraphControls'));
 const GraphView = lazy(() => import('../features/graph/GraphView'));
@@ -73,6 +75,10 @@ const AppContent: React.FC = () => {
   }, [currentView, dbReady, refreshData]);
 
   const isMobile = useMediaQuery(MEDIA_QUERIES.MOBILE);
+
+  const searchOverlayRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(searchOverlayRef, isSearchOpen);
+  useEscapeKey(() => setIsSearchOpen(false), isSearchOpen);
 
   if (error) return <div className="error-screen">{error}</div>;
 
@@ -158,11 +164,12 @@ const AppContent: React.FC = () => {
       </MobileDrawer>
 
       {isSearchOpen && (
-        <div className="mobile-search-overlay">
+        <div className="mobile-search-overlay" ref={searchOverlayRef}>
           <SearchPanel
             isMobile
             onClose={() => setIsSearchOpen(false)}
             onResultClick={handleSearchResultClick}
+            ariaLabel="Search Knowledge Base"
           />
         </div>
       )}
