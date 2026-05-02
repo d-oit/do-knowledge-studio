@@ -47,6 +47,22 @@ export class Repository {
     }
   }
 
+  async getEntityById(id: string): Promise<Entity | null> {
+    try {
+      const results = await this.db.exec({
+        sql: `SELECT * FROM entities WHERE id = ?`,
+        bind: [id],
+        returnValue: 'resultRows',
+        rowMode: 'object',
+      }) as Record<string, unknown>[];
+      if (results.length === 0) return null;
+      return this.parseMetadata<Entity>(results[0]);
+    } catch (err) {
+      logger.error('Failed to fetch entity by id', err);
+      throw new AppError('Failed to fetch entity by id', 'DB_ERROR', err);
+    }
+  }
+
   async getEntityByName(name: string): Promise<Entity | null> {
     try {
       const results = await this.db.exec({

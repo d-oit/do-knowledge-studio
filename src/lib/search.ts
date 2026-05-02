@@ -131,8 +131,7 @@ export const upsertToSearchIndex = async (entityId: string) => {
   try {
     await removeFromSearchIndex(entityId);
 
-    const entities = await repository.getAllEntities();
-    const entity = entities.find(e => e.id === entityId);
+    const entity = await repository.getEntityById(entityId);
 
     if (entity) {
       const claims = await repository.getClaimsByEntityId(entity.id!);
