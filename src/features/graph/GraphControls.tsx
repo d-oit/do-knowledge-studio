@@ -1,7 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { Focus, Camera, Clock } from 'lucide-react';
+import { Focus, Camera, Clock, X } from 'lucide-react';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { MEDIA_QUERIES } from '../../lib/constants';
 
 interface GraphNode {
   id: string;
@@ -38,6 +40,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
   const [snapshotName, setSnapshotName] = useState('');
   const [snapshotDesc, setSnapshotDesc] = useState('');
   const modalRef = useRef<HTMLDivElement>(null);
+  const isMobile = useMediaQuery(MEDIA_QUERIES.MOBILE);
 
   useFocusTrap(modalRef, showSaveModal);
   useEscapeKey(() => setShowSaveModal(false), showSaveModal);
@@ -50,31 +53,36 @@ const GraphControls: React.FC<GraphControlsProps> = ({
     setSnapshotDesc('');
   };
 
+  const controls = (
+    <div className={isMobile ? "viz-controls-mobile" : "viz-controls"}>
+      <button
+        onClick={() => setFocusMode(!focusMode)}
+        className={focusMode ? 'active' : ''}
+        disabled={!hasSelection}
+        aria-pressed={focusMode}
+        title={!hasSelection ? "Select a node first" : "Toggle Neighborhood Focus"}
+      >
+        <Focus size={16} /> {focusMode ? 'Show All' : 'Focus Neighborhood'}
+      </button>
+      {onSaveSnapshot && (
+        <button
+          onClick={() => setShowSaveModal(true)}
+          title="Save Graph Snapshot"
+        >
+          <Camera size={16} /> Save Snapshot
+        </button>
+      )}
+      {hasSelection && !isMobile && (
+        <div className="selection-info">
+          Selected: <strong>{selectedName}</strong>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <>
-      <div className="viz-controls">
-        <button
-          onClick={() => setFocusMode(!focusMode)}
-          className={focusMode ? 'active' : ''}
-          disabled={!hasSelection}
-          title={!hasSelection ? "Select a node first" : "Toggle Neighborhood Focus"}
-        >
-          <Focus size={16} /> {focusMode ? 'Show All' : 'Focus Neighborhood'}
-        </button>
-        {onSaveSnapshot && (
-          <button
-            onClick={() => setShowSaveModal(true)}
-            title="Save Graph Snapshot"
-          >
-            <Camera size={16} /> Save Snapshot
-          </button>
-        )}
-        {hasSelection && (
-          <div className="selection-info">
-            Selected: <strong>{selectedName}</strong>
-          </div>
-        )}
-      </div>
+      {controls}
 
       {showSaveModal && (
         <div className="modal-overlay" onClick={() => setShowSaveModal(false)}>
@@ -86,10 +94,17 @@ const GraphControls: React.FC<GraphControlsProps> = ({
             aria-modal="true"
             aria-labelledby="modal-title"
           >
-            <h3 id="modal-title"><Camera size={16} /> Save Graph Snapshot</h3>
-            <p className="modal-meta">
+            <div className="inspector-header" style={{ marginBottom: 'var(--space-4)', padding: 0, background: 'transparent', border: 0 }}>
+              <h3 id="modal-title"><Camera size={18} /> Save Graph Snapshot</h3>
+              <button className="close-button" onClick={() => setShowSaveModal(false)} aria-label="Close modal">
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="modal-meta" style={{ marginBottom: 'var(--space-4)', fontSize: '13px', color: 'var(--text-muted)' }}>
               <Clock size={14} /> {new Date().toLocaleString()} | {nodes.length} nodes, {edges.length} edges
             </p>
+
             <div className="form-group">
               <label htmlFor="snapshot-name">Snapshot Name *</label>
               <input
@@ -109,6 +124,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
                 onChange={(e) => setSnapshotDesc(e.target.value)}
                 placeholder="Optional notes about this snapshot..."
                 rows={2}
+                style={{ width: '100%', padding: 'var(--space-2)', borderRadius: 'var(--radius-base)', border: '1px solid var(--border-default)' }}
               />
             </div>
             <div className="modal-actions">

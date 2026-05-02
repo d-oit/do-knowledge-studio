@@ -1,7 +1,7 @@
-import { getDb, SQLiteDB } from './client.js';
-import { Entity, Claim, Note, Link, GraphSnapshot } from '../lib/validation.js';
-import { AppError } from '../lib/errors.js';
-import { logger } from '../lib/logger.js';
+import { getDb, SQLiteDB } from './client';
+import { Entity, Claim, Note, Link, GraphSnapshot } from '../lib/validation';
+import { AppError } from '../lib/errors';
+import { logger } from '../lib/logger';
 
 export interface GraphSnapshotDiff {
   added_nodes: string[];
