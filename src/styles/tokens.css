@@ -64,6 +64,17 @@
   --search-sidebar-width: 300px;
   --header-height: 60px;
 
+  /* Visualization Tokens */
+  --viz-node-default: #2563eb;
+  --viz-node-selected: #ef4444;
+  --viz-node-concept: #3b82f6;
+  --viz-node-person: #10b981;
+  --viz-node-project: #f59e0b;
+  --viz-node-highlight: #6366f1;
+  --viz-edge-default: #94a3b8;
+  --viz-edge-highlight: #3b82f6;
+  --viz-edge-label: #64748b;
+
   /* Breakpoints */
   --breakpoint-mobile: 768px;
   --breakpoint-tablet: 1024px;

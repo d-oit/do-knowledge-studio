@@ -18,7 +18,6 @@ import { MEDIA_QUERIES } from '../lib/constants';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 
-const GraphControls = lazy(() => import('../features/graph/GraphControls'));
 const GraphView = lazy(() => import('../features/graph/GraphView'));
 const MindMapView = lazy(() => import('../features/mindmap/MindMapView'));
 const Chat = lazy(() => import('../features/chat/Chat'));
@@ -124,6 +123,12 @@ const AppContent: React.FC = () => {
                 <MindMapView
                   rootEntity={entities[0]}
                   relatedEntities={entities.slice(1, 10)}
+                  entities={entities}
+                  links={links}
+                  onEntityClick={(id) => {
+                    setGraphSelectedNode(id);
+                    setCurrentView('graph');
+                  }}
                 />
               )}
               {dbReady && currentView === 'mindmap' && entities.length === 0 && (
@@ -148,19 +153,6 @@ const AppContent: React.FC = () => {
           onSearchClick={() => setIsSearchOpen(true)}
           onClose={() => setIsMenuOpen(false)}
         />
-        {currentView === 'graph' && (
-          <div className="drawer-extra-controls">
-            <h3>Graph Controls</h3>
-            <Suspense fallback={<div>Loading controls...</div>}>
-              <GraphControls
-                focusMode={graphFocusMode}
-                setFocusMode={setGraphFocusMode}
-                hasSelection={!!graphSelectedNode}
-                selectedName={entities.find(e => e.id === graphSelectedNode)?.name}
-              />
-            </Suspense>
-          </div>
-        )}
       </MobileDrawer>
 
       {isSearchOpen && (
