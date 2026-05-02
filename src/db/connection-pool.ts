@@ -1,4 +1,4 @@
-import { logger } from '../lib/logger';
+import { logger } from '../lib/logger.js';
 
 export const DEFAULT_POOL_SIZE = 4;
 const DEFAULT_TIMEOUT_MS = 30000; // 30 seconds default timeout
