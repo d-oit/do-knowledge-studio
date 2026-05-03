@@ -384,7 +384,7 @@ export class Repository {
         r.metadata = {};
       }
     }
-    return r as T;
+    return r;
   }
 }
 
