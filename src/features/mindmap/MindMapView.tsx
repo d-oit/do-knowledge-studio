@@ -75,7 +75,7 @@ const MindMapView: React.FC<Props> = ({
     mindInstance.current = new (MindElixir as any)(options);
     mindInstance.current.init({
       nodeData: treeData
-    } as MindElixirData);
+    });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mindInstance.current.bus.addListener('selectNode', (node: any) => {

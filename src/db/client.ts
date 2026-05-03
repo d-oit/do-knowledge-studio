@@ -10,7 +10,7 @@ export interface SQLiteDB {
     bind?: (string | number | boolean | null)[];
     returnValue?: string;
     rowMode?: string
-  }) => Promise<unknown> | unknown;
+  }) => Promise<unknown>;
   close: () => Promise<void> | void;
 }
 
@@ -60,12 +60,12 @@ export const initDb = async (options?: { poolSize?: number }): Promise<SQLiteDB>
         db.exec('PRAGMA foreign_keys = ON;');
 
         instance = {
-            exec: (options: unknown) => db.exec(options),
+            exec: (options: unknown) => Promise.resolve(db.exec(options)),
             close: () => db.close()
         };
     }
 
-    return instance!;
+    return instance;
   } catch (err) {
     logger.error('Failed to initialize database', err);
     throw new AppError('Failed to initialize database', 'DB_INIT_FAILED', err);

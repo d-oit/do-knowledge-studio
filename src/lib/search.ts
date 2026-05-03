@@ -198,9 +198,11 @@ export interface SearchOptions {
 }
 
 export const searchKnowledge = async (query: string, options?: SearchOptions): Promise<RankedResult[]> => {
-  if (!oramaDb) await initSearch();
+  if (!oramaDb) {
+    oramaDb = await initSearch();
+  }
 
-  const results = await search(oramaDb!, {
+  const results = await search(oramaDb, {
     term: query,
     properties: ['title', 'content'],
   });
