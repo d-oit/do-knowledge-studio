@@ -11,6 +11,7 @@ import SidebarNav from '../components/SidebarNav';
 import Header from '../components/Header';
 import MobileDrawer from '../components/MobileDrawer';
 import SearchPanel from '../features/search/SearchPanel';
+import JobMetrics from '../components/JobMetrics';
 import ErrorBoundary from '../components/ErrorBoundary';
 import Editor from '../features/editor/Editor';
 import { useMediaQuery } from '../hooks/useMediaQuery';
@@ -165,6 +166,8 @@ const AppContent: React.FC = () => {
           />
         </div>
       )}
+
+      <JobMetrics />
     </div>
   );
 };
