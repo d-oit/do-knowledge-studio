@@ -3,7 +3,7 @@
     "target": "ESNext",
     "useDefineForClassFields": true,
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
-    "allowJs": false,
+    "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": false,
     "allowSyntheticDefaultImports": true,
@@ -23,5 +23,16 @@
     },
      "types": ["vite/client", "node", "vitest/globals"]
   },
-  "include": ["src", "cli", "tests"]
+  "include": [
+    "src",
+    "cli",
+    "tests",
+    "*.config.ts",
+    "*.config.js",
+    "*.config.cjs",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "playwright.config.ts",
+    "eslint.config.js"
+  ]
 }
