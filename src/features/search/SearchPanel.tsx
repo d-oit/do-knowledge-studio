@@ -49,7 +49,7 @@ const NoResultsState: React.FC<{ query: string; onClear: () => void }> = ({ quer
       <Filter size={32} />
     </div>
     <h3>No local matches</h3>
-    <p>We couldn't find anything matching "{query}" in your current library.</p>
+    <p>We couldn't find anything matching &quot;{query}&quot; in your current library.</p>
     <div className="no-results-actions">
       <button className="btn-secondary" onClick={onClear}>
         Clear search
