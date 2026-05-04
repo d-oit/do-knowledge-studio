@@ -129,6 +129,7 @@ const GraphView: React.FC<Props> = ({
         entities: entities.filter((e: Entity) => neighborIds.has(e.id!)),
         links: links.filter((l: Link) => neighborIds.has(l.source_id) && neighborIds.has(l.target_id))
       });
+      return Promise.resolve();
     };
 
     jobCoordinator.registerHandler('recompute-neighborhood', handler);
