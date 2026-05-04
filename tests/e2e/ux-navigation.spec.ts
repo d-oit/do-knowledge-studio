@@ -1,34 +1,32 @@
 import { test, expect } from '@playwright/test';
+import { ensureNavVisible } from './utils';
 
-test('sidebar navigation uses semantic buttons and has correct aria-current', async ({ page, isMobile }) => {
+test('sidebar navigation uses semantic buttons and has correct aria-current', async ({ page }) => {
   await page.goto('/');
 
   // Wait for the app to be ready
   await expect(page.locator('.layout-container')).toBeVisible({ timeout: 10000 });
 
-  if (isMobile) {
-    await page.getByLabel('Open menu').click();
-  }
+  await ensureNavVisible(page);
 
   const navButtons = page.locator('.nav-button');
-  // There are 8 nav buttons in total (Editor, Library, Graph, Mind Map, Search, Chat, Export, AI Harness)
-  await expect(navButtons).toHaveCount(8);
+  // On mobile/tablet, both the SidebarNav and Header might have elements,
+  // but we specifically check for the visible ones.
+  await expect(navButtons.filter({ visible: true })).toHaveCount(8);
 
   // Check the first button (Editor) - it should be active by default
-  const editorButton = page.getByRole('button', { name: 'Editor' });
+  const editorButton = navButtons.filter({ hasText: 'Editor', visible: true }).first();
   await expect(editorButton).toHaveAttribute('aria-current', 'page');
   await expect(editorButton).toHaveClass(/active/);
 
   // Click on Graph button
-  const graphButton = page.getByRole('button', { name: 'Graph' });
+  const graphButton = navButtons.filter({ hasText: 'Graph', visible: true }).first();
   await expect(graphButton).not.toHaveAttribute('aria-current', 'page');
 
   await graphButton.click();
 
-  if (isMobile) {
-    // Menu closes after click on mobile, reopen it to check state
-    await page.getByLabel('Open menu').click();
-  }
+  // Menu closes after click on responsive layouts, reopen it to check state
+  await ensureNavVisible(page);
 
   // Now Graph should be active
   await expect(graphButton).toHaveAttribute('aria-current', 'page');

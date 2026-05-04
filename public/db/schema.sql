@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS claims (
     evidence TEXT,
     confidence REAL DEFAULT 1.0,
     source TEXT,
+    verification_status TEXT DEFAULT 'unverified',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (entity_id) REFERENCES entities(id) ON DELETE CASCADE

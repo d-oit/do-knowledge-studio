@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
+import { ensureNavVisible } from './utils';
 
 test.describe('Production Smoke Test', () => {
-  test('should boot and allow core navigation', async ({ page, isMobile }) => {
+  test('should boot and allow core navigation', async ({ page }) => {
     // Go to the home page
     await page.goto('/');
 
@@ -11,13 +12,11 @@ test.describe('Production Smoke Test', () => {
     await expect(layout).toBeVisible({ timeout: 15000 });
 
     // Check for responsive state and open menu if needed
-    if (isMobile) {
-      await page.getByLabel('Open menu').click();
-    }
+    await ensureNavVisible(page);
 
     // Verify core navigation buttons are present
     const navButtons = page.locator('.nav-button');
-    await expect(navButtons.first()).toBeVisible();
+    await expect(navButtons.filter({ visible: true }).first()).toBeVisible();
 
     // Verify Cross-Origin headers on the main document
     const response = await page.request.get('/');
@@ -30,14 +29,17 @@ test.describe('Production Smoke Test', () => {
     }
 
     // Perform a core navigation: click 'Graph'
-    const graphButton = page.getByRole('button', { name: /graph/i }).first();
+    const graphButton = page.locator('.nav-button').filter({ hasText: 'Graph', visible: true }).first();
     await graphButton.click();
-
-    // Verify navigation state
-    await expect(graphButton).toHaveAttribute('aria-current', 'page');
-    await expect(graphButton).toHaveClass(/active/);
 
     // Verify we reached the graph view area
     await expect(page.locator('.main-content')).toBeVisible();
+
+    // On mobile/tablet, the menu closes after navigation, so we need to open it again to check the active state
+    await ensureNavVisible(page);
+
+    const activeGraphButton = page.locator('.nav-button').filter({ hasText: 'Graph' }).filter({ visible: true }).first();
+    await expect(activeGraphButton).toHaveAttribute('aria-current', 'page');
+    await expect(activeGraphButton).toHaveClass(/active/);
   });
 });
