@@ -1,10 +1,14 @@
 import { test, expect } from '@playwright/test';
 
-test('sidebar navigation uses semantic buttons and has correct aria-current', async ({ page }) => {
+test('sidebar navigation uses semantic buttons and has correct aria-current', async ({ page, isMobile }) => {
   await page.goto('/');
 
   // Wait for the app to be ready
   await expect(page.locator('.layout-container')).toBeVisible({ timeout: 10000 });
+
+  if (isMobile) {
+    await page.getByLabel('Open menu').click();
+  }
 
   const navButtons = page.locator('.nav-button');
   // There are 8 nav buttons in total (Editor, Library, Graph, Mind Map, Search, Chat, Export, AI Harness)
@@ -20,6 +24,11 @@ test('sidebar navigation uses semantic buttons and has correct aria-current', as
   await expect(graphButton).not.toHaveAttribute('aria-current', 'page');
 
   await graphButton.click();
+
+  if (isMobile) {
+    // Menu closes after click on mobile, reopen it to check state
+    await page.getByLabel('Open menu').click();
+  }
 
   // Now Graph should be active
   await expect(graphButton).toHaveAttribute('aria-current', 'page');

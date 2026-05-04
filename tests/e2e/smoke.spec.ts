@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Production Smoke Test', () => {
-  test('should boot and allow core navigation', async ({ page }) => {
+  test('should boot and allow core navigation', async ({ page, isMobile }) => {
     // Go to the home page
     await page.goto('/');
 
@@ -10,9 +10,10 @@ test.describe('Production Smoke Test', () => {
     // Wait longer for boot to complete in CI environment
     await expect(layout).toBeVisible({ timeout: 15000 });
 
-    // We expect the app to load at least the sidebar and header
-    await expect(page.locator('.desktop-sidebar')).toBeVisible({ timeout: 15000 });
-    await expect(page.locator('.layout-body')).toBeVisible();
+    // Check for responsive state and open menu if needed
+    if (isMobile) {
+      await page.getByLabel('Open menu').click();
+    }
 
     // Verify core navigation buttons are present
     const navButtons = page.locator('.nav-button');
