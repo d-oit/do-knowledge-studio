@@ -30,6 +30,12 @@ export default tseslint.config(
       'react-refresh': reactRefresh,
       'jsx-a11y': jsxA11y,
     },
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
     rules: {
       ...react.configs.flat.recommended.rules,
       ...react.configs.flat['jsx-runtime'].rules,
@@ -52,19 +58,27 @@ export default tseslint.config(
     },
   },
 
+  // Test configuration
+  {
+    files: ['tests/**/*.{ts,tsx}', 'src/**/*.test.{ts,tsx}', 'src/**/*.spec.{ts,tsx}', 'src/test/setup.ts'],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.test.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
+
   // CLI and Config Files (Node)
   {
-    files: [
-      'cli/**/*.ts',
-      '*.config.{js,ts,cjs}',
-      'scripts/**/*.ts',
-      'vite.config.ts',
-      'vitest.config.ts',
-      'playwright.config.ts',
-    ],
+    files: ['cli/**/*.ts', 'scripts/**/*.ts', '*.config.{ts,js,cjs}', '*.config.*.{ts,js,cjs}', 'eslint.config.js'],
     languageOptions: {
       globals: {
         ...globals.node,
+      },
+      parserOptions: {
+        project: ['./tsconfig.node.json'],
+        tsconfigRootDir: import.meta.dirname,
       },
     },
     rules: {
@@ -75,15 +89,6 @@ export default tseslint.config(
     }
   },
 
-  {
-    files: ['**/*.{js,ts,tsx,cjs}'],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
-  },
   {
     rules: {
       '@typescript-eslint/no-explicit-any': 'error',
