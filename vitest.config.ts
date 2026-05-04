@@ -25,10 +25,12 @@ export default defineConfig({
       ],
       // Thresholds are set to reflect the broad inclusion of UI/feature modules
       // while maintaining a baseline for future growth.
-      branches: 14,
-      functions: 16,
-      lines: 25,
-      statements: 24,
+      thresholds: {
+        branches: 14,
+        functions: 16,
+        lines: 25,
+        statements: 24,
+      },
     },
   },
   resolve: {
