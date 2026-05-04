@@ -1,0 +1,27 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": false,
+    "allowJs": true,
+    "emitDeclarationOnly": true,
+    "outDir": "./dist/types/node",
+    "types": ["node", "vite/client"]
+  },
+  "include": [
+    "cli",
+    "scripts",
+    "src/db/client.ts",
+    "src/db/repository.ts",
+    "src/db/connection-pool.ts",
+    "src/lib/logger.ts",
+    "src/lib/errors.ts",
+    "src/lib/validation.ts",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "playwright.config.ts",
+    "eslint.config.js",
+    "commitlint.config.cjs",
+    "src/test/setup.ts"
+  ]
+}

@@ -13,9 +13,6 @@ export default tseslint.config(
       'playwright-report',
       'test-results',
       '.agents',
-      'cli',
-      '*.cjs',
-      '*.config.*',
     ],
   },
   js.configs.recommended,
@@ -24,10 +21,34 @@ export default tseslint.config(
   react.configs.flat['jsx-runtime'],
   jsxA11y.flatConfigs.recommended,
   {
-    files: ['**/*.{ts,tsx}'],
+    files: ['src/**/*.{ts,tsx}'],
     languageOptions: {
       parserOptions: {
-        project: ['./tsconfig.json'],
+        project: ['./tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
+  {
+    files: ['tests/**/*.{ts,tsx}', 'src/**/*.test.{ts,tsx}', 'src/**/*.spec.{ts,tsx}', 'src/test/setup.ts'],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.test.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
+  {
+    files: ['cli/**/*.ts', 'scripts/**/*.ts', '*.config.{ts,js,cjs}', '*.config.*.{ts,js,cjs}', 'eslint.config.js'],
+    languageOptions: {
+      globals: {
+        module: 'readonly',
+        process: 'readonly',
+        require: 'readonly',
+        __dirname: 'readonly',
+      },
+      parserOptions: {
+        project: ['./tsconfig.node.json'],
         tsconfigRootDir: import.meta.dirname,
       },
     },
