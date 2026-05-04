@@ -82,11 +82,10 @@ export default tseslint.config(
       },
     },
     rules: {
-      // Node-specific rule overrides can go here
       '@typescript-eslint/no-unsafe-assignment': 'warn',
       '@typescript-eslint/no-unsafe-call': 'warn',
       '@typescript-eslint/no-unsafe-member-access': 'warn',
-    }
+    },
   },
 
   {
@@ -97,17 +96,17 @@ export default tseslint.config(
       '@typescript-eslint/no-empty-function': 'error',
       'no-empty-function': 'off', // Replaced by TS version
 
-      // Temporarily downgrade new rules to warn to allow for incremental fixing
-      '@typescript-eslint/no-misused-promises': 'warn',
-      '@typescript-eslint/no-floating-promises': 'warn',
-      '@typescript-eslint/no-unsafe-assignment': 'warn',
-      '@typescript-eslint/no-unsafe-member-access': 'warn',
-      '@typescript-eslint/no-unsafe-call': 'warn',
-      '@typescript-eslint/no-unsafe-argument': 'warn',
-      '@typescript-eslint/await-thenable': 'warn',
-      '@typescript-eslint/no-unnecessary-type-assertion': 'warn',
-      '@typescript-eslint/unbound-method': 'warn',
-      '@typescript-eslint/require-await': 'warn',
+      
+      '@typescript-eslint/no-misused-promises': 'error',
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-unsafe-assignment': 'error',
+      '@typescript-eslint/no-unsafe-member-access': 'error',
+      '@typescript-eslint/no-unsafe-call': 'error',
+      '@typescript-eslint/no-unsafe-argument': 'error',
+      '@typescript-eslint/await-thenable': 'error',
+      '@typescript-eslint/no-unnecessary-type-assertion': 'error',
+      '@typescript-eslint/unbound-method': 'error',
+      '@typescript-eslint/require-await': 'error',
     },
   },
 );
