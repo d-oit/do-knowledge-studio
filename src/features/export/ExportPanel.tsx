@@ -37,7 +37,7 @@ const ExportPanel: React.FC = () => {
       }
     };
 
-    fetchStats();
+    void fetchStats();
 
     jobCoordinator.registerHandler('prepare-export', async (payload) => {
       const { format } = payload as { format: string };

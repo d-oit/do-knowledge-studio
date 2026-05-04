@@ -117,7 +117,7 @@ const GraphView: React.FC<Props> = ({
   }, [entities, links, selectedNode, focusMode, relationFilter]);
 
   useEffect(() => {
-    const handler = async (payload: unknown) => {
+    const handler = (payload: unknown) => {
       const { entities, links, selectedNode } = payload as { entities: Entity[], links: Link[], selectedNode: string };
       const neighborIds = new Set<string>([selectedNode]);
       links.forEach((l: Link) => {
