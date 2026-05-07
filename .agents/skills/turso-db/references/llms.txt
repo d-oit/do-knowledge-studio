@@ -40,12 +40,12 @@
 - [Transfer Group](https://docs.turso.tech/api-reference/groups/transfer.md): Transfer a group to another organization that you own or a member of.
 - [Unarchive Group](https://docs.turso.tech/api-reference/groups/unarchive.md): Unarchive a group that has been archived due to inactivity.
 - [Update Group Configuration](https://docs.turso.tech/api-reference/groups/update-configuration.md): Update a group configuration belonging to the organization or user.
-- [Turso Platform API](https://docs.turso.tech/api-reference/introduction.md)
+- [Turso Platform API](https://docs.turso.tech/api-reference/introduction.md): Programmatically manage databases, groups, organizations, and tokens with the Turso Platform API.
 - [Closest Region](https://docs.turso.tech/api-reference/locations/closest-region.md): Returns the closest region to the user's location.
 - [List Locations](https://docs.turso.tech/api-reference/locations/list.md): Returns a list of locations where you can create or replicate databases.
-- [Create Invite](https://docs.turso.tech/api-reference/organizations/invites/create.md): Invite a user (who isn't already a Turso user) to an organization.
-- [Delete Invite](https://docs.turso.tech/api-reference/organizations/invites/delete.md): Delete an invite for the organization by email.
-- [List Invites](https://docs.turso.tech/api-reference/organizations/invites/list.md): Returns a list of invites for the organization.
+- [Create Invite](https://docs.turso.tech/api-reference/organizations/invites/create-v2.md): Invite a user to an organization. If the user isn't already registered with Turso, they will receive a signup link. If an existing pending invite exists for the same email, it will be replaced.
+- [Delete Invite](https://docs.turso.tech/api-reference/organizations/invites/delete-v2.md): Delete a pending invite for the organization by email.
+- [List Invites](https://docs.turso.tech/api-reference/organizations/invites/list-v2.md): Returns a list of pending invites for the organization.
 - [List Invoices](https://docs.turso.tech/api-reference/organizations/invoices.md): Returns a list of invoices for the organization.
 - [List Organizations](https://docs.turso.tech/api-reference/organizations/list.md): Returns a list of organizations the authenticated user owns or is a member of.
 - [Add Member](https://docs.turso.tech/api-reference/organizations/members/add.md): Add an existing Turso user to an organization.
@@ -64,6 +64,7 @@
 - [List API Tokens](https://docs.turso.tech/api-reference/tokens/list.md): Returns a list of API tokens belonging to a user.
 - [Revoke API Token](https://docs.turso.tech/api-reference/tokens/revoke.md): Revokes the provided API token belonging to a user.
 - [Validate API Token](https://docs.turso.tech/api-reference/tokens/validate.md): Validates an API token belonging to a user.
+- [Get Current User](https://docs.turso.tech/api-reference/user/get-current.md): Returns information about the currently authenticated user.
 - [auth api-tokens list](https://docs.turso.tech/cli/auth/api-tokens/list.md)
 - [auth api-tokens mint](https://docs.turso.tech/cli/auth/api-tokens/mint.md)
 - [auth api-tokens revoke](https://docs.turso.tech/cli/auth/api-tokens/revoke.md)
@@ -167,11 +168,11 @@
 - [Turso Quickstart (Flutter / Dart)](https://docs.turso.tech/sdk/flutter/quickstart.md): Get started with Flutter and Dart using the libSQL client in a few simple steps
 - [Reference](https://docs.turso.tech/sdk/flutter/reference.md): libSQL Flutter / Dart Reference
 - [Examples](https://docs.turso.tech/sdk/go/examples.md)
-- [Turso Quickstart (Go)](https://docs.turso.tech/sdk/go/quickstart.md): Get started with Turso and Go using the libSQL client in a few simple steps.
-- [Reference](https://docs.turso.tech/sdk/go/reference.md)
+- [Turso Quickstart (Go)](https://docs.turso.tech/sdk/go/quickstart.md): Get started with Turso and Go in a few simple steps.
+- [Reference](https://docs.turso.tech/sdk/go/reference.md): Go Reference for Turso
 - [Turso Quickstart (SQL over HTTP)](https://docs.turso.tech/sdk/http/quickstart.md): Get started with SQL over HTTP for Turso in a few simple steps.
 - [SQL over HTTP Reference](https://docs.turso.tech/sdk/http/reference.md)
-- [Turso Cloud SDKs](https://docs.turso.tech/sdk/introduction.md)
+- [Turso SDKs](https://docs.turso.tech/sdk/introduction.md)
 - [Turso Quickstart (Android)](https://docs.turso.tech/sdk/kotlin/quickstart.md): Get started with Turso and Android using the libSQL client in a few simple steps.
 - [Android Reference](https://docs.turso.tech/sdk/kotlin/reference.md): libSQL Android Reference
 - [Examples](https://docs.turso.tech/sdk/php/examples.md)
@@ -182,8 +183,8 @@
 - [Examples](https://docs.turso.tech/sdk/python/examples.md)
 - [Flask + Turso](https://docs.turso.tech/sdk/python/guides/flask.md): Set up Turso in your Flask project in minutes
 - [SQLAlchemy + Turso](https://docs.turso.tech/sdk/python/orm/sqlalchemy.md): Configure SQLAlchemy to work with your Turso database
-- [Turso Quickstart (Python)](https://docs.turso.tech/sdk/python/quickstart.md): Get started with Turso and Python using the libSQL client in a few simple steps.
-- [Reference](https://docs.turso.tech/sdk/python/reference.md)
+- [Turso Quickstart (Python)](https://docs.turso.tech/sdk/python/quickstart.md): Get started with Turso and Python in a few simple steps.
+- [Reference](https://docs.turso.tech/sdk/python/reference.md): Python Reference for Turso
 - [Turso Examples (Ruby)](https://docs.turso.tech/sdk/ruby/examples.md)
 - [Turso Quickstart (Ruby)](https://docs.turso.tech/sdk/ruby/quickstart.md): Get started with Turso and Ruby using the libSQL client in a few simple steps.
 - [Examples](https://docs.turso.tech/sdk/rust/examples.md)
@@ -191,8 +192,8 @@
 - [Turso + Axum](https://docs.turso.tech/sdk/rust/guides/axum.md): Set up Turso in your Axum project in minutes
 - [Turso + Rocket](https://docs.turso.tech/sdk/rust/guides/rocket.md): Set up Turso in your Rocket project in minutes
 - [Tauri + Turso](https://docs.turso.tech/sdk/rust/guides/tauri.md): Set up Turso in your Tauri project in minutes
-- [Turso Quickstart (Rust)](https://docs.turso.tech/sdk/rust/quickstart.md): Get started with Turso and Rust using the libSQL crate in a few simple steps
-- [Reference](https://docs.turso.tech/sdk/rust/reference.md): libSQL Rust Reference
+- [Turso Quickstart (Rust)](https://docs.turso.tech/sdk/rust/quickstart.md): Get started with Turso and Rust in a few simple steps.
+- [Reference](https://docs.turso.tech/sdk/rust/reference.md): Rust Reference for Turso
 - [Turso Quickstart (Swift)](https://docs.turso.tech/sdk/swift/quickstart.md): Get started with Turso and Swift using the libSQL client in a few simple steps.
 - [Swift Reference](https://docs.turso.tech/sdk/swift/reference.md): libSQL Swift Reference
 - [Examples](https://docs.turso.tech/sdk/ts/examples.md)
@@ -269,6 +270,3 @@
 - [Turso Homepage](https://turso.tech)
 - [Discord](https://tur.so/discord)
 - [GitHub](https://github.com/tursodatabase/turso)
-
-
-Built with [Mintlify](https://mintlify.com).
