@@ -27,7 +27,6 @@ interface WorkerEntry {
 export class ConnectionPool {
   private workers: WorkerEntry[] = [];
   private queue: PoolRequest[] = [];
-  private workerUrl: URL;
   private initialized = false;
   private timeoutMs = DEFAULT_TIMEOUT_MS;
   private poolSize: number;
@@ -35,8 +34,6 @@ export class ConnectionPool {
 
   constructor(poolSize: number = DEFAULT_POOL_SIZE) {
     this.poolSize = Math.max(1, Math.min(poolSize, 16));
-    // We use a relative path that Vite will handle
-    this.workerUrl = new URL('./db-worker.ts', import.meta.url);
   }
 
   /**
@@ -65,7 +62,7 @@ export class ConnectionPool {
   }
 
   private createWorker(): WorkerEntry {
-    const worker = new Worker(this.workerUrl, { type: 'module' });
+    const worker = new Worker(new URL('./db-worker.ts', import.meta.url), { type: 'module' });
     return {
       worker,
       busy: false,

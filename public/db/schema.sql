@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS claims (
     evidence TEXT,
     confidence REAL DEFAULT 1.0,
     source TEXT,
+    verification_status TEXT DEFAULT 'unverified',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (entity_id) REFERENCES entities(id) ON DELETE CASCADE
@@ -48,7 +49,7 @@ CREATE TABLE IF NOT EXISTS links (
 
 -- Graph Snapshots: Saved states of the knowledge graph
 CREATE TABLE IF NOT EXISTS graph_snapshots (
-    id UUID PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6))),
+    id UUID PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6)))),
     name TEXT NOT NULL,
     nodes_json TEXT NOT NULL,
     edges_json TEXT NOT NULL,

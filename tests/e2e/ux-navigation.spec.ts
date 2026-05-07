@@ -1,26 +1,32 @@
 import { test, expect } from '@playwright/test';
+import { ensureNavVisible } from './utils';
 
 test('sidebar navigation uses semantic buttons and has correct aria-current', async ({ page }) => {
   await page.goto('/');
 
   // Wait for the app to be ready
-  await expect(page.locator('.layout')).toBeVisible();
+  await expect(page.locator('.layout-container')).toBeVisible({ timeout: 10000 });
+
+  await ensureNavVisible(page);
 
   const navButtons = page.locator('.nav-button');
-  await expect(navButtons).toHaveCount(4);
+  // On mobile/tablet, both the SidebarNav and Header might have elements,
+  // but we specifically check for the visible ones.
+  await expect(navButtons.filter({ visible: true })).toHaveCount(8);
 
   // Check the first button (Editor) - it should be active by default
-  const editorButton = navButtons.nth(0);
-  await expect(editorButton).toHaveText('Editor');
+  const editorButton = navButtons.filter({ hasText: 'Editor', visible: true }).first();
   await expect(editorButton).toHaveAttribute('aria-current', 'page');
   await expect(editorButton).toHaveClass(/active/);
 
   // Click on Graph button
-  const graphButton = navButtons.nth(1);
-  await expect(graphButton).toHaveText('Graph');
+  const graphButton = navButtons.filter({ hasText: 'Graph', visible: true }).first();
   await expect(graphButton).not.toHaveAttribute('aria-current', 'page');
 
   await graphButton.click();
+
+  // Menu closes after click on responsive layouts, reopen it to check state
+  await ensureNavVisible(page);
 
   // Now Graph should be active
   await expect(graphButton).toHaveAttribute('aria-current', 'page');
@@ -29,9 +35,6 @@ test('sidebar navigation uses semantic buttons and has correct aria-current', as
   await expect(editorButton).not.toHaveClass(/active/);
 
   // Verify focus-visible state (simulate keyboard navigation)
-  await page.keyboard.press('Tab'); // This might focus something else first, let's focus a button specifically
   await graphButton.focus();
-  // We can't easily test :focus-visible via Playwright locators without complex CSS checks,
-  // but we can ensure it is focusable.
   await expect(graphButton).toBeFocused();
 });

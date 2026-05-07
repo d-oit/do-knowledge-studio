@@ -259,3 +259,11 @@ jobs:
           else
             echo "No BATS tests found"
           fi
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+        if: hashFiles('package.json') != ''
+
+      - name: Run E2E tests (Production Build)
+        run: npm run test:e2e:ci
+        if: hashFiles('package.json') != ''
