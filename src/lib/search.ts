@@ -1,4 +1,4 @@
-import { create, insert, insertMultiple, remove, search, type Orama } from '@orama/orama';
+import { create, insert, remove, search, type Orama } from '@orama/orama';
 import { repository } from '../db/repository.js';
 import { logger } from './logger.js';
 import { compressText } from './nlp.js';
@@ -13,7 +13,7 @@ interface SearchDocument {
   keywords: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type OramaSchema = typeof searchSchema;
 const searchSchema = {
   id: 'string',
   type: 'string',
@@ -22,36 +22,44 @@ const searchSchema = {
   keywords: 'string',
 } as const;
 
-let oramaDb: Orama<typeof searchSchema> | null = null;
+let oramaDb: Orama<OramaSchema> | null = null;
 const oramaIdMap = new Map<string, string>(); // entityId → oramaInternalId
-
-const prepareEntityDoc = (entity: Entity): SearchDocument => ({
-  id: entity.id!,
-  type: 'entity',
-  title: entity.name,
-  content: compressText(`${entity.name} ${entity.description || ''}`),
-  keywords: entity.type,
-});
-
-const prepareClaimDoc = (claim: Claim, entityName: string): SearchDocument => ({
-  id: claim.id!,
-  type: 'claim',
-  title: entityName,
-  content: compressText(claim.statement),
-  keywords: [claim.entity_id, claim.source || 'unknown'].join(','),
-});
 
 const addEntityToIndex = async (entity: Entity, claims: Claim[]): Promise<void> => {
   if (!oramaDb) return;
 
-  const entityDoc = prepareEntityDoc(entity);
+  const entityDoc: SearchDocument = {
+    id: entity.id!,
+    type: 'entity',
+    title: entity.name,
+    content: compressText(`${entity.name} ${entity.description || ''}`),
+    keywords: entity.type,
+  };
+
   const entityResult = await insert(oramaDb, entityDoc);
   oramaIdMap.set(entity.id!, entityResult);
 
   for (const claim of claims) {
-    const claimDoc = prepareClaimDoc(claim, entity.name);
+    const claimDoc: SearchDocument = {
+      id: claim.id!,
+      type: 'claim',
+      title: entity.name,
+      content: compressText(claim.statement),
+      keywords: [entity.id!, claim.source || 'unknown'].join(','),
+    };
     const claimResult = await insert(oramaDb, claimDoc);
     oramaIdMap.set(claim.id!, claimResult);
+  }
+};
+
+/**
+ * Helper to index an entity and its claims.
+ */
+const indexEntityById = async (entityId: string): Promise<void> => {
+  const entity = await repository.getEntityById(entityId);
+  if (entity) {
+    const claims = await repository.getClaimsByEntityId(entity.id!);
+    await addEntityToIndex(entity, claims);
   }
 };
 
@@ -69,39 +77,12 @@ export const initSearch = async () => {
       },
     });
 
-    const [entities, allClaims] = await Promise.all([
-      repository.getAllEntities(),
-      repository.getAllClaims(),
-    ]);
-
-    const claimsByEntity = allClaims.reduce((acc, claim) => {
-      if (!acc[claim.entity_id]) acc[claim.entity_id] = [];
-      acc[claim.entity_id].push(claim);
-      return acc;
-    }, {} as Record<string, Claim[]>);
-
-    const documents: SearchDocument[] = [];
-    const idList: string[] = [];
-
+    const entities = await repository.getAllEntities();
     for (const entity of entities) {
-      documents.push(prepareEntityDoc(entity));
-      idList.push(entity.id!);
-
-      const claims = claimsByEntity[entity.id!] || [];
-      for (const claim of claims) {
-        documents.push(prepareClaimDoc(claim, entity.name));
-        idList.push(claim.id!);
-      }
+      await indexEntityById(entity.id!);
     }
 
-    if (documents.length > 0) {
-      const oramaIds = await insertMultiple(oramaDb, documents);
-      for (let i = 0; i < oramaIds.length; i++) {
-        oramaIdMap.set(idList[i], oramaIds[i]);
-      }
-    }
-
-    logger.info(`Orama search index initialized with ${documents.length} documents`);
+    logger.info('Orama search index initialized');
 
     // Register job handlers
     jobCoordinator.registerHandler('reindex-document', async (payload) => {
@@ -130,13 +111,7 @@ export const upsertToSearchIndex = async (entityId: string) => {
 
   try {
     await removeFromSearchIndex(entityId);
-
-    const entity = await repository.getEntityById(entityId);
-
-    if (entity) {
-      const claims = await repository.getClaimsByEntityId(entity.id!);
-      await addEntityToIndex(entity, claims);
-    }
+    await indexEntityById(entityId);
   } catch (err) {
     logger.error(`Failed to upsert entity ${entityId} to search index`, err);
   }
@@ -183,49 +158,28 @@ export const hydrateOramaIndex = () => {
   }
 };
 
-export interface RankedResult {
+export interface SearchResult {
   id: string;
-  name: string;
+  title: string;
   type: string;
-  excerpt: string;
-  score: number;
-  stage: 'exact' | 'fts5' | 'orama' | 'semantic' | 'graph';
+  content: string;
 }
 
-export interface SearchOptions {
-  type?: string;
-  limit?: number;
-}
+export const searchKnowledge = async (query: string): Promise<SearchResult[]> => {
+  if (!oramaDb) await initSearch();
 
-export const searchKnowledge = async (query: string, options?: SearchOptions): Promise<RankedResult[]> => {
-  if (!oramaDb) {
-    oramaDb = await initSearch();
-  }
-
-  const results = await search(oramaDb, {
+  const results = await search(oramaDb!, {
     term: query,
     properties: ['title', 'content'],
   });
 
-  let mappedResults: RankedResult[] = results.hits.map(hit => {
+  return results.hits.map(hit => {
     const doc = hit.document;
     return {
       id: doc.id,
-      name: doc.title,
+      title: doc.title,
       type: doc.type,
-      excerpt: doc.content,
-      score: hit.score,
-      stage: hit.score === 1 ? 'exact' : 'orama', // Heuristic for "exact"
+      content: doc.content,
     };
   });
-
-  if (options?.type && options.type !== 'all') {
-    mappedResults = mappedResults.filter(r => r.type.toLowerCase() === options.type?.toLowerCase());
-  }
-
-  if (options?.limit) {
-    mappedResults = mappedResults.slice(0, options.limit);
-  }
-
-  return mappedResults;
 };
