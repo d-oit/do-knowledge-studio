@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-05-07
+
+### Added
+- New `jules` skill for autonomous implementation based on Google Labs Jules Delegator
+- Comprehensive implementation plans in `plans/` directory
+- Full implementation of missing tasks from `plans/` including Graph Snapshots, Claim Provenance, and AI Harness.
+
+### Changed
+- Standardized project version to 0.1.0 across all files
+- Fixed broken documentation references to point to `agents-docs/AVAILABLE_SKILLS.md`
+
+### Fixed
+- Version inconsistencies between package.json, VERSION, and README
+- Broken links to SKILLS.md and AVAILABLE_SKILLS.md
+
+## [0.2.3] - 2026-04-23
+
+### Added
+- Swarm analysis results and implementation roadmap in `plans/`
+- Integrated `do-web-doc-resolver` for RAG and hydration
+
+### Changed
+- Improved Orama search logic with internal ID mapping
+- Enhanced AI agent integration with repository-aware implementation logic
+
 ## [0.2.2] - 2026-04-06
 
 ### Fixed

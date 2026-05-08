@@ -22,7 +22,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - name: Path Filter
-        uses: dorny/paths-filter@de200424a13a299ef0d436c8413210214660e5ba  # v3.0.0
+        uses: dorny/paths-filter@v3  # v3.0.0
         id: filter
         with:
           filters: |
