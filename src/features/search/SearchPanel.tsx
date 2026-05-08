@@ -49,7 +49,7 @@ const NoResultsState: React.FC<{ query: string; onClear: () => void }> = ({ quer
       <Filter size={32} />
     </div>
     <h3>No local matches</h3>
-    <p>We couldn't find anything matching &quot;{query}&quot; in your current library.</p>
+    <p>We couldn&apos;t find anything matching &quot;{query}&quot; in your current library.</p>
     <div className="no-results-actions">
       <button className="btn-secondary" onClick={onClear}>
         Clear search
@@ -79,6 +79,7 @@ const SearchResultItem: React.FC<{
       onClick={() => onResultClick?.(result)}
       onKeyDown={onKeyDown}
       onMouseEnter={onMouseEnter}
+      role="option"
       aria-selected={isSelected}
     >
       <div className="result-meta">
@@ -184,6 +185,15 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
             aria-controls="search-results-list"
             aria-activedescendant={selectedIndex >= 0 ? `result-${selectedIndex}` : undefined}
           />
+          {query && (
+            <button
+              className="clear-button icon-button"
+              onClick={() => setQuery('')}
+              aria-label="Clear search query"
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
         {onClose && (
           <button className="close-button" onClick={onClose} aria-label="Close search">
@@ -208,7 +218,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
         )}
 
         {results.length > 0 && (
-          <ul id="search-results-list" className="results-list" aria-label="Search results">
+          <ul id="search-results-list" className="results-list" aria-label="Search results" role="listbox">
             {results.map((result, index) => (
               <SearchResultItem
                 key={`${result.type}-${result.id}`}
