@@ -1,117 +1,105 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { loadConfig, createProvider } from '../../lib/llm/config';
-import { searchKnowledge } from '../../lib/search';
-import { logger } from '../../lib/logger';
-import { Send, Loader2, Bot, User, Database } from 'lucide-react';
-
-interface Message {
-  role: 'assistant' | 'user' | 'system';
-  content: string;
-}
+import React, { useState } from 'react';
 
 const AIHarness: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: 'AI agent ready to assist with TRIZ analysis and knowledge synthesis. Ask me anything about your local knowledge base.' }
-  ]);
-  const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [useContext, setUseContext] = useState(true);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
-
-    const userMessage = input.trim();
-    setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
-    setIsLoading(true);
-
-    try {
-      let contextString = '';
-      if (useContext) {
-        const results = await searchKnowledge(userMessage);
-        if (results.length > 0) {
-          contextString = "\n\nRelevant local context:\n" + results.map(r => `[${r.type}] ${r.title}: ${r.content}`).join('\n');
-        }
-      }
-
-      const config = loadConfig();
-      const provider = createProvider(config);
-      
-      const promptMessages: Message[] = [
-        { role: 'system', content: 'You are a helpful knowledge assistant. Ground your answers in the provided context whenever possible.' },
-        ...messages.map(m => ({ role: m.role, content: m.content })),
-        { role: 'user', content: userMessage + contextString }
-      ];
-
-      const response = await provider.chat({
-        model: config.activeProvider === 'openrouter' ? 'google/gemini-2.0-flash-lite-preview-02-05:free' : 'meta-llama/llama-3.1-8b-instruct',
-        messages: promptMessages,
-        temperature: 0.7,
-        maxTokens: 1000
-      });
-
-      setMessages(prev => [...prev, { role: 'assistant', content: response.content }]);
-    } catch (err) {
-      logger.error('AI chat failed', err);
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I encountered an error while processing your request.' }]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const [activePanel, setActivePanel] = useState<'prompt' | 'context' | 'log' | 'artifacts'>('prompt');
 
   return (
-    <div className="chat-view">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h2 style={{ margin: 0 }}>AI Harness</h2>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer' }}>
-          <input type="checkbox" checked={useContext} onChange={e => setUseContext(e.target.checked)} />
-          <Database size={16} /> Augment with Local Knowledge
-        </label>
+    <div className="ai-harness-view">
+      <div className="ai-harness-header">
+        <div className="header-main">
+          <h2>AI Harness</h2>
+          <span className="experimental-badge">Experimental Lab</span>
+        </div>
+        <div className="model-status-banner">
+          <span className="status-dot warning"></span>
+          <span className="status-text">Local model unavailable. Configure provider in settings.</span>
+        </div>
       </div>
 
-      <div className="messages-list">
-        {messages.map((m, i) => (
-          <div key={i} className={`message ${m.role}`}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', fontWeight: 'bold', fontSize: '12px' }}>
-              {m.role === 'assistant' ? <Bot size={14} /> : <User size={14} />}
-              {m.role === 'assistant' ? 'Assistant' : 'You'}
+      <div className="harness-layout">
+        <nav className="harness-tabs">
+          <button
+            className={activePanel === 'prompt' ? 'active' : ''}
+            onClick={() => setActivePanel('prompt')}
+          >
+            Prompt
+          </button>
+          <button
+            className={activePanel === 'context' ? 'active' : ''}
+            onClick={() => setActivePanel('context')}
+          >
+            Context
+          </button>
+          <button
+            className={activePanel === 'log' ? 'active' : ''}
+            onClick={() => setActivePanel('log')}
+          >
+            Run Log
+          </button>
+          <button
+            className={activePanel === 'artifacts' ? 'active' : ''}
+            onClick={() => setActivePanel('artifacts')}
+          >
+            Artifacts
+          </button>
+        </nav>
+
+        <div className="harness-content">
+          {activePanel === 'prompt' && (
+            <div className="panel prompt-panel">
+              <div className="panel-header">
+                <h3>System & User Prompt</h3>
+              </div>
+              <textarea
+                className="prompt-editor"
+                placeholder="Enter prompt templates..."
+                disabled
+              />
+              <div className="panel-footer">
+                <button className="primary" disabled>
+                  Execute Chain (Behavior Pending)
+                </button>
+              </div>
             </div>
-            {m.content}
-          </div>
-        ))}
-        {isLoading && (
-          <div className="message assistant">
-            <Loader2 className="animate-spin" size={16} /> Thinking...
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
+          )}
 
-      <div className="chat-controls">
-        <input 
-          type="text" 
-          value={input} 
-          onChange={e => setInput(e.target.value)}
-          onKeyPress={e => e.key === 'Enter' && handleSend()}
-          placeholder="Ask the AI agent..." 
-          disabled={isLoading}
-        />
-        <button className="primary" onClick={handleSend} disabled={isLoading || !input.trim()}>
-          {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
-        </button>
+          {activePanel === 'context' && (
+            <div className="panel context-panel">
+              <div className="panel-header">
+                <h3>Retrieved Context</h3>
+              </div>
+              <div className="empty-panel-state">
+                No context retrieved. Run a chain to see RAG results.
+              </div>
+            </div>
+          )}
+
+          {activePanel === 'log' && (
+            <div className="panel log-panel">
+              <div className="panel-header">
+                <h3>Execution Trace</h3>
+              </div>
+              <div className="log-entries">
+                <div className="log-entry info">Lab environment initialized.</div>
+                <div className="log-entry warning">Waiting for model configuration...</div>
+              </div>
+            </div>
+          )}
+
+          {activePanel === 'artifacts' && (
+            <div className="panel artifacts-panel">
+              <div className="panel-header">
+                <h3>Generated Artifacts</h3>
+              </div>
+              <div className="empty-panel-state">
+                No artifacts generated in this session.
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 };
 
 export default AIHarness;
-

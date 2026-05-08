@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useCallback, Suspense, lazy, useRef } from 'react';
 import { DbProvider, useDb } from '../db/DbProvider';
 import { repository } from '../db/repository';
 import { logger } from '../lib/logger';
 import { hydrateOramaIndex } from '../lib/search';
-import { SearchResult } from '../lib/search';
+import { RankedResult } from '../lib/search';
 import { Entity, Link } from '../lib/validation';
 import '../styles/index.css';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -11,17 +11,21 @@ import SidebarNav from '../components/SidebarNav';
 import Header from '../components/Header';
 import MobileDrawer from '../components/MobileDrawer';
 import SearchPanel from '../features/search/SearchPanel';
+import JobMetrics from '../components/JobMetrics';
 import ErrorBoundary from '../components/ErrorBoundary';
 import Editor from '../features/editor/Editor';
+import { useMediaQuery } from '../hooks/useMediaQuery';
+import { MEDIA_QUERIES } from '../lib/constants';
+import { useFocusTrap } from '../hooks/useFocusTrap';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
-const GraphControls = lazy(() => import('../features/graph/GraphControls'));
 const GraphView = lazy(() => import('../features/graph/GraphView'));
 const MindMapView = lazy(() => import('../features/mindmap/MindMapView'));
 const Chat = lazy(() => import('../features/chat/Chat'));
 const ExportPanel = lazy(() => import('../features/export/ExportPanel'));
 const AIHarness = lazy(() => import('../features/ai/AIHarness'));
 
-type View = 'editor' | 'graph' | 'mindmap' | 'chat' | 'export' | 'ai';
+type View = 'editor' | 'graph' | 'mindmap' | 'chat' | 'export' | 'ai' | 'library' | 'search';
 
 const AppContent: React.FC = () => {
   const { dbReady, error } = useDb();
@@ -35,7 +39,7 @@ const AppContent: React.FC = () => {
   const [graphFocusMode, setGraphFocusMode] = useState(false);
   const [graphSelectedNode, setGraphSelectedNode] = useState<string | null>(null);
 
-  const handleSearchResultClick = useCallback((result: SearchResult) => {
+  const handleSearchResultClick = useCallback((result: RankedResult) => {
     if (result.type === 'claim' || result.type === 'entity' || result.type === 'note' || result.type === 'concept' || result.type === 'person' || result.type === 'project') {
        setCurrentView('editor');
        // In a real app we would navigate to the specific entity.
@@ -70,25 +74,41 @@ const AppContent: React.FC = () => {
     }
   }, [currentView, dbReady, refreshData]);
 
+  const isMobile = useMediaQuery(MEDIA_QUERIES.MOBILE);
+
+  const searchOverlayRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(searchOverlayRef, isSearchOpen);
+  useEscapeKey(() => setIsSearchOpen(false), isSearchOpen);
+
   if (error) return <div className="error-screen">{error}</div>;
 
   return (
     <div className="layout-container">
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
       <Header
         onMenuClick={() => setIsMenuOpen(true)}
         onSearchClick={() => setIsSearchOpen(true)}
       />
 
       <div className="layout-body">
-        <aside className="desktop-sidebar">
-          <SidebarNav currentView={currentView} setCurrentView={setCurrentView} />
+        <aside className="desktop-sidebar" aria-label="Primary Navigation">
+          <SidebarNav
+            currentView={currentView}
+            setCurrentView={setCurrentView}
+            onSearchClick={() => setIsSearchOpen(true)}
+          />
         </aside>
 
-        <main className="main-content">
+        <main id="main-content" className="main-content" aria-label="Main Workspace">
           {!dbReady && <div className="loading-screen">Booting Knowledge Studio...</div>}
           <ErrorBoundary fallback={<div className="error-state">Failed to load component. Please refresh.</div>}>
             <Suspense fallback={<LoadingSpinner />}>
               {dbReady && currentView === 'editor' && <Editor />}
+              {dbReady && currentView === 'library' && (
+                <div className="empty-state">Library (Coming Soon)</div>
+              )}
               {dbReady && currentView === 'graph' && (
                 <GraphView
                   entities={entities}
@@ -97,13 +117,19 @@ const AppContent: React.FC = () => {
                   onFocusModeChange={setGraphFocusMode}
                   selectedNode={graphSelectedNode}
                   onSelectedNodeChange={setGraphSelectedNode}
-                  hideToolbar={window.innerWidth < 768}
+                  hideToolbar={isMobile}
                 />
               )}
               {dbReady && currentView === 'mindmap' && entities.length > 0 && (
                 <MindMapView
                   rootEntity={entities[0]}
                   relatedEntities={entities.slice(1, 10)}
+                  entities={entities}
+                  links={links}
+                  onEntityClick={(id) => {
+                    setGraphSelectedNode(id);
+                    setCurrentView('graph');
+                  }}
                 />
               )}
               {dbReady && currentView === 'mindmap' && entities.length === 0 && (
@@ -116,7 +142,7 @@ const AppContent: React.FC = () => {
           </ErrorBoundary>
         </main>
 
-        <aside className="search-sidebar">
+        <aside className="search-sidebar" aria-label="Search and Discovery">
           <SearchPanel onResultClick={handleSearchResultClick} />
         </aside>
       </div>
@@ -125,32 +151,23 @@ const AppContent: React.FC = () => {
         <SidebarNav
           currentView={currentView}
           setCurrentView={setCurrentView}
+          onSearchClick={() => setIsSearchOpen(true)}
           onClose={() => setIsMenuOpen(false)}
         />
-        {currentView === 'graph' && (
-          <div className="drawer-extra-controls">
-            <h3>Graph Controls</h3>
-            <Suspense fallback={<div>Loading controls...</div>}>
-              <GraphControls
-                focusMode={graphFocusMode}
-                setFocusMode={setGraphFocusMode}
-                hasSelection={!!graphSelectedNode}
-                selectedName={entities.find(e => e.id === graphSelectedNode)?.name}
-              />
-            </Suspense>
-          </div>
-        )}
       </MobileDrawer>
 
       {isSearchOpen && (
-        <div className="mobile-search-overlay">
+        <div className="mobile-search-overlay" ref={searchOverlayRef}>
           <SearchPanel
             isMobile
             onClose={() => setIsSearchOpen(false)}
             onResultClick={handleSearchResultClick}
+            ariaLabel="Search Knowledge Base"
           />
         </div>
       )}
+
+      <JobMetrics />
     </div>
   );
 };

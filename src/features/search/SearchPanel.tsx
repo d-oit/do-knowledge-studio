@@ -109,24 +109,27 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
   const resultsRef = useRef<(HTMLButtonElement | null)[]>([]);
 
   useEffect(() => {
-    const delayDebounceFn = setTimeout(async () => {
-      if (query.trim().length <= 1) {
-        setResults([]);
-        setSelectedIndex(-1);
-        return;
-      }
+    const delayDebounceFn = setTimeout(() => {
+      const performSearch = async () => {
+        if (query.trim().length <= 1) {
+          setResults([]);
+          setSelectedIndex(-1);
+          return;
+        }
 
-      setIsSearching(true);
-      try {
-        const typeFilter = FILTER_MAP[activeFilter];
-        const res = await searchKnowledge(query, { type: typeFilter });
-        setResults(res);
-        setSelectedIndex(-1);
-      } catch (err) {
-        logger.error('Search failed', err);
-      } finally {
-        setIsSearching(false);
-      }
+        setIsSearching(true);
+        try {
+          const typeFilter = FILTER_MAP[activeFilter];
+          const res = await searchKnowledge(query, { type: typeFilter });
+          setResults(res);
+          setSelectedIndex(-1);
+        } catch (err) {
+          logger.error('Search failed', err);
+        } finally {
+          setIsSearching(false);
+        }
+      };
+      void performSearch();
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
