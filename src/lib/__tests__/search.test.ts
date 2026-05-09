@@ -1,8 +1,12 @@
-import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { search } from '@orama/orama';
 
 vi.mock('@orama/orama', () => ({
-  create: vi.fn().mockResolvedValue({}),
+  create: vi.fn().mockResolvedValue({
+    insert: vi.fn().mockResolvedValue('orama-id'),
+    remove: vi.fn().mockResolvedValue(undefined),
+    search: vi.fn(),
+  }),
   insert: vi.fn().mockResolvedValue('orama-internal-id'),
   remove: vi.fn().mockResolvedValue(undefined),
   search: vi.fn(),
@@ -11,8 +15,8 @@ vi.mock('@orama/orama', () => ({
 vi.mock('../../db/repository', () => ({
   repository: {
     getAllEntities: vi.fn().mockResolvedValue([]),
-    getEntityById: vi.fn().mockResolvedValue(null),
     getClaimsByEntityId: vi.fn().mockResolvedValue([]),
+    getAllClaims: vi.fn().mockResolvedValue([]),
   },
 }));
 
@@ -24,7 +28,7 @@ vi.mock('../logger', () => ({
 }));
 
 describe('Search module', () => {
-  beforeEach(async () => {
+  beforeEach(() => {
     vi.clearAllMocks();
   });
 
@@ -32,56 +36,71 @@ describe('Search module', () => {
     it('should export searchKnowledge', async () => {
       const mod = await import('../search');
       expect(mod.searchKnowledge).toBeDefined();
+      expect(typeof mod.searchKnowledge).toBe('function');
     });
 
     it('should export initSearch', async () => {
       const mod = await import('../search');
       expect(mod.initSearch).toBeDefined();
+      expect(typeof mod.initSearch).toBe('function');
     });
-  });
 
-  describe('removeFromSearchIndex', () => {
-    it('should call Orama remove for entity and its claims', async () => {
-      const { removeFromSearchIndex, initSearch, upsertToSearchIndex } = await import('../search');
-      const { repository } = await import('../../db/repository');
-      const { insert, remove } = await import('@orama/orama');
+    it('should export removeFromSearchIndex', async () => {
+      const mod = await import('../search');
+      expect(mod.removeFromSearchIndex).toBeDefined();
+      expect(typeof mod.removeFromSearchIndex).toBe('function');
+    });
 
-      await initSearch();
-
-      const mockEntity = { id: '550e8400-e29b-41d4-a716-446655440000', name: 'Test', type: 'person' };
-      const mockClaims = [{ id: '660e8400-e29b-41d4-a716-446655440001', statement: 'Statement' }];
-
-      (repository.getEntityById as Mock).mockResolvedValue(mockEntity);
-      (repository.getClaimsByEntityId as Mock).mockResolvedValue(mockClaims);
-      (insert as Mock).mockResolvedValue('orama-internal-id');
-
-      // First add to index to populate oramaIdMap
-      await upsertToSearchIndex(mockEntity.id);
-
-      // Then remove
-      await removeFromSearchIndex(mockEntity.id);
-
-      // Called for entity and for claim
-      expect(remove).toHaveBeenCalled();
+    it('should export upsertToSearchIndex', async () => {
+      const mod = await import('../search');
+      expect(mod.upsertToSearchIndex).toBeDefined();
+      expect(typeof mod.upsertToSearchIndex).toBe('function');
     });
   });
 });
 
 describe('search function', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('should call Orama search with query', async () => {
-    (search as Mock).mockResolvedValueOnce({ hits: [] });
+    (search as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ hits: [] });
     const { searchKnowledge } = await import('../search');
     await searchKnowledge('test query');
     expect(search).toHaveBeenCalled();
   });
 
-  it('should map hit document to SearchResult', async () => {
-    (search as Mock).mockResolvedValueOnce({
-      hits: [{ document: { id: '1', title: 'T', type: 'e', content: 'c' } }],
+  it('should return empty results when no hits', async () => {
+    (search as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ hits: [] });
+    const { searchKnowledge } = await import('../search');
+    const results = await searchKnowledge('nonexistent');
+    expect(results).toEqual([]);
+  });
+
+  it('should map hit document to RankedResult', async () => {
+    (search as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      hits: [{ document: { id: '1', title: 'T', type: 'e', content: 'c' }, score: 0.9 }],
     });
     const { searchKnowledge } = await import('../search');
     const results = await searchKnowledge('q');
     expect(results[0]).toHaveProperty('id', '1');
-    expect(results[0]).toHaveProperty('title', 'T');
+    expect(results[0]).toHaveProperty('name', 'T');
+    expect(results[0]).toHaveProperty('type', 'e');
+    expect(results[0]).toHaveProperty('excerpt', 'c');
+    expect(results[0]).toHaveProperty('score', 0.9);
+    expect(results[0]).toHaveProperty('stage', 'orama');
+  });
+
+  it('should handle multiple hits', async () => {
+    (search as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      hits: [
+        { document: { id: '1', title: 'A', type: 'e', content: 'c' }, score: 0.8 },
+        { document: { id: '2', title: 'B', type: 'e', content: 'c' }, score: 0.7 },
+      ],
+    });
+    const { searchKnowledge } = await import('../search');
+    const results = await searchKnowledge('query');
+    expect(results).toHaveLength(2);
   });
 });

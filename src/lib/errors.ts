@@ -1,8 +1,8 @@
 export class AppError extends Error {
   constructor(
-    override message: string,
+    message: string,
     public code: string,
-    public override cause?: unknown
+    public cause?: unknown
   ) {
     super(message);
     this.name = 'AppError';

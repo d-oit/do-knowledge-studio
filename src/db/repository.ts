@@ -1,17 +1,5 @@
-import { z } from 'zod';
 import { getDb, SQLiteDB } from './client';
-import {
-  Entity,
-  Claim,
-  Note,
-  Link,
-  GraphSnapshot,
-  EntitySchema,
-  ClaimSchema,
-  NoteSchema,
-  LinkSchema,
-  GraphSnapshotSchema,
-} from '../lib/validation';
+import { Entity, Claim, Note, Link, GraphSnapshot } from '../lib/validation';
 import { AppError } from '../lib/errors';
 import { logger } from '../lib/logger';
 
@@ -37,9 +25,8 @@ export class Repository {
         bind: [name, type, description ?? null, metadata ? JSON.stringify(metadata) : null],
         returnValue: 'resultRows',
         rowMode: 'object',
-      });
-      const rows = z.array(z.unknown()).parse(result);
-      return this.parseMetadata(EntitySchema, rows[0]);
+      }) as Record<string, unknown>[];
+      return this.parseMetadata<Entity>(result[0]);
     } catch (err) {
       logger.error('Failed to create entity', err);
       throw new AppError('Failed to create entity', 'DB_ERROR', err);
@@ -52,9 +39,8 @@ export class Repository {
         sql: `SELECT * FROM entities ORDER BY name ASC`,
         returnValue: 'resultRows',
         rowMode: 'object',
-      });
-      const rows = z.array(z.unknown()).parse(results);
-      return rows.map((r) => this.parseMetadata(EntitySchema, r));
+      }) as Record<string, unknown>[];
+      return results.map((r) => this.parseMetadata<Entity>(r));
     } catch (err) {
       logger.error('Failed to fetch entities', err);
       throw new AppError('Failed to fetch entities', 'DB_ERROR', err);
@@ -68,10 +54,9 @@ export class Repository {
         bind: [id],
         returnValue: 'resultRows',
         rowMode: 'object',
-      });
-      const rows = z.array(z.unknown()).parse(results);
-      if (rows.length === 0) return null;
-      return this.parseMetadata(EntitySchema, rows[0]);
+      }) as Record<string, unknown>[];
+      if (results.length === 0) return null;
+      return this.parseMetadata<Entity>(results[0]);
     } catch (err) {
       logger.error('Failed to fetch entity by id', err);
       throw new AppError('Failed to fetch entity by id', 'DB_ERROR', err);
@@ -85,50 +70,12 @@ export class Repository {
         bind: [name],
         returnValue: 'resultRows',
         rowMode: 'object',
-      });
-      const rows = z.array(z.unknown()).parse(results);
-      if (rows.length === 0) return null;
-      return this.parseMetadata(EntitySchema, rows[0]);
+      }) as Record<string, unknown>[];
+      if (results.length === 0) return null;
+      return this.parseMetadata<Entity>(results[0]);
     } catch (err) {
       logger.error('Failed to fetch entity by name', err);
       throw new AppError('Failed to fetch entity by name', 'DB_ERROR', err);
-    }
-  }
-
-  async updateEntity(id: string, entity: Partial<Entity>): Promise<Entity> {
-    try {
-      const current = await this.getEntityById(id);
-      if (!current) throw new AppError('Entity not found', 'NOT_FOUND');
-
-      const name = entity.name ?? current.name;
-      const type = entity.type ?? current.type;
-      const description = entity.description ?? current.description;
-      const metadata = entity.metadata ?? current.metadata;
-
-      const result = await this.db.exec({
-        sql: `UPDATE entities SET name = ?, type = ?, description = ?, metadata = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? RETURNING *`,
-        bind: [name, type, description ?? null, metadata ? JSON.stringify(metadata) : null, id],
-        returnValue: 'resultRows',
-        rowMode: 'object',
-      });
-      const rows = z.array(z.unknown()).parse(result);
-      return this.parseMetadata(EntitySchema, rows[0]);
-    } catch (err) {
-      if (err instanceof AppError) throw err;
-      logger.error('Failed to update entity', err);
-      throw new AppError('Failed to update entity', 'DB_ERROR', err);
-    }
-  }
-
-  async deleteEntity(id: string): Promise<void> {
-    try {
-      await this.db.exec({
-        sql: `DELETE FROM entities WHERE id = ?`,
-        bind: [id],
-      });
-    } catch (err) {
-      logger.error('Failed to delete entity', err);
-      throw new AppError('Failed to delete entity', 'DB_ERROR', err);
     }
   }
 
@@ -143,11 +90,10 @@ export class Repository {
         bind: [query],
         returnValue: 'resultRows',
         rowMode: 'object',
-      });
-      const resultRows = z.array(z.unknown()).parse(results);
+      }) as Record<string, unknown>[];
 
       // Fallback to LIKE if FTS5 returns nothing or for simple queries
-      if (resultRows.length === 0) {
+      if (results.length === 0) {
         const fallback = await this.db.exec({
           sql: `SELECT * FROM entities
                 WHERE name LIKE ? OR description LIKE ?
@@ -155,12 +101,11 @@ export class Repository {
           bind: [`%${query}%`, `%${query}%`],
           returnValue: 'resultRows',
           rowMode: 'object',
-        });
-        const fallbackRows = z.array(z.unknown()).parse(fallback);
-        return fallbackRows.map((r) => this.parseMetadata(EntitySchema, r));
+        }) as Record<string, unknown>[];
+        return fallback.map((r) => this.parseMetadata<Entity>(r));
       }
 
-      return resultRows.map((r) => this.parseMetadata(EntitySchema, r));
+      return results.map((r) => this.parseMetadata<Entity>(r));
     } catch (err) {
       logger.error('Failed to search entities', err);
       throw new AppError('Failed to search entities', 'DB_ERROR', err);
@@ -178,12 +123,11 @@ export class Repository {
       const result = await this.db.exec({
         sql: `INSERT INTO claims (entity_id, statement, evidence, confidence, source, verification_status)
               VALUES (?, ?, ?, ?, ?, ?) RETURNING *`,
-        bind: [entity_id, statement, evidence ?? null, confidence ?? 1, source ?? null, verification_status ?? 'unverified'],
+        bind: [entity_id, statement, evidence ?? null, confidence, source ?? null, verification_status ?? 'unverified'],
         returnValue: 'resultRows',
         rowMode: 'object',
-      });
-      const rows = z.array(z.unknown()).parse(result);
-      return this.parseMetadata(ClaimSchema, rows[0]);
+      }) as Claim[];
+      return result[0];
     } catch (err) {
       logger.error('Failed to create claim', err);
       throw new AppError('Failed to create claim', 'DB_ERROR', err);
@@ -195,7 +139,27 @@ export class Repository {
       verification_status?: Claim['verification_status'];
     },
   ): Promise<Claim> {
-    return this.createClaim(claim);
+    try {
+      const { entity_id, statement, evidence, confidence, source, verification_status } = claim;
+      const result = await this.db.exec({
+        sql: `INSERT INTO claims (entity_id, statement, evidence, confidence, source, verification_status)
+              VALUES (?, ?, ?, ?, ?, ?) RETURNING *`,
+        bind: [
+          entity_id,
+          statement,
+          evidence ?? null,
+          confidence ?? 1,
+          source ?? null,
+          verification_status ?? 'unverified',
+        ],
+        returnValue: 'resultRows',
+        rowMode: 'object',
+      }) as Claim[];
+      return result[0];
+    } catch (err) {
+      logger.error('Failed to create claim with provenance', err);
+      throw new AppError('Failed to create claim with provenance', 'DB_ERROR', err);
+    }
   }
 
   async getClaimsByVerificationStatus(status: Claim['verification_status']): Promise<Claim[]> {
@@ -205,9 +169,8 @@ export class Repository {
         bind: [status],
         returnValue: 'resultRows',
         rowMode: 'object',
-      });
-      const rows = z.array(z.unknown()).parse(results);
-      return rows.map((r) => this.parseMetadata(ClaimSchema, r));
+      }) as Claim[];
+      return results;
     } catch (err) {
       logger.error('Failed to fetch claims by verification status', err);
       throw new AppError('Failed to fetch claims by verification status', 'DB_ERROR', err);
@@ -224,12 +187,11 @@ export class Repository {
         bind: [verification_status, claimId],
         returnValue: 'resultRows',
         rowMode: 'object',
-      });
-      const rows = z.array(z.unknown()).parse(result);
-      if (rows.length === 0) {
+      }) as Claim[];
+      if (result.length === 0) {
         throw new AppError('Claim not found', 'NOT_FOUND', null);
       }
-      return this.parseMetadata(ClaimSchema, rows[0]);
+      return result[0];
     } catch (err) {
       if (err instanceof AppError) throw err;
       logger.error('Failed to update claim verification', err);
@@ -244,57 +206,25 @@ export class Repository {
         bind: [entity_id],
         returnValue: 'resultRows',
         rowMode: 'object',
-      });
-      const rows = z.array(z.unknown()).parse(results);
-      return rows.map((r) => this.parseMetadata(ClaimSchema, r));
+      }) as Claim[];
+      return results;
     } catch (err) {
       logger.error('Failed to fetch claims', err);
       throw new AppError('Failed to fetch claims', 'DB_ERROR', err);
     }
   }
 
-  async updateClaim(id: string, claim: Partial<Claim>): Promise<Claim> {
+  async getAllClaims(): Promise<Claim[]> {
     try {
       const results = await this.db.exec({
-        sql: `SELECT * FROM claims WHERE id = ?`,
-        bind: [id],
+        sql: `SELECT * FROM claims`,
         returnValue: 'resultRows',
         rowMode: 'object',
-      });
-      const rows = z.array(z.unknown()).parse(results);
-      if (rows.length === 0) throw new AppError('Claim not found', 'NOT_FOUND');
-
-      const current = this.parseMetadata(ClaimSchema, rows[0]);
-      const statement = claim.statement ?? current.statement;
-      const evidence = claim.evidence ?? current.evidence;
-      const confidence = claim.confidence ?? current.confidence;
-      const source = claim.source ?? current.source;
-      const verification_status = claim.verification_status ?? current.verification_status;
-
-      const result = await this.db.exec({
-        sql: `UPDATE claims SET statement = ?, evidence = ?, confidence = ?, source = ?, verification_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? RETURNING *`,
-        bind: [statement, evidence ?? null, confidence, source ?? null, verification_status, id],
-        returnValue: 'resultRows',
-        rowMode: 'object',
-      });
-      const resultRows = z.array(z.unknown()).parse(result);
-      return this.parseMetadata(ClaimSchema, resultRows[0]);
+      }) as Claim[];
+      return results;
     } catch (err) {
-      if (err instanceof AppError) throw err;
-      logger.error('Failed to update claim', err);
-      throw new AppError('Failed to update claim', 'DB_ERROR', err);
-    }
-  }
-
-  async deleteClaim(id: string): Promise<void> {
-    try {
-      await this.db.exec({
-        sql: `DELETE FROM claims WHERE id = ?`,
-        bind: [id],
-      });
-    } catch (err) {
-      logger.error('Failed to delete claim', err);
-      throw new AppError('Failed to delete claim', 'DB_ERROR', err);
+      logger.error('Failed to fetch all claims', err);
+      throw new AppError('Failed to fetch all claims', 'DB_ERROR', err);
     }
   }
 
@@ -305,12 +235,11 @@ export class Repository {
       const result = await this.db.exec({
         sql: `INSERT INTO notes (entity_id, content, format)
               VALUES (?, ?, ?) RETURNING *`,
-        bind: [entity_id ?? null, content, format ?? 'markdown'],
+        bind: [entity_id ?? null, content, format],
         returnValue: 'resultRows',
         rowMode: 'object',
-      });
-      const rows = z.array(z.unknown()).parse(result);
-      return this.parseMetadata(NoteSchema, rows[0]);
+      }) as Note[];
+      return result[0];
     } catch (err) {
       logger.error('Failed to create note', err);
       throw new AppError('Failed to create note', 'DB_ERROR', err);
@@ -324,54 +253,11 @@ export class Repository {
         bind: [entity_id],
         returnValue: 'resultRows',
         rowMode: 'object',
-      });
-      const rows = z.array(z.unknown()).parse(results);
-      return rows.map((r) => this.parseMetadata(NoteSchema, r));
+      }) as Note[];
+      return results;
     } catch (err) {
       logger.error('Failed to fetch notes', err);
       throw new AppError('Failed to fetch notes', 'DB_ERROR', err);
-    }
-  }
-
-  async updateNote(id: string, note: Partial<Note>): Promise<Note> {
-    try {
-      const results = await this.db.exec({
-        sql: `SELECT * FROM notes WHERE id = ?`,
-        bind: [id],
-        returnValue: 'resultRows',
-        rowMode: 'object',
-      });
-      const rows = z.array(z.unknown()).parse(results);
-      if (rows.length === 0) throw new AppError('Note not found', 'NOT_FOUND');
-
-      const current = this.parseMetadata(NoteSchema, rows[0]);
-      const content = note.content ?? current.content;
-      const format = note.format ?? current.format;
-
-      const result = await this.db.exec({
-        sql: `UPDATE notes SET content = ?, format = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? RETURNING *`,
-        bind: [content, format, id],
-        returnValue: 'resultRows',
-        rowMode: 'object',
-      });
-      const resultRows = z.array(z.unknown()).parse(result);
-      return this.parseMetadata(NoteSchema, resultRows[0]);
-    } catch (err) {
-      if (err instanceof AppError) throw err;
-      logger.error('Failed to update note', err);
-      throw new AppError('Failed to update note', 'DB_ERROR', err);
-    }
-  }
-
-  async deleteNote(id: string): Promise<void> {
-    try {
-      await this.db.exec({
-        sql: `DELETE FROM notes WHERE id = ?`,
-        bind: [id],
-      });
-    } catch (err) {
-      logger.error('Failed to delete note', err);
-      throw new AppError('Failed to delete note', 'DB_ERROR', err);
     }
   }
 
@@ -385,9 +271,8 @@ export class Repository {
         bind: [source_id, target_id, relation, metadata ? JSON.stringify(metadata) : null],
         returnValue: 'resultRows',
         rowMode: 'object',
-      });
-      const rows = z.array(z.unknown()).parse(result);
-      return this.parseMetadata(LinkSchema, rows[0]);
+      }) as Record<string, unknown>[];
+      return this.parseMetadata<Link>(result[0]);
     } catch (err) {
       logger.error('Failed to create link', err);
       throw new AppError('Failed to create link', 'DB_ERROR', err);
@@ -400,24 +285,11 @@ export class Repository {
         sql: `SELECT * FROM links`,
         returnValue: 'resultRows',
         rowMode: 'object',
-      });
-      const rows = z.array(z.unknown()).parse(results);
-      return rows.map((r) => this.parseMetadata(LinkSchema, r));
+      }) as Record<string, unknown>[];
+      return results.map((r) => this.parseMetadata<Link>(r));
     } catch (err) {
       logger.error('Failed to fetch links', err);
       throw new AppError('Failed to fetch links', 'DB_ERROR', err);
-    }
-  }
-
-  async deleteLink(id: string): Promise<void> {
-    try {
-      await this.db.exec({
-        sql: `DELETE FROM links WHERE id = ?`,
-        bind: [id],
-      });
-    } catch (err) {
-      logger.error('Failed to delete link', err);
-      throw new AppError('Failed to delete link', 'DB_ERROR', err);
     }
   }
 
@@ -435,9 +307,8 @@ export class Repository {
         bind: [name, JSON.stringify(nodes), JSON.stringify(edges), description ?? null],
         returnValue: 'resultRows',
         rowMode: 'object',
-      });
-      const rows = z.array(z.unknown()).parse(result);
-      return this.parseMetadata(GraphSnapshotSchema, rows[0]);
+      }) as GraphSnapshot[];
+      return result[0];
     } catch (err) {
       logger.error('Failed to create snapshot', err);
       throw new AppError('Failed to create snapshot', 'DB_ERROR', err);
@@ -451,10 +322,9 @@ export class Repository {
         bind: [id],
         returnValue: 'resultRows',
         rowMode: 'object',
-      });
-      const rows = z.array(z.unknown()).parse(results);
-      if (rows.length === 0) return null;
-      return this.parseMetadata(GraphSnapshotSchema, rows[0]);
+      }) as GraphSnapshot[];
+      if (results.length === 0) return null;
+      return results[0];
     } catch (err) {
       logger.error('Failed to fetch snapshot', err);
       throw new AppError('Failed to fetch snapshot', 'DB_ERROR', err);
@@ -467,9 +337,8 @@ export class Repository {
         sql: `SELECT id, name, description, created_at FROM graph_snapshots ORDER BY created_at DESC`,
         returnValue: 'resultRows',
         rowMode: 'object',
-      });
-      const rows = z.array(z.unknown()).parse(results);
-      return rows.map(r => r as GraphSnapshot);
+      }) as GraphSnapshot[];
+      return results;
     } catch (err) {
       logger.error('Failed to list snapshots', err);
       throw new AppError('Failed to list snapshots', 'DB_ERROR', err);
@@ -506,8 +375,8 @@ export class Repository {
     }
   }
 
-  private parseMetadata<T extends z.ZodTypeAny>(schema: T, row: unknown): z.infer<T> {
-    const r = { ...(row as Record<string, unknown>) };
+  private parseMetadata<T extends { metadata?: Record<string, unknown> }>(row: unknown): T {
+    const r = row as T & { metadata?: string | Record<string, unknown> };
     if (r && typeof r.metadata === 'string') {
       try {
         r.metadata = JSON.parse(r.metadata) as Record<string, unknown>;
@@ -515,13 +384,7 @@ export class Repository {
         r.metadata = {};
       }
     }
-    // Handle null/missing optional fields for Zod
-    if (r.description === null) delete r.description;
-    if (r.metadata === null) r.metadata = {};
-    if (r.evidence === null) delete r.evidence;
-    if (r.source === null) delete r.source;
-
-    return schema.parse(r);
+    return r;
   }
 }
 

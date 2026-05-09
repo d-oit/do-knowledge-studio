@@ -81,29 +81,6 @@
   height: 100%;
 }
 
-.input-wrapper .clear-button {
-  position: absolute;
-  right: var(--space-1);
-  height: 32px;
-  width: 32px;
-  color: var(--text-muted);
-}
-
-.input-wrapper .clear-button:hover {
-  color: var(--text-secondary);
-}
-
-.input-wrapper input {
-  padding-right: var(--space-10);
-}
-
-.input-wrapper input::-webkit-search-cancel-button,
-.input-wrapper input::-webkit-search-decoration,
-.input-wrapper input::-webkit-search-results-button,
-.input-wrapper input::-webkit-search-results-decoration {
-  display: none;
-}
-
 .search-header {
   padding: var(--space-4);
   border-bottom: 1px solid var(--border-default);
@@ -679,6 +656,45 @@ input:focus, select:focus {
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
 }
 
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-wrapper .search-icon {
+  position: absolute;
+  left: var(--space-3);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.input-wrapper input {
+  padding-left: var(--space-10);
+  padding-right: var(--space-10);
+}
+
+.input-wrapper .clear-button {
+  position: absolute;
+  right: var(--space-1);
+  background: transparent;
+  border: none;
+  min-height: 36px;
+  width: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  border-radius: var(--radius-full);
+  padding: 0;
+}
+
+.input-wrapper .clear-button:hover {
+  background: var(--bg-base);
+  color: var(--text-primary);
+}
+
 /* Job Metrics Overlay */
 .job-metrics-panel {
   position: fixed;
@@ -721,25 +737,4 @@ input:focus, select:focus {
   font-weight: 700;
   color: var(--text-primary);
   text-align: right;
-}
-
-button.primary, .btn-primary {
-  background: var(--interactive-primary);
-  color: var(--text-inverse);
-  border: none;
-}
-
-button.primary:hover:not(:disabled), .btn-primary:hover:not(:disabled) {
-  background: var(--interactive-hover);
-}
-
-.btn-secondary {
-  background: var(--bg-surface);
-  color: var(--text-primary);
-  border: 1px solid var(--border-default);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: var(--bg-base);
-  border-color: var(--text-muted);
 }

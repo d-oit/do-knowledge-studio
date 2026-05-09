@@ -75,12 +75,12 @@ const SearchResultItem: React.FC<{
     <button
       id={`result-${index}`}
       ref={innerRef}
+      role="option"
+      aria-selected={isSelected}
       className={`search-result-item ${isSelected ? 'selected' : ''}`}
       onClick={() => onResultClick?.(result)}
       onKeyDown={onKeyDown}
       onMouseEnter={onMouseEnter}
-      role="option"
-      aria-selected={isSelected}
     >
       <div className="result-meta">
         <span className="result-type">{result.type}</span>
@@ -110,26 +110,24 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      const performSearch = async () => {
-        if (query.trim().length <= 1) {
-          setResults([]);
-          setSelectedIndex(-1);
-          return;
-        }
+      if (query.trim().length <= 1) {
+        setResults([]);
+        setSelectedIndex(-1);
+        return;
+      }
 
-        setIsSearching(true);
-        try {
-          const typeFilter = FILTER_MAP[activeFilter];
-          const res = await searchKnowledge(query, { type: typeFilter });
+      setIsSearching(true);
+      searchKnowledge(query, { type: FILTER_MAP[activeFilter] })
+        .then(res => {
           setResults(res);
           setSelectedIndex(-1);
-        } catch (err) {
+        })
+        .catch(err => {
           logger.error('Search failed', err);
-        } finally {
+        })
+        .finally(() => {
           setIsSearching(false);
-        }
-      };
-      void performSearch();
+        });
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
@@ -179,6 +177,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
           <Search size={18} className="search-icon" aria-hidden="true" />
           <input
             type="search"
+            // eslint-disable-next-line jsx-a11y/no-autofocus
             autoFocus={shouldAutoFocus || isMobile}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -190,9 +189,10 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
           />
           {query && (
             <button
-              className="clear-button icon-button"
+              type="button"
+              className="clear-button"
               onClick={() => setQuery('')}
-              aria-label="Clear search query"
+              aria-label="Clear search"
             >
               <X size={16} />
             </button>
@@ -221,7 +221,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
         )}
 
         {results.length > 0 && (
-          <ul id="search-results-list" className="results-list" aria-label="Search results" role="listbox">
+          <ul id="search-results-list" role="listbox" className="results-list" aria-label="Search results">
             {results.map((result, index) => (
               <SearchResultItem
                 key={`${result.type}-${result.id}`}
