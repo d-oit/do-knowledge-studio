@@ -23,7 +23,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -60,7 +60,9 @@
     "eslint": "^8.57.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.6",
+    "graphology-types": "^0.24.8",
     "happy-dom": "^20.9.0",
+    "picomatch": "^4.0.4",
     "ts-node": "^10.9.2",
     "typescript": "^5.2.2",
     "vite": "^8.0.8",
