@@ -77,7 +77,7 @@ jobs:
 
       - name: Upload ShellCheck SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@3b1a19a80ab047f35cbb237b5bd9bdc1e14f166c  # v3
+        uses: github/codeql-action/upload-sarif@7fd177fa680c9881b53cdab4d346d32574c9f7f4  # v3.35.4
         continue-on-error: true
         with:
           sarif_file: shellcheck-results.sarif
@@ -111,7 +111,7 @@ jobs:
 
       - name: Upload Trivy SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@3b1a19a80ab047f35cbb237b5bd9bdc1e14f166c  # v3
+        uses: github/codeql-action/upload-sarif@7fd177fa680c9881b53cdab4d346d32574c9f7f4  # v3.35.4
         with:
           sarif_file: trivy-results.sarif
           category: trivy-fs
@@ -176,7 +176,7 @@ jobs:
 
       - name: Upload IaC Scan SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@3b1a19a80ab047f35cbb237b5bd9bdc1e14f166c  # v3
+        uses: github/codeql-action/upload-sarif@7fd177fa680c9881b53cdab4d346d32574c9f7f4  # v3.35.4
         with:
           sarif_file: trivy-config-results.sarif
           category: trivy-config

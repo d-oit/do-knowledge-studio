@@ -28,6 +28,9 @@ ACTION_SHAS = {
     "actions/labeler@v5": "actions/labeler@8558fd74291d67161a8a78ce36a881fa63b766a9  # v5.0.0",
     "dtolnay/rust-toolchain@stable": "dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9  # stable",
     "dtolnay/rust-toolchain@nightly": "dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9  # nightly",
+    "github/codeql-action/init@v3": "github/codeql-action/init@7fd177fa680c9881b53cdab4d346d32574c9f7f4  # v3.35.4",
+    "github/codeql-action/analyze@v3": "github/codeql-action/analyze@7fd177fa680c9881b53cdab4d346d32574c9f7f4  # v3.35.4",
+    "github/codeql-action/upload-sarif@v3": "github/codeql-action/upload-sarif@7fd177fa680c9881b53cdab4d346d32574c9f7f4  # v3.35.4",
 }
 
 
@@ -52,7 +55,7 @@ def pin_actions(content: str) -> tuple[str, int]:
 
     # Match uses: directives with action references
     # Handles leading whitespace and the "uses: " prefix
-    pattern = r"^(\s+-?\s*uses:\s*)([\w\-]+/[\w\-]+@[\w\-\.]+)"
+    pattern = r"^(\s+-?\s*uses:\s*)([\w\-\./]+@[\w\-\.]+)"
     modified = re.sub(pattern, replace_action, content, flags=re.MULTILINE)
 
     return modified, count
