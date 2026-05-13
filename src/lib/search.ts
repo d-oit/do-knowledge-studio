@@ -14,7 +14,7 @@ interface SearchDocument {
 }
 
 type OramaSchema = typeof searchSchema;
-const searchSchema = {
+export const searchSchema = {
   id: 'string',
   type: 'string',
   title: 'string',
@@ -63,18 +63,12 @@ const indexEntityById = async (entityId: string): Promise<void> => {
   }
 };
 
-export const initSearch = async () => {
+export const initSearch = async (): Promise<Orama<OramaSchema>> => {
   if (oramaDb) return oramaDb;
 
   try {
     oramaDb = await create({
-      schema: {
-        id: 'string',
-        type: 'string',
-        title: 'string',
-        content: 'string',
-        keywords: 'string',
-      },
+      schema: searchSchema,
     });
 
     const entities = await repository.getAllEntities();
@@ -158,28 +152,41 @@ export const hydrateOramaIndex = () => {
   }
 };
 
-export interface SearchResult {
+export type SearchStage = 'exact' | 'fts5' | 'orama' | 'semantic' | 'graph';
+
+export interface RankedResult {
   id: string;
-  title: string;
+  name: string;
   type: string;
-  content: string;
+  excerpt: string;
+  score: number;
+  stage: SearchStage;
 }
 
-export const searchKnowledge = async (query: string): Promise<SearchResult[]> => {
+export interface SearchOptions {
+  type?: string;
+  limit?: number;
+}
+
+export const searchKnowledge = async (query: string, options: SearchOptions = {}): Promise<RankedResult[]> => {
   if (!oramaDb) await initSearch();
 
   const results = await search(oramaDb!, {
     term: query,
     properties: ['title', 'content'],
+    where: options.type ? { type: options.type } : undefined,
+    limit: options.limit,
   });
 
   return results.hits.map(hit => {
     const doc = hit.document;
     return {
       id: doc.id,
-      title: doc.title,
+      name: doc.title,
       type: doc.type,
-      content: doc.content,
+      excerpt: doc.content,
+      score: hit.score,
+      stage: 'orama',
     };
   });
 };

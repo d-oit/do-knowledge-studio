@@ -242,3 +242,42 @@ input:focus, select:focus {
   border-color: var(--border-focus);
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
 }
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-wrapper .search-icon {
+  position: absolute;
+  left: var(--space-3);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.input-wrapper input {
+  padding-left: var(--space-10);
+  padding-right: var(--space-10);
+}
+
+.input-wrapper .clear-button {
+  position: absolute;
+  right: var(--space-1);
+  background: transparent;
+  border: none;
+  min-height: 36px;
+  width: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  border-radius: var(--radius-full);
+  padding: 0;
+}
+
+.input-wrapper .clear-button:hover {
+  background: var(--bg-base);
+  color: var(--text-primary);
+}
