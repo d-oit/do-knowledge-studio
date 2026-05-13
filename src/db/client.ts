@@ -2,7 +2,6 @@ import { logger } from '../lib/logger.js';
 import { AppError } from '../lib/errors.js';
 import { ConnectionPool, DEFAULT_POOL_SIZE } from './connection-pool.js';
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
-import * as fs from 'fs';
 
 export interface SQLiteDB {
   exec: (options: string | {
@@ -31,12 +30,16 @@ const getSchema = async () => {
         const schemaResponse = await fetch('/db/schema.sql');
         if (schemaResponse.ok) return await schemaResponse.text();
     }
-    // Fallback to local fs for CLI
-    try {
-      return fs.readFileSync('./public/db/schema.sql', 'utf-8');
-    } catch {
-      return '';
+    // Fallback for CLI
+    if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+      try {
+        const fs = await import('fs');
+        return fs.readFileSync('./public/db/schema.sql', 'utf-8');
+      } catch {
+        return '';
+      }
     }
+    return '';
 };
 
 const isBrowser = typeof window !== 'undefined' && typeof Worker !== 'undefined';
