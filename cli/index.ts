@@ -28,7 +28,7 @@ program
   .command('sync')
   .description('Sync Markdown files to DB')
   .argument('<dir>', 'directory')
-  .action(async (dir: string) => {
+  .action(async (dir) => {
     console.log(`Syncing from "${dir}"...`);
     if (!fs.existsSync(dir)) {
       console.error('Directory not found');
@@ -57,17 +57,12 @@ program
     console.log('Sync complete.');
   });
 
-interface ExportOptions {
-  format: string;
-  output: string;
-}
-
 program
   .command('export')
   .description('Export data (md, json, site)')
   .option('-f, --format <format>', 'format', 'md')
   .option('-o, --output <dir>', 'output directory', './export')
-  .action(async (options: ExportOptions) => {
+  .action(async (options) => {
     const outDir = options.output;
     if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
 
@@ -199,18 +194,13 @@ async function exportSite(outDir: string) {
   fs.writeFileSync(path.join(outDir, 'index.html'), html);
 }
 
-interface EntityCreateOptions {
-  type: string;
-  description?: string;
-}
-
 program
   .command('entity-create')
   .description('Create entity')
   .argument('<name>')
   .option('-t, --type <type>', 'type', 'concept')
   .option('-d, --description <description>', 'description')
-  .action(async (name: string, options: EntityCreateOptions) => {
+  .action(async (name, options) => {
     await ensureDb();
     try {
       const entity = await repository.createEntity({
@@ -220,7 +210,7 @@ program
       });
       console.log(`Created: ${entity.name} [${entity.type}] (ID: ${entity.id})`);
     } catch (err) {
-      console.error(`Failed to create entity: ${String(err)}`);
+      console.error(`Failed to create entity: ${err}`);
     }
   });
 
@@ -239,17 +229,13 @@ program
     }
   });
 
-interface ClaimCreateOptions {
-  confidence: string;
-}
-
 program
   .command('claim-create')
   .description('Create claim for entity')
   .argument('<entity-name>')
   .argument('<statement>')
   .option('-c, --confidence <confidence>', 'confidence', '1.0')
-  .action(async (entityName: string, statement: string, options: ClaimCreateOptions) => {
+  .action(async (entityName, statement, options) => {
     await ensureDb();
     const entity = await repository.getEntityByName(entityName);
     if (!entity || !entity.id) {
@@ -264,7 +250,7 @@ program
       });
       console.log(`Claim added to ${entity.name}: ${claim.statement}`);
     } catch (err) {
-      console.error(`Failed to create claim: ${String(err)}`);
+      console.error(`Failed to create claim: ${err}`);
     }
   });
 

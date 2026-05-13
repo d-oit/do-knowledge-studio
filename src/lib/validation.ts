@@ -24,7 +24,7 @@ export const ClaimSchema = z.object({
 
 export const NoteSchema = z.object({
   id: z.string().uuid().optional(),
-  entity_id: z.string().uuid().optional(),
+  entity_id: z.string().uuid().nullable().optional(),
   content: z.string().min(1, 'Content is required'),
   format: z.enum(['markdown', 'plain']).default('markdown'),
   created_at: z.string().datetime().optional(),
