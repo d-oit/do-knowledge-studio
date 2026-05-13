@@ -158,41 +158,28 @@ export const hydrateOramaIndex = () => {
   }
 };
 
-export type SearchStage = 'exact' | 'fts5' | 'orama' | 'semantic' | 'graph';
-
-export interface RankedResult {
+export interface SearchResult {
   id: string;
-  name: string;
+  title: string;
   type: string;
-  excerpt: string;
-  score: number;
-  stage: SearchStage;
+  content: string;
 }
 
-export interface SearchOptions {
-  type?: string;
-  limit?: number;
-}
-
-export const searchKnowledge = async (query: string, options: SearchOptions = {}): Promise<RankedResult[]> => {
+export const searchKnowledge = async (query: string): Promise<SearchResult[]> => {
   if (!oramaDb) await initSearch();
 
   const results = await search(oramaDb!, {
     term: query,
     properties: ['title', 'content'],
-    where: options.type ? { type: options.type } : undefined,
-    limit: options.limit,
   });
 
   return results.hits.map(hit => {
     const doc = hit.document;
     return {
       id: doc.id,
-      name: doc.title,
+      title: doc.title,
       type: doc.type,
-      excerpt: doc.content,
-      score: hit.score,
-      stage: 'orama',
+      content: doc.content,
     };
   });
 };
