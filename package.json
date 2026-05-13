@@ -29,6 +29,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "test:e2e:ci": "npm run build && PLAYWRIGHT_MODE=production playwright test",
     "typecheck": "tsc --noEmit",
     "cli": "node --loader ts-node/esm cli/index.ts"
   },
