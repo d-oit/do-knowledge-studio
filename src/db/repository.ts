@@ -253,6 +253,21 @@ export class Repository {
     }
   }
 
+  async getAllClaims(): Promise<Claim[]> {
+    try {
+      const results = await this.db.exec({
+        sql: `SELECT * FROM claims`,
+        returnValue: 'resultRows',
+        rowMode: 'object',
+      });
+      const rows = z.array(z.unknown()).parse(results);
+      return rows.map((r) => this.parseMetadata(ClaimSchema, r));
+    } catch (err) {
+      logger.error('Failed to fetch all claims', err);
+      throw new AppError('Failed to fetch all claims', 'DB_ERROR', err);
+    }
+  }
+
   async updateClaim(id: string, claim: Partial<Claim>): Promise<Claim> {
     try {
       const results = await this.db.exec({

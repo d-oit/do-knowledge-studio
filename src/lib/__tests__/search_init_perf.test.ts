@@ -22,8 +22,8 @@ describe('Search Initialization Benchmark', () => {
     vi.clearAllMocks();
   });
 
-  it('measures initSearch performance with 100 entities and 500 claims', async () => {
-    const numEntities = 100;
+  it('measures initSearch performance with 1000 entities and 5000 claims', async () => {
+    const numEntities = 1000;
     const claimsPerEntity = 5;
 
     const entities = Array.from({ length: numEntities }, (_, i) => ({
@@ -58,5 +58,8 @@ describe('Search Initialization Benchmark', () => {
 
     console.log(`initSearch took ${end - start}ms`);
     expect(repository.getAllEntities).toHaveBeenCalledTimes(1);
+    expect(repository.getAllClaims).toHaveBeenCalledTimes(1);
+    // Should NOT call these during bulk init anymore
+    expect(repository.getEntityById).toHaveBeenCalledTimes(0);
   });
 });

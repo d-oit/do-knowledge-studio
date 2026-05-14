@@ -1,5 +1,5 @@
 ---
-name: CI (2026 Edition)
+name: CI
 
 on:
   push:

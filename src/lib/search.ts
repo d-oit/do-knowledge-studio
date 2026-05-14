@@ -1,4 +1,4 @@
-import { create, insert, remove, search, type Orama } from '@orama/orama';
+import { create, insert, insertMultiple, remove, search, type Orama } from '@orama/orama';
 import { repository } from '../db/repository.js';
 import { logger } from './logger.js';
 import { compressText } from './nlp.js';
@@ -21,6 +21,7 @@ export const searchSchema = {
   content: 'string',
   keywords: 'string',
 } as const;
+export type OramaSchema = typeof searchSchema;
 
 let oramaDb: Orama<OramaSchema> | null = null;
 const oramaIdMap = new Map<string, string>(); // entityId → oramaInternalId
@@ -71,12 +72,53 @@ export const initSearch = async (): Promise<Orama<OramaSchema>> => {
       schema: searchSchema,
     });
 
-    const entities = await repository.getAllEntities();
-    for (const entity of entities) {
-      await indexEntityById(entity.id!);
+    const [entities, allClaims] = await Promise.all([
+      repository.getAllEntities(),
+      repository.getAllClaims(),
+    ]);
+
+    // Group claims by entity_id for efficient lookup
+    const claimsByEntity = new Map<string, Claim[]>();
+    for (const claim of allClaims) {
+      const list = claimsByEntity.get(claim.entity_id) || [];
+      list.push(claim);
+      claimsByEntity.set(claim.entity_id, list);
     }
 
-    logger.info('Orama search index initialized');
+    const docs: SearchDocument[] = [];
+    const originalIds: string[] = [];
+
+    for (const entity of entities) {
+      docs.push({
+        id: entity.id!,
+        type: 'entity',
+        title: entity.name,
+        content: compressText(`${entity.name} ${entity.description || ''}`),
+        keywords: entity.type,
+      });
+      originalIds.push(entity.id!);
+
+      const claims = claimsByEntity.get(entity.id!) || [];
+      for (const claim of claims) {
+        docs.push({
+          id: claim.id!,
+          type: 'claim',
+          title: entity.name,
+          content: compressText(claim.statement),
+          keywords: [entity.id!, claim.source || 'unknown'].join(','),
+        });
+        originalIds.push(claim.id!);
+      }
+    }
+
+    if (docs.length > 0) {
+      const oramaIds = await insertMultiple(oramaDb, docs);
+      for (let i = 0; i < originalIds.length; i++) {
+        oramaIdMap.set(originalIds[i], oramaIds[i]);
+      }
+    }
+
+    logger.info(`Orama search index initialized with ${entities.length} entities and ${allClaims.length} claims`);
 
     // Register job handlers
     jobCoordinator.registerHandler('reindex-document', async (payload) => {
