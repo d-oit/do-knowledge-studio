@@ -38,6 +38,8 @@ ACTION_SHAS = {
     "github/codeql-action/upload-sarif@v4": "github/codeql-action/upload-sarif@68bde559dea0fdcac2102bfdf6230c5f70eb485e  # v4.35.4",
     "dorny/paths-filter@v3": "dorny/paths-filter@0bc4621a3135347011ad047f9ecf449bf72ce2bd  # v3.0.0",
     "dorny/paths-filter@v3.0.0": "dorny/paths-filter@0bc4621a3135347011ad047f9ecf449bf72ce2bd  # v3.0.0",
+    "dorny/paths-filter@v4": "dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d  # v4.0.1",
+    "dorny/paths-filter@v4.0.1": "dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d  # v4.0.1",
 }
 
 
