@@ -49,7 +49,7 @@ const NoResultsState: React.FC<{ query: string; onClear: () => void }> = ({ quer
       <Filter size={32} />
     </div>
     <h3>No local matches</h3>
-    <p>We couldn't find anything matching &quot;{query}&quot; in your current library.</p>
+    <p>We couldn&apos;t find anything matching &quot;{query}&quot; in your current library.</p>
     <div className="no-results-actions">
       <button className="btn-secondary" onClick={onClear}>
         Clear search
@@ -71,15 +71,16 @@ const SearchResultItem: React.FC<{
   onMouseEnter: () => void;
   innerRef: (el: HTMLButtonElement | null) => void;
 }> = ({ result, index, isSelected, onResultClick, onKeyDown, onMouseEnter, innerRef }) => (
-  <li key={`${result.type}-${result.id}`}>
+  <li key={`${result.type}-${result.id}`} role="none">
     <button
       id={`result-${index}`}
       ref={innerRef}
+      role="option"
+      aria-selected={isSelected}
       className={`search-result-item ${isSelected ? 'selected' : ''}`}
       onClick={() => onResultClick?.(result)}
       onKeyDown={onKeyDown}
       onMouseEnter={onMouseEnter}
-      aria-selected={isSelected}
     >
       <div className="result-meta">
         <span className="result-type">{result.type}</span>
@@ -106,29 +107,49 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
   const [isSearching, setIsSearching] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const resultsRef = useRef<(HTMLButtonElement | null)[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const delayDebounceFn = setTimeout(async () => {
+    if (shouldAutoFocus && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [shouldAutoFocus]);
+
+  useEffect(() => {
+    let active = true;
+    const delayDebounceFn = setTimeout(() => {
       if (query.trim().length <= 1) {
-        setResults([]);
-        setSelectedIndex(-1);
+        if (active) {
+          setResults([]);
+          setSelectedIndex(-1);
+        }
         return;
       }
 
       setIsSearching(true);
-      try {
-        const typeFilter = FILTER_MAP[activeFilter];
-        const res = await searchKnowledge(query, { type: typeFilter });
-        setResults(res);
-        setSelectedIndex(-1);
-      } catch (err) {
-        logger.error('Search failed', err);
-      } finally {
-        setIsSearching(false);
-      }
+      const performSearch = async () => {
+        try {
+          const typeFilter = FILTER_MAP[activeFilter];
+          const res = await searchKnowledge(query, { type: typeFilter });
+          if (!active) return;
+          setResults(res);
+          setSelectedIndex(-1);
+        } catch (err) {
+          if (!active) return;
+          logger.error('Search failed', err);
+        } finally {
+          if (active) {
+            setIsSearching(false);
+          }
+        }
+      };
+      void performSearch();
     }, 300);
 
-    return () => clearTimeout(delayDebounceFn);
+    return () => {
+      active = false;
+      clearTimeout(delayDebounceFn);
+    };
   }, [query, activeFilter]);
 
   const handleInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -174,8 +195,8 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
         <div className="input-wrapper">
           <Search size={18} className="search-icon" aria-hidden="true" />
           <input
+            ref={inputRef}
             type="search"
-            autoFocus={shouldAutoFocus || isMobile}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleInputKeyDown}
@@ -184,6 +205,19 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
             aria-controls="search-results-list"
             aria-activedescendant={selectedIndex >= 0 ? `result-${selectedIndex}` : undefined}
           />
+          {query && (
+            <button
+              className="clear-button"
+              onClick={() => {
+                setQuery('');
+                setResults([]);
+                setSelectedIndex(-1);
+              }}
+              aria-label="Clear search"
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
         {onClose && (
           <button className="close-button" onClick={onClose} aria-label="Close search">
@@ -208,7 +242,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
         )}
 
         {results.length > 0 && (
-          <ul id="search-results-list" className="results-list" aria-label="Search results">
+          <ul id="search-results-list" className="results-list" role="listbox" aria-label="Search results">
             {results.map((result, index) => (
               <SearchResultItem
                 key={`${result.type}-${result.id}`}
