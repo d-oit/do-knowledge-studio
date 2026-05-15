@@ -71,7 +71,7 @@ const SearchResultItem: React.FC<{
   onMouseEnter: () => void;
   innerRef: (el: HTMLButtonElement | null) => void;
 }> = ({ result, index, isSelected, onResultClick, onKeyDown, onMouseEnter, innerRef }) => (
-  <li key={`${result.type}-${result.id}`}>
+  <li key={`${result.type}-${result.id}`} role="none">
     <button
       id={`result-${index}`}
       ref={innerRef}
@@ -107,12 +107,22 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
   const [isSearching, setIsSearching] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const resultsRef = useRef<(HTMLButtonElement | null)[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    if (shouldAutoFocus && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [shouldAutoFocus]);
+
+  useEffect(() => {
+    let active = true;
     const delayDebounceFn = setTimeout(() => {
       if (query.trim().length <= 1) {
-        setResults([]);
-        setSelectedIndex(-1);
+        if (active) {
+          setResults([]);
+          setSelectedIndex(-1);
+        }
         return;
       }
 
@@ -121,18 +131,25 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
         try {
           const typeFilter = FILTER_MAP[activeFilter];
           const res = await searchKnowledge(query, { type: typeFilter });
+          if (!active) return;
           setResults(res);
           setSelectedIndex(-1);
         } catch (err) {
+          if (!active) return;
           logger.error('Search failed', err);
         } finally {
-          setIsSearching(false);
+          if (active) {
+            setIsSearching(false);
+          }
         }
       };
       void performSearch();
     }, 300);
 
-    return () => clearTimeout(delayDebounceFn);
+    return () => {
+      active = false;
+      clearTimeout(delayDebounceFn);
+    };
   }, [query, activeFilter]);
 
   const handleInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -178,9 +195,8 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
         <div className="input-wrapper">
           <Search size={18} className="search-icon" aria-hidden="true" />
           <input
+            ref={inputRef}
             type="search"
-            // eslint-disable-next-line jsx-a11y/no-autofocus
-            autoFocus={shouldAutoFocus || isMobile}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleInputKeyDown}
