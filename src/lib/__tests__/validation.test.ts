@@ -31,10 +31,10 @@ describe('EntitySchema', () => {
     }
   });
 
-  it('should accept whitespace-only name (zod min(1) does not trim)', () => {
+  it('should fail on whitespace-only name (now trimmed and min(1) applied)', () => {
     const entity = { name: '   ', type: 'person' };
     const result = EntitySchema.safeParse(entity);
-    expect(result.success).toBe(true);
+    expect(result.success).toBe(false);
   });
 
   it('should fail on missing name', () => {
@@ -73,13 +73,20 @@ describe('EntitySchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('should return inferred type', () => {
-    const entity = { name: 'Test', type: 'person' };
+  it('should return inferred type and trim strings', () => {
+    const entity = { name: '  Test  ', type: ' person ' };
     const result = EntitySchema.safeParse(entity);
+    expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.name).toBe('Test');
       expect(result.data.type).toBe('person');
     }
+  });
+
+  it('should fail on name exceeding max length', () => {
+    const entity = { name: 'a'.repeat(256), type: 'person' };
+    const result = EntitySchema.safeParse(entity);
+    expect(result.success).toBe(false);
   });
 });
 
@@ -171,6 +178,15 @@ describe('ClaimSchema', () => {
     const result = ClaimSchema.safeParse(claim);
     expect(result.success).toBe(false);
   });
+
+  it('should fail on statement exceeding max length', () => {
+    const claim = {
+      entity_id: '550e8400-e29b-41d4-a716-446655440000',
+      statement: 'a'.repeat(10001)
+    };
+    const result = ClaimSchema.safeParse(claim);
+    expect(result.success).toBe(false);
+  });
 });
 
 describe('NoteSchema', () => {
@@ -228,6 +244,12 @@ describe('NoteSchema', () => {
 
   it('should fail on invalid datetime', () => {
     const note = { content: 'Test', created_at: 'invalid' };
+    const result = NoteSchema.safeParse(note);
+    expect(result.success).toBe(false);
+  });
+
+  it('should fail on content exceeding max length', () => {
+    const note = { content: 'a'.repeat(100001) };
     const result = NoteSchema.safeParse(note);
     expect(result.success).toBe(false);
   });

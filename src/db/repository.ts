@@ -30,7 +30,8 @@ export class Repository {
   // --- Entities ---
   async createEntity(entity: Omit<Entity, 'id' | 'created_at' | 'updated_at'>): Promise<Entity> {
     try {
-      const { name, type, description, metadata } = entity;
+      const validated = EntitySchema.omit({ id: true, created_at: true, updated_at: true }).parse(entity);
+      const { name, type, description, metadata } = validated;
       const result = await this.db.exec({
         sql: `INSERT INTO entities (name, type, description, metadata)
               VALUES (?, ?, ?, ?) RETURNING *`,
@@ -100,10 +101,11 @@ export class Repository {
       const current = await this.getEntityById(id);
       if (!current) throw new AppError('Entity not found', 'NOT_FOUND');
 
-      const name = entity.name ?? current.name;
-      const type = entity.type ?? current.type;
-      const description = entity.description ?? current.description;
-      const metadata = entity.metadata ?? current.metadata;
+      const validated = EntitySchema.partial().parse(entity);
+      const name = validated.name ?? current.name;
+      const type = validated.type ?? current.type;
+      const description = validated.description ?? current.description;
+      const metadata = validated.metadata ?? current.metadata;
 
       const result = await this.db.exec({
         sql: `UPDATE entities SET name = ?, type = ?, description = ?, metadata = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? RETURNING *`,
@@ -174,7 +176,8 @@ export class Repository {
     },
   ): Promise<Claim> {
     try {
-      const { entity_id, statement, evidence, confidence, source, verification_status } = claim;
+      const validated = ClaimSchema.omit({ id: true, created_at: true, updated_at: true }).parse(claim);
+      const { entity_id, statement, evidence, confidence, source, verification_status } = validated;
       const result = await this.db.exec({
         sql: `INSERT INTO claims (entity_id, statement, evidence, confidence, source, verification_status)
               VALUES (?, ?, ?, ?, ?, ?) RETURNING *`,
@@ -279,12 +282,13 @@ export class Repository {
       const rows = z.array(z.unknown()).parse(results);
       if (rows.length === 0) throw new AppError('Claim not found', 'NOT_FOUND');
 
+      const validated = ClaimSchema.partial().parse(claim);
       const current = this.parseMetadata(ClaimSchema, rows[0]);
-      const statement = claim.statement ?? current.statement;
-      const evidence = claim.evidence ?? current.evidence;
-      const confidence = claim.confidence ?? current.confidence;
-      const source = claim.source ?? current.source;
-      const verification_status = claim.verification_status ?? current.verification_status;
+      const statement = validated.statement ?? current.statement;
+      const evidence = validated.evidence ?? current.evidence;
+      const confidence = validated.confidence ?? current.confidence;
+      const source = validated.source ?? current.source;
+      const verification_status = validated.verification_status ?? current.verification_status;
 
       const result = await this.db.exec({
         sql: `UPDATE claims SET statement = ?, evidence = ?, confidence = ?, source = ?, verification_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? RETURNING *`,
@@ -316,7 +320,8 @@ export class Repository {
   // --- Notes ---
   async createNote(note: Omit<Note, 'id' | 'created_at' | 'updated_at'>): Promise<Note> {
     try {
-      const { entity_id, content, format } = note;
+      const validated = NoteSchema.omit({ id: true, created_at: true, updated_at: true }).parse(note);
+      const { entity_id, content, format } = validated;
       const result = await this.db.exec({
         sql: `INSERT INTO notes (entity_id, content, format)
               VALUES (?, ?, ?) RETURNING *`,
@@ -359,9 +364,10 @@ export class Repository {
       const rows = z.array(z.unknown()).parse(results);
       if (rows.length === 0) throw new AppError('Note not found', 'NOT_FOUND');
 
+      const validated = NoteSchema.partial().parse(note);
       const current = this.parseMetadata(NoteSchema, rows[0]);
-      const content = note.content ?? current.content;
-      const format = note.format ?? current.format;
+      const content = validated.content ?? current.content;
+      const format = validated.format ?? current.format;
 
       const result = await this.db.exec({
         sql: `UPDATE notes SET content = ?, format = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? RETURNING *`,
@@ -393,7 +399,8 @@ export class Repository {
   // --- Links ---
   async createLink(link: Omit<Link, 'id' | 'created_at' | 'updated_at'>): Promise<Link> {
     try {
-      const { source_id, target_id, relation, metadata } = link;
+      const validated = LinkSchema.omit({ id: true, created_at: true, updated_at: true }).parse(link);
+      const { source_id, target_id, relation, metadata } = validated;
       const result = await this.db.exec({
         sql: `INSERT INTO links (source_id, target_id, relation, metadata)
               VALUES (?, ?, ?, ?) RETURNING *`,
@@ -444,10 +451,17 @@ export class Repository {
     description?: string,
   ): Promise<GraphSnapshot> {
     try {
+      const validated = GraphSnapshotSchema.omit({ id: true, created_at: true }).parse({
+        name,
+        nodes_json: JSON.stringify(nodes),
+        edges_json: JSON.stringify(edges),
+        description,
+      });
+
       const result = await this.db.exec({
         sql: `INSERT INTO graph_snapshots (name, nodes_json, edges_json, description)
               VALUES (?, ?, ?, ?) RETURNING *`,
-        bind: [name, JSON.stringify(nodes), JSON.stringify(edges), description ?? null],
+        bind: [validated.name, validated.nodes_json, validated.edges_json, validated.description ?? null],
         returnValue: 'resultRows',
         rowMode: 'object',
       });
