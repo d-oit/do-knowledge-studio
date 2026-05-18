@@ -1,5 +1,10 @@
 import re
 import os
+import sys
+
+START_MARKER = "<!-- START_DIAGRAM -->"
+END_MARKER = "<!-- END_DIAGRAM -->"
+ARCH_HEADING = "## 🏗️ Architecture"
 
 def generate_mermaid():
     return """
@@ -41,36 +46,38 @@ graph TD
 ```
 """
 
+def get_updated_content(content):
+    mermaid_code = generate_mermaid()
+    pattern = re.compile(f"{re.escape(START_MARKER)}.*?{re.escape(END_MARKER)}", re.DOTALL)
+
+    if pattern.search(content):
+        return pattern.sub(f"{START_MARKER}\n{mermaid_code}\n{END_MARKER}", content)
+    elif ARCH_HEADING in content:
+        return content.replace(ARCH_HEADING, f"{ARCH_HEADING}\n\n{START_MARKER}\n{mermaid_code}\n{END_MARKER}")
+    else:
+        return None
+
 def update_readme(readme_path="README.md"):
     if not os.path.exists(readme_path):
         print(f"Error: {readme_path} not found.")
-        return
+        return False
 
     with open(readme_path, "r", encoding="utf-8") as f:
         content = f.read()
 
-    mermaid_code = generate_mermaid()
+    new_content = get_updated_content(content)
 
-    # Define start and end markers
-    start_marker = "<!-- START_DIAGRAM -->"
-    end_marker = "<!-- END_DIAGRAM -->"
-
-    pattern = re.compile(f"{re.escape(start_marker)}.*?{re.escape(end_marker)}", re.DOTALL)
-
-    if pattern.search(content):
-        new_content = pattern.sub(f"{start_marker}\n{mermaid_code}\n{end_marker}", content)
-    else:
-        # If markers don't exist, insert after the Architecture heading
-        arch_heading = "## 🏗️ Architecture"
-        if arch_heading in content:
-            new_content = content.replace(arch_heading, f"{arch_heading}\n\n{start_marker}\n{mermaid_code}\n{end_marker}")
-        else:
-            print("Could not find Architecture heading to insert diagram.")
-            return
+    if new_content is None:
+        print(f"Could not find markers or heading '{ARCH_HEADING}' to insert diagram.")
+        return False
 
     with open(readme_path, "w", encoding="utf-8") as f:
         f.write(new_content)
     print(f"Updated {readme_path} with architecture diagram.")
+    return True
 
 if __name__ == "__main__":
-    update_readme()
+    if update_readme():
+        sys.exit(0)
+    else:
+        sys.exit(1)
