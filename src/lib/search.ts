@@ -142,35 +142,50 @@ export const initSearch = async () => {
   }
 };
 
+const debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
 /**
  * Upserts an entity and its claims to the search index.
+ * Debounced by 500ms to prevent redundant work during fast edit bursts.
  */
 export const upsertToSearchIndex = async (entityId: string) => {
-  if (!oramaDb) await initSearch();
-
-  try {
-    await removeFromSearchIndex(entityId);
-    await indexEntityById(entityId);
-
-    // Incrementally update SQLite FTS5 index
-    const entity = await repository.getEntityById(entityId);
-    if (entity) {
-      await repository.exec({
-        sql: `INSERT INTO entity_search_idx(rowid, name, description) VALUES (?, ?, ?)`,
-        bind: [entity.rowid, entity.name, entity.description || '']
-      });
-
-      const claims = await repository.getClaimsByEntityId(entityId);
-      for (const claim of claims) {
-        await repository.exec({
-          sql: `INSERT INTO claim_search_idx(rowid, statement) VALUES (?, ?)`,
-          bind: [claim.rowid, claim.statement]
-        });
-      }
-    }
-  } catch (err) {
-    logger.error(`Failed to upsert entity ${entityId} to search index`, err);
+  if (debounceTimers.has(entityId)) {
+    clearTimeout(debounceTimers.get(entityId));
   }
+
+  return new Promise<void>((resolve) => {
+    const timer = setTimeout(async () => {
+      debounceTimers.delete(entityId);
+
+      if (!oramaDb) await initSearch();
+
+      try {
+        await removeFromSearchIndex(entityId);
+        await indexEntityById(entityId);
+
+        // Incrementally update SQLite FTS5 index
+        const entity = await repository.getEntityById(entityId);
+        if (entity) {
+          await repository.exec({
+            sql: `INSERT INTO entity_search_idx(rowid, name, description) VALUES (?, ?, ?)`,
+            bind: [entity.rowid, entity.name, entity.description || '']
+          });
+
+          const claims = await repository.getClaimsByEntityId(entityId);
+          for (const claim of claims) {
+            await repository.exec({
+              sql: `INSERT INTO claim_search_idx(rowid, statement) VALUES (?, ?)`,
+              bind: [claim.rowid, claim.statement]
+            });
+          }
+        }
+      } catch (err) {
+        logger.error(`Failed to upsert entity ${entityId} to search index`, err);
+      }
+      resolve();
+    }, 500);
+    debounceTimers.set(entityId, timer);
+  });
 };
 
 /**
