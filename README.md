@@ -82,23 +82,23 @@ cp .env.example .env
 
 ```mermaid
 graph TD
-    subgraph UI_Layer ["UI Layer (React 19)"]
-        Editor["Rich Text Editor"]
-        Graph["Knowledge Graph"]
-        MindMap["Mind Maps"]
-        Chat["AI Chat"]
+    subgraph UI_Layer [UI Layer (React 19)]
+        Editor[Rich Text Editor]
+        Graph[Knowledge Graph]
+        MindMap[Mind Maps]
+        Chat[AI Chat]
     end
 
-    subgraph Logic_Layer ["Logic & Search"]
-        Repository["Repository API"]
-        Orama["Orama Search Index"]
-        Jobs["Job Coordinator"]
+    subgraph Logic_Layer [Logic & Search]
+        Repository[Repository API]
+        Orama[Orama Search Index]
+        Jobs[Job Coordinator]
     end
 
-    subgraph Data_Layer ["Data & Storage"]
-        Worker["SQLite Worker"]
-        SQLite["SQLite WASM + FTS5"]
-        OPFS["Browser OPFS Storage"]
+    subgraph Data_Layer [Data & Storage]
+        Worker[SQLite Worker]
+        SQLite[SQLite WASM + FTS5]
+        OPFS[Browser OPFS Storage]
     end
 
     Editor --> Repository
@@ -113,8 +113,8 @@ graph TD
     Worker --> SQLite
     SQLite --> OPFS
 
-    CLI["TS CLI"] --> Repository
-    Export["Export Engine"] --> Repository
+    CLI[TS CLI] --> Repository
+    Export[Export Engine] --> Repository
 ```
 
 <!-- END_DIAGRAM -->
@@ -188,11 +188,11 @@ Reusable knowledge modules live in `.agents/skills/` and are symlinked into each
 
 ```mermaid
 graph LR
-    A["Main Agent"] --> B["Sub-Agent 1"]
-    A --> C["Sub-Agent 2"]
-    B --> D["Task Complete"]
-    C --> E["Task Complete"]
-    D --> F["Synthesize"]
+    A[Main Agent] --> B[Sub-Agent 1]
+    A --> C[Sub-Agent 2]
+    B --> D[Task Complete]
+    C --> E[Task Complete]
+    D --> F[Synthesize]
     E --> F
 ```
 
