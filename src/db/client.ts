@@ -10,6 +10,7 @@ export interface SQLiteDB {
     returnValue?: string;
     rowMode?: string
   }) => Promise<unknown>;
+  transaction: (statements: { sql: string; bind?: (string | number | boolean | null)[] }[]) => Promise<unknown>;
   close: () => Promise<void> | void;
 }
 
@@ -64,6 +65,17 @@ export const initDb = async (options?: { poolSize?: number }): Promise<SQLiteDB>
 
         instance = {
             exec: (options: unknown) => Promise.resolve(db.exec(options)),
+            transaction: (statements: { sql: string; bind?: (string | number | boolean | null)[] }[]) => {
+                db.exec('BEGIN TRANSACTION;');
+                try {
+                    const results = statements.map(s => db.exec({ sql: s.sql, bind: s.bind }));
+                    db.exec('COMMIT;');
+                    return Promise.resolve(results);
+                } catch (e) {
+                    db.exec('ROLLBACK;');
+                    throw e;
+                }
+            },
             close: () => db.close()
         };
     }

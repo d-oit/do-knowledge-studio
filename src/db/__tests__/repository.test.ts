@@ -145,7 +145,7 @@ describe('Repository', () => {
       const result = await repository.getEntityById(VALID_UUID);
 
       expect(mockExec).toHaveBeenCalledWith({
-        sql: 'SELECT * FROM entities WHERE id = ?',
+        sql: 'SELECT *, rowid FROM entities WHERE id = ?',
         bind: [VALID_UUID],
         returnValue: 'resultRows',
         rowMode: 'object',
