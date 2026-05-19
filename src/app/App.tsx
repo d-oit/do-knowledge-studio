@@ -6,14 +6,22 @@ import { hydrateOramaIndex } from '../lib/search';
 import { SearchResult } from '../lib/search';
 import { Entity, Link } from '../lib/validation';
 import '../styles/index.css';
-import LoadingSpinner from '../components/LoadingSpinner';
 import SidebarNav from '../components/SidebarNav';
 import Header from '../components/Header';
 import MobileDrawer from '../components/MobileDrawer';
-import SearchPanel from '../features/search/SearchPanel';
 import ErrorBoundary from '../components/ErrorBoundary';
-import Editor from '../features/editor/Editor';
+import {
+  EditorSkeleton,
+  GraphSkeleton,
+  MindMapSkeleton,
+  AISkeleton,
+  SearchSkeleton,
+  ExportSkeleton
+} from '../components/Skeletons';
 
+// Lazy-loaded features
+const Editor = lazy(() => import('../features/editor/Editor'));
+const SearchPanel = lazy(() => import('../features/search/SearchPanel'));
 const GraphControls = lazy(() => import('../features/graph/GraphControls'));
 const GraphView = lazy(() => import('../features/graph/GraphView'));
 const MindMapView = lazy(() => import('../features/mindmap/MindMapView'));
@@ -87,9 +95,13 @@ const AppContent: React.FC = () => {
         <main className="main-content">
           {!dbReady && <div className="loading-screen">Booting Knowledge Studio...</div>}
           <ErrorBoundary fallback={<div className="error-state">Failed to load component. Please refresh.</div>}>
-            <Suspense fallback={<LoadingSpinner />}>
-              {dbReady && currentView === 'editor' && <Editor />}
-              {dbReady && currentView === 'graph' && (
+            {dbReady && currentView === 'editor' && (
+              <Suspense fallback={<EditorSkeleton />}>
+                <Editor />
+              </Suspense>
+            )}
+            {dbReady && currentView === 'graph' && (
+              <Suspense fallback={<GraphSkeleton />}>
                 <GraphView
                   entities={entities}
                   links={links}
@@ -99,25 +111,41 @@ const AppContent: React.FC = () => {
                   onSelectedNodeChange={setGraphSelectedNode}
                   hideToolbar={window.innerWidth < 768}
                 />
-              )}
-              {dbReady && currentView === 'mindmap' && entities.length > 0 && (
+              </Suspense>
+            )}
+            {dbReady && currentView === 'mindmap' && entities.length > 0 && (
+              <Suspense fallback={<MindMapSkeleton />}>
                 <MindMapView
                   rootEntity={entities[0]}
                   relatedEntities={entities.slice(1, 10)}
                 />
-              )}
-              {dbReady && currentView === 'mindmap' && entities.length === 0 && (
-                 <div className="empty-state">No entities found. Create some in the Editor first.</div>
-              )}
-              {dbReady && currentView === 'chat' && <Chat />}
-              {dbReady && currentView === 'export' && <ExportPanel />}
-              {dbReady && currentView === 'ai' && <AIHarness />}
-            </Suspense>
+              </Suspense>
+            )}
+            {dbReady && currentView === 'mindmap' && entities.length === 0 && (
+               <div className="empty-state">No entities found. Create some in the Editor first.</div>
+            )}
+            {dbReady && currentView === 'chat' && (
+              <Suspense fallback={<AISkeleton />}>
+                <Chat />
+              </Suspense>
+            )}
+            {dbReady && currentView === 'export' && (
+              <Suspense fallback={<ExportSkeleton />}>
+                <ExportPanel />
+              </Suspense>
+            )}
+            {dbReady && currentView === 'ai' && (
+              <Suspense fallback={<AISkeleton />}>
+                <AIHarness />
+              </Suspense>
+            )}
           </ErrorBoundary>
         </main>
 
         <aside className="search-sidebar">
-          <SearchPanel onResultClick={handleSearchResultClick} />
+          <Suspense fallback={<SearchSkeleton />}>
+            <SearchPanel onResultClick={handleSearchResultClick} />
+          </Suspense>
         </aside>
       </div>
 
@@ -144,11 +172,13 @@ const AppContent: React.FC = () => {
 
       {isSearchOpen && (
         <div className="mobile-search-overlay">
-          <SearchPanel
-            isMobile
-            onClose={() => setIsSearchOpen(false)}
-            onResultClick={handleSearchResultClick}
-          />
+          <Suspense fallback={<SearchSkeleton />}>
+            <SearchPanel
+              isMobile
+              onClose={() => setIsSearchOpen(false)}
+              onResultClick={handleSearchResultClick}
+            />
+          </Suspense>
         </div>
       )}
     </div>
