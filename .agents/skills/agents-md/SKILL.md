@@ -18,8 +18,8 @@ cat > AGENTS.md << 'EOF'
 readonly MAX_FILE_SIZE=500
 
 ## Setup
-- Install: npm install
-- Test: npm test
+- Install: pnpm install
+- Test: pnpm test
 
 ## Code Style
 - TypeScript strict
@@ -52,10 +52,10 @@ readonly MAX_RETRIES=3
 ```markdown
 ## Quality Gate
 ```bash
-npm run typecheck
-npm run lint
-npm run test
-npm audit
+pnpm run typecheck
+pnpm run lint
+pnpm run test
+pnpm audit
 ```
 ```
 

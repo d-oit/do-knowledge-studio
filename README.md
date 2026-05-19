@@ -49,13 +49,13 @@ It also ships with a production-ready **AI agent harness** supporting Claude Cod
 ```bash
 git clone https://github.com/d-oit/do-knowledge-studio.git
 cd do-knowledge-studio
-npm install
+pnpm install
 ```
 
 ### Development
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 Open [http://localhost:5173](http://localhost:5173) in your browser.
@@ -63,8 +63,8 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 ### Build
 
 ```bash
-npm run build
-npm run preview
+pnpm run build
+pnpm run preview
 ```
 
 ### Environment
@@ -202,19 +202,19 @@ graph LR
 
 ```bash
 # Unit tests
-npm run test
+pnpm run test
 
 # Watch mode
-npm run test:watch
+pnpm run test:watch
 
 # End-to-end tests
-npm run test:e2e
+pnpm run test:e2e
 
 # Type checking
-npm run typecheck
+pnpm run typecheck
 
 # Lint
-npm run lint
+pnpm run lint
 ```
 
 ---
@@ -222,7 +222,7 @@ npm run lint
 ## ⚙️ CLI
 
 ```bash
-npm run cli -- <command>
+pnpm run cli -- <command>
 ```
 
 See `cli/` directory for available commands and scripting options.

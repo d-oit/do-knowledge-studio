@@ -64,7 +64,7 @@ gh run view <run-id> --log-failed
 | Python | black | ⬜ Pass | `black --check .` |
 | Rust | clippy | ⬜ Pass | `cargo clippy -- -D warnings` |
 | Rust | rustfmt | ⬜ Pass | `cargo fmt --check` |
-| TypeScript | eslint | ⬜ Pass | `npm run lint` |
+| TypeScript | eslint | ⬜ Pass | `pnpm run lint` |
 | Go | gofmt | ⬜ Pass | `gofmt -l .` |
 | Go | go vet | ⬜ Pass | `go vet ./...` |
 | Shell | shellcheck | ⬜ Pass | `shellcheck scripts/*.sh` |
@@ -82,7 +82,7 @@ cargo fmt
 cargo clippy --fix --allow-dirty
 
 # TypeScript
-npm run lint -- --fix
+pnpm run lint -- --fix
 
 # Go
 gofmt -w .
@@ -116,9 +116,9 @@ cargo test --lib
 cargo test --workspace
 
 # TypeScript/JavaScript
-npm test
-npm run test:unit
-npm run test:integration
+pnpm test
+pnpm run test:unit
+pnpm run test:integration
 
 # Go
 go test ./...
@@ -143,7 +143,7 @@ bats tests/
 
 | Scan Type | Tool | Status | Command |
 |-----------|------|--------|---------|
-| Dependency Audit | depends on project | ⬜ Pass | `npm audit`, `cargo audit` |
+| Dependency Audit | depends on project | ⬜ Pass | `pnpm audit`, `cargo audit` |
 | Secret Scan | git-secrets/trivy | ⬜ Pass | `git-secrets --scan` |
 | SAST | bandit/semgrep | ⬜ Pass | `bandit -r .`, `semgrep --config=auto` |
 | Container Scan | trivy | ⬜ Pass/N/A | `trivy image <image>` |
@@ -158,7 +158,7 @@ trivy filesystem --scanners vuln,secret,config .
 cargo audit
 
 # Node.js
-npm audit --audit-level=low
+pnpm audit --audit-level=low
 
 # Secrets
 git-secrets --scan

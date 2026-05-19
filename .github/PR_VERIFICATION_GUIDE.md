@@ -77,7 +77,7 @@ Before requesting review, verify:
 
 ```markdown
 - [ ] Local quality gate passes: `./scripts/quality_gate.sh`
-- [ ] All tests pass: `pytest`, `cargo test`, `npm test`
+- [ ] All tests pass: `pytest`, `cargo test`, `pnpm test`
 - [ ] No lint warnings: `ruff`, `clippy`, `eslint`
 - [ ] No security findings: `bandit`, `cargo audit`
 - [ ] Coverage maintained or improved
