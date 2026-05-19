@@ -41,7 +41,7 @@ export class Repository {
       });
       const rows = z.array(z.unknown()).parse(result);
       const parsed = this.parseMetadata(EntitySchema, rows[0]);
-      return { ...parsed, rowid: (rows[0] as unknown).rowid };
+      return { ...parsed, rowid: (rows[0] as any).rowid };
     } catch (err) {
       logger.error('Failed to create entity', err);
       throw new AppError('Failed to create entity', 'DB_ERROR', err);
@@ -82,7 +82,7 @@ export class Repository {
       const rows = z.array(z.unknown()).parse(results);
       if (rows.length === 0) return null;
       const parsed = this.parseMetadata(EntitySchema, rows[0]);
-      return { ...parsed, rowid: (rows[0] as unknown).rowid };
+      return { ...parsed, rowid: (rows[0] as any).rowid };
     } catch (err) {
       logger.error('Failed to fetch entity by id', err);
       throw new AppError('Failed to fetch entity by id', 'DB_ERROR', err);
@@ -149,7 +149,7 @@ export class Repository {
       // Use FTS5 for search
       const results = await this.db.exec({
         sql: `SELECT DISTINCT e.* FROM entities e
-              JOIN entity_search_idx s ON e.id = s.rowid
+              JOIN entity_search_idx s ON e.rowid = s.rowid
               WHERE entity_search_idx MATCH ?
               ORDER BY rank`,
         bind: [query],
@@ -260,7 +260,7 @@ export class Repository {
         rowMode: 'object',
       });
       const rows = z.array(z.unknown()).parse(results);
-      return rows.map((r) => ({ ...this.parseMetadata(ClaimSchema, r), rowid: (r as unknown).rowid }));
+      return rows.map((r) => ({ ...this.parseMetadata(ClaimSchema, r), rowid: (r as any).rowid }));
     } catch (err) {
       logger.error('Failed to fetch claims', err);
       throw new AppError('Failed to fetch claims', 'DB_ERROR', err);
