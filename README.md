@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/badge/version-0.1.0-blue)](VERSION)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-[![Built with React](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://react.dev)
+[![Built with React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org)
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite)](https://vitejs.dev)
 
@@ -15,7 +15,7 @@
 
 ## What Is This?
 
-**do-knowledge-studio** is a local-first, offline-capable knowledge management application built with React, TypeScript, and SQLite WASM. It combines a rich-text editor, an interactive knowledge graph, mind mapping, blazing-fast full-text search, and a static site export — all running entirely in the browser with no backend required.
+**do-knowledge-studio** is a local-first, offline-capable knowledge management application built with React 19, TypeScript 5, and SQLite WASM. It combines a rich-text editor, an interactive knowledge graph, mind mapping, blazing-fast full-text search, and a static site export — all running entirely in the browser with no backend required.
 
 It also ships with a production-ready **AI agent harness** supporting Claude Code, Gemini CLI, OpenCode, Qwen Code, Windsurf, and Cursor — making it a great base for AI-assisted personal knowledge management workflows.
 
@@ -78,6 +78,47 @@ cp .env.example .env
 
 ## 🏗️ Architecture
 
+<!-- START_DIAGRAM -->
+
+```mermaid
+graph TD
+    subgraph UI_Layer [UI Layer (React 19)]
+        Editor[Rich Text Editor]
+        Graph[Knowledge Graph]
+        MindMap[Mind Maps]
+        Chat[AI Chat]
+    end
+
+    subgraph Logic_Layer [Logic & Search]
+        Repository[Repository API]
+        Orama[Orama Search Index]
+        Jobs[Job Coordinator]
+    end
+
+    subgraph Data_Layer [Data & Storage]
+        Worker[SQLite Worker]
+        SQLite[SQLite WASM + FTS5]
+        OPFS[Browser OPFS Storage]
+    end
+
+    Editor --> Repository
+    Graph --> Repository
+    MindMap --> Repository
+    Chat --> Repository
+    Chat --> Orama
+
+    Repository --> Jobs
+    Jobs --> Orama
+    Repository --> Worker
+    Worker --> SQLite
+    SQLite --> OPFS
+
+    CLI[TS CLI] --> Repository
+    Export[Export Engine] --> Repository
+```
+
+<!-- END_DIAGRAM -->
+
 ```
 src/
 ├── app/          # React app shell, routing, layout
@@ -96,11 +137,11 @@ tests/            # Playwright e2e tests
 
 | Layer | Technology |
 |---|---|
-| UI Framework | React 18 + TypeScript 5 |
+| UI Framework | React 19 + TypeScript 5 |
 | Build Tool | Vite 8 |
 | Database | SQLite WASM (FTS5) |
 | Search | Orama 3 |
-| Rich Text | TipTap 2 |
+| Rich Text | TipTap 3 |
 | Graph | Graphology + Sigma.js |
 | Mind Map | Mind Elixir 5 |
 | Validation | Zod |
