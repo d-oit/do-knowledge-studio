@@ -94,6 +94,10 @@ export class ConnectionPool {
     return this.enqueue('exec', payload);
   }
 
+  async transaction(statements: { sql: string; bind?: (string | number | boolean | null)[] }[]): Promise<unknown[]> {
+    return this.enqueue('transaction', { statements }) as Promise<unknown[]>;
+  }
+
   async close(): Promise<void> {
     const closePromises = this.workers.map(async (entry) => {
       if (entry.worker) {

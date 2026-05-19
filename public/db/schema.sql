@@ -64,30 +64,21 @@ CREATE INDEX IF NOT EXISTS idx_links_source_id ON links(source_id);
 CREATE INDEX IF NOT EXISTS idx_links_target_id ON links(target_id);
 
 -- FTS5 Virtual Table for Search
-CREATE VIRTUAL TABLE IF NOT EXISTS search_idx USING fts5(
-    entity_id UNINDEXED,
+-- FTS5 Virtual Table for Search using External Content for performance
+-- FTS5 Virtual Tables for Search using External Content for performance
+-- This avoids data duplication and allows for more efficient incremental re-indexing.
+CREATE VIRTUAL TABLE IF NOT EXISTS entity_search_idx USING fts5(
     name,
     description,
-    statement
+    content='entities',
+    content_rowid='rowid'
 );
 
--- Triggers for FTS5 sync
-CREATE TRIGGER IF NOT EXISTS entities_ai AFTER INSERT ON entities BEGIN
-  INSERT INTO search_idx(entity_id, name, description) VALUES (new.id, new.name, new.description);
-END;
+CREATE VIRTUAL TABLE IF NOT EXISTS claim_search_idx USING fts5(
+    statement,
+    content='claims',
+    content_rowid='rowid'
+);
 
-CREATE TRIGGER IF NOT EXISTS entities_ad AFTER DELETE ON entities BEGIN
-  DELETE FROM search_idx WHERE entity_id = old.id;
-END;
-
-CREATE TRIGGER IF NOT EXISTS entities_au AFTER UPDATE ON entities BEGIN
-  UPDATE search_idx SET name = new.name, description = new.description WHERE entity_id = new.id;
-END;
-
-CREATE TRIGGER IF NOT EXISTS claims_ai AFTER INSERT ON claims BEGIN
-  INSERT INTO search_idx(entity_id, statement) VALUES (new.entity_id, new.statement);
-END;
-
-CREATE TRIGGER IF NOT EXISTS claims_ad AFTER DELETE ON claims BEGIN
-  DELETE FROM search_idx WHERE entity_id = old.entity_id AND statement = old.statement;
-END;
+-- Note: Synchronous triggers are removed to prevent main-thread blocking during writes.
+-- Indexing is now handled asynchronously via the application layer / JobCoordinator.

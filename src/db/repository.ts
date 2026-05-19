@@ -28,23 +28,32 @@ export class Repository {
   }
 
   // --- Entities ---
-  async createEntity(entity: Omit<Entity, 'id' | 'created_at' | 'updated_at'>): Promise<Entity> {
+  async createEntity(entity: Omit<Entity, 'id' | 'created_at' | 'updated_at'>): Promise<Entity & { rowid: number }> {
     try {
       const validated = EntitySchema.omit({ id: true, created_at: true, updated_at: true }).parse(entity);
       const { name, type, description, metadata } = validated;
       const result = await this.db.exec({
         sql: `INSERT INTO entities (name, type, description, metadata)
-              VALUES (?, ?, ?, ?) RETURNING *`,
+              VALUES (?, ?, ?, ?) RETURNING *, rowid`,
         bind: [name, type, description ?? null, metadata ? JSON.stringify(metadata) : null],
         returnValue: 'resultRows',
         rowMode: 'object',
       });
       const rows = z.array(z.unknown()).parse(result);
-      return this.parseMetadata(EntitySchema, rows[0]);
+      const parsed = this.parseMetadata(EntitySchema, rows[0]);
+      return { ...parsed, rowid: (rows[0] as any).rowid };
     } catch (err) {
       logger.error('Failed to create entity', err);
       throw new AppError('Failed to create entity', 'DB_ERROR', err);
     }
+  }
+
+  async exec(options: Parameters<SQLiteDB['exec']>[0]): Promise<unknown> {
+    return this.db.exec(options);
+  }
+
+  async transaction(statements: Parameters<SQLiteDB['transaction']>[0]): Promise<unknown> {
+    return this.db.transaction(statements);
   }
 
   async getAllEntities(): Promise<Entity[]> {
@@ -62,17 +71,18 @@ export class Repository {
     }
   }
 
-  async getEntityById(id: string): Promise<Entity | null> {
+  async getEntityById(id: string): Promise<(Entity & { rowid: number }) | null> {
     try {
       const results = await this.db.exec({
-        sql: `SELECT * FROM entities WHERE id = ?`,
+        sql: `SELECT *, rowid FROM entities WHERE id = ?`,
         bind: [id],
         returnValue: 'resultRows',
         rowMode: 'object',
       });
       const rows = z.array(z.unknown()).parse(results);
       if (rows.length === 0) return null;
-      return this.parseMetadata(EntitySchema, rows[0]);
+      const parsed = this.parseMetadata(EntitySchema, rows[0]);
+      return { ...parsed, rowid: (rows[0] as any).rowid };
     } catch (err) {
       logger.error('Failed to fetch entity by id', err);
       throw new AppError('Failed to fetch entity by id', 'DB_ERROR', err);
@@ -139,8 +149,8 @@ export class Repository {
       // Use FTS5 for search
       const results = await this.db.exec({
         sql: `SELECT DISTINCT e.* FROM entities e
-              JOIN search_idx s ON e.id = s.entity_id
-              WHERE search_idx MATCH ?
+              JOIN entity_search_idx s ON e.id = s.rowid
+              WHERE entity_search_idx MATCH ?
               ORDER BY rank`,
         bind: [query],
         returnValue: 'resultRows',
@@ -174,19 +184,20 @@ export class Repository {
     claim: Omit<Claim, 'id' | 'created_at' | 'updated_at' | 'verification_status'> & {
       verification_status?: Claim['verification_status'];
     },
-  ): Promise<Claim> {
+  ): Promise<Claim & { rowid: number }> {
     try {
       const validated = ClaimSchema.omit({ id: true, created_at: true, updated_at: true }).parse(claim);
       const { entity_id, statement, evidence, confidence, source, verification_status } = validated;
       const result = await this.db.exec({
         sql: `INSERT INTO claims (entity_id, statement, evidence, confidence, source, verification_status)
-              VALUES (?, ?, ?, ?, ?, ?) RETURNING *`,
+              VALUES (?, ?, ?, ?, ?, ?) RETURNING *, rowid`,
         bind: [entity_id, statement, evidence ?? null, confidence ?? 1, source ?? null, verification_status ?? 'unverified'],
         returnValue: 'resultRows',
         rowMode: 'object',
       });
       const rows = z.array(z.unknown()).parse(result);
-      return this.parseMetadata(ClaimSchema, rows[0]);
+      const parsed = this.parseMetadata(ClaimSchema, rows[0]);
+      return { ...parsed, rowid: (rows[0] as any).rowid };
     } catch (err) {
       logger.error('Failed to create claim', err);
       throw new AppError('Failed to create claim', 'DB_ERROR', err);
@@ -240,16 +251,16 @@ export class Repository {
     }
   }
 
-  async getClaimsByEntityId(entity_id: string): Promise<Claim[]> {
+  async getClaimsByEntityId(entity_id: string): Promise<(Claim & { rowid: number })[]> {
     try {
       const results = await this.db.exec({
-        sql: `SELECT * FROM claims WHERE entity_id = ? ORDER BY created_at DESC`,
+        sql: `SELECT *, rowid FROM claims WHERE entity_id = ? ORDER BY created_at DESC`,
         bind: [entity_id],
         returnValue: 'resultRows',
         rowMode: 'object',
       });
       const rows = z.array(z.unknown()).parse(results);
-      return rows.map((r) => this.parseMetadata(ClaimSchema, r));
+      return rows.map((r) => ({ ...this.parseMetadata(ClaimSchema, r), rowid: (r as any).rowid }));
     } catch (err) {
       logger.error('Failed to fetch claims', err);
       throw new AppError('Failed to fetch claims', 'DB_ERROR', err);

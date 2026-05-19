@@ -117,6 +117,10 @@ export const initSearch = async () => {
       }
     }
 
+    // Bulk hydrate SQLite FTS5 index
+    await repository.exec('INSERT INTO entity_search_idx(entity_search_idx) VALUES(\'rebuild\')');
+    await repository.exec('INSERT INTO claim_search_idx(claim_search_idx) VALUES(\'rebuild\')');
+
     logger.info(`Orama search index initialized with ${entities.length} entities and ${allClaims.length} claims`);
 
     // Register job handlers
@@ -147,6 +151,23 @@ export const upsertToSearchIndex = async (entityId: string) => {
   try {
     await removeFromSearchIndex(entityId);
     await indexEntityById(entityId);
+
+    // Incrementally update SQLite FTS5 index
+    const entity = await repository.getEntityById(entityId);
+    if (entity) {
+      await repository.exec({
+        sql: `INSERT INTO entity_search_idx(rowid, name, description) VALUES (?, ?, ?)`,
+        bind: [entity.rowid, entity.name, entity.description || '']
+      });
+
+      const claims = await repository.getClaimsByEntityId(entityId);
+      for (const claim of claims) {
+        await repository.exec({
+          sql: `INSERT INTO claim_search_idx(rowid, statement) VALUES (?, ?)`,
+          bind: [claim.rowid, claim.statement]
+        });
+      }
+    }
   } catch (err) {
     logger.error(`Failed to upsert entity ${entityId} to search index`, err);
   }
@@ -165,6 +186,15 @@ export const removeFromSearchIndex = async (entityId: string) => {
       oramaIdMap.delete(entityId);
     }
 
+    // SQLite FTS5 removal
+    const entity = await repository.getEntityById(entityId);
+    if (entity) {
+      await repository.exec({
+        sql: `DELETE FROM entity_search_idx WHERE rowid = ?`,
+        bind: [entity.rowid]
+      });
+    }
+
     const claims = await repository.getClaimsByEntityId(entityId);
     for (const claim of claims) {
       const claimOramaId = oramaIdMap.get(claim.id!);
@@ -172,6 +202,12 @@ export const removeFromSearchIndex = async (entityId: string) => {
         await remove(oramaDb, claimOramaId);
         oramaIdMap.delete(claim.id!);
       }
+
+      // SQLite FTS5 removal
+      await repository.exec({
+        sql: `DELETE FROM claim_search_idx WHERE rowid = ?`,
+        bind: [claim.rowid]
+      });
     }
   } catch (err) {
     logger.error(`Failed to remove entity ${entityId} from search index`, err);
