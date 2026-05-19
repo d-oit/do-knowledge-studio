@@ -41,7 +41,7 @@ export class Repository {
       });
       const rows = z.array(z.unknown()).parse(result);
       const parsed = this.parseMetadata(EntitySchema, rows[0]);
-      return { ...parsed, rowid: (rows[0] as any).rowid };
+      return { ...parsed, rowid: (rows[0] as unknown).rowid };
     } catch (err) {
       logger.error('Failed to create entity', err);
       throw new AppError('Failed to create entity', 'DB_ERROR', err);
