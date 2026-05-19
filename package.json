@@ -2,6 +2,7 @@
   "name": "do-knowledge-studio",
   "private": true,
   "version": "0.1.0",
+  "packageManager": "pnpm@10.30.3",
   "description": "Local-first knowledge studio — rich text, knowledge graph, mind maps, SQLite WASM FTS5 search, Orama RAG & AI agent harness. No backend required.",
   "keywords": [
     "local-first",
@@ -29,13 +30,14 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "test:e2e:ci": "npm run build && PLAYWRIGHT_MODE=production playwright test",
+    "test:e2e:ci": "pnpm run build && PLAYWRIGHT_MODE=production playwright test",
     "typecheck": "tsc --noEmit",
     "cli": "node --loader ts-node/esm cli/index.ts"
   },
   "dependencies": {
     "@orama/orama": "^3.1.18",
     "@sqlite.org/sqlite-wasm": "3.45.3-build3",
+    "@tiptap/core": "3.23.4",
     "@tiptap/extension-placeholder": "^3.23.4",
     "@tiptap/pm": "^3.23.4",
     "@tiptap/react": "^3.23.4",
@@ -50,6 +52,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@eslint/js": "8.57.1",
     "@playwright/test": "^1.42.1",
     "@types/node": "^20.11.0",
     "@types/react": "^19.0.0",

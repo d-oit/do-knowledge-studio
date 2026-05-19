@@ -17,10 +17,10 @@
 - **Editor**: Tiptap
 
 ## Quality Gate
-- Run `npm test` (Vitest - unit/integration)
-- Run `npm run test:e2e` (Playwright - E2E critical paths)
-- Run `npm run lint`
-- Run `npm run typecheck`
+- Run `pnpm test` (Vitest - unit/integration)
+- Run `pnpm run test:e2e` (Playwright - E2E critical paths)
+- Run `pnpm run lint`
+- Run `pnpm run typecheck`
 
 ### Testing Strategy (2026 Best Practices)
 
@@ -103,7 +103,8 @@ The canonical skill source is `.agents/skills/`. See the full table below for al
 | `goap-agent` | Invoke for complex multi-step tasks requiring intelligent pl | Coordination |
 | `intent-classifier` | Classify user intents and route to appropriate skills, comma | Coordination |
 | `iterative-refinement` | Execute iterative refinement workflows with validation loops | General |
-| `jules-implement` | > | General |
+| `jules` | Autonomous Jules Delegator skill for delegating complex, multi-file tasks | General |
+| `jules-implement` | Repository-aware implementation agent for Stitch designs and UI verification | General |
 | `learn` | Extract non-obvious session learnings into scoped AGENTS.md  | knowledge-management |
 | `local-chat-policy` | Guidelines for ensuring chat functionality prioritizes local | General |
 | `memory-context` | Retrieve semantically relevant past learnings and analysis o | General |
