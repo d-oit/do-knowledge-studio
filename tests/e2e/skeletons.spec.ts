@@ -32,11 +32,7 @@ test.describe('Skeleton Loaders', () => {
     if (isMobile) await ensureNavVisible(page);
     await page.locator('.nav-button:visible:has-text("Mind Map")').first().click();
 
-    // In empty state (no entities), MindMapView is not rendered, so Suspense is not triggered.
-    // Instead, a <div> with .empty-state is shown.
-    // However, if we HAD entities, it would show.
-    // For now, let's just check that it either shows skeleton or empty state,
-    // confirming the route/lazy load works.
+    // Check for skeleton loader in the main content area
     const container = page.locator('.main-content');
     await expect(container.locator('.skeleton-layout, .empty-state').first()).toBeAttached();
   });
@@ -57,11 +53,16 @@ test.describe('Skeleton Loaders', () => {
     await expect(page.locator('.skeleton-layout').first()).toBeAttached();
   });
 
-  test('should show SearchSkeleton in sidebar', async ({ page, isMobile }) => {
+  test('should show SearchSkeleton in sidebar and mobile overlay', async ({ page, isMobile }) => {
     if (isMobile) {
-      return;
+      // In mobile, click the search icon in header to open overlay
+      await page.click('button[aria-label="Open search"]');
+      const searchOverlay = page.locator('.mobile-search-overlay');
+      await expect(searchOverlay.locator('.skeleton-layout')).toBeAttached();
+    } else {
+      // Sidebar search is desktop only
+      const searchSidebar = page.locator('.search-sidebar');
+      await expect(searchSidebar.locator('.skeleton-layout')).toBeAttached();
     }
-    const searchSidebar = page.locator('.search-sidebar');
-    await expect(searchSidebar.locator('.skeleton-layout')).toBeAttached();
   });
 });
