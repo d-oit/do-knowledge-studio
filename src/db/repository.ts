@@ -260,7 +260,7 @@ export class Repository {
         rowMode: 'object',
       });
       const rows = z.array(z.unknown()).parse(results);
-      return rows.map((r) => ({ ...this.parseMetadata(ClaimSchema, r), rowid: (r as any).rowid }));
+      return rows.map((r) => ({ ...this.parseMetadata(ClaimSchema, r), rowid: (r as unknown).rowid }));
     } catch (err) {
       logger.error('Failed to fetch claims', err);
       throw new AppError('Failed to fetch claims', 'DB_ERROR', err);
