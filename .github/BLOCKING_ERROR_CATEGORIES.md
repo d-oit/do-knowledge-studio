@@ -43,7 +43,7 @@
 cargo build --release || exit 1
 
 # TypeScript
-npm run build || tsc --noEmit || exit 1
+pnpm run build || tsc --noEmit || exit 1
 
 # Python (syntax check)
 python -m py_compile src/**/*.py || exit 1
@@ -88,7 +88,7 @@ pytest tests/ -v --tb=short --strict-markers || exit 1
 cargo test --lib -- --nocapture || exit 1
 
 # TypeScript
-npm test -- --ci --coverage || exit 1
+pnpm test -- --ci --coverage || exit 1
 
 # Go
 go test -race -coverprofile=coverage.out ./... || exit 1
@@ -144,7 +144,7 @@ gofmt -l . | grep . && exit 1
 go vet ./... || exit 1
 
 # TypeScript
-npm run lint -- --max-warnings=0 || exit 1
+pnpm run lint -- --max-warnings=0 || exit 1
 
 # Shell
 shellcheck scripts/*.sh || exit 1
@@ -203,7 +203,7 @@ gofmt -w .
 ```bash
 # Dependency audit
 cargo audit || exit 1
-npm audit --audit-level=low || exit 1
+pnpm audit --audit-level=low || exit 1
 
 # Secret scanning
 git-secrets --scan || exit 1
@@ -307,7 +307,7 @@ cargo tarpaulin --out Lcov --output-dir coverage/ || exit 1
 # Compare with base branch coverage
 
 # TypeScript
-npm test -- --coverage --coverageThreshold='{"global":{"branches":85}}' || exit 1
+pnpm test -- --coverage --coverageThreshold='{"global":{"branches":85}}' || exit 1
 ```
 
 **CI Enforcement:**

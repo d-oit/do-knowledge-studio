@@ -154,6 +154,15 @@ if [[ "$SCOPE" == "all" || "$SCOPE" == "tooling" || "${HAS_TOOLING:-false}" == "
     echo ""
 fi
 
+# --- Always: validate package manager configuration ---
+if [[ "$SCOPE" == "all" || "$SCOPE" == "tooling" || "${HAS_TOOLING:-false}" == "true" ]]; then
+    echo -e "${BLUE}Validating package manager configuration...${NC}"
+    if ! ./scripts/validate-package-manager.sh; then
+        FAILED=1
+    fi
+    echo ""
+fi
+
 # --- Always: validate skill symlinks and format ---
 if [[ "$SCOPE" == "all" || "$SCOPE" == "agent" || "${HAS_AGENT:-false}" == "true" ]]; then
     echo -e "${BLUE}Validating skill symlinks and format...${NC}"

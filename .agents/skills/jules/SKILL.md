@@ -20,7 +20,7 @@ This skill allows an agent to delegate autonomous coding tasks to **Jules**, a s
 ### 2. Autonomous Workflow
 - **Research**: Uses `grep_search`, `glob`, and `read_file` to map dependencies.
 - **Implementation**: Performs surgical code edits using `replace` and `write_file`.
-- **Validation**: Executes project-specific quality gates (`npm test`, `npm run lint`).
+- **Validation**: Executes project-specific quality gates (`pnpm test`, `pnpm run lint`).
 - **Submission**: Automates PR creation and summary generation.
 
 ## Usage Guide

@@ -28,6 +28,8 @@ const GraphView: React.FC<Props> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const sigmaInstance = useRef<Sigma | null>(null);
+  const graphRef = useRef<Graph>(new Graph());
+  const layoutTimeoutRef = useRef<number | null>(null);
 
   const [internalSelectedNode, setInternalSelectedNode] = useState<string | null>(null);
   const [internalFocusMode, setInternalFocusMode] = useState(false);
@@ -85,55 +87,96 @@ const GraphView: React.FC<Props> = ({
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const graph = new Graph();
+    const graph = graphRef.current;
 
-    if (filteredData.entities.length === 0 && !focusMode) {
-      // Show default placeholder if no data
-      graph.addNode('1', { label: 'Knowledge Studio', size: 10, color: '#2563eb', x: 0, y: 0 });
-    } else {
-      filteredData.entities.forEach((e, i) => {
-        graph.addNode(e.id ?? String(i), {
-          label: e.name,
-          size: e.id === selectedNode ? 20 : 10,
-          color: e.id === selectedNode ? '#ef4444' : '#2563eb',
-          x: Math.cos((i * 2 * Math.PI) / filteredData.entities.length),
-          y: Math.sin((i * 2 * Math.PI) / filteredData.entities.length)
-        });
+    // Use requestAnimationFrame for throttling updates
+    if (layoutTimeoutRef.current) cancelAnimationFrame(layoutTimeoutRef.current);
+
+    layoutTimeoutRef.current = requestAnimationFrame(() => {
+      // Diff and update graph instead of recreating
+      const currentNodes = new Set(graph.nodes());
+      const targetNodes = new Set(filteredData.entities.map(e => e.id!));
+
+      // 1. Remove nodes that are no longer present
+      currentNodes.forEach(nodeId => {
+        if (!targetNodes.has(nodeId)) graph.dropNode(nodeId);
       });
-      filteredData.links.forEach((l) => {
-        if (graph.hasNode(l.source_id) && graph.hasNode(l.target_id)) {
-          graph.addEdge(l.source_id, l.target_id, {
-            label: l.relation,
-            size: 2,
-            color: '#94a3b8'
-          });
+
+      // 2. Add or update nodes
+      if (filteredData.entities.length === 0 && !focusMode) {
+        if (!graph.hasNode('placeholder')) {
+           graph.addNode('placeholder', { label: 'Knowledge Studio', size: 10, color: '#2563eb', x: 0, y: 0 });
         }
-      });
-    }
+      } else {
+        if (graph.hasNode('placeholder')) graph.dropNode('placeholder');
 
-    if (sigmaInstance.current) {
-        sigmaInstance.current.kill();
-    }
+        filteredData.entities.forEach((e, i) => {
+          if (!graph.hasNode(e.id!)) {
+            graph.addNode(e.id!, {
+              label: e.name,
+              size: e.id === selectedNode ? 20 : 10,
+              color: e.id === selectedNode ? '#ef4444' : '#2563eb',
+              x: Math.cos((i * 2 * Math.PI) / filteredData.entities.length),
+              y: Math.sin((i * 2 * Math.PI) / filteredData.entities.length)
+            });
+          } else {
+            graph.mergeNodeAttributes(e.id!, {
+              label: e.name,
+              size: e.id === selectedNode ? 20 : 10,
+              color: e.id === selectedNode ? '#ef4444' : '#2563eb',
+            });
+          }
+        });
 
-    sigmaInstance.current = new Sigma(graph, containerRef.current, {
-      renderEdgeLabels: true,
-      defaultEdgeType: 'arrow'
+        // 3. Update edges
+        graph.clearEdges();
+        filteredData.links.forEach((l) => {
+          if (graph.hasNode(l.source_id) && graph.hasNode(l.target_id)) {
+            graph.mergeEdge(l.source_id, l.target_id, {
+              label: l.relation,
+              size: 2,
+              color: '#94a3b8'
+            });
+          }
+        });
+      }
+
+      if (!sigmaInstance.current) {
+        sigmaInstance.current = new Sigma(graph, containerRef.current!, {
+          renderEdgeLabels: true,
+          defaultEdgeType: 'arrow',
+          labelSize: 12,
+          labelWeight: 'bold',
+          // Built-in viewport culling is active by default in Sigma v3
+          // Level of Detail (LOD) via hideLabelsOnMove
+          hideLabelsOnMove: true,
+        });
+
+        sigmaInstance.current.on('clickNode', ({ node }) => {
+          setSelectedNode(node);
+        });
+
+        sigmaInstance.current.on('clickStage', () => {
+          setSelectedNode(null);
+          setFocusMode(false);
+        });
+      } else {
+        sigmaInstance.current.refresh();
+      }
     });
 
-    sigmaInstance.current.on('clickNode', ({ node }) => {
-      setSelectedNode(node);
-    });
+    return () => {
+      if (layoutTimeoutRef.current) cancelAnimationFrame(layoutTimeoutRef.current);
+    };
+  }, [filteredData, selectedNode, focusMode, setFocusMode, setSelectedNode]);
 
-    sigmaInstance.current.on('clickStage', () => {
-      setSelectedNode(null);
-      setFocusMode(false);
-    });
-
+  // Cleanup Sigma on unmount
+  useEffect(() => {
     return () => {
       sigmaInstance.current?.kill();
       sigmaInstance.current = null;
     };
-  }, [filteredData, selectedNode, focusMode, setFocusMode, setSelectedNode]);
+  }, []);
 
   const handleSaveSnapshot = async (name: string, nodes: { id: string; label: string }[], edges: { id: string; source: string; target: string; label?: string }[]) => {
     try {

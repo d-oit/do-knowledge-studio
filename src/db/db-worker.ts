@@ -81,6 +81,33 @@ self.onmessage = async (event: MessageEvent) => {
         break;
       }
 
+      case 'transaction': {
+        if (!db) {
+          throw new Error('Database not initialized in worker');
+        }
+
+        const { statements } = payload as { statements: { sql: string; bind?: (string | number | boolean | null)[] }[] };
+
+        db.exec('BEGIN TRANSACTION;');
+        try {
+          const results = [];
+          for (const stmt of statements) {
+            results.push(db.exec({
+              sql: stmt.sql,
+              bind: stmt.bind,
+              returnValue: 'resultRows',
+              rowMode: 'object',
+            }));
+          }
+          db.exec('COMMIT;');
+          self.postMessage({ id, type: 'transaction', success: true, data: results });
+        } catch (err) {
+          db.exec('ROLLBACK;');
+          throw err;
+        }
+        break;
+      }
+
       case 'close': {
         if (db) {
           db.close();

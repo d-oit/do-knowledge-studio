@@ -47,7 +47,7 @@
 ### Automated Tests
 <!-- Check all that apply. All must pass before merge. -->
 
-- [ ] Unit tests added/updated (`pytest`, `cargo test`, `npm test`)
+- [ ] Unit tests added/updated (`pytest`, `cargo test`, `pnpm test`)
 - [ ] Integration tests pass
 - [ ] E2E tests pass (if applicable)
 - [ ] All existing tests continue to pass
@@ -77,7 +77,7 @@
 
 - [ ] **Lint/Format**: No warnings or errors (`ruff`, `black`, `eslint`, `clippy`, `gofmt`)
 - [ ] **Type Safety**: All type checks pass (`mypy`, `tsc`, `cargo check`)
-- [ ] **Security Scan**: No vulnerabilities (`bandit`, `cargo audit`, `npm audit`)
+- [ ] **Security Scan**: No vulnerabilities (`bandit`, `cargo audit`, `pnpm audit`)
 - [ ] **Dead Code**: No unused imports, variables, or functions
 - [ ] **Complexity**: No functions exceeding complexity thresholds
 

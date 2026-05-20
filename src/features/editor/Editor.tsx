@@ -46,6 +46,8 @@ const Editor: React.FC = () => {
 
     try {
       const content = editor.getHTML();
+
+      // We use a transaction for all related records to ensure atomicity and performance
       const entity = await repository.createEntity({
         name: title,
         type: type,
@@ -77,36 +79,37 @@ const Editor: React.FC = () => {
         return true;
       });
 
-      // Persist Note
-      await repository.createNote({
-        entity_id: entity.id,
-        content: content,
-        format: 'markdown'
+      const statements: { sql: string; bind?: (string | number | boolean | null)[] }[] = [];
+
+      // Note
+      statements.push({
+        sql: `INSERT INTO notes (entity_id, content, format) VALUES (?, ?, ?)`,
+        bind: [entity.id, content, 'markdown']
       });
 
-      // Persist Claims
+      // Claims
       for (const claim of claims) {
-        await repository.createClaim({
-          entity_id: entity.id!,
-          statement: claim.statement,
-          confidence: 1.0,
-          evidence: 'Extracted from editor',
-          source: claim.source,
-          verification_status: claim.status as Claim['verification_status']
+        statements.push({
+          sql: `INSERT INTO claims (entity_id, statement, confidence, evidence, source, verification_status)
+                VALUES (?, ?, ?, ?, ?, ?)`,
+          bind: [entity.id!, claim.statement, 1.0, 'Extracted from editor', claim.source, claim.status]
         });
       }
 
-      // Persist Links (Mentions)
+      // Links (Mentions)
       for (const mention of mentions) {
-        await repository.createLink({
-          source_id: entity.id!,
-          target_id: mention.id,
-          relation: 'mentions',
-          metadata: { name: mention.name }
+        statements.push({
+          sql: `INSERT INTO links (source_id, target_id, relation, metadata)
+                VALUES (?, ?, ?, ?)`,
+          bind: [entity.id!, mention.id, 'mentions', JSON.stringify({ name: mention.name })]
         });
       }
 
-      logger.info('Entity, note, claims and links saved', { id: entity.id, claims: claims.length, links: mentions.length });
+      if (statements.length > 0) {
+        await repository.transaction(statements);
+      }
+
+      logger.info('Entity, note, claims and links saved via transaction', { id: entity.id, claims: claims.length, links: mentions.length });
 
       // Enqueue background work
       jobCoordinator.enqueue('reindex-document', entity.id, { entityId: entity.id });
