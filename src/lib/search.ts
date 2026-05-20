@@ -155,7 +155,12 @@ export const upsertToSearchIndex = async (entityId: string) => {
       try {
         // Fetch everything once
         const entity = await repository.getEntityById(entityId);
-        if (!entity) return;
+        const entity = await repository.getEntityById(entityId);
+        if (!entity) {
+          await removeFromSearchIndex(entityId);
+          resolve();
+          return;
+        }
 
         const claims = await repository.getClaimsByEntityId(entityId);
 
