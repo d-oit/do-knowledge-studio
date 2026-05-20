@@ -39,27 +39,19 @@ const addEntityToIndex = async (entity: Entity, claims: Claim[]): Promise<void> 
   const entityResult = await insert(oramaDb, entityDoc);
   oramaIdMap.set(entity.id!, entityResult);
 
-  for (const claim of claims) {
-    const claimDoc: SearchDocument = {
+  if (claims.length > 0) {
+    const claimDocs: SearchDocument[] = claims.map(claim => ({
       id: claim.id!,
       type: 'claim',
       title: entity.name,
       content: compressText(claim.statement),
       keywords: [entity.id!, claim.source || 'unknown'].join(','),
-    };
-    const claimResult = await insert(oramaDb, claimDoc);
-    oramaIdMap.set(claim.id!, claimResult);
-  }
-};
+    }));
 
-/**
- * Helper to index an entity and its claims.
- */
-const indexEntityById = async (entityId: string): Promise<void> => {
-  const entity = await repository.getEntityById(entityId);
-  if (entity) {
-    const claims = await repository.getClaimsByEntityId(entity.id!);
-    await addEntityToIndex(entity, claims);
+    const claimOramaIds = await insertMultiple(oramaDb, claimDocs);
+    for (let i = 0; i < claims.length; i++) {
+      oramaIdMap.set(claims[i].id!, claimOramaIds[i]);
+    }
   }
 };
 
@@ -67,9 +59,9 @@ export const initSearch = async () => {
   if (oramaDb) return oramaDb;
 
   try {
-    oramaDb = await create({
+    oramaDb = create({
       schema: searchSchema,
-    });
+    }) as Orama<OramaSchema>;
 
     const [entities, allClaims] = await Promise.all([
       repository.getAllEntities(),
@@ -154,35 +146,43 @@ export const upsertToSearchIndex = async (entityId: string) => {
   }
 
   return new Promise<void>((resolve) => {
-    const timer = setTimeout(async () => {
-      debounceTimers.delete(entityId);
+    const timer = setTimeout(() => {
+      void (async () => {
+        debounceTimers.delete(entityId);
 
       if (!oramaDb) await initSearch();
 
       try {
-        await removeFromSearchIndex(entityId);
-        await indexEntityById(entityId);
-
-        // Incrementally update SQLite FTS5 index
+        // Fetch everything once
         const entity = await repository.getEntityById(entityId);
-        if (entity) {
-          await repository.exec({
-            sql: `INSERT INTO entity_search_idx(rowid, name, description) VALUES (?, ?, ?)`,
-            bind: [entity.rowid, entity.name, entity.description || '']
-          });
+        if (!entity) return;
 
-          const claims = await repository.getClaimsByEntityId(entityId);
-          for (const claim of claims) {
-            await repository.exec({
-              sql: `INSERT INTO claim_search_idx(rowid, statement) VALUES (?, ?)`,
-              bind: [claim.rowid, claim.statement]
-            });
-          }
+        const claims = await repository.getClaimsByEntityId(entityId);
+
+        // Optimized removal using pre-fetched data
+        await removeFromSearchIndex(entityId, entity, claims);
+
+        // Optimized Orama insertion using insertMultiple
+        await addEntityToIndex(entity, claims);
+
+        // Incrementally update SQLite FTS5 index using set-based INSERT
+        await repository.exec({
+          sql: `INSERT INTO entity_search_idx(rowid, name, description) VALUES (?, ?, ?)`,
+          bind: [entity.rowid, entity.name, entity.description || '']
+        });
+
+        if (claims.length > 0) {
+          await repository.exec({
+            sql: `INSERT INTO claim_search_idx(rowid, statement)
+                  SELECT rowid, statement FROM claims WHERE entity_id = ?`,
+            bind: [entityId]
+          });
         }
       } catch (err) {
         logger.error(`Failed to upsert entity ${entityId} to search index`, err);
       }
       resolve();
+      })();
     }, 500);
     debounceTimers.set(entityId, timer);
   });
@@ -191,18 +191,24 @@ export const upsertToSearchIndex = async (entityId: string) => {
 /**
  * Removes an entity and its claims from the search index.
  */
-export const removeFromSearchIndex = async (entityId: string) => {
+export const removeFromSearchIndex = async (
+  entityId: string,
+  providedEntity?: Entity & { rowid: number },
+  providedClaims?: (Claim & { rowid: number })[]
+) => {
   if (!oramaDb) return;
 
   try {
     const oramaInternalId = oramaIdMap.get(entityId);
+    const oramaRemovals: Promise<unknown>[] = [];
+
     if (oramaInternalId) {
-      await remove(oramaDb, oramaInternalId);
+      oramaRemovals.push(remove(oramaDb, oramaInternalId));
       oramaIdMap.delete(entityId);
     }
 
-    // SQLite FTS5 removal
-    const entity = await repository.getEntityById(entityId);
+    // SQLite FTS5 removal for entity
+    const entity = providedEntity ?? await repository.getEntityById(entityId);
     if (entity) {
       await repository.exec({
         sql: `DELETE FROM entity_search_idx WHERE rowid = ?`,
@@ -210,19 +216,23 @@ export const removeFromSearchIndex = async (entityId: string) => {
       });
     }
 
-    const claims = await repository.getClaimsByEntityId(entityId);
+    const claims = providedClaims ?? await repository.getClaimsByEntityId(entityId);
     for (const claim of claims) {
       const claimOramaId = oramaIdMap.get(claim.id!);
       if (claimOramaId) {
-        await remove(oramaDb, claimOramaId);
+        oramaRemovals.push(remove(oramaDb, claimOramaId));
         oramaIdMap.delete(claim.id!);
       }
+    }
 
-      // SQLite FTS5 removal
-      await repository.exec({
-        sql: `DELETE FROM claim_search_idx WHERE rowid = ?`,
-        bind: [claim.rowid]
-      });
+    // Single set-based SQLite FTS5 removal for all claims of this entity
+    await repository.exec({
+      sql: `DELETE FROM claim_search_idx WHERE rowid IN (SELECT rowid FROM claims WHERE entity_id = ?)`,
+      bind: [entityId]
+    });
+
+    if (oramaRemovals.length > 0) {
+      await Promise.all(oramaRemovals);
     }
   } catch (err) {
     logger.error(`Failed to remove entity ${entityId} from search index`, err);
