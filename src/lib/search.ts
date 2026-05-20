@@ -59,9 +59,7 @@ export const initSearch = async () => {
   if (oramaDb) return oramaDb;
 
   try {
-    oramaDb = (await create({
-      schema: searchSchema,
-    })) as Orama<OramaSchema>;
+    oramaDb = create({
       schema: searchSchema,
     }) as Orama<OramaSchema>;
 
@@ -157,12 +155,7 @@ export const upsertToSearchIndex = async (entityId: string) => {
       try {
         // Fetch everything once
         const entity = await repository.getEntityById(entityId);
-        const entity = await repository.getEntityById(entityId);
-        if (!entity) {
-          await removeFromSearchIndex(entityId);
-          resolve();
-          return;
-        }
+        if (!entity) return;
 
         const claims = await repository.getClaimsByEntityId(entityId);
 
