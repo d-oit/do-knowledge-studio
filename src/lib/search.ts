@@ -59,7 +59,9 @@ export const initSearch = async () => {
   if (oramaDb) return oramaDb;
 
   try {
-    oramaDb = create({
+    oramaDb = (await create({
+      schema: searchSchema,
+    })) as Orama<OramaSchema>;
       schema: searchSchema,
     }) as Orama<OramaSchema>;
 
