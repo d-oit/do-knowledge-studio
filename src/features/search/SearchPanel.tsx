@@ -49,7 +49,7 @@ const NoResultsState: React.FC<{ query: string; onClear: () => void }> = ({ quer
       <Filter size={32} />
     </div>
     <h3>No local matches</h3>
-    <p>We couldn't find anything matching &quot;{query}&quot; in your current library.</p>
+    <p>We could not find anything matching &quot;{query}&quot; in your current library.</p>
     <div className="no-results-actions">
       <button className="btn-secondary" onClick={onClear}>
         Clear search
@@ -106,6 +106,14 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
   const [isSearching, setIsSearching] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const resultsRef = useRef<(HTMLButtonElement | null)[]>([]);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Programmatic focus instead of autoFocus prop (a11y best practice)
+  useEffect(() => {
+    if ((shouldAutoFocus || isMobile) && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [shouldAutoFocus, isMobile]);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
@@ -174,8 +182,8 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
         <div className="input-wrapper">
           <Search size={18} className="search-icon" aria-hidden="true" />
           <input
+            ref={searchInputRef}
             type="search"
-            autoFocus={shouldAutoFocus || isMobile}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleInputKeyDown}

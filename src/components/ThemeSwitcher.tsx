@@ -1,0 +1,148 @@
+import React from 'react';
+import { Palette, Monitor, Gamepad2, Brain, Wrench } from 'lucide-react';
+
+export type Theme = 'app' | 'game' | 'neural' | 'technical';
+
+interface ThemeOption {
+  theme: Theme;
+  label: string;
+  icon: React.ReactNode;
+  description: string;
+}
+
+const THEME_OPTIONS: ThemeOption[] = [
+  {
+    theme: 'app',
+    label: 'Default',
+    icon: <Monitor size={18} />,
+    description: 'Professional light interface',
+  },
+  {
+    theme: 'game',
+    label: 'Tactical',
+    icon: <Gamepad2 size={18} />,
+    description: 'High-contrast neon dark',
+  },
+  {
+    theme: 'neural',
+    label: 'Neural',
+    icon: <Brain size={18} />,
+    description: 'Soft organic palette',
+  },
+  {
+    theme: 'technical',
+    label: 'Technical',
+    icon: <Wrench size={18} />,
+    description: 'Brutalist mono style',
+  },
+];
+
+const STORAGE_KEY = 'do-knowledge-studio-theme';
+
+function getStoredTheme(): Theme {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored && ['app', 'game', 'neural', 'technical'].includes(stored)) {
+      return stored as Theme;
+    }
+  } catch {
+    // localStorage unavailable
+  }
+  return 'app';
+}
+
+function storeTheme(theme: Theme): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, theme);
+  } catch {
+    // localStorage unavailable
+  }
+}
+
+interface ThemeSwitcherProps {
+  compact?: boolean;
+}
+
+const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ compact = false }) => {
+  const [activeTheme, setActiveTheme] = React.useState<Theme>(getStoredTheme);
+  const [isOpen, setIsOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    document.documentElement.setAttribute('data-theme', activeTheme);
+    storeTheme(activeTheme);
+  }, [activeTheme]);
+
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.theme-switcher')) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
+  const handleSelect = (theme: Theme) => {
+    setActiveTheme(theme);
+    setIsOpen(false);
+  };
+
+  if (compact) {
+    return (
+      <div className="theme-switcher theme-switcher-compact">
+        <button
+          className="theme-toggle-btn"
+          onClick={() => setIsOpen(!isOpen)}
+          aria-label="Switch theme"
+          aria-expanded={isOpen}
+          aria-haspopup="listbox"
+        >
+          <Palette size={18} />
+        </button>
+        {isOpen && (
+          <ul className="theme-dropdown" role="listbox" aria-label="Select theme">
+            {THEME_OPTIONS.map((opt) => (
+              <li key={opt.theme}>
+                <button
+                  className={`theme-option ${activeTheme === opt.theme ? 'active' : ''}`}
+                  onClick={() => handleSelect(opt.theme)}
+                  role="option"
+                  aria-selected={activeTheme === opt.theme}
+                >
+                  {opt.icon}
+                  <span>{opt.label}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="theme-switcher">
+      <div className="theme-switcher-label">Theme</div>
+      <div className="theme-grid">
+        {THEME_OPTIONS.map((opt) => (
+          <button
+            key={opt.theme}
+            className={`theme-card ${activeTheme === opt.theme ? 'active' : ''}`}
+            onClick={() => handleSelect(opt.theme)}
+            aria-pressed={activeTheme === opt.theme}
+          >
+            <div className="theme-card-preview" data-theme-preview={opt.theme} />
+            <div className="theme-card-info">
+              <span className="theme-card-icon">{opt.icon}</span>
+              <span className="theme-card-label">{opt.label}</span>
+            </div>
+            <div className="theme-card-desc">{opt.description}</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default ThemeSwitcher;

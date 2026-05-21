@@ -58,7 +58,7 @@ export const initDb = async (options?: { poolSize?: number }): Promise<SQLiteDB>
         instance = pool;
     } else {
         // CLI/Node fallback: Direct initialization
-        const sqlite3 = await sqlite3InitModule() as unknown as Sqlite3Static;
+        const sqlite3 = await sqlite3InitModule() as Sqlite3Static;
         const db = new sqlite3.oo1.DB('/studio.db', 'c');
         db.exec(schemaSql);
         db.exec('PRAGMA foreign_keys = ON;');
