@@ -8,8 +8,8 @@
 
 | Priority | Plan File | Description | Est. Effort |
 |----------|-----------|-------------|------------|
-| **P0** | [01-critical-fixes.md](01-critical-fixes.md) | ⚠️ Partial (Docs/Versions), ✅ Orama Fixed | 2-4h |
-| **P1** | [10-implementation-audit.md](10-implementation-audit.md) | NEW: Gap analysis & wiring tasks | 12-16h |
+| **P0** | [01-critical-fixes.md](01-critical-fixes.md) | ✅ All tasks complete | 2-4h |
+| **P1** | [10-implementation-audit.md](10-implementation-audit.md) | ✅ All gaps wired (Snapshots, Provenance, Export, AI, CLI) | 12-16h |
 | **P1** | [02-code-quality.md](02-code-quality.md) | Tests, deduplication, type safety, ErrorBoundaries | 8-10h |
 | **P1** | [09-ui-style-alignment.md](09-ui-style-alignment.md) | Atmospheric UI, glassmorphism, multi-mode themes | 8-12h |
 | **P2** | [03-core-implementation.md](03-core-implementation.md) | CLI architecture, real export, test coverage | 12-16h |
@@ -34,18 +34,18 @@
 ## Execution Order
 
 ```
-P0: Critical Fixes (Do First)
-    ├─ Fix version inconsistencies (README, CLI, CHANGELOG)
-    ├─ Fix broken doc references (SKILLS.md/AVAILABLE_SKILLS.md → AVAILABLE_SKILLS.md)
+P0: Critical Fixes ✅ COMPLETE
+    ├─ ✅ Fix version inconsistencies (standardized to 0.1.0)
+    ├─ ✅ Fix broken doc references (AVAILABLE_AVAILABLE → AVAILABLE_SKILLS, remove QUICKSTART.md)
     └─ ✅ Fixed: Orama `any` type and remove functionality
     ↓
-P1: Implementation Audit & Wiring (NEW)
-    ├─ Wire Graph Snapshots (Logic exists, UI missing wiring)
-    ├─ Wire Claim Provenance (Logic exists, UI missing)
-    ├─ Replace UI Export mocks with real logic
-    └─ Connect AI Harness to LLM system
+P1: Implementation Audit & Wiring ✅ COMPLETE
+    ├─ ✅ Wire Graph Snapshots
+    ├─ ✅ Wire Claim Provenance
+    ├─ ✅ Replace UI Export mocks with real logic
+    └─ ✅ Connect AI Harness to LLM system
     ↓
-P1: Code Quality
+P1: Code Quality (IN PROGRESS)
     ├─ Add repository tests (80% coverage)
     ├─ Extract duplicated search logic
     ├─ Replace double casts with Zod validation
@@ -70,9 +70,9 @@ P1: Code Quality
 | Category | Score | Trend |
 |----------|--------|-------|
 | Architecture | 85/100 | ✅ Validated by github-template-ai-agents |
-| Implementation Completeness | 60/100 | ⚠️ Critical gaps in AI/Export/CLI |
+| Implementation Completeness | 85/100 | ✅ All major gaps wired |
 | Code Quality | 75/100 | ⚠️ `any` type, double casts |
-| Documentation | 68/100 | ⚠️ Version inconsistencies, broken links |
+| Documentation | 78/100 | ✅ Broken links fixed, version consistent |
 
 ## Key Constraints
 
@@ -89,12 +89,14 @@ P1: Code Quality
 - [x] **GitHub Template Alignment** - Architecture validated, no changes needed
 - [x] **BATS Tests Fixed** - Removed merge conflict marker in quality_gate.sh
 - [x] **opencode.json Created** - Resolves validate-skills.sh error
+- [x] **P0: Critical Fixes** - Doc references fixed (AVAILABLE_AVAILABLE typo, QUICKSTART.md removed)
+- [x] **P1: Implementation Audit** - All gaps verified as wired (Snapshots, Provenance, Export, AI)
 
 ## Next Steps
 
-1. **Start with P0** - Fix `any` type in `src/lib/search.ts`
-2. **Run quality gates frequently** - `npm test`, `npm run lint`, `npm run typecheck`
-3. **Use plans/ as checklist** - Mark tasks complete as you go
+1. **P1: Code Quality** - Replace double casts, add per-feature ErrorBoundaries
+2. **P2: Core Implementation** - CLI architecture, real export, test coverage
+3. **Run quality gates frequently** - `pnpm test`, `pnpm run typecheck`
 4. **Don't modify GEMINI.md/QWEN.md** - AGENTS.md is canonical
 
 ## Verification Commands

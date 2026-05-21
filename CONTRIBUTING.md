@@ -49,7 +49,7 @@ git checkout -b fix/issue-123-bug-description
 
 **Before coding:**
 - Read [`AGENTS.md`](../../AGENTS.md) for project standards
-- Check [`agents-docs/AVAILABLE_AVAILABLE_SKILLS.md`](../../agents-docs/AVAILABLE_AVAILABLE_SKILLS.md) for skill authoring
+- Check [`agents-docs/AVAILABLE_SKILLS.md`](../../agents-docs/AVAILABLE_SKILLS.md) for skill authoring
 - Review [`agents-docs/HARNESS.md`](../../agents-docs/HARNESS.md) for architecture
 
 **While coding:**
