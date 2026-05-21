@@ -97,28 +97,34 @@ const AppContent: React.FC = () => {
           <ErrorBoundary fallback={<div className="error-state">Failed to load component. Please refresh.</div>}>
             {dbReady && currentView === 'editor' && (
               <Suspense fallback={<EditorSkeleton />}>
-                <Editor />
+                <ErrorBoundary>
+                  <Editor />
+                </ErrorBoundary>
               </Suspense>
             )}
             {dbReady && currentView === 'graph' && (
               <Suspense fallback={<GraphSkeleton />}>
-                <GraphView
-                  entities={entities}
-                  links={links}
-                  focusMode={graphFocusMode}
-                  onFocusModeChange={setGraphFocusMode}
-                  selectedNode={graphSelectedNode}
-                  onSelectedNodeChange={setGraphSelectedNode}
-                  hideToolbar={window.innerWidth < 768}
-                />
+                <ErrorBoundary>
+                  <GraphView
+                    entities={entities}
+                    links={links}
+                    focusMode={graphFocusMode}
+                    onFocusModeChange={setGraphFocusMode}
+                    selectedNode={graphSelectedNode}
+                    onSelectedNodeChange={setGraphSelectedNode}
+                    hideToolbar={window.innerWidth < 768}
+                  />
+                </ErrorBoundary>
               </Suspense>
             )}
             {dbReady && currentView === 'mindmap' && entities.length > 0 && (
               <Suspense fallback={<MindMapSkeleton />}>
-                <MindMapView
-                  rootEntity={entities[0]}
-                  relatedEntities={entities.slice(1, 10)}
-                />
+                <ErrorBoundary>
+                  <MindMapView
+                    rootEntity={entities[0]}
+                    relatedEntities={entities.slice(1, 10)}
+                  />
+                </ErrorBoundary>
               </Suspense>
             )}
             {dbReady && currentView === 'mindmap' && entities.length === 0 && (
@@ -126,17 +132,23 @@ const AppContent: React.FC = () => {
             )}
             {dbReady && currentView === 'chat' && (
               <Suspense fallback={<AISkeleton />}>
-                <Chat />
+                <ErrorBoundary>
+                  <Chat />
+                </ErrorBoundary>
               </Suspense>
             )}
             {dbReady && currentView === 'export' && (
               <Suspense fallback={<ExportSkeleton />}>
-                <ExportPanel />
+                <ErrorBoundary>
+                  <ExportPanel />
+                </ErrorBoundary>
               </Suspense>
             )}
             {dbReady && currentView === 'ai' && (
               <Suspense fallback={<AISkeleton />}>
-                <AIHarness />
+                <ErrorBoundary>
+                  <AIHarness />
+                </ErrorBoundary>
               </Suspense>
             )}
           </ErrorBoundary>

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Focus, Camera, Clock, X } from 'lucide-react';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
@@ -42,8 +42,16 @@ const GraphControls: React.FC<GraphControlsProps> = ({
   const modalRef = useRef<HTMLDivElement>(null);
   const isMobile = useMediaQuery(MEDIA_QUERIES.MOBILE);
 
+  const snapshotNameRef = useRef<HTMLInputElement>(null);
+
   useFocusTrap(modalRef, showSaveModal);
   useEscapeKey(() => setShowSaveModal(false), showSaveModal);
+
+  useEffect(() => {
+    if (showSaveModal && snapshotNameRef.current) {
+      snapshotNameRef.current.focus();
+    }
+  }, [showSaveModal]);
 
   const handleSaveSnapshot = async () => {
     if (!snapshotName.trim() || !onSaveSnapshot) return;
@@ -109,11 +117,11 @@ const GraphControls: React.FC<GraphControlsProps> = ({
               <label htmlFor="snapshot-name">Snapshot Name *</label>
               <input
                 id="snapshot-name"
+                ref={snapshotNameRef}
                 type="text"
                 value={snapshotName}
                 onChange={(e) => setSnapshotName(e.target.value)}
                 placeholder="e.g., Before restructuring"
-                autoFocus
               />
             </div>
             <div className="form-group">

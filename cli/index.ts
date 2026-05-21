@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { initDb } from '../src/db/client.js';
 import { repository } from '../src/db/repository.js';
-import type { Claim, Note } from '../src/lib/validation';
+import type { Note } from '../src/lib/validation';
 
 const program = new Command();
 
