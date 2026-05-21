@@ -53,14 +53,56 @@ function createMockClaim(overrides: Record<string, unknown> = {}) {
   };
 }
 
+// Helper to create mock note
+function createMockNote(overrides: Record<string, unknown> = {}) {
+  return {
+    id: THIRD_UUID,
+    entity_id: VALID_UUID,
+    content: 'Test note content',
+    format: 'markdown',
+    created_at: '2024-01-01T00:00:00.000Z',
+    updated_at: '2024-01-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+// Helper to create mock link
+function createMockLink(overrides: Record<string, unknown> = {}) {
+  return {
+    id: THIRD_UUID,
+    source_id: VALID_UUID,
+    target_id: OTHER_UUID,
+    relation: 'related_to',
+    metadata: '{}',
+    created_at: '2024-01-01T00:00:00.000Z',
+    updated_at: '2024-01-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+// Helper to create mock snapshot
+function createMockSnapshot(overrides: Record<string, unknown> = {}) {
+  return {
+    id: THIRD_UUID,
+    name: 'Test Snapshot',
+    nodes_json: '[{"id":"n1","label":"Node 1"}]',
+    edges_json: '[{"id":"e1","source":"n1","target":"n2"}]',
+    description: 'A test snapshot',
+    created_at: '2024-01-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
 describe('Repository', () => {
   let repository: Repository;
   let mockExec: ReturnType<typeof vi.fn>;
-  let mockDb: { exec: ReturnType<typeof vi.fn> };
+  let mockTransaction: ReturnType<typeof vi.fn>;
+  let mockDb: { exec: ReturnType<typeof vi.fn>; transaction: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     mockExec = createMockExec([]);
-    mockDb = { exec: mockExec };
+    mockTransaction = vi.fn().mockResolvedValue([]);
+    mockDb = { exec: mockExec, transaction: mockTransaction };
     (getDb as unknown as Mock).mockReturnValue(mockDb);
     repository = new Repository();
   });
@@ -265,6 +307,341 @@ describe('Repository', () => {
         rowMode: 'object',
       });
       expect(result).toBeDefined();
+    });
+  });
+
+  // --- Entity search & lookup ---
+  describe('searchEntities', () => {
+    it('should search entities via FTS5', async () => {
+      const mockEntity = createMockEntity({ name: 'Searched Entity' });
+      mockExec.mockResolvedValue([mockEntity]);
+
+      const result = await repository.searchEntities('searched');
+
+      expect(mockExec).toHaveBeenCalledWith(expect.objectContaining({
+        sql: expect.stringContaining('entity_search_idx'),
+        bind: ['searched'],
+      }));
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe('Searched Entity');
+    });
+
+    it('should fallback to LIKE when FTS5 returns empty', async () => {
+      const mockEntity = createMockEntity({ name: 'Fallback Entity' });
+      mockExec
+        .mockResolvedValueOnce([]) // FTS5 returns nothing
+        .mockResolvedValueOnce([mockEntity]); // LIKE fallback
+
+      const result = await repository.searchEntities('fallback');
+
+      expect(mockExec).toHaveBeenCalledTimes(2);
+      expect(mockExec).toHaveBeenLastCalledWith(expect.objectContaining({
+        sql: expect.stringContaining('LIKE'),
+        bind: ['%fallback%', '%fallback%'],
+      }));
+      expect(result).toHaveLength(1);
+    });
+  });
+
+  describe('getEntityByName', () => {
+    it('should find entity by name', async () => {
+      const mockEntity = createMockEntity({ name: 'Unique Name' });
+      mockExec.mockResolvedValue([mockEntity]);
+
+      const result = await repository.getEntityByName('Unique Name');
+
+      expect(result?.name).toBe('Unique Name');
+    });
+
+    it('should return null when entity name not found', async () => {
+      mockExec.mockResolvedValue([]);
+      const result = await repository.getEntityByName('Nonexistent');
+      expect(result).toBeNull();
+    });
+  });
+
+  // --- Claims CRUD ---
+  describe('createClaim', () => {
+    it('should create a claim with all fields', async () => {
+      const mockClaim = createMockClaim();
+      mockExec.mockResolvedValue([mockClaim]);
+
+      const result = await repository.createClaim({
+        entity_id: VALID_UUID,
+        statement: 'Test claim statement',
+        evidence: 'Test evidence',
+        confidence: 0.9,
+        source: 'Test source',
+        verification_status: 'unverified',
+      });
+
+      expect(mockExec).toHaveBeenCalledWith(expect.objectContaining({
+        sql: expect.stringContaining('INSERT INTO claims'),
+        bind: [VALID_UUID, 'Test claim statement', 'Test evidence', 0.9, 'Test source', 'unverified'],
+      }));
+      expect(result.statement).toBe('Test claim statement');
+    });
+  });
+
+  describe('getAllClaims', () => {
+    it('should return all claims', async () => {
+      const mockClaims = [createMockClaim(), createMockClaim({ id: THIRD_UUID })];
+      mockExec.mockResolvedValue(mockClaims);
+
+      const result = await repository.getAllClaims();
+
+      expect(result).toHaveLength(2);
+      expect(mockExec).toHaveBeenCalledWith(expect.objectContaining({
+        sql: 'SELECT * FROM claims',
+      }));
+    });
+  });
+
+  describe('getClaimsByEntityId', () => {
+    it('should return claims for an entity', async () => {
+      const mockClaims = [createMockClaim(), createMockClaim({ id: THIRD_UUID })];
+      mockExec.mockResolvedValue(mockClaims);
+
+      const result = await repository.getClaimsByEntityId(VALID_UUID);
+
+      expect(result).toHaveLength(2);
+      expect(mockExec).toHaveBeenCalledWith(expect.objectContaining({
+        sql: expect.stringContaining('WHERE entity_id = ?'),
+        bind: [VALID_UUID],
+      }));
+    });
+
+    it('should return empty array when no claims found', async () => {
+      mockExec.mockResolvedValue([]);
+      const result = await repository.getClaimsByEntityId(VALID_UUID);
+      expect(result).toHaveLength(0);
+    });
+  });
+
+  describe('deleteClaim', () => {
+    it('should delete a claim', async () => {
+      mockExec.mockResolvedValue([]);
+      await repository.deleteClaim(OTHER_UUID);
+
+      expect(mockExec).toHaveBeenCalledWith({
+        sql: 'DELETE FROM claims WHERE id = ?',
+        bind: [OTHER_UUID],
+      });
+    });
+  });
+
+  describe('getClaimsByVerificationStatus', () => {
+    it('should return claims by verification status', async () => {
+      const mockClaims = [createMockClaim({ verification_status: 'verified' })];
+      mockExec.mockResolvedValue(mockClaims);
+
+      const result = await repository.getClaimsByVerificationStatus('verified');
+
+      expect(result).toHaveLength(1);
+      expect(mockExec).toHaveBeenCalledWith(expect.objectContaining({
+        bind: ['verified'],
+      }));
+    });
+  });
+
+  describe('updateClaimVerification', () => {
+    it('should update claim verification status', async () => {
+      const updatedClaim = createMockClaim({ verification_status: 'verified' });
+      mockExec.mockResolvedValue([updatedClaim]);
+
+      const result = await repository.updateClaimVerification(OTHER_UUID, 'verified');
+
+      expect(result.verification_status).toBe('verified');
+      expect(mockExec).toHaveBeenCalledWith(expect.objectContaining({
+        bind: ['verified', OTHER_UUID],
+      }));
+    });
+
+    it('should throw AppError when claim not found', async () => {
+      mockExec.mockResolvedValue([]);
+
+      await expect(
+        repository.updateClaimVerification(OTHER_UUID, 'verified')
+      ).rejects.toThrow(AppError);
+    });
+  });
+
+  // --- Notes CRUD ---
+  describe('getNotesByEntityId', () => {
+    it('should return notes for an entity', async () => {
+      const mockNotes = [createMockNote(), createMockNote({ id: OTHER_UUID })];
+      mockExec.mockResolvedValue(mockNotes);
+
+      const result = await repository.getNotesByEntityId(VALID_UUID);
+
+      expect(result).toHaveLength(2);
+    });
+  });
+
+  describe('deleteNote', () => {
+    it('should delete a note', async () => {
+      mockExec.mockResolvedValue([]);
+      await repository.deleteNote(THIRD_UUID);
+
+      expect(mockExec).toHaveBeenCalledWith({
+        sql: 'DELETE FROM notes WHERE id = ?',
+        bind: [THIRD_UUID],
+      });
+    });
+  });
+
+  // --- Links CRUD ---
+  describe('createLink', () => {
+    it('should create a link with all fields', async () => {
+      const mockLink = createMockLink();
+      mockExec.mockResolvedValue([mockLink]);
+
+      const result = await repository.createLink({
+        source_id: VALID_UUID,
+        target_id: OTHER_UUID,
+        relation: 'related_to',
+        metadata: {},
+      });
+
+      expect(mockExec).toHaveBeenCalledWith(expect.objectContaining({
+        sql: expect.stringContaining('INSERT INTO links'),
+        bind: [VALID_UUID, OTHER_UUID, 'related_to', '{}'],
+      }));
+      expect(result.relation).toBe('related_to');
+    });
+  });
+
+  describe('getAllLinks', () => {
+    it('should return all links', async () => {
+      const mockLinks = [createMockLink(), createMockLink({ id: OTHER_UUID })];
+      mockExec.mockResolvedValue(mockLinks);
+
+      const result = await repository.getAllLinks();
+
+      expect(result).toHaveLength(2);
+      expect(mockExec).toHaveBeenCalledWith(expect.objectContaining({
+        sql: 'SELECT * FROM links',
+      }));
+    });
+  });
+
+  describe('deleteLink', () => {
+    it('should delete a link', async () => {
+      mockExec.mockResolvedValue([]);
+      await repository.deleteLink(THIRD_UUID);
+
+      expect(mockExec).toHaveBeenCalledWith({
+        sql: 'DELETE FROM links WHERE id = ?',
+        bind: [THIRD_UUID],
+      });
+    });
+  });
+
+  // --- Snapshots CRUD ---
+  describe('createSnapshot', () => {
+    it('should create a graph snapshot', async () => {
+      const mockSnapshot = createMockSnapshot();
+      mockExec.mockResolvedValue([mockSnapshot]);
+
+      const nodes = [{ id: 'n1', label: 'Node 1' }];
+      const edges = [{ id: 'e1', source: 'n1', target: 'n2' }];
+
+      const result = await repository.createSnapshot('Test Snapshot', nodes, edges, 'A test snapshot');
+
+      expect(mockExec).toHaveBeenCalledWith(expect.objectContaining({
+        sql: expect.stringContaining('INSERT INTO graph_snapshots'),
+        bind: ['Test Snapshot', JSON.stringify(nodes), JSON.stringify(edges), 'A test snapshot'],
+      }));
+      expect(result.name).toBe('Test Snapshot');
+    });
+  });
+
+  describe('getSnapshot', () => {
+    it('should return a snapshot by id', async () => {
+      const mockSnapshot = createMockSnapshot();
+      mockExec.mockResolvedValue([mockSnapshot]);
+
+      const result = await repository.getSnapshot(THIRD_UUID);
+
+      expect(result?.name).toBe('Test Snapshot');
+    });
+
+    it('should return null when snapshot not found', async () => {
+      mockExec.mockResolvedValue([]);
+      const result = await repository.getSnapshot(THIRD_UUID);
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('listSnapshots', () => {
+    it('should return all snapshots ordered by date', async () => {
+      const mockSnapshots = [createMockSnapshot(), createMockSnapshot({ id: OTHER_UUID, name: 'Older' })];
+      mockExec.mockResolvedValue(mockSnapshots);
+
+      const result = await repository.listSnapshots();
+
+      expect(result).toHaveLength(2);
+      expect(mockExec).toHaveBeenCalledWith(expect.objectContaining({
+        sql: expect.stringContaining('ORDER BY created_at DESC'),
+      }));
+    });
+  });
+
+  describe('diffSnapshots', () => {
+    it('should compute diff between two snapshots', async () => {
+      // Note: mockResolvedValueOnce chains by call order. Promise.all fires both
+      // getSnapshot calls concurrently, but the mock resolves in call order.
+      const snap1 = createMockSnapshot({
+        id: VALID_UUID,
+        nodes_json: '[{"id":"n1"},{"id":"n2"}]',
+        edges_json: '[{"id":"e1"}]',
+      });
+      const snap2 = createMockSnapshot({
+        id: OTHER_UUID,
+        nodes_json: '[{"id":"n1"},{"id":"n3"}]',
+        edges_json: '[{"id":"e2"}]',
+      });
+
+      mockExec
+        .mockResolvedValueOnce([snap1])
+        .mockResolvedValueOnce([snap2]);
+
+      const diff = await repository.diffSnapshots(VALID_UUID, OTHER_UUID);
+
+      expect(diff.added_nodes).toEqual(['n3']);
+      expect(diff.removed_nodes).toEqual(['n2']);
+      expect(diff.added_edges).toEqual(['e2']);
+      expect(diff.removed_edges).toEqual(['e1']);
+    });
+
+    it('should throw AppError when snapshot not found', async () => {
+      mockExec.mockResolvedValue([]);
+
+      await expect(
+        repository.diffSnapshots(VALID_UUID, OTHER_UUID)
+      ).rejects.toThrow(AppError);
+    });
+  });
+
+  // --- Wrapper methods ---
+  describe('exec', () => {
+    it('should delegate to db.exec', async () => {
+      mockExec.mockResolvedValue([{ id: 1 }]);
+      const result = await repository.exec({ sql: 'SELECT 1' });
+
+      expect(mockExec).toHaveBeenCalledWith({ sql: 'SELECT 1' });
+      expect(result).toEqual([{ id: 1 }]);
+    });
+  });
+
+  describe('transaction', () => {
+    it('should delegate to db.transaction', async () => {
+      mockTransaction.mockResolvedValue([{ result: 'ok' }]);
+      const statements = [{ sql: 'INSERT INTO test VALUES (1)' }];
+      const result = await repository.transaction(statements);
+
+      expect(mockTransaction).toHaveBeenCalledWith(statements);
+      expect(result).toEqual([{ result: 'ok' }]);
     });
   });
 });
