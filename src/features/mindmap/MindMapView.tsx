@@ -11,6 +11,13 @@ interface Props {
   onEntityClick?: (entityId: string) => void;
 }
 
+interface MindElixirInstance {
+  init: (data: { nodeData: MindElixirData['nodeData'] }) => void;
+  bus: {
+    addListener: (event: string, handler: (node: { id: string }) => void) => void;
+  };
+}
+
 const MindMapView: React.FC<Props> = ({
   rootEntity: propsRootEntity,
   relatedEntities: _relatedEntities,
@@ -19,8 +26,7 @@ const MindMapView: React.FC<Props> = ({
   onEntityClick
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mindInstance = useRef<any>(null);
+  const mindInstance = useRef<MindElixirInstance | null>(null);
   const [rootId, setRootId] = useState<string>(propsRootEntity.id || '');
   const [maxDepth, setMaxDepth] = useState(2);
   const [relationFilter, setRelationFilter] = useState('all');
@@ -71,14 +77,12 @@ const MindMapView: React.FC<Props> = ({
       keypress: true,
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mindInstance.current = new (MindElixir as any)(options);
+    mindInstance.current = new (MindElixir as unknown as new (options: Record<string, unknown>) => MindElixirInstance)(options);
     mindInstance.current.init({
       nodeData: treeData
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mindInstance.current.bus.addListener('selectNode', (node: any) => {
+    mindInstance.current.bus.addListener('selectNode', (node) => {
       if (node.id && onEntityClick) {
         onEntityClick(node.id);
       }
