@@ -10,15 +10,44 @@
 h1, .display-text {
   font-family: var(--font-display);
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: -0.02em;
+  font-size: var(--size-display);
+  line-height: 1.1;
+}
+
+h2, .serif-heading {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.5rem;
+  color: var(--text-secondary);
+  letter-spacing: -0.01em;
+}
+
+h3 {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+h4 {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 1rem;
 }
 
 body {
   font-family: var(--font-sans);
+  font-size: var(--size-body);
+  line-height: 1.6;
 }
 
-code, pre, .mono-text {
+code, pre, .mono-text, .data-text {
   font-family: var(--font-mono);
+  font-size: 12px;
 }
 
 .serif-text {

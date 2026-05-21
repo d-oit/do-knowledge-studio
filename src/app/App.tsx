@@ -10,6 +10,7 @@ import SidebarNav from '../components/SidebarNav';
 import Header from '../components/Header';
 import MobileDrawer from '../components/MobileDrawer';
 import ErrorBoundary from '../components/ErrorBoundary';
+import ThemeSwitcher from '../components/ThemeSwitcher';
 import {
   EditorSkeleton,
   GraphSkeleton,
@@ -90,6 +91,9 @@ const AppContent: React.FC = () => {
       <div className="layout-body">
         <aside className="desktop-sidebar">
           <SidebarNav currentView={currentView} setCurrentView={setCurrentView} />
+          <div className="sidebar-theme-section">
+            <ThemeSwitcher />
+          </div>
         </aside>
 
         <main className="main-content">
@@ -167,6 +171,9 @@ const AppContent: React.FC = () => {
           setCurrentView={setCurrentView}
           onClose={() => setIsMenuOpen(false)}
         />
+        <div className="drawer-theme-section">
+          <ThemeSwitcher compact />
+        </div>
         {currentView === 'graph' && (
           <div className="drawer-extra-controls">
             <h3>Graph Controls</h3>

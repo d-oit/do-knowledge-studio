@@ -1,9 +1,18 @@
 /* Layout v2 - Atmospheric HUD */
+html {
+  overflow: hidden;
+}
+
+body {
+  overflow-y: auto;
+}
+
 .layout-container {
   display: flex;
   flex-direction: column;
   height: 100vh;
   background: var(--bg-base);
+  overflow: hidden;
 }
 
 .layout-body {
@@ -79,6 +88,11 @@
   .main-content {
     border-radius: var(--radius-lg); /* Slightly smaller radius on small screens */
   }
+  /* HUD Safe Zones: relative width with 16px side margins */
+  .hud-mobile-safe {
+    width: calc(100% - 32px);
+    margin: 0 auto;
+  }
 }
 
 @media (min-width: 769px) and (max-width: 1200px) {
@@ -90,5 +104,9 @@
 @media (min-width: 1201px) {
   .mobile-header {
     display: none;
+  }
+  /* Fixed HUD width on large desktop */
+  .hud-desktop-fixed {
+    max-width: 720px;
   }
 }
