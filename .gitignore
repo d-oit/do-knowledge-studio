@@ -56,3 +56,6 @@ coverage/
 # OS
 .DS_Store
 Thumbs.db
+
+# CLI database
+.studio-cli.db

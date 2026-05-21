@@ -103,6 +103,61 @@ test.describe('Graph', () => {
     await ensureNavVisible(page);
     await expect(page.locator('.nav-button').filter({ hasText: 'Graph', visible: true }).first()).toHaveAttribute('aria-current', 'page', { timeout: 10000 });
   });
+
+  test('Snapshot browser opens and shows empty state', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('.layout-container')).toBeVisible({ timeout: 15000 });
+
+    await ensureNavVisible(page);
+
+    const btn = page.locator('.nav-button').filter({ hasText: 'Graph', visible: true }).first();
+    await btn.click();
+
+    await expect(page.locator('.main-content')).toBeVisible({ timeout: 15000 });
+
+    // Click Load Snapshot button to open the snapshot browser
+    const loadBtn = page.getByTitle('Load or diff saved snapshots');
+    await loadBtn.click();
+
+    // Modal should appear with the title
+    await expect(page.getByRole('dialog', { name: 'Graph Snapshots' })).toBeVisible({ timeout: 5000 });
+
+    // Should show empty state message (no snapshots saved yet)
+    await expect(page.getByText('No snapshots saved yet')).toBeVisible({ timeout: 5000 });
+
+    // Close the modal
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog', { name: 'Graph Snapshots' })).not.toBeVisible({ timeout: 5000 });
+  });
+
+  test('Save Snapshot modal opens and has required fields', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('.layout-container')).toBeVisible({ timeout: 15000 });
+
+    await ensureNavVisible(page);
+
+    const btn = page.locator('.nav-button').filter({ hasText: 'Graph', visible: true }).first();
+    await btn.click();
+
+    await expect(page.locator('.main-content')).toBeVisible({ timeout: 15000 });
+
+    // Click Save Snapshot button
+    const saveBtn = page.getByTitle('Save Graph Snapshot');
+    await saveBtn.click();
+
+    // Modal should appear
+    await expect(page.getByRole('dialog', { name: 'Save Graph Snapshot' })).toBeVisible({ timeout: 5000 });
+
+    // Should have name input field
+    await expect(page.locator('#snapshot-name')).toBeVisible();
+
+    // Save button should be disabled when name is empty
+    const saveActionBtn = page.getByRole('button', { name: 'Save Snapshot' });
+    await expect(saveActionBtn).toBeDisabled();
+
+    // Close modal
+    await page.keyboard.press('Escape');
+  });
 });
 
 test.describe('Mind Map', () => {
