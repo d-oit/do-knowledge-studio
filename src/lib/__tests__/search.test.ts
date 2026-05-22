@@ -78,13 +78,14 @@ describe('search function', () => {
     expect(search).toHaveBeenCalled();
   });
 
-  it('should map hit document to SearchResult', async () => {
+  it('should map hit document to RankedResult', async () => {
     (search as Mock).mockResolvedValueOnce({
-      hits: [{ document: { id: '1', title: 'T', type: 'e', content: 'c' } }],
+      hits: [{ document: { id: '1', title: 'T', type: 'e', content: 'c' }, score: 0.95 }],
     });
     const { searchKnowledge } = await import('../search');
     const results = await searchKnowledge('q');
     expect(results[0]).toHaveProperty('id', '1');
-    expect(results[0]).toHaveProperty('title', 'T');
+    expect(results[0]).toHaveProperty('name', 'T');
+    expect(results[0]).toHaveProperty('score', 0.95);
   });
 });

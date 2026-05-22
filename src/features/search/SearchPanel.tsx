@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { searchKnowledge, RankedResult } from '../../lib/search';
+import { searchKnowledge, semanticSearch, initEmbeddings, RankedResult } from '../../lib/search';
 import { logger } from '../../lib/logger';
-import { Search, X, Filter, Plus } from 'lucide-react';
+import { Search, X, Filter, Plus, Sparkles } from 'lucide-react';
 
 interface SearchPanelProps {
   onClose?: () => void;
@@ -105,6 +105,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
   const [activeFilter, setActiveFilter] = useState<FilterType>('All');
   const [isSearching, setIsSearching] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [useSemantic, setUseSemantic] = useState(false);
   const resultsRef = useRef<(HTMLButtonElement | null)[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -126,7 +127,9 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
       setIsSearching(true);
       try {
         const typeFilter = FILTER_MAP[activeFilter];
-        const res = await searchKnowledge(query, { type: typeFilter });
+        // Use semantic (hybrid) search when toggled, fall back to keyword
+        const searchFn = useSemantic ? semanticSearch : searchKnowledge;
+        const res = await searchFn(query, { type: typeFilter });
         setResults(res);
         setSelectedIndex(-1);
       } catch (err) {
@@ -137,7 +140,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [query, activeFilter]);
+  }, [query, activeFilter, useSemantic]);
 
   const handleInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (results.length === 0) return;
@@ -201,6 +204,30 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
       </div>
 
       <FilterBar activeFilter={activeFilter} onFilterChange={setActiveFilter} />
+
+      <div className="search-mode-toggle" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', fontSize: '13px', borderBottom: '1px solid var(--border-color)' }}>
+        <button
+          className={`filter-chip ${!useSemantic ? 'active' : ''}`}
+          onClick={() => setUseSemantic(false)}
+          aria-pressed={!useSemantic}
+        >
+          Keyword
+        </button>
+        <button
+          className={`filter-chip ${useSemantic ? 'active' : ''}`}
+          onClick={async () => {
+            if (!useSemantic) {
+              setUseSemantic(true);
+              // Trigger lazy model download on first use
+              initEmbeddings();
+            }
+          }}
+          aria-pressed={useSemantic}
+        >
+          <Sparkles size={12} style={{ marginRight: '4px' }} />
+          Semantic
+        </button>
+      </div>
 
       <div className="search-results">
         <div aria-live="polite" className="sr-only">

@@ -2,14 +2,21 @@ import { logger } from '../lib/logger.js';
 import { AppError } from '../lib/errors.js';
 import { ConnectionPool, DEFAULT_POOL_SIZE } from './connection-pool.js';
 
+/**
+ * Abstract database interface for SQLite access.
+ * Implemented by browser (WASM worker pool) and CLI (better-sqlite3) adapters.
+ */
 export interface SQLiteDB {
+  /** Execute a SQL statement with optional bind parameters and return options. */
   exec: (options: string | {
     sql: string;
     bind?: (string | number | boolean | null)[];
     returnValue?: string;
     rowMode?: string
   }) => Promise<unknown>;
+  /** Execute multiple SQL statements in a single transaction with automatic rollback on failure. */
   transaction: (statements: { sql: string; bind?: (string | number | boolean | null)[] }[]) => Promise<unknown>;
+  /** Close the database connection, running VACUUM if supported. */
   close: () => Promise<void> | void;
 }
 
@@ -44,6 +51,14 @@ const getSchema = async () => {
 
 const isBrowser = typeof window !== 'undefined' && typeof Worker !== 'undefined';
 
+/**
+ * Initializes the SQLite database.
+ * In browser: creates a ConnectionPool with Web Workers running SQLite WASM.
+ * In Node.js/CLI: either uses an injected db (via setDb) or falls back to direct WASM.
+ * @param options - Optional poolSize for browser worker pool (default: navigator.hardwareConcurrency).
+ * @returns The initialized SQLiteDB instance.
+ * @throws {AppError} If database initialization fails.
+ */
 export const initDb = async (options?: { poolSize?: number }): Promise<SQLiteDB> => {
   if (instance) return instance;
 
@@ -87,6 +102,11 @@ export const initDb = async (options?: { poolSize?: number }): Promise<SQLiteDB>
   }
 };
 
+/**
+ * Returns the current SQLiteDB instance.
+ * @returns The active database instance.
+ * @throws {AppError} If the database has not been initialized.
+ */
 export const getDb = (): SQLiteDB => {
   if (!instance) {
      throw new AppError('Database not initialized', 'DB_NOT_READY');
