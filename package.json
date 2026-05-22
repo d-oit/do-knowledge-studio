@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.1.0",
   "packageManager": "pnpm@10.30.3",
+  "pnpm": {
+    "onlyBuiltDependencies": ["better-sqlite3"]
+  },
   "description": "Local-first knowledge studio — rich text, knowledge graph, mind maps, SQLite WASM FTS5 search, Orama RAG & AI agent harness. No backend required.",
   "keywords": [
     "local-first",
@@ -54,6 +57,7 @@
   "devDependencies": {
     "@eslint/js": "8.57.1",
     "@playwright/test": "^1.42.1",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20.11.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
@@ -61,6 +65,7 @@
     "@typescript-eslint/parser": "^7.2.0",
     "@vitejs/plugin-react": "^6.0.2",
     "@vitest/coverage-v8": "^4.1.5",
+    "better-sqlite3": "^12.10.0",
     "eslint": "^8.57.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react": "^7.37.5",

@@ -1,14 +1,16 @@
 import { Command } from 'commander';
 import * as fs from 'fs';
 import * as path from 'path';
-import { initDb } from '../src/db/client.js';
+import { setDb } from '../src/db/client.js';
+import { initDb } from './db.js';
 import { repository } from '../src/db/repository.js';
 import type { Note } from '../src/lib/validation';
 
 const program = new Command();
 
 async function ensureDb() {
-  await initDb();
+  const db = await initDb();
+  setDb(db);
 }
 
 program
