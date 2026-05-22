@@ -6,7 +6,7 @@ test.describe('Modern Shell UX', () => {
     await expect(page.locator('.layout-container')).toBeVisible({ timeout: 15000 });
   });
 
-  test('Cmd+K / Ctrl+K toggles the command palette', async ({ page, isMobile }) => {
+  test('Cmd+K / Ctrl+K toggles the command palette', async ({ page, isMobile: _isMobile }) => {
     const palette = page.locator('.command-palette-modal');
     await expect(palette).not.toBeVisible();
 
