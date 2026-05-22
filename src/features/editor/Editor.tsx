@@ -152,6 +152,7 @@ const Editor: React.FC = () => {
         <input
           id="entity-title"
           className="title-input"
+          type="text"
           value={title}
           onChange={e => setTitle(e.target.value)}
           placeholder="Entity Name (e.g. TRIZ)"

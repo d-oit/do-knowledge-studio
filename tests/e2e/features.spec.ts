@@ -123,6 +123,105 @@ test.describe('Mind Map', () => {
 });
 
 test.describe('AI Harness Chat', () => {
+  test('renders with input field and knowledge toggle', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('.layout-container')).toBeVisible({ timeout: 15000 });
+
+    await ensureNavVisible(page);
+
+    const btn = page.locator('.nav-button').filter({ hasText: 'AI Harness', visible: true }).first();
+    await btn.click();
+
+    await expect(page.locator('.chat-view')).toBeVisible({ timeout: 15000 });
+
+    await ensureNavVisible(page);
+    await expect(page.locator('.nav-button').filter({ hasText: 'AI Harness', visible: true }).first()).toHaveAttribute('aria-current', 'page', { timeout: 10000 });
+
+    // Verify input field is present
+    const input = page.locator('.chat-controls input[type="text"]');
+    await expect(input).toBeVisible();
+
+    // Verify knowledge toggle is present
+    const toggle = page.locator('.chat-view input[type="checkbox"]');
+    await expect(toggle).toBeVisible();
+    await expect(toggle).toBeChecked();
+  });
+
+  test('accepts text input and sends message', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('.layout-container')).toBeVisible({ timeout: 15000 });
+
+    await ensureNavVisible(page);
+
+    const btn = page.locator('.nav-button').filter({ hasText: 'AI Harness', visible: true }).first();
+    await btn.click();
+
+    await expect(page.locator('.chat-view')).toBeVisible({ timeout: 15000 });
+
+    // Type a message and submit
+    const input = page.locator('.chat-controls input[type="text"]');
+    await input.fill('What is TRIZ?');
+    
+    const sendBtn = page.locator('.chat-controls button.primary');
+    await sendBtn.click();
+
+    // Verify user message appears
+    await expect(page.locator('.message.user').first()).toBeVisible({ timeout: 10000 });
+  });
+});
+
+test.describe('Entity Editor with Source URL', () => {
+  test('source URL input renders and accepts text', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('.layout-container')).toBeVisible({ timeout: 15000 });
+
+    await ensureNavVisible(page);
+
+    const btn = page.locator('.nav-button').filter({ hasText: 'Editor', visible: true }).first();
+    await btn.click();
+
+    await expect(page.locator('.editor-container')).toBeVisible({ timeout: 15000 });
+
+    await ensureNavVisible(page);
+    await expect(page.locator('.nav-button').filter({ hasText: 'Editor', visible: true }).first()).toHaveAttribute('aria-current', 'page', { timeout: 10000 });
+
+    // Verify source URL input is present
+    const sourceUrlInput = page.locator('input[type="url"]');
+    await expect(sourceUrlInput).toBeVisible();
+
+    // Type a URL
+    await sourceUrlInput.fill('https://en.wikipedia.org/wiki/TRIZ');
+    await expect(sourceUrlInput).toHaveValue('https://en.wikipedia.org/wiki/TRIZ');
+  });
+
+  test('entity name and source URL inputs accept text', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('.layout-container')).toBeVisible({ timeout: 15000 });
+
+    await ensureNavVisible(page);
+
+    const btn = page.locator('.nav-button').filter({ hasText: 'Editor', visible: true }).first();
+    await btn.click();
+
+    await expect(page.locator('.editor-container')).toBeVisible({ timeout: 15000 });
+
+    await ensureNavVisible(page);
+
+    // Fill entity name
+    const nameInput = page.locator('.editor-container input[type="text"]').first();
+    await nameInput.fill('Test Entity');
+
+    // Fill source URL
+    const urlInput = page.locator('input[type="url"]');
+    await urlInput.fill('https://example.com/test-article');
+
+    // Verify both fields have correct values
+    await expect(nameInput).toHaveValue('Test Entity');
+    await expect(urlInput).toHaveValue('https://example.com/test-article');
+  });
+});
+
+test.describe('AI Harness Chat', () => {
   test('AI Harness chat view renders with input field', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('.layout-container')).toBeVisible({ timeout: 15000 });
