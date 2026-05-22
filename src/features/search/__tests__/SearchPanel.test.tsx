@@ -5,8 +5,10 @@ import * as searchLib from '../../../lib/search';
 import React from 'react';
 
 vi.mock('../../../lib/search', () => ({
-  searchKnowledge: vi.fn(),
-  semanticSearch: vi.fn(),
+  progressiveSearch: vi.fn((_query: string, onResults: searchLib.ProgressiveSearchCallback, _options?: { type?: string; signal?: AbortSignal }) => {
+    onResults([], 'exact');
+    return Promise.resolve();
+  }),
   initEmbeddings: vi.fn(),
 }));
 
@@ -19,14 +21,12 @@ describe('SearchPanel UX Improvements', () => {
     render(<SearchPanel />);
     const input = screen.getByLabelText('Search knowledge base') as HTMLInputElement;
 
-    // Type something to make clear button appear
     fireEvent.change(input, { target: { value: 'test' } });
     expect(input.value).toBe('test');
 
     const clearBtn = screen.getByLabelText('Clear search');
     expect(clearBtn).toBeDefined();
 
-    // Click clear
     fireEvent.click(clearBtn);
 
     expect(input.value).toBe('');
@@ -34,56 +34,51 @@ describe('SearchPanel UX Improvements', () => {
   });
 
   it('updates search results using the correct type category when a filter chip is selected', async () => {
-    const mockedSearch = vi.mocked(searchLib.searchKnowledge);
-    mockedSearch.mockResolvedValue([]);
+    const mockedSearch = vi.mocked(searchLib.progressiveSearch);
 
     render(<SearchPanel />);
     const input = screen.getByLabelText('Search knowledge base');
 
-    // Type query
     fireEvent.change(input, { target: { value: 'test' } });
 
-    // Wait for debounce
     await waitFor(() => {
-      expect(mockedSearch).toHaveBeenCalledWith('test', { type: undefined });
+      expect(mockedSearch).toHaveBeenCalledWith('test', expect.any(Function), expect.objectContaining({ type: undefined }));
     });
 
-    // Click "Entities" filter
     const entitiesFilter = screen.getByRole('button', { name: 'Entities' });
     fireEvent.click(entitiesFilter);
 
     await waitFor(() => {
-      expect(mockedSearch).toHaveBeenCalledWith('test', { type: 'entity' });
+      expect(mockedSearch).toHaveBeenCalledWith('test', expect.any(Function), expect.objectContaining({ type: 'entity' }));
     });
   });
 
   it('updates selected result index and ARIA attributes with keyboard navigation', async () => {
-    const mockedSearch = vi.mocked(searchLib.searchKnowledge);
-    mockedSearch.mockResolvedValue([
-      { id: '1', name: 'Result 1', type: 'entity', excerpt: 'Content 1', score: 1, stage: 'verified' as const },
-      { id: '2', name: 'Result 2', type: 'entity', excerpt: 'Content 2', score: 1, stage: 'verified' as const },
-    ]);
+    const mockedSearch = vi.mocked(searchLib.progressiveSearch);
+    mockedSearch.mockImplementation((_query: string, onResults: searchLib.ProgressiveSearchCallback) => {
+      onResults([
+        { id: '1', name: 'Result 1', type: 'entity', excerpt: 'Content 1', score: 1, stage: 'verified' },
+        { id: '2', name: 'Result 2', type: 'entity', excerpt: 'Content 2', score: 1, stage: 'verified' },
+      ], 'exact');
+      return Promise.resolve();
+    });
 
     render(<SearchPanel />);
     const input = screen.getByLabelText('Search knowledge base');
 
     fireEvent.change(input, { target: { value: 'test' } });
 
-    // Wait for results
     await waitFor(() => {
       expect(screen.getAllByRole('option')).toHaveLength(2);
     });
 
-    // Initially none selected
     expect(input).not.toHaveAttribute('aria-activedescendant');
 
-    // Press ArrowDown
     fireEvent.keyDown(input, { key: 'ArrowDown' });
     await waitFor(() => {
       expect(input).toHaveAttribute('aria-activedescendant', 'result-0');
     });
 
-    // Press ArrowDown again
     fireEvent.keyDown(input, { key: 'ArrowDown' });
     await waitFor(() => {
       expect(input).toHaveAttribute('aria-activedescendant', 'result-1');
@@ -91,11 +86,14 @@ describe('SearchPanel UX Improvements', () => {
   });
 
   it('displays appropriate provenance tags based on the result stage', async () => {
-    const mockedSearch = vi.mocked(searchLib.searchKnowledge);
-    mockedSearch.mockResolvedValue([
-      { id: '1', name: 'Verified Result', type: 'entity', excerpt: 'Content', score: 1, stage: 'verified' as const },
-      { id: '2', name: 'Draft Result', type: 'entity', excerpt: 'Content', score: 1, stage: 'draft' as const },
-    ]);
+    const mockedSearch = vi.mocked(searchLib.progressiveSearch);
+    mockedSearch.mockImplementation((_query: string, onResults: searchLib.ProgressiveSearchCallback) => {
+      onResults([
+        { id: '1', name: 'Verified Result', type: 'entity', excerpt: 'Content', score: 1, stage: 'verified' },
+        { id: '2', name: 'Draft Result', type: 'entity', excerpt: 'Content', score: 1, stage: 'draft' },
+      ], 'exact');
+      return Promise.resolve();
+    });
 
     render(<SearchPanel />);
     fireEvent.change(screen.getByLabelText('Search knowledge base'), { target: { value: 'test' } });
@@ -106,8 +104,8 @@ describe('SearchPanel UX Improvements', () => {
     });
   });
 
-  it('debounces searchKnowledge calls', async () => {
-    const mockedSearch = vi.mocked(searchLib.searchKnowledge);
+  it('debounces progressiveSearch calls', async () => {
+    const mockedSearch = vi.mocked(searchLib.progressiveSearch);
     render(<SearchPanel />);
     const input = screen.getByLabelText('Search knowledge base');
 
@@ -116,7 +114,6 @@ describe('SearchPanel UX Improvements', () => {
     fireEvent.change(input, { target: { value: 'tes' } });
     fireEvent.change(input, { target: { value: 'test' } });
 
-    // Wait for debounce time
     await waitFor(() => {
       expect(mockedSearch).toHaveBeenCalledTimes(1);
     }, { timeout: 1000 });

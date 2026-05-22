@@ -63,21 +63,23 @@ CREATE INDEX IF NOT EXISTS idx_claims_entity_id ON claims(entity_id);
 CREATE INDEX IF NOT EXISTS idx_links_source_id ON links(source_id);
 CREATE INDEX IF NOT EXISTS idx_links_target_id ON links(target_id);
 
--- FTS5 Virtual Table for Search
--- FTS5 Virtual Table for Search using External Content for performance
--- FTS5 Virtual Tables for Search using External Content for performance
--- This avoids data duplication and allows for more efficient incremental re-indexing.
+-- FTS5 Virtual Tables for Search
+-- Uses detail=none (no positional info) for ~2x faster indexing/queries
+-- Uses porter + unicode61 tokenizer for stemming support
+-- Contentless mode: FTS is secondary to Orama, so no source table sync needed
 CREATE VIRTUAL TABLE IF NOT EXISTS entity_search_idx USING fts5(
     name,
     description,
-    content='entities',
-    content_rowid='rowid'
+    tokenize='porter unicode61',
+    detail=none,
+    content=''
 );
 
 CREATE VIRTUAL TABLE IF NOT EXISTS claim_search_idx USING fts5(
     statement,
-    content='claims',
-    content_rowid='rowid'
+    tokenize='porter unicode61',
+    detail=none,
+    content=''
 );
 
 -- Web Cache: Offline-ready cache for resolved external URLs

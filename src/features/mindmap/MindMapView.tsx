@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import MindElixir, { type MindElixirData } from 'mind-elixir';
 import { Entity, Link } from '../../lib/validation';
+import { perf } from '../../lib/perf';
 import { ChevronDown, Layers, Filter, Info } from 'lucide-react';
 
 interface Props {
@@ -67,6 +68,8 @@ const MindMapView: React.FC<Props> = ({
     const currentContainer = containerRef.current;
     if (!currentContainer) return;
 
+    perf.mark('mindmap-mount');
+
     const options = {
       el: containerRef.current,
       direction: 2, // SIDE
@@ -81,6 +84,7 @@ const MindMapView: React.FC<Props> = ({
     mindInstance.current.init({
       nodeData: treeData
     });
+    perf.measure('mindmap-init', 'mindmap-mount');
 
     mindInstance.current.bus.addListener('selectNode', (node) => {
       if (node.id && onEntityClick) {

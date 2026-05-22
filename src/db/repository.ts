@@ -14,6 +14,16 @@ import {
 } from '../lib/validation';
 import { AppError } from '../lib/errors';
 import { logger } from '../lib/logger';
+import { perf } from '../lib/perf';
+
+interface RankedResult {
+  id: string;
+  name: string;
+  type: string;
+  excerpt: string;
+  score: number;
+  stage: string;
+}
 
 /** Result of diffing two graph snapshots, showing added/removed nodes and edges. */
 export interface GraphSnapshotDiff {
@@ -71,6 +81,7 @@ export class Repository {
 
   /** Get all entities, ordered by name. */
   async getAllEntities(): Promise<Entity[]> {
+    perf.mark('sqlite-query');
     try {
       const results = await this.db.exec({
         sql: `SELECT * FROM entities ORDER BY name ASC`,
@@ -82,6 +93,8 @@ export class Repository {
     } catch (err) {
       logger.error('Failed to fetch entities', err);
       throw new AppError('Failed to fetch entities', 'DB_ERROR', err);
+    } finally {
+      perf.measure('sqlite-query-entities', 'sqlite-query');
     }
   }
 
@@ -209,6 +222,41 @@ export class Repository {
     } catch (err) {
       logger.error('Failed to search entities', err);
       throw new AppError('Failed to search entities', 'DB_ERROR', err);
+    }
+  }
+
+  async searchRelated(query: string, options?: { excludeIds?: Set<string> }): Promise<RankedResult[]> {
+    try {
+      const results = await this.db.exec({
+        sql: `SELECT DISTINCT e.id, e.name, e.type, e.description,
+              l.relation, l.source_id, l.target_id
+              FROM entities e
+              JOIN links l ON (l.source_id = e.id OR l.target_id = e.id)
+              JOIN entities e2 ON (
+                (l.source_id = e2.id AND e2.id != e.id) OR
+                (l.target_id = e2.id AND e2.id != e.id)
+              )
+              WHERE (e2.name LIKE ? OR e2.description LIKE ?)
+              ORDER BY e.name ASC
+              LIMIT 20`,
+        bind: [`%${query}%`, `%${query}%`],
+        returnValue: 'resultRows',
+        rowMode: 'object',
+      });
+      const rows = z.array(z.unknown()).parse(results) as Array<Record<string, unknown>>;
+      return rows
+        .filter((r) => !options?.excludeIds?.has(r.id as string))
+        .map((r) => ({
+          id: r.id as string,
+          name: r.name as string,
+          type: r.type as string,
+          excerpt: (r.description as string) || '',
+          score: 0,
+          stage: 'related' as const,
+        }));
+    } catch (err) {
+      logger.error('Failed to search related entities', err);
+      return [];
     }
   }
 
@@ -349,6 +397,7 @@ export class Repository {
 
   /** Get all claims in the database. */
   async getAllClaims(): Promise<Claim[]> {
+    perf.mark('sqlite-query');
     try {
       const results = await this.db.exec({
         sql: `SELECT * FROM claims`,
@@ -360,6 +409,8 @@ export class Repository {
     } catch (err) {
       logger.error('Failed to fetch all claims', err);
       throw new AppError('Failed to fetch all claims', 'DB_ERROR', err);
+    } finally {
+      perf.measure('sqlite-query-claims', 'sqlite-query');
     }
   }
 
@@ -533,6 +584,7 @@ export class Repository {
 
   /** Get all links in the database. */
   async getAllLinks(): Promise<Link[]> {
+    perf.mark('sqlite-query');
     try {
       const results = await this.db.exec({
         sql: `SELECT * FROM links`,
@@ -544,6 +596,8 @@ export class Repository {
     } catch (err) {
       logger.error('Failed to fetch links', err);
       throw new AppError('Failed to fetch links', 'DB_ERROR', err);
+    } finally {
+      perf.measure('sqlite-query-links', 'sqlite-query');
     }
   }
 

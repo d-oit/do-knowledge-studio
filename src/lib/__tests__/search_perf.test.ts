@@ -64,10 +64,10 @@ describe('Search Incremental Update Benchmark', () => {
     // 1. upsertToSearchIndex (passed to other functions)
     expect(repository.getClaimsByEntityId).toHaveBeenCalledTimes(1);
 
-    // initSearch calls exec 2 times (rebuild entity and claim index)
-    // removeFromSearchIndex calls exec 1 (entity delete) and 1 (claims delete set-based)
-    // upsertToSearchIndex calls exec 1 (entity insert) and 1 (claims insert set-based)
-    // Total exec calls expected: 2 + 2 + 2 = 6.
-    expect(repository.exec).toHaveBeenCalledTimes(6);
+    // initSearch calls exec: 2 DELETEs (entity, claim) + 1 INSERT (entity) + 100 INSERTs (claims) = 103
+    // removeFromSearchIndex calls exec: 1 (entity delete) + 1 (claims delete) = 2
+    // upsertToSearchIndex calls exec: 1 (entity insert) + 1 (claims insert) = 2
+    // Total exec calls expected: 103 + 2 + 2 = 107.
+    expect(repository.exec).toHaveBeenCalledTimes(107);
   });
 });
