@@ -15,6 +15,7 @@ import {
 import { AppError } from '../lib/errors';
 import { logger } from '../lib/logger';
 
+/** Result of diffing two graph snapshots, showing added/removed nodes and edges. */
 export interface GraphSnapshotDiff {
   added_nodes: string[];
   removed_nodes: string[];
@@ -22,12 +23,22 @@ export interface GraphSnapshotDiff {
   removed_edges: string[];
 }
 
+/**
+ * Data access layer for all persisted entity types.
+ * Provides CRUD operations for entities, claims, notes, links, and graph snapshots.
+ * All methods validate input with Zod schemas and throw AppError on failure.
+ */
 export class Repository {
   private get db(): SQLiteDB {
     return getDb();
   }
 
   // --- Entities ---
+  /**
+   * Create a new entity.
+   * @param entity - Name, type, optional description and metadata.
+   * @returns The created entity with generated id and rowid.
+   */
   async createEntity(entity: Omit<Entity, 'id' | 'created_at' | 'updated_at'>): Promise<Entity & { rowid: number }> {
     try {
       const validated = EntitySchema.omit({ id: true, created_at: true, updated_at: true }).parse(entity);
@@ -48,14 +59,17 @@ export class Repository {
     }
   }
 
+  /** Execute a raw SQL statement against the database. */
   async exec(options: Parameters<SQLiteDB['exec']>[0]): Promise<unknown> {
     return this.db.exec(options);
   }
 
+  /** Execute multiple statements in a single transaction. */
   async transaction(statements: Parameters<SQLiteDB['transaction']>[0]): Promise<unknown> {
     return this.db.transaction(statements);
   }
 
+  /** Get all entities, ordered by name. */
   async getAllEntities(): Promise<Entity[]> {
     try {
       const results = await this.db.exec({
@@ -71,6 +85,10 @@ export class Repository {
     }
   }
 
+  /**
+   * Get a single entity by its UUID.
+   * @returns The entity with rowid, or null if not found.
+   */
   async getEntityById(id: string): Promise<(Entity & { rowid: number }) | null> {
     try {
       const results = await this.db.exec({
@@ -89,6 +107,10 @@ export class Repository {
     }
   }
 
+  /**
+   * Find an entity by its unique name.
+   * @returns The entity or null if not found.
+   */
   async getEntityByName(name: string): Promise<Entity | null> {
     try {
       const results = await this.db.exec({
@@ -106,6 +128,11 @@ export class Repository {
     }
   }
 
+  /**
+   * Update an existing entity's fields.
+   * @returns The updated entity.
+   * @throws {AppError} If the entity is not found.
+   */
   async updateEntity(id: string, entity: Partial<Entity>): Promise<Entity> {
     try {
       const current = await this.getEntityById(id);
@@ -132,6 +159,7 @@ export class Repository {
     }
   }
 
+  /** Delete an entity and cascade to its claims, links, and notes. */
   async deleteEntity(id: string): Promise<void> {
     try {
       await this.db.exec({
@@ -144,6 +172,11 @@ export class Repository {
     }
   }
 
+  /**
+   * Full-text search entities via FTS5 with LIKE fallback.
+   * @param query - Search term.
+   * @returns Matching entities ordered by relevance.
+   */
   async searchEntities(query: string): Promise<Entity[]> {
     try {
       // Use FTS5 for search
@@ -180,6 +213,11 @@ export class Repository {
   }
 
   // --- Claims ---
+  /**
+   * Create a new claim for an entity.
+   * @param claim - entity_id, statement, optional evidence, confidence, source, verification_status.
+   * @returns The created claim with generated id and rowid.
+   */
   async createClaim(
     claim: Omit<Claim, 'id' | 'created_at' | 'updated_at' | 'verification_status'> & {
       verification_status?: Claim['verification_status'];
@@ -204,6 +242,11 @@ export class Repository {
     }
   }
 
+  /**
+   * Create a claim with provenance tracking.
+   * Alias for createClaim that emphasizes source/verification fields.
+   * @returns The created claim.
+   */
   async createClaimWithProvenance(
     claim: Omit<Claim, 'id' | 'created_at' | 'updated_at' | 'verification_status'> & {
       verification_status?: Claim['verification_status'];
@@ -212,6 +255,10 @@ export class Repository {
     return this.createClaim(claim);
   }
 
+  /**
+   * Get all claims filtered by verification status.
+   * @param status - 'unverified', 'verified', or 'disputed'.
+   */
   async getClaimsByVerificationStatus(status: Claim['verification_status']): Promise<Claim[]> {
     try {
       const results = await this.db.exec({
@@ -228,6 +275,11 @@ export class Repository {
     }
   }
 
+  /**
+   * Update a claim's verification status only.
+   * @returns The updated claim.
+   * @throws {AppError} If the claim is not found.
+   */
   async updateClaimVerification(
     claimId: string,
     verification_status: Claim['verification_status'],
@@ -251,6 +303,10 @@ export class Repository {
     }
   }
 
+  /**
+   * Get all claims belonging to an entity, ordered by creation date descending.
+   * @returns Claims with rowid for FTS5 index maintenance.
+   */
   async getClaimsByEntityId(entity_id: string): Promise<(Claim & { rowid: number })[]> {
     try {
       const results = await this.db.exec({
@@ -267,6 +323,7 @@ export class Repository {
     }
   }
 
+  /** Get all claims in the database. */
   async getAllClaims(): Promise<Claim[]> {
     try {
       const results = await this.db.exec({
@@ -282,6 +339,11 @@ export class Repository {
     }
   }
 
+  /**
+   * Update an existing claim's fields.
+   * @returns The updated claim.
+   * @throws {AppError} If the claim is not found.
+   */
   async updateClaim(id: string, claim: Partial<Claim>): Promise<Claim> {
     try {
       const results = await this.db.exec({
@@ -316,6 +378,7 @@ export class Repository {
     }
   }
 
+  /** Delete a claim by its UUID. */
   async deleteClaim(id: string): Promise<void> {
     try {
       await this.db.exec({
@@ -329,6 +392,11 @@ export class Repository {
   }
 
   // --- Notes ---
+  /**
+   * Create a new note.
+   * @param note - entity_id (nullable), content, optional format.
+   * @returns The created note.
+   */
   async createNote(note: Omit<Note, 'id' | 'created_at' | 'updated_at'>): Promise<Note> {
     try {
       const validated = NoteSchema.omit({ id: true, created_at: true, updated_at: true }).parse(note);
@@ -348,6 +416,7 @@ export class Repository {
     }
   }
 
+  /** Get all notes for an entity, newest first. */
   async getNotesByEntityId(entity_id: string): Promise<Note[]> {
     try {
       const results = await this.db.exec({
@@ -364,6 +433,11 @@ export class Repository {
     }
   }
 
+  /**
+   * Update a note's content and/or format.
+   * @returns The updated note.
+   * @throws {AppError} If the note is not found.
+   */
   async updateNote(id: string, note: Partial<Note>): Promise<Note> {
     try {
       const results = await this.db.exec({
@@ -395,6 +469,7 @@ export class Repository {
     }
   }
 
+  /** Delete a note by its UUID. */
   async deleteNote(id: string): Promise<void> {
     try {
       await this.db.exec({
@@ -408,6 +483,11 @@ export class Repository {
   }
 
   // --- Links ---
+  /**
+   * Create a new link (relationship) between two entities.
+   * @param link - source_id, target_id, relation, optional metadata.
+   * @returns The created link.
+   */
   async createLink(link: Omit<Link, 'id' | 'created_at' | 'updated_at'>): Promise<Link> {
     try {
       const validated = LinkSchema.omit({ id: true, created_at: true, updated_at: true }).parse(link);
@@ -427,6 +507,7 @@ export class Repository {
     }
   }
 
+  /** Get all links in the database. */
   async getAllLinks(): Promise<Link[]> {
     try {
       const results = await this.db.exec({
@@ -442,6 +523,7 @@ export class Repository {
     }
   }
 
+  /** Delete a link by its UUID. */
   async deleteLink(id: string): Promise<void> {
     try {
       await this.db.exec({
@@ -455,6 +537,14 @@ export class Repository {
   }
 
   // --- Graph Snapshots ---
+  /**
+   * Save a snapshot of the current graph state.
+   * @param name - Human-readable snapshot name.
+   * @param nodes - Array of graph nodes with id and label.
+   * @param edges - Array of graph edges with id, source, target, and optional label.
+   * @param description - Optional description of this snapshot.
+   * @returns The created graph snapshot.
+   */
   async createSnapshot(
     name: string,
     nodes: { id: string; label: string }[],
@@ -484,6 +574,10 @@ export class Repository {
     }
   }
 
+  /**
+   * Retrieve a graph snapshot by its UUID.
+   * @returns The snapshot or null if not found.
+   */
   async getSnapshot(id: string): Promise<GraphSnapshot | null> {
     try {
       const results = await this.db.exec({
@@ -501,6 +595,7 @@ export class Repository {
     }
   }
 
+  /** List all graph snapshots, newest first (summary only, no JSON payloads). */
   async listSnapshots(): Promise<GraphSnapshot[]> {
     try {
       const results = await this.db.exec({
@@ -516,6 +611,13 @@ export class Repository {
     }
   }
 
+  /**
+   * Compute the diff between two graph snapshots.
+   * @param id1 - First snapshot UUID.
+   * @param id2 - Second snapshot UUID.
+   * @returns Object with arrays of added/removed node IDs and edge IDs.
+   * @throws {AppError} If either snapshot is not found.
+   */
   async diffSnapshots(id1: string, id2: string): Promise<GraphSnapshotDiff> {
     try {
       const [snap1, snap2] = await Promise.all([this.getSnapshot(id1), this.getSnapshot(id2)]);
@@ -565,4 +667,5 @@ export class Repository {
   }
 }
 
+/** Singleton repository instance for the application. */
 export const repository = new Repository();
