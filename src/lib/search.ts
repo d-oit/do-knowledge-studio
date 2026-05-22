@@ -315,12 +315,58 @@ export interface RankedResult {
   stage: 'draft' | 'verified' | 'final';
 }
 
+/** Maps claim verification_status to display stage. */
+const mapVerificationStage = (status: string): RankedResult['stage'] => {
+  switch (status) {
+    case 'verified': return 'verified';
+    case 'disputed': return 'final';
+    default: return 'draft'; // 'unverified' or unknown
+  }
+};
+
+/**
+ * Enriches raw search results with provenance data from the database.
+ * Batches all claim lookups into a single query for efficiency.
+ */
+const enrichResults = async (hits: Array<{ document: SearchDocument; score: number }>): Promise<RankedResult[]> => {
+  // Collect claim IDs for batch provenance lookup
+  const claimIds = hits
+    .filter(h => h.document.type === 'claim')
+    .map(h => h.document.id);
+
+  let stageMap: Map<string, string> = new Map();
+  if (claimIds.length > 0) {
+    try {
+      stageMap = await repository.getClaimStageMap(claimIds);
+    } catch (err) {
+      logger.warn('Failed to enrich search results with provenance', err);
+    }
+  }
+
+  return hits.map(hit => {
+    const doc = hit.document;
+    const rawStage = doc.type === 'claim'
+      ? (stageMap.get(doc.id) ?? 'unverified')
+      : 'verified';
+
+    return {
+      id: doc.id,
+      name: doc.title,
+      type: doc.type,
+      excerpt: doc.content,
+      score: hit.score,
+      stage: mapVerificationStage(rawStage),
+    };
+  });
+};
+
 /**
  * Searches the local knowledge base using Orama full-text search.
  * Falls back to lazy initialization if the index hasn't been built yet.
+ * Enriches results with real claim verification status from the database.
  * @param query - The search query string.
  * @param options - Optional filter by type.
- * @returns Array of matching SearchResult items.
+ * @returns Array of matching RankedResult items with live provenance data.
  */
 export const searchKnowledge = async (
   query: string,
@@ -338,18 +384,7 @@ export const searchKnowledge = async (
   }
 
   const results = await search(oramaDb!, searchParams);
-
-  return results.hits.map((hit, i) => {
-    const doc = hit.document;
-    return {
-      id: doc.id,
-      name: doc.title,
-      type: doc.type,
-      excerpt: doc.content,
-      score: hit.score,
-      stage: 'verified' as const,
-    };
-  });
+  return enrichResults(results.hits.map(h => ({ document: h.document as SearchDocument, score: h.score })));
 };
 
 /**
@@ -385,13 +420,5 @@ export const semanticSearch = async (
   }
 
   const results = await search(oramaDb!, searchParams);
-
-  return results.hits.map((hit, i) => ({
-    id: hit.document.id,
-    name: hit.document.title,
-    type: hit.document.type,
-    excerpt: hit.document.content,
-    score: hit.score,
-    stage: 'verified' as const,
-  }));
+  return enrichResults(results.hits.map(h => ({ document: h.document as SearchDocument, score: h.score })));
 };

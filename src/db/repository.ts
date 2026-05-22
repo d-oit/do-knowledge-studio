@@ -276,6 +276,30 @@ export class Repository {
   }
 
   /**
+   * Batch-lookup verification statuses for multiple claims.
+   * Returns a Map of claimId → verification_status for efficient result enrichment.
+   * @param claimIds - Array of claim UUIDs to look up.
+   * @returns Map from claim ID to its verification_status value.
+   */
+  async getClaimStageMap(claimIds: string[]): Promise<Map<string, string>> {
+    if (claimIds.length === 0) return new Map();
+    try {
+      const placeholders = claimIds.map(() => '?').join(',');
+      const results = await this.db.exec({
+        sql: `SELECT id, verification_status FROM claims WHERE id IN (${placeholders})`,
+        bind: claimIds,
+        returnValue: 'resultRows',
+        rowMode: 'object',
+      });
+      const rows = z.array(z.object({ id: z.string(), verification_status: z.string() })).parse(results);
+      return new Map(rows.map(r => [r.id, r.verification_status]));
+    } catch (err) {
+      logger.error('Failed to batch-lookup claim stages', err);
+      return new Map();
+    }
+  }
+
+  /**
    * Update a claim's verification status only.
    * @returns The updated claim.
    * @throws {AppError} If the claim is not found.
