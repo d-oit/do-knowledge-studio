@@ -6,6 +6,7 @@ import GraphControls from './GraphControls';
 import { jobCoordinator } from '../../lib/jobs';
 import { repository } from '../../db/repository';
 import { logger } from '../../lib/logger';
+import { perf } from '../../lib/perf';
 
 /** Tracks current touch state for mobile gesture handling. */
 interface TouchState {
@@ -101,6 +102,7 @@ const GraphView: React.FC<Props> = ({
 
   useEffect(() => {
     if (!containerRef.current) return;
+    perf.mark('graph-view-mount');
 
     const graph = graphRef.current;
     const data = effectiveData;
@@ -164,8 +166,6 @@ const GraphView: React.FC<Props> = ({
           defaultEdgeType: 'arrow',
           labelSize: 12,
           labelWeight: 'bold',
-          // Built-in viewport culling is active by default in Sigma v3
-          // Level of Detail (LOD) via hideLabelsOnMove
           hideLabelsOnMove: true,
         });
 
@@ -177,6 +177,8 @@ const GraphView: React.FC<Props> = ({
           setSelectedNode(null);
           setFocusMode(false);
         });
+
+        perf.measure('graph-layout-finish', 'graph-view-mount');
       } else {
         sigmaInstance.current.refresh();
       }

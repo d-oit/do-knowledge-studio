@@ -83,6 +83,7 @@
     "graphology-types": "^0.24.8",
     "happy-dom": "^20.9.0",
     "picomatch": "^4.0.4",
+    "rollup-plugin-visualizer": "^7.0.1",
     "ts-node": "^10.9.2",
     "tsx": "^4.22.3",
     "typescript": "^5.2.2",

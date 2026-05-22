@@ -5,6 +5,7 @@ import { logger } from './logger.js';
 import { compressText } from './nlp.js';
 import { jobCoordinator } from './jobs.js';
 import { resolveUrl } from './resolver.js';
+import { perf } from './perf/index.js';
 import type { Entity, Claim } from '../lib/validation.js';
 
 interface SearchDocument {
@@ -105,6 +106,7 @@ const addEntityToIndex = async (entity: Entity, claims: Claim[]): Promise<void> 
  */
 export const initSearch = async () => {
   if (oramaDb) return oramaDb;
+  perf.mark('orama-init');
 
   try {
     const plugins: unknown[] = [];
@@ -152,10 +154,25 @@ export const initSearch = async () => {
       }
     }
 
-    // Bulk hydrate SQLite FTS5 index
-    await repository.exec('INSERT INTO entity_search_idx(entity_search_idx) VALUES(\'rebuild\')');
-    await repository.exec('INSERT INTO claim_search_idx(claim_search_idx) VALUES(\'rebuild\')');
+    // Bulk hydrate SQLite FTS5 index (contentless mode)
+    perf.mark('fts-query');
+    await repository.exec('DELETE FROM entity_search_idx');
+    await repository.exec('DELETE FROM claim_search_idx');
+    for (const entity of entities) {
+      await repository.exec({
+        sql: `INSERT INTO entity_search_idx(rowid, name, description) VALUES (?, ?, ?)`,
+        bind: [0, entity.name, entity.description || ''],
+      });
+    }
+    for (const claim of allClaims) {
+      await repository.exec({
+        sql: `INSERT INTO claim_search_idx(rowid, statement) VALUES (?, ?)`,
+        bind: [0, claim.statement],
+      });
+    }
+    perf.measure('fts-rebuild', 'fts-query');
 
+    perf.measure('orama-init', 'orama-init');
     logger.info(`Orama search index initialized with ${entities.length} entities and ${allClaims.length} claims`);
 
     // Register job handlers
@@ -436,6 +453,7 @@ export const searchKnowledge = async (
   options?: { type?: string },
 ): Promise<RankedResult[]> => {
   if (!oramaDb) await initSearch();
+  perf.mark('orama-query');
 
   const searchParams: Record<string, unknown> = {
     term: query,
@@ -447,6 +465,7 @@ export const searchKnowledge = async (
   }
 
   const results = await search(oramaDb!, searchParams);
+  perf.measure('orama-query-time', 'orama-query');
   return enrichResults(results.hits.map(h => ({ document: h.document as SearchDocument, score: h.score })));
 };
 
@@ -462,10 +481,12 @@ export const semanticSearch = async (
   options?: { type?: string },
 ): Promise<RankedResult[]> => {
   if (!oramaDb) await initSearch();
+  perf.mark('orama-query');
 
-  // Fall back to keyword search if embeddings aren't ready
   if (!embeddingsReady || !embeddingsPlugin) {
-    return searchKnowledge(query, options);
+    const results = await searchKnowledge(query, options);
+    perf.measure('orama-query-time', 'orama-query');
+    return results;
   }
 
   const searchParams: Record<string, unknown> = {
@@ -483,5 +504,37 @@ export const semanticSearch = async (
   }
 
   const results = await search(oramaDb!, searchParams);
+  perf.measure('orama-query-time', 'orama-query');
   return enrichResults(results.hits.map(h => ({ document: h.document as SearchDocument, score: h.score })));
+};
+
+export type ProgressiveSearchCallback = (results: RankedResult[], stage: 'exact' | 'semantic' | 'related') => void;
+
+export const progressiveSearch = async (
+  query: string,
+  onResults: ProgressiveSearchCallback,
+  options?: { type?: string; signal?: AbortSignal },
+): Promise<void> => {
+  if (options?.signal?.aborted) return;
+
+  const exactResults = await searchKnowledge(query, { ...options, type: options?.type });
+  if (options?.signal?.aborted) return;
+  onResults(exactResults, 'exact');
+
+  if (embeddingsReady && embeddingsPlugin) {
+    const semanticResults = await semanticSearch(query, { ...options, type: options?.type });
+    if (options?.signal?.aborted) return;
+    onResults(semanticResults, 'semantic');
+  }
+
+  try {
+    const exactIds = new Set(exactResults.map(r => r.id));
+    const relatedResults = await repository.searchRelated(query, { excludeIds: exactIds });
+    if (options?.signal?.aborted) return;
+    if (relatedResults.length > 0) {
+      onResults(relatedResults, 'related');
+    }
+  } catch {
+    // best-effort
+  }
 };
