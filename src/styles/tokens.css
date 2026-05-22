@@ -26,6 +26,7 @@
 
   /* Interaction — single restrained accent */
   --interactive-primary: #2563eb;
+  --interactive-primary-subtle: #e8f0fe;
   --interactive-hover: #1d4ed8;
   --interactive-active: #1e40af;
   --interactive-disabled: #cbd5e1;
@@ -59,6 +60,7 @@
   --radius-base: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;
+  --radius-xl: 16px;
   --radius-full: 9999px;
 
   /* Typography Scale */
@@ -108,31 +110,42 @@
   --bg-base: #f1f5f9;
   --bg-surface: #ffffff;
   --bg-elevated: #ffffff;
+  --bg-active: #e8f0fe;
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --interactive-primary: #2563eb;
+  --interactive-primary-subtle: #e8f0fe;
+  --interactive-hover: #1d4ed8;
   --border-default: #e2e8f0;
 }
 
-/* Theme: Game (High Contrast / Neon) */
+/* Theme: Game (Dark / High Contrast) */
 [data-theme='game'] {
   --bg-base: #0f172a;
   --bg-surface: #1e293b;
   --bg-elevated: #1e293b;
-  --text-primary: #f8fafc;
+  --bg-active: #1e3a5f;
+  --text-primary: #f1f5f9;
   --text-secondary: #94a3b8;
   --interactive-primary: #38bdf8;
+  --interactive-primary-subtle: #1e3a5f;
+  --interactive-hover: #7dd3fc;
+  --interactive-active: #0284c7;
   --border-default: #334155;
 }
 
-/* Theme: Neural (Soft / Organic) */
+/* Theme: Neural (Soft / Warm) */
 [data-theme='neural'] {
   --bg-base: #faf5ff;
   --bg-surface: #ffffff;
   --bg-elevated: #ffffff;
-  --text-primary: #3b0764;
+  --bg-active: #f3e8ff;
+  --text-primary: #1a1a2e;
   --text-secondary: #6b21a8;
-  --interactive-primary: #9333ea;
+  --interactive-primary: #7c3aed;
+  --interactive-primary-subtle: #f3e8ff;
+  --interactive-hover: #6d28d9;
+  --interactive-active: #5b21b6;
   --border-default: #e9d5ff;
 }
 
@@ -141,15 +154,19 @@
   --bg-base: #ffffff;
   --bg-surface: #ffffff;
   --bg-elevated: #f8fafc;
+  --bg-active: #f1f5f9;
   --text-primary: #000000;
   --text-secondary: #334155;
   --interactive-primary: #000000;
+  --interactive-primary-subtle: #f1f5f9;
   --interactive-hover: #333333;
+  --interactive-active: #111111;
   --border-default: #000000;
   --radius-sm: 0px;
   --radius-base: 0px;
   --radius-md: 0px;
   --radius-lg: 0px;
+  --radius-xl: 0px;
   --shadow-sm: none;
   --shadow-md: none;
   --shadow-lg: none;

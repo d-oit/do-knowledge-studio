@@ -11,6 +11,13 @@ import { perf } from '../../lib/perf';
 import { CheckCircle, AtSign, Link2, ChevronDown, ChevronRight } from 'lucide-react';
 import { Entity } from '../../lib/validation';
 
+const ENTITY_TYPES = [
+  { value: 'note', label: 'Note' },
+  { value: 'concept', label: 'Concept' },
+  { value: 'person', label: 'Person' },
+  { value: 'project', label: 'Project' },
+] as const;
+
 const Editor: React.FC = () => {
   const [title, setTitle] = useState('');
   const [type, setType] = useState('note');
@@ -45,7 +52,19 @@ const Editor: React.FC = () => {
     content: '<p>Every note is an entity.</p>',
   });
 
-  const handleSave = async () => {
+  const handleTypeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setType(e.target.value);
+  }, []);
+
+  const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setTitle(e.target.value);
+  }, []);
+
+  const handleSourceUrlChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSourceUrl(e.target.value);
+  }, []);
+
+  const handleSave = useCallback(async () => {
     if (!title.trim() || !editor) return;
 
     try {
@@ -135,13 +154,13 @@ const Editor: React.FC = () => {
       logger.error('Failed to save entity', err);
       setStatus({ type: 'error', message: 'Save failed. See console for details.' });
     }
-  };
+  }, [title, editor, type, sourceUrl]);
 
-  const insertMention = (target: Entity) => {
+  const insertMention = useCallback((target: Entity) => {
     if (!editor || !target.id) return;
     editor.chain().focus().setMention({ entityId: target.id, entityName: target.name }).run();
     setShowMentionMenu(false);
-  };
+  }, [editor]);
 
   return (
     <div className="editor-container">
@@ -157,15 +176,14 @@ const Editor: React.FC = () => {
           className="title-input"
           type="text"
           value={title}
-          onChange={e => setTitle(e.target.value)}
+          onChange={handleTitleChange}
           placeholder="Entity Name (e.g. TRIZ)"
         />
         <label htmlFor="entity-type" className="sr-only">Entity Type</label>
-        <select id="entity-type" value={type} onChange={e => setType(e.target.value)}>
-          <option value="note">Note</option>
-          <option value="concept">Concept</option>
-          <option value="person">Person</option>
-          <option value="project">Project</option>
+        <select id="entity-type" value={type} onChange={handleTypeChange}>
+          {ENTITY_TYPES.map(et => (
+            <option key={et.value} value={et.value}>{et.label}</option>
+          ))}
         </select>
       </div>
       <div className="toolbar">
@@ -230,7 +248,7 @@ const Editor: React.FC = () => {
               id="entity-source-url"
               className="source-input"
               value={sourceUrl}
-              onChange={e => setSourceUrl(e.target.value)}
+              onChange={handleSourceUrlChange}
               placeholder="Source URL — auto-hydrate description"
               type="url"
               style={{ flex: 1 }}
