@@ -16,12 +16,11 @@ h1, .display-text {
 }
 
 h2, .serif-heading {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-weight: 400;
-  font-size: 1.5rem;
-  color: var(--text-secondary);
-  letter-spacing: -0.01em;
+  font-family: var(--font-sans);
+  font-weight: var(--weight-semibold);
+  font-size: var(--size-heading);
+  color: var(--text-primary);
+  letter-spacing: var(--tracking-tight);
 }
 
 h3 {
@@ -51,5 +50,6 @@ code, pre, .mono-text, .data-text {
 }
 
 .serif-text {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
+  font-weight: var(--weight-medium);
 }

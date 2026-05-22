@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { progressiveSearch, initEmbeddings, type RankedResult } from '../../lib/search';
 import { logger } from '../../lib/logger';
 import { perf } from '../../lib/perf';
@@ -114,6 +115,15 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
   const resultsRef = useRef<(HTMLButtonElement | null)[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const ITEM_HEIGHT = 72;
+
+  const virtualizer = useVirtualizer({
+    count: results.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => ITEM_HEIGHT,
+    overscan: 5,
+  });
 
   // Programmatic focus instead of autoFocus prop (a11y best practice)
   useEffect(() => {
@@ -298,20 +308,42 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
         )}
 
         {results.length > 0 && (
-          <ul id="search-results-list" className="results-list" role="listbox" aria-label="Search results">
-            {results.map((result, index) => (
-              <SearchResultItem
-                key={`${result.type}-${result.id}`}
-                result={result}
-                index={index}
-                isSelected={selectedIndex === index}
-                onResultClick={onResultClick}
-                onKeyDown={handleItemKeyDown}
-                onMouseEnter={() => setSelectedIndex(index)}
-                innerRef={el => resultsRef.current[index] = el}
-              />
-            ))}
-          </ul>
+          <div ref={scrollRef} style={{ overflow: 'auto', flex: 1 }}>
+            <ul
+              id="search-results-list"
+              className="results-list"
+              role="listbox"
+              aria-label="Search results"
+              style={{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }}
+            >
+              {virtualizer.getVirtualItems().map(virtualItem => {
+                const index = virtualItem.index;
+                const result = results[index];
+                return (
+                  <div
+                    key={`${result.type}-${result.id}`}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${virtualItem.start}px)`,
+                    }}
+                  >
+                    <SearchResultItem
+                      result={result}
+                      index={index}
+                      isSelected={selectedIndex === index}
+                      onResultClick={onResultClick}
+                      onKeyDown={handleItemKeyDown}
+                      onMouseEnter={() => setSelectedIndex(index)}
+                      innerRef={el => resultsRef.current[index] = el}
+                    />
+                  </div>
+                );
+              })}
+            </ul>
+          </div>
         )}
       </div>
       <div className="search-footer">

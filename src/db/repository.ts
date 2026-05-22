@@ -192,32 +192,36 @@ export class Repository {
    */
   async searchEntities(query: string): Promise<Entity[]> {
     try {
-      // Use FTS5 for search
+      perf.mark('sqlite-query');
+      // Use FTS5 for search with prefix matching to reduce LIKE fallback
+      const ftsQuery = query.trim().replace(/[^\w\s-]/g, '').split(/\s+/).filter(Boolean).map(t => `${t}*`).join(' ');
       const results = await this.db.exec({
         sql: `SELECT DISTINCT e.* FROM entities e
               JOIN entity_search_idx s ON e.rowid = s.rowid
-              WHERE entity_search_idx MATCH ?
+              WHERE s MATCH ?
               ORDER BY rank`,
-        bind: [query],
+        bind: [ftsQuery],
         returnValue: 'resultRows',
         rowMode: 'object',
       });
       const resultRows = z.array(z.unknown()).parse(results);
 
-      // Fallback to LIKE if FTS5 returns nothing or for simple queries
       if (resultRows.length === 0) {
         const fallback = await this.db.exec({
           sql: `SELECT * FROM entities
                 WHERE name LIKE ? OR description LIKE ?
-                ORDER BY name ASC`,
+                ORDER BY name ASC
+                LIMIT 50`,
           bind: [`%${query}%`, `%${query}%`],
           returnValue: 'resultRows',
           rowMode: 'object',
         });
         const fallbackRows = z.array(z.unknown()).parse(fallback);
+        perf.measure('sqlite-query-search-fallback', 'sqlite-query');
         return fallbackRows.map((r) => this.parseMetadata(EntitySchema, r));
       }
 
+      perf.measure('sqlite-query-search-fts', 'sqlite-query');
       return resultRows.map((r) => this.parseMetadata(EntitySchema, r));
     } catch (err) {
       logger.error('Failed to search entities', err);
@@ -227,6 +231,8 @@ export class Repository {
 
   async searchRelated(query: string, options?: { excludeIds?: Set<string> }): Promise<RankedResult[]> {
     try {
+      perf.mark('sqlite-query');
+      const ftsQuery = query.trim().replace(/[^\w\s-]/g, '').split(/\s+/).filter(Boolean).map(t => `${t}*`).join(' ');
       const results = await this.db.exec({
         sql: `SELECT DISTINCT e.id, e.name, e.type, e.description,
               l.relation, l.source_id, l.target_id
@@ -236,14 +242,16 @@ export class Repository {
                 (l.source_id = e2.id AND e2.id != e.id) OR
                 (l.target_id = e2.id AND e2.id != e.id)
               )
-              WHERE (e2.name LIKE ? OR e2.description LIKE ?)
+              JOIN entity_search_idx s ON e2.rowid = s.rowid
+              WHERE s MATCH ?
               ORDER BY e.name ASC
               LIMIT 20`,
-        bind: [`%${query}%`, `%${query}%`],
+        bind: [ftsQuery],
         returnValue: 'resultRows',
         rowMode: 'object',
       });
       const rows = z.array(z.unknown()).parse(results) as Array<Record<string, unknown>>;
+      perf.measure('sqlite-query-search-related', 'sqlite-query');
       return rows
         .filter((r) => !options?.excludeIds?.has(r.id as string))
         .map((r) => ({

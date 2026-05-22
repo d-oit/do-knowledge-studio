@@ -87,6 +87,31 @@ Use the in-app Performance Panel (Ctrl+Shift+P / Cmd+Shift+P in dev mode) to col
 
 ---
 
+## Benchmark 4: Editor Mount & Save Latency
+
+**What it measures:** Time from navigating to the Editor view to it being interactive, and save operation duration.
+
+**Reproduction steps:**
+1. Navigate to the Editor view
+2. Note the `editor-ready` measurement in the Performance Panel
+3. Type an entity name and some content
+4. Click "Save to DB"
+5. Observe job queue metrics (reindex-document enqueue)
+6. Note the Profiler entry for the Editor component (`react:Editor`)
+
+**Metrics tracked:**
+- `editor-ready`: Time from editor mount to entity list loaded and editor initialized
+- `react:Editor`: React Profiler render duration for the Editor component
+
+**Acceptance criteria:**
+- Editor is interactive in < 200ms after navigation
+- Editor mount timing is visible in the Performance Panel
+- Profiler shows distinct render times for Editor interactions
+
+---
+
+## Data Collection Method
+
 ## Data Collection Method
 
 All measurements are collected via the `src/lib/perf/index.ts` module which wraps the

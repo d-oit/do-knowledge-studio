@@ -37,12 +37,11 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Glassmorphism Utility */
+/* Surface Utility */
 .glass {
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Tap Target Utility */

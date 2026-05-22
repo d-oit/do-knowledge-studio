@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import Sigma from 'sigma';
 import Graph from 'graphology';
+import type { NodeDisplayData, EdgeDisplayData } from 'sigma/types';
 import { Entity, Link } from '../../lib/validation';
 import GraphControls from './GraphControls';
 import { jobCoordinator } from '../../lib/jobs';
@@ -64,6 +65,14 @@ const GraphView: React.FC<Props> = ({
   }, [onFocusModeChange]);
 
   const [filteredData, setFilteredData] = useState({ entities, links });
+
+  const cameraRatioRef = useRef(1);
+  const graphSize = useMemo(() => {
+    const count = entities.length;
+    if (count <= 30) return 'small' as const;
+    if (count <= 100) return 'medium' as const;
+    return 'large' as const;
+  }, [entities.length]);
 
   useEffect(() => {
     if (!focusMode || !selectedNode) {
@@ -162,11 +171,39 @@ const GraphView: React.FC<Props> = ({
 
       if (!sigmaInstance.current) {
         sigmaInstance.current = new Sigma(graph, containerRef.current!, {
-          renderEdgeLabels: true,
+          renderEdgeLabels: graphSize === 'small',
           defaultEdgeType: 'arrow',
-          labelSize: 12,
+          labelSize: graphSize === 'large' ? 10 : 12,
           labelWeight: 'bold',
           hideLabelsOnMove: true,
+          labelRenderedSizeThreshold: graphSize === 'large' ? 8 : 6,
+          nodeReducer: (node, data) => {
+            const ratio = cameraRatioRef.current;
+            const result: Partial<NodeDisplayData> = { ...data };
+            if (ratio > 1.5) {
+              result.label = data.label;
+              result.size = (data.size || 10) * Math.min(ratio, 3);
+            } else if (ratio < 0.5) {
+              result.label = '';
+              result.size = Math.max((data.size || 10) * 0.5, 2);
+            } else if (ratio < 0.8 && graphSize === 'large') {
+              result.label = '';
+              result.size = (data.size || 10) * 0.7;
+            }
+            return result;
+          },
+          edgeReducer: (edge, data) => {
+            const ratio = cameraRatioRef.current;
+            const result: Partial<EdgeDisplayData> = { ...data };
+            if (ratio < 0.5) {
+              result.label = '';
+              result.hidden = true;
+            } else if (ratio < 0.8 && graphSize === 'large') {
+              result.label = '';
+              result.size = Math.min(data.size || 1, 0.5);
+            }
+            return result;
+          },
         });
 
         sigmaInstance.current.on('clickNode', ({ node }) => {
@@ -176,6 +213,13 @@ const GraphView: React.FC<Props> = ({
         sigmaInstance.current.on('clickStage', () => {
           setSelectedNode(null);
           setFocusMode(false);
+        });
+
+        sigmaInstance.current.on('cameraUpdated', () => {
+          const camera = sigmaInstance.current?.getCamera();
+          if (camera) {
+            cameraRatioRef.current = camera.ratio;
+          }
         });
 
         perf.measure('graph-layout-finish', 'graph-view-mount');

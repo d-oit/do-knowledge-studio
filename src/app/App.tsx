@@ -146,7 +146,9 @@ const AppContent: React.FC = () => {
             {dbReady && currentView === 'editor' && (
               <Suspense fallback={<EditorSkeleton />}>
                 <ErrorBoundary>
-                  <Editor />
+                  <Profiled id="Editor">
+                    <Editor />
+                  </Profiled>
                 </ErrorBoundary>
               </Suspense>
             )}

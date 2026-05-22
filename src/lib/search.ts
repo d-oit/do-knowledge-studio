@@ -155,22 +155,31 @@ export const initSearch = async () => {
     }
 
     // Bulk hydrate SQLite FTS5 index (contentless mode)
-    perf.mark('fts-query');
-    await repository.exec('DELETE FROM entity_search_idx');
-    await repository.exec('DELETE FROM claim_search_idx');
-    for (const entity of entities) {
-      await repository.exec({
+    perf.mark('fts-rebuild-start');
+    // Batch delete using single statements
+    await repository.exec({ sql: 'DELETE FROM entity_search_idx', bind: [] });
+    await repository.exec({ sql: 'DELETE FROM claim_search_idx', bind: [] });
+
+    // Batch insert using transactions for performance
+    const batchSize = 100;
+    for (let i = 0; i < entities.length; i += batchSize) {
+      const batch = entities.slice(i, i + batchSize);
+      const stmts = batch.map(e => ({
         sql: `INSERT INTO entity_search_idx(rowid, name, description) VALUES (?, ?, ?)`,
-        bind: [0, entity.name, entity.description || ''],
-      });
+        bind: [e.rowid as unknown as number, e.name, e.description || ''],
+      }));
+      await repository.transaction(stmts);
     }
-    for (const claim of allClaims) {
-      await repository.exec({
+
+    for (let i = 0; i < allClaims.length; i += batchSize) {
+      const batch = allClaims.slice(i, i + batchSize);
+      const stmts = batch.map(c => ({
         sql: `INSERT INTO claim_search_idx(rowid, statement) VALUES (?, ?)`,
-        bind: [0, claim.statement],
-      });
+        bind: [c.rowid as unknown as number, c.statement],
+      }));
+      await repository.transaction(stmts);
     }
-    perf.measure('fts-rebuild', 'fts-query');
+    perf.measure('fts-rebuild', 'fts-rebuild-start');
 
     perf.measure('orama-init', 'orama-init');
     logger.info(`Orama search index initialized with ${entities.length} entities and ${allClaims.length} claims`);

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -7,9 +7,9 @@ import { MentionExtension } from './MentionExtension';
 import { logger } from '../../lib/logger';
 import { repository } from '../../db/repository';
 import { jobCoordinator } from '../../lib/jobs';
-import { useState, useEffect } from 'react';
-import { CheckCircle, AtSign, Link2 } from 'lucide-react';
-import { Entity, Claim } from '../../lib/validation';
+import { perf } from '../../lib/perf';
+import { CheckCircle, AtSign, Link2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Entity } from '../../lib/validation';
 
 const Editor: React.FC = () => {
   const [title, setTitle] = useState('');
@@ -17,6 +17,7 @@ const Editor: React.FC = () => {
   const [sourceUrl, setSourceUrl] = useState('');
   const [allEntities, setAllEntities] = useState<Entity[]>([]);
   const [showMentionMenu, setShowMentionMenu] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
   useEffect(() => {
@@ -27,7 +28,9 @@ const Editor: React.FC = () => {
   }, [status]);
 
   useEffect(() => {
+    perf.mark('editor-mount');
     repository.getAllEntities().then(setAllEntities).catch(err => logger.error('Failed to load entities for mentions', err));
+    perf.measure('editor-ready', 'editor-mount');
   }, []);
 
   const editor = useEditor({
@@ -165,18 +168,6 @@ const Editor: React.FC = () => {
           <option value="project">Project</option>
         </select>
       </div>
-      <div className="entity-source">
-        <Link2 size={16} aria-hidden="true" />
-        <label htmlFor="entity-source-url" className="sr-only">Source URL (optional)</label>
-        <input
-          id="entity-source-url"
-          className="source-input"
-          value={sourceUrl}
-          onChange={e => setSourceUrl(e.target.value)}
-          placeholder="Source URL — auto-hydrate description (optional)"
-          type="url"
-        />
-      </div>
       <div className="toolbar">
         <button
           onClick={() => editor?.chain().focus().toggleBold().run()}
@@ -202,32 +193,75 @@ const Editor: React.FC = () => {
         >
           <CheckCircle size={16} aria-hidden="true" /> Claim
         </button>
-        <div className="mention-tool">
-          <button
-            onClick={() => setShowMentionMenu(!showMentionMenu)}
-            className={editor?.isActive('mention') ? 'active' : ''}
-            title="Link to Entity"
-            aria-label="Link to Entity"
-          >
-            <AtSign size={16} aria-hidden="true" /> Mention
-          </button>
-          {showMentionMenu && (
-            <div className="mention-menu">
-              {allEntities.length === 0 ? (
-                <div className="menu-item disabled">No entities found</div>
-              ) : (
-                allEntities.map(e => (
-                  <div key={e.id} className="menu-item" onClick={() => insertMention(e)}>
-                    {e.name}
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-        </div>
+        <div className="toolbar-spacer" />
         <button onClick={handleSave} className="primary">Save to DB</button>
       </div>
       <EditorContent editor={editor} className="tiptap-content" />
+
+      <button
+        onClick={() => setShowAdvanced(!showAdvanced)}
+        className="advanced-toggle"
+        aria-expanded={showAdvanced}
+        aria-label="Toggle advanced options"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          padding: '8px 0',
+          border: 'none',
+          background: 'none',
+          color: 'var(--text-muted)',
+          cursor: 'pointer',
+          fontSize: '12px',
+          minHeight: '44px',
+          fontFamily: 'var(--font-mono, monospace)',
+        }}
+      >
+        {showAdvanced ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+        Advanced
+      </button>
+
+      {showAdvanced && (
+        <div className="advanced-section" style={{ padding: '0 0 8px 0' }}>
+          <div className="entity-source" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <Link2 size={14} aria-hidden="true" />
+            <label htmlFor="entity-source-url" className="sr-only">Source URL (optional)</label>
+            <input
+              id="entity-source-url"
+              className="source-input"
+              value={sourceUrl}
+              onChange={e => setSourceUrl(e.target.value)}
+              placeholder="Source URL — auto-hydrate description"
+              type="url"
+              style={{ flex: 1 }}
+            />
+          </div>
+          <div className="mention-tool">
+            <button
+              onClick={() => setShowMentionMenu(!showMentionMenu)}
+              className={editor?.isActive('mention') ? 'active' : ''}
+              title="Link to Entity"
+              aria-label="Link to Entity"
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', minHeight: '44px' }}
+            >
+              <AtSign size={14} aria-hidden="true" /> Mention
+            </button>
+            {showMentionMenu && (
+              <div className="mention-menu" style={{ marginTop: '4px' }}>
+                {allEntities.length === 0 ? (
+                  <div className="menu-item disabled">No entities found</div>
+                ) : (
+                  allEntities.map(e => (
+                    <div key={e.id} className="menu-item" onClick={() => insertMention(e)} role="button" tabIndex={0} onKeyDown={(ev) => { if (ev.key === 'Enter') insertMention(e); }}>
+                      {e.name}
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

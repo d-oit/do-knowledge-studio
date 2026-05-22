@@ -4,6 +4,25 @@ import SearchPanel from '../SearchPanel';
 import * as searchLib from '../../../lib/search';
 import React from 'react';
 
+vi.mock('@tanstack/react-virtual', () => {
+  const items: { index: number; start: number; end: number; key: number }[] = [];
+  return {
+    useVirtualizer: (opts: { count: number; estimateSize: (i: number) => number }) => {
+      if (items.length !== opts.count) {
+        items.length = opts.count;
+        for (let i = 0; i < opts.count; i++) {
+          const size = typeof opts.estimateSize === 'function' ? opts.estimateSize(i) : 72;
+          items[i] = { index: i, start: i * size, end: (i + 1) * size, key: i };
+        }
+      }
+      return {
+        getVirtualItems: () => items,
+        getTotalSize: () => items.length * 72,
+      };
+    },
+  };
+});
+
 vi.mock('../../../lib/search', () => ({
   progressiveSearch: vi.fn((_query: string, onResults: searchLib.ProgressiveSearchCallback, _options?: { type?: string; signal?: AbortSignal }) => {
     onResults([], 'exact');

@@ -6,10 +6,44 @@ interface PerfEntry {
   timestamp: number;
 }
 
+interface PerfStats {
+  name: string;
+  count: number;
+  avgMs: number;
+  minMs: number;
+  maxMs: number;
+  lastMs: number;
+}
+
 const entries: PerfEntry[] = [];
 const MAX_ENTRIES = 500;
 
 const isDev = typeof window !== 'undefined' && import.meta.env.DEV;
+
+function computeStats(name: string, items: PerfEntry[]): PerfStats {
+  const durations = items.map(e => e.duration);
+  return {
+    name,
+    count: items.length,
+    avgMs: items.length > 0 ? durations.reduce((a, b) => a + b, 0) / items.length : 0,
+    minMs: items.length > 0 ? Math.min(...durations) : 0,
+    maxMs: items.length > 0 ? Math.max(...durations) : 0,
+    lastMs: items.length > 0 ? durations[durations.length - 1] : 0,
+  };
+}
+
+function categorize(name: string): string {
+  if (name.startsWith('react:')) return 'React Render';
+  if (name.startsWith('sqlite')) return 'SQLite';
+  if (name.startsWith('orama')) return 'Orama Search';
+  if (name.startsWith('search')) return 'Search UI';
+  if (name.startsWith('app-')) return 'App Boot';
+  if (name.startsWith('graph')) return 'Graph Rendering';
+  if (name.startsWith('mindmap')) return 'Mind Map';
+  if (name.startsWith('editor')) return 'Editor';
+  if (name.startsWith('fts')) return 'FTS Indexing';
+  return 'Other';
+}
 
 export const perf = {
   /** @internal */
@@ -63,6 +97,39 @@ export const perf = {
 
   getEntriesByName(name: string): PerfEntry[] {
     return entries.filter(e => e.name === name);
+  },
+
+  getStats(name: string): PerfStats | null {
+    const items = entries.filter(e => e.name === name);
+    if (items.length === 0) return null;
+    return computeStats(name, items);
+  },
+
+  getAllStats(): PerfStats[] {
+    const grouped = new Map<string, PerfEntry[]>();
+    for (const entry of entries) {
+      const list = grouped.get(entry.name) || [];
+      list.push(entry);
+      grouped.set(entry.name, list);
+    }
+    return Array.from(grouped.entries()).map(([name, items]) => computeStats(name, items));
+  },
+
+  getStatsByCategory(): Map<string, PerfStats[]> {
+    const grouped = new Map<string, PerfEntry[]>();
+    for (const entry of entries) {
+      const list = grouped.get(entry.name) || [];
+      list.push(entry);
+      grouped.set(entry.name, list);
+    }
+    const byCategory = new Map<string, PerfStats[]>();
+    for (const [name, items] of grouped) {
+      const cat = categorize(name);
+      const list = byCategory.get(cat) || [];
+      list.push(computeStats(name, items));
+      byCategory.set(cat, list);
+    }
+    return byCategory;
   },
 };
 
