@@ -1,7 +1,7 @@
 import { logger } from './logger';
 
 /** Known job types processed by the JobCoordinator. */
-export type JobType = 'reindex-document' | 'refresh-search-index' | 'recompute-neighborhood' | 'prepare-export';
+export type JobType = 'reindex-document' | 'refresh-search-index' | 'recompute-neighborhood' | 'prepare-export' | 'external-fetch';
 
 /** Internal job record tracking lifecycle state. */
 export interface Job {

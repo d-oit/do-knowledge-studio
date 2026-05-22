@@ -1,21 +1,32 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { loadConfig, createProvider } from '../../lib/llm/config';
 import { searchKnowledge } from '../../lib/search';
+import { resolveUrl, ResolvedContent } from '../../lib/resolver';
 import { logger } from '../../lib/logger';
-import { Send, Loader2, Bot, User, Database } from 'lucide-react';
+import { Send, Loader2, Bot, User, Database, Globe, ExternalLink, X } from 'lucide-react';
 
 interface Message {
   role: 'assistant' | 'user' | 'system';
   content: string;
 }
 
+/** Extract URLs from a text string. */
+const URL_REGEX = /https?:\/\/[^\s<>"'{}|\\^`[\]]+/gi;
+
+/** Safely extract hostname from a URL string, falling back to the raw string. */
+const safeHostname = (url: string): string => {
+  try { return new URL(url).hostname; } catch { return url; }
+};
+
 const AIHarness: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: 'AI agent ready to assist with TRIZ analysis and knowledge synthesis. Ask me anything about your local knowledge base.' }
+    { role: 'assistant', content: 'AI agent ready to assist with TRIZ analysis and knowledge synthesis. Ask me anything about your local knowledge base, or paste URLs to have me fetch and analyze external content.' }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSourcing, setIsSourcing] = useState(false);
   const [useContext, setUseContext] = useState(true);
+  const [resolvedSources, setResolvedSources] = useState<ResolvedContent[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -33,9 +44,40 @@ const AIHarness: React.FC = () => {
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setIsLoading(true);
+    setResolvedSources([]);
 
     try {
       let contextString = '';
+      let externalContent = '';
+
+      // Detect URLs in the user query and fetch external context
+      const urls = userMessage.match(URL_REGEX);
+      if (urls && urls.length > 0) {
+        setIsSourcing(true);
+        const uniqueUrls = [...new Set(urls.map(u => u.replace(/[.,;:!?)]+$/, '')))];
+        const urlsToFetch = uniqueUrls.slice(0, 3);
+        
+        const results = await Promise.allSettled(urlsToFetch.map(url => resolveUrl(url)));
+        const sources: ResolvedContent[] = [];
+        for (const result of results) {
+          if (result.status === 'fulfilled') {
+            sources.push(result.value);
+          } else {
+            logger.warn('Failed to resolve URL for RAG', { err: result.reason });
+          }
+        }
+        
+        setResolvedSources(sources);
+        setIsSourcing(false);
+
+        if (sources.length > 0) {
+          externalContent = "\n\nExternal source content:\n" + sources.map(s => {
+            const header = s.title ? `# ${s.title}` : `Source: ${s.url}`;
+            return `${header}\nURL: ${s.url}\nProvider: ${s.provider}\nContent: ${s.content.slice(0, 3000)}`;
+          }).join('\n\n---\n\n');
+        }
+      }
+
       if (useContext) {
         const results = await searchKnowledge(userMessage);
         if (results.length > 0) {
@@ -47,9 +89,9 @@ const AIHarness: React.FC = () => {
       const provider = createProvider(config);
       
       const promptMessages: Message[] = [
-        { role: 'system', content: 'You are a helpful knowledge assistant. Ground your answers in the provided context whenever possible.' },
+        { role: 'system', content: 'You are a helpful knowledge assistant. Ground your answers in the provided context whenever possible. When external URLs are provided, analyze their content thoroughly and cite specific details. Mark sources clearly in your response.' },
         ...messages.map(m => ({ role: m.role, content: m.content })),
-        { role: 'user', content: userMessage + contextString }
+        { role: 'user', content: userMessage + contextString + externalContent }
       ];
 
       // Use streaming for better UX
@@ -88,15 +130,43 @@ const AIHarness: React.FC = () => {
     }
   };
 
-  return (
-    <div className="chat-view">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+  return (      <div className="chat-view">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
         <h2 style={{ margin: 0 }}>AI Harness</h2>
         <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer' }}>
           <input type="checkbox" checked={useContext} onChange={e => setUseContext(e.target.checked)} />
           <Database size={16} /> Augment with Local Knowledge
         </label>
       </div>
+
+      {/* Sourcing indicator */}
+      {isSourcing && (
+        <div className="sourcing-indicator">
+          <Loader2 className="animate-spin" size={14} />
+          <Globe size={14} />
+          Sourcing external data...
+        </div>
+      )}
+
+      {/* Resolved source chips */}
+      {resolvedSources.length > 0 && (
+        <div className="source-chips">
+          {resolvedSources.map((s, i) => (
+            <div key={i} className="source-chip" title={`${s.title || s.url}\nProvider: ${s.provider}\n${s.wordCount} words`}>
+              <ExternalLink size={12} />
+              <span className="source-chip-label">{s.title || safeHostname(s.url)}</span>
+              <span className="source-chip-provider">{s.provider}</span>
+              <button
+                className="source-chip-remove"
+                onClick={() => setResolvedSources(prev => prev.filter((_, j) => j !== i))}
+                aria-label={`Remove source ${s.title || s.url}`}
+              >
+                <X size={12} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="messages-list">
         {messages.map((m, i) => (

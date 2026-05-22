@@ -80,5 +80,15 @@ CREATE VIRTUAL TABLE IF NOT EXISTS claim_search_idx USING fts5(
     content_rowid='rowid'
 );
 
+-- Web Cache: Offline-ready cache for resolved external URLs
+CREATE TABLE IF NOT EXISTS web_cache (
+    url TEXT PRIMARY KEY,
+    content TEXT NOT NULL,
+    format TEXT DEFAULT 'markdown',
+    title TEXT,
+    resolved_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    metadata TEXT -- JSON: { content_length, word_count, provider, quality_score }
+);
+
 -- Note: Synchronous triggers are removed to prevent main-thread blocking during writes.
 -- Indexing is now handled asynchronously via the application layer / JobCoordinator.

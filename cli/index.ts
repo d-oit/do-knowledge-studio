@@ -28,19 +28,41 @@ program
 
 program
   .command('sync')
-  .description('Sync Markdown files to DB')
-  .argument('<dir>', 'directory')
-  .action(async (dir) => {
-    console.log(`Syncing from "${dir}"...`);
-    if (!fs.existsSync(dir)) {
+  .description('Sync Markdown files or URL to DB')
+  .argument('<source>', 'directory path or URL')
+  .action(async (source) => {
+    await ensureDb();
+    
+    // Detect if source is a URL
+    if (source.startsWith('http://') || source.startsWith('https://')) {
+      console.log(`Syncing from URL: ${source}`);
+      try {
+        const { resolveUrl } = await import('../src/lib/resolver.js');
+        const resolved = await resolveUrl(source);
+        await repository.createEntity({
+          name: resolved.title || new URL(source).hostname,
+          type: 'concept',
+          description: resolved.content || undefined,
+          metadata: { source_url: source },
+        });
+        console.log(`  Imported: ${resolved.title} (${resolved.wordCount} words via ${resolved.provider})`);
+        console.log('Sync complete.');
+      } catch (err) {
+        console.error(`Failed to sync URL: ${err}`);
+      }
+      return;
+    }
+    
+    // Directory sync (existing behavior)
+    console.log(`Syncing from "${source}"...`);
+    if (!fs.existsSync(source)) {
       console.error('Directory not found');
       return;
     }
-    await ensureDb();
-    const files = fs.readdirSync(dir).filter((f: string) => f.endsWith('.md'));
+    const files = fs.readdirSync(source).filter((f: string) => f.endsWith('.md'));
     console.log(`Found ${files.length} markdown files.`);
     for (const file of files) {
-      const content = fs.readFileSync(path.join(dir, file), 'utf-8');
+      const content = fs.readFileSync(path.join(source, file), 'utf-8');
       const lines = content.split('\n');
       const title = lines[0].replace('# ', '').trim();
       const description = lines.slice(1).join('\n').trim().slice(0, 200);
@@ -202,6 +224,7 @@ program
   .argument('<name>')
   .option('-t, --type <type>', 'type', 'concept')
   .option('-d, --description <description>', 'description')
+  .option('-u, --source-url <url>', 'source URL for auto-hydration')
   .action(async (name, options) => {
     await ensureDb();
     try {
@@ -209,8 +232,26 @@ program
         name,
         type: options.type,
         description: options.description,
+        metadata: options.sourceUrl ? { source_url: options.sourceUrl } : undefined,
       });
       console.log(`Created: ${entity.name} [${entity.type}] (ID: ${entity.id})`);
+      
+      // CLI: resolve URL inline (not background) for immediate feedback
+      if (options.sourceUrl && entity.id) {
+        console.log(`Resolving source URL: ${options.sourceUrl}`);
+        try {
+          const { resolveUrl } = await import('../src/lib/resolver.js');
+          const resolved = await resolveUrl(options.sourceUrl);
+          if (resolved.content) {
+            await repository.updateEntity(entity.id, {
+              description: resolved.content || undefined,
+            });
+            console.log(`  Hydrated description from ${resolved.provider} (${resolved.wordCount} words)`);
+          }
+        } catch (err) {
+          console.error(`  Failed to resolve URL: ${err}`);
+        }
+      }
     } catch (err) {
       console.error(`Failed to create entity: ${err}`);
     }
