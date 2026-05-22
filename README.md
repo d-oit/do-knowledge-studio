@@ -17,7 +17,11 @@
 
 **do-knowledge-studio** is a local-first, offline-capable knowledge management application built with React 19, TypeScript 5, and SQLite WASM. It combines a rich-text editor, an interactive knowledge graph, mind mapping, blazing-fast full-text search, and a static site export — all running entirely in the browser with no backend required.
 
-It also ships with a production-ready **AI agent harness** supporting Claude Code, Gemini CLI, OpenCode, Qwen Code, Windsurf, and Cursor — making it a great base for AI-assisted personal knowledge management workflows.
+It also ships with an **AI agent harness** supporting Claude Code, Gemini CLI, OpenCode, Qwen Code, Windsurf, and Cursor — making it a great base for AI-assisted personal knowledge management workflows.
+
+## 🚧 Status
+
+This project is in active development. See [PHASES.md](docs/PHASES.md) for progress tracking.
 
 ---
 
@@ -28,8 +32,8 @@ It also ships with a production-ready **AI agent harness** supporting Claude Cod
 - **🔍 Semantic & Full-Text Search** — Orama-powered in-browser search index for fast, context-aware retrieval
 - **🕸️ Knowledge Graph** — Interactive node-link graph built with Graphology + Sigma.js; focus mode for deep neighborhood exploration
 - **🧠 Mind Maps** — Visual mind mapping with Mind Elixir for brainstorming and concept structuring
-- **📤 Static Site Export** — Turn your knowledge base into a shareable, self-contained static site
-- **🤖 Multi-Agent AI Harness** — Unified workflow across 6+ AI coding tools with skills, quality gates, and sub-agent patterns
+- **📤 Static Site Export** — Turn your knowledge base into a shareable, self-contained static site (Markdown, JSON, HTML)
+- **🤖 AI Agent Harness** — Unified workflow across 6+ AI coding tools with skills, quality gates, and sub-agent patterns
 - **🔬 Swarm Analysis** — Parallel AI-powered web research using git worktrees
 - **⚡ CLI** — TypeScript CLI for scripting and automation tasks
 - **🧪 Full Test Suite** — Vitest unit tests + Playwright end-to-end tests
@@ -255,8 +259,8 @@ Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
 
 ## Community
 
-- 🐛 [Issue Tracker](../../issues) — Report bugs
-- 💬 [Discussions](../../discussions) — Ask questions
+- 🐛 [Issue Tracker](https://github.com/d-oit/do-knowledge-studio/issues) — Report bugs
+- 💬 [Discussions](https://github.com/d-oit/do-knowledge-studio/discussions) — Ask questions
 
 ---
 
