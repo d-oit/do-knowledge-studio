@@ -11,6 +11,7 @@ import Header from '../components/Header';
 import MobileDrawer from '../components/MobileDrawer';
 import ErrorBoundary from '../components/ErrorBoundary';
 import ThemeSwitcher from '../components/ThemeSwitcher';
+import CommandPalette from '../components/CommandPalette';
 import {
   EditorSkeleton,
   GraphSkeleton,
@@ -39,6 +40,7 @@ const AppContent: React.FC = () => {
   const [links, setLinks] = useState<Link[]>([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
 
   // Shared state for GraphView mobile controls
   const [graphFocusMode, setGraphFocusMode] = useState(false);
@@ -79,6 +81,19 @@ const AppContent: React.FC = () => {
     }
   }, [currentView, dbReady, refreshData]);
 
+  // Keyboard shortcut for Command Palette
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsPaletteOpen(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   if (error) return <div className="error-screen">{error}</div>;
 
   return (
@@ -89,8 +104,8 @@ const AppContent: React.FC = () => {
       />
 
       <div className="layout-body">
-        <aside className="desktop-sidebar">
-          <SidebarNav currentView={currentView} setCurrentView={setCurrentView} />
+          <aside className="desktop-sidebar">
+            <SidebarNav currentView={currentView} setCurrentView={setCurrentView} onSearchClick={() => setIsPaletteOpen(true)} />
           <div className="sidebar-theme-section">
             <ThemeSwitcher />
           </div>
@@ -164,6 +179,12 @@ const AppContent: React.FC = () => {
           </Suspense>
         </aside>
       </div>
+
+      <CommandPalette
+        isOpen={isPaletteOpen}
+        onClose={() => setIsPaletteOpen(false)}
+        onViewChange={setCurrentView}
+      />
 
       <MobileDrawer isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)}>
         <SidebarNav
