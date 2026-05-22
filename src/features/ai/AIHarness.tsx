@@ -39,7 +39,7 @@ const AIHarness: React.FC = () => {
       if (useContext) {
         const results = await searchKnowledge(userMessage);
         if (results.length > 0) {
-          contextString = "\n\nRelevant local context:\n" + results.map(r => `[${r.type}] ${r.title}: ${r.content}`).join('\n');
+          contextString = "\n\nRelevant local context:\n" + results.map(r => `[${r.type}] ${r.name}: ${r.excerpt}`).join('\n');
         }
       }
 

@@ -1,4 +1,5 @@
 import { create, insert, insertMultiple, remove, search, type Orama } from '@orama/orama';
+import { pluginEmbeddings } from '@orama/plugin-embeddings';
 import { repository } from '../db/repository.js';
 import { logger } from './logger.js';
 import { compressText } from './nlp.js';
@@ -11,6 +12,7 @@ interface SearchDocument {
   title: string;
   content: string;
   keywords: string;
+  embedding?: number[];
 }
 
 const searchSchema = {
@@ -19,11 +21,39 @@ const searchSchema = {
   title: 'string',
   content: 'string',
   keywords: 'string',
+  embedding: 'vector[384]',
 } as const;
+/** The Orama schema type inferred from the search schema definition. */
 export type OramaSchema = typeof searchSchema;
 
 let oramaDb: Orama<OramaSchema> | null = null;
+let embeddingsReady = false;
+let embeddingsPlugin: ReturnType<typeof pluginEmbeddings> | null = null;
 const oramaIdMap = new Map<string, string>(); // entityId → oramaInternalId
+
+/**
+ * Lazily initializes the embeddings plugin for semantic search.
+ * Downloads the model (~80MB) on first call — runs in background, non-blocking.
+ * @returns True if embeddings are ready, false if still loading or failed.
+ */
+export const initEmbeddings = async (): Promise<boolean> => {
+  if (embeddingsReady) return true;
+  if (embeddingsPlugin) return false; // already loading
+
+  try {
+    embeddingsPlugin = pluginEmbeddings({
+      model: 'Xenova/all-MiniLM-L6-v2',
+      property: 'embedding',
+    });
+    embeddingsReady = true;
+    logger.info('Semantic embeddings plugin initialized');
+    return true;
+  } catch (err) {
+    logger.warn('Semantic embeddings unavailable — falling back to keyword search', err);
+    embeddingsPlugin = null;
+    return false;
+  }
+};
 
 /** Builds a SearchDocument for an Entity. */
 const buildEntityDoc = (entity: Entity): SearchDocument => ({
@@ -58,12 +88,27 @@ const addEntityToIndex = async (entity: Entity, claims: Claim[]): Promise<void> 
   }
 };
 
+/**
+ * Initializes the Orama full-text search index.
+ * Loads all entities and claims from SQLite, builds Orama documents,
+ * and bulk-inserts them into the index. Also hydrates SQLite FTS5 virtual tables.
+ * Registers job handlers for incremental reindexing.
+ * @returns The initialized Orama database instance.
+ * @throws If index initialization fails.
+ */
 export const initSearch = async () => {
   if (oramaDb) return oramaDb;
 
   try {
+    const plugins: unknown[] = [];
+    // Attach embeddings plugin if ready; otherwise init without it
+    if (embeddingsPlugin) {
+      plugins.push(embeddingsPlugin);
+    }
+
     oramaDb = create({
       schema: searchSchema,
+      ...(plugins.length > 0 ? { plugins } : {}),
     }) as Orama<OramaSchema>;
 
     const [entities, allClaims] = await Promise.all([
@@ -245,28 +290,135 @@ export const hydrateOramaIndex = () => {
   }
 };
 
+/** A single search result from the Orama knowledge index. */
 export interface SearchResult {
+  /** Entity or claim ID. */
   id: string;
+  /** Entity name (or claim's entity name). */
   title: string;
+  /** 'entity' or 'claim'. */
   type: string;
+  /** Compressed text content for display. */
   content: string;
 }
 
-export const searchKnowledge = async (query: string): Promise<SearchResult[]> => {
-  if (!oramaDb) await initSearch();
+/**
+ * Enhanced search result with ranking and provenance metadata.
+ * Used by SearchPanel for display and keyboard navigation.
+ */
+export interface RankedResult {
+  id: string;
+  name: string;
+  type: string;
+  excerpt: string;
+  score: number;
+  stage: 'draft' | 'verified' | 'final';
+}
 
-  const results = await search(oramaDb!, {
-    term: query,
-    properties: ['title', 'content'],
-  });
+/** Maps claim verification_status to display stage. */
+const mapVerificationStage = (status: string): RankedResult['stage'] => {
+  switch (status) {
+    case 'verified': return 'verified';
+    case 'disputed': return 'final';
+    default: return 'draft'; // 'unverified' or unknown
+  }
+};
 
-  return results.hits.map(hit => {
+/**
+ * Enriches raw search results with provenance data from the database.
+ * Batches all claim lookups into a single query for efficiency.
+ */
+const enrichResults = async (hits: Array<{ document: SearchDocument; score: number }>): Promise<RankedResult[]> => {
+  // Collect claim IDs for batch provenance lookup
+  const claimIds = hits
+    .filter(h => h.document.type === 'claim')
+    .map(h => h.document.id);
+
+  let stageMap: Map<string, string> = new Map();
+  if (claimIds.length > 0) {
+    try {
+      stageMap = await repository.getClaimStageMap(claimIds);
+    } catch (err) {
+      logger.warn('Failed to enrich search results with provenance', err);
+    }
+  }
+
+  return hits.map(hit => {
     const doc = hit.document;
+    const rawStage = doc.type === 'claim'
+      ? (stageMap.get(doc.id) ?? 'unverified')
+      : 'verified';
+
     return {
       id: doc.id,
-      title: doc.title,
+      name: doc.title,
       type: doc.type,
-      content: doc.content,
+      excerpt: doc.content,
+      score: hit.score,
+      stage: mapVerificationStage(rawStage),
     };
   });
+};
+
+/**
+ * Searches the local knowledge base using Orama full-text search.
+ * Falls back to lazy initialization if the index hasn't been built yet.
+ * Enriches results with real claim verification status from the database.
+ * @param query - The search query string.
+ * @param options - Optional filter by type.
+ * @returns Array of matching RankedResult items with live provenance data.
+ */
+export const searchKnowledge = async (
+  query: string,
+  options?: { type?: string },
+): Promise<RankedResult[]> => {
+  if (!oramaDb) await initSearch();
+
+  const searchParams: Record<string, unknown> = {
+    term: query,
+    properties: ['title', 'content'],
+  };
+
+  if (options?.type) {
+    searchParams.where = { type: options.type };
+  }
+
+  const results = await search(oramaDb!, searchParams);
+  return enrichResults(results.hits.map(h => ({ document: h.document as SearchDocument, score: h.score })));
+};
+
+/**
+ * Performs hybrid semantic + keyword search using the embeddings plugin.
+ * Falls back to keyword-only search if embeddings are not initialized.
+ * @param query - The search query string.
+ * @param options - Optional filter by type.
+ * @returns Array of ranked search results.
+ */
+export const semanticSearch = async (
+  query: string,
+  options?: { type?: string },
+): Promise<RankedResult[]> => {
+  if (!oramaDb) await initSearch();
+
+  // Fall back to keyword search if embeddings aren't ready
+  if (!embeddingsReady || !embeddingsPlugin) {
+    return searchKnowledge(query, options);
+  }
+
+  const searchParams: Record<string, unknown> = {
+    term: query,
+    mode: 'hybrid',
+    hybrid: {
+      semantic: 0.5,
+      fulltext: 0.5,
+    },
+    properties: ['title', 'content'],
+  };
+
+  if (options?.type) {
+    searchParams.where = { type: options.type };
+  }
+
+  const results = await search(oramaDb!, searchParams);
+  return enrichResults(results.hits.map(h => ({ document: h.document as SearchDocument, score: h.score })));
 };

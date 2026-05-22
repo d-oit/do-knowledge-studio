@@ -1,7 +1,9 @@
 import { logger } from './logger';
 
+/** Known job types processed by the JobCoordinator. */
 export type JobType = 'reindex-document' | 'refresh-search-index' | 'recompute-neighborhood' | 'prepare-export';
 
+/** Internal job record tracking lifecycle state. */
 export interface Job {
   id: string;
   type: JobType;
@@ -14,6 +16,7 @@ export interface Job {
   error?: string;
 }
 
+/** Aggregated metrics about job processing throughput and latency. */
 export interface JobMetrics {
   queued: number;
   running: number;
@@ -25,8 +28,14 @@ export interface JobMetrics {
   avgExecutionTime: number;
 }
 
+/** Handler function signature for processing a specific job type. */
 export type JobHandler = (payload: unknown, signal?: AbortSignal) => Promise<unknown>;
 
+/**
+ * Serial job queue with coalescing, cancellation, and metrics.
+ * Ensures only one job runs at a time. Duplicate jobs for the same
+ * (type, targetId) pair are coalesced to prevent redundant work.
+ */
 export class JobCoordinator {
   private queue: Job[] = [];
   private currentJob: Job | null = null;
@@ -47,16 +56,25 @@ export class JobCoordinator {
     this.processQueue = this.processQueue.bind(this);
   }
 
+  /** Register a handler for a job type. Only one handler per type. */
   registerHandler(type: JobType, handler: JobHandler) {
     this.handlers.set(type, handler);
     logger.info(`Job handler registered for: ${type}`);
   }
 
+  /** Remove the handler for a job type. */
   unregisterHandler(type: JobType) {
     this.handlers.delete(type);
     logger.info(`Job handler unregistered for: ${type}`);
   }
 
+  /**
+   * Enqueue a job. Jobs with the same (type, targetId) are coalesced.
+   * @param type - The job type.
+   * @param targetId - Optional entity/document ID this job targets.
+   * @param payload - Arbitrary job data.
+   * @returns The job ID (may be reused if coalesced).
+   */
   enqueue(type: JobType, targetId?: string, payload?: unknown): string {
     // Coalesce: if a job of the same type and targetId is already queued, update it
     if (targetId) {
@@ -134,6 +152,7 @@ export class JobCoordinator {
     }
   }
 
+  /** Returns current job queue metrics including throughput and latency. */
   getMetrics(): JobMetrics {
     const finishedCount = this.metrics.completedCount + this.metrics.failedCount;
     const avgWaitTime = finishedCount > 0 ? this.metrics.totalWaitTime / finishedCount : 0;
