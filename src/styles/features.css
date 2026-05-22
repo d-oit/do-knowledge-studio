@@ -48,6 +48,37 @@
   }
 }
 
+/* Source URL input for entity auto-hydration */
+.entity-source {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  color: var(--text-muted);
+}
+
+.entity-source .source-input {
+  flex: 1;
+  padding: var(--space-2) var(--space-3);
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-base);
+  font-size: 14px;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  transition: border-color var(--motion-fast);
+}
+
+.entity-source .source-input:focus {
+  border-color: var(--interactive-primary);
+  border-style: solid;
+  outline: none;
+}
+
+.entity-source .source-input::placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
 /* Tiptap specific styling */
 .tiptap-content {
   min-height: 300px;

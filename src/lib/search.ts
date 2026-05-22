@@ -4,6 +4,7 @@ import { repository } from '../db/repository.js';
 import { logger } from './logger.js';
 import { compressText } from './nlp.js';
 import { jobCoordinator } from './jobs.js';
+import { resolveUrl } from './resolver.js';
 import type { Entity, Claim } from '../lib/validation.js';
 
 interface SearchDocument {
@@ -30,6 +31,12 @@ let oramaDb: Orama<OramaSchema> | null = null;
 let embeddingsReady = false;
 let embeddingsPlugin: ReturnType<typeof pluginEmbeddings> | null = null;
 const oramaIdMap = new Map<string, string>(); // entityId → oramaInternalId
+
+// --- Eager handler registration (must be ready before initSearch runs) ---
+jobCoordinator.registerHandler('external-fetch', async (payload) => {
+  const { url, entityId } = payload as { url: string; entityId: string };
+  await handleExternalFetch(url, entityId);
+});
 
 /**
  * Lazily initializes the embeddings plugin for semantic search.
@@ -272,6 +279,62 @@ export const removeFromSearchIndex = async (
     }
   } catch (err) {
     logger.error(`Failed to remove entity ${entityId} from search index`, err);
+  }
+};
+
+/**
+ * Handles external URL fetch for entity auto-hydration.
+ * Fetches content from the URL, updates the entity description,
+ * and caches the result for offline use.
+ */
+const handleExternalFetch = async (url: string, entityId: string): Promise<void> => {
+  try {
+    logger.info('Handling external fetch for entity', { entityId, url });
+
+    // Check cache first — if we have cached content, skip the network
+    const cached = await repository.getWebCache(url);
+    let resolved: { url: string; title: string; content: string; format: 'markdown' | 'plain'; wordCount: number; provider: string };
+    if (cached?.content) {
+      logger.info('Using cached web content', { url, cachedAt: cached.resolved_at });
+      resolved = {
+        url,
+        title: cached.title || '',
+        content: cached.content,
+        format: (cached.format as 'markdown' | 'plain') || 'plain',
+        wordCount: cached.content.split(/\s+/).filter(Boolean).length,
+        provider: 'cache' as const,
+        cachedAt: cached.resolved_at,
+      };
+    } else {
+      resolved = await resolveUrl(url);
+    }
+
+    if (resolved.content) {
+      // Update entity description with resolved content
+      const titleToUse = resolved.title || '';
+      const description = titleToUse
+        ? `${titleToUse}\n\n${resolved.content}`
+        : resolved.content;
+
+      await repository.updateEntity(entityId, {
+        description,
+      });
+
+      // Cache for offline use
+      await repository.upsertWebCache(url, resolved.content, resolved.title, resolved.format);
+
+      // Reindex the entity in search
+      await upsertToSearchIndex(entityId);
+
+      logger.info('Entity auto-hydrated from external URL', {
+        entityId,
+        url,
+        provider: resolved.provider,
+        words: resolved.wordCount,
+      });
+    }
+  } catch (err) {
+    logger.error('Failed to auto-hydrate entity from external URL', err);
   }
 };
 
