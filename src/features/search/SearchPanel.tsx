@@ -6,7 +6,7 @@ import { Search, X, Filter, Plus, Sparkles } from 'lucide-react';
 interface SearchPanelProps {
   onClose?: () => void;
   isMobile?: boolean;
-  onResultClick?: (result: RankedResult) => void;
+  onResultClick?: (result: SearchResult) => void;
   shouldAutoFocus?: boolean;
   ariaLabel?: string;
 }
@@ -63,15 +63,15 @@ const NoResultsState: React.FC<{ query: string; onClear: () => void }> = ({ quer
 );
 
 const SearchResultItem: React.FC<{
-  result: RankedResult;
+  result: SearchResult;
   index: number;
   isSelected: boolean;
-  onResultClick?: (result: RankedResult) => void;
+  onResultClick?: (result: SearchResult) => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
   onMouseEnter: () => void;
   innerRef: (el: HTMLButtonElement | null) => void;
 }> = ({ result, index, isSelected, onResultClick, onKeyDown, onMouseEnter, innerRef }) => (
-  <li key={`${result.type}-${result.id}`}>
+  <li key={`${result.type}-${result.id}`} role="none">
     <button
       id={`result-${index}`}
       ref={innerRef}
@@ -79,16 +79,19 @@ const SearchResultItem: React.FC<{
       onClick={() => onResultClick?.(result)}
       onKeyDown={onKeyDown}
       onMouseEnter={onMouseEnter}
+      role="option"
       aria-selected={isSelected}
     >
       <div className="result-meta">
         <span className="result-type">{result.type}</span>
-        <span className={`provenance-tag tag-${result.stage}`}>
-          {result.stage}
-        </span>
+        {result.stage && (
+          <span className={`provenance-tag tag-${result.stage}`}>
+            {result.stage}
+          </span>
+        )}
       </div>
-      <div className="result-name">{result.name}</div>
-      <div className="result-description">{result.excerpt}</div>
+      <div className="result-name">{result.title}</div>
+      <div className="result-description">{result.content}</div>
     </button>
   </li>
 );
@@ -101,7 +104,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
   ariaLabel
 }) => {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<RankedResult[]>([]);
+  const [results, setResults] = useState<SearchResult[]>([]);
   const [activeFilter, setActiveFilter] = useState<FilterType>('All');
   const [isSearching, setIsSearching] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -127,7 +130,6 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
       setIsSearching(true);
       try {
         const typeFilter = FILTER_MAP[activeFilter];
-        // Use semantic (hybrid) search when toggled, fall back to keyword
         const searchFn = useSemantic ? semanticSearch : searchKnowledge;
         const res = await searchFn(query, { type: typeFilter });
         setResults(res);
@@ -195,6 +197,15 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
             aria-controls="search-results-list"
             aria-activedescendant={selectedIndex >= 0 ? `result-${selectedIndex}` : undefined}
           />
+          {query && (
+            <button
+              className="input-clear-button"
+              onClick={() => { setQuery(''); searchInputRef.current?.focus(); }}
+              aria-label="Clear search"
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
         {onClose && (
           <button className="close-button" onClick={onClose} aria-label="Close search">
@@ -230,20 +241,20 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
       </div>
 
       <div className="search-results">
-        <div aria-live="polite" className="sr-only">
+        <div aria-live="polite" role="status" className="sr-only">
           {isSearching ? 'Searching local records...' : ''}
           {!isSearching && query.length > 1 && results.length === 0 ? `No local matches found for ${query}` : ''}
           {!isSearching && results.length > 0 ? `Found ${results.length} local results` : ''}
         </div>
 
-        {isSearching && <div className="searching-status" aria-hidden="true">Searching local records...</div>}
+        {isSearching && <div className="searching-status">Searching local records...</div>}
 
         {!isSearching && query.length > 1 && results.length === 0 && (
           <NoResultsState query={query} onClear={() => setQuery('')} />
         )}
 
         {results.length > 0 && (
-          <ul id="search-results-list" className="results-list" aria-label="Search results">
+          <ul id="search-results-list" className="results-list" role="listbox" aria-label="Search results">
             {results.map((result, index) => (
               <SearchResultItem
                 key={`${result.type}-${result.id}`}

@@ -363,6 +363,7 @@ export interface SearchResult {
   type: string;
   /** Compressed text content for display. */
   content: string;
+  stage?: string;
 }
 
 /**
@@ -383,7 +384,7 @@ const mapVerificationStage = (status: string): RankedResult['stage'] => {
   switch (status) {
     case 'verified': return 'verified';
     case 'disputed': return 'final';
-    default: return 'draft'; // 'unverified' or unknown
+    default: return 'draft';
   }
 };
 
@@ -392,7 +393,6 @@ const mapVerificationStage = (status: string): RankedResult['stage'] => {
  * Batches all claim lookups into a single query for efficiency.
  */
 const enrichResults = async (hits: Array<{ document: SearchDocument; score: number }>): Promise<RankedResult[]> => {
-  // Collect claim IDs for batch provenance lookup
   const claimIds = hits
     .filter(h => h.document.type === 'claim')
     .map(h => h.document.id);
