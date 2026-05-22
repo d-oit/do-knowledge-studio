@@ -44,7 +44,7 @@ jobCoordinator.registerHandler('external-fetch', async (payload) => {
  * Downloads the model (~80MB) on first call — runs in background, non-blocking.
  * @returns True if embeddings are ready, false if still loading or failed.
  */
-export const initEmbeddings = async (): Promise<boolean> => {
+export const initEmbeddings = (): boolean => {
   if (embeddingsReady) return true;
   if (embeddingsPlugin) return false; // already loading
 

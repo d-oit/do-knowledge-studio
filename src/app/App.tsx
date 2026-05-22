@@ -60,12 +60,12 @@ const AppContent: React.FC = () => {
 
   const handlePreload = useCallback((view: string) => {
     switch (view) {
-      case 'graph': preloadGraph(); break;
-      case 'mindmap': preloadMindMap(); break;
-      case 'chat': preloadChat(); break;
-      case 'export': preloadExport(); break;
-      case 'ai': preloadAI(); break;
-      case 'search': preloadSearch(); break;
+      case 'graph': void preloadGraph(); break;
+      case 'mindmap': void preloadMindMap(); break;
+      case 'chat': void preloadChat(); break;
+      case 'export': void preloadExport(); break;
+      case 'ai': void preloadAI(); break;
+      case 'search': void preloadSearch(); break;
     }
   }, []);
 
@@ -90,19 +90,35 @@ const AppContent: React.FC = () => {
     }
   }, [dbReady]);
 
+  // Deferred startup: non-critical tasks pushed to idle callback
   useEffect(() => {
-    if (dbReady) {
+    if (!dbReady) return;
+
+    const performDeferredStartup = () => {
       logger.info('Knowledge Studio ready');
       perf.mark('app-db-ready');
       perf.measure('app-boot-time', 'app-bootstrap-start', 'app-db-ready');
-      refreshData();
+
       hydrateOramaIndex();
+
+      // refreshData loads all entities/links — deferred for the default 'editor' view
+      // Graph/mind map views trigger their own refresh via the view-change effect below
+      const scheduleRefresh = (window as { requestIdleCallback?: (cb: () => void) => void }).requestIdleCallback
+        ?? ((cb: () => void) => setTimeout(cb, 200));
+      scheduleRefresh(() => { refreshData().catch((err: unknown) => logger.error('Deferred refreshData failed', err)); });
+    };
+
+    const ric = (window as { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number }).requestIdleCallback;
+    if (ric) {
+      ric(() => performDeferredStartup(), { timeout: 1000 });
+    } else {
+      setTimeout(performDeferredStartup, 200);
     }
   }, [dbReady, refreshData]);
 
   useEffect(() => {
     if (dbReady && (currentView === 'graph' || currentView === 'mindmap')) {
-      refreshData();
+      void refreshData();
     }
   }, [currentView, dbReady, refreshData]);
 
@@ -176,6 +192,8 @@ const AppContent: React.FC = () => {
                     <MindMapView
                       rootEntity={entities[0]}
                       relatedEntities={entities.slice(1, 10)}
+                      entities={entities}
+                      links={links}
                     />
                   </Profiled>
                 </ErrorBoundary>
