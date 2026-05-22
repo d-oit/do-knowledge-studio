@@ -560,6 +560,54 @@ export class Repository {
     }
   }
 
+  // --- Web Cache ---
+  /**
+   * Cache resolved web content for offline use.
+   * @param url - The source URL (primary key).
+   * @param content - The resolved markdown/plain text content.
+   * @param title - Optional page title.
+   * @param format - 'markdown' or 'plain'.
+   */
+  async upsertWebCache(url: string, content: string, title?: string, format: 'markdown' | 'plain' = 'plain'): Promise<void> {
+    try {
+      await this.db.exec({
+        sql: `INSERT OR REPLACE INTO web_cache (url, content, format, title, resolved_at)
+              VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+        bind: [url, content, format, title ?? null],
+      });
+    } catch (err) {
+      logger.error('Failed to upsert web cache', err);
+    }
+  }
+
+  /**
+   * Retrieve cached web content by URL.
+   * @returns The cached row or null if not found.
+   */
+  async getWebCache(url: string): Promise<{ url: string; content: string; format: string; title?: string; resolved_at: string } | null> {
+    try {
+      const results = await this.db.exec({
+        sql: `SELECT url, content, format, title, resolved_at FROM web_cache WHERE url = ?`,
+        bind: [url],
+        returnValue: 'resultRows',
+        rowMode: 'object',
+      });
+      const rows = z.array(z.unknown()).parse(results);
+      if (rows.length === 0) return null;
+      const r = rows[0] as Record<string, unknown>;
+      return {
+        url: String(r.url),
+        content: String(r.content),
+        format: String(r.format),
+        title: r.title ? String(r.title) : undefined,
+        resolved_at: String(r.resolved_at),
+      };
+    } catch (err) {
+      logger.error('Failed to get web cache', err);
+      return null;
+    }
+  }
+
   // --- Graph Snapshots ---
   /**
    * Save a snapshot of the current graph state.

@@ -8,12 +8,13 @@ import { logger } from '../../lib/logger';
 import { repository } from '../../db/repository';
 import { jobCoordinator } from '../../lib/jobs';
 import { useState, useEffect } from 'react';
-import { CheckCircle, AtSign } from 'lucide-react';
+import { CheckCircle, AtSign, Link2 } from 'lucide-react';
 import { Entity, Claim } from '../../lib/validation';
 
 const Editor: React.FC = () => {
   const [title, setTitle] = useState('');
   const [type, setType] = useState('note');
+  const [sourceUrl, setSourceUrl] = useState('');
   const [allEntities, setAllEntities] = useState<Entity[]>([]);
   const [showMentionMenu, setShowMentionMenu] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
@@ -54,6 +55,15 @@ const Editor: React.FC = () => {
         description: content,
         metadata: {}
       });
+
+      // Enqueue external URL fetch for auto-hydration if source URL provided
+      if (sourceUrl.trim()) {
+        jobCoordinator.enqueue('external-fetch', entity.id!, {
+          url: sourceUrl.trim(),
+          entityId: entity.id!,
+        });
+        logger.info('Enqueued external fetch for entity auto-hydration', { entityId: entity.id, url: sourceUrl });
+      }
 
       const { doc } = editor.state;
       const claims: { statement: string; source: string; status: string }[] = [];
@@ -114,8 +124,9 @@ const Editor: React.FC = () => {
       // Enqueue background work
       jobCoordinator.enqueue('reindex-document', entity.id, { entityId: entity.id });
 
-      setStatus({ type: 'success', message: `Saved successfully! (${claims.length} claims, ${mentions.length} links)` });
+      setStatus({ type: 'success', message: `Saved successfully! (${claims.length} claims, ${mentions.length} links)${sourceUrl.trim() ? ' — fetching source...' : ''}` });
       setTitle('');
+      setSourceUrl('');
       editor.commands.setContent('<p></p>');
     } catch (err) {
       logger.error('Failed to save entity', err);
@@ -152,6 +163,18 @@ const Editor: React.FC = () => {
           <option value="person">Person</option>
           <option value="project">Project</option>
         </select>
+      </div>
+      <div className="entity-source">
+        <Link2 size={16} aria-hidden="true" />
+        <label htmlFor="entity-source-url" className="sr-only">Source URL (optional)</label>
+        <input
+          id="entity-source-url"
+          className="source-input"
+          value={sourceUrl}
+          onChange={e => setSourceUrl(e.target.value)}
+          placeholder="Source URL — auto-hydrate description (optional)"
+          type="url"
+        />
       </div>
       <div className="toolbar">
         <button
