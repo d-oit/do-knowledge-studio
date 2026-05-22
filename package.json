@@ -61,6 +61,10 @@
   "devDependencies": {
     "@eslint/js": "8.57.1",
     "@playwright/test": "^1.42.1",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20.11.0",
     "@types/react": "^19.0.0",
