@@ -121,3 +121,64 @@ test.describe('Mind Map', () => {
     await expect(page.locator('.nav-button').filter({ hasText: 'Mind Map', visible: true }).first()).toHaveAttribute('aria-current', 'page', { timeout: 10000 });
   });
 });
+
+test.describe('AI Harness Chat', () => {
+  test('AI Harness chat view renders with input field', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('.layout-container')).toBeVisible({ timeout: 15000 });
+
+    await ensureNavVisible(page);
+
+    const btn = page.locator('.nav-button').filter({ hasText: 'AI Harness', visible: true }).first();
+    await btn.click();
+
+    await expect(page.locator('.chat-view')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('.chat-controls input')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('input[placeholder*="Ask"]')).toBeVisible({ timeout: 5000 });
+  });
+
+  test('Chat has augment local knowledge toggle', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('.layout-container')).toBeVisible({ timeout: 15000 });
+
+    await ensureNavVisible(page);
+
+    const btn = page.locator('.nav-button').filter({ hasText: 'AI Harness', visible: true }).first();
+    await btn.click();
+
+    await expect(page.locator('.chat-view')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('input[type="checkbox"]')).toBeVisible({ timeout: 5000 });
+  });
+});
+
+test.describe('Entity Editor with Source URL', () => {
+  test('Editor renders source URL input field', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('.layout-container')).toBeVisible({ timeout: 15000 });
+
+    await ensureNavVisible(page);
+
+    const btn = page.locator('.nav-button').filter({ hasText: 'Editor', visible: true }).first();
+    await btn.click();
+
+    await expect(page.locator('.editor-container')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('.entity-source')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.source-input')).toBeVisible({ timeout: 5000 });
+  });
+
+  test('Source URL input accepts text', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('.layout-container')).toBeVisible({ timeout: 15000 });
+
+    await ensureNavVisible(page);
+
+    const btn = page.locator('.nav-button').filter({ hasText: 'Editor', visible: true }).first();
+    await btn.click();
+
+    await expect(page.locator('.editor-container')).toBeVisible({ timeout: 15000 });
+
+    const sourceInput = page.locator('.source-input');
+    await sourceInput.fill('https://example.com/article');
+    await expect(sourceInput).toHaveValue('https://example.com/article');
+  });
+});

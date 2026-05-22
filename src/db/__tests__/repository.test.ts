@@ -623,6 +623,84 @@ describe('Repository', () => {
     });
   });
 
+  // --- Web Cache ---
+  describe('upsertWebCache', () => {
+    it('should insert new web cache entry', async () => {
+      mockExec.mockResolvedValue([]);
+
+      await repository.upsertWebCache('https://example.com', 'Sample content', 'Example', 'markdown');
+
+      expect(mockExec).toHaveBeenCalledWith(expect.objectContaining({
+        sql: expect.stringContaining('INSERT OR REPLACE INTO web_cache'),
+        bind: ['https://example.com', 'Sample content', 'markdown', 'Example'],
+      }));
+    });
+
+    it('should replace existing web cache entry', async () => {
+      mockExec.mockResolvedValue([]);
+
+      await repository.upsertWebCache('https://example.com', 'Updated content', null, 'plain');
+
+      expect(mockExec).toHaveBeenCalledWith(expect.objectContaining({
+        sql: expect.stringContaining('INSERT OR REPLACE INTO web_cache'),
+        bind: ['https://example.com', 'Updated content', 'plain', null],
+      }));
+    });
+
+    it('should default format to plain when omitted', async () => {
+      mockExec.mockResolvedValue([]);
+
+      await repository.upsertWebCache('https://test.com', 'content');
+
+      expect(mockExec).toHaveBeenCalledWith(expect.objectContaining({
+        bind: ['https://test.com', 'content', 'plain', null],
+      }));
+    });
+  });
+
+  describe('getWebCache', () => {
+    it('should return cached content by URL', async () => {
+      mockExec.mockResolvedValue([{
+        url: 'https://example.com',
+        content: 'Cached content',
+        format: 'markdown',
+        title: 'Example Title',
+        resolved_at: '2024-01-01T00:00:00.000Z',
+      }]);
+
+      const result = await repository.getWebCache('https://example.com');
+
+      expect(result).not.toBeNull();
+      expect(result!.url).toBe('https://example.com');
+      expect(result!.content).toBe('Cached content');
+      expect(result!.format).toBe('markdown');
+      expect(result!.title).toBe('Example Title');
+    });
+
+    it('should return null when URL not cached', async () => {
+      mockExec.mockResolvedValue([]);
+
+      const result = await repository.getWebCache('https://uncached.com');
+
+      expect(result).toBeNull();
+    });
+
+    it('should handle missing title field', async () => {
+      mockExec.mockResolvedValue([{
+        url: 'https://example.com',
+        content: 'No title content',
+        format: 'plain',
+        title: null,
+        resolved_at: '2024-01-01T00:00:00.000Z',
+      }]);
+
+      const result = await repository.getWebCache('https://example.com');
+
+      expect(result).not.toBeNull();
+      expect(result!.title).toBeUndefined();
+    });
+  });
+
   // --- Wrapper methods ---
   describe('exec', () => {
     it('should delegate to db.exec', async () => {
