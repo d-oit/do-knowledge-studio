@@ -1,5 +1,5 @@
 import { create, insert, insertMultiple, remove, search, type Orama } from '@orama/orama';
-import { embeddings as createEmbeddingsPlugin } from '@orama/plugin-embeddings';
+import { pluginEmbeddings } from '@orama/plugin-embeddings';
 import { repository } from '../db/repository.js';
 import { logger } from './logger.js';
 import { compressText } from './nlp.js';
@@ -28,7 +28,7 @@ export type OramaSchema = typeof searchSchema;
 
 let oramaDb: Orama<OramaSchema> | null = null;
 let embeddingsReady = false;
-let embeddingsPlugin: ReturnType<typeof createEmbeddingsPlugin> | null = null;
+let embeddingsPlugin: ReturnType<typeof pluginEmbeddings> | null = null;
 const oramaIdMap = new Map<string, string>(); // entityId → oramaInternalId
 
 /**
@@ -41,12 +41,10 @@ export const initEmbeddings = async (): Promise<boolean> => {
   if (embeddingsPlugin) return false; // already loading
 
   try {
-    embeddingsPlugin = createEmbeddingsPlugin({
+    embeddingsPlugin = pluginEmbeddings({
       model: 'Xenova/all-MiniLM-L6-v2',
       property: 'embedding',
     });
-    // Warm up the plugin by generating a dummy embedding
-    await embeddingsPlugin.generate('warmup');
     embeddingsReady = true;
     logger.info('Semantic embeddings plugin initialized');
     return true;
