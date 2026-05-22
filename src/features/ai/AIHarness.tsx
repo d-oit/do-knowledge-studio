@@ -52,17 +52,37 @@ const AIHarness: React.FC = () => {
         { role: 'user', content: userMessage + contextString }
       ];
 
-      const response = await provider.chat({
-        model: config.activeProvider === 'openrouter' ? 'google/gemini-2.0-flash-lite-preview-02-05:free' : 'meta-llama/llama-3.1-8b-instruct',
+      // Use streaming for better UX
+      const model = config.activeProvider === 'openrouter'
+        ? 'google/gemini-2.0-flash-lite-preview-02-05:free'
+        : 'meta-llama/llama-3.1-8b-instruct';
+
+      let streamedContent = '';
+      setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+
+      const stream = provider.chatStream({
+        model,
         messages: promptMessages,
         temperature: 0.7,
         maxTokens: 1000
       });
 
-      setMessages(prev => [...prev, { role: 'assistant', content: response.content }]);
+      for await (const chunk of stream) {
+        if (chunk.done) break;
+        streamedContent += chunk.content;
+        setMessages(prev => {
+          const updated = [...prev];
+          updated[updated.length - 1] = { role: 'assistant', content: streamedContent };
+          return updated;
+        });
+      }
     } catch (err) {
       logger.error('AI chat failed', err);
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I encountered an error while processing your request.' }]);
+      setMessages(prev => {
+        const updated = [...prev];
+        updated[updated.length - 1] = { role: 'assistant', content: 'Sorry, I encountered an error while processing your request.' };
+        return updated;
+      });
     } finally {
       setIsLoading(false);
     }
