@@ -71,8 +71,20 @@ const GraphView: React.FC<Props> = ({
     const count = entities.length;
     if (count <= 30) return 'small' as const;
     if (count <= 100) return 'medium' as const;
-    return 'large' as const;
+    if (count <= 500) return 'large' as const;
+    return 'xlarge' as const;
   }, [entities.length]);
+
+  // Cheaper layout for very large graphs: skip labels at medium zoom, simpler edges
+  const layoutSettings = useMemo(() => ({
+    renderEdgeLabels: graphSize === 'small',
+    defaultEdgeType: graphSize === 'xlarge' ? 'line' as const : 'arrow' as const,
+    labelSize: graphSize === 'large' ? 10 : graphSize === 'xlarge' ? 8 : 12,
+    labelWeight: 'bold' as const,
+    hideLabelsOnMove: true,
+    labelRenderedSizeThreshold: graphSize === 'large' ? 8 : graphSize === 'xlarge' ? 10 : 6,
+    defaultEdgeColor: '#94a3b8',
+  }), [graphSize]);
 
   useEffect(() => {
     if (!focusMode || !selectedNode) {
@@ -171,12 +183,7 @@ const GraphView: React.FC<Props> = ({
 
       if (!sigmaInstance.current) {
         sigmaInstance.current = new Sigma(graph, containerRef.current!, {
-          renderEdgeLabels: graphSize === 'small',
-          defaultEdgeType: 'arrow',
-          labelSize: graphSize === 'large' ? 10 : 12,
-          labelWeight: 'bold',
-          hideLabelsOnMove: true,
-          labelRenderedSizeThreshold: graphSize === 'large' ? 8 : 6,
+          ...layoutSettings,
           nodeReducer: (node, data) => {
             const ratio = cameraRatioRef.current;
             const result: Partial<NodeDisplayData> = { ...data };
@@ -186,9 +193,12 @@ const GraphView: React.FC<Props> = ({
             } else if (ratio < 0.5) {
               result.label = '';
               result.size = Math.max((data.size || 10) * 0.5, 2);
-            } else if (ratio < 0.8 && graphSize === 'large') {
+            } else if (ratio < 0.8 && (graphSize === 'large' || graphSize === 'xlarge')) {
               result.label = '';
               result.size = (data.size || 10) * 0.7;
+            } else if (ratio < 1.0 && graphSize === 'xlarge') {
+              result.label = '';
+              result.size = (data.size || 10) * 0.85;
             }
             return result;
           },
@@ -201,6 +211,9 @@ const GraphView: React.FC<Props> = ({
             } else if (ratio < 0.8 && graphSize === 'large') {
               result.label = '';
               result.size = Math.min(data.size || 1, 0.5);
+            } else if (ratio < 1.0 && graphSize === 'xlarge') {
+              result.label = '';
+              result.hidden = true;
             }
             return result;
           },
