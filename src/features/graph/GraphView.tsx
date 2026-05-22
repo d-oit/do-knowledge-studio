@@ -33,6 +33,8 @@ const GraphView: React.FC<Props> = ({
 
   const [internalSelectedNode, setInternalSelectedNode] = useState<string | null>(null);
   const [internalFocusMode, setInternalFocusMode] = useState(false);
+  const [snapshotMode, setSnapshotMode] = useState(false);
+  const [snapshotData, setSnapshotData] = useState<{ nodes: { id: string; label: string }[]; edges: { id: string; source: string; target: string; label?: string }[] } | null>(null);
 
   const selectedNode = propsSelectedNode !== undefined ? propsSelectedNode : internalSelectedNode;
   const focusMode = propsFocusMode !== undefined ? propsFocusMode : internalFocusMode;
@@ -88,6 +90,7 @@ const GraphView: React.FC<Props> = ({
     if (!containerRef.current) return;
 
     const graph = graphRef.current;
+    const data = effectiveData;
 
     // Use requestAnimationFrame for throttling updates
     if (layoutTimeoutRef.current) cancelAnimationFrame(layoutTimeoutRef.current);
@@ -95,7 +98,7 @@ const GraphView: React.FC<Props> = ({
     layoutTimeoutRef.current = requestAnimationFrame(() => {
       // Diff and update graph instead of recreating
       const currentNodes = new Set(graph.nodes());
-      const targetNodes = new Set(filteredData.entities.map(e => e.id!));
+      const targetNodes = new Set(data.entities.map(e => e.id!));
 
       // 1. Remove nodes that are no longer present
       currentNodes.forEach(nodeId => {
@@ -103,39 +106,40 @@ const GraphView: React.FC<Props> = ({
       });
 
       // 2. Add or update nodes
-      if (filteredData.entities.length === 0 && !focusMode) {
+      if (data.entities.length === 0 && !focusMode && !snapshotMode) {
         if (!graph.hasNode('placeholder')) {
            graph.addNode('placeholder', { label: 'Knowledge Studio', size: 10, color: '#2563eb', x: 0, y: 0 });
         }
       } else {
         if (graph.hasNode('placeholder')) graph.dropNode('placeholder');
 
-        filteredData.entities.forEach((e, i) => {
+        data.entities.forEach((e, i) => {
+          const nodeColor = snapshotMode ? '#8b5cf6' : (e.id === selectedNode ? '#ef4444' : '#2563eb');
           if (!graph.hasNode(e.id!)) {
             graph.addNode(e.id!, {
               label: e.name,
               size: e.id === selectedNode ? 20 : 10,
-              color: e.id === selectedNode ? '#ef4444' : '#2563eb',
-              x: Math.cos((i * 2 * Math.PI) / filteredData.entities.length),
-              y: Math.sin((i * 2 * Math.PI) / filteredData.entities.length)
+              color: nodeColor,
+              x: Math.cos((i * 2 * Math.PI) / data.entities.length),
+              y: Math.sin((i * 2 * Math.PI) / data.entities.length)
             });
           } else {
             graph.mergeNodeAttributes(e.id!, {
               label: e.name,
               size: e.id === selectedNode ? 20 : 10,
-              color: e.id === selectedNode ? '#ef4444' : '#2563eb',
+              color: nodeColor,
             });
           }
         });
 
         // 3. Update edges
         graph.clearEdges();
-        filteredData.links.forEach((l) => {
+        data.links.forEach((l) => {
           if (graph.hasNode(l.source_id) && graph.hasNode(l.target_id)) {
             graph.mergeEdge(l.source_id, l.target_id, {
               label: l.relation,
               size: 2,
-              color: '#94a3b8'
+              color: snapshotMode ? '#a78bfa' : '#94a3b8'
             });
           }
         });
@@ -168,7 +172,7 @@ const GraphView: React.FC<Props> = ({
     return () => {
       if (layoutTimeoutRef.current) cancelAnimationFrame(layoutTimeoutRef.current);
     };
-  }, [filteredData, selectedNode, focusMode, setFocusMode, setSelectedNode]);
+  }, [effectiveData, selectedNode, focusMode, snapshotMode, setFocusMode, setSelectedNode]);
 
   // Cleanup Sigma on unmount
   useEffect(() => {
@@ -187,18 +191,54 @@ const GraphView: React.FC<Props> = ({
     }
   };
 
+  const handleLoadSnapshot = (nodes: { id: string; label: string }[], edges: { id: string; source: string; target: string; label?: string }[]) => {
+    setSnapshotData({ nodes, edges });
+    setSnapshotMode(true);
+    logger.info(`Snapshot loaded with ${nodes.length} nodes, ${edges.length} edges`);
+  };
+
+  const handleExitSnapshot = () => {
+    setSnapshotMode(false);
+    setSnapshotData(null);
+  };
+
+  // Use snapshot data when in snapshot mode, otherwise use filtered live data
+  const effectiveData = snapshotMode && snapshotData
+    ? { entities: snapshotData.nodes.map(n => ({ id: n.id, name: n.label, type: 'snapshot' } as Entity)), links: snapshotData.edges.map(e => ({ id: e.id, source_id: e.source, target_id: e.target, relation: e.label || '' } as Link)) }
+    : filteredData;
+
   return (
     <div className="graph-container">
       {!hideToolbar && (
         <div className="viz-toolbar">
+          {snapshotMode && (
+            <div style={{
+              padding: '6px 12px',
+              background: 'var(--interactive-primary-subtle)',
+              borderBottom: '1px solid var(--border-default)',
+              fontSize: '13px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              color: 'var(--interactive-primary)',
+            }}>
+              <span style={{ fontWeight: 600 }}>Snapshot View</span>
+              <span style={{ color: 'var(--text-muted)' }}>
+                ({snapshotData?.nodes.length ?? 0} nodes, {snapshotData?.edges.length ?? 0} edges)
+              </span>
+            </div>
+          )}
           <GraphControls
             focusMode={focusMode}
             setFocusMode={setFocusMode}
             hasSelection={!!selectedNode}
             selectedName={entities.find(e => e.id === selectedNode)?.name}
-            nodes={filteredData.entities.map(e => ({ id: e.id!, label: e.name }))}
-            edges={filteredData.links.map(l => ({ id: l.id!, source: l.source_id, target: l.target_id, label: l.relation }))}
+            nodes={snapshotMode && snapshotData ? snapshotData.nodes : filteredData.entities.map(e => ({ id: e.id!, label: e.name }))}
+            edges={snapshotMode && snapshotData ? snapshotData.edges : filteredData.links.map(l => ({ id: l.id!, source: l.source_id, target: l.target_id, label: l.relation }))}
             onSaveSnapshot={handleSaveSnapshot}
+            onLoadSnapshot={handleLoadSnapshot}
+            snapshotMode={snapshotMode}
+            onSnapshotModeChange={(active) => { if (!active) handleExitSnapshot(); }}
           />
         </div>
       )}

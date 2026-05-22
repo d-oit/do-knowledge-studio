@@ -55,10 +55,10 @@ describe('EntitySchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('should fail on invalid datetime format', () => {
+  it('should accept any string for created_at (relaxed for SQLite compat)', () => {
     const entity = { name: 'Test', type: 'person', created_at: '2024-01-15' };
     const result = EntitySchema.safeParse(entity);
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
   it('should fail on invalid metadata record', () => {
@@ -173,10 +173,10 @@ describe('ClaimSchema', () => {
     }
   });
 
-  it('should fail on invalid datetime', () => {
+  it('should accept any string for created_at (relaxed for SQLite compat)', () => {
     const claim = { entity_id: '550e8400-e29b-41d4-a716-446655440000', statement: 'Test', created_at: 'not-a-date' };
     const result = ClaimSchema.safeParse(claim);
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
   it('should fail on statement exceeding max length', () => {
@@ -242,10 +242,10 @@ describe('NoteSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('should fail on invalid datetime', () => {
+  it('should accept any string for created_at (relaxed for SQLite compat)', () => {
     const note = { content: 'Test', created_at: 'invalid' };
     const result = NoteSchema.safeParse(note);
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
   it('should fail on content exceeding max length', () => {

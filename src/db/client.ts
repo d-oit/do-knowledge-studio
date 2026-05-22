@@ -1,7 +1,6 @@
 import { logger } from '../lib/logger.js';
 import { AppError } from '../lib/errors.js';
 import { ConnectionPool, DEFAULT_POOL_SIZE } from './connection-pool.js';
-import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 
 export interface SQLiteDB {
   exec: (options: string | {
@@ -57,7 +56,8 @@ export const initDb = async (options?: { poolSize?: number }): Promise<SQLiteDB>
         await pool.init(schemaSql);
         instance = pool;
     } else {
-        // CLI/Node fallback: Direct initialization
+        // CLI/Node fallback: Direct initialization (only reached if setDb not used)
+        const { default: sqlite3InitModule } = await import('@sqlite.org/sqlite-wasm');
         const sqlite3 = await sqlite3InitModule() as Sqlite3Static;
         const db = new sqlite3.oo1.DB('/studio.db', 'c');
         db.exec(schemaSql);
@@ -92,4 +92,9 @@ export const getDb = (): SQLiteDB => {
      throw new AppError('Database not initialized', 'DB_NOT_READY');
   }
   return instance;
+};
+
+/** Allows CLI or other Node.js contexts to inject their own SQLiteDB instance. */
+export const setDb = (db: SQLiteDB): void => {
+  instance = db;
 };

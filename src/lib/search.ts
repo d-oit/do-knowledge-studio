@@ -25,29 +25,32 @@ export type OramaSchema = typeof searchSchema;
 let oramaDb: Orama<OramaSchema> | null = null;
 const oramaIdMap = new Map<string, string>(); // entityId → oramaInternalId
 
+/** Builds a SearchDocument for an Entity. */
+const buildEntityDoc = (entity: Entity): SearchDocument => ({
+  id: entity.id!,
+  type: 'entity',
+  title: entity.name,
+  content: compressText(`${entity.name} ${entity.description || ''}`),
+  keywords: entity.type,
+});
+
+/** Builds a SearchDocument for a Claim associated with an entity. */
+const buildClaimDoc = (claim: Claim, entityName: string, entityId: string): SearchDocument => ({
+  id: claim.id!,
+  type: 'claim',
+  title: entityName,
+  content: compressText(claim.statement),
+  keywords: [entityId, claim.source || 'unknown'].join(','),
+});
+
 const addEntityToIndex = async (entity: Entity, claims: Claim[]): Promise<void> => {
   if (!oramaDb) return;
 
-  const entityDoc: SearchDocument = {
-    id: entity.id!,
-    type: 'entity',
-    title: entity.name,
-    content: compressText(`${entity.name} ${entity.description || ''}`),
-    keywords: entity.type,
-  };
-
-  const entityResult = await insert(oramaDb, entityDoc);
+  const entityResult = await insert(oramaDb, buildEntityDoc(entity));
   oramaIdMap.set(entity.id!, entityResult);
 
   if (claims.length > 0) {
-    const claimDocs: SearchDocument[] = claims.map(claim => ({
-      id: claim.id!,
-      type: 'claim',
-      title: entity.name,
-      content: compressText(claim.statement),
-      keywords: [entity.id!, claim.source || 'unknown'].join(','),
-    }));
-
+    const claimDocs = claims.map(c => buildClaimDoc(c, entity.name, entity.id!));
     const claimOramaIds = await insertMultiple(oramaDb, claimDocs);
     for (let i = 0; i < claims.length; i++) {
       oramaIdMap.set(claims[i].id!, claimOramaIds[i]);
@@ -80,24 +83,12 @@ export const initSearch = async () => {
     const originalIds: string[] = [];
 
     for (const entity of entities) {
-      docs.push({
-        id: entity.id!,
-        type: 'entity',
-        title: entity.name,
-        content: compressText(`${entity.name} ${entity.description || ''}`),
-        keywords: entity.type,
-      });
+      docs.push(buildEntityDoc(entity));
       originalIds.push(entity.id!);
 
       const claims = claimsByEntity.get(entity.id!) || [];
       for (const claim of claims) {
-        docs.push({
-          id: claim.id!,
-          type: 'claim',
-          title: entity.name,
-          content: compressText(claim.statement),
-          keywords: [entity.id!, claim.source || 'unknown'].join(','),
-        });
+        docs.push(buildClaimDoc(claim, entity.name, entity.id!));
         originalIds.push(claim.id!);
       }
     }
