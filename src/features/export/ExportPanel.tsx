@@ -3,6 +3,7 @@ import { logger } from '../../lib/logger';
 import { repository } from '../../db/repository';
 import { Claim, Note } from '../../lib/validation';
 import { Download, FileJson, FileText, Globe, Loader2 } from 'lucide-react';
+import { escapeHtml } from '../../lib/security';
 
 const ExportPanel: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
@@ -105,6 +106,7 @@ const ExportPanel: React.FC = () => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline';">
   <title>Knowledge Base</title>
   <style>
     body { font-family: system-ui, -apple-system, sans-serif; max-width: 900px; margin: 0 auto; padding: 2rem; line-height: 1.6; color: #1e293b; background: #f8fafc; }
@@ -136,7 +138,7 @@ const ExportPanel: React.FC = () => {
   <nav>
     <h4>Quick Navigation</h4>
     <ul>
-      ${entities.map(e => `<li><a href="#${e.name.replace(/[^a-z0-9]/gi, '-').toLowerCase()}">${e.name}</a></li>`).join('\n      ')}
+      ${entities.map(e => `<li><a href="#${e.name.replace(/[^a-z0-9]/gi, '-').toLowerCase()}">${escapeHtml(e.name)}</a></li>`).join('\n      ')}
     </ul>
   </nav>
 
@@ -149,10 +151,12 @@ const ExportPanel: React.FC = () => {
         const safeId = entity.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
         
         html += `\n    <section class="entity" id="${safeId}">\n`;
-        html += `      <span class="type">${entity.type}</span>\n`;
-        html += `      <h2>${entity.name}</h2>\n`;
+        html += `      <span class="type">${escapeHtml(entity.type)}</span>\n`;
+        html += `      <h2>${escapeHtml(entity.name)}</h2>\n`;
         
         if (entity.description) {
+          // entity.description contains HTML from Tiptap editor.
+          // We preserve it to maintain formatting in the export.
           html += `\n      <div class="description">${entity.description}</div>\n`;
         }
         
@@ -160,11 +164,11 @@ const ExportPanel: React.FC = () => {
           html += `\n      <h3>Claims</h3>\n`;
           for (const claim of claims) {
             html += `      <div class="claim">\n`;
-            html += `        <div class="statement">${claim.statement}</div>\n`;
+            html += `        <div class="statement">${escapeHtml(claim.statement)}</div>\n`;
             if (claim.confidence !== 1 || claim.source) {
               html += `        <div class="claim-meta">\n`;
               if (claim.confidence !== 1) html += `          <span>Confidence: ${Math.round(claim.confidence * 100)}%</span>\n`;
-              if (claim.source) html += `          <span>Source: ${claim.source}</span>\n`;
+              if (claim.source) html += `          <span>Source: ${escapeHtml(claim.source)}</span>\n`;
               html += `        </div>\n`;
             }
             html += `      </div>\n`;
