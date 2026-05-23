@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { ensureNavVisible } from './utils';
+import { ensureNavVisible, closeNav } from './utils';
 
 test.describe('Entity CRUD', () => {
   test('User can create a new entity', async ({ page }) => {
@@ -185,6 +185,8 @@ test.describe('Entity Editor with Source URL', () => {
     await ensureNavVisible(page);
     await expect(page.locator('.nav-button').filter({ hasText: 'Editor', visible: true }).first()).toHaveAttribute('aria-current', 'page', { timeout: 10000 });
 
+    await closeNav(page);
+
     // Open Advanced section
     await page.getByRole('button', { name: /advanced/i }).click();
 
@@ -209,6 +211,8 @@ test.describe('Entity Editor with Source URL', () => {
     await expect(page.locator('.editor-container')).toBeVisible({ timeout: 15000 });
 
     await ensureNavVisible(page);
+
+    await closeNav(page);
 
     // Open Advanced section
     await page.getByRole('button', { name: /advanced/i }).click();
