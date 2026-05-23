@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -80,7 +80,7 @@ const Editor: React.FC = () => {
 
       // Enqueue external URL fetch for auto-hydration if source URL provided
       if (sourceUrl.trim()) {
-        jobCoordinator.enqueue('external-fetch', entity.id!, {
+        jobCoordinator.enqueue('external-fetch', entity.id, {
           url: sourceUrl.trim(),
           entityId: entity.id!,
         });
@@ -212,7 +212,7 @@ const Editor: React.FC = () => {
           <CheckCircle size={16} aria-hidden="true" /> Claim
         </button>
         <div className="toolbar-spacer" />
-        <button onClick={handleSave} className="primary">Save to DB</button>
+        <button onClick={() => { void handleSave(); }} className="primary">Save to DB</button>
       </div>
       <EditorContent editor={editor} className="tiptap-content" />
 
