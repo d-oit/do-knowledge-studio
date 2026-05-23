@@ -208,7 +208,7 @@ const ExportPanel: React.FC = () => {
       <div className="toolbar" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
         <button 
           className="primary" 
-          onClick={handleExportMarkdown} 
+          onClick={() => { void handleExportMarkdown(); }}
           disabled={isExporting}
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
         >
@@ -216,7 +216,7 @@ const ExportPanel: React.FC = () => {
           Export as Markdown
         </button>
         <button 
-          onClick={handleExportJson} 
+          onClick={() => { void handleExportJson(); }}
           disabled={isExporting}
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
         >
@@ -224,7 +224,7 @@ const ExportPanel: React.FC = () => {
           Export as JSON
         </button>
         <button 
-          onClick={handleExportSite} 
+          onClick={() => { void handleExportSite(); }}
           disabled={isExporting}
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
         >
