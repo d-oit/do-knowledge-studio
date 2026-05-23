@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { X, ExternalLink, Info, ShieldCheck } from 'lucide-react';
 import { Entity, Claim, Link } from '../../lib/validation';
 
@@ -27,6 +28,33 @@ const GraphInspector: React.FC<GraphInspectorProps> = ({
     [links, entity.id]
   );
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const allRelations = useMemo(() => {
+    const items: Array<{ type: 'outgoing' | 'incoming'; id: string; relation: string; targetId: string }> = [];
+    for (const link of outgoingLinks) {
+      items.push({ type: 'outgoing', id: link.id!, relation: link.relation, targetId: link.target_id });
+    }
+    for (const link of incomingLinks) {
+      items.push({ type: 'incoming', id: link.id!, relation: link.relation, targetId: link.source_id });
+    }
+    return items;
+  }, [outgoingLinks, incomingLinks]);
+
+  const claimVirtualizer = useVirtualizer({
+    count: claims.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 48,
+    overscan: 5,
+  });
+
+  const relationVirtualizer = useVirtualizer({
+    count: allRelations.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 40,
+    overscan: 5,
+  });
+
   const getEntityName = (id: string) =>
     entities.find(e => e.id === id)?.name || 'Unknown Entity';
 
@@ -39,7 +67,7 @@ const GraphInspector: React.FC<GraphInspectorProps> = ({
         </button>
       </div>
 
-      <div className="inspector-content">
+      <div ref={scrollRef} className="inspector-content" style={{ overflow: 'auto', flex: 1 }}>
         <div className="inspector-section">
           <div className="result-type">{entity.type}</div>
           {entity.description && (
@@ -49,40 +77,55 @@ const GraphInspector: React.FC<GraphInspectorProps> = ({
 
         {claims.length > 0 && (
           <div className="inspector-section">
-            <h4><ShieldCheck size={14} /> Claims</h4>
-            <ul className="results-list">
-              {claims.map(claim => (
-                <li key={claim.id} className="search-result-item">
-                  <div className="msg-text" style={{ fontSize: '13px' }}>{claim.statement}</div>
-                  {claim.evidence && (
-                    <div className="result-meta" style={{ marginTop: '4px' }}>
-                      <span className="provenance-tag">Evidence: {claim.evidence}</span>
-                    </div>
-                  )}
-                </li>
-              ))}
+            <h4><ShieldCheck size={14} /> Claims <span className="text-muted">({claims.length})</span></h4>
+            <ul className="results-list" style={{ height: `${claimVirtualizer.getTotalSize()}px`, position: 'relative' }}>
+              {claimVirtualizer.getVirtualItems().map(virtualItem => {
+                const claim = claims[virtualItem.index];
+                return (
+                  <li key={claim.id} className="search-result-item" style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${virtualItem.start}px)`,
+                  }}>
+                    <div className="msg-text" style={{ fontSize: '13px' }}>{claim.statement}</div>
+                    {claim.evidence && (
+                      <div className="result-meta" style={{ marginTop: '4px' }}>
+                        <span className="provenance-tag">Evidence: {claim.evidence}</span>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         )}
 
-        {(outgoingLinks.length > 0 || incomingLinks.length > 0) && (
+        {allRelations.length > 0 && (
           <div className="inspector-section">
-            <h4><ExternalLink size={14} /> Relationships</h4>
-            <ul className="results-list">
-              {outgoingLinks.map(link => (
-                <li key={link.id} className="search-result-item">
-                  <div style={{ fontSize: '13px' }}>
-                    <strong>{link.relation}</strong> → {getEntityName(link.target_id)}
-                  </div>
-                </li>
-              ))}
-              {incomingLinks.map(link => (
-                <li key={link.id} className="search-result-item">
-                  <div style={{ fontSize: '13px' }}>
-                    {getEntityName(link.source_id)} → <strong>{link.relation}</strong>
-                  </div>
-                </li>
-              ))}
+            <h4><ExternalLink size={14} /> Relationships <span className="text-muted">({allRelations.length})</span></h4>
+            <ul className="results-list" style={{ height: `${relationVirtualizer.getTotalSize()}px`, position: 'relative' }}>
+              {relationVirtualizer.getVirtualItems().map(virtualItem => {
+                const rel = allRelations[virtualItem.index];
+                return (
+                  <li key={rel.id} className="search-result-item" style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${virtualItem.start}px)`,
+                  }}>
+                    <div style={{ fontSize: '13px' }}>
+                      {rel.type === 'outgoing' ? (
+                        <><strong>{rel.relation}</strong> → {getEntityName(rel.targetId)}</>
+                      ) : (
+                        <>{getEntityName(rel.targetId)} → <strong>{rel.relation}</strong></>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         )}

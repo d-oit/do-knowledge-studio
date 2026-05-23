@@ -1,11 +1,13 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import Sigma from 'sigma';
 import Graph from 'graphology';
+import type { NodeDisplayData, EdgeDisplayData } from 'sigma/types';
 import { Entity, Link } from '../../lib/validation';
 import GraphControls from './GraphControls';
 import { jobCoordinator } from '../../lib/jobs';
 import { repository } from '../../db/repository';
 import { logger } from '../../lib/logger';
+import { perf } from '../../lib/perf';
 
 /** Tracks current touch state for mobile gesture handling. */
 interface TouchState {
@@ -64,6 +66,26 @@ const GraphView: React.FC<Props> = ({
 
   const [filteredData, setFilteredData] = useState({ entities, links });
 
+  const cameraRatioRef = useRef(1);
+  const graphSize = useMemo(() => {
+    const count = entities.length;
+    if (count <= 30) return 'small' as const;
+    if (count <= 100) return 'medium' as const;
+    if (count <= 500) return 'large' as const;
+    return 'xlarge' as const;
+  }, [entities.length]);
+
+  // Cheaper layout for very large graphs: skip labels at medium zoom, simpler edges
+  const layoutSettings = useMemo(() => ({
+    renderEdgeLabels: graphSize === 'small',
+    defaultEdgeType: graphSize === 'xlarge' ? 'line' as const : 'arrow' as const,
+    labelSize: graphSize === 'large' ? 10 : graphSize === 'xlarge' ? 8 : 12,
+    labelWeight: 'bold' as const,
+    hideLabelsOnMove: true,
+    labelRenderedSizeThreshold: graphSize === 'large' ? 8 : graphSize === 'xlarge' ? 10 : 6,
+    defaultEdgeColor: '#94a3b8',
+  }), [graphSize]);
+
   useEffect(() => {
     if (!focusMode || !selectedNode) {
       setFilteredData({ entities, links });
@@ -101,6 +123,7 @@ const GraphView: React.FC<Props> = ({
 
   useEffect(() => {
     if (!containerRef.current) return;
+    perf.mark('graph-view-mount');
 
     const graph = graphRef.current;
     const data = effectiveData;
@@ -160,13 +183,40 @@ const GraphView: React.FC<Props> = ({
 
       if (!sigmaInstance.current) {
         sigmaInstance.current = new Sigma(graph, containerRef.current!, {
-          renderEdgeLabels: true,
-          defaultEdgeType: 'arrow',
-          labelSize: 12,
-          labelWeight: 'bold',
-          // Built-in viewport culling is active by default in Sigma v3
-          // Level of Detail (LOD) via hideLabelsOnMove
-          hideLabelsOnMove: true,
+          ...layoutSettings,
+          nodeReducer: (node, data) => {
+            const ratio = cameraRatioRef.current;
+            const result: Partial<NodeDisplayData> = { ...data };
+            if (ratio > 1.5) {
+              result.label = data.label;
+              result.size = (data.size || 10) * Math.min(ratio, 3);
+            } else if (ratio < 0.5) {
+              result.label = '';
+              result.size = Math.max((data.size || 10) * 0.5, 2);
+            } else if (ratio < 0.8 && (graphSize === 'large' || graphSize === 'xlarge')) {
+              result.label = '';
+              result.size = (data.size || 10) * 0.7;
+            } else if (ratio < 1.0 && graphSize === 'xlarge') {
+              result.label = '';
+              result.size = (data.size || 10) * 0.85;
+            }
+            return result;
+          },
+          edgeReducer: (edge, data) => {
+            const ratio = cameraRatioRef.current;
+            const result: Partial<EdgeDisplayData> = { ...data };
+            if (ratio < 0.5) {
+              result.label = '';
+              result.hidden = true;
+            } else if (ratio < 0.8 && graphSize === 'large') {
+              result.label = '';
+              result.size = Math.min(data.size || 1, 0.5);
+            } else if (ratio < 1.0 && graphSize === 'xlarge') {
+              result.label = '';
+              result.hidden = true;
+            }
+            return result;
+          },
         });
 
         sigmaInstance.current.on('clickNode', ({ node }) => {
@@ -177,6 +227,15 @@ const GraphView: React.FC<Props> = ({
           setSelectedNode(null);
           setFocusMode(false);
         });
+
+        sigmaInstance.current.on('cameraUpdated', () => {
+          const camera = sigmaInstance.current?.getCamera();
+          if (camera) {
+            cameraRatioRef.current = camera.ratio;
+          }
+        });
+
+        perf.measure('graph-layout-finish', 'graph-view-mount');
       } else {
         sigmaInstance.current.refresh();
       }

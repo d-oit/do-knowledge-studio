@@ -1,9 +1,23 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type PluginOption } from 'vite';
 import react from '@vitejs/plugin-react';
+import { visualizer } from 'rollup-plugin-visualizer';
 import path from 'path';
 
+function getPlugins(): PluginOption[] {
+  const plugins: PluginOption[] = [react()];
+  if (process.env.ANALYZE === 'true') {
+    plugins.push(visualizer({
+      filename: 'dist/stats.html',
+      open: true,
+      gzipSize: true,
+      brotliSize: true,
+    }) as PluginOption);
+  }
+  return plugins;
+}
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: getPlugins(),
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

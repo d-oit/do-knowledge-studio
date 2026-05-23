@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { searchKnowledge, semanticSearch, initEmbeddings, RankedResult } from '../../lib/search';
+import { useVirtualizer } from '@tanstack/react-virtual';
+import { progressiveSearch, initEmbeddings, type RankedResult } from '../../lib/search';
 import { logger } from '../../lib/logger';
+import { perf } from '../../lib/perf';
 import { Search, X, Filter, Plus, Sparkles } from 'lucide-react';
 
 interface SearchPanelProps {
   onClose?: () => void;
   isMobile?: boolean;
-  onResultClick?: (result: RankedResult) => void;
+  onResultClick?: (result: SearchResult) => void;
   shouldAutoFocus?: boolean;
   ariaLabel?: string;
 }
@@ -63,15 +65,15 @@ const NoResultsState: React.FC<{ query: string; onClear: () => void }> = ({ quer
 );
 
 const SearchResultItem: React.FC<{
-  result: RankedResult;
+  result: SearchResult;
   index: number;
   isSelected: boolean;
-  onResultClick?: (result: RankedResult) => void;
+  onResultClick?: (result: SearchResult) => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
   onMouseEnter: () => void;
   innerRef: (el: HTMLButtonElement | null) => void;
 }> = ({ result, index, isSelected, onResultClick, onKeyDown, onMouseEnter, innerRef }) => (
-  <li key={`${result.type}-${result.id}`}>
+  <li key={`${result.type}-${result.id}`} role="none">
     <button
       id={`result-${index}`}
       ref={innerRef}
@@ -79,16 +81,19 @@ const SearchResultItem: React.FC<{
       onClick={() => onResultClick?.(result)}
       onKeyDown={onKeyDown}
       onMouseEnter={onMouseEnter}
+      role="option"
       aria-selected={isSelected}
     >
       <div className="result-meta">
         <span className="result-type">{result.type}</span>
-        <span className={`provenance-tag tag-${result.stage}`}>
-          {result.stage}
-        </span>
+        {result.stage && (
+          <span className={`provenance-tag tag-${result.stage}`}>
+            {result.stage}
+          </span>
+        )}
       </div>
-      <div className="result-name">{result.name}</div>
-      <div className="result-description">{result.excerpt}</div>
+      <div className="result-name">{result.title}</div>
+      <div className="result-description">{result.content}</div>
     </button>
   </li>
 );
@@ -101,13 +106,24 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
   ariaLabel
 }) => {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<RankedResult[]>([]);
+  const [results, setResults] = useState<SearchResult[]>([]);
   const [activeFilter, setActiveFilter] = useState<FilterType>('All');
   const [isSearching, setIsSearching] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [useSemantic, setUseSemantic] = useState(false);
+  const [searchStages, setSearchStages] = useState<Set<string>>(new Set());
   const resultsRef = useRef<(HTMLButtonElement | null)[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const ITEM_HEIGHT = 72;
+
+  const virtualizer = useVirtualizer({
+    count: results.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => ITEM_HEIGHT,
+    overscan: 5,
+  });
 
   // Programmatic focus instead of autoFocus prop (a11y best practice)
   useEffect(() => {
@@ -117,29 +133,62 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
   }, [shouldAutoFocus, isMobile]);
 
   useEffect(() => {
-    const delayDebounceFn = setTimeout(async () => {
-      if (query.trim().length <= 1) {
-        setResults([]);
-        setSelectedIndex(-1);
-        return;
-      }
+    if (query.trim().length <= 1) {
+      setResults([]);
+      setSelectedIndex(-1);
+      setSearchStages(new Set());
+      return;
+    }
 
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    const timeoutId = setTimeout(async () => {
       setIsSearching(true);
+      setSearchStages(new Set());
+      perf.mark('search-query-start');
+
+      const typeFilter = FILTER_MAP[activeFilter];
+      const accumulated = new Map<string, RankedResult>();
+      let firstBatch = true;
+
+      const onStage: ProgressiveSearchCallback = (stageResults, stage) => {
+        if (controller.signal.aborted) return;
+
+        for (const r of stageResults) {
+          accumulated.set(r.id, r);
+        }
+
+        setSearchStages(prev => new Set(prev).add(stage));
+        const flatResults = Array.from(accumulated.values()).map(r => ({
+          id: r.id,
+          title: r.name,
+          type: r.type,
+          content: r.excerpt,
+          stage: r.stage || stage,
+        }));
+        setResults(flatResults);
+
+        if (firstBatch) {
+          perf.measure('search-first-result', 'search-query-start');
+          firstBatch = false;
+        }
+        setIsSearching(false);
+      };
+
       try {
-        const typeFilter = FILTER_MAP[activeFilter];
-        // Use semantic (hybrid) search when toggled, fall back to keyword
-        const searchFn = useSemantic ? semanticSearch : searchKnowledge;
-        const res = await searchFn(query, { type: typeFilter });
-        setResults(res);
-        setSelectedIndex(-1);
+        await progressiveSearch(query, onStage, { type: typeFilter, signal: controller.signal });
       } catch (err) {
         logger.error('Search failed', err);
-      } finally {
         setIsSearching(false);
       }
     }, 300);
 
-    return () => clearTimeout(delayDebounceFn);
+    return () => {
+      clearTimeout(timeoutId);
+      controller.abort();
+    };
   }, [query, activeFilter, useSemantic]);
 
   const handleInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -195,6 +244,15 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
             aria-controls="search-results-list"
             aria-activedescendant={selectedIndex >= 0 ? `result-${selectedIndex}` : undefined}
           />
+          {query && (
+            <button
+              className="input-clear-button"
+              onClick={() => { setQuery(''); searchInputRef.current?.focus(); }}
+              aria-label="Clear search"
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
         {onClose && (
           <button className="close-button" onClick={onClose} aria-label="Close search">
@@ -218,7 +276,6 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
           onClick={async () => {
             if (!useSemantic) {
               setUseSemantic(true);
-              // Trigger lazy model download on first use
               initEmbeddings();
             }
           }}
@@ -229,34 +286,64 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
         </button>
       </div>
 
+      {searchStages.size > 0 && (
+        <div className="search-progress" style={{ padding: '4px 16px', fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '8px', borderBottom: '1px solid var(--border-color)' }}>
+          <span className={searchStages.has('exact') ? 'stage-done' : 'stage-pending'}>{'\u2713'} Keywords</span>
+          {searchStages.has('semantic') ? <span className="stage-done">{'\u2713'} Semantic</span> : <span className="stage-pending">{'\u2022'} Semantic</span>}
+          {searchStages.has('related') ? <span className="stage-done">{'\u2713'} Related</span> : <span className="stage-pending">{'\u2022'} Related</span>}
+        </div>
+      )}
+
       <div className="search-results">
-        <div aria-live="polite" className="sr-only">
+        <div aria-live="polite" role="status" className="sr-only">
           {isSearching ? 'Searching local records...' : ''}
           {!isSearching && query.length > 1 && results.length === 0 ? `No local matches found for ${query}` : ''}
           {!isSearching && results.length > 0 ? `Found ${results.length} local results` : ''}
         </div>
 
-        {isSearching && <div className="searching-status" aria-hidden="true">Searching local records...</div>}
+        {isSearching && <div className="searching-status">Searching local records...</div>}
 
         {!isSearching && query.length > 1 && results.length === 0 && (
           <NoResultsState query={query} onClear={() => setQuery('')} />
         )}
 
         {results.length > 0 && (
-          <ul id="search-results-list" className="results-list" aria-label="Search results">
-            {results.map((result, index) => (
-              <SearchResultItem
-                key={`${result.type}-${result.id}`}
-                result={result}
-                index={index}
-                isSelected={selectedIndex === index}
-                onResultClick={onResultClick}
-                onKeyDown={handleItemKeyDown}
-                onMouseEnter={() => setSelectedIndex(index)}
-                innerRef={el => resultsRef.current[index] = el}
-              />
-            ))}
-          </ul>
+          <div ref={scrollRef} style={{ overflow: 'auto', flex: 1 }}>
+            <ul
+              id="search-results-list"
+              className="results-list"
+              role="listbox"
+              aria-label="Search results"
+              style={{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }}
+            >
+              {virtualizer.getVirtualItems().map(virtualItem => {
+                const index = virtualItem.index;
+                const result = results[index];
+                return (
+                  <div
+                    key={`${result.type}-${result.id}`}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${virtualItem.start}px)`,
+                    }}
+                  >
+                    <SearchResultItem
+                      result={result}
+                      index={index}
+                      isSelected={selectedIndex === index}
+                      onResultClick={onResultClick}
+                      onKeyDown={handleItemKeyDown}
+                      onMouseEnter={() => setSelectedIndex(index)}
+                      innerRef={el => resultsRef.current[index] = el}
+                    />
+                  </div>
+                );
+              })}
+            </ul>
+          </div>
         )}
       </div>
       <div className="search-footer">

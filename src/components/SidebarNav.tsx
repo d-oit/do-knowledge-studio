@@ -7,6 +7,7 @@ interface SidebarNavProps {
   setCurrentView: (view: View) => void;
   onClose?: () => void;
   onSearchClick?: () => void;
+  onPreload?: (view: View) => void;
 }
 
 interface NavItem {
@@ -56,7 +57,7 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-const SidebarNav: React.FC<SidebarNavProps> = ({ currentView, setCurrentView, onClose, onSearchClick }) => {
+const SidebarNav: React.FC<SidebarNavProps> = ({ currentView, setCurrentView, onClose, onSearchClick, onPreload }) => {
   const handleNavClick = (view: View) => {
     if (view === 'search' && onSearchClick) {
       onSearchClick();
@@ -79,6 +80,8 @@ const SidebarNav: React.FC<SidebarNavProps> = ({ currentView, setCurrentView, on
                   <button
                     className={`nav-button ${currentView === item.view ? 'active' : ''}`}
                     onClick={() => handleNavClick(item.view)}
+                    onMouseEnter={() => onPreload?.(item.view)}
+                    onFocus={() => onPreload?.(item.view)}
                     aria-current={currentView === item.view ? 'page' : undefined}
                   >
                     {item.label}

@@ -5,6 +5,7 @@ import { logger } from './logger.js';
 import { compressText } from './nlp.js';
 import { jobCoordinator } from './jobs.js';
 import { resolveUrl } from './resolver.js';
+import { perf } from './perf/index.js';
 import type { Entity, Claim } from '../lib/validation.js';
 
 interface SearchDocument {
@@ -43,7 +44,7 @@ jobCoordinator.registerHandler('external-fetch', async (payload) => {
  * Downloads the model (~80MB) on first call — runs in background, non-blocking.
  * @returns True if embeddings are ready, false if still loading or failed.
  */
-export const initEmbeddings = async (): Promise<boolean> => {
+export const initEmbeddings = (): boolean => {
   if (embeddingsReady) return true;
   if (embeddingsPlugin) return false; // already loading
 
@@ -105,6 +106,7 @@ const addEntityToIndex = async (entity: Entity, claims: Claim[]): Promise<void> 
  */
 export const initSearch = async () => {
   if (oramaDb) return oramaDb;
+  perf.mark('orama-init');
 
   try {
     const plugins: unknown[] = [];
@@ -152,10 +154,34 @@ export const initSearch = async () => {
       }
     }
 
-    // Bulk hydrate SQLite FTS5 index
-    await repository.exec('INSERT INTO entity_search_idx(entity_search_idx) VALUES(\'rebuild\')');
-    await repository.exec('INSERT INTO claim_search_idx(claim_search_idx) VALUES(\'rebuild\')');
+    // Bulk hydrate SQLite FTS5 index (contentless mode)
+    perf.mark('fts-rebuild-start');
+    // Batch delete using single statements
+    await repository.exec({ sql: 'DELETE FROM entity_search_idx', bind: [] });
+    await repository.exec({ sql: 'DELETE FROM claim_search_idx', bind: [] });
 
+    // Batch insert using transactions for performance
+    const batchSize = 100;
+    for (let i = 0; i < entities.length; i += batchSize) {
+      const batch = entities.slice(i, i + batchSize);
+      const stmts = batch.map(e => ({
+        sql: `INSERT INTO entity_search_idx(rowid, name, description) VALUES (?, ?, ?)`,
+        bind: [e.rowid as unknown as number, e.name, e.description || ''],
+      }));
+      await repository.transaction(stmts);
+    }
+
+    for (let i = 0; i < allClaims.length; i += batchSize) {
+      const batch = allClaims.slice(i, i + batchSize);
+      const stmts = batch.map(c => ({
+        sql: `INSERT INTO claim_search_idx(rowid, statement) VALUES (?, ?)`,
+        bind: [c.rowid as unknown as number, c.statement],
+      }));
+      await repository.transaction(stmts);
+    }
+    perf.measure('fts-rebuild', 'fts-rebuild-start');
+
+    perf.measure('orama-init', 'orama-init');
     logger.info(`Orama search index initialized with ${entities.length} entities and ${allClaims.length} claims`);
 
     // Register job handlers
@@ -363,6 +389,7 @@ export interface SearchResult {
   type: string;
   /** Compressed text content for display. */
   content: string;
+  stage?: string;
 }
 
 /**
@@ -383,7 +410,7 @@ const mapVerificationStage = (status: string): RankedResult['stage'] => {
   switch (status) {
     case 'verified': return 'verified';
     case 'disputed': return 'final';
-    default: return 'draft'; // 'unverified' or unknown
+    default: return 'draft';
   }
 };
 
@@ -392,7 +419,6 @@ const mapVerificationStage = (status: string): RankedResult['stage'] => {
  * Batches all claim lookups into a single query for efficiency.
  */
 const enrichResults = async (hits: Array<{ document: SearchDocument; score: number }>): Promise<RankedResult[]> => {
-  // Collect claim IDs for batch provenance lookup
   const claimIds = hits
     .filter(h => h.document.type === 'claim')
     .map(h => h.document.id);
@@ -436,6 +462,7 @@ export const searchKnowledge = async (
   options?: { type?: string },
 ): Promise<RankedResult[]> => {
   if (!oramaDb) await initSearch();
+  perf.mark('orama-query');
 
   const searchParams: Record<string, unknown> = {
     term: query,
@@ -447,6 +474,7 @@ export const searchKnowledge = async (
   }
 
   const results = await search(oramaDb!, searchParams);
+  perf.measure('orama-query-time', 'orama-query');
   return enrichResults(results.hits.map(h => ({ document: h.document as SearchDocument, score: h.score })));
 };
 
@@ -462,10 +490,12 @@ export const semanticSearch = async (
   options?: { type?: string },
 ): Promise<RankedResult[]> => {
   if (!oramaDb) await initSearch();
+  perf.mark('orama-query');
 
-  // Fall back to keyword search if embeddings aren't ready
   if (!embeddingsReady || !embeddingsPlugin) {
-    return searchKnowledge(query, options);
+    const results = await searchKnowledge(query, options);
+    perf.measure('orama-query-time', 'orama-query');
+    return results;
   }
 
   const searchParams: Record<string, unknown> = {
@@ -483,5 +513,37 @@ export const semanticSearch = async (
   }
 
   const results = await search(oramaDb!, searchParams);
+  perf.measure('orama-query-time', 'orama-query');
   return enrichResults(results.hits.map(h => ({ document: h.document as SearchDocument, score: h.score })));
+};
+
+export type ProgressiveSearchCallback = (results: RankedResult[], stage: 'exact' | 'semantic' | 'related') => void;
+
+export const progressiveSearch = async (
+  query: string,
+  onResults: ProgressiveSearchCallback,
+  options?: { type?: string; signal?: AbortSignal },
+): Promise<void> => {
+  if (options?.signal?.aborted) return;
+
+  const exactResults = await searchKnowledge(query, { ...options, type: options?.type });
+  if (options?.signal?.aborted) return;
+  onResults(exactResults, 'exact');
+
+  if (embeddingsReady && embeddingsPlugin) {
+    const semanticResults = await semanticSearch(query, { ...options, type: options?.type });
+    if (options?.signal?.aborted) return;
+    onResults(semanticResults, 'semantic');
+  }
+
+  try {
+    const exactIds = new Set(exactResults.map(r => r.id));
+    const relatedResults = await repository.searchRelated(query, { excludeIds: exactIds });
+    if (options?.signal?.aborted) return;
+    if (relatedResults.length > 0) {
+      onResults(relatedResults, 'related');
+    }
+  } catch {
+    // best-effort
+  }
 };

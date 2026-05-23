@@ -64,10 +64,12 @@ describe('Search Incremental Update Benchmark', () => {
     // 1. upsertToSearchIndex (passed to other functions)
     expect(repository.getClaimsByEntityId).toHaveBeenCalledTimes(1);
 
-    // initSearch calls exec 2 times (rebuild entity and claim index)
-    // removeFromSearchIndex calls exec 1 (entity delete) and 1 (claims delete set-based)
-    // upsertToSearchIndex calls exec 1 (entity insert) and 1 (claims insert set-based)
-    // Total exec calls expected: 2 + 2 + 2 = 6.
+    // Batched FTS index rebuild: 2 DELETEs via exec (entity, claim)
+    // + 2 transaction calls (entity batch + claim batch) via repository.transaction
+    // removeFromSearchIndex: 2 exec (entity delete + claim delete)
+    // upsertToSearchIndex: 2 exec (1 entity INSERT + 1 claims INSERT via subquery)
+    // Total exec calls: 2 + 2 + 2 = 6 (batch transactions use repository.transaction directly)
     expect(repository.exec).toHaveBeenCalledTimes(6);
+    expect(repository.transaction).toHaveBeenCalledTimes(2);
   });
 });

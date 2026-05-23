@@ -320,7 +320,7 @@ describe('Repository', () => {
 
       expect(mockExec).toHaveBeenCalledWith(expect.objectContaining({
         sql: expect.stringContaining('entity_search_idx'),
-        bind: ['searched'],
+        bind: ['searched*'],
       }));
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe('Searched Entity');

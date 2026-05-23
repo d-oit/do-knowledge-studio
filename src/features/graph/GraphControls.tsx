@@ -334,7 +334,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
                     <h4 style={{ margin: '0 0 12px 0', fontSize: '14px' }}>Diff Results</h4>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '13px' }}>
                       <div>
-                        <div style={{ color: 'var(--interactive-success)', fontWeight: 600, marginBottom: '4px' }}>
+                        <div style={{ color: 'var(--status-success)', fontWeight: 600, marginBottom: '4px' }}>
                           + Added Nodes ({diffResult.added_nodes.length})
                         </div>
                         {diffResult.added_nodes.length === 0 ? (
@@ -344,7 +344,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
                         )}
                       </div>
                       <div>
-                        <div style={{ color: 'var(--interactive-danger)', fontWeight: 600, marginBottom: '4px' }}>
+                        <div style={{ color: 'var(--status-danger)', fontWeight: 600, marginBottom: '4px' }}>
                           - Removed Nodes ({diffResult.removed_nodes.length})
                         </div>
                         {diffResult.removed_nodes.length === 0 ? (
@@ -354,7 +354,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
                         )}
                       </div>
                       <div>
-                        <div style={{ color: 'var(--interactive-success)', fontWeight: 600, marginBottom: '4px' }}>
+                        <div style={{ color: 'var(--status-success)', fontWeight: 600, marginBottom: '4px' }}>
                           + Added Edges ({diffResult.added_edges.length})
                         </div>
                         {diffResult.added_edges.length === 0 ? (
@@ -364,7 +364,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
                         )}
                       </div>
                       <div>
-                        <div style={{ color: 'var(--interactive-danger)', fontWeight: 600, marginBottom: '4px' }}>
+                        <div style={{ color: 'var(--status-danger)', fontWeight: 600, marginBottom: '4px' }}>
                           - Removed Edges ({diffResult.removed_edges.length})
                         </div>
                         {diffResult.removed_edges.length === 0 ? (
