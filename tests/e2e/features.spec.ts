@@ -185,6 +185,9 @@ test.describe('Entity Editor with Source URL', () => {
     await ensureNavVisible(page);
     await expect(page.locator('.nav-button').filter({ hasText: 'Editor', visible: true }).first()).toHaveAttribute('aria-current', 'page', { timeout: 10000 });
 
+    // Open Advanced section
+    await page.getByRole('button', { name: /advanced/i }).click();
+
     // Verify source URL input is present
     const sourceUrlInput = page.locator('input[type="url"]');
     await expect(sourceUrlInput).toBeVisible();
@@ -206,6 +209,9 @@ test.describe('Entity Editor with Source URL', () => {
     await expect(page.locator('.editor-container')).toBeVisible({ timeout: 15000 });
 
     await ensureNavVisible(page);
+
+    // Open Advanced section
+    await page.getByRole('button', { name: /advanced/i }).click();
 
     // Fill entity name
     const nameInput = page.locator('.editor-container input[type="text"]').first();
@@ -261,6 +267,10 @@ test.describe('Entity Editor with Source URL', () => {
     await btn.click();
 
     await expect(page.locator('.editor-container')).toBeVisible({ timeout: 15000 });
+
+    // Open Advanced section
+    await page.getByRole('button', { name: /advanced/i }).click();
+
     await expect(page.locator('.entity-source')).toBeVisible({ timeout: 5000 });
     await expect(page.locator('.source-input')).toBeVisible({ timeout: 5000 });
   });
@@ -275,6 +285,9 @@ test.describe('Entity Editor with Source URL', () => {
     await btn.click();
 
     await expect(page.locator('.editor-container')).toBeVisible({ timeout: 15000 });
+
+    // Open Advanced section
+    await page.getByRole('button', { name: /advanced/i }).click();
 
     const sourceInput = page.locator('.source-input');
     await sourceInput.fill('https://example.com/article');
