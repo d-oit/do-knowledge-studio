@@ -14,7 +14,7 @@ const DEFAULT_CONFIG: LLMConfig = {
   providers: {
     openrouter: {
       baseURL: 'https://openrouter.ai/api/v1',
-      apiKey: import.meta.env.VITE_OPENROUTER_API_KEY || '',
+      apiKey: (import.meta.env.VITE_OPENROUTER_API_KEY as string) || '',
     },
     kilo: {
       baseURL: 'https://api.kilo.ai/api/gateway',

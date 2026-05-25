@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Focus, Camera, Clock, X, FolderOpen, GitCompare, RotateCcw, Loader2 } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
+import { Focus, Camera, Clock, X, FolderOpen, GitCompare, RotateCcw, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -33,6 +34,72 @@ interface GraphControlsProps {
   onSnapshotModeChange?: (active: boolean) => void;
 }
 
+// Module-level style constants to avoid inline object recreation on every render
+const MODAL_HEADER_STYLE: React.CSSProperties = {
+  marginBottom: 'var(--space-4)',
+  padding: 0,
+  background: 'transparent',
+  border: 0,
+};
+
+const MODAL_META_STYLE: React.CSSProperties = {
+  marginBottom: 'var(--space-4)',
+  fontSize: '13px',
+  color: 'var(--text-muted)',
+};
+
+const TEXTAREA_STYLE: React.CSSProperties = {
+  width: '100%',
+  padding: 'var(--space-2)',
+  borderRadius: 'var(--radius-base)',
+  border: '1px solid var(--border-default)',
+};
+
+const BROWSER_MODAL_STYLE: React.CSSProperties = {
+  maxWidth: '600px',
+  maxHeight: '80vh',
+  overflowY: 'auto',
+};
+
+const CENTERED_TEXT_STYLE: React.CSSProperties = {
+  textAlign: 'center',
+  padding: 'var(--space-4)',
+  color: 'var(--text-muted)',
+};
+
+const HINT_TEXT_STYLE: React.CSSProperties = {
+  marginBottom: 'var(--space-3)',
+  fontSize: '13px',
+  color: 'var(--text-muted)',
+};
+
+const DIFF_CONTAINER_STYLE: React.CSSProperties = {
+  padding: 'var(--space-3)',
+  background: 'var(--bg-surface)',
+  borderRadius: 'var(--radius-base)',
+  border: '1px solid var(--border-default)',
+};
+
+const DIFF_GRID_STYLE: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '1fr 1fr',
+  gap: '12px',
+  fontSize: '13px',
+};
+
+const COMPARE_BUTTONS_STYLE: React.CSSProperties = {
+  marginBottom: 'var(--space-3)',
+};
+
+const SNAPSHOT_SCROLL_STYLE: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '8px',
+  marginBottom: 'var(--space-3)',
+  overflowY: 'auto',
+  maxHeight: '400px',
+};
+
 const GraphControls: React.FC<GraphControlsProps> = ({
   focusMode,
   setFocusMode,
@@ -48,6 +115,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [snapshotName, setSnapshotName] = useState('');
   const [snapshotDesc, setSnapshotDesc] = useState('');
+  const [showMoreControls, setShowMoreControls] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
   const isMobile = useMediaQuery(MEDIA_QUERIES.MOBILE);
 
@@ -61,11 +129,20 @@ const GraphControls: React.FC<GraphControlsProps> = ({
 
   const snapshotNameRef = useRef<HTMLInputElement>(null);
   const snapshotBrowserRef = useRef<HTMLDivElement>(null);
+  const snapshotScrollRef = useRef<HTMLDivElement>(null);
 
   useFocusTrap(modalRef, showSaveModal);
   useEscapeKey(() => setShowSaveModal(false), showSaveModal);
   useFocusTrap(snapshotBrowserRef, showSnapshotBrowser);
   useEscapeKey(() => { setShowSnapshotBrowser(false); setDiffResult(null); }, showSnapshotBrowser);
+
+  // Virtualize snapshot list for large datasets (#138)
+  const snapshotVirtualizer = useVirtualizer({
+    count: snapshots.length,
+    getScrollElement: useCallback(() => snapshotScrollRef.current, []),
+    estimateSize: useCallback(() => 100, []),
+    overscan: 3,
+  });
 
   useEffect(() => {
     if (showSaveModal && snapshotNameRef.current) {
@@ -128,12 +205,14 @@ const GraphControls: React.FC<GraphControlsProps> = ({
     }
   };
 
-  const handleSaveSnapshot = async () => {
+  const handleSaveSnapshot = () => {
+    void (async () => {
     if (!snapshotName.trim() || !onSaveSnapshot) return;
     await onSaveSnapshot(snapshotName, nodes, edges);
     setShowSaveModal(false);
     setSnapshotName('');
     setSnapshotDesc('');
+    })();
   };
 
   const controls = (
@@ -155,14 +234,6 @@ const GraphControls: React.FC<GraphControlsProps> = ({
           <Camera size={16} /> Save Snapshot
         </button>
       )}
-      {onLoadSnapshot && (
-        <button
-          onClick={handleOpenSnapshotBrowser}
-          title="Load or diff saved snapshots"
-        >
-          <FolderOpen size={16} /> Load Snapshot
-        </button>
-      )}
       {snapshotMode && onSnapshotModeChange && (
         <button
           onClick={() => onSnapshotModeChange(false)}
@@ -170,6 +241,23 @@ const GraphControls: React.FC<GraphControlsProps> = ({
           title="Return to live graph"
         >
           <RotateCcw size={16} /> Exit Snapshot
+        </button>
+      )}
+      <button
+        onClick={() => setShowMoreControls(!showMoreControls)}
+        className="advanced-toggle"
+        aria-expanded={showMoreControls}
+        title="More graph controls"
+      >
+        {showMoreControls ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+        More
+      </button>
+      {showMoreControls && onLoadSnapshot && (
+        <button
+          onClick={handleOpenSnapshotBrowser}
+          title="Load or diff saved snapshots"
+        >
+          <FolderOpen size={16} /> Load Snapshot
         </button>
       )}
       {hasSelection && !isMobile && (
@@ -194,14 +282,14 @@ const GraphControls: React.FC<GraphControlsProps> = ({
             aria-modal="true"
             aria-labelledby="modal-title"
           >
-            <div className="inspector-header" style={{ marginBottom: 'var(--space-4)', padding: 0, background: 'transparent', border: 0 }}>
+            <div className="inspector-header" style={MODAL_HEADER_STYLE}>
               <h3 id="modal-title"><Camera size={18} /> Save Graph Snapshot</h3>
               <button className="close-button" onClick={() => setShowSaveModal(false)} aria-label="Close modal">
                 <X size={18} />
               </button>
             </div>
 
-            <p className="modal-meta" style={{ marginBottom: 'var(--space-4)', fontSize: '13px', color: 'var(--text-muted)' }}>
+            <p className="modal-meta" style={MODAL_META_STYLE}>
               <Clock size={14} /> {new Date().toLocaleString()} | {nodes.length} nodes, {edges.length} edges
             </p>
 
@@ -224,7 +312,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
                 onChange={(e) => setSnapshotDesc(e.target.value)}
                 placeholder="Optional notes about this snapshot..."
                 rows={2}
-                style={{ width: '100%', padding: 'var(--space-2)', borderRadius: 'var(--radius-base)', border: '1px solid var(--border-default)' }}
+                style={TEXTAREA_STYLE}
               />
             </div>
             <div className="modal-actions">
@@ -252,9 +340,8 @@ const GraphControls: React.FC<GraphControlsProps> = ({
             role="dialog"
             aria-modal="true"
             aria-labelledby="snapshot-browser-title"
-            style={{ maxWidth: '600px', maxHeight: '80vh', overflowY: 'auto' }}
-          >
-            <div className="inspector-header" style={{ marginBottom: 'var(--space-4)', padding: 0, background: 'transparent', border: 0 }}>
+            style={BROWSER_MODAL_STYLE}>
+            <div className="inspector-header" style={MODAL_HEADER_STYLE}>
               <h3 id="snapshot-browser-title"><FolderOpen size={18} /> Graph Snapshots</h3>
               <button className="close-button" onClick={() => { setShowSnapshotBrowser(false); setDiffResult(null); }} aria-label="Close modal">
                 <X size={18} />
@@ -262,59 +349,70 @@ const GraphControls: React.FC<GraphControlsProps> = ({
             </div>
 
             {isLoadingSnapshots ? (
-              <p style={{ textAlign: 'center', padding: 'var(--space-4)', color: 'var(--text-muted)' }}>Loading snapshots...</p>
+              <p style={CENTERED_TEXT_STYLE}>Loading snapshots...</p>
             ) : snapshots.length === 0 ? (
-              <p style={{ textAlign: 'center', padding: 'var(--space-4)', color: 'var(--text-muted)' }}>No snapshots saved yet. Use Save Snapshot to create one.</p>
+              <p style={CENTERED_TEXT_STYLE}>No snapshots saved yet. Use Save Snapshot to create one.</p>
             ) : (
               <>
-                <p style={{ marginBottom: 'var(--space-3)', fontSize: '13px', color: 'var(--text-muted)' }}>
+                <p style={HINT_TEXT_STYLE}>
                   Click a snapshot to load it. Select two and click Compare to see differences.
                 </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: 'var(--space-3)' }}>
-                  {snapshots.map(snap => {
-                    const isSelected = selectedForDiff.includes(snap.id!);
-                    return (
-                      <div
-                        key={snap.id}
-                        onClick={() => handleToggleDiffSelect(snap.id!)}
-                        onDoubleClick={() => handleLoadSnapshot(snap.id!)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '12px',
-                          padding: '12px',
-                          border: isSelected ? '2px solid var(--interactive-primary)' : '1px solid var(--border-default)',
-                          borderRadius: 'var(--radius-base)',
-                          background: isSelected ? 'var(--interactive-primary-subtle)' : 'var(--bg-surface)',
-                          cursor: 'pointer',
-                          transition: 'all 0.15s ease',
-                        }}
-                      >
-                        <span style={{ fontSize: '12px', color: 'var(--text-muted)', minWidth: '28px', fontWeight: isSelected ? 'bold' : 'normal' }}>
-                          {isSelected ? (selectedForDiff.indexOf(snap.id!) + 1) : ''}
-                        </span>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: 600, fontSize: '14px' }}>{snap.name}</div>
-                          {snap.description && <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>{snap.description}</div>}
-                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                            {new Date(snap.created_at).toLocaleString()}
-                          </div>
-                        </div>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleLoadSnapshot(snap.id!); }}
-                          className="btn-secondary"
-                          disabled={loadingSnapshotId !== null}
-                          style={{ padding: '4px 12px', fontSize: '12px', minWidth: '60px' }}
-                          title="Load this snapshot"
+                <div ref={snapshotScrollRef} style={SNAPSHOT_SCROLL_STYLE}>
+                  <div style={{ height: `${snapshotVirtualizer.getTotalSize()}px`, position: 'relative', width: '100%' }}>
+                    {snapshotVirtualizer.getVirtualItems().map(virtualItem => {
+                      const snap = snapshots[virtualItem.index];
+                      const isSelected = selectedForDiff.includes(snap.id!);
+                      return (
+                        <div
+                          key={snap.id}
+                          data-index={virtualItem.index}
+                          ref={snapshotVirtualizer.measureElement}
+                          onClick={() => handleToggleDiffSelect(snap.id!)}
+                          onDoubleClick={() => handleLoadSnapshot(snap.id!)}
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            transform: `translateY(${virtualItem.start}px)`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            padding: '12px',
+                            border: isSelected ? '2px solid var(--interactive-primary)' : '1px solid var(--border-default)',
+                            borderRadius: 'var(--radius-base)',
+                            background: isSelected ? 'var(--interactive-primary-subtle)' : 'var(--bg-surface)',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                            boxSizing: 'border-box',
+                          }}
                         >
-                          {loadingSnapshotId === snap.id ? <Loader2 size={14} className="animate-spin" /> : 'Load'}
-                        </button>
-                      </div>
-                    );
-                  })}
+                          <span style={{ fontSize: '12px', color: 'var(--text-muted)', minWidth: '28px', fontWeight: isSelected ? 'bold' : 'normal' }}>
+                            {isSelected ? (selectedForDiff.indexOf(snap.id!) + 1) : ''}
+                          </span>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 600, fontSize: '14px' }}>{snap.name}</div>
+                            {snap.description && <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>{snap.description}</div>}
+                            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                              {new Date(snap.created_at).toLocaleString()}
+                            </div>
+                          </div>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleLoadSnapshot(snap.id!); }}
+                            className="btn-secondary"
+                            disabled={loadingSnapshotId !== null}
+                            style={{ padding: '4px 12px', fontSize: '12px', minWidth: '60px' }}
+                            title="Load this snapshot"
+                          >
+                            {loadingSnapshotId === snap.id ? <Loader2 size={14} className="animate-spin" /> : 'Load'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
 
-                <div className="modal-actions" style={{ marginBottom: 'var(--space-3)' }}>
+                <div className="modal-actions" style={COMPARE_BUTTONS_STYLE}>
                   <button
                     onClick={handleDiff}
                     disabled={selectedForDiff.length !== 2}
@@ -325,14 +423,9 @@ const GraphControls: React.FC<GraphControlsProps> = ({
                 </div>
 
                 {diffResult && (
-                  <div style={{
-                    padding: 'var(--space-3)',
-                    background: 'var(--bg-surface)',
-                    borderRadius: 'var(--radius-base)',
-                    border: '1px solid var(--border-default)',
-                  }}>
+                  <div style={DIFF_CONTAINER_STYLE}>
                     <h4 style={{ margin: '0 0 12px 0', fontSize: '14px' }}>Diff Results</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '13px' }}>
+                    <div style={DIFF_GRID_STYLE}>
                       <div>
                         <div style={{ color: 'var(--status-success)', fontWeight: 600, marginBottom: '4px' }}>
                           + Added Nodes ({diffResult.added_nodes.length})
