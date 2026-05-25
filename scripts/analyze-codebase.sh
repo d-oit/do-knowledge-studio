@@ -22,10 +22,10 @@ DRY_RUN=false
 # Collect data
 # ─────────────────────────────────────────────
 
-# 1. Count active skills
+# 1. Count active skills (exclude the skills directory itself)
 SKILL_COUNT=0
 if [ -d ".agents/skills" ]; then
-    SKILL_COUNT=$(find .agents/skills -maxdepth 1 -type d | wc -l)
+    SKILL_COUNT=$(find .agents/skills -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
 fi
 
 # 2. Extract key scripts
@@ -137,31 +137,33 @@ if [ ! -f "AGENTS.md" ]; then
     exit 1
 fi
 
+# Define section markers for reliable replacement
+BEGIN_MARKER="## Self-Learning Rules (Auto-Generated)"
+END_MARKER="## Skills"
+
 # Check if the auto-generated section already exists
-if grep -q "## Self-Learning Rules (Auto-Generated)" AGENTS.md; then
-    # Replace existing section
-    # Use awk to replace the section between markers
+if grep -qF "$BEGIN_MARKER" AGENTS.md; then
+    # Replace existing section between BEGIN_MARKER and END_MARKER (or EOF)
     TMP_FILE=$(mktemp)
-    awk -v section="$SECTION" '
-        /^## Self-Learning Rules \(Auto-Generated\)/ { in_section=1; print section; next }
-        in_section && /^## / { in_section=0 }
+    awk -v section="$SECTION" -v begin="$BEGIN_MARKER" -v end="$END_MARKER" '
+        $0 == begin { in_section=1; print section; next }
+        in_section && $0 == end { in_section=0; print; next }
         !in_section
     ' AGENTS.md > "$TMP_FILE"
     mv "$TMP_FILE" AGENTS.md
     echo "✓ Updated existing Self-Learning Rules section in AGENTS.md"
 else
-    # Append before the "## Skills" section or at end
-    if grep -q "^## Skills$" AGENTS.md; then
+    # Append before the END_MARKER section or at end
+    if grep -qF "$END_MARKER" AGENTS.md; then
         TMP_FILE=$(mktemp)
-        awk -v section="$SECTION" '
-            /^## Skills$/ && !inserted { print section; print ""; inserted=1 }
+        awk -v section="$SECTION" -v marker="$END_MARKER" '
+            $0 == marker && !inserted { print section; print ""; inserted=1 }
             { print }
         ' AGENTS.md > "$TMP_FILE"
         mv "$TMP_FILE" AGENTS.md
         echo "✓ Added Self-Learning Rules section before Skills in AGENTS.md"
     else
-        echo "" >> AGENTS.md
-        echo "$SECTION" >> AGENTS.md
+        printf "\n%s\n" "$SECTION" >> AGENTS.md
         echo "✓ Appended Self-Learning Rules section to AGENTS.md"
     fi
 fi
