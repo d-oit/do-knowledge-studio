@@ -1,0 +1,59 @@
+# Gitleaks configuration for do-knowledge-studio
+# Verifies: gitleaks detect --config .gitleaks.toml --source . --verbose
+
+[extend]
+useDefault = true
+
+[allowlist]
+  description = "Project-specific false positives"
+
+  # Example/test keys used in documentation and test fixtures
+  paths = [
+    '''tests/''',
+    '''examples/''',
+    '''docs/''',
+    '''analysis/''',
+    '''agents-docs/''',
+    '''plans/''',
+  ]
+
+  # Known safe patterns in test data and configuration examples
+  regexes = [
+    '''example[_-]?api[_-]?key''',
+    '''test[_-]?secret''',
+    '''demo[_-]?token''',
+    '''OPENROUTER_API_KEY''',
+    '''KILO_API_KEY''',
+  ]
+
+  # SHA-256 of known-safe files (update if test fixtures change)
+  # To generate: gitleaks detect --config .gitleaks.toml --source . --verbose --report-format json
+  commits = []
+
+  # Stop words that appear in comments/docs but are not real secrets
+  stopwords = [
+    '''your-api-key-here''',
+    '''replace-with-your-key''',
+    '''sk-xxxxxxxxxxxxxxxxxxxxxxxx''',
+    '''ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxx''',
+  ]
+
+# Custom rules for project-specific patterns
+[[rules]]
+  id = "env-example-pattern"
+  description = "Detect API key patterns in .env.example (expected)"
+  path = '''\.env\.example$'''
+  regex = '''(?i)(api[_-]?key|secret|token|password).*=.*'''
+  tags = ["environment", "allowlisted"]
+  [rules.allowlist]
+    paths = ['''\.env\.example$''']
+
+[[rules]]
+  id = "script-token-pattern"
+  description = "Detect tokens in shell scripts (common in CI/automation)"
+  path = '''\.sh$'''
+  regex = '''(GITHUB_TOKEN|NPM_TOKEN|NODE_AUTH_TOKEN)'''
+  tags = ["ci", "environment"]
+  [rules.allowlist]
+    description = "CI tokens referenced in scripts are expected"
+    paths = ['''scripts/''', '''\.github/''']
