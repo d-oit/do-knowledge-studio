@@ -18,6 +18,42 @@ const ENTITY_TYPES = [
   { value: 'project', label: 'Project' },
 ] as const;
 
+// Module-level style constants to avoid inline object recreation on every render
+const ADVANCED_TOGGLE_STYLE: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '6px',
+  padding: '8px 0',
+  border: 'none',
+  background: 'none',
+  color: 'var(--text-muted)',
+  cursor: 'pointer',
+  fontSize: '12px',
+  minHeight: '44px',
+  fontFamily: 'var(--font-mono, monospace)',
+};
+
+const ADVANCED_SECTION_STYLE: React.CSSProperties = { padding: '0 0 8px 0' };
+
+const ENTITY_SOURCE_STYLE: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  marginBottom: '8px',
+};
+
+const SOURCE_INPUT_STYLE: React.CSSProperties = { flex: 1 };
+
+const MENTION_BUTTON_STYLE: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '6px',
+  padding: '6px 12px',
+  minHeight: '44px',
+};
+
+const MENTION_MENU_STYLE: React.CSSProperties = { marginTop: '4px' };
+
 const Editor: React.FC = () => {
   const [title, setTitle] = useState('');
   const [type, setType] = useState('note');
@@ -91,7 +127,7 @@ const Editor: React.FC = () => {
       const claims: { statement: string; source: string; status: string }[] = [];
       const mentions: { id: string, name: string }[] = [];
 
-      doc.descendants((node) => {
+      doc.descendants((node: { marks: Array<{ type: { name: string }; attrs: Record<string, string> }>; isText: boolean; text?: string }) => {
         const claimMark = node.marks.find(mark => mark.type.name === 'claim');
         if (claimMark && node.isText && node.text) {
           claims.push({
@@ -221,27 +257,15 @@ const Editor: React.FC = () => {
         className="advanced-toggle"
         aria-expanded={showAdvanced}
         aria-label="Toggle advanced options"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          padding: '8px 0',
-          border: 'none',
-          background: 'none',
-          color: 'var(--text-muted)',
-          cursor: 'pointer',
-          fontSize: '12px',
-          minHeight: '44px',
-          fontFamily: 'var(--font-mono, monospace)',
-        }}
+        style={ADVANCED_TOGGLE_STYLE}
       >
         {showAdvanced ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         Advanced
       </button>
 
       {showAdvanced && (
-        <div className="advanced-section" style={{ padding: '0 0 8px 0' }}>
-          <div className="entity-source" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+        <div className="advanced-section" style={ADVANCED_SECTION_STYLE}>
+          <div className="entity-source" style={ENTITY_SOURCE_STYLE}>
             <Link2 size={14} aria-hidden="true" />
             <label htmlFor="entity-source-url" className="sr-only">Source URL (optional)</label>
             <input
@@ -251,7 +275,7 @@ const Editor: React.FC = () => {
               onChange={handleSourceUrlChange}
               placeholder="Source URL — auto-hydrate description"
               type="url"
-              style={{ flex: 1 }}
+              style={SOURCE_INPUT_STYLE}
             />
           </div>
           <div className="mention-tool">
@@ -260,12 +284,12 @@ const Editor: React.FC = () => {
               className={editor?.isActive('mention') ? 'active' : ''}
               title="Link to Entity"
               aria-label="Link to Entity"
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', minHeight: '44px' }}
+              style={MENTION_BUTTON_STYLE}
             >
               <AtSign size={14} aria-hidden="true" /> Mention
             </button>
             {showMentionMenu && (
-              <div className="mention-menu" style={{ marginTop: '4px' }}>
+              <div className="mention-menu" style={MENTION_MENU_STYLE}>
                 {allEntities.length === 0 ? (
                   <div className="menu-item disabled">No entities found</div>
                 ) : (

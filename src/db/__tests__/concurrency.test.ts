@@ -45,7 +45,7 @@ describe('ConnectionPool Concurrency & Queuing', () => {
 
     // Fire 10 requests concurrently
     const promises = Array.from({ length: 10 }).map((_, i) =>
-      pool.exec(`INSERT INTO test VALUES (${i})`)
+    pool.exec(`INSERT INTO test VALUES (${i})`)
     );
 
     // If queuing works, they should all eventually resolve

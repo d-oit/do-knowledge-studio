@@ -36,7 +36,7 @@ export class KiloGatewayProvider implements LLMProvider {
       throw new Error(`Kilo Gateway error: ${error.error?.message || response.statusText}`);
     }
 
-    const data = await response.json();
+    const data: { choices: Array<{ message?: { content?: string } }>; model?: string; usage?: { prompt_tokens: number; completion_tokens: number } } = await response.json();
     return {
       content: data.choices[0]?.message?.content || '',
       model: data.model || request.model,
