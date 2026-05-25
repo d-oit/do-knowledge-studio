@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 import Database from 'better-sqlite3';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -34,8 +35,8 @@ const rowToObject = (row: Record<string, unknown>): Record<string, unknown> => {
  * Initializes the Node.js SQLite database using better-sqlite3.
  * Creates the database file and runs the schema if it doesn't exist.
  */
-export const initDb = async (): Promise<SQLiteDB> => {
-  if (instance) return instance;
+export const initDb = (): Promise<SQLiteDB> => {
+  if (instance) return Promise.resolve(instance);
 
   try {
     db = new Database(DB_PATH);
@@ -48,7 +49,7 @@ export const initDb = async (): Promise<SQLiteDB> => {
     }
 
     instance = {
-      exec: async (options: string | {
+      exec: (options: string | {
         sql: string;
         bind?: (string | number | boolean | null)[];
         returnValue?: string;
@@ -59,20 +60,20 @@ export const initDb = async (): Promise<SQLiteDB> => {
           return [];
         }
 
-        const { sql, bind, returnValue, rowMode } = options;
+        const { sql, bind, returnValue } = options;
         const stmt = db!.prepare(sql);
 
         if (returnValue === 'resultRows') {
           const rows = bind ? stmt.all(...bind) : stmt.all();
           const result = (rows as Record<string, unknown>[]).map(rowToObject);
-          return result;
+          return Promise.resolve(result);
         }
 
         bind ? stmt.run(...bind) : stmt.run();
-        return [];
+        return Promise.resolve([]);
       },
 
-      transaction: async (statements: { sql: string; bind?: (string | number | boolean | null)[] }[]): Promise<unknown> => {
+      transaction: (statements: { sql: string; bind?: (string | number | boolean | null)[] }[]): Promise<unknown> => {
         const txn = db!.transaction(() => {
           const results: unknown[] = [];
           for (const s of statements) {
@@ -82,10 +83,10 @@ export const initDb = async (): Promise<SQLiteDB> => {
           }
           return results;
         });
-        return txn();
+        return Promise.resolve(txn());
       },
 
-      close: async (): Promise<void> => {
+      close: (): Promise<void> => {
         db?.close();
         db = null;
         instance = null;

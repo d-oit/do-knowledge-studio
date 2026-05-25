@@ -62,7 +62,7 @@ export class Repository {
       });
       const rows = z.array(z.unknown()).parse(result);
       const parsed = this.parseMetadata(EntitySchema, rows[0]);
-      return { ...parsed, rowid: (rows[0] as unknown).rowid };
+      return { ...parsed, rowid: (rows[0]).rowid };
     } catch (err) {
       logger.error('Failed to create entity', err);
       throw new AppError('Failed to create entity', 'DB_ERROR', err);
@@ -396,7 +396,7 @@ export class Repository {
         rowMode: 'object',
       });
       const rows = z.array(z.unknown()).parse(results);
-      return rows.map((r) => ({ ...this.parseMetadata(ClaimSchema, r), rowid: (r as unknown).rowid }));
+      return rows.map((r) => ({ ...this.parseMetadata(ClaimSchema, r), rowid: (r).rowid }));
     } catch (err) {
       logger.error('Failed to fetch claims', err);
       throw new AppError('Failed to fetch claims', 'DB_ERROR', err);
