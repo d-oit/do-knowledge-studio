@@ -13,10 +13,13 @@ export default tseslint.config(
       'node_modules',
       'playwright-report',
       'test-results',
+      'coverage',
       '.agents',
+      'eslint.config.js',
     ],
   },
   js.configs.recommended,
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
   ...tseslint.configs.recommendedTypeChecked,
 
   // App-specific configuration (React)
@@ -71,7 +74,7 @@ export default tseslint.config(
 
   // CLI and Config Files (Node)
   {
-    files: ['cli/**/*.ts', 'scripts/**/*.ts', '*.config.{ts,js,cjs}', '*.config.*.{ts,js,cjs}', 'eslint.config.js'],
+    files: ['cli/**/*.ts', 'scripts/**/*.ts', '*.config.{ts,js,cjs}', '*.config.*.{ts,js,cjs}'],
     languageOptions: {
       globals: {
         ...globals.node,

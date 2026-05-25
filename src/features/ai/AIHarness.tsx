@@ -111,7 +111,8 @@ const AIHarness: React.FC = () => {
 
       for await (const chunk of stream) {
         if (chunk.done) break;
-        streamedContent += chunk.content;
+        const content: string = chunk.content;
+        streamedContent += content;
         setMessages(prev => {
           const updated = [...prev];
           updated[updated.length - 1] = { role: 'assistant', content: streamedContent };

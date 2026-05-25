@@ -15,7 +15,8 @@ const Chat: React.FC = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [showSources, setShowSources] = useState<Record<number, boolean>>({});
 
-  const handleSend = async (e?: React.FormEvent) => {
+  const handleSend = (e?: React.FormEvent) => {
+    void (async () => {
     e?.preventDefault();
     if (!input.trim() || isSearching) return;
 
@@ -46,6 +47,7 @@ const Chat: React.FC = () => {
     } finally {
       setIsSearching(false);
     }
+    })();
   };
 
   const toggleSources = (index: number) => {

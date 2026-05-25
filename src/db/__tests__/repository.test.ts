@@ -103,7 +103,7 @@ describe('Repository', () => {
     mockExec = createMockExec([]);
     mockTransaction = vi.fn().mockResolvedValue([]);
     mockDb = { exec: mockExec, transaction: mockTransaction };
-    (getDb as unknown as Mock).mockReturnValue(mockDb);
+    (getDb as unknown as Mock<[], unknown>).mockReturnValue(mockDb);
     repository = new Repository();
   });
 
