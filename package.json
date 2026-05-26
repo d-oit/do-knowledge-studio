@@ -59,6 +59,7 @@
     "mind-elixir": "^5.10.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-router-dom": "^7.15.1",
     "sigma": "^3.0.0-beta.27",
     "zod": "^3.22.4"
   },
