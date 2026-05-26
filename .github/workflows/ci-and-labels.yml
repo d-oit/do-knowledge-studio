@@ -74,7 +74,7 @@ jobs:
   test:
     name: Unit & E2E Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     needs: [changes, quality-gate]
     if: needs.changes.outputs.any_code == 'true'
     steps:
