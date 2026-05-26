@@ -103,8 +103,10 @@ const ExportPanel: React.FC = () => {
       ]);
       const printWindow = window.open('', '_blank');
       if (!printWindow) throw new Error('Popup blocked');
-      printWindow.document.write(generatePrintHtml(entities, claims));
-      printWindow.document.close();
+      const printDoc = printWindow.document;
+      printDoc.open();
+      printDoc.write(generatePrintHtml(entities, claims));
+      printDoc.close();
       printWindow.focus();
       setTimeout(() => printWindow.print(), 500);
       logger.info('PDF export complete');
