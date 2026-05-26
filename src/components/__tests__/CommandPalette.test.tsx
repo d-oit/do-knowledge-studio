@@ -104,7 +104,7 @@ describe('CommandPalette', () => {
       />
     );
 
-    const commands = screen.getAllByRole('button').filter(el => el.className.includes('command-item'));
+    const commands = screen.getAllByRole('option');
 
     // Initially first item is selected
     expect(commands[0].className).toContain('selected');

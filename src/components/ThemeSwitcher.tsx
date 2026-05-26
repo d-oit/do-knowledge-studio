@@ -66,6 +66,7 @@ interface ThemeSwitcherProps {
 const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ compact = false }) => {
   const [activeTheme, setActiveTheme] = React.useState<Theme>(getStoredTheme);
   const [isOpen, setIsOpen] = React.useState(false);
+  const [focusedIndex, setFocusedIndex] = React.useState(-1);
 
   React.useEffect(() => {
     document.documentElement.setAttribute('data-theme', activeTheme);
@@ -88,12 +89,33 @@ const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ compact = false }) => {
     setIsOpen(false);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!isOpen) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setFocusedIndex(prev => Math.min(prev + 1, THEME_OPTIONS.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setFocusedIndex(prev => Math.max(prev - 1, 0));
+    } else if (e.key === 'Enter' && focusedIndex >= 0) {
+      handleSelect(THEME_OPTIONS[focusedIndex].theme);
+    } else if (e.key === 'Escape') {
+      setIsOpen(false);
+    }
+  };
+
+  const handleDropdownOpen = () => {
+    setIsOpen(true);
+    setFocusedIndex(0);
+  };
+
   if (compact) {
     return (
       <div className="theme-switcher theme-switcher-compact">
         <button
           className="theme-toggle-btn"
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={handleDropdownOpen}
+          onKeyDown={handleKeyDown}
           aria-label="Switch theme"
           aria-expanded={isOpen}
           aria-haspopup="listbox"
@@ -101,10 +123,17 @@ const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ compact = false }) => {
           <Palette size={18} />
         </button>
         {isOpen && (
-          <ul className="theme-dropdown" role="listbox" aria-label="Select theme">
-            {THEME_OPTIONS.map((opt) => (
+          <ul
+            className="theme-dropdown"
+            role="listbox"
+            aria-label="Select theme"
+            aria-activedescendant={focusedIndex >= 0 ? `theme-option-${focusedIndex}` : undefined}
+            onKeyDown={handleKeyDown}
+          >
+            {THEME_OPTIONS.map((opt, i) => (
               <li key={opt.theme}>
                 <button
+                  id={`theme-option-${i}`}
                   className={`theme-option ${activeTheme === opt.theme ? 'active' : ''}`}
                   onClick={() => handleSelect(opt.theme)}
                   role="option"

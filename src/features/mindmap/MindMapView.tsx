@@ -61,6 +61,7 @@ const MindMapView: React.FC<Props> = ({
   const [maxDepth, setMaxDepth] = useState(2);
   const [relationFilter, setRelationFilter] = useState('all');
   const [collapsedByDefault, setCollapsedByDefault] = useState(entities.length > COLLAPSED_BY_DEFAULT_THRESHOLD);
+  const [selectedNodeName, setSelectedNodeName] = useState<string | null>(null);
 
   const rootEntity = useMemo(() =>
     entities.find(e => e.id === rootId) || propsRootEntity,
@@ -109,10 +110,32 @@ const MindMapView: React.FC<Props> = ({
     perf.measure('mindmap-init', 'mindmap-mount');
 
     mindInstance.current.bus.addListener('selectNode', (node) => {
+      const label = node.id ? (entities.find(e => e.id === node.id)?.name || null) : null;
+      setSelectedNodeName(label);
       if (node.id && onEntityClick) {
         onEntityClick(node.id);
       }
     });
+
+    // Add ARIA attributes to Mind Elixir nodes
+    const container = containerRef.current;
+    if (container) {
+      container.setAttribute('role', 'tree');
+      const addAriaToNodes = () => {
+        const topics = container.querySelectorAll('me-tpc');
+        topics.forEach(tpc => {
+          const parent = tpc.closest('me-parent');
+          if (parent && !parent.hasAttribute('role')) {
+            parent.setAttribute('role', 'treeitem');
+            parent.setAttribute('aria-label', tpc.textContent?.trim() || 'Mind map node');
+          }
+        });
+      };
+      addAriaToNodes();
+      const nodeObserver = new MutationObserver(addAriaToNodes);
+      nodeObserver.observe(container, { childList: true, subtree: true });
+      setTimeout(() => { nodeObserver.disconnect(); }, 2000);
+    }
 
     // Wire MindElixir operations to repository
     const bus = mindInstance.current.bus;
@@ -257,9 +280,9 @@ const MindMapView: React.FC<Props> = ({
       <div className="viz-container" style={{ flex: 1, minHeight: '600px' }}>
         <div ref={containerRef} className="viz-canvas" />
 
-        <div className="sr-only">
+        <div className="sr-only" aria-live="polite">
           <h4>Mind Map Summary</h4>
-          <p>Rooted at {rootEntity.name}. Depth: {maxDepth}.</p>
+          <p>Rooted at {rootEntity.name}. Depth: {maxDepth}.{selectedNodeName ? ` Selected: ${selectedNodeName}.` : ''}</p>
           <p>This visualization shows a hierarchical view of entities based on their relationships.</p>
         </div>
       </div>

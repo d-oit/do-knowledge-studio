@@ -179,7 +179,7 @@ const ExportPanel: React.FC = () => {
       </p>
 
       {error && (
-        <div style={{ marginBottom: '16px', padding: '12px', background: '#fef2f2', color: '#991b1b', borderRadius: '8px', border: '1px solid #fecaca', fontSize: '0.875rem' }}>
+        <div role="alert" aria-live="polite" style={{ marginBottom: '16px', padding: '12px', background: '#fef2f2', color: '#991b1b', borderRadius: '8px', border: '1px solid #fecaca', fontSize: '0.875rem' }}>
           {error}
         </div>
       )}

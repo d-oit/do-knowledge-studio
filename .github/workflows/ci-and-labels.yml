@@ -51,7 +51,7 @@ jobs:
   quality-gate:
     name: Quality Gate
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     needs: changes
     if: needs.changes.outputs.any_code == 'true'
     steps:
@@ -74,7 +74,7 @@ jobs:
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     needs: [changes, quality-gate]
     if: needs.changes.outputs.any_code == 'true'
     steps:

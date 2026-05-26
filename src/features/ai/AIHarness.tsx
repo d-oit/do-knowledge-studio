@@ -167,8 +167,8 @@ const AIHarness: React.FC = () => {
           >
             <Settings size={16} />
           </button>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer' }}>
-            <input type="checkbox" checked={useContext} onChange={e => setUseContext(e.target.checked)} />
+          <label htmlFor="use-context-checkbox" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer' }}>
+            <input id="use-context-checkbox" type="checkbox" checked={useContext} onChange={e => setUseContext(e.target.checked)} />
             <Database size={16} /> Augment with Local Knowledge
           </label>
         </div>
@@ -242,7 +242,7 @@ const AIHarness: React.FC = () => {
         </div>
       )}
 
-      <div className="messages-list">
+      <div className="messages-list" role="log" aria-live="polite">
         {messages.map((m, i) => (
           <div key={i} className={`message ${m.role}`}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', fontWeight: 'bold', fontSize: '12px' }}>
@@ -268,6 +268,7 @@ const AIHarness: React.FC = () => {
           onKeyPress={e => e.key === 'Enter' && handleSend()}
           placeholder="Ask the AI agent..." 
           disabled={isLoading}
+          aria-label="Ask the AI agent"
         />
         <button className="primary" onClick={handleSend} disabled={isLoading || !input.trim()}>
           {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}

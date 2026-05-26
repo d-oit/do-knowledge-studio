@@ -668,10 +668,15 @@ const GraphView: React.FC<Props> = ({
         className="viz-container"
         style={{ height: '600px', width: '100%' }}
         role="img"
-        aria-label="Knowledge Graph"
+        aria-label={`Knowledge Graph: ${effectiveData.entities.length} entities, ${effectiveData.links.length} connections${selectedNode ? `. Selected: ${entities.find(e => e.id === selectedNode)?.name || selectedNode}` : ''}`}
         tabIndex={-1}
         aria-roledescription="Interactive knowledge graph showing entities and their relationships"
       />
+      <div aria-live="polite" className="sr-only">
+        {selectedNode
+          ? `Selected entity: ${entities.find(e => e.id === selectedNode)?.name || selectedNode}. ${effectiveData.links.filter(l => l.source_id === selectedNode || l.target_id === selectedNode).length} connections.`
+          : 'Knowledge graph. No entity selected. Use Tab to navigate nodes.'}
+      </div>
       {selectedNode && (() => {
         const entity = entities.find(e => e.id === selectedNode);
         if (!entity) return null;
