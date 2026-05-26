@@ -1,0 +1,277 @@
+import { describe, it, expect } from 'vitest';
+import { generateSiteHtml, generateMarkdownExport, generateJsonExport } from '../export-core';
+import type { ExportData } from '../export-core';
+import type { Entity, Claim, Note } from '../validation';
+
+function makeEntity(overrides: Partial<Entity> = {}): Entity {
+  return {
+    id: '550e8400-e29b-41d4-a716-446655440000',
+    name: 'Test Entity',
+    type: 'concept',
+    description: 'A test entity',
+    created_at: '2024-01-01T00:00:00.000Z',
+    updated_at: '2024-01-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+function makeClaim(overrides: Partial<Claim> = {}): Claim {
+  return {
+    id: '660e8400-e29b-41d4-a716-446655440001',
+    entity_id: '550e8400-e29b-41d4-a716-446655440000',
+    statement: 'Test claim statement',
+    evidence: 'Test evidence',
+    confidence: 0.9,
+    verification_status: 'unverified',
+    created_at: '2024-01-01T00:00:00.000Z',
+    updated_at: '2024-01-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+function makeNote(overrides: Partial<Note> = {}): Note {
+  return {
+    id: '770e8400-e29b-41d4-a716-446655440002',
+    entity_id: '550e8400-e29b-41d4-a716-446655440000',
+    content: 'Test note content',
+    format: 'markdown',
+    created_at: '2024-01-01T00:00:00.000Z',
+    updated_at: '2024-01-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+function makeData(overrides: Partial<ExportData> = {}): ExportData {
+  const entity = makeEntity();
+  const entityId = entity.id!;
+  return {
+    entities: [entity],
+    claims: { [entityId]: [makeClaim()] },
+    notes: { [entityId]: [makeNote()] },
+    ...overrides,
+  };
+}
+
+describe('generateSiteHtml', () => {
+  it('produces valid HTML structure', () => {
+    const html = generateSiteHtml(makeData());
+    expect(html).toContain('<!DOCTYPE html>');
+    expect(html).toContain('<html');
+    expect(html).toContain('</html>');
+    expect(html).toContain('<head>');
+    expect(html).toContain('<body>');
+  });
+
+  it('includes entity names', () => {
+    const html = generateSiteHtml(makeData());
+    expect(html).toContain('Test Entity');
+  });
+
+  it('includes entity type badges', () => {
+    const html = generateSiteHtml(makeData());
+    expect(html).toContain('concept');
+  });
+
+  it('includes claim statements', () => {
+    const html = generateSiteHtml(makeData());
+    expect(html).toContain('Test claim statement');
+  });
+
+  it('handles zero entities', () => {
+    const html = generateSiteHtml(makeData({ entities: [], claims: {}, notes: {} }));
+    expect(html).toContain('Knowledge Base');
+    expect(html).toContain('</html>');
+  });
+
+  it('sanitizes XSS vectors in descriptions', () => {
+    const entity = makeEntity({ description: '<script>alert("xss")</script>normal text' });
+    const data = makeData({ entities: [entity] });
+    const html = generateSiteHtml(data);
+    expect(html).not.toContain('<script>');
+    expect(html).not.toContain('alert');
+    expect(html).toContain('normal text');
+  });
+
+  it('escapes HTML in entity names', () => {
+    const entity = makeEntity({ name: '<script>alert(1)</script>' });
+    const data = makeData({ entities: [entity] });
+    const html = generateSiteHtml(data);
+    expect(html).not.toContain('<script>');
+    expect(html).toContain('&lt;script&gt;');
+  });
+
+  it('escapes HTML in claim statements', () => {
+    const entityId = makeEntity().id!;
+    const claim = makeClaim({ statement: '<b>bold</b>' });
+    const data = makeData({
+      entities: [makeEntity()],
+      claims: { [entityId]: [claim] },
+    });
+    const html = generateSiteHtml(data);
+    expect(html).toContain('&lt;b&gt;');
+  });
+
+  it('shows confidence when not default', () => {
+    const entityId = makeEntity().id!;
+    const claim = makeClaim({ confidence: 0.5, entity_id: entityId });
+    const data = makeData({
+      entities: [makeEntity()],
+      claims: { [entityId]: [claim] },
+    });
+    const html = generateSiteHtml(data);
+    expect(html).toContain('50%');
+  });
+
+  it('hides confidence when default (1)', () => {
+    const entityId = makeEntity().id!;
+    const claim = makeClaim({ confidence: 1, entity_id: entityId });
+    const data = makeData({
+      entities: [makeEntity()],
+      claims: { [entityId]: [claim] },
+    });
+    const html = generateSiteHtml(data);
+    expect(html).not.toContain('Confidence');
+  });
+
+  it('includes navigation for all entities', () => {
+    const e1 = makeEntity({ id: 'a', name: 'Entity A' });
+    const e2 = makeEntity({ id: 'b', name: 'Entity B' });
+    const data = makeData({ entities: [e1, e2], claims: {}, notes: {} });
+    const html = generateSiteHtml(data);
+    expect(html).toContain('Entity A');
+    expect(html).toContain('Entity B');
+    expect(html).toContain('Quick Navigation');
+  });
+
+  it('handles entity with no id', () => {
+    const entity = makeEntity({ id: undefined });
+    const data = makeData({ entities: [entity], claims: {}, notes: {} });
+    expect(() => generateSiteHtml(data)).not.toThrow();
+  });
+});
+
+describe('generateMarkdownExport', () => {
+  it('produces valid markdown', () => {
+    const md = generateMarkdownExport(makeData());
+    expect(md).toContain('# ');
+    expect(md).toContain('**Type:**');
+    expect(md).toContain('## Claims');
+    expect(md).toContain('## Notes');
+  });
+
+  it('includes entity names', () => {
+    const md = generateMarkdownExport(makeData());
+    expect(md).toContain('Test Entity');
+  });
+
+  it('handles zero entities', () => {
+    const md = generateMarkdownExport(makeData({ entities: [], claims: {}, notes: {} }));
+    expect(md).toBe('');
+  });
+
+  it('escapes HTML in markdown content', () => {
+    const entity = makeEntity({ name: '<script>alert(1)</script>' });
+    const data = makeData({ entities: [entity] });
+    const md = generateMarkdownExport(data);
+    expect(md).not.toContain('<script>');
+    expect(md).toContain('&lt;script&gt;');
+  });
+
+  it('handles entity with no claims or notes', () => {
+    const entity = makeEntity();
+    const data = makeData({
+      entities: [entity],
+      claims: {},
+      notes: {},
+    });
+    const md = generateMarkdownExport(data);
+    expect(md).toContain('# Test Entity');
+    expect(md).not.toContain('## Claims');
+    expect(md).not.toContain('## Notes');
+  });
+
+  it('includes evidence in claims', () => {
+    const entityId = makeEntity().id!;
+    const claim = makeClaim({ evidence: 'Source document', entity_id: entityId });
+    const data = makeData({
+      entities: [makeEntity()],
+      claims: { [entityId]: [claim] },
+    });
+    const md = generateMarkdownExport(data);
+    expect(md).toContain('Evidence');
+    expect(md).toContain('Source document');
+  });
+
+  it('separates entities with ---', () => {
+    const e1 = makeEntity({ id: 'a', name: 'Entity A' });
+    const e2 = makeEntity({ id: 'b', name: 'Entity B' });
+    const data = makeData({ entities: [e1, e2], claims: {}, notes: {} });
+    const md = generateMarkdownExport(data);
+    expect(md).toContain('---');
+    expect(md).toContain('Entity A');
+    expect(md).toContain('Entity B');
+  });
+
+  it('handles entity with no id', () => {
+    const entity = makeEntity({ id: undefined });
+    const data = makeData({ entities: [entity], claims: {}, notes: {} });
+    expect(() => generateMarkdownExport(data)).not.toThrow();
+  });
+
+  it('shows confidence for non-default values', () => {
+    const entityId = makeEntity().id!;
+    const claim = makeClaim({ confidence: 0.75, entity_id: entityId, evidence: undefined });
+    const data = makeData({
+      entities: [makeEntity()],
+      claims: { [entityId]: [claim] },
+    });
+    const md = generateMarkdownExport(data);
+    expect(md).toContain('0.75');
+  });
+});
+
+describe('generateJsonExport', () => {
+  it('produces valid JSON', () => {
+    const json = generateJsonExport(makeData());
+    expect(() => JSON.parse(json)).not.toThrow();
+  });
+
+  it('produces pretty-printed JSON', () => {
+    const data = makeData();
+    const json = generateJsonExport(data);
+    expect(json).toContain('\n  ');
+  });
+
+  it('handles empty data', () => {
+    const json = generateJsonExport({ entities: [], claims: {}, notes: {} });
+    const parsed: ExportData = JSON.parse(json);
+    expect(parsed.entities).toHaveLength(0);
+  });
+
+  it('includes all fields', () => {
+    const data = makeData();
+    const parsed: ExportData = JSON.parse(generateJsonExport(data));
+    expect(parsed.entities).toBeDefined();
+    expect(parsed.claims).toBeDefined();
+    expect(parsed.notes).toBeDefined();
+  });
+
+  it('serializes nested records', () => {
+    const data = makeData();
+    const parsed: ExportData = JSON.parse(generateJsonExport(data));
+    const entityId = makeEntity().id!;
+    expect(parsed.claims[entityId]).toBeDefined();
+  });
+
+  it('handles arbitrary data shapes', () => {
+    const data: Record<string, unknown> = { foo: 'bar', count: 42 };
+    const json = generateJsonExport(data);
+    const parsed: Record<string, unknown> = JSON.parse(json);
+    expect(parsed.foo).toBe('bar');
+    expect(parsed.count).toBe(42);
+  });
+
+  it('handles null', () => {
+    expect(() => generateJsonExport(null)).not.toThrow();
+  });
+});

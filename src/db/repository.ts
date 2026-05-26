@@ -16,6 +16,17 @@ import { AppError } from '../lib/errors';
 import { logger } from '../lib/logger';
 import { perf } from '../lib/perf';
 
+/** Schema for search-related query results that join entities and links. */
+const SearchRelatedRowSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: z.string(),
+  description: z.string().nullable().optional(),
+  relation: z.string(),
+  source_id: z.string(),
+  target_id: z.string(),
+});
+
 interface RankedResult {
   id: string;
   name: string;
@@ -113,7 +124,7 @@ export class Repository {
       const rows = z.array(z.unknown()).parse(results);
       if (rows.length === 0) return null;
       const parsed = this.parseMetadata(EntitySchema, rows[0]);
-      return { ...parsed, rowid: (rows[0] as any).rowid };
+      return { ...parsed, rowid: (rows[0] as { rowid: number }).rowid };
     } catch (err) {
       logger.error('Failed to fetch entity by id', err);
       throw new AppError('Failed to fetch entity by id', 'DB_ERROR', err);
@@ -250,15 +261,15 @@ export class Repository {
         returnValue: 'resultRows',
         rowMode: 'object',
       });
-      const rows = z.array(z.unknown()).parse(results) as Array<Record<string, unknown>>;
+      const rows = z.array(SearchRelatedRowSchema).parse(results);
       perf.measure('sqlite-query-search-related', 'sqlite-query');
       return rows
-        .filter((r) => !options?.excludeIds?.has(r.id as string))
+        .filter((r) => !options?.excludeIds?.has(r.id))
         .map((r) => ({
-          id: r.id as string,
-          name: r.name as string,
-          type: r.type as string,
-          excerpt: (r.description as string) || '',
+          id: r.id,
+          name: r.name,
+          type: r.type,
+          excerpt: r.description ?? '',
           score: 0,
           stage: 'related' as const,
         }));
@@ -291,7 +302,7 @@ export class Repository {
       });
       const rows = z.array(z.unknown()).parse(result);
       const parsed = this.parseMetadata(ClaimSchema, rows[0]);
-      return { ...parsed, rowid: (rows[0] as any).rowid };
+      return { ...parsed, rowid: (rows[0] as { rowid: number }).rowid };
     } catch (err) {
       logger.error('Failed to create claim', err);
       throw new AppError('Failed to create claim', 'DB_ERROR', err);
@@ -403,6 +414,25 @@ export class Repository {
     }
   }
 
+  /** Get all notes in the database. */
+  async getAllNotes(): Promise<Note[]> {
+    perf.mark('sqlite-query');
+    try {
+      const results = await this.db.exec({
+        sql: `SELECT * FROM notes`,
+        returnValue: 'resultRows',
+        rowMode: 'object',
+      });
+      const rows = z.array(z.unknown()).parse(results);
+      return rows.map((r) => this.parseMetadata(NoteSchema, r));
+    } catch (err) {
+      logger.error('Failed to fetch all notes', err);
+      throw new AppError('Failed to fetch all notes', 'DB_ERROR', err);
+    } finally {
+      perf.measure('sqlite-query-notes', 'sqlite-query');
+    }
+  }
+
   /** Get all claims in the database. */
   async getAllClaims(): Promise<Claim[]> {
     perf.mark('sqlite-query');
@@ -420,6 +450,32 @@ export class Repository {
     } finally {
       perf.measure('sqlite-query-claims', 'sqlite-query');
     }
+  }
+
+  /**
+   * Get all claims grouped by entity_id for batch export.
+   * More efficient than N+1 queries for export operations.
+   */
+  async getAllClaimsGroupedByEntity(): Promise<Record<string, Claim[]>> {
+    const claims = await this.getAllClaims();
+    return claims.reduce((acc, claim) => {
+      if (!acc[claim.entity_id]) acc[claim.entity_id] = [];
+      acc[claim.entity_id].push(claim);
+      return acc;
+    }, {} as Record<string, Claim[]>);
+  }
+
+  /**
+   * Get all notes grouped by entity_id for batch export.
+   */
+  async getAllNotesGroupedByEntity(): Promise<Record<string, Note[]>> {
+    const notes = await this.getAllNotes();
+    return notes.reduce((acc, note) => {
+      if (!note.entity_id) return acc;
+      if (!acc[note.entity_id]) acc[note.entity_id] = [];
+      acc[note.entity_id].push(note);
+      return acc;
+    }, {} as Record<string, Note[]>);
   }
 
   /**
@@ -639,12 +695,14 @@ export class Repository {
       });
     } catch (err) {
       logger.error('Failed to upsert web cache', err);
+      throw new AppError('Failed to upsert web cache', 'DB_ERROR', err);
     }
   }
 
   /**
    * Retrieve cached web content by URL.
    * @returns The cached row or null if not found.
+   * @throws {AppError} If the database query fails.
    */
   async getWebCache(url: string): Promise<{ url: string; content: string; format: string; title?: string; resolved_at: string } | null> {
     try {
@@ -666,7 +724,7 @@ export class Repository {
       };
     } catch (err) {
       logger.error('Failed to get web cache', err);
-      return null;
+      throw new AppError('Failed to get web cache', 'DB_ERROR', err);
     }
   }
 
@@ -733,12 +791,12 @@ export class Repository {
   async listSnapshots(): Promise<GraphSnapshot[]> {
     try {
       const results = await this.db.exec({
-        sql: `SELECT id, name, description, created_at FROM graph_snapshots ORDER BY created_at DESC`,
+        sql: `SELECT * FROM graph_snapshots ORDER BY created_at DESC`,
         returnValue: 'resultRows',
         rowMode: 'object',
       });
       const rows = z.array(z.unknown()).parse(results);
-      return rows.map(r => r as GraphSnapshot);
+      return rows.map(r => this.parseMetadata(GraphSnapshotSchema, r));
     } catch (err) {
       logger.error('Failed to list snapshots', err);
       throw new AppError('Failed to list snapshots', 'DB_ERROR', err);

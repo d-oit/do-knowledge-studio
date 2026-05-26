@@ -5,14 +5,21 @@ import { readFileSync } from 'fs';
 import { setDb } from '../src/db/client.js';
 import { initDb } from './db.js';
 import { repository } from '../src/db/repository.js';
+import { generateSiteHtml, generateJsonExport } from '../src/lib/export-core.js';
 import type { Note } from '../src/lib/validation';
 
 const program = new Command();
 
+let dbInstance: Awaited<ReturnType<typeof initDb>> | null = null;
+
 async function ensureDb() {
-  const db = await initDb();
-  setDb(db);
+  dbInstance = await initDb();
+  setDb(dbInstance);
 }
+
+process.on('exit', () => {
+  dbInstance?.close();
+});
 
 const version = readFileSync(new URL('../VERSION', import.meta.url), 'utf-8').trim();
 
@@ -62,7 +69,13 @@ program
       console.error('Directory not found');
       return;
     }
-    const files = fs.readdirSync(source).filter((f: string) => f.endsWith('.md'));
+    let files: string[];
+    try {
+      files = fs.readdirSync(source).filter((f: string) => f.endsWith('.md'));
+    } catch (err) {
+      console.error(`Failed to read directory: ${err}`);
+      return;
+    }
     console.log(`Found ${files.length} markdown files.`);
     for (const file of files) {
       const content = fs.readFileSync(path.join(source, file), 'utf-8');
@@ -141,17 +154,12 @@ async function exportMarkdown(outDir: string) {
 }
 
 async function exportJson(outDir: string) {
-  const entities = await repository.getAllEntities();
-  const links = await repository.getAllLinks();
-  
-  const claims: Record<string, Claim[]> = {};
-  const notes: Record<string, Note[]> = {};
-  
-  for (const entity of entities) {
-    if (!entity.id) continue;
-    claims[entity.id] = await repository.getClaimsByEntityId(entity.id);
-    notes[entity.id] = await repository.getNotesByEntityId(entity.id);
-  }
+  const [entities, links, claims, notes] = await Promise.all([
+    repository.getAllEntities(),
+    repository.getAllLinks(),
+    repository.getAllClaimsGroupedByEntity(),
+    repository.getAllNotesGroupedByEntity(),
+  ]);
   
   const data = {
     exported_at: new Date().toISOString(),
@@ -161,63 +169,17 @@ async function exportJson(outDir: string) {
     links,
   };
   
-  fs.writeFileSync(path.join(outDir, 'knowledge.json'), JSON.stringify(data, null, 2));
+  fs.writeFileSync(path.join(outDir, 'knowledge.json'), generateJsonExport(data));
 }
 
 async function exportSite(outDir: string) {
-  const entities = await repository.getAllEntities();
+  const [entities, claims, notes] = await Promise.all([
+    repository.getAllEntities(),
+    repository.getAllClaimsGroupedByEntity(),
+    repository.getAllNotesGroupedByEntity(),
+  ]);
   
-  let html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Knowledge Base</title>
-  <style>
-    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; line-height: 1.6; }
-    h1 { border-bottom: 2px solid #333; padding-bottom: 0.5rem; }
-    h2 { margin-top: 2rem; }
-    .entity { margin-bottom: 2rem; padding: 1rem; border: 1px solid #ddd; border-radius: 8px; }
-    .type { background: #f0f0f0; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.875rem; }
-    .claim { margin: 0.5rem 0; padding-left: 1rem; border-left: 3px solid #007bff; }
-    a { color: #007bff; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-  </style>
-</head>
-<body>
-  <h1>Knowledge Base</h1>
-  <p>Exported from Knowledge Studio</p>
-`;
-
-  for (const entity of entities) {
-    const entityId = entity.id!;
-    const claims = await repository.getClaimsByEntityId(entityId);
-    const safeId = entity.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-    
-    html += `\n  <div class="entity" id="${safeId}">\n`;
-    html += `    <h2><a href="#${safeId}">${entity.name}</a></h2>\n`;
-    html += `    <span class="type">${entity.type}</span>\n`;
-    
-    if (entity.description) {
-      html += `\n    <p>${entity.description}</p>\n`;
-    }
-    
-    if (claims.length > 0) {
-      html += `\n    <h3>Claims</h3>\n`;
-      for (const claim of claims) {
-        html += `    <div class="claim">${claim.statement}`;
-        if (claim.confidence !== 1) html += ` <em>(confidence: ${claim.confidence})</em>`;
-        html += `</div>\n`;
-      }
-    }
-    
-    html += `  </div>\n`;
-  }
-
-  html += `
-</body>
-</html>`;
-
+  const html = generateSiteHtml({ entities, claims, notes });
   fs.writeFileSync(path.join(outDir, 'index.html'), html);
 }
 

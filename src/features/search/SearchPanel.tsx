@@ -276,7 +276,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
           onClick={async () => {
             if (!useSemantic) {
               setUseSemantic(true);
-              initEmbeddings();
+              try { initEmbeddings(); } catch { /* embeddings are best-effort */ }
             }
           }}
           aria-pressed={useSemantic}

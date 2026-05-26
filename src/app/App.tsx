@@ -158,72 +158,70 @@ const AppContent: React.FC = () => {
 
         <main className="main-content">
           {!dbReady && <div className="loading-screen">Booting Knowledge Studio...</div>}
-          <ErrorBoundary fallback={<div className="error-state">Failed to load component. Please refresh.</div>}>
-            {dbReady && currentView === 'editor' && (
-              <Suspense fallback={<EditorSkeleton />}>
-                <ErrorBoundary>
-                  <Profiled id="Editor">
-                    <Editor />
-                  </Profiled>
-                </ErrorBoundary>
-              </Suspense>
-            )}
-            {dbReady && currentView === 'graph' && (
-              <Suspense fallback={<GraphSkeleton />}>
-                <ErrorBoundary>
-                  <Profiled id="GraphView">
-                    <GraphView
-                      entities={entities}
-                      links={links}
-                      focusMode={graphFocusMode}
-                      onFocusModeChange={setGraphFocusMode}
-                      selectedNode={graphSelectedNode}
-                      onSelectedNodeChange={setGraphSelectedNode}
-                      hideToolbar={window.innerWidth < 768}
-                    />
-                  </Profiled>
-                </ErrorBoundary>
-              </Suspense>
-            )}
-            {dbReady && currentView === 'mindmap' && entities.length > 0 && (
-              <Suspense fallback={<MindMapSkeleton />}>
-                <ErrorBoundary>
-                  <Profiled id="MindMapView">
-                    <MindMapView
-                      rootEntity={entities[0]}
-                      relatedEntities={entities.slice(1, 10)}
-                      entities={entities}
-                      links={links}
-                    />
-                  </Profiled>
-                </ErrorBoundary>
-              </Suspense>
-            )}
-            {dbReady && currentView === 'mindmap' && entities.length === 0 && (
-               <div className="empty-state">No entities found. Create some in the Editor first.</div>
-            )}
-            {dbReady && currentView === 'chat' && (
-              <Suspense fallback={<AISkeleton />}>
-                <ErrorBoundary>
-                  <Chat />
-                </ErrorBoundary>
-              </Suspense>
-            )}
-            {dbReady && currentView === 'export' && (
-              <Suspense fallback={<ExportSkeleton />}>
-                <ErrorBoundary>
-                  <ExportPanel />
-                </ErrorBoundary>
-              </Suspense>
-            )}
-            {dbReady && currentView === 'ai' && (
-              <Suspense fallback={<AISkeleton />}>
-                <ErrorBoundary>
-                  <AIHarness />
-                </ErrorBoundary>
-              </Suspense>
-            )}
-          </ErrorBoundary>
+          {dbReady && currentView === 'editor' && (
+            <Suspense fallback={<EditorSkeleton />}>
+              <ErrorBoundary featureName="Editor" onRetry={() => window.location.reload()}>
+                <Profiled id="Editor">
+                  <Editor />
+                </Profiled>
+              </ErrorBoundary>
+            </Suspense>
+          )}
+          {dbReady && currentView === 'graph' && (
+            <Suspense fallback={<GraphSkeleton />}>
+              <ErrorBoundary featureName="Graph View" onRetry={() => window.location.reload()}>
+                <Profiled id="GraphView">
+                  <GraphView
+                    entities={entities}
+                    links={links}
+                    focusMode={graphFocusMode}
+                    onFocusModeChange={setGraphFocusMode}
+                    selectedNode={graphSelectedNode}
+                    onSelectedNodeChange={setGraphSelectedNode}
+                    hideToolbar={window.innerWidth < 768}
+                  />
+                </Profiled>
+              </ErrorBoundary>
+            </Suspense>
+          )}
+          {dbReady && currentView === 'mindmap' && entities.length > 0 && (
+            <Suspense fallback={<MindMapSkeleton />}>
+              <ErrorBoundary featureName="Mind Map" onRetry={() => window.location.reload()}>
+                <Profiled id="MindMapView">
+                  <MindMapView
+                    rootEntity={entities[0]}
+                    relatedEntities={entities.slice(1, 10)}
+                    entities={entities}
+                    links={links}
+                  />
+                </Profiled>
+              </ErrorBoundary>
+            </Suspense>
+          )}
+          {dbReady && currentView === 'mindmap' && entities.length === 0 && (
+             <div className="empty-state">No entities found. Create some in the Editor first.</div>
+          )}
+          {dbReady && currentView === 'chat' && (
+            <Suspense fallback={<AISkeleton />}>
+              <ErrorBoundary featureName="Chat" onRetry={() => window.location.reload()}>
+                <Chat />
+              </ErrorBoundary>
+            </Suspense>
+          )}
+          {dbReady && currentView === 'export' && (
+            <Suspense fallback={<ExportSkeleton />}>
+              <ErrorBoundary featureName="Export" onRetry={() => window.location.reload()}>
+                <ExportPanel />
+              </ErrorBoundary>
+            </Suspense>
+          )}
+          {dbReady && currentView === 'ai' && (
+            <Suspense fallback={<AISkeleton />}>
+              <ErrorBoundary featureName="AI" onRetry={() => window.location.reload()}>
+                <AIHarness />
+              </ErrorBoundary>
+            </Suspense>
+          )}
         </main>
 
         <aside className="search-sidebar">

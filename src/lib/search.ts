@@ -2,6 +2,7 @@ import { create, insert, insertMultiple, remove, search, type Orama } from '@ora
 import { pluginEmbeddings } from '@orama/plugin-embeddings';
 import { repository } from '../db/repository.js';
 import { logger } from './logger.js';
+import { AppError } from './errors.js';
 import { compressText } from './nlp.js';
 import { jobCoordinator } from './jobs.js';
 import { resolveUrl } from './resolver.js';
@@ -57,9 +58,9 @@ export const initEmbeddings = (): boolean => {
     logger.info('Semantic embeddings plugin initialized');
     return true;
   } catch (err) {
-    logger.warn('Semantic embeddings unavailable — falling back to keyword search', err);
+    logger.error('Semantic embeddings initialization failed', err);
     embeddingsPlugin = null;
-    return false;
+    throw new AppError('Failed to initialize embeddings', 'SEARCH_FAILED', err, 'Semantic search unavailable, falling back to keyword', true);
   }
 };
 
@@ -166,7 +167,7 @@ export const initSearch = async () => {
       const batch = entities.slice(i, i + batchSize);
       const stmts = batch.map(e => ({
         sql: `INSERT INTO entity_search_idx(rowid, name, description) VALUES (?, ?, ?)`,
-        bind: [e.rowid as unknown as number, e.name, e.description || ''],
+        bind: [(e as Entity & { rowid: number }).rowid, e.name, e.description || ''],
       }));
       await repository.transaction(stmts);
     }
@@ -175,7 +176,7 @@ export const initSearch = async () => {
       const batch = allClaims.slice(i, i + batchSize);
       const stmts = batch.map(c => ({
         sql: `INSERT INTO claim_search_idx(rowid, statement) VALUES (?, ?)`,
-        bind: [c.rowid as unknown as number, c.statement],
+        bind: [(c as Claim & { rowid: number }).rowid, c.statement],
       }));
       await repository.transaction(stmts);
     }
@@ -543,7 +544,8 @@ export const progressiveSearch = async (
     if (relatedResults.length > 0) {
       onResults(relatedResults, 'related');
     }
-  } catch {
-    // best-effort
+  } catch (err) {
+    logger.error('Related search failed', err);
+    throw new AppError('Related search failed', 'SEARCH_FAILED', err, 'Search encountered an error', true);
   }
 };

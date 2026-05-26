@@ -36,17 +36,18 @@ const getSchema = async () => {
     if (typeof fetch !== 'undefined') {
         const schemaResponse = await fetch('/db/schema.sql');
         if (schemaResponse.ok) return await schemaResponse.text();
+        throw new AppError('Failed to load database schema from server', 'DB_INIT_FAILED');
     }
     // Fallback for CLI
     if (typeof process !== 'undefined' && process.versions && process.versions.node) {
       try {
         const fs = await import('fs');
         return fs.readFileSync('./public/db/schema.sql', 'utf-8');
-      } catch {
-        return '';
+      } catch (err) {
+        throw new AppError('Failed to load database schema from filesystem', 'DB_INIT_FAILED', err);
       }
     }
-    return '';
+    throw new AppError('No schema source available', 'DB_INIT_FAILED');
 };
 
 const isBrowser = typeof window !== 'undefined' && typeof Worker !== 'undefined';

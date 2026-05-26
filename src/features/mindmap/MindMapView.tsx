@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import MindElixir, { type MindElixirData } from 'mind-elixir';
+import MindElixir, { type MindElixirData, type MindElixirInstance } from 'mind-elixir';
 import { Entity, Link } from '../../lib/validation';
 import { perf } from '../../lib/perf';
 import { ChevronDown, Layers, Filter, Info, ChevronRight } from 'lucide-react';
@@ -15,11 +15,8 @@ interface Props {
   onEntityClick?: (entityId: string) => void;
 }
 
-interface MindElixirInstance {
-  init: (data: { nodeData: MindElixirData['nodeData'] }) => void;
-  bus: {
-    addListener: (event: string, handler: (node: { id: string }) => void) => void;
-  };
+interface Bus {
+  addListener: (event: string, handler: (node: { id: string }) => void) => void;
 }
 
 function buildTree(
@@ -55,7 +52,7 @@ const MindMapView: React.FC<Props> = ({
   onEntityClick
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mindInstance = useRef<MindElixirInstance | null>(null);
+  const mindInstance = useRef<{ init: (data: { nodeData: MindElixirData['nodeData'] }) => void; bus: Bus } | null>(null);
   const treeDataRef = useRef<string>('');
   const [rootId, setRootId] = useState<string>(propsRootEntity.id || '');
   const [maxDepth, setMaxDepth] = useState(2);
@@ -100,8 +97,9 @@ const MindMapView: React.FC<Props> = ({
       keypress: true,
     };
 
-    mindInstance.current = new (MindElixir as unknown as new (options: Record<string, unknown>) => MindElixirInstance)(options);
-    mindInstance.current.init({
+    const instance: MindElixirInstance = new (MindElixir as new (options: Record<string, unknown>) => MindElixirInstance)(options);
+    mindInstance.current = instance;
+    instance.init({
       nodeData: treeData
     });
     perf.measure('mindmap-init', 'mindmap-mount');
