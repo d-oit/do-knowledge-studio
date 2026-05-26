@@ -2,8 +2,9 @@ import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import Sigma from 'sigma';
 import Graph from 'graphology';
 import type { NodeDisplayData, EdgeDisplayData } from 'sigma/types';
-import { Entity, Link } from '../../lib/validation';
+import { Entity, Link, Claim } from '../../lib/validation';
 import GraphControls from './GraphControls';
+import GraphInspector from './GraphInspector';
 import { jobCoordinator } from '../../lib/jobs';
 import { repository } from '../../db/repository';
 import { logger } from '../../lib/logger';
@@ -50,6 +51,8 @@ const GraphView: React.FC<Props> = ({
   const [internalFocusMode, setInternalFocusMode] = useState(false);
   const [snapshotMode, setSnapshotMode] = useState(false);
   const [snapshotData, setSnapshotData] = useState<{ nodes: { id: string; label: string }[]; edges: { id: string; source: string; target: string; label?: string }[] } | null>(null);
+  const [selectedEntityClaims, setSelectedEntityClaims] = useState<Claim[]>([]);
+  const [selectedEntityLinks, setSelectedEntityLinks] = useState<Link[]>([]);
 
   const selectedNode = propsSelectedNode !== undefined ? propsSelectedNode : internalSelectedNode;
   const focusMode = propsFocusMode !== undefined ? propsFocusMode : internalFocusMode;
@@ -246,6 +249,19 @@ const GraphView: React.FC<Props> = ({
     };
   }, [effectiveData, selectedNode, focusMode, snapshotMode, setFocusMode, setSelectedNode]);
 
+  // Fetch claims and links when selected node changes
+  useEffect(() => {
+    if (!selectedNode) {
+      setSelectedEntityClaims([]);
+      setSelectedEntityLinks([]);
+      return;
+    }
+    repository.getClaimsByEntityId(selectedNode).then(claims => {
+      setSelectedEntityClaims(claims);
+    }).catch(err => logger.error('Failed to fetch entity claims', err));
+    setSelectedEntityLinks(links.filter(l => l.source_id === selectedNode || l.target_id === selectedNode));
+  }, [selectedNode, links]);
+
   // Cleanup Sigma on unmount
   useEffect(() => {
     return () => {
@@ -428,6 +444,19 @@ const GraphView: React.FC<Props> = ({
         </div>
       )}
       <div ref={containerRef} className="viz-container" style={{ height: '600px', width: '100%' }} />
+      {selectedNode && (() => {
+        const entity = entities.find(e => e.id === selectedNode);
+        if (!entity) return null;
+        return (
+          <GraphInspector
+            entity={entity}
+            claims={selectedEntityClaims}
+            links={selectedEntityLinks}
+            entities={entities}
+            onClose={() => setSelectedNode(null)}
+          />
+        );
+      })()}
     </div>
   );
 };

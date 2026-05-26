@@ -28,7 +28,7 @@ if git diff --cached --name-only | grep -q "^VERSION$"; then
     echo "VERSION changed - propagating to all files..."
     "$REPO_ROOT/scripts/propagate-version.sh"
     # Re-stage files that were updated by propagation
-    git add README.md QUICKSTART.md agents-docs/MIGRATION.md CHANGELOG.md 2>/dev/null || true
+    git add README.md agents-docs/MIGRATION.md CHANGELOG.md 2>/dev/null || true
 fi
 
 echo "Running pre-commit checks..."

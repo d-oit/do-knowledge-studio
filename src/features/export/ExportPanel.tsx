@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { logger } from '../../lib/logger';
 import { repository } from '../../db/repository';
 import { Claim, Note } from '../../lib/validation';
+import { sanitizeHtml, escapeHtml } from '../../lib/security';
 import { Download, FileJson, FileText, Globe, Loader2 } from 'lucide-react';
 
 const ExportPanel: React.FC = () => {
@@ -136,7 +137,7 @@ const ExportPanel: React.FC = () => {
   <nav>
     <h4>Quick Navigation</h4>
     <ul>
-      ${entities.map(e => `<li><a href="#${e.name.replace(/[^a-z0-9]/gi, '-').toLowerCase()}">${e.name}</a></li>`).join('\n      ')}
+      ${entities.map(e => `<li><a href="#${escapeHtml(e.name.replace(/[^a-z0-9]/gi, '-').toLowerCase())}">${escapeHtml(e.name)}</a></li>`).join('\n      ')}
     </ul>
   </nav>
 
@@ -149,22 +150,22 @@ const ExportPanel: React.FC = () => {
         const safeId = entity.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
         
         html += `\n    <section class="entity" id="${safeId}">\n`;
-        html += `      <span class="type">${entity.type}</span>\n`;
-        html += `      <h2>${entity.name}</h2>\n`;
+        html += `      <span class="type">${escapeHtml(entity.type)}</span>\n`;
+        html += `      <h2>${escapeHtml(entity.name)}</h2>\n`;
         
         if (entity.description) {
-          html += `\n      <div class="description">${entity.description}</div>\n`;
+          html += `\n      <div class="description">${sanitizeHtml(entity.description)}</div>\n`;
         }
         
         if (claims.length > 0) {
           html += `\n      <h3>Claims</h3>\n`;
           for (const claim of claims) {
             html += `      <div class="claim">\n`;
-            html += `        <div class="statement">${claim.statement}</div>\n`;
+            html += `        <div class="statement">${escapeHtml(claim.statement)}</div>\n`;
             if (claim.confidence !== 1 || claim.source) {
               html += `        <div class="claim-meta">\n`;
               if (claim.confidence !== 1) html += `          <span>Confidence: ${Math.round(claim.confidence * 100)}%</span>\n`;
-              if (claim.source) html += `          <span>Source: ${claim.source}</span>\n`;
+              if (claim.source) html += `          <span>Source: ${escapeHtml(claim.source)}</span>\n`;
               html += `        </div>\n`;
             }
             html += `      </div>\n`;

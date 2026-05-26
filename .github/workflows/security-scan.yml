@@ -26,6 +26,7 @@ jobs:
   shellcheck-security:
     name: Shell Script Security Analysis
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -90,6 +91,7 @@ jobs:
   trivy-fs:
     name: Trivy Filesystem Security Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -123,6 +125,7 @@ jobs:
   secret-detection:
     name: Secret Detection
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -155,6 +158,7 @@ jobs:
   iac-scan:
     name: Infrastructure as Code Security
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -188,6 +192,7 @@ jobs:
   security-summary:
     name: Security Scan Summary
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs:
       - shellcheck-security
       - trivy-fs

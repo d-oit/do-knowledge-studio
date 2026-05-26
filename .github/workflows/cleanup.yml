@@ -27,6 +27,7 @@ jobs:
   detect-unused:
     name: Detect Unused Files
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     outputs:
       unused_files: ${{ steps.unused.outputs.unused_files }}
       quality_passed: ${{ steps.quality.outputs.quality_passed }}
@@ -160,6 +161,7 @@ jobs:
   report:
     name: Generate Report
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: detect-unused
     if: always()
     steps:

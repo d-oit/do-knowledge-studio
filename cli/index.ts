@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import * as fs from 'fs';
 import * as path from 'path';
+import { readFileSync } from 'fs';
 import { setDb } from '../src/db/client.js';
 import { initDb } from './db.js';
 import { repository } from '../src/db/repository.js';
@@ -13,10 +14,12 @@ async function ensureDb() {
   setDb(db);
 }
 
+const version = readFileSync(new URL('../VERSION', import.meta.url), 'utf-8').trim();
+
 program
   .name('knowledge-studio')
   .description('CLI for do-knowledge-studio')
-  .version('0.1.0');
+  .version(version);
 
 program
   .command('init')

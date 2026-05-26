@@ -30,7 +30,6 @@ git commit -m "chore: bump version to 0.3.0"
 
 The pre-commit hook detects the VERSION change and runs `propagate-version.sh`, which updates:
 - `README.md` - version badge
-- `QUICKSTART.md` - version badge
 - `agents-docs/MIGRATION.md` - version badge + template version text
 - `CHANGELOG.md` - adds `[Unreleased]` section if missing
 
@@ -46,7 +45,6 @@ The pre-commit hook detects the VERSION change and runs `propagate-version.sh`, 
 |------|---------|------------|
 | `VERSION` | `0.2.2` | Manual edit |
 | `README.md` | `version-X.Y.Z` badge | propagate-version.sh |
-| `QUICKSTART.md` | `version-X.Y.Z` badge | propagate-version.sh |
 | `agents-docs/MIGRATION.md` | badge + `Template version:` text | propagate-version.sh |
 | `CHANGELOG.md` | `[Unreleased]` section | propagate-version.sh (if missing) |
 
