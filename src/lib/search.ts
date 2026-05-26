@@ -1,5 +1,4 @@
 import { create, insert, insertMultiple, remove, search, type Orama } from '@orama/orama';
-import { pluginEmbeddings } from '@orama/plugin-embeddings';
 import { repository } from '../db/repository.js';
 import { logger } from './logger.js';
 import { AppError } from './errors.js';
@@ -31,8 +30,17 @@ export type OramaSchema = typeof searchSchema;
 
 let oramaDb: Orama<OramaSchema> | null = null;
 let embeddingsReady = false;
-let embeddingsPlugin: ReturnType<typeof pluginEmbeddings> | null = null;
+let embeddingsPlugin: ReturnType<typeof import('@orama/plugin-embeddings')['pluginEmbeddings']> | null = null;
 const oramaIdMap = new Map<string, string>(); // entityId → oramaInternalId
+const ORAMA_MAP_MAX = 10000;
+
+function addToOramaMap(key: string, value: string): void {
+  if (oramaIdMap.size >= ORAMA_MAP_MAX) {
+    const firstKey = oramaIdMap.keys().next().value;
+    if (firstKey !== undefined) oramaIdMap.delete(firstKey);
+  }
+  oramaIdMap.set(key, value);
+}
 
 // --- Eager handler registration (must be ready before initSearch runs) ---
 jobCoordinator.registerHandler('external-fetch', async (payload) => {
@@ -45,11 +53,12 @@ jobCoordinator.registerHandler('external-fetch', async (payload) => {
  * Downloads the model (~80MB) on first call — runs in background, non-blocking.
  * @returns True if embeddings are ready, false if still loading or failed.
  */
-export const initEmbeddings = (): boolean => {
+export const initEmbeddings = async (): Promise<boolean> => {
   if (embeddingsReady) return true;
   if (embeddingsPlugin) return false; // already loading
 
   try {
+    const { pluginEmbeddings } = await import('@orama/plugin-embeddings');
     embeddingsPlugin = pluginEmbeddings({
       model: 'Xenova/all-MiniLM-L6-v2',
       property: 'embedding',
@@ -86,13 +95,13 @@ const addEntityToIndex = async (entity: Entity, claims: Claim[]): Promise<void> 
   if (!oramaDb) return;
 
   const entityResult = await insert(oramaDb, buildEntityDoc(entity));
-  oramaIdMap.set(entity.id!, entityResult);
+  addToOramaMap(entity.id!, entityResult);
 
   if (claims.length > 0) {
     const claimDocs = claims.map(c => buildClaimDoc(c, entity.name, entity.id!));
     const claimOramaIds = await insertMultiple(oramaDb, claimDocs);
     for (let i = 0; i < claims.length; i++) {
-      oramaIdMap.set(claims[i].id!, claimOramaIds[i]);
+      addToOramaMap(claims[i].id!, claimOramaIds[i]);
     }
   }
 };
@@ -151,7 +160,7 @@ export const initSearch = async () => {
     if (docs.length > 0) {
       const oramaIds = await insertMultiple(oramaDb, docs);
       for (let i = 0; i < originalIds.length; i++) {
-        oramaIdMap.set(originalIds[i], oramaIds[i]);
+        addToOramaMap(originalIds[i], oramaIds[i]);
       }
     }
 

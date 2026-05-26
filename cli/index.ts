@@ -7,6 +7,7 @@ import { initDb } from './db.js';
 import { repository } from '../src/db/repository.js';
 import { generateSiteHtml, generateJsonExport } from '../src/lib/export-core.js';
 import type { Note } from '../src/lib/validation';
+import { runMigrations, rollbackLastMigration, getMigrationStatus } from '../src/db/migrate.js';
 
 const program = new Command();
 
@@ -259,6 +260,54 @@ program
       console.log(`Claim added to ${entity.name}: ${claim.statement}`);
     } catch (err) {
       console.error(`Failed to create claim: ${err}`);
+    }
+  });
+
+program
+  .command('db:migrate')
+  .description('Run pending database migrations')
+  .action(async () => {
+    await ensureDb();
+    console.log('Running pending migrations...');
+    const { applied, errors } = await runMigrations(dbInstance!);
+    if (applied.length > 0) {
+      console.log(`Applied: ${applied.join(', ')}`);
+    } else {
+      console.log('No pending migrations.');
+    }
+    if (errors.length > 0) {
+      console.error(`Errors: ${errors.join('; ')}`);
+    }
+  });
+
+program
+  .command('db:rollback')
+  .description('Rollback the last migration')
+  .action(async () => {
+    await ensureDb();
+    console.log('Rolling back last migration...');
+    try {
+      await rollbackLastMigration(dbInstance!);
+      console.log('Rollback complete.');
+    } catch (err) {
+      console.error(`Rollback failed: ${err}`);
+    }
+  });
+
+program
+  .command('db:status')
+  .description('Show migration status')
+  .action(async () => {
+    await ensureDb();
+    const statuses = await getMigrationStatus(dbInstance!);
+    if (statuses.length === 0) {
+      console.log('No migrations found.');
+      return;
+    }
+    console.log('Migration Status:');
+    for (const s of statuses) {
+      const applied = s.appliedAt ?? 'PENDING';
+      console.log(`  [${s.version}] ${s.name} — ${applied}`);
     }
   });
 

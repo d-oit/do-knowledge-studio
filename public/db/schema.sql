@@ -92,5 +92,13 @@ CREATE TABLE IF NOT EXISTS web_cache (
     metadata TEXT -- JSON: { content_length, word_count, provider, quality_score }
 );
 
+-- Migration Tracking: Schema version for incremental migrations
+CREATE TABLE IF NOT EXISTS schema_version (
+  version INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  checksum TEXT NOT NULL,
+  applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- Note: Synchronous triggers are removed to prevent main-thread blocking during writes.
 -- Indexing is now handled asynchronously via the application layer / JobCoordinator.

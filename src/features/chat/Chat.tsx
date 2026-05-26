@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { searchKnowledge, RankedResult } from '../../lib/search';
 import { logger } from '../../lib/logger';
 import { Search, Send, ChevronDown, ChevronUp, Database, ShieldCheck, Plus } from 'lucide-react';
@@ -17,9 +17,13 @@ const Chat: React.FC = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [showSources, setShowSources] = useState<Record<number, boolean>>({});
 
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!input.trim() || isSearching) return;
+    if (debounceRef.current) return;
+    debounceRef.current = setTimeout(() => { debounceRef.current = null; }, 300);
 
     const userMsg: Message = { role: 'user', content: input };
     setMessages(prev => [...prev, userMsg]);

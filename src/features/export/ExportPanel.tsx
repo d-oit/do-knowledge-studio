@@ -114,6 +114,7 @@ const ExportPanel: React.FC = () => {
           className="primary" 
           onClick={handleExportMarkdown} 
           disabled={isExporting}
+          aria-label="Export knowledge base as Markdown"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
         >
           {isExporting ? <Loader2 className="animate-spin" size={20} /> : <FileText size={20} />}
@@ -122,6 +123,7 @@ const ExportPanel: React.FC = () => {
         <button 
           onClick={handleExportJson} 
           disabled={isExporting}
+          aria-label="Export knowledge base as JSON"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
         >
           {isExporting ? <Loader2 className="animate-spin" size={20} /> : <FileJson size={20} />}
@@ -130,6 +132,7 @@ const ExportPanel: React.FC = () => {
         <button 
           onClick={handleExportSite} 
           disabled={isExporting}
+          aria-label="Export knowledge base as static HTML site"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
         >
           {isExporting ? <Loader2 className="animate-spin" size={20} /> : <Globe size={20} />}

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Focus, Camera, Clock, X, FolderOpen, GitCompare, RotateCcw, Loader2 } from 'lucide-react';
+import { Focus, Camera, Clock, X, FolderOpen, GitCompare, RotateCcw, Loader2, Layout, LayoutDashboard } from 'lucide-react';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -31,6 +31,8 @@ interface GraphControlsProps {
   onLoadSnapshot?: (nodes: GraphNode[], edges: GraphEdge[]) => void;
   snapshotMode?: boolean;
   onSnapshotModeChange?: (active: boolean) => void;
+  layout?: 'force' | 'hierarchical';
+  onLayoutChange?: (layout: 'force' | 'hierarchical') => void;
 }
 
 const GraphControls: React.FC<GraphControlsProps> = ({
@@ -44,6 +46,8 @@ const GraphControls: React.FC<GraphControlsProps> = ({
   onLoadSnapshot,
   snapshotMode = false,
   onSnapshotModeChange,
+  layout = 'force',
+  onLayoutChange,
 }) => {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [snapshotName, setSnapshotName] = useState('');
@@ -143,6 +147,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
         className={focusMode ? 'active' : ''}
         disabled={!hasSelection}
         aria-pressed={focusMode}
+        aria-label={focusMode ? 'Show all nodes' : 'Focus on neighborhood'}
         title={!hasSelection ? "Select a node first" : "Toggle Neighborhood Focus"}
       >
         <Focus size={16} /> {focusMode ? 'Show All' : 'Focus Neighborhood'}
@@ -150,6 +155,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       {onSaveSnapshot && (
         <button
           onClick={() => setShowSaveModal(true)}
+          aria-label="Save graph snapshot"
           title="Save Graph Snapshot"
         >
           <Camera size={16} /> Save Snapshot
@@ -158,6 +164,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       {onLoadSnapshot && (
         <button
           onClick={handleOpenSnapshotBrowser}
+          aria-label="Load or diff saved snapshots"
           title="Load or diff saved snapshots"
         >
           <FolderOpen size={16} /> Load Snapshot
@@ -167,6 +174,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
         <button
           onClick={() => onSnapshotModeChange(false)}
           className="active"
+          aria-label="Return to live graph"
           title="Return to live graph"
         >
           <RotateCcw size={16} /> Exit Snapshot
@@ -175,6 +183,30 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       {hasSelection && !isMobile && (
         <div className="selection-info">
           Selected: <strong>{selectedName}</strong>
+        </div>
+      )}
+      {onLayoutChange && (
+        <div className="layout-toggle" style={{ display: 'flex', gap: '4px', marginLeft: 'auto' }}>
+          <button
+            onClick={() => onLayoutChange('force')}
+            className={layout === 'force' ? 'active' : ''}
+            aria-pressed={layout === 'force'}
+            aria-label="Force-directed layout"
+            title="Force-directed layout"
+            style={{ padding: '6px 10px', minHeight: '36px', fontSize: '12px' }}
+          >
+            <LayoutDashboard size={14} /> Force
+          </button>
+          <button
+            onClick={() => onLayoutChange('hierarchical')}
+            className={layout === 'hierarchical' ? 'active' : ''}
+            aria-pressed={layout === 'hierarchical'}
+            aria-label="Hierarchical layout"
+            title="Hierarchical layout"
+            style={{ padding: '6px 10px', minHeight: '36px', fontSize: '12px' }}
+          >
+            <Layout size={14} /> Hierarchical
+          </button>
         </div>
       )}
     </div>

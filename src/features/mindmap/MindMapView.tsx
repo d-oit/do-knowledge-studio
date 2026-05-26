@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import MindElixir, { type MindElixirData, type MindElixirInstance } from 'mind-elixir';
 import { Entity, Link } from '../../lib/validation';
+import { repository } from '../../db/repository';
+import { logger } from '../../lib/logger';
+import { upsertToSearchIndex } from '../../lib/search';
 import { perf } from '../../lib/perf';
 import { ChevronDown, Layers, Filter, Info, ChevronRight } from 'lucide-react';
 
@@ -110,12 +113,77 @@ const MindMapView: React.FC<Props> = ({
       }
     });
 
+    // Wire MindElixir operations to repository
+    const bus = mindInstance.current.bus;
+    bus.addListener('operation', (op: Record<string, unknown>) => {
+      const opName = op.name as string;
+      if (opName === 'addChild') {
+        const obj = op.obj as Record<string, unknown> | undefined;
+        if (obj?.topic) {
+          void (async () => {
+            try {
+              const newEntity = await repository.createEntity({
+                name: obj.topic as string,
+                type: 'note',
+                description: '',
+                metadata: {},
+              });
+              logger.info('Created entity from mind map child', { id: newEntity.id, name: obj.topic });
+              if (rootId && newEntity.id) {
+                await repository.createLink({
+                  source_id: rootId,
+                  target_id: newEntity.id,
+                  relation: 'hierarchy',
+                });
+              }
+            } catch (err) {
+              logger.error('Failed to create entity from mind map', err);
+            }
+          })();
+        }
+      } else if (opName === 'finishEdit') {
+        const obj = op.obj as Record<string, unknown> | undefined;
+        if (obj?.id && obj?.topic) {
+          const nodeId = obj.id as string;
+          const newTopic = obj.topic as string;
+          if (/^[0-9a-f-]{36}$/i.test(nodeId)) {
+            void (async () => {
+              try {
+                await repository.updateEntity(nodeId, { name: newTopic });
+                await upsertToSearchIndex(nodeId);
+                logger.info('Updated entity name from mind map', { id: nodeId, name: newTopic });
+              } catch (err) {
+                logger.error('Failed to update entity name from mind map', err);
+              }
+            })();
+          }
+        }
+      } else if (opName === 'removeNodes') {
+        const objs = op.objs as Record<string, unknown>[] | undefined;
+        if (Array.isArray(objs)) {
+          void (async () => {
+            try {
+              for (const nodeObj of objs) {
+                const nodeId = nodeObj.id as string | undefined;
+                if (nodeId && /^[0-9a-f-]{36}$/i.test(nodeId)) {
+                  await repository.deleteEntity(nodeId);
+                  logger.info('Deleted entity from mind map', { id: nodeId });
+                }
+              }
+            } catch (err) {
+              logger.error('Failed to delete entities from mind map', err);
+            }
+          })();
+        }
+      }
+    });
+
     return () => {
       if (mindInstance.current) {
         if (currentContainer) currentContainer.innerHTML = '';
       }
     };
-  }, [treeData, onEntityClick, isLargeMap]);
+  }, [treeData, onEntityClick, isLargeMap, rootId]);
 
   const handleResetRoot = useCallback(() => {
     setRootId(propsRootEntity.id || '');
@@ -178,6 +246,11 @@ const MindMapView: React.FC<Props> = ({
           <ChevronRight size={14} />
           {collapsedByDefault ? 'Expand' : 'Compact'}
         </button>
+        <div className="layout-toggle" style={{ display: 'flex', gap: '4px', marginLeft: 'auto' }}>
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
+            Tab: Add Child | F2: Rename | Del: Delete
+          </span>
+        </div>
       </div>
 
       <div className="viz-container" style={{ flex: 1, minHeight: '600px' }}>

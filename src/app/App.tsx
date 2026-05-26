@@ -57,6 +57,7 @@ const AppContent: React.FC = () => {
   // Shared state for GraphView mobile controls
   const [graphFocusMode, setGraphFocusMode] = useState(false);
   const [graphSelectedNode, setGraphSelectedNode] = useState<string | null>(null);
+  const [editingEntityId, setEditingEntityId] = useState<string | null>(null);
 
   const handlePreload = useCallback((view: string) => {
     switch (view) {
@@ -68,6 +69,16 @@ const AppContent: React.FC = () => {
       case 'search': void preloadSearch(); break;
     }
   }, []);
+
+  const handleEditEntity = useCallback((entityId: string) => {
+    setEditingEntityId(entityId);
+    setCurrentView('editor');
+  }, []);
+
+  const handleEditComplete = useCallback(() => {
+    setEditingEntityId(null);
+    void refreshData();
+  }, [refreshData]);
 
   const handleSearchResultClick = useCallback((result: SearchResult) => {
     if (result.type === 'claim' || result.type === 'entity' || result.type === 'note' || result.type === 'concept' || result.type === 'person' || result.type === 'project') {
@@ -162,7 +173,10 @@ const AppContent: React.FC = () => {
             <Suspense fallback={<EditorSkeleton />}>
               <ErrorBoundary featureName="Editor" onRetry={() => window.location.reload()}>
                 <Profiled id="Editor">
-                  <Editor />
+                  <Editor
+                    editingEntityId={editingEntityId}
+                    onEditComplete={handleEditComplete}
+                  />
                 </Profiled>
               </ErrorBoundary>
             </Suspense>
@@ -179,6 +193,7 @@ const AppContent: React.FC = () => {
                     selectedNode={graphSelectedNode}
                     onSelectedNodeChange={setGraphSelectedNode}
                     hideToolbar={window.innerWidth < 768}
+                    onEditEntity={handleEditEntity}
                   />
                 </Profiled>
               </ErrorBoundary>

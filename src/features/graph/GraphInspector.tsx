@@ -1,7 +1,10 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { X, ExternalLink, Info, ShieldCheck } from 'lucide-react';
+import { X, ExternalLink, Info, ShieldCheck, Pencil, Trash2 } from 'lucide-react';
 import { Entity, Claim, Link } from '../../lib/validation';
+import { repository } from '../../db/repository';
+import { removeFromSearchIndex } from '../../lib/search';
+import { logger } from '../../lib/logger';
 
 interface GraphInspectorProps {
   entity: Entity;
@@ -9,6 +12,7 @@ interface GraphInspectorProps {
   links: Link[];
   entities: Entity[];
   onClose: () => void;
+  onEdit?: (entityId: string) => void;
 }
 
 const GraphInspector: React.FC<GraphInspectorProps> = ({
@@ -16,8 +20,10 @@ const GraphInspector: React.FC<GraphInspectorProps> = ({
   claims,
   links,
   entities,
-  onClose
+  onClose,
+  onEdit,
 }) => {
+  const [isDeleting, setIsDeleting] = useState(false);
   const outgoingLinks = useMemo(() =>
     links.filter(l => l.source_id === entity.id),
     [links, entity.id]
@@ -62,9 +68,40 @@ const GraphInspector: React.FC<GraphInspectorProps> = ({
     <aside className="inspector-panel" aria-label={`Details for ${entity.name}`}>
       <div className="inspector-header">
         <h3>{entity.name}</h3>
-        <button className="close-button" onClick={onClose} aria-label="Close inspector">
-          <X size={18} />
-        </button>
+        <div style={{ display: 'flex', gap: '4px' }}>
+          <button
+            onClick={() => onEdit?.(entity.id!)}
+            aria-label={`Edit ${entity.name}`}
+            title="Edit entity"
+            style={{ padding: '6px', minHeight: '36px', minWidth: '36px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+          >
+            <Pencil size={16} />
+          </button>
+          <button
+            onClick={() => {
+              if (window.confirm(`Delete "${entity.name}"? This will also delete all claims and links for this entity.`)) {
+                setIsDeleting(true);
+                void repository.deleteEntity(entity.id!).then(() => {
+                  void removeFromSearchIndex(entity.id!);
+                  logger.info('Entity deleted', { id: entity.id });
+                  onClose();
+                }).catch(err => {
+                  logger.error('Failed to delete entity', err);
+                  setIsDeleting(false);
+                });
+              }
+            }}
+            disabled={isDeleting}
+            aria-label={`Delete ${entity.name}`}
+            title="Delete entity"
+            style={{ padding: '6px', minHeight: '36px', minWidth: '36px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--status-danger, #ef4444)' }}
+          >
+            <Trash2 size={16} />
+          </button>
+          <button className="close-button" onClick={onClose} aria-label="Close inspector">
+            <X size={18} />
+          </button>
+        </div>
       </div>
 
       <div ref={scrollRef} className="inspector-content" style={{ overflow: 'auto', flex: 1 }}>

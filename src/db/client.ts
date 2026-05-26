@@ -1,6 +1,7 @@
 import { logger } from '../lib/logger.js';
 import { AppError } from '../lib/errors.js';
 import { ConnectionPool, DEFAULT_POOL_SIZE } from './connection-pool.js';
+import { runMigrations } from './migrate.js';
 
 /**
  * Abstract database interface for SQLite access.
@@ -95,6 +96,17 @@ export const initDb = async (options?: { poolSize?: number }): Promise<SQLiteDB>
             close: () => db.close()
         };
     }
+
+    runMigrations(instance).then(({ applied, errors }) => {
+      if (applied.length > 0) {
+        logger.info(`Applied migrations: ${applied.join(', ')}`);
+      }
+      if (errors.length > 0) {
+        logger.error(`Migration errors: ${errors.join('; ')}`);
+      }
+    }).catch((err) => {
+      logger.warn('Non-blocking migration check failed, app will continue', err);
+    });
 
     return instance;
   } catch (err) {
