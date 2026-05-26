@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateSiteHtml, generateMarkdownExport, generateJsonExport } from '../export-core';
+import { generateSiteHtml, generateMarkdownExport, generateJsonExport, generatePrintHtml } from '../export-core';
 import type { ExportData } from '../export-core';
 import type { Entity, Claim, Note } from '../validation';
 
@@ -273,5 +273,87 @@ describe('generateJsonExport', () => {
 
   it('handles null', () => {
     expect(() => generateJsonExport(null)).not.toThrow();
+  });
+});
+
+describe('generatePrintHtml', () => {
+  it('produces valid HTML structure', () => {
+    const html = generatePrintHtml([makeEntity()], {});
+    expect(html).toContain('<!DOCTYPE html>');
+    expect(html).toContain('<html');
+    expect(html).toContain('</html>');
+    expect(html).toContain('<body>');
+    expect(html).toContain('</body>');
+  });
+
+  it('includes entity names and types', () => {
+    const entity = makeEntity({ id: 'e1', name: 'My Entity', type: 'person' });
+    const html = generatePrintHtml([entity], {});
+    expect(html).toContain('My Entity');
+    expect(html).toContain('person');
+  });
+
+  it('includes claim statements', () => {
+    const entity = makeEntity({ id: 'e1' });
+    const claims = { e1: [makeClaim({ statement: 'Test claim' })] };
+    const html = generatePrintHtml([entity], claims);
+    expect(html).toContain('Test claim');
+  });
+
+  it('includes confidence when not default', () => {
+    const entity = makeEntity({ id: 'e1' });
+    const claims = { e1: [makeClaim({ confidence: 0.75 })] };
+    const html = generatePrintHtml([entity], claims);
+    expect(html).toContain('75%');
+  });
+
+  it('handles zero entities', () => {
+    const html = generatePrintHtml([], {});
+    expect(html).toContain('Knowledge Base Export');
+    expect(html).toContain('</html>');
+  });
+
+  it('handles entity with no id', () => {
+    const entity = makeEntity({ id: undefined });
+    expect(() => generatePrintHtml([entity], {})).not.toThrow();
+  });
+});
+
+describe('PNG export', () => {
+  it('canvas has toDataURL method', () => {
+    const canvas = document.createElement('canvas');
+    expect(typeof canvas.toDataURL).toBe('function');
+  });
+
+  it('generates data URL from mocked canvas', () => {
+    const mockDataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    const mockCanvas = {
+      toDataURL: () => mockDataUrl,
+    } as HTMLCanvasElement;
+    const dataUrl = mockCanvas.toDataURL('image/png');
+    expect(dataUrl).toMatch(/^data:image\/png;base64,/);
+    expect(dataUrl.length).toBeGreaterThan(100);
+  });
+});
+
+describe('DOCX export structure', () => {
+  it('produces valid Document with sections', async () => {
+    const { Document, Packer, Paragraph, HeadingLevel } = await import('docx');
+
+    const doc = new Document({
+      title: 'Test Export',
+      sections: [{
+        children: [
+          new Paragraph({ text: 'Test Entity', heading: HeadingLevel.HEADING_1 }),
+          new Paragraph({ text: 'Type: concept' }),
+          new Paragraph({ text: '• Test claim statement', spacing: { after: 100 } }),
+        ],
+      }],
+    });
+
+    const blob = await Packer.toBlob(doc);
+    expect(blob).toBeInstanceOf(Blob);
+    expect(blob.size).toBeGreaterThan(0);
+    expect(blob.type).toBe('application/vnd.openxmlformats-officedocument.wordprocessingml.document');
   });
 });

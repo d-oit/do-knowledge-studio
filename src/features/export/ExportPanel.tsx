@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { logger } from '../../lib/logger';
 import { repository } from '../../db/repository';
-import { generateSiteHtml, generateMarkdownExport, generateJsonExport } from '../../lib/export-core';
+import { generateSiteHtml, generateMarkdownExport, generateJsonExport, generatePrintHtml } from '../../lib/export-core';
 import type { ExportData } from '../../lib/export-core';
-import { Download, FileJson, FileText, Globe, Loader2 } from 'lucide-react';
+import { Download, File, FileJson, FileText, FileSpreadsheet, Globe, Loader2 } from 'lucide-react';
 
 const ExportPanel: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
@@ -93,6 +93,79 @@ const ExportPanel: React.FC = () => {
     }
   };
 
+  const handleExportPDF = async () => {
+    setIsExporting(true);
+    setError(null);
+    try {
+      const [entities, claims] = await Promise.all([
+        repository.getAllEntities(),
+        repository.getAllClaimsGroupedByEntity(),
+      ]);
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) throw new Error('Popup blocked');
+      printWindow.document.write(generatePrintHtml(entities, claims));
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => printWindow.print(), 500);
+      logger.info('PDF export complete');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'PDF export failed';
+      setError(msg);
+      logger.error('PDF export failed', err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportDOCX = async () => {
+    setIsExporting(true);
+    setError(null);
+    try {
+      const [entities, claims] = await Promise.all([
+        repository.getAllEntities(),
+        repository.getAllClaimsGroupedByEntity(),
+      ]);
+      const { Document, Packer, Paragraph, HeadingLevel } = await import('docx');
+
+      const doc = new Document({
+        title: 'Knowledge Base Export',
+        sections: [{
+          children: [
+            new Paragraph({ text: 'Knowledge Base Export', heading: HeadingLevel.TITLE }),
+            new Paragraph({ text: `Exported on ${new Date().toLocaleString()}`, spacing: { after: 400 } }),
+            ...entities.flatMap(entity => [
+              new Paragraph({ text: entity.name, heading: HeadingLevel.HEADING_1 }),
+              new Paragraph({ text: `Type: ${entity.type}`, spacing: { after: 200 } }),
+              ...(entity.description ? [new Paragraph({ text: entity.description, spacing: { after: 200 } })] : []),
+              ...(claims[entity.id!]?.length ? [
+                new Paragraph({ text: 'Claims', heading: HeadingLevel.HEADING_2 }),
+                ...claims[entity.id!].map(claim => new Paragraph({
+                  text: `• ${claim.statement}${claim.confidence !== 1 ? ` (confidence: ${Math.round(claim.confidence * 100)}%)` : ''}`,
+                  spacing: { after: 100 },
+                })),
+              ] : []),
+            ]),
+          ],
+        }],
+      });
+
+      const blob = await Packer.toBlob(doc);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'knowledge-base.docx';
+      link.click();
+      URL.revokeObjectURL(url);
+      logger.info('DOCX export complete');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'DOCX export failed';
+      setError(msg);
+      logger.error('DOCX export failed', err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="editor-container">
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
@@ -137,6 +210,24 @@ const ExportPanel: React.FC = () => {
         >
           {isExporting ? <Loader2 className="animate-spin" size={20} /> : <Globe size={20} />}
           Export as Static Site
+        </button>
+        <button 
+          onClick={handleExportPDF} 
+          disabled={isExporting}
+          aria-label="Export knowledge base as PDF"
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
+        >
+          {isExporting ? <Loader2 className="animate-spin" size={20} /> : <File size={20} />}
+          Export as PDF
+        </button>
+        <button 
+          onClick={handleExportDOCX} 
+          disabled={isExporting}
+          aria-label="Export knowledge base as DOCX"
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
+        >
+          {isExporting ? <Loader2 className="animate-spin" size={20} /> : <FileSpreadsheet size={20} />}
+          Export as DOCX
         </button>
       </div>
 

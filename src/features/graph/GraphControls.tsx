@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Focus, Camera, Clock, X, FolderOpen, GitCompare, RotateCcw, Loader2, Layout, LayoutDashboard } from 'lucide-react';
+import { Focus, Camera, Clock, X, FolderOpen, GitCompare, RotateCcw, Loader2, Layout, LayoutDashboard, Download } from 'lucide-react';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -29,6 +29,7 @@ interface GraphControlsProps {
   edges?: GraphEdge[];
   onSaveSnapshot?: (name: string, nodes: GraphNode[], edges: GraphEdge[]) => Promise<void>;
   onLoadSnapshot?: (nodes: GraphNode[], edges: GraphEdge[]) => void;
+  onExportPNG?: () => void;
   snapshotMode?: boolean;
   onSnapshotModeChange?: (active: boolean) => void;
   layout?: 'force' | 'hierarchical';
@@ -44,6 +45,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
   edges = [],
   onSaveSnapshot,
   onLoadSnapshot,
+  onExportPNG,
   snapshotMode = false,
   onSnapshotModeChange,
   layout = 'force',
@@ -152,6 +154,15 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       >
         <Focus size={16} /> {focusMode ? 'Show All' : 'Focus Neighborhood'}
       </button>
+      {onExportPNG && (
+        <button
+          onClick={onExportPNG}
+          aria-label="Export graph as PNG"
+          title="Export graph as PNG image"
+        >
+          <Download size={16} /> Export PNG
+        </button>
+      )}
       {onSaveSnapshot && (
         <button
           onClick={() => setShowSaveModal(true)}

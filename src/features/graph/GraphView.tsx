@@ -396,6 +396,19 @@ const GraphView: React.FC<Props> = ({
     setSnapshotData(null);
   };
 
+  const handleExportPNG = useCallback(() => {
+    const sigma = sigmaInstance.current;
+    if (!sigma) return;
+    const canvases = sigma.getCanvases();
+    const canvas = Object.values(canvases)[0];
+    if (!canvas) return;
+    const link = document.createElement('a');
+    link.download = `graph-${Date.now()}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    logger.info('Graph exported as PNG');
+  }, []);
+
   // --- Mobile touch gesture handling (pinch-to-zoom + drag-to-pan) ---
   const touchStateRef = useRef<TouchState>({
     touches: new Map(),
@@ -642,6 +655,7 @@ const GraphView: React.FC<Props> = ({
             edges={snapshotMode && snapshotData ? snapshotData.edges : filteredData.links.map(l => ({ id: l.id!, source: l.source_id, target: l.target_id, label: l.relation }))}
             onSaveSnapshot={handleSaveSnapshot}
             onLoadSnapshot={handleLoadSnapshot}
+            onExportPNG={handleExportPNG}
             snapshotMode={snapshotMode}
             onSnapshotModeChange={(active) => { if (!active) handleExitSnapshot(); }}
             layout={layout}
