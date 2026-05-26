@@ -180,7 +180,7 @@ const MindMapView: React.FC<Props> = ({
 
     return () => {
       if (mindInstance.current) {
-        if (currentContainer) currentContainer.innerHTML = '';
+        if (currentContainer) currentContainer.replaceChildren();
       }
     };
   }, [treeData, onEntityClick, isLargeMap, rootId]);
