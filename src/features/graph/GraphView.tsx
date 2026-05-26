@@ -622,7 +622,7 @@ const GraphView: React.FC<Props> = ({
 
   // Use snapshot data when in snapshot mode, otherwise use filtered live data
   const effectiveData = snapshotMode && snapshotData
-    ? { entities: snapshotData.nodes.map(n => ({ id: n.id, name: n.label, type: 'snapshot' } as Entity)), links: snapshotData.edges.map(e => ({ id: e.id, source_id: e.source, target_id: e.target, relation: e.label || '' } as Link)) }
+    ? { entities: snapshotData.nodes.map(n => ({ id: n.id, name: n.label, type: 'snapshot' })), links: snapshotData.edges.map(e => ({ id: e.id, source_id: e.source, target_id: e.target, relation: e.label || '' })) }
     : filteredData;
 
   return (

@@ -37,7 +37,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ci": "pnpm run build && PLAYWRIGHT_MODE=production playwright test",
     "typecheck": "tsc --noEmit",
-    "cli": "node --loader ts-node/esm cli/index.ts"
+    "cli": "node --loader ts-node/esm cli/index.ts",
+    "quality_gate": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.2.0",
