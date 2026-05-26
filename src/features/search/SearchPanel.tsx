@@ -3,7 +3,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { progressiveSearch, initEmbeddings, type RankedResult } from '../../lib/search';
 import { logger } from '../../lib/logger';
 import { perf } from '../../lib/perf';
-import { Search, X, Filter, Plus, Sparkles, ChevronDown, ChevronRight } from 'lucide-react';
+import { Search, X, Filter, Plus, Sparkles } from 'lucide-react';
 
 interface SearchPanelProps {
   onClose?: () => void;
@@ -23,44 +23,6 @@ const FILTER_MAP: Record<FilterType, string | undefined> = {
   'Notes': 'note',
   'Projects': 'project',
   'People': 'person',
-};
-
-// Module-level style constants to avoid inline object recreation on every render
-const MODE_TOGGLE_STYLE: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '8px',
-  padding: '8px 16px',
-  fontSize: '13px',
-  borderBottom: '1px solid var(--border-color)',
-};
-
-const PROGRESS_STYLE: React.CSSProperties = {
-  padding: '4px 16px',
-  fontSize: '11px',
-  color: 'var(--text-muted)',
-  display: 'flex',
-  gap: '8px',
-  borderBottom: '1px solid var(--border-color)',
-};
-
-const SCROLL_CONTAINER_STYLE: React.CSSProperties = { overflow: 'auto', flex: 1 };
-
-const SPARKLES_MARGIN_STYLE: React.CSSProperties = { marginRight: '4px' };
-
-const ADVANCED_SEARCH_TOGGLE_STYLE: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '6px',
-  padding: '6px 16px',
-  border: 'none',
-  background: 'none',
-  color: 'var(--text-muted)',
-  cursor: 'pointer',
-  fontSize: '12px',
-  fontFamily: 'var(--font-mono, monospace)',
-  borderBottom: '1px solid var(--border-color)',
-  width: '100%',
 };
 
 const FilterBar: React.FC<{
@@ -149,7 +111,6 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
   const [isSearching, setIsSearching] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [useSemantic, setUseSemantic] = useState(false);
-  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [searchStages, setSearchStages] = useState<Set<string>>(new Set());
   const resultsRef = useRef<(HTMLButtonElement | null)[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -203,7 +164,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
         const flatResults = Array.from(accumulated.values()).map(r => ({
           id: r.id,
           title: r.name,
-          type: (r as { type: string }).type,
+          type: r.type,
           content: r.excerpt,
           stage: r.stage || stage,
         }));
@@ -302,43 +263,31 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
 
       <FilterBar activeFilter={activeFilter} onFilterChange={setActiveFilter} />
 
-      <button
-        onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
-        className="advanced-toggle"
-        aria-expanded={showAdvancedSearch}
-        style={ADVANCED_SEARCH_TOGGLE_STYLE}
-      >
-        {showAdvancedSearch ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-        Advanced Search
-      </button>
-
-      {showAdvancedSearch && (
-        <div className="search-mode-toggle" style={MODE_TOGGLE_STYLE}>
-          <button
-            className={`filter-chip ${!useSemantic ? 'active' : ''}`}
-            onClick={() => setUseSemantic(false)}
-            aria-pressed={!useSemantic}
-          >
-            Keyword
-          </button>
-          <button
-            className={`filter-chip ${useSemantic ? 'active' : ''}`}
-            onClick={async () => {
-              if (!useSemantic) {
-                setUseSemantic(true);
-                initEmbeddings();
-              }
-            }}
-            aria-pressed={useSemantic}
-          >
-            <Sparkles size={12} style={SPARKLES_MARGIN_STYLE} />
-            Semantic
-          </button>
-        </div>
-      )}
+      <div className="search-mode-toggle" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', fontSize: '13px', borderBottom: '1px solid var(--border-color)' }}>
+        <button
+          className={`filter-chip ${!useSemantic ? 'active' : ''}`}
+          onClick={() => setUseSemantic(false)}
+          aria-pressed={!useSemantic}
+        >
+          Keyword
+        </button>
+        <button
+          className={`filter-chip ${useSemantic ? 'active' : ''}`}
+          onClick={async () => {
+            if (!useSemantic) {
+              setUseSemantic(true);
+              try { await initEmbeddings(); } catch { /* embeddings are best-effort */ }
+            }
+          }}
+          aria-pressed={useSemantic}
+        >
+          <Sparkles size={12} style={{ marginRight: '4px' }} />
+          Semantic
+        </button>
+      </div>
 
       {searchStages.size > 0 && (
-        <div className="search-progress" style={PROGRESS_STYLE}>
+        <div className="search-progress" style={{ padding: '4px 16px', fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '8px', borderBottom: '1px solid var(--border-color)' }}>
           <span className={searchStages.has('exact') ? 'stage-done' : 'stage-pending'}>{'\u2713'} Keywords</span>
           {searchStages.has('semantic') ? <span className="stage-done">{'\u2713'} Semantic</span> : <span className="stage-pending">{'\u2022'} Semantic</span>}
           {searchStages.has('related') ? <span className="stage-done">{'\u2713'} Related</span> : <span className="stage-pending">{'\u2022'} Related</span>}
@@ -359,7 +308,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
         )}
 
         {results.length > 0 && (
-          <div ref={scrollRef} style={SCROLL_CONTAINER_STYLE}>
+          <div ref={scrollRef} style={{ overflow: 'auto', flex: 1 }}>
             <ul
               id="search-results-list"
               className="results-list"

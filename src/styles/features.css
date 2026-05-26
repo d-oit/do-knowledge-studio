@@ -379,3 +379,121 @@
   color: var(--text-muted);
   cursor: default;
 }
+
+/* Layout Toggle Buttons */
+.layout-toggle {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.layout-toggle button {
+  padding: 6px 10px;
+  min-height: 36px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--motion-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.layout-toggle button:hover {
+  background: var(--bg-base);
+  border-color: var(--interactive-primary);
+  color: var(--text-primary);
+}
+
+.layout-toggle button.active {
+  background: var(--interactive-primary);
+  color: var(--text-inverse);
+  border-color: var(--interactive-primary);
+}
+
+.layout-toggle button:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+/* Inspector Panel */
+.inspector-panel {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 360px;
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border-default);
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+  box-shadow: var(--shadow-md);
+}
+
+.inspector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-default);
+  background: var(--bg-base);
+}
+
+.inspector-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inspector-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-3);
+}
+
+.inspector-section {
+  margin-bottom: var(--space-4);
+}
+
+.inspector-section h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: var(--space-2);
+  font-weight: 600;
+}
+
+.close-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.close-button:hover {
+  background: var(--bg-base);
+  color: var(--text-primary);
+}

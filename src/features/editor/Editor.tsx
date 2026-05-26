@@ -1,14 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { ClaimExtension } from './ClaimExtension';
 import { MentionExtension } from './MentionExtension';
 import { logger } from '../../lib/logger';
 import { repository } from '../../db/repository';
 import { jobCoordinator } from '../../lib/jobs';
+import { upsertToSearchIndex } from '../../lib/search';
 import { perf } from '../../lib/perf';
-import { CheckCircle, AtSign, Link2, ChevronDown, ChevronRight } from 'lucide-react';
+import { CheckCircle, AtSign, Link2, ChevronDown, ChevronRight, Pencil } from 'lucide-react';
 import { Entity } from '../../lib/validation';
 
 const ENTITY_TYPES = [
@@ -18,43 +20,12 @@ const ENTITY_TYPES = [
   { value: 'project', label: 'Project' },
 ] as const;
 
-// Module-level style constants to avoid inline object recreation on every render
-const ADVANCED_TOGGLE_STYLE: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '6px',
-  padding: '8px 0',
-  border: 'none',
-  background: 'none',
-  color: 'var(--text-muted)',
-  cursor: 'pointer',
-  fontSize: '12px',
-  minHeight: '44px',
-  fontFamily: 'var(--font-mono, monospace)',
-};
+interface EditorProps {
+  editingEntityId?: string | null;
+  onEditComplete?: () => void;
+}
 
-const ADVANCED_SECTION_STYLE: React.CSSProperties = { padding: '0 0 8px 0' };
-
-const ENTITY_SOURCE_STYLE: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '8px',
-  marginBottom: '8px',
-};
-
-const SOURCE_INPUT_STYLE: React.CSSProperties = { flex: 1 };
-
-const MENTION_BUTTON_STYLE: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '6px',
-  padding: '6px 12px',
-  minHeight: '44px',
-};
-
-const MENTION_MENU_STYLE: React.CSSProperties = { marginTop: '4px' };
-
-const Editor: React.FC = () => {
+const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
   const [title, setTitle] = useState('');
   const [type, setType] = useState('note');
   const [sourceUrl, setSourceUrl] = useState('');
@@ -62,6 +33,7 @@ const Editor: React.FC = () => {
   const [showMentionMenu, setShowMentionMenu] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+  const [isLoadingEntity, setIsLoadingEntity] = useState(false);
 
   useEffect(() => {
     if (status) {
@@ -75,6 +47,21 @@ const Editor: React.FC = () => {
     repository.getAllEntities().then(setAllEntities).catch(err => logger.error('Failed to load entities for mentions', err));
     perf.measure('editor-ready', 'editor-mount');
   }, []);
+
+  // Load entity data for editing
+  useEffect(() => {
+    if (!editingEntityId) return;
+    setIsLoadingEntity(true);
+    repository.getEntityById(editingEntityId).then(entity => {
+      if (!entity) return;
+      setTitle(entity.name);
+      setType(entity.type);
+      if (entity.description) {
+        editor?.commands.setContent(entity.description);
+      }
+    }).catch(err => logger.error('Failed to load entity for editing', err))
+    .finally(() => setIsLoadingEntity(false));
+  }, [editingEntityId]);
 
   const editor = useEditor({
     extensions: [
@@ -106,91 +93,112 @@ const Editor: React.FC = () => {
     try {
       const content = editor.getHTML();
 
-      // We use a transaction for all related records to ensure atomicity and performance
-      const entity = await repository.createEntity({
-        name: title,
-        type: type,
-        description: content,
-        metadata: {}
-      });
-
-      // Enqueue external URL fetch for auto-hydration if source URL provided
-      if (sourceUrl.trim()) {
-        jobCoordinator.enqueue('external-fetch', entity.id, {
-          url: sourceUrl.trim(),
-          entityId: entity.id!,
+      if (editingEntityId) {
+        // Update existing entity
+        const entity = await repository.updateEntity(editingEntityId, {
+          name: title,
+          type: type,
+          description: content,
         });
-        logger.info('Enqueued external fetch for entity auto-hydration', { entityId: entity.id, url: sourceUrl });
-      }
 
-      const { doc } = editor.state;
-      const claims: { statement: string; source: string; status: string }[] = [];
-      const mentions: { id: string, name: string }[] = [];
+        // Update search index
+        await upsertToSearchIndex(editingEntityId);
 
-      doc.descendants((node: { marks: Array<{ type: { name: string }; attrs: Record<string, string> }>; isText: boolean; text?: string }) => {
-        const claimMark = node.marks.find(mark => mark.type.name === 'claim');
-        if (claimMark && node.isText && node.text) {
-          claims.push({
-            statement: node.text,
-            source: claimMark.attrs.source || 'Manual entry',
-            status: claimMark.attrs.verification_status || 'unverified'
+        logger.info('Entity updated', { id: entity.id });
+        setStatus({ type: 'success', message: 'Entity updated successfully!' });
+        onEditComplete?.();
+      } else {
+        // Create new entity
+        const entity = await repository.createEntity({
+          name: title,
+          type: type,
+          description: content,
+          metadata: {}
+        });
+
+        // Enqueue external URL fetch for auto-hydration if source URL provided
+        if (sourceUrl.trim()) {
+          jobCoordinator.enqueue('external-fetch', entity.id!, {
+            url: sourceUrl.trim(),
+            entityId: entity.id!,
+          });
+          logger.info('Enqueued external fetch for entity auto-hydration', { entityId: entity.id, url: sourceUrl });
+        }
+
+        const { doc } = editor.state;
+        const claims: { statement: string; source: string; status: string }[] = [];
+        const mentions: { id: string, name: string }[] = [];
+
+        doc.descendants((node) => {
+          const claimMark = node.marks.find(mark => mark.type.name === 'claim');
+          if (claimMark && node.isText && node.text) {
+            claims.push({
+              statement: node.text,
+              source: claimMark.attrs.source || 'Manual entry',
+              status: claimMark.attrs.verification_status || 'unverified'
+            });
+          }
+
+          const mentionMark = node.marks.find(mark => mark.type.name === 'mention');
+          if (mentionMark) {
+            mentions.push({
+              id: mentionMark.attrs.entityId,
+              name: mentionMark.attrs.entityName
+            });
+          }
+          return true;
+        });
+
+        const statements: { sql: string; bind?: (string | number | boolean | null)[] }[] = [];
+
+        statements.push({
+          sql: `INSERT INTO notes (entity_id, content, format) VALUES (?, ?, ?)`,
+          bind: [entity.id, content, 'markdown']
+        });
+
+        for (const claim of claims) {
+          statements.push({
+            sql: `INSERT INTO claims (entity_id, statement, confidence, evidence, source, verification_status)
+                  VALUES (?, ?, ?, ?, ?, ?)`,
+            bind: [entity.id!, claim.statement, 1.0, 'Extracted from editor', claim.source, claim.status]
           });
         }
 
-        const mentionMark = node.marks.find(mark => mark.type.name === 'mention');
-        if (mentionMark) {
-          mentions.push({
-            id: mentionMark.attrs.entityId,
-            name: mentionMark.attrs.entityName
+        for (const mention of mentions) {
+          statements.push({
+            sql: `INSERT INTO links (source_id, target_id, relation, metadata)
+                  VALUES (?, ?, ?, ?)`,
+            bind: [entity.id!, mention.id, 'mentions', JSON.stringify({ name: mention.name })]
           });
         }
-        return true;
-      });
 
-      const statements: { sql: string; bind?: (string | number | boolean | null)[] }[] = [];
+        if (statements.length > 0) {
+          await repository.transaction(statements);
+        }
 
-      // Note
-      statements.push({
-        sql: `INSERT INTO notes (entity_id, content, format) VALUES (?, ?, ?)`,
-        bind: [entity.id, content, 'markdown']
-      });
+        logger.info('Entity, note, claims and links saved via transaction', { id: entity.id, claims: claims.length, links: mentions.length });
 
-      // Claims
-      for (const claim of claims) {
-        statements.push({
-          sql: `INSERT INTO claims (entity_id, statement, confidence, evidence, source, verification_status)
-                VALUES (?, ?, ?, ?, ?, ?)`,
-          bind: [entity.id!, claim.statement, 1.0, 'Extracted from editor', claim.source, claim.status]
-        });
+        jobCoordinator.enqueue('reindex-document', entity.id, { entityId: entity.id });
+
+        setStatus({ type: 'success', message: `Saved successfully! (${claims.length} claims, ${mentions.length} links)${sourceUrl.trim() ? ' — fetching source...' : ''}` });
+        setTitle('');
+        setSourceUrl('');
+        editor.commands.setContent('<p></p>');
       }
-
-      // Links (Mentions)
-      for (const mention of mentions) {
-        statements.push({
-          sql: `INSERT INTO links (source_id, target_id, relation, metadata)
-                VALUES (?, ?, ?, ?)`,
-          bind: [entity.id!, mention.id, 'mentions', JSON.stringify({ name: mention.name })]
-        });
-      }
-
-      if (statements.length > 0) {
-        await repository.transaction(statements);
-      }
-
-      logger.info('Entity, note, claims and links saved via transaction', { id: entity.id, claims: claims.length, links: mentions.length });
-
-      // Enqueue background work
-      jobCoordinator.enqueue('reindex-document', entity.id, { entityId: entity.id });
-
-      setStatus({ type: 'success', message: `Saved successfully! (${claims.length} claims, ${mentions.length} links)${sourceUrl.trim() ? ' — fetching source...' : ''}` });
-      setTitle('');
-      setSourceUrl('');
-      editor.commands.setContent('<p></p>');
     } catch (err) {
       logger.error('Failed to save entity', err);
       setStatus({ type: 'error', message: 'Save failed. See console for details.' });
     }
-  }, [title, editor, type, sourceUrl]);
+  }, [title, editor, type, sourceUrl, editingEntityId, onEditComplete]);
+
+  const mentionScrollRef = useRef<HTMLDivElement>(null);
+
+  const mentionVirtualizer = useVirtualizer({
+    count: allEntities.length,
+    getScrollElement: () => mentionScrollRef.current,
+    estimateSize: () => 40,
+    overscan: 5,
+  });
 
   const insertMention = useCallback((target: Entity) => {
     if (!editor || !target.id) return;
@@ -198,11 +206,25 @@ const Editor: React.FC = () => {
     setShowMentionMenu(false);
   }, [editor]);
 
+  const handleCancelEdit = useCallback(() => {
+    setTitle('');
+    setSourceUrl('');
+    setType('note');
+    if (editor) editor.commands.setContent('<p></p>');
+    onEditComplete?.();
+  }, [editor, onEditComplete]);
+
   return (
     <div className="editor-container">
       {status && (
         <div className={`status-message ${status.type}`} role="alert">
           {status.message}
+        </div>
+      )}
+      {editingEntityId && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', color: 'var(--interactive-primary)', fontSize: '13px', fontWeight: 600 }}>
+          <Pencil size={14} aria-hidden="true" />
+          {isLoadingEntity ? 'Loading entity...' : 'Editing Entity'}
         </div>
       )}
       <div className="entity-meta">
@@ -248,7 +270,12 @@ const Editor: React.FC = () => {
           <CheckCircle size={16} aria-hidden="true" /> Claim
         </button>
         <div className="toolbar-spacer" />
-        <button onClick={() => { void handleSave(); }} className="primary">Save to DB</button>
+        <button onClick={handleSave} className="primary">{editingEntityId ? 'Update Entity' : 'Save to DB'}</button>
+        {editingEntityId && (
+          <button onClick={handleCancelEdit} aria-label="Cancel editing">
+            Cancel
+          </button>
+        )}
       </div>
       <EditorContent editor={editor} className="tiptap-content" />
 
@@ -257,15 +284,27 @@ const Editor: React.FC = () => {
         className="advanced-toggle"
         aria-expanded={showAdvanced}
         aria-label="Toggle advanced options"
-        style={ADVANCED_TOGGLE_STYLE}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          padding: '8px 0',
+          border: 'none',
+          background: 'none',
+          color: 'var(--text-muted)',
+          cursor: 'pointer',
+          fontSize: '12px',
+          minHeight: '44px',
+          fontFamily: 'var(--font-mono, monospace)',
+        }}
       >
         {showAdvanced ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         Advanced
       </button>
 
       {showAdvanced && (
-        <div className="advanced-section" style={ADVANCED_SECTION_STYLE}>
-          <div className="entity-source" style={ENTITY_SOURCE_STYLE}>
+        <div className="advanced-section" style={{ padding: '0 0 8px 0' }}>
+          <div className="entity-source" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
             <Link2 size={14} aria-hidden="true" />
             <label htmlFor="entity-source-url" className="sr-only">Source URL (optional)</label>
             <input
@@ -275,7 +314,7 @@ const Editor: React.FC = () => {
               onChange={handleSourceUrlChange}
               placeholder="Source URL — auto-hydrate description"
               type="url"
-              style={SOURCE_INPUT_STYLE}
+              style={{ flex: 1 }}
             />
           </div>
           <div className="mention-tool">
@@ -284,20 +323,43 @@ const Editor: React.FC = () => {
               className={editor?.isActive('mention') ? 'active' : ''}
               title="Link to Entity"
               aria-label="Link to Entity"
-              style={MENTION_BUTTON_STYLE}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', minHeight: '44px' }}
             >
               <AtSign size={14} aria-hidden="true" /> Mention
             </button>
             {showMentionMenu && (
-              <div className="mention-menu" style={MENTION_MENU_STYLE}>
+              <div className="mention-menu" style={{ marginTop: '4px' }}>
                 {allEntities.length === 0 ? (
                   <div className="menu-item disabled">No entities found</div>
                 ) : (
-                  allEntities.map(e => (
-                    <div key={e.id} className="menu-item" onClick={() => insertMention(e)} role="button" tabIndex={0} onKeyDown={(ev) => { if (ev.key === 'Enter') insertMention(e); }}>
-                      {e.name}
+                  <div ref={mentionScrollRef} style={{ maxHeight: '400px', overflow: 'auto' }}>
+                    <div style={{ height: `${mentionVirtualizer.getTotalSize()}px`, position: 'relative' }}>
+                      {mentionVirtualizer.getVirtualItems().map(virtualItem => {
+                        const entity = allEntities[virtualItem.index];
+                        if (!entity) return null;
+                        return (
+                          <div
+                            key={entity.id}
+                            className="menu-item"
+                            style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              width: '100%',
+                              height: `${virtualItem.size}px`,
+                              transform: `translateY(${virtualItem.start}px)`,
+                            }}
+                            onClick={() => insertMention(entity)}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(ev) => { if (ev.key === 'Enter') insertMention(entity); }}
+                          >
+                            {entity.name}
+                          </div>
+                        );
+                      })}
                     </div>
-                  ))
+                  </div>
                 )}
               </div>
             )}

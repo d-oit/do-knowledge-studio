@@ -138,46 +138,35 @@ describe('SearchPanel UX Improvements', () => {
     }, { timeout: 1000 });
   });
 
-  describe('Progressive Disclosure (#143)', () => {
-    it('hides keyword/semantic mode toggle when Advanced Search is collapsed', () => {
+  describe('Search mode toggle', () => {
+    it('shows Keyword and Semantic mode buttons', () => {
       render(<SearchPanel />);
 
-      const advancedBtn = screen.getByText('Advanced Search');
-      expect(advancedBtn).toBeDefined();
-      expect(advancedBtn).toHaveAttribute('aria-expanded', 'false');
-
-      // Semantic/KW mode buttons should not be visible
-      const semanticBtn = screen.queryByText('Semantic');
-      expect(semanticBtn).toBeNull();
-    });
-
-    it('shows keyword/semantic mode toggle when Advanced Search is expanded', () => {
-      render(<SearchPanel />);
-
-      const advancedBtn = screen.getByText('Advanced Search');
-      fireEvent.click(advancedBtn);
-
-      expect(advancedBtn).toHaveAttribute('aria-expanded', 'true');
-
-      // Semantic and Keyword buttons should now be visible
-      const semanticBtn = screen.getByText('Semantic');
       const keywordBtn = screen.getByText('Keyword');
-      expect(semanticBtn).toBeDefined();
+      const semanticBtn = screen.getByText('Semantic');
       expect(keywordBtn).toBeDefined();
+      expect(semanticBtn).toBeDefined();
     });
 
-    it('toggles Advanced Search section on repeated clicks', () => {
+    it('toggles between Keyword and Semantic modes', () => {
       render(<SearchPanel />);
 
-      const advancedBtn = screen.getByText('Advanced Search');
+      const keywordBtn = screen.getByText('Keyword');
+      const semanticBtn = screen.getByText('Semantic');
 
-      // First click — expand
-      fireEvent.click(advancedBtn);
-      expect(screen.getByText('Semantic')).toBeDefined();
+      // Keyword should be active by default
+      expect(keywordBtn).toHaveAttribute('aria-pressed', 'true');
+      expect(semanticBtn).toHaveAttribute('aria-pressed', 'false');
 
-      // Second click — collapse
-      fireEvent.click(advancedBtn);
-      expect(screen.queryByText('Semantic')).toBeNull();
+      // Click Semantic
+      fireEvent.click(semanticBtn);
+      expect(keywordBtn).toHaveAttribute('aria-pressed', 'false');
+      expect(semanticBtn).toHaveAttribute('aria-pressed', 'true');
+
+      // Click Keyword again
+      fireEvent.click(keywordBtn);
+      expect(keywordBtn).toHaveAttribute('aria-pressed', 'true');
+      expect(semanticBtn).toHaveAttribute('aria-pressed', 'false');
     });
   });
 });

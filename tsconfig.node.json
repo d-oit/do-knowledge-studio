@@ -17,6 +17,8 @@
     "src/lib/logger.ts",
     "src/lib/errors.ts",
     "src/lib/validation.ts",
+    "src/lib/security.ts",
+    "src/lib/export-core.ts",
     "vite.config.ts",
     "vitest.config.ts",
     "playwright.config.ts",

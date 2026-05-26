@@ -4,6 +4,8 @@ import { logger } from '../lib/logger';
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
+  onRetry?: () => void;
+  featureName?: string;
 }
 
 interface State {
@@ -22,8 +24,13 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    logger.error('ErrorBoundary caught an error:', { error: error.message, componentStack: errorInfo.componentStack });
+    logger.error('ErrorBoundary caught an error:', { error: error.message, componentStack: errorInfo.componentStack, feature: this.props.featureName });
   }
+
+  private handleRetry = () => {
+    this.setState({ hasError: false, error: undefined });
+    this.props.onRetry?.();
+  };
 
   override render(): ReactNode {
     if (this.state.hasError) {
@@ -32,9 +39,9 @@ class ErrorBoundary extends Component<Props, State> {
       }
       return (
         <div className="error-boundary">
-          <h3>Something went wrong</h3>
+          <h3>{this.props.featureName ? `${this.props.featureName} — Something went wrong` : 'Something went wrong'}</h3>
           <p>{this.state.error?.message || 'An unexpected error occurred'}</p>
-          <button onClick={() => this.setState({ hasError: false })}>
+          <button onClick={this.handleRetry}>
             Try again
           </button>
         </div>

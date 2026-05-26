@@ -12,7 +12,7 @@ export const Profiled: React.FC<ProfiledProps> = ({ id, children }) => {
   if (!isDev) return <>{children}</>;
 
   const onRender: ProfilerOnRenderCallback = (_id, phase, actualDuration) => {
-    const arr = (perf as unknown as { _entries: { name: string; duration: number; timestamp: number }[] })._entries;
+    const arr = perf._entries;
     arr.push({
       name: `react:${_id}`,
       duration: actualDuration,

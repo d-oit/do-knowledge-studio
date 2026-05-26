@@ -2,7 +2,7 @@ import type { LLMProvider, LLMProviderConfig } from './types';
 import { OpenRouterProvider } from './openrouter';
 import { KiloGatewayProvider } from './kilo';
 
-const STORAGE_KEY = 'do-knowledge-studio:llm-config';
+const STORAGE_KEY = 'dks:llm-config';
 
 export interface LLMConfig {
   activeProvider: string;
@@ -14,11 +14,11 @@ const DEFAULT_CONFIG: LLMConfig = {
   providers: {
     openrouter: {
       baseURL: 'https://openrouter.ai/api/v1',
-      apiKey: (import.meta.env.VITE_OPENROUTER_API_KEY as string) || '',
+      apiKey: '',
     },
     kilo: {
       baseURL: 'https://api.kilo.ai/api/gateway',
-      apiKey: import.meta.env.VITE_KILO_API_KEY || '',
+      apiKey: '',
     },
   },
 };
@@ -29,8 +29,8 @@ export function loadConfig(): LLMConfig {
     if (stored) {
       return { ...DEFAULT_CONFIG, ...JSON.parse(stored) };
     }
-  } catch {
-    // Ignore parse errors
+  } catch (e) {
+    throw new Error(`Failed to parse LLM config: ${e instanceof Error ? e.message : String(e)}`);
   }
   return { ...DEFAULT_CONFIG };
 }

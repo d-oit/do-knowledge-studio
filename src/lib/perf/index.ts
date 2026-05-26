@@ -1,6 +1,6 @@
 const PERF_PREFIX = 'perf::';
 
-interface PerfEntry {
+export interface PerfEntry {
   name: string;
   duration: number;
   timestamp: number;

@@ -47,6 +47,7 @@ vi.mock('../../../db/repository', () => ({
 vi.mock('../../../lib/jobs', () => ({
   jobCoordinator: {
     enqueue: vi.fn(),
+    registerHandler: vi.fn(),
   },
 }));
 

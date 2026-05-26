@@ -1,30 +1,76 @@
 import { describe, it, expect } from 'vitest';
-import { escapeHtml } from '../security';
+import { sanitizeHtml, escapeHtml } from '../security';
+
+describe('sanitizeHtml', () => {
+  it('neutralizes script tags', () => {
+    const result = sanitizeHtml('<script>alert(1)</script>');
+    expect(result).not.toContain('<script>');
+    expect(result).not.toContain('alert(1)');
+  });
+
+  it('neutralizes event handlers', () => {
+    const result = sanitizeHtml('<img onerror="alert(1)" src=x>');
+    expect(result).not.toContain('onerror');
+    expect(result).not.toContain('alert(1)');
+  });
+
+  it('neutralizes javascript: URLs', () => {
+    const result = sanitizeHtml('<a href="javascript:alert(1)">click</a>');
+    expect(result).not.toContain('javascript:');
+  });
+
+  it('preserves safe HTML tags', () => {
+    const result = sanitizeHtml('<strong>bold</strong>');
+    expect(result).toContain('<strong>bold</strong>');
+  });
+
+  it('preserves italic tags', () => {
+    const result = sanitizeHtml('<em>italic</em>');
+    expect(result).toContain('<em>italic</em>');
+  });
+
+  it('preserves lists', () => {
+    const result = sanitizeHtml('<ul><li>item</li></ul>');
+    expect(result).toContain('<ul><li>item</li></ul>');
+  });
+
+  it('preserves headings', () => {
+    const result = sanitizeHtml('<h2>heading</h2>');
+    expect(result).toContain('<h2>heading</h2>');
+  });
+
+  it('strips disallowed tags', () => {
+    const result = sanitizeHtml('<style>body{color:red}</style>');
+    expect(result).not.toContain('<style>');
+  });
+});
 
 describe('escapeHtml', () => {
-  it('escapes basic HTML characters', () => {
-    expect(escapeHtml('<script>alert("xss")</script>'))
-      .toBe('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;');
+  it('encodes ampersand', () => {
+    expect(escapeHtml('a&b')).toBe('a&amp;b');
   });
 
-  it('escapes ampersands', () => {
-    expect(escapeHtml('Me & You')).toBe('Me &amp; You');
+  it('encodes less than', () => {
+    expect(escapeHtml('a<b')).toBe('a&lt;b');
   });
 
-  it('escapes single quotes', () => {
-    expect(escapeHtml("It's a trap")).toBe('It&#039;s a trap');
+  it('encodes greater than', () => {
+    expect(escapeHtml('a>b')).toBe('a&gt;b');
   });
 
-  it('handles strings with no special characters', () => {
-    expect(escapeHtml('Normal string')).toBe('Normal string');
+  it('encodes double quote', () => {
+    expect(escapeHtml('a"b')).toBe('a&quot;b');
   });
 
-  it('handles empty strings', () => {
-    expect(escapeHtml('')).toBe('');
+  it('encodes single quote', () => {
+    expect(escapeHtml("a'b")).toBe('a&#x27;b');
   });
 
-  it('escapes multiple occurrences of characters', () => {
-    expect(escapeHtml('<<< & " \' >>>'))
-      .toBe('&lt;&lt;&lt; &amp; &quot; &#039; &gt;&gt;&gt;');
+  it('encodes all special chars', () => {
+    expect(escapeHtml('&<>"\'')).toBe('&amp;&lt;&gt;&quot;&#x27;');
+  });
+
+  it('passes through safe text', () => {
+    expect(escapeHtml('Hello World')).toBe('Hello World');
   });
 });

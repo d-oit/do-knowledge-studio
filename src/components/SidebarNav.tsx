@@ -1,6 +1,6 @@
 import React from 'react';
 
-type View = 'editor' | 'graph' | 'mindmap' | 'chat' | 'export' | 'ai' | 'library' | 'search';
+type View = 'editor' | 'graph' | 'mindmap' | 'chat' | 'export' | 'ai' | 'search';
 
 interface SidebarNavProps {
   currentView: View;
@@ -31,7 +31,6 @@ const NAV_GROUPS: NavGroup[] = [
   {
     group: 'Explore',
     items: [
-      { view: 'library', label: 'Library' },
       { view: 'graph', label: 'Graph' },
       { view: 'mindmap', label: 'Mind Map' },
     ],
