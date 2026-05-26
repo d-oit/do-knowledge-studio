@@ -146,7 +146,7 @@ describe('Migration Framework', () => {
     it('should detect tampered migration file', async () => {
       const { db } = createMockDb();
 
-      vi.stubGlobal('process', { cwd: () => '/home/doit/git/do-knowledge-studio', versions: { node: '20' } });
+      vi.stubGlobal('process', { cwd: () => projectRoot, versions: { node: '20' } });
       const result = await runMigrations(db);
       expect(result.applied).toContain(1);
       expect(result.errors).toHaveLength(0);
