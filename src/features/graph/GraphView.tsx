@@ -10,6 +10,7 @@ import { repository } from '../../db/repository';
 import { removeFromSearchIndex } from '../../lib/search';
 import { logger } from '../../lib/logger';
 import { perf } from '../../lib/perf';
+import { assign as assignFA2Layout, inferSettings } from 'graphology-layout-forceatlas2';
 
 /** Tracks current touch state for mobile gesture handling. */
 interface TouchState {
@@ -24,7 +25,7 @@ interface TouchState {
   lastPanY: number;
 }
 
-type LayoutType = 'force' | 'hierarchical';
+type LayoutType = 'circular' | 'force' | 'hierarchical';
 
 interface Props {
   entities: Entity[];
@@ -201,6 +202,23 @@ const GraphView: React.FC<Props> = ({
     });
   }, [links]);
 
+  const applyCircularLayout = useCallback((graph: Graph, nodes: { id: string }[]) => {
+    const n = nodes.length;
+    if (n === 0) return;
+    const radius = Math.max(200, n * 30);
+    nodes.forEach((node, i) => {
+      const angle = (i * 2 * Math.PI) / n;
+      graph.setNodeAttribute(node.id, 'x', Math.cos(angle) * radius);
+      graph.setNodeAttribute(node.id, 'y', Math.sin(angle) * radius);
+    });
+  }, []);
+
+  const applyForceLayout = useCallback((graph: Graph) => {
+    if (graph.order === 0) return;
+    const settings = inferSettings(graph);
+    assignFA2Layout(graph, { settings, iterations: 100 });
+  }, []);
+
   useEffect(() => {
     if (!containerRef.current) return;
     perf.mark('graph-view-mount');
@@ -272,9 +290,11 @@ const GraphView: React.FC<Props> = ({
           }
         });
 
-        // Apply hierarchical layout if selected
+        // Apply layout
         if (layout === 'hierarchical') {
           applyHierarchicalLayout(graph, data.entities);
+        } else if (layout === 'force') {
+          applyForceLayout(graph);
         }
       }
 
@@ -296,6 +316,10 @@ const GraphView: React.FC<Props> = ({
             } else if (ratio < 1.0 && graphSize === 'xlarge') {
               result.label = '';
               result.size = (data.size || 10) * 0.85;
+            }
+            const g = graphRef.current;
+            if (g && g.getNodeAttribute(node, 'fixed')) {
+              result.color = '#7c3aed';
             }
             return result;
           },
@@ -323,6 +347,13 @@ const GraphView: React.FC<Props> = ({
         sigmaInstance.current.on('clickStage', () => {
           setSelectedNode(null);
           setFocusMode(false);
+        });
+
+        sigmaInstance.current.on('rightClickNode', ({ node }) => {
+          const graph = graphRef.current;
+          const currentFixed = graph.getNodeAttribute(node, 'fixed') || false;
+          graph.setNodeAttribute(node, 'fixed', !currentFixed);
+          sigmaInstance.current?.refresh();
         });
 
         sigmaInstance.current.on('cameraUpdated', () => {
@@ -360,13 +391,22 @@ const GraphView: React.FC<Props> = ({
   useEffect(() => {
     const graph = graphRef.current;
     const sigma = sigmaInstance.current;
-    if (!graph || !sigma) return;
+    if (!graph || !sigma || effectiveData.entities.length === 0) return;
 
-    if (layout === 'hierarchical') {
-      applyHierarchicalLayout(graph, effectiveData.entities);
-      sigma.refresh();
+    switch (layout) {
+      case 'circular':
+        applyCircularLayout(graph, effectiveData.entities);
+        break;
+      case 'force':
+        applyForceLayout(graph);
+        break;
+      case 'hierarchical':
+        applyHierarchicalLayout(graph, effectiveData.entities);
+        break;
     }
-  }, [layout, effectiveData.entities, applyHierarchicalLayout]);
+    sigma.refresh();
+    sigma.getCamera().animatedReset({ duration: 400 });
+  }, [layout, effectiveData.entities, applyHierarchicalLayout, applyCircularLayout, applyForceLayout]);
 
   // Cleanup Sigma on unmount
   useEffect(() => {

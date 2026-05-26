@@ -91,12 +91,27 @@ export class Repository {
     return this.db.transaction(statements);
   }
 
-  /** Get all entities, ordered by name. */
-  async getAllEntities(): Promise<Entity[]> {
+  /**
+   * Get entities, ordered by name.
+   * Supports optional cursor-based pagination via limit/offset.
+   * @param options - Optional limit and offset for pagination.
+   */
+  async getAllEntities(options?: { limit?: number; offset?: number }): Promise<Entity[]> {
     perf.mark('sqlite-query');
     try {
+      let sql = `SELECT * FROM entities ORDER BY name ASC`;
+      const bind: (string | number)[] = [];
+      if (options?.limit !== undefined) {
+        sql += ` LIMIT ?`;
+        bind.push(options.limit);
+      }
+      if (options?.offset !== undefined) {
+        sql += ` OFFSET ?`;
+        bind.push(options.offset);
+      }
       const results = await this.db.exec({
-        sql: `SELECT * FROM entities ORDER BY name ASC`,
+        sql,
+        bind: bind.length > 0 ? bind : undefined,
         returnValue: 'resultRows',
         rowMode: 'object',
       });
@@ -470,6 +485,67 @@ export class Repository {
   }
 
   /**
+   * Batch-load entities with their claims in a single query via LEFT JOIN.
+   * Eliminates N+1 round-trips when both entities and claims are needed.
+   * @returns Entities keyed by id, each with a claims array.
+   */
+  async getAllEntitiesWithClaims(): Promise<Map<string, { entity: Entity; claims: Claim[] }>> {
+    perf.mark('sqlite-query');
+    try {
+      const results = await this.db.exec({
+        sql: `SELECT e.*, c.id as c_id, c.entity_id as c_entity_id, c.statement as c_statement,
+                     c.evidence as c_evidence, c.confidence as c_confidence, c.source as c_source,
+                     c.verification_status as c_verification_status, c.created_at as c_created_at,
+                     c.updated_at as c_updated_at
+              FROM entities e
+              LEFT JOIN claims c ON e.id = c.entity_id
+              ORDER BY e.name ASC`,
+        returnValue: 'resultRows',
+        rowMode: 'object',
+      });
+      const rows = z.array(z.unknown()).parse(results);
+
+      const result = new Map<string, { entity: Entity; claims: Claim[] }>();
+      for (const row of rows) {
+        const r = row as Record<string, unknown>;
+        const entityId = String(r.id);
+
+        if (!result.has(entityId)) {
+          result.set(entityId, {
+            entity: this.parseMetadata(EntitySchema, row),
+            claims: [],
+          });
+        }
+
+        if (r.c_id !== null) {
+          const claimRow = { ...r };
+          // Map prefixed columns back to claim property names
+          claimRow.id = r.c_id;
+          claimRow.entity_id = r.c_entity_id;
+          claimRow.statement = r.c_statement;
+          claimRow.evidence = r.c_evidence;
+          claimRow.confidence = r.c_confidence;
+          claimRow.source = r.c_source;
+          claimRow.verification_status = r.c_verification_status;
+          claimRow.created_at = r.c_created_at;
+          claimRow.updated_at = r.c_updated_at;
+          // Clean up prefixed keys
+          for (const key of Object.keys(claimRow)) {
+            if (key.startsWith('c_')) delete claimRow[key];
+          }
+          result.get(entityId)!.claims.push(this.parseMetadata(ClaimSchema, claimRow));
+        }
+      }
+
+      perf.measure('sqlite-query-entities-claims', 'sqlite-query');
+      return result;
+    } catch (err) {
+      logger.error('Failed to batch-load entities with claims', err);
+      throw new AppError('Failed to batch-load entities with claims', 'DB_ERROR', err);
+    }
+  }
+
+  /**
    * Get all notes grouped by entity_id for batch export.
    */
   async getAllNotesGroupedByEntity(): Promise<Record<string, Note[]>> {
@@ -650,12 +726,27 @@ export class Repository {
     }
   }
 
-  /** Get all links in the database. */
-  async getAllLinks(): Promise<Link[]> {
+  /**
+   * Get all links in the database.
+   * Supports optional cursor-based pagination via limit/offset.
+   * @param options - Optional limit and offset for pagination.
+   */
+  async getAllLinks(options?: { limit?: number; offset?: number }): Promise<Link[]> {
     perf.mark('sqlite-query');
     try {
+      let sql = `SELECT * FROM links`;
+      const bind: (string | number)[] = [];
+      if (options?.limit !== undefined) {
+        sql += ` LIMIT ?`;
+        bind.push(options.limit);
+      }
+      if (options?.offset !== undefined) {
+        sql += ` OFFSET ?`;
+        bind.push(options.offset);
+      }
       const results = await this.db.exec({
-        sql: `SELECT * FROM links`,
+        sql,
+        bind: bind.length > 0 ? bind : undefined,
         returnValue: 'resultRows',
         rowMode: 'object',
       });

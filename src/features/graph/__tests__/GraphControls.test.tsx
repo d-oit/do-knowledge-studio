@@ -76,11 +76,18 @@ describe('GraphControls', () => {
 
   it('shows layout toggle buttons', () => {
     render(<GraphControls {...defaultProps} />);
+    expect(screen.getByTitle('Circular layout')).toBeDefined();
     expect(screen.getByTitle('Force-directed layout')).toBeDefined();
     expect(screen.getByTitle('Hierarchical layout')).toBeDefined();
   });
 
-  it('toggles layout on button click', () => {
+  it('toggles to circular layout on button click', () => {
+    render(<GraphControls {...defaultProps} />);
+    fireEvent.click(screen.getByTitle('Circular layout'));
+    expect(defaultProps.onLayoutChange).toHaveBeenCalledWith('circular');
+  });
+
+  it('toggles to hierarchical layout on button click', () => {
     render(<GraphControls {...defaultProps} />);
     fireEvent.click(screen.getByTitle('Hierarchical layout'));
     expect(defaultProps.onLayoutChange).toHaveBeenCalledWith('hierarchical');

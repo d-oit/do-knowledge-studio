@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Focus, Camera, Clock, X, FolderOpen, GitCompare, RotateCcw, Loader2, Layout, LayoutDashboard, Download } from 'lucide-react';
+import { Focus, Camera, Clock, X, FolderOpen, GitCompare, RotateCcw, Loader2, Layout, LayoutDashboard, Download, CircleDot } from 'lucide-react';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -32,8 +32,8 @@ interface GraphControlsProps {
   onExportPNG?: () => void;
   snapshotMode?: boolean;
   onSnapshotModeChange?: (active: boolean) => void;
-  layout?: 'force' | 'hierarchical';
-  onLayoutChange?: (layout: 'force' | 'hierarchical') => void;
+  layout?: 'circular' | 'force' | 'hierarchical';
+  onLayoutChange?: (layout: 'circular' | 'force' | 'hierarchical') => void;
 }
 
 const GraphControls: React.FC<GraphControlsProps> = ({
@@ -198,6 +198,16 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       )}
       {onLayoutChange && (
         <div className="layout-toggle" style={{ display: 'flex', gap: '4px', marginLeft: 'auto' }}>
+          <button
+            onClick={() => onLayoutChange('circular')}
+            className={layout === 'circular' ? 'active' : ''}
+            aria-pressed={layout === 'circular'}
+            aria-label="Circular layout"
+            title="Circular layout"
+            style={{ padding: '6px 10px', minHeight: '36px', fontSize: '12px' }}
+          >
+            <CircleDot size={14} /> Circular
+          </button>
           <button
             onClick={() => onLayoutChange('force')}
             className={layout === 'force' ? 'active' : ''}
