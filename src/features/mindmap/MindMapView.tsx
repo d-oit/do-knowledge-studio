@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import MindElixir, { type MindElixirData, type MindElixirInstance } from 'mind-elixir';
-import { Entity, Link } from '../../lib/validation';
+import type { Entity, Link } from '../../lib/validation';
 import { repository } from '../../db/repository';
 import { logger } from '../../lib/logger';
 import { upsertToSearchIndex } from '../../lib/search';
@@ -100,7 +100,8 @@ const MindMapView: React.FC<Props> = ({
       keypress: true,
     };
 
-    const instance: MindElixirInstance = new (MindElixir as new (options: Record<string, unknown>) => MindElixirInstance)(options);
+    const MindElixirCtor = MindElixir as new (options: Record<string, unknown>) => MindElixirInstance;
+    const instance: MindElixirInstance = new MindElixirCtor(options);
     mindInstance.current = instance;
     instance.init({
       nodeData: treeData

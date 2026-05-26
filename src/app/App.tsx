@@ -13,6 +13,7 @@ import MobileDrawer from '../components/MobileDrawer';
 import ErrorBoundary from '../components/ErrorBoundary';
 import ThemeSwitcher from '../components/ThemeSwitcher';
 const CommandPalette = lazy(() => import('../components/CommandPalette'));
+import { escapeHtml } from '../lib/security';
 import {
   EditorSkeleton,
   GraphSkeleton,
@@ -151,7 +152,7 @@ const AppContent: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  if (error) return <div className="error-screen">{error}</div>;
+  if (error) return <div className="error-screen">{typeof error === 'string' ? escapeHtml(error) : String(error)}</div>;
 
   return (
     <div className="layout-container">

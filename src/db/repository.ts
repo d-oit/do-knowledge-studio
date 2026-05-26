@@ -73,7 +73,8 @@ export class Repository {
       });
       const rows = z.array(z.unknown()).parse(result);
       const parsed = this.parseMetadata(EntitySchema, rows[0]);
-      return { ...parsed, rowid: (rows[0]).rowid };
+      const row = rows[0] as Record<string, unknown>;
+      return { ...parsed, rowid: row.rowid as number };
     } catch (err) {
       logger.error('Failed to create entity', err);
       throw new AppError('Failed to create entity', 'DB_ERROR', err);
@@ -407,7 +408,10 @@ export class Repository {
         rowMode: 'object',
       });
       const rows = z.array(z.unknown()).parse(results);
-      return rows.map((r) => ({ ...this.parseMetadata(ClaimSchema, r), rowid: (r).rowid }));
+      return rows.map((r) => {
+        const row = r as Record<string, unknown>;
+        return { ...this.parseMetadata(ClaimSchema, r), rowid: row.rowid as number };
+      });
     } catch (err) {
       logger.error('Failed to fetch claims', err);
       throw new AppError('Failed to fetch claims', 'DB_ERROR', err);
@@ -719,7 +723,7 @@ export class Repository {
         url: String(r.url),
         content: String(r.content),
         format: String(r.format),
-        title: r.title ? String(r.title) : undefined,
+        title: typeof r.title === 'string' ? r.title : undefined,
         resolved_at: String(r.resolved_at),
       };
     } catch (err) {
@@ -840,7 +844,7 @@ export class Repository {
     }
   }
 
-  private parseMetadata<T extends z.ZodTypeAny>(schema: T, row: unknown): z.infer<T> {
+  private parseMetadata<T extends z.ZodType<unknown>>(schema: T, row: unknown): z.infer<T> {
     const r = { ...(row as Record<string, unknown>) };
     if (r && typeof r.metadata === 'string') {
       try {

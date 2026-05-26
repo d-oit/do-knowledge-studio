@@ -1,4 +1,4 @@
-import type { LLMProvider, LLMRequest, LLMResponse, LLMStreamChunk, LLMProviderConfig } from './types';
+import type { LLMProvider, LLMRequest, LLMResponse, LLMStreamChunk, LLMProviderConfig, OpenAIChatResponse, OpenAIErrorResponse } from './types';
 
 const KILO_BASE_URL = 'https://api.kilo.ai/api/gateway';
 
@@ -32,11 +32,11 @@ export class KiloGatewayProvider implements LLMProvider {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
+      const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } })) as OpenAIErrorResponse;
       throw new Error(`Kilo Gateway error: ${error.error?.message || response.statusText}`);
     }
 
-    const data: { choices: Array<{ message?: { content?: string } }>; model?: string; usage?: { prompt_tokens: number; completion_tokens: number } } = await response.json();
+    const data = await response.json() as OpenAIChatResponse;
     return {
       content: data.choices[0]?.message?.content || '',
       model: data.model || request.model,
@@ -61,7 +61,7 @@ export class KiloGatewayProvider implements LLMProvider {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
+      const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } })) as OpenAIErrorResponse;
       throw new Error(`Kilo Gateway error: ${error.error?.message || response.statusText}`);
     }
 
@@ -88,7 +88,7 @@ export class KiloGatewayProvider implements LLMProvider {
         }
 
         try {
-          const parsed = JSON.parse(data);
+          const parsed = JSON.parse(data) as OpenAIChatResponse;
           const content = parsed.choices?.[0]?.delta?.content || '';
           if (content) {
             yield { content, done: false };

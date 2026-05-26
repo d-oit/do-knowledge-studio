@@ -27,10 +27,10 @@ export function loadConfig(): LLMConfig {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      return { ...DEFAULT_CONFIG, ...JSON.parse(stored) };
+      return { ...DEFAULT_CONFIG, ...JSON.parse(stored) as Partial<LLMConfig> };
     }
   } catch (e) {
-    throw new Error(`Failed to parse LLM config: ${e instanceof Error ? e.message : String(e)}`);
+    console.warn('Failed to parse stored LLM config, falling back to defaults', e);
   }
   return { ...DEFAULT_CONFIG };
 }

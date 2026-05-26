@@ -186,8 +186,9 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
         editor.commands.setContent('<p></p>');
       }
     } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
       logger.error('Failed to save entity', err);
-      setStatus({ type: 'error', message: 'Save failed. See console for details.' });
+      setStatus({ type: 'error', message: `Save failed: ${msg}` });
     }
   }, [title, editor, type, sourceUrl, editingEntityId, onEditComplete]);
 

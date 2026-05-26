@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/restrict-template-expressions */
 import { Command } from 'commander';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -7,7 +6,6 @@ import { setDb } from '../src/db/client.js';
 import { initDb } from './db.js';
 import { repository } from '../src/db/repository.js';
 import { generateSiteHtml, generateJsonExport } from '../src/lib/export-core.js';
-import type { Note } from '../src/lib/validation';
 import { runMigrations, rollbackLastMigration, getMigrationStatus } from '../src/db/migrate.js';
 
 const program = new Command();
@@ -20,10 +18,16 @@ async function ensureDb() {
 }
 
 process.on('exit', () => {
-  dbInstance?.close();
+  void dbInstance?.close();
 });
 
-const version = readFileSync(new URL('../VERSION', import.meta.url), 'utf-8').trim();
+const version = (() => {
+  try {
+    return readFileSync(new URL('../VERSION', import.meta.url), 'utf-8').trim();
+  } catch {
+    return 'unknown';
+  }
+})();
 
 program
   .name('knowledge-studio')
@@ -42,50 +46,51 @@ program
   .command('sync')
   .description('Sync Markdown files or URL to DB')
   .argument('<source>', 'directory path or URL')
-  .action(async (source) => {
+  .action(async (source: string) => {
     await ensureDb();
     
+    const src = String(source);
     // Detect if source is a URL
-    if (source.startsWith('http://') || source.startsWith('https://')) {
-      console.log(`Syncing from URL: ${source}`);
+    if (src.startsWith('http://') || src.startsWith('https://')) {
+      console.log(`Syncing from URL: ${src}`);
       try {
         const { resolveUrl } = await import('../src/lib/resolver.js');
-        const resolved = await resolveUrl(source);
+        const resolved = await resolveUrl(src);
         await repository.createEntity({
-          name: resolved.title || new URL(source).hostname,
+          name: resolved.title || new URL(src).hostname,
           type: 'concept',
           description: resolved.content || undefined,
-          metadata: { source_url: source },
+          metadata: { source_url: src },
         });
         console.log(`  Imported: ${resolved.title} (${resolved.wordCount} words via ${resolved.provider})`);
         console.log('Sync complete.');
       } catch (err) {
-        console.error(`Failed to sync URL: ${err}`);
+        console.error(`Failed to sync URL: ${err instanceof Error ? err.message : String(err)}`);
       }
       return;
     }
     
     // Directory sync (existing behavior)
-    console.log(`Syncing from "${source}"...`);
-    if (!fs.existsSync(source)) {
+    console.log(`Syncing from "${src}"...`);
+    if (!fs.existsSync(src)) {
       console.error('Directory not found');
       return;
     }
     let files: string[];
     try {
-      files = fs.readdirSync(source).filter((f: string) => f.endsWith('.md'));
+      files = fs.readdirSync(src).filter((f: string) => f.endsWith('.md'));
     } catch (err) {
-      console.error(`Failed to read directory: ${err}`);
+      console.error(`Failed to read directory: ${err instanceof Error ? err.message : String(err)}`);
       return;
     }
     console.log(`Found ${files.length} markdown files.`);
     for (const file of files) {
-      const content = fs.readFileSync(path.join(source, file), 'utf-8');
-      const lines = content.split('\n');
-      const title = lines[0].replace('# ', '').trim();
-      const description = lines.slice(1).join('\n').trim().slice(0, 200);
-      
       try {
+        const content = fs.readFileSync(path.join(src, file), 'utf-8');
+        const lines = content.split('\n');
+        const title = lines[0].replace('# ', '').trim();
+        const description = lines.slice(1).join('\n').trim().slice(0, 200);
+
         await repository.createEntity({
           name: title,
           type: 'concept',
@@ -104,20 +109,21 @@ program
   .description('Export data (md, json, site)')
   .option('-f, --format <format>', 'format', 'md')
   .option('-o, --output <dir>', 'output directory', './export')
-  .action(async (options) => {
-    const outDir = options.output;
+  .action(async (options: { format?: string; output?: string }) => {
+    const outDir = options.output ?? './export';
     if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
 
     await ensureDb();
 
-    if (options.format === 'json') {
+    const fmt = options.format ?? 'md';
+    if (fmt === 'json') {
       await exportJson(outDir);
-    } else if (options.format === 'site') {
+    } else if (fmt === 'site') {
       await exportSite(outDir);
     } else {
       await exportMarkdown(outDir);
     }
-    console.log(`Exported in ${options.format} format to ${outDir}`);
+    console.log(`Exported in ${fmt} format to ${outDir}`);
   });
 
 async function exportMarkdown(outDir: string) {
@@ -193,12 +199,12 @@ program
   .option('-t, --type <type>', 'type', 'concept')
   .option('-d, --description <description>', 'description')
   .option('-u, --source-url <url>', 'source URL for auto-hydration')
-  .action(async (name, options) => {
+  .action(async (name: string, options: { type?: string; description?: string; sourceUrl?: string }) => {
     await ensureDb();
     try {
       const entity = await repository.createEntity({
         name,
-        type: options.type,
+        type: options.type ?? 'concept',
         description: options.description,
         metadata: options.sourceUrl ? { source_url: options.sourceUrl } : undefined,
       });
@@ -217,11 +223,11 @@ program
             console.log(`  Hydrated description from ${resolved.provider} (${resolved.wordCount} words)`);
           }
         } catch (err) {
-          console.error(`  Failed to resolve URL: ${err}`);
+          console.error(`  Failed to resolve URL: ${err instanceof Error ? err.message : String(err)}`);
         }
       }
     } catch (err) {
-      console.error(`Failed to create entity: ${err}`);
+      console.error(`Failed to create entity: ${err instanceof Error ? err.message : String(err)}`);
     }
   });
 
@@ -246,7 +252,7 @@ program
   .argument('<entity-name>')
   .argument('<statement>')
   .option('-c, --confidence <confidence>', 'confidence', '1.0')
-  .action(async (entityName, statement, options) => {
+  .action(async (entityName: string, statement: string, options: { confidence?: string }) => {
     await ensureDb();
     const entity = await repository.getEntityByName(entityName);
     if (!entity || !entity.id) {
@@ -257,11 +263,11 @@ program
       const claim = await repository.createClaim({
         entity_id: entity.id,
         statement,
-        confidence: parseFloat(options.confidence),
+        confidence: parseFloat(options.confidence ?? '1.0'),
       });
       console.log(`Claim added to ${entity.name}: ${claim.statement}`);
     } catch (err) {
-      console.error(`Failed to create claim: ${err}`);
+      console.error(`Failed to create claim: ${err instanceof Error ? err.message : String(err)}`);
     }
   });
 
@@ -292,7 +298,7 @@ program
       await rollbackLastMigration(dbInstance!);
       console.log('Rollback complete.');
     } catch (err) {
-      console.error(`Rollback failed: ${err}`);
+      console.error(`Rollback failed: ${err instanceof Error ? err.message : String(err)}`);
     }
   });
 
@@ -310,6 +316,23 @@ program
     for (const s of statuses) {
       const applied = s.appliedAt ?? 'PENDING';
       console.log(`  [${s.version}] ${s.name} — ${applied}`);
+    }
+  });
+
+program
+  .command('db:backup')
+  .description('Backup the SQLite database')
+  .argument('[path]', 'output path for the backup file')
+  .action(async (pathArg: string | undefined) => {
+    await ensureDb();
+    const backupPath = pathArg ?? `.studio-cli-backup-${Date.now()}.db`;
+    const resolvedPath = path.resolve(process.cwd(), backupPath);
+    console.log(`Backing up database to ${resolvedPath}...`);
+    try {
+      await dbInstance!.exec({ sql: `VACUUM INTO '${resolvedPath.replace(/'/g, "''")}'` });
+      console.log(`Backup created: ${resolvedPath}`);
+    } catch (err) {
+      console.error(`Backup failed: ${err instanceof Error ? err.message : String(err)}`);
     }
   });
 

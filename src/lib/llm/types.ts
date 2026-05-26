@@ -39,3 +39,21 @@ export interface LLMProvider {
   chatStream(request: LLMRequest): AsyncGenerator<LLMStreamChunk>;
   isConfigured(): boolean;
 }
+
+/** OpenAI-compatible chat completion response body. */
+export interface OpenAIChatResponse {
+  choices: Array<{
+    message?: { content?: string };
+    delta?: { content?: string };
+  }>;
+  model?: string;
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+  };
+}
+
+/** OpenAI-compatible error response body. */
+export interface OpenAIErrorResponse {
+  error?: { message?: string };
+}
