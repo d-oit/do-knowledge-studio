@@ -5,7 +5,7 @@ import { readFileSync } from 'fs';
 import { setDb } from '../src/db/client.js';
 import { initDb } from './db.js';
 import { repository } from '../src/db/repository.js';
-import { generateSiteHtml, generateJsonExport } from '../src/lib/export-core.js';
+import { generateSiteHtml, generateJsonExport, generateEntityMarkdown } from '../src/lib/export-core.js';
 import { runMigrations, rollbackLastMigration, getMigrationStatus } from '../src/db/migrate.js';
 
 const program = new Command();
@@ -127,7 +127,6 @@ program
   });
 
 async function exportMarkdown(outDir: string) {
-  const { escapeHtml } = await import('../src/lib/security.js');
   const entities = await repository.getAllEntities();
   
   for (const entity of entities) {
@@ -135,27 +134,7 @@ async function exportMarkdown(outDir: string) {
     const claims = await repository.getClaimsByEntityId(entity.id);
     const notes = await repository.getNotesByEntityId(entity.id);
     
-    let md = `# ${escapeHtml(entity.name)}\n\n`;
-    md += `**Type:** ${escapeHtml(entity.type)}\n\n`;
-    if (entity.description) md += `${entity.description}\n\n`;
-    
-    if (claims.length > 0) {
-      md += `## Claims\n\n`;
-      for (const claim of claims) {
-        md += `- ${escapeHtml(claim.statement)}`;
-        if (claim.confidence !== 1) md += ` (confidence: ${claim.confidence})`;
-        md += `\n`;
-        if (claim.evidence) md += `  - *Evidence:* ${escapeHtml(claim.evidence)}\n`;
-      }
-      md += '\n';
-    }
-    
-    if (notes.length > 0) {
-      md += `## Notes\n\n`;
-      for (const note of notes) {
-        md += `${note.content}\n\n`;
-      }
-    }
+    const md = generateEntityMarkdown(entity, claims, notes);
 
     const safeName = entity.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
     fs.writeFileSync(path.join(outDir, `${safeName}.md`), md);
@@ -333,6 +312,259 @@ program
       console.log(`Backup created: ${resolvedPath}`);
     } catch (err) {
       console.error(`Backup failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  });
+
+program
+  .command('search')
+  .description('Full-text search entities')
+  .argument('<query>', 'search query')
+  .action(async (query: string) => {
+    await ensureDb();
+    try {
+      const results = await repository.searchEntities(query);
+      if (results.length === 0) {
+        console.log('No results found.');
+        return;
+      }
+      for (const r of results) {
+        const desc = r.description ? ` — ${r.description.slice(0, 80)}` : '';
+        console.log(`[${r.type}] ${r.name}${desc}`);
+      }
+    } catch (err) {
+      console.error(`Search failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  });
+
+program
+  .command('entity-update')
+  .description('Update an entity')
+  .argument('<name>', 'entity name')
+  .option('-t, --type <type>', 'new type')
+  .option('-d, --description <description>', 'new description')
+  .action(async (name: string, options: { type?: string; description?: string }) => {
+    await ensureDb();
+    try {
+      const entity = await repository.getEntityByName(name);
+      if (!entity || !entity.id) {
+        console.error(`Entity not found: ${name}`);
+        return;
+      }
+      const update: Record<string, string> = {};
+      if (options.type) update.type = options.type;
+      if (options.description) update.description = options.description;
+      if (Object.keys(update).length === 0) {
+        console.log('No changes specified. Use -t or -d to update fields.');
+        return;
+      }
+      const updated = await repository.updateEntity(entity.id, update);
+      console.log(`Updated: ${updated.name} [${updated.type}]`);
+    } catch (err) {
+      console.error(`Failed to update entity: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  });
+
+program
+  .command('entity-delete')
+  .description('Delete an entity and its cascade')
+  .argument('<name>', 'entity name')
+  .action(async (name: string) => {
+    await ensureDb();
+    try {
+      const entity = await repository.getEntityByName(name);
+      if (!entity || !entity.id) {
+        console.error(`Entity not found: ${name}`);
+        return;
+      }
+      await repository.deleteEntity(entity.id);
+      console.log(`Deleted: ${name}`);
+    } catch (err) {
+      console.error(`Failed to delete entity: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  });
+
+program
+  .command('entity-get')
+  .description('Get an entity by name')
+  .argument('<name>', 'entity name')
+  .action(async (name: string) => {
+    await ensureDb();
+    try {
+      const entity = await repository.getEntityByName(name);
+      if (!entity) {
+        console.error(`Entity not found: ${name}`);
+        return;
+      }
+      console.log(`ID: ${entity.id}`);
+      console.log(`Name: ${entity.name}`);
+      console.log(`Type: ${entity.type}`);
+      if (entity.description) console.log(`Description: ${entity.description.slice(0, 200)}`);
+      console.log(`Created: ${entity.created_at}`);
+      console.log(`Updated: ${entity.updated_at}`);
+    } catch (err) {
+      console.error(`Failed to get entity: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  });
+
+program
+  .command('link-create')
+  .description('Create a link between two entities')
+  .argument('<source>', 'source entity name')
+  .argument('<target>', 'target entity name')
+  .option('-r, --relation <relation>', 'relation type', 'related')
+  .action(async (source: string, target: string, options: { relation?: string }) => {
+    await ensureDb();
+    try {
+      const sourceEntity = await repository.getEntityByName(source);
+      if (!sourceEntity || !sourceEntity.id) {
+        console.error(`Source entity not found: ${source}`);
+        return;
+      }
+      const targetEntity = await repository.getEntityByName(target);
+      if (!targetEntity || !targetEntity.id) {
+        console.error(`Target entity not found: ${target}`);
+        return;
+      }
+      const link = await repository.createLink({
+        source_id: sourceEntity.id,
+        target_id: targetEntity.id,
+        relation: options.relation ?? 'related',
+      });
+      console.log(`Link created: ${source} --[${link.relation}]--> ${target} (ID: ${link.id})`);
+    } catch (err) {
+      console.error(`Failed to create link: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  });
+
+program
+  .command('link-list')
+  .description('List all links')
+  .action(async () => {
+    await ensureDb();
+    try {
+      const links = await repository.getAllLinks();
+      const entities = await repository.getAllEntities();
+      const entityMap = new Map(entities.filter(e => e.id).map(e => [e.id!, e.name]));
+      if (links.length === 0) {
+        console.log('No links found.');
+        return;
+      }
+      for (const link of links) {
+        const source = entityMap.get(link.source_id) || link.source_id;
+        const target = entityMap.get(link.target_id) || link.target_id;
+        console.log(`[${link.id}] ${source} --[${link.relation}]--> ${target}`);
+      }
+    } catch (err) {
+      console.error(`Failed to list links: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  });
+
+program
+  .command('link-delete')
+  .description('Delete a link by ID')
+  .argument('<id>', 'link ID')
+  .action(async (id: string) => {
+    await ensureDb();
+    try {
+      await repository.deleteLink(id);
+      console.log(`Link deleted: ${id}`);
+    } catch (err) {
+      console.error(`Failed to delete link: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  });
+
+program
+  .command('note-create')
+  .description('Create a note for an entity')
+  .argument('<entity>', 'entity name')
+  .argument('<content>', 'note content')
+  .action(async (entityName: string, content: string) => {
+    await ensureDb();
+    try {
+      const entity = await repository.getEntityByName(entityName);
+      if (!entity || !entity.id) {
+        console.error(`Entity not found: ${entityName}`);
+        return;
+      }
+      const note = await repository.createNote({
+        entity_id: entity.id,
+        content,
+      });
+      console.log(`Note created for ${entityName} (ID: ${note.id})`);
+    } catch (err) {
+      console.error(`Failed to create note: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  });
+
+program
+  .command('note-list')
+  .description('List notes for an entity')
+  .argument('<entity>', 'entity name')
+  .action(async (entityName: string) => {
+    await ensureDb();
+    try {
+      const entity = await repository.getEntityByName(entityName);
+      if (!entity || !entity.id) {
+        console.error(`Entity not found: ${entityName}`);
+        return;
+      }
+      const notes = await repository.getNotesByEntityId(entity.id);
+      if (notes.length === 0) {
+        console.log(`No notes for ${entityName}.`);
+        return;
+      }
+      for (const note of notes) {
+        console.log(`[${note.id}] ${note.content.slice(0, 120)}${note.content.length > 120 ? '...' : ''}`);
+      }
+    } catch (err) {
+      console.error(`Failed to list notes: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  });
+
+program
+  .command('snapshot-list')
+  .description('List graph snapshots')
+  .action(async () => {
+    await ensureDb();
+    try {
+      const snapshots = await repository.listSnapshots();
+      if (snapshots.length === 0) {
+        console.log('No snapshots found.');
+        return;
+      }
+      for (const snap of snapshots) {
+        const nodeCount = (() => { try { return (JSON.parse(snap.nodes_json) as { id: string }[]).length; } catch { return 0; } })();
+        const edgeCount = (() => { try { return (JSON.parse(snap.edges_json) as { id: string }[]).length; } catch { return 0; } })();
+        console.log(`[${snap.id}] ${snap.name} — ${nodeCount} nodes, ${edgeCount} edges — ${snap.created_at}`);
+        if (snap.description) console.log(`  ${snap.description}`);
+      }
+    } catch (err) {
+      console.error(`Failed to list snapshots: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  });
+
+program
+  .command('db:reset')
+  .description('Reset the database (drop all tables and re-run schema)')
+  .action(async () => {
+    await ensureDb();
+    console.log('Resetting database...');
+    try {
+      await dbInstance!.exec({ sql: 'DROP TABLE IF EXISTS claim_search_idx' });
+      await dbInstance!.exec({ sql: 'DROP TABLE IF EXISTS entity_search_idx' });
+      await dbInstance!.exec({ sql: 'DROP TABLE IF EXISTS web_cache' });
+      await dbInstance!.exec({ sql: 'DROP TABLE IF EXISTS graph_snapshots' });
+      await dbInstance!.exec({ sql: 'DROP TABLE IF EXISTS schema_version' });
+      await dbInstance!.exec({ sql: 'DROP TABLE IF EXISTS links' });
+      await dbInstance!.exec({ sql: 'DROP TABLE IF EXISTS notes' });
+      await dbInstance!.exec({ sql: 'DROP TABLE IF EXISTS claims' });
+      await dbInstance!.exec({ sql: 'DROP TABLE IF EXISTS entities' });
+      const freshDb = await initDb();
+      setDb(freshDb);
+      dbInstance = freshDb;
+      console.log('Database reset complete.');
+    } catch (err) {
+      console.error(`Reset failed: ${err instanceof Error ? err.message : String(err)}`);
     }
   });
 

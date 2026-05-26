@@ -15,10 +15,12 @@ const DEFAULT_CONFIG: LLMConfig = {
     openrouter: {
       baseURL: 'https://openrouter.ai/api/v1',
       apiKey: '',
+      defaultModel: 'google/gemini-2.0-flash-lite-preview-02-05:free',
     },
     kilo: {
       baseURL: 'https://api.kilo.ai/api/gateway',
       apiKey: '',
+      defaultModel: 'meta-llama/llama-3.1-8b-instruct',
     },
   },
 };

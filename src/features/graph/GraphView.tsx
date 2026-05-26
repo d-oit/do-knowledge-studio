@@ -536,6 +536,9 @@ const GraphView: React.FC<Props> = ({
       const visibleNodes = nodes.filter(n => n !== 'placeholder');
       const currentIdx = selectedNode ? visibleNodes.indexOf(selectedNode) : focusRingIndex;
 
+      // Arrow keys with modifier = pan camera
+      const hasModifier = e.ctrlKey || e.metaKey || e.shiftKey;
+
       switch (e.key) {
         case 'Tab': {
           e.preventDefault();
@@ -549,26 +552,62 @@ const GraphView: React.FC<Props> = ({
         }
         case 'ArrowLeft': {
           e.preventDefault();
-          const camera = sigma.getCamera();
-          camera.setState({ x: camera.x + 50 / camera.ratio });
+          if (hasModifier) {
+            const camera = sigma.getCamera();
+            camera.setState({ x: camera.x + 50 / camera.ratio });
+          } else if (selectedNode) {
+            // Navigate to nearest neighbor in the left/up direction (prefer source nodes)
+            const neighbors = graph.neighbors(selectedNode);
+            if (neighbors.length > 0) {
+              setSelectedNode(neighbors[neighbors.length - 1]);
+            }
+          }
           break;
         }
         case 'ArrowRight': {
           e.preventDefault();
-          const camera = sigma.getCamera();
-          camera.setState({ x: camera.x - 50 / camera.ratio });
+          if (hasModifier) {
+            const camera = sigma.getCamera();
+            camera.setState({ x: camera.x - 50 / camera.ratio });
+          } else if (selectedNode) {
+            // Navigate to nearest neighbor in the right/down direction (prefer target nodes)
+            const neighbors = graph.neighbors(selectedNode);
+            if (neighbors.length > 0) {
+              setSelectedNode(neighbors[0]);
+            }
+          }
           break;
         }
         case 'ArrowUp': {
           e.preventDefault();
-          const camera = sigma.getCamera();
-          camera.setState({ y: camera.y + 50 / camera.ratio });
+          if (hasModifier) {
+            const camera = sigma.getCamera();
+            camera.setState({ y: camera.y + 50 / camera.ratio });
+          } else if (visibleNodes.length > 0) {
+            // Previous node in list
+            const dir = -1;
+            const next = ((currentIdx + dir) % visibleNodes.length + visibleNodes.length) % visibleNodes.length;
+            if (visibleNodes[next]) {
+              setSelectedNode(visibleNodes[next]);
+              setFocusRingIndex(next);
+            }
+          }
           break;
         }
         case 'ArrowDown': {
           e.preventDefault();
-          const camera = sigma.getCamera();
-          camera.setState({ y: camera.y - 50 / camera.ratio });
+          if (hasModifier) {
+            const camera = sigma.getCamera();
+            camera.setState({ y: camera.y - 50 / camera.ratio });
+          } else if (visibleNodes.length > 0) {
+            // Next node in list
+            const dir = 1;
+            const next = ((currentIdx + dir) % visibleNodes.length + visibleNodes.length) % visibleNodes.length;
+            if (visibleNodes[next]) {
+              setSelectedNode(visibleNodes[next]);
+              setFocusRingIndex(next);
+            }
+          }
           break;
         }
         case '=':
@@ -672,10 +711,21 @@ const GraphView: React.FC<Props> = ({
         tabIndex={-1}
         aria-roledescription="Interactive knowledge graph showing entities and their relationships"
       />
-      <div aria-live="polite" className="sr-only">
-        {selectedNode
-          ? `Selected entity: ${entities.find(e => e.id === selectedNode)?.name || selectedNode}. ${effectiveData.links.filter(l => l.source_id === selectedNode || l.target_id === selectedNode).length} connections.`
-          : 'Knowledge graph. No entity selected. Use Tab to navigate nodes.'}
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {(() => {
+          if (!selectedNode) return 'Knowledge graph. No entity selected. Use Tab or arrow keys to navigate nodes.';
+          const entity = entities.find(e => e.id === selectedNode);
+          const name = entity?.name || selectedNode;
+          const connections = effectiveData.links.filter(l => l.source_id === selectedNode || l.target_id === selectedNode);
+          const neighborNames = connections
+            .map(l => {
+              const neighborId = l.source_id === selectedNode ? l.target_id : l.source_id;
+              const neighbor = entities.find(e => e.id === neighborId);
+              return neighbor?.name || neighborId;
+            })
+            .filter(Boolean);
+          return `Selected: ${name}. ${connections.length} connections${neighborNames.length > 0 ? ': ' + neighborNames.slice(0, 5).join(', ') + (neighborNames.length > 5 ? ` and ${neighborNames.length - 5} more` : '') : ''}. Press Tab to next, Enter to inspect, Escape to deselect.`;
+        })()}
       </div>
       {selectedNode && (() => {
         const entity = entities.find(e => e.id === selectedNode);

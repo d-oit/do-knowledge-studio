@@ -43,6 +43,7 @@ import AIHarness from '../AIHarness';
 describe('AIHarness', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.setItem('dks:ai-wizard-seen', 'true');
   });
 
   it('renders without crashing', () => {

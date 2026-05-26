@@ -23,11 +23,16 @@ export interface LLMResponse {
 export interface LLMStreamChunk {
   content: string;
   done: boolean;
+  usage?: {
+    inputTokens: number;
+    outputTokens: number;
+  };
 }
 
 export interface LLMProviderConfig {
   apiKey?: string;
   baseURL: string;
+  defaultModel?: string;
   defaultHeaders?: Record<string, string>;
 }
 

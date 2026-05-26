@@ -70,6 +70,7 @@ export class OpenRouterProvider implements LLMProvider {
 
     const decoder = new TextDecoder();
     let buffer = '';
+    let streamUsage: { inputTokens: number; outputTokens: number } | undefined;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -83,12 +84,18 @@ export class OpenRouterProvider implements LLMProvider {
         if (!line.startsWith('data: ')) continue;
         const data = line.slice(6);
         if (data === '[DONE]') {
-          yield { content: '', done: true };
+          yield { content: '', done: true, usage: streamUsage };
           return;
         }
 
         try {
           const parsed = JSON.parse(data) as OpenAIChatResponse;
+          if (parsed.usage) {
+            streamUsage = {
+              inputTokens: parsed.usage.prompt_tokens,
+              outputTokens: parsed.usage.completion_tokens,
+            };
+          }
           const content = parsed.choices?.[0]?.delta?.content || '';
           if (content) {
             yield { content, done: false };
