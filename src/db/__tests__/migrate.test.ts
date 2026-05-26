@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  runMigrations,
-  rollbackLastMigration,
-  getMigrationStatus,
-  loadMigrations,
-} from '../migrate';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { loadMigrations, runMigrations, rollbackLastMigration, getMigrationStatus } from '../migrate';
 import type { SQLiteDB } from '../client';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const projectRoot = path.resolve(__dirname, '..', '..', '..');
 
 function createMockDb(): { db: SQLiteDB; execLog: { sql: string; bind?: unknown[] }[] } {
   const store = new Map<string, unknown[]>();
@@ -74,7 +75,7 @@ describe('Migration Framework', () => {
     it('should load migrations from filesystem in Node', async () => {
       vi.stubGlobal('fetch', undefined);
       vi.stubGlobal('process', {
-        cwd: () => '/home/doit/git/do-knowledge-studio',
+        cwd: () => projectRoot,
         versions: { node: '20' },
       });
 

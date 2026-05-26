@@ -56,12 +56,12 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
       if (!entity) return;
       setTitle(entity.name);
       setType(entity.type);
-      if (entity.description && editor) {
-        editor.commands.setContent(entity.description);
+      if (entity.description) {
+        editor?.commands.setContent(entity.description);
       }
     }).catch(err => logger.error('Failed to load entity for editing', err))
     .finally(() => setIsLoadingEntity(false));
-  }, [editingEntityId, editor]);
+  }, [editingEntityId]);
 
   const editor = useEditor({
     extensions: [
