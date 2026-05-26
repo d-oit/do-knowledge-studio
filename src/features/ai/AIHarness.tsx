@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { loadConfig, createProvider } from '../../lib/llm/config';
+import { loadConfig, saveConfig, createProvider, maskApiKey } from '../../lib/llm/config';
 import { searchKnowledge } from '../../lib/search';
 import { resolveUrl, ResolvedContent } from '../../lib/resolver';
 import { logger } from '../../lib/logger';
-import { Send, Loader2, Bot, User, Database, Globe, ExternalLink, X } from 'lucide-react';
+import { Send, Loader2, Bot, User, Database, Globe, ExternalLink, X, Settings, Key, AlertTriangle } from 'lucide-react';
 
 interface Message {
   role: 'assistant' | 'user' | 'system';
@@ -19,6 +19,10 @@ const safeHostname = (url: string): string => {
 };
 
 const AIHarness: React.FC = () => {
+  const [config, setConfig] = useState(() => loadConfig());
+  const [showSettings, setShowSettings] = useState(false);
+  const [editApiKey, setEditApiKey] = useState('');
+  const [editProvider, setEditProvider] = useState(config.activeProvider);
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', content: 'AI agent ready to assist with TRIZ analysis and knowledge synthesis. Ask me anything about your local knowledge base, or paste URLs to have me fetch and analyze external content.' }
   ]);
@@ -36,6 +40,18 @@ const AIHarness: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const handleSaveSettings = () => {
+    const updated = { ...config };
+    updated.activeProvider = editProvider;
+    if (editApiKey) {
+      updated.providers[editProvider] = { ...updated.providers[editProvider], apiKey: editApiKey };
+    }
+    saveConfig(updated);
+    setConfig(updated);
+    setShowSettings(false);
+    setEditApiKey('');
+  };
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -131,14 +147,71 @@ const AIHarness: React.FC = () => {
     }
   };
 
+  const currentApiKey = config.providers[config.activeProvider]?.apiKey || '';
+  const hasKey = currentApiKey.length > 0;
+
   return (      <div className="chat-view">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
         <h2 style={{ margin: 0 }}>AI Harness</h2>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer' }}>
-          <input type="checkbox" checked={useContext} onChange={e => setUseContext(e.target.checked)} />
-          <Database size={16} /> Augment with Local Knowledge
-        </label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {hasKey && (
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Key size={12} /> {maskApiKey(currentApiKey)}
+            </span>
+          )}
+          <button
+            onClick={() => { setShowSettings(!showSettings); setEditApiKey(''); setEditProvider(config.activeProvider); }}
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px', color: 'var(--text-muted)' }}
+            aria-label="API settings"
+            title="API settings"
+          >
+            <Settings size={16} />
+          </button>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer' }}>
+            <input type="checkbox" checked={useContext} onChange={e => setUseContext(e.target.checked)} />
+            <Database size={16} /> Augment with Local Knowledge
+          </label>
+        </div>
       </div>
+
+      {!hasKey && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', marginBottom: '12px', background: 'var(--warning-bg, #fef3c7)', borderRadius: '6px', fontSize: '13px', color: 'var(--warning-text, #92400e)' }}>
+          <AlertTriangle size={16} />
+          <span>No API key configured. Set one in the settings (<Settings size={12} style={{ display: 'inline', verticalAlign: 'middle' }} />) to enable AI features.</span>
+        </div>
+      )}
+
+      {showSettings && (
+        <div style={{ padding: '12px', marginBottom: '12px', background: 'var(--surface-secondary)', borderRadius: '8px', border: '1px solid var(--border-default)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label htmlFor="ai-provider" style={{ fontSize: '13px', fontWeight: 600 }}>Provider</label>
+            <select
+              id="ai-provider"
+              value={editProvider}
+              onChange={e => setEditProvider(e.target.value)}
+              style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid var(--border-default)' }}
+            >
+              {Object.keys(config.providers).map(p => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+            <label htmlFor="ai-api-key" style={{ fontSize: '13px', fontWeight: 600 }}>API Key</label>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input
+                id="ai-api-key"
+                type="password"
+                value={editApiKey}
+                onChange={e => setEditApiKey(e.target.value)}
+                placeholder={hasKey ? 'Leave blank to keep current key' : 'Enter API key'}
+                style={{ flex: 1, padding: '6px 8px', borderRadius: '4px', border: '1px solid var(--border-default)' }}
+              />
+              <button className="primary" onClick={handleSaveSettings} disabled={!editApiKey && !hasKey} style={{ padding: '6px 12px' }}>
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Sourcing indicator */}
       {isSourcing && (

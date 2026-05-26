@@ -79,7 +79,7 @@ const Chat: React.FC = () => {
             <div className="suggested-actions">
               <button onClick={() => setInput('Summarize my recent projects')}>Summarize recent projects</button>
               <button onClick={() => setInput('Who are the key people?')}>Key people</button>
-              <button onClick={() => navigate('/editor')}>
+              <button onClick={() => navigate('/editor', { state: { initialQuery: input } })}>
                 <Plus size={16} /> Create new entity
               </button>
             </div>

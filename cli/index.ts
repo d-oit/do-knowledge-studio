@@ -121,6 +121,7 @@ program
   });
 
 async function exportMarkdown(outDir: string) {
+  const { escapeHtml } = await import('../src/lib/security.js');
   const entities = await repository.getAllEntities();
   
   for (const entity of entities) {
@@ -128,17 +129,17 @@ async function exportMarkdown(outDir: string) {
     const claims = await repository.getClaimsByEntityId(entity.id);
     const notes = await repository.getNotesByEntityId(entity.id);
     
-    let md = `# ${entity.name}\n\n`;
-    md += `**Type:** ${entity.type}\n\n`;
+    let md = `# ${escapeHtml(entity.name)}\n\n`;
+    md += `**Type:** ${escapeHtml(entity.type)}\n\n`;
     if (entity.description) md += `${entity.description}\n\n`;
     
     if (claims.length > 0) {
       md += `## Claims\n\n`;
       for (const claim of claims) {
-        md += `- ${claim.statement}`;
+        md += `- ${escapeHtml(claim.statement)}`;
         if (claim.confidence !== 1) md += ` (confidence: ${claim.confidence})`;
         md += `\n`;
-        if (claim.evidence) md += `  - *Evidence:* ${claim.evidence}\n`;
+        if (claim.evidence) md += `  - *Evidence:* ${escapeHtml(claim.evidence)}\n`;
       }
       md += '\n';
     }

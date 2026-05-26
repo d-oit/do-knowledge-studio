@@ -182,7 +182,7 @@ export function generatePrintHtml(entities: Entity[], claims: Record<string, Cla
     html += `    <h2>${escapeHtml(entity.name)}</h2>\n`;
 
     if (entity.description) {
-      html += `    <div class="description">${entity.description}</div>\n`;
+      html += `    <div class="description">${sanitizeHtml(entity.description)}</div>\n`;
     }
 
     if (entityClaims.length > 0) {

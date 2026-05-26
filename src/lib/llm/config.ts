@@ -66,4 +66,9 @@ export function getProvider(id: string, config?: Partial<LLMProviderConfig>): LL
   }
 }
 
+export function maskApiKey(key: string): string {
+  if (!key || key.length < 8) return key ? `...${key.slice(-4)}` : '';
+  return `...${key.slice(-4)}`;
+}
+
 export { OpenRouterProvider, KiloGatewayProvider };
