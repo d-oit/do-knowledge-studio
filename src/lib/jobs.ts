@@ -75,7 +75,7 @@ export class JobCoordinator {
    * @param payload - Arbitrary job data.
    * @returns The job ID (may be reused if coalesced).
    */
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises
+   
   enqueue(type: JobType, targetId?: string, payload?: unknown): string {
     // Coalesce: if a job of the same type and targetId is already queued, update it
     if (targetId) {

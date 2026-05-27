@@ -118,7 +118,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
 
         // Enqueue external URL fetch for auto-hydration if source URL provided
         if (sourceUrl.trim()) {
-          jobCoordinator.enqueue('external-fetch', entity.id!, {
+          jobCoordinator.enqueue('external-fetch', entity.id, {
             url: sourceUrl.trim(),
             entityId: entity.id!,
           });

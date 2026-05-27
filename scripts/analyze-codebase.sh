@@ -61,7 +61,7 @@ fi
 # 6. Get recent tech stack from package.json
 TECH_STACK=""
 if [ -f "package.json" ]; then
-    if command -v node &> /dev/null 2>/dev/null; then
+    if command -v node &>/dev/null; then
         TECH_STACK=$(node -e "
             const pkg = require('./package.json');
             const deps = {...pkg.dependencies, ...pkg.devDependencies};
