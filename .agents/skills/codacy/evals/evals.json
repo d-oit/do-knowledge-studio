@@ -1,0 +1,41 @@
+[
+  {
+    "prompt": "Codacy is blocking PR #209 on d-oit/do-knowledge-studio. How do I find out what issues exist?",
+    "expect": [
+      "Use `codacy pull-request gh d-oit do-knowledge-studio 209 --output json`",
+      "Parse the newIssues array to get issue count, tool, severity, file, and message",
+      "Check the quality gate status in the output"
+    ]
+  },
+  {
+    "prompt": "I have a false positive from SQLint about VIRTUAL in my SQL migration. How do I suppress it?",
+    "expect": [
+      "Get the numeric resultDataId from the PR analysis JSON output",
+      "Run `codacy pull-request gh <org> <repo> <prNumber> --ignore-issue <resultDataId> --ignore-reason FalsePositive`",
+      "Verify the issue was suppressed by re-running the pull-request command"
+    ]
+  },
+  {
+    "prompt": "I ran `codacy-analysis analyze` locally but it shows 0 issues. Codacy Cloud shows 86. What's wrong?",
+    "expect": [
+      "The local Analysis CLI only runs a subset of tools (ESLint, Stylelint, ShellCheck, Trivy, etc.)",
+      "Python, Ruby, and Java tools fail to install locally",
+      "Always use the Cloud CLI (`codacy pull-request`) for actual PR data"
+    ]
+  },
+  {
+    "prompt": "I need to suppress all false positive issues in my PR at once. How?",
+    "expect": [
+      "Use `codacy pull-request gh <org> <repo> <prNumber> --ignore-all-false-positives`",
+      "This auto-suppresses issues Codacy has identified as likely false positives"
+    ]
+  },
+  {
+    "prompt": "The Codacy check says ACTION_REQUIRED on my PR but I've fixed all the issues. What now?",
+    "expect": [
+      "Trigger a reanalysis: `codacy pull-request gh <org> <repo> <prNumber> --reanalyze`",
+      "Wait for analysis to complete, then re-check status",
+      "If suppressions were applied, they need a human to verify on the Codacy dashboard"
+    ]
+  }
+]
