@@ -8,6 +8,7 @@ import MarkdownRenderer from '../../lib/llm/markdown';
 import { Send, Loader2, Bot, User, Database, Globe, ExternalLink, X, Settings, Key, AlertTriangle, ChevronRight, Check } from 'lucide-react';
 
 const WIZARD_SEEN_KEY = 'dks:ai-wizard-seen';
+const PROVIDER_MODELS_MAP = new Map(Object.entries(PROVIDER_MODELS));
 
 interface Message {
   role: 'assistant' | 'user' | 'system';
@@ -70,7 +71,7 @@ const AIHarness: React.FC = () => {
 
   useEffect(() => {
     if (!showSettings && editModel && editProvider === config.activeProvider) {
-      const providerModels = PROVIDER_MODELS[config.activeProvider] || {};
+      const providerModels = PROVIDER_MODELS[config.activeProvider];
       const currentModel = Object.values(providerModels).includes(editModel)
         ? editModel
         : (config.providers[config.activeProvider].defaultModel || '');
@@ -117,12 +118,9 @@ const AIHarness: React.FC = () => {
     setEditModel(providerConfig.defaultModel || '');
   }, [config.activeProvider, config.providers]);
 
-  const handleSaveSettings = () => {
+  const handleSaveSettings = useCallback(() => {
     const updated = { ...config };
     updated.activeProvider = editProvider;
-    if (!updated.providers[editProvider]) {
-      updated.providers[editProvider] = { baseURL: '', apiKey: '', defaultModel: editModel };
-    }
     if (editApiKey) {
       updated.providers[editProvider] = { ...updated.providers[editProvider], apiKey: editApiKey };
     }
@@ -133,29 +131,23 @@ const AIHarness: React.FC = () => {
     setConfig(updated);
     setShowSettings(false);
     setEditApiKey('');
-  };
+  }, [config, editProvider, editApiKey, editModel]);
 
-  const handleWizardNext = () => {
+  const handleWizardNext = useCallback(() => {
     if (wizardStep < 2) {
       setWizardStep(wizardStep + 1);
     }
-  };
+  }, [wizardStep]);
 
-  const handleWizardBack = () => {
+  const handleWizardBack = useCallback(() => {
     if (wizardStep > 0) {
       setWizardStep(wizardStep - 1);
     }
-  };
+  }, [wizardStep]);
 
-  const handleWizardComplete = () => {
+  const handleWizardComplete = useCallback(() => {
     const updated = { ...config };
     updated.activeProvider = wizardProvider;
-    if (!updated.providers[wizardProvider]) {
-      const baseURL = wizardProvider === 'openrouter'
-        ? 'https://openrouter.ai/api/v1'
-        : 'https://api.kilo.ai/api/gateway';
-      updated.providers[wizardProvider] = { baseURL, apiKey: '', defaultModel: wizardModel };
-    }
     if (wizardApiKey) {
       updated.providers[wizardProvider] = { ...updated.providers[wizardProvider], apiKey: wizardApiKey };
     }
@@ -168,15 +160,15 @@ const AIHarness: React.FC = () => {
     setShowWizard(false);
     setWizardStep(0);
     setWizardApiKey('');
-  };
+  }, [config, wizardProvider, wizardApiKey, wizardModel]);
 
-  const handleSkipWizard = () => {
+  const handleSkipWizard = useCallback(() => {
     localStorage.setItem(WIZARD_SEEN_KEY, 'true');
     setShowWizard(false);
     setWizardStep(0);
-  };
+  }, []);
 
-  const handleSend = async () => {
+  const handleSend = useCallback(async () => {
     if (!input.trim() || isLoading) return;
 
     const userMessage = input.trim();
@@ -284,22 +276,23 @@ const AIHarness: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [input, isLoading, useContext, messages, editModel, trackRequest]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       void handleSend();
     }
-  };
+  }, [handleSend]);
 
   const currentApiKey = config.providers[config.activeProvider].apiKey || '';
   const hasKey = currentApiKey.length > 0;
 
-  const availableModels = PROVIDER_MODELS[editProvider] || {};
+  const availableModels = PROVIDER_MODELS_MAP.get(editProvider)!;
   const currentModel = config.providers[config.activeProvider].defaultModel || '';
   const providerModelEntries = Object.entries(availableModels);
 
+  const wizardModelEntries = Object.entries(PROVIDER_MODELS_MAP.get(wizardProvider)!);
   const rateLimitLevel = getRateLimitLevel();
 
   return (
@@ -340,7 +333,7 @@ const AIHarness: React.FC = () => {
                     value={wizardProvider}
                     onChange={e => {
                       setWizardProvider(e.target.value);
-                      const models = PROVIDER_MODELS[e.target.value] || {};
+                      const models = PROVIDER_MODELS[e.target.value];
                       const firstModel = Object.values(models)[0] || '';
                       setWizardModel(firstModel);
                     }}
@@ -357,7 +350,7 @@ const AIHarness: React.FC = () => {
                     onChange={e => { setWizardModel(e.target.value); }}
                     style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-default, #ddd)' }}
                   >
-                    {(PROVIDER_MODELS[wizardProvider] ? Object.entries(PROVIDER_MODELS[wizardProvider]) : []).map(([label, value]) => (
+                    {wizardModelEntries.map(([label, value]) => (
                       <option key={value} value={value}>{label}</option>
                     ))}
                   </select>
@@ -449,7 +442,7 @@ const AIHarness: React.FC = () => {
               value={editProvider}
               onChange={e => {
                 setEditProvider(e.target.value);
-                const models = PROVIDER_MODELS[e.target.value] || {};
+                const models = PROVIDER_MODELS[e.target.value];
                 const firstModel = (Object.values(models)[0] as string | undefined) || '';
                 setEditModel(firstModel);
               }}

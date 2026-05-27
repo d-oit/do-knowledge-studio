@@ -43,20 +43,21 @@ function buildTree(
   };
 }
 
+function addAriaToNodes(container: HTMLElement): void {
+  const topics = container.querySelectorAll('me-tpc');
+  topics.forEach(tpc => {
+    const parent = tpc.closest('me-parent');
+    if (parent && !parent.hasAttribute('role')) {
+      parent.setAttribute('role', 'treeitem');
+      parent.setAttribute('aria-label', tpc.textContent?.trim() || 'Mind map node');
+    }
+  });
+}
+
 function addAriaAttributesToContainer(container: HTMLElement): void {
   container.setAttribute('role', 'tree');
-  const addAriaToNodes = () => {
-    const topics = container.querySelectorAll('me-tpc');
-    topics.forEach(tpc => {
-      const parent = tpc.closest('me-parent');
-      if (parent && !parent.hasAttribute('role')) {
-        parent.setAttribute('role', 'treeitem');
-        parent.setAttribute('aria-label', tpc.textContent?.trim() || 'Mind map node');
-      }
-    });
-  };
-  addAriaToNodes();
-  const nodeObserver = new MutationObserver(addAriaToNodes);
+  addAriaToNodes(container);
+  const nodeObserver = new MutationObserver(() => addAriaToNodes(container));
   nodeObserver.observe(container, { childList: true, subtree: true });
   setTimeout(() => { nodeObserver.disconnect(); }, 2000);
 }

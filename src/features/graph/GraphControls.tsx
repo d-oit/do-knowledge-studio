@@ -329,7 +329,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
                       <button
                         key={snap.id}
                         type="button"
-                        onClick={() => handleToggleDiffSelect(snap.id)}
+                        onClick={() => { handleToggleDiffSelect(snap.id); }}
                         onDoubleClick={() => void handleLoadSnapshot(snap.id)}
                         style={{
                           display: 'flex',

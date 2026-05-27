@@ -84,10 +84,10 @@ const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ compact = false }) => {
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
-  const handleSelect = (theme: Theme) => {
+  const handleSelect = React.useCallback((theme: Theme) => {
     setActiveTheme(theme);
     setIsOpen(false);
-  };
+  }, []);
 
   const handleKeyDown = React.useCallback((e: React.KeyboardEvent) => {
     if (!isOpen) return;
@@ -98,14 +98,14 @@ const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ compact = false }) => {
       e.preventDefault();
       setFocusedIndex(prev => Math.max(prev - 1, 0));
     } else if (e.key === 'Enter' && focusedIndex >= 0) {
-      const selected = THEME_OPTIONS[focusedIndex];
+      const selected = focusedIndex >= 0 && focusedIndex < THEME_OPTIONS.length ? THEME_OPTIONS[focusedIndex] : undefined;
       if (selected) {
         handleSelect(selected.theme);
       }
     } else if (e.key === 'Escape') {
       setIsOpen(false);
     }
-  }, [isOpen, focusedIndex]);
+  }, [isOpen, focusedIndex, handleSelect]);
 
   const handleDropdownOpen = React.useCallback(() => {
     setIsOpen(true);
@@ -135,7 +135,7 @@ const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ compact = false }) => {
             onKeyDown={handleKeyDown}
           >
             {THEME_OPTIONS.map((opt, i) => (
-              <div key={opt.theme} role="option" aria-selected={activeTheme === opt.theme}>
+                <div key={opt.theme} role="option" aria-selected={activeTheme === opt.theme} tabIndex={-1}>
                 <button
                   id={`theme-option-${i}`}
                   className={`theme-option ${activeTheme === opt.theme ? 'active' : ''}`}
