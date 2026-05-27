@@ -42,13 +42,24 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
     }
   }, [status]);
 
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Placeholder.configure({
+        placeholder: 'Enter structured knowledge... Use "Claim" for assertions and "Mention" for links.',
+      }),
+      ClaimExtension,
+      MentionExtension,
+    ],
+    content: '<p>Every note is an entity.</p>',
+  });
+
   useEffect(() => {
     perf.mark('editor-mount');
     repository.getAllEntities().then(setAllEntities).catch(err => logger.error('Failed to load entities for mentions', err));
     perf.measure('editor-ready', 'editor-mount');
   }, []);
 
-  // Load entity data for editing
   useEffect(() => {
     if (!editingEntityId) return;
     setIsLoadingEntity(true);
@@ -62,18 +73,6 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
     }).catch(err => logger.error('Failed to load entity for editing', err))
     .finally(() => setIsLoadingEntity(false));
   }, [editingEntityId, editor?.commands]);
-
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Placeholder.configure({
-        placeholder: 'Enter structured knowledge... Use "Claim" for assertions and "Mention" for links.',
-      }),
-      ClaimExtension,
-      MentionExtension,
-    ],
-    content: '<p>Every note is an entity.</p>',
-  });
 
   const handleTypeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setType(e.target.value);
@@ -273,9 +272,9 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
           <CheckCircle size={16} aria-hidden="true" /> Claim
         </button>
         <div className="toolbar-spacer" />
-        <button onClick={() => void handleSave()} className="primary">{editingEntityId ? 'Update Entity' : 'Save to DB'}</button>
+        <button type="button" onClick={() => void handleSave()} className="primary">{editingEntityId ? 'Update Entity' : 'Save to DB'}</button>
         {editingEntityId && (
-          <button onClick={handleCancelEdit} aria-label="Cancel editing">
+          <button type="button" onClick={handleCancelEdit} aria-label="Cancel editing">
             Cancel
           </button>
         )}
