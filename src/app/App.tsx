@@ -77,20 +77,6 @@ const AppContent: React.FC = () => {
     setCurrentView('editor');
   }, []);
 
-  const handleEditComplete = useCallback(() => {
-    setEditingEntityId(null);
-    void refreshData();
-  }, [refreshData]);
-
-  const handleSearchResultClick = useCallback((result: SearchResult) => {
-    if (result.type === 'claim' || result.type === 'entity' || result.type === 'note' || result.type === 'concept' || result.type === 'person' || result.type === 'project') {
-       setCurrentView('editor');
-       // In a real app we would navigate to the specific entity.
-       // For now, navigating to the editor is a good start.
-    }
-    setIsSearchOpen(false);
-  }, []);
-
   const refreshData = useCallback(async () => {
     if (!dbReady) return;
     try {
@@ -102,6 +88,18 @@ const AppContent: React.FC = () => {
       logger.error('Data refresh failed', err);
     }
   }, [dbReady]);
+
+  const handleEditComplete = useCallback(() => {
+    setEditingEntityId(null);
+    void refreshData();
+  }, [refreshData]);
+
+  const handleSearchResultClick = useCallback((result: SearchResult) => {
+    if (result.type === 'claim' || result.type === 'entity' || result.type === 'note' || result.type === 'concept' || result.type === 'person' || result.type === 'project') {
+       setCurrentView('editor');
+    }
+    setIsSearchOpen(false);
+  }, []);
 
   // Deferred startup: non-critical tasks pushed to idle callback
   useEffect(() => {

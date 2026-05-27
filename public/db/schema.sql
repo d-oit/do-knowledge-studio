@@ -65,7 +65,6 @@ CREATE INDEX IF NOT EXISTS idx_links_source_id ON links(source_id);
 CREATE INDEX IF NOT EXISTS idx_links_target_id ON links(target_id);
 CREATE INDEX IF NOT EXISTS idx_claims_verification_status ON claims(verification_status);
 CREATE INDEX IF NOT EXISTS idx_notes_entity_id ON notes(entity_id);
-CREATE INDEX IF NOT EXISTS idx_web_cache_resolved_at ON web_cache(resolved_at);
 
 -- FTS5 Virtual Tables for Search
 -- Uses detail=none (no positional info) for ~2x faster indexing/queries
@@ -95,6 +94,7 @@ CREATE TABLE IF NOT EXISTS web_cache (
     resolved_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     metadata TEXT -- JSON: { content_length, word_count, provider, quality_score }
 );
+CREATE INDEX IF NOT EXISTS idx_web_cache_resolved_at ON web_cache(resolved_at);
 
 -- Migration Tracking: Schema version for incremental migrations
 CREATE TABLE IF NOT EXISTS schema_version (
