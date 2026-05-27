@@ -17,7 +17,6 @@ function markdownToHtml(markdown: string): string {
   const html: string[] = [];
   let inCodeBlock = false;
   let codeBlockContent: string[] = [];
-  let codeBlockLang = '';
   let inList: 'ul' | 'ol' | null = null;
   let listItems: string[] = [];
 
@@ -41,12 +40,10 @@ function markdownToHtml(markdown: string): string {
       if (inCodeBlock) {
         html.push(`<pre><code>${codeBlockContent.join('\n')}</code></pre>`);
         codeBlockContent = [];
-        codeBlockLang = '';
         inCodeBlock = false;
       } else {
         flushList();
         inCodeBlock = true;
-        codeBlockLang = line.slice(3).trim();
       }
       continue;
     }

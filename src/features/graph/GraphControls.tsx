@@ -174,7 +174,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       )}
       {onLoadSnapshot && (
         <button
-          onClick={handleOpenSnapshotBrowser}
+          onClick={() => void handleOpenSnapshotBrowser()}
           aria-label="Load or diff saved snapshots"
           title="Load or diff saved snapshots"
         >
@@ -238,11 +238,10 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       {controls}
 
       {showSaveModal && (
-        <div className="modal-overlay" onClick={() => setShowSaveModal(false)}>
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowSaveModal(false); }} onKeyDown={(e) => { if (e.key === 'Escape') setShowSaveModal(false); }} role="button" tabIndex={0}>
           <div
             ref={modalRef}
             className="modal-content"
-            onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
             aria-labelledby="modal-title"
@@ -285,7 +284,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
                 Cancel
               </button>
               <button
-                onClick={handleSaveSnapshot}
+                onClick={() => void handleSaveSnapshot()}
                 disabled={!snapshotName.trim()}
                 className="btn-primary"
               >
@@ -297,11 +296,10 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       )}
 
       {showSnapshotBrowser && (
-        <div className="modal-overlay" onClick={() => { setShowSnapshotBrowser(false); setDiffResult(null); }}>
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowSnapshotBrowser(false); setDiffResult(null); } }} onKeyDown={(e) => { if (e.key === 'Escape') { setShowSnapshotBrowser(false); setDiffResult(null); } }} role="button" tabIndex={0}>
           <div
             ref={snapshotBrowserRef}
             className="modal-content"
-            onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
             aria-labelledby="snapshot-browser-title"
@@ -330,7 +328,10 @@ const GraphControls: React.FC<GraphControlsProps> = ({
                       <div
                         key={snap.id}
                         onClick={() => handleToggleDiffSelect(snap.id!)}
-                        onDoubleClick={() => handleLoadSnapshot(snap.id!)}
+                        onDoubleClick={() => void handleLoadSnapshot(snap.id!)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleToggleDiffSelect(snap.id!); } }}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -354,7 +355,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
                           </div>
                         </div>
                         <button
-                          onClick={(e) => { e.stopPropagation(); handleLoadSnapshot(snap.id!); }}
+                          onClick={(e) => { e.stopPropagation(); void handleLoadSnapshot(snap.id!); }}
                           className="btn-secondary"
                           disabled={loadingSnapshotId !== null}
                           style={{ padding: '4px 12px', fontSize: '12px', minWidth: '60px' }}
@@ -369,7 +370,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
 
                 <div className="modal-actions" style={{ marginBottom: 'var(--space-3)' }}>
                   <button
-                    onClick={handleDiff}
+                    onClick={() => void handleDiff()}
                     disabled={selectedForDiff.length !== 2}
                     className="btn-primary"
                   >

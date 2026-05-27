@@ -61,7 +61,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
       }
     }).catch(err => logger.error('Failed to load entity for editing', err))
     .finally(() => setIsLoadingEntity(false));
-  }, [editingEntityId]);
+  }, [editingEntityId, editor?.commands]);
 
   const editor = useEditor({
     extensions: [
@@ -134,16 +134,16 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
           if (claimMark && node.isText && node.text) {
             claims.push({
               statement: node.text,
-              source: claimMark.attrs.source || 'Manual entry',
-              status: claimMark.attrs.verification_status || 'unverified'
+              source: (claimMark.attrs.source as string) || 'Manual entry',
+              status: (claimMark.attrs.verification_status as string) || 'unverified'
             });
           }
 
           const mentionMark = node.marks.find(mark => mark.type.name === 'mention');
           if (mentionMark) {
             mentions.push({
-              id: mentionMark.attrs.entityId,
-              name: mentionMark.attrs.entityName
+              id: mentionMark.attrs.entityId as string,
+              name: mentionMark.attrs.entityName as string
             });
           }
           return true;
@@ -247,6 +247,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
       </div>
       <div className="toolbar">
         <button
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
           onClick={() => editor?.chain().focus().toggleBold().run()}
           className={editor?.isActive('bold') ? 'active' : ''}
           aria-label="Toggle Bold"
@@ -255,6 +256,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
           B
         </button>
         <button
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
           onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}
           className={editor?.isActive('heading', { level: 1 }) ? 'active' : ''}
           aria-label="Toggle Heading 1"
@@ -271,7 +273,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
           <CheckCircle size={16} aria-hidden="true" /> Claim
         </button>
         <div className="toolbar-spacer" />
-        <button onClick={handleSave} className="primary">{editingEntityId ? 'Update Entity' : 'Save to DB'}</button>
+        <button onClick={() => void handleSave()} className="primary">{editingEntityId ? 'Update Entity' : 'Save to DB'}</button>
         {editingEntityId && (
           <button onClick={handleCancelEdit} aria-label="Cancel editing">
             Cancel

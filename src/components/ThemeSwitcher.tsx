@@ -126,6 +126,7 @@ const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ compact = false }) => {
           <ul
             className="theme-dropdown"
             role="listbox"
+            tabIndex={0}
             aria-label="Select theme"
             aria-activedescendant={focusedIndex >= 0 ? `theme-option-${focusedIndex}` : undefined}
             onKeyDown={handleKeyDown}

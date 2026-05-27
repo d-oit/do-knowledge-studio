@@ -6,6 +6,23 @@ import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
  * and manage OPFS exclusive locking.
  */
 
+interface WorkerRequest {
+  id: string;
+  type: string;
+  payload?: Record<string, unknown>;
+}
+
+interface ExecPayload {
+  sql: string;
+  bind?: (string | number | boolean | null)[];
+  returnValue?: string;
+  rowMode?: string;
+}
+
+interface TransactionPayload {
+  statements: { sql: string; bind?: (string | number | boolean | null)[] }[];
+}
+
 interface SQLiteDB {
   exec: (options: string | {
     sql: string;
@@ -32,7 +49,7 @@ const sqlite3Promise = sqlite3InitModule({
 }) as Promise<Sqlite3Static>;
 
 self.onmessage = async (event: MessageEvent) => {
-  const { type, payload, id } = event.data;
+  const { type, payload, id } = event.data as WorkerRequest;
 
   try {
     const sqlite3 = await sqlite3Promise;
@@ -56,8 +73,9 @@ self.onmessage = async (event: MessageEvent) => {
           db.exec('PRAGMA busy_timeout = 5000;');
         }
 
-        if (payload?.schema) {
-          db.exec(payload.schema);
+        const schemaPayload = payload as { schema?: string } | undefined;
+        if (schemaPayload?.schema) {
+          db.exec(schemaPayload.schema);
         }
 
         self.postMessage({ id, type: 'init', success: true });
@@ -69,7 +87,7 @@ self.onmessage = async (event: MessageEvent) => {
           throw new Error('Database not initialized in worker');
         }
 
-        const { sql, bind, returnValue, rowMode } = payload;
+        const { sql, bind, returnValue, rowMode } = payload as ExecPayload;
         const result = db.exec({
           sql,
           bind,
@@ -86,7 +104,7 @@ self.onmessage = async (event: MessageEvent) => {
           throw new Error('Database not initialized in worker');
         }
 
-        const { statements } = payload as { statements: { sql: string; bind?: (string | number | boolean | null)[] }[] };
+        const { statements } = payload as TransactionPayload;
 
         db.exec('BEGIN TRANSACTION;');
         try {

@@ -79,7 +79,7 @@ const Chat: React.FC = () => {
             <div className="suggested-actions">
               <button onClick={() => setInput('Summarize my recent projects')}>Summarize recent projects</button>
               <button onClick={() => setInput('Who are the key people?')}>Key people</button>
-              <button onClick={() => navigate('/editor', { state: { initialQuery: input } })}>
+              <button onClick={() => { void navigate('/editor', { state: { initialQuery: input } }); }}>
                 <Plus size={16} /> Create new entity
               </button>
             </div>
@@ -131,7 +131,7 @@ const Chat: React.FC = () => {
         )}
       </div>
 
-      <form className="ask-composer" onSubmit={handleSend}>
+      <form className="ask-composer" onSubmit={(e) => { void handleSend(e); }}>
         <div className="input-container">
           <Search size={18} className="search-icon" aria-hidden="true" />
           <input

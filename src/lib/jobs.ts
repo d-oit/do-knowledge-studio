@@ -103,7 +103,7 @@ export class JobCoordinator {
     this.queue.push(job);
 
     // Trigger queue processing
-    setTimeout(this.processQueue, 0);
+    setTimeout(() => { void this.processQueue(); }, 0);
 
     return job.id;
   }
@@ -149,7 +149,7 @@ export class JobCoordinator {
 
       this.currentJob = null;
       this.abortController = null;
-      setTimeout(this.processQueue, 0);
+      setTimeout(() => { void this.processQueue(); }, 0);
     }
   }
 

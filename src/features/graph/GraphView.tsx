@@ -112,7 +112,7 @@ const GraphView: React.FC<Props> = ({
   }, [entities, links, selectedNode, focusMode]);
 
   useEffect(() => {
-    const handler = async (payload: unknown) => {
+    const handler = (payload: unknown) => {
       const { entities, links, selectedNode } = payload as { entities: Entity[], links: Link[], selectedNode: string };
       const neighborIds = new Set<string>([selectedNode]);
       links.forEach((l: Link) => {
@@ -124,6 +124,7 @@ const GraphView: React.FC<Props> = ({
         entities: entities.filter((e: Entity) => neighborIds.has(e.id!)),
         links: links.filter((l: Link) => neighborIds.has(l.source_id) && neighborIds.has(l.target_id))
       });
+      return Promise.resolve();
     };
 
     jobCoordinator.registerHandler('recompute-neighborhood', handler);
@@ -216,6 +217,7 @@ const GraphView: React.FC<Props> = ({
   const applyForceLayout = useCallback((graph: Graph) => {
     if (graph.order === 0) return;
     const settings = inferSettings(graph);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     assignFA2Layout(graph, { settings, iterations: 100 });
   }, []);
 
@@ -303,19 +305,20 @@ const GraphView: React.FC<Props> = ({
           ...layoutSettings,
           nodeReducer: (node, data) => {
             const ratio = cameraRatioRef.current;
-            const result: Partial<NodeDisplayData> = { ...data };
+            const nodeData = data as Partial<NodeDisplayData>;
+            const result = { ...nodeData };
             if (ratio > 1.5) {
-              result.label = data.label;
-              result.size = (data.size || 10) * Math.min(ratio, 3);
+              result.label = nodeData.label;
+              result.size = (nodeData.size || 10) * Math.min(ratio, 3);
             } else if (ratio < 0.5) {
               result.label = '';
-              result.size = Math.max((data.size || 10) * 0.5, 2);
+              result.size = Math.max((nodeData.size || 10) * 0.5, 2);
             } else if (ratio < 0.8 && (graphSize === 'large' || graphSize === 'xlarge')) {
               result.label = '';
-              result.size = (data.size || 10) * 0.7;
+              result.size = (nodeData.size || 10) * 0.7;
             } else if (ratio < 1.0 && graphSize === 'xlarge') {
               result.label = '';
-              result.size = (data.size || 10) * 0.85;
+              result.size = (nodeData.size || 10) * 0.85;
             }
             const g = graphRef.current;
             if (g && g.getNodeAttribute(node, 'fixed')) {
@@ -325,13 +328,13 @@ const GraphView: React.FC<Props> = ({
           },
           edgeReducer: (edge, data) => {
             const ratio = cameraRatioRef.current;
-            const result: Partial<EdgeDisplayData> = { ...data };
+            const result = { ...data } as Partial<EdgeDisplayData>;
             if (ratio < 0.5) {
               result.label = '';
               result.hidden = true;
             } else if (ratio < 0.8 && graphSize === 'large') {
               result.label = '';
-              result.size = Math.min(data.size || 1, 0.5);
+              result.size = Math.min((data.size as number) || 1, 0.5);
             } else if (ratio < 1.0 && graphSize === 'xlarge') {
               result.label = '';
               result.hidden = true;
@@ -351,7 +354,7 @@ const GraphView: React.FC<Props> = ({
 
         sigmaInstance.current.on('rightClickNode', ({ node }) => {
           const graph = graphRef.current;
-          const currentFixed = graph.getNodeAttribute(node, 'fixed') || false;
+          const currentFixed = graph.getNodeAttribute(node, 'fixed') as boolean | undefined ?? false;
           graph.setNodeAttribute(node, 'fixed', !currentFixed);
           sigmaInstance.current?.refresh();
         });
@@ -372,7 +375,7 @@ const GraphView: React.FC<Props> = ({
     return () => {
       if (layoutTimeoutRef.current) cancelAnimationFrame(layoutTimeoutRef.current);
     };
-  }, [effectiveData, selectedNode, focusMode, snapshotMode, setFocusMode, setSelectedNode]);
+  }, [effectiveData, selectedNode, focusMode, snapshotMode, setFocusMode, setSelectedNode, applyForceLayout, applyHierarchicalLayout, graphSize, layout, layoutSettings]);
 
   // Fetch claims and links when selected node changes
   useEffect(() => {
@@ -405,7 +408,7 @@ const GraphView: React.FC<Props> = ({
         break;
     }
     sigma.refresh();
-    sigma.getCamera().animatedReset({ duration: 400 });
+    void sigma.getCamera().animatedReset({ duration: 400 });
   }, [layout, effectiveData.entities, applyHierarchicalLayout, applyCircularLayout, applyForceLayout]);
 
   // Cleanup Sigma on unmount
@@ -665,7 +668,7 @@ const GraphView: React.FC<Props> = ({
         }
         case 'Home': {
           e.preventDefault();
-          sigma.getCamera().animatedReset({ duration: 300 });
+          void sigma.getCamera().animatedReset({ duration: 300 });
           break;
         }
         case 'Enter':
@@ -700,6 +703,7 @@ const GraphView: React.FC<Props> = ({
   }, [selectedNode, focusRingIndex, entities, layout, setSelectedNode]);
 
   // Use snapshot data when in snapshot mode, otherwise use filtered live data
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const effectiveData = snapshotMode && snapshotData
     ? { entities: snapshotData.nodes.map(n => ({ id: n.id, name: n.label, type: 'snapshot' })), links: snapshotData.edges.map(e => ({ id: e.id, source_id: e.source, target_id: e.target, relation: e.label || '' })) }
     : filteredData;

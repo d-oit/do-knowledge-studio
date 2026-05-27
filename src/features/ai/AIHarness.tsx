@@ -55,6 +55,7 @@ const AIHarness: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const requestTimestamps = useRef<number[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+  const wizardApiKeyRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const seen = localStorage.getItem(WIZARD_SEEN_KEY);
@@ -63,6 +64,10 @@ const AIHarness: React.FC = () => {
       setShowWizard(true);
     }
   }, [config.providers]);
+
+  useEffect(() => {
+    if (wizardStep === 2 && wizardApiKeyRef.current) wizardApiKeyRef.current.focus();
+  }, [wizardStep]);
 
   useEffect(() => {
     if (!showSettings && editModel && editProvider === config.activeProvider) {
@@ -74,7 +79,7 @@ const AIHarness: React.FC = () => {
         setEditModel(currentModel);
       }
     }
-  }, [showSettings, editModel, config.activeProvider, config.providers]);
+  }, [showSettings, editModel, config.activeProvider, config.providers, editProvider]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -190,7 +195,7 @@ const AIHarness: React.FC = () => {
           if (result.status === 'fulfilled') {
             sources.push(result.value);
           } else {
-            logger.warn('Failed to resolve URL for RAG', { err: result.reason });
+            logger.warn('Failed to resolve URL for RAG', { err: String(result.reason) });
           }
         }
 
@@ -277,7 +282,7 @@ const AIHarness: React.FC = () => {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      void handleSend();
     }
   };
 
@@ -310,7 +315,7 @@ const AIHarness: React.FC = () => {
                 <h2 style={{ margin: '0 0 8px' }}>Welcome to AI Harness</h2>
                 <p style={{ color: 'var(--text-secondary, #666)', margin: '0 0 24px', lineHeight: 1.5 }}>
                   This assistant can answer questions, analyze URLs, and search your local knowledge base.
-                  Let's get you set up with an AI provider.
+                  Let&rsquo;s get you set up with an AI provider.
                 </p>
                 <button className="primary" onClick={handleWizardNext} style={{ width: '100%', padding: '10px' }}>
                   Get Started <ChevronRight size={16} style={{ verticalAlign: 'middle' }} />
@@ -322,8 +327,9 @@ const AIHarness: React.FC = () => {
               <>
                 <h3 style={{ margin: '0 0 16px' }}>Choose Provider &amp; Model</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 600 }}>Provider</label>
+                  <label htmlFor="wizard-provider" style={{ fontSize: '13px', fontWeight: 600 }}>Provider</label>
                   <select
+                    id="wizard-provider"
                     value={wizardProvider}
                     onChange={e => {
                       setWizardProvider(e.target.value);
@@ -337,8 +343,9 @@ const AIHarness: React.FC = () => {
                       <option key={p} value={p}>{p}</option>
                     ))}
                   </select>
-                  <label style={{ fontSize: '13px', fontWeight: 600 }}>Model</label>
+                  <label htmlFor="wizard-model" style={{ fontSize: '13px', fontWeight: 600 }}>Model</label>
                   <select
+                    id="wizard-model"
                     value={wizardModel}
                     onChange={e => setWizardModel(e.target.value)}
                     style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-default, #ddd)' }}
@@ -366,12 +373,12 @@ const AIHarness: React.FC = () => {
                   Your API key stays local in your browser. Never shared with anyone.
                 </p>
                 <input
+                  ref={wizardApiKeyRef}
                   type="password"
                   value={wizardApiKey}
                   onChange={e => setWizardApiKey(e.target.value)}
                   placeholder={`Enter ${wizardProvider} API key`}
                   style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-default, #ddd)', boxSizing: 'border-box' }}
-                  autoFocus
                 />
                 <div style={{ display: 'flex', gap: '8px', marginTop: '24px' }}>
                   <button onClick={handleWizardBack} style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid var(--border-default, #ddd)', borderRadius: '6px', cursor: 'pointer' }}>
@@ -546,7 +553,7 @@ const AIHarness: React.FC = () => {
             disabled={isLoading}
             aria-label="Ask the AI agent"
           />
-          <button className="primary" onClick={handleSend} disabled={isLoading || !input.trim()}>
+          <button className="primary" onClick={() => void handleSend()} disabled={isLoading || !input.trim()}>
             {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
           </button>
         </div>

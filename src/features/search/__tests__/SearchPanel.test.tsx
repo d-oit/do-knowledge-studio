@@ -36,7 +36,7 @@ describe('SearchPanel UX Improvements', () => {
     vi.clearAllMocks();
   });
 
-  it('clears the search query and focuses the input when the clear button is clicked', async () => {
+  it('clears the search query and focuses the input when the clear button is clicked', () => {
     render(<SearchPanel />);
     const input = screen.getByLabelText('Search knowledge base');
 

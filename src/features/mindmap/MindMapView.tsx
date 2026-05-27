@@ -219,7 +219,7 @@ const MindMapView: React.FC<Props> = ({
         if (currentContainer) currentContainer.replaceChildren();
       }
     };
-  }, [treeData, onEntityClick, isLargeMap, rootId]);
+  }, [treeData, onEntityClick, isLargeMap, rootId, entities]);
 
   const handleResetRoot = useCallback(() => {
     setRootId(propsRootEntity.id || '');

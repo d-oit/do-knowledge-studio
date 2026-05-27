@@ -13,7 +13,7 @@ vi.mock('../../../lib/llm/config', () => ({
   saveConfig: vi.fn(),
   createProvider: vi.fn().mockReturnValue({
     chatStream: vi.fn().mockImplementation(() => {
-      async function* gen() { yield { content: '', done: true }; }
+      function* gen() { yield { content: '', done: true }; }
       return gen();
     }),
   }),
