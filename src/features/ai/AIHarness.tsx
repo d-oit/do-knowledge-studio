@@ -119,15 +119,20 @@ const AIHarness: React.FC = () => {
   }, [config.activeProvider, config.providers]);
 
   const handleSaveSettings = useCallback(() => {
-    const updated = { ...config };
-    if (!Object.prototype.hasOwnProperty.call(updated.providers, editProvider)) return;
-    updated.activeProvider = editProvider;
-    if (editApiKey) {
-      updated.providers[editProvider] = { ...updated.providers[editProvider], apiKey: editApiKey };
-    }
-    if (editModel) {
-      updated.providers[editProvider] = { ...updated.providers[editProvider], defaultModel: editModel };
-    }
+    const entries = Object.entries(config.providers);
+    const entry = entries.find(([key]) => key === editProvider);
+    if (!entry) return;
+    const [, providerConfig] = entry;
+    const updatedProvider = { ...providerConfig };
+    if (editApiKey) updatedProvider.apiKey = editApiKey;
+    if (editModel) updatedProvider.defaultModel = editModel;
+    const updated = {
+      ...config,
+      activeProvider: editProvider,
+      providers: Object.fromEntries(
+        entries.map(([key, val]) => [key, key === editProvider ? updatedProvider : val])
+      ),
+    };
     saveConfig(updated);
     setConfig(updated);
     setShowSettings(false);
@@ -147,15 +152,20 @@ const AIHarness: React.FC = () => {
   }, [wizardStep]);
 
   const handleWizardComplete = useCallback(() => {
-    const updated = { ...config };
-    if (!Object.prototype.hasOwnProperty.call(updated.providers, wizardProvider)) return;
-    updated.activeProvider = wizardProvider;
-    if (wizardApiKey) {
-      updated.providers[wizardProvider] = { ...updated.providers[wizardProvider], apiKey: wizardApiKey };
-    }
-    if (wizardModel) {
-      updated.providers[wizardProvider] = { ...updated.providers[wizardProvider], defaultModel: wizardModel };
-    }
+    const entries = Object.entries(config.providers);
+    const entry = entries.find(([key]) => key === wizardProvider);
+    if (!entry) return;
+    const [, providerConfig] = entry;
+    const updatedProvider = { ...providerConfig };
+    if (wizardApiKey) updatedProvider.apiKey = wizardApiKey;
+    if (wizardModel) updatedProvider.defaultModel = wizardModel;
+    const updated = {
+      ...config,
+      activeProvider: wizardProvider,
+      providers: Object.fromEntries(
+        entries.map(([key, val]) => [key, key === wizardProvider ? updatedProvider : val])
+      ),
+    };
     saveConfig(updated);
     setConfig(updated);
     localStorage.setItem(WIZARD_SEEN_KEY, 'true');

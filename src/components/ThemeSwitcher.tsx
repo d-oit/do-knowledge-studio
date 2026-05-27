@@ -98,9 +98,8 @@ const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ compact = false }) => {
       e.preventDefault();
       setFocusedIndex(prev => Math.max(prev - 1, 0));
     } else if (e.key === 'Enter') {
-      if (focusedIndex >= 0 && focusedIndex < THEME_OPTIONS.length) {
-        handleSelect(THEME_OPTIONS[focusedIndex].theme);
-      }
+      const option = THEME_OPTIONS.at(focusedIndex);
+      if (option) handleSelect(option.theme);
     } else if (e.key === 'Escape') {
       setIsOpen(false);
     }
