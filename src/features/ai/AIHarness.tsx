@@ -120,6 +120,7 @@ const AIHarness: React.FC = () => {
 
   const handleSaveSettings = useCallback(() => {
     const updated = { ...config };
+    if (!Object.prototype.hasOwnProperty.call(updated.providers, editProvider)) return;
     updated.activeProvider = editProvider;
     if (editApiKey) {
       updated.providers[editProvider] = { ...updated.providers[editProvider], apiKey: editApiKey };
@@ -147,6 +148,7 @@ const AIHarness: React.FC = () => {
 
   const handleWizardComplete = useCallback(() => {
     const updated = { ...config };
+    if (!Object.prototype.hasOwnProperty.call(updated.providers, wizardProvider)) return;
     updated.activeProvider = wizardProvider;
     if (wizardApiKey) {
       updated.providers[wizardProvider] = { ...updated.providers[wizardProvider], apiKey: wizardApiKey };
@@ -288,11 +290,11 @@ const AIHarness: React.FC = () => {
   const currentApiKey = config.providers[config.activeProvider].apiKey || '';
   const hasKey = currentApiKey.length > 0;
 
-  const availableModels = PROVIDER_MODELS_MAP.get(editProvider)!;
+  const availableModels = PROVIDER_MODELS_MAP.get(editProvider) || {};
   const currentModel = config.providers[config.activeProvider].defaultModel || '';
   const providerModelEntries = Object.entries(availableModels);
 
-  const wizardModelEntries = Object.entries(PROVIDER_MODELS_MAP.get(wizardProvider)!);
+  const wizardModelEntries = Object.entries(PROVIDER_MODELS_MAP.get(wizardProvider) || {});
   const rateLimitLevel = getRateLimitLevel();
 
   return (

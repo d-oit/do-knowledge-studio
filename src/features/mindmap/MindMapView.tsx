@@ -57,7 +57,7 @@ function addAriaToNodes(container: HTMLElement): void {
 function addAriaAttributesToContainer(container: HTMLElement): void {
   container.setAttribute('role', 'tree');
   addAriaToNodes(container);
-  const nodeObserver = new MutationObserver(() => addAriaToNodes(container));
+  const nodeObserver = new MutationObserver(() => { addAriaToNodes(container); });
   nodeObserver.observe(container, { childList: true, subtree: true });
   setTimeout(() => { nodeObserver.disconnect(); }, 2000);
 }

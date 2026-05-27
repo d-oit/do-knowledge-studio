@@ -97,10 +97,9 @@ const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ compact = false }) => {
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setFocusedIndex(prev => Math.max(prev - 1, 0));
-    } else if (e.key === 'Enter' && focusedIndex >= 0) {
-      const selected = focusedIndex >= 0 && focusedIndex < THEME_OPTIONS.length ? THEME_OPTIONS[focusedIndex] : undefined;
-      if (selected) {
-        handleSelect(selected.theme);
+    } else if (e.key === 'Enter') {
+      if (focusedIndex >= 0 && focusedIndex < THEME_OPTIONS.length) {
+        handleSelect(THEME_OPTIONS[focusedIndex].theme);
       }
     } else if (e.key === 'Escape') {
       setIsOpen(false);
