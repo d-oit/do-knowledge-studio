@@ -518,22 +518,21 @@ export class Repository {
         }
 
         if (r.c_id !== null) {
-          const claimRow = { ...r };
-          // Map prefixed columns back to claim property names
-          claimRow.id = r.c_id;
-          claimRow.entity_id = r.c_entity_id;
-          claimRow.statement = r.c_statement;
-          claimRow.evidence = r.c_evidence;
-          claimRow.confidence = r.c_confidence;
-          claimRow.source = r.c_source;
-          claimRow.verification_status = r.c_verification_status;
-          claimRow.created_at = r.c_created_at;
-          claimRow.updated_at = r.c_updated_at;
-          // Clean up prefixed keys
-          for (const key of Object.keys(claimRow)) {
-            if (key.startsWith('c_')) delete claimRow[key];
+          const claimRow: Record<string, unknown> = {
+            id: r.c_id,
+            entity_id: r.c_entity_id,
+            statement: r.c_statement,
+            evidence: r.c_evidence,
+            confidence: r.c_confidence,
+            source: r.c_source,
+            verification_status: r.c_verification_status,
+            created_at: r.c_created_at,
+            updated_at: r.c_updated_at,
+          };
+          const entry = result.get(entityId);
+          if (entry) {
+            entry.claims.push(this.parseMetadata(ClaimSchema, claimRow));
           }
-          result.get(entityId)!.claims.push(this.parseMetadata(ClaimSchema, claimRow));
         }
       }
 

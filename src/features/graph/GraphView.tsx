@@ -74,6 +74,21 @@ const GraphView: React.FC<Props> = ({
   }, [onFocusModeChange]);
 
   const [filteredData, setFilteredData] = useState({ entities, links });
+
+  const recomputeNeighborhoodHandler = useCallback((payload: unknown) => {
+    const { entities, links, selectedNode } = payload as { entities: Entity[], links: Link[], selectedNode: string };
+    const neighborIds = new Set<string>([selectedNode]);
+    links.forEach((l: Link) => {
+      if (l.source_id === selectedNode) neighborIds.add(l.target_id);
+      if (l.target_id === selectedNode) neighborIds.add(l.source_id);
+    });
+
+    setFilteredData({
+      entities: entities.filter((e: Entity) => neighborIds.has(e.id!)),
+      links: links.filter((l: Link) => neighborIds.has(l.source_id) && neighborIds.has(l.target_id))
+    });
+    return Promise.resolve();
+  }, []);
   const [layout, setLayout] = useState<LayoutType>('force');
   const [focusRingIndex, setFocusRingIndex] = useState<number>(-1);
 
@@ -112,26 +127,11 @@ const GraphView: React.FC<Props> = ({
   }, [entities, links, selectedNode, focusMode]);
 
   useEffect(() => {
-    const handler = (payload: unknown) => {
-      const { entities, links, selectedNode } = payload as { entities: Entity[], links: Link[], selectedNode: string };
-      const neighborIds = new Set<string>([selectedNode]);
-      links.forEach((l: Link) => {
-        if (l.source_id === selectedNode) neighborIds.add(l.target_id);
-        if (l.target_id === selectedNode) neighborIds.add(l.source_id);
-      });
-
-      setFilteredData({
-        entities: entities.filter((e: Entity) => neighborIds.has(e.id!)),
-        links: links.filter((l: Link) => neighborIds.has(l.source_id) && neighborIds.has(l.target_id))
-      });
-      return Promise.resolve();
-    };
-
-    jobCoordinator.registerHandler('recompute-neighborhood', handler);
+    jobCoordinator.registerHandler('recompute-neighborhood', recomputeNeighborhoodHandler);
     return () => {
       jobCoordinator.unregisterHandler('recompute-neighborhood');
     };
-  }, []);
+  }, [recomputeNeighborhoodHandler]);
 
   // Apply hierarchical layout to the graph
   const applyHierarchicalLayout = useCallback((graph: Graph, nodes: Entity[]) => {

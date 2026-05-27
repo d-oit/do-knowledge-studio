@@ -255,8 +255,9 @@ program
   .description('Run pending database migrations')
   .action(async () => {
     await ensureDb();
+    if (!dbInstance) throw new Error('Database not initialized');
     console.log('Running pending migrations...');
-    const { applied, errors } = await runMigrations(dbInstance!);
+    const { applied, errors } = await runMigrations(dbInstance);
     if (applied.length > 0) {
       console.log(`Applied: ${applied.join(', ')}`);
     } else {
@@ -272,9 +273,10 @@ program
   .description('Rollback the last migration')
   .action(async () => {
     await ensureDb();
+    if (!dbInstance) throw new Error('Database not initialized');
     console.log('Rolling back last migration...');
     try {
-      await rollbackLastMigration(dbInstance!);
+      await rollbackLastMigration(dbInstance);
       console.log('Rollback complete.');
     } catch (err) {
       console.error(`Rollback failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -286,7 +288,8 @@ program
   .description('Show migration status')
   .action(async () => {
     await ensureDb();
-    const statuses = await getMigrationStatus(dbInstance!);
+    if (!dbInstance) throw new Error('Database not initialized');
+    const statuses = await getMigrationStatus(dbInstance);
     if (statuses.length === 0) {
       console.log('No migrations found.');
       return;
@@ -304,11 +307,12 @@ program
   .argument('[path]', 'output path for the backup file')
   .action(async (pathArg: string | undefined) => {
     await ensureDb();
+    if (!dbInstance) throw new Error('Database not initialized');
     const backupPath = pathArg ?? `.studio-cli-backup-${Date.now()}.db`;
     const resolvedPath = path.resolve(process.cwd(), backupPath);
     console.log(`Backing up database to ${resolvedPath}...`);
     try {
-      await dbInstance!.exec({ sql: `VACUUM INTO '${resolvedPath.replace(/'/g, "''")}'` });
+      await dbInstance.exec({ sql: `VACUUM INTO '${resolvedPath.replace(/'/g, "''")}'` });
       console.log(`Backup created: ${resolvedPath}`);
     } catch (err) {
       console.error(`Backup failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -444,7 +448,10 @@ program
     try {
       const links = await repository.getAllLinks();
       const entities = await repository.getAllEntities();
-      const entityMap = new Map(entities.filter(e => e.id).map(e => [e.id!, e.name]));
+      const entityMap = new Map<string, string>();
+      for (const e of entities) {
+        if (e.id) entityMap.set(e.id, e.name);
+      }
       if (links.length === 0) {
         console.log('No links found.');
         return;
@@ -548,17 +555,18 @@ program
   .description('Reset the database (drop all tables and re-run schema)')
   .action(async () => {
     await ensureDb();
+    if (!dbInstance) throw new Error('Database not initialized');
     console.log('Resetting database...');
     try {
-      await dbInstance!.exec({ sql: 'DROP TABLE IF EXISTS claim_search_idx' });
-      await dbInstance!.exec({ sql: 'DROP TABLE IF EXISTS entity_search_idx' });
-      await dbInstance!.exec({ sql: 'DROP TABLE IF EXISTS web_cache' });
-      await dbInstance!.exec({ sql: 'DROP TABLE IF EXISTS graph_snapshots' });
-      await dbInstance!.exec({ sql: 'DROP TABLE IF EXISTS schema_version' });
-      await dbInstance!.exec({ sql: 'DROP TABLE IF EXISTS links' });
-      await dbInstance!.exec({ sql: 'DROP TABLE IF EXISTS notes' });
-      await dbInstance!.exec({ sql: 'DROP TABLE IF EXISTS claims' });
-      await dbInstance!.exec({ sql: 'DROP TABLE IF EXISTS entities' });
+      await dbInstance.exec({ sql: 'DROP TABLE IF EXISTS claim_search_idx' });
+      await dbInstance.exec({ sql: 'DROP TABLE IF EXISTS entity_search_idx' });
+      await dbInstance.exec({ sql: 'DROP TABLE IF EXISTS web_cache' });
+      await dbInstance.exec({ sql: 'DROP TABLE IF EXISTS graph_snapshots' });
+      await dbInstance.exec({ sql: 'DROP TABLE IF EXISTS schema_version' });
+      await dbInstance.exec({ sql: 'DROP TABLE IF EXISTS links' });
+      await dbInstance.exec({ sql: 'DROP TABLE IF EXISTS notes' });
+      await dbInstance.exec({ sql: 'DROP TABLE IF EXISTS claims' });
+      await dbInstance.exec({ sql: 'DROP TABLE IF EXISTS entities' });
       const freshDb = await initDb();
       setDb(freshDb);
       dbInstance = freshDb;

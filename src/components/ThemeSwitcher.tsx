@@ -89,7 +89,7 @@ const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ compact = false }) => {
     setIsOpen(false);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = React.useCallback((e: React.KeyboardEvent) => {
     if (!isOpen) return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -98,16 +98,19 @@ const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ compact = false }) => {
       e.preventDefault();
       setFocusedIndex(prev => Math.max(prev - 1, 0));
     } else if (e.key === 'Enter' && focusedIndex >= 0) {
-      handleSelect(THEME_OPTIONS[focusedIndex].theme);
+      const selected = THEME_OPTIONS[focusedIndex];
+      if (selected) {
+        handleSelect(selected.theme);
+      }
     } else if (e.key === 'Escape') {
       setIsOpen(false);
     }
-  };
+  }, [isOpen, focusedIndex]);
 
-  const handleDropdownOpen = () => {
+  const handleDropdownOpen = React.useCallback(() => {
     setIsOpen(true);
     setFocusedIndex(0);
-  };
+  }, []);
 
   if (compact) {
     return (
@@ -123,7 +126,7 @@ const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ compact = false }) => {
           <Palette size={18} />
         </button>
         {isOpen && (
-          <ul
+          <div
             className="theme-dropdown"
             role="listbox"
             tabIndex={0}
@@ -132,20 +135,18 @@ const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ compact = false }) => {
             onKeyDown={handleKeyDown}
           >
             {THEME_OPTIONS.map((opt, i) => (
-              <li key={opt.theme}>
+              <div key={opt.theme} role="option" aria-selected={activeTheme === opt.theme}>
                 <button
                   id={`theme-option-${i}`}
                   className={`theme-option ${activeTheme === opt.theme ? 'active' : ''}`}
                   onClick={() => handleSelect(opt.theme)}
-                  role="option"
-                  aria-selected={activeTheme === opt.theme}
                 >
                   {opt.icon}
                   <span>{opt.label}</span>
                 </button>
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </div>
     );

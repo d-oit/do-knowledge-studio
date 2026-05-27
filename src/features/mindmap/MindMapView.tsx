@@ -43,6 +43,24 @@ function buildTree(
   };
 }
 
+function addAriaAttributesToContainer(container: HTMLElement): void {
+  container.setAttribute('role', 'tree');
+  const addAriaToNodes = () => {
+    const topics = container.querySelectorAll('me-tpc');
+    topics.forEach(tpc => {
+      const parent = tpc.closest('me-parent');
+      if (parent && !parent.hasAttribute('role')) {
+        parent.setAttribute('role', 'treeitem');
+        parent.setAttribute('aria-label', tpc.textContent?.trim() || 'Mind map node');
+      }
+    });
+  };
+  addAriaToNodes();
+  const nodeObserver = new MutationObserver(addAriaToNodes);
+  nodeObserver.observe(container, { childList: true, subtree: true });
+  setTimeout(() => { nodeObserver.disconnect(); }, 2000);
+}
+
 const MindMapView: React.FC<Props> = ({
   rootEntity: propsRootEntity,
   relatedEntities: _relatedEntities,
@@ -117,24 +135,7 @@ const MindMapView: React.FC<Props> = ({
     });
 
     // Add ARIA attributes to Mind Elixir nodes
-    const container = containerRef.current;
-    if (container) {
-      container.setAttribute('role', 'tree');
-      const addAriaToNodes = () => {
-        const topics = container.querySelectorAll('me-tpc');
-        topics.forEach(tpc => {
-          const parent = tpc.closest('me-parent');
-          if (parent && !parent.hasAttribute('role')) {
-            parent.setAttribute('role', 'treeitem');
-            parent.setAttribute('aria-label', tpc.textContent?.trim() || 'Mind map node');
-          }
-        });
-      };
-      addAriaToNodes();
-      const nodeObserver = new MutationObserver(addAriaToNodes);
-      nodeObserver.observe(container, { childList: true, subtree: true });
-      setTimeout(() => { nodeObserver.disconnect(); }, 2000);
-    }
+    addAriaAttributesToContainer(currentContainer);
 
     // Wire MindElixir operations to repository
     const bus = mindInstance.current.bus;
@@ -155,8 +156,8 @@ const MindMapView: React.FC<Props> = ({
               });
               logger.info('Created entity from mind map child', { id: newEntity.id, name: obj.topic });
               const topicEl = mindInstance.current?.findEle(obj.id as string);
-              if (topicEl) {
-                topicEl.nodeObj.id = newEntity.id!;
+              if (topicEl && newEntity.id) {
+                topicEl.nodeObj.id = newEntity.id;
               }
               const validParent = parentId && /^[0-9a-f-]{36}$/i.test(parentId);
               if (validParent && newEntity.id) {

@@ -117,10 +117,10 @@ interface MarkdownRendererProps {
   content: string;
 }
 
-const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
+function MarkdownRenderer({ content }: MarkdownRendererProps): React.ReactElement {
   const html = markdownToHtml(content);
   const sanitized = sanitizeHtml(html);
   return <div className="markdown-content" dangerouslySetInnerHTML={{ __html: sanitized }} />;
-};
+}
 
 export default MarkdownRenderer;

@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { loadConfig, saveConfig, createProvider, maskApiKey } from '../../lib/llm/config';
 import { PROVIDER_MODELS } from '../../lib/llm';
-import type { LLMProviderConfig } from '../../lib/llm/types';
 import { searchKnowledge } from '../../lib/search';
 import { resolveUrl, ResolvedContent } from '../../lib/resolver';
 import { logger } from '../../lib/logger';
@@ -36,7 +35,7 @@ const AIHarness: React.FC = () => {
   const [editApiKey, setEditApiKey] = useState('');
   const [editProvider, setEditProvider] = useState(config.activeProvider);
   const [editModel, setEditModel] = useState(
-    config.providers[config.activeProvider]?.defaultModel || ''
+    config.providers[config.activeProvider].defaultModel || ''
   );
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', content: 'AI agent ready to assist with TRIZ analysis and knowledge synthesis. Ask me anything about your local knowledge base, or paste URLs to have me fetch and analyze external content.' }
@@ -74,7 +73,7 @@ const AIHarness: React.FC = () => {
       const providerModels = PROVIDER_MODELS[config.activeProvider] || {};
       const currentModel = Object.values(providerModels).includes(editModel)
         ? editModel
-        : (config.providers[config.activeProvider]?.defaultModel || '');
+        : (config.providers[config.activeProvider].defaultModel || '');
       if (currentModel && currentModel !== editModel) {
         setEditModel(currentModel);
       }
@@ -109,6 +108,14 @@ const AIHarness: React.FC = () => {
     if (ratio >= 0.5) return 'medium';
     return 'low';
   }, [getRateLimitInfo]);
+
+  const handleToggleSettings = useCallback(() => {
+    setShowSettings(prev => !prev);
+    setEditApiKey('');
+    setEditProvider(config.activeProvider);
+    const providerConfig = config.providers[config.activeProvider];
+    setEditModel(providerConfig.defaultModel || '');
+  }, [config.activeProvider, config.providers]);
 
   const handleSaveSettings = () => {
     const updated = { ...config };
@@ -226,8 +233,8 @@ const AIHarness: React.FC = () => {
         { role: 'user', content: userMessage + contextString + externalContent }
       ];
 
-      const providerConfig = currentConfig.providers[currentConfig.activeProvider] as LLMProviderConfig | undefined;
-      const model = (providerConfig && providerConfig.defaultModel) || editModel || 'google/gemini-2.0-flash-lite-preview-02-05:free';
+      const providerConfig = currentConfig.providers[currentConfig.activeProvider];
+      const model = providerConfig.defaultModel || editModel || 'google/gemini-2.0-flash-lite-preview-02-05:free';
 
       let streamedContent = '';
       let streamUsage: { input: number; output: number } | undefined;
@@ -245,8 +252,8 @@ const AIHarness: React.FC = () => {
           if (chunk.usage) {
             streamUsage = { input: chunk.usage.inputTokens, output: chunk.usage.outputTokens };
             setSessionTokens(prev => ({
-              input: prev.input + chunk.usage!.inputTokens,
-              output: prev.output + chunk.usage!.outputTokens,
+              input: prev.input + chunk.usage.inputTokens,
+              output: prev.output + chunk.usage.outputTokens,
             }));
           }
           break;
@@ -286,11 +293,11 @@ const AIHarness: React.FC = () => {
     }
   };
 
-  const currentApiKey = config.providers[config.activeProvider]?.apiKey || '';
+  const currentApiKey = config.providers[config.activeProvider].apiKey || '';
   const hasKey = currentApiKey.length > 0;
 
   const availableModels = PROVIDER_MODELS[editProvider] || {};
-  const currentModel = config.providers[config.activeProvider]?.defaultModel || '';
+  const currentModel = config.providers[config.activeProvider].defaultModel || '';
   const providerModelEntries = Object.entries(availableModels);
 
   const rateLimitLevel = getRateLimitLevel();
@@ -317,7 +324,7 @@ const AIHarness: React.FC = () => {
                   This assistant can answer questions, analyze URLs, and search your local knowledge base.
                   Let&rsquo;s get you set up with an AI provider.
                 </p>
-                <button className="primary" onClick={handleWizardNext} style={{ width: '100%', padding: '10px' }}>
+                <button type="button" className="primary" onClick={handleWizardNext} style={{ width: '100%', padding: '10px' }}>
                   Get Started <ChevronRight size={16} style={{ verticalAlign: 'middle' }} />
                 </button>
               </>
@@ -347,7 +354,7 @@ const AIHarness: React.FC = () => {
                   <select
                     id="wizard-model"
                     value={wizardModel}
-                    onChange={e => setWizardModel(e.target.value)}
+                    onChange={e => { setWizardModel(e.target.value); }}
                     style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-default, #ddd)' }}
                   >
                     {(PROVIDER_MODELS[wizardProvider] ? Object.entries(PROVIDER_MODELS[wizardProvider]) : []).map(([label, value]) => (
@@ -356,10 +363,10 @@ const AIHarness: React.FC = () => {
                   </select>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', marginTop: '24px' }}>
-                  <button onClick={handleWizardBack} style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid var(--border-default, #ddd)', borderRadius: '6px', cursor: 'pointer' }}>
+                  <button type="button" onClick={handleWizardBack} style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid var(--border-default, #ddd)', borderRadius: '6px', cursor: 'pointer' }}>
                     Back
                   </button>
-                  <button className="primary" onClick={handleWizardNext} style={{ flex: 1, padding: '10px' }}>
+                  <button type="button" className="primary" onClick={handleWizardNext} style={{ flex: 1, padding: '10px' }}>
                     Next <ChevronRight size={16} style={{ verticalAlign: 'middle' }} />
                   </button>
                 </div>
@@ -376,15 +383,15 @@ const AIHarness: React.FC = () => {
                   ref={wizardApiKeyRef}
                   type="password"
                   value={wizardApiKey}
-                  onChange={e => setWizardApiKey(e.target.value)}
+                  onChange={e => { setWizardApiKey(e.target.value); }}
                   placeholder={`Enter ${wizardProvider} API key`}
                   style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-default, #ddd)', boxSizing: 'border-box' }}
                 />
                 <div style={{ display: 'flex', gap: '8px', marginTop: '24px' }}>
-                  <button onClick={handleWizardBack} style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid var(--border-default, #ddd)', borderRadius: '6px', cursor: 'pointer' }}>
+                  <button type="button" onClick={handleWizardBack} style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid var(--border-default, #ddd)', borderRadius: '6px', cursor: 'pointer' }}>
                     Back
                   </button>
-                  <button className="primary" onClick={handleWizardComplete} disabled={!wizardApiKey} style={{ flex: 1, padding: '10px' }}>
+                  <button type="button" className="primary" onClick={handleWizardComplete} disabled={!wizardApiKey} style={{ flex: 1, padding: '10px' }}>
                     <Check size={16} style={{ verticalAlign: 'middle' }} /> Complete Setup
                   </button>
                 </div>
@@ -392,6 +399,7 @@ const AIHarness: React.FC = () => {
             )}
 
             <button
+              type="button"
               onClick={handleSkipWizard}
               style={{ display: 'block', margin: '16px auto 0', background: 'none', border: 'none', color: 'var(--text-muted, #999)', cursor: 'pointer', fontSize: '12px', textDecoration: 'underline' }}
             >
@@ -410,13 +418,8 @@ const AIHarness: React.FC = () => {
             </span>
           )}
           <button
-            onClick={() => {
-              setShowSettings(!showSettings);
-              setEditApiKey('');
-              setEditProvider(config.activeProvider);
-              const providerConfig = config.providers[config.activeProvider];
-              setEditModel(providerConfig?.defaultModel || '');
-            }}
+            type="button"
+            onClick={handleToggleSettings}
             style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px', color: 'var(--text-muted)' }}
             aria-label="API settings"
             title="API settings"
@@ -424,7 +427,7 @@ const AIHarness: React.FC = () => {
             <Settings size={16} />
           </button>
           <label htmlFor="use-context-checkbox" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer' }}>
-            <input id="use-context-checkbox" type="checkbox" checked={useContext} onChange={e => setUseContext(e.target.checked)} />
+            <input id="use-context-checkbox" type="checkbox" checked={useContext} onChange={e => { setUseContext(e.target.checked); }} />
             <Database size={16} /> Augment with Local Knowledge
           </label>
         </div>
@@ -461,7 +464,7 @@ const AIHarness: React.FC = () => {
             <select
               id="ai-model"
               value={editModel}
-              onChange={e => setEditModel(e.target.value)}
+              onChange={e => { setEditModel(e.target.value); }}
               style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid var(--border-default)' }}
             >
               {providerModelEntries.map(([label, value]) => (
@@ -475,11 +478,11 @@ const AIHarness: React.FC = () => {
                 id="ai-api-key"
                 type="password"
                 value={editApiKey}
-                onChange={e => setEditApiKey(e.target.value)}
+                onChange={e => { setEditApiKey(e.target.value); }}
                 placeholder={hasKey ? 'Leave blank to keep current key' : 'Enter API key'}
                 style={{ flex: 1, padding: '6px 8px', borderRadius: '4px', border: '1px solid var(--border-default)' }}
               />
-              <button className="primary" onClick={handleSaveSettings} style={{ padding: '6px 12px' }}>
+              <button type="button" className="primary" onClick={handleSaveSettings} style={{ padding: '6px 12px' }}>
                 Save
               </button>
             </div>
@@ -503,6 +506,7 @@ const AIHarness: React.FC = () => {
               <span className="source-chip-label">{s.title || safeHostname(s.url)}</span>
               <span className="source-chip-provider">{s.provider}</span>
               <button
+                type="button"
                 className="source-chip-remove"
                 onClick={() => setResolvedSources(prev => prev.filter((_, j) => j !== i))}
                 aria-label={`Remove source ${s.title || s.url}`}
@@ -547,13 +551,13 @@ const AIHarness: React.FC = () => {
             ref={inputRef}
             type="text"
             value={input}
-            onChange={e => setInput(e.target.value)}
+            onChange={e => { setInput(e.target.value); }}
             onKeyDown={handleKeyDown}
             placeholder="Ask the AI agent..."
             disabled={isLoading}
             aria-label="Ask the AI agent"
           />
-          <button className="primary" onClick={() => void handleSend()} disabled={isLoading || !input.trim()}>
+          <button type="button" className="primary" onClick={() => void handleSend()} disabled={isLoading || !input.trim()}>
             {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
           </button>
         </div>
