@@ -1,7 +1,7 @@
 # Agents Registry
 
 > Auto-generated registry of all sub-agents in this repository.
-> Last updated: 2026-05-19 10:39 UTC
+> Last updated: 2026-05-27 17:21 UTC
 
 This file provides a centralized discovery mechanism for all available sub-agents.
 Agents are organized by CLI tool and purpose.
@@ -39,6 +39,7 @@ See [`agents-docs/AVAILABLE_SKILLS.md`](agents-docs/AVAILABLE_SKILLS.md) for aut
 | `atomic-commit` | `.agents/skills/atomic-commit` | Atomic git workflow - validates, commits, pushes, creates PR |
 | `cicd-pipeline` | `.agents/skills/cicd-pipeline` | Design and implement CI/CD pipelines with GitHub Actions, Gi |
 | `cloudflare-worker-api` | `.agents/skills/cloudflare-worker-api` | Structure Worker API routes and handlers. Activate for route |
+| `codacy` | `.agents/skills/codacy` | Use Codacy static analysis CLIs to query PR analysis, triage |
 | `code-quality` | `.agents/skills/code-quality` | Review and improve code quality across any programming langu |
 | `code-review-assistant` | `.agents/skills/code-review-assistant` | Automated code review with PR analysis, change summaries, an |
 | `codeberg-api` | `.agents/skills/codeberg-api` | Interact with Forgejo/Codeberg repositories via the REST API |

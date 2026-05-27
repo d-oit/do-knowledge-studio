@@ -1,0 +1,39 @@
+{
+  "skill_name": "codacy",
+  "version": "1.0.0",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Codacy is blocking PR #209 on d-o-hub/do-knowledge-studio. How do I find out what issues exist?",
+      "expected_output": "Uses `codacy pull-request ... --output json` to fetch the PR data, parses the `newIssues` array to identify blockers, and checks the `qualityGateStatus` field.",
+      "assertions": [
+        "Uses `codacy pull-request ... --output json`",
+        "Mentions parsing newIssues array",
+        "Mentions checking quality gate status"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "I have a false positive from SQLint about VIRTUAL in my SQL migration. How do I suppress it?",
+      "expected_output": "Identifies the numeric `resultDataId` from the JSON output (not the hash), and runs `codacy pull-request gh <org> <repo> <prNumber> --ignore-issue <resultDataId> --ignore-reason FalsePositive`.",
+      "assertions": [
+        "Mentions numeric resultDataId from JSON",
+        "Uses --ignore-issue with the numeric ID",
+        "Specifies --ignore-reason FalsePositive"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "I ran codacy-analysis locally but it shows 0 issues. Cloud shows 86. What's wrong?",
+      "expected_output": "Explains that the Analysis CLI is limited to a subset of tools (like ESLint, ShellCheck) and often fails on Python, Ruby, or Java tools due to missing runtimes. Recommends using the Cloud CLI for accurate PR data.",
+      "assertions": [
+        "Mentions Analysis CLI limitation (subset of tools)",
+        "Notes that Python/Ruby/Java tools may fail locally",
+        "Suggests using Cloud CLI for authoritative data"
+      ],
+      "files": []
+    }
+  ]
+}
