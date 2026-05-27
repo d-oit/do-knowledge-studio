@@ -1,41 +1,101 @@
-[
-  {
-    "prompt": "Codacy is blocking PR #209 on d-oit/do-knowledge-studio. How do I find out what issues exist?",
-    "expect": [
-      "Use `codacy pull-request gh d-oit do-knowledge-studio 209 --output json`",
-      "Parse the newIssues array to get issue count, tool, severity, file, and message",
-      "Check the quality gate status in the output"
-    ]
-  },
-  {
-    "prompt": "I have a false positive from SQLint about VIRTUAL in my SQL migration. How do I suppress it?",
-    "expect": [
-      "Get the numeric resultDataId from the PR analysis JSON output",
-      "Run `codacy pull-request gh <org> <repo> <prNumber> --ignore-issue <resultDataId> --ignore-reason FalsePositive`",
-      "Verify the issue was suppressed by re-running the pull-request command"
-    ]
-  },
-  {
-    "prompt": "I ran `codacy-analysis analyze` locally but it shows 0 issues. Codacy Cloud shows 86. What's wrong?",
-    "expect": [
-      "The local Analysis CLI only runs a subset of tools (ESLint, Stylelint, ShellCheck, Trivy, etc.)",
-      "Python, Ruby, and Java tools fail to install locally",
-      "Always use the Cloud CLI (`codacy pull-request`) for actual PR data"
-    ]
-  },
-  {
-    "prompt": "I need to suppress all false positive issues in my PR at once. How?",
-    "expect": [
-      "Use `codacy pull-request gh <org> <repo> <prNumber> --ignore-all-false-positives`",
-      "This auto-suppresses issues Codacy has identified as likely false positives"
-    ]
-  },
-  {
-    "prompt": "The Codacy check says ACTION_REQUIRED on my PR but I've fixed all the issues. What now?",
-    "expect": [
-      "Trigger a reanalysis: `codacy pull-request gh <org> <repo> <prNumber> --reanalyze`",
-      "Wait for analysis to complete, then re-check status",
-      "If suppressions were applied, they need a human to verify on the Codacy dashboard"
-    ]
-  }
-]
+{
+  "skill_name": "codacy",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Codacy is blocking PR #209 on d-oit/do-knowledge-studio. How do I find out what issues exist?",
+      "files": [],
+      "assertions": [
+        "The output mentions `codacy pull-request` to query PR analysis",
+        "The output explains how to parse the newIssues JSON array",
+        "The output checks the quality gate status"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I have a false positive from SQLint about VIRTUAL in my SQL migration. How do I suppress it?",
+      "files": [],
+      "assertions": [
+        "The output uses the numeric resultDataId, not the hash ID",
+        "The output uses `--ignore-issue` with `--ignore-reason FalsePositive`",
+        "The output suggests verifying suppression by re-running the command"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I ran `codacy-analysis analyze` locally but it shows 0 issues. Codacy Cloud shows 86. What's wrong?",
+      "files": [],
+      "assertions": [
+        "The output explains that the Analysis CLI runs a limited subset of tools",
+        "The output mentions Python/Ruby/Java tools fail locally",
+        "The output recommends using the Cloud CLI for actual PR data"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "I need to suppress all false positive issues in my PR at once. How?",
+      "files": [],
+      "assertions": [
+        "The output suggests `--ignore-all-false-positives`",
+        "The output explains this auto-suppresses Codacy-identified false positives"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "The Codacy check says ACTION_REQUIRED on my PR but I've fixed all the issues. What now?",
+      "files": [],
+      "assertions": [
+        "The output suggests triggering reanalysis via `--reanalyze`",
+        "The output mentions suppressions may need human verification on the Codacy dashboard"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "PR #42 is being blocked by Codacy's quality gate. Can you check what new issues were introduced and suppress any false positives?",
+      "files": [],
+      "assertions": [
+        "The output fetches PR analysis using `codacy pull-request`",
+        "The output categorizes issues into real vs false positives",
+        "The output explains how to suppress false positives"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "I'm getting an error '--ignore-issue must be a number' when trying to suppress a Codacy issue. What am I doing wrong?",
+      "files": [],
+      "assertions": [
+        "The output identifies the cause as using a hash ID instead of numeric resultDataId",
+        "The output explains how to find the correct numeric ID from JSON output"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "How do I install and authenticate the Codacy CLIs for the first time?",
+      "files": [],
+      "assertions": [
+        "The output mentions both `@codacy/analysis-cli` and `@codacy/codacy-cloud-cli`",
+        "The output shows the `codacy login --token` authentication command",
+        "The output mentions shared credentials at ~/.codacy/credentials"
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "Run local Codacy analysis on my TypeScript project before pushing to CI.",
+      "files": ["src/main.ts", "src/utils.ts"],
+      "assertions": [
+        "The output uses `codacy-analysis init --default` first",
+        "The output uses `codacy-analysis analyze --install-dependencies --output-format json`",
+        "The output mentions the limitations of local analysis"
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "What static analysis tools are available locally for Codacy on this project?",
+      "files": [],
+      "assertions": [
+        "The output uses `codacy-analysis analyze --inspect --output-format json`",
+        "The output lists available tools from the capability report"
+      ]
+    }
+  ]
+}

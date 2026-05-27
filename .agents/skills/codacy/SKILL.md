@@ -1,10 +1,12 @@
 ---
 name: codacy
-description: Use Codacy static analysis CLIs to query PR analysis, triage issues, suppress false positives, and run local analysis. Use when Codacy blocks a PR, when asked to fix Codacy issues, suppress false positives, query PR quality data, or integrate Codacy into CI/CD workflows. Also use when the user mentions "Codacy", "static analysis check", "code quality gate", or "Codacy is failing".
+description: Use Codacy static analysis CLIs to query PR analysis, triage issues, suppress false positives, and run local analysis. Trigger when Codacy blocks a PR, CI quality gate fails, asked to fix/suppress Codacy issues, query PR quality data, or integrate Codacy into agent workflows. Also trigger on "Codacy is failing", "static analysis check", "code quality gate", "Codacy check blocked", "Codacy findings", "Codacy issues", "suppress Codacy", "Codacy reanalysis", "fix Codacy", "Codacy PR", "code review quality gate".
+version: 1.0.0
+template_version: 0.1.0
 license: MIT
+compatibility: Node.js 18+, npm global install. Requires Codacy project access for Cloud CLI. Python 3.x recommended for JSON parsing but not required.
 metadata:
   author: d-oit
-  version: 1.0.0
 ---
 
 # Codacy
@@ -96,10 +98,21 @@ codacy pull-request gh <org> <repo> <prNumber> \
 codacy pull-request gh <org> <repo> <prNumber> --ignore-all-false-positives
 ```
 
-Extract issue IDs from JSON:
+Extract issue IDs from JSON (requires `jq` or use Python):
 
 ```bash
+# With jq
 jq '.newIssues[] | {id: .commitIssue.resultDataId, tool: .commitIssue.toolInfo.name, file: .commitIssue.filePath, message: .commitIssue.message}' /tmp/codacy-pr.json
+
+# With Python (no jq required)
+python3 -c "
+import json
+with open('/tmp/codacy-pr.json') as f:
+    data = json.load(f)
+for issue in data.get('newIssues', []):
+    ci = issue['commitIssue']
+    print(f\"{ci['resultDataId']} | {ci['toolInfo']['name']:10s} | {ci['filePath']}:{ci['lineNumber']} | {ci['message'][:80]}\")
+"
 ```
 
 ### Step 4: Fix Real Issues in Code
@@ -134,10 +147,11 @@ codacy-analysis analyze --tool ESLint9 --tool Stylelint --output-format json
 
 | Tool | Status | Reason |
 |------|--------|--------|
-| ESLint9, Stylelint, ShellCheck, Trivy, markdownlint, Agentlinter | ✅ Works | Bundled or on PATH |
-| Bandit, Pylint, Prospector, Lizard | ❌ Fails | Python venv creation fails |
-| SQLint | ❌ Fails | Ruby runtime missing |
-| PMD | ❌ Fails | Java runtime missing |
+| ESLint9, ESLint8, Stylelint, ShellCheck, Trivy, markdownlint, Agentlinter, Jackson Linter | ✅ Works | Bundled or on PATH |
+| Bandit, Pylint, Prospector, Lizard | ❌ Fails | Python binary not found (venv creation fails) |
+| Semgrep | ❌ Fails | opengrep binary not found |
+| SQLint | ❌ Fails | Ruby runtime missing (gem install fails) |
+| PMD | ❌ Fails | Java runtime not available |
 
 The Analysis CLI may show "0 issues" even when the Cloud CLI reports many — always cross-reference.
 
