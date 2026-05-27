@@ -92,8 +92,10 @@ const AppContent: React.FC = () => {
   const refreshData = useCallback(async () => {
     if (!dbReady) return;
     try {
-      const e = await repository.getAllEntities();
-      const l = await repository.getAllLinks();
+      const [e, l] = await Promise.all([
+        repository.getAllEntities(),
+        repository.getAllLinks()
+      ]);
       setEntities(e);
       setLinks(l);
     } catch (err) {

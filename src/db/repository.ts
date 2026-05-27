@@ -27,11 +27,11 @@ const SearchRelatedRowSchema = z.object({
   target_id: z.string(),
 });
 
-interface RankedResult {
+export interface RankedResult {
   id: string;
-  name: string;
+  title: string;
   type: string;
-  excerpt: string;
+  content: string;
   score: number;
   stage: string;
 }
@@ -267,9 +267,9 @@ export class Repository {
         .filter((r) => !options?.excludeIds?.has(r.id))
         .map((r) => ({
           id: r.id,
-          name: r.name,
+          title: r.name,
           type: r.type,
-          excerpt: r.description ?? '',
+          content: r.description ?? '',
           score: 0,
           stage: 'related' as const,
         }));

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { progressiveSearch, initEmbeddings, type RankedResult } from '../../lib/search';
+import { progressiveSearch, initEmbeddings, type SearchResult } from '../../lib/search';
+import { type RankedResult } from '../../db/repository';
 import { logger } from '../../lib/logger';
 import { perf } from '../../lib/perf';
 import { Search, X, Filter, Plus, Sparkles } from 'lucide-react';
@@ -153,7 +154,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
       const accumulated = new Map<string, RankedResult>();
       let firstBatch = true;
 
-      const onStage: ProgressiveSearchCallback = (stageResults, stage) => {
+      const onStage = (stageResults: RankedResult[], stage: 'exact' | 'semantic' | 'related') => {
         if (controller.signal.aborted) return;
 
         for (const r of stageResults) {
@@ -161,11 +162,8 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
         }
 
         setSearchStages(prev => new Set(prev).add(stage));
-        const flatResults = Array.from(accumulated.values()).map(r => ({
-          id: r.id,
-          title: r.name,
-          type: r.type,
-          content: r.excerpt,
+        const flatResults: SearchResult[] = Array.from(accumulated.values()).map(r => ({
+          ...r,
           stage: r.stage || stage,
         }));
         setResults(flatResults);
@@ -178,7 +176,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
       };
 
       try {
-        await progressiveSearch(query, onStage, { type: typeFilter, signal: controller.signal });
+        await progressiveSearch(query, onStage, { type: typeFilter, limit: 50, signal: controller.signal });
       } catch (err) {
         logger.error('Search failed', err);
         setIsSearching(false);

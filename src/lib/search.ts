@@ -402,18 +402,7 @@ export interface SearchResult {
   stage?: string;
 }
 
-/**
- * Enhanced search result with ranking and provenance metadata.
- * Used by SearchPanel for display and keyboard navigation.
- */
-export interface RankedResult {
-  id: string;
-  name: string;
-  type: string;
-  excerpt: string;
-  score: number;
-  stage: 'draft' | 'verified' | 'final';
-}
+import { type RankedResult } from '../db/repository.js';
 
 /** Maps claim verification_status to display stage. */
 const mapVerificationStage = (status: string): RankedResult['stage'] => {
@@ -450,9 +439,9 @@ const enrichResults = async (hits: Array<{ document: SearchDocument; score: numb
 
     return {
       id: doc.id,
-      name: doc.title,
+      title: doc.title,
       type: doc.type,
-      excerpt: doc.content,
+      content: doc.content,
       score: hit.score,
       stage: mapVerificationStage(rawStage),
     };
@@ -469,7 +458,7 @@ const enrichResults = async (hits: Array<{ document: SearchDocument; score: numb
  */
 export const searchKnowledge = async (
   query: string,
-  options?: { type?: string },
+  options?: { type?: string; limit?: number },
 ): Promise<RankedResult[]> => {
   if (!oramaDb) await initSearch();
   perf.mark('orama-query');
@@ -477,6 +466,7 @@ export const searchKnowledge = async (
   const searchParams: Record<string, unknown> = {
     term: query,
     properties: ['title', 'content'],
+    limit: options?.limit ?? 20,
   };
 
   if (options?.type) {
@@ -497,7 +487,7 @@ export const searchKnowledge = async (
  */
 export const semanticSearch = async (
   query: string,
-  options?: { type?: string },
+  options?: { type?: string; limit?: number },
 ): Promise<RankedResult[]> => {
   if (!oramaDb) await initSearch();
   perf.mark('orama-query');
@@ -516,6 +506,7 @@ export const semanticSearch = async (
       fulltext: 0.5,
     },
     properties: ['title', 'content'],
+    limit: options?.limit ?? 20,
   };
 
   if (options?.type) {
@@ -527,23 +518,23 @@ export const semanticSearch = async (
   return enrichResults(results.hits.map(h => ({ document: h.document as SearchDocument, score: h.score })));
 };
 
-export type ProgressiveSearchCallback = (results: RankedResult[], stage: 'exact' | 'semantic' | 'related') => void;
+export type ProgressiveSearchCallback = (results: RankedResult[], stage: 'exact' | 'semantic' | 'related') => void | Promise<void>;
 
 export const progressiveSearch = async (
   query: string,
   onResults: ProgressiveSearchCallback,
-  options?: { type?: string; signal?: AbortSignal },
+  options?: { type?: string; limit?: number; signal?: AbortSignal },
 ): Promise<void> => {
   if (options?.signal?.aborted) return;
 
   const exactResults = await searchKnowledge(query, { ...options, type: options?.type });
   if (options?.signal?.aborted) return;
-  onResults(exactResults, 'exact');
+  void onResults(exactResults, 'exact');
 
   if (embeddingsReady && embeddingsPlugin) {
     const semanticResults = await semanticSearch(query, { ...options, type: options?.type });
     if (options?.signal?.aborted) return;
-    onResults(semanticResults, 'semantic');
+    void onResults(semanticResults, 'semantic');
   }
 
   try {
@@ -551,7 +542,7 @@ export const progressiveSearch = async (
     const relatedResults = await repository.searchRelated(query, { excludeIds: exactIds });
     if (options?.signal?.aborted) return;
     if (relatedResults.length > 0) {
-      onResults(relatedResults, 'related');
+      void onResults(relatedResults, 'related');
     }
   } catch (err) {
     logger.error('Related search failed', err);
