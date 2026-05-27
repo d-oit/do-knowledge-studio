@@ -65,6 +65,13 @@ Wave 4 (P3) ──→ ✅ MERGED
 | Documentation | 85/100 | ⬆️ Up from 78 | GOAP.md, 5 new ADRs, 8 plans, updated INDEX |
 | Security | 85/100 | ⬆️ Up from 40 | XSS fixed, API keys isolated, security tests |
 
+### Fix Plans (Pre-existing Issues)
+
+| Plan | Description | Status |
+|------|-------------|--------|
+| [002-e2e-prod-build-tdz.md](002-e2e-prod-build-tdz.md) | E2E tests fail: production build TDZ error (`Cannot access 'ae' before initialization`) | 🔴 OPEN |
+| [003-eslint-pre-existing-cleanup.md](003-eslint-pre-existing-cleanup.md) | 141 pre-existing ESLint errors across 20 files | 🔴 OPEN |
+
 ## Key Constraints
 1. **AGENTS.md is single source of truth** — Do NOT modify GEMINI.md or QWEN.md
 2. **Local-first ONLY** — No required backend
