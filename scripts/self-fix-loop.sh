@@ -238,11 +238,19 @@ phase_monitor_ci() {
 
         # Analyze status
         local has_pending=false has_failure=false
+        local ignored_checks=("Codacy" "Dependabot Auto-Merge")
 
         if echo "$checks_output" | grep -qiE "(pending|queued|in progress|running|waiting)"; then
             has_pending=true
         fi
-        if echo "$checks_output" | grep -qiE "(fail|error|✗|×)"; then
+
+        # Filter out known non-blocking external checks
+        local filtered_output="$checks_output"
+        for ignore in "${ignored_checks[@]}"; do
+            filtered_output=$(echo "$filtered_output" | grep -vi "$ignore" || true)
+        done
+
+        if echo "$filtered_output" | grep -qiE "(fail|error|✗|×)"; then
             has_failure=true
         fi
 
@@ -270,12 +278,17 @@ phase_monitor_ci() {
             return 0
         fi
 
-        # Failures detected - capture them
+        # Failures detected - capture them (excluding ignored checks)
         error "CI CHECKS FAILED"
         LAST_FAILURES=()
+        local failed_checks
+        failed_checks=$(echo "$checks_output" | grep -iE "(fail|error)" || true)
+        for ignore in "${ignored_checks[@]}"; do
+            failed_checks=$(echo "$failed_checks" | grep -vi "$ignore" || true)
+        done
         while IFS= read -r line; do
             LAST_FAILURES+=("$line")
-        done < <(echo "$checks_output" | grep -iE "(fail|error)" | head -20)
+        done <<< "$(echo "$failed_checks" | head -20)"
 
         log "Failures:"
         for f in "${LAST_FAILURES[@]}"; do
