@@ -105,7 +105,7 @@ phase_commit_push() {
     # Run quality gate
     log "Running quality gate..."
     if [[ -x "$REPO_ROOT/scripts/quality_gate.sh" ]]; then
-        if ! SKIP_TESTS=true SKIP_LINT=true SKIP_GLOBAL_HOOKS_CHECK=true "$REPO_ROOT/scripts/quality_gate.sh"; then
+        if ! SKIP_TESTS=true SKIP_GLOBAL_HOOKS_CHECK=true "$REPO_ROOT/scripts/quality_gate.sh"; then
             error "Quality gate failed"
             return 1
         fi

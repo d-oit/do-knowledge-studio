@@ -1,7 +1,18 @@
 # Pre-existing ESLint Error Cleanup — 2026-05-27
 
+> **Status**: ✅ RESOLVED
 > **Goal**: Fix 141 pre-existing ESLint errors (4 warnings) so `SKIP_LINT` is no longer needed
 > **Pattern**: Many errors are systematic and can be fixed with targeted refactors
+
+## Summary of Fixes
+
+| Phase | Category | Files Changed | Errors Fixed |
+|-------|----------|---------------|-------------|
+| Wave 2 | Mechanical (void-wrap, vi.mocked, unused code) | 10 files | ~50 |
+| Wave 3 | Type annotations (worker messages, mocks) | 8 files | ~45 |
+| Wave 4 | JSX/Accessibility (modal overlays, labels, roles) | 4 files | ~18 |
+| Wave 5 | Architecture + hook deps | 6 files | ~28 |
+| **Total** | | **28 files** | **141 errors** |
 
 ## Error Breakdown
 
