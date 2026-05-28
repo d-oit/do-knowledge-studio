@@ -3,6 +3,12 @@
 > Auto-generated from skill definitions in `.agents/skills/`
 > Do not edit manually. Run `./scripts/generate-available-skills.sh` to regenerate.
 
+## Quality
+
+| Skill | Description |
+|-------|-------------|
+| `codacy` | Use Codacy static analysis CLIs to query PR analysis, triage issues, suppress false positives, and run local analysis. Use when Codacy blocks a PR, when asked to fix Codacy issues, suppress false positives, query PR quality data, or integrate Codacy into CI/CD workflows. Also use when the user mentions "Codacy", "static analysis check", "code quality gate", or "Codacy is failing". |
+
 ## Analysis
 
 | Skill | Description |
@@ -33,6 +39,7 @@
 | `goap-agent` | Invoke for complex multi-step tasks requiring intelligent planning and multi-agent coordination. Use when tasks need decomposition, dependency mapping, parallel/sequential/swarm/iterative execution strategies, or coordination of multiple specialized agents with quality gates. |
 | `intent-classifier` | Classify user intents and route to appropriate skills, commands, or workflows. Use when determining which skill to invoke, routing requests to specialized agents, or building skill selection logic. Trigger on 'which skill should I use', 'route this to', 'classify this request', 'skill selection', or when multiple skills could handle a task. |
 | `iterative-refinement` | Execute iterative refinement workflows with validation loops until quality criteria are met. Use for test-fix cycles, code quality improvement, performance optimization, or any task requiring repeated action-validate-improve cycles. |
+| `jules` | Autonomous Jules Delegator skill for delegating complex, multi-file tasks to a persistent repository-aware session. |
 | `jules-implement` | Repository-aware implementation agent that handles delta-based targeted research, code generation, and validation of Stitch-rendered designs. |
 | `local-chat-policy` | Guidelines for ensuring chat functionality prioritizes local data and respects privacy. |
 | `memory-context` | Retrieve semantically relevant past learnings and analysis outputs using the csm CLI (HDC encoder with hybrid BM25 retrieval) |
