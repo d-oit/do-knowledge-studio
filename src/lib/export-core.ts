@@ -25,6 +25,7 @@ export function generateSiteHtml(data: ExportData): string {
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; script-src 'none';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Knowledge Base</title>
   <style>
@@ -117,7 +118,7 @@ export function generateMarkdownExport(data: ExportData): string {
 
     fullContent += `# ${escapeHtml(entity.name)}\n\n`;
     fullContent += `**Type:** ${escapeHtml(entity.type)}\n\n`;
-    if (entity.description) fullContent += `${entity.description}\n\n`;
+    if (entity.description) fullContent += `${sanitizeHtml(entity.description)}\n\n`;
 
     if (entityClaims.length > 0) {
       fullContent += `## Claims\n\n`;
@@ -133,7 +134,7 @@ export function generateMarkdownExport(data: ExportData): string {
     if (entityNotes.length > 0) {
       fullContent += `## Notes\n\n`;
       for (const note of entityNotes) {
-        fullContent += `${note.content}\n\n`;
+        fullContent += `${sanitizeHtml(note.content)}\n\n`;
       }
     }
     fullContent += '\n---\n\n';
@@ -153,6 +154,7 @@ export function generatePrintHtml(entities: Entity[], claims: Record<string, Cla
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; script-src 'none';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Knowledge Base Export</title>
   <style>
@@ -182,7 +184,7 @@ export function generatePrintHtml(entities: Entity[], claims: Record<string, Cla
     html += `    <h2>${escapeHtml(entity.name)}</h2>\n`;
 
     if (entity.description) {
-      html += `    <div class="description">${entity.description}</div>\n`;
+      html += `    <div class="description">${sanitizeHtml(entity.description)}</div>\n`;
     }
 
     if (entityClaims.length > 0) {
