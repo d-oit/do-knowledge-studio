@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
-import { DbProvider } from '../db/DbProvider';
-import { useDb } from '../db/useDb';
+import { DbProvider, useDb } from '../db/DbProvider';
 import { repository } from '../db/repository';
 import { logger } from '../lib/logger';
 import { hydrateOramaIndex } from '../lib/search';
@@ -14,7 +13,6 @@ import MobileDrawer from '../components/MobileDrawer';
 import ErrorBoundary from '../components/ErrorBoundary';
 import ThemeSwitcher from '../components/ThemeSwitcher';
 const CommandPalette = lazy(() => import('../components/CommandPalette'));
-import { escapeHtml } from '../lib/security';
 import {
   EditorSkeleton,
   GraphSkeleton,
@@ -44,7 +42,7 @@ const Chat = lazy(preloadChat);
 const ExportPanel = lazy(preloadExport);
 const AIHarness = lazy(preloadAI);
 
-type View = 'editor' | 'graph' | 'mindmap' | 'chat' | 'export' | 'ai' | 'library';
+type View = 'editor' | 'graph' | 'mindmap' | 'chat' | 'export' | 'ai';
 
 const AppContent: React.FC = () => {
   const { dbReady, error } = useDb();
@@ -69,7 +67,6 @@ const AppContent: React.FC = () => {
       case 'export': void preloadExport(); break;
       case 'ai': void preloadAI(); break;
       case 'search': void preloadSearch(); break;
-      case 'library': void preloadEditor(); break;
     }
   }, []);
 
@@ -98,6 +95,8 @@ const AppContent: React.FC = () => {
   const handleSearchResultClick = useCallback((result: SearchResult) => {
     if (result.type === 'claim' || result.type === 'entity' || result.type === 'note' || result.type === 'concept' || result.type === 'person' || result.type === 'project') {
        setCurrentView('editor');
+       // In a real app we would navigate to the specific entity.
+       // For now, navigating to the editor is a good start.
     }
     setIsSearchOpen(false);
   }, []);
@@ -151,7 +150,7 @@ const AppContent: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  if (error) return <div className="error-screen">{typeof error === 'string' ? escapeHtml(error) : String(error)}</div>;
+  if (error) return <div className="error-screen">{error}</div>;
 
   return (
     <div className="layout-container">
@@ -170,7 +169,7 @@ const AppContent: React.FC = () => {
 
         <main className="main-content">
           {!dbReady && <div className="loading-screen">Booting Knowledge Studio...</div>}
-          {(dbReady && currentView === 'editor') || currentView === 'library' ? (
+          {dbReady && currentView === 'editor' && (
             <Suspense fallback={<EditorSkeleton />}>
               <ErrorBoundary featureName="Editor" onRetry={() => window.location.reload()}>
                 <Profiled id="Editor">
@@ -181,7 +180,7 @@ const AppContent: React.FC = () => {
                 </Profiled>
               </ErrorBoundary>
             </Suspense>
-          ) : null}
+          )}
           {dbReady && currentView === 'graph' && (
             <Suspense fallback={<GraphSkeleton />}>
               <ErrorBoundary featureName="Graph View" onRetry={() => window.location.reload()}>
@@ -220,7 +219,7 @@ const AppContent: React.FC = () => {
           {dbReady && currentView === 'chat' && (
             <Suspense fallback={<AISkeleton />}>
               <ErrorBoundary featureName="Chat" onRetry={() => window.location.reload()}>
-                <Chat />
+                <Chat onCreateEntity={() => setCurrentView('editor')} />
               </ErrorBoundary>
             </Suspense>
           )}
