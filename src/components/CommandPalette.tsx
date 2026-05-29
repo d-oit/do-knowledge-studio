@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Search,
   FileText,
@@ -103,7 +103,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onView
     }
   };
 
-  const executeSelected = useCallback(() => {
+  const executeSelected = () => {
     if (selectedIndex < filteredCommands.length) {
       const cmd = filteredCommands[selectedIndex];
       if (cmd.type === 'navigation' && cmd.view) {
@@ -112,10 +112,10 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onView
         onAction?.(cmd.id);
       }
     } else {
-      onViewChange('editor');
+      onViewChange('editor'); // Default for search results
     }
     onClose();
-  }, [selectedIndex, filteredCommands.length, onViewChange, onAction, onClose]);
+  };
 
   if (!isOpen) return null;
 

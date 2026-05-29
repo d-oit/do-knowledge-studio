@@ -161,4 +161,22 @@ describe('resolveUrl', () => {
     expect(result).toHaveProperty('wordCount');
     expect(result).toHaveProperty('provider');
   });
+
+  it('should correctly decode entities in HTML to plain text', async () => {
+    const mockHtml = `<!DOCTYPE html>
+<html><head><title>Entity Test</title></head>
+<body><p>Test &amp; Check &lt; Tag &gt; &quot;Quote&quot; &#39;Apos&#39; &nbsp; Space</p></body></html>`;
+
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      headers: {
+        get: vi.fn().mockReturnValue('text/html'),
+      },
+      text: vi.fn().mockResolvedValue(mockHtml),
+    });
+
+    const result = await resolveUrl('http://localhost:5173/entities');
+
+    expect(result.content).toContain('Test & Check < Tag > "Quote" \'Apos\'   Space');
+  });
 });
