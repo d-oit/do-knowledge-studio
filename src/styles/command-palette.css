@@ -33,10 +33,12 @@
   padding: var(--space-4);
   border-bottom: 1px solid var(--border-default);
   gap: var(--space-3);
+  position: relative;
 }
 
 .command-palette-header .search-icon {
   color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 .command-palette-header input {
@@ -46,9 +48,31 @@
   outline: none;
   font-size: 1.1rem;
   color: var(--text-primary);
+  padding: var(--space-1) 0;
+}
+
+.command-palette-header .input-clear-button {
+  position: static;
+  padding: var(--space-1);
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  transition: all var(--motion-fast);
+}
+
+.command-palette-header .input-clear-button:hover {
+  background: var(--bg-base);
+  color: var(--text-primary);
 }
 
 .command-palette-header .esc-hint {
+  flex-shrink: 0;
   padding: var(--space-1) var(--space-2);
   background: var(--bg-base);
   border: 1px solid var(--border-default);
@@ -84,10 +108,12 @@
   cursor: pointer;
   gap: var(--space-4);
   transition: background var(--motion-fast);
+  border: 1px solid transparent;
 }
 
 .command-item.selected {
   background: var(--bg-active);
+  border-color: var(--border-focus);
 }
 
 .command-item .item-icon {
