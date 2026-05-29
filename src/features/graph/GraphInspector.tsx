@@ -34,7 +34,8 @@ const GraphInspector: React.FC<GraphInspectorProps> = ({
     [links, entity.id]
   );
 
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const claimsScrollRef = useRef<HTMLDivElement>(null);
+  const relationsScrollRef = useRef<HTMLDivElement>(null);
 
   const allRelations = useMemo(() => {
     const items: Array<{ type: 'outgoing' | 'incoming'; id: string; relation: string; targetId: string }> = [];
@@ -49,14 +50,14 @@ const GraphInspector: React.FC<GraphInspectorProps> = ({
 
   const claimVirtualizer = useVirtualizer({
     count: claims.length,
-    getScrollElement: () => scrollRef.current,
+    getScrollElement: () => claimsScrollRef.current,
     estimateSize: () => 48,
     overscan: 5,
   });
 
   const relationVirtualizer = useVirtualizer({
     count: allRelations.length,
-    getScrollElement: () => scrollRef.current,
+    getScrollElement: () => relationsScrollRef.current,
     estimateSize: () => 40,
     overscan: 5,
   });
@@ -104,7 +105,7 @@ const GraphInspector: React.FC<GraphInspectorProps> = ({
         </div>
       </div>
 
-      <div ref={scrollRef} className="inspector-content" style={{ overflow: 'auto', flex: 1 }}>
+      <div className="inspector-content" style={{ overflow: 'auto', flex: 1 }}>
         <div className="inspector-section">
           <div className="result-type">{entity.type}</div>
           {entity.description && (
@@ -115,55 +116,59 @@ const GraphInspector: React.FC<GraphInspectorProps> = ({
         {claims.length > 0 && (
           <div className="inspector-section">
             <h4><ShieldCheck size={14} /> Claims <span className="text-muted">({claims.length})</span></h4>
-            <ul className="results-list" style={{ height: `${claimVirtualizer.getTotalSize()}px`, position: 'relative' }}>
-              {claimVirtualizer.getVirtualItems().map(virtualItem => {
-                const claim = claims[virtualItem.index];
-                return (
-                  <li key={claim.id} className="search-result-item" style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    transform: `translateY(${virtualItem.start}px)`,
-                  }}>
-                    <div className="msg-text" style={{ fontSize: '13px' }}>{claim.statement}</div>
-                    {claim.evidence && (
-                      <div className="result-meta" style={{ marginTop: '4px' }}>
-                        <span className="provenance-tag">Evidence: {claim.evidence}</span>
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
+            <div ref={claimsScrollRef} style={{ overflow: 'auto', maxHeight: '300px' }}>
+              <ul className="results-list" style={{ height: `${claimVirtualizer.getTotalSize()}px`, position: 'relative' }}>
+                {claimVirtualizer.getVirtualItems().map(virtualItem => {
+                  const claim = claims[virtualItem.index];
+                  return (
+                    <li key={claim.id} className="search-result-item" style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${virtualItem.start}px)`,
+                    }}>
+                      <div className="msg-text" style={{ fontSize: '13px' }}>{claim.statement}</div>
+                      {claim.evidence && (
+                        <div className="result-meta" style={{ marginTop: '4px' }}>
+                          <span className="provenance-tag">Evidence: {claim.evidence}</span>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           </div>
         )}
 
         {allRelations.length > 0 && (
           <div className="inspector-section">
             <h4><ExternalLink size={14} /> Relationships <span className="text-muted">({allRelations.length})</span></h4>
-            <ul className="results-list" style={{ height: `${relationVirtualizer.getTotalSize()}px`, position: 'relative' }}>
-              {relationVirtualizer.getVirtualItems().map(virtualItem => {
-                const rel = allRelations[virtualItem.index];
-                return (
-                  <li key={rel.id} className="search-result-item" style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    transform: `translateY(${virtualItem.start}px)`,
-                  }}>
-                    <div style={{ fontSize: '13px' }}>
-                      {rel.type === 'outgoing' ? (
-                        <><strong>{rel.relation}</strong> → {getEntityName(rel.targetId)}</>
-                      ) : (
-                        <>{getEntityName(rel.targetId)} → <strong>{rel.relation}</strong></>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+            <div ref={relationsScrollRef} style={{ overflow: 'auto', maxHeight: '300px' }}>
+              <ul className="results-list" style={{ height: `${relationVirtualizer.getTotalSize()}px`, position: 'relative' }}>
+                {relationVirtualizer.getVirtualItems().map(virtualItem => {
+                  const rel = allRelations[virtualItem.index];
+                  return (
+                    <li key={rel.id} className="search-result-item" style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${virtualItem.start}px)`,
+                    }}>
+                      <div style={{ fontSize: '13px' }}>
+                        {rel.type === 'outgoing' ? (
+                          <><strong>{rel.relation}</strong> → {getEntityName(rel.targetId)}</>
+                        ) : (
+                          <>{getEntityName(rel.targetId)} → <strong>{rel.relation}</strong></>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           </div>
         )}
 

@@ -1,6 +1,6 @@
 import { logger } from '../lib/logger';
 
-export const DEFAULT_POOL_SIZE = 4;
+export const DEFAULT_POOL_SIZE = 2;
 const DEFAULT_TIMEOUT_MS = 30000; // 30 seconds default timeout
 
 /**
@@ -8,6 +8,13 @@ const DEFAULT_TIMEOUT_MS = 30000; // 30 seconds default timeout
  * Manages multiple Web Workers and queues requests to ensure efficient
  * parallel processing while keeping the main thread responsive.
  */
+
+interface WorkerResponse {
+  id: string;
+  success: boolean;
+  data?: unknown;
+  error?: string;
+}
 
 interface PoolRequest {
   id: string;
@@ -50,15 +57,21 @@ export class ConnectionPool {
     this.schema = schema;
     logger.info(`Initializing SQLite worker pool with size ${this.poolSize}`);
 
-    const initPromises = Array.from({ length: this.poolSize }).map((_, i) => {
-      const workerEntry = this.createWorker();
-      this.workers.push(workerEntry);
-      return this.initializeWorker(workerEntry, i);
-    });
+    const results = await Promise.allSettled(
+      Array.from({ length: this.poolSize }).map((_, i) => {
+        const workerEntry = this.createWorker();
+        this.workers.push(workerEntry);
+        return this.initializeWorker(workerEntry, i);
+      })
+    );
 
-    await Promise.all(initPromises);
+    const succeeded = results.filter(r => r.status === 'fulfilled').length;
+    if (succeeded === 0) {
+      throw new Error('All workers failed to initialize');
+    }
+
     this.initialized = true;
-    logger.info('SQLite worker pool initialized');
+    logger.info(`SQLite worker pool initialized (${succeeded}/${this.poolSize} workers ready)`);
   }
 
   private createWorker(): WorkerEntry {
@@ -70,7 +83,7 @@ export class ConnectionPool {
     };
   }
 
-  private async initializeWorker(entry: WorkerEntry, index: number): Promise<void> {
+  private async initializeWorker(entry: WorkerEntry, index: number, retries = 2): Promise<void> {
     const id = crypto.randomUUID();
     try {
       await this.sendToWorker(entry, 'init', { schema: this.schema }, id);
@@ -79,6 +92,13 @@ export class ConnectionPool {
       // Trigger queue processing now that a new worker is available
       this.processQueue();
     } catch (err) {
+      if (retries > 0) {
+        logger.warn(`Worker ${index} init failed, retrying (${retries} left)`, err);
+        entry.worker.terminate();
+        const newEntry = this.createWorker();
+        this.workers[this.workers.indexOf(entry)] = newEntry;
+        return this.initializeWorker(newEntry, index, retries - 1);
+      }
       logger.error(`Failed to initialize worker ${index}`, err);
       throw err;
     }
@@ -177,13 +197,13 @@ export class ConnectionPool {
       }, this.timeoutMs);
 
       const handler = (event: MessageEvent) => {
-        if (event.data.id === id) {
+        if ((event.data as WorkerResponse).id === id) {
           clearTimeout(timeoutId);
           worker.removeEventListener('message', handler);
-          if (event.data.success) {
-            resolve(event.data.data);
+          if ((event.data as WorkerResponse).success) {
+            resolve((event.data as WorkerResponse).data);
           } else {
-            reject(new Error(event.data.error));
+            reject(new Error((event.data as WorkerResponse).error));
           }
         }
       };

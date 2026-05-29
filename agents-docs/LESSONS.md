@@ -836,3 +836,36 @@ Synchronize the upgrade across the entire Vite ecosystem:
 
 **Files Modified**:
 - `package.json` - Synchronized ecosystem upgrade
+
+---
+
+## LESSON-022: Codacy Cloud CLI for PR issue suppression
+
+**Issue**: Codacy Static Code Analysis check blocks PRs with ACTION_REQUIRED status. 91 issues on PR #209 were hard to triage from the web dashboard.
+
+**Root Cause**: No local tooling to query or suppress Codacy Cloud issues programmatically.
+
+**Solution**:
+- Install `@codacy/codacy-cloud-cli` via `npm i -g @codacy/codacy-cloud-cli`
+- Uses same `~/.codacy/credentials` as `codacy-analysis-cli` (shared auth)
+- Query PR issues: `codacy pull-request gh org repo PR# --output json` → contains `newIssues[]` with `resultDataId` (numeric issue ID)
+- Suppress: `codacy pull-request gh org repo PR# --ignore-issue <numeric-id> --ignore-reason FalsePositive`
+- The Analysis CLI (`@codacy/analysis-cli`) locally runs limited tools (ESLint9, Stylelint, ShellCheck, Trivy, Agentlinter). Most Python/Ruby/Java tools fail locally. Cloud CLI is the primary tool for interacting with Codacy.
+
+**Tags**: #codacy #static-analysis #ci-cd #quality-gate
+
+---
+
+## LESSON-023: Codacy Analysis CLI local limitations
+
+**Issue**: Running `codacy-analysis analyze` locally shows "0 issues" even though Codacy Cloud reports 86+ issues.
+
+**Root Cause**: The local Analysis CLI only supports tools bundled with Node.js or already on PATH. Python (Bandit, Pylint, Prospector, Lizard), Ruby (SQLint), and Java (PMD) tools fail to install or run. The cloud analysis runs many more tools.
+
+**Solution**:
+- Always use the Cloud CLI (`codacy pull-request`) to get actual PR issue data
+- Local Analysis CLI useful for quick ESLint checks but not a substitute for cloud analysis
+- `codacy-analysis init --default` gives the closest config to cloud defaults (61 tools found, 14 added for local)
+- Use `--install-dependencies` flag but expect failures for non-JS tools
+
+**Tags**: #codacy #analysis-cli #static-analysis #tooling-gaps

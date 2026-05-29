@@ -39,7 +39,7 @@ export const MentionExtension = Mark.create<MentionOptions>({
       entityId: {
         default: null,
         parseHTML: element => element.getAttribute('data-entity-id'),
-        renderHTML: attributes => {
+        renderHTML: (attributes: Record<string, string>) => {
           return {
             'data-entity-id': attributes.entityId,
           };
@@ -48,7 +48,7 @@ export const MentionExtension = Mark.create<MentionOptions>({
       entityName: {
         default: null,
         parseHTML: element => element.getAttribute('data-entity-name'),
-        renderHTML: attributes => {
+        renderHTML: (attributes: Record<string, string>) => {
           return {
             'data-entity-name': attributes.entityName,
           };

@@ -15,10 +15,12 @@ const DEFAULT_CONFIG: LLMConfig = {
     openrouter: {
       baseURL: 'https://openrouter.ai/api/v1',
       apiKey: '',
+      defaultModel: 'google/gemini-2.0-flash-lite-preview-02-05:free',
     },
     kilo: {
       baseURL: 'https://api.kilo.ai/api/gateway',
       apiKey: '',
+      defaultModel: 'meta-llama/llama-3.1-8b-instruct',
     },
   },
 };
@@ -27,10 +29,10 @@ export function loadConfig(): LLMConfig {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      return { ...DEFAULT_CONFIG, ...JSON.parse(stored) };
+      return { ...DEFAULT_CONFIG, ...JSON.parse(stored) as Partial<LLMConfig> };
     }
   } catch (e) {
-    throw new Error(`Failed to parse LLM config: ${e instanceof Error ? e.message : String(e)}`);
+    console.warn('Failed to parse stored LLM config, falling back to defaults', e);
   }
   return { ...DEFAULT_CONFIG };
 }
@@ -64,6 +66,11 @@ export function getProvider(id: string, config?: Partial<LLMProviderConfig>): LL
     default:
       throw new Error(`Unknown provider: ${id}`);
   }
+}
+
+export function maskApiKey(key: string): string {
+  if (!key || key.length < 8) return key ? `...${key.slice(-4)}` : '';
+  return `...${key.slice(-4)}`;
 }
 
 export { OpenRouterProvider, KiloGatewayProvider };

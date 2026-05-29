@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import MindElixir, { type MindElixirData, type MindElixirInstance } from 'mind-elixir';
-import { Entity, Link } from '../../lib/validation';
+import type { Entity, Link } from '../../lib/validation';
 import { repository } from '../../db/repository';
 import { logger } from '../../lib/logger';
 import { upsertToSearchIndex } from '../../lib/search';
 import { perf } from '../../lib/perf';
-import { ChevronDown, Layers, Filter, Info, ChevronRight } from 'lucide-react';
+import { ChevronDown, Layers, Filter, Info, ChevronRight, Plus, GitBranch, Pencil, Trash2, Image } from 'lucide-react';
 
 const COLLAPSED_BY_DEFAULT_THRESHOLD = 20;
 const EXPENSIVE_RECALC_THRESHOLD = 50;
@@ -16,10 +16,6 @@ interface Props {
   entities: Entity[];
   links: Link[];
   onEntityClick?: (entityId: string) => void;
-}
-
-interface Bus {
-  addListener: (event: string, handler: (node: { id: string }) => void) => void;
 }
 
 function buildTree(
@@ -47,6 +43,25 @@ function buildTree(
   };
 }
 
+function addAriaToNodes(container: HTMLElement): void {
+  const topics = container.querySelectorAll('me-tpc');
+  topics.forEach(tpc => {
+    const parent = tpc.closest('me-parent');
+    if (parent && !parent.hasAttribute('role')) {
+      parent.setAttribute('role', 'treeitem');
+      parent.setAttribute('aria-label', tpc.textContent?.trim() || 'Mind map node');
+    }
+  });
+}
+
+function addAriaAttributesToContainer(container: HTMLElement): void {
+  container.setAttribute('role', 'tree');
+  addAriaToNodes(container);
+  const nodeObserver = new MutationObserver(() => { addAriaToNodes(container); });
+  nodeObserver.observe(container, { childList: true, subtree: true });
+  setTimeout(() => { nodeObserver.disconnect(); }, 2000);
+}
+
 const MindMapView: React.FC<Props> = ({
   rootEntity: propsRootEntity,
   relatedEntities: _relatedEntities,
@@ -55,12 +70,14 @@ const MindMapView: React.FC<Props> = ({
   onEntityClick
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mindInstance = useRef<{ init: (data: { nodeData: MindElixirData['nodeData'] }) => void; bus: Bus } | null>(null);
+  const mindInstance = useRef<MindElixirInstance | null>(null);
   const treeDataRef = useRef<string>('');
   const [rootId, setRootId] = useState<string>(propsRootEntity.id || '');
   const [maxDepth, setMaxDepth] = useState(2);
   const [relationFilter, setRelationFilter] = useState('all');
   const [collapsedByDefault, setCollapsedByDefault] = useState(entities.length > COLLAPSED_BY_DEFAULT_THRESHOLD);
+  const [selectedNodeName, setSelectedNodeName] = useState<string | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   const rootEntity = useMemo(() =>
     entities.find(e => e.id === rootId) || propsRootEntity,
@@ -93,25 +110,33 @@ const MindMapView: React.FC<Props> = ({
     const options = {
       el: containerRef.current,
       direction: 2,
-      draggable: true,
+      editable: true,
       contextMenu: !isLargeMap,
       toolBar: !isLargeMap,
       nodeMenu: true,
       keypress: true,
     };
 
-    const instance: MindElixirInstance = new (MindElixir as new (options: Record<string, unknown>) => MindElixirInstance)(options);
+    const MindElixirCtor = MindElixir as new (options: Record<string, unknown>) => MindElixirInstance;
+    const instance: MindElixirInstance = new MindElixirCtor(options);
     mindInstance.current = instance;
     instance.init({
       nodeData: treeData
     });
     perf.measure('mindmap-init', 'mindmap-mount');
 
-    mindInstance.current.bus.addListener('selectNode', (node) => {
-      if (node.id && onEntityClick) {
-        onEntityClick(node.id);
+    mindInstance.current.bus.addListener('selectNode', (node: { id?: string }) => {
+      const nodeId = node.id || null;
+      setSelectedNodeId(nodeId);
+      const label = nodeId ? (entities.find(e => e.id === nodeId)?.name || null) : null;
+      setSelectedNodeName(label);
+      if (nodeId && onEntityClick) {
+        onEntityClick(nodeId);
       }
     });
+
+    // Add ARIA attributes to Mind Elixir nodes
+    addAriaAttributesToContainer(currentContainer);
 
     // Wire MindElixir operations to repository
     const bus = mindInstance.current.bus;
@@ -122,6 +147,8 @@ const MindMapView: React.FC<Props> = ({
         if (obj?.topic) {
           void (async () => {
             try {
+              const parentObj = obj.parent as Record<string, unknown> | undefined;
+              const parentId = parentObj?.id as string | undefined;
               const newEntity = await repository.createEntity({
                 name: obj.topic as string,
                 type: 'note',
@@ -129,7 +156,18 @@ const MindMapView: React.FC<Props> = ({
                 metadata: {},
               });
               logger.info('Created entity from mind map child', { id: newEntity.id, name: obj.topic });
-              if (rootId && newEntity.id) {
+              const topicEl = mindInstance.current?.findEle(obj.id as string);
+              if (topicEl && newEntity.id) {
+                topicEl.nodeObj.id = newEntity.id;
+              }
+              const validParent = parentId && /^[0-9a-f-]{36}$/i.test(parentId);
+              if (validParent && newEntity.id) {
+                await repository.createLink({
+                  source_id: parentId,
+                  target_id: newEntity.id,
+                  relation: 'hierarchy',
+                });
+              } else if (!validParent && rootId && newEntity.id) {
                 await repository.createLink({
                   source_id: rootId,
                   target_id: newEntity.id,
@@ -183,11 +221,57 @@ const MindMapView: React.FC<Props> = ({
         if (currentContainer) currentContainer.replaceChildren();
       }
     };
-  }, [treeData, onEntityClick, isLargeMap, rootId]);
+  }, [treeData, onEntityClick, isLargeMap, rootId, entities]);
 
   const handleResetRoot = useCallback(() => {
     setRootId(propsRootEntity.id || '');
   }, [propsRootEntity.id]);
+
+  const handleAddChild = useCallback(() => {
+    if (mindInstance.current) {
+      void mindInstance.current.addChild();
+    }
+  }, []);
+
+  const handleAddSibling = useCallback(() => {
+    if (mindInstance.current && selectedNodeId) {
+      void mindInstance.current.insertSibling('after');
+    }
+  }, [selectedNodeId]);
+
+  const handleRename = useCallback(() => {
+    if (mindInstance.current) {
+      void mindInstance.current.beginEdit();
+    }
+  }, []);
+
+  const handleDelete = useCallback(() => {
+    if (mindInstance.current && selectedNodeId) {
+      const topic = mindInstance.current.findEle(selectedNodeId);
+      if (topic) {
+        void mindInstance.current.removeNodes([topic]);
+      }
+    }
+  }, [selectedNodeId]);
+
+  const handleExportPng = useCallback(async () => {
+    if (mindInstance.current) {
+      try {
+        const blob = await mindInstance.current.exportPng();
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.download = `mindmap-${Date.now()}.png`;
+          a.href = url;
+          a.click();
+          URL.revokeObjectURL(url);
+          logger.info('Mind map exported as PNG');
+        }
+      } catch (err) {
+        logger.error('Failed to export mind map as PNG', err);
+      }
+    }
+  }, []);
 
   return (
     <div className="graph-container">
@@ -246,6 +330,58 @@ const MindMapView: React.FC<Props> = ({
           <ChevronRight size={14} />
           {collapsedByDefault ? 'Expand' : 'Compact'}
         </button>
+
+        <span style={{ width: '1px', height: '20px', background: 'var(--border-default)', margin: '0 4px' }} />
+
+        <button
+          onClick={handleAddChild}
+          className="filter-chip"
+          disabled={!mindInstance.current}
+          title="Add child node"
+          aria-label="Add child node"
+        >
+          <Plus size={14} /> Add Child
+        </button>
+        <button
+          onClick={handleAddSibling}
+          className="filter-chip"
+          disabled={!selectedNodeId}
+          title="Add sibling node"
+          aria-label="Add sibling node"
+        >
+          <GitBranch size={14} /> Add Sibling
+        </button>
+        <button
+          onClick={handleRename}
+          className="filter-chip"
+          disabled={!selectedNodeId}
+          title="Rename selected node"
+          aria-label="Rename selected node"
+        >
+          <Pencil size={14} /> Rename
+        </button>
+        <button
+          onClick={handleDelete}
+          className="filter-chip"
+          disabled={!selectedNodeId}
+          title="Delete selected node"
+          aria-label="Delete selected node"
+        >
+          <Trash2 size={14} /> Delete
+        </button>
+
+        <span style={{ width: '1px', height: '20px', background: 'var(--border-default)', margin: '0 4px' }} />
+
+        <button
+          onClick={() => { void handleExportPng(); }}
+          className="filter-chip"
+          disabled={!mindInstance.current}
+          title="Export as PNG"
+          aria-label="Export mind map as PNG"
+        >
+          <Image size={14} /> Export PNG
+        </button>
+
         <div className="layout-toggle" style={{ display: 'flex', gap: '4px', marginLeft: 'auto' }}>
           <span style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
             Tab: Add Child | F2: Rename | Del: Delete
@@ -256,9 +392,9 @@ const MindMapView: React.FC<Props> = ({
       <div className="viz-container" style={{ flex: 1, minHeight: '600px' }}>
         <div ref={containerRef} className="viz-canvas" />
 
-        <div className="sr-only">
+        <div className="sr-only" aria-live="polite">
           <h4>Mind Map Summary</h4>
-          <p>Rooted at {rootEntity.name}. Depth: {maxDepth}.</p>
+          <p>Rooted at {rootEntity.name}. Depth: {maxDepth}.{selectedNodeName ? ` Selected: ${selectedNodeName}.` : ''}</p>
           <p>This visualization shows a hierarchical view of entities based on their relationships.</p>
         </div>
       </div>

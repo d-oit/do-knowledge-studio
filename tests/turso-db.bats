@@ -8,7 +8,7 @@
 
 @test "turso-db skill metadata is valid" {
   grep "name: turso-db" .agents/skills/turso-db/SKILL.md
-  grep "version: 0.5.3" .agents/skills/turso-db/SKILL.md
+  grep "version: 0.6.1" .agents/skills/turso-db/SKILL.md
 }
 
 @test "turso-db is registered in skills README" {

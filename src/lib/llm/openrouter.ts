@@ -1,4 +1,4 @@
-import type { LLMProvider, LLMRequest, LLMResponse, LLMStreamChunk, LLMProviderConfig } from './types';
+import type { LLMProvider, LLMRequest, LLMResponse, LLMStreamChunk, LLMProviderConfig, OpenAIChatResponse, OpenAIErrorResponse } from './types';
 
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 
@@ -32,11 +32,11 @@ export class OpenRouterProvider implements LLMProvider {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
+      const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } })) as OpenAIErrorResponse;
       throw new Error(`OpenRouter error: ${error.error?.message || response.statusText}`);
     }
 
-    const data: { choices: Array<{ message?: { content?: string } }>; model?: string; usage?: { prompt_tokens: number; completion_tokens: number } } = await response.json();
+    const data = await response.json() as OpenAIChatResponse;
     return {
       content: data.choices[0]?.message?.content || '',
       model: data.model || request.model,
@@ -61,7 +61,7 @@ export class OpenRouterProvider implements LLMProvider {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
+      const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } })) as OpenAIErrorResponse;
       throw new Error(`OpenRouter error: ${error.error?.message || response.statusText}`);
     }
 
@@ -70,6 +70,7 @@ export class OpenRouterProvider implements LLMProvider {
 
     const decoder = new TextDecoder();
     let buffer = '';
+    let streamUsage: { inputTokens: number; outputTokens: number } | undefined;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -83,12 +84,18 @@ export class OpenRouterProvider implements LLMProvider {
         if (!line.startsWith('data: ')) continue;
         const data = line.slice(6);
         if (data === '[DONE]') {
-          yield { content: '', done: true };
+          yield { content: '', done: true, usage: streamUsage };
           return;
         }
 
         try {
-          const parsed = JSON.parse(data);
+          const parsed = JSON.parse(data) as OpenAIChatResponse;
+          if (parsed.usage) {
+            streamUsage = {
+              inputTokens: parsed.usage.prompt_tokens,
+              outputTokens: parsed.usage.completion_tokens,
+            };
+          }
           const content = parsed.choices?.[0]?.delta?.content || '';
           if (content) {
             yield { content, done: false };

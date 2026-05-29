@@ -65,7 +65,7 @@ describe('ConnectionPool Concurrency & Queuing', () => {
     const poolState = pool as unknown as { workers: { worker: MockWorker }[] };
     const workerEntry = poolState.workers[0];
     const worker = workerEntry.worker;
-    const originalPostMessage = worker.postMessage;
+    const originalPostMessage = worker.postMessage.bind(worker);
     worker.postMessage = function(message: { id: string; type: string; payload: unknown }) {
         setTimeout(() => {
             if (this.onmessage) {
