@@ -28,6 +28,7 @@ FILES_TO_UPDATE=(
     "README.md"
     "agents-docs/MIGRATION.md"
     "package.json"
+    "cli/index.ts"
 )
 
 UPDATED=0

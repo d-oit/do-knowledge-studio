@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 import Database from 'better-sqlite3';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -69,7 +68,11 @@ export const initDb = (): Promise<SQLiteDB> => {
           return Promise.resolve(result);
         }
 
-        bind ? stmt.run(...bind) : stmt.run();
+        if (bind) {
+          stmt.run(...bind);
+        } else {
+          stmt.run();
+        }
         return Promise.resolve([]);
       },
 

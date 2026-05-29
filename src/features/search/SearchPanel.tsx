@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { progressiveSearch, initEmbeddings, type SearchResult } from '../../lib/search';
-import { type RankedResult } from '../../db/repository';
+import { progressiveSearch, initEmbeddings, type RankedResult, type SearchResult, type ProgressiveSearchCallback } from '../../lib/search';
 import { logger } from '../../lib/logger';
 import { perf } from '../../lib/perf';
 import { Search, X, Filter, Plus, Sparkles } from 'lucide-react';
@@ -145,43 +144,47 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
     const controller = new AbortController();
     abortRef.current = controller;
 
-    const timeoutId = setTimeout(async () => {
-      setIsSearching(true);
-      setSearchStages(new Set());
-      perf.mark('search-query-start');
+    const timeoutId = setTimeout(() => {
+      void (async () => {
+        setIsSearching(true);
+        setSearchStages(new Set());
+        perf.mark('search-query-start');
 
-      const typeFilter = FILTER_MAP[activeFilter];
-      const accumulated = new Map<string, RankedResult>();
-      let firstBatch = true;
+        const typeFilter = FILTER_MAP[activeFilter];
+        const accumulated = new Map<string, RankedResult>();
+        let firstBatch = true;
 
-      // biome-ignore lint/suspicious/noNonSerializable: callback is not serializable but that's fine
-      const onStage = (stageResults: RankedResult[], stage: 'exact' | 'semantic' | 'related') => {
-        if (controller.signal.aborted) return;
+        const onStage: ProgressiveSearchCallback = (stageResults, stage) => {
+          if (controller.signal.aborted) return;
 
-        for (const r of stageResults) {
-          accumulated.set(r.id, r);
+          for (const r of stageResults) {
+            accumulated.set(r.id, r);
+          }
+
+          setSearchStages(prev => new Set(prev).add(stage));
+          const flatResults = Array.from(accumulated.values()).map(r => ({
+            id: r.id,
+            title: r.name,
+            type: r.type,
+            content: r.excerpt,
+            stage: r.stage || stage,
+          }));
+          setResults(flatResults);
+
+          if (firstBatch) {
+            perf.measure('search-first-result', 'search-query-start');
+            firstBatch = false;
+          }
+          setIsSearching(false);
+        };
+
+        try {
+          await progressiveSearch(query, onStage, { type: typeFilter, signal: controller.signal });
+        } catch (err) {
+          logger.error('Search failed', err);
+          setIsSearching(false);
         }
-
-        setSearchStages(prev => new Set(prev).add(stage));
-        const flatResults: SearchResult[] = Array.from(accumulated.values()).map(r => ({
-          ...r,
-          stage: r.stage || stage,
-        }));
-        setResults(flatResults);
-
-        if (firstBatch) {
-          perf.measure('search-first-result', 'search-query-start');
-          firstBatch = false;
-        }
-        setIsSearching(false);
-      };
-
-      try {
-        await progressiveSearch(query, onStage, { type: typeFilter, limit: 50, signal: controller.signal });
-      } catch (err) {
-        logger.error('Search failed', err);
-        setIsSearching(false);
-      }
+      })();
     }, 300);
 
     return () => {
@@ -272,11 +275,13 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
         </button>
         <button
           className={`filter-chip ${useSemantic ? 'active' : ''}`}
-          onClick={async () => {
-            if (!useSemantic) {
-              setUseSemantic(true);
-              try { await initEmbeddings(); } catch { /* embeddings are best-effort */ }
-            }
+          onClick={() => {
+            void (async () => {
+              if (!useSemantic) {
+                setUseSemantic(true);
+                try { await initEmbeddings(); } catch { /* embeddings are best-effort */ }
+              }
+            })();
           }}
           aria-pressed={useSemantic}
         >

@@ -171,53 +171,60 @@ Do not finish with failing lint, typecheck, tests, build, or quality gate output
 - Load only the skills needed for the task to limit context usage.
 - Prefer existing skills and existing `agents-docs/` guidance before inventing a new workflow.
 
-## Learnings
+### Available Skills
 
-- Skim existing learnings before non-trivial work.
-- After a successful task, update the nearest relevant `AGENTS.md` if the task produced a durable lesson.
-- Record only durable lessons: hidden file relationships, surprising runtime behavior, undocumented commands, fragile config, or files that must change together.
-- Merge duplicates, shorten wording, and remove stale guidance when updating learnings.
-- Scope learnings correctly:
-  - project-wide -> root `AGENTS.md`
-  - script-specific -> `scripts/AGENTS.md`
-  - skill-specific -> nearest skill-level `AGENTS.md`
-- Keep verbose historical detail out of the root file.
-
-## Research / Analysis
-
-For complex multi-source analysis or parallel web research, use:
-
-```bash
-./scripts/swarm-worktree-web-research.sh "Topic"
-```
-
-Optional cleanup profile:
-
-```bash
-./scripts/swarm-worktree-web-research.sh --profile balanced --cleanup "Topic"
-```
-
-Any persistent outputs from research belong in `plans/`, not in the repository root.
-
-## Context
-
-Read these only when relevant:
-
-- `agents-docs/HARNESS.md` - harness engineering and context budgeting
-- `agents-docs/WORKFLOW.md` - detailed workflow procedures
-- `agents-docs/AVAILABLE_SKILLS.md` - skill catalog and usage
-- `agents-docs/SUB-AGENTS.md` - delegation patterns
-- `agents-docs/HOOKS.md` - hook behavior
-- `agents-docs/CONTEXT.md` - context-loading and back-pressure
-- `agents-docs/CONFIG.md` - repository constants and configuration
-- `agents-docs/MIGRATION.md` - migration guidance
-
-## Completion Checklist
-
-Before marking a task done:
-
-- Plan exists or was updated in `plans/` for non-trivial work.
-- ADR exists or was updated in `plans/ADRs/` when architecture changed.
-- No temp, scratch, analysis, or one-off script files were added to the repository root.
-- Lint, typecheck, tests, and build pass.
-- Relevant docs or learnings were updated and compacted if the task produced durable new guidance.
+| Skill | Description | Category |
+|-------|-------------|----------|
+| `accessibility-auditor` | Audit web applications for WCAG 2.2 compliance, screen reade | Security |
+| `agent-browser` | Browser automation CLI for AI agents. Use when the user need | workflow |
+| `agent-coordination` | Coordinate multiple agents for software development across a | Coordination |
+| `agents-md` | Create AGENTS.md files with production-ready best practices. | General |
+| `anti-ai-slop` | > | General |
+| `api-design-first` | Design and document RESTful APIs using design-first principl | API Development |
+| `architecture-diagram` | Generate or update a project architecture SVG diagram by sca | General |
+| `atomic-commit` | Atomic git workflow - validates, commits, pushes, creates PR | General |
+| `cicd-pipeline` | Design and implement CI/CD pipelines with GitHub Actions, Gi | DevOps |
+| `cloudflare-worker-api` | > | workflow |
+| `codacy` | Use Codacy static analysis CLIs to query PR analysis, triage | Quality |
+| `code-quality` | Review and improve code quality across any programming langu | Quality |
+| `code-review-assistant` | Automated code review with PR analysis, change summaries, an | General |
+| `codeberg-api` | >- | API Development |
+| `database-devops` | Database design, migration, and DevOps automation with safet | DevOps |
+| `database-schema-migrations` | > | workflow |
+| `do-web-doc-resolver` | Python resolver for URLs and queries into compact, LLM-ready | Documentation |
+| `docs-hook` | Lightweight git hook integration for updating agents-docs wi | Documentation |
+| `document-rendering-and-locators` | > | workflow |
+| `dogfood` | Systematically explore and test a web application to find bu | quality |
+| `git-github-workflow` | Unified atomic git workflow with GitHub integration - commit | General |
+| `github-readme` | Create human-focused GitHub README.md files with 2026 best p | Documentation |
+| `github-workflow` | Complete GitHub workflow automation - push, create branch/PR | General |
+| `goap-agent` | Invoke for complex multi-step tasks requiring intelligent pl | Coordination |
+| `intent-classifier` | Classify user intents and route to appropriate skills, comma | Coordination |
+| `iterative-refinement` | Execute iterative refinement workflows with validation loops | General |
+| `jules` | > | General |
+| `jules-implement` | > | General |
+| `learn` | Extract non-obvious session learnings into scoped AGENTS.md  | knowledge-management |
+| `local-chat-policy` | Guidelines for ensuring chat functionality prioritizes local | General |
+| `memory-context` | Retrieve semantically relevant past learnings and analysis o | General |
+| `migration-refactoring` | Automate complex code migrations and refactorings with safet | Migration |
+| `parallel-execution` | Execute multiple independent tasks simultaneously using para | Coordination |
+| `privacy-first` | > | Security |
+| `pwa-offline-sync` | > | workflow |
+| `reader-ui-ux` | > | workflow |
+| `secure-invite-and-access` | > | workflow |
+| `security-code-auditor` | Perform security audits on code to identify vulnerabilities, | Security |
+| `self-fix-loop` | Self-learning fix loop - commit, push, monitor CI, auto-fix  | General |
+| `shell-script-quality` | Lint and test shell scripts using ShellCheck and BATS. Use w | Quality |
+| `skill-creator` | Create new skills, modify and improve existing skills, and m | Meta |
+| `skill-evaluator` | Reusable skill for evaluating other skills with structure ch | Meta |
+| `stitch-design` | > | General |
+| `task-decomposition` | Break down complex tasks into atomic, actionable goals with  | Coordination |
+| `test-runner` | Execute tests, analyze results, and diagnose failures across | Quality |
+| `testdata-builders` | > | quality |
+| `testing-strategy` | Design comprehensive testing strategies with modern techniqu | Quality |
+| `triz-analysis` | Run a systematic TRIZ contradiction audit against a codebase | analysis |
+| `triz-solver` | Systematic problem-solving using TRIZ (Theory of Inventive P | innovation-problem-solving |
+| `turso-db` | Use this skill for Turso (LibSQL/Limbo) database development | DevOps |
+| `ui-ux-optimize` | > | UI/UX |
+| `validation-checklist` | Maintain high data quality and schema adherence within the k | Quality |
+| `web-search-researcher` | Research topics using web search to find accurate, current i | Research |

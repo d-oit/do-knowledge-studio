@@ -78,18 +78,18 @@ async function getAppliedMigrations(db: SQLiteDB): Promise<Map<number, Migration
 export async function loadMigrations(): Promise<Migration[]> {
   const hasNode = typeof process !== 'undefined' && typeof (process as { versions?: Record<string, string> }).versions?.node === 'string';
   if (hasNode) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+     
     const fs = await import('fs');
     const readFileSync = (p: string, enc: string): string => (fs as { readFileSync: (a: string, b: string) => string }).readFileSync(p, enc);
     const readdirSync = (p: string): string[] => (fs as { readdirSync: (a: string) => string[] }).readdirSync(p);
     const existsSync = (p: string): boolean => (fs as { existsSync: (a: string) => boolean }).existsSync(p);
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+     
     const pathMod = await import('path');
     const resolve = (...p: string[]): string => (pathMod as { resolve: (...a: string[]) => string }).resolve(...p);
     const join = (...p: string[]): string => (pathMod as { join: (...a: string[]) => string }).join(...p);
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+     
     const cwd = (process as { cwd: () => string }).cwd();
     const migrationsDir = resolve(cwd, 'public', 'db', 'migrations');
     const migrations: Migration[] = [];

@@ -2,8 +2,7 @@ import React, { useState, useRef } from 'react';
 import { searchKnowledge } from '../../lib/search';
 import { type RankedResult } from '../../db/repository';
 import { logger } from '../../lib/logger';
-import { Search, Send, ChevronDown, ChevronUp, Database, ShieldCheck, Plus } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Search, Send, ChevronDown, ChevronUp, Database, ShieldCheck } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -11,8 +10,11 @@ interface Message {
   citations?: RankedResult[];
 }
 
-const Chat: React.FC = () => {
-  const navigate = useNavigate();
+interface ChatProps {
+  onCreateEntity?: () => void;
+}
+
+const Chat: React.FC<ChatProps> = ({ onCreateEntity }) => {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -80,8 +82,8 @@ const Chat: React.FC = () => {
             <div className="suggested-actions">
               <button onClick={() => setInput('Summarize my recent projects')}>Summarize recent projects</button>
               <button onClick={() => setInput('Who are the key people?')}>Key people</button>
-              <button onClick={() => navigate('/editor')}>
-                <Plus size={16} /> Create new entity
+              <button onClick={onCreateEntity}>
+                Create new entity
               </button>
             </div>
           </div>

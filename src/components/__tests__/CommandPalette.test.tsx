@@ -65,8 +65,9 @@ describe('CommandPalette', () => {
         onAction={mockOnAction}
       />
     );
-    const overlay = screen.getByRole('button', { name: /Close command palette/i });
-    fireEvent.click(overlay);
+    const overlay = document.querySelector('.command-palette-overlay');
+    expect(overlay).not.toBeNull();
+    fireEvent.click(overlay!);
     expect(mockOnClose).toHaveBeenCalled();
   });
 
@@ -104,7 +105,7 @@ describe('CommandPalette', () => {
       />
     );
 
-    const commands = screen.getAllByRole('button').filter(el => el.className.includes('command-item'));
+    const commands = screen.getAllByRole('option');
 
     // Initially first item is selected
     expect(commands[0].className).toContain('selected');
