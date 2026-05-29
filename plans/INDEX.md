@@ -1,6 +1,6 @@
 # Plans Index — do-knowledge-studio
 
-**Generated**: 2026-05-26  
+**Generated**: 2026-05-27  
 **Source**: Multi-agent swarm analysis + GitHub issue audit (#168–#199)  
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
@@ -61,9 +61,16 @@ Wave 4 (P3) ──→ ✅ MERGED
 |----------|-------|-------|-------|
 | Architecture | 85/100 | ✅ Stable | Validated by github-template-ai-agents |
 | Implementation Completeness | 85/100 | ⬆️ Up from 60 | All 8 plans implemented and merged |
-| Code Quality | 75/100 | ⬆️ Up from 65 | Zero `as any`, AppError, ErrorBoundaries, 212 tests |
+| Code Quality | 85/100 | ⬆️ Up from 75 | Zero ESLint errors, typed workers, vi.mocked tests |
 | Documentation | 85/100 | ⬆️ Up from 78 | GOAP.md, 5 new ADRs, 8 plans, updated INDEX |
 | Security | 85/100 | ⬆️ Up from 40 | XSS fixed, API keys isolated, security tests |
+
+### Fix Plans (Pre-existing Issues)
+
+| Plan | Description | Status | PR |
+|------|-------------|--------|-----|
+| [002-e2e-prod-build-tdz.md](002-e2e-prod-build-tdz.md) | Production build TDZ — circular dep, forward const ref, schema ordering | ✅ RESOLVED | #209 |
+| [003-eslint-pre-existing-cleanup.md](003-eslint-pre-existing-cleanup.md) | 141 ESLint errors (mechanical, type, a11y, hooks) | ✅ RESOLVED | #209 |
 
 ## Key Constraints
 1. **AGENTS.md is single source of truth** — Do NOT modify GEMINI.md or QWEN.md
@@ -83,6 +90,8 @@ Wave 4 (P3) ──→ ✅ MERGED
 | 005 | Error Handling Architecture | ✅ Implemented | AppError class, ErrorBoundaries |
 | 006 | Shared Export Core Deduplication | ✅ Implemented | ExportCore module |
 | 007 | do-web-doc-resolver Integration | 📝 Proposed | Future work |
+| 008 | Rolldown Circular Dependency Resolution | ✅ Implemented | #209 — core.ts extraction, const ordering |
+| 009 | Staged ESLint Rule Enforcement | ✅ Implemented | #209 — typed workers, void-wrap, vi.mocked |
 
 ## Verification Commands
 ```bash

@@ -9,6 +9,13 @@ const DEFAULT_TIMEOUT_MS = 30000; // 30 seconds default timeout
  * parallel processing while keeping the main thread responsive.
  */
 
+interface WorkerResponse {
+  id: string;
+  success: boolean;
+  data?: unknown;
+  error?: string;
+}
+
 interface PoolRequest {
   id: string;
   type: 'init' | 'exec' | 'close';
@@ -190,13 +197,13 @@ export class ConnectionPool {
       }, this.timeoutMs);
 
       const handler = (event: MessageEvent) => {
-        if (event.data.id === id) {
+        if ((event.data as WorkerResponse).id === id) {
           clearTimeout(timeoutId);
           worker.removeEventListener('message', handler);
-          if (event.data.success) {
-            resolve(event.data.data);
+          if ((event.data as WorkerResponse).success) {
+            resolve((event.data as WorkerResponse).data);
           } else {
-            reject(new Error(event.data.error));
+            reject(new Error((event.data as WorkerResponse).error));
           }
         }
       };

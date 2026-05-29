@@ -4,3 +4,24 @@ export { KiloGatewayProvider } from './kilo';
 export { loadConfig, saveConfig, createProvider, getProvider, type LLMConfig } from './config';
 export { OPENROUTER_FREE_MODELS } from './openrouter';
 export { KILO_FREE_MODELS } from './kilo';
+
+export const PROVIDER_MODELS: Record<string, Record<string, string>> = {
+  openrouter: {
+    'Gemini 2.0 Flash Lite': 'google/gemini-2.0-flash-lite-preview-02-05:free',
+    'OpenRouter Free': 'openrouter/free',
+    'Nemotron 3 Super': 'nvidia/nemotron-3-super:free',
+    'Trinity Large': 'arcee-ai/trinity-large-preview:free',
+    'GLM 4.5 Air': 'z-ai/glm-4.5-air:free',
+    'GPT-OSS 120B': 'openai/gpt-oss-120b:free',
+    'Qwen3 Coder': 'qwen/qwen3-coder-480b-a35b:free',
+    'LLaMA 3.3 70B': 'meta-llama/llama-3.3-70b-instruct:free',
+  },
+  kilo: {
+    'Kilo Auto': 'kilo-auto/free',
+    'DoLa Seed 2.0 Pro': 'bytedance-seed/dola-seed-2.0-pro:free',
+    'Grok Code Fast': 'x-ai/grok-code-fast-1:optimized:free',
+    'Nemotron 3 Super': 'nvidia/nemotron-3-super-120b-a12b:free',
+    'Trinity Large': 'arcee-ai/trinity-large-thinking:free',
+    'OpenRouter Free': 'openrouter/free',
+  },
+};

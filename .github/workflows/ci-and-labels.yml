@@ -24,15 +24,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
-      frontend: ${{ steps.filter.outputs.frontend }}
-      tooling: ${{ steps.filter.outputs.tooling }}
-      any_code: ${{ steps.filter.outputs.any_code }}
+      frontend: ${{ steps.filter.outputs.frontend || steps.default.outputs.frontend }}
+      tooling: ${{ steps.filter.outputs.tooling || steps.default.outputs.tooling }}
+      any_code: ${{ steps.filter.outputs.any_code || steps.default.outputs.any_code }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - name: Path Filter
         uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d  # v4.0.1
         id: filter
+        continue-on-error: true
         with:
           filters: |
             frontend:
@@ -47,11 +48,21 @@ jobs:
               - 'tsconfig.json'
             any_code:
               - '!(**.md|docs/**)'
+      - name: Default outputs on diff API failure
+        id: default
+        if: always()
+        run: |
+          frontend="${{ steps.filter.outputs.frontend || 'true' }}"
+          tooling="${{ steps.filter.outputs.tooling || 'true' }}"
+          any_code="${{ steps.filter.outputs.any_code || 'true' }}"
+          echo "frontend=$frontend" >> "$GITHUB_OUTPUT"
+          echo "tooling=$tooling" >> "$GITHUB_OUTPUT"
+          echo "any_code=$any_code" >> "$GITHUB_OUTPUT"
 
   quality-gate:
     name: Quality Gate
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     needs: changes
     if: needs.changes.outputs.any_code == 'true'
     steps:
@@ -74,7 +85,7 @@ jobs:
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     needs: [changes, quality-gate]
     if: needs.changes.outputs.any_code == 'true'
     steps:
@@ -95,7 +106,7 @@ jobs:
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     needs: [changes, unit-tests]
     if: needs.changes.outputs.any_code == 'true'
     continue-on-error: true

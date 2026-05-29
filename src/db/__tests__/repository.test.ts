@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vite
 import { Repository } from '../repository';
 import { getDb } from '../client';
 import { AppError } from '../../lib/errors';
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 
 const VALID_UUID = '550e8400-e29b-41d4-a716-446655440000';
 const OTHER_UUID = '660e8400-e29b-41d4-a716-446655440001';

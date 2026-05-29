@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS entities (
     description TEXT,
     metadata TEXT, -- JSON string
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(name)
 );
 
 -- Claims: Assertions made about entities
@@ -15,9 +16,9 @@ CREATE TABLE IF NOT EXISTS claims (
     entity_id UUID NOT NULL,
     statement TEXT NOT NULL,
     evidence TEXT,
-    confidence REAL DEFAULT 1.0,
+    confidence REAL DEFAULT 1.0 CHECK (confidence >= 0 AND confidence <= 1),
     source TEXT,
-    verification_status TEXT DEFAULT 'unverified',
+    verification_status TEXT DEFAULT 'unverified' CHECK (verification_status IN ('unverified', 'verified', 'disputed')),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (entity_id) REFERENCES entities(id) ON DELETE CASCADE
@@ -62,6 +63,8 @@ CREATE INDEX IF NOT EXISTS idx_graph_snapshots_created_at ON graph_snapshots(cre
 CREATE INDEX IF NOT EXISTS idx_claims_entity_id ON claims(entity_id);
 CREATE INDEX IF NOT EXISTS idx_links_source_id ON links(source_id);
 CREATE INDEX IF NOT EXISTS idx_links_target_id ON links(target_id);
+CREATE INDEX IF NOT EXISTS idx_claims_verification_status ON claims(verification_status);
+CREATE INDEX IF NOT EXISTS idx_notes_entity_id ON notes(entity_id);
 
 -- FTS5 Virtual Tables for Search
 -- Uses detail=none (no positional info) for ~2x faster indexing/queries
@@ -91,6 +94,7 @@ CREATE TABLE IF NOT EXISTS web_cache (
     resolved_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     metadata TEXT -- JSON: { content_length, word_count, provider, quality_score }
 );
+CREATE INDEX IF NOT EXISTS idx_web_cache_resolved_at ON web_cache(resolved_at);
 
 -- Migration Tracking: Schema version for incremental migrations
 CREATE TABLE IF NOT EXISTS schema_version (

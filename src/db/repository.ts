@@ -73,7 +73,8 @@ export class Repository {
       });
       const rows = z.array(z.unknown()).parse(result);
       const parsed = this.parseMetadata(EntitySchema, rows[0]);
-      return { ...parsed, rowid: (rows[0]).rowid };
+      const row = rows[0] as Record<string, unknown>;
+      return { ...parsed, rowid: row.rowid as number };
     } catch (err) {
       logger.error('Failed to create entity', err);
       throw new AppError('Failed to create entity', 'DB_ERROR', err);
@@ -90,12 +91,27 @@ export class Repository {
     return this.db.transaction(statements);
   }
 
-  /** Get all entities, ordered by name. */
-  async getAllEntities(): Promise<Entity[]> {
+  /**
+   * Get entities, ordered by name.
+   * Supports optional cursor-based pagination via limit/offset.
+   * @param options - Optional limit and offset for pagination.
+   */
+  async getAllEntities(options?: { limit?: number; offset?: number }): Promise<Entity[]> {
     perf.mark('sqlite-query');
     try {
+      let sql = `SELECT * FROM entities ORDER BY name ASC`;
+      const bind: (string | number)[] = [];
+      if (options?.limit !== undefined) {
+        sql += ` LIMIT ?`;
+        bind.push(options.limit);
+      }
+      if (options?.offset !== undefined) {
+        sql += ` OFFSET ?`;
+        bind.push(options.offset);
+      }
       const results = await this.db.exec({
-        sql: `SELECT * FROM entities ORDER BY name ASC`,
+        sql,
+        bind: bind.length > 0 ? bind : undefined,
         returnValue: 'resultRows',
         rowMode: 'object',
       });
@@ -407,7 +423,10 @@ export class Repository {
         rowMode: 'object',
       });
       const rows = z.array(z.unknown()).parse(results);
-      return rows.map((r) => ({ ...this.parseMetadata(ClaimSchema, r), rowid: (r).rowid }));
+      return rows.map((r) => {
+        const row = r as Record<string, unknown>;
+        return { ...this.parseMetadata(ClaimSchema, r), rowid: row.rowid as number };
+      });
     } catch (err) {
       logger.error('Failed to fetch claims', err);
       throw new AppError('Failed to fetch claims', 'DB_ERROR', err);
@@ -463,6 +482,66 @@ export class Repository {
       acc[claim.entity_id].push(claim);
       return acc;
     }, {} as Record<string, Claim[]>);
+  }
+
+  /**
+   * Batch-load entities with their claims in a single query via LEFT JOIN.
+   * Eliminates N+1 round-trips when both entities and claims are needed.
+   * @returns Entities keyed by id, each with a claims array.
+   */
+  async getAllEntitiesWithClaims(): Promise<Map<string, { entity: Entity; claims: Claim[] }>> {
+    perf.mark('sqlite-query');
+    try {
+      const results = await this.db.exec({
+        sql: `SELECT e.*, c.id as c_id, c.entity_id as c_entity_id, c.statement as c_statement,
+                     c.evidence as c_evidence, c.confidence as c_confidence, c.source as c_source,
+                     c.verification_status as c_verification_status, c.created_at as c_created_at,
+                     c.updated_at as c_updated_at
+              FROM entities e
+              LEFT JOIN claims c ON e.id = c.entity_id
+              ORDER BY e.name ASC`,
+        returnValue: 'resultRows',
+        rowMode: 'object',
+      });
+      const rows = z.array(z.unknown()).parse(results);
+
+      const result = new Map<string, { entity: Entity; claims: Claim[] }>();
+      for (const row of rows) {
+        const r = row as Record<string, unknown>;
+        const entityId = String(r.id);
+
+        if (!result.has(entityId)) {
+          result.set(entityId, {
+            entity: this.parseMetadata(EntitySchema, row),
+            claims: [],
+          });
+        }
+
+        if (r.c_id !== null) {
+          const claimRow: Record<string, unknown> = {
+            id: r.c_id,
+            entity_id: r.c_entity_id,
+            statement: r.c_statement,
+            evidence: r.c_evidence,
+            confidence: r.c_confidence,
+            source: r.c_source,
+            verification_status: r.c_verification_status,
+            created_at: r.c_created_at,
+            updated_at: r.c_updated_at,
+          };
+          const entry = result.get(entityId);
+          if (entry) {
+            entry.claims.push(this.parseMetadata(ClaimSchema, claimRow));
+          }
+        }
+      }
+
+      perf.measure('sqlite-query-entities-claims', 'sqlite-query');
+      return result;
+    } catch (err) {
+      logger.error('Failed to batch-load entities with claims', err);
+      throw new AppError('Failed to batch-load entities with claims', 'DB_ERROR', err);
+    }
   }
 
   /**
@@ -646,12 +725,27 @@ export class Repository {
     }
   }
 
-  /** Get all links in the database. */
-  async getAllLinks(): Promise<Link[]> {
+  /**
+   * Get all links in the database.
+   * Supports optional cursor-based pagination via limit/offset.
+   * @param options - Optional limit and offset for pagination.
+   */
+  async getAllLinks(options?: { limit?: number; offset?: number }): Promise<Link[]> {
     perf.mark('sqlite-query');
     try {
+      let sql = `SELECT * FROM links`;
+      const bind: (string | number)[] = [];
+      if (options?.limit !== undefined) {
+        sql += ` LIMIT ?`;
+        bind.push(options.limit);
+      }
+      if (options?.offset !== undefined) {
+        sql += ` OFFSET ?`;
+        bind.push(options.offset);
+      }
       const results = await this.db.exec({
-        sql: `SELECT * FROM links`,
+        sql,
+        bind: bind.length > 0 ? bind : undefined,
         returnValue: 'resultRows',
         rowMode: 'object',
       });
@@ -719,7 +813,7 @@ export class Repository {
         url: String(r.url),
         content: String(r.content),
         format: String(r.format),
-        title: r.title ? String(r.title) : undefined,
+        title: typeof r.title === 'string' ? r.title : undefined,
         resolved_at: String(r.resolved_at),
       };
     } catch (err) {
@@ -840,7 +934,7 @@ export class Repository {
     }
   }
 
-  private parseMetadata<T extends z.ZodTypeAny>(schema: T, row: unknown): z.infer<T> {
+  private parseMetadata<T extends z.ZodType<unknown>>(schema: T, row: unknown): z.infer<T> {
     const r = { ...(row as Record<string, unknown>) };
     if (r && typeof r.metadata === 'string') {
       try {
