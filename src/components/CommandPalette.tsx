@@ -9,7 +9,8 @@ import {
   Map,
   Plus,
   Download,
-  Command
+  Command,
+  X
 } from 'lucide-react';
 import { searchKnowledge, SearchResult } from '../lib/search';
 import { logger } from '../lib/logger';
@@ -124,14 +125,21 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onView
     }
   };
 
+  const handleClear = () => {
+    setQuery('');
+    inputRef.current?.focus();
+  };
+
+  const activeId = selectedIndex < filteredCommands.length
+    ? `cmd-${filteredCommands[selectedIndex]?.id}`
+    : `res-${results[selectedIndex - filteredCommands.length]?.id}`;
+
   return (
     <div
       className="command-palette-overlay"
       onClick={handleOverlayClick}
       onKeyDown={e => e.key === 'Escape' && onClose()}
-      role="button"
-      tabIndex={0}
-      aria-label="Close command palette"
+      role="presentation"
     >
       <div
         className="command-palette-modal"
@@ -139,57 +147,78 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onView
         onClick={e => e.stopPropagation()}
       >
         <div className="command-palette-header">
-          <Search className="search-icon" size={20} />
+          <Search className="search-icon" size={20} aria-hidden="true" />
           <input
             ref={inputRef}
-            type="text"
+            type="search"
             placeholder="Search commands or knowledge..."
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={isOpen}
+            aria-haspopup="listbox"
+            aria-controls="palette-listbox"
+            aria-activedescendant={totalItems > 0 ? activeId : undefined}
           />
-          <div className="esc-hint">ESC</div>
+          {query && (
+            <button
+              className="input-clear-button"
+              onClick={handleClear}
+              aria-label="Clear search"
+              type="button"
+            >
+              <X size={16} />
+            </button>
+          )}
+          <div className="esc-hint" aria-hidden="true">ESC</div>
         </div>
 
-        <div className="command-palette-content">
+        <div
+          id="palette-listbox"
+          className="command-palette-content"
+          role="listbox"
+          aria-label="Search results"
+        >
           {isSearching && <SearchSkeleton />}
           {!isSearching && filteredCommands.length > 0 && (
-            <div className="command-section">
-              <div className="section-label">Commands</div>
+            <div className="command-section" role="group" aria-labelledby="section-commands">
+              <div id="section-commands" className="section-label">Commands</div>
               {filteredCommands.map((cmd, i) => (
                 <div
                   key={cmd.id}
+                  id={`cmd-${cmd.id}`}
                   className={`command-item ${selectedIndex === i ? 'selected' : ''}`}
                   onMouseEnter={() => setSelectedIndex(i)}
                   onClick={executeSelected}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={e => e.key === 'Enter' && executeSelected()}
+                  role="option"
+                  aria-selected={selectedIndex === i}
                 >
-                  <cmd.icon size={18} className="item-icon" />
+                  <cmd.icon size={18} className="item-icon" aria-hidden="true" />
                   <span className="item-label">{cmd.label}</span>
-                  {cmd.shortcut && <span className="item-shortcut">{cmd.shortcut}</span>}
+                  {cmd.shortcut && <span className="item-shortcut" aria-label={`Shortcut: ${cmd.shortcut}`}>{cmd.shortcut}</span>}
                 </div>
               ))}
             </div>
           )}
 
           {results.length > 0 && (
-            <div className="command-section">
-              <div className="section-label">Knowledge</div>
+            <div className="command-section" role="group" aria-labelledby="section-knowledge">
+              <div id="section-knowledge" className="section-label">Knowledge</div>
               {results.map((res, i) => {
                 const idx = i + filteredCommands.length;
                 return (
                   <div
                     key={res.id}
+                    id={`res-${res.id}`}
                     className={`command-item ${selectedIndex === idx ? 'selected' : ''}`}
                     onMouseEnter={() => setSelectedIndex(idx)}
                     onClick={executeSelected}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={e => e.key === 'Enter' && executeSelected()}
+                    role="option"
+                    aria-selected={selectedIndex === idx}
                   >
-                    <Layers size={18} className="item-icon" />
+                    <Layers size={18} className="item-icon" aria-hidden="true" />
                     <div className="item-details">
                       <span className="item-label">{res.title}</span>
                       <span className="item-sublabel">{res.type}</span>
@@ -201,7 +230,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onView
           )}
 
           {query && totalItems === 0 && (
-            <div className="palette-empty">
+            <div className="palette-empty" role="status">
               No matches found for &quot;{query}&quot;
             </div>
           )}
