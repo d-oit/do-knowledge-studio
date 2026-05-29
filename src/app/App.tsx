@@ -42,7 +42,7 @@ const Chat = lazy(preloadChat);
 const ExportPanel = lazy(preloadExport);
 const AIHarness = lazy(preloadAI);
 
-type View = 'editor' | 'graph' | 'mindmap' | 'chat' | 'export' | 'ai';
+type View = 'editor' | 'graph' | 'mindmap' | 'chat' | 'export' | 'ai' | 'library';
 
 const AppContent: React.FC = () => {
   const { dbReady, error } = useDb();
@@ -67,6 +67,7 @@ const AppContent: React.FC = () => {
       case 'export': void preloadExport(); break;
       case 'ai': void preloadAI(); break;
       case 'search': void preloadSearch(); break;
+      case 'library': void preloadEditor(); break;
     }
   }, []);
 
@@ -169,7 +170,7 @@ const AppContent: React.FC = () => {
 
         <main className="main-content">
           {!dbReady && <div className="loading-screen">Booting Knowledge Studio...</div>}
-          {dbReady && currentView === 'editor' && (
+          {dbReady && (currentView === 'editor' || currentView === 'library') && (
             <Suspense fallback={<EditorSkeleton />}>
               <ErrorBoundary featureName="Editor" onRetry={() => window.location.reload()}>
                 <Profiled id="Editor">
@@ -219,7 +220,7 @@ const AppContent: React.FC = () => {
           {dbReady && currentView === 'chat' && (
             <Suspense fallback={<AISkeleton />}>
               <ErrorBoundary featureName="Chat" onRetry={() => window.location.reload()}>
-                <Chat />
+                <Chat onCreateEntity={() => setCurrentView('editor')} />
               </ErrorBoundary>
             </Suspense>
           )}
