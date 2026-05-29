@@ -76,6 +76,18 @@ const AppContent: React.FC = () => {
     setCurrentView('editor');
   }, []);
 
+  const refreshData = useCallback(async () => {
+    if (!dbReady) return;
+    try {
+      const e = await repository.getAllEntities();
+      const l = await repository.getAllLinks();
+      setEntities(e);
+      setLinks(l);
+    } catch (err) {
+      logger.error('Data refresh failed', err);
+    }
+  }, [dbReady]);
+
   const handleEditComplete = useCallback(() => {
     setEditingEntityId(null);
     void refreshData();
@@ -89,18 +101,6 @@ const AppContent: React.FC = () => {
     }
     setIsSearchOpen(false);
   }, []);
-
-  const refreshData = useCallback(async () => {
-    if (!dbReady) return;
-    try {
-      const e = await repository.getAllEntities();
-      const l = await repository.getAllLinks();
-      setEntities(e);
-      setLinks(l);
-    } catch (err) {
-      logger.error('Data refresh failed', err);
-    }
-  }, [dbReady]);
 
   // Deferred startup: non-critical tasks pushed to idle callback
   useEffect(() => {

@@ -1,17 +1,17 @@
 import React, { useState, useRef } from 'react';
-import { searchKnowledge, RankedResult } from '../../lib/search';
+import { searchKnowledge } from '../../lib/search';
+import { type RankedResult } from '../../db/repository';
 import { logger } from '../../lib/logger';
-import { Search, Send, ChevronDown, ChevronUp, Database, ShieldCheck, Plus } from 'lucide-react';
-
-interface ChatProps {
-  onCreateEntity?: () => void;
-}
-
+import { Search, Send, ChevronDown, ChevronUp, Database, ShieldCheck } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
   citations?: RankedResult[];
+}
+
+interface ChatProps {
+  onCreateEntity?: () => void;
 }
 
 const Chat: React.FC<ChatProps> = ({ onCreateEntity }) => {
@@ -83,7 +83,7 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity }) => {
               <button onClick={() => setInput('Summarize my recent projects')}>Summarize recent projects</button>
               <button onClick={() => setInput('Who are the key people?')}>Key people</button>
               <button onClick={onCreateEntity}>
-                <Plus size={16} /> Create new entity
+                Create new entity
               </button>
             </div>
           </div>
@@ -111,8 +111,8 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity }) => {
                       {m.citations.map((cite) => (
                         <button key={cite.id} className="citation-card" onClick={() => logger.info('Navigate to', cite.id)}>
                           <div className="cite-type">{cite.type}</div>
-                          <div className="cite-name">{cite.name}</div>
-                          <div className="cite-excerpt">{cite.excerpt}</div>
+                          <div className="cite-name">{cite.title}</div>
+                          <div className="cite-excerpt">{cite.content}</div>
                         </button>
                       ))}
                     </div>

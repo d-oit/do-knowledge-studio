@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { logger } from '../../lib/logger';
 import { repository } from '../../db/repository';
 import { generateSiteHtml, generateMarkdownExport, generateJsonExport, generatePrintHtml } from '../../lib/export-core';
+import { stripHtmlTags } from '../../lib/security';
 import type { ExportData } from '../../lib/export-core';
 import { Download, File, FileJson, FileText, FileSpreadsheet, Globe, Loader2 } from 'lucide-react';
 
@@ -136,13 +137,13 @@ const ExportPanel: React.FC = () => {
             new Paragraph({ text: 'Knowledge Base Export', heading: HeadingLevel.TITLE }),
             new Paragraph({ text: `Exported on ${new Date().toLocaleString()}`, spacing: { after: 400 } }),
             ...entities.flatMap(entity => [
-              new Paragraph({ text: entity.name, heading: HeadingLevel.HEADING_1 }),
-              new Paragraph({ text: `Type: ${entity.type}`, spacing: { after: 200 } }),
-              ...(entity.description ? [new Paragraph({ text: entity.description, spacing: { after: 200 } })] : []),
+              new Paragraph({ text: stripHtmlTags(entity.name), heading: HeadingLevel.HEADING_1 }),
+              new Paragraph({ text: `Type: ${stripHtmlTags(entity.type)}`, spacing: { after: 200 } }),
+              ...(entity.description ? [new Paragraph({ text: stripHtmlTags(entity.description), spacing: { after: 200 } })] : []),
               ...(claims[entity.id!]?.length ? [
                 new Paragraph({ text: 'Claims', heading: HeadingLevel.HEADING_2 }),
                 ...claims[entity.id!].map(claim => new Paragraph({
-                  text: `• ${claim.statement}${claim.confidence !== 1 ? ` (confidence: ${Math.round(claim.confidence * 100)}%)` : ''}`,
+                  text: `• ${stripHtmlTags(claim.statement)}${claim.confidence !== 1 ? ` (confidence: ${Math.round(claim.confidence * 100)}%)` : ''}`,
                   spacing: { after: 100 },
                 })),
               ] : []),
@@ -179,7 +180,7 @@ const ExportPanel: React.FC = () => {
       </p>
 
       {error && (
-        <div style={{ marginBottom: '16px', padding: '12px', background: '#fef2f2', color: '#991b1b', borderRadius: '8px', border: '1px solid #fecaca', fontSize: '0.875rem' }}>
+        <div role="alert" aria-live="polite" style={{ marginBottom: '16px', padding: '12px', background: '#fef2f2', color: '#991b1b', borderRadius: '8px', border: '1px solid #fecaca', fontSize: '0.875rem' }}>
           {error}
         </div>
       )}
@@ -187,7 +188,7 @@ const ExportPanel: React.FC = () => {
       <div className="toolbar" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
         <button 
           className="primary" 
-          onClick={handleExportMarkdown} 
+          onClick={() => void handleExportMarkdown()} 
           disabled={isExporting}
           aria-label="Export knowledge base as Markdown"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
@@ -196,7 +197,7 @@ const ExportPanel: React.FC = () => {
           Export as Markdown
         </button>
         <button 
-          onClick={handleExportJson} 
+          onClick={() => void handleExportJson()} 
           disabled={isExporting}
           aria-label="Export knowledge base as JSON"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
@@ -205,7 +206,7 @@ const ExportPanel: React.FC = () => {
           Export as JSON
         </button>
         <button 
-          onClick={handleExportSite} 
+          onClick={() => void handleExportSite()} 
           disabled={isExporting}
           aria-label="Export knowledge base as static HTML site"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
@@ -214,7 +215,7 @@ const ExportPanel: React.FC = () => {
           Export as Static Site
         </button>
         <button 
-          onClick={handleExportPDF} 
+          onClick={() => void handleExportPDF()} 
           disabled={isExporting}
           aria-label="Export knowledge base as PDF"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
@@ -223,7 +224,7 @@ const ExportPanel: React.FC = () => {
           Export as PDF
         </button>
         <button 
-          onClick={handleExportDOCX} 
+          onClick={() => void handleExportDOCX()} 
           disabled={isExporting}
           aria-label="Export knowledge base as DOCX"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}

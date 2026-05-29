@@ -21,7 +21,7 @@
 4. Add file-based sync: Browser imports from `sync/` directory
 **Effort**: 6-8h  
 **Dependencies**: None (independent task)  
-**Validation**: `npm run cli -- --help` shows working commands, `sync` writes to DB
+**Validation**: `pnpm run cli -- --help` shows working commands, `sync` writes to DB
 
 ---
 
@@ -43,7 +43,7 @@
 4. Update JobCoordinator to track real export progress
 **Effort**: 4-6h  
 **Dependencies**: OPFS utilities (can build alongside)  
-**Validation**: Export buttons produce real files, `npm test` passes
+**Validation**: Export buttons produce real files, `pnpm test` passes
 
 ---
 
@@ -60,7 +60,7 @@
 3. Target: 70%+ coverage overall, 80%+ for critical paths
 **Effort**: 2-3h  
 **Dependencies**: 3.1 and 3.2 (test real implementations)  
-**Validation**: `npm run test:coverage` meets targets
+**Validation**: `pnpm run test:coverage` meets targets
 
 ---
 
@@ -84,7 +84,7 @@
 ---
 
 ## Completion Criteria
-- [ ] CLI commands work with real Node.js SQLite adapter
-- [ ] Export buttons produce real Markdown/JSON/static site files
+- [x] CLI commands work with real Node.js SQLite adapter
+- [x] Export buttons produce real Markdown/JSON/static site files
 - [ ] Test coverage meets targets (70% overall, 80% critical)
-- [ ] All quality gates pass: `npm test`, `npm run lint`, `npm run typecheck`
+- [ ] All quality gates pass: `pnpm test`, `pnpm run lint`, `pnpm run typecheck`

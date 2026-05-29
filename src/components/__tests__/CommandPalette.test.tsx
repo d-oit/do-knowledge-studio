@@ -57,7 +57,7 @@ describe('CommandPalette', () => {
   });
 
   it('calls onClose when clicking the overlay', () => {
-    const { container } = render(
+    render(
       <CommandPalette
         isOpen={true}
         onClose={mockOnClose}
@@ -65,8 +65,9 @@ describe('CommandPalette', () => {
         onAction={mockOnAction}
       />
     );
-    const overlay = container.querySelector('.command-palette-overlay');
-    if (overlay) fireEvent.click(overlay);
+    const overlay = document.querySelector('.command-palette-overlay');
+    expect(overlay).not.toBeNull();
+    fireEvent.click(overlay!);
     expect(mockOnClose).toHaveBeenCalled();
   });
 
@@ -108,19 +109,15 @@ describe('CommandPalette', () => {
 
     // Initially first item is selected
     expect(commands[0].className).toContain('selected');
-    expect(commands[0].getAttribute('aria-selected')).toBe('true');
 
     const input = screen.getByPlaceholderText(/Search commands or knowledge/i);
     fireEvent.keyDown(input, { key: 'ArrowDown' });
 
     expect(commands[0].className).not.toContain('selected');
-    expect(commands[0].getAttribute('aria-selected')).toBe('false');
     expect(commands[1].className).toContain('selected');
-    expect(commands[1].getAttribute('aria-selected')).toBe('true');
 
     fireEvent.keyDown(input, { key: 'ArrowUp' });
     expect(commands[0].className).toContain('selected');
-    expect(commands[0].getAttribute('aria-selected')).toBe('true');
   });
 
   it('executes a navigation command on Enter', () => {

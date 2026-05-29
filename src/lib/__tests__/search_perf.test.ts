@@ -24,7 +24,6 @@ vi.mock('../logger.js', () => ({
 describe('Search Incremental Update Benchmark', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.useFakeTimers();
   });
 
   it('measures upsertToSearchIndex performance with 100 claims', async () => {
@@ -46,7 +45,14 @@ describe('Search Incremental Update Benchmark', () => {
       verification_status: 'unverified',
     }));
 
-    (repository.getAllEntities as Mock).mockResolvedValue([entity]);
+    (repository.getAllEntities as Mock).mockImplementation(
+      (options?: { limit?: number; offset?: number }) => {
+        const all = [entity];
+        const limit = options?.limit ?? all.length;
+        const offset = options?.offset ?? 0;
+        return Promise.resolve(all.slice(offset, offset + limit));
+      },
+    );
     (repository.getAllClaims as Mock).mockResolvedValue(claims);
     (repository.getEntityById as Mock).mockResolvedValue(entity);
     (repository.getClaimsByEntityId as Mock).mockResolvedValue(claims);
@@ -56,20 +62,22 @@ describe('Search Incremental Update Benchmark', () => {
 
     const upsertPromise = upsertToSearchIndex(entityId);
 
-    // Fast-forward debounce timer
-    vi.runAllTimers();
+    // Fast-forward debounce timer (500ms)
+    await new Promise(resolve => setTimeout(resolve, 600));
     await upsertPromise;
 
     // Optimized, it calls getClaimsByEntityId 1 time:
     // 1. upsertToSearchIndex (passed to other functions)
-    expect(repository.getClaimsByEntityId).toHaveBeenCalledTimes(1);
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(vi.mocked(repository.getClaimsByEntityId)).toHaveBeenCalledTimes(1);
 
-    // Batched FTS index rebuild: 2 DELETEs via exec (entity, claim)
-    // + 2 transaction calls (entity batch + claim batch) via repository.transaction
-    // removeFromSearchIndex: 2 exec (entity delete + claim delete)
-    // upsertToSearchIndex: 2 exec (1 entity INSERT + 1 claims INSERT via subquery)
-    // Total exec calls: 2 + 2 + 2 = 6 (batch transactions use repository.transaction directly)
-    expect(repository.exec).toHaveBeenCalledTimes(6);
-    expect(repository.transaction).toHaveBeenCalledTimes(2);
+    // initSearch: 2 DELETEs + 2 set-based INSERTs = 4 exec
+    // upsertToSearchIndex: 2 delete (removeFromSearchIndex) + 2 INSERT = 4 exec
+    // Total exec calls: 4 + 4 = 8
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(vi.mocked(repository.exec)).toHaveBeenCalledTimes(8);
+    // No more batch transactions — FTS rebuild uses set-based SQL
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(vi.mocked(repository.transaction)).toHaveBeenCalledTimes(0);
   });
 });

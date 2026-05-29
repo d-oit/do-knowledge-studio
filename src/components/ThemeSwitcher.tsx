@@ -66,6 +66,7 @@ interface ThemeSwitcherProps {
 const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ compact = false }) => {
   const [activeTheme, setActiveTheme] = React.useState<Theme>(getStoredTheme);
   const [isOpen, setIsOpen] = React.useState(false);
+  const [focusedIndex, setFocusedIndex] = React.useState(-1);
 
   React.useEffect(() => {
     document.documentElement.setAttribute('data-theme', activeTheme);
@@ -83,17 +84,39 @@ const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ compact = false }) => {
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
-  const handleSelect = (theme: Theme) => {
+  const handleSelect = React.useCallback((theme: Theme) => {
     setActiveTheme(theme);
     setIsOpen(false);
-  };
+  }, []);
+
+  const handleKeyDown = React.useCallback((e: React.KeyboardEvent) => {
+    if (!isOpen) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setFocusedIndex(prev => Math.min(prev + 1, THEME_OPTIONS.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setFocusedIndex(prev => Math.max(prev - 1, 0));
+    } else if (e.key === 'Enter') {
+      const option = THEME_OPTIONS.at(focusedIndex);
+      if (option) handleSelect(option.theme);
+    } else if (e.key === 'Escape') {
+      setIsOpen(false);
+    }
+  }, [isOpen, focusedIndex, handleSelect]);
+
+  const handleDropdownOpen = React.useCallback(() => {
+    setIsOpen(true);
+    setFocusedIndex(0);
+  }, []);
 
   if (compact) {
     return (
       <div className="theme-switcher theme-switcher-compact">
         <button
           className="theme-toggle-btn"
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={handleDropdownOpen}
+          onKeyDown={handleKeyDown}
           aria-label="Switch theme"
           aria-expanded={isOpen}
           aria-haspopup="listbox"
@@ -101,21 +124,27 @@ const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ compact = false }) => {
           <Palette size={18} />
         </button>
         {isOpen && (
-          <ul className="theme-dropdown" role="listbox" aria-label="Select theme">
-            {THEME_OPTIONS.map((opt) => (
-              <li key={opt.theme}>
+          <div
+            className="theme-dropdown"
+            role="listbox"
+            tabIndex={0}
+            aria-label="Select theme"
+            aria-activedescendant={focusedIndex >= 0 ? `theme-option-${focusedIndex}` : undefined}
+            onKeyDown={handleKeyDown}
+          >
+            {THEME_OPTIONS.map((opt, i) => (
+                <div key={opt.theme} role="option" aria-selected={activeTheme === opt.theme} tabIndex={-1}>
                 <button
+                  id={`theme-option-${i}`}
                   className={`theme-option ${activeTheme === opt.theme ? 'active' : ''}`}
                   onClick={() => handleSelect(opt.theme)}
-                  role="option"
-                  aria-selected={activeTheme === opt.theme}
                 >
                   {opt.icon}
                   <span>{opt.label}</span>
                 </button>
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </div>
     );

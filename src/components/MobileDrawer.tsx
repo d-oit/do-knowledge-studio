@@ -29,10 +29,9 @@ const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, children }
       <div
         ref={drawerRef}
         className="mobile-drawer-content"
-        onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
-        aria-label="Navigation Drawer"
+        aria-label="Navigation"
       >
         <div className="drawer-header">
           <button className="close-button" onClick={onClose} aria-label="Close menu">

@@ -9,9 +9,11 @@ vi.mock('../../../lib/logger', () => ({
   logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn() },
 }));
 
-import Chat from '../Chat';
+vi.mock('react-router-dom', () => ({
+  useNavigate: () => vi.fn(),
+}));
 
-const mockOnCreateEntity = vi.fn();
+import Chat from '../Chat';
 
 describe('Chat', () => {
   beforeEach(() => {
@@ -19,23 +21,23 @@ describe('Chat', () => {
   });
 
   it('renders without crashing', () => {
-    render(<Chat onCreateEntity={mockOnCreateEntity} />);
+    render(<Chat />);
     expect(screen.getByText('Ask your library')).toBeDefined();
   });
 
   it('renders the ask input field', () => {
-    render(<Chat onCreateEntity={mockOnCreateEntity} />);
+    render(<Chat />);
     const input = screen.getByPlaceholderText('Ask anything about your knowledge...');
     expect(input).toBeDefined();
   });
 
   it('shows local-only badge', () => {
-    render(<Chat onCreateEntity={mockOnCreateEntity} />);
+    render(<Chat />);
     expect(screen.getByText('Local search only')).toBeDefined();
   });
 
   it('shows offline ready badge', () => {
-    render(<Chat onCreateEntity={mockOnCreateEntity} />);
+    render(<Chat />);
     expect(screen.getByText('Offline ready')).toBeDefined();
   });
 });

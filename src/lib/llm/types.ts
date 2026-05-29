@@ -23,11 +23,16 @@ export interface LLMResponse {
 export interface LLMStreamChunk {
   content: string;
   done: boolean;
+  usage?: {
+    inputTokens: number;
+    outputTokens: number;
+  };
 }
 
 export interface LLMProviderConfig {
   apiKey?: string;
   baseURL: string;
+  defaultModel?: string;
   defaultHeaders?: Record<string, string>;
 }
 
@@ -38,4 +43,22 @@ export interface LLMProvider {
   chat(request: LLMRequest): Promise<LLMResponse>;
   chatStream(request: LLMRequest): AsyncGenerator<LLMStreamChunk>;
   isConfigured(): boolean;
+}
+
+/** OpenAI-compatible chat completion response body. */
+export interface OpenAIChatResponse {
+  choices: Array<{
+    message?: { content?: string };
+    delta?: { content?: string };
+  }>;
+  model?: string;
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+  };
+}
+
+/** OpenAI-compatible error response body. */
+export interface OpenAIErrorResponse {
+  error?: { message?: string };
 }

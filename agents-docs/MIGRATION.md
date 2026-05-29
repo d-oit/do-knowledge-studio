@@ -769,7 +769,7 @@ my-project/
 
 After migration:
 
-1. **Train Your Team**: Share this guide and [QUICKSTART.md](QUICKSTART.md)
+1. **Train Your Team**: Share this guide and [README.md](README.md)
 2. **Customize AGENTS.md**: Add project-specific patterns and conventions
 3. **Add More Skills**: Copy additional skills from the template as needed
 4. **Create Sub-Agents**: Define specialized agents for common tasks
@@ -782,7 +782,7 @@ After migration:
 | Resource | Purpose |
 |----------|---------|
 | [README.md](README.md) | Template overview |
-| [QUICKSTART.md](QUICKSTART.md) | 5-minute setup guide |
+| [README.md](README.md) | 5-minute setup guide |
 | [AGENTS.md](AGENTS.md) | Agent instruction format |
 | [agents-docs/AVAILABLE_SKILLS.md](agents-docs/AVAILABLE_SKILLS.md) | Skill authoring guide |
 | [agents-docs/SUB-AGENTS.md](agents-docs/SUB-AGENTS.md) | Sub-agent patterns |

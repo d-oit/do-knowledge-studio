@@ -129,11 +129,14 @@ describe('Migration Framework', () => {
       const { db } = createMockDb();
       await runMigrations(db);
 
+      const statusBefore = await getMigrationStatus(db);
+      const appliedBefore = statusBefore.filter(s => s.appliedAt !== null).length;
+
       await rollbackLastMigration(db);
 
-      const status = await getMigrationStatus(db);
-      const applied = status.filter(s => s.appliedAt !== null);
-      expect(applied).toHaveLength(0);
+      const statusAfter = await getMigrationStatus(db);
+      const appliedAfter = statusAfter.filter(s => s.appliedAt !== null).length;
+      expect(appliedAfter).toBe(appliedBefore - 1);
     });
 
     it('should be no-op when no migrations applied', async () => {
