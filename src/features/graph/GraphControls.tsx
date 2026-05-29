@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Focus, Camera, Clock, X, FolderOpen, GitCompare, RotateCcw, Loader2, Layout, LayoutDashboard, Download } from 'lucide-react';
+import { Focus, Camera, Clock, X, FolderOpen, GitCompare, RotateCcw, Loader2, Layout, LayoutDashboard, Download, CircleDot } from 'lucide-react';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -32,8 +32,8 @@ interface GraphControlsProps {
   onExportPNG?: () => void;
   snapshotMode?: boolean;
   onSnapshotModeChange?: (active: boolean) => void;
-  layout?: 'force' | 'hierarchical';
-  onLayoutChange?: (layout: 'force' | 'hierarchical') => void;
+  layout?: 'circular' | 'force' | 'hierarchical';
+  onLayoutChange?: (layout: 'circular' | 'force' | 'hierarchical') => void;
 }
 
 const GraphControls: React.FC<GraphControlsProps> = ({
@@ -174,7 +174,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       )}
       {onLoadSnapshot && (
         <button
-          onClick={handleOpenSnapshotBrowser}
+          onClick={() => void handleOpenSnapshotBrowser()}
           aria-label="Load or diff saved snapshots"
           title="Load or diff saved snapshots"
         >
@@ -198,6 +198,16 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       )}
       {onLayoutChange && (
         <div className="layout-toggle" style={{ display: 'flex', gap: '4px', marginLeft: 'auto' }}>
+          <button
+            onClick={() => onLayoutChange('circular')}
+            className={layout === 'circular' ? 'active' : ''}
+            aria-pressed={layout === 'circular'}
+            aria-label="Circular layout"
+            title="Circular layout"
+            style={{ padding: '6px 10px', minHeight: '36px', fontSize: '12px' }}
+          >
+            <CircleDot size={14} /> Circular
+          </button>
           <button
             onClick={() => onLayoutChange('force')}
             className={layout === 'force' ? 'active' : ''}
@@ -228,11 +238,10 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       {controls}
 
       {showSaveModal && (
-        <div className="modal-overlay" onClick={() => setShowSaveModal(false)}>
+        <button type="button" className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowSaveModal(false); }} onKeyDown={(e) => { if (e.key === 'Escape') setShowSaveModal(false); }}>
           <div
             ref={modalRef}
             className="modal-content"
-            onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
             aria-labelledby="modal-title"
@@ -275,7 +284,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
                 Cancel
               </button>
               <button
-                onClick={handleSaveSnapshot}
+                onClick={() => void handleSaveSnapshot()}
                 disabled={!snapshotName.trim()}
                 className="btn-primary"
               >
@@ -283,15 +292,14 @@ const GraphControls: React.FC<GraphControlsProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </button>
       )}
 
       {showSnapshotBrowser && (
-        <div className="modal-overlay" onClick={() => { setShowSnapshotBrowser(false); setDiffResult(null); }}>
+        <button type="button" className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowSnapshotBrowser(false); setDiffResult(null); } }} onKeyDown={(e) => { if (e.key === 'Escape') { setShowSnapshotBrowser(false); setDiffResult(null); } }}>
           <div
             ref={snapshotBrowserRef}
             className="modal-content"
-            onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
             aria-labelledby="snapshot-browser-title"
@@ -315,12 +323,14 @@ const GraphControls: React.FC<GraphControlsProps> = ({
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: 'var(--space-3)' }}>
                   {snapshots.map(snap => {
-                    const isSelected = selectedForDiff.includes(snap.id!);
+                    if (!snap.id) return null;
+                    const isSelected = selectedForDiff.includes(snap.id);
                     return (
-                      <div
+                      <button
                         key={snap.id}
-                        onClick={() => handleToggleDiffSelect(snap.id!)}
-                        onDoubleClick={() => handleLoadSnapshot(snap.id!)}
+                        type="button"
+                        onClick={() => { handleToggleDiffSelect(snap.id); }}
+                        onDoubleClick={() => void handleLoadSnapshot(snap.id)}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -331,10 +341,15 @@ const GraphControls: React.FC<GraphControlsProps> = ({
                           background: isSelected ? 'var(--interactive-primary-subtle)' : 'var(--bg-surface)',
                           cursor: 'pointer',
                           transition: 'all 0.15s ease',
+                          width: '100%',
+                          textAlign: 'left',
+                          fontFamily: 'inherit',
+                          fontSize: 'inherit',
+                          color: 'inherit',
                         }}
                       >
                         <span style={{ fontSize: '12px', color: 'var(--text-muted)', minWidth: '28px', fontWeight: isSelected ? 'bold' : 'normal' }}>
-                          {isSelected ? (selectedForDiff.indexOf(snap.id!) + 1) : ''}
+                          {isSelected ? (selectedForDiff.indexOf(snap.id) + 1) : ''}
                         </span>
                         <div style={{ flex: 1 }}>
                           <div style={{ fontWeight: 600, fontSize: '14px' }}>{snap.name}</div>
@@ -343,23 +358,15 @@ const GraphControls: React.FC<GraphControlsProps> = ({
                             {new Date(snap.created_at).toLocaleString()}
                           </div>
                         </div>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleLoadSnapshot(snap.id!); }}
-                          className="btn-secondary"
-                          disabled={loadingSnapshotId !== null}
-                          style={{ padding: '4px 12px', fontSize: '12px', minWidth: '60px' }}
-                          title="Load this snapshot"
-                        >
-                          {loadingSnapshotId === snap.id ? <Loader2 size={14} className="animate-spin" /> : 'Load'}
-                        </button>
-                      </div>
+                        {loadingSnapshotId === snap.id && <Loader2 size={14} className="animate-spin" />}
+                      </button>
                     );
                   })}
                 </div>
 
                 <div className="modal-actions" style={{ marginBottom: 'var(--space-3)' }}>
                   <button
-                    onClick={handleDiff}
+                    onClick={() => void handleDiff()}
                     disabled={selectedForDiff.length !== 2}
                     className="btn-primary"
                   >
@@ -422,7 +429,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
               </>
             )}
           </div>
-        </div>
+        </button>
       )}
     </>
   );

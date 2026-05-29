@@ -25,7 +25,6 @@ export function generateSiteHtml(data: ExportData): string {
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; script-src 'none';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Knowledge Base</title>
   <style>
@@ -107,6 +106,36 @@ export function generateSiteHtml(data: ExportData): string {
   return html;
 }
 
+export function generateEntityMarkdown(
+  entity: Entity,
+  claims: Claim[],
+  notes: Note[],
+): string {
+  let md = `# ${escapeHtml(entity.name)}\n\n`;
+  md += `**Type:** ${escapeHtml(entity.type)}\n\n`;
+  if (entity.description) md += `${entity.description}\n\n`;
+
+  if (claims.length > 0) {
+    md += `## Claims\n\n`;
+    for (const claim of claims) {
+      md += `- ${escapeHtml(claim.statement)}`;
+      if (claim.confidence !== 1) md += ` (confidence: ${claim.confidence})`;
+      md += `\n`;
+      if (claim.evidence) md += `  - *Evidence:* ${escapeHtml(claim.evidence)}\n`;
+    }
+    md += '\n';
+  }
+
+  if (notes.length > 0) {
+    md += `## Notes\n\n`;
+    for (const note of notes) {
+      md += `${note.content}\n\n`;
+    }
+  }
+
+  return md;
+}
+
 export function generateMarkdownExport(data: ExportData): string {
   const { entities, claims, notes } = data;
   let fullContent = '';
@@ -116,27 +145,7 @@ export function generateMarkdownExport(data: ExportData): string {
     const entityClaims = claims[entity.id] ?? [];
     const entityNotes = notes[entity.id] ?? [];
 
-    fullContent += `# ${escapeHtml(entity.name)}\n\n`;
-    fullContent += `**Type:** ${escapeHtml(entity.type)}\n\n`;
-    if (entity.description) fullContent += `${sanitizeHtml(entity.description)}\n\n`;
-
-    if (entityClaims.length > 0) {
-      fullContent += `## Claims\n\n`;
-      for (const claim of entityClaims) {
-        fullContent += `- ${escapeHtml(claim.statement)}`;
-        if (claim.confidence !== 1) fullContent += ` (confidence: ${claim.confidence})`;
-        fullContent += `\n`;
-        if (claim.evidence) fullContent += `  - *Evidence:* ${escapeHtml(claim.evidence)}\n`;
-      }
-      fullContent += '\n';
-    }
-
-    if (entityNotes.length > 0) {
-      fullContent += `## Notes\n\n`;
-      for (const note of entityNotes) {
-        fullContent += `${sanitizeHtml(note.content)}\n\n`;
-      }
-    }
+    fullContent += generateEntityMarkdown(entity, entityClaims, entityNotes);
     fullContent += '\n---\n\n';
   }
 
@@ -154,7 +163,6 @@ export function generatePrintHtml(entities: Entity[], claims: Record<string, Cla
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; script-src 'none';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Knowledge Base Export</title>
   <style>

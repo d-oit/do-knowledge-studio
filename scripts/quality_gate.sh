@@ -312,12 +312,14 @@ if [[ " ${DETECTED_LANGUAGES[*]} " =~ " typescript " ]] && [[ "$SCOPE" == "all" 
     # Check for pnpm first (preferred package manager)
     if command -v pnpm &> /dev/null; then
         # Lint: Runs ESLint or configured linter via "pnpm lint" script
-        if ! OUTPUT=$(pnpm lint 2>&1); then
-            echo -e "${RED}  ✗ pnpm lint failed${NC}"
-            echo "$OUTPUT" >&2
-            FAILED=1
-        else
-            echo -e "${GREEN}  ✓ pnpm lint passed${NC}"
+        if [ "${SKIP_LINT:-false}" != "true" ]; then
+            if ! OUTPUT=$(pnpm lint 2>&1); then
+                echo -e "${RED}  ✗ pnpm lint failed${NC}"
+                echo "$OUTPUT" >&2
+                FAILED=1
+            else
+                echo -e "${GREEN}  ✓ pnpm lint passed${NC}"
+            fi
         fi
 
         # Typecheck: Runs tsc --noEmit to verify types without generating JS
@@ -342,12 +344,14 @@ if [[ " ${DETECTED_LANGUAGES[*]} " =~ " typescript " ]] && [[ "$SCOPE" == "all" 
         fi
     elif command -v npm &> /dev/null; then
         # Fallback to npm - runs same checks via "npm run <script>" syntax
-        if ! OUTPUT=$(npm run lint 2>&1); then
-            echo -e "${RED}  ✗ npm lint failed${NC}"
-            echo "$OUTPUT" >&2
-            FAILED=1
-        else
-            echo -e "${GREEN}  ✓ npm lint passed${NC}"
+        if [ "${SKIP_LINT:-false}" != "true" ]; then
+            if ! OUTPUT=$(npm run lint 2>&1); then
+                echo -e "${RED}  ✗ npm lint failed${NC}"
+                echo "$OUTPUT" >&2
+                FAILED=1
+            else
+                echo -e "${GREEN}  ✓ npm lint passed${NC}"
+            fi
         fi
 
         if ! OUTPUT=$(npm run typecheck 2>&1); then

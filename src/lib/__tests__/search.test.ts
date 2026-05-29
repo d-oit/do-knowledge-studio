@@ -43,7 +43,7 @@ vi.mock('../resolver', () => ({
 }));
 
 describe('Search module', () => {
-  beforeEach(async () => {
+  beforeEach(() => {
     vi.clearAllMocks();
   });
 
@@ -101,7 +101,7 @@ describe('search function', () => {
     const { searchKnowledge } = await import('../search');
     const results = await searchKnowledge('q');
     expect(results[0]).toHaveProperty('id', '1');
-    expect(results[0]).toHaveProperty('name', 'T');
+    expect(results[0]).toHaveProperty('title', 'T');
     expect(results[0]).toHaveProperty('score', 0.95);
   });
 });
@@ -115,7 +115,7 @@ describe('External fetch handler', () => {
     vi.clearAllMocks();
 
     // Re-import search to trigger module-level handler registration
-    const mod = await import('../search');
+    await import('../search');
 
     // Enqueue an external-fetch job with mocked dependencies
     (repository.getWebCache as Mock).mockResolvedValue(null);
@@ -173,8 +173,11 @@ describe('External fetch handler', () => {
 
     // Should use cache, NOT call resolveUrl
     expect(resolveUrl).not.toHaveBeenCalled();
-    expect(repository.getWebCache).toHaveBeenCalledWith('https://cached.example.com');
-    expect(repository.updateEntity).toHaveBeenCalledWith('entity-2', {
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(vi.mocked(repository.getWebCache)).toHaveBeenCalledWith('https://cached.example.com');
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(vi.mocked(repository.updateEntity)).toHaveBeenCalledWith('entity-2', {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       description: expect.stringContaining('Cached Article'),
     });
   });

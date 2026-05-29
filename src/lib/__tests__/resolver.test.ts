@@ -84,7 +84,7 @@ describe('safeHostname', () => {
 // Import and test the actual resolveUrl with mocked fetch
 describe('resolveUrl', () => {
   let resolveUrl: typeof import('../resolver').resolveUrl;
-  const originalAbortSignalTimeout = AbortSignal.timeout;
+  const originalAbortSignalTimeout = AbortSignal.timeout.bind(AbortSignal);
 
   beforeEach(async () => {
     vi.clearAllMocks();

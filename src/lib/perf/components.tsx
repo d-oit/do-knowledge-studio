@@ -1,5 +1,5 @@
 import React, { Profiler, useState, type ProfilerOnRenderCallback } from 'react';
-import { perf } from './index.js';
+import { perf } from './core.js';
 
 const isDev = typeof window !== 'undefined' && import.meta.env.DEV;
 

@@ -76,11 +76,18 @@ describe('GraphControls', () => {
 
   it('shows layout toggle buttons', () => {
     render(<GraphControls {...defaultProps} />);
+    expect(screen.getByTitle('Circular layout')).toBeDefined();
     expect(screen.getByTitle('Force-directed layout')).toBeDefined();
     expect(screen.getByTitle('Hierarchical layout')).toBeDefined();
   });
 
-  it('toggles layout on button click', () => {
+  it('toggles to circular layout on button click', () => {
+    render(<GraphControls {...defaultProps} />);
+    fireEvent.click(screen.getByTitle('Circular layout'));
+    expect(defaultProps.onLayoutChange).toHaveBeenCalledWith('circular');
+  });
+
+  it('toggles to hierarchical layout on button click', () => {
     render(<GraphControls {...defaultProps} />);
     fireEvent.click(screen.getByTitle('Hierarchical layout'));
     expect(defaultProps.onLayoutChange).toHaveBeenCalledWith('hierarchical');
@@ -111,6 +118,7 @@ describe('GraphControls', () => {
 
   it('shows loading state when fetching snapshots', async () => {
     const { repository } = await import('../../../db/repository');
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     vi.mocked(repository.listSnapshots).mockImplementation(
       () => new Promise(resolve => setTimeout(() => resolve([]), 100))
     );
@@ -121,6 +129,7 @@ describe('GraphControls', () => {
 
   it('displays empty state when no snapshots exist', async () => {
     const { repository } = await import('../../../db/repository');
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     vi.mocked(repository.listSnapshots).mockResolvedValue([]);
     render(<GraphControls {...defaultProps} />);
     fireEvent.click(screen.getByTitle('Load or diff saved snapshots'));

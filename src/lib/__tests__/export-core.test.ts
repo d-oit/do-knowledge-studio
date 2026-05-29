@@ -255,7 +255,7 @@ describe('generateMarkdownExport', () => {
 describe('generateJsonExport', () => {
   it('produces valid JSON', () => {
     const json = generateJsonExport(makeData());
-    expect(() => JSON.parse(json)).not.toThrow();
+    expect(() => { JSON.parse(json); }).not.toThrow();
   });
 
   it('produces pretty-printed JSON', () => {
@@ -266,13 +266,13 @@ describe('generateJsonExport', () => {
 
   it('handles empty data', () => {
     const json = generateJsonExport({ entities: [], claims: {}, notes: {} });
-    const parsed: ExportData = JSON.parse(json);
+    const parsed = JSON.parse(json) as ExportData;
     expect(parsed.entities).toHaveLength(0);
   });
 
   it('includes all fields', () => {
     const data = makeData();
-    const parsed: ExportData = JSON.parse(generateJsonExport(data));
+    const parsed = JSON.parse(generateJsonExport(data)) as ExportData;
     expect(parsed.entities).toBeDefined();
     expect(parsed.claims).toBeDefined();
     expect(parsed.notes).toBeDefined();
@@ -280,7 +280,7 @@ describe('generateJsonExport', () => {
 
   it('serializes nested records', () => {
     const data = makeData();
-    const parsed: ExportData = JSON.parse(generateJsonExport(data));
+    const parsed = JSON.parse(generateJsonExport(data)) as ExportData;
     const entityId = makeEntity().id!;
     expect(parsed.claims[entityId]).toBeDefined();
   });
@@ -288,7 +288,7 @@ describe('generateJsonExport', () => {
   it('handles arbitrary data shapes', () => {
     const data: Record<string, unknown> = { foo: 'bar', count: 42 };
     const json = generateJsonExport(data);
-    const parsed: Record<string, unknown> = JSON.parse(json);
+    const parsed = JSON.parse(json) as Record<string, unknown>;
     expect(parsed.foo).toBe('bar');
     expect(parsed.count).toBe(42);
   });

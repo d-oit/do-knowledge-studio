@@ -180,7 +180,7 @@ const ExportPanel: React.FC = () => {
       </p>
 
       {error && (
-        <div style={{ marginBottom: '16px', padding: '12px', background: '#fef2f2', color: '#991b1b', borderRadius: '8px', border: '1px solid #fecaca', fontSize: '0.875rem' }}>
+        <div role="alert" aria-live="polite" style={{ marginBottom: '16px', padding: '12px', background: '#fef2f2', color: '#991b1b', borderRadius: '8px', border: '1px solid #fecaca', fontSize: '0.875rem' }}>
           {error}
         </div>
       )}
@@ -188,7 +188,7 @@ const ExportPanel: React.FC = () => {
       <div className="toolbar" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
         <button 
           className="primary" 
-          onClick={handleExportMarkdown} 
+          onClick={() => void handleExportMarkdown()} 
           disabled={isExporting}
           aria-label="Export knowledge base as Markdown"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
@@ -197,7 +197,7 @@ const ExportPanel: React.FC = () => {
           Export as Markdown
         </button>
         <button 
-          onClick={handleExportJson} 
+          onClick={() => void handleExportJson()} 
           disabled={isExporting}
           aria-label="Export knowledge base as JSON"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
@@ -206,7 +206,7 @@ const ExportPanel: React.FC = () => {
           Export as JSON
         </button>
         <button 
-          onClick={handleExportSite} 
+          onClick={() => void handleExportSite()} 
           disabled={isExporting}
           aria-label="Export knowledge base as static HTML site"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
@@ -215,7 +215,7 @@ const ExportPanel: React.FC = () => {
           Export as Static Site
         </button>
         <button 
-          onClick={handleExportPDF} 
+          onClick={() => void handleExportPDF()} 
           disabled={isExporting}
           aria-label="Export knowledge base as PDF"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
@@ -224,7 +224,7 @@ const ExportPanel: React.FC = () => {
           Export as PDF
         </button>
         <button 
-          onClick={handleExportDOCX} 
+          onClick={() => void handleExportDOCX()} 
           disabled={isExporting}
           aria-label="Export knowledge base as DOCX"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
