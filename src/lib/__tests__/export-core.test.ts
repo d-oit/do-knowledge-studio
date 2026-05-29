@@ -143,6 +143,13 @@ describe('generateSiteHtml', () => {
     expect(html).toContain('Quick Navigation');
   });
 
+  it('includes Content-Security-Policy meta tag', () => {
+    const html = generateSiteHtml(makeData());
+    expect(html).toContain('<meta http-equiv="Content-Security-Policy"');
+    expect(html).toContain("default-src 'self'");
+    expect(html).toContain("script-src 'none'");
+  });
+
   it('handles entity with no id', () => {
     const entity = makeEntity({ id: undefined });
     const data = makeData({ entities: [entity], claims: {}, notes: {} });
@@ -228,6 +235,21 @@ describe('generateMarkdownExport', () => {
     const md = generateMarkdownExport(data);
     expect(md).toContain('0.75');
   });
+
+  it('sanitizes XSS vectors in descriptions and notes', () => {
+    const entityId = '550e8400-e29b-41d4-a716-446655440000';
+    const entity = makeEntity({ id: entityId, description: '<script>alert("xss")</script>normal description' });
+    const note = makeNote({ entity_id: entityId, content: '<img src=x onerror=alert(1)>normal note' });
+    const data = makeData({
+      entities: [entity],
+      notes: { [entityId]: [note] },
+    });
+    const md = generateMarkdownExport(data);
+    expect(md).not.toContain('<script>');
+    expect(md).not.toContain('onerror');
+    expect(md).toContain('normal description');
+    expect(md).toContain('normal note');
+  });
 });
 
 describe('generateJsonExport', () => {
@@ -311,6 +333,21 @@ describe('generatePrintHtml', () => {
     const html = generatePrintHtml([], {});
     expect(html).toContain('Knowledge Base Export');
     expect(html).toContain('</html>');
+  });
+
+  it('sanitizes XSS vectors in descriptions', () => {
+    const entity = makeEntity({ description: '<script>alert("xss")</script>normal text' });
+    const html = generatePrintHtml([entity], {});
+    expect(html).not.toContain('<script>');
+    expect(html).not.toContain('alert');
+    expect(html).toContain('normal text');
+  });
+
+  it('includes Content-Security-Policy meta tag', () => {
+    const html = generatePrintHtml([makeEntity()], {});
+    expect(html).toContain('<meta http-equiv="Content-Security-Policy"');
+    expect(html).toContain("default-src 'self'");
+    expect(html).toContain("script-src 'none'");
   });
 
   it('handles entity with no id', () => {

@@ -7,6 +7,19 @@ export function sanitizeHtml(html: string): string {
   });
 }
 
+/**
+ * Safely strips all HTML tags and returns plain text content.
+ * Uses DOMPurify for secure parsing and extraction.
+ */
+export function stripHtmlTags(html: string): string {
+  const fragment = DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: [], // Strip all tags
+    KEEP_CONTENT: true,
+    RETURN_DOM_FRAGMENT: true,
+  });
+  return fragment.textContent || '';
+}
+
 export function escapeHtml(text: string): string {
   const map: Record<string, string> = {
     '&': '&amp;',

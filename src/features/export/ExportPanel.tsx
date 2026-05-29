@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { logger } from '../../lib/logger';
 import { repository } from '../../db/repository';
 import { generateSiteHtml, generateMarkdownExport, generateJsonExport, generatePrintHtml } from '../../lib/export-core';
+import { stripHtmlTags } from '../../lib/security';
 import type { ExportData } from '../../lib/export-core';
 import { Download, File, FileJson, FileText, FileSpreadsheet, Globe, Loader2 } from 'lucide-react';
 
@@ -136,13 +137,13 @@ const ExportPanel: React.FC = () => {
             new Paragraph({ text: 'Knowledge Base Export', heading: HeadingLevel.TITLE }),
             new Paragraph({ text: `Exported on ${new Date().toLocaleString()}`, spacing: { after: 400 } }),
             ...entities.flatMap(entity => [
-              new Paragraph({ text: entity.name, heading: HeadingLevel.HEADING_1 }),
-              new Paragraph({ text: `Type: ${entity.type}`, spacing: { after: 200 } }),
-              ...(entity.description ? [new Paragraph({ text: entity.description, spacing: { after: 200 } })] : []),
+              new Paragraph({ text: stripHtmlTags(entity.name), heading: HeadingLevel.HEADING_1 }),
+              new Paragraph({ text: `Type: ${stripHtmlTags(entity.type)}`, spacing: { after: 200 } }),
+              ...(entity.description ? [new Paragraph({ text: stripHtmlTags(entity.description), spacing: { after: 200 } })] : []),
               ...(claims[entity.id!]?.length ? [
                 new Paragraph({ text: 'Claims', heading: HeadingLevel.HEADING_2 }),
                 ...claims[entity.id!].map(claim => new Paragraph({
-                  text: `• ${claim.statement}${claim.confidence !== 1 ? ` (confidence: ${Math.round(claim.confidence * 100)}%)` : ''}`,
+                  text: `• ${stripHtmlTags(claim.statement)}${claim.confidence !== 1 ? ` (confidence: ${Math.round(claim.confidence * 100)}%)` : ''}`,
                   spacing: { after: 100 },
                 })),
               ] : []),
