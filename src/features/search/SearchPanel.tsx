@@ -154,6 +154,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
       const accumulated = new Map<string, RankedResult>();
       let firstBatch = true;
 
+      // biome-ignore lint/suspicious/noNonSerializable: callback is not serializable but that's fine
       const onStage = (stageResults: RankedResult[], stage: 'exact' | 'semantic' | 'related') => {
         if (controller.signal.aborted) return;
 
