@@ -1,3 +1,4 @@
+import DOMPurify from 'dompurify';
 import { logger } from './logger';
 
 /** Resolved web content ready for entity hydration. */
@@ -17,21 +18,11 @@ const normalizeText = (text: string): string =>
 
 /** Strip HTML tags and decode entities, producing plain text. */
 const htmlToPlainText = (html: string): string => {
-  // Remove script/style content
-  const stripped = html
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-    .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, '')
-    .replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, '')
-    .replace(/<header[^>]*>[\s\S]*?<\/header>/gi, '');
+  // Use DOMPurify to remove all HTML tags and dangerous content
+  const cleanHtml = DOMPurify.sanitize(html, { ALLOWED_TAGS: [] });
   
-  // Replace block elements with newlines
-  let text = stripped
-    .replace(/<\/?(p|div|h[1-6]|li|tr|br|article|section|aside)[^>]*>/gi, '\n')
-    .replace(/<[^>]*>/g, '');
-  
-  // Decode common entities
-  text = text
+  // Decode common HTML entities
+  const text = cleanHtml
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
