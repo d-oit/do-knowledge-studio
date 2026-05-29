@@ -42,20 +42,10 @@ const htmlToPlainText = (html: string): string => {
   return text;
 };
 
-/** Strip HTML tags from a string by removing all tags in a loop until stable. */
-const stripHtmlTags = (input: string): string => {
-  let previous: string;
-  do {
-    previous = input;
-    input = input.replace(/<[^>]*>/g, '');
-  } while (input !== previous);
-  return input;
-};
-
 /** Extract the page title from HTML, stripping any nested tags. */
 const extractTitle = (html: string): string => {
   const match = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-  return match ? normalizeText(stripHtmlTags(match[1])) : '';
+  return match ? normalizeText(match[1].replace(/<[^>]*>/g, '')) : '';
 };
 
 /** Extract first meaningful paragraph(s) as a summary (up to 2000 chars). */

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sanitizeHtml, escapeHtml } from '../security';
+import { sanitizeHtml, escapeHtml, stripHtmlTags } from '../security';
 
 describe('sanitizeHtml', () => {
   it('neutralizes script tags', () => {
@@ -42,6 +42,27 @@ describe('sanitizeHtml', () => {
   it('strips disallowed tags', () => {
     const result = sanitizeHtml('<style>body{color:red}</style>');
     expect(result).not.toContain('<style>');
+  });
+});
+
+describe('stripHtmlTags', () => {
+  it('removes all HTML tags', () => {
+    const result = stripHtmlTags('<p>hello <strong>world</strong></p>');
+    expect(result).toBe('hello world');
+  });
+
+  it('removes script tags and their content', () => {
+    const result = stripHtmlTags('<script>alert(1)</script>text');
+    expect(result).toBe('text');
+  });
+
+  it('removes style tags and their content', () => {
+    const result = stripHtmlTags('<style>body { color: red; }</style>text');
+    expect(result).toBe('text');
+  });
+
+  it('handles empty input', () => {
+    expect(stripHtmlTags('')).toBe('');
   });
 });
 
