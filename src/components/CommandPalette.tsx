@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Search,
   FileText,
@@ -102,7 +102,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onView
     }
   };
 
-  const executeSelected = () => {
+  const executeSelected = useCallback(() => {
     if (selectedIndex < filteredCommands.length) {
       const cmd = filteredCommands[selectedIndex];
       if (cmd.type === 'navigation' && cmd.view) {
@@ -111,10 +111,10 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onView
         onAction?.(cmd.id);
       }
     } else {
-      onViewChange('editor'); // Default for search results
+      onViewChange('editor');
     }
     onClose();
-  };
+  }, [selectedIndex, filteredCommands.length, onViewChange, onAction, onClose]);
 
   if (!isOpen) return null;
 
@@ -129,9 +129,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onView
       className="command-palette-overlay"
       onClick={handleOverlayClick}
       onKeyDown={e => e.key === 'Escape' && onClose()}
-      role="button"
-      tabIndex={0}
-      aria-label="Close command palette"
+      role="presentation"
     >
       <div
         className="command-palette-modal"
@@ -157,19 +155,17 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onView
             <div className="command-section">
               <div className="section-label">Commands</div>
               {filteredCommands.map((cmd, i) => (
-                <div
+                <button
                   key={cmd.id}
+                  type="button"
                   className={`command-item ${selectedIndex === i ? 'selected' : ''}`}
                   onMouseEnter={() => setSelectedIndex(i)}
                   onClick={executeSelected}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={e => e.key === 'Enter' && executeSelected()}
                 >
                   <cmd.icon size={18} className="item-icon" />
                   <span className="item-label">{cmd.label}</span>
                   {cmd.shortcut && <span className="item-shortcut">{cmd.shortcut}</span>}
-                </div>
+                </button>
               ))}
             </div>
           )}
@@ -180,21 +176,19 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onView
               {results.map((res, i) => {
                 const idx = i + filteredCommands.length;
                 return (
-                  <div
+                  <button
                     key={res.id}
+                    type="button"
                     className={`command-item ${selectedIndex === idx ? 'selected' : ''}`}
                     onMouseEnter={() => setSelectedIndex(idx)}
                     onClick={executeSelected}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={e => e.key === 'Enter' && executeSelected()}
                   >
                     <Layers size={18} className="item-icon" />
                     <div className="item-details">
                       <span className="item-label">{res.title}</span>
                       <span className="item-sublabel">{res.type}</span>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>

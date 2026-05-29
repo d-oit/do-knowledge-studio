@@ -65,8 +65,9 @@ describe('CommandPalette', () => {
         onAction={mockOnAction}
       />
     );
-    const overlay = screen.getByRole('button', { name: /Close command palette/i });
-    fireEvent.click(overlay);
+    const overlay = document.querySelector('.command-palette-overlay');
+    expect(overlay).not.toBeNull();
+    fireEvent.click(overlay!);
     expect(mockOnClose).toHaveBeenCalled();
   });
 
