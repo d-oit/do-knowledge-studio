@@ -122,7 +122,7 @@ self.onmessage = async (event: MessageEvent) => {
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown worker error';
-    console.error(`Worker error (${type}):`, error);
+    console.error('Worker error (%s):', type, error);
     self.postMessage({
       id,
       type,

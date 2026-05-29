@@ -36,7 +36,11 @@ const htmlToPlainText = (html: string): string => {
 /** Extract the page title from HTML, stripping any nested tags. */
 const extractTitle = (html: string): string => {
   const match = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-  return match ? normalizeText(match[1].replace(/<[^>]*>/g, '')) : '';
+  if (!match) return '';
+  
+  // Use DOMPurify to strip any nested HTML tags from the title
+  const cleanTitle = DOMPurify.sanitize(match[1], { ALLOWED_TAGS: [] });
+  return normalizeText(cleanTitle);
 };
 
 /** Extract first meaningful paragraph(s) as a summary (up to 2000 chars). */
