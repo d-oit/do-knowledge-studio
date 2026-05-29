@@ -1,0 +1,28 @@
+---
+engines:
+  eslint-8:
+    exclude_paths:
+      - "dist/**"
+      - "coverage/**"
+      - "export/**"
+  duplication:
+    exclude_paths:
+      - "dist/**"
+      - "coverage/**"
+      - "export/**"
+      - "tests/**"
+    config:
+      languages:
+        - "typescript"
+        - "javascript"
+exclude_paths:
+  - "dist/**"
+  - "coverage/**"
+  - "export/**"
+  - "**/node_modules/**"
+  - ".agents/**"
+  - ".claude/**"
+  - ".gemini/**"
+  - ".qwen/**"
+  - ".cursor/**"
+  - ".windsurf/**"

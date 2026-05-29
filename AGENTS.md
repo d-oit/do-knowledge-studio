@@ -184,8 +184,8 @@ Do not finish with failing lint, typecheck, tests, build, or quality gate output
 | `architecture-diagram` | Generate or update a project architecture SVG diagram by sca | General |
 | `atomic-commit` | Atomic git workflow - validates, commits, pushes, creates PR | General |
 | `cicd-pipeline` | Design and implement CI/CD pipelines with GitHub Actions, Gi | DevOps |
-| `codacy` | Use Codacy static analysis CLIs to triage issues and suppres | Quality |
 | `cloudflare-worker-api` | > | workflow |
+| `codacy` | Use Codacy static analysis CLIs to query PR analysis, triage | Quality |
 | `code-quality` | Review and improve code quality across any programming langu | Quality |
 | `code-review-assistant` | Automated code review with PR analysis, change summaries, an | General |
 | `codeberg-api` | >- | API Development |
