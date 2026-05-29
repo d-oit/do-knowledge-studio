@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { logger } from '../../lib/logger';
 import { repository } from '../../db/repository';
 import { generateSiteHtml, generateMarkdownExport, generateJsonExport, generatePrintHtml } from '../../lib/export-core';
-import { escapeHtml, stripHtmlTags } from '../../lib/security';
+import { stripHtmlTags } from '../../lib/security';
 import type { ExportData } from '../../lib/export-core';
 import { Download, File, FileJson, FileText, FileSpreadsheet, Globe, Loader2 } from 'lucide-react';
 

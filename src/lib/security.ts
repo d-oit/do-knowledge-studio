@@ -12,16 +12,12 @@ export function sanitizeHtml(html: string): string {
  * Uses DOMPurify for secure parsing and extraction.
  */
 export function stripHtmlTags(html: string): string {
-  const clean = DOMPurify.sanitize(html, {
+  const fragment = DOMPurify.sanitize(html, {
     ALLOWED_TAGS: [], // Strip all tags
     KEEP_CONTENT: true,
+    RETURN_DOM_FRAGMENT: true,
   });
-  // DOMPurify with ALLOWED_TAGS: [] might still leave some tags if they are considered "content"
-  // or if there's a misunderstanding of the API.
-  // Actually, to get plain text, we can use the returnDOM option and then textContent.
-  const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = clean;
-  return tempDiv.textContent || tempDiv.innerText || '';
+  return fragment.textContent || '';
 }
 
 export function escapeHtml(text: string): string {
