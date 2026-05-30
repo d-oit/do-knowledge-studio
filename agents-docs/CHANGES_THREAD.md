@@ -1,7 +1,7 @@
 # Complete Changes Thread - All New Skills and Features in Main
 
 **Date**: April 3, 2026  
-**Repository**: github-template-ai-agents  
+**Repository**: do-knowledge-studio  
 **Status**: All changes merged to main ✅  
 **Permanent Documentation**: See `agents-docs/LESSONS.md` (Architecture Decision: AGENTS.md Consolidation section)
 
@@ -371,6 +371,6 @@ scripts/
 
 ## All Changes Are Now Permanent in Main ✅
 
-**Repository**: https://github.com/d-o-hub/github-template-ai-agents  
+**Repository**: https://github.com/d-oit/do-knowledge-studio  
 **Branch**: main  
 **Status**: Production Ready 🚀
