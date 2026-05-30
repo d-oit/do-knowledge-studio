@@ -26,6 +26,7 @@ export function generateSiteHtml(data: ExportData): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; script-src 'none';">
   <title>Knowledge Base</title>
   <style>
     body { font-family: system-ui, -apple-system, sans-serif; max-width: 900px; margin: 0 auto; padding: 2rem; line-height: 1.6; color: #1e293b; background: #f8fafc; }
@@ -113,7 +114,7 @@ export function generateEntityMarkdown(
 ): string {
   let md = `# ${escapeHtml(entity.name)}\n\n`;
   md += `**Type:** ${escapeHtml(entity.type)}\n\n`;
-  if (entity.description) md += `${entity.description}\n\n`;
+  if (entity.description) md += `${sanitizeHtml(entity.description)}\n\n`;
 
   if (claims.length > 0) {
     md += `## Claims\n\n`;
@@ -129,7 +130,7 @@ export function generateEntityMarkdown(
   if (notes.length > 0) {
     md += `## Notes\n\n`;
     for (const note of notes) {
-      md += `${note.content}\n\n`;
+      md += `${sanitizeHtml(note.content)}\n\n`;
     }
   }
 
@@ -164,6 +165,7 @@ export function generatePrintHtml(entities: Entity[], claims: Record<string, Cla
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; script-src 'none';">
   <title>Knowledge Base Export</title>
   <style>
     body { font-family: system-ui, -apple-system, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; line-height: 1.6; color: #1e293b; }
