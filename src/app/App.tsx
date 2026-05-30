@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
-import { DbProvider, useDb } from '../db/DbProvider';
+import { DbProvider } from '../db/DbProvider';
+import { useDb } from '../db/useDb';
 import { repository } from '../db/repository';
 import { logger } from '../lib/logger';
 import { hydrateOramaIndex } from '../lib/search';
