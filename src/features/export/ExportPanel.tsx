@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { logger } from '../../lib/logger';
 import { repository } from '../../db/repository';
-import { generateSiteHtml, generateMarkdownExport, generateJsonExport, generatePrintHtml } from '../../lib/export-core';
+import { generateSiteHtml, generateMarkdownExport, generateJsonExport, generatePrintHtml, fetchAllExportData } from '../../lib/export-core';
 import { stripHtmlTags } from '../../lib/security';
 import type { ExportData } from '../../lib/export-core';
 import { Download, File, FileJson, FileText, FileSpreadsheet, Globe, Loader2 } from 'lucide-react';
@@ -98,15 +98,12 @@ const ExportPanel: React.FC = () => {
     setIsExporting(true);
     setError(null);
     try {
-      const [entities, claims] = await Promise.all([
-        repository.getAllEntities(),
-        repository.getAllClaimsGroupedByEntity(),
-      ]);
+      const data = await fetchAllExportData(repository);
       const printWindow = window.open('', '_blank');
       if (!printWindow) throw new Error('Popup blocked');
       const printDoc = printWindow.document;
       printDoc.open();
-      printDoc.write(generatePrintHtml(entities, claims));
+      printDoc.write(generatePrintHtml(data.entities, data.claims));
       printDoc.close();
       printWindow.focus();
       setTimeout(() => printWindow.print(), 500);
@@ -124,10 +121,7 @@ const ExportPanel: React.FC = () => {
     setIsExporting(true);
     setError(null);
     try {
-      const [entities, claims] = await Promise.all([
-        repository.getAllEntities(),
-        repository.getAllClaimsGroupedByEntity(),
-      ]);
+      const data = await fetchAllExportData(repository);
       const { Document, Packer, Paragraph, HeadingLevel } = await import('docx');
 
       const doc = new Document({
@@ -136,18 +130,21 @@ const ExportPanel: React.FC = () => {
           children: [
             new Paragraph({ text: 'Knowledge Base Export', heading: HeadingLevel.TITLE }),
             new Paragraph({ text: `Exported on ${new Date().toLocaleString()}`, spacing: { after: 400 } }),
-            ...entities.flatMap(entity => [
-              new Paragraph({ text: stripHtmlTags(entity.name), heading: HeadingLevel.HEADING_1 }),
-              new Paragraph({ text: `Type: ${stripHtmlTags(entity.type)}`, spacing: { after: 200 } }),
-              ...(entity.description ? [new Paragraph({ text: stripHtmlTags(entity.description), spacing: { after: 200 } })] : []),
-              ...(claims[entity.id!]?.length ? [
-                new Paragraph({ text: 'Claims', heading: HeadingLevel.HEADING_2 }),
-                ...claims[entity.id!].map(claim => new Paragraph({
-                  text: `• ${stripHtmlTags(claim.statement)}${claim.confidence !== 1 ? ` (confidence: ${Math.round(claim.confidence * 100)}%)` : ''}`,
-                  spacing: { after: 100 },
-                })),
-              ] : []),
-            ]),
+            ...data.entities.filter((e): e is Entity & { id: string } => !!e.id).flatMap(entity => {
+              const entityClaims = data.claims[entity.id] ?? [];
+              return [
+                new Paragraph({ text: stripHtmlTags(entity.name), heading: HeadingLevel.HEADING_1 }),
+                new Paragraph({ text: `Type: ${stripHtmlTags(entity.type)}`, spacing: { after: 200 } }),
+                ...(entity.description ? [new Paragraph({ text: stripHtmlTags(entity.description), spacing: { after: 200 } })] : []),
+                ...(entityClaims.length > 0 ? [
+                  new Paragraph({ text: 'Claims', heading: HeadingLevel.HEADING_2 }),
+                  ...entityClaims.map(claim => new Paragraph({
+                    text: `• ${stripHtmlTags(claim.statement)}${claim.confidence !== 1 ? ` (confidence: ${Math.round(claim.confidence * 100)}%)` : ''}`,
+                    spacing: { after: 100 },
+                  })),
+                ] : []),
+              ];
+            }),
           ],
         }],
       });

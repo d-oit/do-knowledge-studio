@@ -3,10 +3,33 @@ import type { Entity, Claim, Note, Link } from './validation';
 
 export interface ExportData {
   entities: Entity[];
-  claims: Record<string, Claim[]>;
-  notes: Record<string, Note[]>;
+  claims: Record<string, Claim[] | undefined>;
+  notes: Record<string, Note[] | undefined>;
   links?: Link[];
   exported_at?: string;
+}
+
+export interface ExportRepository {
+  getAllEntities(): Promise<Entity[]>;
+  getAllLinks(): Promise<Link[]>;
+  getAllClaimsGroupedByEntity(): Promise<Record<string, Claim[]>>;
+  getAllNotesGroupedByEntity(): Promise<Record<string, Note[]>>;
+}
+
+export async function fetchAllExportData(repository: ExportRepository): Promise<Required<ExportData>> {
+  const [entities, links, claims, notes] = await Promise.all([
+    repository.getAllEntities(),
+    repository.getAllLinks(),
+    repository.getAllClaimsGroupedByEntity(),
+    repository.getAllNotesGroupedByEntity(),
+  ]);
+  return {
+    entities,
+    links,
+    claims,
+    notes,
+    exported_at: new Date().toISOString(),
+  };
 }
 
 export function generateSiteHtml(data: ExportData): string {
