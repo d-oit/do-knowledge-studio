@@ -13,7 +13,8 @@ const program = new Command();
 let dbInstance: Awaited<ReturnType<typeof initDb>> | null = null;
 
 async function ensureDb() {
-  dbInstance = await initDb();
+  const options = program.opts();
+  dbInstance = await initDb(options.dbPath);
   setDb(dbInstance);
 }
 
@@ -32,7 +33,8 @@ const version = (() => {
 program
   .name('knowledge-studio')
   .description('CLI for do-knowledge-studio')
-  .version(version);
+  .version(version)
+  .option('--db-path <path>', 'custom path to SQLite database file');
 
 program
   .command('init')
