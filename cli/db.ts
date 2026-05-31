@@ -133,7 +133,7 @@ export const initDb = (customPath?: string): Promise<SQLiteDB> => {
         db = null;
         instance = null;
       },
-    } as SQLiteDB;
+    };
 
     logger.info(`CLI database initialized at ${dbPath}`);
     return instance;

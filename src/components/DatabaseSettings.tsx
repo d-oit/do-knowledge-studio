@@ -7,7 +7,7 @@ interface DatabaseSettingsProps {
   currentHandle?: FileSystemFileHandle | null;
 }
 
-const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({ onFileSelected, currentHandle }) => {
+const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({ onHandlesSelected, currentHandle }) => {
   const [isSupported, setIsSupported] = useState(true);
 
   useEffect(() => {
@@ -92,7 +92,7 @@ const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({ onFileSelected, cur
         <button
           type="button"
           className="primary"
-          onClick={handleConnect}
+          onClick={() => void handleConnect()}
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '8px 16px' }}
         >
           <HardDrive size={18} />

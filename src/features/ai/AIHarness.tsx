@@ -462,7 +462,7 @@ const AIHarness: React.FC = () => {
 
       {showSettings && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '16px' }}>
-          <DatabaseSettings onHandlesSelected={handleDbHandlesSelected} currentHandle={dbHandle} />
+          <DatabaseSettings onHandlesSelected={(...args) => void handleDbHandlesSelected(...args)} currentHandle={dbHandle} />
 
           <div style={{ padding: '12px', background: 'var(--surface-secondary)', borderRadius: '8px', border: '1px solid var(--border-default)' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

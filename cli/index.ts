@@ -14,7 +14,7 @@ let dbInstance: Awaited<ReturnType<typeof initDb>> | null = null;
 
 async function ensureDb() {
   const options = program.opts();
-  dbInstance = await initDb(options.dbPath);
+  dbInstance = await initDb(options.dbPath as string | undefined);
   setDb(dbInstance);
 }
 

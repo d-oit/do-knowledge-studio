@@ -134,7 +134,7 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity }) => {
         )}
       </div>
 
-      <form className="ask-composer" onSubmit={handleSend}>
+      <form className="ask-composer" onSubmit={e => void handleSend(e)}>
         <div className="input-container">
           <Search size={18} className="search-icon" aria-hidden="true" />
           <input

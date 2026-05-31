@@ -86,7 +86,7 @@ self.onmessage = async (event: MessageEvent) => {
 
     switch (type) {
       case 'init': {
-        const { schema, handle, dirHandle } = payload as { schema?: string; handle?: FileSystemFileHandle; dirHandle?: FileSystemDirectoryHandle } || {};
+        const { handle, dirHandle } = payload as { handle?: FileSystemFileHandle; dirHandle?: FileSystemDirectoryHandle } || {};
 
         if (handle) {
           activeHandle = handle;

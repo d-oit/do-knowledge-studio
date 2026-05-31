@@ -25,7 +25,7 @@ vi.mock('@tanstack/react-virtual', () => {
 
 vi.mock('../../../lib/search', () => ({
   progressiveSearch: vi.fn((_query: string, onResults: searchLib.ProgressiveSearchCallback, _options?: { type?: string; signal?: AbortSignal }) => {
-    onResults([], 'exact');
+    void onResults([], 'exact');
     return Promise.resolve();
   }),
   initEmbeddings: vi.fn(),
@@ -75,7 +75,7 @@ describe('SearchPanel UX Improvements', () => {
   it('updates selected result index and ARIA attributes with keyboard navigation', async () => {
     const mockedSearch = vi.mocked(searchLib.progressiveSearch);
     mockedSearch.mockImplementation((_query: string, onResults: searchLib.ProgressiveSearchCallback) => {
-      onResults([
+      void onResults([
         { id: '1', name: 'Result 1', type: 'entity', excerpt: 'Content 1', score: 1, stage: 'verified' },
         { id: '2', name: 'Result 2', type: 'entity', excerpt: 'Content 2', score: 1, stage: 'verified' },
       ], 'exact');
@@ -107,7 +107,7 @@ describe('SearchPanel UX Improvements', () => {
   it('displays appropriate provenance tags based on the result stage', async () => {
     const mockedSearch = vi.mocked(searchLib.progressiveSearch);
     mockedSearch.mockImplementation((_query: string, onResults: searchLib.ProgressiveSearchCallback) => {
-      onResults([
+      void onResults([
         { id: '1', name: 'Verified Result', type: 'entity', excerpt: 'Content', score: 1, stage: 'verified' },
         { id: '2', name: 'Draft Result', type: 'entity', excerpt: 'Content', score: 1, stage: 'draft' },
       ], 'exact');
