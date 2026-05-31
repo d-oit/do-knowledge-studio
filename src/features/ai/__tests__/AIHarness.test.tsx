@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
+import { renderWithDb } from '../../../test/test-utils';
 
 vi.mock('../../../lib/llm/config', () => ({
   loadConfig: vi.fn().mockReturnValue({
@@ -46,22 +47,22 @@ describe('AIHarness', () => {
   });
 
   it('renders without crashing', () => {
-    render(<AIHarness />);
+    renderWithDb(<AIHarness />);
     expect(screen.getByText('AI Harness')).toBeDefined();
   });
 
   it('shows initial assistant message', () => {
-    render(<AIHarness />);
+    renderWithDb(<AIHarness />);
     expect(screen.getByText(/AI agent ready to assist/)).toBeDefined();
   });
 
   it('shows API key warning when no key is configured', () => {
-    render(<AIHarness />);
+    renderWithDb(<AIHarness />);
     expect(screen.getByText(/No API key configured/)).toBeDefined();
   });
 
   it('renders the ask input', () => {
-    render(<AIHarness />);
+    renderWithDb(<AIHarness />);
     const input = screen.getByPlaceholderText('Ask the AI agent...');
     expect(input).toBeDefined();
   });

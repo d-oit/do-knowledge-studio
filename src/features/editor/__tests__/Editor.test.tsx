@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { screen, fireEvent, act } from '@testing-library/react';
 import React from 'react';
+import { renderWithDb } from '../../../test/test-utils';
 
 // Stable mock for editor to prevent infinite re-render loops in tests
 const mockEditor = {
@@ -106,13 +107,22 @@ vi.mock('../../../lib/search', () => ({
 import Editor from '../Editor';
 
 describe('Editor Progressive Disclosure (#143)', () => {
+  const mockRepo = {
+    createEntity: vi.fn(),
+    getAllEntities: vi.fn().mockResolvedValue([]),
+    getBacklinks: vi.fn().mockResolvedValue([]),
+    getBacklinkCount: vi.fn().mockResolvedValue(0),
+    transaction: vi.fn(),
+    getEntityById: vi.fn().mockResolvedValue(null),
+  } as any;
+
   beforeEach(async () => {
     vi.clearAllMocks();
   });
 
   it('hides source URL and mention sections when Advanced is collapsed', async () => {
     await act(async () => {
-      render(<Editor />);
+      renderWithDb(<Editor />, { repository: mockRepo });
     });
 
     const advancedBtn = screen.getByLabelText('Toggle advanced options');
@@ -130,7 +140,7 @@ describe('Editor Progressive Disclosure (#143)', () => {
 
   it('shows source URL and mention sections when Advanced is expanded', async () => {
     await act(async () => {
-      render(<Editor />);
+      renderWithDb(<Editor />, { repository: mockRepo });
     });
 
     const advancedBtn = screen.getByLabelText('Toggle advanced options');
@@ -151,7 +161,7 @@ describe('Editor Progressive Disclosure (#143)', () => {
 
   it('toggles Advanced section on repeated clicks', async () => {
     await act(async () => {
-      render(<Editor />);
+      renderWithDb(<Editor />, { repository: mockRepo });
     });
 
     const advancedBtn = screen.getByLabelText('Toggle advanced options');
@@ -171,7 +181,7 @@ describe('Editor Progressive Disclosure (#143)', () => {
 
   it('renders primary editor controls always visible', async () => {
     await act(async () => {
-      render(<Editor />);
+      renderWithDb(<Editor />, { repository: mockRepo });
     });
 
     // Title input and type select should always be visible
