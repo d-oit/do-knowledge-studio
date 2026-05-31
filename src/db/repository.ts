@@ -126,6 +126,109 @@ export class Repository {
   }
 
   /**
+   * Get entities with advanced filtering, sorting, and pagination.
+   */
+  async getEntities(options: {
+    limit?: number;
+    offset?: number;
+    sortBy?: 'name' | 'created_at' | 'updated_at';
+    sortOrder?: 'ASC' | 'DESC';
+    type?: string;
+    search?: string;
+  } = {}): Promise<Entity[]> {
+    perf.mark('sqlite-query');
+    try {
+      const { limit, offset, sortBy = 'name', sortOrder = 'ASC', type, search } = options;
+
+      let sql = `SELECT * FROM entities`;
+      const bind: (string | number)[] = [];
+      const whereClauses: string[] = [];
+
+      if (type) {
+        whereClauses.push(`type = ?`);
+        bind.push(type);
+      }
+
+      if (search) {
+        whereClauses.push(`(name LIKE ? OR description LIKE ?)`);
+        bind.push(`%${search}%`, `%${search}%`);
+      }
+
+      if (whereClauses.length > 0) {
+        sql += ` WHERE ` + whereClauses.join(' AND ');
+      }
+
+      // Validate sortBy to prevent SQL injection (though it's from a restricted set)
+      const validSortFields = ['name', 'created_at', 'updated_at'];
+      const sortField = validSortFields.includes(sortBy) ? sortBy : 'name';
+      const order = sortOrder === 'DESC' ? 'DESC' : 'ASC';
+
+      sql += ` ORDER BY ${sortField} ${order}`;
+
+      if (limit !== undefined) {
+        sql += ` LIMIT ?`;
+        bind.push(limit);
+      }
+      if (offset !== undefined) {
+        sql += ` OFFSET ?`;
+        bind.push(offset);
+      }
+
+      const results = await this.db.exec({
+        sql,
+        bind: bind.length > 0 ? bind : undefined,
+        returnValue: 'resultRows',
+        rowMode: 'object',
+      });
+      const rows = z.array(z.unknown()).parse(results);
+      return rows.map((r) => this.parseMetadata(EntitySchema, r));
+    } catch (err) {
+      logger.error('Failed to fetch entities with filters', err);
+      throw new AppError('Failed to fetch entities with filters', 'DB_ERROR', err);
+    } finally {
+      perf.measure('sqlite-query-entities-advanced', 'sqlite-query');
+    }
+  }
+
+  /**
+   * Get the total count of entities matching the given filters.
+   */
+  async getEntitiesCount(options: { type?: string; search?: string } = {}): Promise<number> {
+    try {
+      const { type, search } = options;
+      let sql = `SELECT COUNT(*) as count FROM entities`;
+      const bind: (string | number)[] = [];
+      const whereClauses: string[] = [];
+
+      if (type) {
+        whereClauses.push(`type = ?`);
+        bind.push(type);
+      }
+
+      if (search) {
+        whereClauses.push(`(name LIKE ? OR description LIKE ?)`);
+        bind.push(`%${search}%`, `%${search}%`);
+      }
+
+      if (whereClauses.length > 0) {
+        sql += ` WHERE ` + whereClauses.join(' AND ');
+      }
+
+      const results = await this.db.exec({
+        sql,
+        bind: bind.length > 0 ? bind : undefined,
+        returnValue: 'resultRows',
+        rowMode: 'object',
+      });
+      const rows = z.array(z.object({ count: z.number() })).parse(results);
+      return rows[0].count;
+    } catch (err) {
+      logger.error('Failed to count entities', err);
+      throw new AppError('Failed to count entities', 'DB_ERROR', err);
+    }
+  }
+
+  /**
    * Get a single entity by its UUID.
    * @returns The entity with rowid, or null if not found.
    */

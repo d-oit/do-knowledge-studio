@@ -25,6 +25,7 @@ import {
 
 // Preload functions for lazy chunks (triggered on hover/focus)
 const preloadEditor = () => import('../features/editor/Editor');
+const preloadLibrary = () => import('../features/library/LibraryView');
 const preloadSearch = () => import('../features/search/SearchPanel');
 const preloadGraph = () => import('../features/graph/GraphView');
 const preloadGraphControls = () => import('../features/graph/GraphControls');
@@ -35,6 +36,7 @@ const preloadAI = () => import('../features/ai/AIHarness');
 
 // Lazy-loaded features
 const Editor = lazy(preloadEditor);
+const LibraryView = lazy(preloadLibrary);
 const SearchPanel = lazy(preloadSearch);
 const GraphControls = lazy(preloadGraphControls);
 const GraphView = lazy(preloadGraph);
@@ -68,7 +70,7 @@ const AppContent: React.FC = () => {
       case 'export': void preloadExport(); break;
       case 'ai': void preloadAI(); break;
       case 'search': void preloadSearch(); break;
-      case 'library': void preloadEditor(); break;
+      case 'library': void preloadLibrary(); break;
     }
   }, []);
 
@@ -171,7 +173,7 @@ const AppContent: React.FC = () => {
 
         <main className="main-content">
           {!dbReady && <div className="loading-screen">Booting Knowledge Studio...</div>}
-          {dbReady && (currentView === 'editor' || currentView === 'library') && (
+          {dbReady && currentView === 'editor' && (
             <Suspense fallback={<EditorSkeleton />}>
               <ErrorBoundary featureName="Editor" onRetry={() => window.location.reload()}>
                 <Profiled id="Editor">
@@ -180,6 +182,15 @@ const AppContent: React.FC = () => {
                     onEditComplete={handleEditComplete}
                     onEditEntity={handleEditEntity}
                   />
+                </Profiled>
+              </ErrorBoundary>
+            </Suspense>
+          )}
+          {dbReady && currentView === 'library' && (
+            <Suspense fallback={<div className="loading-screen">Loading Library...</div>}>
+              <ErrorBoundary featureName="Library" onRetry={() => window.location.reload()}>
+                <Profiled id="LibraryView">
+                  <LibraryView onEditEntity={handleEditEntity} />
                 </Profiled>
               </ErrorBoundary>
             </Suspense>
