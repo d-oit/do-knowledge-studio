@@ -64,7 +64,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete, onEdit
 
   useEffect(() => {
     if (!editingEntityId) {
-      setBacklinks([]);
+      setBacklinks(prev => (prev.length === 0 ? prev : []));
       return;
     }
     setIsLoadingEntity(true);

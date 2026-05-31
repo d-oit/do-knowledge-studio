@@ -1,31 +1,68 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import React from 'react';
+
+// Stable mock for editor to prevent infinite re-render loops in tests
+const mockEditor = {
+  getHTML: () => '<p>test</p>',
+  commands: {
+    setContent: vi.fn(),
+    focus: vi.fn().mockReturnValue({ toggleBold: vi.fn().mockReturnValue({ run: vi.fn() }) }),
+  },
+  isActive: vi.fn().mockReturnValue(false),
+  chain: vi.fn().mockReturnValue({
+    focus: vi.fn().mockReturnValue({
+      toggleBold: vi.fn().mockReturnValue({ run: vi.fn() }),
+      toggleHeading: vi.fn().mockReturnValue({ run: vi.fn() }),
+      toggleClaim: vi.fn().mockReturnValue({ run: vi.fn() }),
+      setMention: vi.fn().mockReturnValue({ run: vi.fn() }),
+    }),
+  }),
+  state: {
+    doc: {
+      descendants: vi.fn(),
+    },
+  },
+};
 
 // Mock heavy tiptap dependencies
 vi.mock('@tiptap/react', () => ({
-  useEditor: () => ({
-    getHTML: () => '<p>test</p>',
-    commands: {
-      setContent: vi.fn(),
-      focus: vi.fn().mockReturnValue({ toggleBold: vi.fn().mockReturnValue({ run: vi.fn() }) }),
-    },
-    isActive: vi.fn().mockReturnValue(false),
-    chain: vi.fn().mockReturnValue({
-      focus: vi.fn().mockReturnValue({
-        toggleBold: vi.fn().mockReturnValue({ run: vi.fn() }),
-        toggleHeading: vi.fn().mockReturnValue({ run: vi.fn() }),
-        toggleClaim: vi.fn().mockReturnValue({ run: vi.fn() }),
-        setMention: vi.fn().mockReturnValue({ run: vi.fn() }),
-      }),
-    }),
-    state: {
-      doc: {
-        descendants: vi.fn(),
-      },
-    },
-  }),
+  useEditor: () => mockEditor,
   EditorContent: () => <div data-testid="tiptap-editor" />,
+}));
+
+vi.mock('@tiptap/starter-kit', () => ({
+  default: {},
+}));
+
+vi.mock('@tiptap/extension-placeholder', () => ({
+  default: {
+    configure: vi.fn(),
+  },
+}));
+
+vi.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: () => ({
+    getTotalSize: () => 0,
+    getVirtualItems: () => [],
+  }),
+}));
+
+vi.mock('lucide-react', () => ({
+  CheckCircle: () => <div />,
+  AtSign: () => <div />,
+  Link2: () => <div />,
+  ChevronDown: () => <div />,
+  ChevronRight: () => <div />,
+  Pencil: () => <div />,
+}));
+
+vi.mock('../ClaimExtension', () => ({
+  ClaimExtension: {},
+}));
+
+vi.mock('../MentionExtension', () => ({
+  MentionExtension: {},
 }));
 
 vi.mock('../../../lib/logger', () => ({
@@ -60,15 +97,23 @@ vi.mock('../../../lib/perf', () => ({
   },
 }));
 
+vi.mock('../../../lib/search', () => ({
+  upsertToSearchIndex: vi.fn().mockResolvedValue(undefined),
+  removeFromSearchIndex: vi.fn().mockResolvedValue(undefined),
+  hydrateOramaIndex: vi.fn(),
+}));
+
 import Editor from '../Editor';
 
 describe('Editor Progressive Disclosure (#143)', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
   });
 
-  it('hides source URL and mention sections when Advanced is collapsed', () => {
-    render(<Editor />);
+  it('hides source URL and mention sections when Advanced is collapsed', async () => {
+    await act(async () => {
+      render(<Editor />);
+    });
 
     const advancedBtn = screen.getByLabelText('Toggle advanced options');
     expect(advancedBtn).toBeDefined();
@@ -83,11 +128,15 @@ describe('Editor Progressive Disclosure (#143)', () => {
     expect(mentionBtn).toBeNull();
   });
 
-  it('shows source URL and mention sections when Advanced is expanded', () => {
-    render(<Editor />);
+  it('shows source URL and mention sections when Advanced is expanded', async () => {
+    await act(async () => {
+      render(<Editor />);
+    });
 
     const advancedBtn = screen.getByLabelText('Toggle advanced options');
-    fireEvent.click(advancedBtn);
+    await act(async () => {
+      fireEvent.click(advancedBtn);
+    });
 
     expect(advancedBtn).toHaveAttribute('aria-expanded', 'true');
 
@@ -100,22 +149,30 @@ describe('Editor Progressive Disclosure (#143)', () => {
     expect(mentionBtn).toBeDefined();
   });
 
-  it('toggles Advanced section on repeated clicks', () => {
-    render(<Editor />);
+  it('toggles Advanced section on repeated clicks', async () => {
+    await act(async () => {
+      render(<Editor />);
+    });
 
     const advancedBtn = screen.getByLabelText('Toggle advanced options');
 
     // First click — expand
-    fireEvent.click(advancedBtn);
+    await act(async () => {
+      fireEvent.click(advancedBtn);
+    });
     expect(screen.getByPlaceholderText('Source URL — auto-hydrate description')).toBeDefined();
 
     // Second click — collapse
-    fireEvent.click(advancedBtn);
+    await act(async () => {
+      fireEvent.click(advancedBtn);
+    });
     expect(screen.queryByPlaceholderText('Source URL — auto-hydrate description')).toBeNull();
   });
 
-  it('renders primary editor controls always visible', () => {
-    render(<Editor />);
+  it('renders primary editor controls always visible', async () => {
+    await act(async () => {
+      render(<Editor />);
+    });
 
     // Title input and type select should always be visible
     expect(screen.getByPlaceholderText('Entity Name (e.g. TRIZ)')).toBeDefined();
