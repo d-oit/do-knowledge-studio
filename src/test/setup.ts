@@ -25,10 +25,3 @@ const indexedDB = {
 };
 
 vi.stubGlobal('indexedDB', indexedDB);
-
-// Mock import.meta.env.DEV as true for tests to enable perf measurements and other dev features
-vi.stubGlobal('import.meta', {
-  env: {
-    DEV: true,
-  },
-});

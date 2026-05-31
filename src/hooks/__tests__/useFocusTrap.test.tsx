@@ -33,7 +33,7 @@ describe('useFocusTrap', () => {
     expect(document.activeElement).toBe(b2);
 
     // Tab from last to first
-    fireEvent.keyDown(window, { key: 'Tab' });
+    fireEvent.keyDown(document, { key: 'Tab' });
     expect(document.activeElement).toBe(b1);
   });
 
@@ -47,7 +47,7 @@ describe('useFocusTrap', () => {
     expect(document.activeElement).toBe(b1);
 
     // Shift+Tab from first to last
-    fireEvent.keyDown(window, { key: 'Tab', shiftKey: true });
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
     expect(document.activeElement).toBe(b2);
   });
 
