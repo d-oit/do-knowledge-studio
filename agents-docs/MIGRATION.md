@@ -92,7 +92,7 @@ Download the template files to a temporary location:
 git clone https://github.com/your-org/your-project.git /tmp/ai-agent-template
 
 # Option B: Download as zip
-curl -L -o /tmp/ai-agent-template.zip https://github.com/your-org/your-project/archive/main.zip
+curl -L -o /tmp/ai-agent-template.zip https://github.com/d-oit/do-knowledge-studio/archive/main.zip
 unzip /tmp/ai-agent-template.zip -d /tmp/ai-agent-template
 ```
 

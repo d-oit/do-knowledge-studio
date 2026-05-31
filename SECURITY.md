@@ -44,6 +44,33 @@ Example:
 - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 ```
 
+## Local-First Security Model
+
+This application is a **local-first** knowledge studio. All data, including API
+keys, stays on the user's device.
+
+### API Key Handling
+
+- **User-provided keys**: API keys for LLM providers (OpenRouter, OpenAI, etc.)
+  are entered by the user in the application settings UI and stored in the
+  browser's `localStorage`.
+- **No backend storage**: Keys are never sent to, stored on, or transmitted
+  through any server. All LLM API calls are made directly from the browser.
+- **VITE_ environment variables**: Variables prefixed with `VITE_` are compiled
+  into the JavaScript bundle at build time and are **visible to anyone who
+  inspects the client-side source**. These should only be used for user-provided
+  API keys, never for developer secrets or infrastructure credentials.
+- **No secrets in source code**: API keys must never be hardcoded in source files,
+  committed to version control, or included in build artifacts.
+
+### Recommended Practices
+
+- Enter API keys through the application settings UI, not via `.env` files.
+- Treat any `VITE_` prefixed variable as public — only use it for values the
+  user is willing to expose in the browser.
+- Use the audit script (`scripts/audit-vite-env.sh`) to verify no secret
+  references leak into the client bundle.
+
 ## Scope
 
 This policy covers the source code, workflows, scripts, and configuration files

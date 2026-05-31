@@ -3,7 +3,6 @@ import { logger } from '../../lib/logger';
 import { repository } from '../../db/repository';
 import { generateSiteHtml, generateMarkdownExport, generateJsonExport, generatePrintHtml, fetchAllExportData } from '../../lib/export-core';
 import { stripHtmlTags } from '../../lib/security';
-import type { ExportData } from '../../lib/export-core';
 import { Download, File, FileJson, FileText, FileSpreadsheet, Globe, Loader2 } from 'lucide-react';
 
 const ExportPanel: React.FC = () => {
@@ -26,12 +25,7 @@ const ExportPanel: React.FC = () => {
     setIsExporting(true);
     setError(null);
     try {
-      const [entities, claims, notes] = await Promise.all([
-        repository.getAllEntities(),
-        repository.getAllClaimsGroupedByEntity(),
-        repository.getAllNotesGroupedByEntity(),
-      ]);
-      const data: ExportData = { entities, claims, notes };
+      const data = await fetchAllExportData(repository);
       const content = generateMarkdownExport(data);
       downloadFile(content, 'knowledge-base.md', 'text/markdown');
       logger.info('Markdown export complete');
@@ -48,19 +42,7 @@ const ExportPanel: React.FC = () => {
     setIsExporting(true);
     setError(null);
     try {
-      const [entities, links, claims, notes] = await Promise.all([
-        repository.getAllEntities(),
-        repository.getAllLinks(),
-        repository.getAllClaimsGroupedByEntity(),
-        repository.getAllNotesGroupedByEntity(),
-      ]);
-      const data = {
-        exported_at: new Date().toISOString(),
-        entities,
-        claims,
-        notes,
-        links,
-      };
+      const data = await fetchAllExportData(repository);
       const content = generateJsonExport(data);
       downloadFile(content, 'knowledge-base.json', 'application/json');
       logger.info('JSON export complete');
@@ -77,11 +59,7 @@ const ExportPanel: React.FC = () => {
     setIsExporting(true);
     setError(null);
     try {
-      const [entities, claims] = await Promise.all([
-        repository.getAllEntities(),
-        repository.getAllClaimsGroupedByEntity(),
-      ]);
-      const data: ExportData = { entities, claims, notes: {} };
+      const data = await fetchAllExportData(repository);
       const content = generateSiteHtml(data);
       downloadFile(content, 'knowledge-base.html', 'text/html');
       logger.info('Site export complete');

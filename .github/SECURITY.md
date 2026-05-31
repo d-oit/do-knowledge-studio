@@ -10,13 +10,13 @@ If you discover a security vulnerability, please report it directly to us via **
 
 1.  **Navigate to the "Security" tab** in this repository.
 2.  Click on **"Security advisories"**.
-3.  Click the **"New draft security advisory"** button to start the process[citation:3].
+3.  Click the **"New draft security advisory"** button to start the process.
 
-You can collaborate with our maintainers in the private draft advisory to discuss the finding and develop a patch[citation:1][citation:2].
+You can collaborate with our maintainers in the private draft advisory to discuss the finding and develop a patch.
 
 ## Best Practices for Writing a Security Advisory
 
-To help us process the advisory efficiently and get it reviewed by GitHub, please provide the following information in a clear and standard format[citation:1]:
+To help us process the advisory efficiently and get it reviewed by GitHub, please provide the following information in a clear and standard format:
 
 *   **Ecosystem:** Specify the package ecosystem (e.g., npm, PyPI, Go).
 *   **Package name:** Provide the name of the affected package.
@@ -24,7 +24,7 @@ To help us process the advisory efficiently and get it reviewed by GitHub, pleas
 
 ### Guidelines for Affected Versions
 
-Please use the following syntax to describe which versions are affected[citation:1]:
+Please use the following syntax to describe which versions are affected:
 
 *   **Supported operators:** `=`, `<=`, `<`, `>=`
 *   **Specifying a range:** `>= lower_bound, < upper_bound` (e.g., `>= 1.2.0, < 1.2.5`)
@@ -40,7 +40,7 @@ Please use the following syntax to describe which versions are affected[citation
 After you submit a draft advisory:
 - Our maintainers will be notified and will review the report.
 - We may collaborate with you in the draft advisory to understand and fix the issue.
-- Once a fix is ready and the advisory is finalized, we will publish it to inform the community and may request a CVE from GitHub[citation:3].
+- Once a fix is ready and the advisory is finalized, we will publish it to inform the community and may request a CVE from GitHub.
 
 ## Scope
 

@@ -164,7 +164,7 @@ AGENTS.md           # Single source of truth for all agents
 ├── CLAUDE.md       # Claude Code overrides
 ├── GEMINI.md       # Gemini CLI overrides
 ├── QWEN.md         # Qwen Code overrides
-└── opencode.json   # OpenCode configuration
+└── .opencode/       # OpenCode configuration
 ```
 
 ### Skills System
