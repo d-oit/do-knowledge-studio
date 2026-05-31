@@ -16,7 +16,7 @@ Agents are organized by CLI tool and purpose.
 | `analysis-swarm` | Claude Code | Multi-persona code analysis orchestrator using RYAN (methodi | Read, Glob, Grep, Bash |
 | `goap-agent` | Claude Code | Invoke for complex multi-step tasks requiring intelligent pl | Task, Read, Glob, Grep, TodoWrite |
 | `loop-agent` | Claude Code | Execute workflow agents iteratively for refinement and progr | Task, Read, TodoWrite, Glob, Grep |
-| `agent-name` | OpenCode | Create new opencode agents with proper format, YAML frontmat |  |
+| `skill-creator` | OpenCode | Create new opencode agents with proper format, YAML frontmat |  |
 | `git-worktree-manager` | OpenCode | Manage git worktrees for efficient multi-branch development. |  |
 | `github-action-editor` | OpenCode | Edit and create GitHub Actions workflows and composite actio |  |
 
@@ -25,7 +25,7 @@ Agents are organized by CLI tool and purpose.
 ## Available Skills
 
 Skills are reusable knowledge modules with progressive disclosure.
-See [`agents-docs/AVAILABLE_SKILLS.md`](agents-docs/AVAILABLE_SKILLS.md) for authoring guide.
+See [`AVAILABLE_SKILLS.md`](AVAILABLE_SKILLS.md) for authoring guide.
 
 | Skill | Location | Description |
 |-------|----------|-------------|
