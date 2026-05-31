@@ -3,6 +3,7 @@ import Sigma from 'sigma';
 import Graph from 'graphology';
 import type { NodeDisplayData, EdgeDisplayData } from 'sigma/types';
 import { Entity, Link, Claim } from '../../lib/validation';
+import { LayoutType, applyHierarchicalLayout, applyCircularLayout, applyForceLayout } from '../../lib/graph-data';
 import GraphControls from './GraphControls';
 import GraphInspector from './GraphInspector';
 import { jobCoordinator } from '../../lib/jobs';
@@ -10,7 +11,6 @@ import { repository } from '../../db/repository';
 import { removeFromSearchIndex } from '../../lib/search';
 import { logger } from '../../lib/logger';
 import { perf } from '../../lib/perf';
-import { assign as assignFA2Layout, inferSettings } from 'graphology-layout-forceatlas2';
 
 /** Tracks current touch state for mobile gesture handling. */
 interface TouchState {
@@ -24,8 +24,6 @@ interface TouchState {
   lastPanX: number;
   lastPanY: number;
 }
-
-type LayoutType = 'circular' | 'force' | 'hierarchical';
 
 interface Props {
   entities: Entity[];
@@ -74,6 +72,11 @@ const GraphView: React.FC<Props> = ({
   }, [onFocusModeChange]);
 
   const [filteredData, setFilteredData] = useState({ entities, links });
+
+  // Use snapshot data when in snapshot mode, otherwise use filtered live data
+  const effectiveData = useMemo(() => snapshotMode && snapshotData
+    ? { entities: snapshotData.nodes.map(n => ({ id: n.id, name: n.label, type: 'snapshot' })), links: snapshotData.edges.map(e => ({ id: e.id, source_id: e.source, target_id: e.target, relation: e.label || '' })) }
+    : filteredData, [snapshotMode, snapshotData, filteredData]);
 
   const recomputeNeighborhoodHandler = useCallback((payload: unknown) => {
     const { entities, links, selectedNode } = payload as { entities: Entity[], links: Link[], selectedNode: string };
@@ -133,93 +136,6 @@ const GraphView: React.FC<Props> = ({
     };
   }, [recomputeNeighborhoodHandler]);
 
-  // Apply hierarchical layout to the graph
-  const applyHierarchicalLayout = useCallback((graph: Graph, nodes: Entity[]) => {
-    // Compute ranks based on link direction
-    const inDegree = new Map<string, number>();
-    const outDegree = new Map<string, number>();
-    nodes.forEach(n => { inDegree.set(n.id!, 0); outDegree.set(n.id!, 0); });
-    links.forEach(l => {
-      if (graph.hasNode(l.source_id) && graph.hasNode(l.target_id)) {
-        outDegree.set(l.source_id, (outDegree.get(l.source_id) || 0) + 1);
-        inDegree.set(l.target_id, (inDegree.get(l.target_id) || 0) + 1);
-      }
-    });
-
-    // BFS from root nodes (nodes with no incoming links)
-    const visited = new Set<string>();
-    const levels = new Map<string, number>();
-    const queue: string[] = [];
-
-    nodes.forEach(n => {
-      if ((inDegree.get(n.id!) || 0) === 0) {
-        queue.push(n.id!);
-        levels.set(n.id!, 0);
-      }
-    });
-
-    // Fallback: if no root nodes, use node with most outgoing links
-    if (queue.length === 0 && nodes.length > 0) {
-      let maxOut = -1;
-      let bestNode = nodes[0].id!;
-      nodes.forEach(n => {
-        const out = outDegree.get(n.id!) || 0;
-        if (out > maxOut) { maxOut = out; bestNode = n.id!; }
-      });
-      queue.push(bestNode);
-      levels.set(bestNode, 0);
-    }
-
-    while (queue.length > 0) {
-      const currentId = queue.shift()!;
-      if (visited.has(currentId)) continue;
-      visited.add(currentId);
-      const currentLevel = levels.get(currentId) || 0;
-      links.forEach(l => {
-        if (l.source_id === currentId && !visited.has(l.target_id) && graph.hasNode(l.target_id)) {
-          levels.set(l.target_id, currentLevel + 1);
-          queue.push(l.target_id);
-        }
-      });
-    }
-
-    // Assign positions based on level and rank within level
-    const levelBuckets = new Map<number, string[]>();
-    levels.forEach((level, nodeId) => {
-      if (!levelBuckets.has(level)) levelBuckets.set(level, []);
-      levelBuckets.get(level)!.push(nodeId);
-    });
-
-    const levelSpacing = 300;
-    const nodeSpacing = 120;
-    levelBuckets.forEach((nodeIds, level) => {
-      const totalWidth = (nodeIds.length - 1) * nodeSpacing;
-      nodeIds.forEach((nodeId, idx) => {
-        const x = level * levelSpacing - 500;
-        const y = idx * nodeSpacing - totalWidth / 2;
-        graph.setNodeAttribute(nodeId, 'x', x);
-        graph.setNodeAttribute(nodeId, 'y', y + 100);
-      });
-    });
-  }, [links]);
-
-  const applyCircularLayout = useCallback((graph: Graph, nodes: { id: string }[]) => {
-    const n = nodes.length;
-    if (n === 0) return;
-    const radius = Math.max(200, n * 30);
-    nodes.forEach((node, i) => {
-      const angle = (i * 2 * Math.PI) / n;
-      graph.setNodeAttribute(node.id, 'x', Math.cos(angle) * radius);
-      graph.setNodeAttribute(node.id, 'y', Math.sin(angle) * radius);
-    });
-  }, []);
-
-  const applyForceLayout = useCallback((graph: Graph) => {
-    if (graph.order === 0) return;
-    const settings = inferSettings(graph);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    assignFA2Layout(graph, { settings, iterations: 100 });
-  }, []);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -294,7 +210,7 @@ const GraphView: React.FC<Props> = ({
 
         // Apply layout
         if (layout === 'hierarchical') {
-          applyHierarchicalLayout(graph, data.entities);
+          applyHierarchicalLayout(graph, data.entities, links);
         } else if (layout === 'force') {
           applyForceLayout(graph);
         }
@@ -404,12 +320,12 @@ const GraphView: React.FC<Props> = ({
         applyForceLayout(graph);
         break;
       case 'hierarchical':
-        applyHierarchicalLayout(graph, effectiveData.entities);
+        applyHierarchicalLayout(graph, effectiveData.entities, links);
         break;
     }
     sigma.refresh();
     void sigma.getCamera().animatedReset({ duration: 400 });
-  }, [layout, effectiveData.entities, applyHierarchicalLayout, applyCircularLayout, applyForceLayout]);
+  }, [layout, effectiveData.entities, links]);
 
   // Cleanup Sigma on unmount
   useEffect(() => {
@@ -701,12 +617,6 @@ const GraphView: React.FC<Props> = ({
     container.addEventListener('keydown', handleKeyDown);
     return () => container.removeEventListener('keydown', handleKeyDown);
   }, [selectedNode, focusRingIndex, entities, layout, setSelectedNode]);
-
-  // Use snapshot data when in snapshot mode, otherwise use filtered live data
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const effectiveData = snapshotMode && snapshotData
-    ? { entities: snapshotData.nodes.map(n => ({ id: n.id, name: n.label, type: 'snapshot' })), links: snapshotData.edges.map(e => ({ id: e.id, source_id: e.source, target_id: e.target, relation: e.label || '' })) }
-    : filteredData;
 
   return (
     <div className="graph-container">
