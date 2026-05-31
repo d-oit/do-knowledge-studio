@@ -538,6 +538,42 @@ describe('Repository', () => {
     });
   });
 
+  describe('getBacklinks', () => {
+    it('should return source entities linking to the target', async () => {
+      const mockEntities = [createMockEntity({ name: 'Source Entity', id: OTHER_UUID })];
+      mockExec.mockResolvedValue(mockEntities);
+
+      const result = await repository.getBacklinks(VALID_UUID);
+
+      expect(mockExec).toHaveBeenCalledWith(expect.objectContaining({
+        sql: expect.stringContaining('JOIN links l ON e.id = l.source_id'),
+        bind: [VALID_UUID],
+      }));
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe('Source Entity');
+    });
+  });
+
+  describe('getBacklinkCount', () => {
+    it('should return the count of backlinks', async () => {
+      mockExec.mockResolvedValue([{ count: 5 }]);
+
+      const result = await repository.getBacklinkCount(VALID_UUID);
+
+      expect(mockExec).toHaveBeenCalledWith(expect.objectContaining({
+        sql: 'SELECT COUNT(DISTINCT source_id) as count FROM links WHERE target_id = ?',
+        bind: [VALID_UUID],
+      }));
+      expect(result).toBe(5);
+    });
+
+    it('should return 0 when no backlinks found', async () => {
+      mockExec.mockResolvedValue([]);
+      const result = await repository.getBacklinkCount(VALID_UUID);
+      expect(result).toBe(0);
+    });
+  });
+
   // --- Snapshots CRUD ---
   describe('createSnapshot', () => {
     it('should create a graph snapshot', async () => {

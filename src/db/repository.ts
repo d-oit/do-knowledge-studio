@@ -772,6 +772,50 @@ export class Repository {
     }
   }
 
+  /**
+   * Get all entities that link to the given entity (backlinks).
+   * @param entityId - The UUID of the target entity.
+   * @returns Array of source entities.
+   */
+  async getBacklinks(entityId: string): Promise<Entity[]> {
+    try {
+      const results = await this.db.exec({
+        sql: `SELECT DISTINCT e.* FROM entities e
+              JOIN links l ON e.id = l.source_id
+              WHERE l.target_id = ?
+              ORDER BY e.name ASC`,
+        bind: [entityId],
+        returnValue: 'resultRows',
+        rowMode: 'object',
+      });
+      const rows = z.array(z.unknown()).parse(results);
+      return rows.map((r) => this.parseMetadata(EntitySchema, r));
+    } catch (err) {
+      logger.error('Failed to fetch backlinks', err);
+      throw new AppError('Failed to fetch backlinks', 'DB_ERROR', err);
+    }
+  }
+
+  /**
+   * Get the total count of backlinks for an entity.
+   * @param entityId - The UUID of the target entity.
+   */
+  async getBacklinkCount(entityId: string): Promise<number> {
+    try {
+      const results = await this.db.exec({
+        sql: `SELECT COUNT(DISTINCT source_id) as count FROM links WHERE target_id = ?`,
+        bind: [entityId],
+        returnValue: 'resultRows',
+        rowMode: 'object',
+      });
+      const rows = z.array(z.object({ count: z.number() })).parse(results);
+      return rows[0]?.count ?? 0;
+    } catch (err) {
+      logger.error('Failed to fetch backlink count', err);
+      throw new AppError('Failed to fetch backlink count', 'DB_ERROR', err);
+    }
+  }
+
   // --- Web Cache ---
   /**
    * Cache resolved web content for offline use.

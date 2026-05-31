@@ -23,13 +23,15 @@ const ENTITY_TYPES = [
 interface EditorProps {
   editingEntityId?: string | null;
   onEditComplete?: () => void;
+  onEditEntity?: (id: string) => void;
 }
 
-const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
+const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete, onEditEntity }) => {
   const [title, setTitle] = useState('');
   const [type, setType] = useState('note');
   const [sourceUrl, setSourceUrl] = useState('');
   const [allEntities, setAllEntities] = useState<Entity[]>([]);
+  const [backlinks, setBacklinks] = useState<Entity[]>([]);
   const [showMentionMenu, setShowMentionMenu] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
@@ -61,7 +63,10 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
   }, []);
 
   useEffect(() => {
-    if (!editingEntityId) return;
+    if (!editingEntityId) {
+      setBacklinks(prev => (prev.length === 0 ? prev : []));
+      return;
+    }
     setIsLoadingEntity(true);
     repository.getEntityById(editingEntityId).then(entity => {
       if (!entity) return;
@@ -72,6 +77,8 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
       }
     }).catch(err => logger.error('Failed to load entity for editing', err))
     .finally(() => setIsLoadingEntity(false));
+
+    repository.getBacklinks(editingEntityId).then(setBacklinks).catch(err => logger.error('Failed to load backlinks', err));
   }, [editingEntityId, editor?.commands]);
 
   const handleTypeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -303,6 +310,37 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
         {showAdvanced ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         Advanced
       </button>
+
+      {editingEntityId && backlinks.length > 0 && (
+        <div className="backlinks-section" style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border-default)' }}>
+          <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Link2 size={14} /> Referenced by ({backlinks.length})
+          </h4>
+          <div className="backlinks-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {backlinks.map(bl => (
+              <button
+                key={bl.id}
+                onClick={() => onEditEntity?.(bl.id!)}
+                className="backlink-chip"
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '16px',
+                  background: 'var(--background-secondary)',
+                  border: '1px solid var(--border-default)',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  color: 'var(--interactive-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                <AtSign size={10} /> {bl.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {showAdvanced && (
         <div className="advanced-section" style={{ padding: '0 0 8px 0' }}>
