@@ -178,6 +178,7 @@ const AppContent: React.FC = () => {
                   <Editor
                     editingEntityId={editingEntityId}
                     onEditComplete={handleEditComplete}
+                    onEditEntity={handleEditEntity}
                   />
                 </Profiled>
               </ErrorBoundary>

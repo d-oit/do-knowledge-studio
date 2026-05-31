@@ -35,18 +35,8 @@ const GraphInspector: React.FC<GraphInspectorProps> = ({
   );
 
   const claimsScrollRef = useRef<HTMLDivElement>(null);
-  const relationsScrollRef = useRef<HTMLDivElement>(null);
-
-  const allRelations = useMemo(() => {
-    const items: Array<{ type: 'outgoing' | 'incoming'; id: string; relation: string; targetId: string }> = [];
-    for (const link of outgoingLinks) {
-      items.push({ type: 'outgoing', id: link.id!, relation: link.relation, targetId: link.target_id });
-    }
-    for (const link of incomingLinks) {
-      items.push({ type: 'incoming', id: link.id!, relation: link.relation, targetId: link.source_id });
-    }
-    return items;
-  }, [outgoingLinks, incomingLinks]);
+  const outgoingScrollRef = useRef<HTMLDivElement>(null);
+  const incomingScrollRef = useRef<HTMLDivElement>(null);
 
   const claimVirtualizer = useVirtualizer({
     count: claims.length,
@@ -55,9 +45,16 @@ const GraphInspector: React.FC<GraphInspectorProps> = ({
     overscan: 5,
   });
 
-  const relationVirtualizer = useVirtualizer({
-    count: allRelations.length,
-    getScrollElement: () => relationsScrollRef.current,
+  const outgoingVirtualizer = useVirtualizer({
+    count: outgoingLinks.length,
+    getScrollElement: () => outgoingScrollRef.current,
+    estimateSize: () => 40,
+    overscan: 5,
+  });
+
+  const incomingVirtualizer = useVirtualizer({
+    count: incomingLinks.length,
+    getScrollElement: () => incomingScrollRef.current,
     estimateSize: () => 40,
     overscan: 5,
   });
@@ -142,15 +139,15 @@ const GraphInspector: React.FC<GraphInspectorProps> = ({
           </div>
         )}
 
-        {allRelations.length > 0 && (
+        {outgoingLinks.length > 0 && (
           <div className="inspector-section">
-            <h4><ExternalLink size={14} /> Relationships <span className="text-muted">({allRelations.length})</span></h4>
-            <div ref={relationsScrollRef} style={{ overflow: 'auto', maxHeight: '300px' }}>
-              <ul className="results-list" style={{ height: `${relationVirtualizer.getTotalSize()}px`, position: 'relative' }}>
-                {relationVirtualizer.getVirtualItems().map(virtualItem => {
-                  const rel = allRelations[virtualItem.index];
+            <h4><ExternalLink size={14} /> Relationships <span className="text-muted">({outgoingLinks.length})</span></h4>
+            <div ref={outgoingScrollRef} style={{ overflow: 'auto', maxHeight: '300px' }}>
+              <ul className="results-list" style={{ height: `${outgoingVirtualizer.getTotalSize()}px`, position: 'relative' }}>
+                {outgoingVirtualizer.getVirtualItems().map(virtualItem => {
+                  const link = outgoingLinks[virtualItem.index];
                   return (
-                    <li key={rel.id} className="search-result-item" style={{
+                    <li key={link.id} className="search-result-item" style={{
                       position: 'absolute',
                       top: 0,
                       left: 0,
@@ -158,11 +155,33 @@ const GraphInspector: React.FC<GraphInspectorProps> = ({
                       transform: `translateY(${virtualItem.start}px)`,
                     }}>
                       <div style={{ fontSize: '13px' }}>
-                        {rel.type === 'outgoing' ? (
-                          <><strong>{rel.relation}</strong> → {getEntityName(rel.targetId)}</>
-                        ) : (
-                          <>{getEntityName(rel.targetId)} → <strong>{rel.relation}</strong></>
-                        )}
+                        <strong>{link.relation}</strong> → {getEntityName(link.target_id)}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {incomingLinks.length > 0 && (
+          <div className="inspector-section">
+            <h4><Link2 size={14} /> Referenced by <span className="text-muted">({incomingLinks.length})</span></h4>
+            <div ref={incomingScrollRef} style={{ overflow: 'auto', maxHeight: '300px' }}>
+              <ul className="results-list" style={{ height: `${incomingVirtualizer.getTotalSize()}px`, position: 'relative' }}>
+                {incomingVirtualizer.getVirtualItems().map(virtualItem => {
+                  const link = incomingLinks[virtualItem.index];
+                  return (
+                    <li key={link.id} className="search-result-item" style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${virtualItem.start}px)`,
+                    }}>
+                      <div style={{ fontSize: '13px' }}>
+                        {getEntityName(link.source_id)} → <strong>{link.relation}</strong>
                       </div>
                     </li>
                   );
