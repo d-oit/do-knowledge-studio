@@ -465,7 +465,7 @@ const AIHarness: React.FC = () => {
           <DatabaseSettings onHandlesSelected={handleDbHandlesSelected} currentHandle={dbHandle} />
 
           <div style={{ padding: '12px', background: 'var(--surface-secondary)', borderRadius: '8px', border: '1px solid var(--border-default)' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <label htmlFor="ai-provider" style={{ fontSize: '13px', fontWeight: 600 }}>Provider</label>
             <select
               id="ai-provider"
