@@ -40,6 +40,8 @@ vi.mock('../../../db/repository', () => ({
   repository: {
     createEntity: vi.fn().mockResolvedValue({ id: '1', name: 'Test', type: 'note', description: '<p>test</p>', metadata: {} }),
     getAllEntities: vi.fn().mockResolvedValue([]),
+    getBacklinks: vi.fn().mockResolvedValue([]),
+    getBacklinkCount: vi.fn().mockResolvedValue(0),
     transaction: vi.fn().mockResolvedValue(undefined),
   },
 }));
