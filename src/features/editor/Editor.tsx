@@ -346,16 +346,19 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete, onEdit
 
       {showAdvanced && (
          <div className="advanced-section" style={{ padding: '0 0 8px 0' }}>
-           <div className="entity-source" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-             <Link2 size={14} /> Source
-             <input
-               type="text"
-               placeholder="Source URL — auto-hydrate description"
-               value={sourceUrl}
-               onChange={(e) => setSourceUrl(e.target.value)}
-               className="input input-bordered w-full max-w-xs"
-             />
-           </div>
+            <div className="entity-source" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <Link2 size={14} aria-hidden="true" />
+              <label htmlFor="entity-source-url" className="sr-only">Source URL (optional)</label>
+              <input
+                id="entity-source-url"
+                className="source-input"
+                value={sourceUrl}
+                onChange={handleSourceUrlChange}
+                placeholder="Source URL — auto-hydrate description"
+                type="url"
+                style={{ flex: 1 }}
+              />
+            </div>
 
            <button
              type="button"
