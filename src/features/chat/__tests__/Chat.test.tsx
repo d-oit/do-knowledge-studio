@@ -31,13 +31,13 @@ describe('Chat', () => {
     expect(input).toBeDefined();
   });
 
-  it('shows local-only badge', () => {
+  it('shows local context badge', () => {
     render(<Chat />);
-    expect(screen.getByText('Local search only')).toBeDefined();
+    expect(screen.getByText('Local context')).toBeDefined();
   });
 
-  it('shows offline ready badge', () => {
+  it('shows AI configuration status', () => {
     render(<Chat />);
-    expect(screen.getByText('Offline ready')).toBeDefined();
+    expect(screen.getByText('AI Not Configured')).toBeDefined();
   });
 });
