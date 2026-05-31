@@ -4,6 +4,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { Entity } from '../../lib/validation';
 import { repository } from '../../db/repository';
 import { logger } from '../../lib/logger';
+import { stripHtmlTags } from '../../lib/security';
 
 interface LibraryViewProps {
   onEditEntity: (entityId: string) => void;
@@ -193,7 +194,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onEditEntity }) => {
                       <span className="entity-name-text">{entity.name}</span>
                       {entity.description && (
                          <span className="entity-description-preview">
-                           {entity.description.replace(/<[^>]*>/g, '').substring(0, 80)}...
+                           {stripHtmlTags(entity.description).substring(0, 80)}...
                          </span>
                       )}
                     </div>
