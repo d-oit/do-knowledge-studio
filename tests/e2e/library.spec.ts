@@ -62,11 +62,12 @@ test.describe('Library View', () => {
     await libBtn.click();
     await expect(page.locator('h2:has-text("Library")')).toBeVisible();
 
-    await page.click('text=Library Test Entity');
+    // Click the entity row (click on the entity name text within the virtualized list)
+    await page.locator('.entity-name-text', { hasText: 'Library Test Entity' }).click();
 
     // Should be in Editor now
-    await expect(page.locator('.nav-button.active:has-text("Editor")')).toBeVisible({ timeout: 10000 });
-    // Verify the editing indicator appears (confirms entity is being loaded)
+    await expect(page.locator('.nav-button[aria-current="page"]')).toHaveText('Editor', { timeout: 10000 });
+    // Verify the editing indicator appears
     await expect(page.locator('text=Editing Entity')).toBeVisible({ timeout: 10000 });
   });
 });
