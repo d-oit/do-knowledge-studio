@@ -6,7 +6,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { ClaimExtension } from './ClaimExtension';
 import { MentionExtension } from './MentionExtension';
 import { logger } from '../../lib/logger';
-import { repository } from '../../db/repository';
+import { useRepository } from '../../db/useRepository';
 import { jobCoordinator } from '../../lib/jobs';
 import { upsertToSearchIndex } from '../../lib/search';
 import { perf } from '../../lib/perf';
@@ -27,6 +27,7 @@ interface EditorProps {
 }
 
 const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete, onEditEntity }) => {
+  const repository = useRepository();
   const [title, setTitle] = useState('');
   const [type, setType] = useState('note');
   const [sourceUrl, setSourceUrl] = useState('');
