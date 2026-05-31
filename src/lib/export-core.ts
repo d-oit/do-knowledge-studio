@@ -9,6 +9,27 @@ export interface ExportData {
   exported_at?: string;
 }
 
+export async function fetchAllExportData(repository: {
+  getAllEntities(): Promise<Entity[]>;
+  getAllLinks(): Promise<Link[]>;
+  getAllClaimsGroupedByEntity(): Promise<Record<string, Claim[]>>;
+  getAllNotesGroupedByEntity(): Promise<Record<string, Note[]>>;
+}): Promise<ExportData> {
+  const [entities, links, claims, notes] = await Promise.all([
+    repository.getAllEntities(),
+    repository.getAllLinks(),
+    repository.getAllClaimsGroupedByEntity(),
+    repository.getAllNotesGroupedByEntity(),
+  ]);
+  return {
+    entities,
+    links,
+    claims,
+    notes,
+    exported_at: new Date().toISOString(),
+  };
+}
+
 export function generateSiteHtml(data: ExportData): string {
   const { entities, claims } = data;
   const timestamp = data.exported_at ?? new Date().toLocaleString();
