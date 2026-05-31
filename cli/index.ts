@@ -5,7 +5,7 @@ import { readFileSync } from 'fs';
 import { setDb } from '../src/db/client.js';
 import { initDb } from './db.js';
 import { repository } from '../src/db/repository.js';
-import { generateSiteHtml, generateJsonExport, generateEntityMarkdown } from '../src/lib/export-core.js';
+import { generateSiteHtml, generateJsonExport, generateEntityMarkdown, fetchAllExportData } from '../src/lib/export-core.js';
 import { runMigrations, rollbackLastMigration, getMigrationStatus } from '../src/db/migrate.js';
 
 const program = new Command();
@@ -127,13 +127,13 @@ program
   });
 
 async function exportMarkdown(outDir: string) {
-  const entities = await repository.getAllEntities();
-  
-  for (const entity of entities) {
+  const data = await fetchAllExportData(repository);
+
+  for (const entity of data.entities) {
     if (!entity.id) continue;
-    const claims = await repository.getClaimsByEntityId(entity.id);
-    const notes = await repository.getNotesByEntityId(entity.id);
-    
+    const claims = data.claims[entity.id] ?? [];
+    const notes = data.notes[entity.id] ?? [];
+
     const md = generateEntityMarkdown(entity, claims, notes);
 
     const safeName = entity.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
@@ -142,32 +142,13 @@ async function exportMarkdown(outDir: string) {
 }
 
 async function exportJson(outDir: string) {
-  const [entities, links, claims, notes] = await Promise.all([
-    repository.getAllEntities(),
-    repository.getAllLinks(),
-    repository.getAllClaimsGroupedByEntity(),
-    repository.getAllNotesGroupedByEntity(),
-  ]);
-  
-  const data = {
-    exported_at: new Date().toISOString(),
-    entities,
-    claims,
-    notes,
-    links,
-  };
-  
+  const data = await fetchAllExportData(repository);
   fs.writeFileSync(path.join(outDir, 'knowledge.json'), generateJsonExport(data));
 }
 
 async function exportSite(outDir: string) {
-  const [entities, claims, notes] = await Promise.all([
-    repository.getAllEntities(),
-    repository.getAllClaimsGroupedByEntity(),
-    repository.getAllNotesGroupedByEntity(),
-  ]);
-  
-  const html = generateSiteHtml({ entities, claims, notes });
+  const data = await fetchAllExportData(repository);
+  const html = generateSiteHtml(data);
   fs.writeFileSync(path.join(outDir, 'index.html'), html);
 }
 

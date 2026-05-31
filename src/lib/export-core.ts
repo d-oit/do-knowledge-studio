@@ -3,18 +3,20 @@ import type { Entity, Claim, Note, Link } from './validation';
 
 export interface ExportData {
   entities: Entity[];
-  claims: Record<string, Claim[]>;
-  notes: Record<string, Note[]>;
+  claims: Record<string, Claim[] | undefined>;
+  notes: Record<string, Note[] | undefined>;
   links?: Link[];
   exported_at?: string;
 }
 
-export async function fetchAllExportData(repository: {
+export interface ExportRepository {
   getAllEntities(): Promise<Entity[]>;
   getAllLinks(): Promise<Link[]>;
   getAllClaimsGroupedByEntity(): Promise<Record<string, Claim[]>>;
   getAllNotesGroupedByEntity(): Promise<Record<string, Note[]>>;
-}): Promise<ExportData> {
+}
+
+export async function fetchAllExportData(repository: ExportRepository): Promise<Required<ExportData>> {
   const [entities, links, claims, notes] = await Promise.all([
     repository.getAllEntities(),
     repository.getAllLinks(),
