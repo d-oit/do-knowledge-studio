@@ -1,7 +1,7 @@
 # ADR 006: Shared Export Core for Browser and CLI
 
 ## Status
-PROPOSED
+IMPLEMENTED (PR #220 — fetchAllExportData extracted, N+1 query fixed, type alignment complete)
 
 ## Context
 Export logic is currently duplicated between `src/features/export/ExportPanel.tsx` and `cli/index.ts`. Both generate static HTML sites, but with independent implementations. This causes:
@@ -62,11 +62,11 @@ interface ExportResult {
 - **Negative**: CLI must import from `src/lib/` — works since CLI runs in Node.js and can import TypeScript source
 
 ## Acceptance Criteria
-- [ ] `src/lib/export-core.ts` contains all export generation logic
-- [ ] `ExportPanel.tsx` uses shared core (no inline HTML generation)
-- [ ] `cli/index.ts` uses shared core (no inline HTML generation)
-- [ ] Both paths produce identical output for the same input
-- [ ] N+1 batch query integrated into core
-- [ ] HTML escaping applied in one place (security.ts or export-core.ts)
-- [ ] Tests cover all export formats with sample data
-- [ ] `npm run typecheck` and `npm test` pass
+- [x] `src/lib/export-core.ts` contains all export generation logic
+- [x] `ExportPanel.tsx` uses shared core (no inline HTML generation)
+- [x] `cli/index.ts` uses shared core (no inline HTML generation)
+- [x] Both paths produce identical output for the same input (notes now included in site export)
+- [x] N+1 batch query integrated into core (CLI markdown uses fetchAllExportData)
+- [x] HTML escaping applied in one place (security.ts)
+- [x] Tests cover all export formats with sample data (41 tests)
+- [x] `npm run typecheck` and `npm test` pass

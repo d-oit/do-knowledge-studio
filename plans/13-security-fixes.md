@@ -106,10 +106,12 @@
 ---
 
 ## Completion Criteria
-- [ ] Both browser and CLI export paths escape/sanitize all user content
-- [ ] DOMPurify sanitizes TipTap rich HTML while preserving safe tags
-- [ ] No `VITE_` env vars are used for API keys in production code
-- [ ] API keys are stored in IndexedDB with migration from localStorage
-- [ ] Security test suite covers XSS vectors and key isolation
-- [ ] `npm run typecheck` passes
-- [ ] `npm test` passes (all existing + new security tests)
+- [x] Both browser and CLI export paths escape/sanitize all user content
+- [x] DOMPurify sanitizes TipTap rich HTML while preserving safe tags
+- [x] No `VITE_` env vars are used for API keys in production code
+- [ ] API keys are stored in IndexedDB with migration from localStorage (future work)
+- [x] Security test suite covers XSS vectors and key isolation
+- [x] `npm run typecheck` passes
+- [x] `npm test` passes (all existing + new security tests)
+- [x] `scripts/audit-vite-env.sh` created and passes
+- [x] SECURITY.md documents local-first security model

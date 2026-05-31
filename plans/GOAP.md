@@ -1,7 +1,8 @@
 # GOAP: Goal-Oriented Action Plan — do-knowledge-studio
 
 **Generated**: 2026-05-26  
-**Source**: GitHub issue analysis (#168–#199) + plans/ gap analysis  
+**Updated**: 2026-05-31  
+**Source**: GitHub issue analysis (#168–#221) + plans/ gap analysis  
 **Method**: Goal-Oriented Action Planning with dependency-driven action chains
 
 ## Goal Hierarchy

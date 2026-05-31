@@ -144,9 +144,9 @@
 ---
 
 ## Completion Criteria
-- [ ] Shared export core eliminates duplication between browser and CLI
-- [ ] Graph exports as 1080p PNG from GraphControls
-- [ ] PDF export produces valid documents via jspdf
-- [ ] DOCX export produces valid Word documents via docx library
-- [ ] Export panel shows progress/error/success states
-- [ ] All quality gates pass: `pnpm test`, `pnpm run typecheck`, `pnpm run lint`
+- [x] Shared export core eliminates duplication between browser and CLI (PR #220)
+- [ ] Graph exports as 1080p PNG from GraphControls (future work)
+- [ ] PDF export produces valid documents via jspdf (future work)
+- [x] DOCX export produces valid Word documents via docx library
+- [ ] Export panel shows progress/error/success states (future work)
+- [x] All quality gates pass: `pnpm test`, `pnpm run typecheck`, `pnpm run lint`
