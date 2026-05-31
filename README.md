@@ -225,11 +225,22 @@ pnpm run lint
 
 ## ⚙️ CLI
 
+The CLI enables automation and scripting for your knowledge base. It shares a common database file with the browser app, allowing for seamless integration between automated tools and visual exploration.
+
+**Default Database Path**: `~/.local/share/do-knowledge-studio/data.db`
+
 ```bash
-pnpm run cli -- <command>
+# List all entities
+pnpm run cli -- entity-list
+
+# Import from a directory
+pnpm run cli -- sync ./notes
+
+# Use a custom database path
+pnpm run cli -- --db-path ./custom.db entity-list
 ```
 
-See `cli/` directory for available commands and scripting options.
+See [SETUP.md](docs/SETUP.md) for detailed CLI instructions and how to connect the browser to the shared database.
 
 ---
 

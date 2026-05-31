@@ -31,6 +31,7 @@ interface SQLiteDB {
     rowMode?: string
   }) => unknown[];
   close: () => void;
+  export: () => Uint8Array;
 }
 
 interface Sqlite3Static {
@@ -41,6 +42,35 @@ interface Sqlite3Static {
 }
 
 let db: SQLiteDB | null = null;
+let activeHandle: FileSystemFileHandle | null = null;
+let activeDirHandle: FileSystemDirectoryHandle | null = null;
+
+const flushToHost = async () => {
+  if (!activeHandle || !db) return;
+
+  try {
+    if (activeDirHandle) {
+      // Create lock file
+      await activeDirHandle.getFileHandle('data.db.lock', { create: true });
+    }
+
+    const buffer = db.export();
+    const writable = await activeHandle.createWritable();
+    await writable.write(buffer);
+    await writable.close();
+
+    if (activeDirHandle) {
+      // Remove lock file
+      await activeDirHandle.removeEntry('data.db.lock');
+    }
+  } catch (err) {
+    console.error('Worker: Failed to flush to host', err);
+    // Attempt to cleanup lock on error
+    if (activeDirHandle) {
+       try { await activeDirHandle.removeEntry('data.db.lock'); } catch { /* ignore */ }
+    }
+  }
+};
 
 // The sqlite3 module is loaded once
 const sqlite3Promise = sqlite3InitModule({
@@ -56,6 +86,27 @@ self.onmessage = async (event: MessageEvent) => {
 
     switch (type) {
       case 'init': {
+        const { handle, dirHandle } = payload as { handle?: FileSystemFileHandle; dirHandle?: FileSystemDirectoryHandle } || {};
+
+        if (handle) {
+          activeHandle = handle;
+          activeDirHandle = dirHandle || null;
+          try {
+            const file = await handle.getFile();
+            if (file.size > 0) {
+              const buffer = await file.arrayBuffer();
+              const root = await navigator.storage.getDirectory();
+              const opfsFile = await root.getFileHandle('studio.db', { create: true });
+              const writable = await opfsFile.createWritable();
+              await writable.write(buffer);
+              await writable.close();
+              console.log('Worker: Initialized from host file');
+            }
+          } catch (err) {
+            console.error('Worker: Failed to load from host file', err);
+          }
+        }
+
         if (!db) {
           if (sqlite3.oo1.OpfsDb) {
             // Using /studio.db in OPFS. Note: we do NOT use ?unlock-asap=1
@@ -95,6 +146,10 @@ self.onmessage = async (event: MessageEvent) => {
           rowMode,
         });
 
+        if (activeHandle && !sql.trim().toUpperCase().startsWith('SELECT')) {
+          await flushToHost();
+        }
+
         self.postMessage({ id, type: 'exec', success: true, data: result });
         break;
       }
@@ -118,6 +173,11 @@ self.onmessage = async (event: MessageEvent) => {
             }));
           }
           db.exec('COMMIT;');
+
+          if (activeHandle) {
+            await flushToHost();
+          }
+
           self.postMessage({ id, type: 'transaction', success: true, data: results });
         } catch (err) {
           db.exec('ROLLBACK;');

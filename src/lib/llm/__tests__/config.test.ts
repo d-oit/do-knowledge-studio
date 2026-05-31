@@ -85,7 +85,7 @@ describe('saveConfig', () => {
     };
     saveConfig(config);
 
-    const stored = JSON.parse(localStorage.getItem('dks:llm-config')!);
+    const stored = JSON.parse(localStorage.getItem('dks:llm-config')!) as { activeProvider: string; providers: { openrouter: { apiKey: string } } };
     expect(stored.activeProvider).toBe('kilo');
     expect(stored.providers.openrouter.apiKey).toBe('key1');
   });

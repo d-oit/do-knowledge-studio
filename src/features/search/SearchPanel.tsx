@@ -164,10 +164,10 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
           setSearchStages(prev => new Set(prev).add(stage));
           const flatResults = Array.from(accumulated.values()).map(r => ({
             id: r.id,
-            title: r.name,
+            title: r.title,
             type: r.type,
-            content: r.excerpt,
-            stage: r.stage || stage,
+            content: r.content,
+            stage: r.stage,
           }));
           setResults(flatResults);
 

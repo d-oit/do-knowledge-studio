@@ -27,7 +27,9 @@ describe('useMediaQuery', () => {
     vi.stubGlobal('matchMedia', (query: string) => ({
       matches: true,
       media: query,
+      // eslint-disable-next-line @typescript-eslint/no-empty-function -- Stub matchMedia methods; this test does not exercise listener callbacks
       addEventListener: () => {},
+      // eslint-disable-next-line @typescript-eslint/no-empty-function -- Stub matchMedia methods; this test does not exercise listener callbacks
       removeEventListener: () => {},
     }));
 

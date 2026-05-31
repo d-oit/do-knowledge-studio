@@ -117,6 +117,7 @@ describe('OpenRouterProvider', () => {
       expect(mockFetch).toHaveBeenCalledWith(
         'https://openrouter.ai/api/v1/chat/completions',
         expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Vitest matchers return `any` by design; type safety is enforced on the actual fetch call
           headers: expect.objectContaining({
             Authorization: 'Bearer sk-test-key-12345678',
           }),

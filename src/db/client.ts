@@ -2,6 +2,7 @@ import { logger } from '../lib/logger.js';
 import { AppError } from '../lib/errors.js';
 import { ConnectionPool, DEFAULT_POOL_SIZE } from './connection-pool.js';
 import { runMigrations } from './migrate.js';
+import { getDbHandles } from '../lib/db-persistence.js';
 
 /**
  * Abstract database interface for SQLite access.
@@ -70,7 +71,8 @@ export const initDb = async (options?: { poolSize?: number }): Promise<SQLiteDB>
     if (isBrowser) {
         const poolSize = options?.poolSize ?? DEFAULT_POOL_SIZE;
         const pool = new ConnectionPool(poolSize);
-        await pool.init(schemaSql);
+        const { fileHandle, dirHandle } = await getDbHandles();
+        await pool.init(schemaSql, fileHandle, dirHandle);
         instance = pool;
     } else {
         // CLI/Node fallback: Direct initialization (only reached if setDb not used)

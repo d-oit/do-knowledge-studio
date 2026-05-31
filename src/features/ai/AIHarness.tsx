@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { loadConfig, saveConfig, createProvider, maskApiKey } from '../../lib/llm/config';
+import { saveDbHandles, getDbHandles } from '../../lib/db-persistence';
 import { PROVIDER_MODELS } from '../../lib/llm';
 import { searchKnowledge } from '../../lib/search';
 import { resolveUrl, ResolvedContent } from '../../lib/resolver';
 import { logger } from '../../lib/logger';
 import MarkdownRenderer from '../../lib/llm/markdown';
+import DatabaseSettings from '../../components/DatabaseSettings';
 import { Send, Loader2, Bot, User, Database, Globe, ExternalLink, X, Settings, Key, AlertTriangle, ChevronRight, Check } from 'lucide-react';
 
 const WIZARD_SEEN_KEY = 'dks:ai-wizard-seen';
@@ -47,6 +49,7 @@ const AIHarness: React.FC = () => {
   const [useContext, setUseContext] = useState(true);
   const [resolvedSources, setResolvedSources] = useState<ResolvedContent[]>([]);
   const [sessionTokens, setSessionTokens] = useState<TokenUsage>({ input: 0, output: 0 });
+  const [dbHandle, setDbHandle] = useState<FileSystemFileHandle | null>(null);
   const [showWizard, setShowWizard] = useState(false);
   const [wizardStep, setWizardStep] = useState(0);
   const [wizardApiKey, setWizardApiKey] = useState('');
@@ -63,6 +66,9 @@ const AIHarness: React.FC = () => {
     if (!seen && !hasAnyKey) {
       setShowWizard(true);
     }
+    void getDbHandles().then(({ fileHandle }) => {
+      if (fileHandle) setDbHandle(fileHandle);
+    });
   }, [config.providers]);
 
   useEffect(() => {
@@ -304,6 +310,15 @@ const AIHarness: React.FC = () => {
   const currentModel = config.providers[config.activeProvider].defaultModel || '';
   const providerModelEntries = Object.entries(availableModels);
 
+  const handleDbHandlesSelected = useCallback(async (fileHandle: FileSystemFileHandle, dirHandle: FileSystemDirectoryHandle) => {
+    await saveDbHandles(fileHandle, dirHandle);
+    setDbHandle(fileHandle);
+    // Notify user that reload is needed to switch database
+    if (confirm('Database connection updated. Reload now to apply changes?')) {
+      window.location.reload();
+    }
+  }, []);
+
   const wizardModelEntries = Object.entries(PROVIDER_MODELS_MAP.get(wizardProvider) || {});
   const rateLimitLevel = getRateLimitLevel();
 
@@ -446,8 +461,11 @@ const AIHarness: React.FC = () => {
       )}
 
       {showSettings && (
-        <div style={{ padding: '12px', marginBottom: '12px', background: 'var(--surface-secondary)', borderRadius: '8px', border: '1px solid var(--border-default)' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '16px' }}>
+          <DatabaseSettings onHandlesSelected={(...args) => void handleDbHandlesSelected(...args)} currentHandle={dbHandle} />
+
+          <div style={{ padding: '12px', background: 'var(--surface-secondary)', borderRadius: '8px', border: '1px solid var(--border-default)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <label htmlFor="ai-provider" style={{ fontSize: '13px', fontWeight: 600 }}>Provider</label>
             <select
               id="ai-provider"
@@ -493,6 +511,7 @@ const AIHarness: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
       )}
 
       {isSourcing && (

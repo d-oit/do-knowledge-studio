@@ -26,7 +26,25 @@ Open `http://localhost:5173` in your browser.
 
 ## CLI Usage
 
-The CLI interacts with the database in a Node.js environment. Note that while the browser uses OPFS, the CLI uses a local file-based SQLite database for operations.
+The CLI interacts with the database in a Node.js environment. By default, it uses a shared database file at `~/.local/share/do-knowledge-studio/data.db` (Linux/macOS) or the corresponding user data path on Windows.
+
+### Shared Database with Browser
+
+To see CLI-created data in the browser app:
+1. Open the app in a modern browser (Chrome, Edge).
+2. Go to **AI Harness** and click the **Settings** (gear) icon.
+3. Click **Connect Local Database**.
+4. Select the database directory (usually `~/.local/share/do-knowledge-studio/`).
+5. Reload the page when prompted.
+
+The browser will now synchronize its internal storage (OPFS) with the `data.db` file in that directory.
+
+### CLI Options
+
+You can specify a custom database path using the `--db-path` global flag:
+```bash
+pnpm run cli -- --db-path ./my-data.db entity-list
+```
 
 ### Initialize Workspace
 ```bash

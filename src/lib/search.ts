@@ -407,6 +407,7 @@ export interface SearchResult {
 }
 
 import { type RankedResult } from '../db/repository.js';
+export { type RankedResult } from '../db/repository.js';
 
 /** Maps claim verification_status to display stage. */
 const mapVerificationStage = (status: string): RankedResult['stage'] => {

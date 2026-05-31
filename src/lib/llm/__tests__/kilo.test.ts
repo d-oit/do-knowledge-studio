@@ -97,6 +97,7 @@ describe('KiloGatewayProvider', () => {
       expect(mockFetch).toHaveBeenCalledWith(
         'https://api.kilo.ai/api/gateway/chat/completions',
         expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Vitest matchers return `any` by design; type safety is enforced on the actual fetch call
           headers: expect.objectContaining({
             Authorization: 'Bearer kilo-key-12345678',
           }),

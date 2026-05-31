@@ -90,7 +90,7 @@ jobs:
     name: Unit Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [changes, quality-gate]
+    needs: [changes]
     if: needs.changes.outputs.any_code == 'true'
     steps:
       - name: Checkout repository
@@ -113,7 +113,7 @@ jobs:
     name: E2E Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [changes, unit-tests]
+    needs: [changes, quality-gate, unit-tests]
     if: needs.changes.outputs.any_code == 'true'
     continue-on-error: true
     steps:

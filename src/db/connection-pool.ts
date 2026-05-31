@@ -51,7 +51,7 @@ export class ConnectionPool {
     logger.info(`Connection pool timeout set to ${this.timeoutMs}ms`);
   }
 
-  async init(schema?: string): Promise<void> {
+  async init(schema?: string, handle?: FileSystemFileHandle | null, dirHandle?: FileSystemDirectoryHandle | null): Promise<void> {
     if (this.initialized) return;
 
     this.schema = schema;
@@ -61,7 +61,7 @@ export class ConnectionPool {
       Array.from({ length: this.poolSize }).map((_, i) => {
         const workerEntry = this.createWorker();
         this.workers.push(workerEntry);
-        return this.initializeWorker(workerEntry, i);
+        return this.initializeWorker(workerEntry, i, 2, handle, dirHandle);
       })
     );
 
@@ -83,10 +83,10 @@ export class ConnectionPool {
     };
   }
 
-  private async initializeWorker(entry: WorkerEntry, index: number, retries = 2): Promise<void> {
+  private async initializeWorker(entry: WorkerEntry, index: number, retries = 2, handle?: FileSystemFileHandle | null, dirHandle?: FileSystemDirectoryHandle | null): Promise<void> {
     const id = crypto.randomUUID();
     try {
-      await this.sendToWorker(entry, 'init', { schema: this.schema }, id);
+      await this.sendToWorker(entry, 'init', { schema: this.schema, handle, dirHandle }, id);
       entry.initialized = true;
       logger.info(`Worker ${index} initialized`);
       // Trigger queue processing now that a new worker is available

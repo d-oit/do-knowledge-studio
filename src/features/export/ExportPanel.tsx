@@ -4,6 +4,7 @@ import { repository } from '../../db/repository';
 import { generateSiteHtml, generateMarkdownExport, generateJsonExport, generatePrintHtml, fetchAllExportData } from '../../lib/export-core';
 import { stripHtmlTags } from '../../lib/security';
 import { Download, File, FileJson, FileText, FileSpreadsheet, Globe, Loader2 } from 'lucide-react';
+import type { Entity } from '../../lib/validation';
 
 const ExportPanel: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
@@ -108,7 +109,7 @@ const ExportPanel: React.FC = () => {
           children: [
             new Paragraph({ text: 'Knowledge Base Export', heading: HeadingLevel.TITLE }),
             new Paragraph({ text: `Exported on ${new Date().toLocaleString()}`, spacing: { after: 400 } }),
-            ...data.entities.filter((e): e is Entity & { id: string } => !!e.id).flatMap(entity => {
+            ...data.entities.filter((e): e is Entity & Required<Pick<Entity, 'id'>> => !!e.id).flatMap(entity => {
               const entityClaims = data.claims[entity.id] ?? [];
               return [
                 new Paragraph({ text: stripHtmlTags(entity.name), heading: HeadingLevel.HEADING_1 }),
