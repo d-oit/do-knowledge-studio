@@ -11,7 +11,7 @@ import {
   type ProgressiveSearchCallback
 } from './progressive';
 import { logger } from '../logger';
-import { RankedResult } from '../../db/repository';
+import type { RankedResult } from '../../db/repository/types';
 
 export * from './orama-index';
 export * from './fts5-hydrator';
@@ -23,9 +23,9 @@ export {
   searchKnowledge,
   semanticSearch,
   progressiveSearch,
-  RankedResult,
   type ProgressiveSearchCallback
 };
+export type { RankedResult };
 
 // --- Eager handler registration ---
 jobCoordinator.registerHandler('external-fetch', async (payload) => {
