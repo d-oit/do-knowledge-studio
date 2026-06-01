@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import React, { useRef } from 'react';
 import { useFocusTrap } from '../useFocusTrap';
@@ -9,9 +9,9 @@ const TestComponent = ({ active }: { active: boolean }) => {
 
   return (
     <div ref={ref}>
-      <button data-testid="b1">Button 1</button>
+      <button type="button" data-testid="b1">Button 1</button>
       <input data-testid="input" />
-      <button data-testid="b2">Button 2</button>
+      <button type="button" data-testid="b2">Button 2</button>
     </div>
   );
 };

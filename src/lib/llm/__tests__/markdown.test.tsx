@@ -5,7 +5,7 @@ import MarkdownRenderer from '../markdown';
 
 describe('MarkdownRenderer', () => {
   it('renders headings', () => {
-    const { container } = render(<MarkdownRenderer content="# Heading 1\n## Heading 2" />);
+    const { container } = render(<MarkdownRenderer content="# Heading 1\n\n## Heading 2" />);
     expect(container.textContent).toContain('Heading 1');
     expect(container.textContent).toContain('Heading 2');
   });
