@@ -1,10 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { loadConfig, createProvider } from '../../lib/llm/config';
+import { LLMMessage } from '../../lib/llm/types';
 import { searchKnowledge } from '../../lib/search';
 import { resolveUrl, ResolvedContent } from '../../lib/resolver';
 import { logger } from '../../lib/logger';
 
-const URL_REGEX = /https?:\/\/[^\s<>"'{}|\\^`[\]]+/gi;
+const URL_REGEX = /https?:\/\/[^\s<>"'{}|\\^'\[\]]+/gi;
 
 export interface Message {
   id: string;
@@ -27,6 +28,11 @@ export function useChat() {
   const [resolvedSources, setResolvedSources] = useState<ResolvedContent[]>([]);
   const [sessionTokens, setSessionTokens] = useState<TokenUsage>({ input: 0, output: 0 });
 
+  const messagesRef = useRef<Message[]>(messages);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
   const sendMessage = useCallback(async (
     userMessage: string,
     useContext: boolean,
@@ -35,7 +41,8 @@ export function useChat() {
     if (!userMessage.trim() || isLoading) return;
 
     setIsLoading(true);
-    setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'user', content: userMessage }]);
+    const userMsgId = crypto.randomUUID();
+    setMessages(prev => [...prev, { id: userMsgId, role: 'user', content: userMessage }]);
     setResolvedSources([]);
 
     try {
@@ -63,25 +70,25 @@ export function useChat() {
 
         if (sources.length > 0) {
           externalContent = "\n\nExternal source content:\n" + sources.map(s => {
-            const header = s.title ? `# ${s.title}` : `Source: ${s.url}`;
-            return `${header}\nURL: ${s.url}\nProvider: ${s.provider}\nContent: ${s.content.slice(0, 3000)}`;
+            const header = s.title ? "# " + s.title : "Source: " + s.url;
+            return header + "\nURL: " + s.url + "\nProvider: " + s.provider + "\nContent: " + s.content.slice(0, 3000);
           }).join('\n\n---\n\n');
         }
       }
 
       if (useContext) {
-        const results = await searchKnowledge(userMessage);
-        if (results.length > 0) {
-          contextString = "\n\nRelevant local context:\n" + results.map(r => `[${r.type}] ${r.name}: ${r.excerpt}`).join('\n');
+        const searchResults = await searchKnowledge(userMessage);
+        if (searchResults.length > 0) {
+          contextString = "\n\nRelevant local context:\n" + searchResults.map(r => "[" + r.type + "] " + r.title + ": " + r.content.slice(0, 200)).join('\n');
         }
       }
 
       const currentConfig = loadConfig();
       const provider = createProvider(currentConfig);
 
-      const promptMessages: Message[] = [
+      const promptMessages = [
         { role: 'system', content: 'You are a helpful knowledge assistant. Ground your answers in the provided context whenever possible. When external URLs are provided, analyze their content thoroughly and cite specific details. Mark sources clearly in your response.' },
-        ...messages.map(m => ({ role: m.role, content: m.content })),
+        ...messagesRef.current.map(m => ({ role: m.role, content: m.content })),
         { role: 'user', content: userMessage + contextString + externalContent }
       ];
 
@@ -95,7 +102,7 @@ export function useChat() {
 
       const stream = provider.chatStream({
         model,
-        messages: promptMessages,
+        messages: promptMessages as LLMMessage[],
         temperature: 0.7,
         maxTokens: 1000
       });
@@ -115,7 +122,10 @@ export function useChat() {
         streamedContent += content;
         setMessages(prev => {
           const updated = [...prev];
-          updated[updated.length - 1] = { role: 'assistant', content: streamedContent };
+          const last = updated[updated.length - 1];
+          if (last && last.id === assistantId) {
+            updated[updated.length - 1] = { ...last, content: streamedContent };
+          }
           return updated;
         });
       }
@@ -123,7 +133,10 @@ export function useChat() {
       if (streamUsage) {
         setMessages(prev => {
           const updated = [...prev];
-          updated[updated.length - 1] = { role: 'assistant', content: streamedContent, tokenUsage: streamUsage };
+          const last = updated[updated.length - 1];
+          if (last && last.id === assistantId) {
+            updated[updated.length - 1] = { ...last, content: streamedContent, tokenUsage: streamUsage };
+          }
           return updated;
         });
       }
@@ -131,13 +144,16 @@ export function useChat() {
       logger.error('AI chat failed', err);
       setMessages(prev => {
         const updated = [...prev];
-        updated[updated.length - 1] = { role: 'assistant', content: 'Sorry, I encountered an error while processing your request.' };
+        const last = updated[updated.length - 1];
+        if (last && last.role === 'assistant') {
+           updated[updated.length - 1] = { ...last, content: 'Sorry, I encountered an error while processing your request.' };
+        }
         return updated;
       });
     } finally {
       setIsLoading(false);
     }
-  }, [messages, isLoading]);
+  }, [isLoading]);
 
   return {
     messages,

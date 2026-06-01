@@ -60,11 +60,9 @@
 - [Organization Usage](https://docs.turso.tech/api-reference/organizations/usage.md): Fetch current billing cycle usage for an organization.
 - [Quickstart](https://docs.turso.tech/api-reference/quickstart.md): Get started with Turso API in a few easy steps.
 - [Errors](https://docs.turso.tech/api-reference/response-codes.md)
-- [Create API Token](https://docs.turso.tech/api-reference/tokens/create.md): Returns a new API token belonging to a user.
+- [Create API Token](https://docs.turso.tech/api-reference/tokens/create.md): Returns a new API token belonging to a user. You can optionally restrict the token to a single organization by passing the organization slug in the request body. Organization-scoped tokens can only manage resources within that organization.
 - [List API Tokens](https://docs.turso.tech/api-reference/tokens/list.md): Returns a list of API tokens belonging to a user.
-- [List Organization API Tokens](https://docs.turso.tech/api-reference/tokens/list-organization.md): Returns the API tokens scoped to this organization (both organization-scoped and group-scoped). Unrestricted tokens are not returned here — manage those via [`GET /v1/auth/api-tokens`](/api-reference/tokens/list).
 - [Revoke API Token](https://docs.turso.tech/api-reference/tokens/revoke.md): Revokes the provided API token belonging to a user.
-- [Revoke Organization API Token](https://docs.turso.tech/api-reference/tokens/revoke-organization.md): Revokes a token scoped to this organization.
 - [Validate API Token](https://docs.turso.tech/api-reference/tokens/validate.md): Validates an API token belonging to a user.
 - [Get Current User](https://docs.turso.tech/api-reference/user/get-current.md): Returns information about the currently authenticated user.
 - [auth api-tokens list](https://docs.turso.tech/cli/auth/api-tokens/list.md)
@@ -194,7 +192,6 @@
 - [Turso + Axum](https://docs.turso.tech/sdk/rust/guides/axum.md): Set up Turso in your Axum project in minutes
 - [Turso + Rocket](https://docs.turso.tech/sdk/rust/guides/rocket.md): Set up Turso in your Rocket project in minutes
 - [Tauri + Turso](https://docs.turso.tech/sdk/rust/guides/tauri.md): Set up Turso in your Tauri project in minutes
-- [Toasty + Turso](https://docs.turso.tech/sdk/rust/orm/toasty.md): Use Toasty, the async ORM from the Tokio project, with Turso Database.
 - [Turso Quickstart (Rust)](https://docs.turso.tech/sdk/rust/quickstart.md): Get started with Turso and Rust in a few simple steps.
 - [Reference](https://docs.turso.tech/sdk/rust/reference.md): Rust Reference for Turso
 - [Turso Quickstart (Swift)](https://docs.turso.tech/sdk/swift/quickstart.md): Get started with Turso and Swift using the libSQL client in a few simple steps.

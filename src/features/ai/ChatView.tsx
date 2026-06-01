@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { Bot, User, Loader2, Globe, ExternalLink, X, Send } from 'lucide-react';
 import { Message, TokenUsage } from './useChat';
 import { ResolvedContent } from '../../lib/resolver';
@@ -38,18 +38,21 @@ export const ChatView: React.FC<ChatViewProps> = ({
   rateLimitInfo,
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       onSend();
     }
-  };
+  }, [onSend]);
+
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value);
+  }, [setInput]);
 
   return (
     <>
@@ -64,15 +67,15 @@ export const ChatView: React.FC<ChatViewProps> = ({
       {resolvedSources.length > 0 && (
         <div className="source-chips">
           {resolvedSources.map((s, i) => (
-            <div key={s.url} className="source-chip" title={`${s.title || s.url}\nProvider: ${s.provider}\n${s.wordCount} words`}>
+            <div key={s.url} className="source-chip" title={s.title || s.url}>
               <ExternalLink size={12} />
               <span className="source-chip-label">{s.title || safeHostname(s.url)}</span>
               <span className="source-chip-provider">{s.provider}</span>
               <button
                 type="button"
                 className="source-chip-remove"
-                onClick={() => onRemoveSource(i)}
-                aria-label={`Remove source ${s.title || s.url}`}
+                onClick={() => { onRemoveSource(i); }}
+                aria-label={"Remove source " + (s.title || s.url)}
               >
                 <X size={12} />
               </button>
@@ -83,7 +86,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
       <div className="messages-list" role="log" aria-live="polite">
         {messages.map((m) => (
-          <div key={m.id} className={`message ${m.role}`}>
+          <div key={m.id} className={"message " + m.role}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', fontWeight: 'bold', fontSize: '12px' }}>
               {m.role === 'assistant' ? <Bot size={14} /> : <User size={14} />}
               {m.role === 'assistant' ? 'Assistant' : 'You'}
@@ -95,7 +98,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
             )}
             {m.tokenUsage && (
               <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                {m.tokenUsage.input + m.tokenUsage.output} tokens
+                {(m.tokenUsage.input + m.tokenUsage.output) + " tokens"}
               </div>
             )}
           </div>
@@ -111,10 +114,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
       <div className="chat-controls" style={{ flexDirection: 'column', gap: '4px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
           <input
-            ref={inputRef}
             type="text"
             value={input}
-            onChange={e => setInput(e.target.value)}
+            onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             placeholder="Ask the AI agent..."
             disabled={isLoading}
@@ -146,7 +148,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   : rateLimitLevel === 'low' ? '#059669'
                   : 'transparent',
               }} />
-              {rateLimitInfo.count > 0 && `${rateLimitInfo.count}/${rateLimitInfo.limit} req/min`}
+              {rateLimitInfo.count > 0 && (rateLimitInfo.count + "/" + rateLimitInfo.limit + " req/min")}
             </span>
           </span>
         </div>
