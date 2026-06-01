@@ -3,6 +3,7 @@ import { searchKnowledge } from '../../lib/search';
 import { type RankedResult } from '../../db/repository';
 import { logger } from '../../lib/logger';
 import { loadConfig, createProvider } from '../../lib/llm/config';
+import type { LLMMessage } from '../../lib/llm/types';
 import MarkdownRenderer from '../../lib/llm/markdown';
 import {
   Search,
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react';
 
 interface Message {
+  id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
   citations?: RankedResult[];
@@ -43,8 +45,8 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity, onOpenSettings }) => {
   });
   const [isSearching, setIsSearching] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
-  const [showSources, setShowSources] = useState<Record<number, boolean>>({});
-  const [config, setConfig] = useState(() => loadConfig());
+  const [showSources, setShowSources] = useState<Record<string, boolean>>({});
+  const [config] = useState(loadConfig);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -68,7 +70,7 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity, onOpenSettings }) => {
     debounceRef.current = setTimeout(() => { debounceRef.current = null; }, 300);
 
     const userMessage = input.trim();
-    const userMsg: Message = { role: 'user', content: userMessage };
+    const userMsg: Message = { id: crypto.randomUUID(), role: 'user', content: userMessage };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setIsSearching(true);
@@ -87,7 +89,7 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity, onOpenSettings }) => {
       const providerConfig = currentConfig.providers[currentConfig.activeProvider];
       const model = providerConfig.defaultModel || 'google/gemini-2.0-flash-lite-preview-02-05:free';
 
-      const promptMessages: Message[] = [
+      const promptMessages: LLMMessage[] = [
         { role: 'system', content: 'You are a helpful knowledge assistant. Ground your answers in the provided local context whenever possible. If you find relevant information, cite it clearly. If the user asks about something not in your context, answer based on your general knowledge but mention it was not found in the local library.' },
         ...messages.map(m => ({ role: m.role, content: m.content })),
         { role: 'user', content: userMessage + contextString }
@@ -97,6 +99,7 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity, onOpenSettings }) => {
       let streamUsage: { input: number; output: number } | undefined;
 
       setMessages(prev => [...prev, {
+        id: crypto.randomUUID(),
         role: 'assistant',
         content: '',
         citations: results
@@ -120,7 +123,7 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity, onOpenSettings }) => {
         setMessages(prev => {
           const updated = [...prev];
           const last = updated[updated.length - 1];
-          if (last && last.role === 'assistant') {
+          if (last?.role === 'assistant') {
             updated[updated.length - 1] = { ...last, content: streamedContent };
           }
           return updated;
@@ -131,7 +134,7 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity, onOpenSettings }) => {
         setMessages(prev => {
           const updated = [...prev];
           const last = updated[updated.length - 1];
-          if (last && last.role === 'assistant') {
+          if (last?.role === 'assistant') {
             updated[updated.length - 1] = { ...last, tokenUsage: streamUsage };
           }
           return updated;
@@ -141,12 +144,13 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity, onOpenSettings }) => {
       logger.error('Ask synthesis failed', err);
       setMessages(prev => {
         const updated = [...prev];
-        const last = updated[updated.length - 1];
-        if (last && last.role === 'assistant' && !last.content) {
-          updated[updated.length - 1] = { ...last, content: 'Sorry, I encountered an issue while generating a response. Please check your AI configuration.' };
+        const lastIndex = updated.length - 1;
+        const last = updated[lastIndex];
+        if (last?.role === 'assistant' && !last.content) {
+          updated[lastIndex] = { ...last, content: 'Sorry, I encountered an issue while generating a response. Please check your AI configuration.' };
           return updated;
         }
-        return [...prev, { role: 'assistant', content: 'Sorry, I encountered an issue while generating a response. Please check your AI configuration.' }];
+        return [...prev, { id: crypto.randomUUID(), role: 'assistant', content: 'Sorry, I encountered an issue while generating a response. Please check your AI configuration.' }];
       });
     } finally {
       setIsSearching(false);
@@ -154,8 +158,8 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity, onOpenSettings }) => {
     }
   };
 
-  const toggleSources = (index: number) => {
-    setShowSources(prev => ({ ...prev, [index]: !prev[index] }));
+  const toggleSources = (id: string) => {
+    setShowSources(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
   const currentApiKey = config.providers[config.activeProvider].apiKey || '';
@@ -183,11 +187,11 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity, onOpenSettings }) => {
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
           {messages.length > 0 && (
-            <button className="icon-button" onClick={handleClearHistory} title="Clear conversation" style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+            <button type="button" className="icon-button" onClick={handleClearHistory} title="Clear conversation" style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
               <Trash2 size={16} />
             </button>
           )}
-          <button className="icon-button" onClick={onOpenSettings} title="AI Settings" style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+          <button type="button" className="icon-button" onClick={onOpenSettings} title="AI Settings" style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
             <Settings size={16} />
           </button>
         </div>
@@ -202,16 +206,16 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity, onOpenSettings }) => {
             <h2>Ask your library</h2>
             <p>Search and synthesize information across your local entities, claims, and notes. Your data never leaves this device.</p>
             <div className="suggested-actions">
-              <button onClick={() => setInput('Summarize my recent projects')}>Summarize recent projects</button>
-              <button onClick={() => setInput('Who are the key people?')}>Key people</button>
-              <button onClick={onCreateEntity}>
+              <button type="button" onClick={() => { setInput('Summarize my recent projects'); }}>Summarize recent projects</button>
+              <button type="button" onClick={() => { setInput('Who are the key people?'); }}>Key people</button>
+              <button type="button" onClick={onCreateEntity}>
                 Create new entity
               </button>
             </div>
           </div>
         )}
-        {messages.map((m, i) => (
-          <div key={i} className={`message-wrapper ${m.role} message ${m.role}`}>
+        {messages.map((m) => (
+          <div key={m.id} className={`message-wrapper ${m.role} message ${m.role}`}>
             <div className="message-header">
               <strong>{m.role === 'user' ? 'You' : 'Studio Assistant'}</strong>
               {m.tokenUsage && (
@@ -232,17 +236,18 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity, onOpenSettings }) => {
               {m.citations && m.citations.length > 0 && (
                 <div className="citations-section">
                   <button
+                    type="button"
                     className="source-drawer-toggle"
-                    onClick={() => toggleSources(i)}
+                    onClick={() => toggleSources(m.id)}
                   >
                     <span>Used {m.citations.length} local items</span>
-                    {showSources[i] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    {showSources[m.id] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                   </button>
 
-                  {showSources[i] && (
+                  {showSources[m.id] && (
                     <div className="citation-cards">
                       {m.citations.map((cite) => (
-                        <button key={cite.id} className="citation-card" onClick={() => logger.info('Navigate to', cite.id)}>
+                        <button type="button" key={cite.id} className="citation-card" onClick={() => { logger.info('Navigate to', cite.id); }}>
                           <div className="cite-type">{cite.type}</div>
                           <div className="cite-name">{cite.title}</div>
                           <div className="cite-excerpt">{cite.content}</div>
