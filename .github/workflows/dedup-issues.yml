@@ -198,7 +198,7 @@ jobs:
               return union.size === 0 ? 0 : intersection.length / union.size;
             }
 
-            function levenshteinRatio(a, b) {
+            function characterMatchRatio(a, b) {
               const maxLen = Math.max(a.length, b.length);
               if (maxLen === 0) return 1.0;
               let matches = 0;

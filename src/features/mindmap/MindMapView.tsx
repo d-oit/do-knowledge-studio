@@ -49,7 +49,6 @@ function buildTree(
 
 const MindMapView: React.FC<Props> = ({
   rootEntity: propsRootEntity,
-  relatedEntities: _relatedEntities,
   entities,
   links,
   onEntityClick

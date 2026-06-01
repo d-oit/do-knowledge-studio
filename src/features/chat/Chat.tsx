@@ -26,7 +26,7 @@ const Chat: React.FC = () => {
     setIsSearching(true);
 
     try {
-      const results = await searchKnowledge(currentInput, { limit: 5 });
+      const results = await searchKnowledge(currentInput);
 
       let response = '';
       if (results.length > 0) {

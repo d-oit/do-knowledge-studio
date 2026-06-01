@@ -155,9 +155,7 @@ const ExportPanel: React.FC = () => {
         html += `      <h2>${escapeHtml(entity.name)}</h2>\n`;
         
         if (entity.description) {
-          // entity.description contains HTML from Tiptap editor.
-          // We preserve it to maintain formatting in the export.
-          html += `\n      <div class="description">${entity.description}</div>\n`;
+          html += `\n      <div class="description">${escapeHtml(entity.description)}</div>\n`;
         }
         
         if (claims.length > 0) {

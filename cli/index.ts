@@ -5,6 +5,7 @@ import { setDb } from '../src/db/client.js';
 import { initDb } from './db.js';
 import { repository } from '../src/db/repository.js';
 import type { Note } from '../src/lib/validation';
+import { escapeHtml } from '../src/lib/security.js';
 
 const program = new Command();
 
@@ -196,7 +197,7 @@ async function exportSite(outDir: string) {
     html += `    <span class="type">${entity.type}</span>\n`;
     
     if (entity.description) {
-      html += `\n    <p>${entity.description}</p>\n`;
+      html += `\n    <p>${escapeHtml(entity.description)}</p>\n`;
     }
     
     if (claims.length > 0) {

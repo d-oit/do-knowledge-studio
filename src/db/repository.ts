@@ -113,7 +113,7 @@ export class Repository {
       const rows = z.array(z.unknown()).parse(results);
       if (rows.length === 0) return null;
       const parsed = this.parseMetadata(EntitySchema, rows[0]);
-      return { ...parsed, rowid: (rows[0] as any).rowid };
+      return { ...parsed, rowid: (rows[0] as unknown as { rowid: number }).rowid };
     } catch (err) {
       logger.error('Failed to fetch entity by id', err);
       throw new AppError('Failed to fetch entity by id', 'DB_ERROR', err);
@@ -291,7 +291,7 @@ export class Repository {
       });
       const rows = z.array(z.unknown()).parse(result);
       const parsed = this.parseMetadata(ClaimSchema, rows[0]);
-      return { ...parsed, rowid: (rows[0] as any).rowid };
+      return { ...parsed, rowid: (rows[0] as unknown as { rowid: number }).rowid };
     } catch (err) {
       logger.error('Failed to create claim', err);
       throw new AppError('Failed to create claim', 'DB_ERROR', err);

@@ -12,6 +12,10 @@ name: Version Propagation
 permissions:
   contents: write
 
+concurrency:
+  group: version-propagation
+  cancel-in-progress: false
+
 jobs:
   propagate-version:
     runs-on: ubuntu-latest
