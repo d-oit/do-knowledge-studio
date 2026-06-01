@@ -82,8 +82,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
       )}
 
       <div className="messages-list" role="log" aria-live="polite">
-        {messages.map((m, i) => (
-          <div key={`${m.role}-${i}`} className={`message ${m.role}`}>
+        {messages.map((m) => (
+          <div key={m.id} className={`message ${m.role}`}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', fontWeight: 'bold', fontSize: '12px' }}>
               {m.role === 'assistant' ? <Bot size={14} /> : <User size={14} />}
               {m.role === 'assistant' ? 'Assistant' : 'You'}

@@ -7,6 +7,7 @@ import { logger } from '../../lib/logger';
 const URL_REGEX = /https?:\/\/[^\s<>"'{}|\\^`[\]]+/gi;
 
 export interface Message {
+  id: string;
   role: 'assistant' | 'user' | 'system';
   content: string;
   tokenUsage?: { input: number; output: number };
@@ -19,7 +20,7 @@ export interface TokenUsage {
 
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: 'AI agent ready to assist with TRIZ analysis and knowledge synthesis. Ask me anything about your local knowledge base, or paste URLs to have me fetch and analyze external content.' }
+    { id: 'initial', role: 'assistant', content: 'AI agent ready to assist with TRIZ analysis and knowledge synthesis. Ask me anything about your local knowledge base, or paste URLs to have me fetch and analyze external content.' }
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSourcing, setIsSourcing] = useState(false);
@@ -34,7 +35,7 @@ export function useChat() {
     if (!userMessage.trim() || isLoading) return;
 
     setIsLoading(true);
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'user', content: userMessage }]);
     setResolvedSources([]);
 
     try {
@@ -89,7 +90,8 @@ export function useChat() {
 
       let streamedContent = '';
       let streamUsage: { input: number; output: number } | undefined;
-      setMessages(prev => [...prev, { role: 'assistant', content: '', tokenUsage: undefined }]);
+      const assistantId = crypto.randomUUID();
+      setMessages(prev => [...prev, { id: assistantId, role: 'assistant', content: '', tokenUsage: undefined }]);
 
       const stream = provider.chatStream({
         model,
