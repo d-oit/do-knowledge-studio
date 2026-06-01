@@ -4,6 +4,7 @@
  * Tests SQLite FTS5 query performance across different configurations.
  * Run: pnpm tsx scripts/bench-fts.ts
  */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 
 import Database from 'better-sqlite3';
 

@@ -1,12 +1,32 @@
+import DOMPurify from 'dompurify';
+
+export function sanitizeHtml(html: string): string {
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'p', 'br', 'span', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
+    ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
+  });
+}
+
 /**
- * Safely escapes HTML special characters in a string to prevent XSS.
- * Replaces &, <, >, ", and ' with their corresponding HTML entities.
+ * Safely strips all HTML tags and returns plain text content.
+ * Uses DOMPurify for secure parsing and extraction.
  */
-export const escapeHtml = (unsafe: string): string => {
-  return unsafe
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-};
+export function stripHtmlTags(html: string): string {
+  const fragment = DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: [], // Strip all tags
+    KEEP_CONTENT: true,
+    RETURN_DOM_FRAGMENT: true,
+  });
+  return fragment.textContent || '';
+}
+
+export function escapeHtml(text: string): string {
+  const map: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#x27;',
+  };
+  return text.replace(/[&<>"']/g, (char) => map[char]);
+}

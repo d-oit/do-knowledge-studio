@@ -1,7 +1,7 @@
 import { create, insert, insertMultiple, remove, search, type Orama } from '@orama/orama';
-import { pluginEmbeddings } from '@orama/plugin-embeddings';
 import { repository } from '../db/repository.js';
 import { logger } from './logger.js';
+import { AppError } from './errors.js';
 import { compressText } from './nlp.js';
 import { jobCoordinator } from './jobs.js';
 import { resolveUrl } from './resolver.js';
@@ -30,8 +30,17 @@ export type OramaSchema = typeof searchSchema;
 
 let oramaDb: Orama<OramaSchema> | null = null;
 let embeddingsReady = false;
-let embeddingsPlugin: ReturnType<typeof pluginEmbeddings> | null = null;
+let embeddingsPlugin: ReturnType<typeof import('@orama/plugin-embeddings')['pluginEmbeddings']> | null = null;
 const oramaIdMap = new Map<string, string>(); // entityId → oramaInternalId
+const ORAMA_MAP_MAX = 10000;
+
+function addToOramaMap(key: string, value: string): void {
+  if (oramaIdMap.size >= ORAMA_MAP_MAX) {
+    const firstKey = oramaIdMap.keys().next().value;
+    if (firstKey !== undefined) oramaIdMap.delete(firstKey);
+  }
+  oramaIdMap.set(key, value);
+}
 
 // --- Eager handler registration (must be ready before initSearch runs) ---
 jobCoordinator.registerHandler('external-fetch', async (payload) => {
@@ -44,11 +53,12 @@ jobCoordinator.registerHandler('external-fetch', async (payload) => {
  * Downloads the model (~80MB) on first call — runs in background, non-blocking.
  * @returns True if embeddings are ready, false if still loading or failed.
  */
-export const initEmbeddings = (): boolean => {
+export const initEmbeddings = async (): Promise<boolean> => {
   if (embeddingsReady) return true;
   if (embeddingsPlugin) return false; // already loading
 
   try {
+    const { pluginEmbeddings } = await import('@orama/plugin-embeddings');
     embeddingsPlugin = pluginEmbeddings({
       model: 'Xenova/all-MiniLM-L6-v2',
       property: 'embedding',
@@ -57,9 +67,9 @@ export const initEmbeddings = (): boolean => {
     logger.info('Semantic embeddings plugin initialized');
     return true;
   } catch (err) {
-    logger.warn('Semantic embeddings unavailable — falling back to keyword search', err);
+    logger.error('Semantic embeddings initialization failed', err);
     embeddingsPlugin = null;
-    return false;
+    throw new AppError('Failed to initialize embeddings', 'SEARCH_FAILED', err, 'Semantic search unavailable, falling back to keyword', true);
   }
 };
 
@@ -85,13 +95,13 @@ const addEntityToIndex = async (entity: Entity, claims: Claim[]): Promise<void> 
   if (!oramaDb) return;
 
   const entityResult = await insert(oramaDb, buildEntityDoc(entity));
-  oramaIdMap.set(entity.id!, entityResult);
+  addToOramaMap(entity.id!, entityResult);
 
   if (claims.length > 0) {
     const claimDocs = claims.map(c => buildClaimDoc(c, entity.name, entity.id!));
     const claimOramaIds = await insertMultiple(oramaDb, claimDocs);
     for (let i = 0; i < claims.length; i++) {
-      oramaIdMap.set(claims[i].id!, claimOramaIds[i]);
+      addToOramaMap(claims[i].id!, claimOramaIds[i]);
     }
   }
 };
@@ -120,10 +130,7 @@ export const initSearch = async () => {
       ...(plugins.length > 0 ? { plugins } : {}),
     }) as Orama<OramaSchema>;
 
-    const [entities, allClaims] = await Promise.all([
-      repository.getAllEntities(),
-      repository.getAllClaims(),
-    ]);
+    const allClaims = await repository.getAllClaims();
 
     // Group claims by entity_id for efficient lookup
     const claimsByEntity = new Map<string, Claim[]>();
@@ -133,56 +140,63 @@ export const initSearch = async () => {
       claimsByEntity.set(claim.entity_id, list);
     }
 
-    const docs: SearchDocument[] = [];
-    const originalIds: string[] = [];
+    // Progressive chunked loading from DB to avoid blocking on large datasets
+    const CHUNK_SIZE = 100;
+    let totalEntitiesIndexed = 0;
+    let hasMore = true;
+    let fetchOffset = 0;
 
-    for (const entity of entities) {
-      docs.push(buildEntityDoc(entity));
-      originalIds.push(entity.id!);
-
-      const claims = claimsByEntity.get(entity.id!) || [];
-      for (const claim of claims) {
-        docs.push(buildClaimDoc(claim, entity.name, entity.id!));
-        originalIds.push(claim.id!);
+    while (hasMore) {
+      const chunk = await repository.getAllEntities({ limit: CHUNK_SIZE, offset: fetchOffset });
+      if (chunk.length === 0) {
+        hasMore = false;
+        break;
       }
+
+      const docs: SearchDocument[] = [];
+      const originalIds: string[] = [];
+
+      for (const entity of chunk) {
+        docs.push(buildEntityDoc(entity));
+        originalIds.push(entity.id!);
+
+        const claims = claimsByEntity.get(entity.id!) || [];
+        for (const claim of claims) {
+          docs.push(buildClaimDoc(claim, entity.name, entity.id!));
+          originalIds.push(claim.id!);
+        }
+      }
+
+      if (docs.length > 0) {
+        const oramaIds = await insertMultiple(oramaDb, docs);
+        for (let i = 0; i < originalIds.length; i++) {
+          addToOramaMap(originalIds[i], oramaIds[i]);
+        }
+      }
+
+      totalEntitiesIndexed += chunk.length;
+      fetchOffset += CHUNK_SIZE;
+
+      // Yield to event loop between chunks to keep UI responsive
+      await new Promise(resolve => setTimeout(resolve, 0));
     }
 
-    if (docs.length > 0) {
-      const oramaIds = await insertMultiple(oramaDb, docs);
-      for (let i = 0; i < originalIds.length; i++) {
-        oramaIdMap.set(originalIds[i], oramaIds[i]);
-      }
-    }
-
-    // Bulk hydrate SQLite FTS5 index (contentless mode)
+    // Bulk hydrate SQLite FTS5 index using set-based SQL for efficiency
     perf.mark('fts-rebuild-start');
-    // Batch delete using single statements
     await repository.exec({ sql: 'DELETE FROM entity_search_idx', bind: [] });
     await repository.exec({ sql: 'DELETE FROM claim_search_idx', bind: [] });
-
-    // Batch insert using transactions for performance
-    const batchSize = 100;
-    for (let i = 0; i < entities.length; i += batchSize) {
-      const batch = entities.slice(i, i + batchSize);
-      const stmts = batch.map(e => ({
-        sql: `INSERT INTO entity_search_idx(rowid, name, description) VALUES (?, ?, ?)`,
-        bind: [e.rowid as unknown as number, e.name, e.description || ''],
-      }));
-      await repository.transaction(stmts);
-    }
-
-    for (let i = 0; i < allClaims.length; i += batchSize) {
-      const batch = allClaims.slice(i, i + batchSize);
-      const stmts = batch.map(c => ({
-        sql: `INSERT INTO claim_search_idx(rowid, statement) VALUES (?, ?)`,
-        bind: [c.rowid as unknown as number, c.statement],
-      }));
-      await repository.transaction(stmts);
-    }
+    await repository.exec({
+      sql: `INSERT INTO entity_search_idx(rowid, name, description) SELECT rowid, name, description FROM entities`,
+      bind: [],
+    });
+    await repository.exec({
+      sql: `INSERT INTO claim_search_idx(rowid, statement) SELECT rowid, statement FROM claims`,
+      bind: [],
+    });
     perf.measure('fts-rebuild', 'fts-rebuild-start');
 
     perf.measure('orama-init', 'orama-init');
-    logger.info(`Orama search index initialized with ${entities.length} entities and ${allClaims.length} claims`);
+    logger.info(`Orama search index initialized with ${totalEntitiesIndexed} entities and ${allClaims.length} claims`);
 
     // Register job handlers
     jobCoordinator.registerHandler('reindex-document', async (payload) => {
@@ -392,18 +406,8 @@ export interface SearchResult {
   stage?: string;
 }
 
-/**
- * Enhanced search result with ranking and provenance metadata.
- * Used by SearchPanel for display and keyboard navigation.
- */
-export interface RankedResult {
-  id: string;
-  name: string;
-  type: string;
-  excerpt: string;
-  score: number;
-  stage: 'draft' | 'verified' | 'final';
-}
+import { type RankedResult } from '../db/repository.js';
+export { type RankedResult } from '../db/repository.js';
 
 /** Maps claim verification_status to display stage. */
 const mapVerificationStage = (status: string): RankedResult['stage'] => {
@@ -440,9 +444,9 @@ const enrichResults = async (hits: Array<{ document: SearchDocument; score: numb
 
     return {
       id: doc.id,
-      name: doc.title,
+      title: doc.title,
       type: doc.type,
-      excerpt: doc.content,
+      content: doc.content,
       score: hit.score,
       stage: mapVerificationStage(rawStage),
     };
@@ -459,7 +463,7 @@ const enrichResults = async (hits: Array<{ document: SearchDocument; score: numb
  */
 export const searchKnowledge = async (
   query: string,
-  options?: { type?: string },
+  options?: { type?: string; limit?: number },
 ): Promise<RankedResult[]> => {
   if (!oramaDb) await initSearch();
   perf.mark('orama-query');
@@ -467,6 +471,7 @@ export const searchKnowledge = async (
   const searchParams: Record<string, unknown> = {
     term: query,
     properties: ['title', 'content'],
+    limit: options?.limit ?? 20,
   };
 
   if (options?.type) {
@@ -487,7 +492,7 @@ export const searchKnowledge = async (
  */
 export const semanticSearch = async (
   query: string,
-  options?: { type?: string },
+  options?: { type?: string; limit?: number },
 ): Promise<RankedResult[]> => {
   if (!oramaDb) await initSearch();
   perf.mark('orama-query');
@@ -506,6 +511,7 @@ export const semanticSearch = async (
       fulltext: 0.5,
     },
     properties: ['title', 'content'],
+    limit: options?.limit ?? 20,
   };
 
   if (options?.type) {
@@ -517,23 +523,23 @@ export const semanticSearch = async (
   return enrichResults(results.hits.map(h => ({ document: h.document as SearchDocument, score: h.score })));
 };
 
-export type ProgressiveSearchCallback = (results: RankedResult[], stage: 'exact' | 'semantic' | 'related') => void;
+export type ProgressiveSearchCallback = (results: RankedResult[], stage: 'exact' | 'semantic' | 'related') => void | Promise<void>;
 
 export const progressiveSearch = async (
   query: string,
   onResults: ProgressiveSearchCallback,
-  options?: { type?: string; signal?: AbortSignal },
+  options?: { type?: string; limit?: number; signal?: AbortSignal },
 ): Promise<void> => {
   if (options?.signal?.aborted) return;
 
   const exactResults = await searchKnowledge(query, { ...options, type: options?.type });
   if (options?.signal?.aborted) return;
-  onResults(exactResults, 'exact');
+  void onResults(exactResults, 'exact');
 
   if (embeddingsReady && embeddingsPlugin) {
     const semanticResults = await semanticSearch(query, { ...options, type: options?.type });
     if (options?.signal?.aborted) return;
-    onResults(semanticResults, 'semantic');
+    void onResults(semanticResults, 'semantic');
   }
 
   try {
@@ -541,9 +547,10 @@ export const progressiveSearch = async (
     const relatedResults = await repository.searchRelated(query, { excludeIds: exactIds });
     if (options?.signal?.aborted) return;
     if (relatedResults.length > 0) {
-      onResults(relatedResults, 'related');
+      void onResults(relatedResults, 'related');
     }
-  } catch {
-    // best-effort
+  } catch (err) {
+    logger.error('Related search failed', err);
+    throw new AppError('Related search failed', 'SEARCH_FAILED', err, 'Search encountered an error', true);
   }
 };

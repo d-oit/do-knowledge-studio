@@ -1,6 +1,6 @@
 import React from 'react';
 
-type View = 'editor' | 'graph' | 'mindmap' | 'chat' | 'export' | 'ai' | 'search';
+type View = 'editor' | 'graph' | 'mindmap' | 'chat' | 'export' | 'ai' | 'search' | 'library';
 
 interface SidebarNavProps {
   currentView: View;

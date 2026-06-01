@@ -1,0 +1,37 @@
+# Gitleaks configuration for do-knowledge-studio
+# Verifies: gitleaks detect --config .gitleaks.toml --source . --verbose
+
+[extend]
+useDefault = true
+
+[allowlist]
+  description = "Project-specific false positives"
+
+  # Only allowlist test fixtures and verified-safe documentation examples.
+  # Keep broad scanning on all other project files.
+  paths = [
+    '''tests/e2e/''',
+    '''tests/fixtures/''',
+    '''examples/''',
+  ]
+
+  # Known safe patterns in test data and configuration examples
+  regexes = [
+    '''example[_-]?api[_-]?key''',
+    '''test[_-]?secret''',
+    '''demo[_-]?token''',
+    '''OPENROUTER_API_KEY''',
+    '''KILO_API_KEY''',
+  ]
+
+  # SHA-256 of known-safe files (update if test fixtures change)
+  # To generate: gitleaks detect --config .gitleaks.toml --source . --verbose --report-format json
+  commits = []
+
+  # Stop words that appear in comments/docs but are not real secrets
+  stopwords = [
+    '''your-api-key-here''',
+    '''replace-with-your-key''',
+    '''sk-xxxxxxxxxxxxxxxxxxxxxxxx''',
+    '''ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxx''',
+  ]

@@ -25,7 +25,7 @@ vi.mock('@tanstack/react-virtual', () => {
 
 vi.mock('../../../lib/search', () => ({
   progressiveSearch: vi.fn((_query: string, onResults: searchLib.ProgressiveSearchCallback, _options?: { type?: string; signal?: AbortSignal }) => {
-    onResults([], 'exact');
+    void onResults([], 'exact');
     return Promise.resolve();
   }),
   initEmbeddings: vi.fn(),
@@ -36,9 +36,9 @@ describe('SearchPanel UX Improvements', () => {
     vi.clearAllMocks();
   });
 
-  it('clears the search query and focuses the input when the clear button is clicked', async () => {
+  it('clears the search query and focuses the input when the clear button is clicked', () => {
     render(<SearchPanel />);
-    const input = screen.getByLabelText('Search knowledge base') as HTMLInputElement;
+    const input = screen.getByLabelText('Search knowledge base');
 
     fireEvent.change(input, { target: { value: 'test' } });
     expect(input.value).toBe('test');
@@ -75,7 +75,7 @@ describe('SearchPanel UX Improvements', () => {
   it('updates selected result index and ARIA attributes with keyboard navigation', async () => {
     const mockedSearch = vi.mocked(searchLib.progressiveSearch);
     mockedSearch.mockImplementation((_query: string, onResults: searchLib.ProgressiveSearchCallback) => {
-      onResults([
+      void onResults([
         { id: '1', name: 'Result 1', type: 'entity', excerpt: 'Content 1', score: 1, stage: 'verified' },
         { id: '2', name: 'Result 2', type: 'entity', excerpt: 'Content 2', score: 1, stage: 'verified' },
       ], 'exact');
@@ -107,7 +107,7 @@ describe('SearchPanel UX Improvements', () => {
   it('displays appropriate provenance tags based on the result stage', async () => {
     const mockedSearch = vi.mocked(searchLib.progressiveSearch);
     mockedSearch.mockImplementation((_query: string, onResults: searchLib.ProgressiveSearchCallback) => {
-      onResults([
+      void onResults([
         { id: '1', name: 'Verified Result', type: 'entity', excerpt: 'Content', score: 1, stage: 'verified' },
         { id: '2', name: 'Draft Result', type: 'entity', excerpt: 'Content', score: 1, stage: 'draft' },
       ], 'exact');
@@ -136,5 +136,37 @@ describe('SearchPanel UX Improvements', () => {
     await waitFor(() => {
       expect(mockedSearch).toHaveBeenCalledTimes(1);
     }, { timeout: 1000 });
+  });
+
+  describe('Search mode toggle', () => {
+    it('shows Keyword and Semantic mode buttons', () => {
+      render(<SearchPanel />);
+
+      const keywordBtn = screen.getByText('Keyword');
+      const semanticBtn = screen.getByText('Semantic');
+      expect(keywordBtn).toBeDefined();
+      expect(semanticBtn).toBeDefined();
+    });
+
+    it('toggles between Keyword and Semantic modes', () => {
+      render(<SearchPanel />);
+
+      const keywordBtn = screen.getByText('Keyword');
+      const semanticBtn = screen.getByText('Semantic');
+
+      // Keyword should be active by default
+      expect(keywordBtn).toHaveAttribute('aria-pressed', 'true');
+      expect(semanticBtn).toHaveAttribute('aria-pressed', 'false');
+
+      // Click Semantic
+      fireEvent.click(semanticBtn);
+      expect(keywordBtn).toHaveAttribute('aria-pressed', 'false');
+      expect(semanticBtn).toHaveAttribute('aria-pressed', 'true');
+
+      // Click Keyword again
+      fireEvent.click(keywordBtn);
+      expect(keywordBtn).toHaveAttribute('aria-pressed', 'true');
+      expect(semanticBtn).toHaveAttribute('aria-pressed', 'false');
+    });
   });
 });

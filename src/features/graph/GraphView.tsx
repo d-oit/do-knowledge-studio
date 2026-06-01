@@ -2,12 +2,15 @@ import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import Sigma from 'sigma';
 import Graph from 'graphology';
 import type { NodeDisplayData, EdgeDisplayData } from 'sigma/types';
-import { Entity, Link } from '../../lib/validation';
+import { Entity, Link, Claim } from '../../lib/validation';
 import GraphControls from './GraphControls';
+import GraphInspector from './GraphInspector';
 import { jobCoordinator } from '../../lib/jobs';
 import { repository } from '../../db/repository';
+import { removeFromSearchIndex } from '../../lib/search';
 import { logger } from '../../lib/logger';
 import { perf } from '../../lib/perf';
+import { assign as assignFA2Layout, inferSettings } from 'graphology-layout-forceatlas2';
 
 /** Tracks current touch state for mobile gesture handling. */
 interface TouchState {
@@ -22,6 +25,8 @@ interface TouchState {
   lastPanY: number;
 }
 
+type LayoutType = 'circular' | 'force' | 'hierarchical';
+
 interface Props {
   entities: Entity[];
   links: Link[];
@@ -30,6 +35,7 @@ interface Props {
   selectedNode?: string | null;
   onSelectedNodeChange?: (nodeId: string | null) => void;
   hideToolbar?: boolean;
+  onEditEntity?: (entityId: string) => void;
 }
 
 const GraphView: React.FC<Props> = ({
@@ -39,7 +45,8 @@ const GraphView: React.FC<Props> = ({
   onFocusModeChange,
   selectedNode: propsSelectedNode,
   onSelectedNodeChange,
-  hideToolbar
+  hideToolbar,
+  onEditEntity,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const sigmaInstance = useRef<Sigma | null>(null);
@@ -50,6 +57,8 @@ const GraphView: React.FC<Props> = ({
   const [internalFocusMode, setInternalFocusMode] = useState(false);
   const [snapshotMode, setSnapshotMode] = useState(false);
   const [snapshotData, setSnapshotData] = useState<{ nodes: { id: string; label: string }[]; edges: { id: string; source: string; target: string; label?: string }[] } | null>(null);
+  const [selectedEntityClaims, setSelectedEntityClaims] = useState<Claim[]>([]);
+  const [selectedEntityLinks, setSelectedEntityLinks] = useState<Link[]>([]);
 
   const selectedNode = propsSelectedNode !== undefined ? propsSelectedNode : internalSelectedNode;
   const focusMode = propsFocusMode !== undefined ? propsFocusMode : internalFocusMode;
@@ -65,6 +74,23 @@ const GraphView: React.FC<Props> = ({
   }, [onFocusModeChange]);
 
   const [filteredData, setFilteredData] = useState({ entities, links });
+
+  const recomputeNeighborhoodHandler = useCallback((payload: unknown) => {
+    const { entities, links, selectedNode } = payload as { entities: Entity[], links: Link[], selectedNode: string };
+    const neighborIds = new Set<string>([selectedNode]);
+    links.forEach((l: Link) => {
+      if (l.source_id === selectedNode) neighborIds.add(l.target_id);
+      if (l.target_id === selectedNode) neighborIds.add(l.source_id);
+    });
+
+    setFilteredData({
+      entities: entities.filter((e: Entity) => neighborIds.has(e.id!)),
+      links: links.filter((l: Link) => neighborIds.has(l.source_id) && neighborIds.has(l.target_id))
+    });
+    return Promise.resolve();
+  }, []);
+  const [layout, setLayout] = useState<LayoutType>('force');
+  const [focusRingIndex, setFocusRingIndex] = useState<number>(-1);
 
   const cameraRatioRef = useRef(1);
   const graphSize = useMemo(() => {
@@ -101,24 +127,98 @@ const GraphView: React.FC<Props> = ({
   }, [entities, links, selectedNode, focusMode]);
 
   useEffect(() => {
-    const handler = async (payload: unknown) => {
-      const { entities, links, selectedNode } = payload as { entities: Entity[], links: Link[], selectedNode: string };
-      const neighborIds = new Set<string>([selectedNode]);
-      links.forEach((l: Link) => {
-        if (l.source_id === selectedNode) neighborIds.add(l.target_id);
-        if (l.target_id === selectedNode) neighborIds.add(l.source_id);
-      });
-
-      setFilteredData({
-        entities: entities.filter((e: Entity) => neighborIds.has(e.id!)),
-        links: links.filter((l: Link) => neighborIds.has(l.source_id) && neighborIds.has(l.target_id))
-      });
-    };
-
-    jobCoordinator.registerHandler('recompute-neighborhood', handler);
+    jobCoordinator.registerHandler('recompute-neighborhood', recomputeNeighborhoodHandler);
     return () => {
       jobCoordinator.unregisterHandler('recompute-neighborhood');
     };
+  }, [recomputeNeighborhoodHandler]);
+
+  // Apply hierarchical layout to the graph
+  const applyHierarchicalLayout = useCallback((graph: Graph, nodes: Entity[]) => {
+    // Compute ranks based on link direction
+    const inDegree = new Map<string, number>();
+    const outDegree = new Map<string, number>();
+    nodes.forEach(n => { inDegree.set(n.id!, 0); outDegree.set(n.id!, 0); });
+    links.forEach(l => {
+      if (graph.hasNode(l.source_id) && graph.hasNode(l.target_id)) {
+        outDegree.set(l.source_id, (outDegree.get(l.source_id) || 0) + 1);
+        inDegree.set(l.target_id, (inDegree.get(l.target_id) || 0) + 1);
+      }
+    });
+
+    // BFS from root nodes (nodes with no incoming links)
+    const visited = new Set<string>();
+    const levels = new Map<string, number>();
+    const queue: string[] = [];
+
+    nodes.forEach(n => {
+      if ((inDegree.get(n.id!) || 0) === 0) {
+        queue.push(n.id!);
+        levels.set(n.id!, 0);
+      }
+    });
+
+    // Fallback: if no root nodes, use node with most outgoing links
+    if (queue.length === 0 && nodes.length > 0) {
+      let maxOut = -1;
+      let bestNode = nodes[0].id!;
+      nodes.forEach(n => {
+        const out = outDegree.get(n.id!) || 0;
+        if (out > maxOut) { maxOut = out; bestNode = n.id!; }
+      });
+      queue.push(bestNode);
+      levels.set(bestNode, 0);
+    }
+
+    while (queue.length > 0) {
+      const currentId = queue.shift()!;
+      if (visited.has(currentId)) continue;
+      visited.add(currentId);
+      const currentLevel = levels.get(currentId) || 0;
+      links.forEach(l => {
+        if (l.source_id === currentId && !visited.has(l.target_id) && graph.hasNode(l.target_id)) {
+          levels.set(l.target_id, currentLevel + 1);
+          queue.push(l.target_id);
+        }
+      });
+    }
+
+    // Assign positions based on level and rank within level
+    const levelBuckets = new Map<number, string[]>();
+    levels.forEach((level, nodeId) => {
+      if (!levelBuckets.has(level)) levelBuckets.set(level, []);
+      levelBuckets.get(level)!.push(nodeId);
+    });
+
+    const levelSpacing = 300;
+    const nodeSpacing = 120;
+    levelBuckets.forEach((nodeIds, level) => {
+      const totalWidth = (nodeIds.length - 1) * nodeSpacing;
+      nodeIds.forEach((nodeId, idx) => {
+        const x = level * levelSpacing - 500;
+        const y = idx * nodeSpacing - totalWidth / 2;
+        graph.setNodeAttribute(nodeId, 'x', x);
+        graph.setNodeAttribute(nodeId, 'y', y + 100);
+      });
+    });
+  }, [links]);
+
+  const applyCircularLayout = useCallback((graph: Graph, nodes: { id: string }[]) => {
+    const n = nodes.length;
+    if (n === 0) return;
+    const radius = Math.max(200, n * 30);
+    nodes.forEach((node, i) => {
+      const angle = (i * 2 * Math.PI) / n;
+      graph.setNodeAttribute(node.id, 'x', Math.cos(angle) * radius);
+      graph.setNodeAttribute(node.id, 'y', Math.sin(angle) * radius);
+    });
+  }, []);
+
+  const applyForceLayout = useCallback((graph: Graph) => {
+    if (graph.order === 0) return;
+    const settings = inferSettings(graph);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    assignFA2Layout(graph, { settings, iterations: 100 });
   }, []);
 
   useEffect(() => {
@@ -168,8 +268,20 @@ const GraphView: React.FC<Props> = ({
           }
         });
 
-        // 3. Update edges
-        graph.clearEdges();
+        // 3. Diff and update edges instead of clear/re-add
+        const targetEdgeSet = new Set<string>();
+        data.links.forEach((l) => {
+          targetEdgeSet.add(`${l.source_id}|${l.target_id}`);
+        });
+
+        graph.edges().forEach((edge) => {
+          const s = graph.source(edge);
+          const t = graph.target(edge);
+          if (!targetEdgeSet.has(`${s}|${t}`)) {
+            graph.dropEdge(edge);
+          }
+        });
+
         data.links.forEach((l) => {
           if (graph.hasNode(l.source_id) && graph.hasNode(l.target_id)) {
             graph.mergeEdge(l.source_id, l.target_id, {
@@ -179,6 +291,13 @@ const GraphView: React.FC<Props> = ({
             });
           }
         });
+
+        // Apply layout
+        if (layout === 'hierarchical') {
+          applyHierarchicalLayout(graph, data.entities);
+        } else if (layout === 'force') {
+          applyForceLayout(graph);
+        }
       }
 
       if (!sigmaInstance.current) {
@@ -186,31 +305,36 @@ const GraphView: React.FC<Props> = ({
           ...layoutSettings,
           nodeReducer: (node, data) => {
             const ratio = cameraRatioRef.current;
-            const result: Partial<NodeDisplayData> = { ...data };
+            const nodeData = data as Partial<NodeDisplayData>;
+            const result = { ...nodeData };
             if (ratio > 1.5) {
-              result.label = data.label;
-              result.size = (data.size || 10) * Math.min(ratio, 3);
+              result.label = nodeData.label;
+              result.size = (nodeData.size || 10) * Math.min(ratio, 3);
             } else if (ratio < 0.5) {
               result.label = '';
-              result.size = Math.max((data.size || 10) * 0.5, 2);
+              result.size = Math.max((nodeData.size || 10) * 0.5, 2);
             } else if (ratio < 0.8 && (graphSize === 'large' || graphSize === 'xlarge')) {
               result.label = '';
-              result.size = (data.size || 10) * 0.7;
+              result.size = (nodeData.size || 10) * 0.7;
             } else if (ratio < 1.0 && graphSize === 'xlarge') {
               result.label = '';
-              result.size = (data.size || 10) * 0.85;
+              result.size = (nodeData.size || 10) * 0.85;
+            }
+            const g = graphRef.current;
+            if (g && g.getNodeAttribute(node, 'fixed')) {
+              result.color = '#7c3aed';
             }
             return result;
           },
           edgeReducer: (edge, data) => {
             const ratio = cameraRatioRef.current;
-            const result: Partial<EdgeDisplayData> = { ...data };
+            const result = { ...data } as Partial<EdgeDisplayData>;
             if (ratio < 0.5) {
               result.label = '';
               result.hidden = true;
             } else if (ratio < 0.8 && graphSize === 'large') {
               result.label = '';
-              result.size = Math.min(data.size || 1, 0.5);
+              result.size = Math.min((data.size as number) || 1, 0.5);
             } else if (ratio < 1.0 && graphSize === 'xlarge') {
               result.label = '';
               result.hidden = true;
@@ -226,6 +350,13 @@ const GraphView: React.FC<Props> = ({
         sigmaInstance.current.on('clickStage', () => {
           setSelectedNode(null);
           setFocusMode(false);
+        });
+
+        sigmaInstance.current.on('rightClickNode', ({ node }) => {
+          const graph = graphRef.current;
+          const currentFixed = graph.getNodeAttribute(node, 'fixed') as boolean | undefined ?? false;
+          graph.setNodeAttribute(node, 'fixed', !currentFixed);
+          sigmaInstance.current?.refresh();
         });
 
         sigmaInstance.current.on('cameraUpdated', () => {
@@ -244,7 +375,41 @@ const GraphView: React.FC<Props> = ({
     return () => {
       if (layoutTimeoutRef.current) cancelAnimationFrame(layoutTimeoutRef.current);
     };
-  }, [effectiveData, selectedNode, focusMode, snapshotMode, setFocusMode, setSelectedNode]);
+  }, [effectiveData, selectedNode, focusMode, snapshotMode, setFocusMode, setSelectedNode, applyForceLayout, applyHierarchicalLayout, graphSize, layout, layoutSettings]);
+
+  // Fetch claims and links when selected node changes
+  useEffect(() => {
+    if (!selectedNode) {
+      setSelectedEntityClaims([]);
+      setSelectedEntityLinks([]);
+      return;
+    }
+    repository.getClaimsByEntityId(selectedNode).then(claims => {
+      setSelectedEntityClaims(claims);
+    }).catch(err => logger.error('Failed to fetch entity claims', err));
+    setSelectedEntityLinks(links.filter(l => l.source_id === selectedNode || l.target_id === selectedNode));
+  }, [selectedNode, links]);
+
+  // Re-layout when layout mode changes (without full re-render)
+  useEffect(() => {
+    const graph = graphRef.current;
+    const sigma = sigmaInstance.current;
+    if (!graph || !sigma || effectiveData.entities.length === 0) return;
+
+    switch (layout) {
+      case 'circular':
+        applyCircularLayout(graph, effectiveData.entities);
+        break;
+      case 'force':
+        applyForceLayout(graph);
+        break;
+      case 'hierarchical':
+        applyHierarchicalLayout(graph, effectiveData.entities);
+        break;
+    }
+    sigma.refresh();
+    void sigma.getCamera().animatedReset({ duration: 400 });
+  }, [layout, effectiveData.entities, applyHierarchicalLayout, applyCircularLayout, applyForceLayout]);
 
   // Cleanup Sigma on unmount
   useEffect(() => {
@@ -273,6 +438,19 @@ const GraphView: React.FC<Props> = ({
     setSnapshotMode(false);
     setSnapshotData(null);
   };
+
+  const handleExportPNG = useCallback(() => {
+    const sigma = sigmaInstance.current;
+    if (!sigma) return;
+    const canvases = sigma.getCanvases();
+    const canvas = Object.values(canvases)[0];
+    if (!canvas) return;
+    const link = document.createElement('a');
+    link.download = `graph-${Date.now()}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    logger.info('Graph exported as PNG');
+  }, []);
 
   // --- Mobile touch gesture handling (pinch-to-zoom + drag-to-pan) ---
   const touchStateRef = useRef<TouchState>({
@@ -387,9 +565,147 @@ const GraphView: React.FC<Props> = ({
     };
   }, []);
 
+  // --- Keyboard navigation ---
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const sigma = sigmaInstance.current;
+      if (!sigma) return;
+
+      const graph = graphRef.current;
+      const nodes = graph.nodes();
+      const visibleNodes = nodes.filter(n => n !== 'placeholder');
+      const currentIdx = selectedNode ? visibleNodes.indexOf(selectedNode) : focusRingIndex;
+
+      // Arrow keys with modifier = pan camera
+      const hasModifier = e.ctrlKey || e.metaKey || e.shiftKey;
+
+      switch (e.key) {
+        case 'Tab': {
+          e.preventDefault();
+          const dir = e.shiftKey ? -1 : 1;
+          const next = ((currentIdx + dir) % visibleNodes.length + visibleNodes.length) % visibleNodes.length;
+          if (visibleNodes[next]) {
+            setSelectedNode(visibleNodes[next]);
+            setFocusRingIndex(next);
+          }
+          break;
+        }
+        case 'ArrowLeft': {
+          e.preventDefault();
+          if (hasModifier) {
+            const camera = sigma.getCamera();
+            camera.setState({ x: camera.x + 50 / camera.ratio });
+          } else if (selectedNode) {
+            // Navigate to nearest neighbor in the left/up direction (prefer source nodes)
+            const neighbors = graph.neighbors(selectedNode);
+            if (neighbors.length > 0) {
+              setSelectedNode(neighbors[neighbors.length - 1]);
+            }
+          }
+          break;
+        }
+        case 'ArrowRight': {
+          e.preventDefault();
+          if (hasModifier) {
+            const camera = sigma.getCamera();
+            camera.setState({ x: camera.x - 50 / camera.ratio });
+          } else if (selectedNode) {
+            // Navigate to nearest neighbor in the right/down direction (prefer target nodes)
+            const neighbors = graph.neighbors(selectedNode);
+            if (neighbors.length > 0) {
+              setSelectedNode(neighbors[0]);
+            }
+          }
+          break;
+        }
+        case 'ArrowUp': {
+          e.preventDefault();
+          if (hasModifier) {
+            const camera = sigma.getCamera();
+            camera.setState({ y: camera.y + 50 / camera.ratio });
+          } else if (visibleNodes.length > 0) {
+            // Previous node in list
+            const dir = -1;
+            const next = ((currentIdx + dir) % visibleNodes.length + visibleNodes.length) % visibleNodes.length;
+            if (visibleNodes[next]) {
+              setSelectedNode(visibleNodes[next]);
+              setFocusRingIndex(next);
+            }
+          }
+          break;
+        }
+        case 'ArrowDown': {
+          e.preventDefault();
+          if (hasModifier) {
+            const camera = sigma.getCamera();
+            camera.setState({ y: camera.y - 50 / camera.ratio });
+          } else if (visibleNodes.length > 0) {
+            // Next node in list
+            const dir = 1;
+            const next = ((currentIdx + dir) % visibleNodes.length + visibleNodes.length) % visibleNodes.length;
+            if (visibleNodes[next]) {
+              setSelectedNode(visibleNodes[next]);
+              setFocusRingIndex(next);
+            }
+          }
+          break;
+        }
+        case '=':
+        case '+': {
+          e.preventDefault();
+          const camera = sigma.getCamera();
+          camera.setState({ ratio: camera.ratio * 0.8 });
+          break;
+        }
+        case '-': {
+          e.preventDefault();
+          const camera = sigma.getCamera();
+          camera.setState({ ratio: camera.ratio / 0.8 });
+          break;
+        }
+        case 'Home': {
+          e.preventDefault();
+          void sigma.getCamera().animatedReset({ duration: 300 });
+          break;
+        }
+        case 'Enter':
+        case ' ': {
+          if (visibleNodes.length > 0 && currentIdx >= 0 && visibleNodes[currentIdx]) {
+            setSelectedNode(visibleNodes[currentIdx]);
+          }
+          break;
+        }
+        case 'Escape': {
+          e.preventDefault();
+          setSelectedNode(null);
+          setFocusRingIndex(-1);
+          break;
+        }
+        case 'Delete':
+        case 'Backspace': {
+          if (selectedNode && window.confirm(`Delete "${entities.find(e => e.id === selectedNode)?.name}"? This will also delete all claims and links for this entity.`)) {
+            void repository.deleteEntity(selectedNode).then(() => {
+              void removeFromSearchIndex(selectedNode);
+              logger.info('Entity deleted via keyboard', { id: selectedNode });
+              setSelectedNode(null);
+            }).catch(err => logger.error('Failed to delete entity', err));
+          }
+          break;
+        }
+      }
+    };
+
+    container.addEventListener('keydown', handleKeyDown);
+    return () => container.removeEventListener('keydown', handleKeyDown);
+  }, [selectedNode, focusRingIndex, entities, layout, setSelectedNode]);
+
   // Use snapshot data when in snapshot mode, otherwise use filtered live data
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const effectiveData = snapshotMode && snapshotData
-    ? { entities: snapshotData.nodes.map(n => ({ id: n.id, name: n.label, type: 'snapshot' } as Entity)), links: snapshotData.edges.map(e => ({ id: e.id, source_id: e.source, target_id: e.target, relation: e.label || '' } as Link)) }
+    ? { entities: snapshotData.nodes.map(n => ({ id: n.id, name: n.label, type: 'snapshot' })), links: snapshotData.edges.map(e => ({ id: e.id, source_id: e.source, target_id: e.target, relation: e.label || '' })) }
     : filteredData;
 
   return (
@@ -422,12 +738,53 @@ const GraphView: React.FC<Props> = ({
             edges={snapshotMode && snapshotData ? snapshotData.edges : filteredData.links.map(l => ({ id: l.id!, source: l.source_id, target: l.target_id, label: l.relation }))}
             onSaveSnapshot={handleSaveSnapshot}
             onLoadSnapshot={handleLoadSnapshot}
+            onExportPNG={handleExportPNG}
             snapshotMode={snapshotMode}
             onSnapshotModeChange={(active) => { if (!active) handleExitSnapshot(); }}
+            layout={layout}
+            onLayoutChange={setLayout}
           />
         </div>
       )}
-      <div ref={containerRef} className="viz-container" style={{ height: '600px', width: '100%' }} />
+      <div
+        ref={containerRef}
+        className="viz-container"
+        style={{ height: '600px', width: '100%' }}
+        role="img"
+        aria-label={`Knowledge Graph: ${effectiveData.entities.length} entities, ${effectiveData.links.length} connections${selectedNode ? `. Selected: ${entities.find(e => e.id === selectedNode)?.name || selectedNode}` : ''}`}
+        tabIndex={-1}
+        aria-roledescription="Interactive knowledge graph showing entities and their relationships"
+      />
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {(() => {
+          if (!selectedNode) return 'Knowledge graph. No entity selected. Use Tab or arrow keys to navigate nodes.';
+          const entity = entities.find(e => e.id === selectedNode);
+          const name = entity?.name || selectedNode;
+          const connections = effectiveData.links.filter(l => l.source_id === selectedNode || l.target_id === selectedNode);
+          const neighborNames = connections
+            .map(l => {
+              const neighborId = l.source_id === selectedNode ? l.target_id : l.source_id;
+              const neighbor = entities.find(e => e.id === neighborId);
+              return neighbor?.name || neighborId;
+            })
+            .filter(Boolean);
+          return `Selected: ${name}. ${connections.length} connections${neighborNames.length > 0 ? ': ' + neighborNames.slice(0, 5).join(', ') + (neighborNames.length > 5 ? ` and ${neighborNames.length - 5} more` : '') : ''}. Press Tab to next, Enter to inspect, Escape to deselect.`;
+        })()}
+      </div>
+      {selectedNode && (() => {
+        const entity = entities.find(e => e.id === selectedNode);
+        if (!entity) return null;
+        return (
+          <GraphInspector
+            entity={entity}
+            claims={selectedEntityClaims}
+            links={selectedEntityLinks}
+            entities={entities}
+            onClose={() => setSelectedNode(null)}
+            onEdit={onEditEntity}
+          />
+        );
+      })()}
     </div>
   );
 };

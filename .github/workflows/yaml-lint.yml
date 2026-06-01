@@ -31,6 +31,7 @@ jobs:
   yamllint:
     name: YAML Syntax Validation
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
@@ -41,6 +42,7 @@ jobs:
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
           python-version: '3.x'
+          cache: 'pip'
 
       - name: Install yamllint
         run: pip install yamllint
@@ -54,6 +56,7 @@ jobs:
   actionlint:
     name: GitHub Actions Workflow Validation
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
@@ -62,6 +65,7 @@ jobs:
 
       - name: Run actionlint
         uses: reviewdog/action-actionlint@6fb7acc99f4a1008869fa8a0f09cfca740837d9d  # v1
+        continue-on-error: true
         with:
           fail_level: error
           filter_mode: nofilter

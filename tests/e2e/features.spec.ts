@@ -123,6 +123,12 @@ test.describe('Mind Map', () => {
 });
 
 test.describe('AI Harness Chat', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem('dks:ai-wizard-seen', 'true');
+    });
+  });
+
   test('renders with input field and knowledge toggle', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('.layout-container')).toBeVisible({ timeout: 15000 });
@@ -158,11 +164,14 @@ test.describe('AI Harness Chat', () => {
 
     await expect(page.locator('.chat-view')).toBeVisible({ timeout: 15000 });
 
+    await closeNav(page);
+
     // Type a message and submit
     const input = page.locator('.chat-controls input[type="text"]');
     await input.fill('What is TRIZ?');
     
     const sendBtn = page.locator('.chat-controls button.primary');
+    await expect(sendBtn).toBeVisible({ timeout: 10000 });
     await sendBtn.click();
 
     // Verify user message appears

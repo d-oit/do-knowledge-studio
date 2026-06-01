@@ -29,15 +29,19 @@ const htmlToPlainText = (html: string): string => {
   let text = stripped
     .replace(/<\/?(p|div|h[1-6]|li|tr|br|article|section|aside)[^>]*>/gi, '\n')
     .replace(/<[^>]*>/g, '');
-  
-  // Decode common entities
-  text = text
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, ' ');
+
+  // Decode common entities using a single pass to avoid double-unescaping (CodeQL)
+  // We use a non-capturing group for the entity name to satisfy CodeQL's concern
+  // about producing '&' characters that could be further processed.
+  const entities: Record<string, string> = {
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&quot;': '"',
+    '&#39;': "'",
+    '&nbsp;': ' ',
+  };
+  text = text.replace(/&(?:amp|lt|gt|quot|#39|nbsp);/g, (match) => entities[match] || match);
   
   return text;
 };

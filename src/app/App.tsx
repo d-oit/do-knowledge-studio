@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
-import { DbProvider, useDb } from '../db/DbProvider';
+import { DbProvider } from '../db/DbProvider';
+import { useDb } from '../db/useDb';
 import { repository } from '../db/repository';
 import { logger } from '../lib/logger';
 import { hydrateOramaIndex } from '../lib/search';
@@ -24,6 +25,7 @@ import {
 
 // Preload functions for lazy chunks (triggered on hover/focus)
 const preloadEditor = () => import('../features/editor/Editor');
+const preloadLibrary = () => import('../features/library/LibraryView');
 const preloadSearch = () => import('../features/search/SearchPanel');
 const preloadGraph = () => import('../features/graph/GraphView');
 const preloadGraphControls = () => import('../features/graph/GraphControls');
@@ -34,6 +36,7 @@ const preloadAI = () => import('../features/ai/AIHarness');
 
 // Lazy-loaded features
 const Editor = lazy(preloadEditor);
+const LibraryView = lazy(preloadLibrary);
 const SearchPanel = lazy(preloadSearch);
 const GraphControls = lazy(preloadGraphControls);
 const GraphView = lazy(preloadGraph);
@@ -42,7 +45,7 @@ const Chat = lazy(preloadChat);
 const ExportPanel = lazy(preloadExport);
 const AIHarness = lazy(preloadAI);
 
-type View = 'editor' | 'graph' | 'mindmap' | 'chat' | 'export' | 'ai';
+type View = 'editor' | 'graph' | 'mindmap' | 'chat' | 'export' | 'ai' | 'library';
 
 const AppContent: React.FC = () => {
   const { dbReady, error } = useDb();
@@ -57,6 +60,7 @@ const AppContent: React.FC = () => {
   // Shared state for GraphView mobile controls
   const [graphFocusMode, setGraphFocusMode] = useState(false);
   const [graphSelectedNode, setGraphSelectedNode] = useState<string | null>(null);
+  const [editingEntityId, setEditingEntityId] = useState<string | null>(null);
 
   const handlePreload = useCallback((view: string) => {
     switch (view) {
@@ -66,16 +70,13 @@ const AppContent: React.FC = () => {
       case 'export': void preloadExport(); break;
       case 'ai': void preloadAI(); break;
       case 'search': void preloadSearch(); break;
+      case 'library': void preloadLibrary(); break;
     }
   }, []);
 
-  const handleSearchResultClick = useCallback((result: SearchResult) => {
-    if (result.type === 'claim' || result.type === 'entity' || result.type === 'note' || result.type === 'concept' || result.type === 'person' || result.type === 'project') {
-       setCurrentView('editor');
-       // In a real app we would navigate to the specific entity.
-       // For now, navigating to the editor is a good start.
-    }
-    setIsSearchOpen(false);
+  const handleEditEntity = useCallback((entityId: string) => {
+    setEditingEntityId(entityId);
+    setCurrentView('editor');
   }, []);
 
   const refreshData = useCallback(async () => {
@@ -89,6 +90,20 @@ const AppContent: React.FC = () => {
       logger.error('Data refresh failed', err);
     }
   }, [dbReady]);
+
+  const handleEditComplete = useCallback(() => {
+    setEditingEntityId(null);
+    void refreshData();
+  }, [refreshData]);
+
+  const handleSearchResultClick = useCallback((result: SearchResult) => {
+    if (result.type === 'claim' || result.type === 'entity' || result.type === 'note' || result.type === 'concept' || result.type === 'person' || result.type === 'project') {
+       setCurrentView('editor');
+       // In a real app we would navigate to the specific entity.
+       // For now, navigating to the editor is a good start.
+    }
+    setIsSearchOpen(false);
+  }, []);
 
   // Deferred startup: non-critical tasks pushed to idle callback
   useEffect(() => {
@@ -118,7 +133,10 @@ const AppContent: React.FC = () => {
 
   useEffect(() => {
     if (dbReady && (currentView === 'graph' || currentView === 'mindmap')) {
-      void refreshData();
+      // Use requestIdleCallback or setTimeout to avoid synchronous setState within effect
+      const schedule = (window as { requestIdleCallback?: (cb: () => void) => void }).requestIdleCallback
+        ?? ((cb: () => void) => setTimeout(cb, 0));
+      schedule(() => { void refreshData(); });
     }
   }, [currentView, dbReady, refreshData]);
 
@@ -144,13 +162,13 @@ const AppContent: React.FC = () => {
   return (
     <div className="layout-container">
       <Header
-        onMenuClick={() => setIsMenuOpen(true)}
-        onSearchClick={() => setIsSearchOpen(true)}
+        onMenuClick={() => { setIsMenuOpen(true); }}
+        onSearchClick={() => { setIsSearchOpen(true); }}
       />
 
       <div className="layout-body">
           <aside className="desktop-sidebar">
-            <SidebarNav currentView={currentView} setCurrentView={setCurrentView} onSearchClick={() => setIsPaletteOpen(true)} onPreload={handlePreload} />
+            <SidebarNav currentView={currentView} setCurrentView={setCurrentView} onSearchClick={() => { setIsPaletteOpen(true); }} onPreload={handlePreload} />
           <div className="sidebar-theme-section">
             <ThemeSwitcher />
           </div>
@@ -158,71 +176,86 @@ const AppContent: React.FC = () => {
 
         <main className="main-content">
           {!dbReady && <div className="loading-screen">Booting Knowledge Studio...</div>}
-          <ErrorBoundary fallback={<div className="error-state">Failed to load component. Please refresh.</div>}>
-            {dbReady && currentView === 'editor' && (
-              <Suspense fallback={<EditorSkeleton />}>
-                <ErrorBoundary>
-                  <Profiled id="Editor">
-                    <Editor />
-                  </Profiled>
-                </ErrorBoundary>
-              </Suspense>
-            )}
-            {dbReady && currentView === 'graph' && (
-              <Suspense fallback={<GraphSkeleton />}>
-                <ErrorBoundary>
-                  <Profiled id="GraphView">
-                    <GraphView
-                      entities={entities}
-                      links={links}
-                      focusMode={graphFocusMode}
-                      onFocusModeChange={setGraphFocusMode}
-                      selectedNode={graphSelectedNode}
-                      onSelectedNodeChange={setGraphSelectedNode}
-                      hideToolbar={window.innerWidth < 768}
-                    />
-                  </Profiled>
-                </ErrorBoundary>
-              </Suspense>
-            )}
-            {dbReady && currentView === 'mindmap' && entities.length > 0 && (
-              <Suspense fallback={<MindMapSkeleton />}>
-                <ErrorBoundary>
-                  <Profiled id="MindMapView">
-                    <MindMapView
-                      rootEntity={entities[0]}
-                      entities={entities}
-                      links={links}
-                    />
-                  </Profiled>
-                </ErrorBoundary>
-              </Suspense>
-            )}
-            {dbReady && currentView === 'mindmap' && entities.length === 0 && (
-               <div className="empty-state">No entities found. Create some in the Editor first.</div>
-            )}
-            {dbReady && currentView === 'chat' && (
-              <Suspense fallback={<AISkeleton />}>
-                <ErrorBoundary>
-                  <Chat />
-                </ErrorBoundary>
-              </Suspense>
-            )}
-            {dbReady && currentView === 'export' && (
-              <Suspense fallback={<ExportSkeleton />}>
-                <ErrorBoundary>
-                  <ExportPanel />
-                </ErrorBoundary>
-              </Suspense>
-            )}
-            {dbReady && currentView === 'ai' && (
-              <Suspense fallback={<AISkeleton />}>
-                <ErrorBoundary>
-                  <AIHarness />
-                </ErrorBoundary>
-              </Suspense>
-            )}
-          </ErrorBoundary>
+          {dbReady && currentView === 'editor' && (
+            <Suspense fallback={<EditorSkeleton />}>
+              <ErrorBoundary featureName="Editor" onRetry={() => window.location.reload()}>
+                <Profiled id="Editor">
+                  <Editor
+                    editingEntityId={editingEntityId}
+                    onEditComplete={handleEditComplete}
+                    onEditEntity={handleEditEntity}
+                  />
+                </Profiled>
+              </ErrorBoundary>
+            </Suspense>
+          )}
+          {dbReady && currentView === 'library' && (
+            <Suspense fallback={<div className="loading-screen">Loading Library...</div>}>
+              <ErrorBoundary featureName="Library" onRetry={() => window.location.reload()}>
+                <Profiled id="LibraryView">
+                  <LibraryView onEditEntity={handleEditEntity} />
+                </Profiled>
+              </ErrorBoundary>
+            </Suspense>
+          )}
+          {dbReady && currentView === 'graph' && (
+            <Suspense fallback={<GraphSkeleton />}>
+              <ErrorBoundary featureName="Graph View" onRetry={() => window.location.reload()}>
+                <Profiled id="GraphView">
+                  <GraphView
+                    entities={entities}
+                    links={links}
+                    focusMode={graphFocusMode}
+                    onFocusModeChange={setGraphFocusMode}
+                    selectedNode={graphSelectedNode}
+                    onSelectedNodeChange={setGraphSelectedNode}
+                    hideToolbar={window.innerWidth < 768}
+                    onEditEntity={handleEditEntity}
+                  />
+                </Profiled>
+              </ErrorBoundary>
+            </Suspense>
+          )}
+          {dbReady && currentView === 'mindmap' && entities.length > 0 && (
+            <Suspense fallback={<MindMapSkeleton />}>
+              <ErrorBoundary featureName="Mind Map" onRetry={() => window.location.reload()}>
+                <Profiled id="MindMapView">
+                  <MindMapView
+                    rootEntity={entities[0]}
+                    entities={entities}
+                    links={links}
+                  />
+                </Profiled>
+              </ErrorBoundary>
+            </Suspense>
+          )}
+          {dbReady && currentView === 'mindmap' && entities.length === 0 && (
+             <div className="empty-state">No entities found. Create some in the Editor first.</div>
+          )}
+          {dbReady && currentView === 'chat' && (
+            <Suspense fallback={<AISkeleton />}>
+              <ErrorBoundary featureName="Chat" onRetry={() => window.location.reload()}>
+                <Chat
+                  onCreateEntity={() => { setCurrentView('editor'); }}
+                  onOpenSettings={() => { setCurrentView('ai'); }}
+                />
+              </ErrorBoundary>
+            </Suspense>
+          )}
+          {dbReady && currentView === 'export' && (
+            <Suspense fallback={<ExportSkeleton />}>
+              <ErrorBoundary featureName="Export" onRetry={() => window.location.reload()}>
+                <ExportPanel />
+              </ErrorBoundary>
+            </Suspense>
+          )}
+          {dbReady && currentView === 'ai' && (
+            <Suspense fallback={<AISkeleton />}>
+              <ErrorBoundary featureName="AI" onRetry={() => window.location.reload()}>
+                <AIHarness />
+              </ErrorBoundary>
+            </Suspense>
+          )}
         </main>
 
         <aside className="search-sidebar">
@@ -235,16 +268,16 @@ const AppContent: React.FC = () => {
       <Suspense fallback={null}>
         <CommandPalette
           isOpen={isPaletteOpen}
-          onClose={() => setIsPaletteOpen(false)}
+          onClose={() => { setIsPaletteOpen(false); }}
           onViewChange={setCurrentView}
         />
       </Suspense>
 
-      <MobileDrawer isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)}>
+      <MobileDrawer isOpen={isMenuOpen} onClose={() => { setIsMenuOpen(false); }}>
         <SidebarNav
           currentView={currentView}
           setCurrentView={setCurrentView}
-          onClose={() => setIsMenuOpen(false)}
+          onClose={() => { setIsMenuOpen(false); }}
           onPreload={handlePreload}
         />
         <div className="drawer-theme-section">
@@ -270,14 +303,14 @@ const AppContent: React.FC = () => {
           <Suspense fallback={<SearchSkeleton />}>
             <SearchPanel
               isMobile
-              onClose={() => setIsSearchOpen(false)}
+              onClose={() => { setIsSearchOpen(false); }}
               onResultClick={handleSearchResultClick}
             />
           </Suspense>
         </div>
       )}
 
-      <PerfPanel isOpen={isPerfOpen} onClose={() => setIsPerfOpen(false)} />
+      <PerfPanel isOpen={isPerfOpen} onClose={() => { setIsPerfOpen(false); }} />
     </div>
   );
 };

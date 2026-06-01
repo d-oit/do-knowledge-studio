@@ -2,7 +2,7 @@ import type { LLMProvider, LLMProviderConfig } from './types';
 import { OpenRouterProvider } from './openrouter';
 import { KiloGatewayProvider } from './kilo';
 
-const STORAGE_KEY = 'do-knowledge-studio:llm-config';
+const STORAGE_KEY = 'dks:llm-config';
 
 export interface LLMConfig {
   activeProvider: string;
@@ -14,11 +14,13 @@ const DEFAULT_CONFIG: LLMConfig = {
   providers: {
     openrouter: {
       baseURL: 'https://openrouter.ai/api/v1',
-      apiKey: import.meta.env.VITE_OPENROUTER_API_KEY || '',
+      apiKey: '',
+      defaultModel: 'google/gemini-2.0-flash-lite-preview-02-05:free',
     },
     kilo: {
       baseURL: 'https://api.kilo.ai/api/gateway',
-      apiKey: import.meta.env.VITE_KILO_API_KEY || '',
+      apiKey: '',
+      defaultModel: 'meta-llama/llama-3.1-8b-instruct',
     },
   },
 };
@@ -27,10 +29,10 @@ export function loadConfig(): LLMConfig {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      return { ...DEFAULT_CONFIG, ...JSON.parse(stored) };
+      return { ...DEFAULT_CONFIG, ...JSON.parse(stored) as Partial<LLMConfig> };
     }
-  } catch {
-    // Ignore parse errors
+  } catch (e) {
+    console.warn('Failed to parse stored LLM config, falling back to defaults', e);
   }
   return { ...DEFAULT_CONFIG };
 }
@@ -64,6 +66,11 @@ export function getProvider(id: string, config?: Partial<LLMProviderConfig>): LL
     default:
       throw new Error(`Unknown provider: ${id}`);
   }
+}
+
+export function maskApiKey(key: string): string {
+  if (!key || key.length < 8) return key ? `...${key.slice(-4)}` : '';
+  return `...${key.slice(-4)}`;
 }
 
 export { OpenRouterProvider, KiloGatewayProvider };

@@ -1,6 +1,8 @@
 import { logger } from '../lib/logger.js';
 import { AppError } from '../lib/errors.js';
 import { ConnectionPool, DEFAULT_POOL_SIZE } from './connection-pool.js';
+import { runMigrations } from './migrate.js';
+import { getDbHandles } from '../lib/db-persistence.js';
 
 /**
  * Abstract database interface for SQLite access.
@@ -36,17 +38,18 @@ const getSchema = async () => {
     if (typeof fetch !== 'undefined') {
         const schemaResponse = await fetch('/db/schema.sql');
         if (schemaResponse.ok) return await schemaResponse.text();
+        throw new AppError('Failed to load database schema from server', 'DB_INIT_FAILED');
     }
     // Fallback for CLI
     if (typeof process !== 'undefined' && process.versions && process.versions.node) {
       try {
         const fs = await import('fs');
         return fs.readFileSync('./public/db/schema.sql', 'utf-8');
-      } catch {
-        return '';
+      } catch (err) {
+        throw new AppError('Failed to load database schema from filesystem', 'DB_INIT_FAILED', err);
       }
     }
-    return '';
+    throw new AppError('No schema source available', 'DB_INIT_FAILED');
 };
 
 const isBrowser = typeof window !== 'undefined' && typeof Worker !== 'undefined';
@@ -68,7 +71,8 @@ export const initDb = async (options?: { poolSize?: number }): Promise<SQLiteDB>
     if (isBrowser) {
         const poolSize = options?.poolSize ?? DEFAULT_POOL_SIZE;
         const pool = new ConnectionPool(poolSize);
-        await pool.init(schemaSql);
+        const { fileHandle, dirHandle } = await getDbHandles();
+        await pool.init(schemaSql, fileHandle, dirHandle);
         instance = pool;
     } else {
         // CLI/Node fallback: Direct initialization (only reached if setDb not used)
@@ -94,6 +98,17 @@ export const initDb = async (options?: { poolSize?: number }): Promise<SQLiteDB>
             close: () => db.close()
         };
     }
+
+    runMigrations(instance).then(({ applied, errors }) => {
+      if (applied.length > 0) {
+        logger.info(`Applied migrations: ${applied.join(', ')}`);
+      }
+      if (errors.length > 0) {
+        logger.error(`Migration errors: ${errors.join('; ')}`);
+      }
+    }).catch((err) => {
+      logger.warn('Non-blocking migration check failed, app will continue', err);
+    });
 
     return instance;
   } catch (err) {

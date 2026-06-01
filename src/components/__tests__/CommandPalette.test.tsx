@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
 import CommandPalette from '../CommandPalette';
 import { searchKnowledge } from '../../lib/search';
@@ -65,8 +65,9 @@ describe('CommandPalette', () => {
         onAction={mockOnAction}
       />
     );
-    const overlay = screen.getByRole('button', { name: /Close command palette/i });
-    fireEvent.click(overlay);
+    const overlay = document.querySelector('.command-palette-overlay');
+    expect(overlay).not.toBeNull();
+    fireEvent.click(overlay!);
     expect(mockOnClose).toHaveBeenCalled();
   });
 
@@ -104,7 +105,7 @@ describe('CommandPalette', () => {
       />
     );
 
-    const commands = screen.getAllByRole('button').filter(el => el.className.includes('command-item'));
+    const commands = screen.getAllByRole('option');
 
     // Initially first item is selected
     expect(commands[0].className).toContain('selected');

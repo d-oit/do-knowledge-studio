@@ -18,14 +18,20 @@ const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, children }
   if (!isOpen) return null;
 
   return (
-    <div className="mobile-drawer-overlay" onClick={onClose}>
+    <div
+      className="mobile-drawer-overlay"
+      onClick={onClose}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClose(); }}
+      role="button"
+      tabIndex={0}
+      aria-label="Close navigation drawer"
+    >
       <div
         ref={drawerRef}
         className="mobile-drawer-content"
-        onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
-        aria-label="Navigation Drawer"
+        aria-label="Navigation"
       >
         <div className="drawer-header">
           <button className="close-button" onClick={onClose} aria-label="Close menu">

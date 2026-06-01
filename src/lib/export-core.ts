@@ -1,0 +1,248 @@
+import { escapeHtml, sanitizeHtml } from './security';
+import type { Entity, Claim, Note, Link } from './validation';
+
+export interface ExportData {
+  entities: Entity[];
+  claims: Record<string, Claim[] | undefined>;
+  notes: Record<string, Note[] | undefined>;
+  links?: Link[];
+  exported_at?: string;
+}
+
+export interface ExportRepository {
+  getAllEntities(): Promise<Entity[]>;
+  getAllLinks(): Promise<Link[]>;
+  getAllClaimsGroupedByEntity(): Promise<Record<string, Claim[]>>;
+  getAllNotesGroupedByEntity(): Promise<Record<string, Note[]>>;
+}
+
+export async function fetchAllExportData(repository: ExportRepository): Promise<Required<ExportData>> {
+  const [entities, links, claims, notes] = await Promise.all([
+    repository.getAllEntities(),
+    repository.getAllLinks(),
+    repository.getAllClaimsGroupedByEntity(),
+    repository.getAllNotesGroupedByEntity(),
+  ]);
+  return {
+    entities,
+    links,
+    claims,
+    notes,
+    exported_at: new Date().toISOString(),
+  };
+}
+
+export function generateSiteHtml(data: ExportData): string {
+  const { entities, claims } = data;
+  const timestamp = data.exported_at ?? new Date().toLocaleString();
+
+  const navItems = entities
+    .map(e => {
+      const id = escapeHtml(e.name.replace(/[^a-z0-9]/gi, '-').toLowerCase());
+      const name = escapeHtml(e.name);
+      return `<li><a href="#${id}">${name}</a></li>`;
+    })
+    .join('\n      ');
+
+  let html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; script-src 'none';">
+  <title>Knowledge Base</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; max-width: 900px; margin: 0 auto; padding: 2rem; line-height: 1.6; color: #1e293b; background: #f8fafc; }
+    header { margin-bottom: 3rem; text-align: center; }
+    h1 { font-size: 2.5rem; color: #0f172a; margin-bottom: 0.5rem; }
+    .meta { color: #64748b; font-size: 0.875rem; }
+    .entity { background: white; margin-bottom: 2rem; padding: 2rem; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
+    .entity h2 { margin-top: 0; color: #2563eb; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.5rem; }
+    .type { display: inline-block; background: #f1f5f9; padding: 0.2rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; margin-bottom: 1rem; }
+    .claim { margin: 0.75rem 0; padding: 0.75rem; background: #f0f9ff; border-left: 4px solid #0ea5e9; border-radius: 0 4px 4px 0; }
+    .claim-meta { font-size: 0.75rem; color: #64748b; margin-top: 0.25rem; }
+    .description { margin: 1rem 0; font-size: 1.1rem; }
+    h3 { font-size: 1.25rem; color: #334155; margin-top: 1.5rem; }
+    nav { position: sticky; top: 1rem; background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 2rem; max-height: 300px; overflow-y: auto; }
+    nav h4 { margin: 0 0 0.5rem 0; }
+    nav ul { list-style: none; padding: 0; margin: 0; }
+    nav li { margin-bottom: 0.25rem; }
+    nav a { text-decoration: none; color: #64748b; font-size: 0.875rem; }
+    nav a:hover { color: #2563eb; }
+    @media (max-width: 640px) { body { padding: 1rem; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Knowledge Base</h1>
+    <div class="meta">Exported on ${escapeHtml(timestamp)}</div>
+  </header>
+
+  <nav>
+    <h4>Quick Navigation</h4>
+    <ul>
+      ${navItems}
+    </ul>
+  </nav>
+
+  <main>
+`;
+
+  for (const entity of entities) {
+    if (!entity.id) continue;
+    const entityClaims = claims[entity.id] ?? [];
+    const safeId = entity.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+
+    html += `\n    <section class="entity" id="${safeId}">\n`;
+    html += `      <span class="type">${escapeHtml(entity.type)}</span>\n`;
+    html += `      <h2>${escapeHtml(entity.name)}</h2>\n`;
+
+    if (entity.description) {
+      html += `\n      <div class="description">${sanitizeHtml(entity.description)}</div>\n`;
+    }
+
+    if (entityClaims.length > 0) {
+      html += `\n      <h3>Claims</h3>\n`;
+      for (const claim of entityClaims) {
+        html += `      <div class="claim">\n`;
+        html += `        <div class="statement">${escapeHtml(claim.statement)}</div>\n`;
+        if (claim.confidence !== 1 || claim.source) {
+          html += `        <div class="claim-meta">\n`;
+          if (claim.confidence !== 1) html += `          <span>Confidence: ${Math.round(claim.confidence * 100)}%</span>\n`;
+          if (claim.source) html += `          <span>Source: ${escapeHtml(claim.source)}</span>\n`;
+          html += `        </div>\n`;
+        }
+        html += `      </div>\n`;
+      }
+    }
+
+    html += `    </section>\n`;
+  }
+
+  html += `
+  </main>
+  <footer>
+    <p style="text-align: center; color: #94a3b8; margin-top: 4rem; font-size: 0.875rem;">Generated by do-knowledge-studio</p>
+  </footer>
+</body>
+</html>`;
+
+  return html;
+}
+
+export function generateEntityMarkdown(
+  entity: Entity,
+  claims: Claim[],
+  notes: Note[],
+): string {
+  let md = `# ${escapeHtml(entity.name)}\n\n`;
+  md += `**Type:** ${escapeHtml(entity.type)}\n\n`;
+  if (entity.description) md += `${sanitizeHtml(entity.description)}\n\n`;
+
+  if (claims.length > 0) {
+    md += `## Claims\n\n`;
+    for (const claim of claims) {
+      md += `- ${escapeHtml(claim.statement)}`;
+      if (claim.confidence !== 1) md += ` (confidence: ${claim.confidence})`;
+      md += `\n`;
+      if (claim.evidence) md += `  - *Evidence:* ${escapeHtml(claim.evidence)}\n`;
+    }
+    md += '\n';
+  }
+
+  if (notes.length > 0) {
+    md += `## Notes\n\n`;
+    for (const note of notes) {
+      md += `${sanitizeHtml(note.content)}\n\n`;
+    }
+  }
+
+  return md;
+}
+
+export function generateMarkdownExport(data: ExportData): string {
+  const { entities, claims, notes } = data;
+  let fullContent = '';
+
+  for (const entity of entities) {
+    if (!entity.id) continue;
+    const entityClaims = claims[entity.id] ?? [];
+    const entityNotes = notes[entity.id] ?? [];
+
+    fullContent += generateEntityMarkdown(entity, entityClaims, entityNotes);
+    fullContent += '\n---\n\n';
+  }
+
+  return fullContent;
+}
+
+export function generateJsonExport(data: unknown): string {
+  return JSON.stringify(data, null, 2);
+}
+
+export function generatePrintHtml(entities: Entity[], claims: Record<string, Claim[]>): string {
+  const timestamp = new Date().toLocaleString();
+
+  let html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; script-src 'none';">
+  <title>Knowledge Base Export</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; line-height: 1.6; color: #1e293b; }
+    h1 { font-size: 2rem; border-bottom: 2px solid #2563eb; padding-bottom: 0.5rem; }
+    h2 { font-size: 1.5rem; color: #2563eb; margin-top: 2rem; }
+    h3 { font-size: 1.2rem; color: #334155; }
+    .meta { color: #64748b; font-size: 0.875rem; margin-bottom: 2rem; }
+    .type { display: inline-block; background: #f1f5f9; padding: 0.2rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; margin-bottom: 0.5rem; }
+    .claim { margin: 0.5rem 0; padding: 0.5rem 0.75rem; border-left: 3px solid #0ea5e9; background: #f8fafc; }
+    .claim-meta { font-size: 0.75rem; color: #64748b; margin-top: 0.25rem; }
+    .description { margin: 1rem 0; font-size: 1rem; }
+    @media print { body { padding: 0; } }
+  </style>
+</head>
+<body>
+  <h1>Knowledge Base Export</h1>
+  <div class="meta">Exported on ${escapeHtml(timestamp)}</div>
+`;
+
+  for (const entity of entities) {
+    if (!entity.id) continue;
+    const entityClaims = claims[entity.id] ?? [];
+
+    html += `\n  <section>\n`;
+    html += `    <span class="type">${escapeHtml(entity.type)}</span>\n`;
+    html += `    <h2>${escapeHtml(entity.name)}</h2>\n`;
+
+    if (entity.description) {
+      html += `    <div class="description">${sanitizeHtml(entity.description)}</div>\n`;
+    }
+
+    if (entityClaims.length > 0) {
+      html += `    <h3>Claims</h3>\n`;
+      for (const claim of entityClaims) {
+        html += `    <div class="claim">\n`;
+        html += `      <div>${escapeHtml(claim.statement)}</div>\n`;
+        if (claim.confidence !== 1 || claim.source) {
+          html += `      <div class="claim-meta">\n`;
+          if (claim.confidence !== 1) html += `        <span>Confidence: ${Math.round(claim.confidence * 100)}%</span>\n`;
+          if (claim.source) html += `        <span>Source: ${escapeHtml(claim.source)}</span>\n`;
+          html += `      </div>\n`;
+        }
+        html += `    </div>\n`;
+      }
+    }
+
+    html += `  </section>\n`;
+  }
+
+  html += `\n  <footer>
+    <p style="text-align: center; color: #94a3b8; margin-top: 3rem; font-size: 0.75rem;">Generated by do-knowledge-studio on ${escapeHtml(timestamp)}</p>
+  </footer>
+</body>
+</html>`;
+
+  return html;
+}

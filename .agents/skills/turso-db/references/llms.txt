@@ -60,9 +60,11 @@
 - [Organization Usage](https://docs.turso.tech/api-reference/organizations/usage.md): Fetch current billing cycle usage for an organization.
 - [Quickstart](https://docs.turso.tech/api-reference/quickstart.md): Get started with Turso API in a few easy steps.
 - [Errors](https://docs.turso.tech/api-reference/response-codes.md)
-- [Create API Token](https://docs.turso.tech/api-reference/tokens/create.md): Returns a new API token belonging to a user. You can optionally restrict the token to a single organization by passing the organization slug in the request body. Organization-scoped tokens can only manage resources within that organization.
+- [Create API Token](https://docs.turso.tech/api-reference/tokens/create.md): Returns a new API token belonging to a user.
 - [List API Tokens](https://docs.turso.tech/api-reference/tokens/list.md): Returns a list of API tokens belonging to a user.
+- [List Organization API Tokens](https://docs.turso.tech/api-reference/tokens/list-organization.md): Returns the API tokens scoped to this organization (both organization-scoped and group-scoped). Unrestricted tokens are not returned here — manage those via [`GET /v1/auth/api-tokens`](/api-reference/tokens/list).
 - [Revoke API Token](https://docs.turso.tech/api-reference/tokens/revoke.md): Revokes the provided API token belonging to a user.
+- [Revoke Organization API Token](https://docs.turso.tech/api-reference/tokens/revoke-organization.md): Revokes a token scoped to this organization.
 - [Validate API Token](https://docs.turso.tech/api-reference/tokens/validate.md): Validates an API token belonging to a user.
 - [Get Current User](https://docs.turso.tech/api-reference/user/get-current.md): Returns information about the currently authenticated user.
 - [auth api-tokens list](https://docs.turso.tech/cli/auth/api-tokens/list.md)
@@ -192,6 +194,7 @@
 - [Turso + Axum](https://docs.turso.tech/sdk/rust/guides/axum.md): Set up Turso in your Axum project in minutes
 - [Turso + Rocket](https://docs.turso.tech/sdk/rust/guides/rocket.md): Set up Turso in your Rocket project in minutes
 - [Tauri + Turso](https://docs.turso.tech/sdk/rust/guides/tauri.md): Set up Turso in your Tauri project in minutes
+- [Toasty + Turso](https://docs.turso.tech/sdk/rust/orm/toasty.md): Use Toasty, the async ORM from the Tokio project, with Turso Database.
 - [Turso Quickstart (Rust)](https://docs.turso.tech/sdk/rust/quickstart.md): Get started with Turso and Rust in a few simple steps.
 - [Reference](https://docs.turso.tech/sdk/rust/reference.md): Rust Reference for Turso
 - [Turso Quickstart (Swift)](https://docs.turso.tech/sdk/swift/quickstart.md): Get started with Turso and Swift using the libSQL client in a few simple steps.
@@ -211,12 +214,16 @@
 - [Prisma + Turso](https://docs.turso.tech/sdk/ts/orm/prisma.md): Configure Prisma to work with your Turso database
 - [Turso Quickstart (TypeScript)](https://docs.turso.tech/sdk/ts/quickstart.md): Get started with Turso and TypeScript in a few simple steps.
 - [Reference](https://docs.turso.tech/sdk/ts/reference.md): TypeScript Reference for Turso
+- [Command-Line Options](https://docs.turso.tech/sql-reference/cli/command-line-options.md): CLI flags, arguments, and server modes for the tursodb command
+- [Getting Started](https://docs.turso.tech/sql-reference/cli/getting-started.md): Install and use the Turso interactive SQL shell
+- [Shell Commands](https://docs.turso.tech/sql-reference/cli/shell-commands.md): Dot commands available in the Turso interactive SQL shell
 - [SQLite Compatibility](https://docs.turso.tech/sql-reference/compatibility.md): Turso compatibility with SQLite - supported features, known differences, and limitations
 - [Data Types](https://docs.turso.tech/sql-reference/data-types.md): Storage classes, type affinity, STRICT tables, and custom types in Turso
 - [Experimental Features](https://docs.turso.tech/sql-reference/experimental-features.md): How to enable experimental features in the CLI and each SDK
 - [Expressions](https://docs.turso.tech/sql-reference/expressions.md): SQL expression syntax including literals, operators, CAST, CASE, and subqueries
 - [Extensions](https://docs.turso.tech/sql-reference/extensions.md): Built-in and loadable extensions for additional SQL functions and virtual tables
 - [Aggregate Functions](https://docs.turso.tech/sql-reference/functions/aggregate.md): Built-in aggregate functions for computing summary values over groups of rows
+- [Array Functions](https://docs.turso.tech/sql-reference/functions/array.md): Create, manipulate, and query array values
 - [Date and Time Functions](https://docs.turso.tech/sql-reference/functions/date-time.md): Functions for creating, formatting, and manipulating dates, times, and timestamps
 - [Full-Text Search](https://docs.turso.tech/sql-reference/functions/fts.md): Full-text search with Tantivy-powered FTS indexes, scoring, and highlighting
 - [JSON Functions](https://docs.turso.tech/sql-reference/functions/json.md): Create, extract, modify, and aggregate JSON data
@@ -224,10 +231,12 @@
 - [Scalar Functions](https://docs.turso.tech/sql-reference/functions/scalar.md): Built-in scalar functions for string manipulation, math, type inspection, and more
 - [Vector Functions](https://docs.turso.tech/sql-reference/functions/vector.md): Create, compare, and manipulate vector embeddings
 - [Window Functions](https://docs.turso.tech/sql-reference/functions/window.md): Perform calculations across sets of rows related to the current row without collapsing them
+- [Multi-Process Access](https://docs.turso.tech/sql-reference/multiprocess-access.md): Share a Turso database file between multiple OS processes using the experimental multiprocess WAL coordinator
 - [PRAGMA Statements](https://docs.turso.tech/sql-reference/pragmas.md): Database configuration and metadata commands in Turso
 - [ALTER TABLE](https://docs.turso.tech/sql-reference/statements/alter-table.md): Modify the structure of an existing table by renaming, adding, or dropping columns
 - [ANALYZE](https://docs.turso.tech/sql-reference/statements/analyze.md): Collect statistics about indexes to help the query optimizer
 - [ATTACH DATABASE](https://docs.turso.tech/sql-reference/statements/attach-database.md): Attach an additional database file to the current connection
+- [CREATE DOMAIN](https://docs.turso.tech/sql-reference/statements/create-domain.md): Define a named constraint wrapper over a base type for use in STRICT tables
 - [CREATE INDEX](https://docs.turso.tech/sql-reference/statements/create-index.md): Create an index on one or more columns or expressions to accelerate queries
 - [CREATE MATERIALIZED VIEW](https://docs.turso.tech/sql-reference/statements/create-materialized-view.md): Create a materialized view that stores precomputed results and updates automatically
 - [CREATE TABLE](https://docs.turso.tech/sql-reference/statements/create-table.md): Create a new table in the database with column definitions, constraints, and table options
@@ -237,6 +246,7 @@
 - [CREATE VIRTUAL TABLE](https://docs.turso.tech/sql-reference/statements/create-virtual-table.md): Create a virtual table backed by a module that provides custom data access
 - [DELETE](https://docs.turso.tech/sql-reference/statements/delete.md): Remove rows from a table
 - [DETACH DATABASE](https://docs.turso.tech/sql-reference/statements/detach-database.md): Remove an attached database from the current connection
+- [DROP DOMAIN](https://docs.turso.tech/sql-reference/statements/drop-domain.md): Remove a user-defined domain from the database
 - [DROP INDEX](https://docs.turso.tech/sql-reference/statements/drop-index.md): Remove an index from the database
 - [DROP TABLE](https://docs.turso.tech/sql-reference/statements/drop-table.md): Remove a table and all its data from the database
 - [DROP TRIGGER](https://docs.turso.tech/sql-reference/statements/drop-trigger.md): Remove a trigger from the database
@@ -249,6 +259,7 @@
 - [Transactions](https://docs.turso.tech/sql-reference/statements/transactions.md): Start, commit, and roll back transactions to group operations atomically
 - [UPDATE](https://docs.turso.tech/sql-reference/statements/update.md): Modify existing rows in a table
 - [INSERT ... ON CONFLICT (Upsert)](https://docs.turso.tech/sql-reference/statements/upsert.md): Insert rows with automatic conflict resolution using DO NOTHING or DO UPDATE
+- [VACUUM](https://docs.turso.tech/sql-reference/statements/vacuum.md): Rebuild the database file to reclaim unused space and defragment storage
 - [Checkpoint](https://docs.turso.tech/sync/checkpoint.md): How to compact the local WAL to bound disk usage while preserving sync state.
 - [Conflict Resolution](https://docs.turso.tech/sync/conflict-resolution.md): How Turso sync handles concurrent changes from multiple clients.
 - [Local Sync Server](https://docs.turso.tech/sync/local-sync-server.md): Use the Turso CLI as a local sync server for development and testing without Turso Cloud.

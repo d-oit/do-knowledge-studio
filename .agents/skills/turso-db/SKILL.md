@@ -1,7 +1,7 @@
 ---
 name: turso-db
 description: Use this skill for Turso (LibSQL/Limbo) database development, including scaffolding, querying, migrations, and maintenance. Supports vector search, full-text search, CDC, MVCC, encryption, and bidirectional remote sync. Use when working with Turso SDKs for JavaScript, Rust, Python, Go, and React Native. Provides current API guidance to avoid stale "libsql" legacy knowledge.
-version: 0.5.3
+version: 0.6.1
 license: MIT
 ---
 

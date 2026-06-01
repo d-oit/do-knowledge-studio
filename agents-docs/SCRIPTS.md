@@ -46,7 +46,6 @@
 
 | File | Purpose |
 |------|---------|
-| `lib/skill-validation.sh` | Shared skill validation functions |
 | `lib/worktree-manager.sh` | Git worktree management functions |
 | `lib/eval_types.py` | Python eval type definitions |
 | `lib/eval_validators.py` | Python eval validation logic |
@@ -78,8 +77,6 @@ graph TD
     A --> C[validate-skill-format.sh]
     A --> D[validate-links.sh]
     A --> E[BATS tests]
-    B --> F[lib/skill-validation.sh]
-    C --> F
     G[install-hooks.sh] --> H[pre-commit-hook.sh]
     G --> I[validate-git-hooks.sh]
     H --> A

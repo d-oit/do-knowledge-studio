@@ -2,7 +2,7 @@
 
 > Step-by-step guide for adopting the AI agent template in existing projects.
 
-[![Template Version](https://img.shields.io/badge/version-0.2.4-blue)](VERSION)
+[![Template Version](https://img.shields.io/badge/version-0.1.0-blue)](VERSION)
 
 ---
 
@@ -92,7 +92,7 @@ Download the template files to a temporary location:
 git clone https://github.com/your-org/your-project.git /tmp/ai-agent-template
 
 # Option B: Download as zip
-curl -L -o /tmp/ai-agent-template.zip https://github.com/your-org/your-project/archive/main.zip
+curl -L -o /tmp/ai-agent-template.zip https://github.com/d-oit/do-knowledge-studio/archive/main.zip
 unzip /tmp/ai-agent-template.zip -d /tmp/ai-agent-template
 ```
 
@@ -318,7 +318,7 @@ cat > your-project/MIGRATION_NOTES.md << 'EOF'
 # Migration Notes
 
 Migration completed on: $(date +%Y-%m-%d)
-Template version: 0.2.4
+Template version: 0.1.0
 
 ## Changes Made
 
@@ -769,7 +769,7 @@ my-project/
 
 After migration:
 
-1. **Train Your Team**: Share this guide and [QUICKSTART.md](QUICKSTART.md)
+1. **Train Your Team**: Share this guide and [README.md](README.md)
 2. **Customize AGENTS.md**: Add project-specific patterns and conventions
 3. **Add More Skills**: Copy additional skills from the template as needed
 4. **Create Sub-Agents**: Define specialized agents for common tasks
@@ -782,7 +782,7 @@ After migration:
 | Resource | Purpose |
 |----------|---------|
 | [README.md](README.md) | Template overview |
-| [QUICKSTART.md](QUICKSTART.md) | 5-minute setup guide |
+| [README.md](README.md) | 5-minute setup guide |
 | [AGENTS.md](AGENTS.md) | Agent instruction format |
 | [agents-docs/AVAILABLE_SKILLS.md](agents-docs/AVAILABLE_SKILLS.md) | Skill authoring guide |
 | [agents-docs/SUB-AGENTS.md](agents-docs/SUB-AGENTS.md) | Sub-agent patterns |

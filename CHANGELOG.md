@@ -1,26 +1,11 @@
 # Changelog
 
-All notable changes to this template will be documented in this file.
+All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-
-## [0.1.0] - 2026-05-07
-
-### Added
-- New `jules` skill for autonomous implementation based on Google Labs Jules Delegator
-- Comprehensive implementation plans in `plans/` directory
-- Full implementation of missing tasks from `plans/` including Graph Snapshots, Claim Provenance, and AI Harness.
-
-### Changed
-- Standardized project version to 0.1.0 across all files
-- Fixed broken documentation references to point to `agents-docs/AVAILABLE_SKILLS.md`
-
-### Fixed
-- Version inconsistencies between package.json, VERSION, and README
-- Broken links to SKILLS.md and AVAILABLE_SKILLS.md
 
 ## [0.2.3] - 2026-04-23
 
@@ -32,18 +17,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved Orama search logic with internal ID mapping
 - Enhanced AI agent integration with repository-aware implementation logic
 
-## [0.2.2] - 2026-04-06
+## [0.2.2] - 2026-04-22
 
 ### Fixed
 - Corrected `csm` CLI flag from `--output` to `--output-format` in memory-context skill
 - Added missing `version` and `template_version` fields to memory-context SKILL.md
 
-## [0.2.1] - 2026-04-03
+## [0.2.1] - 2026-04-21
 
 ### Changed
 - Bumped version to 0.2.1 across all files
 
-## [0.2.0] - 2026-03-15
+## [0.2.0] - 2026-04-20
 
 ### Fixed
 - GitHub Actions workflows using non-existent action versions (checkout@v5, setup-python@v6)
@@ -116,5 +101,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Quality gate exits with code 2 to surface errors to agent
 - Progressive disclosure for skills (load on demand)
 
-[Unreleased]: https://github.com/your-org/your-project/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/your-org/your-project/releases/tag/v0.1.0
+[Unreleased]: https://github.com/d-oit/do-knowledge-studio/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/d-oit/do-knowledge-studio/compare/v0.2.2...v0.2.3
+[0.2.2]: https://github.com/d-oit/do-knowledge-studio/compare/v0.2.1...v0.2.2
+[0.2.1]: https://github.com/d-oit/do-knowledge-studio/compare/v0.2.0...v0.2.1
+[0.2.0]: https://github.com/d-oit/do-knowledge-studio/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/d-oit/do-knowledge-studio/releases/tag/v0.1.0

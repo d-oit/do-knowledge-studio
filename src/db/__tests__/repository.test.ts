@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vite
 import { Repository } from '../repository';
 import { getDb } from '../client';
 import { AppError } from '../../lib/errors';
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 
 const VALID_UUID = '550e8400-e29b-41d4-a716-446655440000';
 const OTHER_UUID = '660e8400-e29b-41d4-a716-446655440001';
@@ -103,7 +104,7 @@ describe('Repository', () => {
     mockExec = createMockExec([]);
     mockTransaction = vi.fn().mockResolvedValue([]);
     mockDb = { exec: mockExec, transaction: mockTransaction };
-    (getDb as unknown as Mock).mockReturnValue(mockDb);
+    (getDb as unknown as Mock<[], unknown>).mockReturnValue(mockDb);
     repository = new Repository();
   });
 
@@ -534,6 +535,42 @@ describe('Repository', () => {
         sql: 'DELETE FROM links WHERE id = ?',
         bind: [THIRD_UUID],
       });
+    });
+  });
+
+  describe('getBacklinks', () => {
+    it('should return source entities linking to the target', async () => {
+      const mockEntities = [createMockEntity({ name: 'Source Entity', id: OTHER_UUID })];
+      mockExec.mockResolvedValue(mockEntities);
+
+      const result = await repository.getBacklinks(VALID_UUID);
+
+      expect(mockExec).toHaveBeenCalledWith(expect.objectContaining({
+        sql: expect.stringContaining('JOIN links l ON e.id = l.source_id'),
+        bind: [VALID_UUID],
+      }));
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe('Source Entity');
+    });
+  });
+
+  describe('getBacklinkCount', () => {
+    it('should return the count of backlinks', async () => {
+      mockExec.mockResolvedValue([{ count: 5 }]);
+
+      const result = await repository.getBacklinkCount(VALID_UUID);
+
+      expect(mockExec).toHaveBeenCalledWith(expect.objectContaining({
+        sql: 'SELECT COUNT(DISTINCT source_id) as count FROM links WHERE target_id = ?',
+        bind: [VALID_UUID],
+      }));
+      expect(result).toBe(5);
+    });
+
+    it('should return 0 when no backlinks found', async () => {
+      mockExec.mockResolvedValue([]);
+      const result = await repository.getBacklinkCount(VALID_UUID);
+      expect(result).toBe(0);
     });
   });
 

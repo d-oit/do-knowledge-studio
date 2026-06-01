@@ -11,8 +11,8 @@ Thank you for your interest in contributing! This guide helps you contribute eff
 
 ```bash
 # Fork and clone
-git clone https://github.com/your-org/your-project.git
-cd your-project
+git clone https://github.com/d-oit/do-knowledge-studio.git
+cd do-knowledge-studio
 
 # Setup skills symlinks
 ./scripts/setup-skills.sh
@@ -222,7 +222,6 @@ See [`AGENTS.md`](../../AGENTS.md) for complete style guide. Key points:
 ./scripts/quality_gate.sh
 
 # Run specific test types
-SKIP_CLIPPY=true ./scripts/quality_gate.sh  # Skip Rust clippy
 SKIP_TESTS=true ./scripts/quality_gate.sh   # Skip tests
 
 # Validate skills only

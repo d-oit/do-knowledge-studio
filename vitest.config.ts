@@ -9,6 +9,11 @@ export default defineConfig({
     globals: true,
     setupFiles: ['src/test/setup.ts'],
     exclude: ['**/node_modules/**', '**/dist/**', '**/tests/e2e/**'],
+    // Limit workers to prevent OOM in restricted CI environments
+    pool: 'forks',
+    forks: {
+      singleFork: true,
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
@@ -23,13 +28,11 @@ export default defineConfig({
         'src/db/client.ts',
         'src/db/db-worker.ts',
       ],
-      // Thresholds are set to reflect the broad inclusion of UI/feature modules
-      // while maintaining a baseline for future growth.
       thresholds: {
-        branches: 14,
-        functions: 16,
-        lines: 25,
-        statements: 24,
+        branches: 40,
+        functions: 50,
+        lines: 55,
+        statements: 55,
       },
     },
   },

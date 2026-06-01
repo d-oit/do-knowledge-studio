@@ -147,11 +147,17 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onView
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
+            role="combobox"
+            aria-autocomplete="list"
+            aria-label="Search commands and knowledge"
+            aria-expanded={totalItems > 0}
+            aria-controls="command-palette-listbox"
+            aria-activedescendant={totalItems > 0 ? `command-item-${selectedIndex}` : undefined}
           />
           <div className="esc-hint">ESC</div>
         </div>
 
-        <div className="command-palette-content">
+        <div className="command-palette-content" id="command-palette-listbox" role="listbox">
           {isSearching && <SearchSkeleton />}
           {!isSearching && filteredCommands.length > 0 && (
             <div className="command-section">
@@ -159,12 +165,14 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onView
               {filteredCommands.map((cmd, i) => (
                 <div
                   key={cmd.id}
+                  id={`command-item-${i}`}
                   className={`command-item ${selectedIndex === i ? 'selected' : ''}`}
                   onMouseEnter={() => setSelectedIndex(i)}
                   onClick={executeSelected}
-                  role="button"
+                  role="option"
                   tabIndex={0}
                   onKeyDown={e => e.key === 'Enter' && executeSelected()}
+                  aria-selected={selectedIndex === i}
                 >
                   <cmd.icon size={18} className="item-icon" />
                   <span className="item-label">{cmd.label}</span>
@@ -182,12 +190,14 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onView
                 return (
                   <div
                     key={res.id}
+                    id={`command-item-${idx}`}
                     className={`command-item ${selectedIndex === idx ? 'selected' : ''}`}
                     onMouseEnter={() => setSelectedIndex(idx)}
                     onClick={executeSelected}
-                    role="button"
+                    role="option"
                     tabIndex={0}
                     onKeyDown={e => e.key === 'Enter' && executeSelected()}
+                    aria-selected={selectedIndex === idx}
                   >
                     <Layers size={18} className="item-icon" />
                     <div className="item-details">

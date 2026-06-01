@@ -1,23 +1,40 @@
 import { Command } from 'commander';
 import * as fs from 'fs';
 import * as path from 'path';
+import { readFileSync } from 'fs';
 import { setDb } from '../src/db/client.js';
 import { initDb } from './db.js';
 import { repository } from '../src/db/repository.js';
-import type { Note } from '../src/lib/validation';
-import { escapeHtml } from '../src/lib/security.js';
+import { generateSiteHtml, generateJsonExport, generateEntityMarkdown, fetchAllExportData } from '../src/lib/export-core.js';
+import { runMigrations, rollbackLastMigration, getMigrationStatus } from '../src/db/migrate.js';
 
 const program = new Command();
 
+let dbInstance: Awaited<ReturnType<typeof initDb>> | null = null;
+
 async function ensureDb() {
-  const db = await initDb();
-  setDb(db);
+  const options = program.opts();
+  dbInstance = await initDb(options.dbPath as string | undefined);
+  setDb(dbInstance);
 }
+
+process.on('exit', () => {
+  void dbInstance?.close();
+});
+
+const version = (() => {
+  try {
+    return readFileSync(new URL('../VERSION', import.meta.url), 'utf-8').trim();
+  } catch {
+    return 'unknown';
+  }
+})();
 
 program
   .name('knowledge-studio')
   .description('CLI for do-knowledge-studio')
-  .version('0.1.0');
+  .version(version)
+  .option('--db-path <path>', 'custom path to SQLite database file');
 
 program
   .command('init')
@@ -31,44 +48,51 @@ program
   .command('sync')
   .description('Sync Markdown files or URL to DB')
   .argument('<source>', 'directory path or URL')
-  .action(async (source) => {
+  .action(async (source: string) => {
     await ensureDb();
     
+    const src = String(source);
     // Detect if source is a URL
-    if (source.startsWith('http://') || source.startsWith('https://')) {
-      console.log(`Syncing from URL: ${source}`);
+    if (src.startsWith('http://') || src.startsWith('https://')) {
+      console.log(`Syncing from URL: ${src}`);
       try {
         const { resolveUrl } = await import('../src/lib/resolver.js');
-        const resolved = await resolveUrl(source);
+        const resolved = await resolveUrl(src);
         await repository.createEntity({
-          name: resolved.title || new URL(source).hostname,
+          name: resolved.title || new URL(src).hostname,
           type: 'concept',
           description: resolved.content || undefined,
-          metadata: { source_url: source },
+          metadata: { source_url: src },
         });
         console.log(`  Imported: ${resolved.title} (${resolved.wordCount} words via ${resolved.provider})`);
         console.log('Sync complete.');
       } catch (err) {
-        console.error(`Failed to sync URL: ${err}`);
+        console.error(`Failed to sync URL: ${err instanceof Error ? err.message : String(err)}`);
       }
       return;
     }
     
     // Directory sync (existing behavior)
-    console.log(`Syncing from "${source}"...`);
-    if (!fs.existsSync(source)) {
+    console.log(`Syncing from "${src}"...`);
+    if (!fs.existsSync(src)) {
       console.error('Directory not found');
       return;
     }
-    const files = fs.readdirSync(source).filter((f: string) => f.endsWith('.md'));
+    let files: string[];
+    try {
+      files = fs.readdirSync(src).filter((f: string) => f.endsWith('.md'));
+    } catch (err) {
+      console.error(`Failed to read directory: ${err instanceof Error ? err.message : String(err)}`);
+      return;
+    }
     console.log(`Found ${files.length} markdown files.`);
     for (const file of files) {
-      const content = fs.readFileSync(path.join(source, file), 'utf-8');
-      const lines = content.split('\n');
-      const title = lines[0].replace('# ', '').trim();
-      const description = lines.slice(1).join('\n').trim().slice(0, 200);
-      
       try {
+        const content = fs.readFileSync(path.join(src, file), 'utf-8');
+        const lines = content.split('\n');
+        const title = lines[0].replace('# ', '').trim();
+        const description = lines.slice(1).join('\n').trim().slice(0, 200);
+
         await repository.createEntity({
           name: title,
           type: 'concept',
@@ -87,51 +111,32 @@ program
   .description('Export data (md, json, site)')
   .option('-f, --format <format>', 'format', 'md')
   .option('-o, --output <dir>', 'output directory', './export')
-  .action(async (options) => {
-    const outDir = options.output;
+  .action(async (options: { format?: string; output?: string }) => {
+    const outDir = options.output ?? './export';
     if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
 
     await ensureDb();
 
-    if (options.format === 'json') {
+    const fmt = options.format ?? 'md';
+    if (fmt === 'json') {
       await exportJson(outDir);
-    } else if (options.format === 'site') {
+    } else if (fmt === 'site') {
       await exportSite(outDir);
     } else {
       await exportMarkdown(outDir);
     }
-    console.log(`Exported in ${options.format} format to ${outDir}`);
+    console.log(`Exported in ${fmt} format to ${outDir}`);
   });
 
 async function exportMarkdown(outDir: string) {
-  const entities = await repository.getAllEntities();
-  
-  for (const entity of entities) {
+  const data = await fetchAllExportData(repository);
+
+  for (const entity of data.entities) {
     if (!entity.id) continue;
-    const claims = await repository.getClaimsByEntityId(entity.id);
-    const notes = await repository.getNotesByEntityId(entity.id);
-    
-    let md = `# ${entity.name}\n\n`;
-    md += `**Type:** ${entity.type}\n\n`;
-    if (entity.description) md += `${entity.description}\n\n`;
-    
-    if (claims.length > 0) {
-      md += `## Claims\n\n`;
-      for (const claim of claims) {
-        md += `- ${claim.statement}`;
-        if (claim.confidence !== 1) md += ` (confidence: ${claim.confidence})`;
-        md += `\n`;
-        if (claim.evidence) md += `  - *Evidence:* ${claim.evidence}\n`;
-      }
-      md += '\n';
-    }
-    
-    if (notes.length > 0) {
-      md += `## Notes\n\n`;
-      for (const note of notes) {
-        md += `${note.content}\n\n`;
-      }
-    }
+    const claims = data.claims[entity.id] ?? [];
+    const notes = data.notes[entity.id] ?? [];
+
+    const md = generateEntityMarkdown(entity, claims, notes);
 
     const safeName = entity.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
     fs.writeFileSync(path.join(outDir, `${safeName}.md`), md);
@@ -139,83 +144,13 @@ async function exportMarkdown(outDir: string) {
 }
 
 async function exportJson(outDir: string) {
-  const entities = await repository.getAllEntities();
-  const links = await repository.getAllLinks();
-  
-  const claims: Record<string, Claim[]> = {};
-  const notes: Record<string, Note[]> = {};
-  
-  for (const entity of entities) {
-    if (!entity.id) continue;
-    claims[entity.id] = await repository.getClaimsByEntityId(entity.id);
-    notes[entity.id] = await repository.getNotesByEntityId(entity.id);
-  }
-  
-  const data = {
-    exported_at: new Date().toISOString(),
-    entities,
-    claims,
-    notes,
-    links,
-  };
-  
-  fs.writeFileSync(path.join(outDir, 'knowledge.json'), JSON.stringify(data, null, 2));
+  const data = await fetchAllExportData(repository);
+  fs.writeFileSync(path.join(outDir, 'knowledge.json'), generateJsonExport(data));
 }
 
 async function exportSite(outDir: string) {
-  const entities = await repository.getAllEntities();
-  
-  let html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Knowledge Base</title>
-  <style>
-    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; line-height: 1.6; }
-    h1 { border-bottom: 2px solid #333; padding-bottom: 0.5rem; }
-    h2 { margin-top: 2rem; }
-    .entity { margin-bottom: 2rem; padding: 1rem; border: 1px solid #ddd; border-radius: 8px; }
-    .type { background: #f0f0f0; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.875rem; }
-    .claim { margin: 0.5rem 0; padding-left: 1rem; border-left: 3px solid #007bff; }
-    a { color: #007bff; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-  </style>
-</head>
-<body>
-  <h1>Knowledge Base</h1>
-  <p>Exported from Knowledge Studio</p>
-`;
-
-  for (const entity of entities) {
-    const entityId = entity.id!;
-    const claims = await repository.getClaimsByEntityId(entityId);
-    const safeId = entity.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-    
-    html += `\n  <div class="entity" id="${safeId}">\n`;
-    html += `    <h2><a href="#${safeId}">${entity.name}</a></h2>\n`;
-    html += `    <span class="type">${entity.type}</span>\n`;
-    
-    if (entity.description) {
-      html += `\n    <p>${escapeHtml(entity.description)}</p>\n`;
-    }
-    
-    if (claims.length > 0) {
-      html += `\n    <h3>Claims</h3>\n`;
-      for (const claim of claims) {
-        html += `    <div class="claim">${claim.statement}`;
-        if (claim.confidence !== 1) html += ` <em>(confidence: ${claim.confidence})</em>`;
-        html += `</div>\n`;
-      }
-    }
-    
-    html += `  </div>\n`;
-  }
-
-  html += `
-</body>
-</html>`;
-
+  const data = await fetchAllExportData(repository);
+  const html = generateSiteHtml(data);
   fs.writeFileSync(path.join(outDir, 'index.html'), html);
 }
 
@@ -226,12 +161,12 @@ program
   .option('-t, --type <type>', 'type', 'concept')
   .option('-d, --description <description>', 'description')
   .option('-u, --source-url <url>', 'source URL for auto-hydration')
-  .action(async (name, options) => {
+  .action(async (name: string, options: { type?: string; description?: string; sourceUrl?: string }) => {
     await ensureDb();
     try {
       const entity = await repository.createEntity({
         name,
-        type: options.type,
+        type: options.type ?? 'concept',
         description: options.description,
         metadata: options.sourceUrl ? { source_url: options.sourceUrl } : undefined,
       });
@@ -250,11 +185,11 @@ program
             console.log(`  Hydrated description from ${resolved.provider} (${resolved.wordCount} words)`);
           }
         } catch (err) {
-          console.error(`  Failed to resolve URL: ${err}`);
+          console.error(`  Failed to resolve URL: ${err instanceof Error ? err.message : String(err)}`);
         }
       }
     } catch (err) {
-      console.error(`Failed to create entity: ${err}`);
+      console.error(`Failed to create entity: ${err instanceof Error ? err.message : String(err)}`);
     }
   });
 
@@ -279,7 +214,7 @@ program
   .argument('<entity-name>')
   .argument('<statement>')
   .option('-c, --confidence <confidence>', 'confidence', '1.0')
-  .action(async (entityName, statement, options) => {
+  .action(async (entityName: string, statement: string, options: { confidence?: string }) => {
     await ensureDb();
     const entity = await repository.getEntityByName(entityName);
     if (!entity || !entity.id) {
@@ -290,11 +225,337 @@ program
       const claim = await repository.createClaim({
         entity_id: entity.id,
         statement,
-        confidence: parseFloat(options.confidence),
+        confidence: parseFloat(options.confidence ?? '1.0'),
       });
       console.log(`Claim added to ${entity.name}: ${claim.statement}`);
     } catch (err) {
-      console.error(`Failed to create claim: ${err}`);
+      console.error(`Failed to create claim: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  });
+
+program
+  .command('db:migrate')
+  .description('Run pending database migrations')
+  .action(async () => {
+    await ensureDb();
+    if (!dbInstance) throw new Error('Database not initialized');
+    console.log('Running pending migrations...');
+    const { applied, errors } = await runMigrations(dbInstance);
+    if (applied.length > 0) {
+      console.log(`Applied: ${applied.join(', ')}`);
+    } else {
+      console.log('No pending migrations.');
+    }
+    if (errors.length > 0) {
+      console.error(`Errors: ${errors.join('; ')}`);
+    }
+  });
+
+program
+  .command('db:rollback')
+  .description('Rollback the last migration')
+  .action(async () => {
+    await ensureDb();
+    if (!dbInstance) throw new Error('Database not initialized');
+    console.log('Rolling back last migration...');
+    try {
+      await rollbackLastMigration(dbInstance);
+      console.log('Rollback complete.');
+    } catch (err) {
+      console.error(`Rollback failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  });
+
+program
+  .command('db:status')
+  .description('Show migration status')
+  .action(async () => {
+    await ensureDb();
+    if (!dbInstance) throw new Error('Database not initialized');
+    const statuses = await getMigrationStatus(dbInstance);
+    if (statuses.length === 0) {
+      console.log('No migrations found.');
+      return;
+    }
+    console.log('Migration Status:');
+    for (const s of statuses) {
+      const applied = s.appliedAt ?? 'PENDING';
+      console.log(`  [${s.version}] ${s.name} — ${applied}`);
+    }
+  });
+
+program
+  .command('db:backup')
+  .description('Backup the SQLite database')
+  .argument('[path]', 'output path for the backup file')
+  .action(async (pathArg: string | undefined) => {
+    await ensureDb();
+    if (!dbInstance) throw new Error('Database not initialized');
+    const backupPath = pathArg ?? `.studio-cli-backup-${Date.now()}.db`;
+    const resolvedPath = path.resolve(process.cwd(), backupPath);
+    console.log(`Backing up database to ${resolvedPath}...`);
+    try {
+      await dbInstance.exec({ sql: `VACUUM INTO '${resolvedPath.replace(/'/g, "''")}'` });
+      console.log(`Backup created: ${resolvedPath}`);
+    } catch (err) {
+      console.error(`Backup failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  });
+
+program
+  .command('search')
+  .description('Full-text search entities')
+  .argument('<query>', 'search query')
+  .action(async (query: string) => {
+    await ensureDb();
+    try {
+      const results = await repository.searchEntities(query);
+      if (results.length === 0) {
+        console.log('No results found.');
+        return;
+      }
+      for (const r of results) {
+        const desc = r.description ? ` — ${r.description.slice(0, 80)}` : '';
+        console.log(`[${r.type}] ${r.name}${desc}`);
+      }
+    } catch (err) {
+      console.error(`Search failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  });
+
+program
+  .command('entity-update')
+  .description('Update an entity')
+  .argument('<name>', 'entity name')
+  .option('-t, --type <type>', 'new type')
+  .option('-d, --description <description>', 'new description')
+  .action(async (name: string, options: { type?: string; description?: string }) => {
+    await ensureDb();
+    try {
+      const entity = await repository.getEntityByName(name);
+      if (!entity || !entity.id) {
+        console.error(`Entity not found: ${name}`);
+        return;
+      }
+      const update: Record<string, string> = {};
+      if (options.type) update.type = options.type;
+      if (options.description) update.description = options.description;
+      if (Object.keys(update).length === 0) {
+        console.log('No changes specified. Use -t or -d to update fields.');
+        return;
+      }
+      const updated = await repository.updateEntity(entity.id, update);
+      console.log(`Updated: ${updated.name} [${updated.type}]`);
+    } catch (err) {
+      console.error(`Failed to update entity: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  });
+
+program
+  .command('entity-delete')
+  .description('Delete an entity and its cascade')
+  .argument('<name>', 'entity name')
+  .action(async (name: string) => {
+    await ensureDb();
+    try {
+      const entity = await repository.getEntityByName(name);
+      if (!entity || !entity.id) {
+        console.error(`Entity not found: ${name}`);
+        return;
+      }
+      await repository.deleteEntity(entity.id);
+      console.log(`Deleted: ${name}`);
+    } catch (err) {
+      console.error(`Failed to delete entity: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  });
+
+program
+  .command('entity-get')
+  .description('Get an entity by name')
+  .argument('<name>', 'entity name')
+  .action(async (name: string) => {
+    await ensureDb();
+    try {
+      const entity = await repository.getEntityByName(name);
+      if (!entity) {
+        console.error(`Entity not found: ${name}`);
+        return;
+      }
+      console.log(`ID: ${entity.id}`);
+      console.log(`Name: ${entity.name}`);
+      console.log(`Type: ${entity.type}`);
+      if (entity.description) console.log(`Description: ${entity.description.slice(0, 200)}`);
+      console.log(`Created: ${entity.created_at}`);
+      console.log(`Updated: ${entity.updated_at}`);
+    } catch (err) {
+      console.error(`Failed to get entity: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  });
+
+program
+  .command('link-create')
+  .description('Create a link between two entities')
+  .argument('<source>', 'source entity name')
+  .argument('<target>', 'target entity name')
+  .option('-r, --relation <relation>', 'relation type', 'related')
+  .action(async (source: string, target: string, options: { relation?: string }) => {
+    await ensureDb();
+    try {
+      const sourceEntity = await repository.getEntityByName(source);
+      if (!sourceEntity || !sourceEntity.id) {
+        console.error(`Source entity not found: ${source}`);
+        return;
+      }
+      const targetEntity = await repository.getEntityByName(target);
+      if (!targetEntity || !targetEntity.id) {
+        console.error(`Target entity not found: ${target}`);
+        return;
+      }
+      const link = await repository.createLink({
+        source_id: sourceEntity.id,
+        target_id: targetEntity.id,
+        relation: options.relation ?? 'related',
+      });
+      console.log(`Link created: ${source} --[${link.relation}]--> ${target} (ID: ${link.id})`);
+    } catch (err) {
+      console.error(`Failed to create link: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  });
+
+program
+  .command('link-list')
+  .description('List all links')
+  .action(async () => {
+    await ensureDb();
+    try {
+      const links = await repository.getAllLinks();
+      const entities = await repository.getAllEntities();
+      const entityMap = new Map<string, string>();
+      for (const e of entities) {
+        if (e.id) entityMap.set(e.id, e.name);
+      }
+      if (links.length === 0) {
+        console.log('No links found.');
+        return;
+      }
+      for (const link of links) {
+        const source = entityMap.get(link.source_id) || link.source_id;
+        const target = entityMap.get(link.target_id) || link.target_id;
+        console.log(`[${link.id}] ${source} --[${link.relation}]--> ${target}`);
+      }
+    } catch (err) {
+      console.error(`Failed to list links: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  });
+
+program
+  .command('link-delete')
+  .description('Delete a link by ID')
+  .argument('<id>', 'link ID')
+  .action(async (id: string) => {
+    await ensureDb();
+    try {
+      await repository.deleteLink(id);
+      console.log(`Link deleted: ${id}`);
+    } catch (err) {
+      console.error(`Failed to delete link: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  });
+
+program
+  .command('note-create')
+  .description('Create a note for an entity')
+  .argument('<entity>', 'entity name')
+  .argument('<content>', 'note content')
+  .action(async (entityName: string, content: string) => {
+    await ensureDb();
+    try {
+      const entity = await repository.getEntityByName(entityName);
+      if (!entity || !entity.id) {
+        console.error(`Entity not found: ${entityName}`);
+        return;
+      }
+      const note = await repository.createNote({
+        entity_id: entity.id,
+        content,
+      });
+      console.log(`Note created for ${entityName} (ID: ${note.id})`);
+    } catch (err) {
+      console.error(`Failed to create note: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  });
+
+program
+  .command('note-list')
+  .description('List notes for an entity')
+  .argument('<entity>', 'entity name')
+  .action(async (entityName: string) => {
+    await ensureDb();
+    try {
+      const entity = await repository.getEntityByName(entityName);
+      if (!entity || !entity.id) {
+        console.error(`Entity not found: ${entityName}`);
+        return;
+      }
+      const notes = await repository.getNotesByEntityId(entity.id);
+      if (notes.length === 0) {
+        console.log(`No notes for ${entityName}.`);
+        return;
+      }
+      for (const note of notes) {
+        console.log(`[${note.id}] ${note.content.slice(0, 120)}${note.content.length > 120 ? '...' : ''}`);
+      }
+    } catch (err) {
+      console.error(`Failed to list notes: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  });
+
+program
+  .command('snapshot-list')
+  .description('List graph snapshots')
+  .action(async () => {
+    await ensureDb();
+    try {
+      const snapshots = await repository.listSnapshots();
+      if (snapshots.length === 0) {
+        console.log('No snapshots found.');
+        return;
+      }
+      for (const snap of snapshots) {
+        const nodeCount = (() => { try { return (JSON.parse(snap.nodes_json) as { id: string }[]).length; } catch { return 0; } })();
+        const edgeCount = (() => { try { return (JSON.parse(snap.edges_json) as { id: string }[]).length; } catch { return 0; } })();
+        console.log(`[${snap.id}] ${snap.name} — ${nodeCount} nodes, ${edgeCount} edges — ${snap.created_at}`);
+        if (snap.description) console.log(`  ${snap.description}`);
+      }
+    } catch (err) {
+      console.error(`Failed to list snapshots: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  });
+
+program
+  .command('db:reset')
+  .description('Reset the database (drop all tables and re-run schema)')
+  .action(async () => {
+    await ensureDb();
+    if (!dbInstance) throw new Error('Database not initialized');
+    console.log('Resetting database...');
+    try {
+      await dbInstance.exec({ sql: 'DROP TABLE IF EXISTS claim_search_idx' });
+      await dbInstance.exec({ sql: 'DROP TABLE IF EXISTS entity_search_idx' });
+      await dbInstance.exec({ sql: 'DROP TABLE IF EXISTS web_cache' });
+      await dbInstance.exec({ sql: 'DROP TABLE IF EXISTS graph_snapshots' });
+      await dbInstance.exec({ sql: 'DROP TABLE IF EXISTS schema_version' });
+      await dbInstance.exec({ sql: 'DROP TABLE IF EXISTS links' });
+      await dbInstance.exec({ sql: 'DROP TABLE IF EXISTS notes' });
+      await dbInstance.exec({ sql: 'DROP TABLE IF EXISTS claims' });
+      await dbInstance.exec({ sql: 'DROP TABLE IF EXISTS entities' });
+      const freshDb = await initDb();
+      setDb(freshDb);
+      dbInstance = freshDb;
+      console.log('Database reset complete.');
+    } catch (err) {
+      console.error(`Reset failed: ${err instanceof Error ? err.message : String(err)}`);
     }
   });
 

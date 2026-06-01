@@ -28,6 +28,7 @@ export default defineConfig({
   },
   build: {
     rolldownOptions: {
+      external: ['fs', 'path'],
       output: {
         codeSplitting: {
           groups: [
