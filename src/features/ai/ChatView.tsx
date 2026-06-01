@@ -42,7 +42,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages.length]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -64,7 +64,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
       {resolvedSources.length > 0 && (
         <div className="source-chips">
           {resolvedSources.map((s, i) => (
-            <div key={i} className="source-chip" title={`${s.title || s.url}\nProvider: ${s.provider}\n${s.wordCount} words`}>
+            <div key={s.url} className="source-chip" title={`${s.title || s.url}\nProvider: ${s.provider}\n${s.wordCount} words`}>
               <ExternalLink size={12} />
               <span className="source-chip-label">{s.title || safeHostname(s.url)}</span>
               <span className="source-chip-provider">{s.provider}</span>
@@ -83,7 +83,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
       <div className="messages-list" role="log" aria-live="polite">
         {messages.map((m, i) => (
-          <div key={i} className={`message ${m.role}`}>
+          <div key={`${m.role}-${i}`} className={`message ${m.role}`}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', fontWeight: 'bold', fontSize: '12px' }}>
               {m.role === 'assistant' ? <Bot size={14} /> : <User size={14} />}
               {m.role === 'assistant' ? 'Assistant' : 'You'}

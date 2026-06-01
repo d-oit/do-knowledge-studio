@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { loadConfig, createProvider } from '../../lib/llm/config';
 import { searchKnowledge } from '../../lib/search';
 import { resolveUrl, ResolvedContent } from '../../lib/resolver';

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ChevronRight, Check } from 'lucide-react';
 import { PROVIDER_MODELS } from '../../lib/llm';
 import { LLMConfig } from '../../lib/llm/config';
@@ -22,8 +22,8 @@ export const SettingsWizard: React.FC<SettingsWizardProps> = ({ config, onComple
     if (step === 2 && wizardApiKeyRef.current) wizardApiKeyRef.current.focus();
   }, [step]);
 
-  const handleNext = () => setStep(s => s + 1);
-  const handleBack = () => setStep(s => s - 1);
+  const handleNext = () => { setStep(s => s + 1); };
+  const handleBack = () => { setStep(s => s - 1); };
 
   const wizardModelEntries = Object.entries(PROVIDER_MODELS_MAP.get(wizardProvider) || {});
 

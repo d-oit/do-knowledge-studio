@@ -68,7 +68,7 @@ export class Repository extends RepositoryBase implements IRepository {
   async getAllClaimsGroupedByEntity(): Promise<Record<string, Claim[]>> {
     const claims = await this.getAllClaims();
     return claims.reduce((acc, claim) => {
-      if (!acc[claim.entity_id]) acc[claim.entity_id] = [];
+      acc[claim.entity_id] ??= [];
       acc[claim.entity_id].push(claim);
       return acc;
     }, {} as Record<string, Claim[]>);
@@ -97,7 +97,7 @@ export class Repository extends RepositoryBase implements IRepository {
     const notes = await this.getAllNotes();
     return notes.reduce((acc, note) => {
       if (!note.entity_id) return acc;
-      if (!acc[note.entity_id]) acc[note.entity_id] = [];
+      acc[note.entity_id] ??= [];
       acc[note.entity_id].push(note);
       return acc;
     }, {} as Record<string, Note[]>);

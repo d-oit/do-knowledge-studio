@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useCallback, useRef } from 'react';
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_THRESHOLD = 15;

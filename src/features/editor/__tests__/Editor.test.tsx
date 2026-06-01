@@ -114,7 +114,7 @@ describe('Editor Progressive Disclosure (#143)', () => {
     getBacklinkCount: vi.fn().mockResolvedValue(0),
     transaction: vi.fn(),
     getEntityById: vi.fn().mockResolvedValue(null),
-  } as any;
+  } as unknown as IRepository;
 
   beforeEach(async () => {
     vi.clearAllMocks();

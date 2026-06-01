@@ -16,7 +16,7 @@ export class RepositoryBase {
 
   public parseMetadata<T extends z.ZodType<unknown>>(schema: T, row: unknown): z.infer<T> {
     const r = { ...(row as Record<string, unknown>) };
-    if (r && typeof r.metadata === 'string') {
+    if (typeof r.metadata === 'string') {
       try {
         r.metadata = JSON.parse(r.metadata) as Record<string, unknown>;
       } catch {

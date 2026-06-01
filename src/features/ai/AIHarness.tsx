@@ -171,7 +171,7 @@ const AIHarness: React.FC = () => {
             <Settings size={16} />
           </button>
           <label htmlFor="use-context-checkbox" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer' }}>
-            <input id="use-context-checkbox" type="checkbox" checked={useContext} onChange={e => setUseContext(e.target.checked)} />
+            <input id="use-context-checkbox" type="checkbox" checked={useContext} onChange={e => { setUseContext(e.target.checked); }} />
             <Database size={16} /> Augment with Local Knowledge
           </label>
         </div>
@@ -211,7 +211,7 @@ const AIHarness: React.FC = () => {
               <select
                 id="ai-model"
                 value={editModel}
-                onChange={e => setEditModel(e.target.value)}
+                onChange={e => { setEditModel(e.target.value); }}
                 style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid var(--border-default)' }}
               >
                 {providerModelEntries.map(([label, value]) => (
@@ -225,7 +225,7 @@ const AIHarness: React.FC = () => {
                   id="ai-api-key"
                   type="password"
                   value={editApiKey}
-                  onChange={e => setEditApiKey(e.target.value)}
+                  onChange={e => { setEditApiKey(e.target.value); }}
                   placeholder={hasKey ? 'Leave blank to keep current key' : 'Enter API key'}
                   style={{ flex: 1, padding: '6px 8px', borderRadius: '4px', border: '1px solid var(--border-default)' }}
                 />
@@ -247,7 +247,7 @@ const AIHarness: React.FC = () => {
         input={input}
         setInput={setInput}
         onSend={handleSend}
-        onRemoveSource={(i) => setResolvedSources(prev => prev.filter((_, j) => j !== i))}
+        onRemoveSource={(i) => { setResolvedSources(prev => prev.filter((_, j) => j !== i)); }}
         currentModel={currentModel}
         rateLimitLevel={getRateLimitLevel()}
         rateLimitInfo={getRateLimitInfo()}

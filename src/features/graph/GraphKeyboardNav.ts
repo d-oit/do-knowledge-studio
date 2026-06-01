@@ -35,8 +35,8 @@ export function useGraphKeyboardNavigation(
           e.preventDefault();
           const dir = e.shiftKey ? -1 : 1;
           const next = ((currentIdx + dir) % visibleNodes.length + visibleNodes.length) % visibleNodes.length;
-          if (visibleNodes[next]) {
-            setSelectedNode(visibleNodes[next]);
+          const nextNode = visibleNodes.at(next); if (nextNode) {
+            setSelectedNode(nextNode);
             setFocusRingIndex(next);
           }
           break;
@@ -75,8 +75,8 @@ export function useGraphKeyboardNavigation(
           } else if (visibleNodes.length > 0) {
             const dir = -1;
             const next = ((currentIdx + dir) % visibleNodes.length + visibleNodes.length) % visibleNodes.length;
-            if (visibleNodes[next]) {
-              setSelectedNode(visibleNodes[next]);
+            const nextNode = visibleNodes.at(next); if (nextNode) {
+              setSelectedNode(nextNode);
               setFocusRingIndex(next);
             }
           }
@@ -90,8 +90,8 @@ export function useGraphKeyboardNavigation(
           } else if (visibleNodes.length > 0) {
             const dir = 1;
             const next = ((currentIdx + dir) % visibleNodes.length + visibleNodes.length) % visibleNodes.length;
-            if (visibleNodes[next]) {
-              setSelectedNode(visibleNodes[next]);
+            const nextNode = visibleNodes.at(next); if (nextNode) {
+              setSelectedNode(nextNode);
               setFocusRingIndex(next);
             }
           }
@@ -117,8 +117,8 @@ export function useGraphKeyboardNavigation(
         }
         case 'Enter':
         case ' ': {
-          if (visibleNodes.length > 0 && currentIdx >= 0 && visibleNodes[currentIdx]) {
-            setSelectedNode(visibleNodes[currentIdx]);
+          const activeNode = visibleNodes.at(currentIdx); if (visibleNodes.length > 0 && currentIdx >= 0 && activeNode) {
+            setSelectedNode(activeNode);
           }
           break;
         }
