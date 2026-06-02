@@ -12,6 +12,14 @@ function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (char) => map[char]);
 }
 
+function sanitizeHref(href: string): string {
+  const decoded = href.replace(/&amp;/g, '&').replace(/&#x27;/g, "'").replace(/&quot;/g, '"');
+  if (/^\s*(javascript|data|vbscript)\s*:/i.test(decoded)) {
+    return '#';
+  }
+  return href;
+}
+
 function markdownToHtml(markdown: string): string {
   const lines = markdown.split('\n');
   const html: string[] = [];
@@ -101,7 +109,7 @@ function markdownToHtml(markdown: string): string {
 function processInline(text: string): string {
   const escaped = escapeHtml(text);
   let result = escaped;
-  result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, `<a href="${sanitizeHref('$2')}" target="_blank" rel="noopener noreferrer">$1</a>`);
   result = result.replace(/`([^`]+)`/g, '<code>$1</code>');
   result = result.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
   result = result.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
