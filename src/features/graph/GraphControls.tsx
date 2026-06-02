@@ -6,6 +6,7 @@ import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { MEDIA_QUERIES } from '../../lib/constants';
 import type { GraphSnapshot } from '../../lib/validation';
 import { repository, type GraphSnapshotDiff } from '../../db/repository';
+import { z } from 'zod';
 import { logger } from '../../lib/logger';
 
 interface GraphNode {
@@ -19,6 +20,18 @@ interface GraphEdge {
   target: string;
   label?: string;
 }
+
+const GraphNodeSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+});
+
+const GraphEdgeSchema = z.object({
+  id: z.string(),
+  source: z.string(),
+  target: z.string(),
+  label: z.string().optional(),
+});
 
 interface GraphControlsProps {
   focusMode: boolean;
@@ -103,8 +116,19 @@ const GraphControls: React.FC<GraphControlsProps> = ({
     try {
       const snap = await repository.getSnapshot(snapshotId);
       if (!snap) return;
-      const loadedNodes = JSON.parse(snap.nodes_json) as GraphNode[];
-      const loadedEdges = JSON.parse(snap.edges_json) as GraphEdge[];
+      const nodesResult = z.array(GraphNodeSchema).safeParse(JSON.parse(snap.nodes_json));
+      const edgesResult = z.array(GraphEdgeSchema).safeParse(JSON.parse(snap.edges_json));
+
+      if (!nodesResult.success || !edgesResult.success) {
+        logger.error('Snapshot data validation failed', {
+          nodesError: nodesResult.success ? null : nodesResult.error.message,
+          edgesError: edgesResult.success ? null : edgesResult.error.message,
+        });
+        return;
+      }
+
+      const loadedNodes = nodesResult.data;
+      const loadedEdges = edgesResult.data;
       onLoadSnapshot?.(loadedNodes, loadedEdges);
       onSnapshotModeChange?.(true);
       setShowSnapshotBrowser(false);

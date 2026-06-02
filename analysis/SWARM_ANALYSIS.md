@@ -1,8 +1,8 @@
 # Swarm Analysis Report
 
 **Project:** do-knowledge-studio  
-**Date:** 2026-05-31  
-**Method:** 6-agent parallel swarm analysis (Feature, Implementation, Documentation, Tests, Architecture, Security/Quality)
+**Date:** 2026-06-02  
+**Method:** 6-perspective swarm analysis (Feature Gaps, Implementation Completeness, Documentation Gaps, Test Coverage, Architecture & Patterns, Security & Quality)
 
 ---
 
@@ -15,10 +15,10 @@
 | Documentation | 0 | 9 | 16 | 3 |
 | Test Coverage | 2 | 8 | 5 | 3 |
 | Architecture | 0 | 6 | 10 | 2 |
-| Security & Quality | 0 | 1 | 7 | 5 |
-| **TOTAL** | **6** | **40** | **62** | **22** |
+| Security & Quality | 1 | 2 | 8 | 3 |
+| **TOTAL** | **7** | **41** | **63** | **20** |
 
-**Codebase Health:** Clean v0.1.0 — zero TODO debt, proper Zod validation, no `any` types, excellent lazy loading. Main risks are architectural scaling (4 files exceed 500 LOC), incomplete feature wiring (search→editor, chat→LLM), and thin test coverage.
+**Codebase Health:** Solid v0.1.0 with strong foundations (SQLite WASM + FTS5, progressive search, job coalescing, Zod validation, strict TypeScript). Main risks: XSS via markdown renderer, 4 files exceed 500 LOC hard rule, search-to-editor navigation broken, CLI disconnected from browser DB, thin test coverage (14% branches).
 
 ---
 
@@ -226,25 +226,30 @@
 
 ## 6. Security & Quality
 
-### Security (0 Critical, 1 High, 3 Medium, 2 Low)
+### Security (1 Critical, 2 High, 5 Medium, 3 Low)
 
 | ID | Issue | Priority | File |
 |----|-------|----------|------|
-| S-01 | **API keys in plaintext localStorage** | High | `llm/config.ts:30-41` |
-| S-02 | SSRF in URL resolution — no private IP blocking | Medium | `resolver.ts:70-132` |
-| S-03 | Client-side rate limiting easily bypassed | Medium | `AIHarness.tsx:30-31` |
-| S-04 | No URL scheme validation in resolver | Medium | `resolver.ts:143-148` |
-| S-05 | DOMPurify allows `target` attribute (reverse tabnapping) | Low | `security.ts:3-8` |
-| S-06 | Silent error swallowing in LLM providers | Low | `openrouter.ts:103`, `kilo.ts:103` |
+| S-01 | **XSS via markdown `javascript:` URIs** — DOMPurify allows `href` but doesn't block `javascript:` scheme; AI Harness renders external content from Jina reader | **Critical** | `src/lib/llm/markdown.tsx:104`, `src/lib/security.ts` |
+| S-02 | **API keys in plaintext localStorage** — any XSS vector can exfiltrate keys | **High** | `llm/config.ts:30-41` |
+| S-03 | **Markdown renderer XSS via external content** — Jina → LLM → MarkdownRenderer pipeline can echo malicious `javascript:` links from fetched web pages | **High** | `AIHarness.tsx` → `markdown.tsx` |
+| S-04 | SSRF in URL resolution — no private IP blocking | Medium | `resolver.ts:70-132` |
+| S-05 | Client-side rate limiting easily bypassed | Medium | `AIHarness.tsx:92-96` |
+| S-06 | No URL scheme validation in resolver | Medium | `resolver.ts:143-148` |
+| S-07 | DOMPurify `RETURN_DOM_FRAGMENT` implicit string conversion | Medium | `security.ts:16-19` |
+| S-08 | SQL path interpolation in CLI backup (single-quote escaping only) | Medium | `cli/index.ts:296` |
+| S-09 | FTS5 content-less tables with no startup integrity check | Medium | `public/db/schema.sql:73-86` |
+| S-10 | DOMPurify allows `target` attribute (reverse tabnapping) | Low | `security.ts:3-8` |
+| S-11 | Silent error swallowing in LLM providers | Low | `openrouter.ts:103`, `kilo.ts:103` |
 
-### Quality (0 Critical, 0 High, 4 Medium, 3 Low)
+### Quality (0 Critical, 1 High, 4 Medium, 2 Low)
 
 | ID | Issue | Priority |
 |----|-------|----------|
-| Q-01 | `repository.ts` exceeds 500 LOC (957 lines) | Medium |
-| Q-02 | `AIHarness.tsx` exceeds 500 LOC (600 lines) | Medium |
-| Q-03 | 14 silent catch blocks (no logging) | Medium |
-| Q-04 | Hardcoded magic numbers in multiple files | Low |
+| Q-01 | `repository.ts` exceeds 500 LOC (957 lines) — violates AGENTS.md hard rule | **High** |
+| Q-02 | `GraphView.tsx` exceeds 500 LOC (793 lines) | Medium |
+| Q-03 | `AIHarness.tsx` exceeds 500 LOC (600 lines) | Medium |
+| Q-04 | 14 silent catch blocks (no logging) | Medium |
 | Q-05 | Unsafe type assertions in migration code | Low |
 | Q-06 | Duplicate `escapeHtml` function | Low |
 | Q-07 | `maskApiKey` function has redundant logic | Low |
@@ -256,6 +261,7 @@
 - CSP headers in exported HTML
 - DOMPurify sanitization on all HTML output
 - No `any` types in codebase
+- Strict TypeScript with `noImplicitOverride`, `noUnusedLocals`
 
 ---
 
@@ -263,17 +269,18 @@
 
 | Issue | Perspectives | Summary |
 |-------|-------------|---------|
+| **XSS via markdown renderer** | Security (S-01, S-03) + Implementation (TC-6) | `javascript:` URIs pass DOMPurify; external content pipeline amplifies risk |
 | **Search result → editor navigation broken** | Feature (FG-C2) + Implementation (IM-7) + Architecture (AR-H4) | `handleSearchResultClick` doesn't load entity; search is read-only |
 | **CLI disconnected from browser** | Feature (FG-C3) + Implementation | Separate databases make CLI automation useless |
 | **No undo/redo anywhere** | Feature (FG-H12, FG-H13) + Architecture | TipTap history not configured; no graph undo |
-| **API keys in plaintext** | Implementation (IM-3) + Security (S-01) | localStorage stores unencrypted API keys |
+| **API keys in plaintext** | Implementation (IM-3) + Security (S-02) | localStorage stores unencrypted API keys |
 | **Repository singleton is untestable** | Architecture (AR-H2, AR-M2) + Tests (TC-8) | No DI, no interface, can't mock for tests |
-| **4 files exceed 500 LOC** | Architecture (AR-H1) + Quality (Q-01, Q-02) | repository.ts, GraphView.tsx, AIHarness.tsx, search.ts |
+| **4 files exceed 500 LOC** | Architecture (AR-H1) + Quality (Q-01, Q-02, Q-03) | repository.ts, GraphView.tsx, AIHarness.tsx, search.ts |
 | **Chat disconnected from LLM** | Feature (FG-H10) + Implementation (IM-9) | Chat.tsx never calls LLM providers despite infrastructure existing |
-| **Mind map has zero tests** | Tests (TC-1) + Feature (FG-H6) | 415 LOC completely untested; buildTree() is pure and testable |
+| **Mind map has zero tests** | Tests (TC-1) + Feature (FG-H6) | 415 LOC completely untested; `buildTree()` is pure and testable |
 | **CLI has zero tests** | Tests (TC-2) + Feature (FG-H9) | 18 commands, 560 LOC, no tests; `db:reset` is catastrophic risk |
-| **Silent error swallowing** | Implementation (IM-14, IM-16) + Quality (Q-03) | 14+ silent catch blocks mask real issues |
-| **Side-effect initialization** | Architecture (AR-H3) | search.ts registers job handlers on import; fragile |
+| **Silent error swallowing** | Implementation (IM-14, IM-16) + Quality (Q-04) | 14+ silent catch blocks mask real issues |
+| **Side-effect initialization** | Architecture (AR-H3) | `search.ts` registers job handlers on import; fragile |
 | **No backlinks** | Feature (FG-C4) | Core knowledge management feature missing |
 | **Missing data validation on load** | Implementation (IM-2) | Snapshot JSON parsed without Zod validation |
 | **Browser migration only loads first file** | Implementation (IM-1) | Subsequent migrations silently skipped |
@@ -284,92 +291,117 @@
 
 | # | Win | Effort | Impact |
 |---|-----|--------|--------|
-| 1 | **Wire search result click to entity** — pass `result.id` to editor in `handleSearchResultClick` | 30 min | Critical feature unblocked |
-| 2 | **Wire Chat to LLM** — `Chat.tsx` already has search results; pipe to `openrouter.chat()` | 2 hours | Core AI feature works |
-| 3 | **Add Zod validation for snapshot load** — wrap `JSON.parse(snap.nodes_json)` in safeParse | 1 hour | Prevents crash from corrupt data |
-| 4 | **Fix browser migration loading** — use `import.meta.glob` to bundle all migration files | 1 hour | Prevents schema drift |
-| 5 | **Add `useFocusTrap` unit tests** — 5 tests, pure logic | 30 min | Accessibility coverage |
-| 6 | **Add Markdown renderer unit tests** — 10 tests, pure function | 1 hour | XSS prevention verified |
-| 7 | **Add URL validation in resolver** — block `javascript:`, `file://`, private IPs | 1 hour | SSRF prevention |
-| 8 | **Fix `maskApiKey` redundant logic** — simplify function | 5 min | Code quality |
-| 9 | **Fix VERSION/CHANGELOG sync** — update VERSION to 0.2.3 | 5 min | Documentation accuracy |
-| 10 | **Extract shared test builders** — `createMockEntity`, `createMockClaim` to `src/test/builders.ts` | 2 hours | Test infrastructure |
+| 1 | **Fix markdown XSS** — Add `ALLOWED_URI_REGEXP` to DOMPurify in `security.ts` and `markdown.tsx` to block `javascript:` URIs | 30 min | Critical security fix |
+| 2 | **Wire search result click → entity** — pass `result.id` to editor in `handleSearchResultClick` | 30 min | Critical feature unblocked |
+| 3 | **Wire Chat to LLM** — `Chat.tsx` already has search results; pipe to `openrouter.chat()` | 2 hours | Core AI feature works |
+| 4 | **Add Zod validation for snapshot load** — wrap `JSON.parse(snap.nodes_json)` in `safeParse` | 1 hour | Prevents crash from corrupt data |
+| 5 | **Fix browser migration loading** — use `import.meta.glob` to bundle all migration files | 1 hour | Prevents schema drift |
+| 6 | **Add `useFocusTrap` unit tests** — 5 tests, pure logic | 30 min | Accessibility coverage |
+| 7 | **Add Markdown renderer unit tests** — 10 tests, pure function, verifies XSS block | 1 hour | XSS prevention verified |
+| 8 | **Add URL validation in resolver** — block `javascript:`, `file://`, private IPs | 1 hour | SSRF prevention |
+| 9 | **Fix `maskApiKey` redundant logic** — simplify function | 5 min | Code quality |
+| 10 | **Fix VERSION/CHANGELOG sync** — update VERSION to match CHANGELOG | 5 min | Documentation accuracy |
+| 11 | **Extract shared test builders** — `createMockEntity`, `createMockClaim` to `src/test/builders.ts` | 2 hours | Test infrastructure |
 
 ---
 
 ## 9. Dependencies Between Gaps
 
 ```
+S-01 (XSS via markdown) ──blocks──> S-03 (External content XSS)
+                                     │
 FG-C1 (Library View) ──depends on──> FG-C2 (Search → Editor navigation)
-                                       │
+                                     │
 AR-H2 (Singleton Repository) ──blocks──> TC-8 (Error handling tests)
-                                       │
+                                     │
 AR-H1 (500 LOC violations) ──blocks──> TC-1 (Mind map tests)
-                                      > TC-3 (Graph tests)
-                                      > TC-4 (Editor extension tests)
-                                       │
+                                    > TC-3 (Graph tests)
+                                    > TC-4 (Editor extension tests)
+                                     │
 FG-C3 (CLI separate DB) ──blocks──> TC-2 (CLI tests)
-                                  > FG-H9 (CLI missing commands)
-                                       │
+                                > FG-H9 (CLI missing commands)
+                                     │
 FG-H10 (Chat no LLM) ──blocked-by──> IM-3 (API keys in plaintext)
-                                      │
+                                    │
 AR-H4 (No event bus) ──causes──> FG-C4 (No backlinks)
-                                 > FG-H6 (Mind map orphaned nodes)
-                                 > IM-11 (FTS not transactional)
-                                       │
+                               > FG-H6 (Mind map orphaned nodes)
+                               > IM-11 (FTS not transactional)
+                                     │
 AR-H5 (App.tsx God Component) ──causes──> AR-M3 (Full refresh on nav)
-                                          AR-M9 (Ad-hoc data refresh)
+                                        > AR-M9 (Ad-hoc data refresh)
 ```
 
 ---
 
 ## 10. Prioritized Action Plan
 
-### Phase 1: Critical Quick Wins (1-2 days)
-1. Wire search result click → editor (FG-C2)
-2. Fix browser migration fallback (IM-1)
-3. Add Zod validation for snapshot load (IM-2)
-4. Add URL validation in resolver (S-02)
-5. Fix VERSION sync (DOC-H9)
+### Phase 1: Critical Security & Quick Wins (1-2 days)
+1. Fix markdown XSS — add `ALLOWED_URI_REGEXP` to DOMPurify (S-01, S-03)
+2. Wire search result click → editor (FG-C2)
+3. Fix browser migration fallback (IM-1)
+4. Add Zod validation for snapshot load (IM-2)
+5. Add URL validation in resolver (S-04, S-06)
+6. Fix VERSION sync (DOC-H9)
 
 ### Phase 2: Core Feature Completion (1 week)
-6. Build Library/Entity Browser view (FG-C1)
-7. Wire Chat to LLM providers (FG-H10)
-8. Add backlinks/bidirectional linking (FG-C4)
-9. Expand toolbar (italic, lists, code, links) (FG-H1)
-10. Add undo/redo (FG-H12, FG-H13)
+7. Build Library/Entity Browser view (FG-C1)
+8. Wire Chat to LLM providers (FG-H10)
+9. Add backlinks/bidirectional linking (FG-C4)
+10. Expand toolbar (italic, lists, code, links) (FG-H1)
+11. Add undo/redo (FG-H12, FG-H13)
 
 ### Phase 3: Architecture Hygiene (1 week)
-11. Split `repository.ts` into submodules (AR-H1)
-12. Split `GraphView.tsx` (AR-H1)
-13. Split `AIHarness.tsx` (AR-H1)
-14. Split `search.ts` (AR-H1)
-15. Define `IRepository` interface (AR-M2)
-16. Move job handler registration to explicit init (AR-H3)
+12. Split `repository.ts` into submodules (AR-H1) — `EntityRepository`, `ContentRepository`, `GraphRepository` with barrel export
+13. Split `GraphView.tsx` — extract layout algorithms to `src/lib/graph-layout.ts`
+14. Split `AIHarness.tsx` — extract provider logic, UI shell
+15. Split `search.ts` — separate Orama init, FTS ops, job handlers
+16. Define `IRepository` interface (AR-M2)
+17. Move job handler registration to explicit init (AR-H3)
+18. Extract shared OpenAI-compatible provider base class (provider duplication)
 
 ### Phase 4: Test Coverage (2 weeks)
-17. Extract `buildTree()` and add mind map tests (TC-1)
-18. Add CLI command tests (TC-2)
-19. Add graph data transformation tests (TC-3)
-20. Add editor extension tests (TC-4)
-21. Add error handling tests across repository, search, resolver (TC-8)
-22. Expand E2E to cover CRUD lifecycle workflows (TC-7)
+19. Extract `buildTree()` and add mind map tests (TC-1)
+20. Add CLI command tests (TC-2)
+21. Add graph data transformation tests (TC-3)
+22. Add editor extension tests (TC-4)
+23. Add error handling tests across repository, search, resolver (TC-8)
+24. Expand E2E to cover CRUD lifecycle workflows (TC-7)
 
 ### Phase 5: Documentation (1 week)
-23. Create `docs/CLI.md` (DOC-H1)
-24. Create `docs/DATABASE.md` with ER diagram (DOC-H3)
-25. Create `docs/DEVELOPMENT.md` onboarding guide (DOC-H5)
-26. Create `docs/LLM-SETUP.md` (DOC-H6)
-27. Create `docs/SEARCH.md` (DOC-H4)
-28. Add JSDoc to all exported components (DOC-H2)
+25. Create `docs/CLI.md` (DOC-H1)
+26. Create `docs/DATABASE.md` with ER diagram (DOC-H3)
+27. Create `docs/DEVELOPMENT.md` onboarding guide (DOC-H5)
+28. Create `docs/LLM-SETUP.md` (DOC-H6)
+29. Create `docs/SEARCH.md` (DOC-H4)
+30. Add JSDoc to all exported components (DOC-H2)
 
 ### Phase 6: Polish & Hardening (ongoing)
-29. Encrypt API keys at rest (S-01)
-30. Add tags/categories system (FG-H11)
-31. Add graph filtering/search (FG-H3, FG-H4)
-32. Improve static export to multi-page site (FG-H7)
-33. Add import functionality (FG-H8)
-34. Raise test coverage thresholds to 40-60%
+31. Encrypt API keys at rest using Web Crypto API (S-02)
+32. Add tags/categories system (FG-H11)
+33. Add graph filtering/search (FG-H3, FG-H4)
+34. Improve static export to multi-page site (FG-H7)
+35. Add import functionality (FG-H8)
+36. Raise test coverage thresholds to 40-60%
+
+---
+
+## 11. Swarm Consensus
+
+### Agreed Priorities
+
+All three analyst personas (RYAN, FLASH, SOCRATES) converged on:
+
+1. **XSS via markdown renderer is the #1 security fix** — 5 minutes to fix, blocks a real attack vector through the Jina → LLM → render pipeline
+2. **Search-to-editor navigation is the #1 UX fix** — without it, search is a dead-end
+3. **Repository splitting is necessary but should be scoped** — 3 files (not 6) with barrel export to avoid import complexity
+4. **Error boundary reload is acceptable for v0.1.0** — but draft auto-save should ship before v0.2.0
+5. **Provider duplication is cosmetic** — defer to when a third provider is added
+
+### Disagreements Resolved
+
+- **Repository splitting scope:** RYAN wanted 6 files, FLASH wanted 0. Consensus: 3 files by domain (entities+claims, notes+links, snapshots+cache) with barrel export
+- **XSS severity:** FLASH initially dismissed it. SOCRATES pointed out the Jina reader pipeline. Consensus: Critical — external content can contain malicious links
+- **Error boundary acceptable?:** FLASH said yes for v0.1.0. RYAN said no. Consensus: Accept reload for now, implement draft auto-save before v0.2.0
 
 ---
 
@@ -387,3 +419,5 @@ These patterns should be maintained and extended:
 - **Virtual scrolling** in long lists
 - **DOMPurify** on all HTML output
 - **No `any` types** — strict TypeScript
+- **ARIA accessibility** — keyboard navigation, screen reader support, focus management
+- **Mobile touch gestures** on graph view
