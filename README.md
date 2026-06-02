@@ -282,3 +282,4 @@ Licensed under the [MIT License](LICENSE).
 ---
 
 **Local-first. AI-assisted. Built to think.**
+# trigger
