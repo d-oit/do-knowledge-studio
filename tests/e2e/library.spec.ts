@@ -2,6 +2,8 @@ import { test, expect } from '@playwright/test';
 import { ensureNavVisible, closeNav } from './utils';
 
 test.describe('Library View', () => {
+  test.skip(true, 'Library view removed from SidebarNav');
+
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     // Wait for the app to be ready
