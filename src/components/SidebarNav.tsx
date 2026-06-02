@@ -99,3 +99,4 @@ const SidebarNav: React.FC<SidebarNavProps> = ({ currentView, setCurrentView, on
 };
 
 export default SidebarNav;
+

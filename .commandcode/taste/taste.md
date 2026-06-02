@@ -7,4 +7,5 @@
 
 # workflow
 - Update plans/ folder first before implementing recommendations. Confidence: 0.65
+- Ensure all GitHub Actions checks pass and all PR comments are resolved before completing PRs. Confidence: 0.85
 
