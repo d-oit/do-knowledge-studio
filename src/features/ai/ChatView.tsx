@@ -75,7 +75,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 type="button"
                 className="source-chip-remove"
                 onClick={() => { onRemoveSource(i); }}
-                aria-label={"Remove source " + (s.title || s.url)}
+                aria-label={`Remove source ${s.title || s.url}`}
               >
                 <X size={12} />
               </button>
@@ -86,7 +86,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
       <div className="messages-list" role="log" aria-live="polite">
         {messages.map((m) => (
-          <div key={m.id} className={"message " + m.role}>
+          <div key={m.id} className={`message ${m.role}`}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', fontWeight: 'bold', fontSize: '12px' }}>
               {m.role === 'assistant' ? <Bot size={14} /> : <User size={14} />}
               {m.role === 'assistant' ? 'Assistant' : 'You'}
@@ -98,7 +98,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
             )}
             {m.tokenUsage && (
               <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                {(m.tokenUsage.input + m.tokenUsage.output) + " tokens"}
+                {`${m.tokenUsage.input + m.tokenUsage.output} tokens`}
               </div>
             )}
           </div>
@@ -148,7 +148,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   : rateLimitLevel === 'low' ? '#059669'
                   : 'transparent',
               }} />
-              {rateLimitInfo.count > 0 && (rateLimitInfo.count + "/" + rateLimitInfo.limit + " req/min")}
+              {rateLimitInfo.count > 0 && `${rateLimitInfo.count}/${rateLimitInfo.limit} req/min`}
             </span>
           </span>
         </div>
