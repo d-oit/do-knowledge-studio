@@ -374,49 +374,42 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete, onEdit
        {showAdvanced && showMentionMenu && (
          <div className="mention-section" style={{ marginTop: '16px' }}>
            <label className="block text-sm font-medium mb-2">Link to Entity</label>
-           <div className="space-y-2">
-             {allEntities.map(entity => (
-               <button
-                 key={entity.id}
-                 onClick={() => {
-                   insertMention(entity);
-                   setShowMentionMenu(false);
-                 }}
-                 className="mention-item w-full text-left px-3 py-2 rounded border border-muted hover:bg-muted"
-               >
-                 {entity.name} ({entity.type})
-               </button>
-             ))}
-           </div>
-         </div>
-       )}
-       {editingEntityId && backlinks.length > 0 && (
-         <div className="backlinks-section" style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border-default)' }}>
-           <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-             <Link2 size={14} /> Referenced by ({backlinks.length})
-           </h4>
-           <div className="backlinks-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-             {backlinks.map(bl => (
-               <button
-                 key={bl.id}
-                 onClick={() => onEditEntity?.(bl.id!)}
-                 className="backlink-chip"
-                 style={{
-                   padding: '4px 10px',
-                   borderRadius: '16px',
-                   background: 'var(--background-secondary)',
-                   border: '1px solid var(--border-default)',
-                   fontSize: '12px',
-                   cursor: 'pointer',
-                   color: 'var(--interactive-primary)',
-                   display: 'flex',
-                   alignItems: 'center',
-                   gap: '4px'
-                 }}
-               >
-                 <AtSign size={10} /> {bl.name}
-               </button>
-             ))}
+           <div
+             ref={mentionScrollRef}
+             className="space-y-2"
+             style={{ height: '240px', overflow: 'auto', position: 'relative' }}
+           >
+             <div
+               style={{
+                 height: `${mentionVirtualizer.getTotalSize()}px`,
+                 width: '100%',
+                 position: 'relative',
+               }}
+             >
+               {mentionVirtualizer.getVirtualItems().map((virtualItem) => {
+                 const entity = allEntities[virtualItem.index];
+                 return (
+                   <button
+                     key={virtualItem.key}
+                     onClick={() => {
+                       insertMention(entity);
+                       setShowMentionMenu(false);
+                     }}
+                     className="mention-item w-full text-left px-3 py-2 rounded border border-muted hover:bg-muted"
+                     style={{
+                       position: 'absolute',
+                       top: 0,
+                       left: 0,
+                       width: '100%',
+                       height: `${virtualItem.size}px`,
+                       transform: `translateY(${virtualItem.start}px)`,
+                     }}
+                   >
+                     {entity.name} ({entity.type})
+                   </button>
+                 );
+               })}
+             </div>
            </div>
          </div>
        )}
