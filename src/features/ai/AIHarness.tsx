@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { loadConfig, saveConfig, maskApiKey } from '../../lib/llm/config';
 import { saveDbHandles, getDbHandles } from '../../lib/db-persistence';
 import { PROVIDER_MODELS } from '../../lib/llm';
-import { logger } from '../../lib/logger';
 import DatabaseSettings from '../../components/DatabaseSettings';
 import { Database, Settings, Key, AlertTriangle } from 'lucide-react';
 import { useChat } from './useChat';
@@ -120,12 +119,12 @@ const AIHarness: React.FC = () => {
     setShowWizard(false);
   }, []);
 
-  const handleSend = useCallback(async () => {
+  const handleSend = useCallback(() => {
     if (!input.trim() || isLoading) return;
     const userMessage = input.trim();
     setInput('');
     trackRequest();
-    await sendMessage(userMessage, useContext, editModel);
+    sendMessage(userMessage, useContext, editModel).catch(() => {});
   }, [input, isLoading, useContext, editModel, sendMessage, trackRequest]);
 
   const currentApiKey = config.providers[config.activeProvider].apiKey || '';
