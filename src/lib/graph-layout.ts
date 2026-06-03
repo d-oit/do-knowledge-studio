@@ -56,7 +56,7 @@ export function applyHierarchicalLayout(graph: Graph, nodes: Entity[], links: Li
   const levelBuckets = new Map<number, string[]>();
   levels.forEach((level, nodeId) => {
     if (!levelBuckets.has(level)) levelBuckets.set(level, []);
-    levelBuckets.get(level)!.push(nodeId);
+    levelBuckets.get(level)?.push(nodeId);
   });
 
   const levelSpacing = 300;

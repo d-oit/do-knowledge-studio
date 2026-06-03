@@ -135,7 +135,7 @@ export function useGraphKeyboardNavigation(
               void removeFromSearchIndex(selectedNode);
               logger.info('Entity deleted via keyboard', { id: selectedNode });
               setSelectedNode(null);
-            }).catch(err => logger.error('Failed to delete entity', err));
+            }).catch(err => { logger.error('Failed to delete entity', err); });
           }
           break;
         }
@@ -143,6 +143,6 @@ export function useGraphKeyboardNavigation(
     };
 
     container.addEventListener('keydown', handleKeyDown);
-    return () => container.removeEventListener('keydown', handleKeyDown);
+    return () => { container.removeEventListener('keydown', handleKeyDown); };
   }, [container, sigmaInstance, graph, entities, selectedNode, setSelectedNode, focusRingIndex, setFocusRingIndex, repository]);
 }
