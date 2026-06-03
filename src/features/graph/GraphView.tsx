@@ -350,7 +350,6 @@ const GraphView: React.FC<Props> = ({
     logger.info('Graph exported as PNG');
   }, []);
 
-
   return (
     <div className="graph-container">
       {!hideToolbar && (
