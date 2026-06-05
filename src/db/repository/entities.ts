@@ -20,14 +20,13 @@ export async function createEntity(base: RepositoryBase, entity: Omit<Entity, 'i
   try {
     const validated = EntitySchema.omit({ id: true, created_at: true, updated_at: true }).parse(entity);
     const { name, type, description, sourceUrl, metadata } = validated;
-    const result = await base.exec({
+    const rows = await base.execRows({
       sql: `INSERT INTO entities (name, type, description, source_url, metadata)
             VALUES (?, ?, ?, ?, ?) RETURNING *, rowid`,
       bind: [name, type, description ?? null, sourceUrl ?? null, metadata ? JSON.stringify(metadata) : null],
       returnValue: 'resultRows',
       rowMode: 'object',
     });
-    const rows = z.array(z.unknown()).parse(result);
 
     const parsed = base.parseMetadata(EntitySchema, rows[0]);
     const row = rows[0] as Record<string, unknown>;
@@ -51,13 +50,12 @@ export async function getAllEntities(base: RepositoryBase, options?: { limit?: n
       sql += ` OFFSET ?`;
       bind.push(options.offset);
     }
-    const results = await base.exec({
+    const rows = await base.execRows({
       sql,
       bind: bind.length > 0 ? bind : undefined,
       returnValue: 'resultRows',
       rowMode: 'object',
     });
-    const rows = z.array(z.unknown()).parse(results);
 
     return rows.map((r) => base.parseMetadata(EntitySchema, r));
   } catch (err) {
@@ -113,13 +111,12 @@ export async function getEntities(base: RepositoryBase, options: {
       bind.push(offset);
     }
 
-    const results = await base.exec({
+    const rows = await base.execRows({
       sql,
       bind: bind.length > 0 ? bind : undefined,
       returnValue: 'resultRows',
       rowMode: 'object',
     });
-    const rows = z.array(z.unknown()).parse(results);
 
     return rows.map((r) => base.parseMetadata(EntitySchema, r));
   } catch (err) {
@@ -167,13 +164,12 @@ export async function getEntitiesCount(base: RepositoryBase, options: { type?: s
 
 export async function getEntityById(base: RepositoryBase, id: string): Promise<(Entity & { rowid: number }) | null> {
   try {
-    const results = await base.exec({
+    const rows = await base.execRows({
       sql: `SELECT *, rowid FROM entities WHERE id = ?`,
       bind: [id],
       returnValue: 'resultRows',
       rowMode: 'object',
     });
-    const rows = z.array(z.unknown()).parse(results);
     if (rows.length === 0) return null;
 
     const parsed = base.parseMetadata(EntitySchema, rows[0]);
@@ -186,13 +182,12 @@ export async function getEntityById(base: RepositoryBase, id: string): Promise<(
 
 export async function getEntityByName(base: RepositoryBase, name: string): Promise<Entity | null> {
   try {
-    const results = await base.exec({
+    const rows = await base.execRows({
       sql: `SELECT * FROM entities WHERE name = ?`,
       bind: [name],
       returnValue: 'resultRows',
       rowMode: 'object',
     });
-    const rows = z.array(z.unknown()).parse(results);
     if (rows.length === 0) return null;
 
     return base.parseMetadata(EntitySchema, rows[0]);
@@ -214,13 +209,12 @@ export async function updateEntity(base: RepositoryBase, id: string, entity: Par
     const sourceUrl = validated.sourceUrl ?? current.sourceUrl;
     const metadata = validated.metadata ?? current.metadata;
 
-    const result = await base.exec({
+    const rows = await base.execRows({
       sql: `UPDATE entities SET name = ?, type = ?, description = ?, source_url = ?, metadata = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? RETURNING *`,
       bind: [name, type, description ?? null, sourceUrl ?? null, metadata ? JSON.stringify(metadata) : null, id],
       returnValue: 'resultRows',
       rowMode: 'object',
     });
-    const rows = z.array(z.unknown()).parse(result);
 
     return base.parseMetadata(EntitySchema, rows[0]);
   } catch (err) {
@@ -246,7 +240,7 @@ export async function searchEntities(base: RepositoryBase, query: string): Promi
   try {
     perf.mark('sqlite-query');
     const ftsQuery = query.trim().replace(/[^\w\s-]/g, '').split(/\s+/).filter(Boolean).map(t => `${t}*`).join(' ');
-    const results = await base.exec({
+    const resultRows = await base.execRows({
       sql: `SELECT DISTINCT e.* FROM entities e
             JOIN entity_search_idx s ON e.rowid = s.rowid
             WHERE s MATCH ?
@@ -255,10 +249,9 @@ export async function searchEntities(base: RepositoryBase, query: string): Promi
       returnValue: 'resultRows',
       rowMode: 'object',
     });
-    const resultRows = z.array(z.unknown()).parse(results);
 
     if (resultRows.length === 0) {
-      const fallback = await base.exec({
+      const fallbackRows = await base.execRows({
         sql: `SELECT * FROM entities
               WHERE name LIKE ? OR description LIKE ?
               ORDER BY name ASC
@@ -267,7 +260,6 @@ export async function searchEntities(base: RepositoryBase, query: string): Promi
         returnValue: 'resultRows',
         rowMode: 'object',
       });
-      const fallbackRows = z.array(z.unknown()).parse(fallback);
       perf.measure('sqlite-query-search-fallback', 'sqlite-query');
 
       return fallbackRows.map((r) => base.parseMetadata(EntitySchema, r));
@@ -286,7 +278,7 @@ export async function searchRelated(base: RepositoryBase, query: string, options
   try {
     perf.mark('sqlite-query');
     const ftsQuery = query.trim().replace(/[^\w\s-]/g, '').split(/\s+/).filter(Boolean).map(t => `${t}*`).join(' ');
-    const results = await base.exec({
+    const rawRows = await base.execRows({
       sql: `SELECT DISTINCT e.id, e.name, e.type, e.description,
             l.relation, l.source_id, l.target_id
             FROM entities e
@@ -303,7 +295,7 @@ export async function searchRelated(base: RepositoryBase, query: string, options
       returnValue: 'resultRows',
       rowMode: 'object',
     });
-    const rows = z.array(SearchRelatedRowSchema).parse(results);
+    const rows = z.array(SearchRelatedRowSchema).parse(rawRows);
     perf.measure('sqlite-query-search-related', 'sqlite-query');
     return rows
       .filter((r) => !options?.excludeIds?.has(r.id))

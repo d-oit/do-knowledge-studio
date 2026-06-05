@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import { GraphSnapshot, GraphSnapshotSchema } from '../../lib/validation';
 import { AppError } from '../../lib/errors';
 import { logger } from '../../lib/logger';
@@ -20,14 +19,13 @@ export async function createSnapshot(
       description,
     });
 
-    const result = await base.exec({
+    const rows = await base.execRows({
       sql: `INSERT INTO graph_snapshots (name, nodes_json, edges_json, description)
             VALUES (?, ?, ?, ?) RETURNING *`,
       bind: [validated.name, validated.nodes_json, validated.edges_json, validated.description ?? null],
       returnValue: 'resultRows',
       rowMode: 'object',
     });
-    const rows = z.array(z.unknown()).parse(result);
 
     return base.parseMetadata(GraphSnapshotSchema, rows[0]);
   } catch (err) {
@@ -38,13 +36,12 @@ export async function createSnapshot(
 
 export async function getSnapshot(base: RepositoryBase, id: string): Promise<GraphSnapshot | null> {
   try {
-    const results = await base.exec({
+    const rows = await base.execRows({
       sql: `SELECT * FROM graph_snapshots WHERE id = ?`,
       bind: [id],
       returnValue: 'resultRows',
       rowMode: 'object',
     });
-    const rows = z.array(z.unknown()).parse(results);
     if (rows.length === 0) return null;
 
     return base.parseMetadata(GraphSnapshotSchema, rows[0]);
@@ -56,12 +53,11 @@ export async function getSnapshot(base: RepositoryBase, id: string): Promise<Gra
 
 export async function listSnapshots(base: RepositoryBase): Promise<GraphSnapshot[]> {
   try {
-    const results = await base.exec({
+    const rows = await base.execRows({
       sql: `SELECT * FROM graph_snapshots ORDER BY created_at DESC`,
       returnValue: 'resultRows',
       rowMode: 'object',
     });
-    const rows = z.array(z.unknown()).parse(results);
 
     return rows.map(r => base.parseMetadata(GraphSnapshotSchema, r));
   } catch (err) {

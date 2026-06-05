@@ -9,14 +9,13 @@ export async function createLink(base: RepositoryBase, link: Omit<Link, 'id' | '
   try {
     const validated = LinkSchema.omit({ id: true, created_at: true, updated_at: true }).parse(link);
     const { source_id, target_id, relation, metadata } = validated;
-    const result = await base.exec({
+    const rows = await base.execRows({
       sql: `INSERT INTO links (source_id, target_id, relation, metadata)
             VALUES (?, ?, ?, ?) RETURNING *`,
       bind: [source_id, target_id, relation, metadata ? JSON.stringify(metadata) : null],
       returnValue: 'resultRows',
       rowMode: 'object',
     });
-    const rows = z.array(z.unknown()).parse(result);
 
     return base.parseMetadata(LinkSchema, rows[0]);
   } catch (err) {
@@ -38,13 +37,12 @@ export async function getAllLinks(base: RepositoryBase, options?: { limit?: numb
       sql += ` OFFSET ?`;
       bind.push(options.offset);
     }
-    const results = await base.exec({
+    const rows = await base.execRows({
       sql,
       bind: bind.length > 0 ? bind : undefined,
       returnValue: 'resultRows',
       rowMode: 'object',
     });
-    const rows = z.array(z.unknown()).parse(results);
 
     return rows.map((r) => base.parseMetadata(LinkSchema, r));
   } catch (err) {
@@ -69,7 +67,7 @@ export async function deleteLink(base: RepositoryBase, id: string): Promise<void
 
 export async function getBacklinks(base: RepositoryBase, entityId: string): Promise<Entity[]> {
   try {
-    const results = await base.exec({
+    const rows = await base.execRows({
       sql: `SELECT DISTINCT e.* FROM entities e
             JOIN links l ON e.id = l.source_id
             WHERE l.target_id = ?
@@ -78,7 +76,6 @@ export async function getBacklinks(base: RepositoryBase, entityId: string): Prom
       returnValue: 'resultRows',
       rowMode: 'object',
     });
-    const rows = z.array(z.unknown()).parse(results);
 
     return rows.map((r) => base.parseMetadata(EntitySchema, r));
   } catch (err) {

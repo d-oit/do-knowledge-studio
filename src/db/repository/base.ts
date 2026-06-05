@@ -6,12 +6,19 @@ export class RepositoryBase {
     return getDb();
   }
 
-  async exec<T = unknown>(options: Parameters<SQLiteDB['exec']>[0]): Promise<T> {
-    return this.db.exec(options) as Promise<T>;
+  /** Execute raw SQL. Use execRows() for queries that return rows. */
+  async exec(options: Parameters<SQLiteDB['exec']>[0]): Promise<unknown> {
+    return this.db.exec(options);
   }
 
-  async transaction<T = unknown>(statements: Parameters<SQLiteDB['transaction']>[0]): Promise<T> {
-    return this.db.transaction(statements) as Promise<T>;
+  /** Execute SQL and parse the result as an array of unknown rows via Zod. */
+  async execRows(options: Parameters<SQLiteDB['exec']>[0]): Promise<unknown[]> {
+    const result = await this.db.exec(options);
+    return z.array(z.unknown()).parse(result);
+  }
+
+  async transaction(statements: Parameters<SQLiteDB['transaction']>[0]): Promise<unknown> {
+    return this.db.transaction(statements);
   }
 
   public parseMetadata<T extends z.ZodType<unknown>>(schema: T, row: unknown): z.infer<T> {

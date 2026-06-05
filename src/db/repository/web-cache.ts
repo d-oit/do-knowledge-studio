@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import { AppError } from '../../lib/errors';
 import { logger } from '../../lib/logger';
 import { RepositoryBase } from './base';
@@ -18,13 +17,12 @@ export async function upsertWebCache(base: RepositoryBase, url: string, content:
 
 export async function getWebCache(base: RepositoryBase, url: string): Promise<{ url: string; content: string; format: string; title?: string; resolved_at: string } | null> {
   try {
-    const results = await base.exec({
+    const rows = await base.execRows({
       sql: `SELECT url, content, format, title, resolved_at FROM web_cache WHERE url = ?`,
       bind: [url],
       returnValue: 'resultRows',
       rowMode: 'object',
     });
-    const rows = z.array(z.unknown()).parse(results);
     if (rows.length === 0) return null;
     const r = rows[0] as Record<string, unknown>;
     return {

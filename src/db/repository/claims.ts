@@ -14,14 +14,13 @@ export async function createClaim(
   try {
     const validated = ClaimSchema.omit({ id: true, created_at: true, updated_at: true }).parse(claim);
     const { entity_id, statement, evidence, confidence, source, verification_status } = validated;
-    const result = await base.exec({
+    const rows = await base.execRows({
       sql: `INSERT INTO claims (entity_id, statement, evidence, confidence, source, verification_status)
             VALUES (?, ?, ?, ?, ?, ?) RETURNING *, rowid`,
       bind: [entity_id, statement, evidence ?? null, confidence ?? 1, source ?? null, verification_status ?? 'unverified'],
       returnValue: 'resultRows',
       rowMode: 'object',
     });
-    const rows = z.array(z.unknown()).parse(result);
 
     const parsed = base.parseMetadata(ClaimSchema, rows[0]);
     return { ...parsed, rowid: (rows[0] as { rowid: number }).rowid };
@@ -33,13 +32,12 @@ export async function createClaim(
 
 export async function getClaimsByVerificationStatus(base: RepositoryBase, status: Claim['verification_status']): Promise<Claim[]> {
   try {
-    const results = await base.exec({
+    const rows = await base.execRows({
       sql: `SELECT * FROM claims WHERE verification_status = ? ORDER BY created_at DESC`,
       bind: [status],
       returnValue: 'resultRows',
       rowMode: 'object',
     });
-    const rows = z.array(z.unknown()).parse(results);
 
     return rows.map((r) => base.parseMetadata(ClaimSchema, r));
   } catch (err) {
@@ -72,13 +70,12 @@ export async function updateClaimVerification(
   verification_status: Claim['verification_status'],
 ): Promise<Claim> {
   try {
-    const result = await base.exec({
+    const rows = await base.execRows({
       sql: `UPDATE claims SET verification_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? RETURNING *`,
       bind: [verification_status, claimId],
       returnValue: 'resultRows',
       rowMode: 'object',
     });
-    const rows = z.array(z.unknown()).parse(result);
     if (rows.length === 0) {
       throw new AppError('Claim not found', 'NOT_FOUND', null);
     }
@@ -93,13 +90,12 @@ export async function updateClaimVerification(
 
 export async function getClaimsByEntityId(base: RepositoryBase, entity_id: string): Promise<(Claim & { rowid: number })[]> {
   try {
-    const results = await base.exec({
+    const rows = await base.execRows({
       sql: `SELECT *, rowid FROM claims WHERE entity_id = ? ORDER BY created_at DESC`,
       bind: [entity_id],
       returnValue: 'resultRows',
       rowMode: 'object',
     });
-    const rows = z.array(z.unknown()).parse(results);
     return rows.map((r) => {
       const row = r as Record<string, unknown>;
 
@@ -114,12 +110,11 @@ export async function getClaimsByEntityId(base: RepositoryBase, entity_id: strin
 export async function getAllClaims(base: RepositoryBase): Promise<Claim[]> {
   perf.mark('sqlite-query');
   try {
-    const results = await base.exec({
+    const rows = await base.execRows({
       sql: `SELECT * FROM claims`,
       returnValue: 'resultRows',
       rowMode: 'object',
     });
-    const rows = z.array(z.unknown()).parse(results);
 
     return rows.map((r) => base.parseMetadata(ClaimSchema, r));
   } catch (err) {
@@ -133,7 +128,7 @@ export async function getAllClaims(base: RepositoryBase): Promise<Claim[]> {
 export async function getAllEntitiesWithClaims(base: RepositoryBase): Promise<Map<string, { entity: Entity; claims: Claim[] }>> {
   perf.mark('sqlite-query');
   try {
-    const results = await base.exec({
+    const rows = await base.execRows({
       sql: `SELECT e.*, c.id as c_id, c.entity_id as c_entity_id, c.statement as c_statement,
                    c.evidence as c_evidence, c.confidence as c_confidence, c.source as c_source,
                    c.verification_status as c_verification_status, c.created_at as c_created_at,
@@ -144,7 +139,6 @@ export async function getAllEntitiesWithClaims(base: RepositoryBase): Promise<Ma
       returnValue: 'resultRows',
       rowMode: 'object',
     });
-    const rows = z.array(z.unknown()).parse(results);
 
     const result = new Map<string, { entity: Entity; claims: Claim[] }>();
     for (const row of rows) {
@@ -189,13 +183,12 @@ export async function getAllEntitiesWithClaims(base: RepositoryBase): Promise<Ma
 
 export async function updateClaim(base: RepositoryBase, id: string, claim: Partial<Claim>): Promise<Claim> {
   try {
-    const results = await base.exec({
+    const rows = await base.execRows({
       sql: `SELECT * FROM claims WHERE id = ?`,
       bind: [id],
       returnValue: 'resultRows',
       rowMode: 'object',
     });
-    const rows = z.array(z.unknown()).parse(results);
     if (rows.length === 0) throw new AppError('Claim not found', 'NOT_FOUND');
 
     const validated = ClaimSchema.partial().parse(claim);
@@ -207,13 +200,12 @@ export async function updateClaim(base: RepositoryBase, id: string, claim: Parti
     const source = validated.source ?? current.source;
     const verification_status = validated.verification_status ?? current.verification_status;
 
-    const result = await base.exec({
+    const resultRows = await base.execRows({
       sql: `UPDATE claims SET statement = ?, evidence = ?, confidence = ?, source = ?, verification_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? RETURNING *`,
       bind: [statement, evidence ?? null, confidence, source ?? null, verification_status, id],
       returnValue: 'resultRows',
       rowMode: 'object',
     });
-    const resultRows = z.array(z.unknown()).parse(result);
 
     return base.parseMetadata(ClaimSchema, resultRows[0]);
   } catch (err) {
