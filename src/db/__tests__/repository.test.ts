@@ -127,7 +127,7 @@ describe('Repository', () => {
 
       expect(mockExec).toHaveBeenCalledWith({
         sql: expect.stringContaining('INSERT INTO entities'),
-        bind: ['Test Entity', 'person', 'A test entity', '{"key":"value"}'],
+        bind: ['Test Entity', 'person', 'A test entity', null, '{"key":"value"}'],
         returnValue: 'resultRows',
         rowMode: 'object',
       });
@@ -145,7 +145,7 @@ describe('Repository', () => {
 
       expect(mockExec).toHaveBeenCalledWith({
         sql: expect.stringContaining('INSERT INTO entities'),
-        bind: ['Test Entity', 'person', null, null],
+        bind: ['Test Entity', 'person', null, null, null],
         returnValue: 'resultRows',
         rowMode: 'object',
       });

@@ -19,11 +19,11 @@ const SearchRelatedRowSchema = z.object({
 export async function createEntity(base: RepositoryBase, entity: Omit<Entity, 'id' | 'created_at' | 'updated_at'>): Promise<Entity & { rowid: number }> {
   try {
     const validated = EntitySchema.omit({ id: true, created_at: true, updated_at: true }).parse(entity);
-    const { name, type, description, metadata } = validated;
+    const { name, type, description, sourceUrl, metadata } = validated;
     const result = await base.exec({
-      sql: `INSERT INTO entities (name, type, description, metadata)
-            VALUES (?, ?, ?, ?) RETURNING *, rowid`,
-      bind: [name, type, description ?? null, metadata ? JSON.stringify(metadata) : null],
+      sql: `INSERT INTO entities (name, type, description, source_url, metadata)
+            VALUES (?, ?, ?, ?, ?) RETURNING *, rowid`,
+      bind: [name, type, description ?? null, sourceUrl ?? null, metadata ? JSON.stringify(metadata) : null],
       returnValue: 'resultRows',
       rowMode: 'object',
     });
@@ -211,11 +211,12 @@ export async function updateEntity(base: RepositoryBase, id: string, entity: Par
     const name = validated.name ?? current.name;
     const type = validated.type ?? current.type;
     const description = validated.description ?? current.description;
+    const sourceUrl = validated.sourceUrl ?? current.sourceUrl;
     const metadata = validated.metadata ?? current.metadata;
 
     const result = await base.exec({
-      sql: `UPDATE entities SET name = ?, type = ?, description = ?, metadata = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? RETURNING *`,
-      bind: [name, type, description ?? null, metadata ? JSON.stringify(metadata) : null, id],
+      sql: `UPDATE entities SET name = ?, type = ?, description = ?, source_url = ?, metadata = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? RETURNING *`,
+      bind: [name, type, description ?? null, sourceUrl ?? null, metadata ? JSON.stringify(metadata) : null, id],
       returnValue: 'resultRows',
       rowMode: 'object',
     });

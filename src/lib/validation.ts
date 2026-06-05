@@ -5,6 +5,7 @@ export const EntitySchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(255),
   type: z.string().trim().min(1, 'Type is required').max(255),
   description: z.string().trim().max(10000).optional(),
+  sourceUrl: z.string().max(2048).optional(),
   metadata: z.record(z.unknown()).optional(),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),

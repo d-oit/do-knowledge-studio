@@ -58,7 +58,8 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
 
   useEffect(() => {
     perf.mark('editor-mount');
-    repository.getAllEntities().then(setAllEntities).catch(err => logger.error('Failed to load entities for mentions', { error: err }));
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- exec returns Promise<unknown>
+    repository.getAllEntities().then((entities: Entity[]) => setAllEntities(entities)).catch(err => logger.error('Failed to load entities for mentions', { error: err }));
     perf.measure('editor-ready', 'editor-mount');
   }, [repository]);
 
@@ -67,15 +68,17 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
       return;
     }
     setIsLoadingEntity(true);
-    repository.getEntityById(editingEntityId).then(entity => {
+    /* eslint-disable @typescript-eslint/no-unsafe-assignment -- exec returns Promise<unknown> propagating any */
+    repository.getEntityById(editingEntityId).then((entity: (Entity & { rowid: number }) | null) => {
       if (!entity) return;
       setTitle(entity.name || '');
       setType(entity.type);
-      setSourceUrl('');
+      setSourceUrl(entity.sourceUrl ?? '');
       setShowAdvanced(entity.metadata?.advanced ?? false);
       setStatus(null);
     }).catch(err => logger.error('Failed to load entity for editing', { error: err }))
     .finally(() => setIsLoadingEntity(false));
+    /* eslint-enable @typescript-eslint/no-unsafe-assignment */
 
   }, [editingEntityId, repository]);
 
@@ -103,6 +106,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
           name: title,
           type: type,
           description: content,
+          sourceUrl: sourceUrl.trim() || undefined,
         });
 
         // Update search index
@@ -117,6 +121,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
           name: title,
           type: type,
           description: content,
+          sourceUrl: sourceUrl.trim() || undefined,
           metadata: {}
         });
 
