@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.5] - 2026-06-05
+
+### Fixed
+- SQLite WASM nested transaction error when saving entities with claims/links (#271)
+  - Defensive `COMMIT` before `BEGIN TRANSACTION` clears dangling autocommit state
+  - SQLite WASM `INSERT…RETURNING` with `returnValue:'resultRows'` can leave autocommit off
+- E2E test flakiness from tiptap timing race condition (#271)
+  - Wait for `.ProseMirror[contenteditable="true"]` instead of `.tiptap-content` visibility
+  - Ensures `useEditor` hook resolves before clicking Save
+
 ## [0.2.4] - 2026-06-05
 
 ### Added
@@ -133,7 +143,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Quality gate exits with code 2 to surface errors to agent
 - Progressive disclosure for skills (load on demand)
 
-[Unreleased]: https://github.com/d-oit/do-knowledge-studio/compare/v0.2.4...HEAD
+[Unreleased]: https://github.com/d-oit/do-knowledge-studio/compare/v0.2.5...HEAD
+[0.2.5]: https://github.com/d-oit/do-knowledge-studio/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/d-oit/do-knowledge-studio/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/d-oit/do-knowledge-studio/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/d-oit/do-knowledge-studio/compare/v0.2.1...v0.2.2
