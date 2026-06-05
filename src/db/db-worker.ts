@@ -161,6 +161,16 @@ self.onmessage = async (event: MessageEvent) => {
 
         const { statements } = payload as TransactionPayload;
 
+        // Clear any dangling transaction state from a prior exec() with
+        // RETURNING — SQLite WASM's oo1.DB.exec can leave autocommit off
+        // after INSERT…RETURNING with returnValue:'resultRows'.
+        try { db.exec('COMMIT;'); } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          if (!msg.includes('no transaction is active')) {
+            throw err; // Unexpected error — rethrow
+          }
+        }
+
         db.exec('BEGIN TRANSACTION;');
         try {
           const results = [];

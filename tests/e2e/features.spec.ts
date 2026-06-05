@@ -328,8 +328,9 @@ test.describe('Entity Editor with Source URL', () => {
     const sourceInput = page.locator('#entity-source-url');
     await sourceInput.fill('https://example.com/persisted-article');
 
-    // Wait for tiptap editor to initialize before saving
+    // Wait for tiptap editor to fully initialize (useEditor hook returns non-null)
     await expect(page.locator('.tiptap-content')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.tiptap-content .ProseMirror[contenteditable="true"]')).toBeVisible({ timeout: 5000 });
 
     // Save entity
     const saveBtn = page.locator('button.primary', { hasText: 'Save to DB' });
