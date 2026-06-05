@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS entities (
     name TEXT NOT NULL,
     type TEXT NOT NULL,
     description TEXT,
+    source_url TEXT,
     metadata TEXT, -- JSON string
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,

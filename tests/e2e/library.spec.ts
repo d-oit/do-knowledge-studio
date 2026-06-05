@@ -16,8 +16,10 @@ test.describe('Library View', () => {
 
     await page.fill('input[placeholder="Entity Name (e.g. TRIZ)"]', 'Library Test Entity');
     await page.selectOption('select', 'concept');
+    // Wait for tiptap editor to initialize before saving
+    await expect(page.locator('.tiptap-content')).toBeVisible({ timeout: 5000 });
     await page.click('button:has-text("Save to DB")');
-    await expect(page.locator('text=Saved successfully!')).toBeVisible();
+    await expect(page.locator('[role="alert"]')).toContainText('Saved successfully', { timeout: 10000 });
   });
 
   test('should navigate to Library and show entities', async ({ page }) => {

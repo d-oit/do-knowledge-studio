@@ -98,7 +98,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       const list = await repository.listSnapshots();
       setSnapshots(list);
     } catch (err) {
-      logger.error('Failed to load snapshots', err);
+      logger.error('Failed to load snapshots', { error: err });
     } finally {
       setIsLoadingSnapshots(false);
     }
@@ -134,7 +134,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       setShowSnapshotBrowser(false);
       logger.info(`Loaded snapshot: ${snap.name}`);
     } catch (err) {
-      logger.error('Failed to load snapshot', err);
+      logger.error('Failed to load snapshot', { error: err });
     } finally {
       setLoadingSnapshotId(null);
     }
@@ -154,7 +154,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       const result = await repository.diffSnapshots(selectedForDiff[0], selectedForDiff[1]);
       setDiffResult(result);
     } catch (err) {
-      logger.error('Failed to diff snapshots', err);
+      logger.error('Failed to diff snapshots', { error: err });
     }
   };
 
@@ -262,7 +262,12 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       {controls}
 
       {showSaveModal && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowSaveModal(false); }} onKeyDown={(e) => { if (e.key === 'Escape') setShowSaveModal(false); }} role="button" tabIndex={-1} aria-label="Close modal">
+        <div
+          className="modal-overlay"
+          role="presentation"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowSaveModal(false); }}
+          onKeyDown={(e) => { if (e.target === e.currentTarget && e.key === 'Escape') setShowSaveModal(false); }}
+        >
           <div
             ref={modalRef}
             className="modal-content"
@@ -320,7 +325,12 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       )}
 
       {showSnapshotBrowser && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowSnapshotBrowser(false); setDiffResult(null); } }} onKeyDown={(e) => { if (e.key === 'Escape') { setShowSnapshotBrowser(false); setDiffResult(null); } }} role="button" tabIndex={-1} aria-label="Close snapshot browser">
+        <div
+          className="modal-overlay"
+          role="presentation"
+          onClick={(e) => { if (e.target === e.currentTarget) { setShowSnapshotBrowser(false); setDiffResult(null); } }}
+          onKeyDown={(e) => { if (e.target === e.currentTarget && e.key === 'Escape') { setShowSnapshotBrowser(false); setDiffResult(null); } }}
+        >
           <div
             ref={snapshotBrowserRef}
             className="modal-content"

@@ -173,9 +173,9 @@ describe('External fetch handler', () => {
 
     // Should use cache, NOT call resolveUrl
     expect(resolveUrl).not.toHaveBeenCalled();
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(vi.mocked(repository.getWebCache)).toHaveBeenCalledWith('https://cached.example.com');
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(vi.mocked(repository.updateEntity)).toHaveBeenCalledWith('entity-2', {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       description: expect.stringContaining('Cached Article'),

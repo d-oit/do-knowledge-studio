@@ -306,4 +306,46 @@ test.describe('Entity Editor with Source URL', () => {
     await sourceInput.fill('https://example.com/article');
     await expect(sourceInput).toHaveValue('https://example.com/article');
   });
+
+  test('source URL persists after saving entity', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('.layout-container')).toBeVisible({ timeout: 15000 });
+
+    await ensureNavVisible(page);
+
+    const editorBtn = page.locator('.nav-button').filter({ hasText: 'Editor', visible: true }).first();
+    await editorBtn.click();
+
+    await expect(page.locator('.editor-container')).toBeVisible({ timeout: 15000 });
+    await closeNav(page);
+
+    // Fill entity name
+    const nameInput = page.locator('#entity-title');
+    await nameInput.fill('Source URL Test Entity');
+
+    // Open Advanced and fill source URL
+    await page.getByRole('button', { name: /advanced/i }).click();
+    const sourceInput = page.locator('#entity-source-url');
+    await sourceInput.fill('https://example.com/persisted-article');
+
+    // Wait for tiptap editor to initialize before saving
+    await expect(page.locator('.tiptap-content')).toBeVisible({ timeout: 5000 });
+
+    // Save entity
+    const saveBtn = page.locator('button.primary', { hasText: 'Save to DB' });
+    await saveBtn.click();
+
+    // Verify success status message using role=alert (more reliable than class selector)
+    await expect(page.locator('[role="alert"]')).toContainText('Saved successfully', { timeout: 15000 });
+
+    // Navigate to Library and verify the entity exists
+    await ensureNavVisible(page);
+    const libraryBtn = page.locator('.nav-button').filter({ hasText: 'Library', visible: true }).first();
+    await libraryBtn.click();
+
+    await expect(page.locator('.main-content')).toBeVisible({ timeout: 15000 });
+
+    // Find the saved entity in the library using text content (more reliable than CSS classes)
+    await expect(page.locator('text=Source URL Test Entity').first()).toBeVisible({ timeout: 10000 });
+  });
 });

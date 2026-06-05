@@ -39,6 +39,8 @@
 .command-palette-header .search-icon {
   color: var(--text-muted);
   flex-shrink: 0;
+  position: static;
+  pointer-events: auto;
 }
 
 .command-palette-header input {
@@ -49,6 +51,7 @@
   font-size: 1.1rem;
   color: var(--text-primary);
   padding: var(--space-1) 0;
+  padding-right: var(--space-2);
 }
 
 .command-palette-header .input-clear-button {

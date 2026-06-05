@@ -135,10 +135,7 @@ const AppContent: React.FC = () => {
 
   useEffect(() => {
     if (dbReady && (currentView === 'graph' || currentView === 'mindmap')) {
-      // Use requestIdleCallback or setTimeout to avoid synchronous setState within effect
-      const schedule = (window as { requestIdleCallback?: (cb: () => void) => void }).requestIdleCallback
-        ?? ((cb: () => void) => setTimeout(cb, 0));
-      schedule(() => { void refreshData(); });
+      void refreshData();
     }
   }, [currentView, dbReady, refreshData]);
 
@@ -164,13 +161,13 @@ const AppContent: React.FC = () => {
   return (
     <div className="layout-container">
       <Header
-        onMenuClick={() => { setIsMenuOpen(true); }}
-        onSearchClick={() => { setIsSearchOpen(true); }}
+        onMenuClick={() => setIsMenuOpen(true)}
+        onSearchClick={() => setIsSearchOpen(true)}
       />
 
       <div className="layout-body">
           <aside className="desktop-sidebar">
-            <SidebarNav currentView={currentView} setCurrentView={setCurrentView} onSearchClick={() => { setIsPaletteOpen(true); }} onPreload={handlePreload} />
+            <SidebarNav currentView={currentView} setCurrentView={setCurrentView} onSearchClick={() => setIsPaletteOpen(true)} onPreload={handlePreload} />
           <div className="sidebar-theme-section">
             <ThemeSwitcher />
           </div>
@@ -238,10 +235,7 @@ const AppContent: React.FC = () => {
           {dbReady && currentView === 'chat' && (
             <Suspense fallback={<AISkeleton />}>
               <ErrorBoundary featureName="Chat" onRetry={() => window.location.reload()}>
-                <Chat
-                  onCreateEntity={() => { setCurrentView('editor'); }}
-                  onOpenSettings={() => { setCurrentView('ai'); }}
-                />
+                <Chat onCreateEntity={() => setCurrentView('editor')} />
               </ErrorBoundary>
             </Suspense>
           )}
@@ -271,16 +265,16 @@ const AppContent: React.FC = () => {
       <Suspense fallback={null}>
         <CommandPalette
           isOpen={isPaletteOpen}
-          onClose={() => { setIsPaletteOpen(false); }}
+          onClose={() => setIsPaletteOpen(false)}
           onViewChange={setCurrentView}
         />
       </Suspense>
 
-      <MobileDrawer isOpen={isMenuOpen} onClose={() => { setIsMenuOpen(false); }}>
+      <MobileDrawer isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)}>
         <SidebarNav
           currentView={currentView}
           setCurrentView={setCurrentView}
-          onClose={() => { setIsMenuOpen(false); }}
+          onClose={() => setIsMenuOpen(false)}
           onPreload={handlePreload}
         />
         <div className="drawer-theme-section">
@@ -306,14 +300,14 @@ const AppContent: React.FC = () => {
           <Suspense fallback={<SearchSkeleton />}>
             <SearchPanel
               isMobile
-              onClose={() => { setIsSearchOpen(false); }}
+              onClose={() => setIsSearchOpen(false)}
               onResultClick={handleSearchResultClick}
             />
           </Suspense>
         </div>
       )}
 
-      <PerfPanel isOpen={isPerfOpen} onClose={() => { setIsPerfOpen(false); }} />
+      <PerfPanel isOpen={isPerfOpen} onClose={() => setIsPerfOpen(false)} />
     </div>
   );
 };

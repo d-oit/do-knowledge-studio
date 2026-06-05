@@ -25,6 +25,23 @@ The following PRs from `d-oit/do-knowledge-studio` were validated and integrated
 ### Recommendation
 Close all the above PRs (2-8, 10) as they have been manually consolidated into the current branch to ensure compatibility and atomic verification.
 
+## 2026-06-05: PR #263 Review Fixes
+
+| PR # | Title | Status | Notes |
+|------|-------|--------|-------|
+| 263 | feat(ux): add clear button to CommandPalette search input | Review fixes applied | Jules-generated PR with 3 review issues (DeepSource + Codacy). |
+
+### Review Comments Resolved
+- **DeepSource (2 comments):** `isOpen={true}` → `isOpen` JSX boolean shorthand in test file.
+- **Codacy BestPractice (high):** Added explicit `type="button"` to clear button in `CommandPalette.tsx`.
+- **Codacy Security (high):** Fixed overlay `role="button"` keyboard handler — added `Enter`/`Space`/`Escape` support with `e.target === e.currentTarget` guard to prevent event bubbling from child inputs.
+
+### Commit
+- `78bb75c` on `feat/palette-clear-button-1216242682040609131`
+
 ## Learnings
 - **Vite 8 Upgrade**: Upgrading Vite to major version 8 requires checking compatibility of companion plugins like `@vitejs/plugin-react` and the test runner `vitest`. Peer dependency warnings should be resolved by moving to the latest stable versions of these dependencies.
 - **SHA-based Workflows**: Many workflows use commit SHAs for security. When updating these via Dependabot PRs, ensure both the SHA and the trailing version comment are updated for clarity.
+- **JSX Boolean Attributes**: Always use shorthand (`<Foo bar />`) instead of `bar={true}` for boolean props. DeepSource flags explicit `true` values.
+- **Button Type Attribute**: Every `<button>` must have an explicit `type` attribute (`"button"`, `"submit"`, or `"reset"`). Codacy flags missing types as BestPractice violations.
+- **role="button" Keyboard Support**: Elements with `role="button"` must handle `Enter`, `Space`, and `Escape` keyboard events. Use `e.target === e.currentTarget` guard to prevent event bubbling from child elements (e.g., search inputs). Without the guard, typing a space in an input inside a `role="button"` container will trigger the close/submit action.
