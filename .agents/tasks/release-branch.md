@@ -41,16 +41,11 @@ You are preparing a release branch for this project. Follow these steps systemat
    pnpm run build && pnpm run preview
    ```
 
-## Phase 3 — Tag & Push
+## Phase 3 — Push Branch
 
-1. Create annotated tag:
-   ```bash
-   git tag -a "vX.Y.Z" -m "Release vX.Y.Z"
-   ```
-2. Push branch and tags:
+1. Push the release branch (tagging is handled by the version-propagation workflow after merge):
    ```bash
    git push -u origin release/vX.Y.Z
-   git push origin vX.Y.Z
    ```
 
 ## Phase 4 — GitHub Release
@@ -59,16 +54,16 @@ You are preparing a release branch for this project. Follow these steps systemat
    ```bash
    gh pr create --base main --title "Release vX.Y.Z" --body "$(cat CHANGELOG.md | sed -n '/## vX.Y.Z/,/## v/p' | head -n -1)"
    ```
-2. After merge, create the GitHub Release:
-   ```bash
-   gh release create "vX.Y.Z" --title "vX.Y.Z" --notes-file - <<< "$CHANGELOG_CONTENT"
-   ```
+2. After merge, the version-propagation workflow handles everything:
+   - `.github/workflows/version-propagation.yml` triggers on `VERSION` change
+   - Runs `scripts/propagate-version.sh` to sync version across all files
+   - Tags the release automatically
 
 ## Phase 5 — Post-release
 
-1. Verify the release is published:
+1. Verify CI passed on main after the version bump merge:
    ```bash
-   gh release view vX.Y.Z
+   gh run list --branch main --limit 3
    ```
 2. Update `plans/` with release notes.
 3. Announce in relevant channels.
@@ -77,5 +72,6 @@ You are preparing a release branch for this project. Follow these steps systemat
 
 - **Never** skip the quality gate.
 - **Never** release without passing all CI checks.
+- **Never** create GitHub releases manually (`gh release create`). Use the version-propagation workflow.
 - **Always** use semantic versioning.
 - **Always** tag releases with `v` prefix.

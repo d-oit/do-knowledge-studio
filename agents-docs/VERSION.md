@@ -64,8 +64,18 @@ If a new file needs version references:
 2. Add appropriate `sed` patterns for the file's version format
 3. Update this documentation
 
+## Release Workflow
+
+GitHub releases are **fully automated** via `.github/workflows/version-propagation.yml`. Do NOT create releases manually with `gh release create`. The workflow:
+
+1. Triggers on push to `VERSION` file on `main` or `feat/**`
+2. Runs `scripts/propagate-version.sh` to sync version strings
+3. Commits and pushes any remaining updates
+4. Tags the release automatically
+
 ## Lessons
 
 - Never manually edit version strings in multiple files — always use `VERSION` + propagate
+- Never use `gh release create` — the version-propagation workflow handles releases
 - The pre-commit hook re-stages propagated files automatically (`git add`)
 - CI workflow is a safety net for missed propagations
