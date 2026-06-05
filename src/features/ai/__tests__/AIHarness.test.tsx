@@ -3,14 +3,14 @@ import { screen } from '@testing-library/react';
 import { renderWithDb } from '../../../test/test-utils';
 
 vi.mock('../../../lib/llm/config', () => ({
-  loadConfig: vi.fn().mockReturnValue({
+  loadConfig: vi.fn().mockResolvedValue({
     activeProvider: 'openrouter',
     providers: {
       openai: { apiKey: '', baseUrl: '', model: 'gpt-4o' },
       openrouter: { apiKey: '', baseUrl: '', model: 'google/gemini-2.0-flash-lite-preview-02-05:free' },
     },
   }),
-  saveConfig: vi.fn(),
+  saveConfig: vi.fn().mockResolvedValue(undefined),
   createProvider: vi.fn().mockReturnValue({
     chatStream: vi.fn().mockImplementation(() => {
       function* gen() { yield { content: '', done: true }; }

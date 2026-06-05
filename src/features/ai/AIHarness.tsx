@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { loadConfig, saveConfig, maskApiKey } from '../../lib/llm/config';
+import { loadConfig, saveConfig, maskApiKey, type LLMConfig } from '../../lib/llm/config';
 import { saveDbHandles, getDbHandles } from '../../lib/db-persistence';
 import { PROVIDER_MODELS } from '../../lib/llm';
 import DatabaseSettings from '../../components/DatabaseSettings';
@@ -13,7 +13,18 @@ const WIZARD_SEEN_KEY = 'dks:ai-wizard-seen';
 const PROVIDER_MODELS_MAP = new Map(Object.entries(PROVIDER_MODELS));
 
 const AIHarness: React.FC = () => {
-  const [config, setConfig] = useState(() => loadConfig());
+  const [config, setConfig] = useState<LLMConfig>(() => ({
+    activeProvider: 'openrouter',
+    providers: {
+      openrouter: { baseURL: 'https://openrouter.ai/api/v1', apiKey: '', defaultModel: 'google/gemini-2.0-flash-lite-preview-02-05:free' },
+      kilo: { baseURL: 'https://api.kilo.ai/api/gateway', apiKey: '', defaultModel: 'meta-llama/llama-3.1-8b-instruct' },
+    },
+  }));
+
+  // Load persisted config (with decrypted keys) on mount
+  useEffect(() => {
+    void loadConfig().then(setConfig);
+  }, []);
   const [showSettings, setShowSettings] = useState(false);
   const [editApiKey, setEditApiKey] = useState('');
   const [editProvider, setEditProvider] = useState(config.activeProvider);
@@ -87,7 +98,7 @@ const AIHarness: React.FC = () => {
         entries.map(([key, val]) => [key, key === editProvider ? updatedProvider : val])
       ),
     };
-    saveConfig(updated);
+    void saveConfig(updated);
     setConfig(updated);
     setShowSettings(false);
     setEditApiKey('');
@@ -108,7 +119,7 @@ const AIHarness: React.FC = () => {
         entries.map(([key, val]) => [key, key === provider ? updatedProvider : val])
       ),
     };
-    saveConfig(updated);
+    void saveConfig(updated);
     setConfig(updated);
     localStorage.setItem(WIZARD_SEEN_KEY, 'true');
     setShowWizard(false);

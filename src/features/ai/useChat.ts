@@ -83,7 +83,7 @@ export function useChat() {
         }
       }
 
-      const currentConfig = loadConfig();
+      const currentConfig = await loadConfig();
       const provider = createProvider(currentConfig);
 
       const promptMessages = [
