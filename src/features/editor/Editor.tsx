@@ -61,7 +61,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete, onEdit
 
   useEffect(() => {
     perf.mark('editor-mount');
-    repository.getAllEntities().then(setAllEntities).catch(err => logger.error('Failed to load entities for mentions', err));
+    repository.getAllEntities().then(setAllEntities).catch(err => logger.error('Failed to load entities for mentions', { error: err }));
     perf.measure('editor-ready', 'editor-mount');
   }, []);
 
@@ -78,7 +78,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete, onEdit
       setSourceUrl(entity.sourceUrl ?? '');
       setShowAdvanced(entity.metadata?.advanced ?? false);
       setStatus(null);
-    }).catch(err => logger.error('Failed to load entity for editing', err))
+    }).catch(err => logger.error('Failed to load entity for editing', { error: err }))
     .finally(() => setIsLoadingEntity(false));
 
     repository.getBacklinks(editingEntityId).then(setBacklinks).catch(err => logger.error('Failed to load backlinks', err));
