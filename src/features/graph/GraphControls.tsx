@@ -262,7 +262,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       {controls}
 
       {showSaveModal && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowSaveModal(false); }}>
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowSaveModal(false); }} onKeyDown={(e) => { if (e.key === 'Escape') setShowSaveModal(false); }} role="button" tabIndex={-1} aria-label="Close modal">
           <div
             ref={modalRef}
             className="modal-content"
@@ -320,7 +320,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       )}
 
       {showSnapshotBrowser && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowSnapshotBrowser(false); setDiffResult(null); } }}>
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowSnapshotBrowser(false); setDiffResult(null); } }} onKeyDown={(e) => { if (e.key === 'Escape') { setShowSnapshotBrowser(false); setDiffResult(null); } }} role="button" tabIndex={-1} aria-label="Close snapshot browser">
           <div
             ref={snapshotBrowserRef}
             className="modal-content"
