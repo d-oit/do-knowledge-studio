@@ -107,20 +107,13 @@ export async function loadMigrations(): Promise<Migration[]> {
     return migrations.sort((a, b) => a.version - b.version);
   }
 
-  const migrationModules = import.meta.glob('/public/db/migrations/*.sql', { query: '?raw', import: 'default' });
-  const migrations: Migration[] = [];
-
-  for (const [path, loader] of Object.entries(migrationModules)) {
-    try {
-      const content = await loader() as string;
-      const filename = path.split('/').pop() ?? '';
-      migrations.push(parseMigrationFile(content, filename));
-    } catch (err) {
-      logger.error(`Failed to load migration ${path}`, err);
-    }
+  const baseUrl = import.meta.env.BASE_URL || '/';
+  const resp = await fetch(`${baseUrl}db/migrations/001_initial.sql`);
+  if (resp.ok) {
+    const content = await resp.text();
+    return [parseMigrationFile(content, '001_initial.sql')].sort((a, b) => a.version - b.version);
   }
-
-  return migrations.sort((a, b) => a.version - b.version);
+  return [];
 }
 
 export async function runMigrations(db: SQLiteDB): Promise<{ applied: number[]; errors: string[] }> {

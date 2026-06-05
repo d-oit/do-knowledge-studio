@@ -97,12 +97,10 @@ const AppContent: React.FC = () => {
   }, [refreshData]);
 
   const handleSearchResultClick = useCallback((result: SearchResult) => {
-    if (result.type === 'entity' || result.type === 'note' || result.type === 'concept' || result.type === 'person' || result.type === 'project') {
-      setEditingEntityId(result.id);
-      setCurrentView('editor');
-    } else if (result.type === 'claim') {
-      setEditingEntityId(result.id);
-      setCurrentView('editor');
+    if (result.type === 'claim' || result.type === 'entity' || result.type === 'note' || result.type === 'concept' || result.type === 'person' || result.type === 'project') {
+       setCurrentView('editor');
+       // In a real app we would navigate to the specific entity.
+       // For now, navigating to the editor is a good start.
     }
     setIsSearchOpen(false);
   }, []);

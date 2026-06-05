@@ -1,17 +1,5 @@
 import { logger } from './logger';
 
-const BLOCKED_SCHEMES = ['javascript:', 'data:', 'vbscript:', 'file:'];
-
-function isPrivateIP(hostname: string): boolean {
-  if (/^(127\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|0\.0\.0\.0)$/i.test(hostname)) {
-    return true;
-  }
-  if (/^::1$|^::ffff:127\.|^fc00:|^fd00:/i.test(hostname)) {
-    return true;
-  }
-  return false;
-}
-
 /** Resolved web content ready for entity hydration. */
 export interface ResolvedContent {
   url: string;
@@ -154,22 +142,6 @@ const fetchAndParse = async (url: string): Promise<{ title: string; content: str
  */
 export const resolveUrl = async (url: string): Promise<ResolvedContent> => {
   logger.info('Resolving URL', { url });
-
-  let parsed: URL;
-  try {
-    parsed = new URL(url);
-  } catch {
-    throw new Error(`Invalid URL: ${url}`);
-  }
-
-  if (BLOCKED_SCHEMES.some(scheme => parsed.protocol.toLowerCase().startsWith(scheme))) {
-    throw new Error(`Blocked URL scheme: ${parsed.protocol}`);
-  }
-
-  if (isPrivateIP(parsed.hostname)) {
-    throw new Error(`Blocked private/reserved IP: ${parsed.hostname}`);
-  }
-
   const { title, content, provider } = await fetchAndParse(url);
   const wordCount = content.split(/\s+/).filter(Boolean).length;
 

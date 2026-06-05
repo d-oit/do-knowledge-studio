@@ -68,16 +68,16 @@ describe('Search Incremental Update Benchmark', () => {
 
     // Optimized, it calls getClaimsByEntityId 1 time:
     // 1. upsertToSearchIndex (passed to other functions)
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(vi.mocked(repository.getClaimsByEntityId)).toHaveBeenCalledTimes(1);
 
     // initSearch: 2 DELETEs + 2 set-based INSERTs = 4 exec
     // upsertToSearchIndex: 2 delete (removeFromSearchIndex) + 2 INSERT = 4 exec
     // Total exec calls: 4 + 4 = 8
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(vi.mocked(repository.exec)).toHaveBeenCalledTimes(8);
     // No more batch transactions — FTS rebuild uses set-based SQL
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(vi.mocked(repository.transaction)).toHaveBeenCalledTimes(0);
   });
 });

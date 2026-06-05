@@ -5,7 +5,7 @@ import { searchKnowledge } from '../../lib/search';
 import { resolveUrl, ResolvedContent } from '../../lib/resolver';
 import { logger } from '../../lib/logger';
 
-const URL_REGEX = /https?:\/\/[^\s<>"'{}|\\^[\]]+/gi;
+const URL_REGEX = /https?:\/\/[^\s<>"'{}|\\^'\[\]]+/gi;
 
 export interface Message {
   id: string;
@@ -19,7 +19,7 @@ export interface TokenUsage {
   output: number;
 }
 
-export const useChat = () => {
+export function useChat() {
   const [messages, setMessages] = useState<Message[]>([
     { id: 'initial', role: 'assistant', content: 'AI agent ready to assist with TRIZ analysis and knowledge synthesis. Ask me anything about your local knowledge base, or paste URLs to have me fetch and analyze external content.' }
   ]);
@@ -69,17 +69,17 @@ export const useChat = () => {
         setIsSourcing(false);
 
         if (sources.length > 0) {
-          externalContent = `\n\nExternal source content:\n${sources.map(s => {
-            const header = s.title ? `# ${s.title}` : `Source: ${s.url}`;
-            return `${header}\nURL: ${s.url}\nProvider: ${s.provider}\nContent: ${s.content.slice(0, 3000)}`;
-          }).join('\n\n---\n\n')}`;
+          externalContent = "\n\nExternal source content:\n" + sources.map(s => {
+            const header = s.title ? "# " + s.title : "Source: " + s.url;
+            return header + "\nURL: " + s.url + "\nProvider: " + s.provider + "\nContent: " + s.content.slice(0, 3000);
+          }).join('\n\n---\n\n');
         }
       }
 
       if (useContext) {
         const searchResults = await searchKnowledge(userMessage);
         if (searchResults.length > 0) {
-          contextString = `\n\nRelevant local context:\n${searchResults.map(r => `[${r.type}] ${r.title}: ${r.content.slice(0, 200)}`).join('\n')}`;
+          contextString = "\n\nRelevant local context:\n" + searchResults.map(r => "[" + r.type + "] " + r.title + ": " + r.content.slice(0, 200)).join('\n');
         }
       }
 
@@ -164,4 +164,4 @@ export const useChat = () => {
     sendMessage,
     setResolvedSources,
   };
-};
+}

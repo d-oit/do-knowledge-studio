@@ -65,12 +65,12 @@ describe('Search Initialization Benchmark', () => {
     const end = performance.now();
 
     console.log(`initSearch took ${end - start}ms`);
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(vi.mocked(repository.getAllEntities)).toHaveBeenCalledTimes(11); // 10 chunks + final empty check
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(vi.mocked(repository.getAllClaims)).toHaveBeenCalledTimes(1);
     // Should NOT call these during bulk init anymore
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(vi.mocked(repository.getEntityById)).toHaveBeenCalledTimes(0);
   });
 });

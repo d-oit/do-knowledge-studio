@@ -104,7 +104,6 @@ vi.mock('../../../lib/search', () => ({
   hydrateOramaIndex: vi.fn(),
 }));
 
-import { IRepository } from '../../../db/repository/types';
 import Editor from '../Editor';
 
 describe('Editor Progressive Disclosure (#143)', () => {
@@ -115,17 +114,14 @@ describe('Editor Progressive Disclosure (#143)', () => {
     getBacklinkCount: vi.fn().mockResolvedValue(0),
     transaction: vi.fn(),
     getEntityById: vi.fn().mockResolvedValue(null),
-    updateEntity: vi.fn(),
-    deleteEntity: vi.fn(),
-    getClaimsByEntityId: vi.fn(),
   } as unknown as IRepository;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
   });
 
   it('hides source URL and mention sections when Advanced is collapsed', async () => {
-    await act(() => {
+    await act(async () => {
       renderWithDb(<Editor />, { repository: mockRepo });
     });
 
@@ -143,12 +139,12 @@ describe('Editor Progressive Disclosure (#143)', () => {
   });
 
   it('shows source URL and mention sections when Advanced is expanded', async () => {
-    await act(() => {
+    await act(async () => {
       renderWithDb(<Editor />, { repository: mockRepo });
     });
 
     const advancedBtn = screen.getByLabelText('Toggle advanced options');
-    await act(() => {
+    await act(async () => {
       fireEvent.click(advancedBtn);
     });
 
@@ -164,27 +160,27 @@ describe('Editor Progressive Disclosure (#143)', () => {
   });
 
   it('toggles Advanced section on repeated clicks', async () => {
-    await act(() => {
+    await act(async () => {
       renderWithDb(<Editor />, { repository: mockRepo });
     });
 
     const advancedBtn = screen.getByLabelText('Toggle advanced options');
 
     // First click — expand
-    await act(() => {
+    await act(async () => {
       fireEvent.click(advancedBtn);
     });
     expect(screen.getByPlaceholderText('Source URL — auto-hydrate description')).toBeDefined();
 
     // Second click — collapse
-    await act(() => {
+    await act(async () => {
       fireEvent.click(advancedBtn);
     });
     expect(screen.queryByPlaceholderText('Source URL — auto-hydrate description')).toBeNull();
   });
 
   it('renders primary editor controls always visible', async () => {
-    await act(() => {
+    await act(async () => {
       renderWithDb(<Editor />, { repository: mockRepo });
     });
 

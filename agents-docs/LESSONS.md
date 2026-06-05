@@ -512,7 +512,7 @@ timeout $MAX_OPERATION_SECONDS git push origin "$branch" || {
 
 ## Status
 
-- ✅ LESSON-001 through LESSON-024 documented
+- ✅ LESSON-001 through LESSON-015 documented
 - ✅ Root cause analysis complete
 - ✅ Solutions implemented or documented
 - ✅ CI verified for all recent lessons
@@ -869,67 +869,3 @@ Synchronize the upgrade across the entire Vite ecosystem:
 - Use `--install-dependencies` flag but expect failures for non-JS tools
 
 **Tags**: #codacy #analysis-cli #static-analysis #tooling-gaps
-
----
-
-## LESSON-024: role="button" Keyboard Event Bubbling Guard
-
-**Date**: 2026-06-05
-**Component**: React / Accessibility / CommandPalette
-**Severity**: High
-
-**Issue**: Elements with `role="button"` that contain interactive children (e.g., text inputs) will close/trigger actions when the user types Space or Enter inside the child input, because keyboard events bubble up.
-
-**Symptoms**:
-- Typing a space in a search input inside a modal overlay closes the modal
-- Enter key in an input field triggers the overlay's close handler
-- Users cannot complete multi-word searches
-- DeepSource and Codacy flag `role="button"` elements missing Enter/Space keyboard handlers
-
-**Root Cause**:
-1. **Accessibility requirement**: `role="button"` elements must handle Enter, Space, and Escape keyboard events per WAI-ARIA spec
-2. **Event bubbling**: React's synthetic events bubble by default — a keydown on a child input fires on the parent overlay too
-3. **Missing guard**: Without `e.target === e.currentTarget`, the overlay's keyboard handler fires for all descendant keypresses
-
-**Solution**:
-```tsx
-// ❌ BUG: typing space in the input closes the overlay
-<div
-  role="button"
-  tabIndex={0}
-  onClick={handleClose}
-  onKeyDown={e => {
-    if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') handleClose();
-  }}
->
-  <input type="search" ... />
-</div>
-
-// ✅ FIX: guard with e.target === e.currentTarget
-<div
-  role="button"
-  tabIndex={0}
-  onClick={handleClose}
-  onKeyDown={e => {
-    if (
-      e.target === e.currentTarget &&
-      (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ')
-    ) handleClose();
-  }}
->
-  <input type="search" ... />
-</div>
-```
-
-**Prevention**:
-- Always use `e.target === e.currentTarget` guard in keyboard handlers on container elements with `role="button"`
-- Every `<button>` must have explicit `type="button"` (or `type="submit"` / `type="reset"`) — Codacy flags missing types
-- Use JSX boolean shorthand (`<Foo isOpen />`) instead of `isOpen={true}` — DeepSource flags explicit `true`
-- Review overlay/modal keyboard handlers for child interaction conflicts before submitting PRs
-
-**Tags**: #react #accessibility #aria #keyboard #event-bubbling #deepsource #codacy
-
-**Files Modified**:
-- `src/components/CommandPalette.tsx` - Added keyboard guard and type="button"
-- `src/components/__tests__/CommandPalette.test.tsx` - JSX boolean shorthand
-- `agents-docs/MAINTENANCE.md` - PR #263 review fixes logged

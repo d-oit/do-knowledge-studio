@@ -6,7 +6,6 @@ import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { MEDIA_QUERIES } from '../../lib/constants';
 import type { GraphSnapshot } from '../../lib/validation';
 import { repository, type GraphSnapshotDiff } from '../../db/repository';
-import { z } from 'zod';
 import { logger } from '../../lib/logger';
 
 interface GraphNode {
@@ -20,18 +19,6 @@ interface GraphEdge {
   target: string;
   label?: string;
 }
-
-const GraphNodeSchema = z.object({
-  id: z.string(),
-  label: z.string(),
-});
-
-const GraphEdgeSchema = z.object({
-  id: z.string(),
-  source: z.string(),
-  target: z.string(),
-  label: z.string().optional(),
-});
 
 interface GraphControlsProps {
   focusMode: boolean;
@@ -116,19 +103,8 @@ const GraphControls: React.FC<GraphControlsProps> = ({
     try {
       const snap = await repository.getSnapshot(snapshotId);
       if (!snap) return;
-      const nodesResult = z.array(GraphNodeSchema).safeParse(JSON.parse(snap.nodes_json));
-      const edgesResult = z.array(GraphEdgeSchema).safeParse(JSON.parse(snap.edges_json));
-
-      if (!nodesResult.success || !edgesResult.success) {
-        logger.error('Snapshot data validation failed', {
-          nodesError: nodesResult.success ? null : nodesResult.error.message,
-          edgesError: edgesResult.success ? null : edgesResult.error.message,
-        });
-        return;
-      }
-
-      const loadedNodes = nodesResult.data;
-      const loadedEdges = edgesResult.data;
+      const loadedNodes = JSON.parse(snap.nodes_json) as GraphNode[];
+      const loadedEdges = JSON.parse(snap.edges_json) as GraphEdge[];
       onLoadSnapshot?.(loadedNodes, loadedEdges);
       onSnapshotModeChange?.(true);
       setShowSnapshotBrowser(false);
@@ -262,22 +238,13 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       {controls}
 
       {showSaveModal && (
-        <div
-          className="modal-overlay"
-          onClick={(e) => { if (e.target === e.currentTarget) setShowSaveModal(false); }}
-          onKeyDown={(e) => { if (e.key === 'Escape') setShowSaveModal(false); }}
-          role="button"
-          tabIndex={-1}
-          aria-label="Close modal"
-        >
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowSaveModal(false); }}>
           <div
             ref={modalRef}
             className="modal-content"
             role="dialog"
             aria-modal="true"
             aria-labelledby="modal-title"
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.stopPropagation()}
           >
             <div className="inspector-header" style={{ marginBottom: 'var(--space-4)', padding: 0, background: 'transparent', border: 0 }}>
               <h3 id="modal-title"><Camera size={18} /> Save Graph Snapshot</h3>
@@ -329,14 +296,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       )}
 
       {showSnapshotBrowser && (
-        <div
-          className="modal-overlay"
-          onClick={(e) => { if (e.target === e.currentTarget) { setShowSnapshotBrowser(false); setDiffResult(null); } }}
-          onKeyDown={(e) => { if (e.key === 'Escape') { setShowSnapshotBrowser(false); setDiffResult(null); } }}
-          role="button"
-          tabIndex={-1}
-          aria-label="Close snapshot browser"
-        >
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowSnapshotBrowser(false); setDiffResult(null); } }}>
           <div
             ref={snapshotBrowserRef}
             className="modal-content"
@@ -344,8 +304,6 @@ const GraphControls: React.FC<GraphControlsProps> = ({
             aria-modal="true"
             aria-labelledby="snapshot-browser-title"
             style={{ maxWidth: '600px', maxHeight: '80vh', overflowY: 'auto' }}
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.stopPropagation()}
           >
             <div className="inspector-header" style={{ marginBottom: 'var(--space-4)', padding: 0, background: 'transparent', border: 0 }}>
               <h3 id="snapshot-browser-title"><FolderOpen size={18} /> Graph Snapshots</h3>
