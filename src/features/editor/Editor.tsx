@@ -71,7 +71,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
       if (!entity) return;
       setTitle(entity.name || '');
       setType(entity.type);
-      setSourceUrl(entity.sourceUrl ?? '');
+      setSourceUrl('');
       setShowAdvanced(entity.metadata?.advanced ?? false);
       setStatus(null);
     }).catch(err => logger.error('Failed to load entity for editing', { error: err }))
@@ -242,7 +242,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
       </div>
       <div className="toolbar">
         <button
-
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
           onClick={() => editor?.chain().focus().toggleBold().run()}
           className={editor?.isActive('bold') ? 'active' : ''}
           aria-label="Toggle Bold"
@@ -251,7 +251,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
           B
         </button>
         <button
-
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
           onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}
           className={editor?.isActive('heading', { level: 1 }) ? 'active' : ''}
           aria-label="Toggle Heading 1"

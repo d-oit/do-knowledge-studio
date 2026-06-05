@@ -813,6 +813,16 @@ describe('Repository', () => {
       expect(result.metadata).toEqual({});
     });
 
+    it('should preserve existing object metadata as-is', () => {
+      const existingMetadata = { key: 'value', nested: { a: 1 } };
+      const row = { metadata: existingMetadata, description: 'test' };
+      const result = repository.parseMetadata(
+        z.object({ metadata: z.record(z.unknown()).default({}), description: z.string().optional() }),
+        row
+      );
+      expect(result.metadata).toEqual({ key: 'value', nested: { a: 1 } });
+    });
+
     it('should not mutate the original row object', () => {
       const row = { metadata: null, description: null };
       const copy = { ...row };
