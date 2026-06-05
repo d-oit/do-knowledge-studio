@@ -1,3 +1,12 @@
+---
+name: impeccable
+description: >
+  Canonical skill for frontend UI design, visual polish, and UX critique.
+  Prevents common AI design patterns and produces distinctive, high-quality
+  frontend design. Covers typography, color, spacing, layout, motion, and
+  interaction. Use for design polish, critique, audit, and responsive work.
+---
+
 # Impeccable — Frontend Design Skill
 
 > Canonical skill for general frontend UI design, visual polish, and UX critique.

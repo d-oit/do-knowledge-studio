@@ -199,6 +199,8 @@ Do not finish with failing lint, typecheck, tests, build, or quality gate output
 | `github-readme` | Create human-focused GitHub README.md files with 2026 best p | Documentation |
 | `github-workflow` | Complete GitHub workflow automation - push, create branch/PR | General |
 | `goap-agent` | Invoke for complex multi-step tasks requiring intelligent pl | Coordination |
+| `impeccable` | Canonical skill for frontend UI design, visual polish, and UX critique. Prevents common AI design patterns. Covers typography, color, spacing, layout, motion, and interaction.
+| General |
 | `intent-classifier` | Classify user intents and route to appropriate skills, comma | Coordination |
 | `iterative-refinement` | Execute iterative refinement workflows with validation loops | General |
 | `jules` | > | General |
