@@ -1,6 +1,7 @@
 import type { LLMProvider, LLMProviderConfig } from './types';
 import { OpenRouterProvider } from './openrouter';
 import { KiloGatewayProvider } from './kilo';
+import { encryptApiKey, decryptApiKey, isEncrypted } from './encryption';
 
 const STORAGE_KEY = 'dks:llm-config';
 
@@ -25,11 +26,35 @@ const DEFAULT_CONFIG: LLMConfig = {
   },
 };
 
-export function loadConfig(): LLMConfig {
+export async function loadConfig(): Promise<LLMConfig> {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      return { ...DEFAULT_CONFIG, ...JSON.parse(stored) as Partial<LLMConfig> };
+      const parsed = JSON.parse(stored) as Partial<LLMConfig>;
+      const config = { ...DEFAULT_CONFIG, ...parsed };
+
+      // Decrypt provider API keys (migrates plaintext keys on the fly)
+      const migrated = { ...config, providers: { ...config.providers } };
+      let needsSave = false;
+      for (const [id, providerConfig] of Object.entries(migrated.providers)) {
+        if (providerConfig.apiKey && providerConfig.apiKey.length > 0) {
+          migrated.providers[id] = {
+            ...providerConfig,
+            apiKey: await decryptApiKey(providerConfig.apiKey),
+          };
+          // Auto-migrate plaintext keys to encrypted
+          if (!isEncrypted(providerConfig.apiKey)) {
+            needsSave = true;
+          }
+        }
+      }
+
+      if (needsSave) {
+        // Re-save with encrypted keys (fire-and-forget)
+        void saveConfig(migrated);
+      }
+
+      return migrated;
     }
   } catch (e) {
     console.warn('Failed to parse stored LLM config, falling back to defaults', e);
@@ -37,8 +62,18 @@ export function loadConfig(): LLMConfig {
   return { ...DEFAULT_CONFIG };
 }
 
-export function saveConfig(config: LLMConfig): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+export async function saveConfig(config: LLMConfig): Promise<void> {
+  // Encrypt all provider API keys before persisting
+  const encrypted = { ...config, providers: { ...config.providers } };
+  for (const [id, providerConfig] of Object.entries(encrypted.providers)) {
+    if (providerConfig.apiKey && providerConfig.apiKey.length > 0 && !isEncrypted(providerConfig.apiKey)) {
+      encrypted.providers[id] = {
+        ...providerConfig,
+        apiKey: await encryptApiKey(providerConfig.apiKey),
+      };
+    }
+  }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(encrypted));
 }
 
 export function createProvider(config: LLMConfig): LLMProvider {
@@ -69,7 +104,7 @@ export function getProvider(id: string, config?: Partial<LLMProviderConfig>): LL
 }
 
 export function maskApiKey(key: string): string {
-  if (!key || key.length < 8) return key ? `...${key.slice(-4)}` : '';
+  if (!key) return '';
   return `...${key.slice(-4)}`;
 }
 

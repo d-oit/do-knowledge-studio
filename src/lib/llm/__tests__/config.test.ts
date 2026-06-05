@@ -31,14 +31,14 @@ describe('loadConfig', () => {
     localStorage.clear();
   });
 
-  it('returns default config when localStorage is empty', () => {
-    const config = loadConfig();
+  it('returns default config when localStorage is empty', async () => {
+    const config = await loadConfig();
     expect(config.activeProvider).toBe('openrouter');
     expect(config.providers.openrouter.baseURL).toBe('https://openrouter.ai/api/v1');
     expect(config.providers.kilo.baseURL).toBe('https://api.kilo.ai/api/gateway');
   });
 
-  it('merges saved config with defaults (shallow)', () => {
+  it('merges saved config with defaults (shallow)', async () => {
     const saved = {
       activeProvider: 'kilo',
       providers: {
@@ -56,16 +56,16 @@ describe('loadConfig', () => {
     };
     localStorage.setItem('dks:llm-config', JSON.stringify(saved));
 
-    const config = loadConfig();
+    const config = await loadConfig();
     expect(config.activeProvider).toBe('kilo');
     expect(config.providers.openrouter.apiKey).toBe('test-key');
     expect(config.providers.openrouter.baseURL).toBe('https://custom.api/v1');
     expect(config.providers.kilo.defaultModel).toBe('custom-kilo');
   });
 
-  it('returns defaults on invalid JSON', () => {
+  it('returns defaults on invalid JSON', async () => {
     localStorage.setItem('dks:llm-config', 'not-json');
-    const config = loadConfig();
+    const config = await loadConfig();
     expect(config.activeProvider).toBe('openrouter');
   });
 });
@@ -75,7 +75,7 @@ describe('saveConfig', () => {
     localStorage.clear();
   });
 
-  it('persists config to localStorage', () => {
+  it('persists config to localStorage', async () => {
     const config = {
       activeProvider: 'kilo',
       providers: {
@@ -83,11 +83,15 @@ describe('saveConfig', () => {
         kilo: { baseURL: 'https://api.kilo.ai/api/gateway', apiKey: 'key2', defaultModel: 'm2' },
       },
     };
-    saveConfig(config);
+    await saveConfig(config);
 
     const stored = JSON.parse(localStorage.getItem('dks:llm-config')!) as { activeProvider: string; providers: { openrouter: { apiKey: string } } };
     expect(stored.activeProvider).toBe('kilo');
-    expect(stored.providers.openrouter.apiKey).toBe('key1');
+    // API key should be encrypted (starts with enc:v1:)
+    expect(stored.providers.openrouter.apiKey).toMatch(/^enc:v1:/);
+    // But loading it back should decrypt
+    const loaded = await loadConfig();
+    expect(loaded.providers.openrouter.apiKey).toBe('key1');
   });
 });
 
