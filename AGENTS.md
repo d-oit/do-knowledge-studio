@@ -18,6 +18,7 @@ Local-first knowledge studio with rich text, knowledge graph, mind maps, SQLite 
 - Prefer small, composable modules over mixed-responsibility files.
 - Reuse existing abstractions before introducing new patterns.
 - Keep changes scoped; avoid unrelated refactors in the same commit.
+- **Never** create GitHub releases manually (`gh release create`). Releases are handled by `.github/workflows/version-propagation.yml` — edit `VERSION` and the workflow propagates and tags automatically.
 
 ## Repository Shape
 
