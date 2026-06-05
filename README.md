@@ -3,7 +3,7 @@
 > A local-first knowledge management studio — rich notes, knowledge graph, mind maps, full-text search, and AI agent integration in a single browser-based app.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-0.1.0-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-0.2.5-blue)](VERSION)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![Built with React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org)
@@ -35,8 +35,9 @@ This project is in active development. See [PHASES.md](docs/PHASES.md) for progr
 - **📤 Static Site Export** — Turn your knowledge base into a shareable, self-contained static site (Markdown, JSON, HTML)
 - **🤖 AI Agent Harness** — Unified workflow across 6+ AI coding tools with skills, quality gates, and sub-agent patterns
 - **🔬 Swarm Analysis** — Parallel AI-powered web research using git worktrees
-- **⚡ CLI** — TypeScript CLI for scripting and automation tasks
-- **🧪 Full Test Suite** — Vitest unit tests + Playwright end-to-end tests
+- **🔒 AES-256-GCM Encryption** — API keys encrypted at rest via Web Crypto API
+- **⚡ CLI** — TypeScript CLI with 20 commands for scripting and automation
+- **🧪 Full Test Suite** — 310 Vitest unit tests + 31 Playwright end-to-end tests
 
 ---
 
@@ -256,6 +257,12 @@ See [SETUP.md](docs/SETUP.md) for detailed CLI instructions and how to connect t
 - 🔄 **[Migration](agents-docs/MIGRATION.md)** — Adopting in existing projects
 - 🔒 **[Security](SECURITY.md)** — Security policy and reporting
 - 📝 **[Changelog](CHANGELOG.md)** — Release history
+- 🔧 **[CLI Reference](docs/CLI.md)** — All 20 CLI commands
+- 🗄️ **[Database Schema](docs/DATABASE.md)** — Tables, ER diagram, migrations
+- 🔍 **[Search Architecture](docs/SEARCH.md)** — Dual FTS5 + Orama search
+- 🤖 **[LLM Setup](docs/LLM-SETUP.md)** — Provider configuration
+- 📦 **[Repository API](docs/REPOSITORY-API.md)** — Full API reference
+- 👩‍💻 **[Developer Guide](docs/DEVELOPMENT.md)** — Onboarding and common tasks
 
 ---
 
