@@ -512,7 +512,7 @@ timeout $MAX_OPERATION_SECONDS git push origin "$branch" || {
 
 ## Status
 
-- ✅ LESSON-001 through LESSON-015 documented
+- ✅ LESSON-001 through LESSON-024 documented
 - ✅ Root cause analysis complete
 - ✅ Solutions implemented or documented
 - ✅ CI verified for all recent lessons
@@ -872,7 +872,7 @@ Synchronize the upgrade across the entire Vite ecosystem:
 
 ---
 
-### LESSON-024: role="button" Keyboard Event Bubbling Guard
+## LESSON-024: role="button" Keyboard Event Bubbling Guard
 
 **Date**: 2026-06-05
 **Component**: React / Accessibility / CommandPalette

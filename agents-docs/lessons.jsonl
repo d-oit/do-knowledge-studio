@@ -13,3 +13,4 @@
 {"id": "LESSON-013", "date": "2026-04-04", "component": "CI/CD", "title": "CI Hangs Indefinitely Due to BATS Recursion", "severity": "Critical", "tags": ["bats", "recursion", "ci-hang", "timeout", "testing"]}
 {"id": "LESSON-014", "date": "2026-04-04", "component": "CI/CD", "title": "Shellcheck Warnings vs Errors in CI", "severity": "Medium", "tags": ["shellcheck", "ci", "static-analysis", "warnings", "quality-gate"]}
 {"id": "LESSON-015", "date": "2026-04-04", "component": "CI/CD", "title": "GitHub API 403 Errors in Generic Templates", "severity": "High", "tags": ["github-api", "permissions", "token", "generic-template", "ci"]}
+{"id":"LESSON-024","date":"2026-06-05","component":"React / Accessibility / CommandPalette","title":"role=button Keyboard Event Bubbling Guard","severity":"High","tags":["react","accessibility","aria","keyboard","event-bubbling","deepsource","codacy"]}

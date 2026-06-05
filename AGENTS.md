@@ -136,6 +136,7 @@ If CI fails after pushing, use the existing repair workflow:
 - Build mobile-first.
 - Keep interactive targets at least 44x44px.
 - Preserve responsive behavior across editor, graph, search, and mind map views.
+- Elements with `role="button"` must handle Enter/Space/Escape. Always guard keyboard handlers with `e.target === e.currentTarget` when the element contains interactive children (e.g., inputs). Every `<button>` needs an explicit `type` attribute. Use JSX boolean shorthand (`<Foo isOpen />`) not `isOpen={true}`. See LESSON-024.
 
 ## Git Workflow
 
