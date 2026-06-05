@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
-import { useVirtualizer } from '@tanstack/react-virtual';
 import { ClaimExtension } from './ClaimExtension';
 import { MentionExtension } from './MentionExtension';
 import { logger } from '../../lib/logger';
@@ -23,16 +22,14 @@ const ENTITY_TYPES = [
 interface EditorProps {
   editingEntityId?: string | null;
   onEditComplete?: () => void;
-  onEditEntity?: (id: string) => void;
 }
 
-const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete, onEditEntity }) => {
+const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
   const repository = useRepository();
   const [title, setTitle] = useState('');
   const [type, setType] = useState('note');
   const [sourceUrl, setSourceUrl] = useState('');
   const [allEntities, setAllEntities] = useState<Entity[]>([]);
-  const [backlinks, setBacklinks] = useState<Entity[]>([]);
   const [showMentionMenu, setShowMentionMenu] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
@@ -63,11 +60,10 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete, onEdit
     perf.mark('editor-mount');
     repository.getAllEntities().then(setAllEntities).catch(err => logger.error('Failed to load entities for mentions', { error: err }));
     perf.measure('editor-ready', 'editor-mount');
-  }, []);
+  }, [repository]);
 
   useEffect(() => {
     if (!editingEntityId) {
-      setBacklinks(prev => (prev.length === 0 ? prev : []));
       return;
     }
     setIsLoadingEntity(true);
@@ -81,8 +77,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete, onEdit
     }).catch(err => logger.error('Failed to load entity for editing', { error: err }))
     .finally(() => setIsLoadingEntity(false));
 
-    repository.getBacklinks(editingEntityId).then(setBacklinks).catch(err => logger.error('Failed to load backlinks', err));
-  }, [editingEntityId]);
+  }, [editingEntityId, repository]);
 
   const handleTypeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setType(e.target.value);
@@ -196,19 +191,10 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete, onEdit
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      logger.error('Failed to save entity', err);
+      logger.error('Failed to save entity', { error: err });
       setStatus({ type: 'error', message: `Save failed: ${msg}` });
     }
-  }, [title, type, sourceUrl, editingEntityId, onEditComplete]);
-
-  const mentionScrollRef = useRef<HTMLDivElement>(null);
-
-  const mentionVirtualizer = useVirtualizer({
-    count: allEntities.length,
-    getScrollElement: () => mentionScrollRef.current,
-    estimateSize: () => 40,
-    overscan: 5,
-  });
+  }, [title, type, sourceUrl, editingEntityId, onEditComplete, editor, repository]);
 
   const insertMention = useCallback((target: Entity) => {
     if (!editor || !target.id) return;
@@ -314,37 +300,6 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete, onEdit
         Advanced
       </button>
 
-      {editingEntityId && backlinks.length > 0 && (
-        <div className="backlinks-section" style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border-default)' }}>
-          <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Link2 size={14} /> Referenced by ({backlinks.length})
-          </h4>
-          <div className="backlinks-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            {backlinks.map(bl => (
-              <button
-                key={bl.id}
-                onClick={() => onEditEntity?.(bl.id!)}
-                className="backlink-chip"
-                style={{
-                  padding: '4px 10px',
-                  borderRadius: '16px',
-                  background: 'var(--background-secondary)',
-                  border: '1px solid var(--border-default)',
-                  fontSize: '12px',
-                  cursor: 'pointer',
-                  color: 'var(--interactive-primary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}
-              >
-                <AtSign size={10} /> {bl.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       {showAdvanced && (
          <div className="advanced-section" style={{ padding: '0 0 8px 0' }}>
             <div className="entity-source" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
@@ -374,7 +329,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete, onEdit
        )}
        {showAdvanced && showMentionMenu && (
          <div className="mention-section" style={{ marginTop: '16px' }}>
-           <label className="block text-sm font-medium mb-2">Link to Entity</label>
+           <h4 className="block text-sm font-medium mb-2">Link to Entity</h4>
            <div className="space-y-2">
              {allEntities.map(entity => (
                <button
@@ -391,36 +346,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete, onEdit
            </div>
          </div>
        )}
-       {editingEntityId && backlinks.length > 0 && (
-         <div className="backlinks-section" style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border-default)' }}>
-           <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-             <Link2 size={14} /> Referenced by ({backlinks.length})
-           </h4>
-           <div className="backlinks-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-             {backlinks.map(bl => (
-               <button
-                 key={bl.id}
-                 onClick={() => onEditEntity?.(bl.id!)}
-                 className="backlink-chip"
-                 style={{
-                   padding: '4px 10px',
-                   borderRadius: '16px',
-                   background: 'var(--background-secondary)',
-                   border: '1px solid var(--border-default)',
-                   fontSize: '12px',
-                   cursor: 'pointer',
-                   color: 'var(--interactive-primary)',
-                   display: 'flex',
-                   alignItems: 'center',
-                   gap: '4px'
-                 }}
-               >
-                 <AtSign size={10} /> {bl.name}
-               </button>
-             ))}
-           </div>
-         </div>
-       )}
+
     </div>
   );
 };
