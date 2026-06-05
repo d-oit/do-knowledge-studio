@@ -46,7 +46,7 @@ function getStoredTheme(): Theme {
       return stored as Theme;
     }
   } catch {
-    // localStorage unavailable
+    // localStorage unavailable (e.g. private browsing, SSR)
   }
   return 'app';
 }
@@ -55,7 +55,7 @@ function storeTheme(theme: Theme): void {
   try {
     localStorage.setItem(STORAGE_KEY, theme);
   } catch {
-    // localStorage unavailable
+    // localStorage unavailable (e.g. private browsing, SSR)
   }
 }
 
