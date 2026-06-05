@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, SortAsc, SortDesc, Calendar, BookOpen, User, Lightbulb, Briefcase, ExternalLink } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Entity } from '../../lib/validation';
-import { repository } from '../../db/repository';
+import { useRepository } from '../../db/useRepository';
 import { logger } from '../../lib/logger';
 import { stripHtmlTags } from '../../lib/security';
 
@@ -25,6 +25,7 @@ const SORT_OPTIONS = [
 ] as const;
 
 export const LibraryView: React.FC<LibraryViewProps> = ({ onEditEntity }) => {
+  const repository = useRepository();
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [sortBy, setSortBy] = useState<'name' | 'created_at' | 'updated_at'>('name');
@@ -49,7 +50,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onEditEntity }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [search, filterType, sortBy, sortOrder]);
+  }, [search, filterType, sortBy, sortOrder, repository]);
 
   useEffect(() => {
     const timer = setTimeout(() => {

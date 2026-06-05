@@ -1,10 +1,12 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { initDb } from './client';
 import { logger } from '../lib/logger';
+import { IRepository, repository } from './repository';
 
 interface DbContextType {
   dbReady: boolean;
   error: string | null;
+  repository: IRepository;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -27,7 +29,7 @@ export const DbProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   }, []);
 
   return (
-    <DbContext.Provider value={{ dbReady, error }}>
+    <DbContext.Provider value={{ dbReady, error, repository }}>
       {children}
     </DbContext.Provider>
   );

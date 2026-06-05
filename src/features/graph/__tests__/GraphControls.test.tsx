@@ -118,7 +118,7 @@ describe('GraphControls', () => {
 
   it('shows loading state when fetching snapshots', async () => {
     const { repository } = await import('../../../db/repository');
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     vi.mocked(repository.listSnapshots).mockImplementation(
       () => new Promise(resolve => setTimeout(() => resolve([]), 100))
     );
@@ -129,7 +129,7 @@ describe('GraphControls', () => {
 
   it('displays empty state when no snapshots exist', async () => {
     const { repository } = await import('../../../db/repository');
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     vi.mocked(repository.listSnapshots).mockResolvedValue([]);
     render(<GraphControls {...defaultProps} />);
     fireEvent.click(screen.getByTitle('Load or diff saved snapshots'));

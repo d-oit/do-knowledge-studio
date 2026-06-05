@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
+import { z } from 'zod';
 import { Repository } from '../repository';
 import { getDb } from '../client';
 import { AppError } from '../../lib/errors';
@@ -126,7 +127,7 @@ describe('Repository', () => {
 
       expect(mockExec).toHaveBeenCalledWith({
         sql: expect.stringContaining('INSERT INTO entities'),
-        bind: ['Test Entity', 'person', 'A test entity', '{"key":"value"}'],
+        bind: ['Test Entity', 'person', 'A test entity', null, '{"key":"value"}'],
         returnValue: 'resultRows',
         rowMode: 'object',
       });
@@ -144,7 +145,7 @@ describe('Repository', () => {
 
       expect(mockExec).toHaveBeenCalledWith({
         sql: expect.stringContaining('INSERT INTO entities'),
-        bind: ['Test Entity', 'person', null, null],
+        bind: ['Test Entity', 'person', null, null, null],
         returnValue: 'resultRows',
         rowMode: 'object',
       });
@@ -735,6 +736,101 @@ describe('Repository', () => {
 
       expect(result).not.toBeNull();
       expect(result!.title).toBeUndefined();
+    });
+  });
+
+  // --- RepositoryBase helpers ---
+  describe('parseMetadata / normalizeFields', () => {
+    it('should parse JSON string metadata', () => {
+      const row = { metadata: '{"key":"value"}', description: 'test' };
+      const result = repository.parseMetadata(
+        z.object({ metadata: z.record(z.string()).default({}), description: z.string().optional() }),
+        row
+      );
+      expect(result.metadata).toEqual({ key: 'value' });
+      expect(result.description).toBe('test');
+    });
+
+    it('should default metadata to {} when null', () => {
+      const row = { metadata: null };
+      const result = repository.parseMetadata(
+        z.object({ metadata: z.record(z.unknown()).default({}) }),
+        row
+      );
+      expect(result.metadata).toEqual({});
+    });
+
+    it('should default metadata to {} when invalid JSON string', () => {
+      const row = { metadata: 'not-json{' };
+      const result = repository.parseMetadata(
+        z.object({ metadata: z.record(z.unknown()).default({}) }),
+        row
+      );
+      expect(result.metadata).toEqual({});
+    });
+
+    it('should normalize null description to undefined', () => {
+      const row = { description: null, metadata: {} };
+      const result = repository.parseMetadata(
+        z.object({ description: z.string().optional(), metadata: z.record(z.unknown()).default({}) }),
+        row
+      );
+      expect(result.description).toBeUndefined();
+    });
+
+    it('should normalize null evidence to undefined', () => {
+      const row = { evidence: null, metadata: {} };
+      const result = repository.parseMetadata(
+        z.object({ evidence: z.string().optional(), metadata: z.record(z.unknown()).default({}) }),
+        row
+      );
+      expect(result.evidence).toBeUndefined();
+    });
+
+    it('should normalize null source to undefined', () => {
+      const row = { source: null, metadata: {} };
+      const result = repository.parseMetadata(
+        z.object({ source: z.string().optional(), metadata: z.record(z.unknown()).default({}) }),
+        row
+      );
+      expect(result.source).toBeUndefined();
+    });
+
+    it('should handle all-null optional fields', () => {
+      const row = { description: null, evidence: null, source: null, metadata: null };
+      const result = repository.parseMetadata(
+        z.object({
+          description: z.string().optional(),
+          evidence: z.string().optional(),
+          source: z.string().optional(),
+          metadata: z.record(z.unknown()).default({}),
+        }),
+        row
+      );
+      expect(result.description).toBeUndefined();
+      expect(result.evidence).toBeUndefined();
+      expect(result.source).toBeUndefined();
+      expect(result.metadata).toEqual({});
+    });
+
+    it('should preserve existing object metadata as-is', () => {
+      const existingMetadata = { key: 'value', nested: { a: 1 } };
+      const row = { metadata: existingMetadata, description: 'test' };
+      const result = repository.parseMetadata(
+        z.object({ metadata: z.record(z.unknown()).default({}), description: z.string().optional() }),
+        row
+      );
+      expect(result.metadata).toEqual({ key: 'value', nested: { a: 1 } });
+    });
+
+    it('should not mutate the original row object', () => {
+      const row = { metadata: null, description: null };
+      const copy = { ...row };
+      repository.parseMetadata(
+        z.object({ metadata: z.record(z.unknown()).default({}), description: z.string().optional() }),
+        row
+      );
+      expect(row).toEqual(copy);
     });
   });
 

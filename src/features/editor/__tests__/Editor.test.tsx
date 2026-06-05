@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { screen, fireEvent, act } from '@testing-library/react';
 import React from 'react';
+import { renderWithDb } from '../../../test/test-utils';
 
 // Stable mock for editor to prevent infinite re-render loops in tests
 const mockEditor = {
@@ -103,16 +104,29 @@ vi.mock('../../../lib/search', () => ({
   hydrateOramaIndex: vi.fn(),
 }));
 
+import { IRepository } from '../../../db/repository/types';
 import Editor from '../Editor';
 
 describe('Editor Progressive Disclosure (#143)', () => {
-  beforeEach(async () => {
+  const mockRepo = {
+    createEntity: vi.fn(),
+    getAllEntities: vi.fn().mockResolvedValue([]),
+    getBacklinks: vi.fn().mockResolvedValue([]),
+    getBacklinkCount: vi.fn().mockResolvedValue(0),
+    transaction: vi.fn(),
+    getEntityById: vi.fn().mockResolvedValue(null),
+    updateEntity: vi.fn(),
+    deleteEntity: vi.fn(),
+    getClaimsByEntityId: vi.fn(),
+  } as unknown as IRepository;
+
+  beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('hides source URL and mention sections when Advanced is collapsed', async () => {
-    await act(async () => {
-      render(<Editor />);
+  it('hides source URL and mention sections when Advanced is collapsed', () => {
+    act(() => {
+      renderWithDb(<Editor />, { repository: mockRepo });
     });
 
     const advancedBtn = screen.getByLabelText('Toggle advanced options');
@@ -128,13 +142,13 @@ describe('Editor Progressive Disclosure (#143)', () => {
     expect(mentionBtn).toBeNull();
   });
 
-  it('shows source URL and mention sections when Advanced is expanded', async () => {
-    await act(async () => {
-      render(<Editor />);
+  it('shows source URL and mention sections when Advanced is expanded', () => {
+    act(() => {
+      renderWithDb(<Editor />, { repository: mockRepo });
     });
 
     const advancedBtn = screen.getByLabelText('Toggle advanced options');
-    await act(async () => {
+    act(() => {
       fireEvent.click(advancedBtn);
     });
 
@@ -149,29 +163,29 @@ describe('Editor Progressive Disclosure (#143)', () => {
     expect(mentionBtn).toBeDefined();
   });
 
-  it('toggles Advanced section on repeated clicks', async () => {
-    await act(async () => {
-      render(<Editor />);
+  it('toggles Advanced section on repeated clicks', () => {
+    act(() => {
+      renderWithDb(<Editor />, { repository: mockRepo });
     });
 
     const advancedBtn = screen.getByLabelText('Toggle advanced options');
 
     // First click — expand
-    await act(async () => {
+    act(() => {
       fireEvent.click(advancedBtn);
     });
     expect(screen.getByPlaceholderText('Source URL — auto-hydrate description')).toBeDefined();
 
     // Second click — collapse
-    await act(async () => {
+    act(() => {
       fireEvent.click(advancedBtn);
     });
     expect(screen.queryByPlaceholderText('Source URL — auto-hydrate description')).toBeNull();
   });
 
-  it('renders primary editor controls always visible', async () => {
-    await act(async () => {
-      render(<Editor />);
+  it('renders primary editor controls always visible', () => {
+    act(() => {
+      renderWithDb(<Editor />, { repository: mockRepo });
     });
 
     // Title input and type select should always be visible

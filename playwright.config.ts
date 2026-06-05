@@ -37,15 +37,18 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
 
-    {
-      name: 'mobile',
-      use: { ...devices['iPhone 13'] },
-    },
+    /* Mobile/tablet projects only run in CI where WebKit dependencies are installed */
+    ...(process.env.CI ? [
+      {
+        name: 'mobile',
+        use: { ...devices['iPhone 13'] },
+      },
 
-    {
-      name: 'tablet',
-      use: { ...devices['iPad Pro 11'] },
-    },
+      {
+        name: 'tablet',
+        use: { ...devices['iPad Pro 11'] },
+      },
+    ] : []),
   ],
 
   /* Run your local dev server before starting the tests */
