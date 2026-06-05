@@ -52,7 +52,7 @@ export const perf = {
     try {
       performance.mark(`${PERF_PREFIX}${name}`);
     } catch {
-      // silently ignore in unsupported environments
+      // Performance API unavailable (e.g. SSR, older browsers)
     }
   },
 
@@ -86,7 +86,7 @@ export const perf = {
       performance.clearMarks();
       performance.clearMeasures();
     } catch {
-      // ignore
+      // Performance API unavailable
     }
   },
 
