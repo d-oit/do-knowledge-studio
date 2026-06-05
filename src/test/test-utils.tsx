@@ -22,4 +22,4 @@ export function renderWithDb(
   return rtlRender(ui, { wrapper: Wrapper, ...renderOptions });
 }
 
-export * from '@testing-library/react';
+export { render, screen, fireEvent, waitFor, act, within, cleanup } from '@testing-library/react';

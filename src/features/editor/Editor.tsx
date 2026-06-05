@@ -58,7 +58,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
 
   useEffect(() => {
     perf.mark('editor-mount');
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- exec returns Promise<unknown>
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- type resolution through Promise chain
     repository.getAllEntities().then((entities: Entity[]) => setAllEntities(entities)).catch(err => logger.error('Failed to load entities for mentions', { error: err }));
     perf.measure('editor-ready', 'editor-mount');
   }, [repository]);
@@ -68,7 +68,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
       return;
     }
     setIsLoadingEntity(true);
-    /* eslint-disable @typescript-eslint/no-unsafe-assignment -- exec returns Promise<unknown> propagating any */
+    /* eslint-disable @typescript-eslint/no-unsafe-assignment -- type resolution through Promise chain */
     repository.getEntityById(editingEntityId).then((entity: (Entity & { rowid: number }) | null) => {
       if (!entity) return;
       setTitle(entity.name || '');

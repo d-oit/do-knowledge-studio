@@ -6,12 +6,12 @@ export class RepositoryBase {
     return getDb();
   }
 
-  async exec(options: Parameters<SQLiteDB['exec']>[0]): Promise<unknown> {
-    return this.db.exec(options);
+  async exec<T = unknown>(options: Parameters<SQLiteDB['exec']>[0]): Promise<T> {
+    return this.db.exec(options) as Promise<T>;
   }
 
-  async transaction(statements: Parameters<SQLiteDB['transaction']>[0]): Promise<unknown> {
-    return this.db.transaction(statements);
+  async transaction<T = unknown>(statements: Parameters<SQLiteDB['transaction']>[0]): Promise<T> {
+    return this.db.transaction(statements) as Promise<T>;
   }
 
   public parseMetadata<T extends z.ZodType<unknown>>(schema: T, row: unknown): z.infer<T> {

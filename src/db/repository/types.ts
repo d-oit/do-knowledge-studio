@@ -25,8 +25,8 @@ export interface GraphSnapshotDiff {
 
 export interface IRepository {
   // --- Core ---
-  exec(options: Parameters<SQLiteDB['exec']>[0]): Promise<unknown>;
-  transaction(statements: Parameters<SQLiteDB['transaction']>[0]): Promise<unknown>;
+  exec<T = unknown>(options: Parameters<SQLiteDB['exec']>[0]): Promise<T>;
+  transaction<T = unknown>(statements: Parameters<SQLiteDB['transaction']>[0]): Promise<T>;
 
   // --- Entities ---
   createEntity(entity: Omit<Entity, 'id' | 'created_at' | 'updated_at'>): Promise<Entity & { rowid: number }>;

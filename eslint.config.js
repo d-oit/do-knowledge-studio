@@ -61,17 +61,6 @@ export default tseslint.config(
     },
   },
 
-  // Test configuration
-  {
-    files: ['tests/**/*.{ts,tsx}', 'src/**/*.test.{ts,tsx}', 'src/**/*.spec.{ts,tsx}', 'src/test/setup.ts'],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.test.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
-  },
-
   // CLI and Config Files (Node)
   {
     files: ['cli/**/*.ts', 'scripts/**/*.ts', '*.config.{ts,js,cjs}', '*.config.*.{ts,js,cjs}'],
@@ -110,6 +99,20 @@ export default tseslint.config(
       '@typescript-eslint/no-unnecessary-type-assertion': 'error',
       '@typescript-eslint/unbound-method': 'error',
       '@typescript-eslint/require-await': 'error',
+    },
+  },
+
+  // Test configuration (must come AFTER global rules to override unbound-method)
+  {
+    files: ['tests/**/*.{ts,tsx}', 'src/**/*.test.{ts,tsx}', 'src/**/*.spec.{ts,tsx}', 'src/test/setup.ts'],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.test.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      '@typescript-eslint/unbound-method': 'off',
     },
   },
 );

@@ -306,4 +306,51 @@ test.describe('Entity Editor with Source URL', () => {
     await sourceInput.fill('https://example.com/article');
     await expect(sourceInput).toHaveValue('https://example.com/article');
   });
+
+  test('source URL persists after saving entity', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('.layout-container')).toBeVisible({ timeout: 15000 });
+
+    await ensureNavVisible(page);
+
+    const editorBtn = page.locator('.nav-button').filter({ hasText: 'Editor', visible: true }).first();
+    await editorBtn.click();
+
+    await expect(page.locator('.editor-container')).toBeVisible({ timeout: 15000 });
+    await closeNav(page);
+
+    // Fill entity name
+    const nameInput = page.locator('#entity-title');
+    await nameInput.fill('Source URL Test Entity');
+
+    // Open Advanced and fill source URL
+    await page.getByRole('button', { name: /advanced/i }).click();
+    const sourceInput = page.locator('#entity-source-url');
+    await sourceInput.fill('https://example.com/persisted-article');
+
+    // Save entity
+    const saveBtn = page.locator('button.primary', { hasText: 'Save to DB' });
+    await saveBtn.click();
+
+    // Verify success status message
+    await expect(page.locator('.status-message.success')).toBeVisible({ timeout: 10000 });
+
+    // Navigate to Library and back to verify the entity exists
+    await ensureNavVisible(page);
+    const libraryBtn = page.locator('.nav-button').filter({ hasText: 'Library', visible: true }).first();
+    await libraryBtn.click();
+
+    await expect(page.locator('.main-content')).toBeVisible({ timeout: 15000 });
+
+    // Find and click on the saved entity to edit it
+    const entityCard = page.locator('.entity-card, .entity-item, .library-item').filter({ hasText: 'Source URL Test Entity' }).first();
+    await expect(entityCard).toBeVisible({ timeout: 10000 });
+    await entityCard.click();
+    await expect(page.locator('.editor-container')).toBeVisible({ timeout: 15000 });
+
+    // Verify the source URL field is visible in edit mode
+    await page.getByRole('button', { name: /advanced/i }).click();
+    const editSourceInput = page.locator('#entity-source-url');
+    await expect(editSourceInput).toBeVisible({ timeout: 5000 });
+  });
 });

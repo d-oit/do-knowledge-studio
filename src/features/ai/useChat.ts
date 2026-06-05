@@ -5,7 +5,7 @@ import { searchKnowledge } from '../../lib/search';
 import { resolveUrl, ResolvedContent } from '../../lib/resolver';
 import { logger } from '../../lib/logger';
 
-const URL_REGEX = /https?:\/\/[^\s<>"'{}|\\^'\[\]]+/gi;
+const URL_REGEX = /https?:\/\/[^\s<>"'{}|\\^[\]]+/gi;
 
 export interface Message {
   id: string;
