@@ -4,6 +4,7 @@
 @import './layout.css';
 @import './components.css';
 @import './features.css';
+@import './command-palette.css';
 @import './utilities.css';
 
 /* Global Typography Overrides */
