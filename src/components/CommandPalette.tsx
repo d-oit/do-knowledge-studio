@@ -129,7 +129,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onView
     <div
       className="command-palette-overlay"
       onClick={handleOverlayClick}
-      onKeyDown={e => e.key === 'Escape' && onClose()}
+      onKeyDown={e => { if (e.target === e.currentTarget && (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ')) onClose(); }}
       role="button"
       tabIndex={0}
       aria-label="Close command palette"
@@ -157,6 +157,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onView
           />
           {query && (
             <button
+              type="button"
               className="input-clear-button"
               onClick={() => { setQuery(''); inputRef.current?.focus(); }}
               aria-label="Clear search"

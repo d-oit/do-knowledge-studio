@@ -21,7 +21,7 @@ describe('CommandPalette', () => {
   it('renders when isOpen is true', () => {
     render(
       <CommandPalette
-        isOpen={true}
+        isOpen
         onClose={mockOnClose}
         onViewChange={mockOnViewChange}
         onAction={mockOnAction}
@@ -45,7 +45,7 @@ describe('CommandPalette', () => {
   it('calls onClose when Escape is pressed', () => {
     render(
       <CommandPalette
-        isOpen={true}
+        isOpen
         onClose={mockOnClose}
         onViewChange={mockOnViewChange}
         onAction={mockOnAction}
@@ -59,7 +59,7 @@ describe('CommandPalette', () => {
   it('calls onClose when clicking the overlay', () => {
     render(
       <CommandPalette
-        isOpen={true}
+        isOpen
         onClose={mockOnClose}
         onViewChange={mockOnViewChange}
         onAction={mockOnAction}
@@ -78,7 +78,7 @@ describe('CommandPalette', () => {
 
     render(
       <CommandPalette
-        isOpen={true}
+        isOpen
         onClose={mockOnClose}
         onViewChange={mockOnViewChange}
         onAction={mockOnAction}
@@ -98,7 +98,7 @@ describe('CommandPalette', () => {
   it('navigates through commands with ArrowDown/ArrowUp', () => {
     render(
       <CommandPalette
-        isOpen={true}
+        isOpen
         onClose={mockOnClose}
         onViewChange={mockOnViewChange}
         onAction={mockOnAction}
@@ -123,7 +123,7 @@ describe('CommandPalette', () => {
   it('executes a navigation command on Enter', () => {
     render(
       <CommandPalette
-        isOpen={true}
+        isOpen
         onClose={mockOnClose}
         onViewChange={mockOnViewChange}
         onAction={mockOnAction}
@@ -142,7 +142,7 @@ describe('CommandPalette', () => {
   it('executes an action command on Enter', () => {
     render(
       <CommandPalette
-        isOpen={true}
+        isOpen
         onClose={mockOnClose}
         onViewChange={mockOnViewChange}
         onAction={mockOnAction}
@@ -163,7 +163,7 @@ describe('CommandPalette', () => {
   it('shows clear button when input has text', () => {
     render(
       <CommandPalette
-        isOpen={true}
+        isOpen
         onClose={mockOnClose}
         onViewChange={mockOnViewChange}
         onAction={mockOnAction}
@@ -180,7 +180,7 @@ describe('CommandPalette', () => {
   it('clears input and refocuses when clear button is clicked', () => {
     render(
       <CommandPalette
-        isOpen={true}
+        isOpen
         onClose={mockOnClose}
         onViewChange={mockOnViewChange}
         onAction={mockOnAction}
