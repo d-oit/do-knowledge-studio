@@ -13,19 +13,21 @@ test.describe('Modern Shell UX', () => {
     // Toggle on
     await page.keyboard.press('Control+k');
     await expect(palette).toBeVisible();
+    // Wait for input focus (palette uses setTimeout 10ms to focus input)
+    await expect(page.locator('.command-palette-header input')).toBeFocused({ timeout: 3000 });
 
     // Toggle off with Escape
     await page.keyboard.press('Escape');
-    await expect(palette).not.toBeVisible();
+    await expect(palette).not.toBeVisible({ timeout: 5000 });
 
     // Toggle on again
     await page.keyboard.press('Control+k');
     await expect(palette).toBeVisible();
+    await expect(page.locator('.command-palette-header input')).toBeFocused({ timeout: 3000 });
 
     // Toggle off by clicking overlay
-    // Use dispatchEvent for more reliable overlay clicks across viewports
     await page.locator('.command-palette-overlay').evaluate(el => (el as HTMLElement).click());
-    await expect(palette).not.toBeVisible();
+    await expect(palette).not.toBeVisible({ timeout: 5000 });
   });
 
   test('searching and keyboard navigation in palette', async ({ page }) => {
