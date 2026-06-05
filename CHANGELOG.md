@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.3.0] - 2026-06-05
+## [0.2.4] - 2026-06-05
 
 ### Added
 - AES-256-GCM encryption for API keys at rest via Web Crypto API (#238)
@@ -34,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - E2E test schema SQL, tiptap timing, and Playwright config for CI
 
 ### Changed
-- `loadConfig` and `saveConfig` are now async (breaking for direct callers)
+- `loadConfig` and `saveConfig` are now async (internal API change)
 - Simplified `maskApiKey` to remove redundant logic
 - Repository `parseMetadata` uses extracted `normalizeFields` helper
 - Improved comment quality in silent catch blocks across 4 files
@@ -133,8 +133,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Quality gate exits with code 2 to surface errors to agent
 - Progressive disclosure for skills (load on demand)
 
-[Unreleased]: https://github.com/d-oit/do-knowledge-studio/compare/v0.3.0...HEAD
-[0.3.0]: https://github.com/d-oit/do-knowledge-studio/compare/v0.2.3...v0.3.0
+[Unreleased]: https://github.com/d-oit/do-knowledge-studio/compare/v0.2.4...HEAD
+[0.2.4]: https://github.com/d-oit/do-knowledge-studio/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/d-oit/do-knowledge-studio/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/d-oit/do-knowledge-studio/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/d-oit/do-knowledge-studio/compare/v0.2.0...v0.2.1
