@@ -187,13 +187,13 @@ describe('CommandPalette', () => {
       />
     );
 
-    const input = screen.getByPlaceholderText(/Search commands or knowledge/i) as HTMLInputElement;
+    const input = screen.getByPlaceholderText(/Search commands or knowledge/i);
     fireEvent.change(input, { target: { value: 'test' } });
     const clearBtn = screen.getByLabelText(/Clear search/i);
 
     fireEvent.click(clearBtn);
 
-    expect(input.value).toBe('');
+    expect(input).toHaveValue('');
     expect(document.activeElement).toBe(input);
   });
 });
