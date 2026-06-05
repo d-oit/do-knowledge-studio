@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { loadConfig, saveConfig, maskApiKey } from '../../lib/llm/config';
 import { saveDbHandles, getDbHandles } from '../../lib/db-persistence';
 import { PROVIDER_MODELS } from '../../lib/llm';
-import { logger } from '../../lib/logger';
 import DatabaseSettings from '../../components/DatabaseSettings';
 import { Database, Settings, Key, AlertTriangle } from 'lucide-react';
 import { useChat } from './useChat';
@@ -246,7 +245,7 @@ const AIHarness: React.FC = () => {
         sessionTokens={sessionTokens}
         input={input}
         setInput={setInput}
-        onSend={handleSend}
+        onSend={() => { void handleSend(); }}
         onRemoveSource={(i) => { setResolvedSources(prev => prev.filter((_, j) => j !== i)); }}
         currentModel={currentModel}
         rateLimitLevel={getRateLimitLevel()}

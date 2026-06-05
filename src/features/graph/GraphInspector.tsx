@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { X, ExternalLink, Info, ShieldCheck, Pencil, Trash2 } from 'lucide-react';
+import { X, ExternalLink, Info, ShieldCheck, Pencil, Trash2, Link2 } from 'lucide-react';
 import { Entity, Claim, Link } from '../../lib/validation';
 import { repository } from '../../db/repository';
 import { removeFromSearchIndex } from '../../lib/search';
