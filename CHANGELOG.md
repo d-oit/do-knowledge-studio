@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-05
+
+### Added
+- AES-256-GCM encryption for API keys at rest via Web Crypto API (#238)
+  - Auto-generates 256-bit key stored as JWK in localStorage
+  - `enc:v1:` prefix for forward-compatible migration detection
+  - Auto-migrates legacy plaintext keys on first load
+- Comprehensive documentation suite (#237):
+  - `docs/CLI.md` — CLI reference for all 20 commands
+  - `docs/DATABASE.md` — Schema reference with ER diagram
+  - `docs/DEVELOPMENT.md` — Developer onboarding guide
+  - `docs/SEARCH.md` — Dual FTS5+Orama search architecture
+  - `docs/LLM-SETUP.md` — LLM provider configuration guide
+  - `docs/REPOSITORY-API.md` — Full repository API reference
+- `impeccable` skill for frontend design quality (#251)
+  - Typography, color, spacing, and motion reference guides
+  - `/polish`, `/critique`, `/audit`, `/responsive` commands
+- SSRF protection blocking `javascript:` URIs and local network access
+- Dependency updates via Dependabot (5 PRs merged)
+
+### Fixed
+- ALLOWED_URI_REGEXP regex incorrectly blocking `https://` hrefs
+- Silent catch blocks now have descriptive comments explaining expected errors
+- `loadConfig`/`saveConfig` async API for encryption compatibility
+- E2E test schema SQL, tiptap timing, and Playwright config for CI
+
+### Changed
+- `loadConfig` and `saveConfig` are now async (breaking for direct callers)
+- Simplified `maskApiKey` to remove redundant logic
+- Repository `parseMetadata` uses extracted `normalizeFields` helper
+- Improved comment quality in silent catch blocks across 4 files
+
 ## [0.2.3] - 2026-04-23
 
 ### Added
@@ -101,7 +133,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Quality gate exits with code 2 to surface errors to agent
 - Progressive disclosure for skills (load on demand)
 
-[Unreleased]: https://github.com/d-oit/do-knowledge-studio/compare/v0.2.3...HEAD
+[Unreleased]: https://github.com/d-oit/do-knowledge-studio/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/d-oit/do-knowledge-studio/compare/v0.2.3...v0.3.0
 [0.2.3]: https://github.com/d-oit/do-knowledge-studio/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/d-oit/do-knowledge-studio/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/d-oit/do-knowledge-studio/compare/v0.2.0...v0.2.1
