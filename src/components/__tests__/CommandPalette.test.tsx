@@ -159,4 +159,41 @@ describe('CommandPalette', () => {
     expect(mockOnAction).toHaveBeenCalledWith('act-new');
     expect(mockOnClose).toHaveBeenCalled();
   });
+
+  it('shows clear button when input has text', () => {
+    render(
+      <CommandPalette
+        isOpen={true}
+        onClose={mockOnClose}
+        onViewChange={mockOnViewChange}
+        onAction={mockOnAction}
+      />
+    );
+
+    const input = screen.getByPlaceholderText(/Search commands or knowledge/i);
+    expect(screen.queryByLabelText(/Clear search/i)).toBeNull();
+
+    fireEvent.change(input, { target: { value: 'test' } });
+    expect(screen.getByLabelText(/Clear search/i)).toBeDefined();
+  });
+
+  it('clears input and refocuses when clear button is clicked', () => {
+    render(
+      <CommandPalette
+        isOpen={true}
+        onClose={mockOnClose}
+        onViewChange={mockOnViewChange}
+        onAction={mockOnAction}
+      />
+    );
+
+    const input = screen.getByPlaceholderText(/Search commands or knowledge/i) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'test' } });
+    const clearBtn = screen.getByLabelText(/Clear search/i);
+
+    fireEvent.click(clearBtn);
+
+    expect(input.value).toBe('');
+    expect(document.activeElement).toBe(input);
+  });
 });

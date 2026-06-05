@@ -9,7 +9,8 @@ import {
   Map,
   Plus,
   Download,
-  Command
+  Command,
+  X
 } from 'lucide-react';
 import { searchKnowledge, SearchResult } from '../lib/search';
 import { logger } from '../lib/logger';
@@ -142,7 +143,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onView
           <Search className="search-icon" size={20} />
           <input
             ref={inputRef}
-            type="text"
+            type="search"
             placeholder="Search commands or knowledge..."
             value={query}
             onChange={e => setQuery(e.target.value)}
@@ -154,6 +155,15 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onView
             aria-controls="command-palette-listbox"
             aria-activedescendant={totalItems > 0 ? `command-item-${selectedIndex}` : undefined}
           />
+          {query && (
+            <button
+              className="input-clear-button"
+              onClick={() => { setQuery(''); inputRef.current?.focus(); }}
+              aria-label="Clear search"
+            >
+              <X size={16} />
+            </button>
+          )}
           <div className="esc-hint">ESC</div>
         </div>
 
