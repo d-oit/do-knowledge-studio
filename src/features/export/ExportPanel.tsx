@@ -80,6 +80,7 @@ const ExportPanel: React.FC = () => {
       const data = await fetchAllExportData(repository);
       const printWindow = window.open('', '_blank');
       if (!printWindow) throw new Error('Popup blocked');
+      printWindow.opener = null;
       const printDoc = printWindow.document;
       printDoc.open();
       printDoc.write(generatePrintHtml(data.entities, data.claims));
