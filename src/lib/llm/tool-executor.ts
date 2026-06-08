@@ -50,24 +50,25 @@ function handleGetCurrentNote(toolCall: ToolCall, context: ToolExecutionContext)
   return { toolCallId: toolCall.id, content };
 }
 
-const HANDLERS: Record<string, (tc: ToolCall, ctx: ToolExecutionContext, search: typeof searchKnowledge) => Promise<ToolResult>> = {
-  search_knowledge: (tc, _ctx, search) => handleSearchKnowledge(tc, search),
-  create_note: (tc, _ctx, _search) => handleCreateNote(tc),
-  add_graph_node: (tc, _ctx, _search) => handleAddGraphNode(tc),
-  get_current_note: (tc, ctx, _search) => Promise.resolve(handleGetCurrentNote(tc, ctx)),
-};
-
 export async function executeTool(
   toolCall: ToolCall,
   context: ToolExecutionContext = {},
 ): Promise<ToolResult> {
   const search = context.search ?? searchKnowledge;
-  const handler = HANDLERS[toolCall.name]; /* nosemgrep: js/object-injection-sink */
-  if (!handler) {
-    return { toolCallId: toolCall.id, content: `Unknown tool: ${toolCall.name}`, isError: true };
-  }
+
   try {
-    return await handler(toolCall, context, search);
+    switch (toolCall.name) {
+      case 'search_knowledge':
+        return handleSearchKnowledge(toolCall, search);
+      case 'create_note':
+        return handleCreateNote(toolCall);
+      case 'add_graph_node':
+        return handleAddGraphNode(toolCall);
+      case 'get_current_note':
+        return Promise.resolve(handleGetCurrentNote(toolCall, context));
+      default:
+        return { toolCallId: toolCall.id, content: `Unknown tool: ${toolCall.name}`, isError: true };
+    }
   } catch (err) {
     logger.error('Tool execution failed', { tool: toolCall.name, error: err });
     return { toolCallId: toolCall.id, content: String(err), isError: true };

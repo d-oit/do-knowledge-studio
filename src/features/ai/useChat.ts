@@ -183,9 +183,8 @@ export function useChat() {
           )
         );
 
-        for (let i = 0; i < response.toolCalls.length; i++) {
-          const tc = response.toolCalls[i]; /* nosemgrep: js/object-injection-sink */
-          const tr = toolResults[i]; /* nosemgrep: js/object-injection-sink */
+        response.toolCalls.forEach((tc, i) => {
+          const tr = toolResults[i];
           accumulatedToolCalls.push({
             id: tc.id,
             name: tc.name,
@@ -193,7 +192,7 @@ export function useChat() {
             result: tr.content,
             isError: tr.isError,
           });
-        }
+        });
 
         // Append assistant tool-call message + tool result messages for next round
         promptMessages = [

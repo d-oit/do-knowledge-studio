@@ -23,42 +23,51 @@ const safeHostname = (url: string): string => {
   try { return new URL(url).hostname; } catch { return url; }
 };
 
-const ToolCallHeader: React.FC<{ toolCall: ToolCallRecord; expanded: boolean; onToggle: () => void }> = ({ toolCall, expanded, onToggle }) => (
-  <button
-    type="button"
-    onClick={onToggle}
-    style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 8px', background: 'var(--surface-secondary)', border: 'none', cursor: 'pointer', textAlign: 'left' }} /* nosemgrep: js/react-inline-style */
-    aria-expanded={expanded}
-  >
-    <Wrench size={12} />
-    <span style={{ fontWeight: 600 }}>{toolCall.name}</span>
-    {toolCall.isError && <span style={{ color: '#dc2626', marginLeft: 'auto' }}>error</span>}
-    <span style={{ marginLeft: toolCall.isError ? '0' : 'auto' }}>
-      {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-    </span>
-  </button>
-);
+const nameStyle: React.CSSProperties = { fontWeight: 600 };
+const labelStyle: React.CSSProperties = { fontWeight: 600, color: 'var(--text-muted)' };
+const codeStyle: React.CSSProperties = { whiteSpace: 'pre-wrap', wordBreak: 'break-all' };
+const bodyDivStyle: React.CSSProperties = { padding: '6px 8px', background: 'var(--surface-primary)', display: 'flex', flexDirection: 'column', gap: '4px' };
+const blockStyle: React.CSSProperties = { margin: '4px 0', border: '1px solid var(--border-default)', borderRadius: '6px', fontSize: '12px', overflow: 'hidden' };
 
-const ToolCallBody: React.FC<{ toolCall: ToolCallRecord }> = ({ toolCall }) => (
-  <div style={{ padding: '6px 8px', background: 'var(--surface-primary)', display: 'flex', flexDirection: 'column', gap: '4px' }} /* nosemgrep: js/react-inline-style */>
-    <div>
-      <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>Input: </span>
-      <code style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{JSON.stringify(toolCall.arguments, null, 2)}</code>
-    </div>
-    {toolCall.result !== undefined && (
+const ToolCallHeader: React.FC<{ toolCall: ToolCallRecord; expanded: boolean; onToggle: () => void }> = ({ toolCall, expanded, onToggle }) => {
+  const btnStyle: React.CSSProperties = { width: '100%', display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 8px', background: 'var(--surface-secondary)', border: 'none', cursor: 'pointer', textAlign: 'left' };
+  const errorStyle: React.CSSProperties = { color: '#dc2626', marginLeft: 'auto' };
+  const iconStyle: React.CSSProperties = { marginLeft: toolCall.isError ? '0' : 'auto' };
+  return (
+    <button type="button" onClick={onToggle} style={btnStyle} aria-expanded={expanded}>
+      <Wrench size={12} />
+      <span style={nameStyle}>{toolCall.name}</span>
+      {toolCall.isError && <span style={errorStyle}>error</span>}
+      <span style={iconStyle}>
+        {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+      </span>
+    </button>
+  );
+};
+
+const ToolCallBody: React.FC<{ toolCall: ToolCallRecord }> = ({ toolCall }) => {
+  const resultCodeStyle: React.CSSProperties = { whiteSpace: 'pre-wrap', wordBreak: 'break-all', color: toolCall.isError ? '#dc2626' : undefined };
+  return (
+    <div style={bodyDivStyle}>
       <div>
-        <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>Result: </span>
-        <code style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', color: toolCall.isError ? '#dc2626' : undefined }}>{toolCall.result}</code>
+        <span style={labelStyle}>Input: </span>
+        <code style={codeStyle}>{JSON.stringify(toolCall.arguments, null, 2)}</code>
       </div>
-    )}
-  </div>
-);
+      {toolCall.result !== undefined && (
+        <div>
+          <span style={labelStyle}>Result: </span>
+          <code style={resultCodeStyle}>{toolCall.result}</code>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const ToolCallBlock: React.FC<{ toolCall: ToolCallRecord }> = ({ toolCall }) => {
   const [expanded, setExpanded] = useState(false);
   const toggle = useCallback(() => { setExpanded(v => !v); }, []);
   return (
-    <div style={{ margin: '4px 0', border: '1px solid var(--border-default)', borderRadius: '6px', fontSize: '12px', overflow: 'hidden' }} /* nosemgrep: js/react-inline-style */>
+    <div style={blockStyle}>
       <ToolCallHeader toolCall={toolCall} expanded={expanded} onToggle={toggle} />
       {expanded && <ToolCallBody toolCall={toolCall} />}
     </div>
