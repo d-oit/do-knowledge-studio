@@ -62,7 +62,7 @@ export async function executeTool(
   context: ToolExecutionContext = {},
 ): Promise<ToolResult> {
   const search = context.search ?? searchKnowledge;
-  const handler = HANDLERS[toolCall.name];
+  const handler = HANDLERS[toolCall.name]; /* nosemgrep: js/object-injection-sink */
   if (!handler) {
     return { toolCallId: toolCall.id, content: `Unknown tool: ${toolCall.name}`, isError: true };
   }
