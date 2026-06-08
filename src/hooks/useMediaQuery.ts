@@ -5,14 +5,16 @@ import { useState, useEffect } from 'react';
  * @param query Media query string (e.g., '(max-width: 768px)')
  * @returns boolean indicating if the query matches
  */
+function createMediaListener(setter: (v: boolean) => void): (e: MediaQueryListEvent) => void {
+  return (e: MediaQueryListEvent) => { setter(e.matches); };
+}
+
 export function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
 
   useEffect(() => {
     const media = window.matchMedia(query);
-    const listener = (e: MediaQueryListEvent) => {
-      setMatches(e.matches);
-    };
+    const listener = createMediaListener(setMatches);
     media.addEventListener('change', listener);
     return () => media.removeEventListener('change', listener);
   }, [query]);

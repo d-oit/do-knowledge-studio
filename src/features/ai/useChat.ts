@@ -31,6 +31,10 @@ export interface TokenUsage {
   output: number;
 }
 
+function buildToolCallRecord(tc: ToolCallRecord, result: string, isError?: boolean): ToolCallRecord {
+  return { id: tc.id, name: tc.name, arguments: tc.arguments, result, isError };
+}
+
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([
     { id: 'initial', role: 'assistant', content: 'AI agent ready to assist with TRIZ analysis and knowledge synthesis. Ask me anything about your local knowledge base, or paste URLs to have me fetch and analyze external content.' }
@@ -185,13 +189,7 @@ export function useChat() {
 
         response.toolCalls.forEach((tc, i) => {
           const tr = toolResults[i];
-          accumulatedToolCalls.push({
-            id: tc.id,
-            name: tc.name,
-            arguments: tc.arguments,
-            result: tr.content,
-            isError: tr.isError,
-          });
+          accumulatedToolCalls.push(buildToolCallRecord(tc, tr.content, tr.isError));
         });
 
         // Append assistant tool-call message + tool result messages for next round
