@@ -59,13 +59,13 @@ export async function executeTool(
   try {
     switch (toolCall.name) {
       case 'search_knowledge':
-        return handleSearchKnowledge(toolCall, search);
+        return await handleSearchKnowledge(toolCall, search);
       case 'create_note':
-        return handleCreateNote(toolCall);
+        return await handleCreateNote(toolCall);
       case 'add_graph_node':
-        return handleAddGraphNode(toolCall);
+        return await handleAddGraphNode(toolCall);
       case 'get_current_note':
-        return Promise.resolve(handleGetCurrentNote(toolCall, context));
+        return handleGetCurrentNote(toolCall, context);
       default:
         return { toolCallId: toolCall.id, content: `Unknown tool: ${toolCall.name}`, isError: true };
     }
