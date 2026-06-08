@@ -1,68 +1,75 @@
 import type { ToolCall, ToolResult } from './types';
 import { searchKnowledge } from '../search';
 import { repository } from '../../db/repository';
+import { logger } from '../logger';
 
-/** Context provided to each tool execution. Allows overriding deps in tests. */
 export interface ToolExecutionContext {
   search?: typeof searchKnowledge;
   getCurrentNoteContent?: () => string;
 }
+
+async function handleSearchKnowledge(toolCall: ToolCall, search: typeof searchKnowledge): Promise<ToolResult> {
+  const query = toolCall.arguments.query as string;
+  const limit = (toolCall.arguments.limit as number | undefined) ?? 5;
+  const results = await search(query, { limit });
+  const summary = results.map(r => ({
+    title: r.title,
+    type: r.type,
+    excerpt: r.content.slice(0, 200),
+  }));
+  return { toolCallId: toolCall.id, content: JSON.stringify(summary) };
+}
+
+async function handleCreateNote(toolCall: ToolCall): Promise<ToolResult> {
+  const title = toolCall.arguments.title as string;
+  const content = toolCall.arguments.content as string;
+  const tags = ((toolCall.arguments.tags as string | undefined) ?? '')
+    .split(',')
+    .map(t => t.trim())
+    .filter(Boolean);
+
+  const entity = await repository.createEntity({
+    name: title,
+    type: 'note',
+    description: tags.length > 0 ? `Tags: ${tags.join(', ')}` : undefined,
+  });
+  await repository.createNote({ entity_id: entity.id, content, format: 'markdown' });
+  return { toolCallId: toolCall.id, content: `Note "${title}" created (entity id: ${entity.id})` };
+}
+
+async function handleAddGraphNode(toolCall: ToolCall): Promise<ToolResult> {
+  const label = toolCall.arguments.label as string;
+  const type = (toolCall.arguments.type as string | undefined) ?? 'concept';
+  const description = toolCall.arguments.description as string | undefined;
+  const entity = await repository.createEntity({ name: label, type, description });
+  return { toolCallId: toolCall.id, content: `Graph node "${label}" added (id: ${entity.id})` };
+}
+
+function handleGetCurrentNote(toolCall: ToolCall, context: ToolExecutionContext): ToolResult {
+  const content = context.getCurrentNoteContent?.() ?? '(no active note)';
+  return { toolCallId: toolCall.id, content };
+}
+
+const HANDLERS: Record<string, (tc: ToolCall, ctx: ToolExecutionContext, search: typeof searchKnowledge) => Promise<ToolResult>> = {
+  search_knowledge: (tc, _ctx, search) => handleSearchKnowledge(tc, search),
+  create_note: (tc, _ctx, _search) => handleCreateNote(tc),
+  add_graph_node: (tc, _ctx, _search) => handleAddGraphNode(tc),
+  get_current_note: (tc, ctx, _search) => Promise.resolve(handleGetCurrentNote(tc, ctx)),
+};
 
 export async function executeTool(
   toolCall: ToolCall,
   context: ToolExecutionContext = {},
 ): Promise<ToolResult> {
   const search = context.search ?? searchKnowledge;
-
+  const handler = HANDLERS[toolCall.name];
+  if (!handler) {
+    return { toolCallId: toolCall.id, content: `Unknown tool: ${toolCall.name}`, isError: true };
+  }
   try {
-    switch (toolCall.name) {
-      case 'search_knowledge': {
-        const query = toolCall.arguments.query as string;
-        const limit = (toolCall.arguments.limit as number | undefined) ?? 5;
-        const results = await search(query, { limit });
-        const summary = results.map(r => ({
-          title: r.title,
-          type: r.type,
-          excerpt: r.content.slice(0, 200),
-        }));
-        return { toolCallId: toolCall.id, content: JSON.stringify(summary) };
-      }
-
-      case 'create_note': {
-        const title = toolCall.arguments.title as string;
-        const content = toolCall.arguments.content as string;
-        const tags = ((toolCall.arguments.tags as string | undefined) ?? '')
-          .split(',')
-          .map(t => t.trim())
-          .filter(Boolean);
-
-        // Create entity (the titled concept) then attach the note
-        const entity = await repository.createEntity({
-          name: title,
-          type: 'note',
-          description: tags.length > 0 ? `Tags: ${tags.join(', ')}` : undefined,
-        });
-        await repository.createNote({ entity_id: entity.id, content, format: 'markdown' });
-        return { toolCallId: toolCall.id, content: `Note "${title}" created (entity id: ${entity.id})` };
-      }
-
-      case 'add_graph_node': {
-        const label = toolCall.arguments.label as string;
-        const type = (toolCall.arguments.type as string | undefined) ?? 'concept';
-        const description = toolCall.arguments.description as string | undefined;
-        const entity = await repository.createEntity({ name: label, type, description });
-        return { toolCallId: toolCall.id, content: `Graph node "${label}" added (id: ${entity.id})` };
-      }
-
-      case 'get_current_note': {
-        const content = context.getCurrentNoteContent?.() ?? '(no active note)';
-        return { toolCallId: toolCall.id, content };
-      }
-
-      default:
-        return { toolCallId: toolCall.id, content: `Unknown tool: ${toolCall.name}`, isError: true };
-    }
+    return await handler(toolCall, context, search);
   } catch (err) {
+    logger.error('Tool execution failed', { tool: toolCall.name, error: err });
     return { toolCallId: toolCall.id, content: String(err), isError: true };
   }
 }

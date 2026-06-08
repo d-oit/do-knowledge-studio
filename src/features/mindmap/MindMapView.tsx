@@ -224,6 +224,7 @@ const MindMapView: React.FC<Props> = ({
         mindInstance.current = null;
         setIsMindReady(false);
       }
+      return;
     };
   }, [treeData, onEntityClick, isLargeMap, rootId, entities]);
 
