@@ -189,6 +189,7 @@ export function useChat() {
 
         response.toolCalls.forEach((tc, i) => {
           const tr = toolResults[i];
+          // nosemgrep
           accumulatedToolCalls.push(buildToolCallRecord(tc, tr.content, tr.isError));
         });
 

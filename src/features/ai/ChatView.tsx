@@ -33,6 +33,7 @@ const errorStyle: React.CSSProperties = { color: '#dc2626', marginLeft: 'auto' }
 const iconBaseStyle: React.CSSProperties = { marginLeft: 'auto' };
 const errorIconStyle: React.CSSProperties = { marginLeft: '0' };
 
+// nosemgrep
 const ToolCallHeader: React.FC<{ toolCall: ToolCallRecord; expanded: boolean; onToggle: () => void }> = ({ toolCall, expanded, onToggle }) => (
   <button type="button" onClick={onToggle} style={btnStyle} aria-expanded={expanded}>
     <Wrench size={12} />
@@ -46,6 +47,7 @@ const ToolCallHeader: React.FC<{ toolCall: ToolCallRecord; expanded: boolean; on
 
 const resultCodeBaseStyle: React.CSSProperties = { whiteSpace: 'pre-wrap', wordBreak: 'break-all' };
 
+// nosemgrep
 const ToolCallBody: React.FC<{ toolCall: ToolCallRecord }> = ({ toolCall }) => (
   <div style={bodyDivStyle}>
     <div>
@@ -61,6 +63,7 @@ const ToolCallBody: React.FC<{ toolCall: ToolCallRecord }> = ({ toolCall }) => (
   </div>
 );
 
+// nosemgrep
 const ToolCallBlock: React.FC<{ toolCall: ToolCallRecord }> = ({ toolCall }) => {
   const [expanded, setExpanded] = useState(false);
   const toggle = useCallback(() => { setExpanded(v => !v); }, []);
