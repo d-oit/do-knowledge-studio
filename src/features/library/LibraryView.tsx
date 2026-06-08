@@ -25,6 +25,7 @@ const SORT_OPTIONS = [
 ] as const;
 
 export const LibraryView: React.FC<LibraryViewProps> = ({ onEditEntity }) => {
+  "use no memo"; // opt out of React Compiler — useVirtualizer returns non-memoizable functions
   const repository = useRepository();
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('all');
@@ -59,6 +60,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onEditEntity }) => {
     return () => clearTimeout(timer);
   }, [loadEntities]);
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- useVirtualizer is stable; component opts out of React Compiler via "use no memo"
   const rowVirtualizer = useVirtualizer({
     count: entities.length,
     getScrollElement: () => parentRef.current,

@@ -135,6 +135,7 @@ const AppContent: React.FC = () => {
 
   useEffect(() => {
     if (dbReady && (currentView === 'graph' || currentView === 'mindmap')) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- setState inside async refreshData, not synchronous
       void refreshData();
     }
   }, [currentView, dbReady, refreshData]);

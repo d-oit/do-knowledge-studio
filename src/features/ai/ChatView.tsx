@@ -1,6 +1,6 @@
-import React, { useRef, useEffect, useCallback } from 'react';
-import { Bot, User, Loader2, Globe, ExternalLink, X, Send } from 'lucide-react';
-import { Message, TokenUsage } from './useChat';
+import React, { useRef, useEffect, useCallback, useState } from 'react';
+import { Bot, User, Loader2, Globe, ExternalLink, X, Send, ChevronDown, ChevronRight, Wrench } from 'lucide-react';
+import { Message, TokenUsage, ToolCallRecord } from './useChat';
 import { ResolvedContent } from '../../lib/resolver';
 import MarkdownRenderer from '../../lib/llm/markdown';
 
@@ -21,6 +21,41 @@ interface ChatViewProps {
 
 const safeHostname = (url: string): string => {
   try { return new URL(url).hostname; } catch { return url; }
+};
+
+const ToolCallBlock: React.FC<{ toolCall: ToolCallRecord }> = ({ toolCall }) => {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div style={{ margin: '4px 0', border: '1px solid var(--border-default)', borderRadius: '6px', fontSize: '12px', overflow: 'hidden' }}>
+      <button
+        type="button"
+        onClick={() => { setExpanded(v => !v); }}
+        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 8px', background: 'var(--surface-secondary)', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+        aria-expanded={expanded}
+      >
+        <Wrench size={12} />
+        <span style={{ fontWeight: 600 }}>{toolCall.name}</span>
+        {toolCall.isError && <span style={{ color: '#dc2626', marginLeft: 'auto' }}>error</span>}
+        <span style={{ marginLeft: toolCall.isError ? '0' : 'auto' }}>
+          {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+        </span>
+      </button>
+      {expanded && (
+        <div style={{ padding: '6px 8px', background: 'var(--surface-primary)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <div>
+            <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>Input: </span>
+            <code style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{JSON.stringify(toolCall.arguments, null, 2)}</code>
+          </div>
+          {toolCall.result !== undefined && (
+            <div>
+              <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>Result: </span>
+              <code style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', color: toolCall.isError ? '#dc2626' : undefined }}>{toolCall.result}</code>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 };
 
 export const ChatView: React.FC<ChatViewProps> = ({
@@ -92,7 +127,14 @@ export const ChatView: React.FC<ChatViewProps> = ({
               {m.role === 'assistant' ? 'Assistant' : 'You'}
             </div>
             {m.role === 'assistant' ? (
-              <MarkdownRenderer content={m.content} />
+              <>
+                {m.toolCalls && m.toolCalls.length > 0 && (
+                  <div style={{ marginBottom: '6px' }}>
+                    {m.toolCalls.map(tc => <ToolCallBlock key={tc.id} toolCall={tc} />)}
+                  </div>
+                )}
+                <MarkdownRenderer content={m.content} />
+              </>
             ) : (
               m.content
             )}

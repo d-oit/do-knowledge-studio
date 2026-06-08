@@ -52,8 +52,6 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onView
 
   useEffect(() => {
     if (isOpen) {
-      setQuery('');
-      setSelectedIndex(0);
       setTimeout(() => inputRef.current?.focus(), 10);
     }
   }, [isOpen]);
