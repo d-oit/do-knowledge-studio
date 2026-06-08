@@ -33,38 +33,39 @@ const errorStyle: React.CSSProperties = { color: '#dc2626', marginLeft: 'auto' }
 const iconBaseStyle: React.CSSProperties = { marginLeft: 'auto' };
 const errorIconStyle: React.CSSProperties = { marginLeft: '0' };
 
-// nosemgrep
-const ToolCallHeader: React.FC<{ toolCall: ToolCallRecord; expanded: boolean; onToggle: () => void }> = ({ toolCall, expanded, onToggle }) => (
-  <button type="button" onClick={onToggle} style={btnStyle} aria-expanded={expanded}>
-    <Wrench size={12} />
-    <span style={nameStyle}>{toolCall.name}</span>
-    {toolCall.isError && <span style={errorStyle}>error</span>}
-    <span style={toolCall.isError ? errorIconStyle : iconBaseStyle}>
-      {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-    </span>
-  </button>
-);
+function ToolCallHeader({ toolCall, expanded, onToggle }: { toolCall: ToolCallRecord; expanded: boolean; onToggle: () => void }): React.ReactElement {
+  return (
+    <button type="button" onClick={onToggle} style={btnStyle} aria-expanded={expanded}>
+      <Wrench size={12} />
+      <span style={nameStyle}>{toolCall.name}</span>
+      {toolCall.isError && <span style={errorStyle}>error</span>}
+      <span style={toolCall.isError ? errorIconStyle : iconBaseStyle}>
+        {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+      </span>
+    </button>
+  );
+}
 
 const resultCodeBaseStyle: React.CSSProperties = { whiteSpace: 'pre-wrap', wordBreak: 'break-all' };
 
-// nosemgrep
-const ToolCallBody: React.FC<{ toolCall: ToolCallRecord }> = ({ toolCall }) => (
-  <div style={bodyDivStyle}>
-    <div>
-      <span style={labelStyle}>Input: </span>
-      <code style={codeStyle}>{JSON.stringify(toolCall.arguments, null, 2)}</code>
-    </div>
-    {toolCall.result !== undefined && (
+function ToolCallBody({ toolCall }: { toolCall: ToolCallRecord }): React.ReactElement {
+  return (
+    <div style={bodyDivStyle}>
       <div>
-        <span style={labelStyle}>Result: </span>
-        <code style={toolCall.isError ? { ...resultCodeBaseStyle, color: '#dc2626' } : resultCodeBaseStyle}>{toolCall.result}</code>
+        <span style={labelStyle}>Input: </span>
+        <code style={codeStyle}>{JSON.stringify(toolCall.arguments, null, 2)}</code>
       </div>
-    )}
-  </div>
-);
+      {toolCall.result !== undefined && (
+        <div>
+          <span style={labelStyle}>Result: </span>
+          <code style={toolCall.isError ? { ...resultCodeBaseStyle, color: '#dc2626' } : resultCodeBaseStyle}>{toolCall.result}</code>
+        </div>
+      )}
+    </div>
+  );
+}
 
-// nosemgrep
-const ToolCallBlock: React.FC<{ toolCall: ToolCallRecord }> = ({ toolCall }) => {
+function ToolCallBlock({ toolCall }: { toolCall: ToolCallRecord }): React.ReactElement {
   const [expanded, setExpanded] = useState(false);
   const toggle = useCallback(() => { setExpanded(v => !v); }, []);
   return (
@@ -73,7 +74,7 @@ const ToolCallBlock: React.FC<{ toolCall: ToolCallRecord }> = ({ toolCall }) => 
       {expanded && <ToolCallBody toolCall={toolCall} />}
     </div>
   );
-};
+}
 
 export const ChatView: React.FC<ChatViewProps> = ({
   messages,

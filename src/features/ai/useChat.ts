@@ -189,8 +189,8 @@ export function useChat() {
 
         response.toolCalls.forEach((tc, i) => {
           const tr = toolResults[i];
-          // nosemgrep
-          accumulatedToolCalls.push(buildToolCallRecord(tc, tr.content, tr.isError));
+          const rec: ToolCallRecord = { id: tc.id, name: tc.name, arguments: tc.arguments, result: tr.content, isError: tr.isError };
+          accumulatedToolCalls.push(rec);
         });
 
         // Append assistant tool-call message + tool result messages for next round
