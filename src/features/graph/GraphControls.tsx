@@ -2,13 +2,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Focus, Camera, Clock, X, FolderOpen, GitCompare, RotateCcw, Loader2, Layout, LayoutDashboard, Download, CircleDot, Sparkles } from 'lucide-react';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
-import { extractEntities, EntityExtractionResult } from '../../lib/ai/entity-extractor';
+import { extractEntities, EntityExtractionResult, ExtractedEntity, ExtractedRelationship } from '../../lib/ai/entity-extractor';
 import { loadConfig, createProvider } from '../../lib/llm/config';
 import EntityReviewDialog from '../ai/EntityReviewDialog';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { MEDIA_QUERIES } from '../../lib/constants';
 import type { GraphSnapshot } from '../../lib/validation';
 import { repository, type GraphSnapshotDiff } from '../../db/repository';
+import { useRepository } from '../../db/useRepository';
 import { z } from 'zod';
 import { logger } from '../../lib/logger';
 
@@ -67,6 +68,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
   layout = 'force',
   onLayoutChange,
 }) => {
+  const repository = useRepository();
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [snapshotName, setSnapshotName] = useState('');
   const [snapshotDesc, setSnapshotDesc] = useState('');
@@ -183,8 +185,8 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       const providerConfig = config.providers[config.activeProvider];
       const model = providerConfig.defaultModel || 'google/gemini-2.0-flash-lite-preview-02-05:free';
 
-      const allEntitiesMap = new Map<string, any>();
-      const allRelationships: any[] = [];
+      const allEntitiesMap = new Map<string, ExtractedEntity>();
+      const allRelationships: ExtractedRelationship[] = [];
 
       for (const note of notes) {
         if (!note.content) continue;

@@ -17,7 +17,7 @@ export async function applyEntitiesToGraph(
   for (const entity of result.entities) {
     if (!selectedEntities.includes(entity.name)) continue;
 
-    let existing = await repository.getEntityByName(entity.name);
+    const existing = await repository.getEntityByName(entity.name);
     if (!existing) {
       // Create new entity if it doesn't exist
       const created = await repository.createEntity({

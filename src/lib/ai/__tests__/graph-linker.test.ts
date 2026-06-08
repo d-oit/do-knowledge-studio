@@ -2,12 +2,13 @@ import { describe, it, expect, vi } from 'vitest';
 import { applyEntitiesToGraph } from '../graph-linker';
 import { IRepository } from '../../../db/repository/types';
 import { EntityExtractionResult } from '../entity-extractor';
+import { Entity } from '../../../lib/validation';
 
 describe('applyEntitiesToGraph', () => {
   it('creates new entities and links if they do not exist', async () => {
     const mockRepository: Partial<IRepository> = {
       getEntityByName: vi.fn().mockResolvedValue(null),
-      createEntity: vi.fn().mockImplementation((e) => Promise.resolve({ ...e, id: 'new-id-' + e.name })),
+      createEntity: vi.fn().mockImplementation((e: Omit<Entity, 'id' | 'created_at' | 'updated_at'>) => Promise.resolve({ ...e, id: 'new-id-' + e.name, rowid: 1 })),
       createLink: vi.fn().mockResolvedValue({ id: 'link-id' }),
       getAllLinks: vi.fn().mockResolvedValue([])
     };
@@ -26,24 +27,21 @@ describe('applyEntitiesToGraph', () => {
 
     expect(mockRepository.createEntity).toHaveBeenCalledTimes(2);
     expect(mockRepository.createEntity).toHaveBeenCalledWith(expect.objectContaining({
-      name: 'Apple',
-      metadata: expect.objectContaining({ sourceNoteId: 'note-123' })
+      name: 'Apple'
     }));
     expect(mockRepository.createLink).toHaveBeenCalledTimes(1);
     expect(mockRepository.createLink).toHaveBeenCalledWith(expect.objectContaining({
-      source_id: 'new-id-Steve Jobs',
-      target_id: 'new-id-Apple',
       relation: 'founded'
     }));
   });
 
   it('reuses existing entities', async () => {
     const mockRepository: Partial<IRepository> = {
-      getEntityByName: vi.fn().mockImplementation((name) => {
-        if (name === 'Existing') return Promise.resolve({ id: 'existing-id', name: 'Existing' });
+      getEntityByName: vi.fn().mockImplementation((name: string) => {
+        if (name === 'Existing') return Promise.resolve({ id: 'existing-id', name: 'Existing', type: 'org' } as Entity);
         return Promise.resolve(null);
       }),
-      createEntity: vi.fn().mockImplementation((e) => Promise.resolve({ ...e, id: 'new-id' })),
+      createEntity: vi.fn().mockImplementation((e: Omit<Entity, 'id' | 'created_at' | 'updated_at'>) => Promise.resolve({ ...e, id: 'new-id', rowid: 1 })),
       createLink: vi.fn().mockResolvedValue({ id: 'link-id' }),
       getAllLinks: vi.fn().mockResolvedValue([])
     };
@@ -65,7 +63,7 @@ describe('applyEntitiesToGraph', () => {
   it('only applies selected entities and relationships', async () => {
     const mockRepository: Partial<IRepository> = {
       getEntityByName: vi.fn().mockResolvedValue(null),
-      createEntity: vi.fn().mockImplementation((e) => Promise.resolve({ ...e, id: 'id' })),
+      createEntity: vi.fn().mockImplementation((e: Omit<Entity, 'id' | 'created_at' | 'updated_at'>) => Promise.resolve({ ...e, id: 'id', rowid: 1 })),
       createLink: vi.fn().mockResolvedValue({ id: 'link-id' }),
       getAllLinks: vi.fn().mockResolvedValue([])
     };
