@@ -204,7 +204,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       for (let i = 0; i < notesToAnalyze.length; i += BATCH_SIZE) {
         const batch = notesToAnalyze.slice(i, i + BATCH_SIZE);
         const results = await Promise.all(
-          batch.map(note => extractEntities(note.description!, provider, model))
+          batch.map(note => extractEntities(note.description || '', provider, model))
         );
 
         results.forEach(result => {
@@ -544,7 +544,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       {showBatchReview && batchResult && (
         <EntityReviewDialog
           result={batchResult}
-          onClose={() => setShowBatchReview(false)}
+          onClose={() => { setShowBatchReview(false); }}
           onComplete={() => {
             setShowBatchReview(false);
             setBatchResult(null);

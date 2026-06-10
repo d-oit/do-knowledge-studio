@@ -60,11 +60,19 @@ const EntityReviewDialog: React.FC<EntityReviewDialogProps> = ({
   };
 
   return (
-    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal-content" style={{ maxWidth: '600px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+    <div
+      className="modal-overlay"
+    >
+      <div
+        className="modal-content"
+        style={{ maxWidth: '600px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="review-dialog-title"
+      >
         <div className="inspector-header">
-          <h3><PlusCircle size={18} /> Review Extracted Entities</h3>
-          <button className="close-button" onClick={onClose} aria-label="Close">
+          <h3 id="review-dialog-title"><PlusCircle size={18} /> Review Extracted Entities</h3>
+          <button type="button" className="close-button" onClick={() => { onClose(); }} aria-label="Close">
             <X size={18} />
           </button>
         </div>
@@ -81,28 +89,28 @@ const EntityReviewDialog: React.FC<EntityReviewDialogProps> = ({
             </h4>
             <div className="entity-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {result.entities.map((entity, idx) => (
-                <label key={idx} style={{
+                <div key={entity.name} style={{
                   display: 'flex',
                   alignItems: 'flex-start',
                   gap: '10px',
                   padding: '10px',
                   border: '1px solid var(--border-default)',
                   borderRadius: '6px',
-                  cursor: 'pointer',
                   background: selectedEntities.includes(entity.name) ? 'var(--bg-surface-active)' : 'transparent'
                 }}>
                   <input
+                    id={`entity-check-${idx}`}
                     type="checkbox"
                     checked={selectedEntities.includes(entity.name)}
-                    onChange={() => toggleEntity(entity.name)}
-                    style={{ marginTop: '3px' }}
+                    onChange={() => { toggleEntity(entity.name); }}
+                    style={{ marginTop: '3px', cursor: 'pointer' }}
                   />
-                  <div>
+                  <label htmlFor={`entity-check-${idx}`} style={{ cursor: 'pointer', flex: 1 }}>
                     <div style={{ fontWeight: 600, fontSize: '14px' }}>{entity.name}</div>
                     <div style={{ fontSize: '11px', color: 'var(--interactive-primary)', textTransform: 'uppercase', marginBottom: '4px' }}>{entity.type}</div>
                     <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{entity.description}</div>
-                  </div>
-                </label>
+                  </label>
+                </div>
               ))}
             </div>
           </section>
@@ -115,27 +123,28 @@ const EntityReviewDialog: React.FC<EntityReviewDialogProps> = ({
               {result.relationships.map((rel, idx) => {
                 const key = `${rel.from}->${rel.to}`;
                 return (
-                  <label key={idx} style={{
+                  <div key={key} style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: '10px',
                     padding: '10px',
                     border: '1px solid var(--border-default)',
                     borderRadius: '6px',
-                    cursor: 'pointer',
                     background: selectedRelationships.includes(key) ? 'var(--bg-surface-active)' : 'transparent'
                   }}>
                     <input
+                      id={`rel-check-${idx}`}
                       type="checkbox"
                       checked={selectedRelationships.includes(key)}
-                      onChange={() => toggleRelationship(rel.from, rel.to)}
+                      onChange={() => { toggleRelationship(rel.from, rel.to); }}
+                      style={{ cursor: 'pointer' }}
                     />
-                    <div style={{ fontSize: '13px' }}>
+                    <label htmlFor={`rel-check-${idx}`} style={{ fontSize: '13px', cursor: 'pointer', flex: 1 }}>
                       <span style={{ fontWeight: 600 }}>{rel.from}</span>
                       <span style={{ margin: '0 8px', color: 'var(--text-muted)' }}>— {rel.label} →</span>
                       <span style={{ fontWeight: 600 }}>{rel.to}</span>
-                    </div>
-                  </label>
+                    </label>
+                  </div>
                 );
               })}
             </div>
@@ -143,9 +152,10 @@ const EntityReviewDialog: React.FC<EntityReviewDialogProps> = ({
         </div>
 
         <div className="modal-actions" style={{ padding: '16px', borderTop: '1px solid var(--border-default)' }}>
-          <button onClick={onClose} disabled={isApplying}>Cancel</button>
+          <button type="button" onClick={() => onClose()} disabled={isApplying}>Cancel</button>
           <button
-            onClick={handleApply}
+            type="button"
+            onClick={() => { void handleApply(); }}
             className="primary"
             disabled={isApplying || (selectedEntities.length === 0 && selectedRelationships.length === 0)}
           >

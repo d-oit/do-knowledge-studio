@@ -76,6 +76,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
     if (!editingEntityId) {
       return;
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoadingEntity(true);
     /* eslint-disable @typescript-eslint/no-unsafe-assignment -- type resolution through Promise chain */
     repository.getEntityById(editingEntityId).then((entity: (Entity & { rowid: number }) | null) => {
@@ -241,11 +242,12 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
       logger.error('Failed to save entity', { error: err });
       setStatus({ type: 'error', message: `Save failed: ${msg}` });
     }
-  }, [title, type, sourceUrl, editingEntityId, onEditComplete, editor, repository]);
+  }, [title, type, sourceUrl, editingEntityId, onEditComplete, editor, repository, handleExtractEntities]);
 
   const insertMention = useCallback((target: Entity) => {
     if (!editor || !target.id) return;
-    editor.chain().focus().setMention({ entityId: target.id, entityName: target.name }).run();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    (editor.chain().focus() as unknown as { setMention: (attrs: { entityId: string; entityName: string }) => { run: () => void } }).setMention({ entityId: target.id, entityName: target.name }).run();
     setShowMentionMenu(false);
   }, [editor]);
 
@@ -358,14 +360,16 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button
-              onClick={() => setShowExtractionReview(true)}
+              type="button"
+              onClick={() => { setShowExtractionReview(true); }}
               className="primary"
               style={{ padding: '4px 12px', fontSize: '12px', minHeight: '32px' }}
             >
               Review
             </button>
             <button
-              onClick={() => setShowExtractionNotice(false)}
+              type="button"
+              onClick={() => { setShowExtractionNotice(false); }}
               style={{ padding: '4px 8px', fontSize: '12px', minHeight: '32px', background: 'transparent', border: 'none' }}
               aria-label="Dismiss"
             >
@@ -379,7 +383,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
         <EntityReviewDialog
           result={extractionResult}
           sourceNoteId={extractionSourceId}
-          onClose={() => setShowExtractionReview(false)}
+          onClose={() => { setShowExtractionReview(false); }}
           onComplete={() => {
             setShowExtractionNotice(false);
             setExtractionResult(null);
@@ -389,7 +393,8 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
       )}
 
       <button
-        onClick={() => setShowAdvanced(!showAdvanced)}
+        type="button"
+        onClick={() => { setShowAdvanced(!showAdvanced); }}
         className="advanced-toggle"
         aria-expanded={showAdvanced}
         aria-label="Toggle advanced options"
