@@ -362,7 +362,6 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
              >
                {mentionVirtualizer.getVirtualItems().map((virtualItem) => {
                  const entity = allEntities[virtualItem.index];
-                 if (!entity) return null;
                  return (
                    <button
                      key={virtualItem.key}
