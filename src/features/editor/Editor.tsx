@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
-import { useVirtualizer } from '@tanstack/react-virtual';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { ClaimExtension } from './ClaimExtension';
@@ -35,14 +34,6 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
   const [sourceUrl, setSourceUrl] = useState('');
   const [allEntities, setAllEntities] = useState<Entity[]>([]);
   const [showMentionMenu, setShowMentionMenu] = useState(false);
-  const mentionScrollRef = useRef<HTMLDivElement>(null);
-
-  const mentionVirtualizer = useVirtualizer({
-    count: allEntities.length,
-    getScrollElement: () => mentionScrollRef.current,
-    estimateSize: () => 48,
-    overscan: 5,
-  });
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [isLoadingEntity, setIsLoadingEntity] = useState(false);
@@ -450,46 +441,19 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
        {showAdvanced && showMentionMenu && (
          <div className="mention-section" style={{ marginTop: '16px' }}>
            <h4 className="block text-sm font-medium mb-2">Link to Entity</h4>
-           <div
-             ref={mentionScrollRef}
-             className="mention-list-container"
-             style={{
-               maxHeight: '300px',
-               overflowY: 'auto',
-               position: 'relative',
-             }}
-           >
-             <div
-               style={{
-                 height: `${mentionVirtualizer.getTotalSize()}px`,
-                 width: '100%',
-                 position: 'relative',
-               }}
-             >
-               {mentionVirtualizer.getVirtualItems().map((virtualItem) => {
-                 const entity = allEntities[virtualItem.index];
-                 return (
-                   <button
-                     key={virtualItem.key}
-                     onClick={() => {
-                       insertMention(entity);
-                       setShowMentionMenu(false);
-                     }}
-                     className="mention-item w-full text-left px-3 py-2 rounded border border-muted hover:bg-muted"
-                     style={{
-                       position: 'absolute',
-                       top: 0,
-                       left: 0,
-                       width: '100%',
-                       height: `${virtualItem.size - 8}px`,
-                       transform: `translateY(${virtualItem.start}px)`,
-                     }}
-                   >
-                     {entity.name} ({entity.type})
-                   </button>
-                 );
-               })}
-             </div>
+           <div className="space-y-2">
+             {allEntities.map(entity => (
+               <button
+                 key={entity.id}
+                 onClick={() => {
+                   insertMention(entity);
+                   setShowMentionMenu(false);
+                 }}
+                 className="mention-item w-full text-left px-3 py-2 rounded border border-muted hover:bg-muted"
+               >
+                 {entity.name} ({entity.type})
+               </button>
+             ))}
            </div>
          </div>
        )}

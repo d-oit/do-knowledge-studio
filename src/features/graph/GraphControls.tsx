@@ -8,7 +8,7 @@ import EntityReviewDialog from '../ai/EntityReviewDialog';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { MEDIA_QUERIES } from '../../lib/constants';
 import type { GraphSnapshot } from '../../lib/validation';
-import { repository, type GraphSnapshotDiff } from '../../db/repository';
+import { type GraphSnapshotDiff } from '../../db/repository';
 import { useRepository } from '../../db/useRepository';
 import { z } from 'zod';
 import { logger } from '../../lib/logger';
@@ -179,7 +179,18 @@ const GraphControls: React.FC<GraphControlsProps> = ({
   const handleAnalyzeAllNotes = async () => {
     setIsAnalyzing(true);
     try {
-      const notes = await repository.getAllNotes();
+      const allEntities = await repository.getAllEntities();
+      // Filter for entities of type 'note' that have meaningful content in description
+      const notesToAnalyze = allEntities.filter(e =>
+        e.type === 'note' && e.description && e.description.trim().length > 20
+      );
+
+      if (notesToAnalyze.length === 0) {
+        logger.info('No notes found for analysis');
+        setIsAnalyzing(false);
+        return;
+      }
+
       const config = await loadConfig();
       const provider = createProvider(config);
       const providerConfig = config.providers[config.activeProvider];
@@ -188,14 +199,24 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       const allEntitiesMap = new Map<string, ExtractedEntity>();
       const allRelationships: ExtractedRelationship[] = [];
 
-      for (const note of notes) {
-        if (!note.content) continue;
-        const result = await extractEntities(note.content, provider, model);
+      // Process in batches of 3 to improve performance while respecting rate limits
+      const BATCH_SIZE = 3;
+      for (let i = 0; i < notesToAnalyze.length; i += BATCH_SIZE) {
+        const batch = notesToAnalyze.slice(i, i + BATCH_SIZE);
+        const results = await Promise.all(
+          batch.map(note => extractEntities(note.description!, provider, model))
+        );
 
-        result.entities.forEach(e => {
-          allEntitiesMap.set(e.name, e);
+        results.forEach(result => {
+          result.entities.forEach(e => {
+            // Deduplicate by name, preferring the one with description if available
+            const existing = allEntitiesMap.get(e.name);
+            if (!existing || (!existing.description && e.description)) {
+              allEntitiesMap.set(e.name, e);
+            }
+          });
+          allRelationships.push(...result.relationships);
         });
-        allRelationships.push(...result.relationships);
       }
 
       setBatchResult({
