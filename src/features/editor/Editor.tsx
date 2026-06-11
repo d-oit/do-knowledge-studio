@@ -9,7 +9,7 @@ import { useRepository } from '../../db/useRepository';
 import { jobCoordinator } from '../../lib/jobs';
 import { upsertToSearchIndex } from '../../lib/search';
 import { perf } from '../../lib/perf';
-import { CheckCircle, AtSign, Link2, ChevronDown, ChevronRight, Pencil, Sparkles, X } from 'lucide-react';
+import { CheckCircle, AtSign, Link2, ChevronDown, ChevronRight, Pencil, Undo2, Redo2, Sparkles, X } from 'lucide-react';
 import { Entity } from '../../lib/validation';
 import { extractEntities, EntityExtractionResult } from '../../lib/ai/entity-extractor';
 import { loadConfig, createProvider } from '../../lib/llm/config';
@@ -35,6 +35,8 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
   const [allEntities, setAllEntities] = useState<Entity[]>([]);
   const [showMentionMenu, setShowMentionMenu] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showLinkInput, setShowLinkInput] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('');
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [isLoadingEntity, setIsLoadingEntity] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
@@ -42,13 +44,14 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
   const [showExtractionReview, setShowExtractionReview] = useState(false);
   const [extractionSourceId, setExtractionSourceId] = useState<string | undefined>(undefined);
   const [showExtractionNotice, setShowExtractionNotice] = useState(false);
+  const [backlinks, setBacklinks] = useState<Entity[]>([]);
 
   const editor = useEditor({
     extensions: [
       StarterKit,
       Placeholder,
       ClaimExtension,
-      MentionExtension
+      MentionExtension,
     ],
     content: '<p></p>',
     editorProps: {
@@ -74,6 +77,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
 
   useEffect(() => {
     if (!editingEntityId) {
+      setBacklinks([]);
       return;
     }
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -89,6 +93,10 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
     }).catch(err => logger.error('Failed to load entity for editing', { error: err }))
     .finally(() => setIsLoadingEntity(false));
     /* eslint-enable @typescript-eslint/no-unsafe-assignment */
+
+    repository.getBacklinks(editingEntityId).then((links: Entity[]) => {
+      setBacklinks(links);
+    }).catch((err: unknown) => logger.error('Failed to load backlinks', { error: err }));
 
   }, [editingEntityId, repository]);
 
@@ -259,6 +267,14 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
     onEditComplete?.();
   }, [editor, onEditComplete]);
 
+  const setLink = useCallback(() => {
+    if (!editor || !linkUrl.trim()) return;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    editor.chain().focus().extendMarkRange('link').setLink({ href: linkUrl.trim() }).run();
+    setShowLinkInput(false);
+    setLinkUrl('');
+  }, [editor, linkUrl]);
+
   return (
     <div className="editor-container">
       {status && (
@@ -295,9 +311,18 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
           onClick={() => editor?.chain().focus().toggleBold().run()}
           className={editor?.isActive('bold') ? 'active' : ''}
           aria-label="Toggle Bold"
-          title="Bold"
+          title="Bold (Ctrl+B)"
         >
           B
+        </button>
+        <button
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
+          onClick={() => editor?.chain().focus().toggleItalic().run()}
+          className={editor?.isActive('italic') ? 'active' : ''}
+          aria-label="Toggle Italic"
+          title="Italic (Ctrl+I)"
+        >
+          <em>I</em>
         </button>
         <button
           // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
@@ -307,6 +332,75 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
           title="Heading 1"
         >
           H1
+        </button>
+        <button
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
+          onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
+          className={editor?.isActive('heading', { level: 2 }) ? 'active' : ''}
+          aria-label="Toggle Heading 2"
+          title="Heading 2"
+        >
+          H2
+        </button>
+        <button
+          onClick={() => editor?.chain().focus().toggleBulletList().run()}
+          className={editor?.isActive('bulletList') ? 'active' : ''}
+          aria-label="Toggle Bullet List"
+          title="Bullet List"
+        >
+          • List
+        </button>
+        <button
+          onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+          className={editor?.isActive('orderedList') ? 'active' : ''}
+          aria-label="Toggle Ordered List"
+          title="Ordered List"
+        >
+          1. List
+        </button>
+        <button
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
+          onClick={() => editor?.chain().focus().toggleCodeBlock().run()}
+          className={editor?.isActive('codeBlock') ? 'active' : ''}
+          aria-label="Toggle Code Block"
+          title="Code Block"
+        >
+          {'</>'}
+        </button>
+        <button
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
+          onClick={() => editor?.chain().focus().toggleBlockquote().run()}
+          className={editor?.isActive('blockquote') ? 'active' : ''}
+          aria-label="Toggle Blockquote"
+          title="Blockquote"
+        >
+          &ldquo;
+        </button>
+        <button
+          onClick={() => setShowLinkInput(!showLinkInput)}
+          className={editor?.isActive('link') ? 'active' : ''}
+          aria-label="Insert Link"
+          title="Insert Link"
+        >
+          <Link2 size={16} aria-hidden="true" />
+        </button>
+        <button
+          onClick={() => editor?.chain().focus().undo().run()}
+          disabled={!editor?.can?.().undo()}
+          aria-label="Undo"
+          title="Undo (Ctrl+Z)"
+          style={{ opacity: editor?.can?.().undo() ? 1 : 0.4 }}
+        >
+          <Undo2 size={16} aria-hidden="true" />
+        </button>
+        <button
+          onClick={() => editor?.chain().focus().redo().run()}
+          disabled={!editor?.can?.().redo()}
+          aria-label="Redo"
+          title="Redo (Ctrl+Shift+Z)"
+          style={{ opacity: editor?.can?.().redo() ? 1 : 0.4 }}
+        >
+          <Redo2 size={16} aria-hidden="true" />
         </button>
           <button
             onClick={() => editor?.chain().focus().toggleClaim().run()}
@@ -338,6 +432,21 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
           </button>
         )}
       </div>
+      {showLinkInput && (
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '4px 0', marginBottom: '8px' }}>
+          <input
+            type="url"
+            value={linkUrl}
+            onChange={(e) => setLinkUrl(e.target.value)}
+            placeholder="https://..."
+            onKeyDown={(e) => { if (e.key === 'Enter') setLink(); }}
+            style={{ flex: 1, padding: '6px 8px', fontSize: '13px' }}
+            aria-label="Link URL"
+          />
+          <button type="button" onClick={setLink} style={{ padding: '6px 12px', fontSize: '13px' }}>Apply</button>
+          <button type="button" onClick={() => { setShowLinkInput(false); setLinkUrl(''); }} style={{ padding: '6px 12px', fontSize: '13px' }}>Cancel</button>
+        </div>
+      )}
       <EditorContent editor={editor} className="tiptap-content" />
 
       {showExtractionNotice && extractionResult && (
@@ -444,24 +553,40 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
          </div>
        )}
        {showAdvanced && showMentionMenu && (
-         <div className="mention-section" style={{ marginTop: '16px' }}>
-           <h4 className="block text-sm font-medium mb-2">Link to Entity</h4>
-           <div className="space-y-2">
-             {allEntities.map(entity => (
-               <button
-                 key={entity.id}
-                 onClick={() => {
-                   insertMention(entity);
-                   setShowMentionMenu(false);
-                 }}
-                 className="mention-item w-full text-left px-3 py-2 rounded border border-muted hover:bg-muted"
-               >
-                 {entity.name} ({entity.type})
-               </button>
-             ))}
-           </div>
-         </div>
-       )}
+          <div className="mention-section" style={{ marginTop: '16px' }}>
+            <h4 className="block text-sm font-medium mb-2">Link to Entity</h4>
+            <div className="space-y-2">
+              {allEntities.map(entity => (
+                <button
+                  key={entity.id}
+                  onClick={() => {
+                    insertMention(entity);
+                    setShowMentionMenu(false);
+                  }}
+                  className="mention-item w-full text-left px-3 py-2 rounded border border-muted hover:bg-muted"
+                >
+                  {entity.name} ({entity.type})
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {editingEntityId && backlinks.length > 0 && (
+          <div className="backlinks-section" style={{ marginTop: '16px', padding: '8px 0' }}>
+            <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>
+              Referenced by ({backlinks.length})
+            </h4>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {backlinks.map(bl => (
+                <li key={bl.id} style={{ padding: '4px 0', fontSize: '13px' }}>
+                  <span style={{ color: 'var(--interactive-primary)', cursor: 'default' }}>{bl.name}</span>
+                  <span style={{ color: 'var(--text-muted)', marginLeft: '6px' }}>({bl.type})</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
     </div>
   );

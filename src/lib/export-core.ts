@@ -246,3 +246,75 @@ export function generatePrintHtml(entities: Entity[], claims: Record<string, Cla
 
   return html;
 }
+
+export interface ParsedEntity {
+  name: string;
+  type: string;
+  description: string;
+  claims: Array<{ statement: string; confidence: number; evidence: string }>;
+  notes: string[];
+}
+
+export function parseMarkdownImport(markdown: string): ParsedEntity[] {
+  const entities: ParsedEntity[] = [];
+  const sections = markdown.split(/\n---\n/);
+
+  for (const section of sections) {
+    const trimmed = section.trim();
+    if (!trimmed) continue;
+
+    const lines = trimmed.split('\n');
+    const nameMatch = lines[0]?.match(/^#\s+(.+)/);
+    if (!nameMatch) continue;
+
+    const name = nameMatch[1].trim();
+    let type = 'note';
+    let description = '';
+    const claims: ParsedEntity['claims'] = [];
+    const notes: string[] = [];
+
+    let currentSection: 'none' | 'claims' | 'notes' = 'none';
+    let claimBuffer: { statement: string; confidence: number; evidence: string } | null = null;
+
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i];
+      const typeMatch = line.match(/^\*\*Type:\*\*\s*(.+)/);
+      if (typeMatch) {
+        type = typeMatch[1].trim().toLowerCase();
+        continue;
+      }
+
+      if (line.startsWith('## Claims')) {
+        currentSection = 'claims';
+        continue;
+      }
+      if (line.startsWith('## Notes')) {
+        currentSection = 'notes';
+        continue;
+      }
+
+      if (currentSection === 'claims') {
+        const claimMatch = line.match(/^-\s+(.+)/);
+        if (claimMatch) {
+          if (claimBuffer) claims.push(claimBuffer);
+          const statement = claimMatch[1].replace(/\s*\(confidence:\s*([\d.]+)\)/, '').trim();
+          const confMatch = claimMatch[1].match(/\(confidence:\s*([\d.]+)\)/);
+          claimBuffer = { statement, confidence: confMatch ? parseFloat(confMatch[1]) : 1.0, evidence: '' };
+        } else if (claimBuffer && line.match(/^\s+-\s+\*Evidence:\*\s*(.+)/)) {
+          const evMatch = line.match(/^\s+-\s+\*Evidence:\*\s*(.+)/);
+          if (evMatch) claimBuffer.evidence = evMatch[1].trim();
+        }
+      } else if (currentSection === 'notes') {
+        if (line.trim()) notes.push(line.trim());
+      } else if (line.trim() && !line.startsWith('#')) {
+        description += (description ? '\n' : '') + line.trim();
+      }
+    }
+
+    if (claimBuffer) claims.push(claimBuffer);
+
+    entities.push({ name, type, description: description.trim(), claims, notes });
+  }
+
+  return entities;
+}
