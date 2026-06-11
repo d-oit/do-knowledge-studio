@@ -96,7 +96,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
 
     repository.getBacklinks(editingEntityId).then((links: Entity[]) => {
       setBacklinks(links);
-    }).catch((err: unknown) => logger.error('Failed to load backlinks', { error: err }));
+    }).catch((err: unknown) => { logger.error('Failed to load backlinks', { error: err }); });
 
   }, [editingEntityId, repository]);
 
@@ -377,7 +377,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
           &ldquo;
         </button>
         <button
-          onClick={() => setShowLinkInput(!showLinkInput)}
+          onClick={() => { setShowLinkInput(!showLinkInput); }}
           className={editor?.isActive('link') ? 'active' : ''}
           aria-label="Insert Link"
           title="Insert Link"
@@ -437,7 +437,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
           <input
             type="url"
             value={linkUrl}
-            onChange={(e) => setLinkUrl(e.target.value)}
+            onChange={(e) => { setLinkUrl(e.target.value); }}
             placeholder="https://..."
             onKeyDown={(e) => { if (e.key === 'Enter') setLink(); }}
             style={{ flex: 1, padding: '6px 8px', fontSize: '13px' }}

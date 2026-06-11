@@ -44,8 +44,8 @@ function buildBudgetedMessages(
   let usedTokens = 0;
 
   // Walk messages from most recent, keeping as many as budget allows
-  for (let i = messages.length - 1; i >= 0; i--) {
-    const msg = messages[i];
+  const reversed = [...messages].reverse();
+  for (const msg of reversed) {
     const tokens = estimateTokens(msg.content);
     if (usedTokens + tokens > budgetForHistory) break;
     historyMessages.unshift({ role: msg.role, content: msg.content });
@@ -77,13 +77,13 @@ export function useChat() {
       if (history.length > 0) {
         setMessages(history);
       }
-    }).catch((err: unknown) => logger.warn('Failed to load chat history', { error: err }));
+    }).catch((err: unknown) => { logger.warn('Failed to load chat history', { error: err }); });
   }, []);
 
   // Persist messages whenever they change
   useEffect(() => {
     if (messages.length > 1) {
-      saveChatHistory(messages).catch((err: unknown) => logger.warn('Failed to save chat history', { error: err }));
+      saveChatHistory(messages).catch((err: unknown) => { logger.warn('Failed to save chat history', { error: err }); });
     }
   }, [messages]);
 
