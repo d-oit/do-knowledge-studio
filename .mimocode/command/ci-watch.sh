@@ -20,15 +20,18 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Determine if argument is a PR number or branch name
-if [[ "$PR_OR_BRANCH" =~ ^[0-9]+$ ]]; then
-  IS_PR=true
-  PR_NUM="$PR_OR_BRANCH"
-  echo "→ Monitoring PR #$PR_NUM CI status..."
-else
-  IS_PR=false
-  BRANCH="$PR_OR_BRANCH"
-  echo "→ Monitoring branch '$BRANCH' CI status..."
-fi
+case "$PR_OR_BRANCH" in
+  ''|*[!0-9]*)
+    IS_PR=false
+    BRANCH="$PR_OR_BRANCH"
+    echo "→ Monitoring branch '$BRANCH' CI status..."
+    ;;
+  *)
+    IS_PR=true
+    PR_NUM="$PR_OR_BRANCH"
+    echo "→ Monitoring PR #$PR_NUM CI status..."
+    ;;
+esac
 
 get_pr_checks() {
   if $IS_PR; then
@@ -36,7 +39,7 @@ get_pr_checks() {
   else
     local run_id
     run_id=$(gh run list --branch "$BRANCH" --limit 1 --json databaseId --jq '.[0].databaseId' 2>/dev/null)
-    if [[ -z "$run_id" || "$run_id" == "null" ]]; then
+    if [[ -z "$run_id" || "$run_id" = "null" ]]; then
       echo "No runs found for branch '$BRANCH'" >&2
       return 1
     fi
