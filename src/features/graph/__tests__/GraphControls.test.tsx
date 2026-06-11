@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
+import { renderWithDb } from '../../../test/test-utils';
+import { repository } from '../../../db/repository';
 
 vi.mock('@tanstack/react-virtual', () => {
   const items: { index: number; start: number; end: number; key: number }[] = [];
@@ -67,7 +69,7 @@ describe('GraphControls', () => {
   });
 
   it('shows primary buttons always visible', () => {
-    render(<GraphControls {...defaultProps} />);
+    renderWithDb(<GraphControls {...defaultProps} />, { repository });
     expect(screen.getByTitle('Select a node first')).toBeDefined();
     expect(screen.getByTitle('Export graph as PNG image')).toBeDefined();
     expect(screen.getByTitle('Save Graph Snapshot')).toBeDefined();
@@ -75,38 +77,38 @@ describe('GraphControls', () => {
   });
 
   it('shows layout toggle buttons', () => {
-    render(<GraphControls {...defaultProps} />);
+    renderWithDb(<GraphControls {...defaultProps} />, { repository });
     expect(screen.getByTitle('Circular layout')).toBeDefined();
     expect(screen.getByTitle('Force-directed layout')).toBeDefined();
     expect(screen.getByTitle('Hierarchical layout')).toBeDefined();
   });
 
   it('toggles to circular layout on button click', () => {
-    render(<GraphControls {...defaultProps} />);
+    renderWithDb(<GraphControls {...defaultProps} />, { repository });
     fireEvent.click(screen.getByTitle('Circular layout'));
     expect(defaultProps.onLayoutChange).toHaveBeenCalledWith('circular');
   });
 
   it('toggles to hierarchical layout on button click', () => {
-    render(<GraphControls {...defaultProps} />);
+    renderWithDb(<GraphControls {...defaultProps} />, { repository });
     fireEvent.click(screen.getByTitle('Hierarchical layout'));
     expect(defaultProps.onLayoutChange).toHaveBeenCalledWith('hierarchical');
   });
 
   it('triggers focus mode toggle', () => {
-    render(<GraphControls {...defaultProps} hasSelection={true} />);
+    renderWithDb(<GraphControls {...defaultProps} hasSelection={true} />, { repository });
     fireEvent.click(screen.getByTitle('Toggle Neighborhood Focus'));
     expect(defaultProps.setFocusMode).toHaveBeenCalledWith(true);
   });
 
   it('triggers export PNG on button click', () => {
-    render(<GraphControls {...defaultProps} />);
+    renderWithDb(<GraphControls {...defaultProps} />, { repository });
     fireEvent.click(screen.getByTitle('Export graph as PNG image'));
     expect(defaultProps.onExportPNG).toHaveBeenCalled();
   });
 
   it('opens snapshot browser and renders snapshots via virtualizer', async () => {
-    render(<GraphControls {...defaultProps} />);
+    renderWithDb(<GraphControls {...defaultProps} />, { repository });
     fireEvent.click(screen.getByTitle('Load or diff saved snapshots'));
     await waitFor(() => {
       expect(screen.getByText('Snapshot 1')).toBeDefined();
@@ -122,16 +124,14 @@ describe('GraphControls', () => {
     vi.mocked(repository.listSnapshots).mockImplementation(
       () => new Promise(resolve => setTimeout(() => resolve([]), 100))
     );
-    render(<GraphControls {...defaultProps} />);
+    renderWithDb(<GraphControls {...defaultProps} />, { repository });
     fireEvent.click(screen.getByTitle('Load or diff saved snapshots'));
     expect(screen.getByText('Loading snapshots...')).toBeDefined();
   });
 
   it('displays empty state when no snapshots exist', async () => {
-    const { repository } = await import('../../../db/repository');
-
     vi.mocked(repository.listSnapshots).mockResolvedValue([]);
-    render(<GraphControls {...defaultProps} />);
+    renderWithDb(<GraphControls {...defaultProps} />, { repository });
     fireEvent.click(screen.getByTitle('Load or diff saved snapshots'));
     await waitFor(() => {
       expect(screen.getByText(/No snapshots saved yet/)).toBeDefined();

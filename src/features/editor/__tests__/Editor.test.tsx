@@ -56,6 +56,8 @@ vi.mock('lucide-react', () => ({
   ChevronDown: () => <div />,
   ChevronRight: () => <div />,
   Pencil: () => <div />,
+  Sparkles: () => <div />,
+  X: () => <div />,
 }));
 
 vi.mock('../ClaimExtension', () => ({
