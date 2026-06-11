@@ -9,8 +9,8 @@ interface ChatMessage {
   tokenUsage?: { input: number; output: number };
 }
 
-function openDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
+const openDB = (): Promise<IDBDatabase> =>
+  new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onerror = () => reject(new Error(String(request.error)));
     request.onsuccess = () => resolve(request.result);
@@ -21,9 +21,8 @@ function openDB(): Promise<IDBDatabase> {
       }
     };
   });
-}
 
-export async function loadChatHistory(): Promise<ChatMessage[]> {
+export const loadChatHistory = async (): Promise<ChatMessage[]> => {
   try {
     const db = await openDB();
     return new Promise((resolve, reject) => {
@@ -43,9 +42,9 @@ export async function loadChatHistory(): Promise<ChatMessage[]> {
   } catch {
     return [];
   }
-}
+};
 
-export async function saveChatHistory(messages: ChatMessage[]): Promise<void> {
+export const saveChatHistory = async (messages: ChatMessage[]): Promise<void> => {
   try {
     const db = await openDB();
     const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -60,9 +59,9 @@ export async function saveChatHistory(messages: ChatMessage[]): Promise<void> {
   } catch {
     // Silently fail — chat history persistence is best-effort
   }
-}
+};
 
-export async function clearChatHistory(): Promise<void> {
+export const clearChatHistory = async (): Promise<void> => {
   try {
     const db = await openDB();
     const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -75,10 +74,10 @@ export async function clearChatHistory(): Promise<void> {
   } catch {
     // Silently fail
   }
-}
+};
 
-function getTimestampFromId(id: string): number {
+const getTimestampFromId = (id: string): number => {
   const ts = id.split('-')[0];
   const num = parseInt(ts, 10);
   return isNaN(num) ? 0 : num;
-}
+};

@@ -169,10 +169,10 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
         });
 
         // Enqueue external URL fetch for auto-hydration if source URL provided
-        if (sourceUrl.trim()) {
+        if (sourceUrl.trim() && entity.id) {
           jobCoordinator.enqueue('external-fetch', entity.id, {
             url: sourceUrl.trim(),
-            entityId: entity.id!,
+            entityId: entity.id,
           });
           logger.info('Enqueued external fetch for entity auto-hydration', { entityId: entity.id, url: sourceUrl });
         }
@@ -203,24 +203,24 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
 
         const statements: { sql: string; bind?: (string | number | boolean | null)[] }[] = [];
 
+        const entityId = entity.id ?? '';
+
         statements.push({
           sql: 'INSERT INTO notes (entity_id, content, format) VALUES (?, ?, ?)',
-          bind: [entity.id, content, 'markdown']
+          bind: [entityId, content, 'markdown']
         });
 
         for (const claim of claims) {
           statements.push({
-            sql: `INSERT INTO claims (entity_id, statement, confidence, evidence, source, verification_status)
-                  VALUES (?, ?, ?, ?, ?, ?)`,
-            bind: [entity.id!, claim.statement, 1.0, 'Extracted from editor', claim.source, claim.status]
+            sql: 'INSERT INTO claims (entity_id, statement, confidence, evidence, source, verification_status) VALUES (?, ?, ?, ?, ?, ?)',
+            bind: [entityId, claim.statement, 1.0, 'Extracted from editor', claim.source, claim.status]
           });
         }
 
         for (const mention of mentions) {
           statements.push({
-            sql: `INSERT INTO links (source_id, target_id, relation, metadata)
-                  VALUES (?, ?, ?, ?)`,
-            bind: [entity.id!, mention.id, 'mentions', JSON.stringify({ name: mention.name })]
+            sql: 'INSERT INTO links (source_id, target_id, relation, metadata) VALUES (?, ?, ?, ?)',
+            bind: [entityId, mention.id, 'mentions', JSON.stringify({ name: mention.name })]
           });
         }
 
@@ -425,7 +425,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
             AI Extract
           </button>
           <div className="toolbar-spacer" />
-        <button type="button" onClick={() => void handleSave()} className="primary">{editingEntityId ? 'Update Entity' : 'Save to DB'}</button>
+        <button type="button" onClick={() => { void handleSave(); }} className="primary">{editingEntityId ? 'Update Entity' : 'Save to DB'}</button>
         {editingEntityId && (
           <button type="button" onClick={handleCancelEdit} aria-label="Cancel editing">
             Cancel
