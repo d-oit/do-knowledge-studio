@@ -9,12 +9,12 @@
 
 | Priority | Plan | Description | Effort | Status | Issues |
 |----------|------|-------------|--------|--------|--------|
-| **P0** | [33-post-swarm-critical-features.md](33-post-swarm-critical-features.md) | Library view, search nav, backlinks, CLI unification, Chat→LLM, toolbar, undo/redo | 20-28h | 📝 OPEN | #223–#231 |
+| **P0** | [33-post-swarm-critical-features.md](33-post-swarm-critical-features.md) | Library view, search nav, backlinks, CLI unification, Chat→LLM, toolbar, undo/redo | 20-28h | 🟡 PARTIAL | #223–#231 |
 | **P1** | [34-architecture-hygiene.md](34-architecture-hygiene.md) | Split 4 oversized files (repository, GraphView, AIHarness, search) | 16-20h | 📝 OPEN | #226 |
 | **P1** | [35-test-coverage-expansion.md](35-test-coverage-expansion.md) | Mind map, CLI, graph, extension, E2E tests | 20-28h | 📝 OPEN | #228, #229 |
 | **P1** | [36-documentation-overhaul.md](36-documentation-overhaul.md) | CLI docs, JSDoc, DB schema, search arch, onboarding, LLM setup, deployment | 12-16h | 📝 OPEN | #237 |
 | **P1** | [37-security-quality-hardening.md](37-security-quality-hardening.md) | API key encryption, SSRF fix, migration fix, snapshot validation | 8-12h | 📝 OPEN | #238–#240 |
-| **P0** | [033-goap-open-issues-prs-2026-06-11.md](033-goap-open-issues-prs-2026-06-11.md) | Close all 8 open issues + merge 7 open PRs | 25-35h | 📝 OPEN | #280–#289, #292–#303 |
+| **P0** | [033-goap-open-issues-prs-2026-06-11.md](033-goap-open-issues-prs-2026-06-11.md) | Close 6 open issues + wire missing plan features | 8-12h | ✅ DONE | #280–#282, #284, #288, #289 |
 
 ## Quick Reference — Completed Plans
 
