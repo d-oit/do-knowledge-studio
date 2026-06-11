@@ -1,0 +1,12 @@
+version: "1"
+exclude_patterns:
+  - "dist/"
+  - "node_modules/"
+  - "coverage/"
+  - ".mimocode/"
+tools:
+  biome:
+    enabled: true
+    config:
+      rules:
+        lint/correctness/useQwikValidLexicalScope: off
