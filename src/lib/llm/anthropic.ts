@@ -15,7 +15,7 @@ export class AnthropicProvider implements LLMProvider {
   }
 
   isConfigured(): boolean {
-    return !!this.config.apiKey;
+    return Boolean(this.config.apiKey);
   }
 
   async chat(request: LLMRequest): Promise<LLMResponse> {

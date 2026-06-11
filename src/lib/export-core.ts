@@ -255,7 +255,7 @@ export interface ParsedEntity {
   notes: string[];
 }
 
-export function parseMarkdownImport(markdown: string): ParsedEntity[] {
+export const parseMarkdownImport = (markdown: string): ParsedEntity[] => {
   const entities: ParsedEntity[] = [];
   const sections = markdown.split(/\n---\n/);
 

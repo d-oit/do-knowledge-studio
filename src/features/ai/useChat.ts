@@ -57,7 +57,7 @@ const buildBudgetedMessages = (
   ];
 };
 
-export function useChat() {
+export const useChat = () => {
   const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSourcing, setIsSourcing] = useState(false);

@@ -9,6 +9,12 @@ interface ChatMessage {
   tokenUsage?: { input: number; output: number };
 }
 
+const getTimestampFromId = (id: string): number => {
+  const ts = id.split('-')[0];
+  const num = parseInt(ts, 10);
+  return isNaN(num) ? 0 : num;
+};
+
 const openDB = (): Promise<IDBDatabase> =>
   new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -74,10 +80,4 @@ export const clearChatHistory = async (): Promise<void> => {
   } catch {
     // Silently fail
   }
-};
-
-const getTimestampFromId = (id: string): number => {
-  const ts = id.split('-')[0];
-  const num = parseInt(ts, 10);
-  return isNaN(num) ? 0 : num;
 };

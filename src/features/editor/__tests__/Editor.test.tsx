@@ -93,7 +93,7 @@ vi.mock('../../../db/repository', () => ({
     getAllEntities: vi.fn().mockResolvedValue([]),
     getBacklinks: vi.fn().mockResolvedValue([]),
     getBacklinkCount: vi.fn().mockResolvedValue(0),
-    transaction: vi.fn().mockResolvedValue(void 0),
+    transaction: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -112,8 +112,8 @@ vi.mock('../../../lib/perf', () => ({
 }));
 
 vi.mock('../../../lib/search', () => ({
-  upsertToSearchIndex: vi.fn().mockResolvedValue(void 0),
-  removeFromSearchIndex: vi.fn().mockResolvedValue(void 0),
+  upsertToSearchIndex: vi.fn().mockResolvedValue(undefined),
+  removeFromSearchIndex: vi.fn().mockResolvedValue(undefined),
   hydrateOramaIndex: vi.fn(),
 }));
 
