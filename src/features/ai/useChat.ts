@@ -25,16 +25,15 @@ const WELCOME_MESSAGE: Message = { id: 'initial', role: 'assistant', content: 'A
 const MAX_CONTEXT_TOKENS = 6000;
 const CHARS_PER_TOKEN = 4;
 
-function estimateTokens(text: string): number {
-  return Math.ceil(text.length / CHARS_PER_TOKEN);
-}
+const estimateTokens = (text: string): number =>
+  Math.ceil(text.length / CHARS_PER_TOKEN);
 
-function buildBudgetedMessages(
+const buildBudgetedMessages = (
   messages: Message[],
   systemPrompt: string,
   userContent: string,
   maxTokens: number
-): LLMMessage[] {
+): LLMMessage[] => {
   const systemTokens = estimateTokens(systemPrompt);
   const userTokens = estimateTokens(userContent);
   const reservedTokens = systemTokens + userTokens + 200;
@@ -43,7 +42,6 @@ function buildBudgetedMessages(
   const historyMessages: LLMMessage[] = [];
   let usedTokens = 0;
 
-  // Walk messages from most recent, keeping as many as budget allows
   const reversed = [...messages].reverse();
   for (const msg of reversed) {
     const tokens = estimateTokens(msg.content);
@@ -57,7 +55,7 @@ function buildBudgetedMessages(
     ...historyMessages,
     { role: 'user', content: userContent },
   ];
-}
+};
 
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE]);

@@ -147,7 +147,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
         // Update existing entity
         const entity = await repository.updateEntity(editingEntityId, {
           name: title,
-          type: type,
+          type,
           description: content,
           sourceUrl: sourceUrl.trim() || undefined,
         });
@@ -162,7 +162,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
         // Create new entity
         const entity = await repository.createEntity({
           name: title,
-          type: type,
+          type,
           description: content,
           sourceUrl: sourceUrl.trim() || undefined,
           metadata: {}
@@ -204,7 +204,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
         const statements: { sql: string; bind?: (string | number | boolean | null)[] }[] = [];
 
         statements.push({
-          sql: `INSERT INTO notes (entity_id, content, format) VALUES (?, ?, ?)`,
+          sql: 'INSERT INTO notes (entity_id, content, format) VALUES (?, ?, ?)',
           bind: [entity.id, content, 'markdown']
         });
 
