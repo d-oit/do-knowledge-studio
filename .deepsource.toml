@@ -21,22 +21,5 @@ enabled = true
   max_complexity = "30"
   max_functions = "50"
 
-  [[analyzers.meta.issue_patterns]]
-  pattern = "JS-0098"
-  skip = true
-
-  [[analyzers.meta.issue_patterns]]
-  pattern = "JS-R1005"
-  skip = true
-
-  [[analyzers.meta.issue_patterns]]
-  pattern = "JS-W1042"
-  skip = true
-
-  [[analyzers.meta.issue_patterns]]
-  pattern = "JS-0045"
-  skip = true
-
-  [[analyzers.meta.issue_patterns]]
-  pattern = "JS-0067"
-  skip = true
+  [analyzers.meta.ratings]
+    documentation_coverage = "A"
