@@ -56,6 +56,7 @@ const AIHarness: React.FC = () => {
     const seen = localStorage.getItem(WIZARD_SEEN_KEY);
     const hasAnyKey = Object.values(config.providers).some(p => p.apiKey);
     if (!seen && !hasAnyKey) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- conditional UI flag set after async config load, not a cascade risk
       setShowWizard(true);
     }
     void getDbHandles().then(({ fileHandle }) => {
@@ -70,6 +71,7 @@ const AIHarness: React.FC = () => {
         ? editModel
         : (config.providers[config.activeProvider].defaultModel || '');
       if (currentModel && currentModel !== editModel) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- model sync on provider/settings change, no cascade risk
         setEditModel(currentModel);
       }
     }

@@ -1,4 +1,4 @@
-export type { LLMMessage, LLMRequest, LLMResponse, LLMStreamChunk, LLMProviderConfig, LLMProvider } from './types';
+export type { LLMMessage, LLMRequest, LLMResponse, LLMStreamChunk, LLMProviderConfig, LLMProvider, ToolDefinition, ToolCall, ToolResult } from './types';
 export { OpenRouterProvider } from './openrouter';
 export { KiloGatewayProvider } from './kilo';
 export { AnthropicProvider } from './anthropic';
@@ -6,6 +6,8 @@ export { OllamaProvider } from './ollama';
 export { loadConfig, saveConfig, createProvider, getProvider, type LLMConfig } from './config';
 export { OPENROUTER_FREE_MODELS } from './openrouter';
 export { KILO_FREE_MODELS } from './kilo';
+export { BUILT_IN_TOOLS } from './tool-registry';
+export { executeTool, type ToolExecutionContext } from './tool-executor';
 export { ANTHROPIC_MODELS } from './anthropic';
 export { OLLAMA_MODELS } from './ollama';
 

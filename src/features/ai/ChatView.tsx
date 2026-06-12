@@ -1,6 +1,6 @@
-import React, { useRef, useEffect, useCallback } from 'react';
-import { Bot, User, Loader2, Globe, ExternalLink, X, Send } from 'lucide-react';
-import { Message, TokenUsage } from './useChat';
+import React, { useRef, useEffect, useCallback, useState } from 'react';
+import { Bot, User, Loader2, Globe, ExternalLink, X, Send, ChevronDown, ChevronRight, Wrench } from 'lucide-react';
+import { Message, TokenUsage, ToolCallRecord } from './useChat';
 import { ResolvedContent } from '../../lib/resolver';
 import MarkdownRenderer from '../../lib/llm/markdown';
 
@@ -22,6 +22,59 @@ interface ChatViewProps {
 const safeHostname = (url: string): string => {
   try { return new URL(url).hostname; } catch { return url; }
 };
+
+const nameStyle: React.CSSProperties = { fontWeight: 600 };
+const labelStyle: React.CSSProperties = { fontWeight: 600, color: 'var(--text-muted)' };
+const codeStyle: React.CSSProperties = { whiteSpace: 'pre-wrap', wordBreak: 'break-all' };
+const bodyDivStyle: React.CSSProperties = { padding: '6px 8px', background: 'var(--surface-primary)', display: 'flex', flexDirection: 'column', gap: '4px' };
+const blockStyle: React.CSSProperties = { margin: '4px 0', border: '1px solid var(--border-default)', borderRadius: '6px', fontSize: '12px', overflow: 'hidden' };
+const btnStyle: React.CSSProperties = { width: '100%', display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 8px', background: 'var(--surface-secondary)', border: 'none', cursor: 'pointer', textAlign: 'left' };
+const errorStyle: React.CSSProperties = { color: '#dc2626', marginLeft: 'auto' };
+const iconBaseStyle: React.CSSProperties = { marginLeft: 'auto' };
+const errorIconStyle: React.CSSProperties = { marginLeft: '0' };
+
+function ToolCallHeader({ toolCall, expanded, onToggle }: { toolCall: ToolCallRecord; expanded: boolean; onToggle: () => void }): React.ReactElement {
+  return (
+    <button type="button" onClick={onToggle} style={btnStyle} aria-expanded={expanded}>
+      <Wrench size={12} />
+      <span style={nameStyle}>{toolCall.name}</span>
+      {toolCall.isError && <span style={errorStyle}>error</span>}
+      <span style={toolCall.isError ? errorIconStyle : iconBaseStyle}>
+        {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+      </span>
+    </button>
+  );
+}
+
+const resultCodeBaseStyle: React.CSSProperties = { whiteSpace: 'pre-wrap', wordBreak: 'break-all' };
+
+function ToolCallBody({ toolCall }: { toolCall: ToolCallRecord }): React.ReactElement {
+  return (
+    <div style={bodyDivStyle}>
+      <div>
+        <span style={labelStyle}>Input: </span>
+        <code style={codeStyle}>{JSON.stringify(toolCall.arguments, null, 2)}</code>
+      </div>
+      {toolCall.result !== undefined && (
+        <div>
+          <span style={labelStyle}>Result: </span>
+          <code style={toolCall.isError ? { ...resultCodeBaseStyle, color: '#dc2626' } : resultCodeBaseStyle}>{toolCall.result}</code>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ToolCallBlock({ toolCall }: { toolCall: ToolCallRecord }): React.ReactElement {
+  const [expanded, setExpanded] = useState(false);
+  const toggle = useCallback(() => { setExpanded(v => !v); }, []);
+  return (
+    <div style={blockStyle}>
+      <ToolCallHeader toolCall={toolCall} expanded={expanded} onToggle={toggle} />
+      {expanded && <ToolCallBody toolCall={toolCall} />}
+    </div>
+  );
+}
 
 export const ChatView: React.FC<ChatViewProps> = ({
   messages,
@@ -92,7 +145,14 @@ export const ChatView: React.FC<ChatViewProps> = ({
               {m.role === 'assistant' ? 'Assistant' : 'You'}
             </div>
             {m.role === 'assistant' ? (
-              <MarkdownRenderer content={m.content} />
+              <>
+                {m.toolCalls && m.toolCalls.length > 0 && (
+                  <div style={{ marginBottom: '6px' }}>
+                    {m.toolCalls.map(tc => <ToolCallBlock key={tc.id} toolCall={tc} />)}
+                  </div>
+                )}
+                <MarkdownRenderer content={m.content} />
+              </>
             ) : (
               m.content
             )}

@@ -28,6 +28,9 @@ export class OpenRouterProvider implements LLMProvider {
         temperature: request.temperature,
         max_tokens: request.maxTokens,
         stream: false,
+        ...(request.tools?.length
+          ? { tools: request.tools.map(t => ({ type: 'function', function: t })), tool_choice: 'auto' }
+          : {}),
       }),
     });
 
@@ -37,13 +40,24 @@ export class OpenRouterProvider implements LLMProvider {
     }
 
     const data = await response.json() as OpenAIChatResponse;
+    const message = data.choices[0]?.message;
+    const rawToolCalls = message?.tool_calls;
     return {
-      content: data.choices[0]?.message?.content || '',
+      content: message?.content || '',
       model: data.model || request.model,
       usage: data.usage ? {
         inputTokens: data.usage.prompt_tokens,
         outputTokens: data.usage.completion_tokens,
       } : undefined,
+      ...(rawToolCalls?.length
+        ? {
+            toolCalls: rawToolCalls.map(tc => ({
+              id: tc.id,
+              name: tc.function.name,
+              arguments: JSON.parse(tc.function.arguments) as Record<string, unknown>,
+            })),
+          }
+        : {}),
     };
   }
 

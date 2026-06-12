@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Database, HardDrive, RefreshCcw, AlertCircle, CheckCircle2, FileWarning } from 'lucide-react';
 import { logger } from '../lib/logger';
 
@@ -8,13 +8,7 @@ interface DatabaseSettingsProps {
 }
 
 const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({ onHandlesSelected, currentHandle }) => {
-  const [isSupported, setIsSupported] = useState(true);
-
-  useEffect(() => {
-    if (!('showOpenFilePicker' in window)) {
-      setIsSupported(false);
-    }
-  }, []);
+  const [isSupported] = useState(() => 'showOpenFilePicker' in window);
 
   const handleConnect = async () => {
     try {

@@ -82,6 +82,7 @@ const MindMapView: React.FC<Props> = ({
   const [collapsedByDefault, setCollapsedByDefault] = useState(entities.length > COLLAPSED_BY_DEFAULT_THRESHOLD);
   const [selectedNodeName, setSelectedNodeName] = useState<string | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [isMindReady, setIsMindReady] = useState(false);
 
   const rootEntity = useMemo(() =>
     entities.find(e => e.id === rootId) || propsRootEntity,
@@ -124,6 +125,7 @@ const MindMapView: React.FC<Props> = ({
     const MindElixirCtor = MindElixir as new (options: Record<string, unknown>) => MindElixirInstance;
     const instance: MindElixirInstance = new MindElixirCtor(options);
     mindInstance.current = instance;
+    setIsMindReady(true);
     instance.init({
       nodeData: treeData
     });
@@ -224,6 +226,8 @@ const MindMapView: React.FC<Props> = ({
     return () => {
       if (mindInstance.current) {
         if (currentContainer) currentContainer.replaceChildren();
+        mindInstance.current = null;
+        setIsMindReady(false);
       }
     };
   }, [treeData, onEntityClick, isLargeMap, rootId, entities]);
@@ -378,7 +382,7 @@ const MindMapView: React.FC<Props> = ({
         <button
           onClick={handleAddChild}
           className="filter-chip"
-          disabled={!mindInstance.current}
+          disabled={!isMindReady}
           title="Add child node"
           aria-label="Add child node"
         >
@@ -419,7 +423,7 @@ const MindMapView: React.FC<Props> = ({
         <button
           onClick={() => { void handleExportPng(); }}
           className="filter-chip"
-          disabled={!mindInstance.current}
+          disabled={!isMindReady}
           title="Export as PNG"
           aria-label="Export mind map as PNG"
         >

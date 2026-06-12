@@ -23,6 +23,7 @@ const GraphInspector: React.FC<GraphInspectorProps> = ({
   onClose,
   onEdit,
 }) => {
+  "use no memo"; // opt out of React Compiler — useVirtualizer returns non-memoizable functions
   const [isDeleting, setIsDeleting] = useState(false);
   const outgoingLinks = useMemo(() =>
     links.filter(l => l.source_id === entity.id),
@@ -38,6 +39,7 @@ const GraphInspector: React.FC<GraphInspectorProps> = ({
   const outgoingScrollRef = useRef<HTMLDivElement>(null);
   const incomingScrollRef = useRef<HTMLDivElement>(null);
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- useVirtualizer is stable; component opts out of React Compiler via "use no memo"
   const claimVirtualizer = useVirtualizer({
     count: claims.length,
     getScrollElement: () => claimsScrollRef.current,
@@ -45,6 +47,7 @@ const GraphInspector: React.FC<GraphInspectorProps> = ({
     overscan: 5,
   });
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- useVirtualizer is stable; component opts out of React Compiler via "use no memo"
   const outgoingVirtualizer = useVirtualizer({
     count: outgoingLinks.length,
     getScrollElement: () => outgoingScrollRef.current,
@@ -52,6 +55,7 @@ const GraphInspector: React.FC<GraphInspectorProps> = ({
     overscan: 5,
   });
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- useVirtualizer is stable; component opts out of React Compiler via "use no memo"
   const incomingVirtualizer = useVirtualizer({
     count: incomingLinks.length,
     getScrollElement: () => incomingScrollRef.current,

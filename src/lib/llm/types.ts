@@ -1,6 +1,42 @@
-export interface LLMMessage {
-  role: 'user' | 'assistant' | 'system';
+// --- Tool-calling types ---
+
+export interface ToolParameterSchema {
+  type: string;
+  description: string;
+  enum?: string[];
+}
+
+export interface ToolDefinition {
+  name: string;
+  description: string;
+  parameters: {
+    type: 'object';
+    properties: Record<string, ToolParameterSchema>;
+    required?: string[];
+  };
+}
+
+export interface ToolCall {
+  id: string;
+  name: string;
+  arguments: Record<string, unknown>;
+}
+
+export interface ToolResult {
+  toolCallId: string;
   content: string;
+  isError?: boolean;
+}
+
+// --- Message types ---
+
+export interface LLMMessage {
+  role: 'user' | 'assistant' | 'system' | 'tool';
+  content: string;
+  /** Present when role is 'assistant' and the model invoked tools. */
+  tool_calls?: ToolCall[];
+  /** Present when role is 'tool'. */
+  tool_call_id?: string;
 }
 
 export interface LLMRequest {
@@ -9,6 +45,7 @@ export interface LLMRequest {
   temperature?: number;
   maxTokens?: number;
   stream?: boolean;
+  tools?: ToolDefinition[];
 }
 
 export interface LLMResponse {
@@ -18,6 +55,7 @@ export interface LLMResponse {
     inputTokens: number;
     outputTokens: number;
   };
+  toolCalls?: ToolCall[];
 }
 
 export interface LLMStreamChunk {
@@ -48,7 +86,13 @@ export interface LLMProvider {
 /** OpenAI-compatible chat completion response body. */
 export interface OpenAIChatResponse {
   choices: Array<{
-    message?: { content?: string };
+    message?: {
+      content?: string;
+      tool_calls?: Array<{
+        id: string;
+        function: { name: string; arguments: string };
+      }>;
+    };
     delta?: { content?: string };
   }>;
   model?: string;

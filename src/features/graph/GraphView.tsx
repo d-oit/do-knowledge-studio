@@ -76,9 +76,11 @@ const GraphView: React.FC<Props> = ({
     handleExitSnapshot,
   } = useGraphSnapshotManager(repository);
 
+  // eslint-disable-next-line react-hooks/refs -- hook uses refs only inside effects, not for rendering
   useGraphKeyboardNavigation(
     containerRef.current,
     sigmaInstance.current,
+    // eslint-disable-next-line react-hooks/refs -- accessed only in effect inside hook
     graphRef.current,
     entities,
     selectedNode,
@@ -88,6 +90,7 @@ const GraphView: React.FC<Props> = ({
     repository
   );
 
+  // eslint-disable-next-line react-hooks/refs -- hook uses refs only inside effects, not for rendering
   useGraphTouchGestures(containerRef.current, sigmaInstance.current);
 
   const recomputeNeighborhoodHandler = useCallback((payload: unknown) => {
@@ -126,6 +129,7 @@ const GraphView: React.FC<Props> = ({
 
   useEffect(() => {
     if (!focusMode || !selectedNode) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- guard reset before async job, not a cascade risk
       setFilteredData({ entities, links });
       return;
     }
@@ -310,6 +314,7 @@ const GraphView: React.FC<Props> = ({
   useEffect(() => {
     if (!selectedNode) {
       setSelectedEntityClaims([]);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- guard reset before async fetch
       setSelectedEntityLinks([]);
       return;
     }

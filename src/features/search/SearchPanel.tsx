@@ -105,6 +105,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
   shouldAutoFocus = false,
   ariaLabel
 }) => {
+  "use no memo"; // opt out of React Compiler — useVirtualizer returns non-memoizable functions
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [activeFilter, setActiveFilter] = useState<FilterType>('All');
@@ -118,6 +119,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
   const scrollRef = useRef<HTMLDivElement>(null);
   const ITEM_HEIGHT = 72;
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- useVirtualizer is stable; component opts out of React Compiler via "use no memo"
   const virtualizer = useVirtualizer({
     count: results.length,
     getScrollElement: () => scrollRef.current,

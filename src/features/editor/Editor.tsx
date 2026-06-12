@@ -81,18 +81,16 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
       setBacklinks([]);
       return;
     }
-    setIsLoadingEntity(true);
-    /* eslint-disable @typescript-eslint/no-unsafe-assignment -- type resolution through Promise chain */
+    setIsLoadingEntity(true); // eslint-disable-line react-hooks/set-state-in-effect -- loading flag set before async fetch, not a cascade risk
     repository.getEntityById(editingEntityId).then((entity: (Entity & { rowid: number }) | null) => {
       if (!entity) return;
       setTitle(entity.name || '');
       setType(entity.type);
       setSourceUrl(entity.sourceUrl ?? '');
-      setShowAdvanced(entity.metadata?.advanced ?? false);
+      setShowAdvanced((entity.metadata?.advanced as boolean | undefined) ?? false);
       setStatus(null);
     }).catch(err => logger.error('Failed to load entity for editing', { error: err }))
     .finally(() => setIsLoadingEntity(false));
-    /* eslint-enable @typescript-eslint/no-unsafe-assignment */
 
     repository.getBacklinks(editingEntityId).then((links: Entity[]) => {
       setBacklinks(links);
@@ -306,7 +304,6 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
       </div>
       <div className="toolbar">
         <button
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
           onClick={() => editor?.chain().focus().toggleBold().run()}
           className={editor?.isActive('bold') ? 'active' : ''}
           aria-label="Toggle Bold"
