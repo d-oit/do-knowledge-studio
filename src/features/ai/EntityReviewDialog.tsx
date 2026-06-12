@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import type { FC } from 'react';
 import { X, CheckCircle2, Link2, PlusCircle } from 'lucide-react';
-import { EntityExtractionResult } from '../../lib/ai/entity-extractor';
+import type { EntityExtractionResult } from '../../lib/ai/entity-extractor';
 import { useRepository } from '../../db/useRepository';
 import { applyEntitiesToGraph } from '../../lib/ai/graph-linker';
 import { logger } from '../../lib/logger';
@@ -12,7 +13,7 @@ interface EntityReviewDialogProps {
   onComplete: () => void;
 }
 
-const EntityReviewDialog: React.FC<EntityReviewDialogProps> = ({
+const EntityReviewDialog: FC<EntityReviewDialogProps> = ({
   result,
   sourceNoteId,
   onClose,
@@ -152,7 +153,7 @@ const EntityReviewDialog: React.FC<EntityReviewDialogProps> = ({
         </div>
 
         <div className="modal-actions" style={{ padding: '16px', borderTop: '1px solid var(--border-default)' }}>
-          <button type="button" onClick={() => onClose()} disabled={isApplying}>Cancel</button>
+          <button type="button" onClick={() => { onClose(); }} disabled={isApplying}>Cancel</button>
           <button
             type="button"
             onClick={() => { void handleApply(); }}

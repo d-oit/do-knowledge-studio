@@ -1,14 +1,14 @@
 import { describe, it, expect, vi } from 'vitest';
 import { applyEntitiesToGraph } from '../graph-linker';
-import { IRepository } from '../../../db/repository/types';
-import { EntityExtractionResult } from '../entity-extractor';
-import { Entity } from '../../../lib/validation';
+import type { IRepository } from '../../../db/repository/types';
+import type { EntityExtractionResult } from '../entity-extractor';
+import type { Entity } from '../../../lib/validation';
 
 describe('applyEntitiesToGraph', () => {
   it('creates new entities and links if they do not exist', async () => {
     const mockRepository: Partial<IRepository> = {
       getEntityByName: vi.fn().mockResolvedValue(null),
-      createEntity: vi.fn().mockImplementation((e: Omit<Entity, 'id' | 'created_at' | 'updated_at'>) => Promise.resolve({ ...e, id: 'new-id-' + e.name, rowid: 1 })),
+      createEntity: vi.fn().mockImplementation((e: Omit<Entity, 'id' | 'created_at' | 'updated_at'>) => Promise.resolve({ ...e, id: `new-id-${e.name}`, rowid: 1 })),
       createLink: vi.fn().mockResolvedValue({ id: 'link-id' }),
       getAllLinks: vi.fn().mockResolvedValue([])
     };
