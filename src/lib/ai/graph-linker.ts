@@ -1,5 +1,5 @@
-import { IRepository } from '../../db/repository/types';
-import { EntityExtractionResult } from './entity-extractor';
+import type { IRepository } from '../../db/repository/types';
+import type { EntityExtractionResult } from './entity-extractor';
 
 /**
  * Applies the selected entities and relationships from an AI extraction result to the graph.
@@ -29,9 +29,9 @@ export async function applyEntitiesToGraph(
           aiExtracted: true
         }
       });
-      nameToId.set(entity.name, created.id!);
+      if (created.id) nameToId.set(entity.name, created.id);
     } else {
-      nameToId.set(entity.name, existing.id!);
+      if (existing.id) nameToId.set(entity.name, existing.id);
     }
   }
 

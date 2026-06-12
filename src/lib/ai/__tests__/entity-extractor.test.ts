@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { extractEntities } from '../entity-extractor';
-import { LLMProvider, LLMResponse } from '../../llm/types';
+import type { LLMProvider, LLMResponse } from '../../llm/types';
 
 describe('extractEntities', () => {
   it('successfully extracts entities and relationships from LLM response', async () => {
