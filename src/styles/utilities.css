@@ -88,6 +88,15 @@
 }
 
 /* Skeleton Animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
 @keyframes skeleton-pulse {
   0% { background-color: var(--bg-base); }
   50% { background-color: var(--border-default); }
