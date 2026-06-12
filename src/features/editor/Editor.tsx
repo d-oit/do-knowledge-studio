@@ -9,7 +9,7 @@ import { useRepository } from '../../db/useRepository';
 import { jobCoordinator } from '../../lib/jobs';
 import { upsertToSearchIndex } from '../../lib/search';
 import { perf } from '../../lib/perf';
-import { CheckCircle, AtSign, Link2, ChevronDown, ChevronRight, Pencil, Undo2, Redo2, Sparkles, X } from 'lucide-react';
+import { CheckCircle, AtSign, Link2, ChevronDown, ChevronRight, Pencil, Undo2, Redo2, Sparkles, X, Loader2 } from 'lucide-react';
 import { Entity } from '../../lib/validation';
 import { extractEntities } from '../../lib/ai/entity-extractor';
 import type { EntityExtractionResult } from '../../lib/ai/entity-extractor';
@@ -417,7 +417,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
             style={{ color: 'var(--interactive-primary)' }}
           >
             {isExtracting ? (
-              <span className="animate-spin" style={{ display: 'inline-block' }}>⌛</span>
+              <Loader2 size={16} className="animate-spin" aria-hidden="true" />
             ) : (
               <Sparkles size={16} aria-hidden="true" />
             )}
