@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, CheckCircle2, Link2, PlusCircle } from 'lucide-react';
-import { EntityExtractionResult } from '../../lib/ai/entity-extractor';
+import type { EntityExtractionResult } from '../../lib/ai/entity-extractor';
 import { useRepository } from '../../db/useRepository';
 import { applyEntitiesToGraph } from '../../lib/ai/graph-linker';
 import { logger } from '../../lib/logger';

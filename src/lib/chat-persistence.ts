@@ -12,7 +12,7 @@ interface ChatMessage {
 const getTimestampFromId = (id: string): number => {
   const ts = id.split('-')[0];
   const num = parseInt(ts, 10);
-  return isNaN(num) ? 0 : num;
+  return Number.isNaN(num) ? 0 : num;
 };
 
 const openDB = (): Promise<IDBDatabase> =>

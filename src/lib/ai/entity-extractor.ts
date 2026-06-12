@@ -1,4 +1,4 @@
-import { LLMProvider } from '../llm/types';
+import type { LLMProvider } from '../llm/types';
 
 export const ENTITY_EXTRACTION_PROMPT = `
 Analyze the following note and extract:

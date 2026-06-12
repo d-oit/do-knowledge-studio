@@ -11,7 +11,8 @@ import { upsertToSearchIndex } from '../../lib/search';
 import { perf } from '../../lib/perf';
 import { CheckCircle, AtSign, Link2, ChevronDown, ChevronRight, Pencil, Undo2, Redo2, Sparkles, X } from 'lucide-react';
 import { Entity } from '../../lib/validation';
-import { extractEntities, EntityExtractionResult } from '../../lib/ai/entity-extractor';
+import { extractEntities } from '../../lib/ai/entity-extractor';
+import type { EntityExtractionResult } from '../../lib/ai/entity-extractor';
 import { loadConfig, createProvider } from '../../lib/llm/config';
 import EntityReviewDialog from '../ai/EntityReviewDialog';
 
@@ -80,7 +81,6 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
       setBacklinks([]);
       return;
     }
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoadingEntity(true);
     /* eslint-disable @typescript-eslint/no-unsafe-assignment -- type resolution through Promise chain */
     repository.getEntityById(editingEntityId).then((entity: (Entity & { rowid: number }) | null) => {
@@ -254,7 +254,6 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
 
   const insertMention = useCallback((target: Entity) => {
     if (!editor || !target.id) return;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     (editor.chain().focus() as unknown as { setMention: (attrs: { entityId: string; entityName: string }) => { run: () => void } }).setMention({ entityId: target.id, entityName: target.name }).run();
     setShowMentionMenu(false);
   }, [editor]);
