@@ -1,6 +1,8 @@
 import type { LLMProvider, LLMProviderConfig } from './types';
 import { OpenRouterProvider } from './openrouter';
 import { KiloGatewayProvider } from './kilo';
+import { AnthropicProvider } from './anthropic';
+import { OllamaProvider } from './ollama';
 import { encryptApiKey, decryptApiKey, isEncrypted } from './encryption';
 
 const STORAGE_KEY = 'dks:llm-config';
@@ -22,6 +24,16 @@ const DEFAULT_CONFIG: LLMConfig = {
       baseURL: 'https://api.kilo.ai/api/gateway',
       apiKey: '',
       defaultModel: 'meta-llama/llama-3.1-8b-instruct',
+    },
+    anthropic: {
+      baseURL: 'https://api.anthropic.com/v1',
+      apiKey: '',
+      defaultModel: 'claude-3-5-haiku-20241022',
+    },
+    ollama: {
+      baseURL: 'http://localhost:11434',
+      apiKey: '',
+      defaultModel: 'llama3.2',
     },
   },
 };
@@ -87,6 +99,10 @@ export function createProvider(config: LLMConfig): LLMProvider {
       return new OpenRouterProvider(providerConfig);
     case 'kilo':
       return new KiloGatewayProvider(providerConfig);
+    case 'anthropic':
+      return new AnthropicProvider(providerConfig);
+    case 'ollama':
+      return new OllamaProvider(providerConfig);
     default:
       throw new Error(`Unknown provider: ${config.activeProvider}`);
   }
@@ -98,6 +114,10 @@ export function getProvider(id: string, config?: Partial<LLMProviderConfig>): LL
       return new OpenRouterProvider(config);
     case 'kilo':
       return new KiloGatewayProvider(config);
+    case 'anthropic':
+      return new AnthropicProvider(config);
+    case 'ollama':
+      return new OllamaProvider(config);
     default:
       throw new Error(`Unknown provider: ${id}`);
   }
@@ -108,4 +128,4 @@ export function maskApiKey(key: string): string {
   return `...${key.slice(-4)}`;
 }
 
-export { OpenRouterProvider, KiloGatewayProvider };
+export { OpenRouterProvider, KiloGatewayProvider, AnthropicProvider, OllamaProvider };

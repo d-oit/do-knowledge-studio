@@ -9,8 +9,12 @@ import { useRepository } from '../../db/useRepository';
 import { jobCoordinator } from '../../lib/jobs';
 import { upsertToSearchIndex } from '../../lib/search';
 import { perf } from '../../lib/perf';
-import { CheckCircle, AtSign, Link2, ChevronDown, ChevronRight, Pencil } from 'lucide-react';
+import { CheckCircle, AtSign, Link2, ChevronDown, ChevronRight, Pencil, Undo2, Redo2, Sparkles, X } from 'lucide-react';
 import { Entity } from '../../lib/validation';
+import { extractEntities } from '../../lib/ai/entity-extractor';
+import type { EntityExtractionResult } from '../../lib/ai/entity-extractor';
+import { loadConfig, createProvider } from '../../lib/llm/config';
+import EntityReviewDialog from '../ai/EntityReviewDialog';
 
 const ENTITY_TYPES = [
   { value: 'note', label: 'Note' },
@@ -32,14 +36,23 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
   const [allEntities, setAllEntities] = useState<Entity[]>([]);
   const [showMentionMenu, setShowMentionMenu] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showLinkInput, setShowLinkInput] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('');
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [isLoadingEntity, setIsLoadingEntity] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [extractionResult, setExtractionResult] = useState<EntityExtractionResult | null>(null);
+  const [showExtractionReview, setShowExtractionReview] = useState(false);
+  const [extractionSourceId, setExtractionSourceId] = useState<string | undefined>(undefined);
+  const [showExtractionNotice, setShowExtractionNotice] = useState(false);
+  const [backlinks, setBacklinks] = useState<Entity[]>([]);
+
   const editor = useEditor({
     extensions: [
       StarterKit,
       Placeholder,
       ClaimExtension,
-      MentionExtension
+      MentionExtension,
     ],
     content: '<p></p>',
     editorProps: {
@@ -65,6 +78,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
 
   useEffect(() => {
     if (!editingEntityId) {
+      setBacklinks([]);
       return;
     }
     setIsLoadingEntity(true);
@@ -80,6 +94,10 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
     .finally(() => setIsLoadingEntity(false));
     /* eslint-enable @typescript-eslint/no-unsafe-assignment */
 
+    repository.getBacklinks(editingEntityId).then((links: Entity[]) => {
+      setBacklinks(links);
+    }).catch((err: unknown) => { logger.error('Failed to load backlinks', { error: err }); });
+
   }, [editingEntityId, repository]);
 
   const handleTypeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -94,6 +112,31 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
     setSourceUrl(e.target.value);
   }, []);
 
+  const handleExtractEntities = useCallback(async (entityId?: string, forceContent?: string) => {
+    if (!editor || isExtracting) return;
+
+    const content = forceContent || editor.getHTML();
+    if (!content.trim() || content === '<p></p>') return;
+
+    setIsExtracting(true);
+    try {
+      const config = await loadConfig();
+      const provider = createProvider(config);
+      const providerConfig = config.providers[config.activeProvider];
+      const model = providerConfig.defaultModel || 'google/gemini-2.0-flash-lite-preview-02-05:free';
+
+      const result = await extractEntities(content, provider, model);
+      setExtractionResult(result);
+      setExtractionSourceId(entityId || editingEntityId || undefined);
+      setShowExtractionNotice(true);
+    } catch (err) {
+      logger.error('Failed to extract entities', err);
+      setStatus({ type: 'error', message: 'Failed to extract entities with AI' });
+    } finally {
+      setIsExtracting(false);
+    }
+  }, [editor, isExtracting, editingEntityId]);
+
   const handleSave = useCallback(async () => {
     if (!title.trim() || !editor) return;
 
@@ -104,7 +147,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
         // Update existing entity
         const entity = await repository.updateEntity(editingEntityId, {
           name: title,
-          type: type,
+          type,
           description: content,
           sourceUrl: sourceUrl.trim() || undefined,
         });
@@ -119,17 +162,17 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
         // Create new entity
         const entity = await repository.createEntity({
           name: title,
-          type: type,
+          type,
           description: content,
           sourceUrl: sourceUrl.trim() || undefined,
           metadata: {}
         });
 
         // Enqueue external URL fetch for auto-hydration if source URL provided
-        if (sourceUrl.trim()) {
+        if (sourceUrl.trim() && entity.id) {
           jobCoordinator.enqueue('external-fetch', entity.id, {
             url: sourceUrl.trim(),
-            entityId: entity.id!,
+            entityId: entity.id,
           });
           logger.info('Enqueued external fetch for entity auto-hydration', { entityId: entity.id, url: sourceUrl });
         }
@@ -160,24 +203,24 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
 
         const statements: { sql: string; bind?: (string | number | boolean | null)[] }[] = [];
 
+        const entityId = entity.id ?? '';
+
         statements.push({
-          sql: `INSERT INTO notes (entity_id, content, format) VALUES (?, ?, ?)`,
-          bind: [entity.id, content, 'markdown']
+          sql: 'INSERT INTO notes (entity_id, content, format) VALUES (?, ?, ?)',
+          bind: [entityId, content, 'markdown']
         });
 
         for (const claim of claims) {
           statements.push({
-            sql: `INSERT INTO claims (entity_id, statement, confidence, evidence, source, verification_status)
-                  VALUES (?, ?, ?, ?, ?, ?)`,
-            bind: [entity.id!, claim.statement, 1.0, 'Extracted from editor', claim.source, claim.status]
+            sql: 'INSERT INTO claims (entity_id, statement, confidence, evidence, source, verification_status) VALUES (?, ?, ?, ?, ?, ?)',
+            bind: [entityId, claim.statement, 1.0, 'Extracted from editor', claim.source, claim.status]
           });
         }
 
         for (const mention of mentions) {
           statements.push({
-            sql: `INSERT INTO links (source_id, target_id, relation, metadata)
-                  VALUES (?, ?, ?, ?)`,
-            bind: [entity.id!, mention.id, 'mentions', JSON.stringify({ name: mention.name })]
+            sql: 'INSERT INTO links (source_id, target_id, relation, metadata) VALUES (?, ?, ?, ?)',
+            bind: [entityId, mention.id, 'mentions', JSON.stringify({ name: mention.name })]
           });
         }
 
@@ -190,6 +233,14 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
         jobCoordinator.enqueue('reindex-document', entity.id, { entityId: entity.id });
 
         setStatus({ type: 'success', message: `Saved successfully! (${claims.length} claims, ${mentions.length} links)${sourceUrl.trim() ? ' — fetching source...' : ''}` });
+
+        // Auto-trigger extraction after 3s debounce
+        // Capture content before clearing editor
+        const savedContent = content;
+        setTimeout(() => {
+          void handleExtractEntities(entity.id, savedContent);
+        }, 3000);
+
         setTitle('');
         setSourceUrl('');
         editor.commands.setContent('<p></p>');
@@ -199,11 +250,11 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
       logger.error('Failed to save entity', { error: err });
       setStatus({ type: 'error', message: `Save failed: ${msg}` });
     }
-  }, [title, type, sourceUrl, editingEntityId, onEditComplete, editor, repository]);
+  }, [title, type, sourceUrl, editingEntityId, onEditComplete, editor, repository, handleExtractEntities]);
 
   const insertMention = useCallback((target: Entity) => {
     if (!editor || !target.id) return;
-    editor.chain().focus().setMention({ entityId: target.id, entityName: target.name }).run();
+    (editor.chain().focus() as unknown as { setMention: (attrs: { entityId: string; entityName: string }) => { run: () => void } }).setMention({ entityId: target.id, entityName: target.name }).run();
     setShowMentionMenu(false);
   }, [editor]);
 
@@ -214,6 +265,14 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
     if (editor) editor.commands.setContent('<p></p>');
     onEditComplete?.();
   }, [editor, onEditComplete]);
+
+  const setLink = useCallback(() => {
+    if (!editor || !linkUrl.trim()) return;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    editor.chain().focus().extendMarkRange('link').setLink({ href: linkUrl.trim() }).run();
+    setShowLinkInput(false);
+    setLinkUrl('');
+  }, [editor, linkUrl]);
 
   return (
     <div className="editor-container">
@@ -251,9 +310,18 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
           onClick={() => editor?.chain().focus().toggleBold().run()}
           className={editor?.isActive('bold') ? 'active' : ''}
           aria-label="Toggle Bold"
-          title="Bold"
+          title="Bold (Ctrl+B)"
         >
           B
+        </button>
+        <button
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
+          onClick={() => editor?.chain().focus().toggleItalic().run()}
+          className={editor?.isActive('italic') ? 'active' : ''}
+          aria-label="Toggle Italic"
+          title="Italic (Ctrl+I)"
+        >
+          <em>I</em>
         </button>
         <button
           // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
@@ -264,6 +332,75 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
         >
           H1
         </button>
+        <button
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
+          onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
+          className={editor?.isActive('heading', { level: 2 }) ? 'active' : ''}
+          aria-label="Toggle Heading 2"
+          title="Heading 2"
+        >
+          H2
+        </button>
+        <button
+          onClick={() => editor?.chain().focus().toggleBulletList().run()}
+          className={editor?.isActive('bulletList') ? 'active' : ''}
+          aria-label="Toggle Bullet List"
+          title="Bullet List"
+        >
+          • List
+        </button>
+        <button
+          onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+          className={editor?.isActive('orderedList') ? 'active' : ''}
+          aria-label="Toggle Ordered List"
+          title="Ordered List"
+        >
+          1. List
+        </button>
+        <button
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
+          onClick={() => editor?.chain().focus().toggleCodeBlock().run()}
+          className={editor?.isActive('codeBlock') ? 'active' : ''}
+          aria-label="Toggle Code Block"
+          title="Code Block"
+        >
+          {'</>'}
+        </button>
+        <button
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
+          onClick={() => editor?.chain().focus().toggleBlockquote().run()}
+          className={editor?.isActive('blockquote') ? 'active' : ''}
+          aria-label="Toggle Blockquote"
+          title="Blockquote"
+        >
+          &ldquo;
+        </button>
+        <button
+          onClick={() => { setShowLinkInput(!showLinkInput); }}
+          className={editor?.isActive('link') ? 'active' : ''}
+          aria-label="Insert Link"
+          title="Insert Link"
+        >
+          <Link2 size={16} aria-hidden="true" />
+        </button>
+        <button
+          onClick={() => editor?.chain().focus().undo().run()}
+          disabled={!editor?.can?.().undo()}
+          aria-label="Undo"
+          title="Undo (Ctrl+Z)"
+          style={{ opacity: editor?.can?.().undo() ? 1 : 0.4 }}
+        >
+          <Undo2 size={16} aria-hidden="true" />
+        </button>
+        <button
+          onClick={() => editor?.chain().focus().redo().run()}
+          disabled={!editor?.can?.().redo()}
+          aria-label="Redo"
+          title="Redo (Ctrl+Shift+Z)"
+          style={{ opacity: editor?.can?.().redo() ? 1 : 0.4 }}
+        >
+          <Redo2 size={16} aria-hidden="true" />
+        </button>
           <button
             onClick={() => editor?.chain().focus().toggleClaim().run()}
             className={editor?.isActive('claim') ? 'active' : ''}
@@ -272,18 +409,100 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
           >
             <CheckCircle size={16} aria-hidden="true" /> Claim
           </button>
+          <button
+            onClick={() => void handleExtractEntities()}
+            disabled={isExtracting}
+            title="Extract entities with AI"
+            aria-label="Extract entities with AI"
+            style={{ color: 'var(--interactive-primary)' }}
+          >
+            {isExtracting ? (
+              <span className="animate-spin" style={{ display: 'inline-block' }}>⌛</span>
+            ) : (
+              <Sparkles size={16} aria-hidden="true" />
+            )}
+            AI Extract
+          </button>
           <div className="toolbar-spacer" />
-        <button type="button" onClick={() => void handleSave()} className="primary">{editingEntityId ? 'Update Entity' : 'Save to DB'}</button>
+        <button type="button" onClick={() => { void handleSave(); }} className="primary">{editingEntityId ? 'Update Entity' : 'Save to DB'}</button>
         {editingEntityId && (
           <button type="button" onClick={handleCancelEdit} aria-label="Cancel editing">
             Cancel
           </button>
         )}
       </div>
+      {showLinkInput && (
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '4px 0', marginBottom: '8px' }}>
+          <input
+            type="url"
+            value={linkUrl}
+            onChange={(e) => { setLinkUrl(e.target.value); }}
+            placeholder="https://..."
+            onKeyDown={(e) => { if (e.key === 'Enter') setLink(); }}
+            style={{ flex: 1, padding: '6px 8px', fontSize: '13px' }}
+            aria-label="Link URL"
+          />
+          <button type="button" onClick={setLink} style={{ padding: '6px 12px', fontSize: '13px' }}>Apply</button>
+          <button type="button" onClick={() => { setShowLinkInput(false); setLinkUrl(''); }} style={{ padding: '6px 12px', fontSize: '13px' }}>Cancel</button>
+        </div>
+      )}
       <EditorContent editor={editor} className="tiptap-content" />
 
+      {showExtractionNotice && extractionResult && (
+        <div style={{
+          marginTop: '16px',
+          padding: '12px 16px',
+          background: 'var(--interactive-primary-subtle)',
+          borderRadius: '8px',
+          border: '1px solid var(--interactive-primary)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+            <Sparkles size={16} style={{ color: 'var(--interactive-primary)' }} />
+            <span>
+              AI found <strong>{extractionResult.entities.length} entities</strong> and <strong>{extractionResult.relationships.length} relationships</strong> in this note.
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              type="button"
+              onClick={() => { setShowExtractionReview(true); }}
+              className="primary"
+              style={{ padding: '4px 12px', fontSize: '12px', minHeight: '32px' }}
+            >
+              Review
+            </button>
+            <button
+              type="button"
+              onClick={() => { setShowExtractionNotice(false); }}
+              style={{ padding: '4px 8px', fontSize: '12px', minHeight: '32px', background: 'transparent', border: 'none' }}
+              aria-label="Dismiss"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showExtractionReview && extractionResult && (
+        <EntityReviewDialog
+          result={extractionResult}
+          sourceNoteId={extractionSourceId}
+          onClose={() => { setShowExtractionReview(false); }}
+          onComplete={() => {
+            setShowExtractionNotice(false);
+            setExtractionResult(null);
+            onEditComplete?.();
+          }}
+        />
+      )}
+
       <button
-        onClick={() => setShowAdvanced(!showAdvanced)}
+        type="button"
+        onClick={() => { setShowAdvanced(!showAdvanced); }}
         className="advanced-toggle"
         aria-expanded={showAdvanced}
         aria-label="Toggle advanced options"
@@ -333,24 +552,40 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
          </div>
        )}
        {showAdvanced && showMentionMenu && (
-         <div className="mention-section" style={{ marginTop: '16px' }}>
-           <h4 className="block text-sm font-medium mb-2">Link to Entity</h4>
-           <div className="space-y-2">
-             {allEntities.map(entity => (
-               <button
-                 key={entity.id}
-                 onClick={() => {
-                   insertMention(entity);
-                   setShowMentionMenu(false);
-                 }}
-                 className="mention-item w-full text-left px-3 py-2 rounded border border-muted hover:bg-muted"
-               >
-                 {entity.name} ({entity.type})
-               </button>
-             ))}
-           </div>
-         </div>
-       )}
+          <div className="mention-section" style={{ marginTop: '16px' }}>
+            <h4 className="block text-sm font-medium mb-2">Link to Entity</h4>
+            <div className="space-y-2">
+              {allEntities.map(entity => (
+                <button
+                  key={entity.id}
+                  onClick={() => {
+                    insertMention(entity);
+                    setShowMentionMenu(false);
+                  }}
+                  className="mention-item w-full text-left px-3 py-2 rounded border border-muted hover:bg-muted"
+                >
+                  {entity.name} ({entity.type})
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {editingEntityId && backlinks.length > 0 && (
+          <div className="backlinks-section" style={{ marginTop: '16px', padding: '8px 0' }}>
+            <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>
+              Referenced by ({backlinks.length})
+            </h4>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {backlinks.map(bl => (
+                <li key={bl.id} style={{ padding: '4px 0', fontSize: '13px' }}>
+                  <span style={{ color: 'var(--interactive-primary)', cursor: 'default' }}>{bl.name}</span>
+                  <span style={{ color: 'var(--text-muted)', marginLeft: '6px' }}>({bl.type})</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
     </div>
   );

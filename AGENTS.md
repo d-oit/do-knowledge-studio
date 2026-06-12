@@ -19,6 +19,7 @@ Local-first knowledge studio with rich text, knowledge graph, mind maps, SQLite 
 - Reuse existing abstractions before introducing new patterns.
 - Keep changes scoped; avoid unrelated refactors in the same commit.
 - **Never** create GitHub releases manually (`gh release create`). Releases are handled by `.github/workflows/version-propagation.yml` — edit `VERSION` and the workflow propagates and tags automatically.
+- Never modify `biome.json`, any `eslint` configuration file, or lint suppressions/ignore settings unless I explicitly request that change. If such a change seems necessary, stop, explain why, and ask for approval before editing.
 
 ## Repository Shape
 

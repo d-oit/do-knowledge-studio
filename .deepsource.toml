@@ -1,0 +1,25 @@
+version = "1"
+
+test_patterns = [
+  "**/__tests__/**",
+  "**/*.test.*",
+  "**/*.spec.*"
+]
+
+exclude_patterns = [
+  "dist/",
+  "node_modules/",
+  "coverage/",
+  ".mimocode/"
+]
+
+[[analyzers]]
+name = "javascript-typescript"
+enabled = true
+
+  [analyzers.meta]
+  max_complexity = "30"
+  max_functions = "50"
+
+  [analyzers.meta.ratings]
+    documentation_coverage = "A"
