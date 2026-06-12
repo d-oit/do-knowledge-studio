@@ -1,10 +1,14 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import MindElixir, { type MindElixirData, type MindElixirInstance } from 'mind-elixir';
+import { useGraphSyncStore } from '../../store/graph-sync-store';
+import { setupMindMapSyncListeners } from './sync-adapter';
+import type { SharedNode } from '../../store/graph-sync-types';
 import type { Entity, Link } from '../../lib/validation';
 import { repository } from '../../db/repository';
 import { logger } from '../../lib/logger';
 import { upsertToSearchIndex } from '../../lib/search';
 import { perf } from '../../lib/perf';
+import SyncToggle from '../../components/SyncToggle';
 import { ChevronDown, Layers, Filter, Info, ChevronRight, Plus, GitBranch, Pencil, Trash2, Image } from 'lucide-react';
 
 const COLLAPSED_BY_DEFAULT_THRESHOLD = 20;
@@ -123,6 +127,7 @@ const MindMapView: React.FC<Props> = ({
     instance.init({
       nodeData: treeData
     });
+    setupMindMapSyncListeners(instance);
     perf.measure('mindmap-init', 'mindmap-mount');
 
     mindInstance.current.bus.addListener('selectNode', (node: { id?: string }) => {
@@ -222,6 +227,43 @@ const MindMapView: React.FC<Props> = ({
       }
     };
   }, [treeData, onEntityClick, isLargeMap, rootId, entities]);
+
+  // Sync effect to consume events
+  useEffect(() => {
+    const unsubscribe = useGraphSyncStore.subscribe((state) => {
+      if (!state.syncEnabled || !mindInstance.current || state.pendingEvents.length === 0) return;
+
+      const events = useGraphSyncStore.getState().consumeEvents('mindmap');
+      if (events.length === 0) return;
+
+      events.forEach(event => {
+        const payload = event.payload as SharedNode;
+        if (event.type === 'node:add') {
+          if (!mindInstance.current?.findEle(payload.id)) {
+            // Add as child of root for simplicity if not specified
+            mindInstance.current?.addChild(mindInstance.current.findEle(rootId), {
+              id: payload.id,
+              topic: payload.label
+            });
+          }
+        } else if (event.type === 'node:update') {
+          const el = mindInstance.current?.findEle(payload.id);
+          if (el && el.nodeObj.topic !== payload.label) {
+            console.warn(`[Sync Conflict] Mind map node ${payload.id} has different label. Local: ${el.nodeObj.topic}, Incoming: ${payload.label}. Applying last-writer wins.`);
+            mindInstance.current?.updateNodeStyle(payload.id); // Refresh
+            el.nodeObj.topic = payload.label;
+            mindInstance.current?.refresh();
+          }
+        } else if (event.type === 'node:remove') {
+          const el = mindInstance.current?.findEle(payload.id);
+          if (el) {
+            mindInstance.current?.removeNodes([el]);
+          }
+        }
+      });
+    });
+    return () => unsubscribe();
+  }, [rootId]);
 
   const handleResetRoot = useCallback(() => {
     setRootId(propsRootEntity.id || '');
@@ -371,6 +413,8 @@ const MindMapView: React.FC<Props> = ({
         </button>
 
         <span style={{ width: '1px', height: '20px', background: 'var(--border-default)', margin: '0 4px' }} />
+
+        <SyncToggle />
 
         <button
           onClick={() => { void handleExportPng(); }}

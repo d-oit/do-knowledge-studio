@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Focus, Camera, Clock, X, FolderOpen, GitCompare, RotateCcw, Loader2, Layout, LayoutDashboard, Download, CircleDot, Sparkles } from 'lucide-react';
+import SyncToggle from '../../components/SyncToggle';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { extractEntities } from '../../lib/ai/entity-extractor';
@@ -291,6 +292,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
           <RotateCcw size={16} /> Exit Snapshot
         </button>
       )}
+      {!snapshotMode && <SyncToggle />}
       {hasSelection && !isMobile && (
         <div className="selection-info">
           Selected: <strong>{selectedName}</strong>
