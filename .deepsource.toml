@@ -1,0 +1,42 @@
+version = "1"
+
+test_patterns = [
+  "**/__tests__/**",
+  "**/*.test.*",
+  "**/*.spec.*"
+]
+
+exclude_patterns = [
+  "dist/",
+  "node_modules/",
+  "coverage/",
+  ".mimocode/"
+]
+
+[[analyzers]]
+name = "javascript-typescript"
+enabled = true
+
+  [analyzers.meta]
+  max_complexity = "30"
+  max_functions = "50"
+
+  [[analyzers.meta.issue_patterns]]
+  pattern = "JS-0098"
+  skip = true
+
+  [[analyzers.meta.issue_patterns]]
+  pattern = "JS-R1005"
+  skip = true
+
+  [[analyzers.meta.issue_patterns]]
+  pattern = "JS-W1042"
+  skip = true
+
+  [[analyzers.meta.issue_patterns]]
+  pattern = "JS-0045"
+  skip = true
+
+  [[analyzers.meta.issue_patterns]]
+  pattern = "JS-0067"
+  skip = true
