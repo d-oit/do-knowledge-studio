@@ -153,7 +153,7 @@ const EntityReviewDialog: FC<EntityReviewDialogProps> = ({
         </div>
 
         <div className="modal-actions" style={{ padding: '16px', borderTop: '1px solid var(--border-default)' }}>
-          <button type="button" onClick={() => onClose()} disabled={isApplying}>Cancel</button>
+          <button type="button" onClick={() => { onClose(); }} disabled={isApplying}>Cancel</button>
           <button
             type="button"
             onClick={() => { void handleApply(); }}
