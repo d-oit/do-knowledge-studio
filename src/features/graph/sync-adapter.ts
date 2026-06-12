@@ -2,54 +2,72 @@ import type Graph from 'graphology';
 import { useGraphSyncStore } from '../../store/graph-sync-store';
 import { SharedNode, SharedEdge } from '../../store/graph-sync-types';
 
+interface GraphNodeEvent {
+  key: string;
+  attributes: Record<string, unknown>;
+}
+
+interface GraphEdgeEvent {
+  key: string;
+  source: string;
+  target: string;
+  attributes: Record<string, unknown>;
+}
+
+interface GraphKeyOnlyEvent {
+  key: string;
+}
+
+const asString = (value: unknown): string =>
+  typeof value === 'string' ? value : '';
+
 export function setupGraphSyncListeners(
   graph: Graph
 ) {
   const store = useGraphSyncStore.getState();
 
-  const onNodeAdded = ({ key, attributes }: any) => {
+  const onNodeAdded = ({ key, attributes }: GraphNodeEvent) => {
     if (!useGraphSyncStore.getState().syncEnabled) return;
     store.emitEvent({
       type: 'node:add',
       source: 'graph',
-      payload: { id: key, label: attributes.label } as SharedNode,
+      payload: { id: key, label: asString(attributes.label) } satisfies SharedNode,
     });
   };
 
-  const onNodeAttributesUpdated = ({ key, attributes }: any) => {
+  const onNodeAttributesUpdated = ({ key, attributes }: GraphNodeEvent) => {
     if (!useGraphSyncStore.getState().syncEnabled) return;
     store.emitEvent({
       type: 'node:update',
       source: 'graph',
-      payload: { id: key, label: attributes.label } as SharedNode,
+      payload: { id: key, label: asString(attributes.label) } satisfies SharedNode,
     });
   };
 
-  const onNodeDropped = ({ key }: any) => {
+  const onNodeDropped = ({ key }: GraphKeyOnlyEvent) => {
     if (!useGraphSyncStore.getState().syncEnabled) return;
     store.emitEvent({
       type: 'node:remove',
       source: 'graph',
-      payload: { id: key, label: '' } as SharedNode,
+      payload: { id: key, label: '' } satisfies SharedNode,
     });
   };
 
-  const onEdgeAdded = ({ key, source, target, attributes }: any) => {
+  const onEdgeAdded = ({ key, source, target, attributes }: GraphEdgeEvent) => {
     if (!useGraphSyncStore.getState().syncEnabled) return;
     store.emitEvent({
       type: 'edge:add',
       source: 'graph',
-      payload: { id: key, from: source, to: target, label: attributes.label } as SharedEdge,
+      payload: { id: key, from: source, to: target, label: asString(attributes.label) } satisfies SharedEdge,
     });
   };
 
-  const onEdgeDropped = ({ key }: any) => {
+  const onEdgeDropped = ({ key }: GraphKeyOnlyEvent) => {
     if (!useGraphSyncStore.getState().syncEnabled) return;
-    // We don't have from/to here, but id should be enough for removal if shared
     store.emitEvent({
       type: 'edge:remove',
       source: 'graph',
-      payload: { id: key, from: '', to: '' } as SharedEdge,
+      payload: { id: key, from: '', to: '' } satisfies SharedEdge,
     });
   };
 

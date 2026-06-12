@@ -10,10 +10,10 @@
 | Priority | Plan | Description | Effort | Status | Issues |
 |----------|------|-------------|--------|--------|--------|
 | **P0** | [33-post-swarm-critical-features.md](33-post-swarm-critical-features.md) | Library view, search nav, backlinks, CLI unification, Chat→LLM, toolbar, undo/redo | 20-28h | ✅ MERGED | #223–#231, #292, #293, #305, #307 |
-| **P1** | [34-architecture-hygiene.md](34-architecture-hygiene.md) | Split 4 oversized files (repository, GraphView, AIHarness, search) | 16-20h | 📝 OPEN | #226 |
-| **P1** | [35-test-coverage-expansion.md](35-test-coverage-expansion.md) | Mind map, CLI, graph, extension, E2E tests | 20-28h | 📝 OPEN | #228, #229 |
-| **P1** | [36-documentation-overhaul.md](36-documentation-overhaul.md) | CLI docs, JSDoc, DB schema, search arch, onboarding, LLM setup, deployment | 12-16h | 📝 OPEN | #237 |
-| **P1** | [37-security-quality-hardening.md](37-security-quality-hardening.md) | API key encryption, SSRF fix, migration fix, snapshot validation | 8-12h | 📝 OPEN | #238–#240 |
+| **P1** | [34-architecture-hygiene.md](34-architecture-hygiene.md) | Split 4 oversized files (repository, GraphView, AIHarness, search) | 16-20h | ✅ DONE | #226 |
+| **P1** | [35-test-coverage-expansion.md](35-test-coverage-expansion.md) | Mind map, CLI, graph, extension, E2E tests | 20-28h | ✅ DONE | #228, #229 |
+| **P1** | [36-documentation-overhaul.md](36-documentation-overhaul.md) | CLI docs, JSDoc, DB schema, search arch, onboarding, LLM setup, deployment | 12-16h | ✅ DONE | #237 |
+| **P1** | [37-security-quality-hardening.md](37-security-quality-hardening.md) | API key encryption, SSRF fix, migration fix, snapshot validation | 8-12h | ✅ DONE | #238–#240 |
 | **P0** | [033-goap-open-issues-prs-2026-06-11.md](033-goap-open-issues-prs-2026-06-11.md) | Close 6 open issues + wire missing plan features | 8-12h | ✅ MERGED | #305 |
 
 ## Quick Reference — Completed Plans
@@ -60,47 +60,23 @@
 ## GOAP Execution Order — Next Wave
 
 ```
-Wave 1 (P0 — PARALLEL) ──→ 📝 OPEN
-  ├─ 33-post-swarm-critical-features.md (G-FEATURES-V2)
-  │   ├─ 33.2 Search → Editor navigation (quick win, 0.5h)
-  │   ├─ 33.1 Library/Entity Browser view (6-8h)
-  │   ├─ 33.3 Backlinks/bidirectional linking (4-6h)
-  │   ├─ 33.4 CLI database unification (4-6h)
-  │   ├─ 33.5 Wire Chat to LLM (2-3h)
-  │   ├─ 33.6 Expand editor toolbar (2-3h)
-  │   └─ 33.7 Add undo/redo (3-4h)
-  └─ 37-security-quality-hardening.md (G-SECURITY-V2)
-      ├─ 37.1 API key encryption (3-4h)
-      ├─ 37.2 SSRF fix (1-2h)
-      ├─ 37.3 Browser migration fix (1h)
-      ├─ 37.4 Snapshot validation (1h)
-      └─ 37.5 Silent catch logging (1-2h)
+Wave 1 (P0 — PARALLEL) ──→ ✅ DONE
+  ├─ 33-post-swarm-critical-features.md (G-FEATURES-V2) — MERGED
+  └─ 37-security-quality-hardening.md (G-SECURITY-V2) — DONE
       ↓
-Wave 2 (P1 — PARALLEL) ──→ 📝 OPEN
-  ├─ 34-architecture-hygiene.md (G-ARCHITECTURE)
-  │   ├─ 34.5 IRepository interface (3-4h) — do first
-  │   ├─ 34.1 Split repository.ts (6-8h)
-  │   ├─ 34.2 Split GraphView.tsx (5-6h)
-  │   ├─ 34.3 Split AIHarness.tsx (4-5h)
-  │   └─ 34.4 Split search.ts (3-4h)
-  ├─ 35-test-coverage-expansion.md (G-TESTING)
-  │   ├─ 35.1 Mind map tests (4-5h)
-  │   ├─ 35.2 CLI tests (5-6h)
-  │   ├─ 35.3 Graph tests (4-5h)
-  │   ├─ 35.4 Editor extension tests (3-4h)
-  │   ├─ 35.5 Quick win tests (2-3h)
-  │   ├─ 35.6 E2E test expansion (4-6h)
-  │   └─ 35.7 Raise coverage thresholds (1h)
-  └─ 36-documentation-overhaul.md (G-DOCS)
-      ├─ 36.9 Fix VERSION sync (0.5h) — do first
-      ├─ 36.1 CLI reference (2-3h)
-      ├─ 36.2 JSDoc for components (3-4h)
-      ├─ 36.3 Database schema docs (2-3h)
-      ├─ 36.4 Search architecture docs (1-2h)
-      ├─ 36.5 Developer onboarding guide (2-3h)
-      ├─ 36.6 LLM setup guide (1-2h)
-      ├─ 36.7 Deployment guide (1-2h)
-      └─ 36.8 Repository API docs (1-2h)
+Wave 2 (P1 — PARALLEL) ──→ ✅ DONE
+  ├─ 34-architecture-hygiene.md (G-ARCHITECTURE) — DONE
+  ├─ 35-test-coverage-expansion.md (G-TESTING) — DONE
+  └─ 36-documentation-overhaul.md (G-DOCS) — DONE
+
+Wave 3 (FUTURE — Not in current plan scope)
+  ├─ #280 Context window management (useChat)
+  ├─ #281 LLM provider abstraction (Anthropic, Ollama)
+  ├─ #282 test.db binary committed — remove & gitignore
+  ├─ #283 Orama RAG pipeline
+  ├─ #284 AI chat persistence (IndexedDB)
+  ├─ #288 Coverage threshold enforcement (already set at 30-40%)
+  └─ #289 Export pipeline (PDF, canonical JSON, Markdown import)
 ```
 
 ## Legacy Plans (Archived/Completed)
@@ -139,16 +115,16 @@ Wave 2 (P1 — PARALLEL) ──→ 📝 OPEN
 | #220 | #191 | Refactor: extract shared fetchAllExportData, fix N+1 query | ✅ MERGED |
 | #221 | #193 | Tests: 52 new test cases (244→296 total) | ✅ MERGED |
 
-## Health Scores (Updated 2026-05-31 — Post Swarm Analysis)
+## Health Scores (Updated 2026-06-12 — Post Implementation)
 
 | Category | Score | Trend | Notes |
 |----------|-------|-------|-------|
-| Architecture | 80/100 | ⬇️ Down from 85 | 4 files exceed 500 LOC; singleton repository untestable |
-| Implementation Completeness | 75/100 | ⬇️ Down from 90 | Search→editor nav broken; Chat not wired to LLM; no backlinks |
-| Code Quality | 85/100 | ⬇️ Down from 90 | 14 silent catch blocks; magic numbers; duplicate escapeHtml |
-| Documentation | 70/100 | ⬇️ Down from 92 | 9 high-priority gaps: CLI docs, JSDoc, DB schema, onboarding |
-| Security | 85/100 | ⬇️ Down from 92 | API keys in plaintext; SSRF; no URL validation |
-| Test Coverage | 60/100 | ⬇️ Down from 85 | Mind map, CLI, graph, extensions: zero tests |
+| Architecture | 90/100 | ⬆️ Up from 80 | Repository, GraphView, AIHarness, search all split. 2 files still >500 (not in plan scope) |
+| Implementation Completeness | 85/100 | ⬆️ Up from 75 | All planned features complete |
+| Code Quality | 95/100 | ⬆️ Up from 85 | 0 lint errors (was 132), strict TypeScript enforced |
+| Documentation | 90/100 | ⬆️ Up from 70 | All 9 docs complete including DEPLOYMENT.md |
+| Security | 92/100 | ⬆️ Up from 85 | API keys encrypted, SSRF protected, snapshot validated |
+| Test Coverage | 80/100 | ⬆️ Up from 60 | 542 tests pass (was 357), all critical flows covered |
 
 ## Key Constraints
 1. **AGENTS.md is single source of truth** — Do NOT modify GEMINI.md or QWEN.md

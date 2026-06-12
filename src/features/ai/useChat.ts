@@ -32,6 +32,7 @@ export interface TokenUsage {
   output: number;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- may be needed for tool call result tracking
 function buildToolCallRecord(tc: ToolCallRecord, result: string, isError?: boolean): ToolCallRecord {
   return { id: tc.id, name: tc.name, arguments: tc.arguments, result, isError };
 }

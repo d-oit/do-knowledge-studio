@@ -78,10 +78,11 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
 
   useEffect(() => {
     if (!editingEntityId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- guard reset before async fetch
       setBacklinks([]);
       return;
     }
-    setIsLoadingEntity(true); // eslint-disable-line react-hooks/set-state-in-effect -- loading flag set before async fetch, not a cascade risk
+    setIsLoadingEntity(true);
     repository.getEntityById(editingEntityId).then((entity: (Entity & { rowid: number }) | null) => {
       if (!entity) return;
       setTitle(entity.name || '');
@@ -89,7 +90,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
       setSourceUrl(entity.sourceUrl ?? '');
       setShowAdvanced((entity.metadata?.advanced as boolean | undefined) ?? false);
       setStatus(null);
-    }).catch(err => logger.error('Failed to load entity for editing', { error: err }))
+    }).catch((err: unknown) => logger.error('Failed to load entity for editing', { error: err }))
     .finally(() => setIsLoadingEntity(false));
 
     repository.getBacklinks(editingEntityId).then((links: Entity[]) => {
@@ -266,7 +267,6 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
 
   const setLink = useCallback(() => {
     if (!editor || !linkUrl.trim()) return;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     editor.chain().focus().extendMarkRange('link').setLink({ href: linkUrl.trim() }).run();
     setShowLinkInput(false);
     setLinkUrl('');
@@ -312,7 +312,6 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
           B
         </button>
         <button
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
           onClick={() => editor?.chain().focus().toggleItalic().run()}
           className={editor?.isActive('italic') ? 'active' : ''}
           aria-label="Toggle Italic"
@@ -321,7 +320,6 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
           <em>I</em>
         </button>
         <button
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
           onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}
           className={editor?.isActive('heading', { level: 1 }) ? 'active' : ''}
           aria-label="Toggle Heading 1"
@@ -330,7 +328,6 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
           H1
         </button>
         <button
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
           onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
           className={editor?.isActive('heading', { level: 2 }) ? 'active' : ''}
           aria-label="Toggle Heading 2"
@@ -355,7 +352,6 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
           1. List
         </button>
         <button
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
           onClick={() => editor?.chain().focus().toggleCodeBlock().run()}
           className={editor?.isActive('codeBlock') ? 'active' : ''}
           aria-label="Toggle Code Block"
@@ -364,7 +360,6 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
           {'</>'}
         </button>
         <button
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
           onClick={() => editor?.chain().focus().toggleBlockquote().run()}
           className={editor?.isActive('blockquote') ? 'active' : ''}
           aria-label="Toggle Blockquote"

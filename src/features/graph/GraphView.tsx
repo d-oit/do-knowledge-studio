@@ -76,11 +76,10 @@ const GraphView: React.FC<Props> = ({
     handleExitSnapshot,
   } = useGraphSnapshotManager(repository);
 
-  // eslint-disable-next-line react-hooks/refs -- hook uses refs only inside effects, not for rendering
+  /* eslint-disable react-hooks/refs -- refs accessed here are only used inside effects, not for rendering */
   useGraphKeyboardNavigation(
     containerRef.current,
     sigmaInstance.current,
-    // eslint-disable-next-line react-hooks/refs -- accessed only in effect inside hook
     graphRef.current,
     entities,
     selectedNode,
@@ -89,6 +88,7 @@ const GraphView: React.FC<Props> = ({
     setFocusRingIndex,
     repository
   );
+  /* eslint-enable react-hooks/refs */
 
   // eslint-disable-next-line react-hooks/refs -- hook uses refs only inside effects, not for rendering
   useGraphTouchGestures(containerRef.current, sigmaInstance.current);
@@ -313,8 +313,8 @@ const GraphView: React.FC<Props> = ({
 
   useEffect(() => {
     if (!selectedNode) {
-      setSelectedEntityClaims([]);
       // eslint-disable-next-line react-hooks/set-state-in-effect -- guard reset before async fetch
+      setSelectedEntityClaims([]);
       setSelectedEntityLinks([]);
       return;
     }
@@ -368,7 +368,7 @@ const GraphView: React.FC<Props> = ({
         } else if (event.type === 'node:update') {
           const payload = event.payload as SharedNode;
           if (graph.hasNode(payload.id)) {
-            const currentLabel = graph.getNodeAttribute(payload.id, 'label');
+            const currentLabel = graph.getNodeAttribute(payload.id, 'label') as string;
             if (currentLabel !== payload.label) {
               console.warn(`[Sync Conflict] Graph node ${payload.id} has different label. Local: ${currentLabel}, Incoming: ${payload.label}. Applying last-writer wins.`);
               graph.mergeNodeAttributes(payload.id, { label: payload.label });

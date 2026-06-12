@@ -47,7 +47,6 @@ const GraphInspector: React.FC<GraphInspectorProps> = ({
     overscan: 5,
   });
 
-  // eslint-disable-next-line react-hooks/incompatible-library -- useVirtualizer is stable; component opts out of React Compiler via "use no memo"
   const outgoingVirtualizer = useVirtualizer({
     count: outgoingLinks.length,
     getScrollElement: () => outgoingScrollRef.current,
@@ -55,7 +54,6 @@ const GraphInspector: React.FC<GraphInspectorProps> = ({
     overscan: 5,
   });
 
-  // eslint-disable-next-line react-hooks/incompatible-library -- useVirtualizer is stable; component opts out of React Compiler via "use no memo"
   const incomingVirtualizer = useVirtualizer({
     count: incomingLinks.length,
     getScrollElement: () => incomingScrollRef.current,
