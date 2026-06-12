@@ -1,11 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Focus, Camera, Clock, X, FolderOpen, GitCompare, RotateCcw, Loader2, Layout, LayoutDashboard, Download, CircleDot } from 'lucide-react';
+import { Focus, Camera, Clock, X, FolderOpen, GitCompare, RotateCcw, Loader2, Layout, LayoutDashboard, Download, CircleDot, Sparkles } from 'lucide-react';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
+import { extractEntities } from '../../lib/ai/entity-extractor';
+import type { EntityExtractionResult, ExtractedEntity, ExtractedRelationship } from '../../lib/ai/entity-extractor';
+import { loadConfig, createProvider } from '../../lib/llm/config';
+import EntityReviewDialog from '../ai/EntityReviewDialog';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { MEDIA_QUERIES } from '../../lib/constants';
 import type { GraphSnapshot } from '../../lib/validation';
-import { repository, type GraphSnapshotDiff } from '../../db/repository';
+import type { GraphSnapshotDiff } from '../../db/repository';
+import { useRepository } from '../../db/useRepository';
 import { z } from 'zod';
 import { logger } from '../../lib/logger';
 
@@ -64,6 +69,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
   layout = 'force',
   onLayoutChange,
 }) => {
+  const repository = useRepository();
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [snapshotName, setSnapshotName] = useState('');
   const [snapshotDesc, setSnapshotDesc] = useState('');
@@ -77,6 +83,11 @@ const GraphControls: React.FC<GraphControlsProps> = ({
   const [selectedForDiff, setSelectedForDiff] = useState<string[]>([]);
   const [diffResult, setDiffResult] = useState<GraphSnapshotDiff | null>(null);
   const [loadingSnapshotId, setLoadingSnapshotId] = useState<string | null>(null);
+
+  // Batch analysis state
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [batchResult, setBatchResult] = useState<EntityExtractionResult | null>(null);
+  const [showBatchReview, setShowBatchReview] = useState(false);
 
   const snapshotNameRef = useRef<HTMLInputElement>(null);
   const snapshotBrowserRef = useRef<HTMLDivElement>(null);
@@ -166,6 +177,61 @@ const GraphControls: React.FC<GraphControlsProps> = ({
     setSnapshotDesc('');
   };
 
+  const handleAnalyzeAllNotes = async () => {
+    setIsAnalyzing(true);
+    try {
+      const allEntities = await repository.getAllEntities();
+      // Filter for entities of type 'note' that have meaningful content in description
+      const notesToAnalyze = allEntities.filter(e =>
+        e.type === 'note' && e.description && e.description.trim().length > 20
+      );
+
+      if (notesToAnalyze.length === 0) {
+        logger.info('No notes found for analysis');
+        setIsAnalyzing(false);
+        return;
+      }
+
+      const config = await loadConfig();
+      const provider = createProvider(config);
+      const providerConfig = config.providers[config.activeProvider];
+      const model = providerConfig.defaultModel || 'google/gemini-2.0-flash-lite-preview-02-05:free';
+
+      const allEntitiesMap = new Map<string, ExtractedEntity>();
+      const allRelationships: ExtractedRelationship[] = [];
+
+      // Process in batches of 3 to improve performance while respecting rate limits
+      const BATCH_SIZE = 3;
+      for (let i = 0; i < notesToAnalyze.length; i += BATCH_SIZE) {
+        const batch = notesToAnalyze.slice(i, i + BATCH_SIZE);
+        const results = await Promise.all(
+          batch.map(note => extractEntities(note.description || '', provider, model))
+        );
+
+        results.forEach(result => {
+          result.entities.forEach(e => {
+            // Deduplicate by name, preferring the one with description if available
+            const existing = allEntitiesMap.get(e.name);
+            if (!existing || (!existing.description && e.description)) {
+              allEntitiesMap.set(e.name, e);
+            }
+          });
+          allRelationships.push(...result.relationships);
+        });
+      }
+
+      setBatchResult({
+        entities: Array.from(allEntitiesMap.values()),
+        relationships: allRelationships
+      });
+      setShowBatchReview(true);
+    } catch (err) {
+      logger.error('Batch analysis failed', err);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   const controls = (
     <div className={isMobile ? "viz-controls-mobile" : "viz-controls"}>
       <button
@@ -205,6 +271,16 @@ const GraphControls: React.FC<GraphControlsProps> = ({
           <FolderOpen size={16} /> Load Snapshot
         </button>
       )}
+      <button
+        onClick={() => void handleAnalyzeAllNotes()}
+        disabled={isAnalyzing}
+        title="Analyze all notes for new entities"
+        aria-label="Analyze all notes for new entities"
+        style={{ color: 'var(--interactive-primary)' }}
+      >
+        {isAnalyzing ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+        {isAnalyzing ? 'Analyzing...' : 'Analyze All Notes'}
+      </button>
       {snapshotMode && onSnapshotModeChange && (
         <button
           onClick={() => onSnapshotModeChange(false)}
@@ -464,6 +540,17 @@ const GraphControls: React.FC<GraphControlsProps> = ({
             )}
           </div>
         </div>
+      )}
+
+      {showBatchReview && batchResult && (
+        <EntityReviewDialog
+          result={batchResult}
+          onClose={() => { setShowBatchReview(false); }}
+          onComplete={() => {
+            setShowBatchReview(false);
+            setBatchResult(null);
+          }}
+        />
       )}
     </>
   );

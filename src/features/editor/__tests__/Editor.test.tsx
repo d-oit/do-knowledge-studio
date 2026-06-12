@@ -11,11 +11,20 @@ const mockEditor = {
     focus: vi.fn().mockReturnValue({ toggleBold: vi.fn().mockReturnValue({ run: vi.fn() }) }),
   },
   isActive: vi.fn().mockReturnValue(false),
+  can: vi.fn().mockReturnValue({ undo: vi.fn().mockReturnValue(false), redo: vi.fn().mockReturnValue(false) }),
   chain: vi.fn().mockReturnValue({
     focus: vi.fn().mockReturnValue({
       toggleBold: vi.fn().mockReturnValue({ run: vi.fn() }),
       toggleHeading: vi.fn().mockReturnValue({ run: vi.fn() }),
       toggleClaim: vi.fn().mockReturnValue({ run: vi.fn() }),
+      toggleItalic: vi.fn().mockReturnValue({ run: vi.fn() }),
+      toggleBulletList: vi.fn().mockReturnValue({ run: vi.fn() }),
+      toggleOrderedList: vi.fn().mockReturnValue({ run: vi.fn() }),
+      toggleCodeBlock: vi.fn().mockReturnValue({ run: vi.fn() }),
+      toggleBlockquote: vi.fn().mockReturnValue({ run: vi.fn() }),
+      extendMarkRange: vi.fn().mockReturnValue({ setLink: vi.fn().mockReturnValue({ run: vi.fn() }) }),
+      undo: vi.fn().mockReturnValue({ run: vi.fn() }),
+      redo: vi.fn().mockReturnValue({ run: vi.fn() }),
       setMention: vi.fn().mockReturnValue({ run: vi.fn() }),
     }),
   }),
@@ -56,6 +65,10 @@ vi.mock('lucide-react', () => ({
   ChevronDown: () => <div />,
   ChevronRight: () => <div />,
   Pencil: () => <div />,
+  Undo2: () => <div />,
+  Redo2: () => <div />,
+  Sparkles: () => <div />,
+  X: () => <div />,
 }));
 
 vi.mock('../ClaimExtension', () => ({

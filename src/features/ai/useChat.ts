@@ -6,6 +6,7 @@ import { executeTool } from '../../lib/llm/tool-executor';
 import { searchKnowledge } from '../../lib/search';
 import { resolveUrl, ResolvedContent } from '../../lib/resolver';
 import { logger } from '../../lib/logger';
+import { loadChatHistory, saveChatHistory, clearChatHistory } from '../../lib/chat-persistence';
 
 const URL_REGEX = /https?:\/\/[^\s<>"'{}|\\^[\]]+/gi;
 const MAX_TOOL_ROUNDS = 5;
@@ -35,10 +36,45 @@ function buildToolCallRecord(tc: ToolCallRecord, result: string, isError?: boole
   return { id: tc.id, name: tc.name, arguments: tc.arguments, result, isError };
 }
 
+const WELCOME_MESSAGE: Message = { id: 'initial', role: 'assistant', content: 'AI agent ready to assist with TRIZ analysis and knowledge synthesis. Ask me anything about your local knowledge base, or paste URLs to have me fetch and analyze external content.' };
+
+const MAX_CONTEXT_TOKENS = 6000;
+const CHARS_PER_TOKEN = 4;
+
+const estimateTokens = (text: string): number =>
+  Math.ceil(text.length / CHARS_PER_TOKEN);
+
+const buildBudgetedMessages = (
+  messages: Message[],
+  systemPrompt: string,
+  userContent: string,
+  maxTokens: number
+): LLMMessage[] => {
+  const systemTokens = estimateTokens(systemPrompt);
+  const userTokens = estimateTokens(userContent);
+  const reservedTokens = systemTokens + userTokens + 200;
+  const budgetForHistory = Math.max(0, maxTokens - reservedTokens);
+
+  const historyMessages: LLMMessage[] = [];
+  let usedTokens = 0;
+
+  const reversed = [...messages].reverse();
+  for (const msg of reversed) {
+    const tokens = estimateTokens(msg.content);
+    if (usedTokens + tokens > budgetForHistory) break;
+    historyMessages.unshift({ role: msg.role, content: msg.content });
+    usedTokens += tokens;
+  }
+
+  return [
+    { role: 'system', content: systemPrompt },
+    ...historyMessages,
+    { role: 'user', content: userContent },
+  ];
+};
+
 export function useChat() {
-  const [messages, setMessages] = useState<Message[]>([
-    { id: 'initial', role: 'assistant', content: 'AI agent ready to assist with TRIZ analysis and knowledge synthesis. Ask me anything about your local knowledge base, or paste URLs to have me fetch and analyze external content.' }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSourcing, setIsSourcing] = useState(false);
   const [resolvedSources, setResolvedSources] = useState<ResolvedContent[]>([]);
@@ -47,6 +83,22 @@ export function useChat() {
   const messagesRef = useRef<Message[]>(messages);
   useEffect(() => {
     messagesRef.current = messages;
+  }, [messages]);
+
+  // Load persisted chat history on mount
+  useEffect(() => {
+    loadChatHistory().then(history => {
+      if (history.length > 0) {
+        setMessages(history);
+      }
+    }).catch((err: unknown) => { logger.warn('Failed to load chat history', { error: err }); });
+  }, []);
+
+  // Persist messages whenever they change
+  useEffect(() => {
+    if (messages.length > 1) {
+      saveChatHistory(messages).catch((err: unknown) => { logger.warn('Failed to save chat history', { error: err }); });
+    }
   }, [messages]);
 
   const sendMessage = useCallback(async (
@@ -102,19 +154,18 @@ export function useChat() {
       const currentConfig = await loadConfig();
       const provider = createProvider(currentConfig);
 
+      const systemPrompt = 'You are a helpful knowledge assistant. Ground your answers in the provided context whenever possible. When external URLs are provided, analyze their content thoroughly and cite specific details. Mark sources clearly in your response.';
+      const userContent = userMessage + contextString + externalContent;
+
+      let promptMessages = buildBudgetedMessages(
+        messagesRef.current,
+        systemPrompt,
+        userContent,
+        MAX_CONTEXT_TOKENS
+      );
+
       const providerConfig = currentConfig.providers[currentConfig.activeProvider];
       const model = activeModel || providerConfig.defaultModel || 'google/gemini-2.0-flash-lite-preview-02-05:free';
-
-      const systemMessage: LLMMessage = {
-        role: 'system',
-        content: 'You are a helpful knowledge assistant. Ground your answers in the provided context whenever possible. When external URLs are provided, analyze their content thoroughly and cite specific details. Mark sources clearly in your response.',
-      };
-
-      let promptMessages: LLMMessage[] = [
-        systemMessage,
-        ...messagesRef.current.map(m => ({ role: m.role, content: m.content })),
-        { role: 'user', content: userMessage + contextString + externalContent },
-      ];
 
       // --- Agentic tool-call loop ---
       const assistantId = crypto.randomUUID();
@@ -227,5 +278,9 @@ export function useChat() {
     sessionTokens,
     sendMessage,
     setResolvedSources,
+    clearHistory: useCallback(async () => {
+      await clearChatHistory();
+      setMessages([WELCOME_MESSAGE]);
+    }, []),
   };
 }
