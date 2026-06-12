@@ -9,7 +9,7 @@ import EntityReviewDialog from '../ai/EntityReviewDialog';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { MEDIA_QUERIES } from '../../lib/constants';
 import type { GraphSnapshot } from '../../lib/validation';
-import { type GraphSnapshotDiff } from '../../db/repository';
+import type { GraphSnapshotDiff } from '../../db/repository';
 import { useRepository } from '../../db/useRepository';
 import { z } from 'zod';
 import { logger } from '../../lib/logger';

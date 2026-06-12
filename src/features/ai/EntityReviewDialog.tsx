@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import type { FC } from 'react';
 import { X, CheckCircle2, Link2, PlusCircle } from 'lucide-react';
 import type { EntityExtractionResult } from '../../lib/ai/entity-extractor';
 import { useRepository } from '../../db/useRepository';
@@ -12,7 +13,7 @@ interface EntityReviewDialogProps {
   onComplete: () => void;
 }
 
-const EntityReviewDialog: React.FC<EntityReviewDialogProps> = ({
+const EntityReviewDialog: FC<EntityReviewDialogProps> = ({
   result,
   sourceNoteId,
   onClose,
