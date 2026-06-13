@@ -3,12 +3,34 @@ import { logger } from './logger';
 const BLOCKED_SCHEMES = ['javascript:', 'data:', 'vbscript:', 'file:'];
 
 function isPrivateIP(hostname: string): boolean {
-  if (/^(127\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|0\.0\.0\.0)$/i.test(hostname)) {
+  // Normalize hostname: lowercase, strip trailing dot, and strip IPv6 brackets
+  const normalized = hostname.toLowerCase().replace(/\.$/, '').replace(/^\[(.+)\]$/, '$1');
+
+  if (normalized === 'localhost') {
     return true;
   }
-  if (/^::1$|^::ffff:127\.|^fc00:|^fd00:/i.test(hostname)) {
+
+  // IPv4 Private and Reserved Ranges
+  if (
+    /^(127\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|169\.254\.\d+\.\d+|0\.0\.0\.0)$/.test(
+      normalized,
+    )
+  ) {
     return true;
   }
+
+  // IPv6 Loopback, Link-Local, and Unique Local Addresses
+  if (
+    /^::1$/.test(normalized) || // Loopback
+    /^::$/.test(normalized) || // Unspecified
+    /^fe[89ab][0-9a-f]:/i.test(normalized) || // Link-local
+    /^f[cd][0-9a-f]{2}:/i.test(normalized) || // Unique local (fc00::/7)
+    /^::ffff:([0-9a-f]{1,4}:){1,2}[0-9a-f]{1,4}$/.test(normalized) || // IPv4-mapped (covers all, as we can't easily parse hex here)
+    /^::ffff:\d+\.\d+\.\d+\.\d+$/.test(normalized) // IPv4-mapped literal
+  ) {
+    return true;
+  }
+
   return false;
 }
 

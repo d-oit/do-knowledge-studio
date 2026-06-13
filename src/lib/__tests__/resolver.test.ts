@@ -93,7 +93,7 @@ describe('resolveUrl', () => {
     global.fetch = vi.fn();
     // Mock location for same-origin check
     Object.defineProperty(window, 'location', {
-      value: { origin: 'http://localhost:5173' },
+      value: { origin: 'http://studio.local' },
       writable: true,
     });
     // Polyfill AbortSignal.timeout for happy-dom
@@ -123,11 +123,11 @@ describe('resolveUrl', () => {
       text: vi.fn().mockResolvedValue(mockHtml),
     });
 
-    const result = await resolveUrl('http://localhost:5173/test');
+    const result = await resolveUrl('http://studio.local/test');
 
     expect(result.provider).toBe('direct');
     expect(result.title).toBe('Test Page');
-    expect(result.url).toBe('http://localhost:5173/test');
+    expect(result.url).toBe('http://studio.local/test');
     expect(result.format).toBe('plain');
     expect(result.wordCount).toBeGreaterThan(0);
   });
@@ -175,7 +175,7 @@ describe('resolveUrl', () => {
       text: vi.fn().mockResolvedValue(mockHtml),
     });
 
-    const result = await resolveUrl('http://localhost:5173/entities');
+    const result = await resolveUrl('http://studio.local/entities');
 
     expect(result.content).toContain('Test & Check < Tag > "Quote" \'Apos\'   Space');
   });
