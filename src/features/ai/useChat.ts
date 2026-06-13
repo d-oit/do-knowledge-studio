@@ -32,10 +32,6 @@ export interface TokenUsage {
   output: number;
 }
 
-function buildToolCallRecord(tc: ToolCallRecord, result: string, isError?: boolean): ToolCallRecord {
-  return { id: tc.id, name: tc.name, arguments: tc.arguments, result, isError };
-}
-
 const WELCOME_MESSAGE: Message = { id: 'initial', role: 'assistant', content: 'AI agent ready to assist with TRIZ analysis and knowledge synthesis. Ask me anything about your local knowledge base, or paste URLs to have me fetch and analyze external content.' };
 
 const MAX_CONTEXT_TOKENS = 6000;
