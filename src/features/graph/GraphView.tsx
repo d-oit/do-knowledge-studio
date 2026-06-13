@@ -106,7 +106,7 @@ const GraphView: React.FC<Props> = ({
     });
 
     setFilteredData({
-      entities: entities.filter((e: Entity) => neighborIds.has(e.id!)),
+      entities: entities.filter((e: Entity) => e.id != null && neighborIds.has(e.id)),
       links: links.filter((l: Link) => neighborIds.has(l.source_id) && neighborIds.has(l.target_id))
     });
     return Promise.resolve();
@@ -170,7 +170,7 @@ const GraphView: React.FC<Props> = ({
 
     layoutTimeoutRef.current = requestAnimationFrame(() => {
       const currentNodes = new Set(graph.nodes());
-      const targetNodes = new Set(data.entities.map(e => e.id!));
+      const targetNodes = new Set(data.entities.map(e => e.id ?? ''));
 
       currentNodes.forEach(nodeId => {
         if (!targetNodes.has(nodeId)) graph.dropNode(nodeId);
@@ -184,9 +184,10 @@ const GraphView: React.FC<Props> = ({
         if (graph.hasNode('placeholder')) graph.dropNode('placeholder');
 
         data.entities.forEach((e, i) => {
+          const entityId = e.id ?? '';
           const nodeColor = snapshotMode ? '#8b5cf6' : (e.id === selectedNode ? '#ef4444' : '#2563eb');
-          if (!graph.hasNode(e.id!)) {
-            graph.addNode(e.id!, {
+          if (!graph.hasNode(entityId)) {
+            graph.addNode(entityId, {
               label: e.name,
               size: e.id === selectedNode ? 20 : 10,
               color: nodeColor,
@@ -194,7 +195,7 @@ const GraphView: React.FC<Props> = ({
               y: Math.sin((i * 2 * Math.PI) / data.entities.length)
             });
           } else {
-            graph.mergeNodeAttributes(e.id!, {
+            graph.mergeNodeAttributes(entityId, {
               label: e.name,
               size: e.id === selectedNode ? 20 : 10,
               color: nodeColor,
@@ -208,9 +209,9 @@ const GraphView: React.FC<Props> = ({
         });
 
         graph.edges().forEach((edge) => {
-          const s = graph.source(edge);
-          const t = graph.target(edge);
-          if (!targetEdgeSet.has(`${s}|${t}`)) {
+          const sourceNode = graph.source(edge);
+          const targetNode = graph.target(edge);
+          if (!targetEdgeSet.has(`${sourceNode}|${targetNode}`)) {
             graph.dropEdge(edge);
           }
         });
