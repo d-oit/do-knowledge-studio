@@ -1,8 +1,8 @@
 # Plans Index — do-knowledge-studio
 
 **Generated**: 2026-05-27  
-**Updated**: 2026-06-12  
-**Source**: 6-agent parallel swarm analysis + GitHub issue audit (#168–#240) + open issues (#280-#289) + all PRs merged (#292-#307)  
+**Updated**: 2026-06-16  
+**Source**: 6-agent parallel swarm analysis + GitHub issue audit (#168–#240) + open issues (#280-#289) + all PRs merged (#292-#307) + 4-agent gap audit (Plans 34-37)  
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
 ## Quick Reference — Active Plans
@@ -10,12 +10,13 @@
 | Priority | Plan | Description | Effort | Status | Issues |
 |----------|------|-------------|--------|--------|--------|
 | **P0** | [33-post-swarm-critical-features.md](33-post-swarm-critical-features.md) | Library view, search nav, backlinks, CLI unification, Chat→LLM, toolbar, undo/redo | 20-28h | ✅ MERGED | #223–#231, #292, #293, #305, #307 |
-| **P1** | [34-architecture-hygiene.md](34-architecture-hygiene.md) | Split 4 oversized files (repository, GraphView, AIHarness, search) | 16-20h | 📝 OPEN | #226 |
-| **P1** | [35-test-coverage-expansion.md](35-test-coverage-expansion.md) | Mind map, CLI, graph, extension, E2E tests | 20-28h | 📝 OPEN | #228, #229 |
-| **P1** | [36-documentation-overhaul.md](36-documentation-overhaul.md) | CLI docs, JSDoc, DB schema, search arch, onboarding, LLM setup, deployment | 12-16h | 📝 OPEN | #237 |
-| **P1** | [37-security-quality-hardening.md](37-security-quality-hardening.md) | API key encryption, SSRF fix, migration fix, snapshot validation | 8-12h | 📝 OPEN | #238–#240 |
+| **P1** | [34-architecture-hygiene.md](34-architecture-hygiene.md) | Split 4 oversized files (repository, GraphView, AIHarness, search) | 16-20h | ✅ MERGED (2026-06-16) | #226 |
+| **P1** | [35-test-coverage-expansion.md](35-test-coverage-expansion.md) | Mind map, CLI, graph, extension, E2E tests | 20-28h | 📝 OPEN (30% complete; 14 items remain) | #228, #229 |
+| **P1** | [36-documentation-overhaul.md](36-documentation-overhaul.md) | CLI docs, JSDoc, DB schema, search arch, onboarding, LLM setup, deployment | 12-16h | 📝 OPEN (85% complete; JSDoc + DEPLOYMENT remain) | #237 |
+| **P1** | [37-security-quality-hardening.md](37-security-quality-hardening.md) | API key encryption, SSRF fix, migration fix, snapshot validation | 8-12h | 📝 OPEN (95% complete; silent-catch logging remains) | #238–#240 |
 | **P0** | [033-goap-open-issues-prs-2026-06-11.md](033-goap-open-issues-prs-2026-06-11.md) | Close 6 open issues + wire missing plan features | 8-12h | ✅ MERGED | #305 |
 | **P1** | [040-goap-export-pipeline-and-pr-cleanup-2026-06-16.md](040-goap-export-pipeline-and-pr-cleanup-2026-06-16.md) | Complete export pipeline (PDF, JSON schema v1.0, MD round-trip) + resolve red PRs | 12-18h | ✅ MERGED | #289 |
+| **P1** | [041-goap-remaining-gaps-tests-docs-logging-2026-06-16.md](041-goap-remaining-gaps-tests-docs-logging-2026-06-16.md) | Close remaining gaps in 35/36/37: tests, JSDoc, DEPLOYMENT.md, logger.debug | 25-35h | 📝 OPEN | — |
 
 ## Quick Reference — Completed Plans
 
@@ -61,47 +62,26 @@
 ## GOAP Execution Order — Next Wave
 
 ```
-Wave 1 (P0 — PARALLEL) ──→ 📝 OPEN
-  ├─ 33-post-swarm-critical-features.md (G-FEATURES-V2)
-  │   ├─ 33.2 Search → Editor navigation (quick win, 0.5h)
-  │   ├─ 33.1 Library/Entity Browser view (6-8h)
-  │   ├─ 33.3 Backlinks/bidirectional linking (4-6h)
-  │   ├─ 33.4 CLI database unification (4-6h)
-  │   ├─ 33.5 Wire Chat to LLM (2-3h)
-  │   ├─ 33.6 Expand editor toolbar (2-3h)
-  │   └─ 33.7 Add undo/redo (3-4h)
-  └─ 37-security-quality-hardening.md (G-SECURITY-V2)
-      ├─ 37.1 API key encryption (3-4h)
-      ├─ 37.2 SSRF fix (1-2h)
-      ├─ 37.3 Browser migration fix (1h)
-      ├─ 37.4 Snapshot validation (1h)
-      └─ 37.5 Silent catch logging (1-2h)
-      ↓
-Wave 2 (P1 — PARALLEL) ──→ 📝 OPEN
-  ├─ 34-architecture-hygiene.md (G-ARCHITECTURE)
-  │   ├─ 34.5 IRepository interface (3-4h) — do first
-  │   ├─ 34.1 Split repository.ts (6-8h)
-  │   ├─ 34.2 Split GraphView.tsx (5-6h)
-  │   ├─ 34.3 Split AIHarness.tsx (4-5h)
-  │   └─ 34.4 Split search.ts (3-4h)
-  ├─ 35-test-coverage-expansion.md (G-TESTING)
-  │   ├─ 35.1 Mind map tests (4-5h)
-  │   ├─ 35.2 CLI tests (5-6h)
-  │   ├─ 35.3 Graph tests (4-5h)
-  │   ├─ 35.4 Editor extension tests (3-4h)
-  │   ├─ 35.5 Quick win tests (2-3h)
-  │   ├─ 35.6 E2E test expansion (4-6h)
-  │   └─ 35.7 Raise coverage thresholds (1h)
-  └─ 36-documentation-overhaul.md (G-DOCS)
-      ├─ 36.9 Fix VERSION sync (0.5h) — do first
-      ├─ 36.1 CLI reference (2-3h)
-      ├─ 36.2 JSDoc for components (3-4h)
-      ├─ 36.3 Database schema docs (2-3h)
-      ├─ 36.4 Search architecture docs (1-2h)
-      ├─ 36.5 Developer onboarding guide (2-3h)
-      ├─ 36.6 LLM setup guide (1-2h)
-      ├─ 36.7 Deployment guide (1-2h)
-      └─ 36.8 Repository API docs (1-2h)
+Plan 34 (Architecture) ──→ ✅ MERGED 2026-06-16
+   ├─ 34.5 IRepository interface ✅
+   ├─ 34.1 Split repository.ts (957 → 9 modules, each < 350 LOC) ✅
+   ├─ 34.2 Split GraphView.tsx (793 → 456 LOC + 4 extracted modules) ✅
+   ├─ 34.3 Split AIHarness.tsx (600 → 272 LOC + 4 extracted modules) ✅
+   └─ 34.4 Split search.ts (555 → 2-line shim + 5 modules) ✅
+
+Plan 041 (Gap Closure) ──→ 📝 OPEN — next to execute
+   ├─ G-LOGGING-GAP: 12 silent-catch blocks → logger.debug (1-2h)
+   ├─ G-DOCS-GAP-DEPLOY: docs/DEPLOYMENT.md (2-3h)
+   ├─ G-DOCS-GAP-JSDOC: 11+ components + 4 Zod schemas (3-4h)
+   ├─ G-TESTING-GAP-MINDMAP: mindmap-tree.ts + 8+ tests (4-5h)
+   ├─ G-TESTING-GAP-CLI: db.test.ts + 10+ command tests (3-4h)
+   ├─ G-TESTING-GAP-GRAPH: graph-data.ts + 6+ tests (4-5h)
+   ├─ G-TESTING-GAP-EXTENSIONS: ClaimExtension + MentionExtension tests (3-4h)
+   ├─ G-TESTING-GAP-QUICKWINS: useFocusTrap + DbProvider tests (2-3h)
+   ├─ G-TESTING-GAP-E2E: 5 new spec files (5-7h)
+   └─ G-TESTING-GAP-THRESHOLDS: raise vitest.config to 40/50/50/50 (0.5h)
+
+Plan 35, 36, 37 ──→ will mark MERGED in INDEX once Plan 041 lands
 ```
 
 ## Legacy Plans (Archived/Completed)
@@ -172,6 +152,12 @@ Wave 2 (P1 — PARALLEL) ──→ 📝 OPEN
 | 007 | do-web-doc-resolver Integration | 📝 Proposed | Future work |
 | 008 | Rolldown Circular Dependency Resolution | ✅ Implemented | #209 — core.ts extraction, const ordering |
 | 009 | Staged ESLint Rule Enforcement | ✅ Implemented | #209 — typed workers, void-wrap, vi.mocked |
+| 010 | Export Schema v1.0 | ✅ Accepted | `KnowledgeStudioExport` Zod-validated JSON |
+| 011 | CLI Command Extraction | ✅ Accepted | `cli/commands/*.ts` split, one file per group |
+| 012 | PDF Export Strategy | ✅ Accepted | `@react-pdf/renderer` (rejects puppeteer/wkhtmltopdf) |
+| 013 | Silent Catch Logging Policy | 📝 Proposed | Replace comments with `logger.debug` (Plan 041, 37.5 closure) |
+| 014 | Test Architecture: Pure Data Transforms | 📝 Proposed | Extract `mindmap-tree`, `graph-data` for unit testing (Plan 041, 35) |
+| 015 | JSDoc-First Documentation Policy | 📝 Proposed | Leading JSDoc on all exported `.tsx` (Plan 041, 36.2 closure) |
 
 ## Verification Commands
 ```bash
