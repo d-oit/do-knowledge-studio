@@ -93,16 +93,56 @@
   --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
   --shadow-lg: 0 8px 24px rgba(15, 23, 42, 0.1);
 
-  /* Motion — minimal, purposeful */
-  --motion-fast: 100ms ease-out;
-  --motion-base: 200ms ease-in-out;
-  --motion-slow: 300ms ease-in-out;
+  /* Motion — calm, intentional, declarative.
+   *
+   * Durations (150ms baseline for responsiveness; faster = twitchy, slower = laggy):
+   *   --duration-instant  80ms  press feedback, focus rings, hover micro-shifts
+   *   --duration-quick   150ms  filter chip / button hover, list-item highlight
+   *   --duration-base    200ms  overlays (drawer, palette, sheet) entrance
+   *   --duration-flow    280ms  status messages, snackbars, list-item insert
+   *   --duration-large   400ms  page-level view swaps, layout reflows
+   *   --duration-loader  800ms  continuous waiting states (steady, not panicked)
+   *
+   * Easings (real motion has weight — default `ease` is banned):
+   *   --ease-out      decelerate, the workhorse for entrances
+   *   --ease-in       accelerate, the workhorse for exits
+   *   --ease-in-out   symmetric, for state swaps
+   *   --ease-spring   overshoot for tactile confirmations (use sparingly)
+   *   --ease-out-quart sharper deceleration for confident arrivals
+   */
+  --duration-instant: 80ms;
+  --duration-quick: 150ms;
+  --duration-base: 200ms;
+  --duration-flow: 280ms;
+  --duration-large: 400ms;
+  --duration-loader: 800ms;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Legacy aliases — kept for backward compatibility with existing component CSS. */
+  --motion-fast: var(--duration-quick);
+  --motion-base: var(--duration-base);
+  --motion-slow: var(--duration-large);
+
+  /* Press scale (visual press feedback) */
+  --press-scale: 0.97;
 
   /* Layout Constants */
   --sidebar-width: 260px;
   --search-sidebar-width: 300px;
   --header-height: 56px;
   --content-max-width: 960px;
+  --drawer-width: min(86vw, 320px);
+
+  /* Safe-area insets (notch / home indicator) — 0px fallback for non-notched devices */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
 }
 
 /* Theme: App (Default — Professional) */
@@ -177,6 +217,8 @@
 *::before,
 *::after {
   box-sizing: border-box;
+  /* Prevent the layout from ever creating a horizontal scrollbar */
+  min-width: 0;
 }
 
 body {
@@ -190,6 +232,10 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
+  /* Block iOS text-zoom & callout on long-press without disabling selection */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overflow: hidden;
 }
 
 h1, h2, h3, h4, h5, h6 {

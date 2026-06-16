@@ -22,11 +22,18 @@ const ENTITY_TYPES = [
 
 interface EditorProps {
   editingEntityId?: string | null;
+  draftTitle?: string | null;
   onEditComplete?: () => void;
   onEditEntity?: (id: string) => void;
 }
 
-const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete, onEditEntity }) => {
+const Editor: React.FC<EditorProps> = ({
+  editingEntityId,
+  draftTitle,
+  onEditComplete,
+  onEditEntity
+}) => {
+  "use no memo"; // opt out of React Compiler — useVirtualizer returns non-memoizable functions
   const [title, setTitle] = useState('');
   const [type, setType] = useState('note');
   const [sourceUrl, setSourceUrl] = useState('');
@@ -64,22 +71,38 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete, onEdit
 
   useEffect(() => {
     if (!editingEntityId) {
+      // New entity mode — seed the title from a draft if the host
+      // supplied one (e.g. from the search-empty-state Create button).
       setBacklinks([]);
+      if (draftTitle && draftTitle.trim().length > 0) {
+        setTitle(draftTitle.trim());
+      }
       return;
     }
     setIsLoadingEntity(true);
-    repository.getEntityById(editingEntityId).then(entity => {
-      if (!entity) return;
-      setTitle(entity.name || '');
-      setType(entity.type as EntityType);
-      setSourceUrl(entity.sourceUrl ?? '');
-      setAdvanced(entity.metadata?.advanced ?? false);
-      setStatus(null);
-    }).catch(err => logger.error('Failed to load entity for editing', err))
-    .finally(() => setIsLoadingEntity(false));
-
-    repository.getBacklinks(editingEntityId).then(setBacklinks).catch(err => logger.error('Failed to load backlinks', err));
-  }, [editingEntityId]);
+    void (async () => {
+      try {
+        const entity = await repository.getEntityById(editingEntityId);
+        if (entity) {
+          setTitle(entity.name || '');
+          setType(entity.type);
+          setSourceUrl(entity.sourceUrl ?? '');
+          setShowAdvanced(entity.metadata?.advanced ?? false);
+          setStatus(null);
+        }
+      } catch (err) {
+        logger.error('Failed to load entity for editing', err);
+      } finally {
+        setIsLoadingEntity(false);
+      }
+      try {
+        const links = await repository.getBacklinks(editingEntityId);
+        setBacklinks(links);
+      } catch (err) {
+        logger.error('Failed to load backlinks', err);
+      }
+    })();
+  }, [editingEntityId, draftTitle]);
 
   const handleTypeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setType(e.target.value);
@@ -200,6 +223,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete, onEdit
 
   const mentionScrollRef = useRef<HTMLDivElement>(null);
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- useVirtualizer is stable; component opts out of React Compiler via "use no memo"
   const mentionVirtualizer = useVirtualizer({
     count: allEntities.length,
     getScrollElement: () => mentionScrollRef.current,
@@ -253,7 +277,6 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete, onEdit
       </div>
       <div className="toolbar">
         <button
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
           onClick={() => editor?.chain().focus().toggleBold().run()}
           className={editor?.isActive('bold') ? 'active' : ''}
           aria-label="Toggle Bold"
@@ -262,7 +285,6 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete, onEdit
           B
         </button>
         <button
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
           onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}
           className={editor?.isActive('heading', { level: 1 }) ? 'active' : ''}
           aria-label="Toggle Heading 1"
@@ -343,7 +365,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete, onEdit
       )}
 
       {showAdvanced && (
-        <div className="advanced-section" style={{ padding: '0 0 8px 0' }}>
+        <div key="advanced-section" className="advanced-section motion-rise-in" style={{ padding: '0 0 8px 0' }}>
           <div className="entity-source" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
             <Link2 size={14} aria-hidden="true" />
             <label htmlFor="entity-source-url" className="sr-only">Source URL (optional)</label>

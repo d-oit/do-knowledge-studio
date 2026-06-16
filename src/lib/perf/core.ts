@@ -54,7 +54,7 @@ export const perf = {
     try {
       performance.mark(`${PERF_PREFIX}${name}`);
     } catch (err) {
-      logger.debug('Performance API unavailable for mark', { name, error: String(err) });
+      logger.debug('Performance API unavailable for mark', { name, error: err });
     }
   },
 
@@ -77,7 +77,7 @@ export const perf = {
       }
       return null;
     } catch (err) {
-      logger.debug('Performance API unavailable for measure', { name, error: String(err) });
+      logger.debug('Performance API unavailable for measure', { name, error: err });
       return null;
     }
   },
@@ -89,7 +89,7 @@ export const perf = {
       performance.clearMarks();
       performance.clearMeasures();
     } catch (err) {
-      logger.debug('Performance API unavailable for clear', { error: String(err) });
+      logger.debug('Performance API unavailable for clear', err);
     }
   },
 

@@ -17,7 +17,7 @@ function makeEntity(overrides: Partial<Entity>): Entity {
     createdAt: '2026-01-01T00:00:00Z',
     updatedAt: '2026-01-01T00:00:00Z',
     ...overrides,
-  } as Entity;
+  };
 }
 
 function makeLink(overrides: Partial<Link>): Link {
@@ -27,7 +27,7 @@ function makeLink(overrides: Partial<Link>): Link {
     target_id: 'e2',
     relation: 'references',
     ...overrides,
-  } as Link;
+  };
 }
 
 describe('buildTree', () => {

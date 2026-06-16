@@ -26,7 +26,7 @@ describe('useFocusTrap', () => {
 
   beforeEach(() => {
     container = makeContainer();
-    ref = { current: container } as React.RefObject<HTMLDivElement>;
+    ref = { current: container };
   });
 
   afterEach(() => {
@@ -39,8 +39,11 @@ describe('useFocusTrap', () => {
     expect(result.current).toBeNull();
   });
 
-  it('focuses the first focusable element on activation', () => {
+  it('focuses the first focusable element on activation', async () => {
     renderHook(() => useFocusTrap(ref, true));
+    // The hook defers the initial focus to the next animation frame so
+    // the overlay has time to lay out.
+    await new Promise(requestAnimationFrame);
     expect(document.activeElement).toBe(container.querySelectorAll('button')[0]);
   });
 

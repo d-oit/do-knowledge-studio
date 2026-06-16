@@ -122,7 +122,7 @@ export class AnthropicProvider implements LLMProvider {
             return;
           }
         } catch (err) {
-          logger.debug('SSE chunk not yet complete or invalid JSON', { error: String(err) });
+          logger.debug('SSE chunk not yet complete or invalid JSON', err);
         }
       }
     }

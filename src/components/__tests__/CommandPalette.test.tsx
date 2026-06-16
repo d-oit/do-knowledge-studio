@@ -67,7 +67,9 @@ describe('CommandPalette', () => {
     );
     const overlay = document.querySelector('.command-palette-overlay');
     expect(overlay).not.toBeNull();
-    fireEvent.click(overlay!);
+    // The overlay uses mousedown (not click) so it closes on press
+    // even if the user begins a drag-to-text-select gesture.
+    fireEvent.mouseDown(overlay!);
     expect(mockOnClose).toHaveBeenCalled();
   });
 
@@ -105,7 +107,7 @@ describe('CommandPalette', () => {
       />
     );
 
-    const commands = screen.getAllByRole('option');
+    const commands = document.querySelectorAll('.command-item');
 
     // Initially first item is selected
     expect(commands[0].className).toContain('selected');

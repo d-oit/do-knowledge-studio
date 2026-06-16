@@ -28,7 +28,7 @@ export class RepositoryBase {
       try {
         r.metadata = JSON.parse(r.metadata) as Record<string, unknown>;
       } catch (err) {
-        logger.debug('Failed to parse metadata JSON, defaulting to empty object', { error: String(err) });
+        logger.debug('Failed to parse metadata JSON, defaulting to empty object', { error: err instanceof Error ? err.message : String(err) });
         r.metadata = {};
       }
     }

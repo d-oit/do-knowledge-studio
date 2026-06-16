@@ -1,28 +1,52 @@
-/* Layout v2 - Atmospheric HUD */
+/* Layout v2 - Atmospheric HUD
+ *
+ * Breakpoint strategy
+ *   0   – 639px  Phone (portrait)        : single column, bottom-rail nav, full-bleed sheets
+ *   640 – 1023px Tablet & small laptop   : condensed sidebar OR icon rail + main + optional right rail
+ *   1024 – 1439px Desktop                 : full three-pane (nav / content / search)
+ *   1440 +      Wide / ultrawide         : capped measure, generous gutters, no runaway line length
+ *
+ * Container queries are intentionally avoided for the app shell; the layout is driven by
+ * viewport breakpoints because the shell composes the page rather than living inside one.
+ */
+
 html {
   overflow: hidden;
 }
 
 body {
-  overflow-y: auto;
+  overflow: hidden;
+  /* Prevent rubber-banding on iOS from scrolling the layout itself */
+  overscroll-behavior: none;
 }
 
 .layout-container {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh;
   background: var(--bg-base);
   overflow: hidden;
+  /* Respect notch on landscape phones */
+  padding-top: var(--safe-top);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+  /* Shell arrival — calm 3-beat entrance, then static.
+   * Reduced motion: motion.css flattens it to a near-instant swap.
+   */
+  animation: rise-in var(--duration-flow) var(--ease-out) both;
 }
 
 .layout-body {
   display: flex;
   flex: 1;
+  min-height: 0;
   overflow: hidden;
   gap: var(--space-4);
   padding: var(--space-4);
 }
 
+/* ----- Mobile Header (phone only) ----------------------------------------- */
 .mobile-header {
   display: none;
   height: var(--header-height);
@@ -32,21 +56,30 @@ body {
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
+  /* Honor the dynamic island / status bar inset on top of the chrome */
+  padding-top: var(--safe-top);
+  height: calc(var(--header-height) + var(--safe-top));
 }
 
 .mobile-brand {
   font-family: var(--font-display);
   text-transform: uppercase;
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
 }
 
-.desktop-sidebar, .main-content, .search-sidebar {
+/* ----- Surfaces ----------------------------------------------------------- */
+.desktop-sidebar,
+.main-content,
+.search-sidebar {
   background: var(--bg-surface);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-xl);
-  overflow-y: auto;
+  overflow: auto;
   box-shadow: var(--shadow-sm);
+  min-width: 0;
 }
 
 .desktop-sidebar {
@@ -63,50 +96,214 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
-@media (max-width: 1200px) {
-  .search-sidebar {
-    display: none;
-  }
-  .mobile-header {
-    display: flex;
-  }
-  .layout-body {
-    padding-top: 0;
-  }
-}
-
-@media (max-width: 768px) {
-  .desktop-sidebar {
-    display: none;
-  }
+/* ===========================================================================
+ *  Breakpoint 1 — Phone (≤ 639px)
+ *  Single column. Sidebar becomes a drawer. Right search becomes a sheet.
+ *  Bottom safe area honored on fixed overlays.
+ * ======================================================================== */
+@media (max-width: 639px) {
   .layout-body {
     padding: var(--space-2);
     gap: var(--space-2);
   }
-  .main-content {
-    border-radius: var(--radius-lg); /* Slightly smaller radius on small screens */
+
+  .mobile-header {
+    display: flex;
   }
-  /* HUD Safe Zones: relative width with 16px side margins */
+
+  .desktop-sidebar,
+  .search-sidebar {
+    display: none;
+  }
+
+  .main-content {
+    border-radius: var(--radius-lg);
+  }
+
+  /* All "HUD" content gets safe side margins on the smallest screens */
   .hud-mobile-safe {
     width: calc(100% - 32px);
     margin: 0 auto;
   }
 }
 
-@media (min-width: 769px) and (max-width: 1200px) {
-  .mobile-header .icon-button:first-child {
+/* ===========================================================================
+ *  Breakpoint 2 — Tablet (640 – 1023px)
+ *  Show icon-rail sidebar (narrow) + main. Right search hidden; command palette
+ *  is the primary search entry. Mobile header is hidden — the rail provides IA.
+ * ======================================================================== */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .mobile-header {
+    display: none;
+  }
+
+  .search-sidebar {
+    display: none;
+  }
+
+  .desktop-sidebar {
+    width: 72px;
+  }
+
+  /* Compress the brand on the icon rail */
+  .desktop-sidebar .brand {
+    padding: var(--space-4) var(--space-2);
+    font-size: 0.6rem;
+    text-align: center;
+    letter-spacing: 0;
+  }
+
+  .desktop-sidebar .nav-group-label {
+    /* Hide group labels on the rail — the column is too narrow */
+    display: none;
+  }
+
+  .desktop-sidebar .nav-button {
+    padding: var(--space-3) var(--space-2);
+    justify-content: center;
+    font-size: 10px;
+    text-align: center;
+    line-height: 1.2;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .desktop-sidebar .experimental-badge {
+    font-size: 8px;
+  }
+
+  .desktop-sidebar .sidebar-theme-section {
+    padding: var(--space-2);
+  }
+}
+
+/* ===========================================================================
+ *  Breakpoint 3 — Desktop (1024 – 1439px)
+ *  Full three-pane: nav, main, right search. No mobile header.
+ * ======================================================================== */
+@media (min-width: 1024px) and (max-width: 1439px) {
+  .mobile-header {
     display: none;
   }
 }
 
-@media (min-width: 1201px) {
+/* ===========================================================================
+ *  Breakpoint 4 — Wide / ultrawide (≥ 1440px)
+ *  Cap content measure, give the shell more breathing room. Sidebar + search
+ *  remain but main content max-width is bounded to preserve readable line length.
+ * ======================================================================== */
+@media (min-width: 1440px) {
   .mobile-header {
     display: none;
   }
-  /* Fixed HUD width on large desktop */
-  .hud-desktop-fixed {
-    max-width: 720px;
+
+  .layout-body {
+    padding: var(--space-6);
+    gap: var(--space-6);
+  }
+
+  /* Cap the central column so type measure stays in the 60-76ch range */
+  .main-content > * {
+    max-width: 1280px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+/* ===========================================================================
+ *  Mobile drawer overlay — used on phones only.
+ *  Motion is defined in motion.css (keyframes `drawer-in` / `overlay-in`).
+ *  Using the shared tokens keeps timing and easing consistent with the rest
+ *  of the surface.
+ * ======================================================================== */
+.mobile-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-overlay);
+  z-index: 1000;
+  /* Tap-outside-to-close also works for back button / Esc via MobileDrawer hook */
+  animation: overlay-in var(--duration-base) var(--ease-out) both;
+}
+
+.mobile-drawer-content {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--drawer-width);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  /* Keep the drawer away from the home indicator on phones with notches */
+  padding-left: var(--safe-left);
+  padding-bottom: var(--safe-bottom);
+  animation: drawer-in var(--duration-base) var(--ease-out) both;
+}
+
+.drawer-extra-controls {
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--border-default);
+}
+
+.drawer-extra-controls h3 {
+  font-size: 14px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: var(--space-4);
+  letter-spacing: 0.05em;
+}
+
+.drawer-header {
+  padding: var(--space-2) var(--space-4);
+  display: flex;
+  justify-content: flex-end;
+  /* Push close button below the safe area */
+  padding-top: calc(var(--space-2) + var(--safe-top));
+}
+
+.sidebar-theme-section,
+.drawer-theme-section {
+  border-top: 1px solid var(--border-default);
+}
+
+.sidebar-theme-section {
+  margin-top: auto;
+}
+
+.drawer-theme-section {
+  padding: 0 var(--space-6) var(--space-4) var(--space-6);
+  margin-top: auto;
+}
+
+/* ===========================================================================
+ *  Mobile search overlay (phone only) — full-screen sheet with safe areas
+ * ======================================================================== */
+.mobile-search-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-surface);
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  /* Honor notch & home indicator */
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+  /* Sheet from the bottom — closest to the thumb on phones. */
+  animation: sheet-up var(--duration-base) var(--ease-out) both;
+}
+
+/* ===========================================================================
+ *  Reduced motion — kill the drawer slide when the user opts out
+ * ======================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .mobile-drawer-content,
+  .mobile-search-overlay,
+  .mobile-drawer-overlay {
+    animation: none;
   }
 }

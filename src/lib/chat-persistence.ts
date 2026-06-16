@@ -1,3 +1,5 @@
+import { logger } from './logger';
+
 const DB_NAME = 'dks-chat-history';
 const DB_VERSION = 1;
 const STORE_NAME = 'messages';
@@ -46,7 +48,7 @@ export const loadChatHistory = async (): Promise<ChatMessage[]> => {
       request.onerror = () => reject(new Error(String(request.error)));
     });
   } catch (err) {
-    logger.debug('Failed to load chat history, returning empty', { error: String(err) });
+    logger.debug('Failed to load chat history, returning empty', { error: err instanceof Error ? err.message : String(err) });
     return [];
   }
 };
@@ -64,7 +66,7 @@ export const saveChatHistory = async (messages: ChatMessage[]): Promise<void> =>
       tx.onerror = () => reject(new Error(String(tx.error)));
     });
   } catch (err) {
-    logger.debug('Failed to save chat history, continuing without persistence', { error: String(err) });
+    logger.debug('Failed to save chat history, continuing without persistence', { error: err instanceof Error ? err.message : String(err) });
   }
 };
 
@@ -79,6 +81,6 @@ export const clearChatHistory = async (): Promise<void> => {
       tx.onerror = () => reject(new Error(String(tx.error)));
     });
   } catch (err) {
-    logger.debug('Failed to clear chat history', { error: String(err) });
+    logger.debug('Failed to clear chat history', err);
   }
 };

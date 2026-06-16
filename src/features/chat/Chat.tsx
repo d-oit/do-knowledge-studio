@@ -12,9 +12,10 @@ interface Message {
 
 interface ChatProps {
   onCreateEntity?: () => void;
+  onCitationClick?: (id: string, type: string) => void;
 }
 
-const Chat: React.FC<ChatProps> = ({ onCreateEntity }) => {
+const Chat: React.FC<ChatProps> = ({ onCreateEntity, onCitationClick }) => {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -82,7 +83,7 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity }) => {
             <div className="suggested-actions">
               <button onClick={() => setInput('Summarize my recent projects')}>Summarize recent projects</button>
               <button onClick={() => setInput('Who are the key people?')}>Key people</button>
-              <button onClick={onCreateEntity}>
+              <button type="button" onClick={onCreateEntity}>
                 Create new entity
               </button>
             </div>
@@ -99,17 +100,26 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity }) => {
               {m.citations && m.citations.length > 0 && (
                 <div className="citations-section">
                   <button
+                    type="button"
                     className="source-drawer-toggle"
                     onClick={() => toggleSources(i)}
+                    aria-expanded={showSources[i] ?? false}
+                    aria-controls={`citations-${i}`}
                   >
                     <span>Used {m.citations.length} local items</span>
                     {showSources[i] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                   </button>
 
                   {showSources[i] && (
-                    <div className="citation-cards">
+                    <div key={`citation-drawer-${i}-${m.id ?? i}`} id={`citations-${i}`} className="citation-cards motion-rise-in">
                       {m.citations.map((cite) => (
-                        <button key={cite.id} className="citation-card" onClick={() => logger.info('Navigate to', cite.id)}>
+                        <button
+                          key={cite.id}
+                          type="button"
+                          className="citation-card"
+                          onClick={() => onCitationClick?.(cite.id, cite.type)}
+                          aria-label={`Open ${cite.type}: ${cite.title}`}
+                        >
                           <div className="cite-type">{cite.type}</div>
                           <div className="cite-name">{cite.title}</div>
                           <div className="cite-excerpt">{cite.content}</div>

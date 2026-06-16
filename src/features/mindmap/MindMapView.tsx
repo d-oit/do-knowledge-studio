@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import MindElixir, { type MindElixirData, type MindElixirInstance } from 'mind-elixir';
+import MindElixir, { type MindElixirInstance } from 'mind-elixir';
 import { useGraphSyncStore } from '../../store/graph-sync-store';
 import { setupMindMapSyncListeners } from './sync-adapter';
 import type { SharedNode } from '../../store/graph-sync-types';
@@ -295,7 +295,7 @@ const MindMapView: React.FC<Props> = ({
 
   return (
     <div className="graph-container">
-      <div className="viz-toolbar">
+      <div className="viz-toolbar motion-stagger-2" key={`mindmap-toolbar-${rootId}-${relationFilter}`}>
         <div className="filter-group" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
           <ChevronDown size={16} className="text-muted" />
           <select
@@ -411,7 +411,7 @@ const MindMapView: React.FC<Props> = ({
         </div>
       </div>
 
-      <div className="viz-container" style={{ flex: 1, minHeight: '600px' }}>
+      <div className="viz-container motion-fade-in" key={`mindmap-canvas-${rootId}`} style={{ flex: 1, minHeight: '600px' }}>
         <div ref={containerRef} className="viz-canvas" />
 
         <div className="sr-only" aria-live="polite">

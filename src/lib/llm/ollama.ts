@@ -1,4 +1,5 @@
 import type { LLMProvider, LLMRequest, LLMResponse, LLMStreamChunk, LLMProviderConfig } from './types';
+import { logger } from '../logger';
 
 const OLLAMA_DEFAULT_BASE_URL = 'http://localhost:11434';
 
@@ -115,7 +116,7 @@ export class OllamaProvider implements LLMProvider {
             return;
           }
         } catch (err) {
-          logger.debug('SSE chunk not yet complete or invalid JSON', { error: String(err) });
+          logger.debug('SSE chunk not yet complete or invalid JSON', err);
         }
       }
     }

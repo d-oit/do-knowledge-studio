@@ -206,7 +206,7 @@ export async function getMigrationStatus(db: SQLiteDB): Promise<MigrationStatus[
   try {
     await ensureSchemaVersionTable(db);
   } catch (err) {
-    logger.debug('ensureSchemaVersionTable failed, returning empty status', { error: String(err) });
+    logger.debug('ensureSchemaVersionTable failed, returning empty status', { error: err instanceof Error ? err.message : String(err) });
     return [];
   }
 

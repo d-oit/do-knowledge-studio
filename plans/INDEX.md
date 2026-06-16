@@ -81,6 +81,13 @@ Plan 041 (Gap Closure) ──→ 📝 OPEN — next to execute
    ├─ G-TESTING-GAP-E2E: 5 new spec files (5-7h)
    └─ G-TESTING-GAP-THRESHOLDS: raise vitest.config to 40/50/50/50 (0.5h)
 
+Plan 042 (CLI + Chat) ──→ 📝 OPEN — parallelizable with 041
+   ├─ G-CLI-BACKUP: implement `db:backup` (VACUUM INTO) (1h)
+   ├─ G-CLI-CLAIM-CRUD: claim-list/update/delete commands (2h)
+   ├─ G-CHAT-CANCEL: AbortController + cancel button (2h)
+   ├─ G-CHAT-RETRY: withRetry helper for 5xx/429 (2h)
+   └─ G-TESTS: 10+ new CLI test cases (1h)
+
 Plan 35, 36, 37 ──→ will mark MERGED in INDEX once Plan 041 lands
 ```
 
@@ -158,6 +165,7 @@ Plan 35, 36, 37 ──→ will mark MERGED in INDEX once Plan 041 lands
 | 013 | Silent Catch Logging Policy | 📝 Proposed | Replace comments with `logger.debug` (Plan 041, 37.5 closure) |
 | 014 | Test Architecture: Pure Data Transforms | 📝 Proposed | Extract `mindmap-tree`, `graph-data` for unit testing (Plan 041, 35) |
 | 015 | JSDoc-First Documentation Policy | 📝 Proposed | Leading JSDoc on all exported `.tsx` (Plan 041, 36.2 closure) |
+| 016 | CLI Surface Completion + Chat Streaming Resilience | 📝 Proposed | `db:backup`, claim CRUD, AbortController, retry/backoff (Plan 042) |
 
 ## Verification Commands
 ```bash
@@ -197,6 +205,12 @@ pnpm test && pnpm run typecheck && pnpm run lint
 
 # Check for type safety violations
 grep -r "as any" src/ --include="*.ts" --include="*.tsx" || echo "✅ No 'as any'"
+grep -r "as unknown as" src/ --include="*.ts" --include="*.tsx" || echo "✅ No 'as unknown as'"
+
+# Check for 500 LOC violations
+find src/ -name "*.ts" -o -name "*.tsx" | xargs wc -l | awk '$1 > 500 {print $0}'
+```
+as any'"
 grep -r "as unknown as" src/ --include="*.ts" --include="*.tsx" || echo "✅ No 'as unknown as'"
 
 # Check for 500 LOC violations

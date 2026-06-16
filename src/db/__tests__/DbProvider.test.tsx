@@ -21,7 +21,7 @@ describe('DbProvider', () => {
     vi.clearAllMocks();
   });
 
-  it('renders children when database initializes', async () => {
+  it('renders children when database initializes', () => {
     render(
       <DbProvider>
         <div data-testid="child">Hello</div>

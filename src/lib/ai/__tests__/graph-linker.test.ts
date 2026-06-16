@@ -23,7 +23,7 @@ describe('applyEntitiesToGraph', () => {
       ]
     };
 
-    await applyEntitiesToGraph(result, mockRepository as IRepository, ['Apple', 'Steve Jobs'], ['Steve Jobs->Apple'], 'note-123');
+    await applyEntitiesToGraph(result, mockRepository, ['Apple', 'Steve Jobs'], ['Steve Jobs->Apple'], 'note-123');
 
     expect(mockRepository.createEntity).toHaveBeenCalledTimes(2);
     expect(mockRepository.createEntity).toHaveBeenCalledWith(expect.objectContaining({
@@ -54,7 +54,7 @@ describe('applyEntitiesToGraph', () => {
       relationships: []
     };
 
-    await applyEntitiesToGraph(result, mockRepository as IRepository, ['Existing', 'New'], []);
+    await applyEntitiesToGraph(result, mockRepository, ['Existing', 'New'], []);
 
     expect(mockRepository.createEntity).toHaveBeenCalledTimes(1);
     expect(mockRepository.createEntity).toHaveBeenCalledWith(expect.objectContaining({ name: 'New' }));
@@ -78,7 +78,7 @@ describe('applyEntitiesToGraph', () => {
       ]
     };
 
-    await applyEntitiesToGraph(result, mockRepository as IRepository, ['A'], []);
+    await applyEntitiesToGraph(result, mockRepository, ['A'], []);
 
     expect(mockRepository.createEntity).toHaveBeenCalledTimes(1);
     expect(mockRepository.createEntity).toHaveBeenCalledWith(expect.objectContaining({ name: 'A' }));
