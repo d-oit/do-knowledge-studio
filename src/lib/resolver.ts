@@ -146,8 +146,8 @@ const fetchAndParse = async (url: string): Promise<{ title: string; content: str
           provider: 'direct',
         };
       }
-    } catch {
-      logger.info('Direct fetch failed, falling back to Jina reader', { url });
+    } catch (err) {
+      logger.debug('Direct fetch failed, falling back to Jina reader', { url, error: String(err) });
     }
   }
 
@@ -180,7 +180,8 @@ export const resolveUrl = async (url: string): Promise<ResolvedContent> => {
   let parsed: URL;
   try {
     parsed = new URL(url);
-  } catch {
+  } catch (err) {
+    logger.debug('Invalid URL provided to resolveUrl', { url, error: String(err) });
     throw new Error(`Invalid URL: ${url}`);
   }
 

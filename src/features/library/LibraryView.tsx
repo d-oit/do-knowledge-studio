@@ -76,7 +76,8 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onEditEntity }) => {
         day: 'numeric',
         year: 'numeric'
       });
-    } catch {
+    } catch (err) {
+      logger.debug('Failed to format date', { dateStr, error: String(err) });
       return dateStr;
     }
   };

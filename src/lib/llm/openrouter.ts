@@ -1,4 +1,5 @@
 import type { LLMProvider, LLMRequest, LLMResponse, LLMStreamChunk, LLMProviderConfig, OpenAIChatResponse, OpenAIErrorResponse } from './types';
+import { logger } from '../logger';
 
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 
@@ -114,8 +115,8 @@ export class OpenRouterProvider implements LLMProvider {
           if (content) {
             yield { content, done: false };
           }
-        } catch {
-          // Expected: SSE chunk not yet complete or invalid JSON
+        } catch (err) {
+          logger.debug('SSE chunk not yet complete or invalid JSON', { error: String(err) });
         }
       }
     }
@@ -140,3 +141,4 @@ export const OPENROUTER_FREE_MODELS = {
   QWEN3_CODER: 'qwen/qwen3-coder-480b-a35b:free',
   LLAMA_3_3_70B: 'meta-llama/llama-3.3-70b-instruct:free',
 } as const;
+;

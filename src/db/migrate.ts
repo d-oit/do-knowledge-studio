@@ -205,7 +205,8 @@ export async function rollbackLastMigration(db: SQLiteDB): Promise<void> {
 export async function getMigrationStatus(db: SQLiteDB): Promise<MigrationStatus[]> {
   try {
     await ensureSchemaVersionTable(db);
-  } catch {
+  } catch (err) {
+    logger.debug('ensureSchemaVersionTable failed, returning empty status', { error: String(err) });
     return [];
   }
 

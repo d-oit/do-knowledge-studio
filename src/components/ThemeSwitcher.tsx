@@ -45,8 +45,8 @@ function getStoredTheme(): Theme {
     if (stored && ['app', 'game', 'neural', 'technical'].includes(stored)) {
       return stored as Theme;
     }
-  } catch {
-    // localStorage unavailable (e.g. private browsing, SSR)
+  } catch (err) {
+    logger.debug('localStorage unavailable for reading stored theme', { error: String(err) });
   }
   return 'app';
 }
@@ -54,8 +54,8 @@ function getStoredTheme(): Theme {
 function storeTheme(theme: Theme): void {
   try {
     localStorage.setItem(STORAGE_KEY, theme);
-  } catch {
-    // localStorage unavailable (e.g. private browsing, SSR)
+  } catch (err) {
+    logger.debug('localStorage unavailable for storing theme', { theme, error: String(err) });
   }
 }
 

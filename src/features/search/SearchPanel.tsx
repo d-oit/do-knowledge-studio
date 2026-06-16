@@ -281,7 +281,11 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
             void (async () => {
               if (!useSemantic) {
                 setUseSemantic(true);
-                try { await initEmbeddings(); } catch { /* embeddings are best-effort */ }
+                try {
+                  await initEmbeddings();
+                } catch (err) {
+                  logger.debug('Embeddings initialization failed, continuing without', { error: String(err) });
+                }
               }
             })();
           }}

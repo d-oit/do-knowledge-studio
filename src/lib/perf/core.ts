@@ -1,3 +1,5 @@
+import { logger } from '../logger';
+
 const PERF_PREFIX = 'perf::';
 
 export interface PerfEntry {
@@ -51,8 +53,8 @@ export const perf = {
     if (!isDev) return;
     try {
       performance.mark(`${PERF_PREFIX}${name}`);
-    } catch {
-      // Performance API unavailable (e.g. SSR, older browsers)
+    } catch (err) {
+      logger.debug('Performance API unavailable for mark', { name, error: String(err) });
     }
   },
 
@@ -74,7 +76,8 @@ export const perf = {
         return measure.duration;
       }
       return null;
-    } catch {
+    } catch (err) {
+      logger.debug('Performance API unavailable for measure', { name, error: String(err) });
       return null;
     }
   },
@@ -85,8 +88,8 @@ export const perf = {
     try {
       performance.clearMarks();
       performance.clearMeasures();
-    } catch {
-      // Performance API unavailable
+    } catch (err) {
+      logger.debug('Performance API unavailable for clear', { error: String(err) });
     }
   },
 
@@ -125,6 +128,13 @@ export const perf = {
     for (const [name, items] of grouped) {
       const cat = categorize(name);
       const list = byCategory.get(cat) || [];
+      list.push(computeStats(name, items));
+      byCategory.set(cat, list);
+    }
+    return byCategory;
+  },
+};
+list = byCategory.get(cat) || [];
       list.push(computeStats(name, items));
       byCategory.set(cat, list);
     }
