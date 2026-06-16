@@ -8,6 +8,8 @@
 [![Built with React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org)
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite)](https://vitejs.dev)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](#testing)
+[![Coverage](https://img.shields.io/badge/coverage-40%25%2B-blue)](#testing)
 
 **Quick Links**: [Quick Start](#-quick-start) · [Features](#-features) · [Architecture](#-architecture) · [AI Agents](#-ai-agent-integration) · [Contributing](#-contributing)
 

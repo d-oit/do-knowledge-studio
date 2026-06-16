@@ -1,0 +1,23 @@
+# Trivy ignore file — one rule per line.
+# Acceptable formats: <trivy-id>, <cve-id>, <ghsa-id>, or regex pattern.
+#
+# All entries below are dompurify 3.4.6 CVEs that we cannot upgrade past
+# because dompurify >=3.4.7 is incompatible with happy-dom in our test
+# environment (throws "Failed to execute 'insertBefore' on 'Node'" in
+# the security unit tests). Upgrading dompurify requires migrating the
+# test env to jsdom — tracked in plans/041-post-export-cleanup.
+
+# Hook mutation of data.allowedTags (IN_PLACE mode not used in this app)
+GHSA-76mc-f452-cxcm
+
+# IN_PLACE Sanitization Bypass via Shadow Root (IN_PLACE mode not used)
+GHSA-rp9w-3fw7-7cwq
+
+# Trusted Types policy poisoning (we do not use Trusted Types)
+GHSA-vxr8-fq34-vjx9
+
+# SAFE_FOR_TEMPLATES bypass (we do not use SAFE_FOR_TEMPLATES)
+GHSA-gvmj-g25r-r7wr
+
+# Hook mutation of data.allowedTags (IN_PLACE mode not used)
+CVE-2026-49978

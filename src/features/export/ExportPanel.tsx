@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { logger } from '../../lib/logger';
 import { repository } from '../../db/repository';
-import { generateSiteHtml, generateMarkdownExport, generateJsonExport, generatePrintHtml, fetchAllExportData } from '../../lib/export-core';
+import { generateSiteHtml, generateMarkdownExport, generateJsonExport, fetchAllExportData } from '../../lib/export-core';
 import { stripHtmlTags } from '../../lib/security';
 import { Download, File, FileJson, FileText, FileSpreadsheet, Globe, Loader2 } from 'lucide-react';
 import type { Entity } from '../../lib/validation';
@@ -78,15 +78,10 @@ const ExportPanel: React.FC = () => {
     setError(null);
     try {
       const data = await fetchAllExportData(repository);
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) throw new Error('Popup blocked');
-      printWindow.opener = null;
-      const printDoc = printWindow.document;
-      printDoc.open();
-      printDoc.write(generatePrintHtml(data.entities, data.claims));
-      printDoc.close();
-      printWindow.focus();
-      setTimeout(() => printWindow.print(), 500);
+      const { exportAllNotesToPDF, writePdfBlobToFile } = await import('./pdf-exporter');
+      const notes = Object.values(data.notes ?? {}).flatMap(n => n ?? []);
+      const blob = await exportAllNotesToPDF(notes, data.entities, { title: 'Knowledge Base Export' });
+      writePdfBlobToFile(blob, 'knowledge-base.pdf');
       logger.info('PDF export complete');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'PDF export failed';

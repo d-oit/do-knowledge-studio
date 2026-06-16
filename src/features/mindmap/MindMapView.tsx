@@ -245,7 +245,7 @@ const MindMapView: React.FC<Props> = ({
         if (event.type === 'node:add') {
           if (!mindInstance.current?.findEle(payload.id)) {
             // Add as child of root for simplicity if not specified
-            mindInstance.current?.addChild(mindInstance.current.findEle(rootId), {
+            void mindInstance.current?.addChild(mindInstance.current.findEle(rootId), {
               id: payload.id,
               topic: payload.label
             });
@@ -254,14 +254,15 @@ const MindMapView: React.FC<Props> = ({
           const el = mindInstance.current?.findEle(payload.id);
           if (el && el.nodeObj.topic !== payload.label) {
             console.warn(`[Sync Conflict] Mind map node ${payload.id} has different label. Local: ${el.nodeObj.topic}, Incoming: ${payload.label}. Applying last-writer wins.`);
-            mindInstance.current?.updateNodeStyle(payload.id); // Refresh
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- mind-elixir type resolution
+            void mindInstance.current?.updateNodeStyle(payload.id); // Refresh
             el.nodeObj.topic = payload.label;
             mindInstance.current?.refresh();
           }
         } else if (event.type === 'node:remove') {
           const el = mindInstance.current?.findEle(payload.id);
           if (el) {
-            mindInstance.current?.removeNodes([el]);
+            void mindInstance.current?.removeNodes([el]);
           }
         }
       });

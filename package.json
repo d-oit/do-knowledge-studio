@@ -6,7 +6,14 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "better-sqlite3"
-    ]
+    ],
+    "overrides": {
+      "esbuild@<0.28.1": "^0.28.1",
+      "ws@<8.21.0": "^8.21.0",
+      "dompurify": "3.4.9",
+      "protobufjs@<7.6.3": "^7.6.3",
+      "vite@<8.0.16": "^8.0.16"
+    }
   },
   "description": "Local-first knowledge studio — rich text, knowledge graph, mind maps, SQLite WASM FTS5 search, Orama RAG & AI agent harness. No backend required.",
   "keywords": [
@@ -44,6 +51,7 @@
     "@huggingface/transformers": "^4.2.0",
     "@orama/orama": "^3.1.18",
     "@orama/plugin-embeddings": "^3.1.18",
+    "@react-pdf/renderer": "^4.5.1",
     "@sqlite.org/sqlite-wasm": "3.45.3-build3",
     "@tanstack/react-virtual": "^3.13.25",
     "@tiptap/core": "3.23.5",
@@ -53,21 +61,23 @@
     "@tiptap/starter-kit": "^3.23.4",
     "commander": "^15.0.0",
     "docx": "^9.7.1",
-    "dompurify": "^3.4.6",
+    "dompurify": "3.4.9",
     "graphology": "^0.26.0",
     "graphology-layout-forceatlas2": "^0.10.1",
+    "happy-dom": "^20.10.4",
+    "jszip": "^3.10.1",
     "lucide-react": "^1.17.0",
     "mind-elixir": "^5.12.2",
     "react": "19.2.7",
     "react-dom": "19.2.7",
     "react-router-dom": "^7.15.1",
     "sigma": "^3.0.0-beta.27",
-    "zod": "^3.22.4",
+    "zod": "^4.4.3",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@eslint/js": "9.39.4",
-    "@playwright/test": "^1.42.1",
+    "@playwright/test": "^1.61.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -81,7 +91,7 @@
     "@typescript-eslint/parser": "^7.2.0",
     "@vitejs/plugin-react": "^6.0.2",
     "@vitest/coverage-v8": "^4.1.5",
-    "better-sqlite3": "^12.10.0",
+    "better-sqlite3": "^12.11.1",
     "eslint": "^8.57.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react": "^7.37.5",
@@ -89,13 +99,12 @@
     "eslint-plugin-react-refresh": "^0.4.6",
     "globals": "^17.6.0",
     "graphology-types": "^0.24.8",
-    "happy-dom": "^20.9.0",
     "picomatch": "^4.0.4",
     "rollup-plugin-visualizer": "^7.0.1",
     "ts-node": "^10.9.2",
     "tsx": "^4.22.4",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.60.1",
+    "typescript-eslint": "^8.61.1",
     "vite": "^8.0.14",
     "vitest": "^4.1.4"
   }

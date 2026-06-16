@@ -9,12 +9,13 @@ import { useRepository } from '../../db/useRepository';
 import { jobCoordinator } from '../../lib/jobs';
 import { upsertToSearchIndex } from '../../lib/search';
 import { perf } from '../../lib/perf';
-import { CheckCircle, AtSign, Link2, ChevronDown, ChevronRight, Pencil, Undo2, Redo2, Sparkles, X, Loader2 } from 'lucide-react';
+import { AtSign, ChevronDown, ChevronRight, Pencil, Link2, Sparkles, X } from 'lucide-react';
 import { Entity } from '../../lib/validation';
 import { extractEntities } from '../../lib/ai/entity-extractor';
 import type { EntityExtractionResult } from '../../lib/ai/entity-extractor';
 import { loadConfig, createProvider } from '../../lib/llm/config';
 import EntityReviewDialog from '../ai/EntityReviewDialog';
+import EditorToolbar from './EditorToolbar';
 
 const ENTITY_TYPES = [
   { value: 'note', label: 'Note' },
@@ -78,10 +79,11 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
 
   useEffect(() => {
     if (!editingEntityId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting state before async operation
       setBacklinks([]);
       return;
     }
-    setIsLoadingEntity(true); // eslint-disable-line react-hooks/set-state-in-effect -- loading flag set before async fetch, not a cascade risk
+    setIsLoadingEntity(true);
     repository.getEntityById(editingEntityId).then((entity: (Entity & { rowid: number }) | null) => {
       if (!entity) return;
       setTitle(entity.name || '');
@@ -89,7 +91,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
       setSourceUrl(entity.sourceUrl ?? '');
       setShowAdvanced((entity.metadata?.advanced as boolean | undefined) ?? false);
       setStatus(null);
-    }).catch(err => logger.error('Failed to load entity for editing', { error: err }))
+    }).catch((err: unknown) => logger.error('Failed to load entity for editing', { error: err }))
     .finally(() => setIsLoadingEntity(false));
 
     repository.getBacklinks(editingEntityId).then((links: Entity[]) => {
@@ -266,7 +268,6 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
 
   const setLink = useCallback(() => {
     if (!editor || !linkUrl.trim()) return;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     editor.chain().focus().extendMarkRange('link').setLink({ href: linkUrl.trim() }).run();
     setShowLinkInput(false);
     setLinkUrl('');
@@ -302,132 +303,15 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
           ))}
         </select>
       </div>
-      <div className="toolbar">
-        <button
-          onClick={() => editor?.chain().focus().toggleBold().run()}
-          className={editor?.isActive('bold') ? 'active' : ''}
-          aria-label="Toggle Bold"
-          title="Bold (Ctrl+B)"
-        >
-          B
-        </button>
-        <button
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
-          onClick={() => editor?.chain().focus().toggleItalic().run()}
-          className={editor?.isActive('italic') ? 'active' : ''}
-          aria-label="Toggle Italic"
-          title="Italic (Ctrl+I)"
-        >
-          <em>I</em>
-        </button>
-        <button
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
-          onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}
-          className={editor?.isActive('heading', { level: 1 }) ? 'active' : ''}
-          aria-label="Toggle Heading 1"
-          title="Heading 1"
-        >
-          H1
-        </button>
-        <button
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
-          onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
-          className={editor?.isActive('heading', { level: 2 }) ? 'active' : ''}
-          aria-label="Toggle Heading 2"
-          title="Heading 2"
-        >
-          H2
-        </button>
-        <button
-          onClick={() => editor?.chain().focus().toggleBulletList().run()}
-          className={editor?.isActive('bulletList') ? 'active' : ''}
-          aria-label="Toggle Bullet List"
-          title="Bullet List"
-        >
-          • List
-        </button>
-        <button
-          onClick={() => editor?.chain().focus().toggleOrderedList().run()}
-          className={editor?.isActive('orderedList') ? 'active' : ''}
-          aria-label="Toggle Ordered List"
-          title="Ordered List"
-        >
-          1. List
-        </button>
-        <button
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
-          onClick={() => editor?.chain().focus().toggleCodeBlock().run()}
-          className={editor?.isActive('codeBlock') ? 'active' : ''}
-          aria-label="Toggle Code Block"
-          title="Code Block"
-        >
-          {'</>'}
-        </button>
-        <button
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
-          onClick={() => editor?.chain().focus().toggleBlockquote().run()}
-          className={editor?.isActive('blockquote') ? 'active' : ''}
-          aria-label="Toggle Blockquote"
-          title="Blockquote"
-        >
-          &ldquo;
-        </button>
-        <button
-          onClick={() => { setShowLinkInput(!showLinkInput); }}
-          className={editor?.isActive('link') ? 'active' : ''}
-          aria-label="Insert Link"
-          title="Insert Link"
-        >
-          <Link2 size={16} aria-hidden="true" />
-        </button>
-        <button
-          onClick={() => editor?.chain().focus().undo().run()}
-          disabled={!editor?.can?.().undo()}
-          aria-label="Undo"
-          title="Undo (Ctrl+Z)"
-          style={{ opacity: editor?.can?.().undo() ? 1 : 0.4 }}
-        >
-          <Undo2 size={16} aria-hidden="true" />
-        </button>
-        <button
-          onClick={() => editor?.chain().focus().redo().run()}
-          disabled={!editor?.can?.().redo()}
-          aria-label="Redo"
-          title="Redo (Ctrl+Shift+Z)"
-          style={{ opacity: editor?.can?.().redo() ? 1 : 0.4 }}
-        >
-          <Redo2 size={16} aria-hidden="true" />
-        </button>
-          <button
-            onClick={() => editor?.chain().focus().toggleClaim().run()}
-            className={editor?.isActive('claim') ? 'active' : ''}
-            title="Mark as Claim"
-            aria-label="Mark as Claim"
-          >
-            <CheckCircle size={16} aria-hidden="true" /> Claim
-          </button>
-          <button
-            onClick={() => void handleExtractEntities()}
-            disabled={isExtracting}
-            title="Extract entities with AI"
-            aria-label="Extract entities with AI"
-            style={{ color: 'var(--interactive-primary)' }}
-          >
-            {isExtracting ? (
-              <Loader2 size={16} className="animate-spin" aria-hidden="true" />
-            ) : (
-              <Sparkles size={16} aria-hidden="true" />
-            )}
-            AI Extract
-          </button>
-          <div className="toolbar-spacer" />
-        <button type="button" onClick={() => { void handleSave(); }} className="primary">{editingEntityId ? 'Update Entity' : 'Save to DB'}</button>
-        {editingEntityId && (
-          <button type="button" onClick={handleCancelEdit} aria-label="Cancel editing">
-            Cancel
-          </button>
-        )}
-      </div>
+      <EditorToolbar
+        editor={editor}
+        editingEntityId={editingEntityId}
+        isExtracting={isExtracting}
+        onExtractEntities={() => void handleExtractEntities()}
+        onToggleLinkInput={() => setShowLinkInput(!showLinkInput)}
+        onSave={() => void handleSave()}
+        onCancelEdit={handleCancelEdit}
+      />
       {showLinkInput && (
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '4px 0', marginBottom: '8px' }}>
           <input
