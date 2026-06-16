@@ -111,10 +111,11 @@ jobs:
           exit-code: '0'
           ignore-unfixed: true
           trivyignores: '.trivyignore'
-          # Ignore Trivy's "Newer version available" notice which causes
-          # non-zero exit even when 0 vulns found (Trivy 0.70.0 bug).
-          # The SARIF is still uploaded to the Security tab where humans
-          # review the findings.
+          hide-progress: true
+        # Trivy 0.70.0 emits a "Notices:" line on the version-check that
+        # makes the action exit 1 even with 0 vulnerabilities. The SARIF
+        # upload to GitHub code-scanning is the source of truth — humans
+        # review the Security tab. exit-code is 0 by design here.
 
       - name: Upload Trivy SARIF
         if: always()
