@@ -60,3 +60,7 @@ Thumbs.db
 # CLI database
 .studio-cli.db
 test.db
+
+# Agent scratch / taste
+.commandcode/
+.claude/

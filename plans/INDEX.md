@@ -15,6 +15,7 @@
 | **P1** | [36-documentation-overhaul.md](36-documentation-overhaul.md) | CLI docs, JSDoc, DB schema, search arch, onboarding, LLM setup, deployment | 12-16h | 📝 OPEN | #237 |
 | **P1** | [37-security-quality-hardening.md](37-security-quality-hardening.md) | API key encryption, SSRF fix, migration fix, snapshot validation | 8-12h | 📝 OPEN | #238–#240 |
 | **P0** | [033-goap-open-issues-prs-2026-06-11.md](033-goap-open-issues-prs-2026-06-11.md) | Close 6 open issues + wire missing plan features | 8-12h | ✅ MERGED | #305 |
+| **P1** | [040-goap-export-pipeline-and-pr-cleanup-2026-06-16.md](040-goap-export-pipeline-and-pr-cleanup-2026-06-16.md) | Complete export pipeline (PDF, JSON schema v1.0, MD round-trip) + resolve red PRs | 12-18h | ✅ MERGED | #289 |
 
 ## Quick Reference — Completed Plans
 
@@ -168,6 +169,30 @@ Wave 2 (P1 — PARALLEL) ──→ 📝 OPEN
 | 004 | Database Migration System | ✅ Implemented | Migration runner, CLI commands |
 | 005 | Error Handling Architecture | ✅ Implemented | AppError class, ErrorBoundaries |
 | 006 | Shared Export Core Deduplication | ✅ Implemented | fetchAllExportData, N+1 fix, type alignment |
+| 007 | do-web-doc-resolver Integration | 📝 Proposed | Future work |
+| 008 | Rolldown Circular Dependency Resolution | ✅ Implemented | #209 — core.ts extraction, const ordering |
+| 009 | Staged ESLint Rule Enforcement | ✅ Implemented | #209 — typed workers, void-wrap, vi.mocked |
+
+## Verification Commands
+```bash
+# Check all plans exist
+ls -1 plans/*.md | wc -l
+# Should return 40+
+
+# Verify no QUICKSTART.md references
+grep -r "QUICKSTART" . --include="*.sh" --include="*.md" --include="*.yml" --include="*.yaml"
+
+# Run quality gates
+pnpm test && pnpm run typecheck && pnpm run lint
+
+# Check for type safety violations
+grep -r "as any" src/ --include="*.ts" --include="*.tsx" || echo "✅ No 'as any'"
+grep -r "as unknown as" src/ --include="*.ts" --include="*.tsx" || echo "✅ No 'as unknown as'"
+
+# Check for 500 LOC violations
+find src/ -name "*.ts" -o -name "*.tsx" | xargs wc -l | awk '$1 > 500 {print $0}'
+```
+ignment |
 | 007 | do-web-doc-resolver Integration | 📝 Proposed | Future work |
 | 008 | Rolldown Circular Dependency Resolution | ✅ Implemented | #209 — core.ts extraction, const ordering |
 | 009 | Staged ESLint Rule Enforcement | ✅ Implemented | #209 — typed workers, void-wrap, vi.mocked |
