@@ -318,3 +318,56 @@ export const parseMarkdownImport = (markdown: string): ParsedEntity[] => {
 
   return entities;
 }
+
+import {
+  CURRENT_EXPORT_VERSION,
+  ExportSchemaV1,
+  exportToJsonString,
+  importExportJson,
+  UnsupportedExportVersionError,
+  type KnowledgeStudioExport,
+} from './export-schema';
+
+export {
+  CURRENT_EXPORT_VERSION,
+  ExportSchemaV1,
+  exportToJsonString,
+  importExportJson,
+  UnsupportedExportVersionError,
+};
+export type { KnowledgeStudioExport };
+
+/**
+ * Build a KnowledgeStudioExport v1.0 payload from the legacy ExportData
+ * shape used by the existing export pipeline. Falls back to empty arrays
+ * for sections (graph, mindMap) that the legacy shape doesn't carry.
+ */
+export function buildKnowledgeStudioExport(
+  data: ExportData,
+  opts?: { title?: string; description?: string; tags?: string[]; source?: KnowledgeStudioExport['metadata']['source'] },
+): Omit<KnowledgeStudioExport, 'version' | 'exportedAt'> {
+  const flatClaims = Object.values(data.claims ?? {}).flatMap(c => c ?? []);
+  const flatNotes = Object.values(data.notes ?? {}).flatMap(n => n ?? []);
+  return {
+    metadata: {
+      title: opts?.title ?? 'Knowledge Base Export',
+      ...(opts?.description ? { description: opts.description } : {}),
+      source: opts?.source ?? 'browser',
+    },
+    notes: flatNotes,
+    entities: data.entities,
+    claims: flatClaims,
+    links: data.links ?? [],
+    graph: { nodes: [], edges: [] },
+    mindMap: null,
+    tags: opts?.tags ?? [],
+  };
+}
+
+export function exportToJson(data: ExportData, opts?: Parameters<typeof buildKnowledgeStudioExport>[1]): string {
+  return exportToJsonString(buildKnowledgeStudioExport(data, opts));
+}
+
+export function importFromJson(json: string): KnowledgeStudioExport {
+  return importExportJson(json).export;
+}
