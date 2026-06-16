@@ -110,6 +110,7 @@ jobs:
           output: 'trivy-results.sarif'
           exit-code: '1'
           ignore-unfixed: true
+          ignorefile: '.trivyignore'
 
       - name: Upload Trivy SARIF
         if: always()
