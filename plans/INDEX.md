@@ -69,26 +69,25 @@ Plan 34 (Architecture) ──→ ✅ MERGED 2026-06-16
    ├─ 34.3 Split AIHarness.tsx (600 → 272 LOC + 4 extracted modules) ✅
    └─ 34.4 Split search.ts (555 → 2-line shim + 5 modules) ✅
 
-Plan 041 (Gap Closure) ──→ 📝 OPEN — next to execute
-   ├─ G-LOGGING-GAP: 12 silent-catch blocks → logger.debug (1-2h)
-   ├─ G-DOCS-GAP-DEPLOY: docs/DEPLOYMENT.md (2-3h)
-   ├─ G-DOCS-GAP-JSDOC: 11+ components + 4 Zod schemas (3-4h)
-   ├─ G-TESTING-GAP-MINDMAP: mindmap-tree.ts + 8+ tests (4-5h)
-   ├─ G-TESTING-GAP-CLI: db.test.ts + 10+ command tests (3-4h)
-   ├─ G-TESTING-GAP-GRAPH: graph-data.ts + 6+ tests (4-5h)
-   ├─ G-TESTING-GAP-EXTENSIONS: ClaimExtension + MentionExtension tests (3-4h)
-   ├─ G-TESTING-GAP-QUICKWINS: useFocusTrap + DbProvider tests (2-3h)
-   ├─ G-TESTING-GAP-E2E: 5 new spec files (5-7h)
-   └─ G-TESTING-GAP-THRESHOLDS: raise vitest.config to 40/50/50/50 (0.5h)
+Plan 041 (Gap Closure) ──→ 📝 OPEN — ~50% done (PR #326)
+   ├─ G-LOGGING-GAP: 12 silent-catch blocks → logger.debug ✅ (PR #326)
+   ├─ G-DOCS-GAP-DEPLOY: docs/DEPLOYMENT.md ❌
+   ├─ G-DOCS-GAP-JSDOC: 5 Zod schemas ✅ (validation.ts); 11+ .tsx components ❌
+   ├─ G-TESTING-GAP-MINDMAP: mindmap-tree.ts + 8+ tests ✅ (prev commit)
+   ├─ G-TESTING-GAP-CLI: db.test.ts + 10+ command tests ❌
+   ├─ G-TESTING-GAP-GRAPH: graph-data.ts + GraphView.test.tsx ✅ (PR #326)
+   ├─ G-TESTING-GAP-EXTENSIONS: ClaimExtension + MentionExtension tests ❌
+   ├─ G-TESTING-GAP-QUICKWINS: useFocusTrap + DbProvider tests ✅ (PR #326)
+   ├─ G-TESTING-GAP-E2E: 5 new spec files ❌
+   ├─ G-TESTING-GAP-THRESHOLDS: raise vitest.config → 40/50/50/50 ❌
+   └─ G-MOTION-UI: motion system + design token refresh (ADR 017) ✅ (PR #326)
 
-Plan 042 (CLI + Chat) ──→ 📝 OPEN — parallelizable with 041
+Plan 042 (CLI + Chat) ──→ 📝 Proposed (ADR 016) — not yet implemented
    ├─ G-CLI-BACKUP: implement `db:backup` (VACUUM INTO) (1h)
    ├─ G-CLI-CLAIM-CRUD: claim-list/update/delete commands (2h)
    ├─ G-CHAT-CANCEL: AbortController + cancel button (2h)
    ├─ G-CHAT-RETRY: withRetry helper for 5xx/429 (2h)
    └─ G-TESTS: 10+ new CLI test cases (1h)
-
-Plan 35, 36, 37 ──→ will mark MERGED in INDEX once Plan 041 lands
 ```
 
 ## Legacy Plans (Archived/Completed)
@@ -127,16 +126,16 @@ Plan 35, 36, 37 ──→ will mark MERGED in INDEX once Plan 041 lands
 | #220 | #191 | Refactor: extract shared fetchAllExportData, fix N+1 query | ✅ MERGED |
 | #221 | #193 | Tests: 52 new test cases (244→296 total) | ✅ MERGED |
 
-## Health Scores (Updated 2026-05-31 — Post Swarm Analysis)
+## Health Scores (Updated 2026-06-16 — Post PR #326)
 
 | Category | Score | Trend | Notes |
 |----------|-------|-------|-------|
-| Architecture | 80/100 | ⬇️ Down from 85 | 4 files exceed 500 LOC; singleton repository untestable |
-| Implementation Completeness | 75/100 | ⬇️ Down from 90 | Search→editor nav broken; Chat not wired to LLM; no backlinks |
-| Code Quality | 85/100 | ⬇️ Down from 90 | 14 silent catch blocks; magic numbers; duplicate escapeHtml |
-| Documentation | 70/100 | ⬇️ Down from 92 | 9 high-priority gaps: CLI docs, JSDoc, DB schema, onboarding |
-| Security | 85/100 | ⬇️ Down from 92 | API keys in plaintext; SSRF; no URL validation |
-| Test Coverage | 60/100 | ⬇️ Down from 85 | Mind map, CLI, graph, extensions: zero tests |
+| Architecture | 82/100 | ⬆️ Up from 80 | Focus trap rewrite, error boundary rewrite, motion system |
+| Implementation Completeness | 82/100 | ⬆️ Up from 75 | Draft title, citation click, motion system, a11y pass |
+| Code Quality | 88/100 | ⬆️ Up from 85 | Silent catch → logger.debug (12+); err object logging; JSDoc on schemas |
+| Documentation | 74/100 | ⬆️ Up from 70 | JSDoc on 5 Zod schemas; Quality Gate Discipline in AGENTS.md |
+| Security | 85/100 | → Same | No security changes in this PR |
+| Test Coverage | 68/100 | ⬆️ Up from 60 | GraphView 143-line test (7 describes, 43 cases); tests updated for new behavior |
 
 ## Key Constraints
 1. **AGENTS.md is single source of truth** — Do NOT modify GEMINI.md or QWEN.md
@@ -166,6 +165,7 @@ Plan 35, 36, 37 ──→ will mark MERGED in INDEX once Plan 041 lands
 | 014 | Test Architecture: Pure Data Transforms | 📝 Proposed | Extract `mindmap-tree`, `graph-data` for unit testing (Plan 041, 35) |
 | 015 | JSDoc-First Documentation Policy | 📝 Proposed | Leading JSDoc on all exported `.tsx` (Plan 041, 36.2 closure) |
 | 016 | CLI Surface Completion + Chat Streaming Resilience | 📝 Proposed | `db:backup`, claim CRUD, AbortController, retry/backoff (Plan 042) |
+| 017 | Motion System & Design Token Refresh | ✅ Implemented | CSS tokens (duration/easing), `motion.css` keyframes, utility classes (PR #326) |
 
 ## Verification Commands
 ```bash
@@ -185,34 +185,4 @@ grep -r "as unknown as" src/ --include="*.ts" --include="*.tsx" || echo "✅ No 
 
 # Check for 500 LOC violations
 find src/ -name "*.ts" -o -name "*.tsx" | xargs wc -l | awk '$1 > 500 {print $0}'
-```
-ignment |
-| 007 | do-web-doc-resolver Integration | 📝 Proposed | Future work |
-| 008 | Rolldown Circular Dependency Resolution | ✅ Implemented | #209 — core.ts extraction, const ordering |
-| 009 | Staged ESLint Rule Enforcement | ✅ Implemented | #209 — typed workers, void-wrap, vi.mocked |
 
-## Verification Commands
-```bash
-# Check all plans exist
-ls -1 plans/*.md | wc -l
-# Should return 40+
-
-# Verify no QUICKSTART.md references
-grep -r "QUICKSTART" . --include="*.sh" --include="*.md" --include="*.yml" --include="*.yaml"
-
-# Run quality gates
-pnpm test && pnpm run typecheck && pnpm run lint
-
-# Check for type safety violations
-grep -r "as any" src/ --include="*.ts" --include="*.tsx" || echo "✅ No 'as any'"
-grep -r "as unknown as" src/ --include="*.ts" --include="*.tsx" || echo "✅ No 'as unknown as'"
-
-# Check for 500 LOC violations
-find src/ -name "*.ts" -o -name "*.tsx" | xargs wc -l | awk '$1 > 500 {print $0}'
-```
-as any'"
-grep -r "as unknown as" src/ --include="*.ts" --include="*.tsx" || echo "✅ No 'as unknown as'"
-
-# Check for 500 LOC violations
-find src/ -name "*.ts" -o -name "*.tsx" | xargs wc -l | awk '$1 > 500 {print $0}'
-```
