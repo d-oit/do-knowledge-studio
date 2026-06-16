@@ -134,10 +134,3 @@ export const perf = {
     return byCategory;
   },
 };
-list = byCategory.get(cat) || [];
-      list.push(computeStats(name, items));
-      byCategory.set(cat, list);
-    }
-    return byCategory;
-  },
-};

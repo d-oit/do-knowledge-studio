@@ -1,21 +1,17 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { ClaimExtension } from './ClaimExtension';
 import { MentionExtension } from './MentionExtension';
 import { logger } from '../../lib/logger';
-import { useRepository } from '../../db/useRepository';
+import { repository } from '../../db/repository';
 import { jobCoordinator } from '../../lib/jobs';
 import { upsertToSearchIndex } from '../../lib/search';
 import { perf } from '../../lib/perf';
-import { AtSign, ChevronDown, ChevronRight, Pencil, Link2, Sparkles, X } from 'lucide-react';
+import { CheckCircle, AtSign, Link2, ChevronDown, ChevronRight, Pencil } from 'lucide-react';
 import { Entity } from '../../lib/validation';
-import { extractEntities } from '../../lib/ai/entity-extractor';
-import type { EntityExtractionResult } from '../../lib/ai/entity-extractor';
-import { loadConfig, createProvider } from '../../lib/llm/config';
-import EntityReviewDialog from '../ai/EntityReviewDialog';
-import EditorToolbar from './EditorToolbar';
 
 const ENTITY_TYPES = [
   { value: 'note', label: 'Note' },
@@ -27,41 +23,19 @@ const ENTITY_TYPES = [
 interface EditorProps {
   editingEntityId?: string | null;
   onEditComplete?: () => void;
+  onEditEntity?: (id: string) => void;
 }
 
-const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
-  const repository = useRepository();
+const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete, onEditEntity }) => {
   const [title, setTitle] = useState('');
   const [type, setType] = useState('note');
   const [sourceUrl, setSourceUrl] = useState('');
   const [allEntities, setAllEntities] = useState<Entity[]>([]);
+  const [backlinks, setBacklinks] = useState<Entity[]>([]);
   const [showMentionMenu, setShowMentionMenu] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [showLinkInput, setShowLinkInput] = useState(false);
-  const [linkUrl, setLinkUrl] = useState('');
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [isLoadingEntity, setIsLoadingEntity] = useState(false);
-  const [isExtracting, setIsExtracting] = useState(false);
-  const [extractionResult, setExtractionResult] = useState<EntityExtractionResult | null>(null);
-  const [showExtractionReview, setShowExtractionReview] = useState(false);
-  const [extractionSourceId, setExtractionSourceId] = useState<string | undefined>(undefined);
-  const [showExtractionNotice, setShowExtractionNotice] = useState(false);
-  const [backlinks, setBacklinks] = useState<Entity[]>([]);
-
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Placeholder,
-      ClaimExtension,
-      MentionExtension,
-    ],
-    content: '<p></p>',
-    editorProps: {
-      attributes: {
-        class: 'prose prose-sm max-w-none'
-      }
-    }
-  });
 
   useEffect(() => {
     if (status) {
@@ -70,35 +44,42 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
     }
   }, [status]);
 
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Placeholder.configure({
+        placeholder: 'Enter structured knowledge... Use "Claim" for assertions and "Mention" for links.',
+      }),
+      ClaimExtension,
+      MentionExtension,
+    ],
+    content: '<p>Every note is an entity.</p>',
+  });
+
   useEffect(() => {
     perf.mark('editor-mount');
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- type resolution through Promise chain
-    repository.getAllEntities().then((entities: Entity[]) => setAllEntities(entities)).catch(err => logger.error('Failed to load entities for mentions', { error: err }));
+    repository.getAllEntities().then(setAllEntities).catch(err => logger.error('Failed to load entities for mentions', err));
     perf.measure('editor-ready', 'editor-mount');
-  }, [repository]);
+  }, []);
 
   useEffect(() => {
     if (!editingEntityId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting state before async operation
       setBacklinks([]);
       return;
     }
     setIsLoadingEntity(true);
-    repository.getEntityById(editingEntityId).then((entity: (Entity & { rowid: number }) | null) => {
+    repository.getEntityById(editingEntityId).then(entity => {
       if (!entity) return;
       setTitle(entity.name || '');
-      setType(entity.type);
+      setType(entity.type as EntityType);
       setSourceUrl(entity.sourceUrl ?? '');
-      setShowAdvanced((entity.metadata?.advanced as boolean | undefined) ?? false);
+      setAdvanced(entity.metadata?.advanced ?? false);
       setStatus(null);
-    }).catch((err: unknown) => logger.error('Failed to load entity for editing', { error: err }))
+    }).catch(err => logger.error('Failed to load entity for editing', err))
     .finally(() => setIsLoadingEntity(false));
 
-    repository.getBacklinks(editingEntityId).then((links: Entity[]) => {
-      setBacklinks(links);
-    }).catch((err: unknown) => { logger.error('Failed to load backlinks', { error: err }); });
-
-  }, [editingEntityId, repository]);
+    repository.getBacklinks(editingEntityId).then(setBacklinks).catch(err => logger.error('Failed to load backlinks', err));
+  }, [editingEntityId]);
 
   const handleTypeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setType(e.target.value);
@@ -112,31 +93,6 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
     setSourceUrl(e.target.value);
   }, []);
 
-  const handleExtractEntities = useCallback(async (entityId?: string, forceContent?: string) => {
-    if (!editor || isExtracting) return;
-
-    const content = forceContent || editor.getHTML();
-    if (!content.trim() || content === '<p></p>') return;
-
-    setIsExtracting(true);
-    try {
-      const config = await loadConfig();
-      const provider = createProvider(config);
-      const providerConfig = config.providers[config.activeProvider];
-      const model = providerConfig.defaultModel || 'google/gemini-2.0-flash-lite-preview-02-05:free';
-
-      const result = await extractEntities(content, provider, model);
-      setExtractionResult(result);
-      setExtractionSourceId(entityId || editingEntityId || undefined);
-      setShowExtractionNotice(true);
-    } catch (err) {
-      logger.error('Failed to extract entities', err);
-      setStatus({ type: 'error', message: 'Failed to extract entities with AI' });
-    } finally {
-      setIsExtracting(false);
-    }
-  }, [editor, isExtracting, editingEntityId]);
-
   const handleSave = useCallback(async () => {
     if (!title.trim() || !editor) return;
 
@@ -147,9 +103,8 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
         // Update existing entity
         const entity = await repository.updateEntity(editingEntityId, {
           name: title,
-          type,
+          type: type,
           description: content,
-          sourceUrl: sourceUrl.trim() || undefined,
         });
 
         // Update search index
@@ -162,17 +117,16 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
         // Create new entity
         const entity = await repository.createEntity({
           name: title,
-          type,
+          type: type,
           description: content,
-          sourceUrl: sourceUrl.trim() || undefined,
           metadata: {}
         });
 
         // Enqueue external URL fetch for auto-hydration if source URL provided
-        if (sourceUrl.trim() && entity.id) {
+        if (sourceUrl.trim()) {
           jobCoordinator.enqueue('external-fetch', entity.id, {
             url: sourceUrl.trim(),
-            entityId: entity.id,
+            entityId: entity.id!,
           });
           logger.info('Enqueued external fetch for entity auto-hydration', { entityId: entity.id, url: sourceUrl });
         }
@@ -203,24 +157,24 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
 
         const statements: { sql: string; bind?: (string | number | boolean | null)[] }[] = [];
 
-        const entityId = entity.id ?? '';
-
         statements.push({
-          sql: 'INSERT INTO notes (entity_id, content, format) VALUES (?, ?, ?)',
-          bind: [entityId, content, 'markdown']
+          sql: `INSERT INTO notes (entity_id, content, format) VALUES (?, ?, ?)`,
+          bind: [entity.id, content, 'markdown']
         });
 
         for (const claim of claims) {
           statements.push({
-            sql: 'INSERT INTO claims (entity_id, statement, confidence, evidence, source, verification_status) VALUES (?, ?, ?, ?, ?, ?)',
-            bind: [entityId, claim.statement, 1.0, 'Extracted from editor', claim.source, claim.status]
+            sql: `INSERT INTO claims (entity_id, statement, confidence, evidence, source, verification_status)
+                  VALUES (?, ?, ?, ?, ?, ?)`,
+            bind: [entity.id!, claim.statement, 1.0, 'Extracted from editor', claim.source, claim.status]
           });
         }
 
         for (const mention of mentions) {
           statements.push({
-            sql: 'INSERT INTO links (source_id, target_id, relation, metadata) VALUES (?, ?, ?, ?)',
-            bind: [entityId, mention.id, 'mentions', JSON.stringify({ name: mention.name })]
+            sql: `INSERT INTO links (source_id, target_id, relation, metadata)
+                  VALUES (?, ?, ?, ?)`,
+            bind: [entity.id!, mention.id, 'mentions', JSON.stringify({ name: mention.name })]
           });
         }
 
@@ -233,28 +187,29 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
         jobCoordinator.enqueue('reindex-document', entity.id, { entityId: entity.id });
 
         setStatus({ type: 'success', message: `Saved successfully! (${claims.length} claims, ${mentions.length} links)${sourceUrl.trim() ? ' — fetching source...' : ''}` });
-
-        // Auto-trigger extraction after 3s debounce
-        // Capture content before clearing editor
-        const savedContent = content;
-        setTimeout(() => {
-          void handleExtractEntities(entity.id, savedContent);
-        }, 3000);
-
         setTitle('');
         setSourceUrl('');
         editor.commands.setContent('<p></p>');
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      logger.error('Failed to save entity', { error: err });
+      logger.error('Failed to save entity', err);
       setStatus({ type: 'error', message: `Save failed: ${msg}` });
     }
-  }, [title, type, sourceUrl, editingEntityId, onEditComplete, editor, repository, handleExtractEntities]);
+  }, [title, editor, type, sourceUrl, editingEntityId, onEditComplete]);
+
+  const mentionScrollRef = useRef<HTMLDivElement>(null);
+
+  const mentionVirtualizer = useVirtualizer({
+    count: allEntities.length,
+    getScrollElement: () => mentionScrollRef.current,
+    estimateSize: () => 40,
+    overscan: 5,
+  });
 
   const insertMention = useCallback((target: Entity) => {
     if (!editor || !target.id) return;
-    (editor.chain().focus() as unknown as { setMention: (attrs: { entityId: string; entityName: string }) => { run: () => void } }).setMention({ entityId: target.id, entityName: target.name }).run();
+    editor.chain().focus().setMention({ entityId: target.id, entityName: target.name }).run();
     setShowMentionMenu(false);
   }, [editor]);
 
@@ -265,13 +220,6 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
     if (editor) editor.commands.setContent('<p></p>');
     onEditComplete?.();
   }, [editor, onEditComplete]);
-
-  const setLink = useCallback(() => {
-    if (!editor || !linkUrl.trim()) return;
-    editor.chain().focus().extendMarkRange('link').setLink({ href: linkUrl.trim() }).run();
-    setShowLinkInput(false);
-    setLinkUrl('');
-  }, [editor, linkUrl]);
 
   return (
     <div className="editor-container">
@@ -303,87 +251,45 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
           ))}
         </select>
       </div>
-      <EditorToolbar
-        editor={editor}
-        editingEntityId={editingEntityId}
-        isExtracting={isExtracting}
-        onExtractEntities={() => void handleExtractEntities()}
-        onToggleLinkInput={() => setShowLinkInput(!showLinkInput)}
-        onSave={() => void handleSave()}
-        onCancelEdit={handleCancelEdit}
-      />
-      {showLinkInput && (
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '4px 0', marginBottom: '8px' }}>
-          <input
-            type="url"
-            value={linkUrl}
-            onChange={(e) => { setLinkUrl(e.target.value); }}
-            placeholder="https://..."
-            onKeyDown={(e) => { if (e.key === 'Enter') setLink(); }}
-            style={{ flex: 1, padding: '6px 8px', fontSize: '13px' }}
-            aria-label="Link URL"
-          />
-          <button type="button" onClick={setLink} style={{ padding: '6px 12px', fontSize: '13px' }}>Apply</button>
-          <button type="button" onClick={() => { setShowLinkInput(false); setLinkUrl(''); }} style={{ padding: '6px 12px', fontSize: '13px' }}>Cancel</button>
-        </div>
-      )}
+      <div className="toolbar">
+        <button
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
+          onClick={() => editor?.chain().focus().toggleBold().run()}
+          className={editor?.isActive('bold') ? 'active' : ''}
+          aria-label="Toggle Bold"
+          title="Bold"
+        >
+          B
+        </button>
+        <button
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
+          onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}
+          className={editor?.isActive('heading', { level: 1 }) ? 'active' : ''}
+          aria-label="Toggle Heading 1"
+          title="Heading 1"
+        >
+          H1
+        </button>
+        <button
+          onClick={() => editor?.chain().focus().toggleClaim().run()}
+          className={editor?.isActive('claim') ? 'active' : ''}
+          title="Mark as Claim"
+          aria-label="Mark as Claim"
+        >
+          <CheckCircle size={16} aria-hidden="true" /> Claim
+        </button>
+        <div className="toolbar-spacer" />
+        <button type="button" onClick={() => void handleSave()} className="primary">{editingEntityId ? 'Update Entity' : 'Save to DB'}</button>
+        {editingEntityId && (
+          <button type="button" onClick={handleCancelEdit} aria-label="Cancel editing">
+            Cancel
+          </button>
+        )}
+      </div>
       <EditorContent editor={editor} className="tiptap-content" />
 
-      {showExtractionNotice && extractionResult && (
-        <div style={{
-          marginTop: '16px',
-          padding: '12px 16px',
-          background: 'var(--interactive-primary-subtle)',
-          borderRadius: '8px',
-          border: '1px solid var(--interactive-primary)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '12px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-            <Sparkles size={16} style={{ color: 'var(--interactive-primary)' }} />
-            <span>
-              AI found <strong>{extractionResult.entities.length} entities</strong> and <strong>{extractionResult.relationships.length} relationships</strong> in this note.
-            </span>
-          </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              type="button"
-              onClick={() => { setShowExtractionReview(true); }}
-              className="primary"
-              style={{ padding: '4px 12px', fontSize: '12px', minHeight: '32px' }}
-            >
-              Review
-            </button>
-            <button
-              type="button"
-              onClick={() => { setShowExtractionNotice(false); }}
-              style={{ padding: '4px 8px', fontSize: '12px', minHeight: '32px', background: 'transparent', border: 'none' }}
-              aria-label="Dismiss"
-            >
-              <X size={16} />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {showExtractionReview && extractionResult && (
-        <EntityReviewDialog
-          result={extractionResult}
-          sourceNoteId={extractionSourceId}
-          onClose={() => { setShowExtractionReview(false); }}
-          onComplete={() => {
-            setShowExtractionNotice(false);
-            setExtractionResult(null);
-            onEditComplete?.();
-          }}
-        />
-      )}
-
       <button
-        type="button"
-        onClick={() => { setShowAdvanced(!showAdvanced); }}
+        onClick={() => setShowAdvanced(!showAdvanced)}
         className="advanced-toggle"
         aria-expanded={showAdvanced}
         aria-label="Toggle advanced options"
@@ -405,69 +311,101 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
         Advanced
       </button>
 
+      {editingEntityId && backlinks.length > 0 && (
+        <div className="backlinks-section" style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border-default)' }}>
+          <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Link2 size={14} /> Referenced by ({backlinks.length})
+          </h4>
+          <div className="backlinks-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {backlinks.map(bl => (
+              <button
+                key={bl.id}
+                onClick={() => onEditEntity?.(bl.id!)}
+                className="backlink-chip"
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '16px',
+                  background: 'var(--background-secondary)',
+                  border: '1px solid var(--border-default)',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  color: 'var(--interactive-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                <AtSign size={10} /> {bl.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {showAdvanced && (
-         <div className="advanced-section" style={{ padding: '0 0 8px 0' }}>
-            <div className="entity-source" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-              <Link2 size={14} aria-hidden="true" />
-              <label htmlFor="entity-source-url" className="sr-only">Source URL (optional)</label>
-              <input
-                id="entity-source-url"
-                className="source-input"
-                value={sourceUrl}
-                onChange={handleSourceUrlChange}
-                placeholder="Source URL — auto-hydrate description"
-                type="url"
-                style={{ flex: 1 }}
-              />
-            </div>
-
-           <button
-             type="button"
-             onClick={() => setShowMentionMenu(!showMentionMenu)}
-             aria-label="Link to Entity"
-             title="Link to Entity"
-             style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', minHeight: '44px' }}
-           >
-             <AtSign size={14} aria-hidden="true" /> Mention
-           </button>
-         </div>
-       )}
-       {showAdvanced && showMentionMenu && (
-          <div className="mention-section" style={{ marginTop: '16px' }}>
-            <h4 className="block text-sm font-medium mb-2">Link to Entity</h4>
-            <div className="space-y-2">
-              {allEntities.map(entity => (
-                <button
-                  key={entity.id}
-                  onClick={() => {
-                    insertMention(entity);
-                    setShowMentionMenu(false);
-                  }}
-                  className="mention-item w-full text-left px-3 py-2 rounded border border-muted hover:bg-muted"
-                >
-                  {entity.name} ({entity.type})
-                </button>
-              ))}
-            </div>
+        <div className="advanced-section" style={{ padding: '0 0 8px 0' }}>
+          <div className="entity-source" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <Link2 size={14} aria-hidden="true" />
+            <label htmlFor="entity-source-url" className="sr-only">Source URL (optional)</label>
+            <input
+              id="entity-source-url"
+              className="source-input"
+              value={sourceUrl}
+              onChange={handleSourceUrlChange}
+              placeholder="Source URL — auto-hydrate description"
+              type="url"
+              style={{ flex: 1 }}
+            />
           </div>
-        )}
-
-        {editingEntityId && backlinks.length > 0 && (
-          <div className="backlinks-section" style={{ marginTop: '16px', padding: '8px 0' }}>
-            <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>
-              Referenced by ({backlinks.length})
-            </h4>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-              {backlinks.map(bl => (
-                <li key={bl.id} style={{ padding: '4px 0', fontSize: '13px' }}>
-                  <span style={{ color: 'var(--interactive-primary)', cursor: 'default' }}>{bl.name}</span>
-                  <span style={{ color: 'var(--text-muted)', marginLeft: '6px' }}>({bl.type})</span>
-                </li>
-              ))}
-            </ul>
+          <div className="mention-tool">
+            <button
+              onClick={() => setShowMentionMenu(!showMentionMenu)}
+              className={editor?.isActive('mention') ? 'active' : ''}
+              title="Link to Entity"
+              aria-label="Link to Entity"
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', minHeight: '44px' }}
+            >
+              <AtSign size={14} aria-hidden="true" /> Mention
+            </button>
+            {showMentionMenu && (
+              <div className="mention-menu" style={{ marginTop: '4px' }}>
+                {allEntities.length === 0 ? (
+                  <div className="menu-item disabled">No entities found</div>
+                ) : (
+                  <div ref={mentionScrollRef} style={{ maxHeight: '400px', overflow: 'auto' }}>
+                    <div style={{ height: `${mentionVirtualizer.getTotalSize()}px`, position: 'relative' }}>
+                      {mentionVirtualizer.getVirtualItems().map(virtualItem => {
+                        const entity = allEntities[virtualItem.index];
+                        if (!entity) return null;
+                        return (
+                          <div
+                            key={entity.id}
+                            className="menu-item"
+                            style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              width: '100%',
+                              height: `${virtualItem.size}px`,
+                              transform: `translateY(${virtualItem.start}px)`,
+                            }}
+                            onClick={() => insertMention(entity)}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(ev) => { if (ev.key === 'Enter') insertMention(entity); }}
+                          >
+                            {entity.name}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        )}
-
+        </div>
+      )}
     </div>
   );
 };
