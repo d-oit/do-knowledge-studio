@@ -78,6 +78,9 @@
 - [Authentication](https://docs.turso.tech/cli/authentication.md)
 - [contact bookmeeting](https://docs.turso.tech/cli/contact/bookmeeting.md)
 - [contact feedback](https://docs.turso.tech/cli/contact/feedback.md)
+- [db config allow-rules clear](https://docs.turso.tech/cli/db/config/allow-rules/clear.md)
+- [db config allow-rules set](https://docs.turso.tech/cli/db/config/allow-rules/set.md)
+- [db config allow-rules show](https://docs.turso.tech/cli/db/config/allow-rules/show.md)
 - [db create](https://docs.turso.tech/cli/db/create.md)
 - [db destroy](https://docs.turso.tech/cli/db/destroy.md)
 - [db export](https://docs.turso.tech/cli/db/export.md)
@@ -120,6 +123,7 @@
 - [plan show](https://docs.turso.tech/cli/plan/show.md)
 - [plan upgrade](https://docs.turso.tech/cli/plan/upgrade.md)
 - [Upgrading](https://docs.turso.tech/cli/upgrading.md): Update the Turso CLI to the latest version to benefit from all the latest features, and fixes.
+- [Database Access Allow Rules](https://docs.turso.tech/cloud/allow-rules.md): Restrict database access to specific IP addresses, CIDR ranges, or AWS VPC endpoints.
 - [Durability Guarantees](https://docs.turso.tech/cloud/durability.md)
 - [BYOK Encryption](https://docs.turso.tech/cloud/encryption.md)
 - [Limitations](https://docs.turso.tech/cloud/limitations.md): Known limitations and differences when using SQLite on Turso Cloud.
