@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, act } from '@testing-library/react';
-import React from 'react';
+import { act } from '@testing-library/react';
 import { useGraphSyncStore } from '../../store/graph-sync-store';
 import { setupMindMapSyncListeners } from '../mindmap/sync-adapter';
 import { setupGraphSyncListeners } from '../graph/sync-adapter';
@@ -18,6 +17,11 @@ const mockMindMap = {
   removeNodes: vi.fn(),
 };
 
+interface MindMapOperation {
+  name: string;
+  obj: { id: string; topic: string };
+}
+
 describe('Sync Integration', () => {
   beforeEach(() => {
     useGraphSyncStore.getState().clearEvents();
@@ -30,15 +34,15 @@ describe('Sync Integration', () => {
     setupGraphSyncListeners(graph);
 
     // Simulate setupMindMapSyncListeners
-    let mindMapListener: (op: any) => void = () => {};
-    mockMindMap.bus.addListener.mockImplementation((name, cb) => {
+    let mindMapListener: ((op: MindMapOperation) => void) | null = null;
+    mockMindMap.bus.addListener.mockImplementation((name: string, cb: (op: MindMapOperation) => void) => {
       if (name === 'operation') mindMapListener = cb;
     });
-    setupMindMapSyncListeners(mockMindMap as any);
+    setupMindMapSyncListeners(mockMindMap as Parameters<typeof setupMindMapSyncListeners>[0]);
 
     // 1. Add node in mind map
     act(() => {
-      mindMapListener({
+      mindMapListener?.({
         name: 'addChild',
         obj: { id: 'test-node', topic: 'Test Node' }
       });
@@ -53,7 +57,7 @@ describe('Sync Integration', () => {
     expect(events).toHaveLength(1);
 
     act(() => {
-      const payload: any = events[0].payload;
+      const payload = events[0].payload as { id: string; label: string };
       graph.addNode(payload.id, { label: payload.label });
     });
 
@@ -82,6 +86,6 @@ describe('Sync Integration', () => {
     const events = useGraphSyncStore.getState().pendingEvents;
     expect(events.some(e => e.type === 'node:update')).toBe(true);
     const updateEvent = events.find(e => e.type === 'node:update');
-    expect((updateEvent?.payload as any).label).toBe('Updated');
+    expect((updateEvent?.payload as { label: string }).label).toBe('Updated');
   });
 });

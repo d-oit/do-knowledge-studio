@@ -10,12 +10,11 @@ import { useRepository } from '../../db/useRepository';
 import { logger } from '../../lib/logger';
 import { perf } from '../../lib/perf';
 import { applyCircularLayout, applyForceLayout, applyHierarchicalLayout } from '../../lib/graph-layout';
-import { useGraphSyncStore } from '../../store/graph-sync-store';
 import { setupGraphSyncListeners } from './sync-adapter';
-import type { SharedNode, SharedEdge } from '../../store/graph-sync-types';
 import { useGraphKeyboardNavigation } from './GraphKeyboardNav';
 import { useGraphTouchGestures } from './GraphTouchHandler';
 import { useGraphSnapshotManager } from './GraphSnapshotManager';
+import { useGraphSyncEvents } from './GraphSyncEvents';
 
 type LayoutType = 'circular' | 'force' | 'hierarchical';
 
@@ -76,11 +75,12 @@ const GraphView: React.FC<Props> = ({
     handleExitSnapshot,
   } = useGraphSnapshotManager(repository);
 
-  // eslint-disable-next-line react-hooks/refs -- hook uses refs only inside effects, not for rendering
   useGraphKeyboardNavigation(
+    // eslint-disable-next-line react-hooks/refs -- hook uses refs only inside effects, not for rendering
     containerRef.current,
+    // eslint-disable-next-line react-hooks/refs -- hook uses refs only inside effects, not for rendering
     sigmaInstance.current,
-    // eslint-disable-next-line react-hooks/refs -- accessed only in effect inside hook
+    // eslint-disable-next-line react-hooks/refs -- hook uses refs only inside effects, not for rendering
     graphRef.current,
     entities,
     selectedNode,
@@ -90,8 +90,12 @@ const GraphView: React.FC<Props> = ({
     repository
   );
 
-  // eslint-disable-next-line react-hooks/refs -- hook uses refs only inside effects, not for rendering
-  useGraphTouchGestures(containerRef.current, sigmaInstance.current);
+  useGraphTouchGestures(
+    // eslint-disable-next-line react-hooks/refs -- hook uses refs only inside effects, not for rendering
+    containerRef.current,
+    // eslint-disable-next-line react-hooks/refs -- hook uses refs only inside effects, not for rendering
+    sigmaInstance.current
+  );
 
   const recomputeNeighborhoodHandler = useCallback((payload: unknown) => {
     const { entities, links, selectedNode } = payload as { entities: Entity[], links: Link[], selectedNode: string };
@@ -102,7 +106,7 @@ const GraphView: React.FC<Props> = ({
     });
 
     setFilteredData({
-      entities: entities.filter((e: Entity) => neighborIds.has(e.id!)),
+      entities: entities.filter((e: Entity) => e.id != null && neighborIds.has(e.id)),
       links: links.filter((l: Link) => neighborIds.has(l.source_id) && neighborIds.has(l.target_id))
     });
     return Promise.resolve();
@@ -166,7 +170,7 @@ const GraphView: React.FC<Props> = ({
 
     layoutTimeoutRef.current = requestAnimationFrame(() => {
       const currentNodes = new Set(graph.nodes());
-      const targetNodes = new Set(data.entities.map(e => e.id!));
+      const targetNodes = new Set(data.entities.map(e => e.id ?? ''));
 
       currentNodes.forEach(nodeId => {
         if (!targetNodes.has(nodeId)) graph.dropNode(nodeId);
@@ -180,9 +184,10 @@ const GraphView: React.FC<Props> = ({
         if (graph.hasNode('placeholder')) graph.dropNode('placeholder');
 
         data.entities.forEach((e, i) => {
+          const entityId = e.id ?? '';
           const nodeColor = snapshotMode ? '#8b5cf6' : (e.id === selectedNode ? '#ef4444' : '#2563eb');
-          if (!graph.hasNode(e.id!)) {
-            graph.addNode(e.id!, {
+          if (!graph.hasNode(entityId)) {
+            graph.addNode(entityId, {
               label: e.name,
               size: e.id === selectedNode ? 20 : 10,
               color: nodeColor,
@@ -190,7 +195,7 @@ const GraphView: React.FC<Props> = ({
               y: Math.sin((i * 2 * Math.PI) / data.entities.length)
             });
           } else {
-            graph.mergeNodeAttributes(e.id!, {
+            graph.mergeNodeAttributes(entityId, {
               label: e.name,
               size: e.id === selectedNode ? 20 : 10,
               color: nodeColor,
@@ -204,9 +209,9 @@ const GraphView: React.FC<Props> = ({
         });
 
         graph.edges().forEach((edge) => {
-          const s = graph.source(edge);
-          const t = graph.target(edge);
-          if (!targetEdgeSet.has(`${s}|${t}`)) {
+          const sourceNode = graph.source(edge);
+          const targetNode = graph.target(edge);
+          if (!targetEdgeSet.has(`${sourceNode}|${targetNode}`)) {
             graph.dropEdge(edge);
           }
         });
@@ -313,8 +318,8 @@ const GraphView: React.FC<Props> = ({
 
   useEffect(() => {
     if (!selectedNode) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting state before async operation
       setSelectedEntityClaims([]);
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- guard reset before async fetch
       setSelectedEntityLinks([]);
       return;
     }
@@ -344,68 +349,14 @@ const GraphView: React.FC<Props> = ({
     void sigma.getCamera().animatedReset({ duration: 400 });
   }, [layout, effectiveData.entities, links]);
 
-  // Sync effect to consume events
-  useEffect(() => {
-    const unsubscribe = useGraphSyncStore.subscribe((state) => {
-      if (!state.syncEnabled || !graphRef.current || state.pendingEvents.length === 0) return;
-
-      const events = useGraphSyncStore.getState().consumeEvents('graph');
-      if (events.length === 0) return;
-
-      const graph = graphRef.current;
-      events.forEach(event => {
-        if (event.type === 'node:add') {
-          const payload = event.payload as SharedNode;
-          if (!graph.hasNode(payload.id)) {
-            graph.addNode(payload.id, {
-              label: payload.label,
-              size: 10,
-              color: '#2563eb',
-              x: Math.random(),
-              y: Math.random()
-            });
-          }
-        } else if (event.type === 'node:update') {
-          const payload = event.payload as SharedNode;
-          if (graph.hasNode(payload.id)) {
-            const currentLabel = graph.getNodeAttribute(payload.id, 'label');
-            if (currentLabel !== payload.label) {
-              console.warn(`[Sync Conflict] Graph node ${payload.id} has different label. Local: ${currentLabel}, Incoming: ${payload.label}. Applying last-writer wins.`);
-              graph.mergeNodeAttributes(payload.id, { label: payload.label });
-            }
-          }
-        } else if (event.type === 'node:remove') {
-          const payload = event.payload as SharedNode;
-          if (graph.hasNode(payload.id)) {
-            graph.dropNode(payload.id);
-          }
-        } else if (event.type === 'edge:add') {
-          const payload = event.payload as SharedEdge;
-          if (graph.hasNode(payload.from) && graph.hasNode(payload.to) && !graph.hasEdge(payload.id)) {
-            graph.addEdgeWithKey(payload.id, payload.from, payload.to, {
-              label: payload.label,
-              size: 2,
-              color: '#94a3b8'
-            });
-          }
-        } else if (event.type === 'edge:remove') {
-          const payload = event.payload as SharedEdge;
-          if (graph.hasEdge(payload.id)) {
-            graph.dropEdge(payload.id);
-          }
-        }
-      });
-      if (sigmaInstance.current) sigmaInstance.current.refresh();
-    });
-    return () => unsubscribe();
-  }, []);
-
   useEffect(() => {
     return () => {
       sigmaInstance.current?.kill();
       sigmaInstance.current = null;
     };
   }, []);
+
+  useGraphSyncEvents(graphRef);
 
   const handleExportPNG = useCallback(() => {
     const sigma = sigmaInstance.current;
