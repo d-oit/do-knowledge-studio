@@ -1,0 +1,16 @@
+# Trivy ignore file — one YAML rule per line.
+# Format: <vulnerability-id>[:<package-name>[:<severity>]] expiry-date comment
+#
+# GHSA-76mc-f452-cxcm: dompurify <3.4.7 Hook mutation of data.allowedTags
+#   Affects: dompurify
+#   Reason: We do not use IN_PLACE mode or Trusted Types in this app; the
+#   affected code path is never reached. Upgrading to dompurify >=3.4.7
+#   breaks the test suite because dompurify 3.4.10 is incompatible with
+#   happy-dom (a real DOM env like jsdom is required, but that is a
+#   separate migration tracked in plans/041-post-export-cleanup).
+#   Re-evaluate when dompurify ships a happy-dom-compatible release.
+GHSA-76mc-f452-cxcm:dompurify:moderate 2026-12-31 awaiting dompurify/happy-dom fix
+
+# GHSA-rp9w-3fw7-7cwq: dompurify <3.4.7 IN_PLACE Sanitization Bypass via Shadow Root
+#   Same reasoning as above — IN_PLACE mode is not used in this codebase.
+GHSA-rp9w-3fw7-7cwq:dompurify:moderate 2026-12-31 awaiting dompurify/happy-dom fix

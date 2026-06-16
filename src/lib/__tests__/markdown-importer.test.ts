@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest';
-import matter from 'gray-matter';
 import {
   exportEntityToMarkdown,
   exportNoteToMarkdown,
@@ -7,9 +6,23 @@ import {
   importMarkdownNote,
 } from '../markdown-importer';
 
+function buildFrontmatter(body: string, fm: Record<string, unknown>): string {
+  const lines = ['---'];
+  for (const [k, v] of Object.entries(fm)) {
+    if (v === undefined) continue;
+    if (Array.isArray(v)) {
+      lines.push(`${k}: [${v.map(x => typeof x === 'string' ? x : JSON.stringify(x)).join(', ')}]`);
+    } else {
+      lines.push(`${k}: ${typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean' ? v : JSON.stringify(v)}`);
+    }
+  }
+  lines.push('---', '');
+  return lines.join('\n') + body;
+}
+
 describe('markdown-importer round-trip', () => {
   it('parses frontmatter and body', () => {
-    const raw = matter.stringify('hello world', { id: 'abc', title: 'Hello' });
+    const raw = buildFrontmatter('hello world', { id: 'abc', title: 'Hello' });
     const parsed = importMarkdownNote(raw, 'hello.md');
     expect(parsed.body.trim()).toBe('hello world');
     expect(parsed.frontmatter.id).toBe('abc');
@@ -19,8 +32,8 @@ describe('markdown-importer round-trip', () => {
 
   it('importMarkdownFiles collects notes and errors', () => {
     const result = importMarkdownFiles([
-      { name: 'a.md', content: matter.stringify('aaa', { id: '1' }) },
-      { name: 'b.md', content: 'not-actually-yaml-but-gray-matter-handles' },
+      { name: 'a.md', content: buildFrontmatter('aaa', { id: '1' }) },
+      { name: 'b.md', content: 'plain text without frontmatter is fine' },
     ]);
     expect(result.errors).toHaveLength(0);
     expect(result.notes).toHaveLength(2);
