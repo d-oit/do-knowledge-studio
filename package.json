@@ -72,7 +72,7 @@
     "react-dom": "19.2.7",
     "react-router-dom": "^7.15.1",
     "sigma": "^3.0.0-beta.27",
-    "zod": "^3.22.4",
+    "zod": "^4.4.3",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
