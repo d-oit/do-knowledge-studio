@@ -1,5 +1,4 @@
 import type { LLMProvider, LLMRequest, LLMResponse, LLMStreamChunk, LLMProviderConfig, OpenAIChatResponse, OpenAIErrorResponse } from './types';
-import { logger } from '../logger';
 
 const KILO_BASE_URL = 'https://api.kilo.ai/api/gateway';
 
@@ -115,8 +114,8 @@ export class KiloGatewayProvider implements LLMProvider {
           if (content) {
             yield { content, done: false };
           }
-        } catch (err) {
-          logger.debug('SSE chunk not yet complete or invalid JSON', err);
+        } catch {
+          // Expected: SSE chunk not yet complete or invalid JSON
         }
       }
     }

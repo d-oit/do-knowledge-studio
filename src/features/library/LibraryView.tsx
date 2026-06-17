@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, SortAsc, SortDesc, Calendar, BookOpen, User, Lightbulb, Briefcase, ExternalLink, Layers, Loader2 } from 'lucide-react';
+import { Search, SortAsc, SortDesc, Calendar, BookOpen, User, Lightbulb, Briefcase, ExternalLink } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Entity } from '../../lib/validation';
 import { useRepository } from '../../db/useRepository';
@@ -11,7 +11,7 @@ interface LibraryViewProps {
 }
 
 const ENTITY_TYPES = [
-  { value: 'all', label: 'All', icon: <Layers size={14} /> },
+  { value: 'all', label: 'All', icon: <BookOpen size={14} /> },
   { value: 'note', label: 'Note', icon: <BookOpen size={14} /> },
   { value: 'concept', label: 'Concept', icon: <Lightbulb size={14} /> },
   { value: 'person', label: 'Person', icon: <User size={14} /> },
@@ -76,8 +76,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onEditEntity }) => {
         day: 'numeric',
         year: 'numeric'
       });
-    } catch (err) {
-      logger.debug('Failed to format date', { dateStr, error: err });
+    } catch {
       return dateStr;
     }
   };
@@ -90,7 +89,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onEditEntity }) => {
           <div className="library-stats">{entities.length} entities</div>
         </div>
 
-        <div className="library-controls motion-stagger-2" key={`library-controls-${filterType}-${sortBy}-${sortOrder}`}>
+        <div className="library-controls">
           <div className="search-box">
             <Search className="search-icon" size={18} />
             <input
@@ -148,12 +147,13 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onEditEntity }) => {
         <div
           ref={parentRef}
           className="virtual-list-container"
+          style={{
+            height: `calc(100vh - 280px)`,
+            overflow: 'auto',
+          }}
         >
           {isLoading ? (
-            <div className="library-loading" role="status" aria-live="polite">
-              <Loader2 size={20} className="animate-spin" aria-hidden="true" />
-              <span>Loading entities...</span>
-            </div>
+            <div className="library-loading">Loading entities...</div>
           ) : entities.length === 0 ? (
             <div className="library-empty">
               <BookOpen size={48} />
@@ -226,4 +226,3 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onEditEntity }) => {
 };
 
 export default LibraryView;
-

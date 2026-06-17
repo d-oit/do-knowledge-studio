@@ -26,11 +26,7 @@
   border-radius: var(--radius-md);
   padding: var(--space-3);
   cursor: pointer;
-  transition:
-    background-color var(--duration-quick) var(--ease-out),
-    border-color var(--duration-quick) var(--ease-out),
-    color var(--duration-quick) var(--ease-out),
-    box-shadow var(--duration-quick) var(--ease-out);
+  transition: all var(--motion-fast);
   gap: var(--space-1);
   text-align: left;
 }
@@ -178,11 +174,7 @@
   border-radius: var(--radius-base);
   color: var(--text-secondary);
   font-weight: 500;
-  transition:
-    background-color var(--duration-quick) var(--ease-out),
-    border-color var(--duration-quick) var(--ease-out),
-    color var(--duration-quick) var(--ease-out),
-    box-shadow var(--duration-quick) var(--ease-out);
+  transition: all var(--motion-fast);
   text-align: left;
   min-height: 44px;
 }
@@ -205,41 +197,6 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  min-height: 0;
-}
-
-.search-mode-toggle {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
-  border-bottom: 1px solid var(--border-default);
-  flex-wrap: wrap;
-}
-
-.search-mode-toggle .filter-chip {
-  font-size: 12px;
-}
-
-.search-progress {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-1) var(--space-4);
-  font-size: 11px;
-  color: var(--text-muted);
-  border-bottom: 1px solid var(--border-subtle);
-  background: var(--bg-base);
-  flex-wrap: wrap;
-}
-
-.search-progress .stage-done {
-  color: var(--status-success);
-  font-weight: 600;
-}
-
-.search-progress .stage-pending {
-  color: var(--text-muted);
 }
 
 .search-header {
@@ -344,51 +301,19 @@
   gap: var(--space-4);
 }
 
-.viz-controls-mobile {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.viz-controls-mobile button {
-  width: 100%;
-  justify-content: flex-start;
-  text-align: left;
-  min-height: 44px;
-}
-
-/* Sync toggle — a stateful filter chip with a live indicator.
- * Lives here because it's only used in graph controls.
- */
-.sync-toggle {
-  position: relative;
-  gap: var(--space-2);
-  min-height: 36px;
-}
-
-.sync-icon-on {
-  animation: spin var(--duration-loader) linear infinite;
-}
-
-.sync-icon-off {
-  opacity: 0.55;
-}
-
-.sync-indicator-dot {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--status-success);
-  box-shadow: 0 0 4px var(--status-success);
-}
-
 .drawer-header {
   padding: var(--space-2) var(--space-4);
   display: flex;
   justify-content: flex-end;
+}
+
+.mobile-search-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-surface);
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Interactive Elements - Best Practice */
@@ -407,12 +332,7 @@ button {
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  transition:
-    background-color var(--duration-quick) var(--ease-out),
-    border-color var(--duration-quick) var(--ease-out),
-    color var(--duration-quick) var(--ease-out),
-    box-shadow var(--duration-quick) var(--ease-out),
-    transform var(--duration-instant) var(--ease-out);
+  transition: all var(--motion-fast);
 }
 
 .icon-button {
@@ -438,7 +358,7 @@ button:focus-visible,
 }
 
 button:active:not(:disabled) {
-  transform: scale(var(--press-scale));
+  transform: translateY(1px);
 }
 
 button:disabled {
@@ -467,9 +387,7 @@ input, select {
   color: var(--text-primary);
   min-height: 44px;
   width: 100%;
-  transition:
-    border-color var(--duration-quick) var(--ease-out),
-    box-shadow var(--duration-quick) var(--ease-out);
+  transition: border-color var(--motion-fast);
 }
 
 input:focus, select:focus {
@@ -527,25 +445,15 @@ input:focus, select:focus {
   border: 1px solid var(--border-default);
   color: var(--text-secondary);
   cursor: pointer;
-  min-height: 36px;
+  min-height: 32px;
   display: inline-flex;
   align-items: center;
-  transition:
-    background-color var(--duration-quick) var(--ease-out),
-    border-color var(--duration-quick) var(--ease-out),
-    color var(--duration-quick) var(--ease-out),
-    box-shadow var(--duration-quick) var(--ease-out),
-    transform var(--duration-instant) var(--ease-out);
+  transition: all var(--motion-fast);
 }
 
 .filter-chip:hover {
   background: var(--bg-active);
   border-color: var(--interactive-primary);
-}
-
-.filter-chip:focus-visible {
-  outline: 2px solid var(--border-focus);
-  outline-offset: 2px;
 }
 
 .filter-chip.active {
@@ -647,11 +555,6 @@ input[type="search"]::-webkit-search-cancel-button {
   justify-content: center;
   cursor: pointer;
   z-index: 1;
-  border-radius: var(--radius-sm);
-  transition:
-    color var(--duration-quick) var(--ease-out),
-    background-color var(--duration-quick) var(--ease-out),
-    transform var(--duration-instant) var(--ease-out);
 }
 
 .input-clear-button:hover {

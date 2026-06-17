@@ -139,7 +139,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
       <div className="messages-list" role="log" aria-live="polite">
         {messages.map((m) => (
-          <div key={m.id} className={"message motion-rise-in " + m.role}>
+          <div key={m.id} className={"message " + m.role}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', fontWeight: 'bold', fontSize: '12px' }}>
               {m.role === 'assistant' ? <Bot size={14} /> : <User size={14} />}
               {m.role === 'assistant' ? 'Assistant' : 'You'}
@@ -164,7 +164,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
           </div>
         ))}
         {isLoading && (
-          <div className="message assistant motion-rise-in" key="thinking">
+          <div className="message assistant">
             <Loader2 className="animate-spin" size={16} /> Thinking...
           </div>
         )}
@@ -180,19 +180,10 @@ export const ChatView: React.FC<ChatViewProps> = ({
             onKeyDown={handleKeyDown}
             placeholder="Ask the AI agent..."
             disabled={isLoading}
-            aria-label="Ask the AI agent. Press Enter to send, Shift+Enter for newline."
+            aria-label="Ask the AI agent"
           />
-          <button
-            type="button"
-            className="primary"
-            onClick={onSend}
-            disabled={isLoading || !input.trim()}
-            aria-label={isLoading ? 'Sending message' : 'Send message'}
-            style={{ minWidth: '44px' }}
-          >
-            {isLoading
-              ? <><Loader2 className="animate-spin" size={16} aria-hidden="true" /><span style={{ fontSize: '13px', fontWeight: 500 }}>Sending</span></>
-              : <Send size={20} aria-hidden="true" />}
+          <button type="button" className="primary" onClick={onSend} disabled={isLoading || !input.trim()}>
+            {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
           </button>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)' }}>

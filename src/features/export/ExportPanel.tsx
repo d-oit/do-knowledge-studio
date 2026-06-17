@@ -1,23 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { logger } from '../../lib/logger';
 import { repository } from '../../db/repository';
 import { generateSiteHtml, generateMarkdownExport, generateJsonExport, fetchAllExportData } from '../../lib/export-core';
 import { stripHtmlTags } from '../../lib/security';
-import { Download, File, FileJson, FileText, FileSpreadsheet, Globe, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Download, File, FileJson, FileText, FileSpreadsheet, Globe, Loader2 } from 'lucide-react';
 import type { Entity } from '../../lib/validation';
 
 const ExportPanel: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-
-  // Clear the success message after a few seconds so the panel doesn't
-  // accumulate stale "Exported!" notes from previous runs.
-  useEffect(() => {
-    if (!success) return;
-    const timer = setTimeout(() => { setSuccess(null); }, 4000);
-    return () => { clearTimeout(timer); };
-  }, [success]);
 
   const downloadFile = (content: string, fileName: string, contentType: string) => {
     const blob = new Blob([content], { type: contentType });
@@ -38,7 +29,6 @@ const ExportPanel: React.FC = () => {
       const data = await fetchAllExportData(repository);
       const content = generateMarkdownExport(data);
       downloadFile(content, 'knowledge-base.md', 'text/markdown');
-      setSuccess('knowledge-base.md downloaded');
       logger.info('Markdown export complete');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Markdown export failed';
@@ -56,7 +46,6 @@ const ExportPanel: React.FC = () => {
       const data = await fetchAllExportData(repository);
       const content = generateJsonExport(data);
       downloadFile(content, 'knowledge-base.json', 'application/json');
-      setSuccess('knowledge-base.json downloaded');
       logger.info('JSON export complete');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'JSON export failed';
@@ -74,7 +63,6 @@ const ExportPanel: React.FC = () => {
       const data = await fetchAllExportData(repository);
       const content = generateSiteHtml(data);
       downloadFile(content, 'knowledge-base.html', 'text/html');
-      setSuccess('knowledge-base.html downloaded');
       logger.info('Site export complete');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Site export failed';
@@ -94,7 +82,6 @@ const ExportPanel: React.FC = () => {
       const notes = Object.values(data.notes ?? {}).flatMap(n => n ?? []);
       const blob = await exportAllNotesToPDF(notes, data.entities, { title: 'Knowledge Base Export' });
       writePdfBlobToFile(blob, 'knowledge-base.pdf');
-      setSuccess('knowledge-base.pdf downloaded');
       logger.info('PDF export complete');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'PDF export failed';
@@ -144,7 +131,6 @@ const ExportPanel: React.FC = () => {
       link.download = 'knowledge-base.docx';
       link.click();
       URL.revokeObjectURL(url);
-      setSuccess('knowledge-base.docx downloaded');
       logger.info('DOCX export complete');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'DOCX export failed';
@@ -166,34 +152,8 @@ const ExportPanel: React.FC = () => {
       </p>
 
       {error && (
-        <div role="alert" aria-live="assertive" style={{ marginBottom: '16px', padding: '12px 16px', background: '#fef2f2', color: '#991b1b', borderRadius: '8px', border: '1px solid #fecaca', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <AlertCircle size={16} aria-hidden="true" />
+        <div role="alert" aria-live="polite" style={{ marginBottom: '16px', padding: '12px', background: '#fef2f2', color: '#991b1b', borderRadius: '8px', border: '1px solid #fecaca', fontSize: '0.875rem' }}>
           {error}
-        </div>
-      )}
-
-      {success && (
-        <div
-          key={success}
-          role="status"
-          aria-live="polite"
-          className="export-success"
-          style={{
-            marginBottom: '16px',
-            padding: '12px 16px',
-            background: '#dcfce7',
-            color: '#065f46',
-            borderRadius: '8px',
-            border: '1px solid #bdf0d2',
-            fontSize: '0.875rem',
-            fontWeight: 500,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}
-        >
-          <CheckCircle2 size={16} aria-hidden="true" />
-          {success}
         </div>
       )}
       

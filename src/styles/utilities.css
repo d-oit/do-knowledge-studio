@@ -17,14 +17,7 @@
   margin-bottom: var(--space-4);
   font-size: 14px;
   font-weight: 500;
-  /* 3-beat entrance, then exit. The exit uses an `animation-delay` so it
-   * fires just before the React timeout removes the node. The two
-   * animations share the property list and never overlap.
-   */
-  animation:
-    rise-in var(--duration-flow) var(--ease-out) both,
-    rise-out var(--duration-flow) var(--ease-in) both;
-  animation-delay: 0s, 2.5s;
+  animation: slideIn var(--motion-fast);
 }
 
 .status-message.success {
@@ -37,6 +30,11 @@
   background: #fee2e2;
   color: var(--status-danger);
   border: 1px solid #fecaca;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Surface Utility */
@@ -63,8 +61,12 @@
   background: var(--bg-surface);
 }
 
-/* Shimmer effect (used by skeleton loaders).
- * Keyframes are defined in motion.css for shared reuse. */
+/* Shimmer Effect for Active/Loading States */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
 .shimmer {
   background: linear-gradient(
     90deg,
@@ -85,9 +87,20 @@
   will-change: opacity;
 }
 
-/* Spinner — used by inline loading icons. 800ms is the reference steady rate. */
+/* Skeleton Animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .animate-spin {
-  animation: spin var(--duration-loader) linear infinite;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes skeleton-pulse {
+  0% { background-color: var(--bg-base); }
+  50% { background-color: var(--border-default); }
+  100% { background-color: var(--bg-base); }
 }
 
 .skeleton-animate {
@@ -111,8 +124,6 @@
   padding: var(--space-6);
   height: 100%;
   width: 100%;
-  /* Gentle fade so loading state doesn't pop in cold. */
-  animation: fade-in var(--duration-base) var(--ease-out) both;
 }
 
 /* Structural Alignment - Enforce Consistent Borders */
@@ -138,86 +149,4 @@
   .hud-safe {
     padding: var(--space-10);
   }
-}
-
-/* Error boundary surface — calm, recoverable, accessible.
- * Tells the user what broke, what to do next, and offers a copy-out
- * for the technical details so they can report the issue.
- */
-.error-boundary {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-3);
-  padding: var(--space-6);
-  margin: var(--space-4) auto;
-  max-width: 480px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-error, var(--status-danger));
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  color: var(--text-primary);
-}
-
-.error-boundary-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-full);
-  background: var(--bg-active);
-  color: var(--status-danger);
-}
-
-.error-boundary-title {
-  margin: 0;
-  font-size: var(--size-heading);
-  font-weight: var(--weight-semibold);
-  color: var(--text-primary);
-  text-transform: none;
-  letter-spacing: var(--tracking-tight);
-}
-
-.error-boundary-body {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 14px;
-  line-height: 1.5;
-  word-break: break-word;
-}
-
-.error-boundary-hint {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.error-boundary-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
-}
-
-/* View transition wrapper.
- * Lives inside .main-content, takes the full flex slot, and replays a calm
- * 3-beat entrance each time `key={currentView}` re-mounts the wrapper on
- * view change.
- */
-.view-transition {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  animation: rise-in var(--duration-flow) var(--ease-out) both;
-}
-
-/* Export success message — fades in once per file download.
- * The `key={success}` on the JSX re-mounts the element on every new
- * message, replaying the rise-in. Auto-dismiss is handled in the panel.
- */
-.export-success {
-  animation: rise-in var(--duration-flow) var(--ease-out) both;
 }

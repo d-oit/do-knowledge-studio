@@ -26,7 +26,7 @@ const indexedDB = {
 
 vi.stubGlobal('indexedDB', indexedDB);
 
-// Mock scrollIntoView which is missing in JSDOM/happy-dom
+// Mock scrollIntoView which is missing in many DOM emulations
 if (typeof window !== 'undefined') {
   window.Element.prototype.scrollIntoView = vi.fn();
 }

@@ -1,9 +1,8 @@
 # Plans Index — do-knowledge-studio
 
 **Generated**: 2026-05-27  
-**Updated**: 2026-06-17  
-**Source**: 6-agent parallel swarm analysis + GitHub issue audit (#168–#240) + open issues (#280-#289) + all PRs merged (#292-#307) + 4-agent gap audit (Plans 34-37) + PR #327 E2E fixes  
-**Method**: GOAP (Goal-Oriented Action Planning) with ADRs
+**Updated**: 2026-06-12
+**Source**: 6-agent parallel swarm analysis + GitHub issue audit (#168–#240) + open issues (#280-#289) + all PRs merged (#292-#307)
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
 ## Quick Reference — Active Plans
@@ -11,13 +10,12 @@
 | Priority | Plan | Description | Effort | Status | Issues |
 |----------|------|-------------|--------|--------|--------|
 | **P0** | [33-post-swarm-critical-features.md](33-post-swarm-critical-features.md) | Library view, search nav, backlinks, CLI unification, Chat→LLM, toolbar, undo/redo | 20-28h | ✅ MERGED | #223–#231, #292, #293, #305, #307 |
-| **P1** | [34-architecture-hygiene.md](34-architecture-hygiene.md) | Split 4 oversized files (repository, GraphView, AIHarness, search) | 16-20h | ✅ MERGED (2026-06-16) | #226 |
-| **P1** | [35-test-coverage-expansion.md](35-test-coverage-expansion.md) | Mind map, CLI, graph, extension, E2E tests | 20-28h | 📝 OPEN (30% complete; 14 items remain) | #228, #229 |
-| **P1** | [36-documentation-overhaul.md](36-documentation-overhaul.md) | CLI docs, JSDoc, DB schema, search arch, onboarding, LLM setup, deployment | 12-16h | 📝 OPEN (85% complete; JSDoc + DEPLOYMENT remain) | #237 |
-| **P1** | [37-security-quality-hardening.md](37-security-quality-hardening.md) | API key encryption, SSRF fix, migration fix, snapshot validation | 8-12h | 📝 OPEN (95% complete; silent-catch logging remains) | #238–#240 |
+| **P1** | [34-architecture-hygiene.md](34-architecture-hygiene.md) | Split 4 oversized files (repository, GraphView, AIHarness, search) | 16-20h | 📝 OPEN | #226 |
+| **P1** | [35-test-coverage-expansion.md](35-test-coverage-expansion.md) | Mind map, CLI, graph, extension, E2E tests | 20-28h | 📝 OPEN | #228, #229 |
+| **P1** | [36-documentation-overhaul.md](36-documentation-overhaul.md) | CLI docs, JSDoc, DB schema, search arch, onboarding, LLM setup, deployment | 12-16h | 📝 OPEN | #237 |
+| **P1** | [37-security-quality-hardening.md](37-security-quality-hardening.md) | API key encryption, SSRF fix, migration fix, snapshot validation | 8-12h | 📝 OPEN | #238–#240 |
 | **P0** | [033-goap-open-issues-prs-2026-06-11.md](033-goap-open-issues-prs-2026-06-11.md) | Close 6 open issues + wire missing plan features | 8-12h | ✅ MERGED | #305 |
 | **P1** | [040-goap-export-pipeline-and-pr-cleanup-2026-06-16.md](040-goap-export-pipeline-and-pr-cleanup-2026-06-16.md) | Complete export pipeline (PDF, JSON schema v1.0, MD round-trip) + resolve red PRs | 12-18h | ✅ MERGED | #289 |
-| **P1** | [041-goap-remaining-gaps-tests-docs-logging-2026-06-16.md](041-goap-remaining-gaps-tests-docs-logging-2026-06-16.md) | Close remaining gaps in 35/36/37: tests, JSDoc, DEPLOYMENT.md, logger.debug | 25-35h | 📝 OPEN | — |
 
 ## Quick Reference — Completed Plans
 
@@ -63,39 +61,47 @@
 ## GOAP Execution Order — Next Wave
 
 ```
-Plan 34 (Architecture) ──→ ✅ MERGED 2026-06-16
-   ├─ 34.5 IRepository interface ✅
-   ├─ 34.1 Split repository.ts (957 → 9 modules, each < 350 LOC) ✅
-   ├─ 34.2 Split GraphView.tsx (793 → 456 LOC + 4 extracted modules) ✅
-   ├─ 34.3 Split AIHarness.tsx (600 → 272 LOC + 4 extracted modules) ✅
-   └─ 34.4 Split search.ts (555 → 2-line shim + 5 modules) ✅
-
-Plan 041 (Gap Closure) ──→ 📝 OPEN — ~50% done (PR #326)
-   ├─ G-LOGGING-GAP: 12 silent-catch blocks → logger.debug ✅ (PR #326)
-   ├─ G-DOCS-GAP-DEPLOY: docs/DEPLOYMENT.md ❌
-   ├─ G-DOCS-GAP-JSDOC: 5 Zod schemas ✅ (validation.ts); 11+ .tsx components ❌
-   ├─ G-TESTING-GAP-MINDMAP: mindmap-tree.ts + 8+ tests ✅ (prev commit)
-   ├─ G-TESTING-GAP-CLI: db.test.ts + 10+ command tests ❌
-   ├─ G-TESTING-GAP-GRAPH: graph-data.ts + GraphView.test.tsx ✅ (PR #326)
-   ├─ G-TESTING-GAP-EXTENSIONS: ClaimExtension + MentionExtension tests ❌
-   ├─ G-TESTING-GAP-QUICKWINS: useFocusTrap + DbProvider tests ✅ (PR #326)
-   ├─ G-TESTING-GAP-E2E: 5 new spec files ❌
-   ├─ G-TESTING-GAP-THRESHOLDS: raise vitest.config → 40/50/50/50 ❌
-   └─ G-MOTION-UI: motion system + design token refresh (ADR 017) ✅ (PR #326)
-
-Plan 042 (CLI + Chat) ──→ 📝 Proposed (ADR 016) — not yet implemented
-
-Plan 043 (Static Analysis Closure) ──→ ✅ DONE (PR #326)
-   ├─ Codacy: 12 real issues fixed in code ✅
-   ├─ Codacy: 27 false positives suppressed ✅
-   ├─ DeepSource: 6 pre-existing issues fixed (db.test.ts) ✅
-   ├─ E2E: workers 1→2, retries 2→1, timeout 30→40m ✅
-   └─ Remaining: 35 flaky E2E tests (pre-existing viewport issues) + complexity warnings (ADR 018)
-   ├─ G-CLI-BACKUP: implement `db:backup` (VACUUM INTO) (1h)
-   ├─ G-CLI-CLAIM-CRUD: claim-list/update/delete commands (2h)
-   ├─ G-CHAT-CANCEL: AbortController + cancel button (2h)
-   ├─ G-CHAT-RETRY: withRetry helper for 5xx/429 (2h)
-   └─ G-TESTS: 10+ new CLI test cases (1h)
+Wave 1 (P0 — PARALLEL) ──→ 📝 OPEN
+  ├─ 33-post-swarm-critical-features.md (G-FEATURES-V2)
+  │   ├─ 33.2 Search → Editor navigation (quick win, 0.5h)
+  │   ├─ 33.1 Library/Entity Browser view (6-8h)
+  │   ├─ 33.3 Backlinks/bidirectional linking (4-6h)
+  │   ├─ 33.4 CLI database unification (4-6h)
+  │   ├─ 33.5 Wire Chat to LLM (2-3h)
+  │   ├─ 33.6 Expand editor toolbar (2-3h)
+  │   └─ 33.7 Add undo/redo (3-4h)
+  └─ 37-security-quality-hardening.md (G-SECURITY-V2)
+      ├─ 37.1 API key encryption (3-4h)
+      ├─ 37.2 SSRF fix (1-2h)
+      ├─ 37.3 Browser migration fix (1h)
+      ├─ 37.4 Snapshot validation (1h)
+      └─ 37.5 Silent catch logging (1-2h)
+      ↓
+Wave 2 (P1 — PARALLEL) ──→ 📝 OPEN
+  ├─ 34-architecture-hygiene.md (G-ARCHITECTURE)
+  │   ├─ 34.5 IRepository interface (3-4h) — do first
+  │   ├─ 34.1 Split repository.ts (6-8h)
+  │   ├─ 34.2 Split GraphView.tsx (5-6h)
+  │   ├─ 34.3 Split AIHarness.tsx (4-5h)
+  │   └─ 34.4 Split search.ts (3-4h)
+  ├─ 35-test-coverage-expansion.md (G-TESTING)
+  │   ├─ 35.1 Mind map tests (4-5h)
+  │   ├─ 35.2 CLI tests (5-6h)
+  │   ├─ 35.3 Graph tests (4-5h)
+  │   ├─ 35.4 Editor extension tests (3-4h)
+  │   ├─ 35.5 Quick win tests (2-3h)
+  │   ├─ 35.6 E2E test expansion (4-6h)
+  │   └─ 35.7 Raise coverage thresholds (1h)
+  └─ 36-documentation-overhaul.md (G-DOCS)
+      ├─ 36.9 Fix VERSION sync (0.5h) — do first
+      ├─ 36.1 CLI reference (2-3h)
+      ├─ 36.2 JSDoc for components (3-4h)
+      ├─ 36.3 Database schema docs (2-3h)
+      ├─ 36.4 Search architecture docs (1-2h)
+      ├─ 36.5 Developer onboarding guide (2-3h)
+      ├─ 36.6 LLM setup guide (1-2h)
+      ├─ 36.7 Deployment guide (1-2h)
+      └─ 36.8 Repository API docs (1-2h)
 ```
 
 ## Legacy Plans (Archived/Completed)
@@ -134,16 +140,16 @@ Plan 043 (Static Analysis Closure) ──→ ✅ DONE (PR #326)
 | #220 | #191 | Refactor: extract shared fetchAllExportData, fix N+1 query | ✅ MERGED |
 | #221 | #193 | Tests: 52 new test cases (244→296 total) | ✅ MERGED |
 
-## Health Scores (Updated 2026-06-16 — Post PR #326)
+## Health Scores (Updated 2026-05-31 — Post Swarm Analysis)
 
 | Category | Score | Trend | Notes |
 |----------|-------|-------|-------|
-| Architecture | 82/100 | ⬆️ Up from 80 | Focus trap rewrite, error boundary rewrite, motion system |
-| Implementation Completeness | 82/100 | ⬆️ Up from 75 | Draft title, citation click, motion system, a11y pass |
-| Code Quality | 88/100 | ⬆️ Up from 85 | Silent catch → logger.debug (12+); err object logging; JSDoc on schemas |
-| Documentation | 74/100 | ⬆️ Up from 70 | JSDoc on 5 Zod schemas; Quality Gate Discipline in AGENTS.md |
-| Security | 85/100 | → Same | No security changes in this PR |
-| Test Coverage | 68/100 | ⬆️ Up from 60 | GraphView 143-line test (7 describes, 43 cases); tests updated for new behavior |
+| Architecture | 80/100 | ⬇️ Down from 85 | 4 files exceed 500 LOC; singleton repository untestable |
+| Implementation Completeness | 75/100 | ⬇️ Down from 90 | Search→editor nav broken; Chat not wired to LLM; no backlinks |
+| Code Quality | 85/100 | ⬇️ Down from 90 | 14 silent catch blocks; magic numbers; duplicate escapeHtml |
+| Documentation | 70/100 | ⬇️ Down from 92 | 9 high-priority gaps: CLI docs, JSDoc, DB schema, onboarding |
+| Security | 85/100 | ⬇️ Down from 92 | API keys in plaintext; SSRF; no URL validation |
+| Test Coverage | 60/100 | ⬇️ Down from 85 | Mind map, CLI, graph, extensions: zero tests |
 
 ## Key Constraints
 1. **AGENTS.md is single source of truth** — Do NOT modify GEMINI.md or QWEN.md
@@ -166,15 +172,6 @@ Plan 043 (Static Analysis Closure) ──→ ✅ DONE (PR #326)
 | 007 | do-web-doc-resolver Integration | 📝 Proposed | Future work |
 | 008 | Rolldown Circular Dependency Resolution | ✅ Implemented | #209 — core.ts extraction, const ordering |
 | 009 | Staged ESLint Rule Enforcement | ✅ Implemented | #209 — typed workers, void-wrap, vi.mocked |
-| 010 | Export Schema v1.0 | ✅ Accepted | `KnowledgeStudioExport` Zod-validated JSON |
-| 011 | CLI Command Extraction | ✅ Accepted | `cli/commands/*.ts` split, one file per group |
-| 012 | PDF Export Strategy | ✅ Accepted | `@react-pdf/renderer` (rejects puppeteer/wkhtmltopdf) |
-| 013 | Silent Catch Logging Policy | 📝 Proposed | Replace comments with `logger.debug` (Plan 041, 37.5 closure) |
-| 014 | Test Architecture: Pure Data Transforms | 📝 Proposed | Extract `mindmap-tree`, `graph-data` for unit testing (Plan 041, 35) |
-| 015 | JSDoc-First Documentation Policy | 📝 Proposed | Leading JSDoc on all exported `.tsx` (Plan 041, 36.2 closure) |
-| 016 | CLI Surface Completion + Chat Streaming Resilience | 📝 Proposed | `db:backup`, claim CRUD, AbortController, retry/backoff (Plan 042) |
-| 017 | Motion System & Design Token Refresh | ✅ Implemented | CSS tokens (duration/easing), `motion.css` keyframes, utility classes (PR #326) |
-| 018 | Pre-existing Flaky E2E Tests & Static Analysis | 📝 Proposed | 35 flaky E2E tests (viewport), DeepSource complexity warnings, Codacy security FPs (Plan 043) |
 
 ## Verification Commands
 ```bash
@@ -194,4 +191,28 @@ grep -r "as unknown as" src/ --include="*.ts" --include="*.tsx" || echo "✅ No 
 
 # Check for 500 LOC violations
 find src/ -name "*.ts" -o -name "*.tsx" | xargs wc -l | awk '$1 > 500 {print $0}'
+```
+ignment |
+| 007 | do-web-doc-resolver Integration | 📝 Proposed | Future work |
+| 008 | Rolldown Circular Dependency Resolution | ✅ Implemented | #209 — core.ts extraction, const ordering |
+| 009 | Staged ESLint Rule Enforcement | ✅ Implemented | #209 — typed workers, void-wrap, vi.mocked |
 
+## Verification Commands
+```bash
+# Check all plans exist
+ls -1 plans/*.md | wc -l
+# Should return 40+
+
+# Verify no QUICKSTART.md references
+grep -r "QUICKSTART" . --include="*.sh" --include="*.md" --include="*.yml" --include="*.yaml"
+
+# Run quality gates
+pnpm test && pnpm run typecheck && pnpm run lint
+
+# Check for type safety violations
+grep -r "as any" src/ --include="*.ts" --include="*.tsx" || echo "✅ No 'as any'"
+grep -r "as unknown as" src/ --include="*.ts" --include="*.tsx" || echo "✅ No 'as unknown as'"
+
+# Check for 500 LOC violations
+find src/ -name "*.ts" -o -name "*.tsx" | xargs wc -l | awk '$1 > 500 {print $0}'
+```

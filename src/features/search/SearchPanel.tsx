@@ -9,7 +9,6 @@ interface SearchPanelProps {
   onClose?: () => void;
   isMobile?: boolean;
   onResultClick?: (result: SearchResult) => void;
-  onCreateNew?: (query: string) => void;
   shouldAutoFocus?: boolean;
   ariaLabel?: string;
 }
@@ -46,11 +45,7 @@ const FilterBar: React.FC<{
   </div>
 );
 
-const NoResultsState: React.FC<{
-  query: string;
-  onClear: () => void;
-  onCreateNew?: (query: string) => void;
-}> = ({ query, onClear, onCreateNew }) => (
+const NoResultsState: React.FC<{ query: string; onClear: () => void }> = ({ query, onClear }) => (
   <div className="no-results-state">
     <div className="no-results-icon" aria-hidden="true">
       <Filter size={32} />
@@ -58,19 +53,13 @@ const NoResultsState: React.FC<{
     <h3>No local matches</h3>
     <p>We could not find anything matching &quot;{query}&quot; in your current library.</p>
     <div className="no-results-actions">
-      <button type="button" className="btn-secondary" onClick={onClear}>
+      <button className="btn-secondary" onClick={onClear}>
         Clear search
       </button>
-      {onCreateNew && (
-        <button
-          type="button"
-          className="btn-primary"
-          onClick={() => onCreateNew(query)}
-        >
-          <Plus size={16} aria-hidden="true" />
-          Create new entity
-        </button>
-      )}
+      <button className="btn-primary">
+        <Plus size={16} />
+        Create new entity
+      </button>
     </div>
   </div>
 );
@@ -113,7 +102,6 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
   onClose,
   isMobile,
   onResultClick,
-  onCreateNew,
   shouldAutoFocus = false,
   ariaLabel
 }) => {
@@ -216,15 +204,9 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setSelectedIndex(prev => (prev > 0 ? prev - 1 : results.length - 1));
-    } else if (e.key === 'Enter') {
-      // If the user hasn't arrowed yet, treat Enter as "open the first
-      // result" instead of doing nothing. Keyboard users expect the
-      // first match to be the default action.
-      const targetIndex = selectedIndex >= 0 ? selectedIndex : 0;
-      if (targetIndex < results.length) {
-        e.preventDefault();
-        onResultClick?.(results[targetIndex]);
-      }
+    } else if (e.key === 'Enter' && selectedIndex >= 0) {
+      e.preventDefault();
+      onResultClick?.(results[selectedIndex]);
     }
   }, [results, selectedIndex, onResultClick]);
 
@@ -285,7 +267,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
 
       <FilterBar activeFilter={activeFilter} onFilterChange={setActiveFilter} />
 
-      <div className="search-mode-toggle">
+      <div className="search-mode-toggle" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', fontSize: '13px', borderBottom: '1px solid var(--border-color)' }}>
         <button
           className={`filter-chip ${!useSemantic ? 'active' : ''}`}
           onClick={() => setUseSemantic(false)}
@@ -299,23 +281,19 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
             void (async () => {
               if (!useSemantic) {
                 setUseSemantic(true);
-                try {
-                  await initEmbeddings();
-                } catch (err) {
-                  logger.debug('Embeddings initialization failed, continuing without', { error: err instanceof Error ? err.message : String(err) });
-                }
+                try { await initEmbeddings(); } catch { /* embeddings are best-effort */ }
               }
             })();
           }}
           aria-pressed={useSemantic}
         >
-          <Sparkles size={12} />
+          <Sparkles size={12} style={{ marginRight: '4px' }} />
           Semantic
         </button>
       </div>
 
       {searchStages.size > 0 && (
-        <div className="search-progress" aria-live="polite">
+        <div className="search-progress" style={{ padding: '4px 16px', fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '8px', borderBottom: '1px solid var(--border-color)' }}>
           <span className={searchStages.has('exact') ? 'stage-done' : 'stage-pending'}>{'\u2713'} Keywords</span>
           {searchStages.has('semantic') ? <span className="stage-done">{'\u2713'} Semantic</span> : <span className="stage-pending">{'\u2022'} Semantic</span>}
           {searchStages.has('related') ? <span className="stage-done">{'\u2713'} Related</span> : <span className="stage-pending">{'\u2022'} Related</span>}
@@ -332,11 +310,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
         {isSearching && <div className="searching-status">Searching local records...</div>}
 
         {!isSearching && query.length > 1 && results.length === 0 && (
-          <NoResultsState
-          query={query}
-          onClear={() => { setQuery(''); }}
-          onCreateNew={onCreateNew}
-        />
+          <NoResultsState query={query} onClear={() => setQuery('')} />
         )}
 
         {results.length > 0 && (

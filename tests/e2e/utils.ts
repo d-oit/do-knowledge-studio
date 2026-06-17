@@ -1,30 +1,30 @@
-import { Page, expect } from '@playwright/test';
+import { Page } from '@playwright/test';
 
 /**
  * Ensures the navigation menu is visible on responsive layouts.
- * If the navigation buttons are not visible, it clicks the 'Open menu' button
- * and waits for the drawer to fully open via DOM assertion.
+ * If the navigation buttons are not visible, it attempts to click the 'Open menu' button.
  */
 export async function ensureNavVisible(page: Page) {
   const navButton = page.locator('.nav-button').filter({ hasText: 'Editor' });
-  if (await navButton.isVisible({ timeout: 1000 }).catch(() => false)) {
-    return;
-  }
-  const menuButton = page.getByLabel('Open menu');
-  if (await menuButton.isVisible({ timeout: 1000 }).catch(() => false)) {
-    await menuButton.click();
-    await expect(page.getByLabel('Close menu')).toBeVisible({ timeout: 5000 });
+  if (!(await navButton.isVisible())) {
+    const menuButton = page.getByLabel('Open menu');
+    if (await menuButton.isVisible()) {
+      await menuButton.click();
+      // Wait for the drawer to fully open to prevent pointer intercept errors
+      await page.waitForTimeout(500);
+    }
   }
 }
 
 /**
  * Ensures the navigation menu is hidden on mobile layouts after use.
- * Waits for the drawer to be removed from DOM instead of a hard timeout.
+ * This prevents the drawer overlay from intercepting pointer events.
  */
 export async function closeNav(page: Page) {
   const menuButton = page.getByLabel('Close menu');
-  if (await menuButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+  if (await menuButton.isVisible()) {
     await menuButton.click();
-    await expect(page.getByLabel('Close menu')).not.toBeVisible({ timeout: 5000 });
+    // Wait for the drawer to fully close
+    await page.waitForTimeout(500);
   }
 }

@@ -374,7 +374,7 @@ const GraphView: React.FC<Props> = ({
   return (
     <div className="graph-container">
       {!hideToolbar && (
-        <div className="viz-toolbar motion-stagger-2" key={`graph-toolbar-${selectedNode ?? 'none'}-${snapshotMode ? 'snap' : 'live'}`}>
+        <div className="viz-toolbar">
           {snapshotMode && (
             <div style={{
               padding: '6px 12px',
@@ -411,8 +411,7 @@ const GraphView: React.FC<Props> = ({
       )}
       <div
         ref={containerRef}
-        className="viz-container motion-fade-in"
-        key={`graph-canvas-${selectedNode ?? 'none'}`}
+        className="viz-container"
         style={{ height: '600px', width: '100%' }}
         role="img"
         aria-label={`Knowledge Graph: ${effectiveData.entities.length} entities, ${effectiveData.links.length} connections${selectedNode ? `. Selected: ${entities.find(e => e.id === selectedNode)?.name || selectedNode}` : ''}`}
