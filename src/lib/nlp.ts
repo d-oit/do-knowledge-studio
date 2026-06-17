@@ -14,21 +14,8 @@ export const stripHtml = (html: string): string => {
  * Using a regex for global replacement is significantly faster than splitting and filtering in JS
  * for large text bodies during indexing.
  */
-const STOP_WORDS_REGEX = new RegExp(
-  `\\b(${[
-    'a', 'an', 'the', 'and', 'or', 'but', 'if', 'then', 'else', 'when',
-    'at', 'from', 'by', 'for', 'with', 'about', 'against', 'between',
-    'into', 'through', 'during', 'before', 'after', 'above', 'below',
-    'to', 'up', 'down', 'in', 'out', 'on', 'off', 'over', 'under',
-    'again', 'further', 'once', 'here', 'there', 'where', 'why', 'how',
-    'all', 'any', 'both', 'each', 'few', 'more', 'most', 'other', 'some',
-    'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than',
-    'too', 'very', 'can', 'will', 'just', 'should', 'now', 'is', 'are',
-    'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do',
-    'does', 'did', 'of', 'for', 'this'
-  ].join('|')})\\b`,
-  'gi'
-);
+const STOP_WORDS_REGEX =
+  /\b(a|an|the|and|or|but|if|then|else|when|at|from|by|for|with|about|against|between|into|through|during|before|after|above|below|to|up|down|in|out|on|off|over|under|again|further|once|here|there|where|why|how|all|any|both|each|few|more|most|other|some|such|no|nor|not|only|own|same|so|than|too|very|can|will|just|should|now|is|are|was|were|be|been|being|have|has|had|do|does|did|of|for|this)\b/gi;
 
 /**
  * Removes stop words from a string using a pre-compiled regex for performance.
