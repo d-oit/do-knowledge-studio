@@ -47,7 +47,7 @@ export const compressText = (text: string, maxLength: number = 200): string => {
 
   const cleanText = stripHtml(text);
   const withoutStopWords = removeStopWords(cleanText);
-  const trimmed = withoutStopWords.trim();
+  const trimmed = withoutStopWords;
 
   if (trimmed.length <= maxLength) return trimmed;
 
