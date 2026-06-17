@@ -11,6 +11,8 @@ export const stripHtml = (html: string): string => {
 
 /**
  * Pre-compiled regex for standard English stop words.
+ * Using a regex for global replacement is significantly faster than splitting and filtering in JS
+ * for large text bodies during indexing.
  */
 const STOP_WORDS_REGEX = new RegExp(
   `\\b(${[
@@ -47,6 +49,7 @@ export const compressText = (text: string, maxLength: number = 200): string => {
 
   const cleanText = stripHtml(text);
   const withoutStopWords = removeStopWords(cleanText);
+  // removeStopWords already handles whitespace normalization
   const trimmed = withoutStopWords;
 
   if (trimmed.length <= maxLength) return trimmed;
