@@ -9,12 +9,10 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ onMenuClick, onSearchClick }) => {
   return (
     <header className="mobile-header">
-      <button className="icon-button" onClick={onMenuClick} aria-label="Open navigation">
+      <button className="icon-button" onClick={onMenuClick} aria-label="Open menu">
         <Menu size={24} />
       </button>
-      <div className="mobile-brand">
-        Knowledge Studio
-      </div>
+      <div className="mobile-brand">Knowledge Studio</div>
       <button className="icon-button" onClick={onSearchClick} aria-label="Open search">
         <Search size={24} />
       </button>

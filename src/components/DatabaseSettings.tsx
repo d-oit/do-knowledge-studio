@@ -95,7 +95,7 @@ const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({ onHandlesSelected, 
 
         {currentHandle && (
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <RefreshCcw size={12} className="animate-spin" />
+            <RefreshCcw size={12} className="animate-spin-slow" />
             Auto-syncing changes to local file
           </div>
         )}

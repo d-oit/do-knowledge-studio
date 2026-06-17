@@ -35,7 +35,7 @@ describe('ErrorBoundary', () => {
     );
     expect(screen.getByText('Something went wrong')).toBeDefined();
     expect(screen.getByText('Test error')).toBeDefined();
-    expect(screen.getByRole('button', { name: /try again/i })).toBeDefined();
+    expect(screen.getByText('Try again')).toBeDefined();
   });
 
   it('renders custom fallback when provided', () => {
@@ -53,7 +53,7 @@ describe('ErrorBoundary', () => {
         <ThrowingComponent shouldThrow={true} />
       </ErrorBoundary>
     );
-    expect(screen.getByText(/Graph View ran into a problem/)).toBeDefined();
+    expect(screen.getByText('Graph View — Something went wrong')).toBeDefined();
   });
 
   it('resets error state on retry click', () => {

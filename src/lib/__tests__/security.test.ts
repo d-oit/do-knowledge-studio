@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
 import { sanitizeHtml, escapeHtml, stripHtmlTags } from '../security';
 

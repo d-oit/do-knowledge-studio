@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Search,
   FileText,
@@ -10,8 +10,7 @@ import {
   Plus,
   Download,
   Command,
-  X,
-  AlertCircle
+  X
 } from 'lucide-react';
 import { searchKnowledge, SearchResult } from '../lib/search';
 import { logger } from '../lib/logger';
@@ -22,7 +21,6 @@ interface CommandPaletteProps {
   onClose: () => void;
   onViewChange: (view: 'editor' | 'graph' | 'mindmap' | 'chat' | 'export' | 'ai') => void;
   onAction?: (action: string) => void;
-  onResultClick?: (result: SearchResult) => void;
 }
 
 interface CommandItem {
@@ -45,71 +43,42 @@ const COMMANDS: CommandItem[] = [
   { id: 'act-graph-focus', label: 'Toggle Graph Focus', icon: Share2, type: 'action', shortcut: 'F' },
 ];
 
-const CommandPalette: React.FC<CommandPaletteProps> = ({
-  isOpen,
-  onClose,
-  onViewChange,
-  onAction,
-  onResultClick
-}) => {
+const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onViewChange, onAction }) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
 
-  // Focus the input when the palette mounts. The host uses a `key`
-  // tied to `isOpen`, so every open creates a fresh instance — no reset
-  // effects required.
   useEffect(() => {
     if (isOpen) {
-      requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
+      setTimeout(() => inputRef.current?.focus(), 10);
     }
   }, [isOpen]);
 
-  // Debounced search. We deliberately avoid calling setState
-  // synchronously in the effect body — instead, state updates are
-  // performed inside the debounced callback or via the search handler.
-  // The render hides stale results when the query is too short.
   useEffect(() => {
-    if (!isOpen) return;
-    if (query.trim().length < 2) {
-      // Schedule the reset asynchronously so the effect body stays
-      // side-effect-free from React's perspective.
-      queueMicrotask(() => {
-        setIsSearching(false);
-        setSearchError(null);
-      });
-      return;
-    }
-    queueMicrotask(() => { setIsSearching(true); });
-    const controller = new AbortController();
-    const timer = setTimeout(() => {
-      (async () => {
+    const handleSearch = () => {
+      void (async () => {
+        if (query.trim().length < 2) {
+          setResults([]);
+          setIsSearching(false);
+          return;
+        }
+        setIsSearching(true);
         try {
           const res = await searchKnowledge(query);
-          if (controller.signal.aborted) return;
           setResults(res);
-          setSearchError(null);
         } catch (err) {
-          if (controller.signal.aborted) return;
           logger.error('Palette search failed', err);
-          setResults([]);
-          setSearchError(err instanceof Error ? err.message : 'Search failed');
         } finally {
-          if (!controller.signal.aborted) {
-            setIsSearching(false);
-          }
+          setIsSearching(false);
         }
-      })().catch(() => undefined);
-    }, 150);
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
+      })();
     };
-  }, [query, isOpen]);
+
+    const timer = setTimeout(handleSearch, 150);
+    return () => clearTimeout(timer);
+  }, [query]);
 
   const filteredCommands = COMMANDS.filter(c =>
     c.label.toLowerCase().includes(query.toLowerCase())
@@ -117,57 +86,22 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   const totalItems = filteredCommands.length + results.length;
 
-  const safeSetIndex = useCallback(
-    (next: number) => {
-      if (totalItems === 0) {
-        setSelectedIndex(0);
-        return;
-      }
-      // Clamp explicitly to avoid the NaN-from-0%0 trap.
-      const clamped = ((next % totalItems) + totalItems) % totalItems;
-      setSelectedIndex(clamped);
-    },
-    [totalItems]
-  );
-
-  const scrollSelectedIntoView = useCallback((idx: number) => {
-    const list = listRef.current;
-    if (!list) return;
-    const node = list.querySelector<HTMLElement>(`#command-item-${idx}`);
-    if (node) {
-      node.scrollIntoView({ block: 'nearest' });
-    }
-  }, []);
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      if (totalItems === 0) return;
-      safeSetIndex(selectedIndex + 1);
+      setSelectedIndex(prev => (prev + 1) % totalItems);
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      if (totalItems === 0) return;
-      safeSetIndex(selectedIndex - 1);
+      setSelectedIndex(prev => (prev - 1 + totalItems) % totalItems);
     } else if (e.key === 'Enter') {
       e.preventDefault();
       executeSelected();
     } else if (e.key === 'Escape') {
-      e.preventDefault();
       onClose();
-    } else if (e.key === 'Home') {
-      e.preventDefault();
-      safeSetIndex(0);
-    } else if (e.key === 'End') {
-      e.preventDefault();
-      safeSetIndex(totalItems - 1);
     }
   };
 
   const executeSelected = () => {
-    if (totalItems === 0) {
-      // Nothing to do — leave the palette open so the user can adjust the query.
-      return;
-    }
     if (selectedIndex < filteredCommands.length) {
       const cmd = filteredCommands[selectedIndex];
       if (cmd.type === 'navigation' && cmd.view) {
@@ -176,27 +110,14 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
         onAction?.(cmd.id);
       }
     } else {
-      const result = results[selectedIndex - filteredCommands.length];
-      if (result) {
-        // Prefer the rich result handler if the host provided one.
-        if (onResultClick) {
-          onResultClick(result);
-        } else {
-          onViewChange('editor');
-        }
-      }
+      onViewChange('editor'); // Default for search results
     }
     onClose();
   };
 
-  // Keep the highlighted item in view when the selection changes.
-  useEffect(() => {
-    scrollSelectedIntoView(selectedIndex);
-  }, [selectedIndex, scrollSelectedIntoView]);
-
   if (!isOpen) return null;
 
-  const handleOverlayMouseDown = (e: React.MouseEvent) => {
+  const handleOverlayClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       onClose();
     }
@@ -205,18 +126,19 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
   return (
     <div
       className="command-palette-overlay"
-      onMouseDown={handleOverlayMouseDown}
-      role="presentation"
-      aria-hidden="true"
+      onClick={handleOverlayClick}
+      onKeyDown={e => { if (e.target === e.currentTarget && (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ')) onClose(); }}
+      role="button"
+      tabIndex={0}
+      aria-label="Close command palette"
     >
       <div
         className="command-palette-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Command palette"
+        role="presentation"
+        onClick={e => e.stopPropagation()}
       >
         <div className="command-palette-header">
-          <Search className="search-icon" size={20} aria-hidden="true" />
+          <Search className="search-icon" size={20} />
           <input
             ref={inputRef}
             type="search"
@@ -230,8 +152,6 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
             aria-expanded={totalItems > 0}
             aria-controls="command-palette-listbox"
             aria-activedescendant={totalItems > 0 ? `command-item-${selectedIndex}` : undefined}
-            autoComplete="off"
-            spellCheck={false}
           />
           {query && (
             <button
@@ -243,19 +163,12 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
               <X size={16} />
             </button>
           )}
-          <div className="esc-hint" aria-hidden="true">ESC</div>
+          <div className="esc-hint">ESC</div>
         </div>
 
-        <div
-          className="command-palette-content"
-          id="command-palette-listbox"
-          role="listbox"
-          aria-label="Commands and knowledge"
-          ref={listRef}
-        >
+        <div className="command-palette-content" id="command-palette-listbox" role="listbox">
           {isSearching && <SearchSkeleton />}
-
-          {!isSearching && !searchError && filteredCommands.length > 0 && (
+          {!isSearching && filteredCommands.length > 0 && (
             <div className="command-section">
               <div className="section-label">Commands</div>
               {filteredCommands.map((cmd, i) => (
@@ -263,22 +176,22 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                   key={cmd.id}
                   id={`command-item-${i}`}
                   className={`command-item ${selectedIndex === i ? 'selected' : ''}`}
-                  onMouseEnter={() => { safeSetIndex(i); }}
+                  onMouseEnter={() => setSelectedIndex(i)}
                   onClick={executeSelected}
                   role="option"
-                  tabIndex={-1}
-                  onKeyDown={(e) => { if (e.key === 'Enter') executeSelected(); }}
+                  tabIndex={0}
+                  onKeyDown={e => e.key === 'Enter' && executeSelected()}
                   aria-selected={selectedIndex === i}
                 >
-                  <cmd.icon size={18} className="item-icon" aria-hidden="true" />
+                  <cmd.icon size={18} className="item-icon" />
                   <span className="item-label">{cmd.label}</span>
-                  {cmd.shortcut && <span className="item-shortcut" aria-hidden="true">{cmd.shortcut}</span>}
+                  {cmd.shortcut && <span className="item-shortcut">{cmd.shortcut}</span>}
                 </div>
               ))}
             </div>
           )}
 
-          {!isSearching && !searchError && query.trim().length >= 2 && results.length > 0 && (
+          {results.length > 0 && (
             <div className="command-section">
               <div className="section-label">Knowledge</div>
               {results.map((res, i) => {
@@ -288,14 +201,14 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                     key={res.id}
                     id={`command-item-${idx}`}
                     className={`command-item ${selectedIndex === idx ? 'selected' : ''}`}
-                    onMouseEnter={() => { safeSetIndex(idx); }}
+                    onMouseEnter={() => setSelectedIndex(idx)}
                     onClick={executeSelected}
                     role="option"
-                    tabIndex={-1}
+                    tabIndex={0}
                     onKeyDown={e => e.key === 'Enter' && executeSelected()}
                     aria-selected={selectedIndex === idx}
                   >
-                    <Layers size={18} className="item-icon" aria-hidden="true" />
+                    <Layers size={18} className="item-icon" />
                     <div className="item-details">
                       <span className="item-label">{res.title}</span>
                       <span className="item-sublabel">{res.type}</span>
@@ -306,25 +219,9 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
             </div>
           )}
 
-          {searchError && (
-            <div className="palette-error" role="alert">
-              <AlertCircle size={20} aria-hidden="true" />
-              <div>
-                <strong>Search failed.</strong>
-                <p>{searchError}</p>
-              </div>
-            </div>
-          )}
-
-          {!isSearching && !searchError && query && totalItems === 0 && (
+          {query && totalItems === 0 && (
             <div className="palette-empty">
-              No matches for &quot;{query}&quot;. Try a different search or press <kbd>Esc</kbd> to close.
-            </div>
-          )}
-
-          {!isSearching && !searchError && !query && (
-            <div className="palette-empty palette-hint">
-              Type to search commands, or browse the list above.
+              No matches found for &quot;{query}&quot;
             </div>
           )}
         </div>
@@ -334,13 +231,10 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
             <kbd><Command size={12} /></kbd> <kbd>K</kbd> to open
           </div>
           <div className="footer-tip">
-            <kbd>↑</kbd><kbd>↓</kbd> to navigate
+            <kbd>↑↓</kbd> to navigate
           </div>
           <div className="footer-tip">
             <kbd>↵</kbd> to select
-          </div>
-          <div className="footer-tip">
-            <kbd>Esc</kbd> to close
           </div>
         </div>
       </div>

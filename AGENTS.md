@@ -21,20 +21,6 @@ Local-first knowledge studio with rich text, knowledge graph, mind maps, SQLite 
 - **Never** create GitHub releases manually (`gh release create`). Releases are handled by `.github/workflows/version-propagation.yml` — edit `VERSION` and the workflow propagates and tags automatically.
 - Never modify `biome.json`, any `eslint` configuration file, or lint suppressions/ignore settings unless I explicitly request that change. If such a change seems necessary, stop, explain why, and ask for approval before editing.
 
-## Quality Gate Discipline
-
-**Always address all pre-existing errors and warnings encountered during work — not only the ones the current task introduces.**
-
-Before committing or claiming a task complete, run `pnpm run lint`, `pnpm run typecheck`, and `pnpm run test`. If any of these report issues that pre-existed your changes, you are responsible for fixing them in the same change set. Do not punt, suppress, or comment them out unless the fix is genuinely out of scope; in that case, flag them in the final report.
-
-Acceptable reasons to leave a pre-existing issue unfixed:
-
-- The fix requires changes outside the touched surface and the user has not approved a wider scope.
-- The fix would require modifying `biome.json`, `eslint` config, or a lint suppression, which is forbidden without explicit approval. In that case, stop and ask.
-- The issue is a known false positive in a third-party type definition and is annotated with a justified, narrow `// eslint-disable-next-line` comment.
-
-When you fix a pre-existing issue that affects another file, include that file in the same commit and explain the fix in the final report.
-
 ## Repository Shape
 
 - `src/app` - app shell, routing, layout
