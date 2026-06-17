@@ -22,8 +22,8 @@ const STOP_WORDS_REGEX =
  * Not used for HTML sanitization — stripHtml handles tag removal first.
  */
 export const removeStopWords = (text: string): string => {
-  // lgtm[js/incomplete-multi-character-sanitization]
   return text
+    // lgtm[js/incomplete-multi-character-sanitization]
     .replace(STOP_WORDS_REGEX, '')
     .replace(/\s+/g, ' ')
     .trim();
