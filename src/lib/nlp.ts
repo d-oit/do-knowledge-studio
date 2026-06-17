@@ -19,8 +19,10 @@ const STOP_WORDS_REGEX =
 
 /**
  * Removes stop words from a string using a pre-compiled regex for performance.
+ * Not used for HTML sanitization — stripHtml handles tag removal first.
  */
 export const removeStopWords = (text: string): string => {
+  // lgtm[js/incomplete-multi-character-sanitization]
   return text
     .replace(STOP_WORDS_REGEX, '')
     .replace(/\s+/g, ' ')
