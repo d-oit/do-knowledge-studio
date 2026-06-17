@@ -70,7 +70,7 @@ const SidebarNav: React.FC<SidebarNavProps> = ({ currentView, setCurrentView, on
   return (
     <nav className="sidebar-nav" aria-label="Main Navigation">
       <div className="brand">Knowledge Studio</div>
-      <div className="nav-content">
+      <div className="nav-content motion-stagger" key={currentView}>
         {NAV_GROUPS.map((group) => (
           <div key={group.group} className="nav-group">
             <div className="nav-group-label">{group.group}</div>

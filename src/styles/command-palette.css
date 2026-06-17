@@ -11,7 +11,7 @@
   justify-content: center;
   padding-top: 15vh;
   z-index: 2000;
-  animation: fadeIn 0.15s ease-out;
+  animation: fade-in var(--duration-quick) var(--ease-out) both;
 }
 
 .command-palette-modal {
@@ -24,7 +24,7 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  animation: slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: pop-in var(--duration-base) var(--ease-spring) both;
 }
 
 .command-palette-header {
@@ -66,7 +66,9 @@
   justify-content: center;
   flex-shrink: 0;
   border-radius: var(--radius-sm);
-  transition: all var(--motion-fast);
+  transition:
+    background-color var(--duration-quick) var(--ease-out),
+    color var(--duration-quick) var(--ease-out);
 }
 
 .command-palette-header .input-clear-button:hover {
@@ -110,7 +112,9 @@
   border-radius: var(--radius-md);
   cursor: pointer;
   gap: var(--space-4);
-  transition: background var(--motion-fast);
+  transition:
+    background-color var(--duration-quick) var(--ease-out),
+    border-color var(--duration-quick) var(--ease-out);
   border: 1px solid transparent;
 }
 
@@ -155,6 +159,37 @@
   color: var(--text-muted);
 }
 
+.palette-hint {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.palette-error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  margin: var(--space-3);
+  border: 1px solid var(--status-danger);
+  border-radius: var(--radius-md);
+  background: var(--bg-base);
+  color: var(--status-danger);
+}
+
+.palette-error strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: var(--space-1);
+}
+
+.palette-error p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
 .command-palette-footer {
   display: flex;
   align-items: center;
@@ -185,15 +220,7 @@
   font-family: var(--font-mono);
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideUp {
-  from { transform: translateY(20px) scale(0.98); opacity: 0; }
-  to { transform: translateY(0) scale(1); opacity: 1; }
-}
+/* Keyframes (fade-in, pop-in, rise-in, etc.) live in motion.css. */
 
 @media (max-width: 640px) {
   .command-palette-modal {

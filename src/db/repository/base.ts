@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { getDb, SQLiteDB } from '../client';
+import { logger } from '../../lib/logger';
 
 export class RepositoryBase {
   protected get db(): SQLiteDB {
@@ -26,7 +27,8 @@ export class RepositoryBase {
     if (typeof r.metadata === 'string') {
       try {
         r.metadata = JSON.parse(r.metadata) as Record<string, unknown>;
-      } catch {
+      } catch (err) {
+        logger.debug('Failed to parse metadata JSON, defaulting to empty object', { error: err instanceof Error ? err.message : String(err) });
         r.metadata = {};
       }
     }

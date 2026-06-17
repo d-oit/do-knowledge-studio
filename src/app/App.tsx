@@ -61,6 +61,7 @@ const AppContent: React.FC = () => {
   const [graphFocusMode, setGraphFocusMode] = useState(false);
   const [graphSelectedNode, setGraphSelectedNode] = useState<string | null>(null);
   const [editingEntityId, setEditingEntityId] = useState<string | null>(null);
+  const [editorDraftTitle, setEditorDraftTitle] = useState<string | null>(null);
 
   const handlePreload = useCallback((view: string) => {
     switch (view) {
@@ -99,11 +100,20 @@ const AppContent: React.FC = () => {
   const handleSearchResultClick = useCallback((result: SearchResult) => {
     if (result.type === 'entity' || result.type === 'note' || result.type === 'concept' || result.type === 'person' || result.type === 'project') {
       setEditingEntityId(result.id);
+      setEditorDraftTitle(null);
       setCurrentView('editor');
     } else if (result.type === 'claim') {
       setEditingEntityId(result.id);
+      setEditorDraftTitle(null);
       setCurrentView('editor');
     }
+    setIsSearchOpen(false);
+  }, []);
+
+  const handleCreateNewFromQuery = useCallback((query: string) => {
+    setEditingEntityId(null);
+    setEditorDraftTitle(query);
+    setCurrentView('editor');
     setIsSearchOpen(false);
   }, []);
 
@@ -175,6 +185,7 @@ const AppContent: React.FC = () => {
         </aside>
 
         <main className="main-content">
+          <div className="view-transition" key={currentView}>
           {!dbReady && <div className="loading-screen">Booting Knowledge Studio...</div>}
           {dbReady && currentView === 'editor' && (
             <Suspense fallback={<EditorSkeleton />}>
@@ -182,6 +193,7 @@ const AppContent: React.FC = () => {
                 <Profiled id="Editor">
                   <Editor
                     editingEntityId={editingEntityId}
+                    draftTitle={editorDraftTitle}
                     onEditComplete={handleEditComplete}
                     onEditEntity={handleEditEntity}
                   />
@@ -236,7 +248,14 @@ const AppContent: React.FC = () => {
           {dbReady && currentView === 'chat' && (
             <Suspense fallback={<AISkeleton />}>
               <ErrorBoundary featureName="Chat" onRetry={() => window.location.reload()}>
-                <Chat onCreateEntity={() => setCurrentView('editor')} />
+                <Chat
+                  onCreateEntity={() => { setCurrentView('editor'); }}
+                  onCitationClick={(id) => {
+                    setEditingEntityId(id);
+                    setEditorDraftTitle(null);
+                    setCurrentView('editor');
+                  }}
+                />
               </ErrorBoundary>
             </Suspense>
           )}
@@ -254,20 +273,26 @@ const AppContent: React.FC = () => {
               </ErrorBoundary>
             </Suspense>
           )}
+          </div>
         </main>
 
         <aside className="search-sidebar">
           <Suspense fallback={<SearchSkeleton />}>
-            <SearchPanel onResultClick={handleSearchResultClick} />
+            <SearchPanel
+              onResultClick={handleSearchResultClick}
+              onCreateNew={handleCreateNewFromQuery}
+            />
           </Suspense>
         </aside>
       </div>
 
       <Suspense fallback={null}>
         <CommandPalette
+          key={isPaletteOpen ? 'open' : 'closed'}
           isOpen={isPaletteOpen}
           onClose={() => setIsPaletteOpen(false)}
           onViewChange={setCurrentView}
+          onResultClick={handleSearchResultClick}
         />
       </Suspense>
 
@@ -303,6 +328,7 @@ const AppContent: React.FC = () => {
               isMobile
               onClose={() => setIsSearchOpen(false)}
               onResultClick={handleSearchResultClick}
+              onCreateNew={handleCreateNewFromQuery}
             />
           </Suspense>
         </div>

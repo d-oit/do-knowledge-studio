@@ -7,37 +7,29 @@ interface SyncToggleProps {
 }
 
 const SyncToggle: React.FC<SyncToggleProps> = ({
-  tooltip = "Sync mind map with knowledge graph"
+  tooltip = 'Sync mind map with knowledge graph',
 }) => {
   const { syncEnabled, setSyncEnabled } = useGraphSyncStore();
 
   return (
     <button
+      type="button"
       onClick={() => setSyncEnabled(!syncEnabled)}
-      className={`filter-chip ${syncEnabled ? 'active' : ''}`}
+      className={`filter-chip sync-toggle ${syncEnabled ? 'active' : ''}`}
       aria-pressed={syncEnabled}
+      aria-label={`${syncEnabled ? 'Disable' : 'Enable'} graph sync`}
       title={tooltip}
-      aria-label={tooltip}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 'var(--space-2)',
-        position: 'relative'
-      }}
     >
-      <RefreshCw size={14} className={syncEnabled ? 'animate-spin-slow' : ''} />
-      {syncEnabled ? 'Sync On' : 'Sync Off'}
+      <RefreshCw
+        size={14}
+        className={syncEnabled ? 'sync-icon-on' : 'sync-icon-off'}
+        aria-hidden="true"
+      />
+      <span className="sync-toggle-label">
+        {syncEnabled ? 'Sync on' : 'Sync off'}
+      </span>
       {syncEnabled && (
-        <span style={{
-          position: 'absolute',
-          top: '2px',
-          right: '2px',
-          width: '6px',
-          height: '6px',
-          background: 'var(--status-success)',
-          borderRadius: '50%',
-          boxShadow: '0 0 4px var(--status-success)'
-        }} />
+        <span className="sync-indicator-dot" aria-hidden="true" />
       )}
     </button>
   );
