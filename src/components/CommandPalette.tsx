@@ -52,7 +52,8 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onView
 
   useEffect(() => {
     if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 10);
+      const timer = setTimeout(() => inputRef.current?.focus(), 10);
+      return () => clearTimeout(timer);
     }
   }, [isOpen]);
 
