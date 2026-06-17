@@ -288,7 +288,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                     key={res.id}
                     id={`command-item-${idx}`}
                     className={`command-item ${selectedIndex === idx ? 'selected' : ''}`}
-                    onMouseEnter={() => safeSetIndex(idx)}
+                    onMouseEnter={() => { safeSetIndex(idx); }}
                     onClick={executeSelected}
                     role="option"
                     tabIndex={-1}
