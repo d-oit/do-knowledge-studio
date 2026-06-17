@@ -10,29 +10,32 @@ export const stripHtml = (html: string): string => {
 };
 
 /**
- * Standard English stop words.
+ * Pre-compiled regex for standard English stop words.
  */
-const STOP_WORDS = new Set([
-  'a', 'an', 'the', 'and', 'or', 'but', 'if', 'then', 'else', 'when',
-  'at', 'from', 'by', 'for', 'with', 'about', 'against', 'between',
-  'into', 'through', 'during', 'before', 'after', 'above', 'below',
-  'to', 'up', 'down', 'in', 'out', 'on', 'off', 'over', 'under',
-  'again', 'further', 'once', 'here', 'there', 'where', 'why', 'how',
-  'all', 'any', 'both', 'each', 'few', 'more', 'most', 'other', 'some',
-  'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than',
-  'too', 'very', 'can', 'will', 'just', 'should', 'now', 'is', 'are',
-  'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do',
-  'does', 'did', 'of', 'for', 'this'
-]);
+const STOP_WORDS_REGEX = new RegExp(
+  `\\b(${[
+    'a', 'an', 'the', 'and', 'or', 'but', 'if', 'then', 'else', 'when',
+    'at', 'from', 'by', 'for', 'with', 'about', 'against', 'between',
+    'into', 'through', 'during', 'before', 'after', 'above', 'below',
+    'to', 'up', 'down', 'in', 'out', 'on', 'off', 'over', 'under',
+    'again', 'further', 'once', 'here', 'there', 'where', 'why', 'how',
+    'all', 'any', 'both', 'each', 'few', 'more', 'most', 'other', 'some',
+    'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than',
+    'too', 'very', 'can', 'will', 'just', 'should', 'now', 'is', 'are',
+    'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do',
+    'does', 'did', 'of', 'for', 'this'
+  ].join('|')})\\b`,
+  'gi'
+);
 
 /**
- * Removes stop words from a string.
+ * Removes stop words from a string using a pre-compiled regex for performance.
  */
 export const removeStopWords = (text: string): string => {
   return text
-    .split(/\s+/)
-    .filter(word => word && !STOP_WORDS.has(word.toLowerCase()))
-    .join(' ');
+    .replace(STOP_WORDS_REGEX, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 };
 
 /**
@@ -44,7 +47,7 @@ export const compressText = (text: string, maxLength: number = 200): string => {
 
   const cleanText = stripHtml(text);
   const withoutStopWords = removeStopWords(cleanText);
-  const trimmed = withoutStopWords.trim().replace(/\s+/g, ' ');
+  const trimmed = withoutStopWords.trim();
 
   if (trimmed.length <= maxLength) return trimmed;
 
