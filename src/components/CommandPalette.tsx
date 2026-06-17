@@ -84,10 +84,10 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
       });
       return;
     }
-    queueMicrotask(() => setIsSearching(true));
+    queueMicrotask(() => { setIsSearching(true); });
     const controller = new AbortController();
     const timer = setTimeout(() => {
-      void (async () => {
+      (async () => {
         try {
           const res = await searchKnowledge(query);
           if (controller.signal.aborted) return;
@@ -103,7 +103,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
             setIsSearching(false);
           }
         }
-      })();
+      })().catch(() => undefined);
     }, 150);
     return () => {
       clearTimeout(timer);
@@ -263,11 +263,11 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                   key={cmd.id}
                   id={`command-item-${i}`}
                   className={`command-item ${selectedIndex === i ? 'selected' : ''}`}
-                  onMouseEnter={() => safeSetIndex(i)}
+                  onMouseEnter={() => { safeSetIndex(i); }}
                   onClick={executeSelected}
                   role="option"
                   tabIndex={-1}
-                  onKeyDown={e => e.key === 'Enter' && executeSelected()}
+                  onKeyDown={(e) => { if (e.key === 'Enter') executeSelected(); }}
                   aria-selected={selectedIndex === i}
                 >
                   <cmd.icon size={18} className="item-icon" aria-hidden="true" />

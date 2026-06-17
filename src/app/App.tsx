@@ -249,7 +249,7 @@ const AppContent: React.FC = () => {
             <Suspense fallback={<AISkeleton />}>
               <ErrorBoundary featureName="Chat" onRetry={() => window.location.reload()}>
                 <Chat
-                  onCreateEntity={() => setCurrentView('editor')}
+                  onCreateEntity={() => { setCurrentView('editor'); }}
                   onCitationClick={(id) => {
                     setEditingEntityId(id);
                     setEditorDraftTitle(null);

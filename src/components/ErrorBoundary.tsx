@@ -49,9 +49,9 @@ class ErrorBoundary extends Component<Props, State> {
       .filter(Boolean)
       .join('\n\n');
     try {
-      await navigator.clipboard?.writeText(text);
+      await navigator.clipboard.writeText(text);
     } catch {
-      // Clipboard not available; user can still see the message.
+      // Clipboard write rejected (permission, no API). Not a user-facing error.
     }
   };
 
@@ -105,7 +105,7 @@ class ErrorBoundary extends Component<Props, State> {
             <button
               type="button"
               className="btn-secondary"
-              onClick={() => { void this.copyDetails(); }}
+              onClick={() => { this.copyDetails().catch(() => undefined); }}
             >
               Copy error details
             </button>

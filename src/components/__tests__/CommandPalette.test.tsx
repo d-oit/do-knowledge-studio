@@ -66,10 +66,10 @@ describe('CommandPalette', () => {
       />
     );
     const overlay = document.querySelector('.command-palette-overlay');
-    expect(overlay).not.toBeNull();
+    if (!overlay) throw new Error('overlay not found');
     // The overlay uses mousedown (not click) so it closes on press
     // even if the user begins a drag-to-text-select gesture.
-    fireEvent.mouseDown(overlay!);
+    fireEvent.mouseDown(overlay);
     expect(mockOnClose).toHaveBeenCalled();
   });
 

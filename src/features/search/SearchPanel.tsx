@@ -334,7 +334,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
         {!isSearching && query.length > 1 && results.length === 0 && (
           <NoResultsState
           query={query}
-          onClear={() => setQuery('')}
+          onClear={() => { setQuery(''); }}
           onCreateNew={onCreateNew}
         />
         )}

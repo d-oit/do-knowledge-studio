@@ -65,7 +65,7 @@ const Editor: React.FC<EditorProps> = ({
 
   useEffect(() => {
     perf.mark('editor-mount');
-    repository.getAllEntities().then(setAllEntities).catch(err => logger.error('Failed to load entities for mentions', err));
+    repository.getAllEntities().then(setAllEntities).catch((err: unknown) => { logger.error('Failed to load entities for mentions', err); });
     perf.measure('editor-ready', 'editor-mount');
   }, []);
 
@@ -145,11 +145,10 @@ const Editor: React.FC<EditorProps> = ({
           metadata: {}
         });
 
-        // Enqueue external URL fetch for auto-hydration if source URL provided
-        if (sourceUrl.trim()) {
+        if (sourceUrl.trim() && entity.id) {
           jobCoordinator.enqueue('external-fetch', entity.id, {
             url: sourceUrl.trim(),
-            entityId: entity.id!,
+            entityId: entity.id,
           });
           logger.info('Enqueued external fetch for entity auto-hydration', { entityId: entity.id, url: sourceUrl });
         }
@@ -186,19 +185,23 @@ const Editor: React.FC<EditorProps> = ({
         });
 
         for (const claim of claims) {
-          statements.push({
-            sql: `INSERT INTO claims (entity_id, statement, confidence, evidence, source, verification_status)
-                  VALUES (?, ?, ?, ?, ?, ?)`,
-            bind: [entity.id!, claim.statement, 1.0, 'Extracted from editor', claim.source, claim.status]
-          });
+          if (entity.id) {
+            statements.push({
+              sql: `INSERT INTO claims (entity_id, statement, confidence, evidence, source, verification_status)
+                    VALUES (?, ?, ?, ?, ?, ?)`,
+              bind: [entity.id, claim.statement, 1.0, 'Extracted from editor', claim.source, claim.status]
+            });
+          }
         }
 
         for (const mention of mentions) {
-          statements.push({
-            sql: `INSERT INTO links (source_id, target_id, relation, metadata)
-                  VALUES (?, ?, ?, ?)`,
-            bind: [entity.id!, mention.id, 'mentions', JSON.stringify({ name: mention.name })]
-          });
+          if (entity.id) {
+            statements.push({
+              sql: `INSERT INTO links (source_id, target_id, relation, metadata)
+                    VALUES (?, ?, ?, ?)`,
+              bind: [entity.id, mention.id, 'mentions', JSON.stringify({ name: mention.name })]
+            });
+          }
         }
 
         if (statements.length > 0) {
@@ -301,7 +304,7 @@ const Editor: React.FC<EditorProps> = ({
           <CheckCircle size={16} aria-hidden="true" /> Claim
         </button>
         <div className="toolbar-spacer" />
-        <button type="button" onClick={() => void handleSave()} className="primary">{editingEntityId ? 'Update Entity' : 'Save to DB'}</button>
+        <button type="button" onClick={() => { handleSave().catch(() => undefined); }} className="primary">{editingEntityId ? 'Update Entity' : 'Save to DB'}</button>
         {editingEntityId && (
           <button type="button" onClick={handleCancelEdit} aria-label="Cancel editing">
             Cancel
@@ -311,7 +314,7 @@ const Editor: React.FC<EditorProps> = ({
       <EditorContent editor={editor} className="tiptap-content" />
 
       <button
-        onClick={() => setShowAdvanced(!showAdvanced)}
+        onClick={() => { setShowAdvanced(!showAdvanced); }}
         className="advanced-toggle"
         aria-expanded={showAdvanced}
         aria-label="Toggle advanced options"
@@ -342,7 +345,7 @@ const Editor: React.FC<EditorProps> = ({
             {backlinks.map(bl => (
               <button
                 key={bl.id}
-                onClick={() => onEditEntity?.(bl.id!)}
+                onClick={() => { if (bl.id) onEditEntity?.(bl.id); }}
                 className="backlink-chip"
                 style={{
                   padding: '4px 10px',
@@ -400,7 +403,7 @@ const Editor: React.FC<EditorProps> = ({
                         const entity = allEntities[virtualItem.index];
                         if (!entity) return null;
                         return (
-                          <div
+                          <button
                             key={entity.id}
                             className="menu-item"
                             style={{
@@ -410,14 +413,19 @@ const Editor: React.FC<EditorProps> = ({
                               width: '100%',
                               height: `${virtualItem.size}px`,
                               transform: `translateY(${virtualItem.start}px)`,
+                              border: 'none',
+                              background: 'none',
+                              cursor: 'pointer',
+                              textAlign: 'left',
+                              fontSize: 'inherit',
+                              fontFamily: 'inherit',
+                              padding: '4px 12px',
                             }}
-                            onClick={() => insertMention(entity)}
-                            role="button"
-                            tabIndex={0}
+                            onClick={() => { insertMention(entity); }}
                             onKeyDown={(ev) => { if (ev.key === 'Enter') insertMention(entity); }}
                           >
                             {entity.name}
-                          </div>
+                          </button>
                         );
                       })}
                     </div>

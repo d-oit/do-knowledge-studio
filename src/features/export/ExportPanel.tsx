@@ -15,8 +15,8 @@ const ExportPanel: React.FC = () => {
   // accumulate stale "Exported!" notes from previous runs.
   useEffect(() => {
     if (!success) return;
-    const timer = setTimeout(() => setSuccess(null), 4000);
-    return () => clearTimeout(timer);
+    const timer = setTimeout(() => { setSuccess(null); }, 4000);
+    return () => { clearTimeout(timer); };
   }, [success]);
 
   const downloadFile = (content: string, fileName: string, contentType: string) => {

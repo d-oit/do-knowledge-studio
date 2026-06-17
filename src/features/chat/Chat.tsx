@@ -5,6 +5,7 @@ import { logger } from '../../lib/logger';
 import { Search, Send, ChevronDown, ChevronUp, Database, ShieldCheck } from 'lucide-react';
 
 interface Message {
+  id: string;
   role: 'user' | 'assistant';
   content: string;
   citations?: RankedResult[];
@@ -29,7 +30,7 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity, onCitationClick }) => {
     if (debounceRef.current) return;
     debounceRef.current = setTimeout(() => { debounceRef.current = null; }, 300);
 
-    const userMsg: Message = { role: 'user', content: input };
+    const userMsg: Message = { id: crypto.randomUUID(), role: 'user', content: input };
     setMessages(prev => [...prev, userMsg]);
     const currentInput = input;
     setInput('');
@@ -46,13 +47,14 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity, onCitationClick }) => {
       }
 
       setMessages(prev => [...prev, {
+        id: crypto.randomUUID(),
         role: 'assistant',
         content: response,
         citations: results
       }]);
     } catch (err) {
       logger.error('Ask retrieval failed', err);
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I encountered an issue while searching your local library.' }]);
+      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: 'Sorry, I encountered an issue while searching your local library.' }]);
     } finally {
       setIsSearching(false);
     }
@@ -111,7 +113,7 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity, onCitationClick }) => {
                   </button>
 
                   {showSources[i] && (
-                    <div key={`citation-drawer-${i}-${m.id ?? i}`} id={`citations-${i}`} className="citation-cards motion-rise-in">
+                    <div key={`citations-${m.id}`} id={`citations-${i}`} className="citation-cards motion-rise-in">
                       {m.citations.map((cite) => (
                         <button
                           key={cite.id}
