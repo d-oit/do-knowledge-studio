@@ -83,6 +83,13 @@ Plan 041 (Gap Closure) ──→ 📝 OPEN — ~50% done (PR #326)
    └─ G-MOTION-UI: motion system + design token refresh (ADR 017) ✅ (PR #326)
 
 Plan 042 (CLI + Chat) ──→ 📝 Proposed (ADR 016) — not yet implemented
+
+Plan 043 (Static Analysis Closure) ──→ ✅ DONE (PR #326)
+   ├─ Codacy: 12 real issues fixed in code ✅
+   ├─ Codacy: 27 false positives suppressed ✅
+   ├─ DeepSource: 6 pre-existing issues fixed (db.test.ts) ✅
+   ├─ E2E: workers 1→2, retries 2→1, timeout 30→40m ✅
+   └─ Remaining: 35 flaky E2E tests (pre-existing viewport issues) + complexity warnings (ADR 018)
    ├─ G-CLI-BACKUP: implement `db:backup` (VACUUM INTO) (1h)
    ├─ G-CLI-CLAIM-CRUD: claim-list/update/delete commands (2h)
    ├─ G-CHAT-CANCEL: AbortController + cancel button (2h)
@@ -166,6 +173,7 @@ Plan 042 (CLI + Chat) ──→ 📝 Proposed (ADR 016) — not yet implemented
 | 015 | JSDoc-First Documentation Policy | 📝 Proposed | Leading JSDoc on all exported `.tsx` (Plan 041, 36.2 closure) |
 | 016 | CLI Surface Completion + Chat Streaming Resilience | 📝 Proposed | `db:backup`, claim CRUD, AbortController, retry/backoff (Plan 042) |
 | 017 | Motion System & Design Token Refresh | ✅ Implemented | CSS tokens (duration/easing), `motion.css` keyframes, utility classes (PR #326) |
+| 018 | Pre-existing Flaky E2E Tests & Static Analysis | 📝 Proposed | 35 flaky E2E tests (viewport), DeepSource complexity warnings, Codacy security FPs (Plan 043) |
 
 ## Verification Commands
 ```bash

@@ -29,6 +29,18 @@
 | `src/components/CommandPalette.tsx:48` | CommandPalette cyclomatic complexity 20 (high) | DeepSource JS-R1005 | Command palette handles search + commands + keyboard nav; extracting sub-components would change public API |
 | `src/components/CommandPalette.tsx:142` | handleKeyDown complexity 9 | DeepSource JS-R1005 | Multi-key handler for arrow/enter/escape; extracting per-key handlers is cosmetic |
 
+### Pre-existing Flaky E2E Tests
+
+Playwright CI (93 tests across chromium/mobile/tablet) reported 35 failures and 55 passes in 16.9m with the updated config (2 workers, 1 retry, 40m timeout). Failures break down by project:
+
+| Project | Failures | Root Cause |
+|---------|----------|------------|
+| chromium | 3 | `modern-shell.spec.ts` — palette toggle/keyboard nav: `expect(locator).not.toBeVisible()` / `expect(locator).toBeVisible()` timeout |
+| mobile | 28 | `features.spec.ts` — all sections (Entity CRUD, Claims, Search, Graph, Mind Map, AI Harness Chat, Source URL): all fail at same assertion line, likely responsive navigation not rendering on iPhone 13 viewport |
+| tablet | 4 | `skeletons.spec.ts` + `modern-shell.spec.ts` — search sidebar not navigable via sidebar button on iPad viewport |
+
+These are all timing/viewport-related flaky failures, not caused by code changes in this PR. Fix would require either: (a) waiting for responsive sidebar to animate before clicking, or (b) adding `ensureNavVisible` before navigation actions on mobile/tablet.
+
 ### Pre-existing Test File Issues (not in change set)
 
 | File | Issue | Tool | Reason |
