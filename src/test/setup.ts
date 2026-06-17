@@ -25,3 +25,12 @@ const indexedDB = {
 };
 
 vi.stubGlobal('indexedDB', indexedDB);
+
+// Mock scrollIntoView which is missing in JSDOM\nif (typeof window !== "undefined") {\n  window.Element.prototype.scrollIntoView = vi.fn();\n}
+
+// Mock scrollIntoView which is missing in JSDOM\nif (typeof window !== "undefined") {\n  window.Element.prototype.scrollIntoView = vi.fn();\n}
+
+// Mock scrollIntoView which is missing in JSDOM
+if (typeof window !== 'undefined') {
+  window.Element.prototype.scrollIntoView = vi.fn();
+}
