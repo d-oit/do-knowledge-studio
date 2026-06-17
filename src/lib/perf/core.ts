@@ -1,3 +1,5 @@
+import { logger } from '../logger';
+
 const PERF_PREFIX = 'perf::';
 
 export interface PerfEntry {
@@ -51,8 +53,8 @@ export const perf = {
     if (!isDev) return;
     try {
       performance.mark(`${PERF_PREFIX}${name}`);
-    } catch {
-      // Performance API unavailable (e.g. SSR, older browsers)
+    } catch (err) {
+      logger.debug('Performance API unavailable for mark', { name, error: err });
     }
   },
 
@@ -74,7 +76,8 @@ export const perf = {
         return measure.duration;
       }
       return null;
-    } catch {
+    } catch (err) {
+      logger.debug('Performance API unavailable for measure', { name, error: err });
       return null;
     }
   },
@@ -85,8 +88,8 @@ export const perf = {
     try {
       performance.clearMarks();
       performance.clearMeasures();
-    } catch {
-      // Performance API unavailable
+    } catch (err) {
+      logger.debug('Performance API unavailable for clear', err);
     }
   },
 

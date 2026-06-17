@@ -21,7 +21,7 @@ describe('extractEntities', () => {
       chat: vi.fn().mockResolvedValue(mockResponse)
     };
 
-    const result = await extractEntities('Genrich Altshuller invented TRIZ.', mockProvider as LLMProvider, 'test-model');
+    const result = await extractEntities('Genrich Altshuller invented TRIZ.', mockProvider, 'test-model');
 
     expect(result.entities).toHaveLength(2);
     expect(result.entities[0].name).toBe('TRIZ');
@@ -43,7 +43,7 @@ describe('extractEntities', () => {
       chat: vi.fn().mockResolvedValue(mockResponse)
     };
 
-    const result = await extractEntities('React is a UI library.', mockProvider as LLMProvider, 'test-model');
+    const result = await extractEntities('React is a UI library.', mockProvider, 'test-model');
 
     expect(result.entities).toHaveLength(1);
     expect(result.entities[0].name).toBe('React');
@@ -59,7 +59,7 @@ describe('extractEntities', () => {
       chat: vi.fn().mockResolvedValue(mockResponse)
     };
 
-    const result = await extractEntities('Some content', mockProvider as LLMProvider, 'test-model');
+    const result = await extractEntities('Some content', mockProvider, 'test-model');
 
     expect(result.entities).toEqual([]);
     expect(result.relationships).toEqual([]);

@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
 import { generateSiteHtml, generateMarkdownExport, generateJsonExport, generatePrintHtml } from '../export-core';
 import type { ExportData } from '../export-core';

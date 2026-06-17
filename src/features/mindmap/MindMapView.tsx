@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import MindElixir, { type MindElixirData, type MindElixirInstance } from 'mind-elixir';
+import MindElixir, { type MindElixirInstance } from 'mind-elixir';
 import { useGraphSyncStore } from '../../store/graph-sync-store';
 import { setupMindMapSyncListeners } from './sync-adapter';
 import type { SharedNode } from '../../store/graph-sync-types';
@@ -8,6 +8,7 @@ import { repository } from '../../db/repository';
 import { logger } from '../../lib/logger';
 import { upsertToSearchIndex } from '../../lib/search';
 import { perf } from '../../lib/perf';
+import { buildTree as buildTreePure, collectRelations } from '../../lib/mindmap-tree';
 import SyncToggle from '../../components/SyncToggle';
 import { ChevronDown, Layers, Filter, Info, ChevronRight, Plus, GitBranch, Pencil, Trash2, Image } from 'lucide-react';
 
@@ -20,31 +21,6 @@ interface Props {
   entities: Entity[];
   links: Link[];
   onEntityClick?: (entityId: string) => void;
-}
-
-function buildTree(
-  currentId: string,
-  depth: number,
-  maxDepth: number,
-  entities: Entity[],
-  links: Link[],
-  relationFilter: string,
-): MindElixirData['nodeData'] | null {
-  const entity = entities.find(e => e.id === currentId);
-  if (!entity || depth > maxDepth) return null;
-
-  const childrenLinks = links.filter(l =>
-    l.source_id === currentId &&
-    (relationFilter === 'all' || l.relation === relationFilter)
-  );
-
-  return {
-    id: entity.id || `node-${Math.random()}`,
-    topic: entity.name,
-    children: childrenLinks
-      .map(l => buildTree(l.target_id, depth + 1, maxDepth, entities, links, relationFilter))
-      .filter((n): n is MindElixirData['nodeData'] => n !== null)
-  };
 }
 
 function addAriaToNodes(container: HTMLElement): void {
@@ -89,16 +65,13 @@ const MindMapView: React.FC<Props> = ({
     [entities, rootId, propsRootEntity]
   );
 
-  const uniqueRelations = useMemo(() => {
-    const relations = new Set(links.map(l => l.relation));
-    return ['all', ...Array.from(relations)];
-  }, [links]);
+  const uniqueRelations = useMemo(() => collectRelations(links), [links]);
 
   const isLargeMap = entities.length > EXPENSIVE_RECALC_THRESHOLD;
 
   const treeData = useMemo(() => {
     const effectiveDepth = collapsedByDefault ? Math.min(maxDepth, 1) : maxDepth;
-    return buildTree(rootId, 0, effectiveDepth, entities, links, relationFilter) || { id: 'root', topic: 'No data' };
+    return buildTreePure({ rootId, entities, links, maxDepth: effectiveDepth, relationFilter }) || { id: 'root', topic: 'No data' };
   }, [rootId, entities, links, maxDepth, relationFilter, collapsedByDefault]);
 
   // Only recreate MindElixir instance when treeData actually changes
@@ -322,7 +295,7 @@ const MindMapView: React.FC<Props> = ({
 
   return (
     <div className="graph-container">
-      <div className="viz-toolbar">
+      <div className="viz-toolbar motion-stagger-2" key={`mindmap-toolbar-${rootId}-${relationFilter}`}>
         <div className="filter-group" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
           <ChevronDown size={16} className="text-muted" />
           <select
@@ -438,7 +411,7 @@ const MindMapView: React.FC<Props> = ({
         </div>
       </div>
 
-      <div className="viz-container" style={{ flex: 1, minHeight: '600px' }}>
+      <div className="viz-container motion-fade-in" key={`mindmap-canvas-${rootId}`} style={{ flex: 1, minHeight: '600px' }}>
         <div ref={containerRef} className="viz-canvas" />
 
         <div className="sr-only" aria-live="polite">
