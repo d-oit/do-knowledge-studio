@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom/vitest';
 import { vi } from 'vitest';
 
-// Mock IndexedDB for happy-dom environment
+// Mock IndexedDB for happy-dom/jsdom environment
 const indexedDB = {
   open: vi.fn().mockReturnValue({
     onupgradeneeded: null,
@@ -26,11 +26,7 @@ const indexedDB = {
 
 vi.stubGlobal('indexedDB', indexedDB);
 
-// Mock scrollIntoView which is missing in JSDOM\nif (typeof window !== "undefined") {\n  window.Element.prototype.scrollIntoView = vi.fn();\n}
-
-// Mock scrollIntoView which is missing in JSDOM\nif (typeof window !== "undefined") {\n  window.Element.prototype.scrollIntoView = vi.fn();\n}
-
-// Mock scrollIntoView which is missing in JSDOM
+// Mock scrollIntoView which is missing in JSDOM/happy-dom
 if (typeof window !== 'undefined') {
   window.Element.prototype.scrollIntoView = vi.fn();
 }

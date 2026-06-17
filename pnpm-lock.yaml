@@ -66,6 +66,9 @@ importers:
       happy-dom:
         specifier: ^20.10.4
         version: 20.10.4
+      jsdom:
+        specifier: ^29.1.1
+        version: 29.1.1(@noble/hashes@1.8.0)
       jszip:
         specifier: ^3.10.1
         version: 3.10.1
@@ -166,9 +169,6 @@ importers:
       graphology-types:
         specifier: ^0.24.8
         version: 0.24.8
-      jsdom:
-        specifier: ^29.1.1
-        version: 29.1.1(@noble/hashes@1.8.0)
       picomatch:
         specifier: ^4.0.4
         version: 4.0.4
