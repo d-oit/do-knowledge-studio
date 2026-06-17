@@ -1,8 +1,8 @@
 # Plans Index — do-knowledge-studio
 
 **Generated**: 2026-05-27  
-**Updated**: 2026-06-12  
-**Source**: 6-agent parallel swarm analysis + GitHub issue audit (#168–#240) + open issues (#280-#289) + all PRs merged (#292-#307)  
+**Updated**: 2026-06-17  
+**Source**: 6-agent parallel swarm analysis + GitHub issue audit (#168–#240) + open issues (#280-#289) + all PRs merged (#292-#307) + PR #327 E2E fixes  
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
 ## Quick Reference — Active Plans
