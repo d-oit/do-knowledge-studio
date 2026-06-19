@@ -59,15 +59,14 @@ test.describe('Library View', () => {
     await expect(page.locator('text=Library Test Entity')).not.toBeVisible();
   });
 
-  // TODO: Fix navigation from Library to Editor - clicking entity doesn't trigger view switch
-  test.skip('should navigate to editor when clicking an entity', async ({ page }) => {
+  test('should navigate to editor when clicking an entity', async ({ page }) => {
     await ensureNavVisible(page);
     const libBtn = page.locator('.nav-button').filter({ hasText: 'Library', visible: true }).first();
     await libBtn.click();
     await expect(page.locator('h2:has-text("Library")')).toBeVisible();
 
-    // Click the entity row (click on the entity name text within the virtualized list)
-    await page.locator('.entity-name-text', { hasText: 'Library Test Entity' }).click();
+    // Click the entity row in the virtualized list
+    await page.locator('.entity-list-row', { hasText: 'Library Test Entity' }).click();
 
     // Should be in Editor now
     await expect(page.locator('.nav-button[aria-current="page"]')).toHaveText('Editor', { timeout: 10000 });
