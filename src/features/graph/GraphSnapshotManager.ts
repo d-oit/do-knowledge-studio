@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { IRepository } from '../../db/repository';
 import { logger } from '../../lib/logger';
+import { validateSnapshotData } from './graph-schemas';
 
 export function useGraphSnapshotManager(repository: IRepository) {
   const [snapshotMode, setSnapshotMode] = useState(false);
@@ -26,9 +27,14 @@ export function useGraphSnapshotManager(repository: IRepository) {
     nodes: { id: string; label: string }[],
     edges: { id: string; source: string; target: string; label?: string }[]
   ) => {
-    setSnapshotData({ nodes, edges });
+    const validated = validateSnapshotData({ nodes, edges });
+    if (!validated) {
+      logger.warn('Invalid snapshot data rejected', { nodeCount: nodes.length, edgeCount: edges.length });
+      return;
+    }
+    setSnapshotData(validated);
     setSnapshotMode(true);
-    logger.info(`Snapshot loaded with ${nodes.length} nodes, ${edges.length} edges`);
+    logger.info(`Snapshot loaded with ${validated.nodes.length} nodes, ${validated.edges.length} edges`);
   }, []);
 
   const handleExitSnapshot = useCallback(() => {

@@ -1,3 +1,5 @@
+import { logger } from '../logger';
+
 const ENCRYPTION_KEY_STORAGE = 'dks:llm-encryption-key';
 const ENCRYPTED_PREFIX = 'enc:v1:';
 
@@ -16,8 +18,8 @@ async function getKey(): Promise<CryptoKey> {
         true,
         ['encrypt', 'decrypt'],
       );
-    } catch {
-      // Key is corrupted, generate a new one
+    } catch (err) {
+      logger.warn('Encryption key is corrupted, generating a new one', err);
       localStorage.removeItem(ENCRYPTION_KEY_STORAGE);
     }
   }

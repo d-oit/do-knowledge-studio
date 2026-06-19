@@ -1,6 +1,6 @@
 import { logger } from './logger';
 
-const BLOCKED_SCHEMES = ['javascript:', 'data:', 'vbscript:', 'file:'];
+const BLOCKED_SCHEMES = ['javascript:', 'data:', 'vbscript:', 'file:', 'ftp:'];
 
 function isPrivateIP(hostname: string): boolean {
   // Normalize hostname: lowercase, strip trailing dot, and strip IPv6 brackets
@@ -181,6 +181,7 @@ export const resolveUrl = async (url: string): Promise<ResolvedContent> => {
   try {
     parsed = new URL(url);
   } catch {
+    logger.warn('Failed to parse URL', { url });
     throw new Error(`Invalid URL: ${url}`);
   }
 
