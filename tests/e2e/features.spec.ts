@@ -60,7 +60,7 @@ test.describe('Search', () => {
     const btn = page.locator('.nav-button').filter({ hasText: 'Chat', visible: true }).first();
     await btn.click();
 
-    await expect(page.locator('.ask-surface')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('.chat-view')).toBeVisible({ timeout: 15000 });
 
     await ensureNavVisible(page);
     await expect(page.locator('.nav-button').filter({ hasText: 'Chat', visible: true }).first()).toHaveAttribute('aria-current', 'page', { timeout: 10000 });
@@ -69,7 +69,7 @@ test.describe('Search', () => {
     await input.fill('test');
     await page.keyboard.press('Enter');
 
-    await expect(page.locator('.message-wrapper').first()).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('.message').first()).toBeVisible({ timeout: 15000 });
   });
 });
 

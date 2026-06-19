@@ -1,8 +1,8 @@
 # Plans Index — do-knowledge-studio
 
 **Generated**: 2026-05-27  
-**Updated**: 2026-06-12
-**Source**: 6-agent parallel swarm analysis + GitHub issue audit (#168–#240) + open issues (#280-#289) + all PRs merged (#292-#307)
+**Updated**: 2026-06-18
+**Source**: 6-agent parallel swarm analysis + GitHub issue audit (#168–#240) + open issues (#280-#289) + all PRs merged (#292-#307) + 3-agent UI/UX/feature-gap analysis (plan 041, ADRs 013–016)
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
 ## Quick Reference — Active Plans
@@ -16,6 +16,7 @@
 | **P1** | [37-security-quality-hardening.md](37-security-quality-hardening.md) | API key encryption, SSRF fix, migration fix, snapshot validation | 8-12h | 📝 OPEN | #238–#240 |
 | **P0** | [033-goap-open-issues-prs-2026-06-11.md](033-goap-open-issues-prs-2026-06-11.md) | Close 6 open issues + wire missing plan features | 8-12h | ✅ MERGED | #305 |
 | **P1** | [040-goap-export-pipeline-and-pr-cleanup-2026-06-16.md](040-goap-export-pipeline-and-pr-cleanup-2026-06-16.md) | Complete export pipeline (PDF, JSON schema v1.0, MD round-trip) + resolve red PRs | 12-18h | ✅ MERGED | #289 |
+| **P0** | [041-goap-ui-ux-modernization-and-feature-gaps-2026-06-18.md](041-goap-ui-ux-modernization-and-feature-gaps-2026-06-18.md) | UI modernization (semantic tokens, primitives), full responsiveness (dynamic viewport, 44px targets, mobile viz controls, overlay a11y), feature-gap closure (import persistence, tags, version history, notes search, chat unification) | 90-130h | 📝 OPEN | #232–#236, #227, #231 |
 
 ## Quick Reference — Completed Plans
 
@@ -172,30 +173,13 @@ Wave 2 (P1 — PARALLEL) ──→ 📝 OPEN
 | 007 | do-web-doc-resolver Integration | 📝 Proposed | Future work |
 | 008 | Rolldown Circular Dependency Resolution | ✅ Implemented | #209 — core.ts extraction, const ordering |
 | 009 | Staged ESLint Rule Enforcement | ✅ Implemented | #209 — typed workers, void-wrap, vi.mocked |
-
-## Verification Commands
-```bash
-# Check all plans exist
-ls -1 plans/*.md | wc -l
-# Should return 40+
-
-# Verify no QUICKSTART.md references
-grep -r "QUICKSTART" . --include="*.sh" --include="*.md" --include="*.yml" --include="*.yaml"
-
-# Run quality gates
-pnpm test && pnpm run typecheck && pnpm run lint
-
-# Check for type safety violations
-grep -r "as any" src/ --include="*.ts" --include="*.tsx" || echo "✅ No 'as any'"
-grep -r "as unknown as" src/ --include="*.ts" --include="*.tsx" || echo "✅ No 'as unknown as'"
-
-# Check for 500 LOC violations
-find src/ -name "*.ts" -o -name "*.tsx" | xargs wc -l | awk '$1 > 500 {print $0}'
-```
-ignment |
-| 007 | do-web-doc-resolver Integration | 📝 Proposed | Future work |
-| 008 | Rolldown Circular Dependency Resolution | ✅ Implemented | #209 — core.ts extraction, const ordering |
-| 009 | Staged ESLint Rule Enforcement | ✅ Implemented | #209 — typed workers, void-wrap, vi.mocked |
+| 010 | Export Schema v1.0 | ✅ Implemented | KnowledgeStudioExport interface + Zod validators |
+| 011 | CLI Command Extraction | ✅ Implemented | cli/commands/ split |
+| 012 | PDF Export via @react-pdf/renderer | ✅ Implemented | Single/multi-note PDF, dynamic import |
+| 013 | Semantic Design Tokens & Theme Coverage | 📝 Proposed | Fix undefined tokens, status/entity/graph token families, reduced-motion → plan 041 |
+| 014 | Overlay/Modal Accessibility Primitive | 📝 Proposed | Shared `<Overlay>` (focus-trap, Escape, scroll-lock, dialog roles) → plan 041 |
+| 015 | Responsive & Visualization Theming | 📝 Proposed | Dynamic viewport, 44px targets, viz CSS-token bridge, mobile controls → plan 041 |
+| 016 | Feature-Gap Closure | 📝 Proposed | Import persistence, tags, version history, notes search, chat unification → plan 041 |
 
 ## Verification Commands
 ```bash

@@ -438,7 +438,7 @@ const MindMapView: React.FC<Props> = ({
         </div>
       </div>
 
-      <div className="viz-container" style={{ flex: 1, minHeight: '600px' }}>
+      <div className="viz-container" style={{ flex: 1, minHeight: 'clamp(400px, 60vh, 800px)' }}>
         <div ref={containerRef} className="viz-canvas" />
 
         <div className="sr-only" aria-live="polite">

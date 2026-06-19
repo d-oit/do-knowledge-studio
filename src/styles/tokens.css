@@ -103,6 +103,54 @@
   --search-sidebar-width: 300px;
   --header-height: 56px;
   --content-max-width: 960px;
+
+  /* Aliases — canonical names above, these are for backward compat */
+  --border-color: var(--border-default);
+  --surface-primary: var(--bg-surface);
+  --surface-secondary: var(--bg-base);
+
+  /* Semantic Status Tokens */
+  --status-success-bg: #dcfce7;
+  --status-success-border: #10b981;
+  --status-warning-bg: #fef9c3;
+  --status-warning-border: #d97706;
+  --status-danger-bg: #fee2e2;
+  --status-danger-border: #ef4444;
+  --status-info-bg: #dbeafe;
+  --status-info-border: #2563eb;
+
+  /* Entity Type Tokens */
+  --entity-note-bg: #e0f2fe;
+  --entity-note-text: #0369a1;
+  --entity-concept-bg: #fef9c3;
+  --entity-concept-text: #a16207;
+  --entity-person-bg: #fce7f3;
+  --entity-person-text: #be185d;
+  --entity-project-bg: #dcfce7;
+  --entity-project-text: #15803d;
+
+  /* Graph Tokens */
+  --graph-node-default: #94a3b8;
+  --graph-node-selected: var(--interactive-primary);
+  --graph-edge-default: #cbd5e1;
+  --graph-edge-highlighted: var(--interactive-primary);
+
+  /* Control Heights */
+  --control-height-sm: 32px;
+  --control-height-md: 40px;
+  --control-height-lg: 48px;
+
+  /* Z-Index Scale */
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-overlay: 300;
+  --z-modal: 400;
+  --z-popover: 500;
+  --z-toast: 600;
+
+  /* Focus Ring */
+  --focus-ring: 0 0 0 2px var(--bg-surface), 0 0 0 4px var(--border-focus);
 }
 
 /* Theme: App (Default — Professional) */
@@ -207,4 +255,16 @@ h1, h2, h3, h4, h5, h6 {
 ::selection {
   background: var(--interactive-primary);
   color: var(--text-inverse);
+}
+
+/* Reduced Motion Policy */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

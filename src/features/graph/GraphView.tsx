@@ -412,7 +412,7 @@ const GraphView: React.FC<Props> = ({
       <div
         ref={containerRef}
         className="viz-container"
-        style={{ height: '600px', width: '100%' }}
+        style={{ height: 'clamp(400px, 60vh, 800px)', width: '100%' }}
         role="img"
         aria-label={`Knowledge Graph: ${effectiveData.entities.length} entities, ${effectiveData.links.length} connections${selectedNode ? `. Selected: ${entities.find(e => e.id === selectedNode)?.name || selectedNode}` : ''}`}
         tabIndex={-1}
