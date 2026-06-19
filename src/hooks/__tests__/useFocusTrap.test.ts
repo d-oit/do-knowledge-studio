@@ -25,7 +25,7 @@ describe('useFocusTrap', () => {
     const firstButton = container.querySelector('#first') as HTMLElement;
     firstButton.focus();
 
-    const { result } = renderHook(() => {
+    renderHook(() => {
       const ref = useRef<HTMLDivElement>(container);
       useFocusTrap(ref, true);
       return ref;
@@ -39,7 +39,7 @@ describe('useFocusTrap', () => {
     document.body.appendChild(outsideButton);
     outsideButton.focus();
 
-    const { result, rerender } = renderHook(
+    const { rerender } = renderHook(
       ({ active }) => {
         const ref = useRef<HTMLDivElement>(container);
         useFocusTrap(ref, active);
