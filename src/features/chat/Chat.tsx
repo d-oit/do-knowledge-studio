@@ -15,12 +15,12 @@ interface ChatProps {
   onNavigate?: (id: string) => void;
 }
 
-function buildResponse(input: string, results: RankedResult[]): string {
+const buildResponse = (input: string, results: RankedResult[]): string => {
   if (results.length > 0) {
     return `Based on your local records, here's what I found about "${input}". I've cited the most relevant items below.`;
   }
   return `I couldn't find any direct matches in your local library for "${input}". You might want to try different keywords or add more context to your entities.`;
-}
+};
 
 const Chat: React.FC<ChatProps> = ({ onCreateEntity, onNavigate }) => {
   const [input, setInput] = useState('');
@@ -78,8 +78,8 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity, onNavigate }) => {
             <h2>Ask your library</h2>
             <p>Search and synthesize information across your local entities, claims, and notes. Your data never leaves this device.</p>
             <div className="suggested-actions">
-              <button onClick={() => { void handleSend(undefined, 'Summarize my recent projects'); }}>Summarize recent projects</button>
-              <button onClick={() => { void handleSend(undefined, 'Who are the key people?'); }}>Key people</button>
+              <button onClick={() => { handleSend(undefined, 'Summarize my recent projects').catch(console.error); }}>Summarize recent projects</button>
+              <button onClick={() => { handleSend(undefined, 'Who are the key people?').catch(console.error); }}>Key people</button>
               <button onClick={onCreateEntity}>
                 Create new entity
               </button>
@@ -130,7 +130,7 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity, onNavigate }) => {
         )}
       </div>
 
-      <form className="chat-controls" onSubmit={e => { void handleSend(e); }}>
+      <form className="chat-controls" onSubmit={e => { handleSend(e).catch(console.error); }}>
         <div className="input-wrapper">
           <Search size={18} className="search-icon" aria-hidden="true" />
           <input

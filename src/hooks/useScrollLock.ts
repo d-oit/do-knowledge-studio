@@ -4,7 +4,7 @@ import { useEffect } from 'react';
  * Locks document scroll when active.
  * Restores previous scroll position on deactivation.
  */
-export function useScrollLock(active: boolean): void {
+export const useScrollLock = (active: boolean): void => {
   useEffect(() => {
     if (!active) return;
 
@@ -28,4 +28,4 @@ export function useScrollLock(active: boolean): void {
       window.scrollTo(0, scrollY);
     };
   }, [active]);
-}
+};
