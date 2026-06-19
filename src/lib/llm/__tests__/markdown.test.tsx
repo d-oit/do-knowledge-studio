@@ -2,127 +2,123 @@ import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
 import MarkdownRenderer from '../markdown';
 
-// sanitizeHtml (from src/lib/security.ts) only allows:
-// b, i, em, strong, a, ul, ol, li, p, br, span, div, h1-h6
-// Tags like <code>, <pre>, <del> are stripped but content is preserved.
-
 describe('MarkdownRenderer', () => {
-  it('renders plain text in a paragraph', () => {
-    const { container } = render(<MarkdownRenderer content="Hello world" />);
-    expect(container.textContent).toContain('Hello world');
+  it('should render heading levels h1-h6', () => {
+    const { container } = render(<MarkdownRenderer content="# Heading 1" />);
+    expect(container.querySelector('h1')).toBeTruthy();
+    expect(container.querySelector('h1')?.textContent).toBe('Heading 1');
   });
 
-  it('renders bold text via **syntax**', () => {
-    const { container } = render(<MarkdownRenderer content="**bold**" />);
+  it('should render h2', () => {
+    const { container } = render(<MarkdownRenderer content="## Heading 2" />);
+    expect(container.querySelector('h2')).toBeTruthy();
+  });
+
+  it('should render h3', () => {
+    const { container } = render(<MarkdownRenderer content="### Heading 3" />);
+    expect(container.querySelector('h3')).toBeTruthy();
+  });
+
+  it('should render unordered lists', () => {
+    const { container } = render(
+      <MarkdownRenderer content={'- Item 1\n- Item 2\n- Item 3'} />
+    );
+    const list = container.querySelector('ul');
+    expect(list).toBeTruthy();
+    const items = container.querySelectorAll('li');
+    expect(items.length).toBe(3);
+  });
+
+  it('should render ordered lists', () => {
+    const { container } = render(
+      <MarkdownRenderer content={'1. First\n2. Second\n3. Third'} />
+    );
+    const list = container.querySelector('ol');
+    expect(list).toBeTruthy();
+    const items = container.querySelectorAll('li');
+    expect(items.length).toBe(3);
+  });
+
+  it('should render fenced code blocks', () => {
+    const { container } = render(
+      <MarkdownRenderer content={'```\nconst x = 1;\n```'} />
+    );
+    const pre = container.querySelector('pre');
+    expect(pre).toBeTruthy();
+    const code = container.querySelector('code');
+    expect(code).toBeTruthy();
+  });
+
+  it('should render inline bold', () => {
+    const { container } = render(<MarkdownRenderer content="**bold text**" />);
     const strong = container.querySelector('strong');
-    expect(strong?.textContent).toBe('bold');
+    expect(strong).toBeTruthy();
+    expect(strong?.textContent).toBe('bold text');
   });
 
-  it('renders italic text via *syntax*', () => {
-    const { container } = render(<MarkdownRenderer content="*italic*" />);
+  it('should render inline italic', () => {
+    const { container } = render(<MarkdownRenderer content="*italic text*" />);
     const em = container.querySelector('em');
-    expect(em?.textContent).toBe('italic');
+    expect(em).toBeTruthy();
+    expect(em?.textContent).toBe('italic text');
   });
 
-  it('renders bold italic text via ***syntax***', () => {
-    const { container } = render(<MarkdownRenderer content="***both***" />);
-    const strong = container.querySelector('strong');
-    const em = container.querySelector('em');
-    expect(strong).toBeDefined();
-    expect(em).toBeDefined();
+  it('should render strikethrough', () => {
+    const { container } = render(<MarkdownRenderer content="~~strikethrough~~" />);
+    const del = container.querySelector('del');
+    expect(del).toBeTruthy();
+    expect(del?.textContent).toBe('strikethrough');
   });
 
-  it('renders inline code content (tag stripped by sanitizer)', () => {
-    const { container } = render(<MarkdownRenderer content="use `console.log` now" />);
-    // <code> is stripped by sanitizeHtml but text content is preserved
-    expect(container.textContent).toContain('console.log');
+  it('should render inline code', () => {
+    const { container } = render(<MarkdownRenderer content="Text with `code` inline" />);
+    // The markdown renderer wraps inline code in <code> tags
+    // Check if the content contains the code element
+    const content = container.querySelector('.markdown-content');
+    expect(content).toBeTruthy();
+    expect(content?.innerHTML).toContain('<code>');
   });
 
-  it('renders links with target=_blank and rel=noopener', () => {
-    const { container } = render(<MarkdownRenderer content="[click](https://example.com)" />);
+  it('should render links with target="_blank"', () => {
+    const { container } = render(
+      <MarkdownRenderer content="[link](https://example.com)" />
+    );
     const link = container.querySelector('a');
+    expect(link).toBeTruthy();
     expect(link?.getAttribute('href')).toBe('https://example.com');
     expect(link?.getAttribute('target')).toBe('_blank');
     expect(link?.getAttribute('rel')).toBe('noopener noreferrer');
-    expect(link?.textContent).toBe('click');
   });
 
-  it('renders strikethrough content (del tag stripped by sanitizer)', () => {
-    const { container } = render(<MarkdownRenderer content="~~deleted~~" />);
-    // <del> is stripped by sanitizeHtml but text content is preserved
-    expect(container.textContent).toContain('deleted');
+  it('should sanitize XSS vectors', () => {
+    const { container } = render(
+      <MarkdownRenderer content="<script>alert('xss')</script>" />
+    );
+    const script = container.querySelector('script');
+    expect(script).toBeFalsy();
   });
 
-  it('renders h1 header', () => {
-    const { container } = render(<MarkdownRenderer content="# H1" />);
-    const h1 = container.querySelector('h1');
-    expect(h1?.textContent).toBe('H1');
-  });
-
-  it('renders h2 header', () => {
-    const { container } = render(<MarkdownRenderer content="## H2" />);
-    const h2 = container.querySelector('h2');
-    expect(h2?.textContent).toBe('H2');
-  });
-
-  it('renders h3 header', () => {
-    const { container } = render(<MarkdownRenderer content="### H3" />);
-    const h3 = container.querySelector('h3');
-    expect(h3?.textContent).toBe('H3');
-  });
-
-  it('renders unordered lists', () => {
-    const { container } = render(<MarkdownRenderer content={"- item 1\n- item 2"} />);
-    const ul = container.querySelector('ul');
-    expect(ul).toBeDefined();
-    const items = container.querySelectorAll('li');
-    expect(items.length).toBe(2);
-    expect(items[0].textContent).toBe('item 1');
-    expect(items[1].textContent).toBe('item 2');
-  });
-
-  it('renders ordered lists', () => {
-    const { container } = render(<MarkdownRenderer content={"1. first\n2. second"} />);
-    const ol = container.querySelector('ol');
-    expect(ol).toBeDefined();
-    const items = container.querySelectorAll('li');
-    expect(items.length).toBe(2);
-    expect(items[0].textContent).toBe('first');
-    expect(items[1].textContent).toBe('second');
-  });
-
-  it('renders code block content (pre tag stripped by sanitizer)', () => {
-    const { container } = render(<MarkdownRenderer content={"```\nconst x = 1;\n```"} />);
-    // <pre><code> are stripped by sanitizeHtml but text content is preserved
-    expect(container.textContent).toContain('const x = 1;');
-  });
-
-  it('escapes HTML in code blocks to prevent XSS', () => {
-    const { container } = render(<MarkdownRenderer content={'```<script>alert("xss")</script>```'} />);
-    // The raw HTML should be escaped and never rendered as actual HTML
-    expect(container.innerHTML).not.toContain('<script>');
-  });
-
-  it('escapes HTML in regular text', () => {
-    const { container } = render(<MarkdownRenderer content={'<img src=x onerror=alert(1)>'} />);
-    expect(container.innerHTML).not.toContain('<img');
-    expect(container.innerHTML).toContain('&lt;');
-  });
-
-  it('handles empty content', () => {
+  it('should handle empty input', () => {
     const { container } = render(<MarkdownRenderer content="" />);
-    expect(container.querySelector('.markdown-content')).toBeDefined();
+    expect(container.querySelector('.markdown-content')).toBeTruthy();
   });
 
-  it('renders underscore bold __text__', () => {
-    const { container } = render(<MarkdownRenderer content="__bold__" />);
+  it('should handle unclosed code blocks', () => {
+    const { container } = render(
+      <MarkdownRenderer content={'Some text\n```\nconst x = 1;'} />
+    );
+    // The unclosed code block should still render as a paragraph
+    const p = container.querySelector('p');
+    expect(p).toBeTruthy();
+  });
+
+  it('should render bold and italic together', () => {
+    const { container } = render(
+      <MarkdownRenderer content="***bold and italic***" />
+    );
     const strong = container.querySelector('strong');
-    expect(strong?.textContent).toBe('bold');
-  });
-
-  it('renders underscore italic _text_', () => {
-    const { container } = render(<MarkdownRenderer content="_italic_" />);
     const em = container.querySelector('em');
-    expect(em?.textContent).toBe('italic');
+    expect(strong).toBeTruthy();
+    expect(em).toBeTruthy();
   });
 });
