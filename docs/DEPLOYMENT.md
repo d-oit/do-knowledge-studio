@@ -62,7 +62,7 @@ dist/
    [build]
      command = "pnpm run build"
      publish = "dist"
-   
+
    [[headers]]
      for = "/*.wasm"
      [headers.values]
@@ -142,34 +142,34 @@ dist/
      server_name your-domain.com;
      root /var/www/dks;
      index index.html;
-   
+
      # Security headers
      add_header X-Frame-Options "SAMEORIGIN" always;
      add_header X-Content-Type-Options "nosniff" always;
      add_header Referrer-Policy "no-referrer-when-downgrade" always;
      add_header Content-Security-Policy "default-src 'self' 'wasm-unsafe-eval'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:;" always;
-   
+
      # WASM MIME type
      types {
        application/wasm wasm;
      }
-   
+
      # SPA routing
      location / {
        try_files $uri $uri/ /index.html;
      }
-   
+
      # Cache static assets
      location /assets/ {
        expires 1y;
        add_header Cache-Control "public, immutable";
      }
-   
+
      # No cache for index.html
      location = /index.html {
        add_header Cache-Control "no-cache, no-store, must-revalidate";
      }
-   
+
      # Gzip compression
      gzip on;
      gzip_types text/css application/javascript application/wasm application/json;
@@ -201,21 +201,21 @@ dist/
    <VirtualHost *:80>
      ServerName your-domain.com
      DocumentRoot /var/www/dks
-   
+
      <Directory /var/www/dks>
        Options -Indexes +FollowSymLinks
        AllowOverride All
        Require all granted
      </Directory>
-   
+
      # Security headers
      Header set X-Content-Type-Options "nosniff"
      Header set X-Frame-Options "SAMEORIGIN"
      Header set Referrer-Policy "no-referrer-when-downgrade"
-   
+
      # WASM MIME type
      AddType application/wasm .wasm
-   
+
      # SPA routing
      RewriteEngine On
      RewriteBase /
@@ -223,7 +223,7 @@ dist/
      RewriteCond %{REQUEST_FILENAME} !-f
      RewriteCond %{REQUEST_FILENAME} !-d
      RewriteRule . /index.html [L]
-   
+
      # Compression
      <IfModule mod_deflate.c>
        AddOutputFilterByType DEFLATE text/css application/javascript application/wasm application/json
@@ -244,7 +244,7 @@ dist/
    your-domain.com {
      root * /var/www/dks
      encode gzip
-   
+
      # Security headers
      header {
        X-Content-Type-Options "nosniff"
@@ -252,10 +252,10 @@ dist/
        Referrer-Policy "no-referrer-when-downgrade"
        Content-Security-Policy "default-src 'self' 'wasm-unsafe-eval'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:;"
      }
-   
+
      # SPA routing
      try_files {path} /index.html
-   
+
      # Cache static assets
      @assets path /assets/*
      header @assets Cache-Control "public, immutable, max-age=31536000"
@@ -277,7 +277,7 @@ dist/
    RUN corepack enable && pnpm install --frozen-lockfile
    COPY . .
    RUN pnpm run build
-   
+
    FROM nginx:alpine
    COPY --from=builder /app/dist /usr/share/nginx/html
    COPY nginx.conf /etc/nginx/conf.d/default.conf
@@ -291,15 +291,15 @@ dist/
      listen 80;
      root /usr/share/nginx/html;
      index index.html;
-   
+
      types {
        application/wasm wasm;
      }
-   
+
      location / {
        try_files $uri $uri/ /index.html;
      }
-   
+
      location /assets/ {
        expires 1y;
        add_header Cache-Control "public, immutable";
