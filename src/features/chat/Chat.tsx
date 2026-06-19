@@ -5,6 +5,7 @@ import { logger } from '../../lib/logger';
 import { Search, Send, ChevronDown, ChevronUp, Database, ShieldCheck, Loader2 } from 'lucide-react';
 
 interface Message {
+  id: string;
   role: 'user' | 'assistant';
   content: string;
   citations?: RankedResult[];
@@ -15,6 +16,7 @@ interface ChatProps {
   onNavigate?: (id: string) => void;
 }
 
+/* biome-ignore lint/correctness/useQwikValidLexicalScope: false positive - standard React arrow function */
 const buildResponse = (input: string, results: RankedResult[]): string => {
   if (results.length > 0) {
     return `Based on your local records, here's what I found about "${input}". I've cited the most relevant items below.`;
@@ -30,26 +32,31 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity, onNavigate }) => {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  /* biome-ignore lint/correctness/useQwikValidLexicalScope: false positive - standard React async function */
   const handleSend = async (e?: React.FormEvent, query?: string) => {
     e?.preventDefault();
     const currentInput = query ?? input;
     if (!currentInput.trim() || isSearching || debounceRef.current) return;
 
     debounceRef.current = setTimeout(() => { debounceRef.current = null; }, 300);
-    setMessages(prev => [...prev, { role: 'user', content: currentInput }]);
+    const userMessageId = `user-${Date.now()}`;
+    setMessages(prev => [...prev, { id: userMessageId, role: 'user', content: currentInput }]);
     setInput('');
     setIsSearching(true);
 
     try {
       const results = await searchKnowledge(currentInput, { limit: 5 });
+      const assistantMessageId = `assistant-${Date.now()}`;
       setMessages(prev => [...prev, {
+        id: assistantMessageId,
         role: 'assistant',
         content: buildResponse(currentInput, results),
         citations: results
       }]);
     } catch (err) {
       logger.error('Ask retrieval failed', err);
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I encountered an issue while searching your local library.' }]);
+      const errorMessageId = `error-${Date.now()}`;
+      setMessages(prev => [...prev, { id: errorMessageId, role: 'assistant', content: 'Sorry, I encountered an issue while searching your local library.' }]);
     } finally {
       setIsSearching(false);
     }
@@ -78,16 +85,16 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity, onNavigate }) => {
             <h2>Ask your library</h2>
             <p>Search and synthesize information across your local entities, claims, and notes. Your data never leaves this device.</p>
             <div className="suggested-actions">
-              <button onClick={() => { handleSend(undefined, 'Summarize my recent projects').catch(console.error); }}>Summarize recent projects</button>
-              <button onClick={() => { handleSend(undefined, 'Who are the key people?').catch(console.error); }}>Key people</button>
-              <button onClick={onCreateEntity}>
+              <button type="button" onClick={() => { handleSend(undefined, 'Summarize my recent projects').catch(console.error); }}>Summarize recent projects</button>
+              <button type="button" onClick={() => { handleSend(undefined, 'Who are the key people?').catch(console.error); }}>Key people</button>
+              <button type="button" onClick={onCreateEntity}>
                 Create new entity
               </button>
             </div>
           </div>
         )}
         {messages.map((m, i) => (
-          <div key={i} className={`message ${m.role}`}>
+          <div key={m.id} className={`message ${m.role}`}>
             <div className="message-header">
               <strong>{m.role === 'user' ? 'You' : 'Studio Assistant'}</strong>
             </div>
@@ -97,6 +104,7 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity, onNavigate }) => {
               {m.citations && m.citations.length > 0 && (
                 <div className="citations-section">
                   <button
+                    type="button"
                     className="source-drawer-toggle"
                     onClick={() => toggleSources(i)}
                   >
@@ -107,7 +115,7 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity, onNavigate }) => {
                   {showSources[i] && (
                     <div className="citation-cards">
                       {m.citations.map((cite) => (
-                        <button key={cite.id} className="citation-card" onClick={() => onNavigate?.(cite.id)}>
+                        <button type="button" key={cite.id} className="citation-card" onClick={() => onNavigate?.(cite.id)}>
                           <div className="cite-type">{cite.type}</div>
                           <div className="cite-name">{cite.title}</div>
                           <div className="cite-excerpt">{cite.content}</div>
