@@ -17,53 +17,105 @@ interface ChatProps {
 }
 
 /* biome-ignore lint/correctness/useQwikValidLexicalScope: false positive - standard React arrow function */
-const buildResponse = (input: string, results: RankedResult[]): string => {
+const buildResponse = (queryText: string, results: RankedResult[]): string => {
   if (results.length > 0) {
-    return `Based on your local records, here's what I found about "${input}". I've cited the most relevant items below.`;
+    return `Based on your local records, here's what I found about "${queryText}". I've cited the most relevant items below.`;
   }
-  return `I couldn't find any direct matches in your local library for "${input}". You might want to try different keywords or add more context to your entities.`;
+  return `I couldn't find any direct matches in your local library for "${queryText}". You might want to try different keywords or add more context to your entities.`;
 };
+
+const CitationsPanel: React.FC<{
+  citations: RankedResult[];
+  expanded: boolean;
+  onToggle: () => void;
+  onNavigate?: (id: string) => void;
+}> = ({ citations, expanded, onToggle, onNavigate }) => (
+  <div className="citations-section">
+    <button type="button" className="source-drawer-toggle" onClick={onToggle}>
+      <span>Used {citations.length} local items</span>
+      {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+    </button>
+    {expanded && (
+      <div className="citation-cards">
+        {citations.map((cite) => (
+          <button type="button" key={cite.id} className="citation-card" onClick={() => onNavigate?.(cite.id)}>
+            <div className="cite-type">{cite.type}</div>
+            <div className="cite-name">{cite.title}</div>
+            <div className="cite-excerpt">{cite.content}</div>
+          </button>
+        ))}
+      </div>
+    )}
+  </div>
+);
+
+const ChatMessage: React.FC<{
+  message: Message;
+  showSources: boolean;
+  onToggleSources: () => void;
+  onNavigate?: (id: string) => void;
+}> = ({ message, showSources, onToggleSources, onNavigate }) => (
+  <div className={`message ${message.role}`}>
+    <div className="message-header">
+      <strong>{message.role === 'user' ? 'You' : 'Studio Assistant'}</strong>
+    </div>
+    <div className="message-content">
+      <div className="msg-text">{message.content}</div>
+      {message.citations && message.citations.length > 0 && (
+        <CitationsPanel
+          citations={message.citations}
+          expanded={showSources}
+          onToggle={onToggleSources}
+          onNavigate={onNavigate}
+        />
+      )}
+    </div>
+  </div>
+);
 
 const Chat: React.FC<ChatProps> = ({ onCreateEntity, onNavigate }) => {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [showSources, setShowSources] = useState<Record<number, boolean>>({});
+  const [showSources, setShowSources] = useState<Record<string, boolean>>({});
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const canSend = (currentInput: string): boolean =>
+    currentInput.trim() !== '' && !isSearching && !debounceRef.current;
+
+  const scheduleDebounceReset = () => {
+    debounceRef.current = setTimeout(() => { debounceRef.current = null; }, 300);
+  };
 
   /* biome-ignore lint/correctness/useQwikValidLexicalScope: false positive - standard React async function */
   const handleSend = async (e?: React.FormEvent, query?: string) => {
     e?.preventDefault();
     const currentInput = query ?? input;
-    if (!currentInput.trim() || isSearching || debounceRef.current) return;
+    if (!canSend(currentInput)) return;
 
-    debounceRef.current = setTimeout(() => { debounceRef.current = null; }, 300);
-    const userMessageId = `user-${Date.now()}`;
-    setMessages(prev => [...prev, { id: userMessageId, role: 'user', content: currentInput }]);
+    scheduleDebounceReset();
+    const userId = `user-${Date.now()}`;
+    setMessages(prev => [...prev, { id: userId, role: 'user', content: currentInput }]);
     setInput('');
     setIsSearching(true);
 
     try {
       const results = await searchKnowledge(currentInput, { limit: 5 });
-      const assistantMessageId = `assistant-${Date.now()}`;
+      const assistantId = `assistant-${Date.now()}`;
       setMessages(prev => [...prev, {
-        id: assistantMessageId,
+        id: assistantId,
         role: 'assistant',
         content: buildResponse(currentInput, results),
         citations: results
       }]);
     } catch (err) {
       logger.error('Ask retrieval failed', err);
-      const errorMessageId = `error-${Date.now()}`;
-      setMessages(prev => [...prev, { id: errorMessageId, role: 'assistant', content: 'Sorry, I encountered an issue while searching your local library.' }]);
+      const errorId = `error-${Date.now()}`;
+      setMessages(prev => [...prev, { id: errorId, role: 'assistant', content: 'Sorry, I encountered an issue while searching your local library.' }]);
     } finally {
       setIsSearching(false);
     }
-  };
-
-  const toggleSources = (index: number) => {
-    setShowSources(prev => ({ ...prev, [index]: !prev[index] }));
   };
 
   return (
@@ -93,40 +145,14 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity, onNavigate }) => {
             </div>
           </div>
         )}
-        {messages.map((m, i) => (
-          <div key={m.id} className={`message ${m.role}`}>
-            <div className="message-header">
-              <strong>{m.role === 'user' ? 'You' : 'Studio Assistant'}</strong>
-            </div>
-            <div className="message-content">
-              <div className="msg-text">{m.content}</div>
-
-              {m.citations && m.citations.length > 0 && (
-                <div className="citations-section">
-                  <button
-                    type="button"
-                    className="source-drawer-toggle"
-                    onClick={() => toggleSources(i)}
-                  >
-                    <span>Used {m.citations.length} local items</span>
-                    {showSources[i] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                  </button>
-
-                  {showSources[i] && (
-                    <div className="citation-cards">
-                      {m.citations.map((cite) => (
-                        <button type="button" key={cite.id} className="citation-card" onClick={() => onNavigate?.(cite.id)}>
-                          <div className="cite-type">{cite.type}</div>
-                          <div className="cite-name">{cite.title}</div>
-                          <div className="cite-excerpt">{cite.content}</div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
+        {messages.map((m) => (
+          <ChatMessage
+            key={m.id}
+            message={m}
+            showSources={showSources[m.id] ?? false}
+            onToggleSources={() => { setShowSources(prev => ({ ...prev, [m.id]: !prev[m.id] })); }}
+            onNavigate={onNavigate}
+          />
         ))}
         {isSearching && (
           <div className="message assistant loading">

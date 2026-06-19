@@ -236,7 +236,10 @@ const AppContent: React.FC = () => {
           {dbReady && currentView === 'chat' && (
             <Suspense fallback={<AISkeleton />}>
               <ErrorBoundary featureName="Chat" onRetry={() => window.location.reload()}>
-                <Chat onCreateEntity={() => setCurrentView('editor')} />
+                <Chat
+                  onCreateEntity={() => { setCurrentView('editor'); }}
+                  onNavigate={handleEditEntity}
+                />
               </ErrorBoundary>
             </Suspense>
           )}

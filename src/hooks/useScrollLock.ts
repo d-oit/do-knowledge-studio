@@ -4,7 +4,6 @@ import { useEffect } from 'react';
  * Locks document scroll when active.
  * Restores previous scroll position on deactivation.
  */
-// eslint-disable-next-line @typescript-eslint/no-empty-function -- cleanup function returns void
 export const useScrollLock = (active: boolean): void => {
   useEffect(() => {
     if (!active) return;
