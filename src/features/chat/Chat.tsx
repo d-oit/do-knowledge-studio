@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { searchKnowledge } from '../../lib/search';
 import { type RankedResult } from '../../db/repository';
 import { logger } from '../../lib/logger';
-import { Search, Send, ChevronDown, ChevronUp, Database, ShieldCheck } from 'lucide-react';
+import { Search, Send, ChevronDown, ChevronUp, Database, ShieldCheck, Loader2 } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -12,9 +12,17 @@ interface Message {
 
 interface ChatProps {
   onCreateEntity?: () => void;
+  onNavigate?: (id: string) => void;
 }
 
-const Chat: React.FC<ChatProps> = ({ onCreateEntity }) => {
+function buildResponse(input: string, results: RankedResult[]): string {
+  if (results.length > 0) {
+    return `Based on your local records, here's what I found about "${input}". I've cited the most relevant items below.`;
+  }
+  return `I couldn't find any direct matches in your local library for "${input}". You might want to try different keywords or add more context to your entities.`;
+}
+
+const Chat: React.FC<ChatProps> = ({ onCreateEntity, onNavigate }) => {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -22,31 +30,21 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity }) => {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleSend = async (e?: React.FormEvent) => {
+  const handleSend = async (e?: React.FormEvent, query?: string) => {
     e?.preventDefault();
-    if (!input.trim() || isSearching) return;
-    if (debounceRef.current) return;
-    debounceRef.current = setTimeout(() => { debounceRef.current = null; }, 300);
+    const currentInput = query ?? input;
+    if (!currentInput.trim() || isSearching || debounceRef.current) return;
 
-    const userMsg: Message = { role: 'user', content: input };
-    setMessages(prev => [...prev, userMsg]);
-    const currentInput = input;
+    debounceRef.current = setTimeout(() => { debounceRef.current = null; }, 300);
+    setMessages(prev => [...prev, { role: 'user', content: currentInput }]);
     setInput('');
     setIsSearching(true);
 
     try {
       const results = await searchKnowledge(currentInput, { limit: 5 });
-
-      let response = '';
-      if (results.length > 0) {
-        response = `Based on your local records, here's what I found about "${currentInput}". I've cited the most relevant items below.`;
-      } else {
-        response = `I couldn't find any direct matches in your local library for "${currentInput}". You might want to try different keywords or add more context to your entities.`;
-      }
-
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: response,
+        content: buildResponse(currentInput, results),
         citations: results
       }]);
     } catch (err) {
@@ -62,7 +60,7 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity }) => {
   };
 
   return (
-    <div className="ask-surface">
+    <div className="chat-view">
       <div className="ask-header">
         <div className="local-status-chip">
           <ShieldCheck size={14} />
@@ -71,7 +69,7 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity }) => {
         <div className="offline-badge">Offline ready</div>
       </div>
 
-      <div className="messages-list">
+      <div className="messages-list" role="log" aria-live="polite">
         {messages.length === 0 && (
           <div className="ask-empty-state">
             <div className="empty-icon">
@@ -80,8 +78,8 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity }) => {
             <h2>Ask your library</h2>
             <p>Search and synthesize information across your local entities, claims, and notes. Your data never leaves this device.</p>
             <div className="suggested-actions">
-              <button onClick={() => setInput('Summarize my recent projects')}>Summarize recent projects</button>
-              <button onClick={() => setInput('Who are the key people?')}>Key people</button>
+              <button onClick={() => { void handleSend(undefined, 'Summarize my recent projects'); }}>Summarize recent projects</button>
+              <button onClick={() => { void handleSend(undefined, 'Who are the key people?'); }}>Key people</button>
               <button onClick={onCreateEntity}>
                 Create new entity
               </button>
@@ -89,7 +87,7 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity }) => {
           </div>
         )}
         {messages.map((m, i) => (
-          <div key={i} className={`message-wrapper ${m.role}`}>
+          <div key={i} className={`message ${m.role}`}>
             <div className="message-header">
               <strong>{m.role === 'user' ? 'You' : 'Studio Assistant'}</strong>
             </div>
@@ -109,7 +107,7 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity }) => {
                   {showSources[i] && (
                     <div className="citation-cards">
                       {m.citations.map((cite) => (
-                        <button key={cite.id} className="citation-card" onClick={() => logger.info('Navigate to', cite.id)}>
+                        <button key={cite.id} className="citation-card" onClick={() => onNavigate?.(cite.id)}>
                           <div className="cite-type">{cite.type}</div>
                           <div className="cite-name">{cite.title}</div>
                           <div className="cite-excerpt">{cite.content}</div>
@@ -123,19 +121,17 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity }) => {
           </div>
         ))}
         {isSearching && (
-          <div className="message-wrapper assistant loading">
+          <div className="message assistant loading">
             <div className="searching-indicator">
-              <span className="dot"></span>
-              <span className="dot"></span>
-              <span className="dot"></span>
+              <Loader2 size={16} className="animate-spin" />
               <span>Retrieving local context...</span>
             </div>
           </div>
         )}
       </div>
 
-      <form className="ask-composer" onSubmit={e => void handleSend(e)}>
-        <div className="input-container">
+      <form className="chat-controls" onSubmit={e => { void handleSend(e); }}>
+        <div className="input-wrapper">
           <Search size={18} className="search-icon" aria-hidden="true" />
           <input
             id="chat-input"
