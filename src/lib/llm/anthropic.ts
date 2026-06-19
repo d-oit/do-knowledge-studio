@@ -121,7 +121,7 @@ export class AnthropicProvider implements LLMProvider {
             return;
           }
         } catch {
-          // Expected: SSE chunk not yet complete or invalid JSON
+          console.debug('SSE chunk parse skipped (incomplete or invalid JSON)');
         }
       }
     }

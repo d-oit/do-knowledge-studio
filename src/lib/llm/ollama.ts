@@ -115,7 +115,7 @@ export class OllamaProvider implements LLMProvider {
             return;
           }
         } catch {
-          // Expected: incomplete JSON line
+          console.debug('SSE chunk parse skipped (incomplete JSON line)');
         }
       }
     }

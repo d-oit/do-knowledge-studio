@@ -1,7 +1,20 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { maskApiKey, loadConfig, saveConfig, createProvider, getProvider } from '../config';
 import { OpenRouterProvider } from '../openrouter';
 import { KiloGatewayProvider } from '../kilo';
+
+vi.mock('../../key-store', () => {
+  const store = new Map<string, string>();
+  return {
+    keyStore: {
+      async get(id: string) { return await Promise.resolve(store.get(id) ?? null); },
+      async set(id: string, value: string) { await Promise.resolve(store.set(id, value)); },
+      async delete(id: string) { await Promise.resolve(store.delete(id)); },
+      async has(id: string) { return await Promise.resolve(store.has(id)); },
+    },
+    migrateFromLocalStorage: vi.fn().mockResolvedValue(false),
+  };
+});
 
 describe('maskApiKey', () => {
   it('returns empty string for empty key', () => {
@@ -27,11 +40,12 @@ describe('maskApiKey', () => {
 });
 
 describe('loadConfig', () => {
-  beforeEach(() => {
-    localStorage.clear();
+  beforeEach(async () => {
+    const { keyStore } = await import('../../key-store');
+    await keyStore.delete('dks:llm-config');
   });
 
-  it('returns default config when localStorage is empty', async () => {
+  it('returns default config when key store is empty', async () => {
     const config = await loadConfig();
     expect(config.activeProvider).toBe('openrouter');
     expect(config.providers.openrouter.baseURL).toBe('https://openrouter.ai/api/v1');
@@ -54,7 +68,8 @@ describe('loadConfig', () => {
         },
       },
     };
-    localStorage.setItem('dks:llm-config', JSON.stringify(saved));
+    const { keyStore } = await import('../../key-store');
+    await keyStore.set('dks:llm-config', JSON.stringify(saved));
 
     const config = await loadConfig();
     expect(config.activeProvider).toBe('kilo');
@@ -64,18 +79,20 @@ describe('loadConfig', () => {
   });
 
   it('returns defaults on invalid JSON', async () => {
-    localStorage.setItem('dks:llm-config', 'not-json');
+    const { keyStore } = await import('../../key-store');
+    await keyStore.set('dks:llm-config', 'not-json');
     const config = await loadConfig();
     expect(config.activeProvider).toBe('openrouter');
   });
 });
 
 describe('saveConfig', () => {
-  beforeEach(() => {
-    localStorage.clear();
+  beforeEach(async () => {
+    const { keyStore } = await import('../../key-store');
+    await keyStore.delete('dks:llm-config');
   });
 
-  it('persists config to localStorage', async () => {
+  it('persists config to key store', async () => {
     const config = {
       activeProvider: 'kilo',
       providers: {
@@ -85,11 +102,10 @@ describe('saveConfig', () => {
     };
     await saveConfig(config);
 
-    const stored = JSON.parse(localStorage.getItem('dks:llm-config')!) as { activeProvider: string; providers: { openrouter: { apiKey: string } } };
+    const { keyStore } = await import('../../key-store');
+    const stored = JSON.parse((await keyStore.get('dks:llm-config'))!) as { activeProvider: string; providers: { openrouter: { apiKey: string } } };
     expect(stored.activeProvider).toBe('kilo');
-    // API key should be encrypted (starts with enc:v1:)
     expect(stored.providers.openrouter.apiKey).toMatch(/^enc:v1:/);
-    // But loading it back should decrypt
     const loaded = await loadConfig();
     expect(loaded.providers.openrouter.apiKey).toBe('key1');
   });

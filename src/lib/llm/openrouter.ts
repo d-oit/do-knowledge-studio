@@ -115,7 +115,7 @@ export class OpenRouterProvider implements LLMProvider {
             yield { content, done: false };
           }
         } catch {
-          // Expected: SSE chunk not yet complete or invalid JSON
+          console.debug('SSE chunk parse skipped (incomplete or invalid JSON)');
         }
       }
     }
