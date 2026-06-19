@@ -69,7 +69,7 @@ test.describe('Search', () => {
     await input.fill('test');
     await page.keyboard.press('Enter');
 
-    await expect(page.locator('.message-wrapper').first()).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('.message').first()).toBeVisible({ timeout: 15000 });
   });
 });
 
