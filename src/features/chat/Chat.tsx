@@ -16,64 +16,71 @@ interface ChatProps {
   onNavigate?: (id: string) => void;
 }
 
-/* biome-ignore lint/correctness/useQwikValidLexicalScope: false positive - standard React arrow function */
-const buildResponse = (queryText: string, results: RankedResult[]): string => {
+function buildResponse(queryText: string, results: RankedResult[]): string {
   if (results.length > 0) {
     return `Based on your local records, here's what I found about "${queryText}". I've cited the most relevant items below.`;
   }
   return `I couldn't find any direct matches in your local library for "${queryText}". You might want to try different keywords or add more context to your entities.`;
-};
+}
 
-const CitationsPanel: React.FC<{
+interface CitationsPanelProps {
   citations: RankedResult[];
   expanded: boolean;
   onToggle: () => void;
   onNavigate?: (id: string) => void;
-}> = ({ citations, expanded, onToggle, onNavigate }) => (
-  <div className="citations-section">
-    <button type="button" className="source-drawer-toggle" onClick={onToggle}>
-      <span>Used {citations.length} local items</span>
-      {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-    </button>
-    {expanded && (
-      <div className="citation-cards">
-        {citations.map((cite) => (
-          <button type="button" key={cite.id} className="citation-card" onClick={() => onNavigate?.(cite.id)}>
-            <div className="cite-type">{cite.type}</div>
-            <div className="cite-name">{cite.title}</div>
-            <div className="cite-excerpt">{cite.content}</div>
-          </button>
-        ))}
-      </div>
-    )}
-  </div>
-);
+}
 
-const ChatMessage: React.FC<{
+function CitationsPanel({ citations, expanded, onToggle, onNavigate }: CitationsPanelProps): React.ReactElement {
+  return (
+    <div className="citations-section">
+      <button type="button" className="source-drawer-toggle" onClick={onToggle}>
+        <span>Used {citations.length} local items</span>
+        {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+      </button>
+      {expanded && (
+        <div className="citation-cards">
+          {citations.map((cite) => (
+            <button type="button" key={cite.id} className="citation-card" onClick={() => onNavigate?.(cite.id)}>
+              <div className="cite-type">{cite.type}</div>
+              <div className="cite-name">{cite.title}</div>
+              <div className="cite-excerpt">{cite.content}</div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface ChatMessageProps {
   message: Message;
   showSources: boolean;
   onToggleSources: () => void;
   onNavigate?: (id: string) => void;
-}> = ({ message, showSources, onToggleSources, onNavigate }) => (
-  <div className={`message ${message.role}`}>
-    <div className="message-header">
-      <strong>{message.role === 'user' ? 'You' : 'Studio Assistant'}</strong>
-    </div>
-    <div className="message-content">
-      <div className="msg-text">{message.content}</div>
-      {message.citations && message.citations.length > 0 && (
-        <CitationsPanel
-          citations={message.citations}
-          expanded={showSources}
-          onToggle={onToggleSources}
-          onNavigate={onNavigate}
-        />
-      )}
-    </div>
-  </div>
-);
+}
 
-const Chat: React.FC<ChatProps> = ({ onCreateEntity, onNavigate }) => {
+function ChatMessage({ message, showSources, onToggleSources, onNavigate }: ChatMessageProps): React.ReactElement {
+  return (
+    <div className={`message ${message.role}`}>
+      <div className="message-header">
+        <strong>{message.role === 'user' ? 'You' : 'Studio Assistant'}</strong>
+      </div>
+      <div className="message-content">
+        <div className="msg-text">{message.content}</div>
+        {message.citations && message.citations.length > 0 && (
+          <CitationsPanel
+            citations={message.citations}
+            expanded={showSources}
+            onToggle={onToggleSources}
+            onNavigate={onNavigate}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Chat({ onCreateEntity, onNavigate }: ChatProps): React.ReactElement {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -81,15 +88,15 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity, onNavigate }) => {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const canSend = (currentInput: string): boolean =>
-    currentInput.trim() !== '' && !isSearching && !debounceRef.current;
+  function canSend(currentInput: string): boolean {
+    return currentInput.trim() !== '' && !isSearching && !debounceRef.current;
+  }
 
-  const scheduleDebounceReset = () => {
+  function scheduleDebounceReset() {
     debounceRef.current = setTimeout(() => { debounceRef.current = null; }, 300);
-  };
+  }
 
-  /* biome-ignore lint/correctness/useQwikValidLexicalScope: false positive - standard React async function */
-  const handleSend = async (e?: React.FormEvent, query?: string) => {
+  async function handleSend(e?: React.FormEvent, query?: string) {
     e?.preventDefault();
     const currentInput = query ?? input;
     if (!canSend(currentInput)) return;
@@ -116,7 +123,7 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity, onNavigate }) => {
     } finally {
       setIsSearching(false);
     }
-  };
+  }
 
   return (
     <div className="chat-view">
@@ -137,8 +144,8 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity, onNavigate }) => {
             <h2>Ask your library</h2>
             <p>Search and synthesize information across your local entities, claims, and notes. Your data never leaves this device.</p>
             <div className="suggested-actions">
-              <button type="button" onClick={() => { handleSend(undefined, 'Summarize my recent projects').catch(console.error); }}>Summarize recent projects</button>
-              <button type="button" onClick={() => { handleSend(undefined, 'Who are the key people?').catch(console.error); }}>Key people</button>
+              <button type="button" onClick={() => { void handleSend(undefined, 'Summarize my recent projects'); }}>Summarize recent projects</button>
+              <button type="button" onClick={() => { void handleSend(undefined, 'Who are the key people?'); }}>Key people</button>
               <button type="button" onClick={onCreateEntity}>
                 Create new entity
               </button>
@@ -164,7 +171,7 @@ const Chat: React.FC<ChatProps> = ({ onCreateEntity, onNavigate }) => {
         )}
       </div>
 
-      <form className="chat-controls" onSubmit={e => { handleSend(e).catch(console.error); }}>
+      <form className="chat-controls" onSubmit={(e) => { void handleSend(e); }}>
         <div className="input-wrapper">
           <Search size={18} className="search-icon" aria-hidden="true" />
           <input
