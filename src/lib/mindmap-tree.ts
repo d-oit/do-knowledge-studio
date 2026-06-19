@@ -8,7 +8,7 @@ interface MindMapNode {
 
 /**
  * Builds a tree structure from entities and links for mind map visualization.
- * 
+ *
  * @param currentId - The ID of the current entity to start from
  * @param depth - Current depth in the tree
  * @param maxDepth - Maximum depth to traverse
@@ -44,7 +44,7 @@ export function buildTree(
 
 /**
  * Adds ARIA attributes to mind map nodes for accessibility.
- * 
+ *
  * @param container - The container element containing mind map nodes
  */
 export function addAriaToNodes(container: HTMLElement): void {
