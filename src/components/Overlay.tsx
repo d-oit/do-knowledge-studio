@@ -40,7 +40,6 @@ export const Overlay: React.FC<OverlayProps> = ({
   useEffect(() => {
     if (!isOpen) return;
     document.addEventListener('keydown', handleKeyDown);
-    // eslint-disable-next-line @typescript-eslint/no-empty-function -- cleanup returns void
     return () => { document.removeEventListener('keydown', handleKeyDown); };
   }, [isOpen, handleKeyDown]);
 

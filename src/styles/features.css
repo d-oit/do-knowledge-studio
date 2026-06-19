@@ -139,6 +139,14 @@
   border-top: 1px solid var(--border-default);
 }
 
+.searching-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 13px;
+  color: var(--interactive-primary);
+}
+
 /* Sourcing indicator for external URL fetching */
 .sourcing-indicator {
   display: flex;
