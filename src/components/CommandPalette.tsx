@@ -20,6 +20,7 @@ interface CommandPaletteProps {
   isOpen: boolean;
   onClose: () => void;
   onViewChange: (view: 'editor' | 'graph' | 'mindmap' | 'chat' | 'export' | 'ai') => void;
+  onEntitySelect?: (entityId: string) => void;
   onAction?: (action: string) => void;
 }
 
@@ -43,7 +44,7 @@ const COMMANDS: CommandItem[] = [
   { id: 'act-graph-focus', label: 'Toggle Graph Focus', icon: Share2, type: 'action', shortcut: 'F' },
 ];
 
-const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onViewChange, onAction }) => {
+const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onViewChange, onEntitySelect, onAction }) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -110,7 +111,14 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onView
         onAction?.(cmd.id);
       }
     } else {
-      onViewChange('editor'); // Default for search results
+      // Search result selected — navigate to editor with entity
+      const searchIndex = selectedIndex - filteredCommands.length;
+      const result = searchResults[searchIndex];
+      if (result?.id && onEntitySelect) {
+        onEntitySelect(result.id);
+      } else {
+        onViewChange('editor');
+      }
     }
     onClose();
   };

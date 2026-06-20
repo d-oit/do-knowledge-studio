@@ -175,11 +175,32 @@
   --bg-active: #1e3a5f;
   --text-primary: #f1f5f9;
   --text-secondary: #94a3b8;
+  --text-muted: #64748b;
   --interactive-primary: #38bdf8;
   --interactive-primary-subtle: #1e3a5f;
   --interactive-hover: #7dd3fc;
   --interactive-active: #0284c7;
+  --interactive-disabled: #475569;
   --border-default: #334155;
+  --border-subtle: #1e293b;
+  --status-success: #34d399;
+  --status-warning: #fbbf24;
+  --status-danger: #f87171;
+  --status-info: #38bdf8;
+  --status-success-bg: #064e3b;
+  --status-warning-bg: #78350f;
+  --status-danger-bg: #7f1d1d;
+  --status-info-bg: #0c4a6e;
+  --graph-node-default: #64748b;
+  --graph-edge-default: #475569;
+  --entity-note-bg: #0c4a6e;
+  --entity-note-text: #7dd3fc;
+  --entity-concept-bg: #78350f;
+  --entity-concept-text: #fbbf24;
+  --entity-person-bg: #831843;
+  --entity-person-text: #f9a8d4;
+  --entity-project-bg: #064e3b;
+  --entity-project-text: #34d399;
 }
 
 /* Theme: Neural (Soft / Warm) */
@@ -190,11 +211,32 @@
   --bg-active: #f3e8ff;
   --text-primary: #1a1a2e;
   --text-secondary: #6b21a8;
+  --text-muted: #a78bfa;
   --interactive-primary: #7c3aed;
   --interactive-primary-subtle: #f3e8ff;
   --interactive-hover: #6d28d9;
   --interactive-active: #5b21b6;
+  --interactive-disabled: #c4b5fd;
   --border-default: #e9d5ff;
+  --border-subtle: #faf5ff;
+  --status-success: #059669;
+  --status-warning: #d97706;
+  --status-danger: #dc2626;
+  --status-info: #7c3aed;
+  --status-success-bg: #d1fae5;
+  --status-warning-bg: #fef3c7;
+  --status-danger-bg: #fee2e2;
+  --status-info-bg: #ede9fe;
+  --graph-node-default: #a78bfa;
+  --graph-edge-default: #c4b5fd;
+  --entity-note-bg: #ede9fe;
+  --entity-note-text: #6d28d9;
+  --entity-concept-bg: #fef3c7;
+  --entity-concept-text: #92400e;
+  --entity-person-bg: #fce7f3;
+  --entity-person-text: #be185d;
+  --entity-project-bg: #d1fae5;
+  --entity-project-text: #047857;
 }
 
 /* Theme: Technical (Brutalist / Mono) */
@@ -205,11 +247,32 @@
   --bg-active: #f1f5f9;
   --text-primary: #000000;
   --text-secondary: #334155;
+  --text-muted: #94a3b8;
   --interactive-primary: #000000;
   --interactive-primary-subtle: #f1f5f9;
   --interactive-hover: #333333;
   --interactive-active: #111111;
+  --interactive-disabled: #e2e8f0;
   --border-default: #000000;
+  --border-subtle: #e2e8f0;
+  --status-success: #000000;
+  --status-warning: #000000;
+  --status-danger: #000000;
+  --status-info: #000000;
+  --status-success-bg: #f1f5f9;
+  --status-warning-bg: #f1f5f9;
+  --status-danger-bg: #f1f5f9;
+  --status-info-bg: #f1f5f9;
+  --graph-node-default: #94a3b8;
+  --graph-edge-default: #cbd5e1;
+  --entity-note-bg: #f1f5f9;
+  --entity-note-text: #000000;
+  --entity-concept-bg: #f1f5f9;
+  --entity-concept-text: #000000;
+  --entity-person-bg: #f1f5f9;
+  --entity-person-text: #000000;
+  --entity-project-bg: #f1f5f9;
+  --entity-project-text: #000000;
   --radius-sm: 0px;
   --radius-base: 0px;
   --radius-md: 0px;
