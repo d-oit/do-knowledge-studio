@@ -761,3 +761,47 @@
 .library-empty p {
   font-size: 16px;
 }
+
+/* Settings Wizard */
+.wizard-icon {
+  font-size: 28px;
+  margin-bottom: var(--space-4);
+}
+
+.wizard-title {
+  margin: 0 0 var(--space-2);
+}
+
+.wizard-description {
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-6);
+  line-height: 1.5;
+}
+
+.wizard-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.wizard-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.wizard-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-6);
+}
+
+.wizard-skip {
+  display: block;
+  margin: var(--space-4) auto 0;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  text-decoration: underline;
+}

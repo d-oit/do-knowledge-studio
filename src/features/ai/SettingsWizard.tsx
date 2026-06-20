@@ -38,13 +38,13 @@ export const SettingsWizard: React.FC<SettingsWizardProps> = ({ config, onComple
       <div>
         {step === 0 && (
           <>
-            <div style={{ fontSize: '28px', marginBottom: '16px' }}>🤖</div>
-            <h2 style={{ margin: '0 0 8px' }}>Welcome to AI Harness</h2>
-            <p style={{ color: 'var(--text-secondary, #666)', margin: '0 0 24px', lineHeight: 1.5 }}>
+            <div className="wizard-icon">🤖</div>
+            <h2 className="wizard-title">Welcome to AI Harness</h2>
+            <p className="wizard-description">
               This assistant can answer questions, analyze URLs, and search your local knowledge base.
               Let&rsquo;s get you set up with an AI provider.
             </p>
-            <button type="button" className="primary" onClick={handleNext} style={{ width: '100%', padding: '10px' }}>
+            <button type="button" className="primary" onClick={handleNext} style={{ width: '100%' }}>
               Get Started <ChevronRight size={16} style={{ verticalAlign: 'middle' }} />
             </button>
           </>
@@ -53,8 +53,8 @@ export const SettingsWizard: React.FC<SettingsWizardProps> = ({ config, onComple
         {step === 1 && (
           <>
             <h3 style={{ margin: '0 0 16px' }}>Choose Provider &amp; Model</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <label htmlFor="wizard-provider" style={{ fontSize: '13px', fontWeight: 600 }}>Provider</label>
+            <div className="wizard-form">
+              <label htmlFor="wizard-provider" className="wizard-label">Provider</label>
               <select
                 id="wizard-provider"
                 value={wizardProvider}
@@ -64,29 +64,27 @@ export const SettingsWizard: React.FC<SettingsWizardProps> = ({ config, onComple
                   const firstModel = Object.values(models)[0] || '';
                   setWizardModel(firstModel);
                 }}
-                style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-default, #ddd)' }}
               >
                 {Object.keys(config.providers).map(p => (
                   <option key={p} value={p}>{p}</option>
                 ))}
               </select>
-              <label htmlFor="wizard-model" style={{ fontSize: '13px', fontWeight: 600 }}>Model</label>
+              <label htmlFor="wizard-model" className="wizard-label">Model</label>
               <select
                 id="wizard-model"
                 value={wizardModel}
                 onChange={e => { setWizardModel(e.target.value); }}
-                style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-default, #ddd)' }}
               >
                 {wizardModelEntries.map(([label, value]) => (
                   <option key={value} value={value}>{label}</option>
                 ))}
               </select>
             </div>
-            <div style={{ display: 'flex', gap: '8px', marginTop: '24px' }}>
-              <button type="button" onClick={handleBack} style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid var(--border-default, #ddd)', borderRadius: '6px', cursor: 'pointer' }}>
+            <div className="wizard-actions">
+              <button type="button" onClick={handleBack} className="btn-secondary" style={{ flex: 1 }}>
                 Back
               </button>
-              <button type="button" className="primary" onClick={handleNext} style={{ flex: 1, padding: '10px' }}>
+              <button type="button" className="primary" onClick={handleNext} style={{ flex: 1 }}>
                 Next <ChevronRight size={16} style={{ verticalAlign: 'middle' }} />
               </button>
             </div>
@@ -96,7 +94,7 @@ export const SettingsWizard: React.FC<SettingsWizardProps> = ({ config, onComple
         {step === 2 && (
           <>
             <h3 style={{ margin: '0 0 16px' }}>Enter API Key</h3>
-            <p style={{ color: 'var(--text-secondary, #666)', margin: '0 0 16px', fontSize: '13px', lineHeight: 1.5 }}>
+            <p className="wizard-description" style={{ fontSize: '13px' }}>
               Your API key stays local in your browser. Never shared with anyone.
             </p>
             <input
@@ -105,13 +103,12 @@ export const SettingsWizard: React.FC<SettingsWizardProps> = ({ config, onComple
               value={wizardApiKey}
               onChange={e => { setWizardApiKey(e.target.value); }}
               placeholder={`Enter ${wizardProvider} API key`}
-              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-default, #ddd)', boxSizing: 'border-box' }}
             />
-            <div style={{ display: 'flex', gap: '8px', marginTop: '24px' }}>
-              <button type="button" onClick={handleBack} style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid var(--border-default, #ddd)', borderRadius: '6px', cursor: 'pointer' }}>
+            <div className="wizard-actions">
+              <button type="button" onClick={handleBack} className="btn-secondary" style={{ flex: 1 }}>
                 Back
               </button>
-              <button type="button" className="primary" onClick={() => onComplete(wizardProvider, wizardModel, wizardApiKey)} disabled={!wizardApiKey} style={{ flex: 1, padding: '10px' }}>
+              <button type="button" className="primary" onClick={() => onComplete(wizardProvider, wizardModel, wizardApiKey)} disabled={!wizardApiKey} style={{ flex: 1 }}>
                 <Check size={16} style={{ verticalAlign: 'middle' }} /> Complete Setup
               </button>
             </div>
@@ -121,7 +118,7 @@ export const SettingsWizard: React.FC<SettingsWizardProps> = ({ config, onComple
         <button
           type="button"
           onClick={onSkip}
-          style={{ display: 'block', margin: '16px auto 0', background: 'none', border: 'none', color: 'var(--text-muted, #999)', cursor: 'pointer', fontSize: '12px', textDecoration: 'underline' }}
+          className="wizard-skip"
         >
           Skip setup
         </button>
