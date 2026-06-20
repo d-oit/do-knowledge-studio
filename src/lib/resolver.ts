@@ -11,22 +11,24 @@ function isPrivateIP(hostname: string): boolean {
   }
 
   // IPv4 Private and Reserved Ranges
+  // Ref: https://en.wikipedia.org/wiki/Reserved_IP_addresses
   if (
-    /^(127\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|169\.254\.\d+\.\d+|0\.0\.0\.0)$/.test(
+    /^(?:127\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(?:1[6-9]|2\d|3[01])\.\d+\.\d+|169\.254\.\d+\.\d+|0\.\d+\.\d+\.\d+|100\.(?:6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.\d+\.\d+|192\.0\.0\.\d+|192\.0\.2\.\d+|192\.88\.99\.\d+|198\.51\.100\.\d+|203\.0\.113\.\d+|198\.(?:1[89])\.\d+\.\d+|22[4-9]\.\d+\.\d+\.\d+|23\d\.\d+\.\d+\.\d+|24\d\.\d+\.\d+\.\d+|25[0-5]\.\d+\.\d+\.\d+)$/.test(
       normalized,
     )
   ) {
     return true;
   }
 
-  // IPv6 Loopback, Link-Local, and Unique Local Addresses
+  // IPv6 Loopback, Link-Local, Unique Local, and Multicast Addresses
   if (
-    /^::1$/.test(normalized) || // Loopback
-    /^::$/.test(normalized) || // Unspecified
-    /^fe[89ab][0-9a-f]:/i.test(normalized) || // Link-local
+    /^::1?$/.test(normalized) || // Loopback (::1) and Unspecified (::)
+    /^fe[89ab][0-9a-f]:/i.test(normalized) || // Link-local (fe80::/10)
     /^f[cd][0-9a-f]{2}:/i.test(normalized) || // Unique local (fc00::/7)
-    /^::ffff:([0-9a-f]{1,4}:){1,2}[0-9a-f]{1,4}$/.test(normalized) || // IPv4-mapped (covers all, as we can't easily parse hex here)
-    /^::ffff:\d+\.\d+\.\d+\.\d+$/.test(normalized) // IPv4-mapped literal
+    /^ff[0-9a-f]{2}:/i.test(normalized) || // Multicast (ff00::/8)
+    /^::(?:ffff:)?(?:0:){1,2}ffff$/i.test(normalized) || // IPv4-translated
+    /^::ffff:(?:[0-9a-f]{1,4}:){1,2}[0-9a-f]{1,4}$/.test(normalized) || // IPv4-mapped (hex)
+    /^::ffff:\d+\.\d+\.\d+\.\d+$/.test(normalized) // IPv4-mapped (literal)
   ) {
     return true;
   }
