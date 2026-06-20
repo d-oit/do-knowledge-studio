@@ -123,27 +123,31 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onView
     onClose();
   };
 
-  if (!isOpen) return null;
-
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       onClose();
     }
   };
 
+  if (!isOpen) return null;
+
   return (
     <div
       className="command-palette-overlay"
       onClick={handleOverlayClick}
-      onKeyDown={e => { if (e.target === e.currentTarget && (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ')) onClose(); }}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') onClose();
+      }}
       role="button"
       tabIndex={0}
       aria-label="Close command palette"
     >
       <div
         className="command-palette-modal"
-        role="presentation"
-        onClick={e => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Command palette"
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="command-palette-header">
           <Search className="search-icon" size={20} />

@@ -1,7 +1,6 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { X } from 'lucide-react';
-import { useFocusTrap } from '../hooks/useFocusTrap';
-import { useEscapeKey } from '../hooks/useEscapeKey';
+import Overlay from './Overlay';
 
 interface MobileDrawerProps {
   isOpen: boolean;
@@ -10,37 +9,20 @@ interface MobileDrawerProps {
 }
 
 const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, children }) => {
-  const drawerRef = useRef<HTMLDivElement>(null);
-
-  useFocusTrap(drawerRef, isOpen);
-  useEscapeKey(onClose, isOpen);
-
-  if (!isOpen) return null;
-
   return (
-    <div
-      className="mobile-drawer-overlay"
-      onClick={onClose}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClose(); }}
-      role="button"
-      tabIndex={0}
-      aria-label="Close navigation drawer"
+    <Overlay
+      isOpen={isOpen}
+      onClose={onClose}
+      variant="sheet-left"
+      ariaLabel="Navigation"
     >
-      <div
-        ref={drawerRef}
-        className="mobile-drawer-content"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Navigation"
-      >
-        <div className="drawer-header">
-          <button className="close-button" onClick={onClose} aria-label="Close menu">
-            <X size={24} />
-          </button>
-        </div>
-        {children}
+      <div className="drawer-header">
+        <button className="close-button" onClick={onClose} aria-label="Close menu">
+          <X size={24} />
+        </button>
       </div>
-    </div>
+      {children}
+    </Overlay>
   );
 };
 

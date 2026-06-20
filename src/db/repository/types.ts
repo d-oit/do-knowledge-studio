@@ -4,8 +4,11 @@ import {
   Note,
   Link,
   GraphSnapshot,
+  Tag,
 } from '../../lib/validation';
 import { SQLiteDB } from '../client';
+import type { TagWithCount } from './tags';
+import type { EntityVersion } from './entity-versions';
 
 export interface RankedResult {
   id: string;
@@ -98,4 +101,26 @@ export interface IRepository {
   getSnapshot(id: string): Promise<GraphSnapshot | null>;
   listSnapshots(): Promise<GraphSnapshot[]>;
   diffSnapshots(id1: string, id2: string): Promise<GraphSnapshotDiff>;
+
+  // --- Tags ---
+  createTag(name: string, color?: string): Promise<Tag>;
+  getAllTags(): Promise<TagWithCount[]>;
+  getTagByName(name: string): Promise<Tag | null>;
+  deleteTag(id: string): Promise<void>;
+  addTagToEntity(entityId: string, tagId: string): Promise<void>;
+  removeTagFromEntity(entityId: string, tagId: string): Promise<void>;
+  getTagsByEntityId(entityId: string): Promise<Tag[]>;
+  getEntitiesByTagId(tagId: string): Promise<string[]>;
+
+  // --- Entity Versions ---
+  captureEntityVersion(entityId: string): Promise<void>;
+  getEntityVersions(entityId: string): Promise<EntityVersion[]>;
+  getEntityVersion(entityId: string, version: number): Promise<EntityVersion | null>;
+  restoreEntityVersion(entityId: string, version: number): Promise<void>;
+  diffEntityVersions(entityId: string, version1: number, version2: number): Promise<{
+    name: { old: string; new: string } | null;
+    type: { old: string; new: string } | null;
+    description: { old: string | null; new: string | null } | null;
+    metadata: { old: string | null; new: string | null } | null;
+  }>;
 }

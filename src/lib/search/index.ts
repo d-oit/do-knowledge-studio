@@ -4,6 +4,7 @@ import { handleExternalFetch } from './external-fetch';
 import {
   initSearch,
   upsertToSearchIndex,
+  upsertNoteToSearchIndex,
   removeFromSearchIndex,
   searchKnowledge,
   semanticSearch,
@@ -19,6 +20,7 @@ export * from './external-fetch';
 export {
   initSearch,
   upsertToSearchIndex,
+  upsertNoteToSearchIndex,
   removeFromSearchIndex,
   searchKnowledge,
   semanticSearch,

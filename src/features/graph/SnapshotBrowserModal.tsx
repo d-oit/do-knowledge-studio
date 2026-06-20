@@ -1,13 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, FolderOpen, GitCompare, Loader2 } from 'lucide-react';
-import { useFocusTrap } from '../../hooks/useFocusTrap';
-import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useRepository } from '../../db/useRepository';
 import { logger } from '../../lib/logger';
 import type { GraphSnapshot } from '../../lib/validation';
 import type { GraphSnapshotDiff } from '../../db/repository';
 import { GraphNodeSchema, GraphEdgeSchema } from './graph-schemas';
 import { z } from 'zod';
+import Overlay from '../../components/Overlay';
 
 interface SnapshotBrowserModalProps {
   isOpen: boolean;
@@ -23,15 +22,11 @@ const SnapshotBrowserModal: React.FC<SnapshotBrowserModalProps> = ({
   onSnapshotModeChange,
 }) => {
   const repository = useRepository();
-  const snapshotBrowserRef = useRef<HTMLDivElement>(null);
   const [snapshots, setSnapshots] = useState<GraphSnapshot[]>([]);
   const [isLoadingSnapshots, setIsLoadingSnapshots] = useState(false);
   const [selectedForDiff, setSelectedForDiff] = useState<string[]>([]);
   const [diffResult, setDiffResult] = useState<GraphSnapshotDiff | null>(null);
   const [loadingSnapshotId, setLoadingSnapshotId] = useState<string | null>(null);
-
-  useFocusTrap(snapshotBrowserRef, isOpen);
-  useEscapeKey(() => { onClose(); setDiffResult(null); }, isOpen);
 
   useEffect(() => {
     if (isOpen) {
@@ -100,18 +95,14 @@ const SnapshotBrowserModal: React.FC<SnapshotBrowserModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div
-      className="modal-overlay"
-      role="presentation"
-      onClick={(e) => { if (e.target === e.currentTarget) { onClose(); setDiffResult(null); } }}
-      onKeyDown={(e) => { if (e.target === e.currentTarget && e.key === 'Escape') { onClose(); setDiffResult(null); } }}
+    <Overlay
+      isOpen={isOpen}
+      onClose={() => { onClose(); setDiffResult(null); }}
+      variant="center"
+      labelledBy="snapshot-browser-title"
     >
       <div
-        ref={snapshotBrowserRef}
         className="modal-content"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="snapshot-browser-title"
         style={{ maxWidth: '600px', maxHeight: '80vh', overflowY: 'auto' }}
       >
         <div className="inspector-header" style={{ marginBottom: 'var(--space-4)', padding: 0, background: 'transparent', border: 0 }}>
@@ -238,7 +229,7 @@ const SnapshotBrowserModal: React.FC<SnapshotBrowserModalProps> = ({
           </>
         )}
       </div>
-    </div>
+    </Overlay>
   );
 };
 

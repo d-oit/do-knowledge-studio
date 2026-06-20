@@ -182,14 +182,13 @@ const GraphControls: React.FC<GraphControlsProps> = ({
         </div>
       )}
       {onLayoutChange && (
-        <div className="layout-toggle" style={{ display: 'flex', gap: '4px', marginLeft: 'auto' }}>
+        <div className="layout-toggle">
           <button
             onClick={() => onLayoutChange('circular')}
             className={layout === 'circular' ? 'active' : ''}
             aria-pressed={layout === 'circular'}
             aria-label="Circular layout"
             title="Circular layout"
-            style={{ padding: '6px 10px', minHeight: '36px', fontSize: '12px' }}
           >
             <CircleDot size={14} /> Circular
           </button>
@@ -199,7 +198,6 @@ const GraphControls: React.FC<GraphControlsProps> = ({
             aria-pressed={layout === 'force'}
             aria-label="Force-directed layout"
             title="Force-directed layout"
-            style={{ padding: '6px 10px', minHeight: '36px', fontSize: '12px' }}
           >
             <LayoutDashboard size={14} /> Force
           </button>
@@ -209,7 +207,6 @@ const GraphControls: React.FC<GraphControlsProps> = ({
             aria-pressed={layout === 'hierarchical'}
             aria-label="Hierarchical layout"
             title="Hierarchical layout"
-            style={{ padding: '6px 10px', minHeight: '36px', fontSize: '12px' }}
           >
             <Layout size={14} /> Hierarchical
           </button>

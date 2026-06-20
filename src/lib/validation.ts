@@ -51,8 +51,16 @@ export const GraphSnapshotSchema = z.object({
   created_at: z.string().optional(),
 });
 
+export const TagSchema = z.object({
+  id: z.string().uuid().optional(),
+  name: z.string().trim().min(1, 'Name is required').max(100),
+  color: z.string().max(7).optional(),
+  created_at: z.string().optional(),
+});
+
 export type Entity = z.infer<typeof EntitySchema>;
 export type Claim = z.infer<typeof ClaimSchema>;
 export type Note = z.infer<typeof NoteSchema>;
 export type Link = z.infer<typeof LinkSchema>;
 export type GraphSnapshot = z.infer<typeof GraphSnapshotSchema>;
+export type Tag = z.infer<typeof TagSchema>;

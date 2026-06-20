@@ -172,11 +172,10 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onEditEntity }) => {
                 if (!entity) return null;
 
                 return (
-                  <div
+                  <button
                     key={virtualItem.key}
                     className="entity-list-row"
-                    role="button"
-                    tabIndex={0}
+                    type="button"
                     style={{
                       position: 'absolute',
                       top: 0,
@@ -186,12 +185,6 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onEditEntity }) => {
                       transform: `translateY(${virtualItem.start}px)`,
                     }}
                     onClick={() => entity.id && onEditEntity(entity.id)}
-                    onKeyDown={(e) => {
-                      if ((e.key === 'Enter' || e.key === ' ') && entity.id) {
-                        e.preventDefault();
-                        onEditEntity(entity.id);
-                      }
-                    }}
                   >
                     <div className="col-name">
                       <span className="entity-name-text">{entity.name}</span>
@@ -210,11 +203,11 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onEditEntity }) => {
                       {formatDate(entity.updated_at)}
                     </div>
                     <div className="col-actions">
-                       <button className="icon-button" aria-label="Open in editor">
+                       <span className="icon-button" aria-hidden="true">
                           <ExternalLink size={16} />
-                       </button>
+                       </span>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>

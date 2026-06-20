@@ -5,6 +5,7 @@ import type { EntityExtractionResult } from '../../lib/ai/entity-extractor';
 import { useRepository } from '../../db/useRepository';
 import { applyEntitiesToGraph } from '../../lib/ai/graph-linker';
 import { logger } from '../../lib/logger';
+import Overlay from '../../components/Overlay';
 
 interface EntityReviewDialogProps {
   result: EntityExtractionResult;
@@ -61,15 +62,15 @@ const EntityReviewDialog: FC<EntityReviewDialogProps> = ({
   };
 
   return (
-    <div
-      className="modal-overlay"
+    <Overlay
+      isOpen={true}
+      onClose={onClose}
+      variant="center"
+      labelledBy="review-dialog-title"
     >
       <div
         className="modal-content"
         style={{ maxWidth: '600px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="review-dialog-title"
       >
         <div className="inspector-header">
           <h3 id="review-dialog-title"><PlusCircle size={18} /> Review Extracted Entities</h3>
@@ -164,7 +165,7 @@ const EntityReviewDialog: FC<EntityReviewDialogProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </Overlay>
   );
 };
 

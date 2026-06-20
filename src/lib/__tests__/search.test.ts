@@ -12,6 +12,7 @@ vi.mock('../../db/repository', () => ({
   repository: {
     getAllEntities: vi.fn().mockResolvedValue([]),
     getAllClaims: vi.fn().mockResolvedValue([]),
+    getAllNotes: vi.fn().mockResolvedValue([]),
     getEntityById: vi.fn().mockResolvedValue(null),
     getClaimsByEntityId: vi.fn().mockResolvedValue([]),
     exec: vi.fn().mockResolvedValue([]),

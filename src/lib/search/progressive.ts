@@ -17,7 +17,7 @@ import { hydrateFts5Index } from './fts5-hydrator';
 
 interface SearchDocument {
   id: string;
-  type: 'entity' | 'claim';
+  type: 'entity' | 'claim' | 'note';
   title: string;
   content: string;
   keywords: string;
@@ -38,6 +38,14 @@ const buildClaimDoc = (claim: Claim, entityName: string, entityId: string): Sear
   title: entityName,
   content: compressText(claim.statement),
   keywords: [entityId, claim.source || 'unknown'].join(','),
+});
+
+const buildNoteDoc = (note: { id: string; content: string; entity_id?: string | null }, entityName?: string): SearchDocument => ({
+  id: note.id,
+  type: 'note',
+  title: entityName || 'Note',
+  content: compressText(note.content),
+  keywords: note.entity_id || 'unlinked',
 });
 
 const addEntityToIndex = async (entity: Entity, claims: Claim[]): Promise<void> => {
@@ -109,8 +117,31 @@ export const initSearch = async () => {
     }
 
     await hydrateFts5Index();
+
+    // Index notes
+    const allNotes = await repository.getAllNotes();
+    const noteDocs: SearchDocument[] = [];
+    const noteIds: string[] = [];
+
+    for (const note of allNotes) {
+      if (note.content && note.content.trim().length > 0) {
+        const entityName = note.entity_id
+          ? (await repository.getEntityById(note.entity_id))?.name
+          : undefined;
+        noteDocs.push(buildNoteDoc(note, entityName));
+        noteIds.push(note.id);
+      }
+    }
+
+    if (noteDocs.length > 0) {
+      const oramaIds = await insertMultiple(db, noteDocs);
+      for (let i = 0; i < noteIds.length; i++) {
+        addToOramaMap(noteIds[i], oramaIds[i]);
+      }
+    }
+
     perf.measure('orama-init', 'orama-init');
-    logger.info(`Orama search index initialized with ${totalEntitiesIndexed} entities and ${allClaims.length} claims`);
+    logger.info(`Orama search index initialized with ${totalEntitiesIndexed} entities, ${allClaims.length} claims, ${noteDocs.length} notes`);
 
     return db;
   } catch (err) {
@@ -160,6 +191,49 @@ export const upsertToSearchIndex = async (entityId: string) => {
       })();
     }, 500);
     debounceTimers.set(entityId, timer);
+  });
+};
+
+const noteDebounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+export const upsertNoteToSearchIndex = async (noteId: string) => {
+  if (noteDebounceTimers.has(noteId)) {
+    clearTimeout(noteDebounceTimers.get(noteId));
+  }
+
+  return new Promise<void>((resolve) => {
+    const timer = setTimeout(() => {
+      void (async () => {
+        noteDebounceTimers.delete(noteId);
+
+        if (!oramaDb) await initSearch();
+
+        try {
+          const notes = await repository.getAllNotes();
+          const note = notes.find(n => n.id === noteId);
+          if (!note) return;
+
+          // Remove old note from index if it exists
+          const oramaInternalId = oramaIdMap.get(noteId);
+          if (oramaInternalId) {
+            await remove(oramaDb, oramaInternalId);
+            oramaIdMap.delete(noteId);
+          }
+
+          // Add updated note to index
+          const entityName = note.entity_id
+            ? (await repository.getEntityById(note.entity_id))?.name
+            : undefined;
+          const noteDoc = buildNoteDoc(note, entityName);
+          const oramaId = await insert(oramaDb, noteDoc);
+          addToOramaMap(noteId, oramaId);
+        } catch (err) {
+          logger.error(`Failed to upsert note ${noteId} to search index`, err);
+        }
+        resolve();
+      })();
+    }, 500);
+    noteDebounceTimers.set(noteId, timer);
   });
 };
 

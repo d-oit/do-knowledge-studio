@@ -15,6 +15,7 @@ import { useGraphKeyboardNavigation } from './GraphKeyboardNav';
 import { useGraphTouchGestures } from './GraphTouchHandler';
 import { useGraphSnapshotManager } from './GraphSnapshotManager';
 import { useGraphSyncEvents } from './GraphSyncEvents';
+import { getGraphThemeTokens, onThemeChange } from '../../lib/theme-tokens';
 
 type LayoutType = 'circular' | 'force' | 'hierarchical';
 
@@ -178,14 +179,16 @@ const GraphView: React.FC<Props> = ({
 
       if (data.entities.length === 0 && !focusMode && !snapshotMode) {
         if (!graph.hasNode('placeholder')) {
-           graph.addNode('placeholder', { label: 'Knowledge Studio', size: 10, color: '#2563eb', x: 0, y: 0 });
+          const tokens = getGraphThemeTokens();
+           graph.addNode('placeholder', { label: 'Knowledge Studio', size: 10, color: tokens.interactivePrimary, x: 0, y: 0 });
         }
       } else {
         if (graph.hasNode('placeholder')) graph.dropNode('placeholder');
 
+        const tokens = getGraphThemeTokens();
         data.entities.forEach((e, i) => {
           const entityId = e.id ?? '';
-          const nodeColor = snapshotMode ? '#8b5cf6' : (e.id === selectedNode ? '#ef4444' : '#2563eb');
+          const nodeColor = snapshotMode ? tokens.nodeDefault : (e.id === selectedNode ? tokens.nodeSelected : tokens.interactivePrimary);
           if (!graph.hasNode(entityId)) {
             graph.addNode(entityId, {
               label: e.name,
@@ -218,10 +221,11 @@ const GraphView: React.FC<Props> = ({
 
         data.links.forEach((l) => {
           if (graph.hasNode(l.source_id) && graph.hasNode(l.target_id)) {
+            const tokens = getGraphThemeTokens();
             graph.mergeEdge(l.source_id, l.target_id, {
               label: l.relation,
               size: 2,
-              color: snapshotMode ? '#a78bfa' : '#94a3b8'
+              color: snapshotMode ? tokens.edgeHighlighted : tokens.edgeDefault
             });
           }
         });
@@ -255,7 +259,7 @@ const GraphView: React.FC<Props> = ({
             }
             const g = graphRef.current;
             if (g && g.getNodeAttribute(node, 'fixed')) {
-              result.color = '#7c3aed';
+              result.color = getGraphThemeTokens().interactivePrimary;
             }
             return result;
           },
@@ -355,6 +359,40 @@ const GraphView: React.FC<Props> = ({
       sigmaInstance.current = null;
     };
   }, []);
+
+  // Re-render graph when theme changes
+  useEffect(() => {
+    const disconnect = onThemeChange(() => {
+      const sigma = sigmaInstance.current;
+      const graph = graphRef.current;
+      if (!sigma || !graph) return;
+
+      const tokens = getGraphThemeTokens();
+      graph.forEachNode((node) => {
+        const attrs = graph.getNodeAttributes(node);
+        const isFixed = attrs.fixed as boolean | undefined;
+        const isSelected = node === selectedNode;
+        const isSnapshot = snapshotMode;
+        const newNodeColor = isFixed
+          ? tokens.interactivePrimary
+          : isSnapshot
+            ? tokens.nodeDefault
+            : isSelected
+              ? tokens.nodeSelected
+              : tokens.interactivePrimary;
+        graph.setNodeAttribute(node, 'color', newNodeColor);
+      });
+
+      graph.forEachEdge((edge) => {
+        const isSnapshot = snapshotMode;
+        const newEdgeColor = isSnapshot ? tokens.edgeHighlighted : tokens.edgeDefault;
+        graph.setEdgeAttribute(edge, 'color', newEdgeColor);
+      });
+
+      sigma.refresh();
+    });
+    return disconnect;
+  }, [selectedNode, snapshotMode]);
 
   useGraphSyncEvents(graphRef);
 

@@ -11,6 +11,7 @@ import '../styles/index.css';
 import SidebarNav from '../components/SidebarNav';
 import Header from '../components/Header';
 import MobileDrawer from '../components/MobileDrawer';
+import Overlay from '../components/Overlay';
 import ErrorBoundary from '../components/ErrorBoundary';
 import ThemeSwitcher from '../components/ThemeSwitcher';
 const CommandPalette = lazy(() => import('../components/CommandPalette'));
@@ -300,17 +301,20 @@ const AppContent: React.FC = () => {
         )}
       </MobileDrawer>
 
-      {isSearchOpen && (
-        <div className="mobile-search-overlay">
-          <Suspense fallback={<SearchSkeleton />}>
-            <SearchPanel
-              isMobile
-              onClose={() => setIsSearchOpen(false)}
-              onResultClick={handleSearchResultClick}
-            />
-          </Suspense>
-        </div>
-      )}
+      <Overlay
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        variant="fullscreen"
+        ariaLabel="Search"
+      >
+        <Suspense fallback={<SearchSkeleton />}>
+          <SearchPanel
+            isMobile
+            onClose={() => setIsSearchOpen(false)}
+            onResultClick={handleSearchResultClick}
+          />
+        </Suspense>
+      </Overlay>
 
       <PerfPanel isOpen={isPerfOpen} onClose={() => setIsPerfOpen(false)} />
     </div>

@@ -56,7 +56,7 @@ describe('CommandPalette', () => {
     expect(mockOnClose).toHaveBeenCalled();
   });
 
-  it('calls onClose when clicking the overlay', () => {
+  it('calls onClose when clicking the backdrop', () => {
     render(
       <CommandPalette
         isOpen
@@ -65,9 +65,10 @@ describe('CommandPalette', () => {
         onAction={mockOnAction}
       />
     );
-    const overlay = document.querySelector('.command-palette-overlay');
-    expect(overlay).not.toBeNull();
-    fireEvent.click(overlay!);
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).not.toBeNull();
+    // Click the backdrop (parent of dialog)
+    fireEvent.click(dialog.parentElement!);
     expect(mockOnClose).toHaveBeenCalled();
   });
 

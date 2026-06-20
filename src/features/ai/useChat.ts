@@ -7,6 +7,7 @@ import { searchKnowledge } from '../../lib/search';
 import { resolveUrl, ResolvedContent } from '../../lib/resolver';
 import { logger } from '../../lib/logger';
 import { loadChatHistory, saveChatHistory, clearChatHistory } from '../../lib/chat-persistence';
+import { useRateLimiter } from './useRateLimiter';
 
 const URL_REGEX = /https?:\/\/[^\s<>"'{}|\\^[\]]+/gi;
 const MAX_TOOL_ROUNDS = 5;
@@ -76,6 +77,8 @@ export function useChat() {
   const [resolvedSources, setResolvedSources] = useState<ResolvedContent[]>([]);
   const [sessionTokens, setSessionTokens] = useState<TokenUsage>({ input: 0, output: 0 });
 
+  const { trackRequest, getRateLimitLevel } = useRateLimiter();
+
   const messagesRef = useRef<Message[]>(messages);
   useEffect(() => {
     messagesRef.current = messages;
@@ -104,6 +107,14 @@ export function useChat() {
   ) => {
     if (!userMessage.trim() || isLoading) return;
 
+    // Check rate limit
+    const rateLevel = getRateLimitLevel();
+    if (rateLevel === 'high') {
+      logger.warn('Rate limit reached, request throttled');
+      return;
+    }
+
+    trackRequest();
     setIsLoading(true);
     const userMsgId = crypto.randomUUID();
     setMessages(prev => [...prev, { id: userMsgId, role: 'user', content: userMessage }]);

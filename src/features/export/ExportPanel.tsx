@@ -1,14 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { logger } from '../../lib/logger';
 import { repository } from '../../db/repository';
 import { generateSiteHtml, generateMarkdownExport, generateJsonExport, fetchAllExportData } from '../../lib/export-core';
+import { importMarkdownFiles } from '../../lib/markdown-importer';
 import { stripHtmlTags } from '../../lib/security';
-import { Download, File, FileJson, FileText, FileSpreadsheet, Globe, Loader2 } from 'lucide-react';
+import { Download, Upload, File, FileJson, FileText, FileSpreadsheet, Globe, Loader2 } from 'lucide-react';
 import type { Entity } from '../../lib/validation';
 
 const ExportPanel: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [importSuccess, setImportSuccess] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const downloadFile = (content: string, fileName: string, contentType: string) => {
     const blob = new Blob([content], { type: contentType });
@@ -20,6 +24,91 @@ const ExportPanel: React.FC = () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    setError(null);
+    setImportSuccess(null);
+
+    try {
+      const content = await file.text();
+      let imported = 0;
+
+      if (file.name.endsWith('.json')) {
+        const { importFromJson } = await import('../../lib/export-core');
+        const exp = importFromJson(content);
+
+        for (const entity of exp.entities) {
+          try {
+            await repository.createEntity({
+              name: entity.name,
+              type: entity.type || 'concept',
+              description: entity.description,
+              metadata: entity.metadata ? JSON.stringify(entity.metadata) : undefined,
+            });
+            imported++;
+          } catch (err) {
+            logger.error(`Failed to import entity "${entity.name}"`, err);
+          }
+        }
+
+        for (const note of exp.notes) {
+          try {
+            await repository.createNote({
+              entity_id: note.entity_id || null,
+              content: note.content,
+              format: note.format || 'markdown',
+            });
+            imported++;
+          } catch (err) {
+            logger.error('Failed to import note', err);
+          }
+        }
+
+        for (const claim of exp.claims) {
+          try {
+            await repository.createClaim({
+              entity_id: claim.entity_id,
+              statement: claim.statement,
+              confidence: claim.confidence || 1.0,
+              source: claim.source,
+              verification_status: claim.verification_status || 'unverified',
+            });
+            imported++;
+          } catch (err) {
+            logger.error('Failed to import claim', err);
+          }
+        }
+
+        setImportSuccess(`Imported ${imported} items from ${file.name}`);
+      } else if (file.name.endsWith('.md')) {
+        const result = importMarkdownFiles([{ name: file.name, content }]);
+        for (const note of result.notes) {
+          try {
+            await repository.createNote({
+              entity_id: note.entityId || null,
+              content: note.content,
+              format: note.format || 'markdown',
+            });
+            imported++;
+          } catch (err) {
+            logger.error('Failed to import note', err);
+          }
+        }
+        setImportSuccess(`Imported ${imported} note(s) from ${file.name}`);
+      } else {
+        setError('Unsupported file format. Please use .json or .md files.');
+      }
+    } catch (err) {
+      setError(`Import failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setIsImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const handleExportMarkdown = async () => {
@@ -212,6 +301,39 @@ const ExportPanel: React.FC = () => {
           <p>Processing your knowledge base...</p>
         </div>
       )}
+
+      {importSuccess && (
+        <div role="status" style={{ marginTop: '16px', padding: '12px', background: '#dcfce7', color: '#166534', borderRadius: '8px', border: '1px solid #86efac', fontSize: '0.875rem' }}>
+          {importSuccess}
+        </div>
+      )}
+
+      <div style={{ marginTop: '32px', borderTop: '1px solid var(--border-default)', paddingTop: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+          <Upload size={24} />
+          <h2 style={{ margin: 0 }}>Import Knowledge</h2>
+        </div>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>
+          Import entities, notes, and claims from JSON or Markdown files.
+        </p>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json,.md"
+          onChange={handleImport}
+          style={{ display: 'none' }}
+          aria-label="Import file"
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isImporting}
+          className="btn-secondary"
+          aria-label="Import knowledge from file"
+        >
+          {isImporting ? <Loader2 className="animate-spin" size={16} /> : <Upload size={16} />}
+          {isImporting ? 'Importing...' : 'Import from File'}
+        </button>
+      </div>
     </div>
   );
 };
