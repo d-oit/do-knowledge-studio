@@ -913,3 +913,141 @@
   border-color: var(--text-primary);
   box-shadow: 0 0 0 2px var(--bg-surface);
 }
+
+/* Version History Panel */
+.version-history-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.version-history-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.version-count {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.version-empty {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-style: italic;
+}
+
+.version-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.version-item {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-base);
+  overflow: hidden;
+}
+
+.version-item-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-surface);
+}
+
+.version-expand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-size: 13px;
+}
+
+.version-number {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.version-date {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.version-restore {
+  font-size: 12px;
+  padding: var(--space-1) var(--space-2);
+}
+
+.version-details {
+  padding: var(--space-3);
+  border-top: 1px solid var(--border-default);
+  background: var(--bg-base);
+}
+
+.version-field {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  font-size: 13px;
+}
+
+.version-label {
+  font-weight: 600;
+  color: var(--text-muted);
+  min-width: 80px;
+}
+
+.version-value {
+  color: var(--text-primary);
+}
+
+.version-diff {
+  margin-top: var(--space-4);
+  padding: var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-base);
+  background: var(--bg-surface);
+}
+
+.version-diff h4 {
+  margin: 0 0 var(--space-3);
+  font-size: 14px;
+}
+
+.diff-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  font-size: 13px;
+}
+
+.diff-label {
+  font-weight: 600;
+  color: var(--text-muted);
+  min-width: 80px;
+}
+
+.diff-old {
+  color: var(--status-danger);
+  text-decoration: line-through;
+}
+
+.diff-arrow {
+  color: var(--text-muted);
+}
+
+.diff-new {
+  color: var(--status-success);
+}

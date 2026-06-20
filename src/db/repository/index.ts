@@ -7,8 +7,10 @@ import * as linksSub from './links';
 import * as snapshotsSub from './graph-snapshots';
 import * as webCacheSub from './web-cache';
 import * as tagsSub from './tags';
+import * as entityVersionsSub from './entity-versions';
 import { Entity, Claim, Note, Link, GraphSnapshot, Tag } from '../../lib/validation';
 import type { TagWithCount } from './tags';
+import type { EntityVersion } from './entity-versions';
 
 export type { IRepository, RankedResult, GraphSnapshotDiff };
 
@@ -179,6 +181,23 @@ export class Repository extends RepositoryBase implements IRepository {
   }
   async getEntitiesByTagId(tagId: string): Promise<string[]> {
     return tagsSub.getEntitiesByTagId(this, tagId);
+  }
+
+  // --- Entity Versions ---
+  async captureEntityVersion(entityId: string): Promise<void> {
+    return entityVersionsSub.captureEntityVersion(this, entityId);
+  }
+  async getEntityVersions(entityId: string): Promise<EntityVersion[]> {
+    return entityVersionsSub.getEntityVersions(this, entityId);
+  }
+  async getEntityVersion(entityId: string, version: number): Promise<EntityVersion | null> {
+    return entityVersionsSub.getEntityVersion(this, entityId, version);
+  }
+  async restoreEntityVersion(entityId: string, version: number): Promise<void> {
+    return entityVersionsSub.restoreEntityVersion(this, entityId, version);
+  }
+  async diffEntityVersions(entityId: string, version1: number, version2: number) {
+    return entityVersionsSub.diffEntityVersions(this, entityId, version1, version2);
   }
 }
 

@@ -5,6 +5,7 @@ import { logger } from '../../lib/logger';
 import { perf } from '../../lib/perf';
 import { RepositoryBase } from './base';
 import { RankedResult } from './types';
+import { captureEntityVersion } from './entity-versions';
 
 const SearchRelatedRowSchema = z.object({
   id: z.string(),
@@ -201,6 +202,9 @@ export async function updateEntity(base: RepositoryBase, id: string, entity: Par
   try {
     const current = await getEntityById(base, id);
     if (!current) throw new AppError('Entity not found', 'NOT_FOUND');
+
+    // Capture version before update
+    await captureEntityVersion(base, id);
 
     const validated = EntitySchema.partial().parse(entity);
     const name = validated.name ?? current.name;
