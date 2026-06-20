@@ -26,6 +26,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       <button
         onClick={() => editor?.chain().focus().toggleBold().run()}
         className={editor?.isActive('bold') ? 'active' : ''}
+        aria-pressed={editor?.isActive('bold') ?? false}
         aria-label="Toggle Bold"
         title="Bold (Ctrl+B)"
       >
@@ -34,6 +35,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       <button
         onClick={() => editor?.chain().focus().toggleItalic().run()}
         className={editor?.isActive('italic') ? 'active' : ''}
+        aria-pressed={editor?.isActive('italic') ?? false}
         aria-label="Toggle Italic"
         title="Italic (Ctrl+I)"
       >
@@ -42,6 +44,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       <button
         onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}
         className={editor?.isActive('heading', { level: 1 }) ? 'active' : ''}
+        aria-pressed={editor?.isActive('heading', { level: 1 }) ?? false}
         aria-label="Toggle Heading 1"
         title="Heading 1"
       >
@@ -50,6 +53,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       <button
         onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
         className={editor?.isActive('heading', { level: 2 }) ? 'active' : ''}
+        aria-pressed={editor?.isActive('heading', { level: 2 }) ?? false}
         aria-label="Toggle Heading 2"
         title="Heading 2"
       >
@@ -58,6 +62,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       <button
         onClick={() => editor?.chain().focus().toggleBulletList().run()}
         className={editor?.isActive('bulletList') ? 'active' : ''}
+        aria-pressed={editor?.isActive('bulletList') ?? false}
         aria-label="Toggle Bullet List"
         title="Bullet List"
       >
@@ -66,6 +71,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       <button
         onClick={() => editor?.chain().focus().toggleOrderedList().run()}
         className={editor?.isActive('orderedList') ? 'active' : ''}
+        aria-pressed={editor?.isActive('orderedList') ?? false}
         aria-label="Toggle Ordered List"
         title="Ordered List"
       >
@@ -74,6 +80,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       <button
         onClick={() => editor?.chain().focus().toggleCodeBlock().run()}
         className={editor?.isActive('codeBlock') ? 'active' : ''}
+        aria-pressed={editor?.isActive('codeBlock') ?? false}
         aria-label="Toggle Code Block"
         title="Code Block"
       >
@@ -82,6 +89,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       <button
         onClick={() => editor?.chain().focus().toggleBlockquote().run()}
         className={editor?.isActive('blockquote') ? 'active' : ''}
+        aria-pressed={editor?.isActive('blockquote') ?? false}
         aria-label="Toggle Blockquote"
         title="Blockquote"
       >
@@ -90,6 +98,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       <button
         onClick={onToggleLinkInput}
         className={editor?.isActive('link') ? 'active' : ''}
+        aria-pressed={editor?.isActive('link') ?? false}
         aria-label="Insert Link"
         title="Insert Link"
       >
