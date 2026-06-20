@@ -277,6 +277,16 @@
   flex-wrap: wrap;
 }
 
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.filter-group select {
+  width: auto;
+}
+
 .selection-info {
   font-size: 14px;
   color: var(--text-secondary);

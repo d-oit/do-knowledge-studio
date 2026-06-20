@@ -323,13 +323,12 @@ const MindMapView: React.FC<Props> = ({
   return (
     <div className="graph-container">
       <div className="viz-toolbar">
-        <div className="filter-group" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+        <div className="filter-group">
           <ChevronDown size={16} className="text-muted" />
           <select
             value={rootId}
             onChange={(e) => setRootId(e.target.value)}
             className="filter-chip"
-            style={{ width: 'auto' }}
             aria-label="Select root entity"
           >
             {entities.map(e => (
@@ -338,13 +337,12 @@ const MindMapView: React.FC<Props> = ({
           </select>
         </div>
 
-        <div className="filter-group" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+        <div className="filter-group">
           <Layers size={16} className="text-muted" />
           <select
             value={maxDepth}
             onChange={(e) => setMaxDepth(Number(e.target.value))}
             className="filter-chip"
-            style={{ width: 'auto' }}
             aria-label="Set depth"
           >
             {[1, 2, 3, 4, 5].map(d => (
@@ -353,13 +351,12 @@ const MindMapView: React.FC<Props> = ({
           </select>
         </div>
 
-        <div className="filter-group" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+        <div className="filter-group">
           <Filter size={16} className="text-muted" />
           <select
             value={relationFilter}
             onChange={(e) => setRelationFilter(e.target.value)}
             className="filter-chip"
-            style={{ width: 'auto' }}
             aria-label="Filter relations"
           >
             {uniqueRelations.map(rel => (
