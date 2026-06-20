@@ -183,7 +183,6 @@ const AppContent: React.FC = () => {
                   <Editor
                     editingEntityId={editingEntityId}
                     onEditComplete={handleEditComplete}
-                    onEditEntity={handleEditEntity}
                   />
                 </Profiled>
               </ErrorBoundary>
@@ -261,7 +260,7 @@ const AppContent: React.FC = () => {
 
         <aside className="search-sidebar">
           <Suspense fallback={<SearchSkeleton />}>
-            <SearchPanel onResultClick={handleSearchResultClick} />
+            <SearchPanel onResultClick={handleSearchResultClick} onCreateEntity={() => setCurrentView('editor')} />
           </Suspense>
         </aside>
       </div>
@@ -271,6 +270,7 @@ const AppContent: React.FC = () => {
           isOpen={isPaletteOpen}
           onClose={() => setIsPaletteOpen(false)}
           onViewChange={setCurrentView}
+          onEntitySelect={handleEditEntity}
         />
       </Suspense>
 
@@ -279,6 +279,7 @@ const AppContent: React.FC = () => {
           currentView={currentView}
           setCurrentView={setCurrentView}
           onClose={() => setIsMenuOpen(false)}
+          onSearchClick={() => { setIsMenuOpen(false); setIsPaletteOpen(true); }}
           onPreload={handlePreload}
         />
         <div className="drawer-theme-section">

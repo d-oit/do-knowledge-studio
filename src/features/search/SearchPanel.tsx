@@ -9,6 +9,7 @@ interface SearchPanelProps {
   onClose?: () => void;
   isMobile?: boolean;
   onResultClick?: (result: SearchResult) => void;
+  onCreateEntity?: () => void;
   shouldAutoFocus?: boolean;
   ariaLabel?: string;
 }
@@ -45,7 +46,7 @@ const FilterBar: React.FC<{
   </div>
 );
 
-const NoResultsState: React.FC<{ query: string; onClear: () => void }> = ({ query, onClear }) => (
+const NoResultsState: React.FC<{ query: string; onClear: () => void; onCreateEntity?: () => void }> = ({ query, onClear, onCreateEntity }) => (
   <div className="no-results-state">
     <div className="no-results-icon" aria-hidden="true">
       <Filter size={32} />
@@ -56,7 +57,7 @@ const NoResultsState: React.FC<{ query: string; onClear: () => void }> = ({ quer
       <button className="btn-secondary" onClick={onClear}>
         Clear search
       </button>
-      <button className="btn-primary">
+      <button className="btn-primary" onClick={onCreateEntity}>
         <Plus size={16} />
         Create new entity
       </button>
@@ -102,6 +103,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
   onClose,
   isMobile,
   onResultClick,
+  onCreateEntity,
   shouldAutoFocus = false,
   ariaLabel
 }) => {
@@ -310,7 +312,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
         {isSearching && <div className="searching-status">Searching local records...</div>}
 
         {!isSearching && query.length > 1 && results.length === 0 && (
-          <NoResultsState query={query} onClear={() => setQuery('')} />
+          <NoResultsState query={query} onClear={() => setQuery('')} onCreateEntity={onCreateEntity} />
         )}
 
         {results.length > 0 && (
