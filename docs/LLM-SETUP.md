@@ -1,172 +1,148 @@
-# LLM Provider Setup
+# LLM Setup
 
-The knowledge studio supports multiple LLM providers through a unified abstraction layer. API keys are encrypted at rest using AES-256-GCM.
-
----
+Knowledge Studio supports multiple LLM providers for AI-powered features (entity extraction, chat, knowledge augmentation).
 
 ## Supported Providers
 
-### OpenRouter (Default)
-
-Access to 100+ free and paid models through a single API.
-
-**Base URL:** `https://openrouter.ai/api/v1`
-
-**Free Models:**
-| Display Name | Model ID |
-|-------------|----------|
-| Gemini 2.0 Flash Lite | `google/gemini-2.0-flash-lite-preview-02-05:free` |
-| OpenRouter Free | `openrouter/free` |
-| Nemotron 3 Super | `nvidia/nemotron-3-super:free` |
-| Trinity Large | `arcee-ai/trinity-large-preview:free` |
-| GLM 4.5 Air | `z-ai/glm-4.5-air:free` |
-| GPT-OSS 120B | `openai/gpt-oss-120b:free` |
-| Qwen3 Coder | `qwen/qwen3-coder-480b-a35b:free` |
-| LLaMA 3.3 70B | `meta-llama/llama-3.3-70b-instruct:free` |
-
-**Setup:**
-1. Get an API key from [openrouter.ai](https://openrouter.ai)
-2. Open AI Harness → Settings → paste your key
-
-### Kilo Gateway
-
-Free-tier AI gateway with curated models.
-
-**Base URL:** `https://api.kilo.ai/api/gateway`
-
-**Free Models:**
-| Display Name | Model ID |
-|-------------|----------|
-| Kilo Auto | `kilo-auto/free` |
-| DoLa Seed 2.0 Pro | `bytedance-seed/dola-seed-2.0-pro:free` |
-| Grok Code Fast | `x-ai/grok-code-fast-1:optimized:free` |
-| Nemotron 3 Super | `nvidia/nemotron-3-super-120b-a12b:free` |
-| Trinity Large | `arcee-ai/trinity-large-thinking:free` |
-| OpenRouter Free | `openrouter/free` |
-
-**Setup:**
-1. Get an API key from [kilo.ai](https://kilo.ai)
-2. Open AI Harness → Settings → select Kilo provider → paste your key
-
----
+| Provider | API Key Required | Free Tier | Base URL |
+|----------|-----------------|-----------|----------|
+| OpenRouter | Yes | Yes (limited) | `https://openrouter.ai/api/v1` |
+| Kilo Gateway | Yes | Yes | `https://api.kilo.ai/api/gateway` |
+| Anthropic | Yes | No | `https://api.anthropic.com/v1` |
+| Ollama | No | Yes (local) | `http://localhost:11434` |
 
 ## Configuration
 
-### Storage
+### Via the App
 
-LLM configuration is stored in `localStorage` under the key `dks:llm-config`. The config includes:
-- `activeProvider` — which provider to use (`openrouter` or `kilo`)
-- `providers` — per-provider settings (base URL, API key, default model)
+1. Open the AI Harness view (click "AI Harness" in the sidebar)
+2. Click the settings gear icon
+3. Select your provider
+4. Enter your API key
+5. Select a model (or use the default)
 
-### API Key Encryption
+API keys are encrypted at rest using AES-GCM and stored in IndexedDB.
 
-API keys are encrypted at rest using **AES-256-GCM** via the Web Crypto API:
+### Via CLI
 
-1. On first use, a 256-bit encryption key is generated and stored as JWK in `localStorage` under `dks:llm-encryption-key`
-2. API keys are encrypted before persisting and decrypted on load
-3. Legacy plaintext keys are auto-migrated to encrypted on first load
-4. Encrypted values are prefixed with `enc:v1:` for forward-compatible migration
+API keys can also be configured via environment variables (not recommended for production):
 
-### Loading Config
-
-```typescript
-const config = await loadConfig();  // async — decrypts API keys
+```bash
+export VITE_LLM_API_KEY="your-api-key"
 ```
 
-### Saving Config
+## Provider Setup
 
-```typescript
-await saveConfig(config);  // async — encrypts API keys before persisting
-```
+### OpenRouter
 
----
+1. Sign up at [openrouter.ai](https://openrouter.ai)
+2. Get your API key from the dashboard
+3. In the app, select "OpenRouter" as the provider
+4. Paste your API key
 
-## Adding a New Provider
+**Free models available:**
+- `google/gemini-2.0-flash-lite-preview-02-05:free`
+- `meta-llama/llama-3.3-70b-instruct:free`
+- `nvidia/nemotron-3-super:free`
+- `qwen/qwen3-coder-480b-a35b:free`
 
-1. Create `src/lib/llm/<provider>.ts` implementing `LLMProvider`:
+### Kilo Gateway
 
-```typescript
-import type { LLMProvider, LLMRequest, LLMResponse, LLMStreamChunk, LLMProviderConfig } from './types';
+1. Sign up at [kilo.ai](https://kilo.ai)
+2. Get your API key
+3. In the app, select "Kilo Gateway" as the provider
+4. Paste your API key
 
-export class MyProvider implements LLMProvider {
-  id = 'myprovider';
-  name = 'My Provider';
-  config: LLMProviderConfig;
+**Free models available:**
+- `kilo-auto/free`
+- `meta-llama/llama-3.1-8b-instruct`
 
-  constructor(config?: Partial<LLMProviderConfig>) {
-    this.config = { baseURL: 'https://api.example.com/v1', ...config };
-  }
+### Anthropic
 
-  isConfigured(): boolean {
-    return !!this.config.apiKey;
-  }
+1. Sign up at [console.anthropic.com](https://console.anthropic.com)
+2. Get your API key
+3. In the app, select "Anthropic" as the provider
+4. Paste your API key
 
-  async chat(request: LLMRequest): Promise<LLMResponse> {
-    // Implement chat completion
-  }
+**Available models:**
+- `claude-3-5-haiku-20241022` (default, fast)
+- `claude-sonnet-4-20250514`
+- `claude-opus-4-20250514`
 
-  async *chatStream(request: LLMRequest): AsyncGenerator<LLMStreamChunk> {
-    // Implement streaming chat
-  }
-}
-```
+### Ollama (Local)
 
-2. Register in `src/lib/llm/config.ts`:
+1. Install Ollama: [ollama.com](https://ollama.com)
+2. Pull a model:
+   ```bash
+   ollama pull llama3.2
+   ```
+3. Start Ollama:
+   ```bash
+   ollama serve
+   ```
+4. In the app, select "Ollama" as the provider
+5. No API key needed (uses localhost)
 
-```typescript
-case 'myprovider':
-  return new MyProviderProvider(providerConfig);
-```
+**Available models:**
+- `llama3.2` (default)
+- `llama3.1`
+- `mistral`
+- `codellama`
+- `qwen2.5`
+- `gemma2`
 
-3. Add to `src/lib/llm/index.ts`:
+## Features Using LLM
 
-```typescript
-export { MyProvider } from './myprovider';
+### Entity Extraction
 
-export const PROVIDER_MODELS: Record<string, Record<string, string>> = {
-  // ... existing providers
-  myprovider: {
-    'Model Name': 'model-id',
-  },
-};
-```
+The AI harness can automatically extract entities from text:
 
-4. Add tests in `src/lib/llm/__tests__/`
+1. Open AI Harness
+2. Paste text or select an entity
+3. Click "Extract Entities"
+4. Review and accept extracted entities
 
----
+### Chat
 
-## Architecture
+Ask questions about your knowledge base:
 
-```
-AI Harness (UI)
-    │
-    ▼
-useChat → loadConfig() → createProvider(config)
-    │
-    ▼
-┌─────────────────────┐
-│  LLMProvider        │  ← Interface: chat(), chatStream()
-│  (OpenRouter | Kilo) │
-└─────────────────────┘
-    │
-    ▼
-fetch() → Provider API → Streaming response
-```
+1. Open Chat view
+2. Toggle "Augment with Knowledge" to enable RAG
+3. Ask a question
+4. The AI will search your knowledge base for relevant context
 
-All providers implement the `LLMProvider` interface with:
-- `chat(request)` — single response
-- `chatStream(request)` — streaming response via AsyncGenerator
-- `isConfigured()` — check if API key is set
+### Knowledge Augmentation
 
----
+When enabled, chat queries are augmented with relevant entities and claims from your knowledge base using semantic search.
 
-## Related Files
+## Troubleshooting
 
-| File | Purpose |
-|------|---------|
-| `src/lib/llm/types.ts` | Type definitions (LLMProvider, LLMRequest, etc.) |
-| `src/lib/llm/config.ts` | Config loading/saving with encryption |
-| `src/lib/llm/encryption.ts` | AES-GCM encryption for API keys |
-| `src/lib/llm/openrouter.ts` | OpenRouter provider implementation |
-| `src/lib/llm/kilo.ts` | Kilo Gateway provider implementation |
-| `src/lib/llm/index.ts` | Barrel exports and model registry |
+### "API key not configured"
+
+- Ensure you've entered a valid API key in Settings
+- Check that the provider is selected as active
+
+### "Rate limit exceeded"
+
+- Free tiers have rate limits
+- Switch to a different provider or wait
+- The app includes a client-side rate limiter
+
+### "Model not available"
+
+- Check if the model is available for your provider
+- Free models may be temporarily unavailable
+- Try a different model
+
+### Ollama connection refused
+
+- Ensure Ollama is running: `ollama serve`
+- Check the base URL: `http://localhost:11434`
+- Verify the model is pulled: `ollama list`
+
+## Security
+
+- API keys are encrypted at rest using AES-GCM (Web Crypto API)
+- Keys are stored in IndexedDB (not localStorage)
+- Keys are never sent to any server except the configured provider
+- All LLM communication uses HTTPS (except local Ollama)
