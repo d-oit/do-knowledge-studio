@@ -1,178 +1,145 @@
 # Search Architecture
 
-The knowledge studio uses a **dual search system** combining SQLite FTS5 for exact keyword matching with Orama for fuzzy/semantic search. Results are merged into a unified ranked list via progressive search.
-
----
+Knowledge Studio uses a dual search system: FTS5 for exact keyword matching and Orama for semantic similarity.
 
 ## Overview
 
 ```
 User Query
     │
-    ▼
-┌─────────────────────┐
-│  Progressive Search  │
-│  (progressive.ts)    │
-└────────┬────────────┘
-         │
-    ┌────┴────┐
-    ▼         ▼
-┌────────┐  ┌──────────┐
-│  FTS5  │  │  Orama   │
-│ (SQLite)│  │(in-memory)│
-└────────┘  └──────────┘
-    │         │
-    └────┬────┘
-         ▼
-┌─────────────────────┐
-│  Ranked Results      │
-│  (merged & scored)   │
-└─────────────────────┘
+    ├─→ FTS5 (exact match) ──→ Results
+    │       │
+    │       └─→ No results ──→ Orama (semantic) ──→ Results
+    │                               │
+    │                               └─→ No results ──→ Link traversal ──→ Results
+    │
+    └─→ Progressive fallback chain
 ```
 
----
+## Search Pipeline
 
-## Search Stages
+1. **FTS5 Full-Text Search** — Porter-stemmed keyword matching via SQLite FTS5 virtual tables
+2. **Orama Semantic Search** — Vector similarity search with optional embeddings
+3. **Related Entities** — Graph traversal via link relationships
 
-### Stage 1: FTS5 Exact Match
+### FTS5 Index
 
-SQLite's FTS5 virtual tables provide fast keyword search with porter stemming.
+Two virtual tables power keyword search:
 
-**Tables:**
-- `entity_search_idx` — indexes entity `name` and `description`
-- `claim_search_idx` — indexes claim `statement`
+| Table | Content | Tokenizer |
+|-------|---------|-----------|
+| `entity_search_idx` | Entity names + descriptions | `porter unicode61` |
+| `claim_search_idx` | Claim statements | `porter unicode61` |
 
-**Configuration:**
-- Tokenizer: `porter unicode61` (stemming + Unicode support)
-- Mode: Contentless (`content=''`) — no positional info for ~2x faster queries
-- Detail: `none` — no column or position data stored
+FTS5 indexes are contentless (`detail=none, content=''`) — they store only the index, not the original text. The actual data lives in the `entities` and `claims` tables.
 
-**Usage:**
-```sql
-SELECT * FROM entity_search_idx WHERE entity_search_idx MATCH 'search query';
-```
+### Orama Index
 
-FTS5 is the first search stage. If results are found, they're returned immediately. If empty, the system falls back to Stage 2.
+Orama provides in-browser vector search with BM25 ranking:
 
-### Stage 2: Orama Fuzzy/Semantic Search
-
-Orama is an in-memory search engine that provides:
-- **Fuzzy matching** — handles typos and partial matches
-- **BM25 scoring** — relevance ranking
-- **Vector embeddings** — semantic similarity (when embeddings are initialized)
-
-**Index Schema** (`orama-index.ts`):
 ```typescript
+// Schema definition (src/lib/search/orama-index.ts)
 {
   id: 'string',
-  name: 'string',
-  type: 'string',
-  content: 'string',
+  type: 'string',      // 'entity' | 'claim'
+  title: 'string',     // Entity name or claim statement
+  content: 'string',   // Compressed text (stop words removed)
+  keywords: 'string',  // Entity type, source, etc.
 }
 ```
 
-**Lifecycle:**
-1. On app startup, `hydrateOramaIndex()` is called (deferred via `requestIdleCallback`)
-2. All entities and claims are loaded from SQLite into the Orama index
-3. The index is kept in sync via the Job Coordinator (`reindex-document` job)
+Documents are compressed before indexing:
+- HTML tags stripped
+- Stop words removed (pre-compiled regex)
+- Trimmed to 200 characters
 
-### Stage 3: Related Entities
+## Search Functions
 
-If both FTS5 and Orama return empty results, the system searches for related entities by:
-1. Finding entities that share claims or links with search terms
-2. Scoring by relationship strength
+### `initSearch()`
 
----
-
-## Progressive Search
-
-The `progressiveSearch()` function orchestrates all three stages:
+Initializes the Orama index by hydrating from the database:
 
 ```typescript
-async function progressiveSearch(
-  query: string,
-  callback: ProgressiveSearchCallback,
-): Promise<void>
+import { initSearch } from './search';
+await initSearch(); // Loads all entities + claims into Orama
 ```
 
-**Callback stages:**
-1. `stage: 'fts5'` — FTS5 results arrive first (fast)
-2. `stage: 'orama'` — Orama results arrive second
-3. `stage: 'related'` — Related entity results arrive last
+### `searchKnowledge(query, options?)`
 
-This gives users immediate results while more comprehensive results load.
+Main search entry point — progressive fallback:
 
----
-
-## Search Entry Points
-
-### `searchKnowledge(query)`
-
-The primary search function used by the AI Harness and Chat. Returns `RankedResult[]` with combined FTS5 + Orama results.
-
-### `semanticSearch(query)`
-
-Orama-only search for fuzzy/semantic matching. Used when FTS5 is unavailable.
+```typescript
+const results = await searchKnowledge('TRIZ innovation');
+// Returns: RankedResult[]
+```
 
 ### `progressiveSearch(query, callback)`
 
-Streaming search that calls back with results as each stage completes. Used by the Search Panel UI.
+Search with incremental results via callback:
 
----
+```typescript
+await progressiveSearch('TRIZ', (stage, results) => {
+  console.log(`Stage: ${stage}, Found: ${results.length}`);
+});
+```
 
-## Indexing Pipeline
+### `upsertToSearchIndex(entityId)`
 
-### Initial Hydration
+Index a single entity and its claims:
 
-On app startup:
-1. `hydrateOramaIndex()` is called (deferred to avoid blocking UI)
-2. Loads all entities and claims from SQLite
-3. Builds the Orama in-memory index
+```typescript
+await upsertToSearchIndex('entity-uuid');
+```
 
-### Incremental Updates
+### `removeFromSearchIndex(entityId)`
 
-When entities or claims change:
-1. The `JobCoordinator` queues a `reindex-document` job
-2. Jobs are coalesced (multiple updates to the same entity become one job)
-3. The handler calls `upsertToSearchIndex(entityId)` which updates both FTS5 and Orama
+Remove an entity from the search index:
 
-### External Content
+```typescript
+await removeFromSearchIndex('entity-uuid');
+```
 
-When URLs are resolved:
-1. The `external-fetch` job handler fetches content via Jina AI reader
-2. Content is cached in the `web_cache` table
-3. The entity's search index entry is updated with the fetched content
+## Job Queue Integration
 
----
+Search index updates are processed asynchronously via `JobCoordinator`:
 
-## NLP Utilities
+| Job Type | Handler | Description |
+|----------|---------|-------------|
+| `external-fetch` | `handleExternalFetch` | Resolve URL, hydrate entity, update index |
+| `reindex-document` | `upsertToSearchIndex` | Re-index a single entity |
+| `refresh-search-index` | `clearOramaDb` + `initSearch` | Full reindex |
 
-Located in `src/lib/search/nlp.ts`:
+Jobs are deduplicated by type + targetId to prevent redundant work.
 
-- **`stripHtml(html)`** — Remove HTML tags
-- **`removeStopWords(text)`** — Remove common English stop words
-- **`compressText(text, maxLength)`** — Strip HTML + stop words, truncate
+## NLP Processing
 
-These are used during indexing to improve search quality.
+Text is preprocessed before indexing:
 
----
+```typescript
+// src/lib/nlp.ts
+compressText(text, maxLength = 200)
+  → stripHtml(text)        // Remove HTML tags
+  → removeStopWords(text)  // Remove common English words
+  → trim to maxLength      // Cut at word boundary
+```
 
-## Performance Considerations
+## Configuration
 
-- FTS5 queries are sub-millisecond for typical datasets
-- Orama hydration is deferred to idle time (`requestIdleCallback`)
-- Index updates are coalesced to avoid redundant work
-- The Orama index is rebuilt on every app start (no persistence to OPFS yet)
+Search behavior is configured via:
 
----
+- **FTS5 tokenizer**: `porter unicode61` (stemming + Unicode support)
+- **Orama ranking**: BM25 with default parameters
+- **Compression**: 200 character limit, stop word removal
+- **Embeddings**: Optional, loaded via `@orama/plugin-embeddings` when available
 
-## Related Files
+## Performance
 
-| File | Purpose |
-|------|---------|
-| `src/lib/search/progressive.ts` | Progressive search orchestrator |
-| `src/lib/search/orama-index.ts` | Orama index management |
-| `src/lib/search/fts5-hydrator.ts` | FTS5 index hydration |
-| `src/lib/search/external-fetch.ts` | External URL content fetching |
-| `src/lib/search/nlp.ts` | NLP utilities (stop words, compression) |
-| `src/lib/jobs.ts` | Job Coordinator for background indexing |
+Search initialization benchmarks (1000 entities, 5000 claims):
+
+| Operation | Time |
+|-----------|------|
+| `initSearch()` | ~10s (first load) |
+| `searchKnowledge()` | <100ms |
+| `upsertToSearchIndex()` | <50ms |
+
+The Orama index is hydrated lazily via `requestIdleCallback` to avoid blocking the main thread.
