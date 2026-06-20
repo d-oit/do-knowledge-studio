@@ -3,6 +3,7 @@ import { Bot, User, Loader2, Globe, ExternalLink, X, Send, ChevronDown, ChevronR
 import { Message, TokenUsage, ToolCallRecord } from './useChat';
 import { ResolvedContent } from '../../lib/resolver';
 import MarkdownRenderer from '../../lib/llm/markdown';
+import { scrollIntoViewSmooth } from '../../lib/motion';
 
 interface ChatViewProps {
   messages: Message[];
@@ -93,7 +94,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    scrollIntoViewSmooth(messagesEndRef.current);
   }, [messages.length]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
