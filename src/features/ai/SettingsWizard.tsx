@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChevronRight, Check } from 'lucide-react';
 import { PROVIDER_MODELS } from '../../lib/llm';
 import { LLMConfig } from '../../lib/llm/config';
+import Overlay from '../../components/Overlay';
 
 const PROVIDER_MODELS_MAP = new Map(Object.entries(PROVIDER_MODELS));
 
@@ -28,17 +29,13 @@ export const SettingsWizard: React.FC<SettingsWizardProps> = ({ config, onComple
   const wizardModelEntries = Object.entries(PROVIDER_MODELS_MAP.get(wizardProvider) || {});
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 1000,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
-    }}>
-      <div style={{
-        background: 'var(--surface-primary, #fff)',
-        borderRadius: '12px', padding: '32px',
-        maxWidth: '480px', width: '90%',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-      }}>
+    <Overlay
+      isOpen={true}
+      onClose={onSkip}
+      variant="center"
+      ariaLabel="AI Settings Wizard"
+    >
+      <div>
         {step === 0 && (
           <>
             <div style={{ fontSize: '28px', marginBottom: '16px' }}>🤖</div>
@@ -129,6 +126,6 @@ export const SettingsWizard: React.FC<SettingsWizardProps> = ({ config, onComple
           Skip setup
         </button>
       </div>
-    </div>
+    </Overlay>
   );
 };

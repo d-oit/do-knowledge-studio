@@ -1,31 +1,27 @@
-import { useEffect } from 'react';
+import { useEffect, RefObject } from 'react';
 
-/**
- * Locks document scroll when active.
- * Restores previous scroll position on deactivation.
- */
-export const useScrollLock = (active: boolean): void => {
+function getScrollbarWidth(): number {
+  return window.innerWidth - document.documentElement.clientWidth;
+}
+
+export function useScrollLock(active: boolean, containerRef?: RefObject<HTMLElement>): void {
   useEffect(() => {
-    if (!active) return;
+    if (!active) return undefined;
 
-    const scrollY = window.scrollY;
-    const body = document.body;
-    const originalOverflow = body.style.overflow;
-    const originalPosition = body.style.position;
-    const originalTop = body.style.top;
-    const originalWidth = body.style.width;
+    const el = containerRef?.current;
+    const target: HTMLElement = el ?? document.body;
+    const previousOverflow = target.style.overflow;
+    const previousPaddingRight = target.style.paddingRight;
+    const scrollbarWidth = getScrollbarWidth();
 
-    body.style.overflow = 'hidden';
-    body.style.position = 'fixed';
-    body.style.top = `-${scrollY}px`;
-    body.style.width = '100%';
+    target.style.overflow = 'hidden';
+    if (scrollbarWidth > 0) {
+      target.style.paddingRight = `${scrollbarWidth}px`;
+    }
 
     return () => {
-      body.style.overflow = originalOverflow;
-      body.style.position = originalPosition;
-      body.style.top = originalTop;
-      body.style.width = originalWidth;
-      window.scrollTo(0, scrollY);
+      target.style.overflow = previousOverflow;
+      target.style.paddingRight = previousPaddingRight;
     };
-  }, [active]);
-};
+  }, [active, containerRef]);
+}

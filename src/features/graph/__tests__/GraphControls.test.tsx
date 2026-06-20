@@ -47,6 +47,7 @@ vi.mock('../../../db/repository', () => ({
 
 vi.mock('../../../hooks/useFocusTrap', () => ({ useFocusTrap: vi.fn() }));
 vi.mock('../../../hooks/useEscapeKey', () => ({ useEscapeKey: vi.fn() }));
+vi.mock('../../../hooks/useScrollLock', () => ({ useScrollLock: vi.fn() }));
 vi.mock('../../../hooks/useMediaQuery', () => ({ useMediaQuery: () => false }));
 
 import GraphControls from '../GraphControls';
