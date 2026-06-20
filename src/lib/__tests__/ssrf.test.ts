@@ -60,10 +60,10 @@ describe('SSRF Protection', () => {
   ];
 
   it.each(allowedUrls)('should allow public URL: %s', async (url) => {
-    (global.fetch as any).mockResolvedValue({
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
       ok: true,
       headers: { get: () => 'text/markdown' },
-      text: async () => '# Test\n\nContent',
+      text: async () => Promise.resolve('# Test\n\nContent'),
     });
 
     const result = await resolveUrl(url);

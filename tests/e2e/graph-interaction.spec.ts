@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { ensureNavVisible, closeNav } from './utils';
+import { ensureNavVisible } from './utils';
 
 test.describe('Graph Interaction', () => {
   test('graph view renders with controls', async ({ page }) => {
