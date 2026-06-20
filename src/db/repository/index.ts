@@ -6,7 +6,9 @@ import * as notesSub from './notes';
 import * as linksSub from './links';
 import * as snapshotsSub from './graph-snapshots';
 import * as webCacheSub from './web-cache';
-import { Entity, Claim, Note, Link, GraphSnapshot } from '../../lib/validation';
+import * as tagsSub from './tags';
+import { Entity, Claim, Note, Link, GraphSnapshot, Tag } from '../../lib/validation';
+import type { TagWithCount } from './tags';
 
 export type { IRepository, RankedResult, GraphSnapshotDiff };
 
@@ -151,6 +153,32 @@ export class Repository extends RepositoryBase implements IRepository {
   }
   async diffSnapshots(id1: string, id2: string): Promise<GraphSnapshotDiff> {
     return snapshotsSub.diffSnapshots(this, id1, id2);
+  }
+
+  // --- Tags ---
+  async createTag(name: string, color?: string): Promise<Tag> {
+    return tagsSub.createTag(this, name, color);
+  }
+  async getAllTags(): Promise<TagWithCount[]> {
+    return tagsSub.getAllTags(this);
+  }
+  async getTagByName(name: string): Promise<Tag | null> {
+    return tagsSub.getTagByName(this, name);
+  }
+  async deleteTag(id: string): Promise<void> {
+    return tagsSub.deleteTag(this, id);
+  }
+  async addTagToEntity(entityId: string, tagId: string): Promise<void> {
+    return tagsSub.addTagToEntity(this, entityId, tagId);
+  }
+  async removeTagFromEntity(entityId: string, tagId: string): Promise<void> {
+    return tagsSub.removeTagFromEntity(this, entityId, tagId);
+  }
+  async getTagsByEntityId(entityId: string): Promise<Tag[]> {
+    return tagsSub.getTagsByEntityId(this, entityId);
+  }
+  async getEntitiesByTagId(tagId: string): Promise<string[]> {
+    return tagsSub.getEntitiesByTagId(this, tagId);
   }
 }
 

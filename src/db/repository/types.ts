@@ -4,8 +4,10 @@ import {
   Note,
   Link,
   GraphSnapshot,
+  Tag,
 } from '../../lib/validation';
 import { SQLiteDB } from '../client';
+import type { TagWithCount } from './tags';
 
 export interface RankedResult {
   id: string;
@@ -98,4 +100,14 @@ export interface IRepository {
   getSnapshot(id: string): Promise<GraphSnapshot | null>;
   listSnapshots(): Promise<GraphSnapshot[]>;
   diffSnapshots(id1: string, id2: string): Promise<GraphSnapshotDiff>;
+
+  // --- Tags ---
+  createTag(name: string, color?: string): Promise<Tag>;
+  getAllTags(): Promise<TagWithCount[]>;
+  getTagByName(name: string): Promise<Tag | null>;
+  deleteTag(id: string): Promise<void>;
+  addTagToEntity(entityId: string, tagId: string): Promise<void>;
+  removeTagFromEntity(entityId: string, tagId: string): Promise<void>;
+  getTagsByEntityId(entityId: string): Promise<Tag[]>;
+  getEntitiesByTagId(tagId: string): Promise<string[]>;
 }
