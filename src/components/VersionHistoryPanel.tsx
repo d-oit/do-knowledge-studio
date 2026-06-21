@@ -102,6 +102,7 @@ export const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({ entity
                     aria-label={`Select version ${version.version}`}
                   />
                   <button
+                    type="button"
                     className="version-expand"
                     onClick={() => { setExpandedVersion(expandedVersion === version.version ? null : version.version); }}
                     aria-expanded={expandedVersion === version.version}

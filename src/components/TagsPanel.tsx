@@ -121,6 +121,7 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({ entityId, onTagsChange }) 
         <div className="tags-list">
           {allTags.map(tag => (
             <button
+              type="button"
               key={tag.id}
               className={`tag-chip ${entityTags.some(t => t.id === tag.id) ? 'active' : ''}`}
               style={{ borderColor: tag.color || 'var(--border-default)' }}
