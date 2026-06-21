@@ -312,7 +312,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
         {isSearching && <div className="searching-status">Searching local records...</div>}
 
         {!isSearching && query.length > 1 && results.length === 0 && (
-          <NoResultsState query={query} onClear={() => setQuery('')} onCreateEntity={onCreateEntity} />
+          <NoResultsState query={query} onClear={() => { setQuery(''); }} onCreateEntity={onCreateEntity} />
         )}
 
         {results.length > 0 && (

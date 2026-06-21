@@ -61,7 +61,7 @@ const ExportPanel: React.FC = () => {
             await repository.createNote({
               entity_id: note.entity_id || null,
               content: note.content,
-              format: note.format || 'markdown',
+              format: note.format,
             });
             imported++;
           } catch (err) {
@@ -76,7 +76,7 @@ const ExportPanel: React.FC = () => {
               statement: claim.statement,
               confidence: claim.confidence || 1.0,
               source: claim.source,
-              verification_status: claim.verification_status || 'unverified',
+              verification_status: claim.verification_status,
             });
             imported++;
           } catch (err) {
@@ -92,7 +92,7 @@ const ExportPanel: React.FC = () => {
             await repository.createNote({
               entity_id: note.entityId || null,
               content: note.content,
-              format: note.format || 'markdown',
+              format: note.format,
             });
             imported++;
           } catch (err) {
@@ -320,7 +320,7 @@ const ExportPanel: React.FC = () => {
           ref={fileInputRef}
           type="file"
           accept=".json,.md"
-          onChange={handleImport}
+          onChange={(...args) => { void handleImport(...args); }}
           style={{ display: 'none' }}
           aria-label="Import file"
         />

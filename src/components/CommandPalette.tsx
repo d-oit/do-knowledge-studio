@@ -147,7 +147,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onView
         role="dialog"
         aria-modal="true"
         aria-label="Command palette"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => { e.stopPropagation(); }}
       >
         <div className="command-palette-header">
           <Search className="search-icon" size={20} />

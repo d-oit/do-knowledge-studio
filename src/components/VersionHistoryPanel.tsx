@@ -98,12 +98,12 @@ export const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({ entity
                   <input
                     type="checkbox"
                     checked={selectedVersions.includes(String(version.version))}
-                    onChange={() => handleToggleSelect(String(version.version))}
+                    onChange={() => { handleToggleSelect(String(version.version)); }}
                     aria-label={`Select version ${version.version}`}
                   />
                   <button
                     className="version-expand"
-                    onClick={() => setExpandedVersion(expandedVersion === version.version ? null : version.version)}
+                    onClick={() => { setExpandedVersion(expandedVersion === version.version ? null : version.version); }}
                     aria-expanded={expandedVersion === version.version}
                   >
                     {expandedVersion === version.version ? <ChevronDown size={14} /> : <ChevronRight size={14} />}

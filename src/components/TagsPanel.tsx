@@ -149,7 +149,7 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({ entityId, onTagsChange }) 
         <input
           type="text"
           value={newTagName}
-          onChange={e => setNewTagName(e.target.value)}
+          onChange={e => { setNewTagName(e.target.value); }}
           placeholder="New tag name..."
           onKeyDown={e => { if (e.key === 'Enter') void handleCreateTag(); }}
           aria-label="New tag name"
@@ -160,7 +160,7 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({ entityId, onTagsChange }) 
               key={color}
               className={`tag-color-swatch ${newTagColor === color ? 'selected' : ''}`}
               style={{ background: color }}
-              onClick={() => setNewTagColor(color)}
+              onClick={() => { setNewTagColor(color); }}
               aria-label={`Select color ${color}`}
             />
           ))}
