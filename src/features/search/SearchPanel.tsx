@@ -54,10 +54,10 @@ const NoResultsState: React.FC<{ query: string; onClear: () => void; onCreateEnt
     <h3>No local matches</h3>
     <p>We could not find anything matching &quot;{query}&quot; in your current library.</p>
     <div className="no-results-actions">
-      <button className="btn-secondary" onClick={onClear}>
+      <button type="button" className="btn-secondary" onClick={onClear}>
         Clear search
       </button>
-      <button className="btn-primary" onClick={onCreateEntity}>
+      <button type="button" className="btn-primary" onClick={onCreateEntity}>
         <Plus size={16} />
         Create new entity
       </button>

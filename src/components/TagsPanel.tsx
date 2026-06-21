@@ -86,18 +86,6 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({ entityId, onTagsChange }) 
     }
   };
 
-  const handleDeleteTag = async (tagId: string) => {
-    try {
-      await repository.deleteTag(tagId);
-      await loadTags();
-      if (entityId) {
-        await loadEntityTags();
-      }
-    } catch (err) {
-      logger.error('Failed to delete tag', err);
-    }
-  };
-
   return (
     <div className="tags-panel">
       <div className="tags-header">
@@ -113,6 +101,7 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({ entityId, onTagsChange }) 
             entityTags.map(tag => (
               <button
                 key={tag.id}
+                type="button"
                 className="tag-chip active"
                 style={{ borderColor: tag.color || 'var(--interactive-primary)' }}
                 onClick={() => void handleToggleTag(tag)}

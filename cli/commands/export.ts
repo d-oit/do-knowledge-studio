@@ -147,7 +147,7 @@ export const registerImportCommand: CommandRegistrar = (program, ctx) => {
           await repository.createNote({
             entity_id: note.entityId || null,
             content: note.content,
-            format: note.format || 'markdown',
+            format: note.format,
           });
           imported++;
         } catch (err) {

@@ -86,7 +86,7 @@ export const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({ entity
       ) : (
         <>
           {selectedVersions.length === 2 && (
-            <button className="btn-secondary" onClick={() => void handleCompare()}>
+            <button type="button" className="btn-secondary" onClick={() => void handleCompare()}>
               <GitCompare size={14} /> Compare Selected
             </button>
           )}
@@ -111,6 +111,7 @@ export const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({ entity
                     <span className="version-date">{formatDate(version.created_at)}</span>
                   </button>
                   <button
+                    type="button"
                     className="btn-secondary version-restore"
                     onClick={() => void handleRestore(version.version)}
                     aria-label={`Restore version ${version.version}`}
