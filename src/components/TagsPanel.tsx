@@ -147,6 +147,7 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({ entityId, onTagsChange }) 
         <div className="tag-color-picker">
           {TAG_COLORS.map(color => (
             <button
+              type="button"
               key={color}
               className={`tag-color-swatch ${newTagColor === color ? 'selected' : ''}`}
               style={{ background: color }}
