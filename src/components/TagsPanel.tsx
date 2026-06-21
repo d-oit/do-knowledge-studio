@@ -157,6 +157,7 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({ entityId, onTagsChange }) 
           ))}
         </div>
         <button
+          type="button"
           className="btn-primary"
           onClick={() => void handleCreateTag()}
           disabled={isCreating || !newTagName.trim()}
