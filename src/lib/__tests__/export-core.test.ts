@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { generateSiteHtml, generateMarkdownExport, generateJsonExport, generatePrintHtml } from '../export-core';
+import { describe, it, expect, vi } from 'vitest';
+import { generateSiteHtml, generateMarkdownExport, generateJsonExport, generatePrintHtml, parseMarkdownImport, fetchAllExportData } from '../export-core';
 import type { ExportData } from '../export-core';
 import type { Entity, Claim, Note } from '../validation';
 
@@ -370,6 +370,56 @@ describe('PNG export', () => {
     const dataUrl = mockCanvas.toDataURL('image/png');
     expect(dataUrl).toMatch(/^data:image\/png;base64,/);
     expect(dataUrl.length).toBeGreaterThan(100);
+  });
+});
+
+describe('parseMarkdownImport', () => {
+  it('parses a basic markdown export', () => {
+    const md = `# Entity Name\n**Type:** person\nDescription here\n\n## Claims\n- Claim 1 (confidence: 0.8)\n  - *Evidence:* Source 1\n## Notes\nNote content`;
+    const parsed = parseMarkdownImport(md);
+    expect(parsed).toHaveLength(1);
+    expect(parsed[0].name).toBe('Entity Name');
+    expect(parsed[0].type).toBe('person');
+    expect(parsed[0].description).toBe('Description here');
+    expect(parsed[0].claims).toHaveLength(1);
+    expect(parsed[0].claims[0].statement).toBe('Claim 1');
+    expect(parsed[0].claims[0].confidence).toBe(0.8);
+    expect(parsed[0].claims[0].evidence).toBe('Source 1');
+    expect(parsed[0].notes).toEqual(['Note content']);
+  });
+
+  it('handles multiple entities and missing sections', () => {
+    const md = `# E1\n**Type:** t1\nD1\n\n---\n\n# E2\n**Type:** t2\nD2`;
+    const parsed = parseMarkdownImport(md);
+    expect(parsed).toHaveLength(2);
+    expect(parsed[0].name).toBe('E1');
+    expect(parsed[1].name).toBe('E2');
+  });
+
+  it('skips invalid sections', () => {
+    const md = `Invalid content\n\n---\n\n# Valid\n**Type:** concept\nDesc`;
+    const parsed = parseMarkdownImport(md);
+    expect(parsed).toHaveLength(1);
+    expect(parsed[0].name).toBe('Valid');
+  });
+
+  it('handles empty input', () => {
+    expect(parseMarkdownImport('')).toHaveLength(0);
+  });
+});
+
+describe('fetchAllExportData', () => {
+  it('fetches all data from repository', async () => {
+    const repo = {
+      getAllEntities: vi.fn().mockResolvedValue([]),
+      getAllLinks: vi.fn().mockResolvedValue([]),
+      getAllClaimsGroupedByEntity: vi.fn().mockResolvedValue({}),
+      getAllNotesGroupedByEntity: vi.fn().mockResolvedValue({}),
+    };
+    const data = await fetchAllExportData(repo);
+    expect(data.entities).toEqual([]);
+    expect(data.exported_at).toBeDefined();
+    expect(repo.getAllEntities).toHaveBeenCalled();
   });
 });
 

@@ -179,4 +179,81 @@ describe('resolveUrl', () => {
 
     expect(result.content).toContain('Test & Check < Tag > "Quote" \'Apos\'   Space');
   });
+
+  it('should handle URL parsing errors', async () => {
+    await expect(resolveUrl('not-a-url')).rejects.toThrow('Invalid URL');
+  });
+
+  it('should handle direct fetch non-html content', async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      headers: {
+        get: vi.fn().mockReturnValue('text/plain'),
+      },
+      text: vi.fn().mockResolvedValue('Just some plain text'),
+    });
+
+    const result = await resolveUrl('http://studio.local/plain');
+    expect(result.format).toBe('plain');
+    expect(result.content).toBe('Just some plain text');
+  });
+
+  it('should handle direct fetch non-html content with markdown style header', async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      headers: {
+        get: vi.fn().mockReturnValue('text/plain'),
+      },
+      text: vi.fn().mockResolvedValue('# Markdown Header\nContent'),
+    });
+
+    const result = await resolveUrl('http://studio.local/md-plain');
+    expect(result.title).toBe('Markdown Header');
+  });
+
+  it('should fallback to Jina if direct fetch fails', async () => {
+    // Direct fetch fails
+    (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Network error'));
+    // Jina fallback succeeds
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      text: vi.fn().mockResolvedValue('# Fallback Content'),
+    });
+
+    const result = await resolveUrl('http://studio.local/fallback');
+    expect(result.provider).toBe('jina');
+  });
+
+  it('should throw if Jina reader fails', async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+    });
+
+    await expect(resolveUrl('https://external.com')).rejects.toThrow('Jina reader returned 500');
+  });
+
+  it('should handle Jina response without markdown title', async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      text: vi.fn().mockResolvedValue('Title: Custom Title\n\nBody content'),
+    });
+
+    const result = await resolveUrl('https://external.com/no-h1');
+    expect(result.title).toBe('Custom Title');
+  });
+
+  it('should extract summary correctly', async () => {
+    const mockHtml = `<html><body><p>${'A'.repeat(50)}</p><p>${'B'.repeat(50)}</p></body></html>`;
+
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      headers: { get: () => 'text/html' },
+      text: async () => Promise.resolve(mockHtml),
+    });
+
+    const result = await resolveUrl('http://studio.local/summary');
+    expect(result.content).toContain('A'.repeat(50));
+    expect(result.content).toContain('B'.repeat(50));
+  });
 });
