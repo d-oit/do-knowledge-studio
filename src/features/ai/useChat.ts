@@ -275,7 +275,7 @@ export function useChat() {
     } finally {
       setIsLoading(false);
     }
-  }, [isLoading]);
+  }, [isLoading, getRateLimitLevel, trackRequest]);
 
   return {
     messages,

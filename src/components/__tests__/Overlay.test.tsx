@@ -16,8 +16,10 @@ describe('Overlay', () => {
 
   it('calls onClose when backdrop is clicked', () => {
     const onClose = vi.fn();
-    render(<Overlay isOpen={true} onClose={onClose}><div>Content</div></Overlay>);
-    fireEvent.click(screen.getByLabelText('Close overlay'));
+    const { container } = render(<Overlay isOpen={true} onClose={onClose}><div>Content</div></Overlay>);
+    const backdrop = container.querySelector('[role="presentation"]');
+    expect(backdrop).not.toBeNull();
+    fireEvent.click(backdrop!);
     expect(onClose).toHaveBeenCalled();
   });
 });

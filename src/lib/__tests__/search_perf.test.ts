@@ -7,6 +7,7 @@ vi.mock('../../db/repository.js', () => ({
     getAllEntities: vi.fn(),
     getClaimsByEntityId: vi.fn(),
     getAllClaims: vi.fn(),
+    getAllNotes: vi.fn().mockResolvedValue([]),
     getEntityById: vi.fn(),
     exec: vi.fn().mockResolvedValue([]),
     transaction: vi.fn().mockResolvedValue([]),

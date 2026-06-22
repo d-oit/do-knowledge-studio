@@ -42,7 +42,7 @@ export async function captureEntityVersion(
             VALUES (?, ?, ?, ?, ?, ?)`,
       bind: [entityId, e.name, e.type, e.description, e.metadata, newVersion],
     });
-  } catch (err) {
+  } catch {
     // Silently ignore if entity_versions table doesn't exist yet
     // This allows the code to work before migration 005 is applied
   }

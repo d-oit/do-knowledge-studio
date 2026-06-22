@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, X, Tag } from 'lucide-react';
-import { useRepository } from '../../db/useRepository';
-import { logger } from '../../lib/logger';
-import type { Tag as TagType } from '../../lib/validation';
-import type { TagWithCount } from '../../db/repository/tags';
+import { useRepository } from '../db/useRepository';
+import { logger } from '../lib/logger';
+import type { Tag as TagType } from '../lib/validation';
+import type { TagWithCount } from '../db/repository/tags';
 
 interface TagsPanelProps {
   entityId?: string;
@@ -23,41 +23,62 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({ entityId, onTagsChange }) 
   const [newTagColor, setNewTagColor] = useState(TAG_COLORS[0]);
   const [isCreating, setIsCreating] = useState(false);
 
-  const loadTags = useCallback(async () => {
+  const loadAllTags = async () => {
     try {
-      const tags = await repository.getAllTags();
+      const tags: TagWithCount[] = await repository.getAllTags();
       setAllTags(tags);
     } catch (err) {
       logger.error('Failed to load tags', err);
     }
-  }, [repository]);
+  };
 
-  const loadEntityTags = useCallback(async () => {
+  const loadEntityTags = async () => {
     if (!entityId) return;
     try {
-      const tags = await repository.getTagsByEntityId(entityId);
+      const tags: TagType[] = await repository.getTagsByEntityId(entityId);
       setEntityTags(tags);
     } catch (err) {
       logger.error('Failed to load entity tags', err);
     }
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const tags: TagWithCount[] = await repository.getAllTags();
+        if (!cancelled) setAllTags(tags);
+      } catch (err) {
+        if (!cancelled) logger.error('Failed to load tags', err);
+      }
+    }
+    void load();
+    return () => { cancelled = true; };
+  }, [repository]);
+
+  useEffect(() => {
+    if (!entityId) return;
+    let cancelled = false;
+    async function load() {
+      try {
+        const tags: TagType[] = await repository.getTagsByEntityId(entityId);
+        if (!cancelled) setEntityTags(tags);
+      } catch (err) {
+        if (!cancelled) logger.error('Failed to load entity tags', err);
+      }
+    }
+    void load();
+    return () => { cancelled = true; };
   }, [entityId, repository]);
-
-  useEffect(() => {
-    void loadTags();
-  }, [loadTags]);
-
-  useEffect(() => {
-    void loadEntityTags();
-  }, [loadEntityTags]);
 
   const handleCreateTag = async () => {
     if (!newTagName.trim()) return;
     setIsCreating(true);
     try {
-      const tag = await repository.createTag(newTagName.trim(), newTagColor);
+      const tag: TagType = await repository.createTag(newTagName.trim(), newTagColor);
       setNewTagName('');
       setNewTagColor(TAG_COLORS[0]);
-      await loadTags();
+      await loadAllTags();
       if (entityId) {
         await repository.addTagToEntity(entityId, tag.id);
         await loadEntityTags();
@@ -72,7 +93,7 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({ entityId, onTagsChange }) 
 
   const handleToggleTag = async (tag: TagType) => {
     if (!entityId || !tag.id) return;
-    const isApplied = entityTags.some(t => t.id === tag.id);
+    const isApplied: boolean = entityTags.some(t => t.id === tag.id);
     try {
       if (isApplied) {
         await repository.removeTagFromEntity(entityId, tag.id);
@@ -83,18 +104,6 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({ entityId, onTagsChange }) 
       onTagsChange?.(isApplied ? entityTags.filter(t => t.id !== tag.id) : [...entityTags, tag]);
     } catch (err) {
       logger.error('Failed to toggle tag', err);
-    }
-  };
-
-  const handleDeleteTag = async (tagId: string) => {
-    try {
-      await repository.deleteTag(tagId);
-      await loadTags();
-      if (entityId) {
-        await loadEntityTags();
-      }
-    } catch (err) {
-      logger.error('Failed to delete tag', err);
     }
   };
 
@@ -113,6 +122,7 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({ entityId, onTagsChange }) 
             entityTags.map(tag => (
               <button
                 key={tag.id}
+                type="button"
                 className="tag-chip active"
                 style={{ borderColor: tag.color || 'var(--interactive-primary)' }}
                 onClick={() => void handleToggleTag(tag)}
@@ -132,6 +142,7 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({ entityId, onTagsChange }) 
         <div className="tags-list">
           {allTags.map(tag => (
             <button
+              type="button"
               key={tag.id}
               className={`tag-chip ${entityTags.some(t => t.id === tag.id) ? 'active' : ''}`}
               style={{ borderColor: tag.color || 'var(--border-default)' }}
@@ -149,7 +160,7 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({ entityId, onTagsChange }) 
         <input
           type="text"
           value={newTagName}
-          onChange={e => setNewTagName(e.target.value)}
+          onChange={e => { setNewTagName(e.target.value); }}
           placeholder="New tag name..."
           onKeyDown={e => { if (e.key === 'Enter') void handleCreateTag(); }}
           aria-label="New tag name"
@@ -157,15 +168,17 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({ entityId, onTagsChange }) 
         <div className="tag-color-picker">
           {TAG_COLORS.map(color => (
             <button
+              type="button"
               key={color}
               className={`tag-color-swatch ${newTagColor === color ? 'selected' : ''}`}
               style={{ background: color }}
-              onClick={() => setNewTagColor(color)}
+              onClick={() => { setNewTagColor(color); }}
               aria-label={`Select color ${color}`}
             />
           ))}
         </div>
         <button
+          type="button"
           className="btn-primary"
           onClick={() => void handleCreateTag()}
           disabled={isCreating || !newTagName.trim()}

@@ -112,8 +112,8 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onView
       }
     } else {
       // Search result selected — navigate to editor with entity
-      const searchIndex = selectedIndex - filteredCommands.length;
-      const result = searchResults[searchIndex];
+      const searchIndex: number = selectedIndex - filteredCommands.length;
+      const result: SearchResult | undefined = results[searchIndex];
       if (result?.id && onEntitySelect) {
         onEntitySelect(result.id);
       } else {
@@ -142,12 +142,14 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onView
       tabIndex={0}
       aria-label="Close command palette"
     >
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
       <div
         className="command-palette-modal"
         role="dialog"
         aria-modal="true"
         aria-label="Command palette"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => { e.stopPropagation(); }}
+        onKeyDown={(e) => { e.stopPropagation(); }}
       >
         <div className="command-palette-header">
           <Search className="search-icon" size={20} />

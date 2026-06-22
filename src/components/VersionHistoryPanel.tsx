@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { History, RotateCcw, GitCompare, ChevronDown, ChevronRight } from 'lucide-react';
-import { useRepository } from '../../db/useRepository';
-import { logger } from '../../lib/logger';
-import type { EntityVersion } from '../../db/repository/entity-versions';
+import { useRepository } from '../db/useRepository';
+import { logger } from '../lib/logger';
+import type { EntityVersion } from '../db/repository/entity-versions';
 
 interface VersionHistoryPanelProps {
   entityId: string;
@@ -31,6 +31,7 @@ export const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({ entity
   }, [entityId, repository]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- async data fetch, setState inside async callback
     void loadVersions();
   }, [loadVersions]);
 
@@ -86,7 +87,7 @@ export const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({ entity
       ) : (
         <>
           {selectedVersions.length === 2 && (
-            <button className="btn-secondary" onClick={() => void handleCompare()}>
+            <button type="button" className="btn-secondary" onClick={() => void handleCompare()}>
               <GitCompare size={14} /> Compare Selected
             </button>
           )}
@@ -98,12 +99,13 @@ export const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({ entity
                   <input
                     type="checkbox"
                     checked={selectedVersions.includes(String(version.version))}
-                    onChange={() => handleToggleSelect(String(version.version))}
+                    onChange={() => { handleToggleSelect(String(version.version)); }}
                     aria-label={`Select version ${version.version}`}
                   />
                   <button
+                    type="button"
                     className="version-expand"
-                    onClick={() => setExpandedVersion(expandedVersion === version.version ? null : version.version)}
+                    onClick={() => { setExpandedVersion(expandedVersion === version.version ? null : version.version); }}
                     aria-expanded={expandedVersion === version.version}
                   >
                     {expandedVersion === version.version ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -111,6 +113,7 @@ export const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({ entity
                     <span className="version-date">{formatDate(version.created_at)}</span>
                   </button>
                   <button
+                    type="button"
                     className="btn-secondary version-restore"
                     onClick={() => void handleRestore(version.version)}
                     aria-label={`Restore version ${version.version}`}

@@ -108,7 +108,7 @@ export const registerImportCommand: CommandRegistrar = (program, ctx) => {
               await repository.createNote({
                 entity_id: note.entity_id || null,
                 content: note.content,
-                format: note.format || 'markdown',
+                format: note.format,
               });
               imported++;
             } catch (err) {
@@ -124,7 +124,7 @@ export const registerImportCommand: CommandRegistrar = (program, ctx) => {
                 statement: claim.statement,
                 confidence: claim.confidence || 1.0,
                 source: claim.source,
-                verification_status: claim.verification_status || 'unverified',
+                verification_status: claim.verification_status,
               });
               imported++;
             } catch (err) {
@@ -147,7 +147,7 @@ export const registerImportCommand: CommandRegistrar = (program, ctx) => {
           await repository.createNote({
             entity_id: note.entityId || null,
             content: note.content,
-            format: note.format || 'markdown',
+            format: note.format,
           });
           imported++;
         } catch (err) {

@@ -261,7 +261,7 @@ const AppContent: React.FC = () => {
 
         <aside className="search-sidebar">
           <Suspense fallback={<SearchSkeleton />}>
-            <SearchPanel onResultClick={handleSearchResultClick} onCreateEntity={() => setCurrentView('editor')} />
+            <SearchPanel onResultClick={handleSearchResultClick} onCreateEntity={() => { setCurrentView('editor'); }} />
           </Suspense>
         </aside>
       </div>
