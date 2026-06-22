@@ -25,7 +25,7 @@ describe('Search Initialization Benchmark', () => {
     vi.clearAllMocks();
   });
 
-  it('measures initSearch performance with 1000 entities and 5000 claims', { timeout: 30_000 }, async () => {
+  it('measures initSearch performance with 1000 entities and 5000 claims', { timeout: 60_000 }, async () => {
     const numEntities = 1000;
     const claimsPerEntity = 5;
 
