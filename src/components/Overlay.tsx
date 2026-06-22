@@ -103,6 +103,7 @@ const Overlay: React.FC<OverlayProps> = ({
       role="presentation"
       tabIndex={-1}
     >
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
       <div
         ref={contentRef}
         role="dialog"
@@ -117,6 +118,11 @@ const Overlay: React.FC<OverlayProps> = ({
           paddingBottom: 'calc(var(--space-6) + env(safe-area-inset-bottom, 0px))',
         }}
         onClick={handleContentClick}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.stopPropagation();
+          }
+        }}
       >
         {children}
       </div>

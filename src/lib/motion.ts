@@ -30,7 +30,7 @@ export function animateWithMotionPreference(
   if (prefersReducedMotion()) {
     callback(to);
     onEnd?.();
-    return () => {};
+    return () => { /* no-op */ };
   }
 
   const start = performance.now();

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { History, RotateCcw, GitCompare, ChevronDown, ChevronRight } from 'lucide-react';
-import { useRepository } from '../../db/useRepository';
-import { logger } from '../../lib/logger';
-import type { EntityVersion } from '../../db/repository/entity-versions';
+import { useRepository } from '../db/useRepository';
+import { logger } from '../lib/logger';
+import type { EntityVersion } from '../db/repository/entity-versions';
 
 interface VersionHistoryPanelProps {
   entityId: string;
@@ -31,6 +31,7 @@ export const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({ entity
   }, [entityId, repository]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- async data fetch, setState inside async callback
     void loadVersions();
   }, [loadVersions]);
 

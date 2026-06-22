@@ -8,8 +8,12 @@ export function useScrollLock(active: boolean, containerRef?: RefObject<HTMLElem
   useEffect(() => {
     if (!active) return undefined;
 
-    const el = containerRef?.current;
-    const target: HTMLElement = el ?? document.body;
+    function getTarget(): HTMLElement {
+      if (containerRef?.current) return containerRef.current;
+      return document.body;
+    }
+
+    const target = getTarget();
     const previousOverflow = target.style.overflow;
     const previousPaddingRight = target.style.paddingRight;
     const scrollbarWidth = getScrollbarWidth();

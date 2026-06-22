@@ -1,15 +1,22 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import { MentionExtension } from '../MentionExtension';
 import { ClaimExtension } from '../ClaimExtension';
 
+let editor: Editor;
+
 function createEditor(extensions = []) {
-  return new Editor({
+  editor = new Editor({
     extensions: [StarterKit, ...extensions],
     content: '',
   });
+  return editor;
 }
+
+afterEach(() => {
+  editor?.destroy();
+});
 
 describe('MentionExtension', () => {
   it('registers mention mark', () => {
