@@ -152,6 +152,7 @@
 - [AI Memory](https://docs.turso.tech/guides/ai-memory.md)
 - [Code Indexing](https://docs.turso.tech/guides/code-indexing.md)
 - [Content Caching](https://docs.turso.tech/guides/content-caching.md)
+- [Secrets Vault](https://docs.turso.tech/guides/secrets-vault.md)
 - [Vector Search](https://docs.turso.tech/guides/vector-search.md): Build semantic search, recommendation systems, and RAG workflows with native vector search in Turso.
 - [Usage & Billing](https://docs.turso.tech/help/usage-and-billing.md)
 - [Vercel](https://docs.turso.tech/integrations/vercel.md): Use Turso with Vercel serverless and edge functions.
