@@ -64,7 +64,7 @@ export const GraphFiltersPanel: React.FC<{
                     <input
                       type="checkbox"
                       checked={checked}
-                      onChange={() => toggleType(type)}
+                      onChange={() => { toggleType(type); }}
                       aria-label={`Filter by type ${type}`}
                     />
                     <span>{type}</span>
@@ -89,7 +89,7 @@ export const GraphFiltersPanel: React.FC<{
                     <input
                       type="checkbox"
                       checked={checked}
-                      onChange={() => toggleRelation(relation)}
+                      onChange={() => { toggleRelation(relation); }}
                       aria-label={`Filter by relation ${relation}`}
                     />
                     <span>{relation}</span>

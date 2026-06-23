@@ -49,8 +49,8 @@ function parseOpmlOutlineText(opml: string): OpmlOutline[] {
   const tagRe = /<(\/?)outline\b([^>]*)>/g;
   const roots: OpmlOutline[] = [];
   const stack: OpmlOutline[] = [];
-  let match: RegExpExecArray | null;
-  while ((match = tagRe.exec(opml)) !== null) {
+  let match: RegExpExecArray | null = tagRe.exec(opml);
+  while (match !== null) {
     const isClose = match[1] === '/';
     const isSelfClose = match[2].trimEnd().endsWith('/');
     if (isClose) {
@@ -59,7 +59,7 @@ function parseOpmlOutlineText(opml: string): OpmlOutline[] {
     }
     const attrs = parseAttrs(match[2].trimEnd().replace(/\/$/, ''));
     const entry: OpmlOutline = {
-      text: attrs.text ?? attrs.title ?? 'Untitled',
+      text: attrs.text || attrs.title || 'Untitled',
       ...(attrs.note ? { note: attrs.note } : {}),
       children: [],
     };
@@ -67,6 +67,7 @@ function parseOpmlOutlineText(opml: string): OpmlOutline[] {
     if (parent) parent.children.push(entry);
     else roots.push(entry);
     if (!isSelfClose) stack.push(entry);
+    match = tagRe.exec(opml);
   }
   return roots;
 }
@@ -74,9 +75,10 @@ function parseOpmlOutlineText(opml: string): OpmlOutline[] {
 function parseAttrs(attrString: string): Record<string, string> {
   const attrs: Record<string, string> = {};
   const re = /([A-Za-z_][\w:-]*)\s*=\s*"([^"]*)"/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(attrString)) !== null) {
+  let m: RegExpExecArray | null = re.exec(attrString);
+  while (m !== null) {
     attrs[m[1]] = m[2];
+    m = re.exec(attrString);
   }
   return attrs;
 }

@@ -76,7 +76,7 @@ function parseOpmlOutlines(raw: string): OpmlOutline[] {
     }
     const attrs = parseAttrs(isSelfClose ? match[2].trimEnd().slice(0, -1) : match[2]);
     const entry: OpmlOutline = {
-      text: attrs.text ?? attrs.title ?? 'Untitled',
+      text: attrs.text || attrs.title || 'Untitled',
       ...(attrs.note ? { note: attrs.note } : {}),
       children: [],
     };
@@ -243,7 +243,7 @@ const ImportPanel: React.FC = () => {
   }, []);
 
   const performImport = useCallback(async () => {
-    if (!preview || preview.format === 'unknown') return;
+    if (preview.format === 'unknown') return;
     setProgress({ step: 'importing', message: 'Writing to repository…' });
 
     const counts = { entities: 0, notes: 0, claims: 0 };
@@ -410,7 +410,7 @@ const ImportPanel: React.FC = () => {
             </h3>
             <button
               type="button"
-              onClick={() => setPreview(null)}
+              onClick={() => { setPreview(null); }}
               className="btn-icon"
               aria-label="Discard preview"
             >
