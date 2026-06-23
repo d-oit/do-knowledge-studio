@@ -408,3 +408,12 @@ export const progressiveSearch = async (
     throw new AppError('Related search failed', 'SEARCH_FAILED', err, 'Search encountered an error', true);
   }
 };
+
+const noteParentEntityMap = new Map<string, string>();
+
+export const getNoteParentEntityId = (noteId: string): string | undefined =>
+  noteParentEntityMap.get(noteId);
+
+export const clearNoteParentEntityMap = (): void => {
+  noteParentEntityMap.clear();
+};

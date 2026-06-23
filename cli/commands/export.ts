@@ -4,6 +4,170 @@ import type { CommandRegistrar } from './context';
 import { generateSiteHtml, generateEntityMarkdown, fetchAllExportData, exportToJson, importFromJson } from '../../src/lib/export-core.js';
 import { importMarkdownFiles } from '../../src/lib/markdown-importer.js';
 
+interface OpmlOutline {
+  text: string;
+  note?: string;
+  children: OpmlOutline[];
+}
+
+interface ImportPlanEntity {
+  name: string;
+  type: string;
+  description?: string;
+}
+
+interface ImportPlanNote {
+  entityName: string | null;
+  content: string;
+  format: string;
+}
+
+interface ImportPlanClaim {
+  entityName: string;
+  statement: string;
+  confidence: number;
+  verification_status: string;
+}
+
+interface ImportPlan {
+  entities: ImportPlanEntity[];
+  notes: ImportPlanNote[];
+  claims: ImportPlanClaim[];
+  parseErrors: string[];
+}
+
+type ImportFormat = 'json' | 'opml' | 'markdown';
+
+function detectFormatInner(fileName: string): ImportFormat {
+  const lower = fileName.toLowerCase();
+  if (lower.endsWith('.json')) return 'json';
+  if (lower.endsWith('.opml') || lower.endsWith('.xml')) return 'opml';
+  return 'markdown';
+}
+
+function parseOpmlOutlineText(opml: string): OpmlOutline[] {
+  const tagRe = /<(\/?)outline\b([^>]*)>/g;
+  const roots: OpmlOutline[] = [];
+  const stack: OpmlOutline[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = tagRe.exec(opml)) !== null) {
+    const isClose = match[1] === '/';
+    const isSelfClose = match[2].trimEnd().endsWith('/');
+    if (isClose) {
+      stack.pop();
+      continue;
+    }
+    const attrs = parseAttrs(match[2].trimEnd().replace(/\/$/, ''));
+    const entry: OpmlOutline = {
+      text: attrs.text ?? attrs.title ?? 'Untitled',
+      ...(attrs.note ? { note: attrs.note } : {}),
+      children: [],
+    };
+    const parent = stack[stack.length - 1];
+    if (parent) parent.children.push(entry);
+    else roots.push(entry);
+    if (!isSelfClose) stack.push(entry);
+  }
+  return roots;
+}
+
+function parseAttrs(attrString: string): Record<string, string> {
+  const attrs: Record<string, string> = {};
+  const re = /([A-Za-z_][\w:-]*)\s*=\s*"([^"]*)"/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(attrString)) !== null) {
+    attrs[m[1]] = m[2];
+  }
+  return attrs;
+}
+
+function flattenOpmlToEntities(entries: OpmlOutline[]): ImportPlanEntity[] {
+  const out: ImportPlanEntity[] = [];
+  const visit = (e: OpmlOutline): void => {
+    if (e.text.trim()) {
+      out.push({
+        name: e.text.trim(),
+        type: 'concept',
+        ...(e.note ? { description: e.note } : {}),
+      });
+    }
+    for (const child of e.children) visit(child);
+  };
+  for (const root of entries) visit(root);
+  return out;
+}
+
+function buildJsonImportPlan(json: string): ImportPlan {
+  try {
+    const exp = importFromJson(json);
+    const entities: ImportPlanEntity[] = exp.entities.map(e => ({
+      name: e.name,
+      type: e.type || 'concept',
+      ...(e.description ? { description: e.description } : {}),
+    }));
+
+    const notes: ImportPlanNote[] = [];
+    for (const note of exp.notes) {
+      const entityName = note.entity_id
+        ? exp.entities.find(e => e.id === note.entity_id)?.name ?? null
+        : null;
+      notes.push({ entityName, content: note.content, format: note.format });
+    }
+
+    const claims: ImportPlanClaim[] = [];
+    for (const claim of exp.claims) {
+      const entityName = exp.entities.find(e => e.id === claim.entity_id)?.name ?? 'Unknown';
+      claims.push({
+        entityName,
+        statement: claim.statement,
+        confidence: claim.confidence ?? 1.0,
+        verification_status: claim.verification_status ?? 'unverified',
+      });
+    }
+
+    return { entities, notes, claims, parseErrors: [] };
+  } catch (err) {
+    return { entities: [], notes: [], claims: [], parseErrors: [String(err)] };
+  }
+}
+
+function buildMarkdownImportPlan(md: string, fileName: string): ImportPlan {
+  const result = importMarkdownFiles([{ name: fileName, content: md }]);
+  const notes: ImportPlanNote[] = result.notes.map(n => ({
+    entityName: n.title ?? null,
+    content: n.content,
+    format: n.format,
+  }));
+  const parseErrors = result.errors.map(e => `${e.file}: ${e.error}`);
+  return { entities: [], notes, claims: [], parseErrors };
+}
+
+function buildOpmlImportPlan(opml: string): ImportPlan {
+  const tree = parseOpmlOutlineText(opml);
+  const entities = flattenOpmlToEntities(tree);
+  return { entities, notes: [], claims: [], parseErrors: [] };
+}
+
+function planToSqlStatements(plan: ImportPlan): { sql: string }[] {
+  const stmts: { sql: string }[] = [];
+  for (const e of plan.entities) {
+    stmts.push({ sql: `INSERT INTO entities (name, type, description) VALUES ('${e.name}', '${e.type}', ${e.description ? `'${e.description}'` : 'NULL'})` });
+  }
+  for (const n of plan.notes) {
+    stmts.push({ sql: `INSERT INTO notes (entity_name, content, format) VALUES (${n.entityName ? `'${n.entityName}'` : 'NULL'}, '${n.content}', '${n.format}')` });
+  }
+  for (const c of plan.claims) {
+    stmts.push({ sql: `INSERT INTO claims (entity_name, statement, confidence, verification_status) VALUES ('${c.entityName}', '${c.statement}', ${c.confidence}, '${c.verification_status}')` });
+  }
+  return stmts;
+}
+
+function summarizePlan(plan: ImportPlan): string {
+  const total = plan.entities.length + plan.notes.length + plan.claims.length;
+  if (total === 0) return 'no items';
+  return `${total} entities`;
+}
+
 async function exportMarkdown(outDir: string): Promise<void> {
   const { repository } = await import('../../src/db/repository.js');
   const data = await fetchAllExportData(repository);
@@ -159,4 +323,15 @@ export const registerImportCommand: CommandRegistrar = (program, ctx) => {
         console.error(`  Error: ${e.file}: ${e.error}`);
       }
     });
+};
+
+export const __testing = {
+  detectFormat: detectFormatInner,
+  buildJsonImportPlan,
+  buildMarkdownImportPlan,
+  buildOpmlImportPlan,
+  parseOpmlOutlineText,
+  flattenOpmlToEntities,
+  planToSqlStatements,
+  summarizePlan,
 };

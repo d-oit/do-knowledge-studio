@@ -105,30 +105,30 @@ const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({ entityId, onR
 
   if (isLoading) {
     return (
-      <div className="version-history-panel" aria-label="Loading version history">
+      <section className="version-history-panel" aria-label="Loading version history">
         <div className="version-history-header">
           <History size={14} aria-hidden="true" />
           Version History
         </div>
         <p className="version-empty">Loading versions...</p>
-      </div>
+      </section>
     );
   }
 
   if (versions.length === 0) {
     return (
-      <div className="version-history-panel" aria-label="No version history">
+      <section className="version-history-panel" aria-label="No version history">
         <div className="version-history-header">
           <History size={14} aria-hidden="true" />
           Version History
         </div>
         <p className="version-empty">No versions yet. Save changes to create versions.</p>
-      </div>
+      </section>
     );
   }
 
   return (
-    <div className="version-history-panel" aria-label="Version history">
+    <section className="version-history-panel" aria-label="Version history">
       <div className="version-history-header">
         <History size={14} aria-hidden="true" />
         Version History
@@ -202,7 +202,7 @@ const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({ entityId, onR
           );
         })}
       </div>
-    </div>
+    </section>
   );
 };
 

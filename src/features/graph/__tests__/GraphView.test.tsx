@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import React from 'react';
 import Graph from 'graphology';
 import { buildGraphologyInstance } from '../../../lib/graph-data';
 import { EMPTY_GRAPH_FILTERS } from '../graph-filters';
@@ -106,14 +105,14 @@ const sampleEntities: Entity[] = [entity1, entity2, entity3];
 
 const linkA: Link = {
   id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-  source_id: entity1.id!,
-  target_id: entity2.id!,
+  source_id: entity1.id as string,
+  target_id: entity2.id as string,
   relation: 'works_on',
 };
 const linkB: Link = {
   id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
-  source_id: entity2.id!,
-  target_id: entity3.id!,
+  source_id: entity2.id as string,
+  target_id: entity3.id as string,
   relation: 'references',
 };
 const sampleLinks: Link[] = [linkA, linkB];
@@ -130,24 +129,24 @@ describe('buildGraphologyInstance', () => {
   it('creates one node per entity with the correct attributes', () => {
     const graph = buildGraphologyInstance(sampleEntities, []);
     expect(graph.order).toBe(3);
-    expect(graph.hasNode(entity1.id!)).toBe(true);
-    expect(graph.hasNode(entity2.id!)).toBe(true);
-    expect(graph.hasNode(entity3.id!)).toBe(true);
-    expect(graph.getNodeAttribute(entity1.id!, 'label')).toBe('Alice');
-    expect(graph.getNodeAttribute(entity2.id!, 'label')).toBe('Project Atlas');
-    expect(graph.getNodeAttribute(entity1.id!, 'type')).toBe('person');
-    expect(graph.getNodeAttribute(entity2.id!, 'type')).toBe('project');
-    expect(graph.getNodeAttribute(entity3.id!, 'size')).toBe(10);
+    expect(graph.hasNode(entity1.id as string)).toBe(true);
+    expect(graph.hasNode(entity2.id as string)).toBe(true);
+    expect(graph.hasNode(entity3.id as string)).toBe(true);
+    expect(graph.getNodeAttribute(entity1.id as string, 'label')).toBe('Alice');
+    expect(graph.getNodeAttribute(entity2.id as string, 'label')).toBe('Project Atlas');
+    expect(graph.getNodeAttribute(entity1.id as string, 'type')).toBe('person');
+    expect(graph.getNodeAttribute(entity2.id as string, 'type')).toBe('project');
+    expect(graph.getNodeAttribute(entity3.id as string, 'size')).toBe(10);
   });
 
   it('creates directed edges with the correct direction and label', () => {
     const graph = buildGraphologyInstance(sampleEntities, sampleLinks);
     expect(graph.size).toBe(2);
-    expect(graph.hasDirectedEdge(entity1.id!, entity2.id!)).toBe(true);
-    expect(graph.hasDirectedEdge(entity2.id!, entity3.id!)).toBe(true);
-    expect(graph.getEdgeAttribute(entity1.id!, entity2.id!, 'label')).toBe('works_on');
-    expect(graph.getEdgeAttribute(entity2.id!, entity3.id!, 'label')).toBe('references');
-    const edgeAB = graph.edge(entity1.id!, entity2.id!);
+    expect(graph.hasDirectedEdge(entity1.id as string, entity2.id as string)).toBe(true);
+    expect(graph.hasDirectedEdge(entity2.id as string, entity3.id as string)).toBe(true);
+    expect(graph.getEdgeAttribute(entity1.id as string, entity2.id as string, 'label')).toBe('works_on');
+    expect(graph.getEdgeAttribute(entity2.id as string, entity3.id as string, 'label')).toBe('references');
+    const edgeAB = graph.edge(entity1.id, entity2.id);
     expect(graph.source(edgeAB)).toBe(entity1.id);
     expect(graph.target(edgeAB)).toBe(entity2.id);
   });
@@ -159,31 +158,31 @@ describe('buildGraphologyInstance', () => {
     ];
     const graph = buildGraphologyInstance(entities, []);
     expect(graph.order).toBe(1);
-    expect(graph.hasNode(entity1.id!)).toBe(true);
+    expect(graph.hasNode(entity1.id as string)).toBe(true);
   });
 
   it('drops links whose endpoints are missing from the entity set', () => {
     const dangling: Link = {
       id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
-      source_id: entity1.id!,
+      source_id: entity1.id as string,
       target_id: '99999999-9999-9999-9999-999999999999',
       relation: 'broken',
     };
     const graph = buildGraphologyInstance(sampleEntities, [linkA, dangling]);
     expect(graph.size).toBe(1);
-    expect(graph.hasDirectedEdge(entity1.id!, entity2.id!)).toBe(true);
+    expect(graph.hasDirectedEdge(entity1.id as string, entity2.id as string)).toBe(true);
   });
 
   it('deduplicates duplicate edges between the same source/target pair', () => {
     const duplicate: Link = {
       id: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
-      source_id: entity1.id!,
-      target_id: entity2.id!,
+      source_id: entity1.id as string,
+      target_id: entity2.id as string,
       relation: 'duplicate_relation',
     };
     const graph = buildGraphologyInstance(sampleEntities, [linkA, duplicate]);
     expect(graph.size).toBe(1);
-    expect(graph.getEdgeAttribute(entity1.id!, entity2.id!, 'label')).toBe('works_on');
+    expect(graph.getEdgeAttribute(entity1.id as string, entity2.id as string, 'label')).toBe('works_on');
   });
 
   it('deduplicates duplicate entity ids', () => {
@@ -194,7 +193,7 @@ describe('buildGraphologyInstance', () => {
     ];
     const graph = buildGraphologyInstance(entities, []);
     expect(graph.order).toBe(2);
-    expect(graph.getNodeAttribute(entity1.id!, 'label')).toBe('Alice');
+    expect(graph.getNodeAttribute(entity1.id as string, 'label')).toBe('Alice');
   });
 
   it('returns a graphology Graph instance', () => {
@@ -206,13 +205,13 @@ describe('buildGraphologyInstance', () => {
 describe('useGraphFilters', () => {
   it('builds entity type, edge relation, and node degree maps', () => {
     const { result } = renderHook(() => useGraphFilters(sampleEntities, sampleLinks));
-    expect(result.current.entityTypeMap[entity1.id!]).toBe('person');
-    expect(result.current.entityTypeMap[entity2.id!]).toBe('project');
-    expect(result.current.edgeRelationMap[linkA.id!]).toBe('works_on');
-    expect(result.current.edgeRelationMap[linkB.id!]).toBe('references');
-    expect(result.current.nodeDegreeMap[entity1.id!]).toBe(1);
-    expect(result.current.nodeDegreeMap[entity2.id!]).toBe(2);
-    expect(result.current.nodeDegreeMap[entity3.id!]).toBe(1);
+    expect(result.current.entityTypeMap[entity1.id as string]).toBe('person');
+    expect(result.current.entityTypeMap[entity2.id as string]).toBe('project');
+    expect(result.current.edgeRelationMap[linkA.id as string]).toBe('works_on');
+    expect(result.current.edgeRelationMap[linkB.id as string]).toBe('references');
+    expect(result.current.nodeDegreeMap[entity1.id as string]).toBe(1);
+    expect(result.current.nodeDegreeMap[entity2.id as string]).toBe(2);
+    expect(result.current.nodeDegreeMap[entity3.id as string]).toBe(1);
   });
 
   it('returns the input unchanged when no filters are active', () => {
@@ -284,14 +283,14 @@ describe('GraphInspector', () => {
   const claims: Claim[] = [
     {
       id: 'cl-1',
-      entity_id: entity1.id!,
+      entity_id: entity1.id as string,
       statement: 'Alice works on Project Atlas',
       confidence: 0.9,
       verification_status: 'verified',
     },
     {
       id: 'cl-2',
-      entity_id: entity1.id!,
+      entity_id: entity1.id as string,
       statement: 'Alice likes coffee',
       evidence: 'observation',
       confidence: 0.8,
@@ -302,14 +301,14 @@ describe('GraphInspector', () => {
   const links: Link[] = [
     {
       id: 'l1',
-      source_id: entity1.id!,
-      target_id: entity2.id!,
+      source_id: entity1.id as string,
+      target_id: entity2.id as string,
       relation: 'works_on',
     },
     {
       id: 'l2',
-      source_id: entity3.id!,
-      target_id: entity1.id!,
+      source_id: entity3.id as string,
+      target_id: entity1.id as string,
       relation: 'mentions',
     },
   ];
@@ -375,7 +374,7 @@ describe('GraphInspector', () => {
     const danglingLink: Link = {
       id: 'dangling',
       source_id: 'unknown-id',
-      target_id: entity1.id!,
+      target_id: entity1.id as string,
       relation: 'links_to',
     };
     render(<GraphInspector entity={baseEntity} claims={[]} links={[danglingLink]} entities={entities} onClose={vi.fn()} />);
@@ -437,8 +436,8 @@ describe('GraphFiltersPanel integration via useGraphFilters', () => {
       ...sampleLinks,
       {
         id: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
-        source_id: extraEntity.id!,
-        target_id: entity1.id!,
+        source_id: extraEntity.id as string,
+        target_id: entity1.id as string,
         relation: 'references',
       },
     ];
