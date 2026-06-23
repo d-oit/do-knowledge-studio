@@ -120,8 +120,8 @@ function buildJsonImportPlan(json: string): ImportPlan {
       claims.push({
         entityName,
         statement: claim.statement,
-        confidence: claim.confidence ?? 1.0,
-        verification_status: claim.verification_status ?? 'unverified',
+        confidence: claim.confidence,
+        verification_status: claim.verification_status,
       });
     }
 
