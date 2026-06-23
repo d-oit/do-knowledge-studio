@@ -1,8 +1,8 @@
 # Plans Index — do-knowledge-studio
 
 **Generated**: 2026-05-27  
-**Updated**: 2026-06-18
-**Source**: 6-agent parallel swarm analysis + GitHub issue audit (#168–#240) + open issues (#280-#289) + all PRs merged (#292-#307) + 3-agent UI/UX/feature-gap analysis (plan 041, ADRs 013–016)
+**Updated**: 2026-06-22
+**Source**: 6-agent parallel swarm analysis + GitHub issue audit (#168–#240) + open issues (#280-#289) + all PRs merged (#292-#307) + 3-agent UI/UX/feature-gap analysis (plan 041, ADRs 013–016) + 4-wave master GOAP swarm execution (plan 042, 2026-06-22)
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
 ## Quick Reference — Active Plans
@@ -10,13 +10,14 @@
 | Priority | Plan | Description | Effort | Status | Issues |
 |----------|------|-------------|--------|--------|--------|
 | **P0** | [33-post-swarm-critical-features.md](33-post-swarm-critical-features.md) | Library view, search nav, backlinks, CLI unification, Chat→LLM, toolbar, undo/redo | 20-28h | ✅ MERGED | #223–#231, #292, #293, #305, #307 |
-| **P1** | [34-architecture-hygiene.md](34-architecture-hygiene.md) | Split 4 oversized files (repository, GraphView, AIHarness, search) | 16-20h | 📝 OPEN | #226 |
-| **P1** | [35-test-coverage-expansion.md](35-test-coverage-expansion.md) | Mind map, CLI, graph, extension, E2E tests | 20-28h | 📝 OPEN | #228, #229 |
-| **P1** | [36-documentation-overhaul.md](36-documentation-overhaul.md) | CLI docs, JSDoc, DB schema, search arch, onboarding, LLM setup, deployment | 12-16h | 📝 OPEN | #237 |
-| **P1** | [37-security-quality-hardening.md](37-security-quality-hardening.md) | API key encryption, SSRF fix, migration fix, snapshot validation | 8-12h | 📝 OPEN | #238–#240 |
+| **P1** | [34-architecture-hygiene.md](34-architecture-hygiene.md) | Split 4 oversized files (repository, GraphView, AIHarness, search) | 16-20h | ✅ MERGED | #226 |
+| **P1** | [35-test-coverage-expansion.md](35-test-coverage-expansion.md) | Mind map, CLI, graph, extension, E2E tests | 20-28h | ✅ MERGED | #228, #229 |
+| **P1** | [36-documentation-overhaul.md](36-documentation-overhaul.md) | CLI docs, JSDoc, DB schema, search arch, onboarding, LLM setup, deployment | 12-16h | ✅ MERGED | #237 |
+| **P1** | [37-security-quality-hardening.md](37-security-quality-hardening.md) | API key encryption, SSRF fix, migration fix, snapshot validation | 8-12h | ✅ MERGED | #238–#240 |
 | **P0** | [033-goap-open-issues-prs-2026-06-11.md](033-goap-open-issues-prs-2026-06-11.md) | Close 6 open issues + wire missing plan features | 8-12h | ✅ MERGED | #305 |
 | **P1** | [040-goap-export-pipeline-and-pr-cleanup-2026-06-16.md](040-goap-export-pipeline-and-pr-cleanup-2026-06-16.md) | Complete export pipeline (PDF, JSON schema v1.0, MD round-trip) + resolve red PRs | 12-18h | ✅ MERGED | #289 |
-| **P0** | [041-goap-ui-ux-modernization-and-feature-gaps-2026-06-18.md](041-goap-ui-ux-modernization-and-feature-gaps-2026-06-18.md) | UI modernization (semantic tokens, primitives), full responsiveness (dynamic viewport, 44px targets, mobile viz controls, overlay a11y), feature-gap closure (import persistence, tags, version history, notes search, chat unification) | 90-130h | 📝 OPEN | #232–#236, #227, #231 |
+| **P0** | [041-goap-ui-ux-modernization-and-feature-gaps-2026-06-18.md](041-goap-ui-ux-modernization-and-feature-gaps-2026-06-18.md) | UI modernization (semantic tokens, primitives), full responsiveness (dynamic viewport, 44px targets, mobile viz controls, overlay a11y), feature-gap closure (import persistence, tags, version history, notes search, chat unification) | 90-130h | ✅ MERGED | #232–#236, #227, #231 |
+| **P0** | [042-goap-master-implementation-2026-06-22.md](042-goap-master-implementation-2026-06-22.md) | Master GOAP orchestration — 4-wave swarm execution of all open plans (34, 35, 36, 37, 041) | 140-200h | ✅ MERGED | All |
 
 ## Quick Reference — Completed Plans
 
@@ -59,51 +60,51 @@
 | #239 | Fix browser migration fallback loading only first file | High | bug, jules | 37.3 |
 | #240 | Add Zod validation for graph snapshot loading | High | bug, jules | 37.4 |
 
-## GOAP Execution Order — Next Wave
+## GOAP Execution Order — Master Wave (2026-06-22)
+
+**Plan 042** — Master GOAP orchestration with 4-wave swarm execution. All tracks completed in single coordinated run.
 
 ```
-Wave 1 (P0 — PARALLEL) ──→ 📝 OPEN
-  ├─ 33-post-swarm-critical-features.md (G-FEATURES-V2)
-  │   ├─ 33.2 Search → Editor navigation (quick win, 0.5h)
-  │   ├─ 33.1 Library/Entity Browser view (6-8h)
-  │   ├─ 33.3 Backlinks/bidirectional linking (4-6h)
-  │   ├─ 33.4 CLI database unification (4-6h)
-  │   ├─ 33.5 Wire Chat to LLM (2-3h)
-  │   ├─ 33.6 Expand editor toolbar (2-3h)
-  │   └─ 33.7 Add undo/redo (3-4h)
-  └─ 37-security-quality-hardening.md (G-SECURITY-V2)
-      ├─ 37.1 API key encryption (3-4h)
-      ├─ 37.2 SSRF fix (1-2h)
-      ├─ 37.3 Browser migration fix (1h)
-      ├─ 37.4 Snapshot validation (1h)
-      └─ 37.5 Silent catch logging (1-2h)
+Wave 1 (P0 — FOUNDATION — PARALLEL) ──→ ✅ MERGED
+  ├─ Tokens (A1-A2): fix undefined tokens, add semantic families
+  ├─ Security (A5-A9): API key encryption, SSRF, migration fix, snapshot validation, silent catches
+  ├─ Architecture (A10-A13): split repository.ts, GraphView, AIHarness, search.ts
+  ├─ Overlay (A4): build <Overlay> primitive (focus-trap, Escape, scroll-lock)
+  └─ Motion (A3): prefers-reduced-motion policy
       ↓
-Wave 2 (P1 — PARALLEL) ──→ 📝 OPEN
-  ├─ 34-architecture-hygiene.md (G-ARCHITECTURE)
-  │   ├─ 34.5 IRepository interface (3-4h) — do first
-  │   ├─ 34.1 Split repository.ts (6-8h)
-  │   ├─ 34.2 Split GraphView.tsx (5-6h)
-  │   ├─ 34.3 Split AIHarness.tsx (4-5h)
-  │   └─ 34.4 Split search.ts (3-4h)
-  ├─ 35-test-coverage-expansion.md (G-TESTING)
-  │   ├─ 35.1 Mind map tests (4-5h)
-  │   ├─ 35.2 CLI tests (5-6h)
-  │   ├─ 35.3 Graph tests (4-5h)
-  │   ├─ 35.4 Editor extension tests (3-4h)
-  │   ├─ 35.5 Quick win tests (2-3h)
-  │   ├─ 35.6 E2E test expansion (4-6h)
-  │   └─ 35.7 Raise coverage thresholds (1h)
-  └─ 36-documentation-overhaul.md (G-DOCS)
-      ├─ 36.9 Fix VERSION sync (0.5h) — do first
-      ├─ 36.1 CLI reference (2-3h)
-      ├─ 36.2 JSDoc for components (3-4h)
-      ├─ 36.3 Database schema docs (2-3h)
-      ├─ 36.4 Search architecture docs (1-2h)
-      ├─ 36.5 Developer onboarding guide (2-3h)
-      ├─ 36.6 LLM setup guide (1-2h)
-      ├─ 36.7 Deployment guide (1-2h)
-      └─ 36.8 Repository API docs (1-2h)
+Wave 2 (P0/P1 — RESPONSIVE + MODERNIZE — PARALLEL) ──→ ✅ MERGED
+  ├─ Layout (B1-B3, B9): fix mobile search, dynamic viewport, library cards
+  ├─ Touch (B4, B8): 44px targets, mobile graph/mindmap controls
+  ├─ Viz (B6-B7): responsive canvas, graph reads theme tokens
+  ├─ Primitives (B10-B11): Button/IconButton/EmptyState/Skeleton, replace hex colors
+  └─ A11y (B5): migrate CommandPalette/Settings/EntityReview to <Overlay>
+      ↓
+Wave 3 (P1/P2 — FEATURES — PARALLEL) ──→ ✅ MERGED
+  ├─ Import (C1-C2): CLI import persistence + browser import UI
+  ├─ Tags (C3-C4): tags schema, repository, validation, editor/library/search UI
+  ├─ History (C5): entity_versions table, capture-on-write, history/diff/restore
+  ├─ Search (C6-C8): index notes, semantic toggle, graph filters + node search
+  └─ Chat (C9-C10): wire F5/F6/F7, unify chat, wire rate limiter
+      ↓
+Wave 4 (P1/P2 — QUALITY — PARALLEL) ──→ ✅ MERGED
+  ├─ Tests (D1-D6): mind map, CLI, graph, editor extensions, quick wins, E2E
+  ├─ Docs (D7-D14): CLI, DATABASE, SEARCH, DEVELOPMENT, LLM-SETUP, DEPLOYMENT, REPOSITORY-API
+  ├─ VERSION sync (D15): propagate 0.2.5
+  └─ Coverage thresholds (D16): raise to 40-50%
 ```
+
+### Wave Artifacts
+
+| Wave | Plan | Status |
+|------|------|--------|
+| 1 | [042-goap-master-implementation-2026-06-22.md](042-goap-master-implementation-2026-06-22.md) | ✅ MERGED |
+| 3 | [043-goap-chat-unification-2026-06-22.md](043-goap-chat-unification-2026-06-22.md) | ✅ MERGED |
+| 3 | [043-wave3-search-improvements.md](043-wave3-search-improvements.md) | ✅ MERGED |
+| 3 | [043-wave3-tags-implementation-2026-06-22.md](043-wave3-tags-implementation-2026-06-22.md) | ✅ MERGED |
+| 3 | [044-wave3-import-persistence-2026-06-22.md](044-wave3-import-persistence-2026-06-22.md) | ✅ MERGED |
+| 4 | [045-wave4-test-coverage-d5-d6-d16.md](045-wave4-test-coverage-d5-d6-d16.md) | ✅ MERGED |
+| 4 | [046-wave4-test-coverage-d1-d2.md](046-wave4-test-coverage-d1-d2.md) | ✅ MERGED |
+| 3 | [ADRs/017-chat-unification.md](ADRs/017-chat-unification.md) | ✅ MERGED |
 
 ## Legacy Plans (Archived/Completed)
 

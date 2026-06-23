@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { DbProvider, DbContext } from '../DbProvider';
+import { useDb } from '../useDb';
 
 // Mock the initDb function
 vi.mock('../../db/client', () => ({
@@ -110,5 +111,18 @@ describe('DbProvider', () => {
     await vi.waitFor(() => {
       expect(screen.getByTestId('db-ready').textContent).toBe('ready');
     });
+  });
+
+  it('throws when useDb is used outside DbProvider', () => {
+    const UseDbConsumer = () => {
+      useDb();
+      return null;
+    };
+
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    expect(() => render(<UseDbConsumer />)).toThrow('useDb must be used within a DbProvider');
+
+    consoleErrorSpy.mockRestore();
   });
 });
