@@ -1,20 +1,23 @@
-version: "1"
-exclude_patterns:
-  - "dist/"
-  - "node_modules/"
-  - "coverage/"
-  - ".mimicode/"
+---
+exclude_paths:
+  - "dist/**"
+  - "node_modules/**"
+  - "coverage/**"
+  - ".mimicode/**"
   - "**/__tests__/**"
   - "**/*.test.*"
   - "**/*.spec.*"
-tools:
+engines:
   biome:
     enabled: true
     config:
       rules:
         lint/correctness/useQwikValidLexicalScope: "off"
-  eslint:
+  eslint-8:
     enabled: true
-    config:
-      rules:
-        security/detect-object-injection: "off"
+    exclude_paths:
+      - "**/__tests__/**"
+      - "**/*.test.*"
+      - "**/*.spec.*"
+    disable_rules:
+      - "ESLint8_security_detect-object-injection"

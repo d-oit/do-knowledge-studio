@@ -136,7 +136,7 @@ function buildJsonImportPlan(json: string): ImportPlan {
 function buildMarkdownImportPlan(md: string, fileName: string): ImportPlan {
   const result = importMarkdownFiles([{ name: fileName, content: md }]);
   const notes: ImportPlanNote[] = result.notes.map(n => ({
-    entityName: n.title ?? null,
+    entityName: n.title || null,
     content: n.content,
     format: n.format,
   }));

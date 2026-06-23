@@ -287,8 +287,8 @@ const ImportPanel: React.FC = () => {
           counts.claims++;
         }
         for (const note of exp.notes) {
-          const entityName = note.entity_id ? entityNameById.get(note.entity_id) ?? null : null;
-          const entityId = entityName ? nameToId.get(entityName) ?? null : null;
+          const entityName = note.entity_id ? entityNameById.get(note.entity_id) || null : null;
+          const entityId = entityName ? nameToId.get(entityName) || null : null;
           await repository.createNote({
             ...(entityId ? { entity_id: entityId } : { entity_id: null }),
             content: note.content,
@@ -299,7 +299,7 @@ const ImportPanel: React.FC = () => {
       } else if (preview.format === 'markdown') {
         const result = importMarkdownFiles([{ name: preview.fileName, content: preview.raw }]);
         for (const note of result.notes) {
-          const entityId = note.title ? nameToId.get(note.title) ?? null : null;
+          const entityId = note.title ? nameToId.get(note.title) || null : null;
           await repository.createNote({
             ...(entityId ? { entity_id: entityId } : { entity_id: null }),
             content: note.content,
@@ -379,7 +379,7 @@ const ImportPanel: React.FC = () => {
           alignItems: 'center',
           justifyContent: 'center',
         }}
-        onClick={() => fileInputRef.current?.click()}
+        onClick={() => { fileInputRef.current?.click(); }}
         aria-label="Drop file here or click to browse"
       >
         <Upload size={32} color="var(--text-secondary)" />
