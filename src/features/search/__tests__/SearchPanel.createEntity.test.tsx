@@ -22,7 +22,7 @@ vi.mock('@tanstack/react-virtual', () => {
 
 vi.mock('../../../lib/search', () => ({
   progressiveSearch: vi.fn((_query: string, onResults: (rs: unknown, stage: string) => void) => {
-    void onResults([], 'exact');
+    onResults([], 'exact');
     return Promise.resolve();
   }),
   initEmbeddings: vi.fn(),

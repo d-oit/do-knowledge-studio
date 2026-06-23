@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Plus, X, Tag as TagIcon } from 'lucide-react';
 import { useRepository } from '../../db/useRepository';
 import { logger } from '../../lib/logger';
@@ -31,22 +31,24 @@ export const EntityTagsSection: React.FC<EntityTagsSectionProps> = ({ entityId }
   const [newName, setNewName] = useState('');
   const [newColor, setNewColor] = useState<string>(TAG_COLORS[0]);
 
+  const cancelledRef = useRef(false);
+
   useEffect(() => {
-    let cancelled = false;
+    cancelledRef.current = false;
     void (async () => {
       try {
         const [tags, current] = await Promise.all([
           repository.getAllTags(),
           repository.getTagsByEntityId(entityId),
         ]);
-        if (cancelled) return;
+        if (cancelledRef.current) return;
         setAllTags(tags);
         setEntityTags(current);
       } catch (err) {
         logger.error('Failed to load tags', err);
       }
     })();
-    return () => { cancelled = true; };
+    return () => { cancelledRef.current = true; };
   }, [entityId, repository]);
 
   const handleToggle = async (tag: Tag) => {
