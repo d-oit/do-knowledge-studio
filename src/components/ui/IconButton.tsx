@@ -4,6 +4,7 @@ import type { ButtonProps } from './Button';
 
 interface IconButtonProps extends Omit<ButtonProps, 'size'> {
   'aria-label': string;
+  style?: React.CSSProperties;
 }
 
 const iconButtonStyle: React.CSSProperties = {

@@ -12,11 +12,16 @@ const baseStyle: React.CSSProperties = {
   borderRadius: 'var(--radius-sm)',
 };
 
-const variantMap: Record<NonNullable<SkeletonProps['variant']>, React.CSSProperties> = {
-  rect: { borderRadius: 'var(--radius-sm)' },
-  circle: { borderRadius: 'var(--radius-full)' },
-  text: { borderRadius: 'var(--radius-sm)', height: '1em' },
-};
+function getVariantStyle(variant: NonNullable<SkeletonProps['variant']>): React.CSSProperties {
+  switch (variant) {
+    case 'rect':
+      return { borderRadius: 'var(--radius-sm)' };
+    case 'circle':
+      return { borderRadius: 'var(--radius-full)' };
+    case 'text':
+      return { borderRadius: 'var(--radius-sm)', height: '1em' };
+  }
+}
 
 /**
  * Animated placeholder block used to reserve layout space while
@@ -31,7 +36,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({ width, height, variant = 're
     className="skeleton-animate"
     style={{
       ...baseStyle,
-      ...variantMap[variant],
+      ...getVariantStyle(variant),
       width: width ?? '100%',
       height: height ?? '16px',
       ...style,

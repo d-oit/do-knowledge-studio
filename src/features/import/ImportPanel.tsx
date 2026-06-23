@@ -53,9 +53,10 @@ function detectFormat(fileName: string): ImportFormat {
 function parseAttrs(attrString: string): Record<string, string> {
   const attrs: Record<string, string> = {};
   const re = /([A-Za-z_][\w:-]*)\s*=\s*"([^"]*)"/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(attrString)) !== null) {
+  let m: RegExpExecArray | null = re.exec(attrString);
+  while (m !== null) {
     attrs[m[1]] = m[2];
+    m = re.exec(attrString);
   }
   return attrs;
 }
@@ -64,12 +65,13 @@ function parseOpmlOutlines(raw: string): OpmlOutline[] {
   const tagRe = /<(\/?)outline\b([^>]*)>/g;
   const roots: OpmlOutline[] = [];
   const stack: OpmlOutline[] = [];
-  let match: RegExpExecArray | null;
-  while ((match = tagRe.exec(raw)) !== null) {
+  let match: RegExpExecArray | null = tagRe.exec(raw);
+  while (match !== null) {
     const isClose = match[1] === '/';
     const isSelfClose = match[2].trimEnd().endsWith('/');
     if (isClose) {
       stack.pop();
+      match = tagRe.exec(raw);
       continue;
     }
     const attrs = parseAttrs(isSelfClose ? match[2].trimEnd().slice(0, -1) : match[2]);
@@ -82,6 +84,7 @@ function parseOpmlOutlines(raw: string): OpmlOutline[] {
     if (parent) parent.children.push(entry);
     else roots.push(entry);
     if (!isSelfClose) stack.push(entry);
+    match = tagRe.exec(raw);
   }
   return roots;
 }
@@ -218,7 +221,7 @@ const ImportPanel: React.FC = () => {
 
   const onFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) void handleFile(file);
+    if (file) { void handleFile(file); }
     if (fileInputRef.current) fileInputRef.current.value = '';
   }, [handleFile]);
 
@@ -226,7 +229,7 @@ const ImportPanel: React.FC = () => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
-    if (file) void handleFile(file);
+    if (file) { void handleFile(file); }
   }, [handleFile]);
 
   const onDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
@@ -357,7 +360,8 @@ const ImportPanel: React.FC = () => {
         </div>
       )}
 
-      <div
+      <button
+        type="button"
         onDrop={(...args) => { onDrop(...args); }}
         onDragOver={(...args) => { onDragOver(...args); }}
         onDragLeave={(...args) => { onDragLeave(...args); }}
@@ -376,9 +380,6 @@ const ImportPanel: React.FC = () => {
           justifyContent: 'center',
         }}
         onClick={() => fileInputRef.current?.click()}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click(); }}
         aria-label="Drop file here or click to browse"
       >
         <Upload size={32} color="var(--text-secondary)" />
@@ -388,18 +389,18 @@ const ImportPanel: React.FC = () => {
         <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
           Accepts .json, .md, .opml, .xml (max 50 MB)
         </p>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept={ACCEPTED_EXTENSIONS.join(',')}
-          onChange={(...args) => { onFileChange(...args); }}
-          style={{ display: 'none' }}
-          aria-label="Import file"
-        />
-      </div>
+      </button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={ACCEPTED_EXTENSIONS.join(',')}
+        onChange={(...args) => { onFileChange(...args); }}
+        style={{ display: 'none' }}
+        aria-label="Import file"
+      />
 
       {preview && (
-        <div role="region" aria-label="Import preview" style={{ background: 'var(--surface-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
+        <section aria-label="Import preview" style={{ background: 'var(--surface-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
             <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
               {preview.format === 'json' && <FileJson size={20} />}
@@ -408,6 +409,7 @@ const ImportPanel: React.FC = () => {
               {preview.fileName}
             </h3>
             <button
+              type="button"
               onClick={() => setPreview(null)}
               className="btn-icon"
               aria-label="Discard preview"
@@ -442,8 +444,8 @@ const ImportPanel: React.FC = () => {
             <details style={{ marginBottom: '12px' }}>
               <summary style={{ cursor: 'pointer', fontWeight: 500 }}>Entities ({preview.entities.length})</summary>
               <ul style={{ margin: '8px 0 0', paddingLeft: '20px', maxHeight: '200px', overflowY: 'auto', fontSize: '0.875rem' }}>
-                {preview.entities.slice(0, 50).map((e, i) => (
-                  <li key={`${e.name}-${i}`}><strong>{e.name}</strong> <span style={{ color: 'var(--text-secondary)' }}>({e.type})</span></li>
+                {preview.entities.slice(0, 50).map((e) => (
+                  <li key={e.name}><strong>{e.name}</strong> <span style={{ color: 'var(--text-secondary)' }}>({e.type})</span></li>
                 ))}
                 {preview.entities.length > 50 && (
                   <li style={{ color: 'var(--text-secondary)' }}>… and {preview.entities.length - 50} more</li>
@@ -454,11 +456,12 @@ const ImportPanel: React.FC = () => {
 
           {preview.warnings.length > 0 && (
             <div style={{ padding: '8px 12px', background: 'var(--status-warning-bg, #fef3c7)', color: 'var(--status-warning-text)', borderRadius: '6px', fontSize: '0.8rem', marginBottom: '12px' }}>
-              {preview.warnings.map((w, i) => <div key={i}>{w}</div>)}
+              {preview.warnings.map((w) => <div key={w}>{w}</div>)}
             </div>
           )}
 
           <button
+            type="button"
             onClick={() => { void performImport(); }}
             disabled={!isImportable || isWorking}
             className="primary"
@@ -468,7 +471,7 @@ const ImportPanel: React.FC = () => {
             {isWorking ? <Loader2 className="animate-spin" size={16} /> : <Upload size={16} />}
             {isWorking ? progress.message : `Import ${totalItems} item(s)`}
           </button>
-        </div>
+        </section>
       )}
     </div>
   );

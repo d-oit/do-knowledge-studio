@@ -50,7 +50,7 @@ export const GraphFiltersPanel: React.FC<{
   );
 
   return (
-    <div className="graph-filters-panel" role="region" aria-label="Graph filters">
+    <section className="graph-filters-panel" aria-label="Graph filters">
       <FilterSection title="Type">
         {nodeTypes.length === 0 ? (
           <p className="graph-filter-empty">No node types yet</p>
@@ -153,6 +153,6 @@ export const GraphFiltersPanel: React.FC<{
           Reset filters
         </button>
       )}
-    </div>
+    </section>
   );
 };

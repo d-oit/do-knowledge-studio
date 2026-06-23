@@ -18,7 +18,7 @@ interface EntityTagsSectionProps {
  * Compact tag chip editor embedded in the editor sidebar.
  *
  * Loads the global tag catalog and the subset already applied to the
- * entity. Toggling a chip calls `addEntityTag` or `removeEntityTag`
+ * entity. Toggling a chip calls `addTagToEntity` or `removeTagFromEntity`
  * on the repository. "New tag" opens an inline form with a name
  * input and a 10-color palette; the created tag is automatically
  * applied to the current entity.
@@ -36,8 +36,8 @@ export const EntityTagsSection: React.FC<EntityTagsSectionProps> = ({ entityId }
     void (async () => {
       try {
         const [tags, current] = await Promise.all([
-          repository.listTags(),
-          repository.getEntityTags(entityId),
+          repository.getAllTags(),
+          repository.getTagsByEntityId(entityId),
         ]);
         if (cancelled) return;
         setAllTags(tags);
@@ -54,10 +54,10 @@ export const EntityTagsSection: React.FC<EntityTagsSectionProps> = ({ entityId }
     const applied = entityTags.some(t => t.id === tag.id);
     try {
       if (applied) {
-        await repository.removeEntityTag(entityId, tag.id);
+        await repository.removeTagFromEntity(entityId, tag.id);
         setEntityTags(prev => prev.filter(t => t.id !== tag.id));
       } else {
-        await repository.addEntityTag(entityId, tag.id);
+        await repository.addTagToEntity(entityId, tag.id);
         setEntityTags(prev => [...prev, tag]);
       }
     } catch (err) {
@@ -70,8 +70,8 @@ export const EntityTagsSection: React.FC<EntityTagsSectionProps> = ({ entityId }
     if (!name) return;
     try {
       const tag = await repository.createTag(name, newColor);
-      await repository.addEntityTag(entityId, tag.id);
-      const refreshed = await repository.listTags();
+      await repository.addTagToEntity(entityId, tag.id);
+      const refreshed = await repository.getAllTags();
       setAllTags(refreshed);
       setEntityTags(prev => [...prev, tag]);
       setNewName('');
