@@ -80,7 +80,7 @@ function parseOpmlOutlines(raw: string): OpmlOutline[] {
       ...(attrs.note ? { note: attrs.note } : {}),
       children: [],
     };
-    const parent = stack[stack.length - 1];
+    const parent = stack.at(-1);
     if (parent) parent.children.push(entry);
     else roots.push(entry);
     if (!isSelfClose) stack.push(entry);
@@ -228,7 +228,8 @@ const ImportPanel: React.FC = () => {
   const onDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
-    const file = e.dataTransfer.files?.[0];
+    const fileList = e.dataTransfer.files;
+    const file = fileList.length > 0 ? fileList[0] : undefined;
     if (file) { void handleFile(file); }
   }, [handleFile]);
 

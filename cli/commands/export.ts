@@ -63,7 +63,7 @@ function parseOpmlOutlineText(opml: string): OpmlOutline[] {
       ...(attrs.note ? { note: attrs.note } : {}),
       children: [],
     };
-    const parent = stack[stack.length - 1];
+    const parent = stack.at(-1);
     if (parent) parent.children.push(entry);
     else roots.push(entry);
     if (!isSelfClose) stack.push(entry);
@@ -201,7 +201,7 @@ async function exportPdf(outDir: string): Promise<void> {
   const { repository } = await import('../../src/db/repository.js');
   const { exportAllNotesToPDF } = await import('../../src/features/export/pdf-exporter.js');
   const data = await fetchAllExportData(repository);
-  const notes = Object.values(data.notes ?? {}).flatMap(n => n ?? []);
+  const notes = Object.values(data.notes).flat();
   const entities = data.entities;
   const blob = await exportAllNotesToPDF(notes, entities, { title: 'Knowledge Base Export' });
   const arrayBuffer = await blob.arrayBuffer();
