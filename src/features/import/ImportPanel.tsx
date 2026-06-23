@@ -280,9 +280,9 @@ const ImportPanel: React.FC = () => {
             entity_id: entityId,
             statement: claim.statement,
             ...(claim.evidence ? { evidence: claim.evidence } : {}),
-            confidence: claim.confidence ?? 1.0,
+            confidence: claim.confidence,
             ...(claim.source ? { source: claim.source } : {}),
-            verification_status: claim.verification_status ?? 'unverified',
+            verification_status: claim.verification_status,
           });
           counts.claims++;
         }
@@ -292,7 +292,7 @@ const ImportPanel: React.FC = () => {
           await repository.createNote({
             ...(entityId ? { entity_id: entityId } : { entity_id: null }),
             content: note.content,
-            format: note.format ?? 'markdown',
+            format: note.format,
           });
           counts.notes++;
         }
@@ -303,7 +303,7 @@ const ImportPanel: React.FC = () => {
           await repository.createNote({
             ...(entityId ? { entity_id: entityId } : { entity_id: null }),
             content: note.content,
-            format: note.format ?? 'markdown',
+            format: note.format,
           });
           counts.notes++;
         }

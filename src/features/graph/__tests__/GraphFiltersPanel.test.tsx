@@ -43,40 +43,40 @@ describe('GraphFiltersPanel', () => {
   });
 
   it('toggles a node type filter on click', () => {
-    let next: GraphFilters | null = null;
-    const onChange = (f: GraphFilters) => { next = f; };
+    let next: GraphFilters = EMPTY_GRAPH_FILTERS;
+    const onChange = vi.fn((f: GraphFilters) => { next = f; });
     renderPanel({}, onChange);
     fireEvent.click(screen.getByLabelText('Filter by type person'));
-    expect(next).not.toBeNull();
-    expect(next!.typeFilter.has('person')).toBe(true);
-    expect(next!.typeFilter.size).toBe(1);
+    expect(onChange).toHaveBeenCalled();
+    expect(next.typeFilter.has('person')).toBe(true);
+    expect(next.typeFilter.size).toBe(1);
   });
 
   it('toggles a relation filter on click', () => {
-    let next: GraphFilters | null = null;
-    const onChange = (f: GraphFilters) => { next = f; };
+    let next: GraphFilters = EMPTY_GRAPH_FILTERS;
+    const onChange = vi.fn((f: GraphFilters) => { next = f; });
     renderPanel({}, onChange);
     fireEvent.click(screen.getByLabelText('Filter by relation knows'));
-    expect(next).not.toBeNull();
-    expect(next!.relationFilter.has('knows')).toBe(true);
+    expect(onChange).toHaveBeenCalled();
+    expect(next.relationFilter.has('knows')).toBe(true);
   });
 
   it('updates node search input', () => {
-    let next: GraphFilters | null = null;
-    const onChange = (f: GraphFilters) => { next = f; };
+    let next: GraphFilters = EMPTY_GRAPH_FILTERS;
+    const onChange = vi.fn((f: GraphFilters) => { next = f; });
     renderPanel({}, onChange);
     fireEvent.change(screen.getByLabelText('Search nodes by label'), { target: { value: 'alpha' } });
-    expect(next).not.toBeNull();
-    expect(next!.nodeSearch).toBe('alpha');
+    expect(onChange).toHaveBeenCalled();
+    expect(next.nodeSearch).toBe('alpha');
   });
 
   it('updates the min-degree filter when a chip is clicked', () => {
-    let next: GraphFilters | null = null;
-    const onChange = (f: GraphFilters) => { next = f; };
+    let next: GraphFilters = EMPTY_GRAPH_FILTERS;
+    const onChange = vi.fn((f: GraphFilters) => { next = f; });
     renderPanel({}, onChange);
     fireEvent.click(screen.getByLabelText('Show nodes with at least 2 connections'));
-    expect(next).not.toBeNull();
-    expect(next!.minDegree).toBe(2);
+    expect(onChange).toHaveBeenCalled();
+    expect(next.minDegree).toBe(2);
   });
 
   it('hides the reset button when no filters are active', () => {
@@ -85,17 +85,17 @@ describe('GraphFiltersPanel', () => {
   });
 
   it('shows the reset button when a filter is active and clears on click', () => {
-    let next: GraphFilters | null = null;
-    const onChange = (f: GraphFilters) => { next = f; };
+    let next: GraphFilters = EMPTY_GRAPH_FILTERS;
+    const onChange = vi.fn((f: GraphFilters) => { next = f; });
     renderPanel({ typeFilter: new Set(['person']) }, onChange);
     const reset = screen.getByText('Reset filters');
     expect(reset).toBeDefined();
     fireEvent.click(reset);
-    expect(next).not.toBeNull();
-    expect(next!.typeFilter.size).toBe(0);
-    expect(next!.relationFilter.size).toBe(0);
-    expect(next!.nodeSearch).toBe('');
-    expect(next!.minDegree).toBe(0);
+    expect(onChange).toHaveBeenCalled();
+    expect(next.typeFilter.size).toBe(0);
+    expect(next.relationFilter.size).toBe(0);
+    expect(next.nodeSearch).toBe('');
+    expect(next.minDegree).toBe(0);
   });
 
   it('displays the empty state when there are no node types', () => {

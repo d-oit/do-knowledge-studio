@@ -29,7 +29,7 @@ const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({ entityId, onR
   const repository = useRepository();
   const [versions, setVersions] = useState<EntityVersion[]>([]);
   const [expandedVersion, setExpandedVersion] = useState<number | null>(null);
-  const [diffData, setDiffData] = useState<Record<number, DiffField[]>>({});
+  const [diffData, setDiffData] = useState<Record<number, DiffField[] | undefined>>({});
   const [restoring, setRestoring] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 

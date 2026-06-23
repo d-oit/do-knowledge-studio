@@ -383,7 +383,7 @@ describe('GraphInspector', () => {
 
   it('handles a confirmed delete by calling repository.deleteEntity and removeFromSearchIndex', async () => {
     const onClose = vi.fn();
-    const deleteEntityMock = vi.mocked(mockedRepository.deleteEntity);
+    const deleteEntityMock = vi.mocked(mockedRepository).deleteEntity;
     deleteEntityMock.mockClear();
 
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);

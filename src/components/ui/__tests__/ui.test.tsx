@@ -121,7 +121,7 @@ describe('EmptyState', () => {
     render(
       <EmptyState
         title="With action"
-        action={<button>Do something</button>}
+        action={<button type="button">Do something</button>}
       />
     );
     const action = screen.getByRole('button', { name: 'Do something' });
