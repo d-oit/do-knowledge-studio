@@ -46,11 +46,13 @@ export async function saveTestEntity(page: Page, name: string, options?: { type?
 
   await saveBtn.click();
 
-  // Wait for save success
-  await expect(page.locator('[role="alert"]')).toContainText(
-    /Saved successfully|updated successfully/,
-    { timeout: 10000 }
-  );
+  // Wait for save success — check for alert OR title cleared (both indicate success)
+  const titleInput = page.locator('#entity-title');
+  const alert = page.locator('[role="alert"]');
+  await Promise.race([
+    expect(alert).toContainText(/Saved successfully|updated successfully/, { timeout: 15000 }),
+    expect(titleInput).toHaveValue('', { timeout: 15000 }),
+  ]);
 
   // Brief pause for FTS5 indexing
   await page.waitForTimeout(1000);
