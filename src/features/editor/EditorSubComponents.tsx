@@ -19,7 +19,7 @@ export const MentionMenu: React.FC<MentionMenuProps> = ({ isLoading, error, enti
       {error && <div className="text-sm text-error">{error}</div>}
       {!isLoading && !error && entities.length === 0 && <div className="text-sm text-muted">No entities found</div>}
       {entities.map(entity => (
-        <button
+        <button type="button"
           key={entity.id}
           onClick={() => { onSelect(entity); onClose(); }}
           className="mention-item w-full text-left px-3 py-2 rounded border border-muted hover:bg-muted"
@@ -102,16 +102,14 @@ export const ExtractionNotice: React.FC<ExtractionNoticeProps> = ({ result, onRe
       </span>
     </div>
     <div style={{ display: 'flex', gap: '8px' }}>
-      <button
-        type="button"
+      <button type="button"
         onClick={onReview}
         className="primary"
         style={{ padding: '4px 12px', fontSize: '12px', minHeight: '32px' }}
       >
         Review
       </button>
-      <button
-        type="button"
+      <button type="button"
         onClick={onDismiss}
         style={{ padding: '4px 8px', fontSize: '12px', minHeight: '32px', background: 'transparent', border: 'none' }}
         aria-label="Dismiss"

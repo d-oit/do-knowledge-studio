@@ -336,7 +336,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
       {showLinkInput && <LinkInput value={linkUrl} onChange={setLinkUrl} onApply={setLink} onCancel={() => { setShowLinkInput(false); setLinkUrl(''); }} />}
       <EditorContent editor={editor} className="tiptap-content" />
 
-      {showExtractionNotice && extractionResult && <ExtractionNotice result={extractionResult} onReview={() => setShowExtractionReview(true)} onDismiss={() => setShowExtractionNotice(false)} />}
+      {showExtractionNotice && extractionResult && <ExtractionNotice result={extractionResult} onReview={() => { setShowExtractionReview(true); }} onDismiss={() => { setShowExtractionNotice(false); }} />}
 
       {showExtractionReview && extractionResult && (
         <EntityReviewDialog
@@ -402,7 +402,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
            </button>
          </div>
        )}
-       {showAdvanced && showMentionMenu && <MentionMenu isLoading={isLoadingEntities} error={loadEntitiesError} entities={allEntities} onSelect={insertMention} onClose={() => setShowMentionMenu(false)} />}
+       {showAdvanced && showMentionMenu && <MentionMenu isLoading={isLoadingEntities} error={loadEntitiesError} entities={allEntities} onSelect={insertMention} onClose={() => { setShowMentionMenu(false); }} />}
 
         {editingEntityId && backlinks.length > 0 && <BacklinksList backlinks={backlinks} />}
 
