@@ -37,9 +37,13 @@ test.describe('View Loading', () => {
   });
 
   test('Search view renders when navigated', async ({ page, isMobile }) => {
-    test.skip(isMobile, 'Command palette open behavior differs on mobile/tablet — covered by chromium');
-    await ensureNavVisible(page);
-    await page.locator('.nav-button:visible:has-text("Search")').first().click();
-    await expect(page.locator('.command-palette-modal')).toBeVisible({ timeout: 10000 });
+    if (isMobile) {
+      await page.click('button[aria-label="Open search"]');
+      await expect(page.locator('.mobile-search-overlay')).toBeVisible({ timeout: 10000 });
+    } else {
+      await ensureNavVisible(page);
+      await page.locator('.nav-button:visible:has-text("Search")').first().click();
+      await expect(page.locator('.search-sidebar')).toBeVisible({ timeout: 10000 });
+    }
   });
 });
