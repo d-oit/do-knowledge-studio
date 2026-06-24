@@ -19,8 +19,6 @@ import EditorToolbar from './EditorToolbar';
 import { ExtractionNotice, MentionMenu, BacklinksList, LinkInput } from './EditorSubComponents';
 import { ENTITY_TYPES } from './constants';
 
-
-
 interface EditorProps {
   editingEntityId?: string | null;
   onEditComplete?: () => void;
@@ -69,8 +67,6 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
       return () => clearTimeout(timer);
     }
   }, [status]);
-
-
 
   useEffect(() => {
     perf.mark('editor-mount');
@@ -257,6 +253,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
         jobCoordinator.enqueue('reindex-document', entity.id, { entityId: entity.id });
 
         setStatus({ type: 'success', message: `Saved successfully! (${claims.length} claims, ${mentions.length} links)${sourceUrl.trim() ? ' — fetching source...' : ''}` });
+        onEditComplete?.();
 
         // Auto-trigger extraction after 3s debounce
         // Capture content before clearing editor
@@ -281,8 +278,6 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
     (editor.chain().focus() as unknown as { setMention: (attrs: { entityId: string; entityName: string }) => { run: () => void } }).setMention({ entityId: target.id, entityName: target.name }).run();
     setShowMentionMenu(false);
   }, [editor]);
-
-
 
   const handleCancelEdit = useCallback(() => {
     setTitle('');
@@ -414,6 +409,5 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
     </div>
   );
 };
-
 
 export default Editor;
