@@ -9,20 +9,15 @@ import { useRepository } from '../../db/useRepository';
 import { jobCoordinator } from '../../lib/jobs';
 import { upsertToSearchIndex } from '../../lib/search';
 import { perf } from '../../lib/perf';
-import { AtSign, ChevronDown, ChevronRight, Pencil, Link2, Sparkles, X } from 'lucide-react';
+import { AtSign, ChevronDown, ChevronRight, Pencil, Link2 } from 'lucide-react';
 import { Entity } from '../../lib/validation';
 import { extractEntities } from '../../lib/ai/entity-extractor';
 import type { EntityExtractionResult } from '../../lib/ai/entity-extractor';
 import { loadConfig, createProvider } from '../../lib/llm/config';
 import EntityReviewDialog from '../ai/EntityReviewDialog';
 import EditorToolbar from './EditorToolbar';
-
-const ENTITY_TYPES = [
-  { value: 'note', label: 'Note' },
-  { value: 'concept', label: 'Concept' },
-  { value: 'person', label: 'Person' },
-  { value: 'project', label: 'Project' },
-] as const;
+import { ExtractionNotice, MentionMenu, BacklinksList, LinkInput } from './EditorSubComponents';
+import { ENTITY_TYPES } from './constants';
 
 interface EditorProps {
   editingEntityId?: string | null;
@@ -42,6 +37,9 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [isLoadingEntity, setIsLoadingEntity] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [isLoadingEntities, setIsLoadingEntities] = useState(false);
+  const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
+  const [loadEntitiesError, setLoadEntitiesError] = useState<string | null>(null);
   const [extractionResult, setExtractionResult] = useState<EntityExtractionResult | null>(null);
   const [showExtractionReview, setShowExtractionReview] = useState(false);
   const [extractionSourceId, setExtractionSourceId] = useState<string | undefined>(undefined);
@@ -72,14 +70,36 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
 
   useEffect(() => {
     perf.mark('editor-mount');
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- type resolution through Promise chain
-    repository.getAllEntities().then((entities: Entity[]) => setAllEntities(entities)).catch(err => logger.error('Failed to load entities for mentions', { error: err }));
     perf.measure('editor-ready', 'editor-mount');
-  }, [repository]);
+  }, []);
+
+  useEffect(() => {
+    if (showMentionMenu && !hasAttemptedLoad && !isLoadingEntities) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- lazy load triggered by UI state
+      setIsLoadingEntities(true);
+      setLoadEntitiesError(null);
+      perf.mark('mention-entities-load-start');
+      repository.getAllEntities()
+        .then((entities: Entity[]) => {
+          setAllEntities(entities);
+          setHasAttemptedLoad(true);
+          perf.mark('mention-entities-load-end');
+          perf.measure('mention-entities-load', 'mention-entities-load-start');
+        })
+        .catch((err: unknown) => {
+          logger.error('Failed to load entities for mentions', { error: err });
+          setLoadEntitiesError('Could not load suggestions');
+          setHasAttemptedLoad(true);
+        })
+        .finally(() => {
+          setIsLoadingEntities(false);
+        });
+    }
+  }, [showMentionMenu, hasAttemptedLoad, isLoadingEntities, repository]);
 
   useEffect(() => {
     if (!editingEntityId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting state before async operation
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset state before async load
       setBacklinks([]);
       return;
     }
@@ -233,6 +253,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
         jobCoordinator.enqueue('reindex-document', entity.id, { entityId: entity.id });
 
         setStatus({ type: 'success', message: `Saved successfully! (${claims.length} claims, ${mentions.length} links)${sourceUrl.trim() ? ' — fetching source...' : ''}` });
+        onEditComplete?.();
 
         // Auto-trigger extraction after 3s debounce
         // Capture content before clearing editor
@@ -312,61 +333,10 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
         onSave={() => void handleSave()}
         onCancelEdit={handleCancelEdit}
       />
-      {showLinkInput && (
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '4px 0', marginBottom: '8px' }}>
-          <input
-            type="url"
-            value={linkUrl}
-            onChange={(e) => { setLinkUrl(e.target.value); }}
-            placeholder="https://..."
-            onKeyDown={(e) => { if (e.key === 'Enter') setLink(); }}
-            style={{ flex: 1, padding: '6px 8px', fontSize: '13px' }}
-            aria-label="Link URL"
-          />
-          <button type="button" onClick={setLink} style={{ padding: '6px 12px', fontSize: '13px' }}>Apply</button>
-          <button type="button" onClick={() => { setShowLinkInput(false); setLinkUrl(''); }} style={{ padding: '6px 12px', fontSize: '13px' }}>Cancel</button>
-        </div>
-      )}
+      {showLinkInput && <LinkInput value={linkUrl} onChange={setLinkUrl} onApply={setLink} onCancel={() => { setShowLinkInput(false); setLinkUrl(''); }} />}
       <EditorContent editor={editor} className="tiptap-content" />
 
-      {showExtractionNotice && extractionResult && (
-        <div style={{
-          marginTop: '16px',
-          padding: '12px 16px',
-          background: 'var(--interactive-primary-subtle)',
-          borderRadius: '8px',
-          border: '1px solid var(--interactive-primary)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '12px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-            <Sparkles size={16} style={{ color: 'var(--interactive-primary)' }} />
-            <span>
-              AI found <strong>{extractionResult.entities.length} entities</strong> and <strong>{extractionResult.relationships.length} relationships</strong> in this note.
-            </span>
-          </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              type="button"
-              onClick={() => { setShowExtractionReview(true); }}
-              className="primary"
-              style={{ padding: '4px 12px', fontSize: '12px', minHeight: '32px' }}
-            >
-              Review
-            </button>
-            <button
-              type="button"
-              onClick={() => { setShowExtractionNotice(false); }}
-              style={{ padding: '4px 8px', fontSize: '12px', minHeight: '32px', background: 'transparent', border: 'none' }}
-              aria-label="Dismiss"
-            >
-              <X size={16} />
-            </button>
-          </div>
-        </div>
-      )}
+      {showExtractionNotice && extractionResult && <ExtractionNotice result={extractionResult} onReview={() => { setShowExtractionReview(true); }} onDismiss={() => { setShowExtractionNotice(false); }} />}
 
       {showExtractionReview && extractionResult && (
         <EntityReviewDialog
@@ -432,41 +402,9 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
            </button>
          </div>
        )}
-       {showAdvanced && showMentionMenu && (
-          <div className="mention-section" style={{ marginTop: '16px' }}>
-            <h4 className="block text-sm font-medium mb-2">Link to Entity</h4>
-            <div className="space-y-2">
-              {allEntities.map(entity => (
-                <button
-                  key={entity.id}
-                  onClick={() => {
-                    insertMention(entity);
-                    setShowMentionMenu(false);
-                  }}
-                  className="mention-item w-full text-left px-3 py-2 rounded border border-muted hover:bg-muted"
-                >
-                  {entity.name} ({entity.type})
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+       {showAdvanced && showMentionMenu && <MentionMenu isLoading={isLoadingEntities} error={loadEntitiesError} entities={allEntities} onSelect={insertMention} onClose={() => { setShowMentionMenu(false); }} />}
 
-        {editingEntityId && backlinks.length > 0 && (
-          <div className="backlinks-section" style={{ marginTop: '16px', padding: '8px 0' }}>
-            <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>
-              Referenced by ({backlinks.length})
-            </h4>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-              {backlinks.map(bl => (
-                <li key={bl.id} style={{ padding: '4px 0', fontSize: '13px' }}>
-                  <span style={{ color: 'var(--interactive-primary)', cursor: 'default' }}>{bl.name}</span>
-                  <span style={{ color: 'var(--text-muted)', marginLeft: '6px' }}>({bl.type})</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        {editingEntityId && backlinks.length > 0 && <BacklinksList backlinks={backlinks} />}
 
     </div>
   );

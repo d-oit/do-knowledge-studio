@@ -8,9 +8,6 @@ test.describe('Search Navigation', () => {
 
     await saveTestEntity(page, 'Search Test Entity');
 
-    // Extra wait for FTS5 indexing
-    await page.waitForTimeout(2000);
-
     // Open command palette and search
     await page.keyboard.press('Control+k');
     await expect(page.locator('.command-palette-modal')).toBeVisible();
@@ -22,8 +19,7 @@ test.describe('Search Navigation', () => {
     await expect(page.locator('text=Editing Entity')).toBeVisible({ timeout: 10000 });
   });
 
-  test('search sidebar shows entity results', async ({ page, isMobile }) => {
-    test.skip(isMobile, 'Search sidebar is hidden on mobile/tablet');
+  test('search sidebar shows entity results', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('.layout-container')).toBeVisible({ timeout: 15000 });
 

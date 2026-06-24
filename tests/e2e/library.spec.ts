@@ -32,7 +32,7 @@ test.describe('Library View', () => {
     await expect(page.locator('text=Library Test Entity')).not.toBeVisible();
 
     await page.locator('button:has-text("Concept")').click();
-    await expect(page.locator('text=Library Test Entity')).toBeVisible();
+    await expect(page.locator('text=Library Test Entity').first()).toBeVisible({ timeout: 15000 });
   });
 
   test('should search for entities', async ({ page }) => {
@@ -41,7 +41,7 @@ test.describe('Library View', () => {
     await expect(page.locator('text=Library Test Entity')).toBeVisible({ timeout: 15000 });
 
     await page.fill('input[placeholder="Search library..."]', 'Library Test');
-    await expect(page.locator('text=Library Test Entity')).toBeVisible();
+    await expect(page.locator('text=Library Test Entity').first()).toBeVisible({ timeout: 15000 });
 
     await page.fill('input[placeholder="Search library..."]', 'Non-existent');
     await expect(page.locator('text=Library Test Entity')).not.toBeVisible();

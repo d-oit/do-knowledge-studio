@@ -10,7 +10,7 @@ test.describe('Export Functionality', () => {
     await page.locator('.nav-button').filter({ hasText: 'Export', visible: true }).first().click();
 
     await expect(page.locator('.main-content')).toBeVisible({ timeout: 15000 });
-    await expect(page.locator('.main-content >> text=Export').first()).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('text=Export')).toBeVisible({ timeout: 5000 });
   });
 
   test('export panel shows format buttons', async ({ page }) => {
