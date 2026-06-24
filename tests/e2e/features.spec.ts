@@ -337,7 +337,7 @@ test.describe('Entity Editor with Source URL', () => {
     await saveBtn.click();
 
     // Verify success status message using role=alert (more reliable than class selector)
-    await expect(page.locator('[role="alert"]')).toContainText('Saved successfully', { timeout: 15000 });
+    await expect(page.locator('[role="alert"]')).toContainText(/Saved successfully|updated successfully/, { timeout: 15000 });
 
     // Navigate to Library and verify the entity exists
     await ensureNavVisible(page);

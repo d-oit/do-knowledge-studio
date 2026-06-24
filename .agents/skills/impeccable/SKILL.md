@@ -129,7 +129,7 @@ Ensure the component works well across mobile, tablet, and desktop breakpoints.
 
 ## References
 
-- [Typography Scale](references/typography.md)
-- [Color System](references/color.md)
-- [Spacing & Layout](references/spacing.md)
-- [Motion Guidelines](references/motion.md)
+- `references/typography.md` - Typography Scale
+- `references/color.md` - Color System
+- `references/spacing.md` - Spacing & Layout
+- `references/motion.md` - Motion Guidelines

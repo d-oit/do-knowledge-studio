@@ -145,7 +145,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         AI Extract
       </button>
       <div className="toolbar-spacer" />
-      <button type="button" onClick={onSave} className="primary">{editingEntityId ? 'Update Entity' : 'Save to DB'}</button>
+      <button type="button" onClick={onSave} className="primary" disabled={!editor}>{editingEntityId ? 'Update Entity' : 'Save to DB'}</button>
       {editingEntityId && (
         <button type="button" onClick={onCancelEdit} aria-label="Cancel editing">
           Cancel
