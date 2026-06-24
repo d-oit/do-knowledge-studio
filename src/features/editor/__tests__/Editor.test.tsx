@@ -207,3 +207,80 @@ describe('Editor Progressive Disclosure (#143)', () => {
     expect(screen.getByText('Save to DB')).toBeDefined();
   });
 });
+
+describe('Editor Lazy Loading (#143)', () => {
+  const mockRepo = {
+    createEntity: vi.fn(),
+    getAllEntities: vi.fn().mockResolvedValue([{ id: '1', name: 'Entity 1', type: 'concept' }]),
+    getBacklinks: vi.fn().mockResolvedValue([]),
+    getBacklinkCount: vi.fn().mockResolvedValue(0),
+    transaction: vi.fn(),
+    getEntityById: vi.fn().mockResolvedValue(null),
+    updateEntity: vi.fn(),
+    deleteEntity: vi.fn(),
+    getClaimsByEntityId: vi.fn(),
+  } as unknown as IRepository;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('does not call getAllEntities on mount', () => {
+    act(() => {
+      renderWithDb(<Editor />, { repository: mockRepo });
+    });
+
+    expect(mockRepo.getAllEntities).not.toHaveBeenCalled();
+  });
+
+  it('calls getAllEntities only when mention menu is opened for the first time', async () => {
+    act(() => {
+      renderWithDb(<Editor />, { repository: mockRepo });
+    });
+
+    // Expand advanced section
+    const advancedBtn = screen.getByLabelText('Toggle advanced options');
+    await act(async () => { await Promise.resolve();
+      fireEvent.click(advancedBtn);
+    });
+
+    // Initially not called
+    expect(mockRepo.getAllEntities).not.toHaveBeenCalled();
+
+    // Click Mention button to show menu
+    const mentionBtn = screen.getByLabelText('Link to Entity');
+
+    // We don't await act here because we want to catch the Loading state if possible,
+    // but since it's a mockResolvedValue, it might be too fast.
+    // Let's change the mock to a delayed one for this test.
+    let resolveEntities: (value: unknown) => void;
+    mockRepo.getAllEntities = vi.fn().mockReturnValue(new Promise((resolve) => {
+      resolveEntities = resolve;
+    }));
+
+    await act(async () => { await Promise.resolve();
+      fireEvent.click(mentionBtn);
+    });
+
+    expect(mockRepo.getAllEntities).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Loading...')).toBeDefined();
+
+    // Now resolve the promise
+    await act(async () => { await Promise.resolve();
+      resolveEntities([{ id: '1', name: 'Entity 1', type: 'concept' }]);
+    });
+
+    expect(screen.getByText('Entity 1 (concept)')).toBeDefined();
+
+    // Close and reopen mention menu
+    await act(async () => { await Promise.resolve();
+      fireEvent.click(mentionBtn); // Close
+    });
+    await act(async () => { await Promise.resolve();
+      fireEvent.click(mentionBtn); // Reopen
+    });
+
+    // Should NOT have been called again
+    expect(mockRepo.getAllEntities).toHaveBeenCalledTimes(1);
+  });
+});
