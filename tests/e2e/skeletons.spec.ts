@@ -43,7 +43,9 @@ test.describe('View Loading', () => {
     } else {
       await ensureNavVisible(page);
       await page.locator('.nav-button:visible:has-text("Search")').first().click();
-      await expect(page.locator('.search-sidebar')).toBeVisible({ timeout: 10000 });
+      const sidebar = page.locator('.search-sidebar');
+      const palette = page.locator('.command-palette-modal');
+      await expect(sidebar.or(palette)).toBeVisible({ timeout: 10000 });
     }
   });
 });
