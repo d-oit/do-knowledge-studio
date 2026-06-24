@@ -40,6 +40,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
   const [isLoadingEntity, setIsLoadingEntity] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [isLoadingEntities, setIsLoadingEntities] = useState(false);
+  const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
   const [loadEntitiesError, setLoadEntitiesError] = useState<string | null>(null);
   const [extractionResult, setExtractionResult] = useState<EntityExtractionResult | null>(null);
   const [showExtractionReview, setShowExtractionReview] = useState(false);
@@ -77,7 +78,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
   }, []);
 
   useEffect(() => {
-    if (showMentionMenu && allEntities.length === 0 && !isLoadingEntities) {
+    if (showMentionMenu && !hasAttemptedLoad && !isLoadingEntities) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- lazy load triggered by UI state
       setIsLoadingEntities(true);
       setLoadEntitiesError(null);
@@ -85,18 +86,20 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
       repository.getAllEntities()
         .then((entities: Entity[]) => {
           setAllEntities(entities);
+          setHasAttemptedLoad(true);
           perf.mark('mention-entities-load-end');
           perf.measure('mention-entities-load', 'mention-entities-load-start');
         })
         .catch((err: unknown) => {
           logger.error('Failed to load entities for mentions', { error: err });
           setLoadEntitiesError('Could not load suggestions');
+          setHasAttemptedLoad(true);
         })
         .finally(() => {
           setIsLoadingEntities(false);
         });
     }
-  }, [showMentionMenu, allEntities.length, isLoadingEntities, repository]);
+  }, [showMentionMenu, hasAttemptedLoad, isLoadingEntities, repository]);
 
   useEffect(() => {
     if (!editingEntityId) {
