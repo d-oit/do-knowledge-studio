@@ -39,13 +39,11 @@ test.describe('View Loading', () => {
   test('Search view renders when navigated', async ({ page, isMobile }) => {
     if (isMobile) {
       await page.click('button[aria-label="Open search"]');
-      await expect(page.locator('[role="dialog"][aria-modal="true"]')).toBeVisible({ timeout: 10000 });
+      await expect(page.locator('.command-palette-modal')).toBeVisible({ timeout: 10000 });
     } else {
       await ensureNavVisible(page);
       await page.locator('.nav-button:visible:has-text("Search")').first().click();
-      await expect(
-        page.locator('.command-palette-modal')
-      ).toBeVisible({ timeout: 10000 });
+      await expect(page.locator('.command-palette-modal')).toBeVisible({ timeout: 10000 });
     }
   });
 });
