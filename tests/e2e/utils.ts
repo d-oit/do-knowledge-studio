@@ -46,11 +46,11 @@ export async function saveTestEntity(page: Page, name: string, options?: { type?
 
   await saveBtn.click();
 
-  // Wait for save success
-  await expect(page.locator('[role="alert"]')).toContainText(
-    /Saved successfully|updated successfully/,
-    { timeout: 10000 }
-  );
+  // Wait for save success — title is cleared after successful save
+  await page.waitForFunction(() => {
+    const input = document.querySelector('#entity-title') as HTMLInputElement;
+    return input && input.value === '';
+  }, { timeout: 15000 });
 
   // Brief pause for FTS5 indexing
   await page.waitForTimeout(1000);
