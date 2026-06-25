@@ -19,7 +19,8 @@ test.describe('Search Navigation', () => {
     await expect(page.locator('text=Editing Entity')).toBeVisible({ timeout: 10000 });
   });
 
-  test('search sidebar shows entity results', async ({ page }) => {
+  test('search sidebar shows entity results', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'Search sidebar is hidden on mobile/tablet');
     await page.goto('/');
     await expect(page.locator('.layout-container')).toBeVisible({ timeout: 15000 });
 

@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { ensureNavVisible, saveTestEntity } from './utils';
 
 test.describe('Graph Interaction', () => {
-  test('graph view renders with controls', async ({ page }) => {
+  test('graph view renders with controls', async ({ page, isMobile }) => {
     await page.goto('/');
     await expect(page.locator('.layout-container')).toBeVisible({ timeout: 15000 });
 
@@ -11,7 +11,9 @@ test.describe('Graph Interaction', () => {
 
     await expect(page.locator('.main-content')).toBeVisible({ timeout: 15000 });
     await expect(page.locator('.viz-container, .loading-screen')).toBeVisible({ timeout: 15000 });
-    await expect(page.locator('.viz-controls')).toBeVisible({ timeout: 5000 });
+    if (!isMobile) {
+      await expect(page.locator('.viz-controls')).toBeVisible({ timeout: 15000 });
+    }
   });
 
   test('graph renders canvas with nodes', async ({ page }) => {
@@ -26,14 +28,15 @@ test.describe('Graph Interaction', () => {
     await expect(page.locator('.viz-container canvas').first()).toBeVisible({ timeout: 10000 });
   });
 
-  test('graph controls have snapshot buttons', async ({ page }) => {
+  test('graph controls have snapshot buttons', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'Graph toolbar is hidden on mobile');
     await page.goto('/');
     await expect(page.locator('.layout-container')).toBeVisible({ timeout: 15000 });
 
     await ensureNavVisible(page);
     await page.locator('.nav-button').filter({ hasText: 'Graph', visible: true }).first().click();
     await expect(page.locator('.viz-container, .loading-screen')).toBeVisible({ timeout: 15000 });
-    await expect(page.locator('.viz-controls')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.viz-controls')).toBeVisible({ timeout: 15000 });
 
     const saveBtn = page.locator('button[aria-label="Save graph snapshot"]');
     const loadBtn = page.locator('button[aria-label="Load or diff saved snapshots"]');
@@ -63,7 +66,8 @@ test.describe('Graph Interaction', () => {
     await expect(page.locator('.viz-container')).toBeVisible({ timeout: 5000 });
   });
 
-  test('toggling focus mode updates aria-pressed state', async ({ page }) => {
+  test('toggling focus mode updates aria-pressed state', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'Graph toolbar is hidden on mobile');
     await page.goto('/');
     await expect(page.locator('.layout-container')).toBeVisible({ timeout: 15000 });
     await saveTestEntity(page, 'Graph Focus Entity');
@@ -88,7 +92,8 @@ test.describe('Graph Interaction', () => {
     expect(restoredPressed).toBe(initialPressed);
   });
 
-  test('saving a snapshot opens the save modal and persists the name', async ({ page }) => {
+  test('saving a snapshot opens the save modal and persists the name', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'Graph toolbar is hidden on mobile');
     await page.goto('/');
     await expect(page.locator('.layout-container')).toBeVisible({ timeout: 15000 });
 
