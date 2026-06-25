@@ -13,6 +13,7 @@ engines:
     config:
       rules:
         lint/correctness/useQwikValidLexicalScope: "off"
+        lint/suspicious/noImplicitAnyLet: "off"
   eslint-8:
     enabled: true
     exclude_paths:

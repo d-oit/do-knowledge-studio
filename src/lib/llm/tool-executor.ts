@@ -55,7 +55,7 @@ async function handleListEntities(toolCall: ToolCall): Promise<ToolResult> {
   const type = toolCall.arguments.type as string | undefined;
   const limit = (toolCall.arguments.limit as number | undefined) ?? 10;
 
-  let entities;
+  let entities: Awaited<ReturnType<typeof repository.searchEntities>>;
   if (query) {
     entities = await repository.searchEntities(query);
   } else {
