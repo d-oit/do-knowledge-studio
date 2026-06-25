@@ -1,8 +1,10 @@
-# Plan 04: Feature Roadmap (P3)
+# Plan 04: Feature Roadmap
 
-**Priority**: P3 (Medium term)  
+**Priority**: P0 (Active — 4.1 in progress)  
 **Estimated Total Effort**: 20-30 hours  
-**Sources**: Swarm analysis - new feature suggestions, LLM provider system
+**Status**: 🟢 ACTIVE (unheld 2026-06-25)  
+**Sources**: Swarm analysis - new feature suggestions, LLM provider system  
+**Implementation Plan**: [041-ai-harness-implementation.md](041-ai-harness-implementation.md)
 
 ## Tasks
 

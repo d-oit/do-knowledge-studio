@@ -44,6 +44,7 @@ const AIHarness: React.FC = () => {
     sessionTokens,
     sendMessage,
     setResolvedSources,
+    clearHistory,
   } = useChat();
 
   const {
@@ -259,6 +260,7 @@ const AIHarness: React.FC = () => {
         input={input}
         setInput={setInput}
         onSend={() => { void handleSend(); }}
+        onClearChat={() => { void clearHistory(); }}
         onRemoveSource={(i) => { setResolvedSources(prev => prev.filter((_, j) => j !== i)); }}
         currentModel={currentModel}
         rateLimitLevel={getRateLimitLevel()}
