@@ -1,8 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { searchKnowledge } from '../../lib/search';
 import { type RankedResult } from '../../db/repository';
 import { logger } from '../../lib/logger';
-import { Search, Send, ChevronDown, ChevronUp, Database, ShieldCheck, Loader2 } from 'lucide-react';
+import { loadConfig, createProvider } from '../../lib/llm/config';
+import type { LLMMessage } from '../../lib/llm/types';
+import { Search, Send, ChevronDown, ChevronUp, Database, ShieldCheck, Loader2, Sparkles } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -80,28 +82,40 @@ function ChatMessage({ message, showSources, onToggleSources, onNavigate }: Chat
   );
 }
 
+const SYSTEM_PROMPT = 'You are a helpful knowledge assistant for Knowledge Studio. Ground your answers in the provided local context whenever possible. Be concise and cite specific entities or claims when relevant.';
+
 function Chat({ onCreateEntity, onNavigate }: ChatProps): React.ReactElement {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showSources, setShowSources] = useState<Record<string, boolean>>({});
+  const [llmAvailable, setLlmAvailable] = useState(false);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const messagesRef = useRef(messages);
 
-  function canSend(currentInput: string): boolean {
-    return currentInput.trim() !== '' && !isSearching && !debounceRef.current;
-  }
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
-  function scheduleDebounceReset() {
-    debounceRef.current = setTimeout(() => { debounceRef.current = null; }, 300);
-  }
+  useEffect(() => {
+    void (async () => {
+      try {
+        const config = await loadConfig();
+        const provider = createProvider(config);
+        setLlmAvailable(provider.isConfigured());
+      } catch {
+        setLlmAvailable(false);
+      }
+    })();
+  }, []);
 
-  async function handleSend(e?: React.FormEvent, query?: string) {
+  const handleSend = useCallback(async (e?: React.FormEvent, query?: string) => {
     e?.preventDefault();
     const currentInput = query ?? input;
-    if (!canSend(currentInput)) return;
+    if (currentInput.trim() === '' || isSearching || debounceRef.current) return;
 
-    scheduleDebounceReset();
+    debounceRef.current = setTimeout(() => { debounceRef.current = null; }, 300);
     const userId = `user-${Date.now()}`;
     setMessages(prev => [...prev, { id: userId, role: 'user', content: currentInput }]);
     setInput('');
@@ -109,28 +123,66 @@ function Chat({ onCreateEntity, onNavigate }: ChatProps): React.ReactElement {
 
     try {
       const results = await searchKnowledge(currentInput, { limit: 5 });
-      const assistantId = `assistant-${Date.now()}`;
-      setMessages(prev => [...prev, {
-        id: assistantId,
-        role: 'assistant',
-        content: buildResponse(currentInput, results),
-        citations: results
-      }]);
+
+      if (llmAvailable) {
+        const config = await loadConfig();
+        const provider = createProvider(config);
+        const providerConfig = config.providers[config.activeProvider];
+        const model = providerConfig.defaultModel || 'google/gemini-2.0-flash-lite-preview-02-05:free';
+
+        const contextBlock = results.length > 0
+          ? '\n\nRelevant local context:\n' + results.map(r => `[${r.type}] ${r.title}: ${r.content.slice(0, 200)}`).join('\n')
+          : '';
+
+        const historyMessages: LLMMessage[] = messagesRef.current.slice(-6).map(m => ({
+          role: m.role === 'user' ? 'user' as const : 'assistant' as const,
+          content: m.content,
+        }));
+
+        const promptMessages: LLMMessage[] = [
+          { role: 'system', content: SYSTEM_PROMPT },
+          ...historyMessages,
+          { role: 'user', content: currentInput + contextBlock },
+        ];
+
+        const assistantId = `assistant-${Date.now()}`;
+        setMessages(prev => [...prev, { id: assistantId, role: 'assistant', content: '' }]);
+
+        const stream = provider.chatStream({ model, messages: promptMessages, temperature: 0.3 });
+        let accumulated = '';
+
+        for await (const chunk of stream) {
+          if (chunk.content) {
+            accumulated += chunk.content;
+            setMessages(prev => prev.map(m =>
+              m.id === assistantId ? { ...m, content: accumulated, citations: results } : m
+            ));
+          }
+        }
+      } else {
+        const assistantId = `assistant-${Date.now()}`;
+        setMessages(prev => [...prev, {
+          id: assistantId,
+          role: 'assistant',
+          content: buildResponse(currentInput, results),
+          citations: results
+        }]);
+      }
     } catch (err) {
-      logger.error('Ask retrieval failed', err);
+      logger.error('Chat failed', err);
       const errorId = `error-${Date.now()}`;
-      setMessages(prev => [...prev, { id: errorId, role: 'assistant', content: 'Sorry, I encountered an issue while searching your local library.' }]);
+      setMessages(prev => [...prev, { id: errorId, role: 'assistant', content: 'Sorry, I encountered an issue while processing your request.' }]);
     } finally {
       setIsSearching(false);
     }
-  }
+  }, [input, llmAvailable, isSearching]);
 
   return (
     <div className="chat-view">
       <div className="ask-header">
         <div className="local-status-chip">
-          <ShieldCheck size={14} />
-          <span>Local search only</span>
+          {llmAvailable ? <Sparkles size={14} /> : <ShieldCheck size={14} />}
+          <span>{llmAvailable ? 'LLM powered' : 'Local search only'}</span>
         </div>
         <div className="offline-badge">Offline ready</div>
       </div>
@@ -165,7 +217,7 @@ function Chat({ onCreateEntity, onNavigate }: ChatProps): React.ReactElement {
           <div className="message assistant loading">
             <div className="searching-indicator">
               <Loader2 size={16} className="animate-spin" />
-              <span>Retrieving local context...</span>
+              <span>{llmAvailable ? 'Thinking...' : 'Retrieving local context...'}</span>
             </div>
           </div>
         )}

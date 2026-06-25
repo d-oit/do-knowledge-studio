@@ -16,6 +16,7 @@ import { useGraphTouchGestures } from './GraphTouchHandler';
 import { useGraphSnapshotManager } from './GraphSnapshotManager';
 import { useGraphSyncEvents } from './GraphSyncEvents';
 import { getGraphThemeTokens, onThemeChange } from '../../lib/theme-tokens';
+import { useGraphUndoRedo } from './useGraphUndoRedo';
 
 type LayoutType = 'circular' | 'force' | 'hierarchical';
 
@@ -41,6 +42,7 @@ const GraphView: React.FC<Props> = ({
   onEditEntity,
 }) => {
   const repository = useRepository();
+  const { canUndo, canRedo, pushDelete, undo, redo } = useGraphUndoRedo(repository);
   const containerRef = useRef<HTMLDivElement>(null);
   const sigmaInstance = useRef<Sigma | null>(null);
   const graphRef = useRef<Graph>(new Graph());
@@ -88,7 +90,8 @@ const GraphView: React.FC<Props> = ({
     setSelectedNode,
     focusRingIndex,
     setFocusRingIndex,
-    repository
+    repository,
+    (id: string) => { void pushDelete(id); }
   );
 
   useGraphTouchGestures(
@@ -444,6 +447,10 @@ const GraphView: React.FC<Props> = ({
             onSnapshotModeChange={(active) => { if (!active) handleExitSnapshot(); }}
             layout={layout}
             onLayoutChange={setLayout}
+            canUndo={canUndo}
+            canRedo={canRedo}
+            onUndo={() => void undo()}
+            onRedo={() => void redo()}
           />
         </div>
       )}

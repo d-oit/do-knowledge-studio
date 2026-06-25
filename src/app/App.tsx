@@ -222,7 +222,6 @@ const AppContent: React.FC = () => {
                 <Profiled id="MindMapView">
                   <MindMapView
                     rootEntity={entities[0]}
-                    relatedEntities={entities.slice(1, 10)}
                     entities={entities}
                     links={links}
                   />

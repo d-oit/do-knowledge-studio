@@ -183,7 +183,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
         };
 
         try {
-          await progressiveSearch(query, onStage, { type: typeFilter, signal: controller.signal });
+          await progressiveSearch(query, onStage, { type: typeFilter, signal: controller.signal, semantic: useSemantic });
         } catch (err) {
           logger.error('Search failed', err);
           setIsSearching(false);

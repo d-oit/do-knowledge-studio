@@ -15,7 +15,8 @@ export function useGraphKeyboardNavigation(
   setSelectedNode: (node: string | null) => void,
   focusRingIndex: number,
   setFocusRingIndex: (index: number) => void,
-  repository: IRepository
+  repository: IRepository,
+  beforeDelete?: (entityId: string) => void
 ) {
   useEffect(() => {
     if (!container) return;
@@ -131,6 +132,7 @@ export function useGraphKeyboardNavigation(
         case 'Delete':
         case 'Backspace': {
           if (selectedNode && window.confirm(`Delete "${entities.find(e => e.id === selectedNode)?.name}"? This will also delete all claims and links for this entity.`)) {
+            beforeDelete?.(selectedNode);
             void repository.deleteEntity(selectedNode).then(() => {
               void removeFromSearchIndex(selectedNode);
               logger.info('Entity deleted via keyboard', { id: selectedNode });
@@ -144,5 +146,5 @@ export function useGraphKeyboardNavigation(
 
     container.addEventListener('keydown', handleKeyDown);
     return () => { container.removeEventListener('keydown', handleKeyDown); };
-  }, [container, sigmaInstance, graph, entities, selectedNode, setSelectedNode, focusRingIndex, setFocusRingIndex, repository]);
+  }, [container, sigmaInstance, graph, entities, selectedNode, setSelectedNode, focusRingIndex, setFocusRingIndex, repository, beforeDelete]);
 }
