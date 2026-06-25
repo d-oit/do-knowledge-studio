@@ -57,7 +57,7 @@ const SYSTEM_PROMPT = `You are the Knowledge Studio AI agent. You help users ana
 - For TRIZ analysis, identify contradictions between claims and suggest inventive principles
 - When external URLs are provided, analyze them and compare with local knowledge`;
 
-const buildStructuredContext = (results: RankedResult[]): string => {
+function buildStructuredContext(results: RankedResult[]): string {
   if (results.length === 0) return '';
 
   const entities = results.filter(r => r.type === 'entity');
@@ -88,7 +88,7 @@ const buildStructuredContext = (results: RankedResult[]): string => {
   }
 
   return '\n\nRelevant local knowledge:\n' + parts.join('\n');
-};
+}
 
 const MAX_CONTEXT_TOKENS = 6000;
 const CHARS_PER_TOKEN = 4;
