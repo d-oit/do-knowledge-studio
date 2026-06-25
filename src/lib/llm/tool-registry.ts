@@ -44,4 +44,42 @@ export const BUILT_IN_TOOLS: ToolDefinition[] = [
     description: 'Get the content of the currently active note in the editor',
     parameters: { type: 'object', properties: {}, required: [] },
   },
+  {
+    name: 'list_entities',
+    description: 'List or search entities in the knowledge base with optional type filter',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Optional search term to filter by name or description' },
+        type: { type: 'string', description: 'Optional entity type filter (e.g., "person", "concept", "tech")' },
+        limit: { type: 'number', description: 'Max results (default 10)' },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'get_entity_claims',
+    description: 'Get all claims for a specific entity by ID or name',
+    parameters: {
+      type: 'object',
+      properties: {
+        entity_id: { type: 'string', description: 'Entity UUID' },
+        entity_name: { type: 'string', description: 'Entity name (used if entity_id not provided)' },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'create_link',
+    description: 'Create a relationship link between two entities in the knowledge graph',
+    parameters: {
+      type: 'object',
+      properties: {
+        source_name: { type: 'string', description: 'Source entity name' },
+        target_name: { type: 'string', description: 'Target entity name' },
+        relation: { type: 'string', description: 'Relationship type (e.g., "relates_to", "contradicts", "supports")' },
+      },
+      required: ['source_name', 'target_name', 'relation'],
+    },
+  },
 ];

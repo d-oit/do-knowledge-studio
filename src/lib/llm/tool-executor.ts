@@ -50,6 +50,75 @@ function handleGetCurrentNote(toolCall: ToolCall, context: ToolExecutionContext)
   return { toolCallId: toolCall.id, content };
 }
 
+async function handleListEntities(toolCall: ToolCall): Promise<ToolResult> {
+  const query = toolCall.arguments.query as string | undefined;
+  const type = toolCall.arguments.type as string | undefined;
+  const limit = (toolCall.arguments.limit as number | undefined) ?? 10;
+
+  let entities: Awaited<ReturnType<typeof repository.searchEntities>>;
+  if (query) {
+    entities = await repository.searchEntities(query);
+  } else {
+    entities = await repository.getEntities({ type, limit });
+  }
+
+  const summary = entities.slice(0, limit).map(e => ({
+    id: e.id,
+    name: e.name,
+    type: e.type,
+    description: e.description?.slice(0, 100) || '',
+  }));
+
+  return { toolCallId: toolCall.id, content: JSON.stringify(summary) };
+}
+
+async function handleGetEntityClaims(toolCall: ToolCall): Promise<ToolResult> {
+  let entityId = toolCall.arguments.entity_id as string | undefined;
+  const entityName = toolCall.arguments.entity_name as string | undefined;
+
+  if (!entityId && entityName) {
+    const entity = await repository.getEntityByName(entityName);
+    if (!entity) {
+      return { toolCallId: toolCall.id, content: `Entity "${entityName}" not found`, isError: true };
+    }
+    entityId = entity.id;
+  }
+
+  if (!entityId) {
+    return { toolCallId: toolCall.id, content: 'Either entity_id or entity_name is required', isError: true };
+  }
+
+  const claims = await repository.getClaimsByEntityId(entityId);
+  const summary = claims.map(c => ({
+    statement: c.statement,
+    confidence: c.confidence,
+    verification_status: c.verification_status,
+    source: c.source || 'none',
+  }));
+
+  return { toolCallId: toolCall.id, content: JSON.stringify(summary) };
+}
+
+async function handleCreateLink(toolCall: ToolCall): Promise<ToolResult> {
+  const sourceName = toolCall.arguments.source_name as string;
+  const targetName = toolCall.arguments.target_name as string;
+  const relation = toolCall.arguments.relation as string;
+
+  const source = await repository.getEntityByName(sourceName);
+  if (!source) return { toolCallId: toolCall.id, content: `Source entity "${sourceName}" not found`, isError: true };
+
+  const target = await repository.getEntityByName(targetName);
+  if (!target) return { toolCallId: toolCall.id, content: `Target entity "${targetName}" not found`, isError: true };
+
+  const link = await repository.createLink({
+    source_id: source.id!,
+    target_id: target.id!,
+    relation,
+  });
+
+  return { toolCallId: toolCall.id, content: `Link created: ${sourceName} --[${relation}]--> ${targetName} (id: ${link.id})` };
+}
+
 export async function executeTool(
   toolCall: ToolCall,
   context: ToolExecutionContext = {},
@@ -66,6 +135,12 @@ export async function executeTool(
         return await handleAddGraphNode(toolCall);
       case 'get_current_note':
         return handleGetCurrentNote(toolCall, context);
+      case 'list_entities':
+        return await handleListEntities(toolCall);
+      case 'get_entity_claims':
+        return await handleGetEntityClaims(toolCall);
+      case 'create_link':
+        return await handleCreateLink(toolCall);
       default:
         return { toolCallId: toolCall.id, content: `Unknown tool: ${toolCall.name}`, isError: true };
     }

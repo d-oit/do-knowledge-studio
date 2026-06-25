@@ -3,7 +3,7 @@ import { loadConfig, createProvider } from '../../lib/llm/config';
 import type { LLMMessage } from '../../lib/llm/types';
 import { BUILT_IN_TOOLS } from '../../lib/llm/tool-registry';
 import { executeTool } from '../../lib/llm/tool-executor';
-import { searchKnowledge } from '../../lib/search';
+import { searchKnowledge, type RankedResult } from '../../lib/search';
 import { resolveUrl, ResolvedContent } from '../../lib/resolver';
 import { logger } from '../../lib/logger';
 import { loadChatHistory, saveChatHistory, clearChatHistory } from '../../lib/chat-persistence';
@@ -34,6 +34,61 @@ export interface TokenUsage {
 }
 
 const WELCOME_MESSAGE: Message = { id: 'initial', role: 'assistant', content: 'AI agent ready to assist with TRIZ analysis and knowledge synthesis. Ask me anything about your local knowledge base, or paste URLs to have me fetch and analyze external content.' };
+
+const SYSTEM_PROMPT = `You are the Knowledge Studio AI agent. You help users analyze, connect, and synthesize information from their local knowledge base.
+
+## Knowledge Base Structure
+- **Entities**: Named concepts, people, organizations, technologies (with type and description)
+- **Claims**: Statements about entities with source, evidence, confidence, and verification status
+- **Links**: Relationships between entities (e.g., "invented", "relates_to", "contradicts")
+- **Notes**: Free-form content attached to entities
+
+## Your Capabilities
+- Search the knowledge base for relevant entities, claims, and notes
+- Create new notes and entities
+- Add nodes to the knowledge graph
+- Fetch and analyze external URLs
+- Read the currently active note in the editor
+
+## Guidelines
+- Always ground your answers in local knowledge when available
+- Cite specific entities and claims by name
+- When suggesting connections, reference existing links or propose new ones
+- For TRIZ analysis, identify contradictions between claims and suggest inventive principles
+- When external URLs are provided, analyze them and compare with local knowledge`;
+
+function buildStructuredContext(results: RankedResult[]): string {
+  if (results.length === 0) return '';
+
+  const entities = results.filter(r => r.type === 'entity');
+  const claims = results.filter(r => r.type === 'claim');
+  const notes = results.filter(r => r.type === 'note');
+
+  const parts: string[] = [];
+
+  if (entities.length > 0) {
+    parts.push('### Relevant Entities');
+    for (const e of entities) {
+      parts.push(`- **${e.title}** (${e.type}): ${e.content}`);
+    }
+  }
+
+  if (claims.length > 0) {
+    parts.push('### Relevant Claims');
+    for (const c of claims) {
+      parts.push(`- [${c.stage}] ${c.title}: ${c.content}`);
+    }
+  }
+
+  if (notes.length > 0) {
+    parts.push('### Relevant Notes');
+    for (const n of notes) {
+      parts.push(`- ${n.title}: ${n.content.slice(0, 200)}`);
+    }
+  }
+
+  return '\n\nRelevant local knowledge:\n' + parts.join('\n');
+}
 
 const MAX_CONTEXT_TOKENS = 6000;
 const CHARS_PER_TOKEN = 4;
@@ -152,16 +207,16 @@ export function useChat() {
       }
 
       if (useContext) {
-        const searchResults = await searchKnowledge(userMessage);
+        const searchResults = await searchKnowledge(userMessage, { limit: 5 });
         if (searchResults.length > 0) {
-          contextString = "\n\nRelevant local context:\n" + searchResults.map(r => "[" + r.type + "] " + r.title + ": " + r.content.slice(0, 200)).join('\n');
+          contextString = buildStructuredContext(searchResults);
         }
       }
 
       const currentConfig = await loadConfig();
       const provider = createProvider(currentConfig);
 
-      const systemPrompt = 'You are a helpful knowledge assistant. Ground your answers in the provided context whenever possible. When external URLs are provided, analyze their content thoroughly and cite specific details. Mark sources clearly in your response.';
+      const systemPrompt = SYSTEM_PROMPT;
       const userContent = userMessage + contextString + externalContent;
 
       let promptMessages = buildBudgetedMessages(

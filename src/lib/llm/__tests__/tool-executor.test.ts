@@ -7,6 +7,11 @@ vi.mock('../../../db/repository', () => ({
   repository: {
     createEntity: vi.fn(),
     createNote: vi.fn(),
+    createLink: vi.fn(),
+    searchEntities: vi.fn(),
+    getEntities: vi.fn(),
+    getEntityByName: vi.fn(),
+    getClaimsByEntityId: vi.fn(),
   },
 }));
 
@@ -112,6 +117,98 @@ describe('executeTool', () => {
       const result = await executeTool(call, {});
       expect(result.isError).toBe(true);
       expect(result.content).toContain('fly_to_moon');
+    });
+  });
+
+  describe('list_entities', () => {
+    it('searches entities by query', async () => {
+      vi.mocked(repository.searchEntities).mockResolvedValue([
+        { id: 'e1', name: 'React', type: 'tech', description: 'UI library' },
+      ]);
+      const call: ToolCall = { id: 'tc10', name: 'list_entities', arguments: { query: 'React' } };
+      const result = await executeTool(call, {});
+      expect(repository.searchEntities).toHaveBeenCalledWith('React');
+      expect(result.isError).toBeFalsy();
+      const parsed = JSON.parse(result.content) as Array<{ name: string }>;
+      expect(parsed[0].name).toBe('React');
+    });
+
+    it('lists entities with type filter when no query', async () => {
+      vi.mocked(repository.getEntities).mockResolvedValue([
+        { id: 'e2', name: 'Altshuller', type: 'person', description: 'Inventor' },
+      ]);
+      const call: ToolCall = { id: 'tc11', name: 'list_entities', arguments: { type: 'person', limit: 5 } };
+      const result = await executeTool(call, {});
+      expect(repository.getEntities).toHaveBeenCalledWith({ type: 'person', limit: 5 });
+      expect(result.isError).toBeFalsy();
+    });
+
+    it('defaults limit to 10', async () => {
+      vi.mocked(repository.getEntities).mockResolvedValue([]);
+      const call: ToolCall = { id: 'tc12', name: 'list_entities', arguments: {} };
+      await executeTool(call, {});
+      expect(repository.getEntities).toHaveBeenCalledWith({ type: undefined, limit: 10 });
+    });
+  });
+
+  describe('get_entity_claims', () => {
+    it('fetches claims by entity name', async () => {
+      vi.mocked(repository.getEntityByName).mockResolvedValue({ id: 'e1', name: 'React', type: 'tech' });
+      vi.mocked(repository.getClaimsByEntityId).mockResolvedValue([
+        { id: 'c1', entity_id: 'e1', statement: 'React is popular', confidence: 0.9, verification_status: 'verified', source: 'docs' },
+      ]);
+      const call: ToolCall = { id: 'tc13', name: 'get_entity_claims', arguments: { entity_name: 'React' } };
+      const result = await executeTool(call, {});
+      expect(result.isError).toBeFalsy();
+      const parsed = JSON.parse(result.content) as Array<{ statement: string }>;
+      expect(parsed[0].statement).toBe('React is popular');
+    });
+
+    it('returns error when entity not found', async () => {
+      vi.mocked(repository.getEntityByName).mockResolvedValue(null);
+      const call: ToolCall = { id: 'tc14', name: 'get_entity_claims', arguments: { entity_name: 'Nonexistent' } };
+      const result = await executeTool(call, {});
+      expect(result.isError).toBe(true);
+      expect(result.content).toContain('not found');
+    });
+
+    it('returns error when neither id nor name provided', async () => {
+      const call: ToolCall = { id: 'tc15', name: 'get_entity_claims', arguments: {} };
+      const result = await executeTool(call, {});
+      expect(result.isError).toBe(true);
+      expect(result.content).toContain('entity_id or entity_name');
+    });
+  });
+
+  describe('create_link', () => {
+    it('creates link between two entities', async () => {
+      vi.mocked(repository.getEntityByName)
+        .mockResolvedValueOnce({ id: 'e1', name: 'Altshuller', type: 'person' })
+        .mockResolvedValueOnce({ id: 'e2', name: 'TRIZ', type: 'tech' });
+      vi.mocked(repository.createLink).mockResolvedValue({ id: 'l1', source_id: 'e1', target_id: 'e2', relation: 'invented', created_at: '', updated_at: '' });
+      const call: ToolCall = { id: 'tc16', name: 'create_link', arguments: { source_name: 'Altshuller', target_name: 'TRIZ', relation: 'invented' } };
+      const result = await executeTool(call, {});
+      expect(result.isError).toBeFalsy();
+      expect(result.content).toContain('Altshuller');
+      expect(result.content).toContain('TRIZ');
+    });
+
+    it('returns error when source entity not found', async () => {
+      vi.mocked(repository.getEntityByName).mockResolvedValue(null);
+      const call: ToolCall = { id: 'tc17', name: 'create_link', arguments: { source_name: 'X', target_name: 'Y', relation: 'relates_to' } };
+      const result = await executeTool(call, {});
+      expect(result.isError).toBe(true);
+      expect(result.content).toContain('Source entity');
+    });
+
+    it('returns error when target entity not found', async () => {
+      vi.mocked(repository.getEntityByName)
+        .mockResolvedValueOnce({ id: 'e1', name: 'X', type: 'concept' })
+        .mockResolvedValueOnce(null);
+      const call: ToolCall = { id: 'tc18', name: 'create_link', arguments: { source_name: 'X', target_name: 'Y', relation: 'relates_to' } };
+      const result = await executeTool(call, {});
+      expect(result.isError).toBe(true);
+      expect(result.content).toContain('Target entity');
     });
   });
 

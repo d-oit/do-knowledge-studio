@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react';
-import { Bot, User, Loader2, Globe, ExternalLink, X, Send, ChevronDown, ChevronRight, Wrench } from 'lucide-react';
+import { Bot, User, Loader2, Globe, ExternalLink, X, Send, ChevronDown, ChevronRight, Wrench, Trash2 } from 'lucide-react';
 import { Message, TokenUsage, ToolCallRecord } from './useChat';
 import { ResolvedContent } from '../../lib/resolver';
 import MarkdownRenderer from '../../lib/llm/markdown';
@@ -14,6 +14,7 @@ interface ChatViewProps {
   input: string;
   setInput: (value: string) => void;
   onSend: () => void;
+  onClearChat: () => void;
   onRemoveSource: (index: number) => void;
   currentModel: string;
   rateLimitLevel: string;
@@ -86,6 +87,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   input,
   setInput,
   onSend,
+  onClearChat,
   onRemoveSource,
   currentModel,
   rateLimitLevel,
@@ -141,14 +143,14 @@ export const ChatView: React.FC<ChatViewProps> = ({
       <div className="messages-list" role="log" aria-live="polite">
         {messages.map((m) => (
           <div key={m.id} className={"message " + m.role}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', fontWeight: 'bold', fontSize: '12px' }}>
+            <div className="message-header">
               {m.role === 'assistant' ? <Bot size={14} /> : <User size={14} />}
               {m.role === 'assistant' ? 'Assistant' : 'You'}
             </div>
             {m.role === 'assistant' ? (
               <>
                 {m.toolCalls && m.toolCalls.length > 0 && (
-                  <div style={{ marginBottom: '6px' }}>
+                  <div className="tool-calls-wrapper">
                     {m.toolCalls.map(tc => <ToolCallBlock key={tc.id} toolCall={tc} />)}
                   </div>
                 )}
@@ -158,7 +160,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
               m.content
             )}
             {m.tokenUsage && (
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+              <div className="token-usage">
                 {(m.tokenUsage.input + m.tokenUsage.output) + " tokens"}
               </div>
             )}
@@ -173,7 +175,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
       </div>
 
       <div className="chat-controls" style={{ flexDirection: 'column', gap: '4px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+        <div className="chat-input-row">
           <input
             type="text"
             value={input}
@@ -187,30 +189,27 @@ export const ChatView: React.FC<ChatViewProps> = ({
             {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
           </button>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <div className="chat-footer">
+          <span className="chat-footer-left">
             Model: {currentModel ? currentModel.split('/').pop() : 'none'}
           </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <span className="chat-footer-right">
             {sessionTokens.input + sessionTokens.output > 0 && (
               <span>Tokens: {sessionTokens.input + sessionTokens.output}</span>
             )}
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: '3px',
-              color: rateLimitLevel === 'high' ? '#dc2626'
-                : rateLimitLevel === 'medium' ? '#d97706'
-                : rateLimitLevel === 'low' ? '#059669'
-                : 'var(--text-muted)',
-            }}>
-              <span style={{
-                display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%',
-                background: rateLimitLevel === 'high' ? '#dc2626'
-                  : rateLimitLevel === 'medium' ? '#d97706'
-                  : rateLimitLevel === 'low' ? '#059669'
-                  : 'transparent',
-              }} />
+            <span className={"rate-limit-indicator rate-limit-" + rateLimitLevel}>
+              <span className="rate-limit-dot" />
               {rateLimitInfo.count > 0 && (rateLimitInfo.count + "/" + rateLimitInfo.limit + " req/min")}
             </span>
+            <button
+              type="button"
+              className="chat-clear-btn"
+              onClick={onClearChat}
+              aria-label="Clear chat history"
+              title="Clear chat"
+            >
+              <Trash2 size={12} />
+            </button>
           </span>
         </div>
       </div>
