@@ -9,14 +9,13 @@ import { logger } from '../../lib/logger';
 import { upsertToSearchIndex } from '../../lib/search';
 import { perf } from '../../lib/perf';
 import SyncToggle from '../../components/SyncToggle';
-import { ChevronDown, Layers, Filter, Info, ChevronRight, Plus, GitBranch, Pencil, Trash2, Image } from 'lucide-react';
+import { ChevronDown, Layers, Filter, Info, ChevronRight, Plus, GitBranch, Pencil, Trash2, Image, Undo2, Redo2 } from 'lucide-react';
 
 const COLLAPSED_BY_DEFAULT_THRESHOLD = 20;
 const EXPENSIVE_RECALC_THRESHOLD = 50;
 
 interface Props {
   rootEntity: Entity;
-  relatedEntities: Entity[];
   entities: Entity[];
   links: Link[];
   onEntityClick?: (entityId: string) => void;
@@ -68,7 +67,6 @@ function addAriaAttributesToContainer(container: HTMLElement): void {
 
 const MindMapView: React.FC<Props> = ({
   rootEntity: propsRootEntity,
-  relatedEntities: _relatedEntities,
   entities,
   links,
   onEntityClick
@@ -412,6 +410,24 @@ const MindMapView: React.FC<Props> = ({
           aria-label="Delete selected node"
         >
           <Trash2 size={14} /> Delete
+        </button>
+        <button
+          onClick={() => mindInstance.current?.undo()}
+          className="filter-chip"
+          disabled={!isMindReady}
+          title="Undo (Ctrl+Z)"
+          aria-label="Undo last action"
+        >
+          <Undo2 size={14} /> Undo
+        </button>
+        <button
+          onClick={() => mindInstance.current?.redo()}
+          className="filter-chip"
+          disabled={!isMindReady}
+          title="Redo (Ctrl+Shift+Z)"
+          aria-label="Redo last action"
+        >
+          <Redo2 size={14} /> Redo
         </button>
 
         <span style={{ width: '1px', height: '20px', background: 'var(--border-default)', margin: '0 4px' }} />

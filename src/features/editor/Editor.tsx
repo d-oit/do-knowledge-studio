@@ -172,11 +172,62 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
           sourceUrl: sourceUrl.trim() || undefined,
         });
 
+        // Reconcile claims and mentions from editor content
+        const { doc } = editor.state;
+        const claims: { statement: string; source: string; status: string }[] = [];
+        const mentions: { id: string; name: string }[] = [];
+
+        doc.descendants((node) => {
+          const claimMark = node.marks.find(mark => mark.type.name === 'claim');
+          if (claimMark && node.isText && node.text) {
+            claims.push({
+              statement: node.text,
+              source: (claimMark.attrs.source as string) || 'Manual entry',
+              status: (claimMark.attrs.verification_status as string) || 'unverified'
+            });
+          }
+
+          const mentionMark = node.marks.find(mark => mark.type.name === 'mention');
+          if (mentionMark) {
+            mentions.push({
+              id: mentionMark.attrs.entityId as string,
+              name: mentionMark.attrs.entityName as string
+            });
+          }
+          return true;
+        });
+
+        const statements: { sql: string; bind?: (string | number | boolean | null)[] }[] = [];
+
+        // Delete existing claims and links for this entity
+        statements.push({ sql: 'DELETE FROM claims WHERE entity_id = ?', bind: [editingEntityId] });
+        statements.push({ sql: 'DELETE FROM links WHERE source_id = ? AND relation = ?', bind: [editingEntityId, 'mentions'] });
+
+        // Insert reconciled claims
+        for (const claim of claims) {
+          statements.push({
+            sql: 'INSERT INTO claims (entity_id, statement, confidence, evidence, source, verification_status) VALUES (?, ?, ?, ?, ?, ?)',
+            bind: [editingEntityId, claim.statement, 1.0, 'Extracted from editor', claim.source, claim.status]
+          });
+        }
+
+        // Insert reconciled mentions
+        for (const mention of mentions) {
+          statements.push({
+            sql: 'INSERT INTO links (source_id, target_id, relation, metadata) VALUES (?, ?, ?, ?)',
+            bind: [editingEntityId, mention.id, 'mentions', JSON.stringify({ name: mention.name })]
+          });
+        }
+
+        if (statements.length > 0) {
+          await repository.transaction(statements);
+        }
+
         // Update search index
         await upsertToSearchIndex(editingEntityId);
 
-        logger.info('Entity updated', { id: entity.id });
-        setStatus({ type: 'success', message: 'Entity updated successfully!' });
+        logger.info('Entity updated with claim/mention reconciliation', { id: entity.id, claims: claims.length, links: mentions.length });
+        setStatus({ type: 'success', message: `Updated successfully! (${claims.length} claims, ${mentions.length} links)` });
         onEditComplete?.();
       } else {
         // Create new entity

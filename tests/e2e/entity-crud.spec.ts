@@ -51,7 +51,7 @@ test.describe('Entity CRUD', () => {
     await titleInput.fill(updatedTitle);
     await page.waitForTimeout(500);
     await page.click('button:has-text("Update Entity")');
-    await expect(page.locator('[role="alert"]')).toContainText(/updated successfully|Saved successfully/, { timeout: 10000 });
+    await expect(page.locator('[role="alert"]')).toContainText(/updated successfully|Updated successfully|Saved successfully/i, { timeout: 10000 });
 
     await ensureNavVisible(page);
     await page.locator('.nav-button').filter({ hasText: 'Library', visible: true }).first().click();

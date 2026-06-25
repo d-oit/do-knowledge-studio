@@ -382,7 +382,7 @@ export type ProgressiveSearchCallback = (results: RankedResult[], stage: 'exact'
 export const progressiveSearch = async (
   query: string,
   onResults: ProgressiveSearchCallback,
-  options?: { type?: string; limit?: number; signal?: AbortSignal },
+  options?: { type?: string; limit?: number; signal?: AbortSignal; semantic?: boolean },
 ): Promise<void> => {
   if (options?.signal?.aborted) return;
 
@@ -390,7 +390,7 @@ export const progressiveSearch = async (
   if (options?.signal?.aborted) return;
   void onResults(exactResults, 'exact');
 
-  if (embeddingsReady && embeddingsPlugin) {
+  if (options?.semantic !== false && embeddingsReady && embeddingsPlugin) {
     const semanticResults = await semanticSearch(query, { ...options, type: options?.type });
     if (options?.signal?.aborted) return;
     void onResults(semanticResults, 'semantic');

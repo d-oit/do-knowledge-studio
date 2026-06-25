@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Focus, Camera, RotateCcw, Loader2, Layout, LayoutDashboard, Download, CircleDot, Sparkles, FolderOpen } from 'lucide-react';
+import { Focus, Camera, RotateCcw, Loader2, Layout, LayoutDashboard, Download, CircleDot, Sparkles, FolderOpen, Undo2, Redo2 } from 'lucide-react';
 import SyncToggle from '../../components/SyncToggle';
 import { extractEntities } from '../../lib/ai/entity-extractor';
 import type { EntityExtractionResult, ExtractedEntity, ExtractedRelationship } from '../../lib/ai/entity-extractor';
@@ -27,6 +27,10 @@ interface GraphControlsProps {
   onSnapshotModeChange?: (active: boolean) => void;
   layout?: 'circular' | 'force' | 'hierarchical';
   onLayoutChange?: (layout: 'circular' | 'force' | 'hierarchical') => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
+  onUndo?: () => void;
+  onRedo?: () => void;
 }
 
 const GraphControls: React.FC<GraphControlsProps> = ({
@@ -43,6 +47,10 @@ const GraphControls: React.FC<GraphControlsProps> = ({
   onSnapshotModeChange,
   layout = 'force',
   onLayoutChange,
+  canUndo = false,
+  canRedo = false,
+  onUndo,
+  onRedo,
 }) => {
   const repository = useRepository();
   const [showSaveModal, setShowSaveModal] = useState(false);
@@ -128,6 +136,26 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       >
         <Focus size={16} /> {focusMode ? 'Show All' : 'Focus Neighborhood'}
       </button>
+      {onUndo && (
+        <button
+          onClick={onUndo}
+          disabled={!canUndo}
+          aria-label="Undo entity deletion"
+          title="Undo (Ctrl+Z)"
+        >
+          <Undo2 size={16} /> Undo
+        </button>
+      )}
+      {onRedo && (
+        <button
+          onClick={onRedo}
+          disabled={!canRedo}
+          aria-label="Redo entity deletion"
+          title="Redo (Ctrl+Shift+Z)"
+        >
+          <Redo2 size={16} /> Redo
+        </button>
+      )}
       {onExportPNG && (
         <button
           onClick={onExportPNG}

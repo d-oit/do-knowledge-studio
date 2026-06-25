@@ -122,8 +122,7 @@ const createEntity = (id: string, name: string): Entity => ({
 });
 
 const baseRoot: Entity = createEntity(VALID_PARENT_UUID, 'Root');
-const baseRelated: Entity[] = [createEntity(VALID_CHILD_UUID, 'Child')];
-const baseEntities: Entity[] = [baseRoot, ...baseRelated];
+const baseEntities: Entity[] = [baseRoot, createEntity(VALID_CHILD_UUID, 'Child')];
 const baseLinks: Link[] = [];
 
 async function flushAsync(): Promise<void> {
@@ -169,7 +168,7 @@ describe('MindMapView', () => {
     const { container } = render(
       <MindMapView
         rootEntity={baseRoot}
-        relatedEntities={baseRelated}
+
         entities={baseEntities}
         links={baseLinks}
       />,
@@ -187,7 +186,7 @@ describe('MindMapView', () => {
       render(
         <MindMapView
           rootEntity={baseRoot}
-          relatedEntities={baseRelated}
+  
           entities={baseEntities}
           links={baseLinks}
         />,
@@ -218,7 +217,7 @@ describe('MindMapView', () => {
       render(
         <MindMapView
           rootEntity={baseRoot}
-          relatedEntities={baseRelated}
+  
           entities={baseEntities}
           links={baseLinks}
         />,
@@ -244,7 +243,7 @@ describe('MindMapView', () => {
       render(
         <MindMapView
           rootEntity={baseRoot}
-          relatedEntities={baseRelated}
+  
           entities={baseEntities}
           links={baseLinks}
         />,
@@ -266,7 +265,7 @@ describe('MindMapView', () => {
       render(
         <MindMapView
           rootEntity={baseRoot}
-          relatedEntities={baseRelated}
+  
           entities={baseEntities}
           links={baseLinks}
         />,
@@ -291,7 +290,7 @@ describe('MindMapView', () => {
       render(
         <MindMapView
           rootEntity={baseRoot}
-          relatedEntities={baseRelated}
+  
           entities={baseEntities}
           links={baseLinks}
         />,
@@ -315,7 +314,7 @@ describe('MindMapView', () => {
       render(
         <MindMapView
           rootEntity={baseRoot}
-          relatedEntities={baseRelated}
+  
           entities={baseEntities}
           links={baseLinks}
         />,
@@ -336,7 +335,7 @@ describe('MindMapView', () => {
       render(
         <MindMapView
           rootEntity={baseRoot}
-          relatedEntities={baseRelated}
+  
           entities={baseEntities}
           links={baseLinks}
         />,
@@ -358,7 +357,7 @@ describe('MindMapView', () => {
       render(
         <MindMapView
           rootEntity={baseRoot}
-          relatedEntities={baseRelated}
+  
           entities={baseEntities}
           links={baseLinks}
         />,
@@ -382,7 +381,7 @@ describe('MindMapView', () => {
       render(
         <MindMapView
           rootEntity={baseRoot}
-          relatedEntities={baseRelated}
+  
           entities={baseEntities}
           links={baseLinks}
         />,
@@ -405,7 +404,7 @@ describe('MindMapView', () => {
       render(
         <MindMapView
           rootEntity={baseRoot}
-          relatedEntities={baseRelated}
+  
           entities={baseEntities}
           links={baseLinks}
         />,
@@ -427,7 +426,7 @@ describe('MindMapView', () => {
       render(
         <MindMapView
           rootEntity={baseRoot}
-          relatedEntities={baseRelated}
+  
           entities={baseEntities}
           links={baseLinks}
         />,
@@ -449,7 +448,7 @@ describe('MindMapView', () => {
       render(
         <MindMapView
           rootEntity={baseRoot}
-          relatedEntities={baseRelated}
+  
           entities={baseEntities}
           links={baseLinks}
         />,
@@ -472,7 +471,7 @@ describe('MindMapView', () => {
     render(
       <MindMapView
         rootEntity={baseRoot}
-        relatedEntities={baseRelated}
+
         entities={baseEntities}
         links={baseLinks}
       />,
