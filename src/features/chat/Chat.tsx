@@ -4,7 +4,8 @@ import { type RankedResult } from '../../db/repository';
 import { logger } from '../../lib/logger';
 import { loadConfig, createProvider } from '../../lib/llm/config';
 import type { LLMMessage } from '../../lib/llm/types';
-import { Search, Send, ChevronDown, ChevronUp, Database, ShieldCheck, Loader2, Sparkles } from 'lucide-react';
+import { Search, Send, ChevronDown, ChevronUp, Database, ShieldCheck, Loader2, Sparkles, Trash2 } from 'lucide-react';
+import { scrollIntoViewSmooth } from '../../lib/motion';
 
 interface Message {
   id: string;
@@ -35,7 +36,7 @@ interface CitationsPanelProps {
 function CitationsPanel({ citations, expanded, onToggle, onNavigate }: CitationsPanelProps): React.ReactElement {
   return (
     <div className="citations-section">
-      <button type="button" className="source-drawer-toggle" onClick={onToggle}>
+      <button type="button" className="source-drawer-toggle" onClick={onToggle} aria-expanded={expanded}>
         <span>Used {citations.length} local items</span>
         {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
       </button>
@@ -92,11 +93,21 @@ function Chat({ onCreateEntity, onNavigate }: ChatProps): React.ReactElement {
   const [llmAvailable, setLlmAvailable] = useState(false);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef(messages);
 
   useEffect(() => {
     messagesRef.current = messages;
+    if (messagesEndRef.current) {
+      scrollIntoViewSmooth(messagesEndRef.current);
+    }
   }, [messages]);
+
+  useEffect(() => {
+    if (isSearching && messagesEndRef.current) {
+      scrollIntoViewSmooth(messagesEndRef.current);
+    }
+  }, [isSearching]);
 
   useEffect(() => {
     void (async () => {
@@ -177,6 +188,11 @@ function Chat({ onCreateEntity, onNavigate }: ChatProps): React.ReactElement {
     }
   }, [input, llmAvailable, isSearching]);
 
+  const handleClearChat = useCallback(() => {
+    setMessages([]);
+    setShowSources({});
+  }, []);
+
   return (
     <div className="chat-view">
       <div className="ask-header">
@@ -221,6 +237,7 @@ function Chat({ onCreateEntity, onNavigate }: ChatProps): React.ReactElement {
             </div>
           </div>
         )}
+        <div ref={messagesEndRef} />
       </div>
 
       <form className="chat-controls" onSubmit={(e) => { void handleSend(e); }}>
@@ -234,9 +251,25 @@ function Chat({ onCreateEntity, onNavigate }: ChatProps): React.ReactElement {
             disabled={isSearching}
             aria-label="Ask your library"
           />
-          <button type="submit" className="send-button" disabled={isSearching || !input.trim()}>
+          <button type="submit" className="send-button" disabled={isSearching || !input.trim()} aria-label="Send message" title="Send message">
             <Send size={18} />
           </button>
+        </div>
+        <div className="chat-footer">
+          <div className="chat-footer-left">
+            <span>{llmAvailable ? 'Secure LLM session' : 'Local search active'}</span>
+          </div>
+          <div className="chat-footer-right">
+            <button
+              type="button"
+              className="chat-clear-btn"
+              onClick={handleClearChat}
+              title="Clear chat"
+              aria-label="Clear chat history"
+            >
+              <Trash2 size={12} />
+            </button>
+          </div>
         </div>
       </form>
     </div>

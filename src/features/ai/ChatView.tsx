@@ -96,7 +96,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    scrollIntoViewSmooth(messagesEndRef.current);
+    if (messagesEndRef.current) {
+      scrollIntoViewSmooth(messagesEndRef.current);
+    }
   }, [messages.length]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -185,7 +187,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
             disabled={isLoading}
             aria-label="Ask the AI agent"
           />
-          <button type="button" className="primary" onClick={onSend} disabled={isLoading || !input.trim()}>
+          <button type="button" className="primary" onClick={onSend} disabled={isLoading || !input.trim()} aria-label="Send message" title="Send message">
             {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
           </button>
         </div>
