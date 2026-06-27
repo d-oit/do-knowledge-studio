@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
-import { Search, X as XIcon, Check, Minus } from 'lucide-react';
+import { Search, X as XIcon, Check, Minus, ShieldCheck } from 'lucide-react';
 import { EMPTY_GRAPH_FILTERS, MIN_DEGREE_OPTIONS, type GraphFilters } from './graph-filters';
+import { VERIFICATION_OPTIONS } from './useGraphFilters';
 
 const FilterSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <fieldset className="graph-filter-section">
@@ -40,12 +41,19 @@ export const GraphFiltersPanel: React.FC<{
   const setMinDegree = (n: number) => onChange({ ...filters, minDegree: n });
   const setNodeSearch = (q: string) => onChange({ ...filters, nodeSearch: q });
 
+  const toggleVerification = (status: string) => {
+    const next = new Set(filters.claimVerificationFilter);
+    if (next.has(status)) next.delete(status); else next.add(status);
+    onChange({ ...filters, claimVerificationFilter: next });
+  };
+
   const hasActiveFilter = useMemo(
     () =>
       filters.typeFilter.size > 0 ||
       filters.relationFilter.size > 0 ||
       filters.nodeSearch.length > 0 ||
-      filters.minDegree > 0,
+      filters.minDegree > 0 ||
+      filters.claimVerificationFilter.size > 0,
     [filters],
   );
 
@@ -121,6 +129,26 @@ export const GraphFiltersPanel: React.FC<{
               <XIcon size={12} />
             </button>
           )}
+        </div>
+      </FilterSection>
+
+      <FilterSection title="Claim verification">
+        <div className="graph-filter-degree">
+          {VERIFICATION_OPTIONS.map(status => {
+            const active = filters.claimVerificationFilter.has(status);
+            return (
+              <button
+                key={status}
+                type="button"
+                className={`filter-chip ${active ? 'active' : ''}`}
+                onClick={() => { toggleVerification(status); }}
+                aria-pressed={active}
+                aria-label={`Filter by verification status ${status}`}
+              >
+                <ShieldCheck size={12} /> {status}
+              </button>
+            );
+          })}
         </div>
       </FilterSection>
 

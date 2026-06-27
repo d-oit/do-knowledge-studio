@@ -113,16 +113,16 @@ Wave 4 (P1/P2 — QUALITY — PARALLEL) ──→ ✅ MERGED
 |------|-------------|--------|
 | [01-critical-fixes.md](01-critical-fixes.md) | P0 fixes (any type, version, doc references) | ✅ COMPLETED |
 | [02-code-quality-v1-completed.md](02-code-quality-v1-completed.md) | Original code quality plan | 📦 SUPERSEDED by 16 |
-| [03-core-implementation.md](03-core-implementation.md) | CLI architecture, export, test coverage | ⏸ ON HOLD |
-| [04-feature-roadmap.md](04-feature-roadmap.md) | AI Harness, claim provenance, semantic search | 🟢 ACTIVE (4.1 in progress) |
-| [05-documentation-overhaul.md](05-documentation-overhaul.md) | README, JSDoc, PHASES.md | ⏸ ON HOLD |
+| [03-core-implementation.md](03-core-implementation.md) | CLI architecture, export, test coverage | 🟡 PARTIAL (coverage 46%) |
+| [04-feature-roadmap.md](04-feature-roadmap.md) | AI Harness, claim provenance, semantic search | ✅ COMPLETED |
+| [05-documentation-overhaul.md](05-documentation-overhaul.md) | README, JSDoc, PHASES.md | ✅ COMPLETED |
 | [06-llm-provider-system.md](06-llm-provider-system.md) | OpenRouter + Kilo plugin system | ✅ COMPLETED |
 | [07-github-template-alignment.md](07-github-template-alignment.md) | Architecture validation | ✅ COMPLETED |
 | [08-perplexity-removal.md](08-perplexity-removal.md) | Perplexity deletion | ✅ COMPLETED |
-| [09-ui-style-alignment.md](09-ui-style-alignment.md) | Multi-mode atmospheric UI | ⏸ ON HOLD |
+| [09-ui-style-alignment.md](09-ui-style-alignment.md) | Multi-mode atmospheric UI | ✅ COMPLETED |
 | [10-implementation-audit-v1-completed.md](10-implementation-audit-v1-completed.md) | Original implementation audit | 📦 SUPERSEDED by 13-20 |
-| [11-expansion-roadmap.md](11-expansion-roadmap.md) | P2P sync, synthesis, voice | ⏸ ON HOLD |
-| [12-doc-resolver-integration.md](12-doc-resolver-integration.md) | Web doc resolver for RAG | ⏸ ON HOLD |
+| [11-expansion-roadmap.md](11-expansion-roadmap.md) | P2P sync, synthesis, voice, E2EE, TRIZ, query builder | ✅ COMPLETED |
+| [12-doc-resolver-integration.md](12-doc-resolver-integration.md) | Web doc resolver for RAG | ✅ COMPLETED |
 | [12-doc-resolver-implementation-roadmap.md](12-doc-resolver-implementation-roadmap.md) | Doc resolver implementation details | ⏸ ON HOLD |
 
 ### Fix Plans (Pre-existing Issues)

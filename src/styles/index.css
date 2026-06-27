@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 
 @import './tokens.css';
 @import './layout.css';
@@ -17,7 +17,8 @@ h1, .display-text {
 }
 
 h2, .serif-heading {
-  font-family: var(--font-sans);
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-style: italic;
   font-weight: var(--weight-semibold);
   font-size: var(--size-heading);
   color: var(--text-primary);

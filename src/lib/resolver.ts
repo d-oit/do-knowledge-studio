@@ -1,4 +1,5 @@
 import { logger } from './logger';
+import { shouldSkip, recordSuccess, recordFailure } from './routing-memory';
 
 const BLOCKED_SCHEMES = ['javascript:', 'data:', 'vbscript:', 'file:', 'ftp:'];
 
@@ -179,6 +180,11 @@ const fetchAndParse = async (url: string): Promise<{ title: string; content: str
 export const resolveUrl = async (url: string): Promise<ResolvedContent> => {
   logger.info('Resolving URL', { url });
 
+  if (shouldSkip(url)) {
+    logger.warn('Skipping URL due to routing memory (domain marked as failing)', { url });
+    throw new Error(`Domain temporarily skipped: ${new URL(url).hostname}`);
+  }
+
   let parsed: URL;
   try {
     parsed = new URL(url);
@@ -195,8 +201,13 @@ export const resolveUrl = async (url: string): Promise<ResolvedContent> => {
     throw new Error(`Blocked private/reserved IP: ${parsed.hostname}`);
   }
 
-  const { title, content, provider } = await fetchAndParse(url);
-  const wordCount = content.split(/\s+/).filter(Boolean).length;
-
-  return { url, title, content, format: provider === 'jina' ? 'markdown' : 'plain', wordCount, provider };
+  try {
+    const { title, content, provider } = await fetchAndParse(url);
+    const wordCount = content.split(/\s+/).filter(Boolean).length;
+    recordSuccess(url);
+    return { url, title, content, format: provider === 'jina' ? 'markdown' : 'plain', wordCount, provider };
+  } catch (err) {
+    recordFailure(url);
+    throw err;
+  }
 };

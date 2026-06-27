@@ -181,7 +181,7 @@ Do not finish with failing lint, typecheck, tests, build, or quality gate output
 | `agent-browser` | Browser automation CLI for AI agents. Use when the user need | workflow |
 | `agent-coordination` | Coordinate multiple agents for software development across a | Coordination |
 | `agents-md` | Create AGENTS.md files with production-ready best practices. | General |
-| `anti-ai-slop` | > | General |
+| `anti-ai-slop` | Avoid generic AI aesthetic in UI/UX design and copy | General |
 | `api-design-first` | Design and document RESTful APIs using design-first principl | API Development |
 | `architecture-diagram` | Generate or update a project architecture SVG diagram by sca | General |
 | `atomic-commit` | Atomic git workflow - validates, commits, pushes, creates PR | General |

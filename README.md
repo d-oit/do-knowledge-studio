@@ -39,7 +39,7 @@ This project is in active development. See [PHASES.md](docs/PHASES.md) for progr
 - **🔬 Swarm Analysis** — Parallel AI-powered web research using git worktrees
 - **🔒 AES-256-GCM Encryption** — API keys encrypted at rest via Web Crypto API
 - **⚡ CLI** — TypeScript CLI with 20 commands for scripting and automation
-- **🧪 Full Test Suite** — 310 Vitest unit tests + 31 Playwright end-to-end tests
+- **🧪 Full Test Suite** — 671 Vitest unit tests + Playwright end-to-end tests
 
 ---
 

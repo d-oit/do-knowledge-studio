@@ -1,7 +1,7 @@
 # Plan 12: do-web-doc-resolver Integration
 
 **Date**: 2026-05-07  
-**Status**: PROPOSED  
+**Status**: ✅ COMPLETE (2026-06-25)  
 **Goal**: Integrate the `do-web-doc-resolver` skill into core workflows to enhance local knowledge with high-signal external data.
 
 ## 12.1 RAG Context Enrichment (AI Harness)

@@ -151,6 +151,12 @@
 
   /* Focus Ring */
   --focus-ring: 0 0 0 2px var(--bg-surface), 0 0 0 4px var(--border-focus);
+
+  /* Glassmorphism */
+  --glass-blur: 80px;
+  --glass-bg: rgba(255, 255, 255, 0.01);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
 }
 
 /* Theme: App (Default — Professional) */
@@ -165,6 +171,7 @@
   --interactive-primary-subtle: #e8f0fe;
   --interactive-hover: #1d4ed8;
   --border-default: #e2e8f0;
+  --radius-xl: 32px;
 }
 
 /* Theme: Game (Dark / High Contrast) */
@@ -201,6 +208,9 @@
   --entity-person-text: #f9a8d4;
   --entity-project-bg: #064e3b;
   --entity-project-text: #34d399;
+  --glass-bg: rgba(30, 41, 59, 0.8);
+  --glass-border: rgba(148, 163, 184, 0.15);
+  --glass-shadow: 0 0 50px rgba(0, 0, 0, 0.6);
 }
 
 /* Theme: Neural (Soft / Warm) */
@@ -237,6 +247,9 @@
   --entity-person-text: #be185d;
   --entity-project-bg: #d1fae5;
   --entity-project-text: #047857;
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(124, 58, 237, 0.15);
+  --glass-shadow: 0 0 50px rgba(124, 58, 237, 0.1);
 }
 
 /* Theme: Technical (Brutalist / Mono) */

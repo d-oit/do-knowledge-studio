@@ -853,4 +853,381 @@ describe('Repository', () => {
       expect(result).toEqual([{ result: 'ok' }]);
     });
   });
+
+  describe('getEntities (filtered)', () => {
+    it('should return entities with type filter', async () => {
+      mockExec.mockResolvedValue([createMockEntity()]);
+      const result = await repository.getEntities({ type: 'person' });
+      expect(result).toHaveLength(1);
+      expect(mockExec).toHaveBeenCalledWith(expect.objectContaining({
+        sql: expect.stringContaining('WHERE type = ?'),
+      }));
+    });
+
+    it('should return entities with search filter', async () => {
+      mockExec.mockResolvedValue([createMockEntity()]);
+      const result = await repository.getEntities({ search: 'Test' });
+      expect(result).toHaveLength(1);
+      expect(mockExec).toHaveBeenCalledWith(expect.objectContaining({
+        sql: expect.stringContaining('name LIKE ?'),
+      }));
+    });
+
+    it('should return entities with sort and limit', async () => {
+      mockExec.mockResolvedValue([createMockEntity()]);
+      const result = await repository.getEntities({ sortBy: 'created_at', sortOrder: 'DESC', limit: 5 });
+      expect(result).toHaveLength(1);
+      expect(mockExec).toHaveBeenCalledWith(expect.objectContaining({
+        sql: expect.stringContaining('ORDER BY created_at DESC'),
+      }));
+    });
+
+    it('should throw on db error', async () => {
+      mockExec.mockRejectedValue(new Error('DB error'));
+      await expect(repository.getEntities()).rejects.toThrow('Failed to fetch entities');
+    });
+  });
+
+  describe('getEntitiesCount', () => {
+    it('should return count of entities', async () => {
+      mockExec.mockResolvedValue([{ count: 42 }]);
+      const result = await repository.getEntitiesCount();
+      expect(result).toBe(42);
+    });
+
+    it('should filter by type', async () => {
+      mockExec.mockResolvedValue([{ count: 5 }]);
+      const result = await repository.getEntitiesCount({ type: 'concept' });
+      expect(result).toBe(5);
+      expect(mockExec).toHaveBeenCalledWith(expect.objectContaining({
+        sql: expect.stringContaining('WHERE type = ?'),
+      }));
+    });
+
+    it('should throw on db error', async () => {
+      mockExec.mockRejectedValue(new Error('DB error'));
+      await expect(repository.getEntitiesCount()).rejects.toThrow();
+    });
+  });
+
+  describe('searchRelated', () => {
+    it('should return related entities via FTS', async () => {
+      mockExec.mockResolvedValue([
+        { id: 'r1', name: 'Related', type: 'concept', description: 'desc', relation: 'relates_to', source_id: 'e1', target_id: 'e2' },
+      ]);
+      const result = await repository.searchRelated('test');
+      expect(result).toHaveLength(1);
+      expect(result[0].title).toBe('Related');
+    });
+
+    it('should exclude specified ids', async () => {
+      mockExec.mockResolvedValue([]);
+      const result = await repository.searchRelated('test', { excludeIds: new Set(['e1']) });
+      expect(result).toEqual([]);
+    });
+
+    it('should return empty on error', async () => {
+      mockExec.mockRejectedValue(new Error('FTS error'));
+      const result = await repository.searchRelated('test');
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('createClaimWithProvenance', () => {
+    it('should create claim via createClaim', async () => {
+      const mockClaim = createMockClaim();
+      mockExec.mockResolvedValue([mockClaim]);
+      const result = await repository.createClaimWithProvenance({
+        entity_id: VALID_UUID,
+        statement: 'Test claim statement',
+      });
+      expect(result.entity_id).toBe(VALID_UUID);
+    });
+  });
+
+  describe('getClaimStageMap', () => {
+    it('should return map of claim ids to statuses', async () => {
+      mockExec.mockResolvedValue([
+        { id: 'c1', verification_status: 'verified' },
+        { id: 'c2', verification_status: 'unverified' },
+      ]);
+      const result = await repository.getClaimStageMap(['c1', 'c2']);
+      expect(result.get('c1')).toBe('verified');
+      expect(result.get('c2')).toBe('unverified');
+    });
+
+    it('should return empty map for empty input', async () => {
+      const result = await repository.getClaimStageMap([]);
+      expect(result.size).toBe(0);
+      expect(mockExec).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getAllClaimsGroupedByEntity', () => {
+    it('should group claims by entity_id', async () => {
+      mockExec.mockResolvedValue([
+        createMockClaim({ entity_id: VALID_UUID, id: OTHER_UUID }),
+        createMockClaim({ entity_id: VALID_UUID, id: THIRD_UUID }),
+      ]);
+      const result = await repository.getAllClaimsGroupedByEntity();
+      expect(Object.keys(result)).toHaveLength(1);
+      expect(result[VALID_UUID]).toHaveLength(2);
+    });
+  });
+
+  describe('getAllEntitiesWithClaims', () => {
+    it('should return entities with their claims', async () => {
+      mockExec.mockResolvedValue([
+        { id: VALID_UUID, name: 'Entity', type: 'concept', c_id: OTHER_UUID, c_statement: 'Claim 1', c_entity_id: VALID_UUID, c_evidence: null, c_confidence: 1, c_source: null, c_verification_status: 'unverified', c_created_at: '2024-01-01', c_updated_at: '2024-01-01' },
+      ]);
+      const result = await repository.getAllEntitiesWithClaims();
+      expect(result.size).toBe(1);
+      const entry = result.get(VALID_UUID);
+      expect(entry?.claims).toHaveLength(1);
+    });
+
+    it('should handle entity with no claims', async () => {
+      mockExec.mockResolvedValue([
+        { id: VALID_UUID, name: 'Entity', type: 'concept', c_id: null, c_entity_id: null, c_statement: null, c_evidence: null, c_confidence: null, c_source: null, c_verification_status: null, c_created_at: null, c_updated_at: null },
+      ]);
+      const result = await repository.getAllEntitiesWithClaims();
+      const entry = result.get(VALID_UUID);
+      expect(entry?.claims).toHaveLength(0);
+    });
+  });
+
+  describe('createLink', () => {
+    it('should create a link', async () => {
+      const mockLink = { id: '880e8400-e29b-41d4-a716-446655440010', source_id: VALID_UUID, target_id: OTHER_UUID, relation: 'relates_to', created_at: '2024-01-01', updated_at: '2024-01-01' };
+      mockExec.mockResolvedValue([mockLink]);
+      const result = await repository.createLink({ source_id: VALID_UUID, target_id: OTHER_UUID, relation: 'relates_to' });
+      expect(result.source_id).toBe(VALID_UUID);
+    });
+  });
+
+  describe('getAllLinks', () => {
+    it('should return links with limit and offset', async () => {
+      mockExec.mockResolvedValue([]);
+      const result = await repository.getAllLinks({ limit: 10, offset: 0 });
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('getBacklinks', () => {
+    it('should return entities linking to target', async () => {
+      mockExec.mockResolvedValue([createMockEntity()]);
+      const result = await repository.getBacklinks(OTHER_UUID);
+      expect(result).toHaveLength(1);
+    });
+  });
+
+  describe('getBacklinkCount', () => {
+    it('should return count of backlinks', async () => {
+      mockExec.mockResolvedValue([{ count: 3 }]);
+      const result = await repository.getBacklinkCount(OTHER_UUID);
+      expect(result).toBe(3);
+    });
+  });
+
+  describe('upsertWebCache / getWebCache', () => {
+    it('should upsert and retrieve web cache', async () => {
+      mockExec.mockResolvedValue([]);
+      await repository.upsertWebCache('https://example.com', 'content', 'Title');
+      expect(mockExec).toHaveBeenCalledWith(expect.objectContaining({
+        sql: expect.stringContaining('web_cache'),
+      }));
+
+      mockExec.mockResolvedValue([{ url: 'https://example.com', content: 'content', format: 'markdown', title: 'Title', resolved_at: '2024-01-01' }]);
+      const result = await repository.getWebCache('https://example.com');
+      expect(result?.url).toBe('https://example.com');
+    });
+
+    it('should return null for missing cache entry', async () => {
+      mockExec.mockResolvedValue([]);
+      const result = await repository.getWebCache('https://missing.com');
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('snapshots', () => {
+    it('should create and list snapshots', async () => {
+      const snap = { id: VALID_UUID, name: 'Test', nodes_json: '[]', edges_json: '[]', description: 'desc', created_at: '2024-01-01' };
+      mockExec.mockResolvedValue([snap]);
+      const created = await repository.createSnapshot('Test', [], [], 'desc');
+      expect(created.name).toBe('Test');
+
+      mockExec.mockResolvedValue([snap]);
+      const list = await repository.listSnapshots();
+      expect(list).toHaveLength(1);
+    });
+
+    it('should get snapshot by id', async () => {
+      const snap = { id: VALID_UUID, name: 'Test', nodes_json: '[]', edges_json: '[]', description: null, created_at: '2024-01-01' };
+      mockExec.mockResolvedValue([snap]);
+      const result = await repository.getSnapshot(VALID_UUID);
+      expect(result?.id).toBe(VALID_UUID);
+    });
+
+    it('should return null for missing snapshot', async () => {
+      mockExec.mockResolvedValue([]);
+      const result = await repository.getSnapshot('990e8400-e29b-41d4-a716-446655440099');
+      expect(result).toBeNull();
+    });
+
+    it('should diff two snapshots', async () => {
+      const snap1 = { id: VALID_UUID, name: 'V1', nodes_json: JSON.stringify([{ id: 'n1', label: 'N1' }]), edges_json: JSON.stringify([{ id: 'e1', source: 'n1', target: 'n2' }]), description: null, created_at: '2024-01-01' };
+      const snap2 = { id: OTHER_UUID, name: 'V2', nodes_json: JSON.stringify([{ id: 'n1', label: 'N1' }, { id: 'n3', label: 'N3' }]), edges_json: JSON.stringify([]), description: null, created_at: '2024-01-02' };
+      mockExec
+        .mockResolvedValueOnce([snap1])
+        .mockResolvedValueOnce([snap2]);
+      const diff = await repository.diffSnapshots(VALID_UUID, OTHER_UUID);
+      expect(diff.added_nodes).toContain('n3');
+      expect(diff.removed_edges).toContain('e1');
+    });
+
+    it('should throw when snapshot not found for diff', async () => {
+      mockExec.mockResolvedValue([]);
+      await expect(repository.diffSnapshots('990e8400-e29b-41d4-a716-446655440099', '990e8400-e29b-41d4-a716-446655440098')).rejects.toThrow('Snapshot not found');
+    });
+  });
+
+  describe('tags', () => {
+    it('should create and retrieve tags', async () => {
+      mockExec.mockResolvedValue([{ id: VALID_UUID, name: 'important', color: '#ff0000', created_at: '2024-01-01' }]);
+      const tag = await repository.createTag('important', '#ff0000');
+      expect(tag.name).toBe('important');
+
+      mockExec.mockResolvedValue([{ id: VALID_UUID, name: 'important', color: '#ff0000', entity_count: 2 }]);
+      const tags = await repository.getAllTags();
+      expect(tags).toHaveLength(1);
+    });
+
+    it('should get tag by name', async () => {
+      mockExec.mockResolvedValue([{ id: VALID_UUID, name: 'found', color: null, created_at: '2024-01-01' }]);
+      const result = await repository.getTagByName('found');
+      expect(result?.name).toBe('found');
+    });
+
+    it('should return null for missing tag', async () => {
+      mockExec.mockResolvedValue([]);
+      const result = await repository.getTagByName('missing');
+      expect(result).toBeNull();
+    });
+
+    it('should add and remove tag from entity', async () => {
+      mockExec.mockResolvedValue([]);
+      await repository.addTagToEntity(VALID_UUID, OTHER_UUID);
+      await repository.removeTagFromEntity(VALID_UUID, OTHER_UUID);
+      expect(mockExec).toHaveBeenCalledTimes(2);
+    });
+
+    it('should get tags by entity id', async () => {
+      mockExec.mockResolvedValue([{ id: VALID_UUID, name: 'tag1', color: null, created_at: '2024-01-01' }]);
+      const tags = await repository.getTagsByEntityId(VALID_UUID);
+      expect(tags).toHaveLength(1);
+    });
+
+    it('should get entities by tag id', async () => {
+      mockExec.mockResolvedValue([{ entity_id: VALID_UUID }, { entity_id: OTHER_UUID }]);
+      const ids = await repository.getEntitiesByTagId(VALID_UUID);
+      expect(ids).toEqual([VALID_UUID, OTHER_UUID]);
+    });
+
+    it('should delete tag', async () => {
+      mockExec.mockResolvedValue([]);
+      await repository.deleteTag(VALID_UUID);
+      expect(mockExec).toHaveBeenCalled();
+    });
+  });
+
+  describe('entity versions', () => {
+    it('should capture and retrieve entity versions', async () => {
+      mockExec
+        .mockResolvedValueOnce([{ id: VALID_UUID, name: 'Test', type: 'concept', description: 'desc', metadata: null }])
+        .mockResolvedValueOnce([{ max_version: 0 }])
+        .mockResolvedValueOnce([]);
+      await repository.captureEntityVersion(VALID_UUID);
+
+      mockExec.mockResolvedValue([{ entity_id: VALID_UUID, name: 'Test', type: 'concept', description: 'desc', metadata: null, version: 1, created_at: '2024-01-01' }]);
+      const versions = await repository.getEntityVersions(VALID_UUID);
+      expect(versions).toHaveLength(1);
+    });
+
+    it('should get specific entity version', async () => {
+      mockExec.mockResolvedValue([{ entity_id: VALID_UUID, name: 'Test', type: 'concept', description: 'desc', metadata: null, version: 1, created_at: '2024-01-01' }]);
+      const version = await repository.getEntityVersion(VALID_UUID, 1);
+      expect(version?.version).toBe(1);
+    });
+
+    it('should return null for missing version', async () => {
+      mockExec.mockResolvedValue([]);
+      const version = await repository.getEntityVersion(VALID_UUID, 99);
+      expect(version).toBeNull();
+    });
+
+    it('should diff entity versions', async () => {
+      const v1 = { name: 'Old', type: 'concept', description: 'old', metadata: null };
+      const v2 = { name: 'New', type: 'person', description: 'new', metadata: '{"k":"v"}' };
+      mockExec
+        .mockResolvedValueOnce([v1])
+        .mockResolvedValueOnce([v2]);
+      const diff = await repository.diffEntityVersions(VALID_UUID, 1, 2);
+      expect(diff.name).toEqual({ old: 'Old', new: 'New' });
+      expect(diff.type).toEqual({ old: 'concept', new: 'person' });
+    });
+
+    it('should return nulls when diffing identical versions', async () => {
+      const v = { name: 'Same', type: 'concept', description: 'same', metadata: null };
+      mockExec
+        .mockResolvedValueOnce([v])
+        .mockResolvedValueOnce([v]);
+      const diff = await repository.diffEntityVersions(VALID_UUID, 1, 2);
+      expect(diff.name).toBeNull();
+    });
+
+    it('should return nulls when version not found for diff', async () => {
+      mockExec.mockResolvedValue([]);
+      const diff = await repository.diffEntityVersions(VALID_UUID, 1, 2);
+      expect(diff.name).toBeNull();
+    });
+  });
+
+  describe('notes error paths', () => {
+    it('should throw on getNotesByEntityId db error', async () => {
+      mockExec.mockRejectedValue(new Error('DB error'));
+      await expect(repository.getNotesByEntityId(VALID_UUID)).rejects.toThrow('Failed to fetch notes');
+    });
+
+    it('should throw on updateNote when note not found', async () => {
+      mockExec.mockResolvedValue([]);
+      await expect(repository.updateNote(VALID_UUID, { content: 'new' })).rejects.toThrow('Note not found');
+    });
+
+    it('should throw on updateNote db error', async () => {
+      mockExec
+        .mockResolvedValueOnce([{ id: VALID_UUID, content: 'old', format: 'markdown' }])
+        .mockRejectedValueOnce(new Error('DB error'));
+      await expect(repository.updateNote(VALID_UUID, { content: 'new' })).rejects.toThrow('Failed to update note');
+    });
+
+    it('should throw on deleteNote db error', async () => {
+      mockExec.mockRejectedValue(new Error('DB error'));
+      await expect(repository.deleteNote(VALID_UUID)).rejects.toThrow('Failed to delete note');
+    });
+  });
+
+  describe('links error paths', () => {
+    it('should throw on createLink db error', async () => {
+      mockExec.mockRejectedValue(new Error('FK violation'));
+      await expect(repository.createLink({ source_id: VALID_UUID, target_id: OTHER_UUID, relation: 'relates_to' })).rejects.toThrow();
+    });
+  });
+
+  describe('web-cache error paths', () => {
+    it('should handle upsertWebCache with format parameter', async () => {
+      mockExec.mockResolvedValue([]);
+      await repository.upsertWebCache('https://example.com', 'content', 'Title', 'markdown');
+      expect(mockExec).toHaveBeenCalled();
+    });
+  });
 });

@@ -4,6 +4,8 @@ import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { ClaimExtension } from './ClaimExtension';
 import { MentionExtension } from './MentionExtension';
+import { ClaimMetadataPopover } from './ClaimMetadataPopover';
+import { useClaimMetadata } from './useClaimMetadata';
 import { logger } from '../../lib/logger';
 import { useRepository } from '../../db/useRepository';
 import { jobCoordinator } from '../../lib/jobs';
@@ -45,6 +47,15 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
   const [extractionSourceId, setExtractionSourceId] = useState<string | undefined>(undefined);
   const [showExtractionNotice, setShowExtractionNotice] = useState(false);
   const [backlinks, setBacklinks] = useState<Entity[]>([]);
+  const {
+    claimMetadata,
+    showClaimPopover,
+    currentClaimStatement,
+    handleToggleClaim: toggleClaimHandler,
+    handleClaimMetadataSave,
+    closeClaimPopover,
+    getClaimMeta,
+  } = useClaimMetadata();
 
   const editor = useEditor({
     extensions: [
@@ -180,10 +191,11 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
         doc.descendants((node) => {
           const claimMark = node.marks.find(mark => mark.type.name === 'claim');
           if (claimMark && node.isText && node.text) {
+            const meta = getClaimMeta(node.text);
             claims.push({
               statement: node.text,
-              source: (claimMark.attrs.source as string) || 'Manual entry',
-              status: (claimMark.attrs.verification_status as string) || 'unverified'
+              source: meta?.source || (claimMark.attrs.source as string) || 'Manual entry',
+              status: meta?.status || (claimMark.attrs.verification_status as string) || 'unverified'
             });
           }
 
@@ -255,10 +267,11 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
         doc.descendants((node) => {
           const claimMark = node.marks.find(mark => mark.type.name === 'claim');
           if (claimMark && node.isText && node.text) {
+            const meta = getClaimMeta(node.text);
             claims.push({
               statement: node.text,
-              source: (claimMark.attrs.source as string) || 'Manual entry',
-              status: (claimMark.attrs.verification_status as string) || 'unverified'
+              source: meta?.source || (claimMark.attrs.source as string) || 'Manual entry',
+              status: meta?.status || (claimMark.attrs.verification_status as string) || 'unverified'
             });
           }
 
@@ -322,7 +335,7 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
       logger.error('Failed to save entity', { error: err });
       setStatus({ type: 'error', message: `Save failed: ${msg}` });
     }
-  }, [title, type, sourceUrl, editingEntityId, onEditComplete, editor, repository, handleExtractEntities]);
+  }, [title, type, sourceUrl, editingEntityId, onEditComplete, editor, repository, handleExtractEntities, getClaimMeta]);
 
   const insertMention = useCallback((target: Entity) => {
     if (!editor || !target.id) return;
@@ -344,6 +357,10 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
     setShowLinkInput(false);
     setLinkUrl('');
   }, [editor, linkUrl]);
+
+  const handleToggleClaim = useCallback(() => {
+    toggleClaimHandler(editor);
+  }, [editor, toggleClaimHandler]);
 
   return (
     <div className="editor-container">
@@ -381,11 +398,21 @@ const Editor: React.FC<EditorProps> = ({ editingEntityId, onEditComplete }) => {
         isExtracting={isExtracting}
         onExtractEntities={() => void handleExtractEntities()}
         onToggleLinkInput={() => setShowLinkInput(!showLinkInput)}
+        onToggleClaim={handleToggleClaim}
         onSave={() => void handleSave()}
         onCancelEdit={handleCancelEdit}
       />
       {showLinkInput && <LinkInput value={linkUrl} onChange={setLinkUrl} onApply={setLink} onCancel={() => { setShowLinkInput(false); setLinkUrl(''); }} />}
       <EditorContent editor={editor} className="tiptap-content" />
+
+      {showClaimPopover && (
+        <ClaimMetadataPopover
+          source={claimMetadata.get(currentClaimStatement)?.source ?? ''}
+          verificationStatus={claimMetadata.get(currentClaimStatement)?.status ?? 'unverified'}
+          onSave={handleClaimMetadataSave}
+          onClose={closeClaimPopover}
+        />
+      )}
 
       {showExtractionNotice && extractionResult && <ExtractionNotice result={extractionResult} onReview={() => { setShowExtractionReview(true); }} onDismiss={() => { setShowExtractionNotice(false); }} />}
 

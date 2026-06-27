@@ -18,13 +18,17 @@
 - [x] Knowledge graph snapshots with diffing
 - [x] Node.js CLI with better-sqlite3 adapter
 
-## Phase 4: Intelligence (In Progress - 2026-Q3)
-- [ ] Streaming AI chat with LLM provider integration
-- [ ] Semantic search with embeddings
+## Phase 4: Intelligence (Complete - 2026-06)
+- [x] Streaming AI chat with LLM provider integration
+- [x] Semantic search with embeddings
+- [x] Entity auto-hydration from external sources
+- [x] Claim provenance and verification tracking
+- [x] Entity-aware AI tools (list, query, link)
 - [ ] Advanced TRIZ analysis features
-- [ ] Entity auto-hydration from external sources
 
 ## Phase 5: Collaboration (Planned - 2026-Q4)
 - [ ] Real-time sync (optional)
 - [ ] Multi-user support
 - [ ] Offline-ready web content caching
+- [ ] P2P sync via WebRTC
+- [ ] Voice-to-knowledge (Web Speech API)

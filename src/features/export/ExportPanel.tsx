@@ -4,7 +4,7 @@ import { repository } from '../../db/repository';
 import { generateSiteHtml, generateMarkdownExport, generateJsonExport, fetchAllExportData } from '../../lib/export-core';
 import { importMarkdownFiles } from '../../lib/markdown-importer';
 import { stripHtmlTags } from '../../lib/security';
-import { Download, Upload, File, FileJson, FileText, FileSpreadsheet, Globe, Loader2 } from 'lucide-react';
+import { Download, Upload, File, FileJson, FileText, FileSpreadsheet, Globe, Loader2, Lock } from 'lucide-react';
 import type { Entity } from '../../lib/validation';
 
 const ExportPanel: React.FC = () => {
@@ -230,6 +230,27 @@ const ExportPanel: React.FC = () => {
     }
   };
 
+  const handleExportE2EE = async () => {
+    const password = prompt('Enter a password to encrypt the export:');
+    if (!password) return;
+
+    setIsExporting(true);
+    setError(null);
+    try {
+      const data = await fetchAllExportData(repository);
+      const { generateEncryptedReader } = await import('../../lib/e2ee-export');
+      const html = await generateEncryptedReader(data, password);
+      downloadFile(html, 'knowledge-base-encrypted.html', 'text/html');
+      logger.info('E2EE export complete');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'E2EE export failed';
+      setError(msg);
+      logger.error('E2EE export failed', err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="editor-container">
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
@@ -292,6 +313,15 @@ const ExportPanel: React.FC = () => {
         >
           {isExporting ? <Loader2 className="animate-spin" size={20} /> : <FileSpreadsheet size={20} />}
           Export as DOCX
+        </button>
+        <button 
+          onClick={() => void handleExportE2EE()} 
+          disabled={isExporting}
+          aria-label="Export knowledge base as encrypted HTML"
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
+        >
+          {isExporting ? <Loader2 className="animate-spin" size={20} /> : <Lock size={20} />}
+          Export Encrypted
         </button>
       </div>
 

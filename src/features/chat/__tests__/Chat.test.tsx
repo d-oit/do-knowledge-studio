@@ -9,6 +9,21 @@ vi.mock('../../../lib/logger', () => ({
   logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn() },
 }));
 
+vi.mock('../../../lib/llm/config', () => ({
+  loadConfig: vi.fn().mockResolvedValue({
+    activeProvider: 'openrouter',
+    providers: {
+      openrouter: { apiKey: 'test-key', baseURL: 'https://openrouter.ai/api/v1', defaultModel: 'test' },
+    },
+  }),
+  createProvider: vi.fn().mockReturnValue({
+    isConfigured: () => true,
+    chatStream: vi.fn().mockReturnValue((function* () {
+      yield { content: 'response', done: true };
+    })()),
+  }),
+}));
+
 vi.mock('react-router-dom', () => ({
   useNavigate: () => vi.fn(),
 }));
@@ -39,5 +54,11 @@ describe('Chat', () => {
   it('shows offline ready badge', () => {
     render(<Chat />);
     expect(screen.getByText('Offline ready')).toBeDefined();
+  });
+
+  it('renders suggested prompt buttons', () => {
+    render(<Chat />);
+    expect(screen.getByText('Summarize recent projects')).toBeDefined();
+    expect(screen.getByText('Key people')).toBeDefined();
   });
 });

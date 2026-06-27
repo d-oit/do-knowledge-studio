@@ -1,10 +1,10 @@
 # Plan 04: Feature Roadmap
 
-**Priority**: P0 (Active — 4.1 in progress)  
+**Priority**: P0 (Complete)  
 **Estimated Total Effort**: 20-30 hours  
-**Status**: 🟢 ACTIVE (unheld 2026-06-25)  
+**Status**: ✅ COMPLETE (2026-06-25)  
 **Sources**: Swarm analysis - new feature suggestions, LLM provider system  
-**Implementation Plan**: [041-ai-harness-implementation.md](041-ai-harness-implementation.md)
+**Implementation Plans**: [041-ai-harness-implementation.md](041-ai-harness-implementation.md), [Claim Provenance (this session)]
 
 ## Tasks
 
@@ -111,9 +111,9 @@
 ---
 
 ## Completion Criteria
-- [ ] AI Harness is fully functional with streaming + Orama context
-- [ ] Claims support source/verification tracking
-- [ ] Semantic search mode available and working
-- [ ] Graph snapshots can be saved/compared/reverted
-- [ ] Mobile gestures work for graph and mind map
-- [ ] All quality gates pass: `npm test`, `npm run lint`, `npm run typecheck`
+- [x] AI Harness is fully functional with streaming + Orama context
+- [x] Claims support source/verification tracking
+- [x] Semantic search mode available and working
+- [x] Graph snapshots can be saved/compared/reverted
+- [x] Mobile gestures work for graph and mind map
+- [x] All quality gates pass: `npm test`, `npm run lint`, `npm run typecheck`
