@@ -1,37 +1,44 @@
 import { logger } from '../logger';
+import { getOrCreateKey, encrypt, decrypt, importAndStoreKey, hasKey } from '../crypto';
 
 const ENCRYPTION_KEY_STORAGE = 'dks:llm-encryption-key';
 const ENCRYPTED_PREFIX = 'enc:v1:';
 
 /**
- * Get or create the AES-GCM encryption key.
- * The key is stored in localStorage as a JWK for persistence across sessions.
+ * Get the AES-GCM encryption key from the secure crypto-store.
+ * Migrates existing legacy keys from localStorage to IndexedDB.
  */
 async function getKey(): Promise<CryptoKey> {
-  const stored = localStorage.getItem(ENCRYPTION_KEY_STORAGE);
-  if (stored) {
-    try {
-      return await crypto.subtle.importKey(
-        'jwk',
-        JSON.parse(stored) as JsonWebKey,
-        { name: 'AES-GCM', length: 256 },
-        true,
-        ['encrypt', 'decrypt'],
-      );
-    } catch (err) {
-      logger.warn('Encryption key is corrupted, generating a new one', err);
-      localStorage.removeItem(ENCRYPTION_KEY_STORAGE);
+  const CRYPTO_KEY_ID = 'dks:llm:encryption-key';
+
+  try {
+    if (await hasKey(CRYPTO_KEY_ID)) {
+      return await getOrCreateKey(CRYPTO_KEY_ID, { extractable: false });
     }
+  } catch (err) {
+    logger.debug('Error checking for key in crypto-store', err);
   }
 
-  const key = await crypto.subtle.generateKey(
-    { name: 'AES-GCM', length: 256 },
-    true,
-    ['encrypt', 'decrypt'],
-  );
-  const exported = await crypto.subtle.exportKey('jwk', key);
-  localStorage.setItem(ENCRYPTION_KEY_STORAGE, JSON.stringify(exported));
-  return key;
+  try {
+    // Fallback to migration from localStorage
+    const stored = localStorage.getItem(ENCRYPTION_KEY_STORAGE);
+    if (stored) {
+      try {
+        const jwk = JSON.parse(stored) as JsonWebKey;
+        const key = await importAndStoreKey(CRYPTO_KEY_ID, jwk, { extractable: false });
+        localStorage.removeItem(ENCRYPTION_KEY_STORAGE);
+        logger.info('Migrated LLM encryption key to secure storage');
+        return key;
+      } catch (migrationErr) {
+        logger.warn('Failed to migrate LLM encryption key, generating a new one', migrationErr);
+        localStorage.removeItem(ENCRYPTION_KEY_STORAGE);
+      }
+    }
+  } catch (err) {
+    logger.debug('No legacy key found in localStorage', err);
+  }
+
+  return await getOrCreateKey(CRYPTO_KEY_ID, { extractable: false });
 }
 
 /**
@@ -40,20 +47,8 @@ async function getKey(): Promise<CryptoKey> {
  */
 export async function encryptApiKey(plaintext: string): Promise<string> {
   const key = await getKey();
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const encoded = new TextEncoder().encode(plaintext);
-  const encrypted = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv },
-    key,
-    encoded,
-  );
-
-  // Combine IV + ciphertext and base64 encode
-  const combined = new Uint8Array(iv.length + encrypted.byteLength);
-  combined.set(iv, 0);
-  combined.set(new Uint8Array(encrypted), iv.length);
-
-  return ENCRYPTED_PREFIX + btoa(String.fromCharCode(...combined));
+  const encrypted = await encrypt(plaintext, key);
+  return ENCRYPTED_PREFIX + encrypted;
 }
 
 /**
@@ -68,19 +63,8 @@ export async function decryptApiKey(encrypted: string): Promise<string> {
   }
 
   const key = await getKey();
-  const base64 = encrypted.slice(ENCRYPTED_PREFIX.length);
-  const combined = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-
-  const iv = combined.slice(0, 12);
-  const ciphertext = combined.slice(12);
-
-  const decrypted = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv },
-    key,
-    ciphertext,
-  );
-
-  return new TextDecoder().decode(decrypted);
+  const ciphertext = encrypted.slice(ENCRYPTED_PREFIX.length);
+  return await decrypt(ciphertext, key);
 }
 
 /**

@@ -1,4 +1,5 @@
 import { logger } from './logger';
+import { getOrCreateKey, encrypt, decrypt, importAndStoreKey, hasKey } from './crypto';
 
 const DB_NAME = 'dks:key-store';
 const DB_VERSION = 1;
@@ -56,63 +57,59 @@ async function deleteRaw(id: string): Promise<void> {
   });
 }
 
-async function getEncryptionKey(): Promise<CryptoKey> {
-  const stored = await getRaw(ENCRYPTION_KEY_ID);
-  if (stored) {
-    try {
-      return await crypto.subtle.importKey(
-        'jwk',
-        JSON.parse(stored) as JsonWebKey,
-        { name: 'AES-GCM', length: 256 },
-        true,
-        ['encrypt', 'decrypt'],
-      );
-    } catch (err) {
-      logger.warn('Encryption key is corrupted, generating a new one', err);
-      await deleteRaw(ENCRYPTION_KEY_ID);
+/**
+ * Get the encryption key for the key-store.
+ * Migrates existing legacy keys (stored as JWK in the same DB) to the secure crypto-store.
+ */
+async function getStoreEncryptionKey(): Promise<CryptoKey> {
+  // Use a dedicated ID for the key-store's key in the crypto-store
+  const CRYPTO_KEY_ID = 'dks:key-store:encryption-key';
+
+  try {
+    // Check if we have it in the new store first
+    if (await hasKey(CRYPTO_KEY_ID)) {
+      return await getOrCreateKey(CRYPTO_KEY_ID, { extractable: false });
     }
+  } catch (err) {
+    logger.debug('Error checking for key in crypto-store', err);
   }
 
-  const key = await crypto.subtle.generateKey(
-    { name: 'AES-GCM', length: 256 },
-    true,
-    ['encrypt', 'decrypt'],
-  );
-  const exported = await crypto.subtle.exportKey('jwk', key);
-  await setRaw(ENCRYPTION_KEY_ID, JSON.stringify(exported));
-  return key;
+  try {
+    // Check if we have a legacy JWK to migrate
+    const legacyJwkString = await getRaw(ENCRYPTION_KEY_ID);
+    if (legacyJwkString) {
+      try {
+        const jwk = JSON.parse(legacyJwkString) as JsonWebKey;
+        const key = await importAndStoreKey(CRYPTO_KEY_ID, jwk, { extractable: false });
+        // Cleanup legacy JWK from the old store
+        await deleteRaw(ENCRYPTION_KEY_ID);
+        logger.info('Migrated key-store encryption key to secure storage');
+        return key;
+      } catch (migrationErr) {
+        logger.error('Failed to migrate legacy key-store encryption key', migrationErr);
+      }
+    }
+  } catch (err) {
+    logger.debug('No legacy key found or error reading it', err);
+  }
+
+  // Final fallback: generate a new key if migration failed or no legacy key exists
+  return await getOrCreateKey(CRYPTO_KEY_ID, { extractable: false });
 }
 
 async function encryptValue(plaintext: string): Promise<string> {
-  const key = await getEncryptionKey();
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const encoded = new TextEncoder().encode(plaintext);
-  const encrypted = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv },
-    key,
-    encoded,
-  );
-  const combined = new Uint8Array(iv.length + encrypted.byteLength);
-  combined.set(iv, 0);
-  combined.set(new Uint8Array(encrypted), iv.length);
-  return ENCRYPTED_PREFIX + btoa(String.fromCharCode(...combined));
+  const key = await getStoreEncryptionKey();
+  const encrypted = await encrypt(plaintext, key);
+  return ENCRYPTED_PREFIX + encrypted;
 }
 
 async function decryptValue(encrypted: string): Promise<string> {
   if (!encrypted.startsWith(ENCRYPTED_PREFIX)) {
     return encrypted;
   }
-  const key = await getEncryptionKey();
-  const base64 = encrypted.slice(ENCRYPTED_PREFIX.length);
-  const combined = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-  const iv = combined.slice(0, 12);
-  const ciphertext = combined.slice(12);
-  const decrypted = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv },
-    key,
-    ciphertext,
-  );
-  return new TextDecoder().decode(decrypted);
+  const key = await getStoreEncryptionKey();
+  const ciphertext = encrypted.slice(ENCRYPTED_PREFIX.length);
+  return await decrypt(ciphertext, key);
 }
 
 export const keyStore = {
