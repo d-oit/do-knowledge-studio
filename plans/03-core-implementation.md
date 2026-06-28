@@ -1,7 +1,8 @@
-# Plan 03: Core Implementation (P2)
+# Plan 03: Core Implementation
 
-**Priority**: P2 (Medium priority)  
+**Priority**: P2 (Partial)  
 **Estimated Total Effort**: 12-16 hours  
+**Status**: 🟡 PARTIAL (2026-06-25) — CLI + export done, coverage 50% (target 70%)  
 **Sources**: Swarm analysis - missing implementations
 
 ## Tasks

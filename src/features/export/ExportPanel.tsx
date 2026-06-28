@@ -4,14 +4,16 @@ import { repository } from '../../db/repository';
 import { generateSiteHtml, generateMarkdownExport, generateJsonExport, fetchAllExportData } from '../../lib/export-core';
 import { importMarkdownFiles } from '../../lib/markdown-importer';
 import { stripHtmlTags } from '../../lib/security';
-import { Download, Upload, File, FileJson, FileText, FileSpreadsheet, Globe, Loader2 } from 'lucide-react';
+import { Download, Upload, File, FileJson, FileText, FileSpreadsheet, Globe, Loader2, Lock } from 'lucide-react';
 import type { Entity } from '../../lib/validation';
+import PasswordModal from './PasswordModal';
 
 const ExportPanel: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const downloadFile = (content: string, fileName: string, contentType: string) => {
@@ -230,6 +232,25 @@ const ExportPanel: React.FC = () => {
     }
   };
 
+  const handleExportE2EE = async (password: string) => {
+    setShowPasswordModal(false);
+    setIsExporting(true);
+    setError(null);
+    try {
+      const data = await fetchAllExportData(repository);
+      const { generateEncryptedReader } = await import('../../lib/e2ee-export');
+      const html = await generateEncryptedReader(data, password);
+      downloadFile(html, 'knowledge-base-encrypted.html', 'text/html');
+      logger.info('E2EE export complete');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'E2EE export failed';
+      setError(msg);
+      logger.error('E2EE export failed', err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="editor-container">
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
@@ -249,7 +270,7 @@ const ExportPanel: React.FC = () => {
       <div className="toolbar" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
         <button 
           className="primary" 
-          onClick={() => void handleExportMarkdown()} 
+          onClick={() => { void handleExportMarkdown(); }} 
           disabled={isExporting}
           aria-label="Export knowledge base as Markdown"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
@@ -258,7 +279,7 @@ const ExportPanel: React.FC = () => {
           Export as Markdown
         </button>
         <button 
-          onClick={() => void handleExportJson()} 
+          onClick={() => { void handleExportJson(); }} 
           disabled={isExporting}
           aria-label="Export knowledge base as JSON"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
@@ -267,7 +288,7 @@ const ExportPanel: React.FC = () => {
           Export as JSON
         </button>
         <button 
-          onClick={() => void handleExportSite()} 
+          onClick={() => { void handleExportSite(); }} 
           disabled={isExporting}
           aria-label="Export knowledge base as static HTML site"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
@@ -276,7 +297,7 @@ const ExportPanel: React.FC = () => {
           Export as Static Site
         </button>
         <button 
-          onClick={() => void handleExportPDF()} 
+          onClick={() => { void handleExportPDF(); }} 
           disabled={isExporting}
           aria-label="Export knowledge base as PDF"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
@@ -285,13 +306,22 @@ const ExportPanel: React.FC = () => {
           Export as PDF
         </button>
         <button 
-          onClick={() => void handleExportDOCX()} 
+          onClick={() => { void handleExportDOCX(); }} 
           disabled={isExporting}
           aria-label="Export knowledge base as DOCX"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
         >
           {isExporting ? <Loader2 className="animate-spin" size={20} /> : <FileSpreadsheet size={20} />}
           Export as DOCX
+        </button>
+        <button 
+          onClick={() => setShowPasswordModal(true)} 
+          disabled={isExporting}
+          aria-label="Export knowledge base as encrypted HTML"
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
+        >
+          {isExporting ? <Loader2 className="animate-spin" size={20} /> : <Lock size={20} />}
+          Export Encrypted
         </button>
       </div>
 
@@ -334,6 +364,15 @@ const ExportPanel: React.FC = () => {
           {isImporting ? 'Importing...' : 'Import from File'}
         </button>
       </div>
+
+      <PasswordModal
+        isOpen={showPasswordModal}
+        title="Encrypt Knowledge Base"
+        description="Enter a password to encrypt your knowledge base export. The encrypted file will be bundled with a self-contained HTML reader."
+        onConfirm={(pwd) => { void handleExportE2EE(pwd); }}
+        onCancel={() => { setShowPasswordModal(false); }}
+        minLength={8}
+      />
     </div>
   );
 };

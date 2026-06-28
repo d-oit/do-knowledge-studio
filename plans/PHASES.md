@@ -11,53 +11,57 @@
 - [x] Local search indexing (FTS5 + Orama)
 - [x] Graph neighborhood rendering (Focus Mode)
 
-## Phase 3: Synthesis (Complete)
+## Phase 3: Synthesis (Complete - 2026-05)
 - [x] Local RAG (Orama-based search)
 - [x] Bi-directional markdown sync (CLI Support)
-- [x] Export to static site
-- [x] Real export implementation (PR #220)
-- [ ] AI Harness integration
+- [x] Export to static site (Markdown, JSON, HTML)
+- [x] Knowledge graph snapshots with diffing
+- [x] Node.js CLI with better-sqlite3 adapter
 
-## Phase 4: Security & Stability (Complete — 2026-05)
-- [x] Security: XSS fixes in all export paths (PR #200, #216)
-- [x] Security: API key isolation from VITE_ env vars (PR #219)
-- [x] Bugs: Broken sidebar nav, dead code, version sync (PR #200)
-- [x] Infra: CI timeouts, caching, tsconfig cleanup (PR #217)
-- See [Plan 13](13-security-fixes.md), [Plan 14](14-bugfix-frontend.md), [Plan 15](15-config-fixes.md)
-
-## Phase 5: Quality & Performance (Complete — 2026-05)
-- [x] Test coverage 296 tests (up from 244) (PR #221)
+## Phase 4: Security & Quality (Complete - 2026-05)
+- [x] XSS fixes in all export paths (PR #200, #216)
+- [x] API key isolation from VITE_ env vars (PR #219)
+- [x] Bug fixes: broken nav, dead code, version sync (PR #200)
+- [x] CI timeouts, caching, tsconfig cleanup (PR #217)
+- [x] Test coverage expanded to 671 tests (PR #221, #354)
 - [x] Eliminate all `as any` and unsafe casts (PR #209)
-- [x] Consistent error handling with AppError (PR #200)
-- [x] Per-feature ErrorBoundaries (PR #200)
+- [x] Consistent error handling with AppError
 - [x] N+1 query elimination (PR #220)
-- [ ] LRU cache, debounce (future work)
-- [ ] Lazy loading of heavy dependencies (future work)
-- See [Plan 16](16-code-quality-v2.md), [Plan 17](17-performance-optimizations.md), [Plan 19](19-db-migration-framework.md)
 
-## Phase 6: Feature Completion (Planned — 2026-06)
-- [ ] Entity editing and deletion in UI
-- [ ] Mind map node editing
-- [ ] Force-directed and hierarchical graph layouts
-- [ ] Keyboard-accessible graph navigation
-- [ ] Accessibility compliance (WCAG 2.2 AA)
-- See [Plan 18](18-feature-gap-closure.md)
+## Phase 5: Feature Completion (Complete - 2026-06)
+- [x] Entity editing and deletion in UI
+- [x] Mind map node editing
+- [x] Force-directed, circular, and hierarchical graph layouts
+- [x] Keyboard-accessible graph navigation
+- [x] Responsive design (mobile, tablet, desktop)
+- [x] Undo/redo across editor, graph, and mind map
+- [x] Library/browser view with virtualization
+- [x] Backlinks and bidirectional linking
+- [x] Tags and categories system
+- [x] Entity version history
+- [x] Import persistence (CLI + browser)
 
-## Phase 7: Export Enhancement (Partial — 2026-05)
-- [ ] Graph PNG export
-- [ ] PDF and DOCX export formats
-- [x] Shared export core (browser + CLI) (PR #220)
-- See [Plan 20](20-export-enhancement.md)
-
-## Phase 8: Intelligence (Future)
-- [ ] Semantic search with embeddings
-- [ ] Claim provenance tracking
+## Phase 6: Intelligence (Complete - 2026-06)
+- [x] Streaming AI chat with LLM provider integration (OpenRouter, Kilo, Anthropic, Ollama)
+- [x] Semantic search with embeddings (all-MiniLM-L6-v2)
+- [x] Entity auto-hydration from external sources (Jina AI reader)
+- [x] Claim provenance and verification tracking
+- [x] Entity-aware AI tools (list, query, link)
+- [x] Agentic tool-calling loop (search, create, link)
+- [x] Chat history persistence (IndexedDB)
+- [x] Rate limiting and API key encryption
 - [ ] Advanced TRIZ analysis features
-- [ ] AI Harness full integration
-- See [Plan 04](04-feature-roadmap.md), [Plan 11](11-expansion-roadmap.md)
 
-## Phase 9: Collaboration (Future)
+## Phase 7: Export Enhancement (Complete - 2026-06)
+- [x] Shared export core (browser + CLI) (PR #220)
+- [x] Graph PNG export
+- [x] PDF export (single/multi-note)
+- [x] JSON schema v1.0 export
+- [x] Markdown round-trip import/export
+
+## Phase 8: Collaboration (Planned - 2026-Q4)
 - [ ] Local-first P2P sync (WebRTC)
 - [ ] Multi-user support
-- [ ] Voice-to-knowledge
-- See [Plan 11](11-expansion-roadmap.md)
+- [ ] Voice-to-knowledge (Web Speech API)
+- [ ] Offline-ready web content caching
+- [ ] Visual query builder

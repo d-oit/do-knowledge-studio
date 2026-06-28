@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { maskApiKey, loadConfig, saveConfig, createProvider, getProvider } from '../config';
 import { OpenRouterProvider } from '../openrouter';
 import { KiloGatewayProvider } from '../kilo';
+import { AnthropicProvider } from '../anthropic';
+import { OllamaProvider } from '../ollama';
 
 vi.mock('../../key-store', () => {
   const store = new Map<string, string>();
@@ -136,6 +138,34 @@ describe('createProvider', () => {
     expect(provider).toBeInstanceOf(KiloGatewayProvider);
   });
 
+  it('creates AnthropicProvider for anthropic', () => {
+    const config = {
+      activeProvider: 'anthropic',
+      providers: {
+        openrouter: { baseURL: '', apiKey: '', defaultModel: '' },
+        kilo: { baseURL: '', apiKey: '', defaultModel: '' },
+        anthropic: { baseURL: 'https://api.anthropic.com/v1', apiKey: 'test', defaultModel: 'claude-3-5-haiku-20241022' },
+        ollama: { baseURL: '', apiKey: '', defaultModel: '' },
+      },
+    };
+    const provider = createProvider(config);
+    expect(provider).toBeInstanceOf(AnthropicProvider);
+  });
+
+  it('creates OllamaProvider for ollama', () => {
+    const config = {
+      activeProvider: 'ollama',
+      providers: {
+        openrouter: { baseURL: '', apiKey: '', defaultModel: '' },
+        kilo: { baseURL: '', apiKey: '', defaultModel: '' },
+        anthropic: { baseURL: '', apiKey: '', defaultModel: '' },
+        ollama: { baseURL: 'http://localhost:11434', apiKey: '', defaultModel: 'llama3.2' },
+      },
+    };
+    const provider = createProvider(config);
+    expect(provider).toBeInstanceOf(OllamaProvider);
+  });
+
   it('throws for unknown provider', () => {
     const config = {
       activeProvider: 'unknown',
@@ -157,6 +187,16 @@ describe('getProvider', () => {
   it('returns KiloGatewayProvider for kilo id', () => {
     const provider = getProvider('kilo');
     expect(provider).toBeInstanceOf(KiloGatewayProvider);
+  });
+
+  it('returns AnthropicProvider for anthropic id', () => {
+    const provider = getProvider('anthropic');
+    expect(provider).toBeInstanceOf(AnthropicProvider);
+  });
+
+  it('returns OllamaProvider for ollama id', () => {
+    const provider = getProvider('ollama');
+    expect(provider).toBeInstanceOf(OllamaProvider);
   });
 
   it('throws for unknown provider id', () => {

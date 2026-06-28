@@ -8,6 +8,7 @@ interface EditorToolbarProps {
   isExtracting: boolean;
   onExtractEntities: () => void;
   onToggleLinkInput: () => void;
+  onToggleClaim: () => void;
   onSave: () => void;
   onCancelEdit: () => void;
 }
@@ -18,6 +19,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   isExtracting,
   onExtractEntities,
   onToggleLinkInput,
+  onToggleClaim,
   onSave,
   onCancelEdit,
 }) => {
@@ -123,7 +125,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         <Redo2 size={16} aria-hidden="true" />
       </button>
       <button
-        onClick={() => editor?.chain().focus().toggleClaim().run()}
+        onClick={onToggleClaim}
         className={editor?.isActive('claim') ? 'active' : ''}
         title="Mark as Claim"
         aria-label="Mark as Claim"

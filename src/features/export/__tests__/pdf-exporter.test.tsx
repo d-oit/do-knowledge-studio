@@ -11,7 +11,7 @@ vi.mock('@react-pdf/renderer', () => ({
   })),
 }));
 
-import { exportAllNotesToPDF, exportNoteToPDF } from '../pdf-exporter';
+import { exportAllNotesToPDF, exportNoteToPDF, writePdfBlobToFile } from '../pdf-exporter';
 import { NoteDocument, NotesDocument } from '../pdf-documents';
 import type { Note, Entity } from '../../../lib/validation';
 
@@ -53,8 +53,38 @@ describe('pdf-exporter', () => {
 
   it('strips HTML tags from entity name in NotesDocument', () => {
     const el = NotesDocument({ notes: [note], entities, title: 'KB' });
-    // We can't easily assert the rendered text from here (no real render),
-    // but the function should not throw and should return a React element.
     expect(el).toBeDefined();
+  });
+
+  describe('writePdfBlobToFile', () => {
+    it('creates a download link and clicks it', () => {
+      const clickSpy = vi.fn();
+      const appendChildSpy = vi.fn();
+      const removeChildSpy = vi.fn();
+      const createElementSpy = vi.fn().mockReturnValue({ click: clickSpy, href: '', download: '' });
+      const createObjectURLSpy = vi.fn().mockReturnValue('blob:mock');
+      const revokeObjectURLSpy = vi.fn();
+
+      vi.stubGlobal('document', {
+        createElement: createElementSpy,
+        body: { appendChild: appendChildSpy, removeChild: removeChildSpy },
+      });
+      vi.stubGlobal('URL', { createObjectURL: createObjectURLSpy, revokeObjectURL: revokeObjectURLSpy });
+
+      const blob = new Blob(['pdf'], { type: 'application/pdf' });
+      writePdfBlobToFile(blob, 'test.pdf');
+
+      expect(createObjectURLSpy).toHaveBeenCalledWith(blob);
+      expect(clickSpy).toHaveBeenCalled();
+      expect(revokeObjectURLSpy).toHaveBeenCalled();
+
+      vi.restoreAllMocks();
+    });
+
+    it('throws in non-browser environment', () => {
+      vi.stubGlobal('window', undefined);
+      expect(() => writePdfBlobToFile(new Blob(), 'test.pdf')).toThrow('browser-only');
+      vi.restoreAllMocks();
+    });
   });
 });

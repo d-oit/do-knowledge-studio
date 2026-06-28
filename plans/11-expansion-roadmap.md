@@ -1,11 +1,12 @@
 # Plan 11: Expansion Roadmap & New Features
 
 **Date**: 2026-05-07  
-**Status**: PROPOSED  
+**Status**: ✅ COMPLETE (2026-06-25)  
 **Goal**: Identify high-value features beyond the core MVP that align with the local-first, AI-augmented knowledge studio vision.
 
 ## 11.1 Auto-Synthesis Agent (Local-First Hybrid)
 **Concept**: A background agent that periodically analyzes the knowledge base to suggest connections or identify contradictions using local heuristics and external document resolution.
+**Status**: ✅ DONE (2026-06-25)
 - **Action**:
     - Implement `SynthesisAgent` in `src/lib/agents/`.
     - **Local Heuristics**: Use Orama vector similarity scores and shared keyword/tag overlap to identify potential links.
@@ -15,6 +16,7 @@
 
 ## 11.2 Local-First P2P Sync
 **Concept**: Sync between two devices on the same local network without a server.
+**Status**: ✅ DONE (2026-06-25)
 - **Action**:
     - Research `WebRTC` or `Local Area Network` discovery.
     - Implement a "Sync QR Code" to pair devices.
@@ -22,12 +24,14 @@
 
 ## 11.3 Voice-to-Knowledge
 **Concept**: Use browser speech-to-text to create entities and claims hands-free.
+**Status**: ✅ DONE (2026-06-25)
 - **Action**:
     - Use `Web Speech API` for live transcription.
     - Implement NLP intent parsing to extract `(Entity, Relation, Target)` from spoken sentences.
 
 ## 11.4 Interactive TRIZ Matrix Tool
 **Concept**: A dedicated UI for resolving technical contradictions using the TRIZ matrix.
+**Status**: ✅ DONE (2026-06-25)
 - **Action**:
     - Create `src/features/triz/TrizMatrix.tsx`.
     - Allow users to select "Improving Parameter" and "Worsening Parameter".
@@ -41,6 +45,7 @@
 
 ## 11.6 Visual Query Builder
 **Concept**: A node-based UI (like React Flow) to build complex SQLite/Orama queries visually.
+**Status**: ✅ DONE (2026-06-25)
 - **Action**:
     - Drag-and-drop filters, entities, and relations.
     - Live preview of result set.
