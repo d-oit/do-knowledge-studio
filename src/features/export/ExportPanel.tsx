@@ -6,12 +6,14 @@ import { importMarkdownFiles } from '../../lib/markdown-importer';
 import { stripHtmlTags } from '../../lib/security';
 import { Download, Upload, File, FileJson, FileText, FileSpreadsheet, Globe, Loader2, Lock } from 'lucide-react';
 import type { Entity } from '../../lib/validation';
+import PasswordModal from './PasswordModal';
 
 const ExportPanel: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const downloadFile = (content: string, fileName: string, contentType: string) => {
@@ -230,10 +232,8 @@ const ExportPanel: React.FC = () => {
     }
   };
 
-  const handleExportE2EE = async () => {
-    const password = prompt('Enter a password to encrypt the export:');
-    if (!password) return;
-
+  const handleExportE2EE = async (password: string) => {
+    setShowPasswordModal(false);
     setIsExporting(true);
     setError(null);
     try {
@@ -315,7 +315,7 @@ const ExportPanel: React.FC = () => {
           Export as DOCX
         </button>
         <button 
-          onClick={() => void handleExportE2EE()} 
+          onClick={() => setShowPasswordModal(true)} 
           disabled={isExporting}
           aria-label="Export knowledge base as encrypted HTML"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
@@ -364,6 +364,15 @@ const ExportPanel: React.FC = () => {
           {isImporting ? 'Importing...' : 'Import from File'}
         </button>
       </div>
+
+      <PasswordModal
+        isOpen={showPasswordModal}
+        title="Encrypt Knowledge Base"
+        description="Enter a password to encrypt your knowledge base export. The encrypted file will be bundled with a self-contained HTML reader."
+        onConfirm={(pwd) => { void handleExportE2EE(pwd); }}
+        onCancel={() => { setShowPasswordModal(false); }}
+        minLength={8}
+      />
     </div>
   );
 };
