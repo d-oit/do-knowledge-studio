@@ -127,7 +127,7 @@ const TrizMatrix: React.FC<TrizMatrixProps> = ({ onClose }) => {
               }}>
                 <button
                   type="button"
-                  onClick={() => setSelectedPrinciple(selectedPrinciple === principle.number ? null : principle.number)}
+                  onClick={() => { setSelectedPrinciple(selectedPrinciple === principle.number ? null : principle.number); }}
                   style={{
                     width: '100%', display: 'flex', alignItems: 'center', gap: '8px',
                     padding: '10px 12px', background: 'none', border: 'none', cursor: 'pointer',
@@ -149,7 +149,7 @@ const TrizMatrix: React.FC<TrizMatrixProps> = ({ onClose }) => {
                     </div>
                     <button
                       type="button"
-                      onClick={() => handleCopy(`Principle #${principle.number}: ${principle.name}\n${principle.description}`, principle.number)}
+                      onClick={() => { handleCopy(`Principle #${principle.number}: ${principle.name}\n${principle.description}`, principle.number); }}
                       className="btn-secondary"
                       style={{ fontSize: '12px', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '4px' }}
                     >

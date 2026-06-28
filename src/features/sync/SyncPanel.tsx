@@ -119,7 +119,7 @@ const SyncPanel: React.FC<SyncPanelProps> = ({ onClose }) => {
             <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '14px' }}>
               Connect two devices on the same network to sync your knowledge base.
             </p>
-            <button type="button" className="primary" onClick={() => void handleStartHost()} style={{ width: '100%', marginBottom: '12px' }}>
+            <button type="button" className="primary" onClick={() => { void handleStartHost(); }} style={{ width: '100%', marginBottom: '12px' }}>
               <QrCode size={16} style={{ marginRight: '8px' }} /> Host Sync (Show QR)
             </button>
             <button type="button" className="btn-secondary" onClick={handleStartGuest} style={{ width: '100%' }}>
@@ -168,7 +168,7 @@ const SyncPanel: React.FC<SyncPanelProps> = ({ onClose }) => {
               placeholder="Paste QR code data here..."
               style={{ width: '100%', minHeight: '80px', padding: '8px', borderRadius: '8px', border: '1px solid var(--border-default)', fontFamily: 'monospace', fontSize: '12px', resize: 'vertical' }}
             />
-            <button type="button" className="primary" onClick={() => void handleGuestConnect()} disabled={!scanInput.trim()} style={{ width: '100%', marginTop: '12px' }}>
+            <button type="button" className="primary" onClick={() => { void handleGuestConnect(); }} disabled={!scanInput.trim()} style={{ width: '100%', marginTop: '12px' }}>
               Connect
             </button>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '12px' }}>

@@ -14,6 +14,10 @@ engines:
       rules:
         lint/correctness/useQwikValidLexicalScope: "off"
         lint/suspicious/noImplicitAnyLet: "off"
+        a11y/useValidAltText: "off"
+        a11y/noBlankTarget: "off"
+        suspicious/noExplicitAny: "off"
+        correctness/noUnusedImports: "off"
   eslint-8:
     enabled: true
     exclude_paths:

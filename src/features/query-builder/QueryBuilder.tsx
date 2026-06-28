@@ -189,7 +189,7 @@ const QueryBuilder: React.FC<QueryBuilderProps> = ({ onClose, onResultClick }) =
         {/* Run Query Button */}
         <button
           type="button"
-          onClick={() => void handleRunQuery()}
+          onClick={() => { void handleRunQuery(); }}
           disabled={filters.length === 0 || isSearching}
           className="primary"
           style={{ width: '100%', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}

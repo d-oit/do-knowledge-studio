@@ -270,7 +270,7 @@ const ExportPanel: React.FC = () => {
       <div className="toolbar" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
         <button 
           className="primary" 
-          onClick={() => void handleExportMarkdown()} 
+          onClick={() => { void handleExportMarkdown(); }} 
           disabled={isExporting}
           aria-label="Export knowledge base as Markdown"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
@@ -279,7 +279,7 @@ const ExportPanel: React.FC = () => {
           Export as Markdown
         </button>
         <button 
-          onClick={() => void handleExportJson()} 
+          onClick={() => { void handleExportJson(); }} 
           disabled={isExporting}
           aria-label="Export knowledge base as JSON"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
@@ -288,7 +288,7 @@ const ExportPanel: React.FC = () => {
           Export as JSON
         </button>
         <button 
-          onClick={() => void handleExportSite()} 
+          onClick={() => { void handleExportSite(); }} 
           disabled={isExporting}
           aria-label="Export knowledge base as static HTML site"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
@@ -297,7 +297,7 @@ const ExportPanel: React.FC = () => {
           Export as Static Site
         </button>
         <button 
-          onClick={() => void handleExportPDF()} 
+          onClick={() => { void handleExportPDF(); }} 
           disabled={isExporting}
           aria-label="Export knowledge base as PDF"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
@@ -306,7 +306,7 @@ const ExportPanel: React.FC = () => {
           Export as PDF
         </button>
         <button 
-          onClick={() => void handleExportDOCX()} 
+          onClick={() => { void handleExportDOCX(); }} 
           disabled={isExporting}
           aria-label="Export knowledge base as DOCX"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px' }}
