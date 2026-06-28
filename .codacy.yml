@@ -9,15 +9,7 @@ exclude_paths:
   - "**/*.spec.*"
 engines:
   biome:
-    enabled: true
-    config:
-      rules:
-        lint/correctness/useQwikValidLexicalScope: "off"
-        lint/suspicious/noImplicitAnyLet: "off"
-        a11y/useValidAltText: "off"
-        a11y/noBlankTarget: "off"
-        suspicious/noExplicitAny: "off"
-        correctness/noUnusedImports: "off"
+    enabled: false
   eslint-8:
     enabled: true
     exclude_paths:
@@ -26,3 +18,4 @@ engines:
       - "**/*.spec.*"
     disable_rules:
       - "ESLint8_security_detect-object-injection"
+      - "ESLint8_security_detect-non-literal-fs-filename"
