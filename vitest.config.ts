@@ -19,6 +19,7 @@ export default defineConfig({
       'src/features/ai/__tests__/useChat.rateLimit.test.ts',
       'src/features/ai/__tests__/useRateLimiter.test.ts',
       'src/features/search/__tests__/SearchPanel.createEntity.test.tsx',
+      'src/lib/search/__tests__/progressive.test.ts',
     ],
     // Limit workers to prevent OOM in restricted CI environments
     pool: 'forks',
