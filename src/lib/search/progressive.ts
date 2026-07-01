@@ -82,6 +82,7 @@ export const initSearch = async () => {
     let totalEntitiesIndexed = 0;
     let hasMore = true;
     let fetchOffset = 0;
+    const entityNames = new Map<string, string>();
 
     while (hasMore) {
       const chunk = await repository.getAllEntities({ limit: CHUNK_SIZE, offset: fetchOffset });
@@ -94,6 +95,7 @@ export const initSearch = async () => {
       const originalIds: string[] = [];
 
       for (const entity of chunk) {
+        entityNames.set(entity.id!, entity.name);
         docs.push(buildEntityDoc(entity));
         originalIds.push(entity.id!);
 
@@ -126,7 +128,7 @@ export const initSearch = async () => {
     for (const note of allNotes) {
       if (note.content && note.content.trim().length > 0) {
         const entityName = note.entity_id
-          ? (await repository.getEntityById(note.entity_id))?.name
+          ? entityNames.get(note.entity_id)
           : undefined;
         noteDocs.push(buildNoteDoc(note, entityName));
         noteIds.push(note.id);
