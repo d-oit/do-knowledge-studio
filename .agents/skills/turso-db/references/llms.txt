@@ -155,6 +155,7 @@
 - [Secrets Vault](https://docs.turso.tech/guides/secrets-vault.md)
 - [Vector Search](https://docs.turso.tech/guides/vector-search.md): Build semantic search, recommendation systems, and RAG workflows with native vector search in Turso.
 - [Usage & Billing](https://docs.turso.tech/help/usage-and-billing.md)
+- [MCP (AI agents)](https://docs.turso.tech/integrations/mcp.md): Connect AI agents to Turso Cloud over the Model Context Protocol — manage databases and run SQL with OAuth, no API token to copy.
 - [Vercel](https://docs.turso.tech/integrations/vercel.md): Use Turso with Vercel serverless and edge functions.
 - [Welcome to Turso](https://docs.turso.tech/introduction.md): The small database to power your big dreams in the age of AI.
 - [libSQL](https://docs.turso.tech/libsql.md): libSQL is a production-ready fork of SQLite, maintained by Turso.
