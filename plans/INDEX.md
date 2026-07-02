@@ -1,7 +1,7 @@
 # Plans Index — do-knowledge-studio
 
 **Generated**: 2026-05-27  
-**Updated**: 2026-06-25
+**Updated**: 2026-06-28
 **Source**: 6-agent parallel swarm analysis + GitHub issue audit (#168–#240) + open issues (#280-#289) + all PRs merged (#292-#307) + 3-agent UI/UX/feature-gap analysis (plan 041, ADRs 013–016) + 4-wave master GOAP swarm execution (plan 042, 2026-06-22)
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
@@ -18,7 +18,7 @@
 | **P1** | [040-goap-export-pipeline-and-pr-cleanup-2026-06-16.md](040-goap-export-pipeline-and-pr-cleanup-2026-06-16.md) | Complete export pipeline (PDF, JSON schema v1.0, MD round-trip) + resolve red PRs | 12-18h | ✅ MERGED | #289 |
 | **P0** | [041-goap-ui-ux-modernization-and-feature-gaps-2026-06-18.md](041-goap-ui-ux-modernization-and-feature-gaps-2026-06-18.md) | UI modernization (semantic tokens, primitives), full responsiveness (dynamic viewport, 44px targets, mobile viz controls, overlay a11y), feature-gap closure (import persistence, tags, version history, notes search, chat unification) | 90-130h | ✅ MERGED | #232–#236, #227, #231 |
 | **P0** | [042-goap-master-implementation-2026-06-22.md](042-goap-master-implementation-2026-06-22.md) | Master GOAP orchestration — 4-wave swarm execution of all open plans (34, 35, 36, 37, 041) | 140-200h | ✅ MERGED | All |
-| **P0** | [041-ai-harness-implementation.md](041-ai-harness-implementation.md) | AI Harness integration: enhanced system prompt, structured context, entity-aware tools, UI polish | 6-8h | 📝 IN PROGRESS | — |
+| **P0** | [041-ai-harness-implementation.md](041-ai-harness-implementation.md) | AI Harness integration: enhanced system prompt, structured context, entity-aware tools, UI polish | 6-8h | ✅ COMPLETED | — |
 
 ## Quick Reference — Completed Plans
 
@@ -113,7 +113,7 @@ Wave 4 (P1/P2 — QUALITY — PARALLEL) ──→ ✅ MERGED
 |------|-------------|--------|
 | [01-critical-fixes.md](01-critical-fixes.md) | P0 fixes (any type, version, doc references) | ✅ COMPLETED |
 | [02-code-quality-v1-completed.md](02-code-quality-v1-completed.md) | Original code quality plan | 📦 SUPERSEDED by 16 |
-| [03-core-implementation.md](03-core-implementation.md) | CLI architecture, export, test coverage | 🟡 PARTIAL (coverage 46%) |
+| [03-core-implementation.md](03-core-implementation.md) | CLI architecture, export, test coverage | ✅ COMPLETED (853 tests) |
 | [04-feature-roadmap.md](04-feature-roadmap.md) | AI Harness, claim provenance, semantic search | ✅ COMPLETED |
 | [05-documentation-overhaul.md](05-documentation-overhaul.md) | README, JSDoc, PHASES.md | ✅ COMPLETED |
 | [06-llm-provider-system.md](06-llm-provider-system.md) | OpenRouter + Kilo plugin system | ✅ COMPLETED |
@@ -123,7 +123,7 @@ Wave 4 (P1/P2 — QUALITY — PARALLEL) ──→ ✅ MERGED
 | [10-implementation-audit-v1-completed.md](10-implementation-audit-v1-completed.md) | Original implementation audit | 📦 SUPERSEDED by 13-20 |
 | [11-expansion-roadmap.md](11-expansion-roadmap.md) | P2P sync, synthesis, voice, E2EE, TRIZ, query builder | ✅ COMPLETED |
 | [12-doc-resolver-integration.md](12-doc-resolver-integration.md) | Web doc resolver for RAG | ✅ COMPLETED |
-| [12-doc-resolver-implementation-roadmap.md](12-doc-resolver-implementation-roadmap.md) | Doc resolver implementation details | ⏸ ON HOLD |
+| [12-doc-resolver-implementation-roadmap.md](12-doc-resolver-implementation-roadmap.md) | Doc resolver implementation details | ✅ COMPLETED |
 
 ### Fix Plans (Pre-existing Issues)
 
