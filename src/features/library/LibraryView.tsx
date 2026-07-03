@@ -91,21 +91,23 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onEditEntity }) => {
 
         <div className="library-controls">
           <div className="search-box">
-            <Search className="search-icon" size={18} />
+            <Search className="search-icon" size={18} aria-hidden="true" />
             <input
-              type="text"
+              type="search"
               placeholder="Search library..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              aria-label="Search library"
             />
           </div>
 
-          <div className="filter-chips">
+          <div className="filter-chips" role="group" aria-label="Filter by type">
             {ENTITY_TYPES.map((type) => (
               <button
                 key={type.value}
                 className={`filter-chip ${filterType === type.value ? 'active' : ''}`}
                 onClick={() => setFilterType(type.value)}
+                aria-pressed={filterType === type.value}
               >
                 {type.icon}
                 <span>{type.label}</span>
@@ -115,10 +117,11 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onEditEntity }) => {
 
           <div className="sort-controls">
             <div className="sort-field-select">
-              <Calendar size={14} />
+              <Calendar size={14} aria-hidden="true" />
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as 'name' | 'created_at' | 'updated_at')}
+                aria-label="Sort by"
               >
                 {SORT_OPTIONS.map(opt => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -129,14 +132,21 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onEditEntity }) => {
               className="sort-order-btn"
               onClick={() => setSortOrder(prev => prev === 'ASC' ? 'DESC' : 'ASC')}
               title={sortOrder === 'ASC' ? 'Sort Ascending' : 'Sort Descending'}
+              aria-label={sortOrder === 'ASC' ? 'Sort Ascending' : 'Sort Descending'}
             >
-              {sortOrder === 'ASC' ? <SortAsc size={18} /> : <SortDesc size={18} />}
+              {sortOrder === 'ASC' ? <SortAsc size={18} aria-hidden="true" /> : <SortDesc size={18} aria-hidden="true" />}
             </button>
           </div>
         </div>
       </div>
 
       <div className="library-content">
+        <div aria-live="polite" role="status" className="sr-only">
+          {isLoading ? 'Loading entities...' : ''}
+          {!isLoading && entities.length === 0 ? 'No entities found matching your filters.' : ''}
+          {!isLoading && entities.length > 0 ? `Showing ${entities.length} entities.` : ''}
+        </div>
+
         <div className="entity-grid-header">
            <div className="col-name">Name</div>
            <div className="col-type">Type</div>
@@ -185,6 +195,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onEditEntity }) => {
                       transform: `translateY(${virtualItem.start}px)`,
                     }}
                     onClick={() => entity.id && onEditEntity(entity.id)}
+                    aria-label={`Edit ${entity.name}`}
                   >
                     <div className="col-name">
                       <span className="entity-name-text">{entity.name}</span>
