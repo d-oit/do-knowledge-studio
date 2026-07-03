@@ -20,6 +20,11 @@ enabled = true
   [analyzers.meta]
   max_complexity = "30"
   max_functions = "50"
+  skip_doc_coverage = ["test"]
 
   [analyzers.meta.ratings]
     documentation_coverage = "A"
+
+  [analyzers.meta.checks]
+  # Disable Qwik-specific rules (project doesn't use Qwik)
+  Biome_lint_correctness_useQwikValidLexicalScope = "off"
