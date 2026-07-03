@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { encryptApiKey, decryptApiKey } from '../encryption';
 import { deleteKey, hasKey, getOrCreateKey } from '../../crypto';
 
@@ -39,7 +39,7 @@ describe('LLM Encryption Secure Migration', () => {
     const combined = new Uint8Array(iv.length + encrypted.byteLength);
     combined.set(iv, 0);
     combined.set(new Uint8Array(encrypted), iv.length);
-    const legacyEncryptedValue = 'enc:v1:' + btoa(String.fromCharCode(...combined));
+    const legacyEncryptedValue = `enc:v1:${btoa(String.fromCharCode(...combined))}`;
 
     // 3. Decrypt it — should trigger migration
     const decrypted = await decryptApiKey(legacyEncryptedValue);

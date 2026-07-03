@@ -7,8 +7,8 @@ const STORE_NAME = 'keys';
 const ENCRYPTION_KEY_ID = '__encryption_key__';
 const ENCRYPTED_PREFIX = 'enc:v1:';
 
-function openDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
+const openDB = (): Promise<IDBDatabase> =>
+  new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onerror = () => reject(new Error(String(request.error)));
     request.onsuccess = () => resolve(request.result);
@@ -19,9 +19,8 @@ function openDB(): Promise<IDBDatabase> {
       }
     };
   });
-}
 
-async function getRaw(id: string): Promise<string | null> {
+const getRaw = async (id: string): Promise<string | null> => {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readonly');
@@ -33,9 +32,9 @@ async function getRaw(id: string): Promise<string | null> {
     };
     request.onerror = () => reject(new Error(String(request.error)));
   });
-}
+};
 
-async function setRaw(id: string, value: string): Promise<void> {
+const setRaw = async (id: string, value: string): Promise<void> => {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -44,9 +43,9 @@ async function setRaw(id: string, value: string): Promise<void> {
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(new Error(String(tx.error)));
   });
-}
+};
 
-async function deleteRaw(id: string): Promise<void> {
+const deleteRaw = async (id: string): Promise<void> => {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -55,13 +54,13 @@ async function deleteRaw(id: string): Promise<void> {
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(new Error(String(tx.error)));
   });
-}
+};
 
 /**
  * Get the encryption key for the key-store.
  * Migrates existing legacy keys (stored as JWK in the same DB) to the secure crypto-store.
  */
-async function getStoreEncryptionKey(): Promise<CryptoKey> {
+const getStoreEncryptionKey = async (): Promise<CryptoKey> => {
   // Use a dedicated ID for the key-store's key in the crypto-store
   const CRYPTO_KEY_ID = 'dks:key-store:encryption-key';
 
@@ -95,22 +94,22 @@ async function getStoreEncryptionKey(): Promise<CryptoKey> {
 
   // Final fallback: generate a new key if migration failed or no legacy key exists
   return await getOrCreateKey(CRYPTO_KEY_ID, { extractable: false });
-}
+};
 
-async function encryptValue(plaintext: string): Promise<string> {
+const encryptValue = async (plaintext: string): Promise<string> => {
   const key = await getStoreEncryptionKey();
   const encrypted = await encrypt(plaintext, key);
   return ENCRYPTED_PREFIX + encrypted;
-}
+};
 
-async function decryptValue(encrypted: string): Promise<string> {
+const decryptValue = async (encrypted: string): Promise<string> => {
   if (!encrypted.startsWith(ENCRYPTED_PREFIX)) {
     return encrypted;
   }
   const key = await getStoreEncryptionKey();
   const ciphertext = encrypted.slice(ENCRYPTED_PREFIX.length);
   return await decrypt(ciphertext, key);
-}
+};
 
 export const keyStore = {
   async get(id: string): Promise<string | null> {

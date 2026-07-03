@@ -8,7 +8,7 @@ const ENCRYPTED_PREFIX = 'enc:v1:';
  * Get the AES-GCM encryption key from the secure crypto-store.
  * Migrates existing legacy keys from localStorage to IndexedDB.
  */
-async function getKey(): Promise<CryptoKey> {
+const getKey = async (): Promise<CryptoKey> => {
   const CRYPTO_KEY_ID = 'dks:llm:encryption-key';
 
   try {
@@ -39,7 +39,7 @@ async function getKey(): Promise<CryptoKey> {
   }
 
   return await getOrCreateKey(CRYPTO_KEY_ID, { extractable: false });
-}
+};
 
 /**
  * Encrypt a plaintext string using AES-GCM.

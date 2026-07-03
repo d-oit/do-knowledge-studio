@@ -1,5 +1,3 @@
-import { logger } from './logger';
-
 const DB_NAME = 'dks:crypto-store';
 const DB_VERSION = 1;
 const STORE_NAME = 'keys';
@@ -8,8 +6,8 @@ const STORE_NAME = 'keys';
  * Open the IndexedDB database for secure key storage.
  * IndexedDB supports storing CryptoKey objects directly via structured clone.
  */
-function openDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
+const openDB = (): Promise<IDBDatabase> =>
+  new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onerror = () => reject(new Error(String(request.error)));
     request.onsuccess = () => resolve(request.result);
@@ -20,7 +18,6 @@ function openDB(): Promise<IDBDatabase> {
       }
     };
   });
-}
 
 /**
  * Get or create a non-extractable AES-GCM encryption key.
@@ -33,7 +30,7 @@ export async function getOrCreateKey(id: string, options: { extractable?: boolea
     const tx = db.transaction(STORE_NAME, 'readonly');
     const store = tx.objectStore(STORE_NAME);
     const request = store.get(id);
-    request.onsuccess = () => resolve(request.result);
+    request.onsuccess = () => resolve(request.result as { id: string; key: CryptoKey } | undefined);
     request.onerror = () => reject(new Error(String(request.error)));
   });
 

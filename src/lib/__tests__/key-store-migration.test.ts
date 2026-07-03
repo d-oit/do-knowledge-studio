@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { keyStore } from '../key-store';
 import { deleteKey, hasKey, getOrCreateKey } from '../crypto';
 
@@ -9,20 +9,20 @@ describe('KeyStore Secure Migration', () => {
     await deleteKey(CRYPTO_KEY_ID);
     // Clear the legacy key from IndexedDB if it exists (mocking legacy state)
     const request = indexedDB.open('dks:key-store', 1);
-    await new Promise((resolve, reject) => {
-      request.onsuccess = (e: any) => {
-        const db = e.target.result;
+    await new Promise<void>((resolve, reject) => {
+      request.onsuccess = (e: Event) => {
+        const db = (e.target as IDBOpenDBRequest).result;
         if (db.objectStoreNames.contains('keys')) {
            const tx = db.transaction('keys', 'readwrite');
            tx.objectStore('keys').delete('__encryption_key__');
-           tx.oncomplete = resolve;
+           tx.oncomplete = () => resolve();
         } else {
-           resolve(null);
+           resolve();
         }
       };
       request.onerror = reject;
-      request.onupgradeneeded = (e: any) => {
-        const db = e.target.result;
+      request.onupgradeneeded = (e: IDBVersionChangeEvent) => {
+        const db = (e.target as IDBOpenDBRequest).result;
         if (!db.objectStoreNames.contains('keys')) {
           db.createObjectStore('keys', { keyPath: 'id' });
         }
@@ -49,12 +49,12 @@ describe('KeyStore Secure Migration', () => {
     const jwk = await crypto.subtle.exportKey('jwk', legacyKey);
 
     const openReq = indexedDB.open('dks:key-store', 1);
-    await new Promise((resolve) => {
-      openReq.onsuccess = (e: any) => {
-        const db = e.target.result;
+    await new Promise<void>((resolve) => {
+      openReq.onsuccess = (e: Event) => {
+        const db = (e.target as IDBOpenDBRequest).result;
         const tx = db.transaction('keys', 'readwrite');
         tx.objectStore('keys').put({ id: '__encryption_key__', value: JSON.stringify(jwk) });
-        tx.oncomplete = resolve;
+        tx.oncomplete = () => resolve();
       };
     });
 
@@ -66,15 +66,15 @@ describe('KeyStore Secure Migration', () => {
     const combined = new Uint8Array(iv.length + encrypted.byteLength);
     combined.set(iv, 0);
     combined.set(new Uint8Array(encrypted), iv.length);
-    const legacyEncryptedValue = 'enc:v1:' + btoa(String.fromCharCode(...combined));
+    const legacyEncryptedValue = `enc:v1:${btoa(String.fromCharCode(...combined))}`;
 
-    await new Promise((resolve) => {
+    await new Promise<void>((resolve) => {
       const openReq2 = indexedDB.open('dks:key-store', 1);
-      openReq2.onsuccess = (e: any) => {
-        const db = e.target.result;
+      openReq2.onsuccess = (e: Event) => {
+        const db = (e.target as IDBOpenDBRequest).result;
         const tx = db.transaction('keys', 'readwrite');
         tx.objectStore('keys').put({ id: 'legacy-item', value: legacyEncryptedValue });
-        tx.oncomplete = resolve;
+        tx.oncomplete = () => resolve();
       };
     });
 
@@ -90,9 +90,9 @@ describe('KeyStore Secure Migration', () => {
 
     // 5. Verify legacy key is gone
     const openReq3 = indexedDB.open('dks:key-store', 1);
-    const legacyKeyStored = await new Promise((resolve) => {
-       openReq3.onsuccess = (e: any) => {
-         const db = e.target.result;
+    const legacyKeyStored = await new Promise<unknown>((resolve) => {
+       openReq3.onsuccess = (e: Event) => {
+         const db = (e.target as IDBOpenDBRequest).result;
          const tx = db.transaction('keys', 'readonly');
          const req = tx.objectStore('keys').get('__encryption_key__');
          req.onsuccess = () => resolve(req.result);
