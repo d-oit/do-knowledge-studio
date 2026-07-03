@@ -101,7 +101,8 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onEditEntity }) => {
             />
           </div>
 
-          <div className="filter-chips" role="group" aria-label="Filter by type">
+          <fieldset className="filter-chips" style={{ border: 'none', padding: 0, margin: 0 }}>
+            <legend className="sr-only">Filter by type</legend>
             {ENTITY_TYPES.map((type) => (
               <button
                 key={type.value}
@@ -113,7 +114,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onEditEntity }) => {
                 <span>{type.label}</span>
               </button>
             ))}
-          </div>
+          </fieldset>
 
           <div className="sort-controls">
             <div className="sort-field-select">
