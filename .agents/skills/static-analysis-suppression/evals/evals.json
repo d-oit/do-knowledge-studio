@@ -1,0 +1,189 @@
+{
+  "skill_name": "static-analysis-suppression",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "fix this pr https://github.com/example/repo/pull/42 - deepsource js-0067 is blocking merge",
+      "expected_output": "Identifies JS-0067 as 'function declaration in module scope'. Convert to const arrow + export default. Step: diagnose DeepSource check, find flagged line, rewrite to const, push.",
+      "files": [],
+      "assertions": [
+        "Identifies JS-0067 as 'function declaration in module scope'",
+        "Recommends const arrow + export default rewrite",
+        "Mentions the decision tree: fix code before suppressing config"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Codacy is blocking PR #50 with security/detect-object-injection but we don't have that rule in our local ESLint",
+      "expected_output": "Diagnoses that security/detect-object-injection is Codacy-only. Cannot eslint-disable. Must add to .codacy.yml engines.eslint-8.disable_rules or restructure code.",
+      "files": [],
+      "assertions": [
+        "Identifies security/detect-object-injection is not in local ESLint",
+        "Recommends .codacy.yml disable_rules as the fix",
+        "Notes that eslint-disable won't work for Codacy-only rules"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "can you suppress this mockResolvedValue(undefined) deepsource warning",
+      "expected_output": "Identifies JS-W1042. Fix: remove undefined argument — mockResolvedValue() returns undefined by default. Simple code change.",
+      "files": [],
+      "assertions": [
+        "Identifies JS-W1042",
+        "Recommends removing the undefined argument",
+        "Assesses it as a trivial code-level fix"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "PR #63 has a pre-existing complexity issue flagged by deepsource that I didn't introduce. How do I suppress it?",
+      "expected_output": "Diagnoses as pre-existing complexity (R1005). Recommend .deepsource.toml meta config: max_complexity increase or specific check suppression. Or admin merge if all real checks pass.",
+      "files": [".deepsource.toml"],
+      "assertions": [
+        "Identifies as pre-existing complexity (R1005)",
+        "Recommends .deepsource.toml meta config for suppression",
+        "Offers admin merge as last resort"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Codacy is flagging Qwik-specific rule useQwikValidLexicalScope on our React project - we don't use Qwik",
+      "expected_output": "Identifies as known false positive for React projects. Recommend .deepsource.toml or .codacy.yml suppression for the Biome rule. As a fallback, admin merge.",
+      "files": [".deepsource.toml", ".codacy.yml"],
+      "assertions": [
+        "Identifies as known Qwik false positive",
+        "Recommends config-level suppression",
+        "Notes admin merge as last resort"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "I need to suppress react-hooks/refs eslint errors in my test file - the refs are only used inside effects",
+      "expected_output": "Recommend inline eslint-disable-next-line with comment explaining why. The rule is correct in general but the pattern is safe because refs aren't used during rendering.",
+      "files": [],
+      "assertions": [
+        "Recommends inline eslint-disable-next-line",
+        "Recommends including a comment explaining why"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "Codacy flagged 'import type' issue - I have import { Foo, Bar } from './types' where Bar is only used as a type",
+      "expected_output": "Recommend splitting into separate value and type imports, or inline type annotation: import { Foo, type Bar } from './types'.",
+      "files": [],
+      "assertions": [
+        "Recommends splitting into separate value and type imports",
+        "Notes inline type annotation as alternative"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "ESLint flags no-confusing-void-expression on my catch handler: .catch(err => fn(err))",
+      "expected_output": "Add braces around the arrow function body: .catch(err => { fn(err); }). This satisfies ESLint while keeping the same behavior.",
+      "files": [],
+      "assertions": [
+        "Recommends adding braces around arrow body",
+        "Notes this is a Codacy ESLint rule not in local ESLint"
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "deepsource is complaining about import * as X - I import a whole module but only use one property",
+      "expected_output": "JS-C1003. Fix: replace import * with named import for only the properties actually used. Example: import { usedFn } from './module' instead of import * as mod.",
+      "files": [],
+      "assertions": [
+        "Identifies JS-C1003",
+        "Recommends named imports for actually-used exports"
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "All my real checks pass (lint, test, build) but DeepSource JavaScript check is still failing and blocking the merge",
+      "expected_output": "Diagnose what DeepSource is flagging first (check the run URL). If it's a known false positive or pre-existing issue, and all functional checks pass, use admin merge: gh pr merge <PR#> --squash --admin.",
+      "files": [],
+      "assertions": [
+        "Recommends diagnosing the specific DeepSource issue first",
+        "Offers admin merge override if all real checks pass"
+      ]
+    },
+    {
+      "id": 11,
+      "prompt": "refactor this api endpoint to use async/await instead of promise chains",
+      "expected_output": "No static analysis suppression needed. This is a pure refactoring task, not a CI suppression issue.",
+      "files": [],
+      "assertions": [
+        "Determines this is not a static analysis suppression task"
+      ]
+    },
+    {
+      "id": 12,
+      "prompt": "add a new feature to the user profile page",
+      "expected_output": "No static analysis suppression needed. This is a feature request, not related to CI suppression.",
+      "files": [],
+      "assertions": [
+        "Determines this is not a static analysis suppression task"
+      ]
+    },
+    {
+      "id": 13,
+      "prompt": "update the README with installation instructions",
+      "expected_output": "No static analysis suppression needed. This is a documentation task.",
+      "files": [],
+      "assertions": [
+        "Determines this is not a static analysis suppression task"
+      ]
+    },
+    {
+      "id": 14,
+      "prompt": "deepsource flagged JS-0357 - arrow function used before declaration. What do I do?",
+      "expected_output": "Move the helper function definition above the code that calls it. JS-0357 is about hoisting: const arrow functions aren't hoisted like function declarations.",
+      "files": [],
+      "assertions": [
+        "Identifies JS-0357 as hoisting issue",
+        "Recommends moving definition above callers"
+      ]
+    },
+    {
+      "id": 15,
+      "prompt": "deepsource flagged JS-0240 - type: type. Weird, we're using property shorthand elsewhere",
+      "expected_output": "{ type: type } should be { type }. JS-0240 flags redundant key-value pairs where key and value are the same identifier — use object property shorthand syntax instead.",
+      "files": [],
+      "assertions": [
+        "Identifies JS-0240 as property shorthand",
+        "Recommends using object property shorthand"
+      ]
+    },
+    {
+      "id": 16,
+      "prompt": "deepsource flagged JS-0339 - non-null assertion. But I know this value is never null!",
+      "expected_output": "DeepSource JS-0339 is Major severity and requires proper typing. Use optional chaining (?.) instead of non-null assertion (!), or add proper null checks. If the type definition is wrong, fix the type.",
+      "files": [],
+      "assertions": [
+        "Notes JS-0339 is Major severity",
+        "Recommends proper typing over suppression",
+        "Suggests optional chaining as alternative"
+      ]
+    },
+    {
+      "id": 17,
+      "prompt": "fix the lint errors in the CI",
+      "expected_output": "First classify which tool is failing and what type of issues. Run pnpm run lint locally to reproduce. Apply code-level fixes for genuine errors. For false positives, use appropriate suppression method from the decision tree.",
+      "files": [],
+      "assertions": [
+        "Recommends first classifying the failing tool",
+        "Recommends local reproduction",
+        "Follows decision tree for suppression method"
+      ]
+    },
+    {
+      "id": 18,
+      "prompt": "Codacy is failing but all tests pass - how do I bypass it?",
+      "expected_output": "First check what Codacy is flagging via the details URL. If it's a known false positive or pre-existing config issue (e.g., Qwik rules in React project), try config-level fix first. Only if all else fails, use admin merge: gh pr merge --admin.",
+      "files": [],
+      "assertions": [
+        "Recommends diagnosing the specific Codacy issue first",
+        "Notes admin merge as last resort"
+      ]
+    }
+  ]
+}

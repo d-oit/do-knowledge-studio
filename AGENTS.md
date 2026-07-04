@@ -221,6 +221,7 @@ Do not finish with failing lint, typecheck, tests, build, or quality gate output
 | `shell-script-quality` | Lint and test shell scripts using ShellCheck and BATS. Use w | Quality |
 | `skill-creator` | Create new skills, modify and improve existing skills, and m | Meta |
 | `skill-evaluator` | Reusable skill for evaluating other skills with structure ch | Meta |
+| `static-analysis-suppression` | Suppress false-positive Codacy/DeepSource/ESLint blockers on PRs with code-level, config-level, or admin-merge fixes. Follows decision tree: fix code before suppressing config before admin override. | Quality |
 | `stitch-design` | > | General |
 | `task-decomposition` | Break down complex tasks into atomic, actionable goals with  | Coordination |
 | `test-runner` | Execute tests, analyze results, and diagnose failures across | Quality |
