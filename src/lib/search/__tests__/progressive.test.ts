@@ -5,7 +5,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('@orama/orama', () => ({
   insert: vi.fn().mockResolvedValue('orama-id'),
   insertMultiple: vi.fn().mockResolvedValue(['orama-id-1', 'orama-id-2']),
-  remove: vi.fn().mockResolvedValue(undefined),
+  remove: vi.fn().mockResolvedValue(),
   search: vi.fn().mockResolvedValue({ hits: [] }),
   create: vi.fn(() => ({ id: 'mock-db' })),
 }));
@@ -56,14 +56,14 @@ vi.mock('../orama-index.js', () => ({
 }));
 
 vi.mock('../fts5-hydrator.js', () => ({
-  hydrateFts5Index: vi.fn().mockResolvedValue(undefined),
+  hydrateFts5Index: vi.fn().mockResolvedValue(),
 }));
 
 import { progressiveSearch, getNoteParentEntityId, clearNoteParentEntityMap } from '../progressive.js';
-import * as oramaIndex from '../orama-index.js';
+import { embeddingsReady, embeddingsPlugin } from '../orama-index.js';
 import { repository } from '../../../db/repository.js';
 
-const mockSearch = oramaIndex as unknown as {
+const mockSearch = { embeddingsReady, embeddingsPlugin } as {
   embeddingsReady: boolean;
   embeddingsPlugin: unknown;
 };

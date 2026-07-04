@@ -26,8 +26,8 @@ vi.mock('../../lib/resolver', () => ({
 
 vi.mock('../../lib/chat-persistence', () => ({
   loadChatHistory: vi.fn().mockResolvedValue([]),
-  saveChatHistory: vi.fn().mockResolvedValue(undefined),
-  clearChatHistory: vi.fn().mockResolvedValue(undefined),
+  saveChatHistory: vi.fn().mockResolvedValue(),
+  clearChatHistory: vi.fn().mockResolvedValue(),
 }));
 
 vi.mock('../../lib/logger', () => ({
