@@ -12,20 +12,31 @@ export default defineConfig({
       '**/node_modules/**',
       '**/dist/**',
       '**/tests/e2e/**',
-      // Wave 3 work-in-progress test files that are not yet stabilized.
-      // These exercise code that is still being developed and will be re-enabled
-      // once the corresponding source modules are finalized.
-      'cli/__tests__/import-command.test.ts',
-      'src/features/ai/__tests__/useChat.rateLimit.test.ts',
-      'src/features/ai/__tests__/useRateLimiter.test.ts',
-      'src/features/search/__tests__/SearchPanel.createEntity.test.tsx',
-      'src/lib/search/__tests__/progressive.test.ts',
     ],
-    // Limit workers to prevent OOM in restricted CI environments
-    pool: 'forks',
-    forks: {
-      singleFork: true,
+    // Wave 3 work-in-progress tests are marked with test.skip inside
+    // their files rather than silently excluded here, so they surface
+    // in reports. Files:
+    //   cli/__tests__/import-command.test.ts
+    //   src/features/ai/__tests__/useChat.rateLimit.test.ts
+    //   src/features/ai/__tests__/useRateLimiter.test.ts
+    //   src/features/search/__tests__/SearchPanel.createEntity.test.tsx
+    //   src/lib/search/__tests__/progressive.test.ts
+
+    // vmThreads with capped workers avoids OOM while still running
+    // tests in parallel (vs the previous singleFork serial mode).
+    pool: 'vmThreads',
+    poolOptions: {
+      vmThreads: {
+        maxWorkers: 2,
+      },
     },
+
+    // Type-check test files using the dedicated tsconfig.
+    typecheck: {
+      tsconfig: './tsconfig.test.json',
+      enabled: true,
+    },
+
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
@@ -36,25 +47,23 @@ export default defineConfig({
         '**/e2e/**',
         '**/*.config.*',
         '**/__tests__/**',
-        // Exclude low-level WASM/Worker glue code that is difficult to unit test in JSDOM
+        // WASM/Worker glue — not exercisable in JSDOM.
         'src/db/client.ts',
         'src/db/db-worker.ts',
-        // Exclude CLI command dispatchers — they require a live SQLite database
-        // and are integration-tested via the CLI binary. Their registration is
-        // already covered by cli/__tests__/commands.test.ts.
+        // CLI command dispatchers — integration-tested via CLI binary.
         'cli/commands/**',
-        // Exclude React-PDF document components — they render to a custom PDF
-        // layout engine that is not exercisable in happy-dom. The export logic
-        // is covered by src/features/export/__tests__/pdf-exporter.test.tsx and
-        // the browser download path is covered manually.
+        // React-PDF document components — PDF engine not exercisable in happy-dom.
         'src/features/export/pdf-documents.tsx',
         'src/features/export/pdf-styles.ts',
       ],
+      // Thresholds raised from Wave 2 baseline (branches:36, functions:40,
+      // lines:45, statements:44). Increase by ~5 pts per release toward
+      // a long-term target of branches:70, functions:75, lines:80.
       thresholds: {
-        branches: 36,
-        functions: 40,
-        lines: 45,
-        statements: 44,
+        branches: 50,
+        functions: 55,
+        lines: 60,
+        statements: 58,
       },
     },
   },
