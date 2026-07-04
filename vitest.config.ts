@@ -22,14 +22,10 @@ export default defineConfig({
     //   src/features/search/__tests__/SearchPanel.createEntity.test.tsx
     //   src/lib/search/__tests__/progressive.test.ts
 
-    // vmThreads with capped workers avoids OOM while still running
+    // threads with capped workers avoids OOM while still running
     // tests in parallel (vs the previous singleFork serial mode).
-    pool: 'vmThreads',
-    poolOptions: {
-      vmThreads: {
-        maxWorkers: 2,
-      },
-    },
+    pool: 'threads',
+    maxWorkers: 2,
 
     // Type-check test files using the dedicated tsconfig.
     typecheck: {

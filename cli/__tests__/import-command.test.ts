@@ -121,7 +121,7 @@ describe('cli/commands/export import plan', () => {
     });
 
     it.skip('handles self-closing outlines without children', () => {
-      const opml = `<opml><body><outline text="Solo"/></body></opml>`;
+      const opml = '<opml><body><outline text="Solo"/></body></opml>';
       const plan = buildOpmlImportPlan(opml);
       expect(plan.entities).toHaveLength(1);
       expect(plan.entities[0]?.name).toBe('Solo');
@@ -130,7 +130,7 @@ describe('cli/commands/export import plan', () => {
 
   describe('parseOpmlOutlineText / flattenOpmlToEntities', () => {
     it.skip('preserves nesting in tree', () => {
-      const opml = `<outline text="A"><outline text="B"/><outline text="C"><outline text="D"/></outline></outline>`;
+      const opml = '<outline text="A"><outline text="B"/><outline text="C"><outline text="D"/></outline></outline>';
       const tree = parseOpmlOutlineText(opml);
       expect(tree).toHaveLength(1);
       expect(tree[0]?.text).toBe('A');

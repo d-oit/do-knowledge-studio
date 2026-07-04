@@ -11,9 +11,7 @@
  *  - Verify the dev / preview server is healthy before tests start
  *  - Export shared auth state once (when auth is added)
  */
-export default async function globalSetup() {
-  // Signal to test fixtures that a fresh run is starting.
+const globalSetup = (): void => {
   process.env.PLAYWRIGHT_FRESH_RUN = '1';
-
-  // Future: await seedFixtureDatabase();
-}
+};
+export default globalSetup;

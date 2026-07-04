@@ -76,9 +76,9 @@ describe('useRateLimiter', () => {
 
   it.skip('shares state between hook instances', () => {
     vi.setSystemTime(new Date('2026-06-22T04:00:00Z'));
-    const a = renderHook(() => useRateLimiter());
-    const b = renderHook(() => useRateLimiter());
-    act(() => { a.result.current.trackRequest(); });
-    expect(b.result.current.getRateLimitInfo().count).toBe(1);
+    const hookA = renderHook(() => useRateLimiter());
+    const hookB = renderHook(() => useRateLimiter());
+    act(() => { hookA.result.current.trackRequest(); });
+    expect(hookB.result.current.getRateLimitInfo().count).toBe(1);
   });
 });
