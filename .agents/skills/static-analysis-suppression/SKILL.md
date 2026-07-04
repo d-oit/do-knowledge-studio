@@ -1,0 +1,142 @@
+---
+name: static-analysis-suppression
+description: >-
+  Suppress false positive or pre-existing issues from static analysis tools on PRs.
+  Use when Codacy, DeepSource, or ESLint blocks a PR with inline review comments
+  that are false positives, pre-existing (not introduced by the diff), or
+  config-level noise (e.g., Qwik-specific Biome rules in a React project).
+  Covers all suppression methods: code-level fixes, eslint-disable comments,
+  config changes (.codacy.yml, .deepsource.toml), and admin merge override.
+version: "1.0"
+template_version: "1.0"
+metadata:
+  source: codified from ~12 sessions of PR CI fix work
+  related-skills: codacy, git-github-workflow
+allowed-tools: "read grep bash edit write"
+---
+
+# Static Analysis Suppression on PRs
+
+Systematic workflow for clearing Codacy, DeepSource, and ESLint blockers
+on pull requests. **Fix code before suppressing config.**
+
+## Decision Tree
+
+```
+PR blocked by static analysis check?
+├── ✓ Code-level fix is simplest/cleanest → fix source code
+├── ✓ False positive from external tool?
+│   ├── DeepSource: use code rewrite (const → arrow, etc.)
+│   ├── Codacy ESLint: use `// eslint-disable-next-line <rule>` inline
+│   ├── Codacy Biome/Qwik: check .codacy.yml `engines.biome.config` rules
+│   └── Pre-existing complexity: .deepsource.toml analyzer.meta.checks
+├── ✗ Config-only fix (no code change)?
+│   ├── Codacy: .codacy.yml `engines.eslint-8.disable_rules` or `exclude_paths`
+│   └── DeepSource: .deepsource.toml `[analyzers.meta.checks]`
+└── ✗ All real checks pass, only policy tool blocks?
+    → `gh pr merge --admin` override
+```
+
+## Workflow
+
+### 1. Diagnose the blocker
+
+Check which tool is blocking and why:
+
+```bash
+gh pr checks <PR#>  # list all status checks
+gh pr view <PR#> --json statusCheckRollup  # full detail incl. DeepSource/Codacy
+```
+
+Classify the issue:
+
+| Category | Example | Fix method |
+|----------|---------|------------|
+| Genuine lint error | unused variable, missing type | Fix source code |
+| DeepSource code pattern | `function` decl → `const` arrow | Code rewrite |
+| DeepSource redundant | `mockResolvedValue(undefined)` | Remove `undefined` arg |
+| Codacy ESLint8_* | `security/detect-object-injection` | `disable_rules` in `.codacy.yml` |
+| Codacy Biome (Qwik) | `useQwikValidLexicalScope` | `biome.json` or `.deepsource.toml` |
+| Pre-existing complexity | `max-complexity "30"` | `.deepsource.toml` `[analyzers.meta]` |
+| ESLint disable needed | `react-hooks/refs`, `set-state-in-effect` | `// eslint-disable-next-line` inline |
+
+### 2. Apply suppression
+
+#### Code rewrite (preferred)
+
+DeepSource JS-0067: `export default async function foo() {}`
+→ `const foo = (): void => { ... }; export default foo;`
+
+DeepSource JS-0240: `{ type: type }`
+→ `{ type }`
+
+DeepSource JS-W1042: `vi.fn().mockResolvedValue(undefined)`
+→ `vi.fn().mockResolvedValue()`
+
+DeepSource JS-0098: `void someFunction()`
+→ `someFunction()`
+
+#### eslint-disable inline
+
+```ts
+// eslint-disable-next-line react-hooks/refs -- hook uses refs inside effects, not for rendering
+```
+
+For multiple consecutive lines, use block form:
+
+```ts
+/* eslint-disable react-hooks/rules-of-hooks */
+useHook(condition);
+useHook(other);
+/* eslint-enable react-hooks/rules-of-hooks */
+```
+
+#### Codacy config (.codacy.yml)
+
+```yaml
+engines:
+  eslint-8:
+    disable_rules:
+      - "ESLint8_security_detect-object-injection"
+```
+
+Codacy YAML requires `---` preamble on line 1.
+
+#### DeepSource config (.deepsource.toml)
+
+```toml
+[analyzers.meta.checks]
+Biome_lint_correctness_useQwikValidLexicalScope = "off"
+```
+
+### 3. Admin merge (last resort)
+
+When ALL real functional checks pass but a static analysis tool
+still blocks (pre-existing issue, known false positive):
+
+```bash
+gh pr merge <PR#> --squash --admin --subject "<message>"
+```
+
+## Common DeepSource Issue Codes
+
+| Code | Issue | Fix |
+|------|-------|-----|
+| JS-0067 | `function` decl in module scope | Arrow `const` assignment + export |
+| JS-0240 | `type: type` redundant key | Property shorthand |
+| JS-0339 | `!` non-null assertion | Proper type narrowing or optional chaining |
+| JS-0357 | Arrow `const` used before decl | Move definition above callers |
+| JS-0098 | `void` expression | Remove `void` keyword |
+| JS-W1042 | `mockResolvedValue(undefined)` | Omit `undefined` argument |
+| JS-C1003 | `import * as` namespace | Named imports for actually-used exports |
+| R1005 | Complexity exceeds threshold | `.deepsource.toml` `max_complexity` or code split |
+
+## Common Codacy ESLint Issue Codes
+
+| Code | Issue | Fix |
+|------|-------|-----|
+| `security/detect-object-injection` | `obj[key]` access | Not in local ESLint — `disable_rules` only |
+| `no-confusing-void-expression` | Arrow returning void | `{ fn(); }` braces |
+| `useImportType` | Value import for type-only | Split `import { foo, type Bar }` |
+| `react-hooks/refs` | Ref not in dependency array | `// eslint-disable-next-line` |
+| `react-hooks/set-state-in-effect` | setState inside effect | `// eslint-disable-next-line` |
