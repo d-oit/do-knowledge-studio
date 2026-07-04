@@ -15,35 +15,43 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
-  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: 'html',
-  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
+  /* 4 workers on CI (GitHub Actions runners have 4 vCPUs) allows
+   * fullyParallel to actually parallelize. Previously workers:1 serialized
+   * all tests despite fullyParallel:true. */
+  workers: process.env.CI ? 4 : undefined,
+  /* CI: machine-readable output for GitHub Actions annotations + Codacy.
+   * Locally: rich HTML report only. */
+  reporter: process.env.CI
+    ? [['github'], ['json', { outputFile: 'playwright-report/results.json' }], ['html', { open: 'never' }]]
+    : [['html']],
   use: {
-    /* Base URL to use in actions like `await page.goto('/')`. */
     baseURL,
-
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
 
-  /* Configure projects for major browsers */
+  /* Global setup clears OPFS/IndexedDB state between full test runs to
+   * prevent test pollution in the local-first SQLite environment. */
+  globalSetup: './tests/e2e/global-setup.ts',
+
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
 
-    /* Mobile/tablet projects only run in CI where WebKit dependencies are installed */
+    /* Firefox is included in CI to catch SQLite WASM SharedArrayBuffer
+     * (COOP/COEP) compatibility issues that Chromium silently passes. */
     ...(process.env.CI ? [
+      {
+        name: 'firefox',
+        use: { ...devices['Desktop Firefox'] },
+      },
       {
         name: 'mobile',
         use: { ...devices['iPhone 13'] },
       },
-
       {
         name: 'tablet',
         use: { ...devices['iPad Pro 11'] },
@@ -51,7 +59,6 @@ export default defineConfig({
     ] : []),
   ],
 
-  /* Run your local dev server before starting the tests */
   webServer: {
     command: isProduction ? 'npm run preview' : 'npm run dev',
     url: baseURL,
