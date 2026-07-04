@@ -1,5 +1,16 @@
 import DOMPurify from 'dompurify';
 
+/**
+ * Add hook to enforce noopener noreferrer on target="_blank" links.
+ * This prevents tabnabbing attacks where a malicious site can control
+ * the opening page via window.opener.
+ */
+DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+  if (node.tagName === 'A' && node.getAttribute('target') === '_blank') {
+    node.setAttribute('rel', 'noopener noreferrer');
+  }
+});
+
 export function sanitizeHtml(html: string): string {
   return DOMPurify.sanitize(html, {
     ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'p', 'br', 'span', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'code', 'pre', 'del'],
