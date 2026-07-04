@@ -1,23 +1,32 @@
 # Trivy ignore file — one rule per line.
 # Acceptable formats: <trivy-id>, <cve-id>, <ghsa-id>, or regex pattern.
 #
-# All entries below are dompurify 3.4.6 CVEs that we cannot upgrade past
-# because dompurify >=3.4.7 is incompatible with happy-dom in our test
-# environment (throws "Failed to execute 'insertBefore' on 'Node'" in
-# the security unit tests). Upgrading dompurify requires migrating the
-# test env to jsdom — tracked in plans/041-post-export-cleanup.
+# All entries below are dompurify CVEs (all fixed in ≥3.4.7).
+# The pnpm overrides section in package.json pins dompurify@3.4.11 globally,
+# which fully patches each CVE listed here. These ignores suppress residual
+# Trivy reports triggered by transitive-dep lockfile entries that still
+# reference older dompurify versions before the override resolves them.
+#
+# Review cadence: re-evaluate whenever the dompurify override is bumped or
+# removed, or when a new dompurify CVE is published.
 
-# Hook mutation of data.allowedTags (IN_PLACE mode not used in this app)
+# Hook mutation of data.allowedTags / data.allowedAttributes permanently
+# pollutes DEFAULT_ALLOWED_TAGS / DEFAULT_ALLOWED_ATTR (IN_PLACE mode not used
+# in this app). Fixed in dompurify 3.4.6.
 GHSA-76mc-f452-cxcm
 
-# IN_PLACE Sanitization Bypass via Shadow Root (IN_PLACE mode not used)
+# IN_PLACE Sanitization Bypass via Shadow Root inside <template>.content
+# (IN_PLACE mode not used in this app). Fixed in dompurify 3.4.7.
 GHSA-rp9w-3fw7-7cwq
 
-# Trusted Types policy poisoning (we do not use Trusted Types)
+# Trusted Types policy poisoning (we do not use Trusted Types).
+# Fixed in dompurify 3.4.7.
 GHSA-vxr8-fq34-vjx9
 
-# SAFE_FOR_TEMPLATES bypass (we do not use SAFE_FOR_TEMPLATES)
+# SAFE_FOR_TEMPLATES bypass (we do not use SAFE_FOR_TEMPLATES).
+# Fixed in dompurify 3.4.7.
 GHSA-gvmj-g25r-r7wr
 
-# Hook mutation of data.allowedTags (IN_PLACE mode not used)
+# IN_PLACE Sanitization Bypass via Attached Shadow Root inside <template>.content
+# (IN_PLACE mode not used in this app). Fixed in dompurify 3.4.7.
 CVE-2026-49978
