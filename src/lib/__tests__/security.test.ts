@@ -43,6 +43,17 @@ describe('sanitizeHtml', () => {
     const result = sanitizeHtml('<style>body{color:red}</style>');
     expect(result).not.toContain('<style>');
   });
+
+  it('enforces noopener noreferrer on target="_blank" links', () => {
+    const result = sanitizeHtml('<a href="https://google.com" target="_blank">click</a>');
+    expect(result).toContain('rel="noopener noreferrer"');
+  });
+
+  it('strips dangerous rel values when target="_blank" is present', () => {
+    const result = sanitizeHtml('<a href="https://google.com" target="_blank" rel="opener">click</a>');
+    expect(result).toContain('rel="noopener noreferrer"');
+    expect(result).not.toMatch(/\srel="opener"/);
+  });
 });
 
 describe('stripHtmlTags', () => {
