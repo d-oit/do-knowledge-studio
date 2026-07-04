@@ -24,16 +24,16 @@ interface SearchDocument {
   embedding?: number[];
 }
 
-const buildEntityDoc = (entity: Entity): SearchDocument => ({
-  id: entity.id!,
+const buildEntityDoc = (entity: Entity & { id: string }): SearchDocument => ({
+  id: entity.id,
   type: 'entity',
   title: entity.name,
   content: compressText(`${entity.name} ${entity.description || ''}`),
   keywords: entity.type,
 });
 
-const buildClaimDoc = (claim: Claim, entityName: string, entityId: string): SearchDocument => ({
-  id: claim.id!,
+const buildClaimDoc = (claim: Claim & { id: string }, entityName: string, entityId: string): SearchDocument => ({
+  id: claim.id,
   type: 'claim',
   title: entityName,
   content: compressText(claim.statement),
@@ -50,15 +50,17 @@ const buildNoteDoc = (note: { id: string; content: string; entity_id?: string | 
 
 const addEntityToIndex = async (entity: Entity, claims: Claim[]): Promise<void> => {
   if (!oramaDb) return;
+  if (!entity.id) return;
 
   const entityResult = await insert(oramaDb, buildEntityDoc(entity));
-  addToOramaMap(entity.id!, entityResult);
+  addToOramaMap(entity.id, entityResult);
 
   if (claims.length > 0) {
-    const claimDocs = claims.map(c => buildClaimDoc(c, entity.name, entity.id!));
+    const claimsWithId = claims.filter((c): c is Claim & { id: string } => Boolean(c.id));
+    const claimDocs = claimsWithId.map(c => buildClaimDoc(c, entity.name, entity.id as string));
     const claimOramaIds = await insertMultiple(oramaDb, claimDocs);
-    for (let i = 0; i < claims.length; i++) {
-      addToOramaMap(claims[i].id!, claimOramaIds[i]);
+    for (let i = 0; i < claimsWithId.length; i++) {
+      addToOramaMap(claimsWithId[i].id, claimOramaIds[i]);
     }
   }
 };
@@ -82,6 +84,7 @@ export const initSearch = async () => {
     let totalEntitiesIndexed = 0;
     let hasMore = true;
     let fetchOffset = 0;
+    const entityNames = new Map<string, string>();
 
     while (hasMore) {
       const chunk = await repository.getAllEntities({ limit: CHUNK_SIZE, offset: fetchOffset });
@@ -94,13 +97,16 @@ export const initSearch = async () => {
       const originalIds: string[] = [];
 
       for (const entity of chunk) {
+        if (!entity.id) continue;
+        entityNames.set(entity.id, entity.name);
         docs.push(buildEntityDoc(entity));
-        originalIds.push(entity.id!);
+        originalIds.push(entity.id);
 
-        const claims = claimsByEntity.get(entity.id!) || [];
+        const claims = claimsByEntity.get(entity.id) || [];
         for (const claim of claims) {
-          docs.push(buildClaimDoc(claim, entity.name, entity.id!));
-          originalIds.push(claim.id!);
+          if (!claim.id) continue;
+          docs.push(buildClaimDoc(claim, entity.name, entity.id));
+          originalIds.push(claim.id);
         }
       }
 
@@ -126,7 +132,7 @@ export const initSearch = async () => {
     for (const note of allNotes) {
       if (note.content && note.content.trim().length > 0) {
         const entityName = note.entity_id
-          ? (await repository.getEntityById(note.entity_id))?.name
+          ? entityNames.get(note.entity_id)
           : undefined;
         noteDocs.push(buildNoteDoc(note, entityName));
         noteIds.push(note.id);
@@ -263,10 +269,11 @@ export const removeFromSearchIndex = async (
 
     const claims = providedClaims ?? await repository.getClaimsByEntityId(entityId);
     for (const claim of claims) {
-      const claimOramaId = oramaIdMap.get(claim.id!);
+      if (!claim.id) continue;
+      const claimOramaId = oramaIdMap.get(claim.id);
       if (claimOramaId) {
         oramaRemovals.push(remove(oramaDb, claimOramaId));
-        oramaIdMap.delete(claim.id!);
+        oramaIdMap.delete(claim.id);
       }
     }
 

@@ -1,30 +1,6 @@
 import '@testing-library/jest-dom/vitest';
 import { vi } from 'vitest';
-
-// Mock IndexedDB for happy-dom/jsdom environment
-const indexedDB = {
-  open: vi.fn().mockReturnValue({
-    onupgradeneeded: null,
-    onsuccess: null,
-    onerror: null,
-    result: {
-      objectStoreNames: {
-        contains: vi.fn().mockReturnValue(true),
-      },
-      createObjectStore: vi.fn(),
-      transaction: vi.fn().mockReturnValue({
-        objectStore: vi.fn().mockReturnValue({
-          put: vi.fn().mockReturnValue({ onsuccess: null, onerror: null }),
-          get: vi.fn().mockReturnValue({ onsuccess: null, onerror: null }),
-          delete: vi.fn().mockReturnValue({ onsuccess: null, onerror: null }),
-        }),
-        onerror: null,
-      }),
-    },
-  }),
-};
-
-vi.stubGlobal('indexedDB', indexedDB);
+import 'fake-indexeddb/auto';
 
 // Mock scrollIntoView which is missing in many DOM emulations
 if (typeof window !== 'undefined') {
