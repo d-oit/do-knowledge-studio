@@ -8,6 +8,27 @@ documentation would be appreciated but is not required.
 
 ================================================================================
 
+DEPENDENCY OVERRIDES
+
+The following pnpm overrides are applied in package.json to address known
+security vulnerabilities in transitive dependencies:
+
+dompurify@3.4.11
+  Package: dompurify (https://github.com/cure53/DOMPurify)
+  Override reason: Multiple transitive dependencies pull in dompurify at
+    versions prior to 3.4.7, which are affected by the following CVEs:
+      - GHSA-76mc-f452-cxcm: Hook mutation permanently pollutes DEFAULT_ALLOWED_TAGS
+      - GHSA-rp9w-3fw7-7cwq / CVE-2026-49978: IN_PLACE bypass via shadow root
+      - GHSA-vxr8-fq34-vjx9: Trusted Types policy poisoning
+      - GHSA-gvmj-g25r-r7wr: SAFE_FOR_TEMPLATES bypass
+  All four are patched in dompurify ≥3.4.7. The override pins 3.4.11
+  (current latest at time of writing) globally across the dependency tree.
+  The application itself does not use IN_PLACE mode, Trusted Types, or
+  SAFE_FOR_TEMPLATES, but the override is retained for defence-in-depth and
+  to suppress Trivy findings on transitive lockfile entries.
+
+================================================================================
+
 THIRD-PARTY COMPONENTS
 
 This software includes or references the following third-party components:
