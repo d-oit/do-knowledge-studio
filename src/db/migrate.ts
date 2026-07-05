@@ -112,7 +112,7 @@ export async function loadMigrations(): Promise<Migration[]> {
 
   for (const [path, loader] of Object.entries(migrationModules)) {
     try {
-      const content = await loader() as string;
+      const content = await loader();
       const filename = path.split('/').pop() ?? '';
       migrations.push(parseMigrationFile(content, filename));
     } catch (err) {
