@@ -53,7 +53,7 @@
     "@orama/plugin-embeddings": "~3.1.18",
     "@react-pdf/renderer": "~4.5.1",
     "@sqlite.org/sqlite-wasm": "3.45.3-build3",
-    "@tanstack/react-virtual": "~3.13.26",
+    "@tanstack/react-virtual": "~3.14.5",
     "@tiptap/core": "3.27.1",
     "@tiptap/extension-placeholder": "~3.27.1",
     "@tiptap/pm": "~3.27.1",
@@ -65,12 +65,12 @@
     "graphology": "~0.26.0",
     "graphology-layout-forceatlas2": "~0.10.1",
     "jszip": "~3.10.1",
-    "lucide-react": "~1.17.0",
-    "mind-elixir": "~5.12.2",
+    "lucide-react": "~1.23.0",
+    "mind-elixir": "~5.13.0",
     "qrcode": "^1.5.4",
     "react": "19.2.7",
     "react-dom": "19.2.7",
-    "react-router-dom": "~7.15.1",
+    "react-router-dom": "~7.18.1",
     "sigma": "~3.0.0-beta.27",
     "zod": "~4.4.3",
     "zustand": "~5.0.14"
@@ -83,7 +83,6 @@
     "@testing-library/react": "~16.3.2",
     "@testing-library/user-event": "~14.6.1",
     "@types/better-sqlite3": "~7.6.13",
-    "@types/dompurify": "~3.2.0",
     "@types/jsdom": "~28.0.3",
     "@types/node": "~26.1.0",
     "@types/qrcode": "^1.5.6",
@@ -92,7 +91,7 @@
     "@typescript-eslint/eslint-plugin": "~7.18.0",
     "@typescript-eslint/parser": "~7.2.0",
     "@vitejs/plugin-react": "~6.0.3",
-    "@vitest/coverage-v8": "~4.1.5",
+    "@vitest/coverage-v8": "~4.1.9",
     "better-sqlite3": "~12.11.1",
     "eslint": "~8.57.0",
     "eslint-plugin-jsx-a11y": "~6.10.2",
@@ -102,7 +101,7 @@
     "fake-indexeddb": "^6.2.5",
     "globals": "~17.6.0",
     "graphology-types": "~0.24.8",
-    "happy-dom": "~20.10.4",
+    "happy-dom": "~20.10.6",
     "jsdom": "~29.1.1",
     "picomatch": "~4.0.4",
     "rollup-plugin-visualizer": "~7.0.1",
@@ -111,6 +110,6 @@
     "typescript": "~6.0.3",
     "typescript-eslint": "~8.61.1",
     "vite": "~8.0.14",
-    "vitest": "~4.1.4"
+    "vitest": "~4.1.9"
   }
 }
