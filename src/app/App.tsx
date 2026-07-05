@@ -75,6 +75,7 @@ const AppContent: React.FC = () => {
       case 'search': void preloadSearch(); break;
       case 'library': void preloadLibrary(); break;
       case 'triz': void preloadTriz(); break;
+      default: break;
     }
   }, []);
 
