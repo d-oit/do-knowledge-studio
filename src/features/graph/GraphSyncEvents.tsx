@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import type Graph from 'graphology';
 import { useGraphSyncStore } from '../../store/graph-sync-store';
 import type { SharedNode, SharedEdge } from '../../store/graph-sync-types';
+import { logger } from '../../lib/logger';
 
 export const useGraphSyncEvents = (graphRef: { current: Graph | null }) => {
   useEffect(() => {
@@ -29,7 +30,7 @@ export const useGraphSyncEvents = (graphRef: { current: Graph | null }) => {
           if (graph.hasNode(payload.id)) {
             const currentLabel = graph.getNodeAttribute(payload.id, 'label') as string;
             if (currentLabel !== payload.label) {
-              console.warn(`[Sync Conflict] Graph node ${payload.id} has different label. Local: ${currentLabel}, Incoming: ${payload.label}. Applying last-writer wins.`);
+              logger.warn(`[Sync Conflict] Graph node ${payload.id} has different label. Local: ${currentLabel}, Incoming: ${payload.label}. Applying last-writer wins.`);
               graph.mergeNodeAttributes(payload.id, { label: payload.label });
             }
           }

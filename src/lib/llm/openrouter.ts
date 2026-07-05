@@ -1,4 +1,5 @@
 import type { LLMProvider, LLMRequest, LLMResponse, LLMStreamChunk, LLMProviderConfig, OpenAIChatResponse, OpenAIErrorResponse } from './types';
+import { logger } from '../logger';
 
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 
@@ -115,7 +116,7 @@ export class OpenRouterProvider implements LLMProvider {
             yield { content, done: false };
           }
         } catch {
-          console.debug('SSE chunk parse skipped (incomplete or invalid JSON)');
+          logger.debug('SSE chunk parse skipped (incomplete or invalid JSON)');
         }
       }
     }

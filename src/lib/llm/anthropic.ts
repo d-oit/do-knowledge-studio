@@ -1,4 +1,5 @@
 import type { LLMProvider, LLMRequest, LLMResponse, LLMStreamChunk, LLMProviderConfig } from './types';
+import { logger } from '../logger';
 
 const ANTHROPIC_BASE_URL = 'https://api.anthropic.com/v1';
 
@@ -121,7 +122,7 @@ export class AnthropicProvider implements LLMProvider {
             return;
           }
         } catch {
-          console.debug('SSE chunk parse skipped (incomplete or invalid JSON)');
+          logger.debug('SSE chunk parse skipped (incomplete or invalid JSON)');
         }
       }
     }
