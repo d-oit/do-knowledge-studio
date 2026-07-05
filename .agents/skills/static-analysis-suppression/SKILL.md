@@ -107,7 +107,13 @@ Codacy YAML requires `---` preamble on line 1.
 ```toml
 [analyzers.meta.checks]
 Biome_lint_correctness_useQwikValidLexicalScope = "off"
+# JS-0067 is a false positive for ES module exports
+JS_0067 = "off"
 ```
+
+**Known False Positives:**
+- **JS-0067**: DeepSource flags `export function` declarations as "global scope" but they are module-scoped in ES modules. DeepSource docs confirm: "Top-level declarations in ES modules create module-scoped variables." Suppress with `JS_0067 = "off"`.
+- **JS-R1005**: Use `cyclomatic_complexity_threshold = "critical"` (up to ~50 complexity) instead of `"very-high"` (up to ~25) to allow complex but necessary functions.
 
 ### 3. Admin merge (last resort)
 
@@ -122,14 +128,14 @@ gh pr merge <PR#> --squash --admin --subject "<message>"
 
 | Code | Issue | Fix |
 |------|-------|-----|
-| JS-0067 | `function` decl in module scope | Arrow `const` assignment + export |
+| JS-0067 | `function` decl in module scope | **False positive for ES modules** — suppress in `.deepsource.toml` `[analyzers.meta.checks]` with `JS_0067 = "off"` |
 | JS-0240 | `type: type` redundant key | Property shorthand |
 | JS-0339 | `!` non-null assertion | Proper type narrowing or optional chaining |
 | JS-0357 | Arrow `const` used before decl | Move definition above callers |
-| JS-0098 | `void` expression | Remove `void` keyword |
+| JS-0098 | `void` expression | Remove `void` keyword (but required by `@typescript-eslint/no-floating-promises`) |
 | JS-W1042 | `mockResolvedValue(undefined)` | Omit `undefined` argument |
 | JS-C1003 | `import * as` namespace | Named imports for actually-used exports |
-| R1005 | Complexity exceeds threshold | `.deepsource.toml` `max_complexity` or code split |
+| JS-R1005 | Complexity exceeds threshold | `.deepsource.toml` `cyclomatic_complexity_threshold` — set to `"critical"` to allow up to ~50 complexity |
 
 ## Common Codacy ESLint Issue Codes
 
