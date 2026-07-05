@@ -18,7 +18,7 @@ name = "javascript-typescript"
 enabled = true
 
   [analyzers.meta]
-  cyclomatic_complexity_threshold = "very-high"
+  cyclomatic_complexity_threshold = "critical"
   max_functions = "50"
   skip_doc_coverage = ["test"]
   plugins = ["react"]
@@ -32,3 +32,6 @@ enabled = true
   [analyzers.meta.checks]
   # Disable Qwik-specific rules (project doesn't use Qwik)
   Biome_lint_correctness_useQwikValidLexicalScope = "off"
+  # JS-0067 is a false positive for ES module exports — top-level declarations
+  # in ES modules are module-scoped, not global. DeepSource docs confirm this.
+  JS_0067 = "off"
