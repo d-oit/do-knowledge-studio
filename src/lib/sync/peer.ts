@@ -5,7 +5,7 @@
  * Uses a signaling channel (manual exchange via QR code) to establish connections.
  */
 import { logger } from '../logger';
-import type { SyncSnapshot } from './protocol';
+import { SyncSnapshotSchema, SyncMessageSchema } from './protocol';
 import { createSyncSnapshot, mergeSnapshots } from './protocol';
 import { repository } from '../../db/repository';
 
@@ -112,7 +112,14 @@ export function setupDataChannel(
 
   channel.onmessage = async (event) => {
     try {
-      const msg = JSON.parse(event.data as string) as { type: string; data: unknown };
+      const raw: unknown = JSON.parse(event.data as string);
+      const msgResult = SyncMessageSchema.safeParse(raw);
+      if (!msgResult.success) {
+        logger.warn('Invalid sync message format', msgResult.error);
+        return;
+      }
+      const msg = msgResult.data;
+
       if (msg.type === 'sync-request') {
         peer.state = 'syncing';
         callbacks.onStateChange?.('syncing');
@@ -130,7 +137,14 @@ export function setupDataChannel(
         peer.state = 'syncing';
         callbacks.onStateChange?.('syncing');
 
-        const remoteSnapshot = msg.data as SyncSnapshot;
+        const snapshotResult = SyncSnapshotSchema.safeParse(msg.data);
+        if (!snapshotResult.success) {
+          logger.warn('Invalid sync snapshot from peer', snapshotResult.error);
+          peer.state = 'error';
+          callbacks.onError?.('Invalid data received from peer');
+          return;
+        }
+        const remoteSnapshot = snapshotResult.data;
 
         const localEntities = await repository.getAllEntities();
         const localLinks = await repository.getAllLinks();

@@ -5,7 +5,29 @@
  * Uses a simple snapshot-based approach: full entity/claim/note data exchange
  * with conflict resolution by timestamp.
  */
+import { z } from 'zod';
 import type { Entity, Claim, Note, Link } from '../../lib/validation';
+import { EntitySchema, ClaimSchema, NoteSchema } from '../../lib/validation';
+
+export const SyncMessageSchema = z.object({
+  type: z.enum(['sync-request', 'sync-data', 'sync-ack']),
+  data: z.unknown(),
+});
+
+export const SyncSnapshotSchema = z.object({
+  entities: z.array(EntitySchema),
+  claims: z.array(ClaimSchema),
+  notes: z.array(NoteSchema),
+  links: z.array(z.object({
+    id: z.string().optional(),
+    source_id: z.string(),
+    target_id: z.string(),
+    relation: z.string(),
+    created_at: z.string().optional(),
+  })),
+  timestamp: z.string(),
+  deviceId: z.string(),
+});
 
 export interface SyncSnapshot {
   entities: Entity[];
