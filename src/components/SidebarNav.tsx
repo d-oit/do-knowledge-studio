@@ -1,6 +1,6 @@
 import React from 'react';
 
-type View = 'editor' | 'graph' | 'mindmap' | 'chat' | 'export' | 'ai' | 'search' | 'library';
+type View = 'editor' | 'graph' | 'mindmap' | 'chat' | 'export' | 'ai' | 'search' | 'library' | 'triz';
 
 interface SidebarNavProps {
   currentView: View;
@@ -53,6 +53,7 @@ const NAV_GROUPS: NavGroup[] = [
     group: 'Lab',
     items: [
       { view: 'ai', label: 'AI Harness', experimental: true },
+      { view: 'triz', label: 'TRIZ Matrix', experimental: true },
     ],
   },
 ];

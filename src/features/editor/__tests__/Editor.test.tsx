@@ -284,3 +284,75 @@ describe('Editor Lazy Loading (#143)', () => {
     expect(mockRepo.getAllEntities).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('Editor handleSave', () => {
+  const mockRepo = {
+    createEntity: vi.fn().mockResolvedValue({ id: 'new-1', name: 'Test', type: 'concept', description: '<p>test</p>', metadata: {} }),
+    updateEntity: vi.fn().mockResolvedValue({ id: 'edit-1', name: 'Updated', type: 'concept', description: '<p>updated</p>', metadata: {} }),
+    getAllEntities: vi.fn().mockResolvedValue([]),
+    getBacklinks: vi.fn().mockResolvedValue([]),
+    getBacklinkCount: vi.fn().mockResolvedValue(0),
+    transaction: vi.fn().mockResolvedValue(undefined),
+    getEntityById: vi.fn().mockResolvedValue(null),
+    deleteEntity: vi.fn(),
+    getClaimsByEntityId: vi.fn().mockResolvedValue([]),
+  } as unknown as IRepository;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('create path: creates entity and enqueues reindex', async () => {
+    mockEditor.state.doc.descendants.mockImplementation((cb: (node: { marks: unknown[]; isText: boolean; text?: string }) => boolean) => {
+      cb({ marks: [], isText: true, text: 'Some text' });
+      return true;
+    });
+
+    renderWithDb(<Editor />, { repository: mockRepo });
+
+    const titleInput = screen.getByLabelText('Entity Name');
+    act(() => {
+      fireEvent.change(titleInput, { target: { value: 'New Entity' } });
+    });
+
+    const saveBtn = screen.getByRole('button', { name: /save/i });
+    await act(async () => {
+      fireEvent.click(saveBtn);
+      await Promise.resolve();
+    });
+
+    expect(mockRepo.createEntity).toHaveBeenCalledTimes(1);
+    expect(mockRepo.transaction).toHaveBeenCalled();
+  });
+
+  it('error path: shows error status on failure', async () => {
+    (mockRepo.createEntity as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('DB error'));
+
+    renderWithDb(<Editor />, { repository: mockRepo });
+
+    const titleInput = screen.getByLabelText('Entity Name');
+    act(() => {
+      fireEvent.change(titleInput, { target: { value: 'Fail Entity' } });
+    });
+
+    const saveBtn = screen.getByRole('button', { name: /save/i });
+    await act(async () => {
+      fireEvent.click(saveBtn);
+      await Promise.resolve();
+    });
+
+    expect(mockRepo.createEntity).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(/Save failed/)).toBeDefined();
+  });
+
+  it('does not save when title is empty', () => {
+    renderWithDb(<Editor />, { repository: mockRepo });
+
+    const saveBtn = screen.getByRole('button', { name: /save/i });
+    act(() => {
+      fireEvent.click(saveBtn);
+    });
+
+    expect(mockRepo.createEntity).not.toHaveBeenCalled();
+  });
+});

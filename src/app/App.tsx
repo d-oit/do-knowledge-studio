@@ -34,6 +34,7 @@ const preloadMindMap = () => import('../features/mindmap/MindMapView');
 const preloadChat = () => import('../features/chat/Chat');
 const preloadExport = () => import('../features/export/ExportPanel');
 const preloadAI = () => import('../features/ai/AIHarness');
+const preloadTriz = () => import('../features/triz/TrizMatrix');
 
 // Lazy-loaded features
 const Editor = lazy(preloadEditor);
@@ -45,8 +46,9 @@ const MindMapView = lazy(preloadMindMap);
 const Chat = lazy(preloadChat);
 const ExportPanel = lazy(preloadExport);
 const AIHarness = lazy(preloadAI);
+const TrizMatrix = lazy(preloadTriz);
 
-type View = 'editor' | 'graph' | 'mindmap' | 'chat' | 'export' | 'ai' | 'library';
+type View = 'editor' | 'graph' | 'mindmap' | 'chat' | 'export' | 'ai' | 'library' | 'triz';
 
 const AppContent: React.FC = () => {
   const { dbReady, error } = useDb();
@@ -72,6 +74,8 @@ const AppContent: React.FC = () => {
       case 'ai': void preloadAI(); break;
       case 'search': void preloadSearch(); break;
       case 'library': void preloadLibrary(); break;
+      case 'triz': void preloadTriz(); break;
+      default: break;
     }
   }, []);
 
@@ -254,6 +258,11 @@ const AppContent: React.FC = () => {
               <ErrorBoundary featureName="AI" onRetry={() => window.location.reload()}>
                 <AIHarness />
               </ErrorBoundary>
+            </Suspense>
+          )}
+          {dbReady && currentView === 'triz' && (
+            <Suspense fallback={null}>
+              <TrizMatrix onClose={() => setCurrentView('editor')} />
             </Suspense>
           )}
         </main>
