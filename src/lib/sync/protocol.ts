@@ -6,8 +6,8 @@
  * with conflict resolution by timestamp.
  */
 import { z } from 'zod';
-import type { Entity, Claim, Note, Link } from '../../lib/validation';
-import { EntitySchema, ClaimSchema, NoteSchema } from '../../lib/validation';
+import type { Entity, Claim, Note, Link } from '../validation';
+import { EntitySchema, ClaimSchema, NoteSchema } from '../validation';
 
 export const SyncMessageSchema = z.object({
   type: z.enum(['sync-request', 'sync-data', 'sync-ack']),

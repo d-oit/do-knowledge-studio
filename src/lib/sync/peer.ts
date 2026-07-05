@@ -29,7 +29,7 @@ export interface SyncCallbacks {
   onError?: (error: string) => void;
 }
 
-let deviceId: string = '';
+let deviceId = '';
 function getDeviceId(): string {
   if (!deviceId) {
     deviceId = localStorage.getItem('dks:device-id') ?? crypto.randomUUID();
