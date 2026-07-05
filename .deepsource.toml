@@ -18,9 +18,13 @@ name = "javascript-typescript"
 enabled = true
 
   [analyzers.meta]
-  max_complexity = "30"
+  cyclomatic_complexity_threshold = "very-high"
   max_functions = "50"
   skip_doc_coverage = ["test"]
+  plugins = ["react"]
+  environment = ["nodejs", "browser"]
+  module_system = "es-modules"
+  dialect = "typescript"
 
   [analyzers.meta.ratings]
     documentation_coverage = "A"
@@ -28,7 +32,3 @@ enabled = true
   [analyzers.meta.checks]
   # Disable Qwik-specific rules (project doesn't use Qwik)
   Biome_lint_correctness_useQwikValidLexicalScope = "off"
-  # void is required by @typescript-eslint/no-floating-promises
-  JS_0098 = "off"
-  # Pre-existing complexity in App.tsx (tracked for refactor)
-  JS_R1005 = "off"
