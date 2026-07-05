@@ -346,3 +346,5 @@ export function useChat() {
     }, []),
   };
 }
+
+export const __testing = { buildStructuredContext, buildBudgetedMessages, estimateTokens };

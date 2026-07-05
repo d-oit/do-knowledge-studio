@@ -10,7 +10,8 @@ import {
   Plus,
   Download,
   Command,
-  X
+  X,
+  Lightbulb
 } from 'lucide-react';
 import { searchKnowledge, SearchResult } from '../lib/search';
 import { logger } from '../lib/logger';
@@ -19,7 +20,7 @@ import { SearchSkeleton } from './Skeletons';
 interface CommandPaletteProps {
   isOpen: boolean;
   onClose: () => void;
-  onViewChange: (view: 'editor' | 'graph' | 'mindmap' | 'chat' | 'export' | 'ai') => void;
+  onViewChange: (view: 'editor' | 'graph' | 'mindmap' | 'chat' | 'export' | 'ai' | 'library' | 'triz') => void;
   onEntitySelect?: (entityId: string) => void;
   onAction?: (action: string) => void;
 }
@@ -40,6 +41,7 @@ const COMMANDS: CommandItem[] = [
   { id: 'nav-chat', label: 'Go to Chat', icon: MessageSquare, type: 'navigation', view: 'chat', shortcut: 'G C' },
   { id: 'nav-export', label: 'Go to Export', icon: Download, type: 'navigation', view: 'export', shortcut: 'G X' },
   { id: 'nav-ai', label: 'Go to AI Harness', icon: Activity, type: 'navigation', view: 'ai', shortcut: 'G A' },
+  { id: 'nav-triz', label: 'Go to TRIZ Matrix', icon: Lightbulb, type: 'navigation', view: 'triz', shortcut: 'G T' },
   { id: 'act-new', label: 'Create New Entity', icon: Plus, type: 'action', shortcut: 'N' },
   { id: 'act-graph-focus', label: 'Toggle Graph Focus', icon: Share2, type: 'action', shortcut: 'F' },
 ];

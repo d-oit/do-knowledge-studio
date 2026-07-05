@@ -151,8 +151,8 @@ describe('CommandPalette', () => {
     );
 
     const input = screen.getByPlaceholderText(/Search commands or knowledge/i);
-    // Go to "Create New Entity" (it's the 7th command)
-    for (let i = 0; i < 6; i++) {
+    // Go to "Create New Entity" (it's the 8th command after adding TRIZ)
+    for (let i = 0; i < 7; i++) {
       fireEvent.keyDown(input, { key: 'ArrowDown' });
     }
     fireEvent.keyDown(input, { key: 'Enter' });
