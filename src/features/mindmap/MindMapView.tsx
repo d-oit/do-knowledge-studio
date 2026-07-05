@@ -251,7 +251,7 @@ const MindMapView: React.FC<Props> = ({
         } else if (event.type === 'node:update') {
           const el = mindInstance.current?.findEle(payload.id);
           if (el && el.nodeObj.topic !== payload.label) {
-            console.warn(`[Sync Conflict] Mind map node ${payload.id} has different label. Local: ${el.nodeObj.topic}, Incoming: ${payload.label}. Applying last-writer wins.`);
+            logger.warn(`[Sync Conflict] Mind map node ${payload.id} has different label. Local: ${el.nodeObj.topic}, Incoming: ${payload.label}. Applying last-writer wins.`);
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- mind-elixir type resolution
             void mindInstance.current?.updateNodeStyle(payload.id); // Refresh
             el.nodeObj.topic = payload.label;

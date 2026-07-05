@@ -1,4 +1,5 @@
 import type { LLMProvider } from '../llm/types';
+import { logger } from '../logger';
 
 export const ENTITY_EXTRACTION_PROMPT = `
 Analyze the following note and extract:
@@ -55,7 +56,7 @@ export async function extractEntities(
     const jsonStr = jsonMatch ? jsonMatch[0] : response.content;
     return JSON.parse(jsonStr) as EntityExtractionResult;
   } catch (err) {
-    console.error('Failed to parse entity extraction response', err, response.content);
+    logger.error('Failed to parse entity extraction response', err, response.content);
     return { entities: [], relationships: [] };
   }
 }
