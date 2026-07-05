@@ -67,7 +67,7 @@ const flushToHost = async () => {
     console.error('Worker: Failed to flush to host', err);
     // Attempt to cleanup lock on error
     if (activeDirHandle) {
-       try { await activeDirHandle.removeEntry('data.db.lock'); } catch { /* ignore */ }
+       try { await activeDirHandle.removeEntry('data.db.lock'); } catch { /* lock cleanup is best-effort */ }
     }
   }
 };
