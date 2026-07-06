@@ -51,6 +51,17 @@ const TrizMatrix = lazy(preloadTriz);
 
 type View = 'editor' | 'graph' | 'mindmap' | 'chat' | 'export' | 'ai' | 'library' | 'triz';
 
+const VIEW_TITLES: Record<View, string> = {
+  editor: 'Editor',
+  graph: 'Graph View',
+  mindmap: 'Mind Map',
+  chat: 'Chat',
+  export: 'Export',
+  ai: 'AI Harness',
+  library: 'Library',
+  triz: 'TRIZ Matrix',
+};
+
 const AppContent: React.FC = () => {
   const { dbReady, error } = useDb();
   const [currentView, setCurrentView] = useState<View>('editor');
@@ -164,18 +175,7 @@ const AppContent: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  if (error) return <div className="error-screen" role="alert" aria-live="assertive">{error}</div>;
-
-  const viewTitles: Record<View, string> = {
-    editor: 'Editor',
-    graph: 'Graph View',
-    mindmap: 'Mind Map',
-    chat: 'Chat',
-    export: 'Export',
-    ai: 'AI Harness',
-    library: 'Library',
-    triz: 'TRIZ Matrix',
-  };
+  if (error) return <div className="error-screen" role="alert" aria-live="polite">{error}</div>;
 
   return (
     <div className="layout-container">
@@ -183,7 +183,7 @@ const AppContent: React.FC = () => {
         onMenuClick={() => setIsMenuOpen(true)}
         onSearchClick={() => setIsSearchOpen(true)}
       />
-      <h1 className="sr-only" aria-live="polite">{viewTitles[currentView]}</h1>
+      <h1 className="sr-only" aria-live="polite">{VIEW_TITLES[currentView]}</h1>
 
       <div className="layout-body">
           <aside className="desktop-sidebar">
