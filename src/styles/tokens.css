@@ -114,6 +114,8 @@
   --motion-fast: 100ms ease-out;
   --motion-base: 200ms ease-in-out;
   --motion-slow: 300ms ease-in-out;
+  --motion-modal-enter: 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-modal-exit: 150ms ease-in;
 
   /* Layout */
   --sidebar-width: 260px;
@@ -271,6 +273,45 @@ h1, h2, h3, h4, h5, h6 {
 ::selection {
   background: var(--interactive-primary);
   color: var(--text-inverse);
+}
+
+/* Modal Animations */
+@keyframes overlayFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes overlayContentEnter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes sheetBottomEnter {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes sheetLeftEnter {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }
 
 /* Reduced Motion Policy */
