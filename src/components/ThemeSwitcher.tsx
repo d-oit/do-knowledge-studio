@@ -48,7 +48,11 @@ function getStoredTheme(): Theme {
   } catch {
     // localStorage unavailable (e.g. private browsing, SSR)
   }
-  return 'app';
+  try {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'game' : 'app';
+  } catch {
+    return 'app';
+  }
 }
 
 function storeTheme(theme: Theme): void {

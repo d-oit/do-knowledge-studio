@@ -45,10 +45,13 @@
     "test:e2e:ci": "pnpm run build && PLAYWRIGHT_MODE=production playwright test",
     "typecheck": "tsc --noEmit",
     "cli": "node --import tsx/esm cli/index.ts",
-    "quality_gate": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build"
+    "design:validate": "node scripts/design/validate-tokens.mjs",
+    "design:colors": "node scripts/design/check-hardcoded-colors.mjs",
+    "design:aria": "node scripts/design/check-aria.mjs",
+    "design:check": "pnpm run design:validate && pnpm run design:colors && pnpm run design:aria",
+    "quality_gate": "pnpm run design:check && pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build"
   },
   "dependencies": {
-    "@huggingface/transformers": "~4.2.0",
     "@orama/orama": "~3.1.18",
     "@orama/plugin-embeddings": "~3.1.18",
     "@react-pdf/renderer": "~4.5.1",

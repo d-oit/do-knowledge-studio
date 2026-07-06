@@ -93,15 +93,8 @@
 .chat-view {
   display: flex;
   flex-direction: column;
-  height: calc(100dvh - 120px);
-  height: calc(100vh - 120px); /* fallback */
-}
-
-@media (max-width: 768px) {
-  .chat-view {
-    height: calc(100dvh - var(--header-height) - 40px);
-    height: calc(100vh - var(--header-height) - 40px); /* fallback */
-  }
+  flex: 1;
+  min-height: 0;
 }
 
 .messages-list {
@@ -620,7 +613,7 @@
     left: 0;
     right: 0;
     width: 100%;
-    height: 70vh;
+    height: clamp(300px, 60dvh, 80vh);
     border-left: none;
     border-top: 1px solid var(--border-default);
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;

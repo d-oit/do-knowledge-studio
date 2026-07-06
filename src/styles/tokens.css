@@ -154,7 +154,7 @@
 
   /* Glassmorphism */
   --glass-blur: 80px;
-  --glass-bg: rgba(255, 255, 255, 0.01);
+  --glass-bg: rgba(255, 255, 255, 0.6);
   --glass-border: rgba(255, 255, 255, 0.1);
   --glass-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
 }
@@ -176,6 +176,7 @@
 
 /* Theme: Game (Dark / High Contrast) */
 [data-theme='game'] {
+  color-scheme: dark;
   --bg-base: #0f172a;
   --bg-surface: #1e293b;
   --bg-elevated: #1e293b;

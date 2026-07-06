@@ -1,4 +1,16 @@
 import React from 'react';
+import {
+  FileText,
+  Library,
+  GitBranch,
+  BrainCircuit,
+  Search,
+  MessageSquare,
+  Download,
+  FlaskConical,
+  Grid3X3,
+  type LucideIcon,
+} from 'lucide-react';
 
 type View = 'editor' | 'graph' | 'mindmap' | 'chat' | 'export' | 'ai' | 'search' | 'library' | 'triz';
 
@@ -13,6 +25,7 @@ interface SidebarNavProps {
 interface NavItem {
   view: View;
   label: string;
+  icon?: LucideIcon;
   experimental?: boolean;
 }
 
@@ -25,35 +38,35 @@ const NAV_GROUPS: NavGroup[] = [
   {
     group: 'Capture',
     items: [
-      { view: 'editor', label: 'Editor' },
+      { view: 'editor', label: 'Editor', icon: FileText },
     ],
   },
   {
     group: 'Explore',
     items: [
-      { view: 'library', label: 'Library' },
-      { view: 'graph', label: 'Graph' },
-      { view: 'mindmap', label: 'Mind Map' },
+      { view: 'library', label: 'Library', icon: Library },
+      { view: 'graph', label: 'Graph', icon: GitBranch },
+      { view: 'mindmap', label: 'Mind Map', icon: BrainCircuit },
     ],
   },
   {
     group: 'Ask',
     items: [
-      { view: 'search', label: 'Search' },
-      { view: 'chat', label: 'Chat' },
+      { view: 'search', label: 'Search', icon: Search },
+      { view: 'chat', label: 'Chat', icon: MessageSquare },
     ],
   },
   {
     group: 'Move',
     items: [
-      { view: 'export', label: 'Export' },
+      { view: 'export', label: 'Export', icon: Download },
     ],
   },
   {
     group: 'Lab',
     items: [
-      { view: 'ai', label: 'AI Harness', experimental: true },
-      { view: 'triz', label: 'TRIZ Matrix', experimental: true },
+      { view: 'ai', label: 'AI Harness', icon: FlaskConical, experimental: true },
+      { view: 'triz', label: 'TRIZ Matrix', icon: Grid3X3, experimental: true },
     ],
   },
 ];
@@ -85,6 +98,7 @@ const SidebarNav: React.FC<SidebarNavProps> = ({ currentView, setCurrentView, on
                     onFocus={() => onPreload?.(item.view)}
                     aria-current={currentView === item.view ? 'page' : undefined}
                   >
+                    {item.icon && <item.icon size={18} />}
                     {item.label}
                     {item.experimental && (
                       <span className="experimental-badge">Experimental</span>
