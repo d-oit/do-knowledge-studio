@@ -15,6 +15,7 @@ themes: [light, dark]
 colors:
   bg-base: "#f9fafb"
   bg-surface: "#ffffff"
+  bg-sidebar: "#111827"
   bg-elevated: "#ffffff"
   bg-overlay: "rgba(17, 24, 39, 0.5)"
   bg-active: "#d1fae5"
@@ -41,6 +42,7 @@ colors:
     light:
       bg-base: "#f9fafb"
       bg-surface: "#ffffff"
+      bg-sidebar: "#111827"
       bg-active: "#d1fae5"
       bg-hover: "#f3f4f6"
       text-primary: "#111827"
@@ -52,6 +54,7 @@ colors:
     dark:
       bg-base: "#111827"
       bg-surface: "#1f2937"
+      bg-sidebar: "#0a0f1a"
       bg-active: "#064e3b"
       bg-hover: "#374151"
       text-primary: "#f9fafb"

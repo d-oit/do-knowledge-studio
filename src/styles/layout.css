@@ -46,7 +46,6 @@ body {
 }
 
 .desktop-sidebar, .main-content, .search-sidebar {
-  background: var(--bg-surface);
   border-radius: var(--radius-xl);
   overflow-y: auto;
 }
@@ -54,12 +53,15 @@ body {
 .desktop-sidebar {
   width: var(--sidebar-width);
   flex-shrink: 0;
-  border: 1px solid var(--border-default);
+  background: var(--bg-sidebar);
+  border: none;
+  color: #f9fafb;
 }
 
 .search-sidebar {
   width: var(--search-sidebar-width);
   flex-shrink: 0;
+  background: var(--bg-surface);
   border-left: 1px solid var(--border-default);
 }
 

@@ -7,6 +7,7 @@
   /* Surface Layering */
   --bg-base: #f9fafb;
   --bg-surface: #ffffff;
+  --bg-sidebar: #111827;
   --bg-elevated: #ffffff;
   --bg-overlay: rgba(17, 24, 39, 0.5);
   --bg-active: #d1fae5;
@@ -169,6 +170,7 @@
 [data-theme='light'] {
   --bg-base: #f9fafb;
   --bg-surface: #ffffff;
+  --bg-sidebar: #111827;
   --bg-elevated: #ffffff;
   --bg-active: #d1fae5;
   --bg-hover: #f3f4f6;
@@ -186,6 +188,7 @@
   color-scheme: dark;
   --bg-base: #111827;
   --bg-surface: #1f2937;
+  --bg-sidebar: #0a0f1a;
   --bg-elevated: #1f2937;
   --bg-active: #064e3b;
   --bg-hover: #374151;
