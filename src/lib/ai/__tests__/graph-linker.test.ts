@@ -84,4 +84,102 @@ describe('applyEntitiesToGraph', () => {
     expect(mockRepository.createEntity).toHaveBeenCalledWith(expect.objectContaining({ name: 'A' }));
     expect(mockRepository.createLink).not.toHaveBeenCalled();
   });
+
+  it('skips duplicate links that already exist', async () => {
+    const mockRepository: Partial<IRepository> = {
+      getEntityByName: vi.fn().mockImplementation((name: string) => {
+        if (name === 'A') return Promise.resolve({ id: 'a-id', name: 'A', type: 'concept' } as Entity);
+        if (name === 'B') return Promise.resolve({ id: 'b-id', name: 'B', type: 'concept' } as Entity);
+        return Promise.resolve(null);
+      }),
+      createEntity: vi.fn(),
+      createLink: vi.fn(),
+      getAllLinks: vi.fn().mockResolvedValue([
+        { source_id: 'a-id', target_id: 'b-id', relation: 'relates_to' }
+      ])
+    };
+
+    const result: EntityExtractionResult = {
+      entities: [],
+      relationships: [
+        { from: 'A', to: 'B', label: 'relates_to' }
+      ]
+    };
+
+    await applyEntitiesToGraph(result, mockRepository as IRepository, [], ['A->B']);
+
+    expect(mockRepository.createLink).not.toHaveBeenCalled();
+  });
+
+  it('skips relationships when entity IDs cannot be resolved', async () => {
+    const mockRepository: Partial<IRepository> = {
+      getEntityByName: vi.fn().mockResolvedValue(null),
+      createEntity: vi.fn(),
+      createLink: vi.fn(),
+      getAllLinks: vi.fn().mockResolvedValue([])
+    };
+
+    const result: EntityExtractionResult = {
+      entities: [],
+      relationships: [
+        { from: 'UnknownA', to: 'UnknownB', label: 'rel' }
+      ]
+    };
+
+    await applyEntitiesToGraph(result, mockRepository as IRepository, [], ['UnknownA->UnknownB']);
+
+    expect(mockRepository.createLink).not.toHaveBeenCalled();
+  });
+
+  it('skips unselected relationships', async () => {
+    const mockRepository: Partial<IRepository> = {
+      getEntityByName: vi.fn().mockImplementation((name: string) =>
+        Promise.resolve({ id: `${name}-id`, name, type: 'concept' } as Entity)
+      ),
+      createEntity: vi.fn(),
+      createLink: vi.fn(),
+      getAllLinks: vi.fn().mockResolvedValue([])
+    };
+
+    const result: EntityExtractionResult = {
+      entities: [],
+      relationships: [
+        { from: 'A', to: 'B', label: 'selected' },
+        { from: 'X', to: 'Y', label: 'unselected' }
+      ]
+    };
+
+    await applyEntitiesToGraph(result, mockRepository as IRepository, [], ['A->B']);
+
+    expect(mockRepository.createLink).toHaveBeenCalledTimes(1);
+    expect(mockRepository.createLink).toHaveBeenCalledWith(expect.objectContaining({ relation: 'selected' }));
+  });
+
+  it('resolves entity IDs via repository when not in nameToId map', async () => {
+    const mockRepository: Partial<IRepository> = {
+      getEntityByName: vi.fn().mockImplementation((name: string) => {
+        if (name === 'FromEntity') return Promise.resolve({ id: 'from-db', name, type: 'concept' } as Entity);
+        if (name === 'ToEntity') return Promise.resolve({ id: 'to-db', name, type: 'concept' } as Entity);
+        return Promise.resolve(null);
+      }),
+      createEntity: vi.fn(),
+      createLink: vi.fn(),
+      getAllLinks: vi.fn().mockResolvedValue([])
+    };
+
+    const result: EntityExtractionResult = {
+      entities: [],
+      relationships: [
+        { from: 'FromEntity', to: 'ToEntity', label: 'links' }
+      ]
+    };
+
+    await applyEntitiesToGraph(result, mockRepository as IRepository, [], ['FromEntity->ToEntity']);
+
+    expect(mockRepository.createLink).toHaveBeenCalledTimes(1);
+    expect(mockRepository.createLink).toHaveBeenCalledWith(expect.objectContaining({
+      source_id: 'from-db',
+      target_id: 'to-db',
+    }));
+  });
 });
