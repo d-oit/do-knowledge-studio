@@ -21,15 +21,15 @@
 }
 
 .status-message.success {
-  background: #dcfce7;
+  background: var(--status-success-bg);
   color: var(--status-success);
-  border: 1px solid #bdf0d2;
+  border: 1px solid var(--status-success-border);
 }
 
 .status-message.error {
-  background: #fee2e2;
+  background: var(--status-danger-bg);
   color: var(--status-danger);
-  border: 1px solid #fecaca;
+  border: 1px solid var(--status-danger-border);
 }
 
 @keyframes slideIn {

@@ -5,7 +5,7 @@
 
 .theme-switcher-label {
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--size-xs);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--text-muted);
@@ -48,26 +48,16 @@
   margin-bottom: var(--space-1);
 }
 
-[data-theme-preview='app'] {
+[data-theme-preview='light'] {
   background: var(--bg-surface);
   border: 1px solid var(--border-default);
   color: var(--text-primary);
 }
 
-[data-theme-preview='game'] {
+[data-theme-preview='dark'] {
   background: #1e293b;
   border: 1px solid #334155;
-  color: #f8fafc;
-}
-
-[data-theme-preview='neural'] {
-  background: #ffffff;
-  border: 1px solid #e9d5ff;
-}
-
-[data-theme-preview='technical'] {
-  background: #ffffff;
-  border: 2px solid #000000;
+  color: #f1f5f9;
 }
 
 .theme-card-info {
@@ -84,13 +74,13 @@
 
 .theme-card-label {
   font-family: var(--font-sans);
-  font-weight: 600;
-  font-size: 13px;
+  font-weight: var(--weight-semibold);
+  font-size: var(--size-base);
   color: var(--text-primary);
 }
 
 .theme-card-desc {
-  font-size: 11px;
+  font-size: var(--size-xs);
   color: var(--text-muted);
 }
 

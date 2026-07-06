@@ -13,10 +13,10 @@ export function getCssToken(token: string, element?: HTMLElement): string {
 export function getGraphThemeTokens(element?: HTMLElement) {
   return {
     nodeDefault: getCssToken('--graph-node-default', element) || '#94a3b8',
-    nodeSelected: getCssToken('--graph-node-selected', element) || '#2563eb',
+    nodeSelected: getCssToken('--graph-node-selected', element) || '#00b894',
     edgeDefault: getCssToken('--graph-edge-default', element) || '#cbd5e1',
-    edgeHighlighted: getCssToken('--graph-edge-highlighted', element) || '#2563eb',
-    interactivePrimary: getCssToken('--interactive-primary', element) || '#2563eb',
+    edgeHighlighted: getCssToken('--graph-edge-highlighted', element) || '#00b894',
+    interactivePrimary: getCssToken('--interactive-primary', element) || '#00b894',
   };
 }
 

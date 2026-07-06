@@ -44,7 +44,7 @@ for (const token of required) {
 }
 
 const themeBlocks = tokensCss.matchAll(/\[data-theme='(\w+)'\]\s*\{([^}]+)\}/g);
-const themes = ['app','game','neural','technical'];
+const themes = ['light','dark'];
 const foundThemes = new Set();
 for (const [, theme] of themeBlocks) foundThemes.add(theme);
 for (const t of themes) {
@@ -55,7 +55,7 @@ for (const t of themes) {
 }
 
 if (errors === 0) {
-  console.log(`✅ design:validate passed — ${Object.keys(cssVars).length} tokens, all 4 themes present`);
+  console.log(`✅ design:validate passed — ${Object.keys(cssVars).length} tokens, all ${themes.length} themes present`);
 } else {
   console.error(`\n${errors} error(s). Fix tokens.css or DESIGN.md before committing.`);
   process.exit(1);
