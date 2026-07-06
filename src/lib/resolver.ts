@@ -1,5 +1,6 @@
 import { logger } from './logger';
 import { shouldSkip, recordSuccess, recordFailure } from './routing-memory';
+import { stripHtmlTags } from './security';
 
 const BLOCKED_SCHEMES = ['javascript:', 'data:', 'vbscript:', 'file:', 'ftp:'];
 
@@ -52,35 +53,9 @@ export interface ResolvedContent {
 const normalizeText = (text: string): string =>
   text.replace(/\s+/g, ' ').trim();
 
-/** Strip HTML tags and decode entities, producing plain text. */
+/** Strip HTML tags and decode entities, producing plain text. Uses DOMPurify for safe parsing. */
 const htmlToPlainText = (html: string): string => {
-  // Remove script/style content
-  const stripped = html
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-    .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, '')
-    .replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, '')
-    .replace(/<header[^>]*>[\s\S]*?<\/header>/gi, '');
-  
-  // Replace block elements with newlines
-  let text = stripped
-    .replace(/<\/?(p|div|h[1-6]|li|tr|br|article|section|aside)[^>]*>/gi, '\n')
-    .replace(/<[^>]*>/g, '');
-
-  // Decode common entities using a single pass to avoid double-unescaping (CodeQL)
-  // We use a non-capturing group for the entity name to satisfy CodeQL's concern
-  // about producing '&' characters that could be further processed.
-  const entities: Record<string, string> = {
-    '&amp;': '&',
-    '&lt;': '<',
-    '&gt;': '>',
-    '&quot;': '"',
-    '&#39;': "'",
-    '&nbsp;': ' ',
-  };
-  text = text.replace(/&(?:amp|lt|gt|quot|#39|nbsp);/g, (match) => entities[match] || match);
-  
-  return text;
+  return stripHtmlTags(html).replace(/\u00a0/g, ' ');
 };
 
 /** Extract the page title from HTML, stripping any nested tags. */
