@@ -1,4 +1,4 @@
-/* Layout v2 - Atmospheric HUD */
+/* Layout */
 html {
   overflow: hidden;
 }
@@ -11,7 +11,7 @@ body {
   display: flex;
   flex-direction: column;
   height: 100dvh;
-  height: 100vh; /* fallback for older browsers */
+  height: 100vh;
   background: var(--bg-base);
   overflow: hidden;
   padding-top: env(safe-area-inset-top);
@@ -24,8 +24,8 @@ body {
   display: flex;
   flex: 1;
   overflow: hidden;
-  gap: var(--space-4);
-  padding: var(--space-4);
+  gap: var(--space-3);
+  padding: var(--space-3);
 }
 
 .mobile-header {
@@ -40,28 +40,27 @@ body {
 }
 
 .mobile-brand {
-  font-family: var(--font-display);
-  text-transform: uppercase;
-  font-weight: 700;
-  font-size: 1.1rem;
+  font-family: var(--font-sans);
+  font-weight: var(--weight-bold);
+  font-size: var(--size-lg);
 }
 
 .desktop-sidebar, .main-content, .search-sidebar {
   background: var(--bg-surface);
-  border: 1px solid var(--border-default);
   border-radius: var(--radius-xl);
   overflow-y: auto;
-  box-shadow: var(--shadow-sm);
 }
 
 .desktop-sidebar {
   width: var(--sidebar-width);
   flex-shrink: 0;
+  border: 1px solid var(--border-default);
 }
 
 .search-sidebar {
   width: var(--search-sidebar-width);
   flex-shrink: 0;
+  border-left: 1px solid var(--border-default);
 }
 
 .main-content {
@@ -70,7 +69,7 @@ body {
   flex-direction: column;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1100px) {
   .search-sidebar {
     display: none;
   }
@@ -91,27 +90,18 @@ body {
     gap: var(--space-2);
   }
   .main-content {
-    border-radius: var(--radius-lg); /* Slightly smaller radius on small screens */
-  }
-  /* HUD Safe Zones: relative width with 16px side margins */
-  .hud-mobile-safe {
-    width: calc(100% - 32px);
-    margin: 0 auto;
+    border-radius: var(--radius-lg);
   }
 }
 
-@media (min-width: 769px) and (max-width: 1200px) {
+@media (min-width: 769px) and (max-width: 1100px) {
   .mobile-header .icon-button:first-child {
     display: none;
   }
 }
 
-@media (min-width: 1201px) {
+@media (min-width: 1101px) {
   .mobile-header {
     display: none;
-  }
-  /* Fixed HUD width on large desktop */
-  .hud-desktop-fixed {
-    max-width: 720px;
   }
 }

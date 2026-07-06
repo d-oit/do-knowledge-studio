@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @import './tokens.css';
 @import './layout.css';
@@ -7,51 +7,36 @@
 @import './command-palette.css';
 @import './utilities.css';
 
-/* Global Typography Overrides */
-h1, .display-text {
-  font-family: var(--font-display);
-  text-transform: uppercase;
-  letter-spacing: -0.02em;
-  font-size: var(--size-display);
-  line-height: 1.1;
+/* Global Typography */
+h1 {
+  font-family: var(--font-sans);
+  font-weight: var(--weight-bold);
+  font-size: var(--size-3xl);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
 }
 
-h2, .serif-heading {
-  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
-  font-style: italic;
+h2 {
+  font-family: var(--font-sans);
   font-weight: var(--weight-semibold);
-  font-size: var(--size-heading);
-  color: var(--text-primary);
-  letter-spacing: var(--tracking-tight);
+  font-size: var(--size-2xl);
+  line-height: var(--leading-tight);
 }
 
 h3 {
   font-family: var(--font-sans);
-  font-weight: 600;
-  font-size: 1.1rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
+  font-weight: var(--weight-semibold);
+  font-size: var(--size-xl);
+  line-height: var(--leading-tight);
 }
 
 h4 {
   font-family: var(--font-sans);
-  font-weight: 500;
-  font-size: 1rem;
-}
-
-body {
-  font-family: var(--font-sans);
-  font-size: var(--size-body);
-  line-height: 1.6;
+  font-weight: var(--weight-medium);
+  font-size: var(--size-lg);
 }
 
 code, pre, .mono-text, .data-text {
   font-family: var(--font-mono);
-  font-size: 12px;
-}
-
-.serif-text {
-  font-family: var(--font-sans);
-  font-weight: var(--weight-medium);
+  font-size: var(--size-sm);
 }

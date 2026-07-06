@@ -185,9 +185,9 @@
   color: var(--text-muted);
 }
 
-.rate-limit-high { color: var(--status-error-text, #dc2626); }
-.rate-limit-medium { color: var(--status-warning-text, #d97706); }
-.rate-limit-low { color: var(--status-success-text, #059669); }
+.rate-limit-high { color: var(--status-danger-text); }
+.rate-limit-medium { color: var(--status-warning-text); }
+.rate-limit-low { color: var(--status-success-text); }
 
 .rate-limit-dot {
   display: inline-block;
@@ -197,9 +197,9 @@
   background: transparent;
 }
 
-.rate-limit-high .rate-limit-dot { background: var(--status-error-text, #dc2626); }
-.rate-limit-medium .rate-limit-dot { background: var(--status-warning-text, #d97706); }
-.rate-limit-low .rate-limit-dot { background: var(--status-success-text, #059669); }
+.rate-limit-high .rate-limit-dot { background: var(--status-danger-text); }
+.rate-limit-medium .rate-limit-dot { background: var(--status-warning-text); }
+.rate-limit-low .rate-limit-dot { background: var(--status-success-text); }
 
 .chat-clear-btn {
   display: inline-flex;
@@ -335,12 +335,12 @@
 }
 
 .source-chip-provider {
-  padding: 0 4px;
-  border-radius: 3px;
-  background: #dbeafe;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--status-info-bg);
   color: var(--interactive-primary);
-  font-size: 10px;
-  font-weight: 600;
+  font-size: var(--size-xxs);
+  font-weight: var(--weight-semibold);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -352,7 +352,7 @@
   padding: 2px;
   border: none;
   background: none;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   color: var(--text-muted);
   min-width: 20px;
@@ -369,8 +369,8 @@
 }
 
 .source-chip-remove:hover {
-  color: #ef4444;
-  background: #fee2e2;
+  color: var(--status-danger);
+  background: var(--status-danger-bg);
 }
 
 /* Viz (Graph & MindMap) Styling */
@@ -429,16 +429,16 @@
 
 /* Extra status for Claim marks in Editor */
 .knowledge-claim {
-  background-color: #dcfce7;
-  border-bottom: 2px solid #10b981;
+  background-color: var(--status-success-bg);
+  border-bottom: 2px solid var(--status-success-border);
   padding: 0 2px;
   cursor: help;
   position: relative;
 }
 
 .knowledge-claim.status-unverified { border-bottom-color: var(--text-muted); background-color: var(--status-info-bg); }
-.knowledge-claim.status-verified { border-bottom-color: var(--status-success); background-color: var(--status-success-bg); }
-.knowledge-claim.status-disputed { border-bottom-color: var(--status-danger); background-color: var(--status-danger-bg); }
+.knowledge-claim.status-verified { border-bottom-color: var(--status-success-border); background-color: var(--status-success-bg); }
+.knowledge-claim.status-disputed { border-bottom-color: var(--status-danger-border); background-color: var(--status-danger-bg); }
 
 .knowledge-claim::after {
   content: attr(data-source);
@@ -446,11 +446,11 @@
   bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
-  background: #334155;
-  color: white;
+  background: var(--text-secondary);
+  color: var(--text-inverse);
   padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 10px;
+  border-radius: var(--radius-sm);
+  font-size: var(--size-xxs);
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
@@ -1225,8 +1225,8 @@
 .claim-metadata-body {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 10px 12px;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-3);
 }
 
 .claim-metadata-label {

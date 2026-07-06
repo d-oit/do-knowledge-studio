@@ -1,7 +1,7 @@
 import React from 'react';
-import { Palette, Monitor, Gamepad2, Brain, Wrench } from 'lucide-react';
+import { Palette, Sun, Moon } from 'lucide-react';
 
-export type Theme = 'app' | 'game' | 'neural' | 'technical';
+export type Theme = 'light' | 'dark';
 
 interface ThemeOption {
   theme: Theme;
@@ -12,28 +12,16 @@ interface ThemeOption {
 
 const THEME_OPTIONS: ThemeOption[] = [
   {
-    theme: 'app',
-    label: 'Default',
-    icon: <Monitor size={18} />,
-    description: 'Professional light interface',
+    theme: 'light',
+    label: 'Light',
+    icon: <Sun size={18} />,
+    description: 'Clean, professional interface',
   },
   {
-    theme: 'game',
-    label: 'Tactical',
-    icon: <Gamepad2 size={18} />,
-    description: 'High-contrast neon dark',
-  },
-  {
-    theme: 'neural',
-    label: 'Neural',
-    icon: <Brain size={18} />,
-    description: 'Soft organic palette',
-  },
-  {
-    theme: 'technical',
-    label: 'Technical',
-    icon: <Wrench size={18} />,
-    description: 'Brutalist mono style',
+    theme: 'dark',
+    label: 'Dark',
+    icon: <Moon size={18} />,
+    description: 'High-contrast dark mode',
   },
 ];
 
@@ -42,16 +30,16 @@ const STORAGE_KEY = 'do-knowledge-studio-theme';
 function getStoredTheme(): Theme {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored && ['app', 'game', 'neural', 'technical'].includes(stored)) {
-      return stored as Theme;
+    if (stored === 'light' || stored === 'dark') {
+      return stored;
     }
   } catch {
-    // localStorage unavailable (e.g. private browsing, SSR)
+    // localStorage unavailable
   }
   try {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'game' : 'app';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   } catch {
-    return 'app';
+    return 'light';
   }
 }
 
@@ -59,7 +47,7 @@ function storeTheme(theme: Theme): void {
   try {
     localStorage.setItem(STORAGE_KEY, theme);
   } catch {
-    // localStorage unavailable (e.g. private browsing, SSR)
+    // localStorage unavailable
   }
 }
 
@@ -137,7 +125,7 @@ const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ compact = false }) => {
             onKeyDown={handleKeyDown}
           >
             {THEME_OPTIONS.map((opt, i) => (
-                <div key={opt.theme} role="option" aria-selected={activeTheme === opt.theme} tabIndex={-1}>
+              <div key={opt.theme} role="option" aria-selected={activeTheme === opt.theme} tabIndex={-1}>
                 <button
                   id={`theme-option-${i}`}
                   className={`theme-option ${activeTheme === opt.theme ? 'active' : ''}`}

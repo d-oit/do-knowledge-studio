@@ -9,41 +9,39 @@ describe('ThemeSwitcher', () => {
     document.documentElement.removeAttribute('data-theme');
   });
 
-  it('renders all four theme options', () => {
+  it('renders all theme options', () => {
     render(<ThemeSwitcher />);
-    expect(screen.getByText('Default')).toBeInTheDocument();
-    expect(screen.getByText('Tactical')).toBeInTheDocument();
-    expect(screen.getByText('Neural')).toBeInTheDocument();
-    expect(screen.getByText('Technical')).toBeInTheDocument();
+    expect(screen.getByText('Light')).toBeInTheDocument();
+    expect(screen.getByText('Dark')).toBeInTheDocument();
   });
 
-  it('defaults to app theme', () => {
+  it('defaults to light theme', () => {
     render(<ThemeSwitcher />);
-    expect(document.documentElement).toHaveAttribute('data-theme', 'app');
+    expect(document.documentElement).toHaveAttribute('data-theme', 'light');
   });
 
   it('sets aria-pressed on active theme', () => {
     render(<ThemeSwitcher />);
-    const defaultBtn = screen.getByText('Default').closest('button');
-    expect(defaultBtn).toHaveAttribute('aria-pressed', 'true');
+    const lightBtn = screen.getByText('Light').closest('button');
+    expect(lightBtn).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('switches theme on click', () => {
     render(<ThemeSwitcher />);
-    fireEvent.click(screen.getByText('Tactical'));
-    expect(document.documentElement).toHaveAttribute('data-theme', 'game');
+    fireEvent.click(screen.getByText('Dark'));
+    expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
   });
 
   it('persists theme to localStorage', () => {
     render(<ThemeSwitcher />);
-    fireEvent.click(screen.getByText('Neural'));
-    expect(localStorage.getItem('do-knowledge-studio-theme')).toBe('neural');
+    fireEvent.click(screen.getByText('Dark'));
+    expect(localStorage.getItem('do-knowledge-studio-theme')).toBe('dark');
   });
 
   it('restores theme from localStorage', () => {
-    localStorage.setItem('do-knowledge-studio-theme', 'technical');
+    localStorage.setItem('do-knowledge-studio-theme', 'dark');
     render(<ThemeSwitcher />);
-    expect(document.documentElement).toHaveAttribute('data-theme', 'technical');
+    expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
   });
 
   describe('compact mode', () => {
@@ -61,8 +59,8 @@ describe('ThemeSwitcher', () => {
     it('switches theme from dropdown', () => {
       render(<ThemeSwitcher compact />);
       fireEvent.click(screen.getByLabelText('Switch theme'));
-      fireEvent.click(screen.getByText('Neural'));
-      expect(document.documentElement).toHaveAttribute('data-theme', 'neural');
+      fireEvent.click(screen.getByText('Dark'));
+      expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
     });
 
     it('closes dropdown on Escape', () => {
@@ -78,9 +76,8 @@ describe('ThemeSwitcher', () => {
       fireEvent.click(screen.getByLabelText('Switch theme'));
       const listbox = screen.getByRole('listbox');
       fireEvent.keyDown(listbox, { key: 'ArrowDown' });
-      fireEvent.keyDown(listbox, { key: 'ArrowDown' });
       fireEvent.keyDown(listbox, { key: 'Enter' });
-      expect(document.documentElement).toHaveAttribute('data-theme', 'neural');
+      expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
     });
   });
 
@@ -104,7 +101,7 @@ describe('ThemeSwitcher', () => {
       const original = Storage.prototype.getItem;
       Storage.prototype.getItem = vi.fn(() => { throw new Error('quota exceeded'); });
       render(<ThemeSwitcher />);
-      expect(screen.getByText('Default')).toBeInTheDocument();
+      expect(screen.getByText('Light')).toBeInTheDocument();
       Storage.prototype.getItem = original;
     });
   });
