@@ -79,7 +79,7 @@ export class ConnectionPool {
     return {
       worker,
       busy: false,
-      initialized: false
+      initialized: false,
     };
   }
 
