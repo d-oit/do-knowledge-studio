@@ -134,10 +134,15 @@ If CI fails after pushing, use the existing repair workflow:
 
 ## UI / UX Guardrails
 
-- Use design tokens from `src/styles/index.css`.
+- Use design tokens from `src/styles/tokens.css` (source of truth).
+- Two themes: `light` and `dark` via `data-theme` attribute.
+- Accent color: Emerald green (`#10b981` light, `#34d399` dark).
+- Font: Inter (clean SaaS aesthetic).
 - Build mobile-first.
 - Keep interactive targets at least 44x44px.
 - Preserve responsive behavior across editor, graph, search, and mind map views.
+- Never hardcode hex values in components — use tokens.
+- Run `pnpm run design:validate` to check token sync.
 
 ## Git Workflow
 

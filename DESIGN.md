@@ -1,7 +1,7 @@
 ---
 name: do-knowledge-studio
 description: >
-  Local-first knowledge studio. Calm, intentional, readable.
+  Local-first knowledge studio. KirriDesk-inspired clean SaaS aesthetic.
   One restrained accent color. Strong typographic hierarchy.
   Minimal decoration. Purposeful motion.
 
@@ -13,54 +13,54 @@ description: >
 themes: [light, dark]
 
 colors:
-  bg-base: "#f8f9fa"
+  bg-base: "#f9fafb"
   bg-surface: "#ffffff"
   bg-elevated: "#ffffff"
-  bg-overlay: "rgba(15, 23, 42, 0.45)"
-  bg-active: "#e6f7f1"
-  bg-hover: "#f1f3f5"
-  text-primary: "#1a1a2e"
-  text-secondary: "#4a5568"
-  text-muted: "#94a3b8"
+  bg-overlay: "rgba(17, 24, 39, 0.5)"
+  bg-active: "#d1fae5"
+  bg-hover: "#f3f4f6"
+  text-primary: "#111827"
+  text-secondary: "#6b7280"
+  text-muted: "#9ca3af"
   text-inverse: "#ffffff"
-  interactive-primary: "#00b894"
-  interactive-primary-subtle: "#e6f7f1"
-  interactive-hover: "#00a884"
-  interactive-active: "#009975"
-  interactive-disabled: "#cbd5e1"
-  status-success: "#00b894"
-  status-warning: "#f39c12"
-  status-danger: "#e74c3c"
-  status-info: "#00b894"
-  border-default: "#e9ecef"
-  border-subtle: "#f1f3f5"
-  border-focus: "#00b894"
-  border-error: "#e74c3c"
+  interactive-primary: "#10b981"
+  interactive-primary-subtle: "#d1fae5"
+  interactive-hover: "#059669"
+  interactive-active: "#047857"
+  interactive-disabled: "#d1d5db"
+  status-success: "#10b981"
+  status-warning: "#f59e0b"
+  status-danger: "#ef4444"
+  status-info: "#3b82f6"
+  border-default: "#e5e7eb"
+  border-subtle: "#f3f4f6"
+  border-focus: "#10b981"
+  border-error: "#ef4444"
 
   themes:
     light:
-      bg-base: "#f8f9fa"
+      bg-base: "#f9fafb"
       bg-surface: "#ffffff"
-      bg-active: "#e6f7f1"
-      bg-hover: "#f1f3f5"
-      text-primary: "#1a1a2e"
-      text-secondary: "#4a5568"
-      interactive-primary: "#00b894"
-      interactive-hover: "#00a884"
-      border-default: "#e9ecef"
+      bg-active: "#d1fae5"
+      bg-hover: "#f3f4f6"
+      text-primary: "#111827"
+      text-secondary: "#6b7280"
+      interactive-primary: "#10b981"
+      interactive-hover: "#059669"
+      border-default: "#e5e7eb"
       radius-xl: "12px"
     dark:
-      bg-base: "#0f172a"
-      bg-surface: "#1e293b"
-      bg-active: "#1e3a5f"
-      bg-hover: "#334155"
-      text-primary: "#f1f5f9"
-      text-secondary: "#94a3b8"
-      text-muted: "#64748b"
-      interactive-primary: "#00d9a3"
-      interactive-hover: "#33e6bc"
-      border-default: "#334155"
-      status-success: "#00d9a3"
+      bg-base: "#111827"
+      bg-surface: "#1f2937"
+      bg-active: "#064e3b"
+      bg-hover: "#374151"
+      text-primary: "#f9fafb"
+      text-secondary: "#9ca3af"
+      text-muted: "#6b7280"
+      interactive-primary: "#34d399"
+      interactive-hover: "#6ee7b7"
+      border-default: "#374151"
+      status-success: "#34d399"
       status-warning: "#fbbf24"
       status-danger: "#f87171"
 
@@ -106,7 +106,7 @@ radius:
   full: "9999px"
 
 layout:
-  sidebar-width: "280px"
+  sidebar-width: "260px"
   search-sidebar-width: "320px"
   header-height: "56px"
   content-max-width: "1200px"
@@ -135,7 +135,7 @@ components:
 
 ## Overview
 
-A calm, intentional design system for a local-first knowledge studio.
+KirriDesk-inspired clean SaaS aesthetic for a local-first knowledge studio.
 One restrained interactive accent color. Strong typographic hierarchy.
 Minimal decoration. Purposeful motion. Two themes share the same
 token vocabulary — only values change, never token names.
@@ -163,8 +163,8 @@ Token file: `src/styles/tokens.css`. Loaded via: `src/styles/index.css`.
 
 | Theme | Character | Accent | Surface |
 |---|---|---|---|
-| `light` | Clean, professional | `#00b894` teal | white on `#f8f9fa` |
-| `dark` | High-contrast dark | `#00d9a3` bright teal | dark slate on `#0f172a` |
+| `light` | Clean, professional | `#10b981` emerald | white on `#f9fafb` |
+| `dark` | High-contrast dark | `#34d399` bright emerald | dark gray on `#111827` |
 
 **Rule:** Any new color MUST be declared in both `[data-theme]` blocks
 in `tokens.css` AND in this file's `colors.themes` frontmatter. Never

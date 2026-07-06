@@ -1,13 +1,21 @@
 # Motion Guidelines
 
+## Duration Tokens
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--motion-fast` | 100ms ease-out | Micro-interactions, hover |
+| `--motion-base` | 200ms ease-in-out | Standard transitions |
+| `--motion-slow` | 300ms ease-in-out | Page transitions, modals |
+
 ## Transitions
 
 ```css
 /* Default for interactive elements */
-transition: all 0.15s ease;
+transition: all var(--motion-fast);
 
 /* Color-only transitions */
-transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+transition: color var(--motion-fast), background-color var(--motion-fast), border-color var(--motion-fast);
 ```
 
 ## Rules
@@ -19,3 +27,5 @@ transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ea
 - Loading spinners: use `animate-spin` from Lucide
 - Modal enter: fade + scale (0.2s)
 - Toast enter: slide up (0.3s)
+- Use `ease-out` for entrances, `ease-in` for exits
+- Keep animations subtle and fast
