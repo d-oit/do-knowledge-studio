@@ -118,7 +118,9 @@ Ensure the component works well across mobile, tablet, and desktop breakpoints.
 
 ## Project Context
 
-- Design tokens: `src/styles/index.css`
+- Design tokens: `src/styles/tokens.css` (loaded via `src/styles/index.css`)
+- Themes: app (light/blue), game (dark/sky), neural (soft/purple), technical (brutalist/mono)
+- Fonts: Anton (display), Playfair Display (h2), Inter (body/UI), Courier New (mono)
 - Components: `src/components/`, `src/features/`
 - Mobile-first, 44px minimum touch targets
 - CSS custom properties for theming (`data-theme` attribute)

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 import { DbProvider } from '../db/DbProvider';
 import { useDb } from '../db/useDb';
 import { repository } from '../db/repository';
@@ -59,6 +60,7 @@ const AppContent: React.FC = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [isPerfOpen, setIsPerfOpen] = useState(false);
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   // Shared state for GraphView mobile controls
   const [graphFocusMode, setGraphFocusMode] = useState(false);
@@ -162,7 +164,18 @@ const AppContent: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  if (error) return <div className="error-screen">{error}</div>;
+  if (error) return <div className="error-screen" role="alert" aria-live="assertive">{error}</div>;
+
+  const viewTitles: Record<View, string> = {
+    editor: 'Editor',
+    graph: 'Graph View',
+    mindmap: 'Mind Map',
+    chat: 'Chat',
+    export: 'Export',
+    ai: 'AI Harness',
+    library: 'Library',
+    triz: 'TRIZ Matrix',
+  };
 
   return (
     <div className="layout-container">
@@ -170,6 +183,7 @@ const AppContent: React.FC = () => {
         onMenuClick={() => setIsMenuOpen(true)}
         onSearchClick={() => setIsSearchOpen(true)}
       />
+      <h1 className="sr-only" aria-live="polite">{viewTitles[currentView]}</h1>
 
       <div className="layout-body">
           <aside className="desktop-sidebar">
@@ -213,7 +227,7 @@ const AppContent: React.FC = () => {
                     onFocusModeChange={setGraphFocusMode}
                     selectedNode={graphSelectedNode}
                     onSelectedNodeChange={setGraphSelectedNode}
-                    hideToolbar={window.innerWidth < 768}
+                    hideToolbar={isMobile}
                     onEditEntity={handleEditEntity}
                   />
                 </Profiled>

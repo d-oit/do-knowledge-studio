@@ -15,6 +15,7 @@ export default tseslint.config(
       'test-results',
       'coverage',
       '.agents',
+      'scripts',
       'eslint.config.js',
     ],
   },
