@@ -157,7 +157,9 @@
   --z-overlay: 300;
   --z-modal: 400;
   --z-popover: 500;
-  --z-toast: 600;
+  --z-tooltip: 700;
+  --z-toast: 800;
+  --z-command-palette: 900;
 
   /* Focus Ring */
   --focus-ring: 0 0 0 2px var(--bg-surface), 0 0 0 4px var(--border-focus);
