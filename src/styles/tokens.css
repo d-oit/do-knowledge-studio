@@ -71,7 +71,7 @@
   --radius-base: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
-  --radius-xl: 12px;
+  --radius-xl: 16px;
   --radius-full: 9999px;
 
   /* Typography */
@@ -118,6 +118,7 @@
   /* Layout */
   --sidebar-width: 260px;
   --search-sidebar-width: 320px;
+  --inspector-width: 360px;
   --header-height: 56px;
   --content-max-width: 1200px;
 

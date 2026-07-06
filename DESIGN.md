@@ -111,6 +111,7 @@ radius:
 layout:
   sidebar-width: "260px"
   search-sidebar-width: "320px"
+  inspector-width: "360px"
   header-height: "56px"
   content-max-width: "1200px"
 
