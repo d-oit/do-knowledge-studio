@@ -59,7 +59,7 @@ export function generateSiteHtml(data: ExportData): string {
     .entity { background: white; margin-bottom: 2rem; padding: 2rem; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
     .entity h2 { margin-top: 0; color: #2563eb; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.5rem; }
     .type { display: inline-block; background: #f1f5f9; padding: 0.2rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; margin-bottom: 1rem; }
-    .claim { margin: 0.75rem 0; padding: 0.75rem; background: #f0f9ff; border-left: 4px solid #0ea5e9; border-radius: 0 4px 4px 0; }
+    .claim { margin: 0.75rem 0; padding: 0.75rem; background: #f0f9ff; border-left: 2px solid #e2e8f0; border-radius: 0 4px 4px 0; }
     .claim-meta { font-size: 0.75rem; color: #64748b; margin-top: 0.25rem; }
     .description { margin: 1rem 0; font-size: 1.1rem; }
     h3 { font-size: 1.25rem; color: #334155; margin-top: 1.5rem; }
@@ -197,7 +197,7 @@ export function generatePrintHtml(entities: Entity[], claims: Record<string, Cla
     h3 { font-size: 1.2rem; color: #334155; }
     .meta { color: #64748b; font-size: 0.875rem; margin-bottom: 2rem; }
     .type { display: inline-block; background: #f1f5f9; padding: 0.2rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; margin-bottom: 0.5rem; }
-    .claim { margin: 0.5rem 0; padding: 0.5rem 0.75rem; border-left: 3px solid #0ea5e9; background: #f8fafc; }
+    .claim { margin: 0.5rem 0; padding: 0.5rem 0.75rem; border-left: 2px solid #e2e8f0; background: #f8fafc; }
     .claim-meta { font-size: 0.75rem; color: #64748b; margin-top: 0.25rem; }
     .description { margin: 1rem 0; font-size: 1rem; }
     @media print { body { padding: 0; } }

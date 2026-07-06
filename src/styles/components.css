@@ -190,8 +190,8 @@
   color: var(--interactive-primary);
   font-weight: 600;
   border-color: transparent;
-  border-left: 3px solid var(--interactive-primary);
-  padding-left: calc(var(--space-3) - 3px);
+  border-left: 2px solid var(--text-secondary);
+  padding-left: calc(var(--space-3) - 2px);
 }
 
 /* Search Panel Styles */

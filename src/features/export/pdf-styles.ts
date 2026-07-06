@@ -6,7 +6,7 @@
 import { StyleSheet } from '@react-pdf/renderer';
 
 export const pdfStyles = StyleSheet.create({
-  page: { padding: 40, fontFamily: 'Helvetica', fontSize: 11, lineHeight: 1.6 },
+  page: { padding: 40, fontFamily: 'Helvetica', fontSize: 11, lineHeight: 1.6 }, // impeccable-disable-line design-system-font: standard PDF font
   h1: { fontSize: 20, marginTop: 16, marginBottom: 8, fontWeight: 'bold' },
   h2: { fontSize: 16, marginTop: 12, marginBottom: 6, fontWeight: 'bold' },
   body: { fontSize: 11, lineHeight: 1.6, marginBottom: 8 },
@@ -14,7 +14,7 @@ export const pdfStyles = StyleSheet.create({
   meta: { fontSize: 9, color: '#888', marginBottom: 4 },
   cover: {
     padding: 40,
-    fontFamily: 'Helvetica',
+    fontFamily: 'Helvetica', // impeccable-disable-line design-system-font: standard PDF font
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
