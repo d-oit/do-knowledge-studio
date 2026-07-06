@@ -10,7 +10,7 @@ description: >
 # Impeccable — Frontend Design Skill
 
 > Canonical skill for general frontend UI design, visual polish, and UX critique.
-> Adapted from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) for shell-first architecture.
+> KirriDesk-inspired clean SaaS aesthetic with emerald accent.
 
 ## Purpose
 
@@ -44,33 +44,35 @@ Trigger on requests like:
 ## Design Principles
 
 ### Typography
-- Use the project's design tokens from `src/styles/index.css`
-- Minimum 16px body text, 14px secondary
-- Line height: 1.5 for body, 1.2 for headings
-- Max 2 font families (system stack preferred)
+- Use the project's design tokens from `src/styles/tokens.css`
+- Font: Inter (clean sans-serif for SaaS aesthetic)
+- Scale: `--size-xxs` (10px) through `--size-3xl` (30px)
+- Line height: 1.5 for body, 1.25 for headings
 - No `font-weight: 300` on small text (poor readability)
+- Input/select MUST stay at `font-size: 16px` (prevents iOS zoom)
 
 ### Color
 - Use CSS custom properties (`var(--text-primary)`, etc.)
 - No pure black (`#000`) or pure white (`#fff`) — use tinted neutrals
 - Minimum 4.5:1 contrast ratio for body text (WCAG AA)
 - Use design tokens for all colors, no hardcoded hex values
-- Accent colors: one primary, one secondary, one danger
+- Accent: Emerald green (`#10b981` light, `#34d399` dark)
+- Two themes only: `light` and `dark`
 
 ### Spacing
-- Use the project's spacing scale (`var(--space-1)` through `var(--space-8)`)
-- Consistent padding within components (4px grid)
+- Use the project's spacing scale (`var(--space-1)` through `var(--space-16)`)
+- 4px grid alignment
 - Minimum 44x44px touch targets
 - Generous whitespace between sections
 
 ### Layout
 - Mobile-first responsive design
-- Use CSS Grid for page layouts, Flexbox for component internals
-- Max content width: 1200px (centered)
-- Breakpoints: mobile (< 640px), tablet (640–1024px), desktop (> 1024px)
+- Breakpoints: mobile (< 768px), tablet (768–1100px), desktop (> 1100px)
+- Max content width: 1200px
+- Three-panel layout: sidebar (260px), main, detail
 
 ### Motion
-- Use `transition: all 0.15s ease` for interactive elements
+- Use tokens: `--motion-fast` (100ms), `--motion-base` (200ms), `--motion-slow` (300ms)
 - Hover states on all clickable elements
 - Focus visible states for keyboard navigation
 - Respect `prefers-reduced-motion`
@@ -90,7 +92,7 @@ Trigger on requests like:
 1. **Gray text on colored backgrounds** — use white/dark with sufficient contrast
 2. **Over-nested cards** — flatten the visual hierarchy
 3. **Purple-to-blue gradients everywhere** — use color intentionally
-4. **Inter font as default** — use the project's type system
+4. **Hardcoded hex values** — always use design tokens
 5. **Centered everything** — use alignment intentionally
 6. **Monospace for all code** — only for actual code blocks
 7. **Tiny click targets** — minimum 44x44px
@@ -119,13 +121,14 @@ Ensure the component works well across mobile, tablet, and desktop breakpoints.
 ## Project Context
 
 - Design tokens: `src/styles/tokens.css` (loaded via `src/styles/index.css`)
-- Themes: app (light/blue), game (dark/sky), neural (soft/purple), technical (brutalist/mono)
-- Fonts: Anton (display), Playfair Display (h2), Inter (body/UI), Courier New (mono)
+- Themes: `light` (emerald accent on white) and `dark` (bright emerald on dark gray)
+- Fonts: Inter (all UI), Courier New (code only)
 - Components: `src/components/`, `src/features/`
 - Mobile-first, 44px minimum touch targets
 - CSS custom properties for theming (`data-theme` attribute)
 - Lucide icons throughout
 - TipTap editor for rich text
+- KirriDesk-inspired clean SaaS aesthetic
 
 ---
 
