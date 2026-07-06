@@ -448,14 +448,15 @@
   transform: translateX(-50%);
   background: var(--text-secondary);
   color: var(--text-inverse);
-  padding: 2px 6px;
+  padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
   font-size: var(--size-xxs);
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s;
-  z-index: 20;
+  transition: opacity var(--motion-base);
+  z-index: var(--z-tooltip);
+  box-shadow: var(--shadow-sm);
 }
 
 .knowledge-claim:hover::after {
@@ -513,7 +514,7 @@
   position: absolute;
   top: 100%;
   left: 0;
-  z-index: 10;
+  z-index: var(--z-dropdown);
   background: var(--bg-surface);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-base);
@@ -522,12 +523,13 @@
   min-width: 200px;
   max-height: 200px;
   overflow-y: auto;
+  animation: fadeIn 150ms ease-out;
 }
 
 .menu-item {
   padding: var(--space-2) var(--space-4);
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--size-md);
   transition: background var(--motion-fast);
   min-height: 44px;
   display: flex;
@@ -601,7 +603,7 @@
   border-left: 1px solid var(--border-default);
   display: flex;
   flex-direction: column;
-  z-index: 10;
+  z-index: var(--z-sticky);
   box-shadow: var(--shadow-md);
 }
 
@@ -1187,13 +1189,25 @@
   bottom: 80px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: var(--z-overlay, 1000);
+  z-index: var(--z-popover);
   background: var(--bg-surface);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
   min-width: 280px;
   max-width: 360px;
+  animation: popoverEnter 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes popoverEnter {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
 }
 
 .claim-metadata-header {

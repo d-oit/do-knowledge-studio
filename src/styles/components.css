@@ -247,7 +247,7 @@
   position: fixed;
   inset: 0;
   background: var(--bg-overlay);
-  z-index: 1000;
+  z-index: var(--z-overlay);
 }
 
 .mobile-drawer-content {
@@ -303,7 +303,7 @@
   position: fixed;
   inset: 0;
   background: var(--bg-surface);
-  z-index: 1100;
+  z-index: var(--z-modal);
   display: flex;
   flex-direction: column;
 }
@@ -657,4 +657,40 @@ input[type="search"]::-webkit-search-cancel-button {
 
 .input-clear-button:hover {
   color: var(--text-primary);
+}
+
+/* Tooltip Styles */
+.tooltip {
+  position: relative;
+}
+
+.tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text-secondary);
+  color: var(--text-inverse);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--size-xxs);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-base);
+  z-index: var(--z-tooltip);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--space-1);
+}
+
+.tooltip:hover::after {
+  opacity: 1;
+}
+
+.tooltip-bottom::after {
+  bottom: auto;
+  top: 100%;
+  margin-bottom: 0;
+  margin-top: var(--space-1);
 }
