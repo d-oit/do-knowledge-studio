@@ -55,7 +55,7 @@ body {
   flex-shrink: 0;
   background: var(--bg-sidebar);
   border: none;
-  color: #f9fafb;
+  color: var(--text-inverse);
 }
 
 .search-sidebar {
