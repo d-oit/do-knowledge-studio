@@ -55,7 +55,7 @@ const backdropStyle: React.CSSProperties = {
   inset: 0,
   background: 'var(--bg-overlay)',
   zIndex: 300,
-  animation: 'overlayFadeIn 150ms ease-out',
+  animation: 'overlayFadeIn 200ms ease-out',
 };
 
 const contentStyle: React.CSSProperties = {
@@ -63,7 +63,7 @@ const contentStyle: React.CSSProperties = {
   boxShadow: 'var(--shadow-lg)',
   padding: 'var(--space-6)',
   paddingBottom: 'calc(var(--space-6) + env(safe-area-inset-bottom, 0px))',
-  animation: 'overlayContentEnter 200ms cubic-bezier(0.16, 1, 0.3, 1)',
+  animation: 'overlayContentEnter 300ms cubic-bezier(0.16, 1, 0.3, 1)',
 };
 
 const Overlay: React.FC<OverlayProps> = ({

@@ -114,8 +114,8 @@
   --motion-fast: 100ms ease-out;
   --motion-base: 200ms ease-in-out;
   --motion-slow: 300ms ease-in-out;
-  --motion-modal-enter: 200ms cubic-bezier(0.16, 1, 0.3, 1);
-  --motion-modal-exit: 150ms ease-in;
+  --motion-modal-enter: 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-modal-exit: 200ms ease-in;
 
   /* Layout */
   --sidebar-width: 260px;
