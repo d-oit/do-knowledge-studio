@@ -6,6 +6,7 @@ import { Topbar } from './topbar'
 import { CommandPalette } from './command-palette'
 import { RightPanel } from './right-panel'
 import { MobileDrawer } from './mobile-drawer'
+import { ShortcutsDialog } from './shortcuts-dialog'
 import { HomeView } from './views/home-view'
 import { EditorView } from './views/editor-view'
 import { LibraryView } from './views/library-view'
@@ -43,6 +44,7 @@ export function AppShell() {
       </div>
       <CommandPalette />
       <MobileDrawer />
+      <ShortcutsDialog />
     </div>
   )
 }

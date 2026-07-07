@@ -20,6 +20,7 @@ import { useTheme } from 'next-themes'
 import { useStudioStore } from '@/lib/studio/store'
 import type { ViewId } from '@/lib/studio/types'
 import { cn } from '@/lib/utils'
+import { ShortcutsTrigger } from './shortcuts-dialog'
 
 interface NavItem {
   id: ViewId
@@ -168,6 +169,11 @@ export function Sidebar() {
             </>
           )}
         </button>
+        <ShortcutsTrigger
+          className={cn(
+            'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12px] font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring',
+          )}
+        />
         <div className="flex-1" />
         <button
           onClick={() => setRightPanelOpen(!rightPanelOpen)}
