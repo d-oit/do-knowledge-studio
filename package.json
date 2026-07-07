@@ -61,7 +61,7 @@
     "@tiptap/extension-placeholder": "~3.27.1",
     "@tiptap/pm": "~3.27.1",
     "@tiptap/react": "~3.27.1",
-    "@tiptap/starter-kit": "~3.27.1",
+    "@tiptap/starter-kit": "~3.27.2",
     "commander": "~15.0.0",
     "docx": "~9.7.1",
     "dompurify": "3.4.11",
