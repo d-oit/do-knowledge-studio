@@ -186,11 +186,6 @@
   font-size: var(--size-xxs);
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
 @keyframes slideUp {
   from { transform: translateY(20px) scale(0.98); opacity: 0; }
   to { transform: translateY(0) scale(1); opacity: 1; }
