@@ -262,7 +262,7 @@ const ExportPanel: React.FC = () => {
       </p>
 
       {error && (
-        <div role="alert" aria-live="polite" style={{ marginBottom: '16px', padding: '12px', background: '#fef2f2', color: '#991b1b', borderRadius: '8px', border: '1px solid #fecaca', fontSize: '0.875rem' }}>
+        <div role="alert" aria-live="polite" style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3)', background: 'var(--status-danger-bg)', color: 'var(--status-danger-text)', borderRadius: 'var(--radius-md)', border: '1px solid var(--status-danger-border)', fontSize: 'var(--size-md)' }}>
           {error}
         </div>
       )}
@@ -333,7 +333,7 @@ const ExportPanel: React.FC = () => {
       )}
 
       {importSuccess && (
-        <div role="status" style={{ marginTop: '16px', padding: '12px', background: '#dcfce7', color: '#166534', borderRadius: '8px', border: '1px solid #86efac', fontSize: '0.875rem' }}>
+        <div role="status" style={{ marginTop: 'var(--space-4)', padding: 'var(--space-3)', background: 'var(--status-success-bg)', color: 'var(--status-success-text)', borderRadius: 'var(--radius-md)', border: '1px solid var(--status-success-border)', fontSize: 'var(--size-md)' }}>
           {importSuccess}
         </div>
       )}

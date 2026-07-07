@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Camera, X, Clock } from 'lucide-react';
-import { useFocusTrap } from '../../hooks/useFocusTrap';
-import { useEscapeKey } from '../../hooks/useEscapeKey';
+import Overlay from '../../components/Overlay';
 
 interface GraphNode {
   id: string;
@@ -32,11 +31,7 @@ const SaveSnapshotModal: React.FC<SaveSnapshotModalProps> = ({
 }) => {
   const [snapshotName, setSnapshotName] = useState('');
   const [snapshotDesc, setSnapshotDesc] = useState('');
-  const modalRef = useRef<HTMLDivElement>(null);
   const snapshotNameRef = useRef<HTMLInputElement>(null);
-
-  useFocusTrap(modalRef, isOpen);
-  useEscapeKey(onClose, isOpen);
 
   useEffect(() => {
     if (isOpen && snapshotNameRef.current) {
@@ -52,30 +47,22 @@ const SaveSnapshotModal: React.FC<SaveSnapshotModalProps> = ({
     setSnapshotDesc('');
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div
-      className="modal-overlay"
-      role="presentation"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      onKeyDown={(e) => { if (e.target === e.currentTarget && e.key === 'Escape') onClose(); }}
+    <Overlay
+      isOpen={isOpen}
+      onClose={onClose}
+      variant="center"
+      ariaLabel="Save Graph Snapshot"
     >
-      <div
-        ref={modalRef}
-        className="modal-content"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="modal-title"
-      >
-        <div className="inspector-header" style={{ marginBottom: 'var(--space-4)', padding: 0, background: 'transparent', border: 0 }}>
-          <h3 id="modal-title"><Camera size={18} /> Save Graph Snapshot</h3>
-          <button className="close-button" onClick={onClose} aria-label="Close modal">
-            <X size={18} />
-          </button>
-        </div>
+      <div className="modal-header">
+        <h3 id="modal-title"><Camera size={18} /> Save Graph Snapshot</h3>
+        <button className="modal-close" onClick={onClose} aria-label="Close modal">
+          <X size={18} />
+        </button>
+      </div>
 
-        <p className="modal-meta" style={{ marginBottom: 'var(--space-4)', fontSize: '13px', color: 'var(--text-muted)' }}>
+      <div className="modal-body">
+        <p style={{ marginBottom: 'var(--space-4)', fontSize: 'var(--size-base)', color: 'var(--text-muted)' }}>
           <Clock size={14} /> {new Date().toLocaleString()} | {nodes.length} nodes, {edges.length} edges
         </p>
 
@@ -98,23 +85,23 @@ const SaveSnapshotModal: React.FC<SaveSnapshotModalProps> = ({
             onChange={(e) => setSnapshotDesc(e.target.value)}
             placeholder="Optional notes about this snapshot..."
             rows={2}
-            style={{ width: '100%', padding: 'var(--space-2)', borderRadius: 'var(--radius-base)', border: '1px solid var(--border-default)' }}
           />
         </div>
-        <div className="modal-actions">
-          <button onClick={onClose} className="btn-secondary">
-            Cancel
-          </button>
-          <button
-            onClick={() => void handleSave()}
-            disabled={!snapshotName.trim()}
-            className="btn-primary"
-          >
-            <Camera size={14} /> Save Snapshot
-          </button>
-        </div>
       </div>
-    </div>
+
+      <div className="modal-actions">
+        <button onClick={onClose} className="btn-secondary">
+          Cancel
+        </button>
+        <button
+          onClick={() => void handleSave()}
+          disabled={!snapshotName.trim()}
+          className="btn-primary"
+        >
+          <Camera size={14} /> Save Snapshot
+        </button>
+      </div>
+    </Overlay>
   );
 };
 

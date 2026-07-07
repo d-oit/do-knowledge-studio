@@ -99,7 +99,7 @@ const SyncPanel: React.FC<SyncPanelProps> = ({ onClose }) => {
       position: 'fixed', top: 0, right: 0, bottom: 0, width: '400px', maxWidth: '100vw',
       background: 'var(--bg-surface)', borderLeft: '1px solid var(--border-default)',
       zIndex: 'var(--z-overlay)', display: 'flex', flexDirection: 'column',
-      boxShadow: '-4px 0 24px rgba(0,0,0,0.1)',
+      boxShadow: 'var(--shadow-lg)',
     }}>
       <div style={{ padding: '16px', borderBottom: '1px solid var(--border-default)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
