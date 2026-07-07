@@ -1,293 +1,112 @@
-# do-knowledge-studio
+# DO Knowledge Studio
 
-> A local-first knowledge management studio — rich notes, knowledge graph, mind maps, full-text search, and AI agent integration in a single browser-based app.
+A local-first knowledge studio for rich notes, knowledge graphs, mind maps,
+semantic search, and AI-assisted thinking — all in your browser, no backend
+required.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-0.2.5-blue)](VERSION)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-[![Built with React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org)
-[![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite)](https://vitejs.dev)
-[![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](#testing)
-[![Coverage](https://img.shields.io/badge/coverage-40%25%2B-blue)](#testing)
+This repository contains the redesigned DO Knowledge Studio: a Next.js 16 app
+that reimagines the original Vite + React SPA as a calmer, more deliberate
+editorial workspace. The visual language is "Editorial Paper & Saffron" — warm
+paper backgrounds, deep ink type, and a single saffron accent. See
+[DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) for the full design reference.
 
-**Quick Links**: [Quick Start](#-quick-start) · [Features](#-features) · [Architecture](#-architecture) · [AI Agents](#-ai-agent-integration) · [Contributing](#-contributing)
+## Tech stack
 
----
+- **Next.js 16** (App Router) with React 19
+- **TypeScript** strict mode
+- **Tailwind CSS 4** with `@theme inline` token mapping
+- **shadcn/ui** primitives (Radix UI + CVA)
+- **Zustand** for app state
+- **Framer Motion** for animation
+- **Lucide** icon set
+- **Sonner** for toast notifications
+- **next-themes** for light/dark theming
+- **cmdk** for the command palette
+- **next/font/google** for Newsreader, Geist Sans, Geist Mono
 
-## What Is This?
+## The nine views
 
-**do-knowledge-studio** is a local-first, offline-capable knowledge management application built with React 19, TypeScript 5, and SQLite WASM. It combines a rich-text editor, an interactive knowledge graph, mind mapping, blazing-fast full-text search, and a static site export — all running entirely in the browser with no backend required.
+| View         | One-line description                                                        |
+|--------------|-----------------------------------------------------------------------------|
+| Home         | Dashboard with stats, recent activity, and entity-type breakdown.           |
+| Editor       | Capture a thought, claim, or note with floating toolbar, tags, and meta.    |
+| Library      | Browse and filter entities in a grid or list with sort and type filters.    |
+| Graph        | Visualize relationships as an interactive SVG graph with three layouts.     |
+| Mind Map     | Hierarchical exploration with expandable tree, depth slider, and root selector. |
+| Chat         | Ask your library; the assistant answers with grounded citations.            |
+| AI Harness   | Configure LLM providers (Anthropic, OpenAI, Ollama) and chat with models.   |
+| TRIZ Matrix  | Solve inventive contradictions via a 2-step parameter picker + principle results. |
+| Export       | Backup and share your knowledge as Markdown, JSON, or encrypted archive.    |
 
-It also ships with an **AI agent harness** supporting Claude Code, Gemini CLI, OpenCode, Qwen Code, Windsurf, and Cursor — making it a great base for AI-assisted personal knowledge management workflows.
-
-## 🚧 Status
-
-This project is in active development. See [PHASES.md](docs/PHASES.md) for progress tracking.
-
----
-
-## ✨ Features
-
-- **📝 Rich Text Editor** — TipTap-powered WYSIWYG editor with Markdown support and placeholder hints
-- **🗄️ Local SQLite Database** — Persistent, offline-first storage via `@sqlite.org/sqlite-wasm` with FTS5 full-text search
-- **🔍 Semantic & Full-Text Search** — Orama-powered in-browser search index for fast, context-aware retrieval
-- **🕸️ Knowledge Graph** — Interactive node-link graph built with Graphology + Sigma.js; focus mode for deep neighborhood exploration
-- **🧠 Mind Maps** — Visual mind mapping with Mind Elixir for brainstorming and concept structuring
-- **📤 Static Site Export** — Turn your knowledge base into a shareable, self-contained static site (Markdown, JSON, HTML)
-- **🤖 AI Agent Harness** — Unified workflow across 6+ AI coding tools with skills, quality gates, and sub-agent patterns
-- **🔬 Swarm Analysis** — Parallel AI-powered web research using git worktrees
-- **🔒 AES-256-GCM Encryption** — API keys encrypted at rest via Web Crypto API
-- **⚡ CLI** — TypeScript CLI with 20 commands for scripting and automation
-- **🧪 Full Test Suite** — 671 Vitest unit tests + Playwright end-to-end tests
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- **Node.js** 20+ ([install](https://nodejs.org))
-- A modern browser (Chrome, Firefox, Edge)
-- *(Optional)* An AI coding CLI: [Claude Code](https://claude.ai/code), [Gemini CLI](https://gemini.google.com), [OpenCode](https://opencode.ai), [Qwen Code](https://github.com/QwenLM/Qwen-Coder)
-
-### Installation
+## How to run
 
 ```bash
-git clone https://github.com/d-oit/do-knowledge-studio.git
-cd do-knowledge-studio
-pnpm install
+bun install
+bun run dev
 ```
 
-### Development
+The app is served at `http://localhost:3000`. The dev log is tee'd to
+`dev.log` in the project root.
+
+Other scripts:
 
 ```bash
-pnpm run dev
+bun run lint      # eslint
+bun run build     # production build
+bun run start     # serve the standalone production build
+bun run db:push   # prisma db push (if you use the prisma layer)
 ```
 
-Open [http://localhost:5173](http://localhost:5173) in your browser.
-
-### Build
-
-```bash
-pnpm run build
-pnpm run preview
-```
-
-### Environment
-
-```bash
-cp .env.example .env
-# Edit .env as needed
-```
-
----
-
-## 🏗️ Architecture
-
-<!-- START_DIAGRAM -->
-
-```mermaid
-graph TD
-    subgraph UI_Layer [UI Layer (React 19)]
-        Editor[Rich Text Editor]
-        Graph[Knowledge Graph]
-        MindMap[Mind Maps]
-        Chat[AI Chat]
-    end
-
-    subgraph Logic_Layer [Logic & Search]
-        Repository[Repository API]
-        Orama[Orama Search Index]
-        Jobs[Job Coordinator]
-    end
-
-    subgraph Data_Layer [Data & Storage]
-        Worker[SQLite Worker]
-        SQLite[SQLite WASM + FTS5]
-        OPFS[Browser OPFS Storage]
-    end
-
-    Editor --> Repository
-    Graph --> Repository
-    MindMap --> Repository
-    Chat --> Repository
-    Chat --> Orama
-
-    Repository --> Jobs
-    Jobs --> Orama
-    Repository --> Worker
-    Worker --> SQLite
-    SQLite --> OPFS
-
-    CLI[TS CLI] --> Repository
-    Export[Export Engine] --> Repository
-```
-
-<!-- END_DIAGRAM -->
+## Project structure
 
 ```
 src/
-├── app/          # React app shell, routing, layout
-├── db/           # SQLite WASM database layer + FTS5 search
-├── features/     # Feature modules (editor, graph, mindmap, search, export)
-├── lib/          # Shared utilities and Orama search index
-└── main.tsx      # Entry point
-
-cli/              # TypeScript CLI for automation
-export/           # Static site export engine
-scripts/          # Setup and quality gate scripts
-tests/            # Playwright e2e tests
+  app/
+    globals.css          # design tokens, base layer, utility classes
+    layout.tsx           # root layout, fonts, toaster, theme provider
+    page.tsx             # renders <AppShell />
+  components/
+    studio/
+      app-shell.tsx      # 3-column shell: sidebar | main | right panel
+      topbar.tsx         # responsive header with inline quick-search
+      sidebar.tsx        # nav with grouped items + shortcuts
+      right-panel.tsx    # contextual search / inspector / citations
+      command-palette.tsx
+      theme-provider.tsx
+      views/             # the 9 view components
+      ...
+    ui/                  # shadcn primitives (do not hand-edit)
+  lib/
+    studio/
+      store.ts           # zustand store + selectors
+      types.ts           # Entity, Claim, ChatMessage, ENTITY_TYPE_META
+      seed-data.ts       # mock entities / claims / chat
+    utils.ts             # cn() class merge
+    db.ts                # prisma client (unused by the studio shell)
+public/
+  logo.svg
+DESIGN-SYSTEM.md         # full design reference
+worklog.md               # build log
 ```
 
-### Tech Stack
+## Design system
 
-| Layer | Technology |
-|---|---|
-| UI Framework | React 19 + TypeScript 5 |
-| Build Tool | Vite 8 |
-| Database | SQLite WASM (FTS5) |
-| Search | Orama 3 |
-| Rich Text | TipTap 3 |
-| Graph | Graphology + Sigma.js |
-| Mind Map | Mind Elixir 5 |
-| Validation | Zod |
-| Icons | Lucide React |
-| Unit Tests | Vitest 4 |
-| E2E Tests | Playwright |
+The full design reference — color tokens, typography, spacing, radius,
+shadows, focus rings, component patterns, layout, and accessibility rules —
+lives in [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md). Read it before adding new
+components or touching tokens in `globals.css`.
 
----
+## Local-first principles
 
-## 🤖 AI Agent Integration
-
-This project ships with a unified AI agent harness that works across multiple tools:
-
-```
-AGENTS.md           # Single source of truth for all agents
-├── CLAUDE.md       # Claude Code overrides
-├── GEMINI.md       # Gemini CLI overrides
-├── QWEN.md         # Qwen Code overrides
-└── .opencode/       # OpenCode configuration
-```
-
-### Skills System
-
-Reusable knowledge modules live in `.agents/skills/` and are symlinked into each tool's config directory:
-
-```
-.agents/skills/         # Canonical skill source
-.claude/skills/         # Symlinks → ../../.agents/skills/
-.gemini/skills/         # Symlinks → ../../.agents/skills/
-.qwen/skills/           # Symlinks → ../../.agents/skills/
-```
-
-### Setup Agent Skills
-
-```bash
-# Create skill symlinks (run once)
-./scripts/setup-skills.sh
-
-# Validate setup
-./scripts/validate-skills.sh
-```
-
-### Sub-Agent Patterns
-
-```mermaid
-graph LR
-    A[Main Agent] --> B[Sub-Agent 1]
-    A --> C[Sub-Agent 2]
-    B --> D[Task Complete]
-    C --> E[Task Complete]
-    D --> F[Synthesize]
-    E --> F
-```
-
----
-
-## 🧪 Testing
-
-```bash
-# Unit tests
-pnpm run test
-
-# Watch mode
-pnpm run test:watch
-
-# End-to-end tests
-pnpm run test:e2e
-
-# Type checking
-pnpm run typecheck
-
-# Lint
-pnpm run lint
-```
-
----
-
-## ⚙️ CLI
-
-The CLI enables automation and scripting for your knowledge base. It shares a common database file with the browser app, allowing for seamless integration between automated tools and visual exploration.
-
-**Default Database Path**: `~/.local/share/do-knowledge-studio/data.db`
-
-```bash
-# List all entities
-pnpm run cli -- entity-list
-
-# Import from a directory
-pnpm run cli -- sync ./notes
-
-# Use a custom database path
-pnpm run cli -- --db-path ./custom.db entity-list
-```
-
-See [SETUP.md](docs/SETUP.md) for detailed CLI instructions and how to connect the browser to the shared database.
-
----
-
-## 📚 Documentation
-
-- 📖 **[AGENTS.md](AGENTS.md)** — AI agent instructions (single source of truth)
-- 🏗️ **[Harness Overview](agents-docs/HARNESS.md)** — Architecture and patterns
-- 🪝 **[Skills Guide](agents-docs/AVAILABLE_SKILLS.md)** — Creating reusable skills
-- 🤖 **[Sub-Agents](agents-docs/SUB-AGENTS.md)** — Context isolation patterns
-- 🔧 **[Hooks](agents-docs/HOOKS.md)** — Pre/post tool hooks
-- 📊 **[Context](agents-docs/CONTEXT.md)** — Back-pressure mechanisms
-- ⚙️ **[Configuration](agents-docs/CONFIG.md)** — Repository constants and utilities
-- 🔄 **[Migration](agents-docs/MIGRATION.md)** — Adopting in existing projects
-- 🔒 **[Security](SECURITY.md)** — Security policy and reporting
-- 📝 **[Changelog](CHANGELOG.md)** — Release history
-- 🔧 **[CLI Reference](docs/CLI.md)** — All 20 CLI commands
-- 🗄️ **[Database Schema](docs/DATABASE.md)** — Tables, ER diagram, migrations
-- 🔍 **[Search Architecture](docs/SEARCH.md)** — Dual FTS5 + Orama search
-- 🤖 **[LLM Setup](docs/LLM-SETUP.md)** — Provider configuration
-- 📦 **[Repository API](docs/REPOSITORY-API.md)** — Full API reference
-- 👩‍💻 **[Developer Guide](docs/DEVELOPMENT.md)** — Onboarding and common tasks
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
-
-- Development environment setup
-- Code style and testing requirements
-- Pull request process
-- Good first issues
-
-## Community
-
-- 🐛 [Issue Tracker](https://github.com/d-oit/do-knowledge-studio/issues) — Report bugs
-- 💬 [Discussions](https://github.com/d-oit/do-knowledge-studio/discussions) — Ask questions
-
----
+- All entity data lives in the Zustand store (seeded from
+  `src/lib/studio/seed-data.ts`). There is no network call required to use the
+  app.
+- The "Offline ready" badge in the topbar is a constant reminder of this
+  promise.
+- Export is the user's escape hatch — Markdown, JSON, or an encrypted archive.
+- The AI Harness view supports local Ollama models so the entire workflow can
+  stay on-device.
 
 ## License
 
-Licensed under the [MIT License](LICENSE).
-
----
-
-**Local-first. AI-assisted. Built to think.**
+Internal project. See the original repository for licensing context.

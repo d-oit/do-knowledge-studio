@@ -1,0 +1,345 @@
+'use client'
+
+import { useStudioStore } from '@/lib/studio/store'
+import {
+  FlaskConical,
+  Bot,
+  User,
+  Send,
+  Settings,
+  Database,
+  Key,
+  Cpu,
+  Plug,
+  Check,
+  ChevronDown,
+  BookOpen,
+  Sparkles,
+  Zap,
+} from 'lucide-react'
+import { useState } from 'react'
+import { cn } from '@/lib/utils'
+import { motion } from 'framer-motion'
+import { toast } from 'sonner'
+
+interface AIProvider {
+  id: string
+  label: string
+  models: string[]
+  requiresKey: boolean
+}
+
+const PROVIDERS: AIProvider[] = [
+  { id: 'openrouter', label: 'OpenRouter', models: ['gemini-2.0-flash-lite', 'gpt-4o-mini', 'claude-3.5-haiku'], requiresKey: true },
+  { id: 'anthropic', label: 'Anthropic', models: ['claude-sonnet-4', 'claude-haiku-3.5', 'claude-opus-4'], requiresKey: true },
+  { id: 'ollama', label: 'Ollama (local)', models: ['llama-3.2', 'mistral', 'qwen-2.5', 'gemma-2'], requiresKey: false },
+  { id: 'kilo', label: 'Kilo', models: ['kilo-large', 'kilo-fast'], requiresKey: true },
+]
+
+export function AIHarnessView() {
+  const { entities } = useStudioStore()
+  const [provider, setProvider] = useState('openrouter')
+  const [model, setModel] = useState(PROVIDERS[0].models[0])
+  const [apiKey, setApiKey] = useState('')
+  const [showKey, setShowKey] = useState(false)
+  const [augment, setAugment] = useState(true)
+  const [showSettings, setShowSettings] = useState(true)
+  const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([
+    {
+      role: 'assistant',
+      content:
+        'AI agent ready to assist with TRIZ analysis and knowledge synthesis. Ask me anything about your local knowledge base, or paste URLs to have me fetch and analyze external content.',
+    },
+  ])
+  const [input, setInput] = useState('')
+
+  const activeProvider = PROVIDERS.find((p) => p.id === provider)!
+
+  const handleSend = () => {
+    if (!input.trim()) return
+    if (!apiKey && activeProvider.requiresKey) {
+      toast.error('Set an API key in settings to send messages.')
+      return
+    }
+    const userMsg = { role: 'user' as const, content: input }
+    setMessages((m) => [...m, userMsg])
+    setInput('')
+    setTimeout(() => {
+      setMessages((m) => [
+        ...m,
+        {
+          role: 'assistant',
+          content:
+            augment && entities.length
+              ? `Drawing on your ${entities.length} local entities, here is a synthesis: the query touches on themes in your library — consider exploring the related concepts and claims for a grounded answer. (Demo response.)`
+              : 'Without local augmentation, here is a general answer. Enable "Augment with local knowledge" for grounded responses. (Demo response.)',
+        },
+      ])
+    }, 700)
+  }
+
+  return (
+    <div className="mx-auto max-w-5xl px-6 py-6 lg:px-10 lg:py-8">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-6 flex items-start gap-4"
+      >
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-saffron to-clay text-white shadow-sm">
+          <FlaskConical className="h-6 w-6" />
+        </div>
+        <div className="flex-1">
+          <div className="mb-1 flex items-center gap-2">
+            <h1 className="font-serif text-2xl font-semibold text-ink">AI Harness</h1>
+            <span className="rounded-full border border-dashed border-saffron/50 px-2 py-0 text-[9px] font-semibold uppercase tracking-wide text-saffron">
+              Lab
+            </span>
+          </div>
+          <p className="text-[13px] text-ink-mute">
+            Connect a language model and augment its answers with your local knowledge base.
+          </p>
+        </div>
+        <button
+          onClick={() => setShowSettings(!showSettings)}
+          className={cn(
+            'flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium transition-colors hover:border-saffron/40 focus-ring',
+            showSettings && 'border-saffron/40 text-saffron-deep',
+          )}
+        >
+          <Settings className="h-3.5 w-3.5" />
+          {showSettings ? 'Hide settings' : 'Show settings'}
+        </button>
+      </motion.div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+        {/* Settings panel */}
+        {showSettings && (
+          <motion.aside
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="lg:col-span-2"
+          >
+            <div className="rounded-lg border border-border bg-card p-4">
+              <h2 className="mb-4 font-serif text-[15px] font-semibold text-ink">Provider</h2>
+
+              <div className="space-y-3">
+                <Field label="Connect Local Database" icon={Database}>
+                  <button
+                    onClick={() => toast.success('Local database synced')}
+                    className="flex w-full items-center justify-between rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Check className="h-3.5 w-3.5 text-emerald-500" />
+                      Connected · {entities.length} entities
+                    </span>
+                    <span className="text-[10px] text-ink-faint">Re-sync</span>
+                  </button>
+                </Field>
+
+                <Field label="Provider" icon={Plug}>
+                  <select
+                    value={provider}
+                    onChange={(e) => {
+                      setProvider(e.target.value)
+                      const p = PROVIDERS.find((x) => x.id === e.target.value)!
+                      setModel(p.models[0])
+                    }}
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+                  >
+                    {PROVIDERS.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+
+                <Field label="Model" icon={Cpu}>
+                  <select
+                    value={model}
+                    onChange={(e) => setModel(e.target.value)}
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+                  >
+                    {activeProvider.models.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+
+                {activeProvider.requiresKey && (
+                  <Field label="API Key" icon={Key}>
+                    <div className="relative">
+                      <input
+                        type={showKey ? 'text' : 'password'}
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                        placeholder="sk-…"
+                        className="w-full rounded-md border border-border bg-background px-3 py-2 pr-16 text-[12px] font-mono text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+                      />
+                      <button
+                        onClick={() => setShowKey(!showKey)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-medium text-ink-faint hover:text-ink"
+                      >
+                        {showKey ? 'Hide' : 'Show'}
+                      </button>
+                    </div>
+                    <p className="mt-1.5 text-[10px] text-ink-faint">
+                      Stored locally only — never sent anywhere except the provider.
+                    </p>
+                  </Field>
+                )}
+
+                <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="h-3.5 w-3.5 text-saffron" />
+                    <div>
+                      <div className="text-[12px] font-medium text-ink">Augment with local knowledge</div>
+                      <div className="text-[10px] text-ink-faint">RAG over your entities</div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setAugment(!augment)}
+                    className={cn(
+                      'relative h-5 w-9 rounded-full transition-colors',
+                      augment ? 'bg-saffron' : 'bg-border',
+                    )}
+                    role="switch"
+                    aria-checked={augment}
+                  >
+                    <span
+                      className={cn(
+                        'absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform',
+                        augment ? 'translate-x-4' : 'translate-x-0.5',
+                      )}
+                    />
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => toast.success('Settings saved')}
+                  className="w-full rounded-md bg-primary px-3 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 focus-ring"
+                >
+                  Save settings
+                </button>
+              </div>
+            </div>
+
+            {/* Status */}
+            <div className="mt-3 rounded-lg border border-border bg-card p-3">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="flex items-center gap-1.5 text-ink-mute">
+                  <Zap className="h-3 w-3 text-saffron" />
+                  Rate limit
+                </span>
+                <span className="font-mono text-ink">1 / 15 req/min</span>
+              </div>
+              <div className="mt-1.5 flex items-center justify-between text-[11px]">
+                <span className="flex items-center gap-1.5 text-ink-mute">
+                  <Cpu className="h-3 w-3 text-ink-faint" />
+                  Active model
+                </span>
+                <span className="font-mono text-ink-soft">{model}</span>
+              </div>
+            </div>
+          </motion.aside>
+        )}
+
+        {/* Chat */}
+        <div className={cn('flex flex-col', showSettings ? 'lg:col-span-3' : 'lg:col-span-5')}>
+          <div className="flex h-[520px] flex-col rounded-lg border border-border bg-card">
+            {/* Messages */}
+            <div className="flex-1 space-y-4 overflow-y-auto p-4">
+              {messages.map((m, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25 }}
+                  className={cn('flex gap-2.5', m.role === 'user' ? 'flex-row-reverse' : 'flex-row')}
+                >
+                  <div
+                    className={cn(
+                      'flex h-7 w-7 shrink-0 items-center justify-center rounded-full',
+                      m.role === 'user'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-saffron-soft text-saffron-deep',
+                    )}
+                  >
+                    {m.role === 'user' ? <User className="h-3.5 w-3.5" /> : <Bot className="h-3.5 w-3.5" />}
+                  </div>
+                  <div
+                    className={cn(
+                      'max-w-[80%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed',
+                      m.role === 'user'
+                        ? 'bg-primary text-primary-foreground rounded-tr-sm'
+                        : 'bg-muted text-ink rounded-tl-sm',
+                    )}
+                  >
+                    {m.content}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Input */}
+            <div className="border-t border-border p-3">
+              <div className="flex items-end gap-2 rounded-lg border border-border bg-background p-1.5 focus-within:border-saffron/40">
+                <textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      handleSend()
+                    }
+                  }}
+                  placeholder="Ask the AI agent…"
+                  rows={1}
+                  className="max-h-24 flex-1 resize-none bg-transparent px-2 py-1 text-[13px] text-ink placeholder:text-ink-faint focus:outline-none"
+                />
+                <button
+                  onClick={handleSend}
+                  disabled={!input.trim()}
+                  className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:opacity-40 focus-ring"
+                  aria-label="Send"
+                >
+                  <Send className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <div className="mt-1.5 flex items-center justify-between px-1 text-[10px] text-ink-faint">
+                <span className="flex items-center gap-1">
+                  <Sparkles className="h-2.5 w-2.5" />
+                  {augment ? 'Augmented with local knowledge' : 'No augmentation'}
+                </span>
+                <span className="font-mono">{model}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function Field({
+  label,
+  icon: Icon,
+  children,
+}: {
+  label: string
+  icon: typeof Database
+  children: React.ReactNode
+}) {
+  return (
+    <div>
+      <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+        <Icon className="h-3 w-3" />
+        {label}
+      </label>
+      {children}
+    </div>
+  )
+}
