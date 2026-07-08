@@ -52,9 +52,14 @@ vi.mock('@tiptap/extension-placeholder', () => ({
 }));
 
 vi.mock('@tanstack/react-virtual', () => ({
-  useVirtualizer: () => ({
-    getTotalSize: () => 0,
-    getVirtualItems: () => [],
+  useVirtualizer: ({ count }: { count: number }) => ({
+    getTotalSize: () => count * 40,
+    getVirtualItems: () => Array.from({ length: count }, (_, i) => ({
+      index: i,
+      key: i,
+      size: 40,
+      start: i * 40,
+    })),
   }),
 }));
 
