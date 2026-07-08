@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Sparkles, X } from 'lucide-react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { Entity } from '../../lib/validation';
 import { EntityExtractionResult } from '../../lib/ai/entity-extractor';
 
@@ -11,25 +12,72 @@ interface MentionMenuProps {
   onClose: () => void;
 }
 
-export const MentionMenu: React.FC<MentionMenuProps> = ({ isLoading, error, entities, onSelect, onClose }) => (
-  <div className="mention-section" style={{ marginTop: '16px' }}>
-    <h4 className="block text-sm font-medium mb-2">Link to Entity</h4>
-    <div className="space-y-2">
-      {isLoading && <div className="text-sm text-muted animate-pulse">Loading...</div>}
-      {error && <div className="text-sm text-error">{error}</div>}
-      {!isLoading && !error && entities.length === 0 && <div className="text-sm text-muted">No entities found</div>}
-      {entities.map(entity => (
-        <button type="button"
-          key={entity.id}
-          onClick={() => { onSelect(entity); onClose(); }}
-          className="mention-item w-full text-left px-3 py-2 rounded border border-muted hover:bg-muted"
-        >
-          {entity.name} ({entity.type})
-        </button>
-      ))}
+export const MentionMenu: React.FC<MentionMenuProps> = ({ isLoading, error, entities, onSelect, onClose }) => {
+  "use no memo";
+  const parentRef = useRef<HTMLDivElement>(null);
+
+  // eslint-disable-next-line react-hooks/incompatible-library -- useVirtualizer is stable; component opts out of React Compiler via "use no memo"
+  const virtualizer = useVirtualizer({
+    count: entities.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 40,
+    overscan: 5,
+  });
+
+  return (
+    <div className="mention-section" style={{ marginTop: '16px' }}>
+      <h4 className="block text-sm font-medium mb-2">Link to Entity</h4>
+      <div
+        ref={parentRef}
+        className="mention-list-container"
+        style={{
+          maxHeight: '300px',
+          overflow: 'auto',
+          position: 'relative',
+        }}
+      >
+        {isLoading && <div className="text-sm text-muted animate-pulse">Loading...</div>}
+        {error && <div className="text-sm text-error">{error}</div>}
+        {!isLoading && !error && entities.length === 0 && <div className="text-sm text-muted">No entities found</div>}
+        {!isLoading && !error && entities.length > 0 && (
+          <div
+            style={{
+              height: `${virtualizer.getTotalSize()}px`,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {virtualizer.getVirtualItems().map((virtualRow) => {
+              const entity = entities[virtualRow.index];
+              if (!entity) return null;
+              return (
+                <button
+                  type="button"
+                  key={virtualRow.key}
+                  onClick={() => {
+                    onSelect(entity);
+                    onClose();
+                  }}
+                  className="mention-item w-full text-left px-3 py-2 rounded border border-muted hover:bg-muted"
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: `${virtualRow.size}px`,
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                >
+                  {entity.name} ({entity.type})
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 
 interface BacklinksListProps {
