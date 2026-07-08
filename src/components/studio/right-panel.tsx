@@ -1,0 +1,269 @@
+'use client'
+
+import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
+import { ENTITY_TYPE_META } from '@/lib/studio/types'
+import { Search, X, Sparkles, FileText, Quote, ArrowRight } from 'lucide-react'
+import { useState } from 'react'
+import { cn } from '@/lib/utils'
+
+export function RightPanel() {
+  const { currentView, rightPanelOpen } = useStudioStore()
+
+  if (!rightPanelOpen) return null
+
+  // Contextual content per view
+  if (currentView === 'graph' || currentView === 'mindmap') {
+    return <InspectorPanel />
+  }
+  if (currentView === 'chat' || currentView === 'ai') {
+    return <CitationsPanel />
+  }
+
+  return <SearchPanel />
+}
+
+function SearchPanel() {
+  const { searchQuery, setSearchQuery, entities, startEdit } = useStudioStore()
+  const [mode, setMode] = useState<'keyword' | 'semantic'>('keyword')
+  const filtered = useFilteredEntities()
+
+  return (
+    <aside className="hidden h-full w-[320px] shrink-0 flex-col border-l border-border bg-background lg:flex">
+      <div className="border-b border-border px-4 py-3">
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="font-serif text-[14px] font-semibold text-ink">Search</h2>
+          <button
+            className="text-ink-faint transition-colors hover:text-ink lg:hidden"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-faint" />
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search knowledge base…"
+            className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-3 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+          />
+        </div>
+        <div className="mt-2 flex items-center gap-1 rounded-md bg-muted p-0.5 text-[11px]">
+          <button
+            onClick={() => setMode('keyword')}
+            className={cn(
+              'flex-1 rounded px-2 py-1 font-medium transition-colors',
+              mode === 'keyword' ? 'bg-background text-ink shadow-sm' : 'text-ink-mute',
+            )}
+          >
+            Keyword
+          </button>
+          <button
+            onClick={() => setMode('semantic')}
+            className={cn(
+              'flex-1 rounded px-2 py-1 font-medium transition-colors',
+              mode === 'semantic' ? 'bg-background text-ink shadow-sm' : 'text-ink-mute',
+            )}
+          >
+            Semantic
+          </button>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-3">
+        {filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+            <FileText className="h-8 w-8 text-ink-faint/50" />
+            <p className="text-[12px] text-ink-mute">
+              {searchQuery ? 'No matches found.' : 'Your library is empty.'}
+            </p>
+          </div>
+        ) : (
+          <ul className="space-y-1.5">
+            {filtered.slice(0, 20).map((e) => {
+              const meta = ENTITY_TYPE_META[e.type]
+              return (
+                <li key={e.id}>
+                  <button
+                    onClick={() => startEdit(e.id)}
+                    className="group block w-full rounded-md border border-transparent p-2.5 text-left transition-colors hover:border-border hover:bg-muted/50 focus-ring"
+                  >
+                    <div className="mb-1 flex items-center gap-2">
+                      <span className={cn('h-1.5 w-1.5 rounded-full', meta.dot)} />
+                      <span className="rounded px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide text-ink-faint">
+                        {meta.label}
+                      </span>
+                    </div>
+                    <div className="truncate text-[13px] font-medium text-ink">{e.name}</div>
+                    <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-ink-mute">
+                      {e.description}
+                    </p>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </div>
+
+      <div className="border-t border-border px-4 py-2.5">
+        <div className="flex items-center gap-1.5 text-[11px] text-ink-faint">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+          Local search · {entities.length} entities
+        </div>
+      </div>
+    </aside>
+  )
+}
+
+function InspectorPanel() {
+  const { entities, selectedEntityId, startEdit, deleteEntity, selectEntity } = useStudioStore()
+  const entity = entities.find((e) => e.id === selectedEntityId) || entities[0]
+
+  if (!entity) {
+    return (
+      <aside className="hidden h-full w-[320px] shrink-0 border-l border-border bg-background lg:flex">
+        <div className="flex h-full flex-1 items-center justify-center p-6 text-center text-[12px] text-ink-mute">
+          Select a node to inspect.
+        </div>
+      </aside>
+    )
+  }
+
+  const meta = ENTITY_TYPE_META[entity.type]
+
+  return (
+    <aside className="hidden h-full w-[340px] shrink-0 flex-col border-l border-border bg-background lg:flex">
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+        <h2 className="font-serif text-[14px] font-semibold text-ink">Inspector</h2>
+        <button
+          onClick={() => selectEntity(null)}
+          className="text-ink-faint transition-colors hover:text-ink"
+          aria-label="Close inspector"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4">
+        <div className="mb-3 flex items-center gap-2">
+          <span className={cn('h-2 w-2 rounded-full', meta.dot)} />
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-ink-faint">
+            {meta.label}
+          </span>
+        </div>
+        <h3 className="font-serif text-lg font-semibold leading-tight text-ink">{entity.name}</h3>
+        <p className="mt-2 text-[12px] leading-relaxed text-ink-mute">{entity.description}</p>
+
+        <div className="mt-4 flex flex-wrap gap-1.5">
+          {entity.tags.map((t) => (
+            <span
+              key={t}
+              className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-ink-mute"
+            >
+              #{t}
+            </span>
+          ))}
+        </div>
+
+        {entity.links.length > 0 && (
+          <div className="mt-5">
+            <h4 className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+              Connections ({entity.links.length})
+            </h4>
+            <ul className="space-y-1">
+              {entity.links.map((l, i) => {
+                const target = entities.find((e) => e.id === l.targetId)
+                if (!target) return null
+                return (
+                  <li key={i}>
+                    <button
+                      onClick={() => selectEntity(target.id)}
+                      className="flex w-full items-center gap-2 rounded-md p-1.5 text-left text-[12px] text-ink-soft transition-colors hover:bg-muted focus-ring"
+                    >
+                      <ArrowRight className="h-3 w-3 shrink-0 text-ink-faint" />
+                      <span className="flex-1 truncate">{target.name}</span>
+                      <span className="text-[10px] italic text-ink-faint">{l.relation}</span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        )}
+
+        <div className="mt-5 border-t border-border pt-3 text-[11px] text-ink-faint">
+          Updated {new Date(entity.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+        </div>
+      </div>
+
+      <div className="flex gap-2 border-t border-border p-3">
+        <button
+          onClick={() => startEdit(entity.id)}
+          className="flex-1 rounded-md bg-primary px-3 py-1.5 text-[12px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 focus-ring"
+        >
+          Edit
+        </button>
+        <button
+          onClick={() => {
+            deleteEntity(entity.id)
+            selectEntity(null)
+          }}
+          className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:border-red-300 hover:text-red-600 focus-ring"
+        >
+          Delete
+        </button>
+      </div>
+    </aside>
+  )
+}
+
+function CitationsPanel() {
+  const { chat, entities } = useStudioStore()
+  const lastAssistant = [...chat].reverse().find((m) => m.role === 'assistant')
+  const citations = lastAssistant?.citations || []
+
+  return (
+    <aside className="hidden h-full w-[320px] shrink-0 flex-col border-l border-border bg-background lg:flex">
+      <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+        <Quote className="h-3.5 w-3.5 text-saffron" />
+        <h2 className="font-serif text-[14px] font-semibold text-ink">Cited sources</h2>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-3">
+        {citations.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 py-12 text-center">
+            <Sparkles className="h-8 w-8 text-ink-faint/40" />
+            <p className="px-6 text-[12px] text-ink-mute">
+              When the assistant cites your library, the sources appear here for verification.
+            </p>
+          </div>
+        ) : (
+          <ul className="space-y-2">
+            {citations.map((c, i) => (
+              <li
+                key={i}
+                className="rounded-md border border-border bg-muted/30 p-3"
+              >
+                <div className="mb-1 flex items-center gap-2">
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-saffron text-[9px] font-bold text-white">
+                    {i + 1}
+                  </span>
+                  <span className="text-[12px] font-medium text-ink">{c.entityName}</span>
+                </div>
+                <p className="text-[11px] leading-snug text-ink-mute">{c.snippet}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="border-t border-border px-4 py-2.5">
+        <div className="flex items-center gap-1.5 text-[11px] text-ink-faint">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+          Grounded in {entities.length} local entities
+        </div>
+      </div>
+    </aside>
+  )
+}
