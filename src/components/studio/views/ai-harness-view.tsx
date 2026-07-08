@@ -12,7 +12,6 @@ import {
   Cpu,
   Plug,
   Check,
-  ChevronDown,
   BookOpen,
   Sparkles,
   Zap,

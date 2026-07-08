@@ -18,7 +18,6 @@ import {
 import { useStudioStore } from '@/lib/studio/store'
 import type { ViewId, EntityType } from '@/lib/studio/types'
 import { ENTITY_TYPE_META } from '@/lib/studio/types'
-import { cn } from '@/lib/utils'
 
 interface CmdItem {
   id: string
