@@ -10,7 +10,6 @@ import {
   Layers,
   Focus,
   Camera,
-  Save,
   RotateCcw,
   RotateCw,
   Download,
@@ -18,7 +17,6 @@ import {
 } from 'lucide-react'
 import { useState, useRef, useMemo } from 'react'
 import { cn } from '@/lib/utils'
-import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 
 type LayoutType = 'force' | 'circular' | 'hierarchical'

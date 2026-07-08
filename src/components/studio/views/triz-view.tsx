@@ -9,12 +9,10 @@ import {
   Check,
   Search,
   Sparkles,
-  X,
-  Lightbulb,
 } from 'lucide-react'
 import { useState, useMemo } from 'react'
 import { cn } from '@/lib/utils'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 
 export function TrizView() {
