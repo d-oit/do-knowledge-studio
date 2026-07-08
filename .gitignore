@@ -64,3 +64,27 @@ test.db
 # Agent scratch / taste
 .commandcode/
 .claude/
+
+# === Next.js redesign additions ===
+# Build output
+.next/
+out/
+
+# Database
+*.db
+*.db-journal
+db/*.db
+
+# Logs
+*.log
+dev.log
+server.log
+
+# Research screenshots (not source)
+research/
+
+# Z scripts runtime
+.zscripts/*.pid
+
+# Download deliverables
+download/
