@@ -209,7 +209,7 @@ export function EditorView() {
 
       <EditorToolbar
         showAdvanced={showAdvanced}
-        onToggleAdvanced={() => setShowAdvanced(!showAdvanced)}
+        onToggleAdvanced={() => { setShowAdvanced(!showAdvanced) }}
       />
 
       {showAdvanced && (
@@ -231,13 +231,13 @@ export function EditorView() {
 
       <div className="mb-4 flex items-center gap-2 border-b border-border pb-2">
         <button
-          onClick={() => setPreviewMode(false)}
+          onClick={() => { setPreviewMode(false) }}
           className={`rounded px-2 py-1 text-[11px] font-medium transition-colors ${!previewMode ? 'bg-muted text-ink' : 'text-ink-mute hover:bg-muted/50'}`}
         >
           Edit
         </button>
         <button
-          onClick={() => setPreviewMode(true)}
+          onClick={() => { setPreviewMode(true) }}
           className={`rounded px-2 py-1 text-[11px] font-medium transition-colors ${previewMode ? 'bg-muted text-ink' : 'text-ink-mute hover:bg-muted/50'}`}
         >
           Preview

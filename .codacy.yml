@@ -4,12 +4,14 @@ exclude_paths:
   - "node_modules/**"
   - "coverage/**"
   - ".mimicode/**"
+  - ".agents/**"
   - "**/__tests__/**"
   - "**/*.test.*"
   - "**/*.spec.*"
 engines:
   biome:
-    enabled: false
+    enabled: true
+    config: biome.json
   eslint-8:
     enabled: true
     exclude_paths:

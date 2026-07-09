@@ -16,9 +16,10 @@ import { toast } from 'sonner'
 function ToolbarButton({ icon: Icon, label }: { icon: typeof Bold; label: string }) {
   return (
     <button
+      type="button"
       title={label}
       aria-label={label}
-      onClick={() => toast.info(`${label} — would apply formatting`)}
+      onClick={() => { toast.info(`${label} — would apply formatting`) }}
       className="rounded p-1.5 text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
     >
       <Icon className="h-3.5 w-3.5" />
@@ -56,13 +57,15 @@ export function EditorToolbar({
         <ToolbarButton icon={Redo2} label="Redo" />
         <div className="flex-1" />
         <button
-          onClick={() => toast.info('AI extraction would scan the body for entities.')}
+          type="button"
+          onClick={() => { toast.info('AI extraction would scan the body for entities.') }}
           className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-saffron-deep transition-colors hover:bg-saffron-soft focus-ring"
         >
           <span className="h-3 w-3">✦</span>
           AI Extract
         </button>
         <button
+          type="button"
           onClick={onToggleAdvanced}
           className={`flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors hover:bg-muted focus-ring ${
             showAdvanced ? 'text-ink' : 'text-ink-mute'

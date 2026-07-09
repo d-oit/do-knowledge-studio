@@ -85,6 +85,7 @@ export function ExportView() {
       }
       const json = buildJsonExport(entities, claims)
       const encrypted = await encryptData(json, password)
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-function-parentheses -- HTML is intentionally built for encrypted export download
       const html = buildEncryptedReaderHtml(encrypted)
       downloadFile(`do-knowledge-studio-encrypted-${todayStamp()}.html`, html, 'text/html')
       toast.success('Encrypted export downloaded', {

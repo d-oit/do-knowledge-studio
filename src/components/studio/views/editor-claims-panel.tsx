@@ -81,7 +81,8 @@ export function ClaimsPanel({
         </div>
         {!showForm && (
           <button
-            onClick={() => setShowForm(true)}
+            type="button"
+            onClick={() => { setShowForm(true) }}
             className="flex items-center gap-1 rounded-md border border-dashed border-saffron/50 px-2.5 py-1 text-[11px] font-medium text-saffron-deep transition-colors hover:bg-saffron-soft focus-ring"
           >
             <Plus className="h-3 w-3" />
@@ -142,26 +143,27 @@ export function ClaimsPanel({
 
       {showForm && (
         <div className="mt-3 rounded-md border border-saffron/40 bg-background p-3">
-          <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+          <label htmlFor="claim-statement" className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
             Statement
           </label>
           <textarea
+            id="claim-statement"
             value={statement}
-            onChange={(e) => setStatement(e.target.value)}
+            onChange={(e) => { setStatement(e.target.value) }}
             placeholder="State a factual claim about this entity…"
             rows={3}
-            autoFocus
             className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-[13px] leading-relaxed text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/30"
           />
 
           <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+              <label htmlFor="claim-verification" className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
                 Verification
               </label>
               <select
+                id="claim-verification"
                 value={verification}
-                onChange={(e) => setVerification(e.target.value as VerificationStatus)}
+                onChange={(e) => { setVerification(e.target.value as VerificationStatus) }}
                 className="w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-[12px] text-ink focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/30"
               >
                 <option value="unverified">Unverified</option>
@@ -170,30 +172,31 @@ export function ClaimsPanel({
               </select>
             </div>
             <div>
-              <label className="mb-1 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+              <label htmlFor="claim-confidence" className="mb-1 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
                 <span>Confidence</span>
                 <span className="font-mono text-[10px] text-ink-mute">{confidence}%</span>
               </label>
               <input
+                id="claim-confidence"
                 type="range"
                 min={0}
                 max={100}
                 step={5}
                 value={confidence}
-                onChange={(e) => setConfidence(Number(e.target.value))}
+                onChange={(e) => { setConfidence(Number(e.target.value)) }}
                 className="h-7 w-full accent-[var(--saffron)]"
-                aria-label="Confidence"
               />
             </div>
           </div>
 
           <div className="mt-3">
-            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+            <label htmlFor="claim-source" className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
               Source (optional)
             </label>
             <input
+              id="claim-source"
               value={source}
-              onChange={(e) => setSource(e.target.value)}
+              onChange={(e) => { setSource(e.target.value) }}
               placeholder="Where did this claim come from? (URL, book, person…)"
               className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-[12px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/30"
             />
@@ -201,12 +204,14 @@ export function ClaimsPanel({
 
           <div className="mt-3 flex justify-end gap-2">
             <button
+              type="button"
               onClick={resetForm}
               className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
             >
               Cancel
             </button>
             <button
+              type="button"
               onClick={handleSave}
               disabled={!statement.trim()}
               className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 focus-ring"

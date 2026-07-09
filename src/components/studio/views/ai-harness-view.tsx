@@ -152,8 +152,8 @@ export function AIHarnessView() {
                     onChange={(e) => {
                       const p = e.target.value as AIProvider
                       setProvider(p)
-                      const opt = PROVIDERS.find((x) => x.id === p)!
-                      setModel(opt.models[0])
+                      const opt = PROVIDERS.find((x) => x.id === p)
+                      if (opt) { setModel(opt.models[0]) }
                     }}
                     className="w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
                   >
