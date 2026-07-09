@@ -16,33 +16,35 @@ import {
   Sparkles,
   Zap,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
+import { loadAISettings, saveAISettings, type AIProvider } from '@/lib/studio/ai-settings'
 
-interface AIProvider {
-  id: string
+interface ProviderOption {
+  id: AIProvider
   label: string
   models: string[]
   requiresKey: boolean
 }
 
-const PROVIDERS: AIProvider[] = [
-  { id: 'openrouter', label: 'OpenRouter', models: ['gemini-2.0-flash-lite', 'gpt-4o-mini', 'claude-3.5-haiku'], requiresKey: true },
+const PROVIDERS: ProviderOption[] = [
+  { id: 'openai', label: 'OpenAI', models: ['gpt-4o', 'gpt-4o-mini', 'gpt-3.5-turbo'], requiresKey: true },
   { id: 'anthropic', label: 'Anthropic', models: ['claude-sonnet-4', 'claude-haiku-3.5', 'claude-opus-4'], requiresKey: true },
-  { id: 'ollama', label: 'Ollama (local)', models: ['llama-3.2', 'mistral', 'qwen-2.5', 'gemma-2'], requiresKey: false },
-  { id: 'kilo', label: 'Kilo', models: ['kilo-large', 'kilo-fast'], requiresKey: true },
+  { id: 'ollama', label: 'Ollama (local)', models: ['llama3', 'mistral', 'qwen2.5', 'gemma2'], requiresKey: false },
 ]
 
 export function AIHarnessView() {
   const { entities } = useStudioStore()
-  const [provider, setProvider] = useState('openrouter')
-  const [model, setModel] = useState(PROVIDERS[0].models[0])
-  const [apiKey, setApiKey] = useState('')
+  const saved = loadAISettings()
+  const [provider, setProvider] = useState<AIProvider>(saved.provider)
+  const [model, setModel] = useState(saved.model)
+  const [apiKey, setApiKey] = useState(saved.apiKey)
   const [showKey, setShowKey] = useState(false)
-  const [augment, setAugment] = useState(true)
+  const [augment, setAugment] = useState(saved.augmentWithLocal)
   const [showSettings, setShowSettings] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([
     {
       role: 'assistant',
@@ -54,32 +56,41 @@ export function AIHarnessView() {
 
   const activeProvider = PROVIDERS.find((p) => p.id === provider)!
 
-  const handleSend = () => {
+  useEffect(() => {
+    saveAISettings({ provider, model, apiKey, augmentWithLocal: augment })
+  }, [provider, model, apiKey, augment])
+
+  const handleSend = async () => {
     if (!input.trim()) return
     if (!apiKey && activeProvider.requiresKey) {
       toast.error('Set an API key in settings to send messages.')
       return
     }
+
     const userMsg = { role: 'user' as const, content: input }
     setMessages((m) => [...m, userMsg])
     setInput('')
-    setTimeout(() => {
+    setIsLoading(true)
+
+    try {
+      const response = await fetchProvider(provider, model, apiKey, [
+        ...messages.map((m) => ({ role: m.role, content: m.content })),
+        { role: 'user' as const, content: input },
+      ])
+      setMessages((m) => [...m, { role: 'assistant', content: response }])
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unknown error'
       setMessages((m) => [
         ...m,
-        {
-          role: 'assistant',
-          content:
-            augment && entities.length
-              ? `Drawing on your ${entities.length} local entities, here is a synthesis: the query touches on themes in your library — consider exploring the related concepts and claims for a grounded answer. (Demo response.)`
-              : 'Without local augmentation, here is a general answer. Enable "Augment with local knowledge" for grounded responses. (Demo response.)',
-        },
+        { role: 'assistant', content: `[Error] ${msg}\n\nThis is a demo fallback. Connect a real provider to get actual responses.` },
       ])
-    }, 700)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-6 lg:px-10 lg:py-8">
-      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
@@ -112,7 +123,6 @@ export function AIHarnessView() {
       </motion.div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-        {/* Settings panel */}
         {showSettings && (
           <motion.aside
             initial={{ opacity: 0, x: -8 }}
@@ -140,9 +150,10 @@ export function AIHarnessView() {
                   <select
                     value={provider}
                     onChange={(e) => {
-                      setProvider(e.target.value)
-                      const p = PROVIDERS.find((x) => x.id === e.target.value)!
-                      setModel(p.models[0])
+                      const p = e.target.value as AIProvider
+                      setProvider(p)
+                      const opt = PROVIDERS.find((x) => x.id === p)!
+                      setModel(opt.models[0])
                     }}
                     className="w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
                   >
@@ -186,7 +197,7 @@ export function AIHarnessView() {
                       </button>
                     </div>
                     <p className="mt-1.5 text-[10px] text-ink-faint">
-                      Stored locally only — never sent anywhere except the provider.
+                      Stored in this browser only — sent directly to the provider.
                     </p>
                   </Field>
                 )}
@@ -218,7 +229,10 @@ export function AIHarnessView() {
                 </div>
 
                 <button
-                  onClick={() => toast.success('Settings saved')}
+                  onClick={() => {
+                    saveAISettings({ provider, model, apiKey, augmentWithLocal: augment })
+                    toast.success('Settings saved')
+                  }}
                   className="w-full rounded-md bg-primary px-3 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 focus-ring"
                 >
                   Save settings
@@ -226,14 +240,13 @@ export function AIHarnessView() {
               </div>
             </div>
 
-            {/* Status */}
             <div className="mt-3 rounded-lg border border-border bg-card p-3">
               <div className="flex items-center justify-between text-[11px]">
                 <span className="flex items-center gap-1.5 text-ink-mute">
                   <Zap className="h-3 w-3 text-saffron" />
-                  Rate limit
+                  Status
                 </span>
-                <span className="font-mono text-ink">1 / 15 req/min</span>
+                <span className="font-mono text-ink">{isLoading ? 'Thinking…' : 'Ready'}</span>
               </div>
               <div className="mt-1.5 flex items-center justify-between text-[11px]">
                 <span className="flex items-center gap-1.5 text-ink-mute">
@@ -246,10 +259,8 @@ export function AIHarnessView() {
           </motion.aside>
         )}
 
-        {/* Chat */}
         <div className={cn('flex flex-col', showSettings ? 'lg:col-span-3' : 'lg:col-span-5')}>
           <div className="flex h-[520px] flex-col rounded-lg border border-border bg-card">
-            {/* Messages */}
             <div className="flex-1 space-y-4 overflow-y-auto p-4">
               {messages.map((m, i) => (
                 <motion.div
@@ -281,9 +292,18 @@ export function AIHarnessView() {
                   </div>
                 </motion.div>
               ))}
+              {isLoading && (
+                <div className="flex gap-2.5">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-saffron-soft text-saffron-deep">
+                    <Bot className="h-3.5 w-3.5" />
+                  </div>
+                  <div className="rounded-2xl rounded-tl-sm bg-muted px-3.5 py-2.5 text-[13px] text-ink-mute">
+                    Thinking…
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Input */}
             <div className="border-t border-border p-3">
               <div className="flex items-end gap-2 rounded-lg border border-border bg-background p-1.5 focus-within:border-saffron/40">
                 <textarea
@@ -297,11 +317,12 @@ export function AIHarnessView() {
                   }}
                   placeholder="Ask the AI agent…"
                   rows={1}
-                  className="max-h-24 flex-1 resize-none bg-transparent px-2 py-1 text-[13px] text-ink placeholder:text-ink-faint focus:outline-none"
+                  disabled={isLoading}
+                  className="max-h-24 flex-1 resize-none bg-transparent px-2 py-1 text-[13px] text-ink placeholder:text-ink-faint focus:outline-none disabled:opacity-50"
                 />
                 <button
                   onClick={handleSend}
-                  disabled={!input.trim()}
+                  disabled={!input.trim() || isLoading}
                   className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:opacity-40 focus-ring"
                   aria-label="Send"
                 >
@@ -321,6 +342,54 @@ export function AIHarnessView() {
       </div>
     </div>
   )
+}
+
+async function fetchProvider(
+  provider: AIProvider,
+  model: string,
+  apiKey: string,
+  messages: { role: string; content: string }[],
+): Promise<string> {
+  if (provider === 'ollama') {
+    const res = await fetch('http://localhost:11434/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, messages, stream: false }),
+    })
+    if (!res.ok) throw new Error(`Ollama returned ${res.status}`)
+    const data = await res.json()
+    return data.message?.content ?? '(Empty response)'
+  }
+
+  if (provider === 'openai') {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({ model, messages }),
+    })
+    if (!res.ok) throw new Error(`OpenAI returned ${res.status}`)
+    const data = await res.json()
+    return data.choices?.[0]?.message?.content ?? '(Empty response)'
+  }
+
+  if (provider === 'anthropic') {
+    const systemMsg = messages.find((m) => m.role === 'system')?.content ?? ''
+    const chatMsgs = messages.filter((m) => m.role !== 'system')
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({ model, max_tokens: 1024, system: systemMsg, messages: chatMsgs }),
+    })
+    if (!res.ok) throw new Error(`Anthropic returned ${res.status}`)
+    const data = await res.json()
+    return data.content?.[0]?.text ?? '(Empty response)'
+  }
+
+  throw new Error(`Unknown provider: ${provider}`)
 }
 
 function Field({

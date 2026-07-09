@@ -1,0 +1,222 @@
+import { useState } from 'react'
+import { Plus, ExternalLink, ShieldCheck, CheckCircle2, AlertTriangle, Circle, Save } from 'lucide-react'
+import { toast } from 'sonner'
+import type { Claim, VerificationStatus } from '@/lib/studio/types'
+
+export function VerificationBadge({ status }: { status: VerificationStatus }) {
+  if (status === 'verified')
+    return (
+      <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+        <CheckCircle2 className="h-3 w-3" />
+        Verified
+      </span>
+    )
+  if (status === 'disputed')
+    return (
+      <span className="flex items-center gap-1 text-[10px] font-medium text-amber-600 dark:text-amber-400">
+        <AlertTriangle className="h-3 w-3" />
+        Disputed
+      </span>
+    )
+  return (
+    <span className="flex items-center gap-1 text-[10px] font-medium text-ink-faint">
+      <Circle className="h-3 w-3" />
+      Unverified
+    </span>
+  )
+}
+
+export function ClaimsPanel({
+  claims,
+  editingEntityId,
+  addClaim,
+}: {
+  claims: Claim[]
+  editingEntityId: string
+  addClaim: (claim: Omit<Claim, 'id'>) => void
+}) {
+  const [showForm, setShowForm] = useState(false)
+  const [statement, setStatement] = useState('')
+  const [verification, setVerification] = useState<VerificationStatus>('unverified')
+  const [confidence, setConfidence] = useState(50)
+  const [source, setSource] = useState('')
+
+  const resetForm = () => {
+    setStatement('')
+    setVerification('unverified')
+    setConfidence(50)
+    setSource('')
+    setShowForm(false)
+  }
+
+  const handleSave = () => {
+    const trimmed = statement.trim()
+    if (!trimmed) {
+      toast.error('Claim statement is required')
+      return
+    }
+    addClaim({
+      entityId: editingEntityId,
+      statement: trimmed,
+      verification,
+      confidence: confidence / 100,
+      source: source.trim() || undefined,
+    })
+    toast.success('Claim added')
+    resetForm()
+  }
+
+  return (
+    <section
+      aria-label="Claims"
+      className="mt-6 rounded-lg border border-border bg-surface-sunken/40 p-4"
+    >
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="h-4 w-4 text-saffron" />
+          <h3 className="font-serif text-[15px] font-semibold text-ink">Claims</h3>
+          <span className="rounded-full bg-muted px-2 py-0 text-[10px] font-semibold text-ink-mute">
+            {claims.length} {claims.length === 1 ? 'claim' : 'claims'}
+          </span>
+        </div>
+        {!showForm && (
+          <button
+            onClick={() => setShowForm(true)}
+            className="flex items-center gap-1 rounded-md border border-dashed border-saffron/50 px-2.5 py-1 text-[11px] font-medium text-saffron-deep transition-colors hover:bg-saffron-soft focus-ring"
+          >
+            <Plus className="h-3 w-3" />
+            Add claim
+          </button>
+        )}
+      </div>
+
+      {claims.length === 0 && !showForm && (
+        <p className="text-[12px] leading-relaxed text-ink-mute">
+          No claims recorded for this entity yet. Capture a factual statement you can later verify, dispute, or cite.
+        </p>
+      )}
+
+      <ul className="space-y-3">
+        {claims.map((c) => (
+          <li
+            key={c.id}
+            className="rounded-md border border-border bg-background p-3 shadow-soft"
+            style={{ borderLeft: '3px solid var(--saffron)' }}
+          >
+            <p className="font-serif text-[14px] italic leading-relaxed text-ink">
+              &ldquo;{c.statement}&rdquo;
+            </p>
+
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+              <VerificationBadge status={c.verification} />
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-medium uppercase tracking-wide text-ink-faint">
+                  Confidence
+                </span>
+                <div className="h-1.5 w-20 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-saffron"
+                    style={{ width: `${Math.round(c.confidence * 100)}%` }}
+                  />
+                </div>
+                <span className="font-mono text-[10px] text-ink-mute">
+                  {Math.round(c.confidence * 100)}%
+                </span>
+              </div>
+              {c.source && (
+                <span className="flex items-center gap-1 text-[10px] text-ink-faint">
+                  <ExternalLink className="h-2.5 w-2.5" />
+                  {c.source}
+                </span>
+              )}
+            </div>
+
+            {c.evidence && (
+              <p className="mt-1.5 text-[11px] italic leading-relaxed text-ink-mute">
+                {c.evidence}
+              </p>
+            )}
+          </li>
+        ))}
+      </ul>
+
+      {showForm && (
+        <div className="mt-3 rounded-md border border-saffron/40 bg-background p-3">
+          <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+            Statement
+          </label>
+          <textarea
+            value={statement}
+            onChange={(e) => setStatement(e.target.value)}
+            placeholder="State a factual claim about this entity…"
+            rows={3}
+            autoFocus
+            className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-[13px] leading-relaxed text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/30"
+          />
+
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+                Verification
+              </label>
+              <select
+                value={verification}
+                onChange={(e) => setVerification(e.target.value as VerificationStatus)}
+                className="w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-[12px] text-ink focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/30"
+              >
+                <option value="unverified">Unverified</option>
+                <option value="verified">Verified</option>
+                <option value="disputed">Disputed</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+                <span>Confidence</span>
+                <span className="font-mono text-[10px] text-ink-mute">{confidence}%</span>
+              </label>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={5}
+                value={confidence}
+                onChange={(e) => setConfidence(Number(e.target.value))}
+                className="h-7 w-full accent-[var(--saffron)]"
+                aria-label="Confidence"
+              />
+            </div>
+          </div>
+
+          <div className="mt-3">
+            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+              Source (optional)
+            </label>
+            <input
+              value={source}
+              onChange={(e) => setSource(e.target.value)}
+              placeholder="Where did this claim come from? (URL, book, person…)"
+              className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-[12px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/30"
+            />
+          </div>
+
+          <div className="mt-3 flex justify-end gap-2">
+            <button
+              onClick={resetForm}
+              className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={!statement.trim()}
+              className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 focus-ring"
+            >
+              <Save className="h-3.5 w-3.5" />
+              Save claim
+            </button>
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
