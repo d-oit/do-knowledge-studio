@@ -167,7 +167,7 @@ export function LibraryView() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25, delay: Math.min(i * 0.03, 0.3) }}
                 onClick={() => startEdit(e.id)}
-                className="group flex flex-col rounded-lg border border-border bg-card p-4 text-left transition-all hover:border-saffron/30 hover:shadow-md focus-ring"
+                className="group flex flex-col rounded-lg border border-border bg-card p-4 text-left transition-all hover:border-saffron/30 hover:shadow-md hover-lift focus-ring"
               >
                 <div className="mb-3 flex items-center justify-between">
                   <div className={cn('flex h-9 w-9 items-center justify-center rounded-md', meta.bg, meta.text)}>

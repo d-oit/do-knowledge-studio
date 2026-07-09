@@ -218,7 +218,7 @@ export function ExportView() {
           </p>
           <button
             onClick={handleImportClick}
-            className="mt-3 rounded-md bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 focus-ring"
+            className="mt-3 rounded-md bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
           >
             Choose file
           </button>
