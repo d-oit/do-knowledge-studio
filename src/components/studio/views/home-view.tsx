@@ -227,13 +227,13 @@ function StatCard({
   return (
     <button
       onClick={onClick}
-      className="group flex flex-col items-start gap-2 rounded-lg border border-border bg-card p-4 text-left transition-all hover:border-saffron/30 hover:shadow-sm focus-ring"
+      className="group flex flex-col items-start gap-2 rounded-md border border-border bg-card p-4 text-left transition-all hover:border-saffron/30 hover:shadow-sm focus-ring"
     >
       <div className={cn('flex h-8 w-8 items-center justify-center rounded-md', accents[accent])}>
         <Icon className="h-4 w-4" />
       </div>
       <div>
-        <div className="font-serif text-2xl font-semibold leading-none text-ink">{value}</div>
+        <div className="font-mono text-2xl font-semibold leading-none text-ink">{value}</div>
         <div className="mt-1 text-[11px] uppercase tracking-wide text-ink-faint">{label}</div>
       </div>
     </button>

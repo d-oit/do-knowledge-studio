@@ -130,8 +130,8 @@ If CI fails after pushing, use the existing repair workflow:
 
 - Use design tokens from `src/app/globals.css` `@theme` block (source of truth).
 - Two themes: `light` and `dark` via `data-theme` attribute.
-- Accent color: Emerald green (`#10b981` light, `#34d399` dark).
-- Font: Inter (clean SaaS aesthetic).
+- Accent color: Saffron (`#c77d3a` light, `#e5944a` dark).
+- Font: Geist Sans (body) + Newsreader (serif headings).
 - Build mobile-first.
 - Keep interactive targets at least 44x44px.
 - Preserve responsive behavior across editor, graph, search, and mind map views.
@@ -249,7 +249,7 @@ pnpm run build
 | `github-readme` | Create human-focused GitHub README.md files with 2026 best p | Documentation |
 | `github-workflow` | Complete GitHub workflow automation - push, create branch/PR | General |
 | `goap-agent` | Invoke for complex multi-step tasks requiring intelligent pl | Coordination |
-| `impeccable` | Canonical skill for frontend UI design, visual polish, and UX critique. Prevents common AI design patterns. Covers typography, color, spacing, layout, motion, and interaction.
+| `impeccable` | Design, redesign, shape, critique, audit, polish, clarify, distill, harden, optimize, adapt, animate, colorize frontend interfaces. Covers UX review, visual hierarchy, typography, spacing, layout, color, motion, responsive behavior, theming, and anti-patterns.
 | General |
 | `intent-classifier` | Classify user intents and route to appropriate skills, comma | Coordination |
 | `iterative-refinement` | Execute iterative refinement workflows with validation loops | General |
