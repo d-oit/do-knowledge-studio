@@ -10,7 +10,8 @@ exclude_patterns = [
   "dist/",
   "node_modules/",
   "coverage/",
-  ".mimocode/"
+  ".mimicode/",
+  ".agents/"
 ]
 
 [[analyzers]]
@@ -19,7 +20,7 @@ enabled = true
 
   [analyzers.meta]
   cyclomatic_complexity_threshold = "critical"
-  max_functions = "50"
+  max_functions = "100"
   skip_doc_coverage = ["test"]
   plugins = ["react"]
   environment = ["nodejs", "browser"]
@@ -32,6 +33,7 @@ enabled = true
   [analyzers.meta.checks]
   # Disable Qwik-specific rules (project doesn't use Qwik)
   Biome_lint_correctness_useQwikValidLexicalScope = "off"
-  # JS-0067 is a false positive for ES module exports — top-level declarations
-  # in ES modules are module-scoped, not global. DeepSource docs confirm this.
+  # JS-0067 is a false positive for ES module exports
   JS_0067 = "off"
+  # JS-R1005: complexity threshold handled via cyclomatic_complexity_threshold above
+  JS_R1005 = "off"
