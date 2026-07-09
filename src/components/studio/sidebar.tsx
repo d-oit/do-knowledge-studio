@@ -73,9 +73,7 @@ export function Sidebar() {
     <aside className="hidden h-full w-[248px] shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground lg:flex">
       {/* Brand */}
       <div className="flex items-center gap-2.5 px-5 pt-5 pb-4">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-          <span className="font-serif text-lg font-semibold leading-none">D</span>
-        </div>
+        <img src="/logo.svg" alt="" className="h-9 w-9" />
         <div className="flex flex-col">
           <span className="font-serif text-[15px] font-semibold leading-tight tracking-tight">
             Knowledge Studio

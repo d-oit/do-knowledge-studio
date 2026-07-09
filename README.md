@@ -8,7 +8,7 @@ This repository contains the redesigned DO Knowledge Studio: a Next.js 16 app
 that reimagines the original Vite + React SPA as a calmer, more deliberate
 editorial workspace. The visual language is "Editorial Paper & Saffron" — warm
 paper backgrounds, deep ink type, and a single saffron accent. See
-[DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) for the full design reference.
+[DESIGN.md](./DESIGN.md) for the full design reference.
 
 ## Tech stack
 
@@ -84,8 +84,9 @@ src/
     utils.ts             # cn() class merge
     db.ts                # prisma client (unused by the studio shell)
 public/
+  favicon.svg
   logo.svg
-DESIGN-SYSTEM.md         # full design reference
+DESIGN.md                 # full design reference
 worklog.md               # build log
 ```
 
@@ -93,7 +94,7 @@ worklog.md               # build log
 
 The full design reference — color tokens, typography, spacing, radius,
 shadows, focus rings, component patterns, layout, and accessibility rules —
-lives in [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md). Read it before adding new
+lives in [DESIGN.md](./DESIGN.md). Read it before adding new
 components or touching tokens in `globals.css`.
 
 ## Local-first principles

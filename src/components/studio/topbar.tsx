@@ -108,8 +108,8 @@ export function Topbar() {
       </div>
 
       {/* Offline-ready badge — hidden on mobile (< 768px) */}
-      <div className="hidden flex-shrink-0 items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-400 md:flex">
-        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+      <div className="hidden flex-shrink-0 items-center gap-1.5 rounded-full border border-saffron/30 bg-saffron-soft px-2.5 py-1 text-[11px] font-medium text-saffron-deep md:flex">
+        <span className="h-1.5 w-1.5 rounded-full bg-saffron" />
         Offline ready
       </div>
 

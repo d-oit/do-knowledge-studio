@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "DO Knowledge Studio" }],
   icons: {
-    icon: "/logo.svg",
+    icon: "/favicon.svg",
   },
   openGraph: {
     title: "DO Knowledge Studio",
