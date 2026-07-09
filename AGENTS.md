@@ -164,6 +164,56 @@ If hooks are needed locally:
 
 Do not finish with failing lint, typecheck, tests, build, or quality gate output.
 
+## Deployment (Vercel)
+
+**Critical**: This project uses Vercel for production deployment. Breaking the build breaks the live site.
+
+### Requirements
+
+- **Node.js ≥ 20** — enforced via `package.json` `engines.node` and `.nvmrc`
+- **pnpm** — Vercel uses `packageManager` field to install correct version
+- **Build must pass** — `pnpm run build` runs on every push to `main`
+
+### Configuration Files
+
+| File | Purpose | Do NOT delete |
+|------|---------|---------------|
+| `package.json` | `engines.node >= 20` tells Vercel which Node version | `engines` field |
+| `vercel.json` | Explicit build/install commands for Vercel | entire file |
+| `.nvmrc` | Node version for local dev and CI | entire file |
+
+### Preventing Deployment Failures
+
+1. **Always run `pnpm run build` locally** before pushing to `main`
+2. **Never remove `engines` field** from `package.json` — Vercel needs it
+3. **Never remove `vercel.json`** — Vercel needs explicit build config
+4. **Never change `build` script** without verifying `vercel.json` matches
+5. **If adding new deps**, run `pnpm install` to update `pnpm-lock.yaml`
+6. **If upgrading Next.js**, check Node.js version requirements
+
+### Diagnosing Vercel Failures
+
+```bash
+# Check Vercel deployment status
+gh pr checks <PR#> | grep -i vercel
+
+# Check production deployment
+gh api repos/d-oit/do-knowledge-studio/deployments --jq '.[] | select(.environment == "Production")'
+
+# Verify build passes locally
+pnpm run build
+```
+
+### Common Vercel Failure Causes
+
+| Cause | Symptom | Fix |
+|-------|---------|-----|
+| Node.js version too old | Build fails with syntax errors | Ensure `engines.node >= 20` in package.json |
+| Missing `vercel.json` | Vercel uses wrong build command | Add vercel.json with explicit config |
+| `pnpm-lock.yaml` out of date | Install fails | Run `pnpm install` and commit lockfile |
+| TypeScript errors | Build fails | Run `pnpm run typecheck` before pushing |
+| Missing dependencies | Import errors | Run `pnpm install` and commit changes |
+
 ## Skills
 
 - Canonical skills live in `.agents/skills/`.

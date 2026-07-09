@@ -1,14 +1,17 @@
 # Plans Index — do-knowledge-studio
 
 **Generated**: 2026-05-27  
-**Updated**: 2026-06-28
-**Source**: 6-agent parallel swarm analysis + GitHub issue audit (#168–#240) + open issues (#280-#289) + all PRs merged (#292-#307) + 3-agent UI/UX/feature-gap analysis (plan 041, ADRs 013–016) + 4-wave master GOAP swarm execution (plan 042, 2026-06-22)
+**Updated**: 2026-07-09
+**Source**: 6-agent parallel swarm analysis + GitHub issue audit (#168–#240) + open issues (#280-#289) + all PRs merged (#292-#307) + 3-agent UI/UX/feature-gap analysis (plan 041, ADRs 013–016) + 4-wave master GOAP swarm execution (plan 042, 2026-06-22) + Next.js cleanup & feature implementation (plans 048-049, 051)
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
 ## Quick Reference — Active Plans
 
 | Priority | Plan | Description | Effort | Status | Issues |
 |----------|------|-------------|--------|--------|--------|
+| **P0** | [048-nextjs-cleanup-and-deprecation-audit-2026-07-09.md](048-nextjs-cleanup-and-deprecation-audit-2026-07-09.md) | Next.js migration cleanup: remove dead deps, fix configs, add tests, align docs | 8-12h | ✅ MERGED | #399 |
+| **P0** | [049-goap-nextjs-feature-implementation-2026-07-09.md](049-goap-nextjs-feature-implementation-2026-07-09.md) | AI provider integration, encrypted export, zod schemas, BM25 retrieval, markdown rendering | 40-60h | ✅ MERGED | #399 |
+| **P0** | [051-vercel-deployment-fix-2026-07-09.md](051-vercel-deployment-fix-2026-07-09.md) | Fix Vercel deployment failure, add Node 20+ requirement, document prevention | 1-2h | ✅ MERGED | #400 |
 | **P0** | [33-post-swarm-critical-features.md](33-post-swarm-critical-features.md) | Library view, search nav, backlinks, CLI unification, Chat→LLM, toolbar, undo/redo | 20-28h | ✅ MERGED | #223–#231, #292, #293, #305, #307 |
 | **P1** | [34-architecture-hygiene.md](34-architecture-hygiene.md) | Split 4 oversized files (repository, GraphView, AIHarness, search) | 16-20h | ✅ MERGED | #226 |
 | **P1** | [35-test-coverage-expansion.md](35-test-coverage-expansion.md) | Mind map, CLI, graph, extension, E2E tests | 20-28h | ✅ MERGED | #228, #229 |
