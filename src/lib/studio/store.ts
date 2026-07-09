@@ -38,7 +38,9 @@ interface StudioState {
 
   // Chat
   chat: ChatMessage[]
+  chatLoading: boolean
   sendMessage: (content: string) => void
+  clearChat: () => void
 
   // Right panel
   rightPanelOpen: boolean
@@ -68,6 +70,7 @@ const SEED_STATE = {
   entities: seedEntities,
   claims: seedClaims,
   chat: seedChat,
+  chatLoading: false,
   currentView: 'home' as ViewId,
   searchQuery: '',
   typeFilter: 'all' as EntityType | 'all',
@@ -139,7 +142,7 @@ export const useStudioStore = create<StudioState>()(
           content,
           timestamp: new Date().toISOString(),
         }
-        set((state) => ({ chat: [...state.chat, userMsg] }))
+        set((state) => ({ chat: [...state.chat, userMsg], chatLoading: true }))
 
         // Simulated RAG response — score entities by word overlap
         setTimeout(() => {
@@ -176,9 +179,11 @@ export const useStudioStore = create<StudioState>()(
             citations: cited,
             timestamp: new Date().toISOString(),
           }
-          set((state) => ({ chat: [...state.chat, reply] }))
+          set((state) => ({ chat: [...state.chat, reply], chatLoading: false }))
         }, 700)
       },
+
+      clearChat: () => set({ chat: [], chatLoading: false }),
 
       setRightPanelOpen: (o) => set({ rightPanelOpen: o }),
 
