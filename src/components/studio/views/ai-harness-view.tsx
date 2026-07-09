@@ -334,7 +334,7 @@ export function AIHarnessView() {
                 <button
                   onClick={handleSend}
                   disabled={!input.trim() || isLoading}
-                  className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:opacity-40 focus-ring"
+                  className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:opacity-40 press-scale focus-ring"
                   aria-label="Send"
                 >
                   <Send className="h-3.5 w-3.5" />

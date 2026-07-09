@@ -126,7 +126,7 @@ export function LibraryView() {
 
         <button
           onClick={startNew}
-          className="flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 focus-ring"
+          className="flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
         >
           <Plus className="h-3.5 w-3.5" />
           New
@@ -146,7 +146,7 @@ export function LibraryView() {
           </p>
           <button
             onClick={startNew}
-            className="mt-4 flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-[13px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 focus-ring"
+            className="mt-4 flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-[13px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
           >
             <Plus className="h-4 w-4" />
             Create your first entity

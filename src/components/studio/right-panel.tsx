@@ -200,7 +200,7 @@ function InspectorPanel() {
       <div className="flex gap-2 border-t border-border p-3">
         <button
           onClick={() => startEdit(entity.id)}
-          className="flex-1 rounded-md bg-primary px-3 py-1.5 text-[12px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 focus-ring"
+          className="flex-1 rounded-md bg-primary px-3 py-1.5 text-[12px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 press-scale focus-ring"
         >
           Edit
         </button>

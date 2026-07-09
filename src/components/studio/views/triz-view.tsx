@@ -209,7 +209,7 @@ export function TrizView() {
           <div className="mt-6 flex items-center gap-2">
             <button
               onClick={handleReset}
-              className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 focus-ring"
+              className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               Try another contradiction
