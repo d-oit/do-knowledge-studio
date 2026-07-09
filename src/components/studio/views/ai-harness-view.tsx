@@ -37,14 +37,14 @@ const PROVIDERS: ProviderOption[] = [
 
 export function AIHarnessView() {
   const { entities } = useStudioStore()
-  const saved = loadAISettings()
-  const [provider, setProvider] = useState<AIProvider>(saved.provider)
-  const [model, setModel] = useState(saved.model)
-  const [apiKey, setApiKey] = useState(saved.apiKey)
+  const [provider, setProvider] = useState<AIProvider>('ollama')
+  const [model, setModel] = useState('llama3')
+  const [apiKey, setApiKey] = useState('')
   const [showKey, setShowKey] = useState(false)
-  const [augment, setAugment] = useState(saved.augmentWithLocal)
+  const [augment, setAugment] = useState(true)
   const [showSettings, setShowSettings] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
+  const [settingsLoaded, setSettingsLoaded] = useState(false)
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([
     {
       role: 'assistant',
@@ -54,11 +54,22 @@ export function AIHarnessView() {
   ])
   const [input, setInput] = useState('')
 
+  useEffect(() => {
+    loadAISettings().then((saved) => {
+      setProvider(saved.provider)
+      setModel(saved.model)
+      setApiKey(saved.apiKey)
+      setAugment(saved.augmentWithLocal)
+      setSettingsLoaded(true)
+    })
+  }, [])
+
   const activeProvider = PROVIDERS.find((p) => p.id === provider)!
 
   useEffect(() => {
+    if (!settingsLoaded) return
     saveAISettings({ provider, model, apiKey, augmentWithLocal: augment })
-  }, [provider, model, apiKey, augment])
+  }, [provider, model, apiKey, augment, settingsLoaded])
 
   const handleSend = async () => {
     if (!input.trim()) return
