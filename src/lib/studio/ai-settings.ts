@@ -1,5 +1,5 @@
 const STORAGE_KEY = 'dks-ai-settings'
-const ENCRYPTION_KEY_NAME = 'dks-ai-enc-key'
+const CRYPTO_KEY_STORAGE = 'dks-ai-enc-key'
 
 export type AIProvider = 'openai' | 'anthropic' | 'ollama'
 
@@ -26,7 +26,7 @@ const DEFAULT_SETTINGS: AISettings = {
 }
 
 async function getOrCreateEncryptionKey(): Promise<CryptoKey> {
-  const stored = sessionStorage.getItem(ENCRYPTION_KEY_NAME)
+  const stored = sessionStorage.getItem(CRYPTO_KEY_STORAGE)
   if (stored) {
     const raw = Uint8Array.from(atob(stored), (c) => c.charCodeAt(0))
     return crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, true, ['encrypt', 'decrypt'])
@@ -34,7 +34,7 @@ async function getOrCreateEncryptionKey(): Promise<CryptoKey> {
   const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt'])
   const exported = await crypto.subtle.exportKey('raw', key)
   const b64 = btoa(String.fromCharCode(...new Uint8Array(exported)))
-  sessionStorage.setItem(ENCRYPTION_KEY_NAME, b64)
+  sessionStorage.setItem(CRYPTO_KEY_STORAGE, b64)
   return key
 }
 
