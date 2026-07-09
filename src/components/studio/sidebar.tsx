@@ -116,7 +116,7 @@ export function Sidebar() {
                       onClick={() => setView(item.id)}
                       aria-current={active ? 'page' : undefined}
                       className={cn(
-                        'group flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] font-medium transition-all focus-ring',
+                        'group flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] font-medium transition-all press-scale focus-ring',
                         active
                           ? 'bg-saffron-soft text-saffron-deep'
                           : 'text-ink-soft hover:bg-sidebar-accent hover:text-ink',

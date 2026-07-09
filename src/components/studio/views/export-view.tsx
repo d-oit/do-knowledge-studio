@@ -149,17 +149,15 @@ export function ExportView() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="stagger-children grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {FORMATS.map((f, i) => {
             const Icon = f.icon
             return (
-              <motion.button
+              <button
                 key={f.id}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25, delay: i * 0.05 }}
+                style={{ '--i': i } as React.CSSProperties}
                 onClick={() => (f.id === 'encrypted' ? setShowPassword(true) : handleExport(f.id))}
-                className="group flex flex-col rounded-lg border border-border bg-card p-4 text-left transition-all hover:border-saffron/30 hover:shadow-md focus-ring"
+                className="group flex flex-col rounded-lg border border-border bg-card p-4 text-left transition-all hover:border-saffron/30 hover:shadow-md hover-lift focus-ring"
               >
                 <div className="mb-3 flex items-center justify-between">
                   <div
@@ -188,7 +186,7 @@ export function ExportView() {
                   Export now
                   <ArrowRight className="h-3 w-3" />
                 </div>
-              </motion.button>
+              </button>
             )
           })}
         </div>

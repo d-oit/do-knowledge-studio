@@ -162,7 +162,7 @@ export function ChatView() {
             <button
               onClick={() => handleSend()}
               disabled={!input.trim()}
-              className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 focus-ring"
+              className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 press-scale focus-ring"
               aria-label="Send message"
             >
               <Send className="h-4 w-4" />
