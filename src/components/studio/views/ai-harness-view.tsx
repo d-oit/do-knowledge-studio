@@ -244,7 +244,7 @@ export function AIHarnessView() {
                     saveAISettings({ provider, model, apiKey, augmentWithLocal: augment })
                     toast.success('Settings saved')
                   }}
-                  className="w-full rounded-md bg-primary px-3 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 focus-ring"
+                  className="w-full rounded-md bg-primary px-3 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
                 >
                   Save settings
                 </button>
