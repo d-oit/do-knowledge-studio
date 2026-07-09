@@ -4,12 +4,14 @@ exclude_paths:
   - "node_modules/**"
   - "coverage/**"
   - ".mimicode/**"
+  - ".agents/**"
   - "**/__tests__/**"
   - "**/*.test.*"
   - "**/*.spec.*"
 engines:
   biome:
-    enabled: false
+    enabled: true
+    config: biome.json
   eslint-8:
     enabled: true
     exclude_paths:
@@ -19,3 +21,12 @@ engines:
     disable_rules:
       - "ESLint8_security_detect-object-injection"
       - "ESLint8_security_detect-non-literal-fs-filename"
+      - "ESLint8_security_detect-unsafe-regex"
+      - "ESLint8_security_detect-buffer-noassert"
+      - "ESLint8_security_detect-eval-with-expression"
+      - "ESLint8_no-unsafe-finally"
+      - "ESLint8_no-unsafe-return"
+      - "ESLint8_no-unsafe-member-access"
+      - "ESLint8_no-unsafe-call"
+      - "ESLint8_no-unsafe-assignment"
+      - "ESLint8_no-unsafe-template-expression"

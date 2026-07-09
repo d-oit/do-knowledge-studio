@@ -4,12 +4,12 @@
 
 ## Project
 
-Local-first knowledge studio with rich text, knowledge graph, mind maps, SQLite WASM + FTS5 search, static export, CLI automation, and an AI agent harness.
+Local-first knowledge studio built with Next.js 16 / React 19 / Tailwind 4 / shadcn / Zustand. Rich text editing, knowledge graph, mind maps, client-side search, export, and an AI agent harness. Persistence via Zustand + localStorage. No required backend.
 
 ## Hard Rules
 
 - Local-first only. Do not introduce a required backend.
-- SQLite WASM + OPFS is the primary storage layer.
+- Zustand + localStorage is the persistence layer.
 - Markdown is import/export, not canonical truth.
 - Use strict TypeScript. Do not use `any`.
 - No magic numbers; extract descriptive named constants.
@@ -23,15 +23,14 @@ Local-first knowledge studio with rich text, knowledge graph, mind maps, SQLite 
 
 ## Repository Shape
 
-- `src/app` - app shell, routing, layout
-- `src/db` - SQLite WASM database layer and FTS5 search
-- `src/features` - editor, graph, mind map, search, export
-- `src/lib` - shared utilities and Orama search helpers
-- `cli/` - TypeScript CLI entrypoints and commands
-- `export/` - static site export engine
-- `tests/` - Playwright end-to-end tests
+- `src/app` - Next.js app shell, routing, layout (App Router)
+- `src/components/studio` - React components (views, UI primitives)
+- `src/lib/studio` - Zustand store, types, seed data, utilities
+- `src/lib/ai` - AI provider adapters (client-side fetch)
+- `src/lib/export` - Export logic (JSON, MD, HTML, encrypted)
+- `src/lib/search` - Client-side retrieval engine
 - `scripts/` - reusable repository automation
-- `plans/` - GOAP plans, ADRs, audits, implementation notes, benchmarks
+- `plans/` - GOAP plans, ADRs, audits, implementation notes
 - `agents-docs/` - detailed harness, workflow, config, hooks, and skill docs
 
 ## Planning Workflow
@@ -70,14 +69,10 @@ pnpm install
 ```bash
 pnpm run dev
 pnpm run build
-pnpm run preview
+pnpm run start
 pnpm run lint
 pnpm run typecheck
 pnpm run test
-pnpm run test:coverage
-pnpm run test:e2e
-pnpm run test:e2e:ci
-pnpm run cli -- <command>
 ```
 
 ## Quality Workflow
@@ -127,14 +122,13 @@ If CI fails after pushing, use the existing repair workflow:
 ## Testing Expectations
 
 - Use Vitest for unit and integration coverage.
-- Use Playwright for critical end-to-end user journeys.
 - Keep critical flows covered: entity CRUD, claim creation, local search/chat flows, graph interaction, and mind map editing.
 - When touching database, validation, NLP/search, queueing, or export behavior, add or update tests close to the changed logic.
 - Run `pnpm run test:coverage` for core data-model, search, export, or infrastructure changes.
 
 ## UI / UX Guardrails
 
-- Use design tokens from `src/styles/tokens.css` (source of truth).
+- Use design tokens from `src/app/globals.css` `@theme` block (source of truth).
 - Two themes: `light` and `dark` via `data-theme` attribute.
 - Accent color: Emerald green (`#10b981` light, `#34d399` dark).
 - Font: Inter (clean SaaS aesthetic).
@@ -142,7 +136,6 @@ If CI fails after pushing, use the existing repair workflow:
 - Keep interactive targets at least 44x44px.
 - Preserve responsive behavior across editor, graph, search, and mind map views.
 - Never hardcode hex values in components — use tokens.
-- Run `pnpm run design:validate` to check token sync.
 
 ## Git Workflow
 

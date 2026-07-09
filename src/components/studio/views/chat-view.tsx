@@ -3,6 +3,7 @@
 import { useStudioStore } from '@/lib/studio/store'
 import { Send, Sparkles, Trash2, Bot, User, Quote, ChevronDown } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
+import Markdown from 'react-markdown'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -64,7 +65,13 @@ export function ChatView() {
                       : 'bg-card border border-border text-ink rounded-tl-sm',
                   )}
                 >
-                  {m.content}
+                  {m.role === 'assistant' ? (
+                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                      <Markdown>{m.content}</Markdown>
+                    </div>
+                  ) : (
+                    m.content
+                  )}
                 </div>
 
                 {/* Citations */}

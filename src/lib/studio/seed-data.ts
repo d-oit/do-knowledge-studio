@@ -116,7 +116,7 @@ export const seedEntities: Entity[] = [
     description:
       'Search that matches by meaning rather than keywords, typically using vector embeddings. Complements traditional full-text search.',
     content:
-      '# Semantic Search\n\nFull-text search (FTS) finds documents that share your keywords. Semantic search finds documents that share your intent.\n\n## Hybrid pipeline\n\n1. **FTS** gives exact-match, fast, interpretable results.\n2. **Semantic** gives meaning-level matches, slower, opaque.\n3. Combine: FTS first, semantic re-rank, or vice versa.\n\nThe studio uses Orama in-browser for both, with SQLite FTS5 as the persistent layer.',
+      '# Semantic Search\n\nFull-text search (FTS) finds documents that share your keywords. Semantic search finds documents that share your intent.\n\n## Hybrid pipeline\n\n1. **FTS** gives exact-match, fast, interpretable results.\n2. **Semantic** gives meaning-level matches, slower, opaque.\n3. Combine: FTS first, semantic re-rank, or vice versa.\n\nThe studio uses client-side search over localStorage-persisted entities and claims, with ranked retrieval for relevant results.',
     tags: ['search', 'ai'],
     createdAt: iso(10),
     updatedAt: iso(4),
