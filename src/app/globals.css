@@ -331,4 +331,73 @@
     backdrop-filter: blur(12px) saturate(140%);
     -webkit-backdrop-filter: blur(12px) saturate(140%);
   }
+
+  /* ── Motion utilities ─────────────────────────────────────── */
+
+  /* Easing curves — natural deceleration, no bounce */
+  .ease-out-quart { transition-timing-function: cubic-bezier(0.25, 1, 0.5, 1); }
+  .ease-out-expo { transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+
+  /* Micro-interaction: subtle hover lift */
+  .hover-lift {
+    transition: transform 150ms cubic-bezier(0.25, 1, 0.5, 1),
+                box-shadow 150ms cubic-bezier(0.25, 1, 0.5, 1);
+  }
+  .hover-lift:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(26, 24, 20, 0.08), 0 2px 4px rgba(26, 24, 20, 0.04);
+  }
+
+  /* Micro-interaction: button press feedback */
+  .press-scale {
+    transition: transform 100ms cubic-bezier(0.25, 1, 0.5, 1);
+  }
+  .press-scale:active {
+    transform: scale(0.97);
+  }
+
+  /* Stagger children — use with style="--i: 0" on each child */
+  .stagger-children > * {
+    animation: stagger-fade-in 300ms cubic-bezier(0.25, 1, 0.5, 1) both;
+    animation-delay: calc(var(--i, 0) * 50ms);
+  }
+  @keyframes stagger-fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Expand/collapse — for accordion-style content */
+  .expand-collapse {
+    overflow: hidden;
+    transition: grid-template-rows 250ms cubic-bezier(0.25, 1, 0.5, 1);
+    display: grid;
+  }
+  .expand-collapse[data-state="open"] { grid-template-rows: 1fr; }
+  .expand-collapse[data-state="closed"] { grid-template-rows: 0fr; }
+
+  /* Skeleton loading shimmer */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      var(--muted) 25%,
+      var(--surface-sunken) 50%,
+      var(--muted) 75%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s ease-in-out infinite;
+    border-radius: var(--radius-sm);
+  }
+  @keyframes skeleton-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* Page transition crossfade */
+  .page-enter {
+    animation: page-fade-in 250ms cubic-bezier(0.25, 1, 0.5, 1) both;
+  }
+  @keyframes page-fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 }

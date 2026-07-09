@@ -115,18 +115,16 @@ export function HomeView() {
               <ArrowUpRight className="h-3 w-3" />
             </button>
           </div>
-          <div className="space-y-2">
+          <div className="stagger-children space-y-2">
             {stats.recent.map((e, i) => {
               const meta = ENTITY_TYPE_META[e.type]
               const Icon = ICONS[meta.icon] || FileText
               return (
-                <motion.button
+                <button
                   key={e.id}
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25, delay: i * 0.04 }}
+                  style={{ '--i': i } as React.CSSProperties}
                   onClick={() => startEdit(e.id)}
-                  className="group flex w-full items-center gap-3 rounded-lg border border-border bg-card p-3 text-left transition-all hover:border-saffron/30 hover:shadow-sm focus-ring"
+                  className="group flex w-full items-center gap-3 rounded-lg border border-border bg-card p-3 text-left transition-all hover:border-saffron/30 hover:shadow-sm hover-lift focus-ring"
                 >
                   <div
                     className={cn(
@@ -150,7 +148,7 @@ export function HomeView() {
                     <Clock className="h-3 w-3" />
                     {new Date(e.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </div>
-                </motion.button>
+                </button>
               )
             })}
           </div>
@@ -227,7 +225,7 @@ function StatCard({
   return (
     <button
       onClick={onClick}
-      className="group flex flex-col items-start gap-2 rounded-md border border-border bg-card p-4 text-left transition-all hover:border-saffron/30 hover:shadow-sm focus-ring"
+      className="group flex flex-col items-start gap-2 rounded-md border border-border bg-card p-4 text-left transition-all hover:border-saffron/30 hover:shadow-sm hover-lift focus-ring"
     >
       <div className={cn('flex h-8 w-8 items-center justify-center rounded-md', accents[accent])}>
         <Icon className="h-4 w-4" />
