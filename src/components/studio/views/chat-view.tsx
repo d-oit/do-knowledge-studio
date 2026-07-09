@@ -225,7 +225,7 @@ export function ChatView() {
             <textarea
               ref={inputRef}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => setInput(e.target.value.slice(0, 2000))}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault()
@@ -234,6 +234,7 @@ export function ChatView() {
               }}
               placeholder="Ask about your library, or request a synthesis…"
               rows={1}
+              maxLength={2000}
               disabled={chatLoading}
               className="max-h-32 flex-1 resize-none bg-transparent px-2 py-1.5 text-[14px] text-ink placeholder:text-ink-faint focus:outline-none disabled:opacity-50"
             />
@@ -254,6 +255,11 @@ export function ChatView() {
               </span>
               <span>·</span>
               <span>Enter to send · Shift+Enter for newline</span>
+              {input.length > 1800 && (
+                <span className={cn('font-mono', input.length >= 2000 ? 'text-clay' : 'text-ink-faint')}>
+                  {input.length}/2000
+                </span>
+              )}
             </div>
             <button
               onClick={handleClear}
