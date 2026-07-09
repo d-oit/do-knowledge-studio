@@ -232,7 +232,7 @@ export function AIHarnessView() {
                   >
                     <span
                       className={cn(
-                        'absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform',
+                        'absolute top-0.5 h-4 w-4 rounded-full bg-background transition-transform',
                         augment ? 'translate-x-4' : 'translate-x-0.5',
                       )}
                     />
