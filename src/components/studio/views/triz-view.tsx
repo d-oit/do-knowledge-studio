@@ -325,7 +325,7 @@ function ParamPicker({
               <span
                 className={cn(
                   'flex h-5 w-5 shrink-0 items-center justify-center rounded font-mono text-[10px] font-bold',
-                  isSelected ? 'bg-white/80 text-ink' : 'bg-muted text-ink-faint',
+                  isSelected ? 'bg-paper-raised text-ink' : 'bg-muted text-ink-faint',
                 )}
               >
                 {index + 1}
@@ -347,7 +347,7 @@ function ContradictionChip({ n, label, accent }: { n: number; label: string; acc
   }[accent]
   return (
     <div className={cn('flex items-center gap-2 rounded-lg border px-3 py-2', accents)}>
-      <span className="flex h-6 w-6 items-center justify-center rounded bg-white/80 font-mono text-[11px] font-bold text-ink">
+      <span className="flex h-6 w-6 items-center justify-center rounded bg-paper-raised font-mono text-[11px] font-bold text-ink">
         {n}
       </span>
       <span className="text-[13px] font-semibold">{label}</span>
