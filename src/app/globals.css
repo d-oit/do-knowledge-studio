@@ -220,6 +220,13 @@
     @apply bg-background text-foreground;
     font-feature-settings: "ss01", "cv11", "cv02";
   }
+  /* Suppress native search clear button in favor of custom UI */
+  input[type="search"]::-webkit-search-cancel-button,
+  input[type="search"]::-webkit-search-decoration,
+  input[type="search"]::-webkit-search-results-button,
+  input[type="search"]::-webkit-search-results-decoration {
+    -webkit-appearance: none;
+  }
   body {
     font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   }
