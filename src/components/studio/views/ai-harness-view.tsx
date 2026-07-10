@@ -224,7 +224,7 @@ export function AIHarnessView() {
                   <button
                     onClick={() => setAugment(!augment)}
                     className={cn(
-                      'relative h-5 w-9 rounded-full transition-colors',
+                      'relative h-5 w-9 overflow-hidden rounded-full transition-colors',
                       augment ? 'bg-saffron' : 'bg-border',
                     )}
                     role="switch"
