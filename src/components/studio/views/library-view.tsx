@@ -92,7 +92,7 @@ export function LibraryView() {
             )}
             aria-label="Grid view"
           >
-            <LayoutGrid className="h-3.5 w-3.5" />
+            <LayoutGrid className="h-4 w-4" />
           </button>
           <button
             onClick={() => setViewMode('list')}
@@ -102,7 +102,7 @@ export function LibraryView() {
             )}
             aria-label="List view"
           >
-            <ListIcon className="h-3.5 w-3.5" />
+            <ListIcon className="h-4 w-4" />
           </button>
         </div>
 

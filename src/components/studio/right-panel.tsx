@@ -7,7 +7,7 @@ import { useState } from 'react'
 import { cn } from '@/lib/utils'
 
 export function RightPanel() {
-  const { currentView, rightPanelOpen } = useStudioStore()
+  const { currentView, rightPanelOpen, chat } = useStudioStore()
 
   if (!rightPanelOpen) return null
 
@@ -16,6 +16,8 @@ export function RightPanel() {
     return <InspectorPanel />
   }
   if (currentView === 'chat' || currentView === 'ai') {
+    const hasCitations = chat.some((m) => m.citations && m.citations.length > 0)
+    if (!hasCitations) return <SearchPanel />
     return <CitationsPanel />
   }
 
@@ -118,6 +120,7 @@ function SearchPanel() {
 
 function InspectorPanel() {
   const { entities, selectedEntityId, startEdit, deleteEntity, selectEntity } = useStudioStore()
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const entity = entities.find((e) => e.id === selectedEntityId) || entities[0]
 
   if (!entity) {
@@ -131,6 +134,12 @@ function InspectorPanel() {
   }
 
   const meta = ENTITY_TYPE_META[entity.type]
+
+  const handleDelete = () => {
+    deleteEntity(entity.id)
+    selectEntity(null)
+    setShowDeleteConfirm(false)
+  }
 
   return (
     <aside className="hidden h-full w-[340px] shrink-0 flex-col border-l border-border bg-background lg:flex">
@@ -205,15 +214,37 @@ function InspectorPanel() {
           Edit
         </button>
         <button
-          onClick={() => {
-            deleteEntity(entity.id)
-            selectEntity(null)
-          }}
+          onClick={() => setShowDeleteConfirm(true)}
           className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:border-red-300 hover:text-red-600 focus-ring"
         >
           Delete
         </button>
       </div>
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-[800] flex items-center justify-center bg-ink/30 backdrop-blur-sm">
+          <div className="w-[340px] rounded-xl border border-border bg-popover p-5 shadow-2xl">
+            <h3 className="mb-2 font-serif text-[14px] font-semibold text-ink">Delete entity?</h3>
+            <p className="mb-4 text-[12px] text-ink-mute">
+              "{entity.name}" will be permanently deleted. This cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                className="rounded-md bg-red-600 px-3 py-1.5 text-[12px] font-semibold text-white transition-colors hover:bg-red-700 focus-ring"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   )
 }
