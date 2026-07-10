@@ -107,14 +107,29 @@ export function HomeView() {
         <section className="lg:col-span-2">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="font-serif text-lg font-semibold text-ink">Recently updated</h2>
-            <button
-              onClick={() => setView('library')}
-              className="flex items-center gap-1 text-[12px] font-medium text-saffron-deep transition-colors hover:text-saffron"
-            >
-              View all
-              <ArrowUpRight className="h-3 w-3" />
-            </button>
+            {stats.recent.length > 0 && (
+              <button
+                onClick={() => setView('library')}
+                className="flex items-center gap-1 text-[12px] font-medium text-saffron-deep transition-colors hover:text-saffron"
+              >
+                View all
+                <ArrowUpRight className="h-3 w-3" />
+              </button>
+            )}
           </div>
+          {stats.recent.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border bg-card/50 p-8 text-center">
+              <FileText className="mx-auto mb-3 h-8 w-8 text-ink-faint/40" />
+              <p className="text-[13px] text-ink-mute">No entities yet. Create your first one to get started.</p>
+              <button
+                onClick={startNew}
+                className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+              >
+                <FileText className="h-3.5 w-3.5" />
+                Create entity
+              </button>
+            </div>
+          ) : (
           <div className="stagger-children space-y-2">
             {stats.recent.map((e, i) => {
               const meta = ENTITY_TYPE_META[e.type]
@@ -152,6 +167,7 @@ export function HomeView() {
               )
             })}
           </div>
+          )}
         </section>
 
         {/* Type breakdown */}

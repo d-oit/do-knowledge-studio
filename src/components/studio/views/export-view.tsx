@@ -2,6 +2,7 @@
 
 import {
   FileLock,
+  FileText,
   Upload,
   Download,
   Shield,
@@ -28,7 +29,7 @@ import {
 import { encryptData, buildEncryptedReaderHtml } from '@/lib/export/encrypt'
 
 export function ExportView() {
-  const { entities, claims, importData, resetStore } = useStudioStore()
+  const { entities, claims, importData, resetStore, setView } = useStudioStore()
 
   const [showPassword, setShowPassword] = useState(false)
   const [password, setPassword] = useState('')
@@ -150,6 +151,19 @@ export function ExportView() {
           </p>
         </div>
 
+        {entities.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-border bg-card/50 p-8 text-center">
+            <Download className="mx-auto mb-3 h-8 w-8 text-ink-faint/40" />
+            <p className="text-[13px] text-ink-mute">No entities to export yet. Create some content first.</p>
+            <button
+              onClick={() => setView('editor')}
+              className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+            >
+              <FileText className="h-3.5 w-3.5" />
+              Create entity
+            </button>
+          </div>
+        ) : (
         <div className="stagger-children grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {FORMATS.map((f, i) => {
             const Icon = f.icon
@@ -191,6 +205,7 @@ export function ExportView() {
             )
           })}
         </div>
+        )}
       </motion.section>
 
       <motion.section
