@@ -78,7 +78,7 @@ export function ChatView() {
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-saffron-soft text-saffron-deep">
                 <MessageSquare className="h-8 w-8" />
               </div>
-              <h2 className="mb-2 font-serif text-xl font-semibold text-ink">
+              <h2 className="mb-2 font-serif text-lg font-semibold text-ink">
                 Ask your library
               </h2>
               <p className="mb-6 max-w-sm text-[14px] text-ink-mute">

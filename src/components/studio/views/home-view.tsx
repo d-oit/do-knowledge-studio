@@ -40,12 +40,12 @@ export function HomeView() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="mb-10"
+        className="mb-8"
       >
         <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.18em] text-saffron">
           {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
         </p>
-        <h1 className="font-serif text-3xl font-semibold leading-tight tracking-tight text-ink lg:text-4xl">
+        <h1 className="font-serif text-2xl font-semibold leading-tight tracking-tight text-ink">
           Your local thinking studio.
         </h1>
         <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink-mute">
@@ -71,7 +71,7 @@ export function HomeView() {
       </motion.section>
 
       {/* Stats grid */}
-      <section className="mb-10 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
           label="Entities"
           value={stats.total}
@@ -124,7 +124,7 @@ export function HomeView() {
                   key={e.id}
                   style={{ '--i': i } as React.CSSProperties}
                   onClick={() => startEdit(e.id)}
-                  className="group flex w-full items-center gap-3 rounded-lg border border-border bg-card p-3 text-left transition-all hover:border-saffron/30 hover:shadow-sm hover-lift focus-ring"
+                  className="group flex w-full items-center gap-3 rounded-lg border border-border bg-card p-4 text-left transition-all hover:border-saffron/30 hover:shadow-sm hover-lift focus-ring"
                 >
                   <div
                     className={cn(

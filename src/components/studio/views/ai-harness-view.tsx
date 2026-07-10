@@ -251,7 +251,7 @@ export function AIHarnessView() {
               </div>
             </div>
 
-            <div className="mt-3 rounded-lg border border-border bg-card p-3">
+            <div className="mt-3 rounded-lg border border-border bg-card p-4">
               <div className="flex items-center justify-between text-[11px]">
                 <span className="flex items-center gap-1.5 text-ink-mute">
                   <Zap className="h-3 w-3 text-saffron" />
