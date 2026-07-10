@@ -144,7 +144,7 @@ export function ExportView() {
         className="mb-8"
       >
         <div className="mb-4">
-          <h2 className="font-serif text-xl font-semibold text-ink">Export knowledge</h2>
+          <h2 className="font-serif text-lg font-semibold text-ink">Export knowledge</h2>
           <p className="mt-1 text-[13px] text-ink-mute">
             Your data is local. Export it whenever you want — for backup, sharing, or migration.
           </p>
@@ -200,7 +200,7 @@ export function ExportView() {
         className="mb-8"
       >
         <div className="mb-4">
-          <h2 className="font-serif text-xl font-semibold text-ink">Import knowledge</h2>
+          <h2 className="font-serif text-lg font-semibold text-ink">Import knowledge</h2>
           <p className="mt-1 text-[13px] text-ink-mute">
             Replace your current library with the contents of a JSON export. This action cannot be undone.
           </p>

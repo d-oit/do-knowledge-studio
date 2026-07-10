@@ -145,7 +145,7 @@ export function TrizView() {
           animate={{ opacity: 1, y: 0 }}
         >
           {/* Contradiction summary */}
-          <div className="mb-6 rounded-lg border border-border bg-card p-5">
+          <div className="mb-6 rounded-lg border border-border bg-card p-4">
             <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
               Your contradiction
             </div>
