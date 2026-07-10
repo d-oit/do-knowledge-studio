@@ -171,6 +171,7 @@ export function HomeView() {
         </section>
 
         {/* Type breakdown */}
+        {stats.total > 0 && (
         <section>
           <h2 className="mb-3 font-serif text-lg font-semibold text-ink">By type</h2>
           <div className="rounded-lg border border-border bg-card p-4">
@@ -214,6 +215,7 @@ export function HomeView() {
             </p>
           </div>
         </section>
+        )}
       </div>
     </div>
   )

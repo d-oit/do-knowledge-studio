@@ -8,8 +8,6 @@ import {
   Quote as QuoteIcon,
   Code,
   Link2,
-  Undo2,
-  Redo2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -53,8 +51,6 @@ export function EditorToolbar({
         <ToolbarButton icon={Code} label="Code" />
         <Divider />
         <ToolbarButton icon={Link2} label="Insert link" />
-        <ToolbarButton icon={Undo2} label="Undo" />
-        <ToolbarButton icon={Redo2} label="Redo" />
         <div className="flex-1" />
         <button
           type="button"
