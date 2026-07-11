@@ -65,6 +65,7 @@ test.db
 # Agent scratch / taste
 .commandcode/
 .claude/
+.mimocode/plans/
 
 # === Next.js redesign additions ===
 # Build output
