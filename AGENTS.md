@@ -20,6 +20,24 @@ Local-first knowledge studio built with Next.js 16 / React 19 / Tailwind 4 / sha
 - Keep changes scoped; avoid unrelated refactors in the same commit.
 - **Never** create GitHub releases manually (`gh release create`). Releases are handled by `.github/workflows/version-propagation.yml` — edit `VERSION` and the workflow propagates and tags automatically.
 - Never modify `biome.json`, any `eslint` configuration file, or lint suppressions/ignore settings unless I explicitly request that change. If such a change seems necessary, stop, explain why, and ask for approval before editing.
+- Escape JSX text content — use `&apos;` for apostrophes, `&quot;` for quotes in JSX text nodes. Do not rely on raw punctuation in JSX strings.
+- All `catch` blocks must handle errors meaningfully — log, toast, or rethrow. Never use empty `catch {}` blocks.
+- Use `try/catch` with `finally` for resource cleanup (AbortController, timers, subscriptions, file handles).
+- Clean up side effects in `useEffect` return functions — abort fetches, clear timers, remove listeners.
+- Use `AbortController` for all `fetch` calls to prevent stale responses and memory leaks.
+- Prefer `const` assertions and `satisfies` over type assertions for type narrowing.
+- Use `React.memo` for pure components that receive stable props to prevent unnecessary re-renders.
+- Use `useCallback` for event handlers passed to child components, `useMemo` for expensive computations.
+- Never hardcode user-facing strings — extract to constants or i18n-ready string maps for future localization.
+- Use `Intl.DateTimeFormat`, `Intl.NumberFormat`, and `Intl.RelativeTimeFormat` for locale-sensitive formatting.
+- Validate all external input at boundaries (API responses, user input, localStorage rehydration) with Zod schemas.
+- Never log secrets, API keys, or sensitive data. Use `console.error` for errors, not `console.log` in production.
+- Prefer `structuredClone` over JSON parse/stringify for deep copies.
+- Use `crypto.randomUUID()` for generating IDs, not `Math.random()`.
+- Prefer native `AbortController` over custom cancellation patterns.
+- Use `queueMicrotask` or `requestAnimationFrame` for batching DOM updates, not `setTimeout(fn, 0)`.
+- Prefer `Intl.Segmenter` over manual string splitting for i18n-safe text processing.
+- **Never ignore pre-existing issues or warnings.** Every warning, lint error, or failing check must be fixed or documented as a follow-up task in `plans/`. Ignoring issues compounds technical debt and erodes trust in the pipeline.
 
 ## Repository Shape
 

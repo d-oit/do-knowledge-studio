@@ -87,10 +87,8 @@ export function ExportView() {
       }
       const json = buildJsonExport(entities, claims)
       const encrypted = await encryptData(json, password)
-      /* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call -- HTML is intentionally built for encrypted export download */
       const html = buildEncryptedReaderHtml(encrypted)
       downloadFile(`do-knowledge-studio-encrypted-${todayStamp()}.html`, html, 'text/html')
-      /* eslint-enable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
       toast.success('Encrypted export downloaded', {
         description: 'AES-256-GCM encrypted with PBKDF2 key derivation.',
       })

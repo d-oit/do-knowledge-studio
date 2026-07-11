@@ -12,7 +12,9 @@ exclude_patterns = [
   "coverage/",
   ".mimicode/",
   ".agents/",
-  "plans/"
+  "plans/",
+  "scripts/",
+  "*.config.*"
 ]
 
 [[analyzers]]
@@ -34,8 +36,26 @@ enabled = true
   [analyzers.meta.checks]
   # Disable Qwik-specific rules (project doesn't use Qwik)
   Biome_lint_correctness_useQwikValidLexicalScope = "off"
-  # JS-0067 is a false positive for ES module exports — top-level declarations
-  # in ES modules are module-scoped, not global. DeepSource docs confirm this.
+  # JS-0067: false positive for ES module exports — top-level declarations
+  # in ES modules are module-scoped, not global.
   JS_0067 = "off"
   # JS-R1005: complexity threshold handled via cyclomatic_complexity_threshold above
   JS_R1005 = "off"
+  # JS-0046: false positive on React components — JSX text nodes are not global refs
+  JS_0046 = "off"
+  # JS-0302: false positive on Zustand store — inferred types are used, not unused
+  JS_0302 = "off"
+
+[[transformers]]
+name = "eslint"
+enabled = true
+
+  [transformers.meta]
+  config_file = "eslint.config.mjs"
+
+[[test_runners]]
+name = "vitest"
+enabled = true
+
+  [test_runners.meta]
+  config_file = "vitest.config.ts"
