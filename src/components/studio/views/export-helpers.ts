@@ -182,6 +182,7 @@ export function buildHtmlExport(entities: Entity[], claims: Claim[]): string {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none';" />
   <title>DO Knowledge Studio export</title>
   <style>
     :root { color-scheme: light dark; }
