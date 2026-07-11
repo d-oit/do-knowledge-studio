@@ -36,6 +36,7 @@ export const metadata: Metadata = {
     "second brain",
   ],
   authors: [{ name: "DO Knowledge Studio" }],
+  referrer: "no-referrer",
   icons: {
     icon: "/favicon.svg",
   },
