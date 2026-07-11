@@ -16,6 +16,7 @@ import {
   Plus,
   Clock,
   Search,
+  X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
@@ -37,6 +38,7 @@ const FILTERS: { id: EntityType | 'all'; label: string }[] = [
 
 export function LibraryView() {
   const {
+    entities: allEntities,
     typeFilter,
     setTypeFilter,
     sortBy,
@@ -50,7 +52,12 @@ export function LibraryView() {
     rightPanelOpen,
   } = useStudioStore()
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const entities = useFilteredEntities()
+  const filteredEntities = useFilteredEntities()
+
+  const clearFilters = () => {
+    setSearchQuery('')
+    setTypeFilter('all')
+  }
 
   return (
     <div className={cn('mx-auto px-6 py-6 lg:px-10 lg:py-8', rightPanelOpen ? 'max-w-5xl' : 'max-w-6xl')}>
@@ -59,20 +66,32 @@ export function LibraryView() {
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-faint" />
           <input
+            type="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Filter by name, description, or tag…"
-            className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-3 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+            aria-label="Search library"
+            className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-10 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink focus-ring rounded"
+              aria-label="Clear search"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
 
-        <div className="flex items-center gap-1 rounded-md border border-border p-0.5">
+        <div className="flex items-center gap-1 rounded-md border border-border p-0.5" role="group" aria-label="Filter by type">
           {FILTERS.map((f) => (
             <button
               key={f.id}
               onClick={() => setTypeFilter(f.id)}
+              aria-pressed={typeFilter === f.id}
               className={cn(
-                'rounded px-2.5 py-1 text-[12px] font-medium transition-colors',
+                'rounded px-2.5 py-1 text-[12px] font-medium transition-colors focus-ring',
                 typeFilter === f.id
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'text-ink-mute hover:text-ink',
@@ -83,24 +102,26 @@ export function LibraryView() {
           ))}
         </div>
 
-        <div className="flex items-center gap-1 rounded-md border border-border p-0.5">
+        <div className="flex items-center gap-1 rounded-md border border-border p-0.5" role="group" aria-label="View mode">
           <button
             onClick={() => setViewMode('grid')}
             className={cn(
-              'rounded p-1.5 transition-colors',
+              'rounded p-1.5 transition-colors focus-ring',
               viewMode === 'grid' ? 'bg-muted text-ink' : 'text-ink-faint hover:text-ink',
             )}
             aria-label="Grid view"
+            aria-pressed={viewMode === 'grid'}
           >
             <LayoutGrid className="h-4 w-4" />
           </button>
           <button
             onClick={() => setViewMode('list')}
             className={cn(
-              'rounded p-1.5 transition-colors',
+              'rounded p-1.5 transition-colors focus-ring',
               viewMode === 'list' ? 'bg-muted text-ink' : 'text-ink-faint hover:text-ink',
             )}
             aria-label="List view"
+            aria-pressed={viewMode === 'list'}
           >
             <ListIcon className="h-4 w-4" />
           </button>
@@ -133,8 +154,8 @@ export function LibraryView() {
         </button>
       </div>
 
-      {/* Empty state */}
-      {entities.length === 0 && (
+      {/* Empty states */}
+      {allEntities.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 py-20 text-center">
           <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-saffron-soft">
             <FileText className="h-6 w-6 text-saffron" />
@@ -152,12 +173,29 @@ export function LibraryView() {
             Create your first entity
           </button>
         </div>
-      )}
+      ) : filteredEntities.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 py-20 text-center">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+            <Search className="h-6 w-6 text-ink-faint" />
+          </div>
+          <h3 className="font-serif text-lg font-semibold text-ink">No matches found</h3>
+          <p className="mt-1 max-w-sm text-[13px] text-ink-mute">
+            Try adjusting your search terms or filters to find what you&apos;re looking for.
+          </p>
+          <button
+            onClick={clearFilters}
+            className="mt-4 flex items-center gap-1.5 rounded-md bg-secondary px-4 py-2 text-[13px] font-semibold text-ink transition-all hover:opacity-90 press-scale focus-ring"
+          >
+            <X className="h-4 w-4" />
+            Clear all filters
+          </button>
+        </div>
+      ) : null}
 
       {/* Grid view */}
-      {entities.length > 0 && viewMode === 'grid' && (
+      {filteredEntities.length > 0 && viewMode === 'grid' && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {entities.map((e, i) => {
+          {filteredEntities.map((e, i) => {
             const meta = ENTITY_TYPE_META[e.type]
             const Icon = TYPE_ICONS[e.type]
             return (
@@ -209,7 +247,7 @@ export function LibraryView() {
       )}
 
       {/* List view */}
-      {entities.length > 0 && viewMode === 'list' && (
+      {filteredEntities.length > 0 && viewMode === 'list' && (
         <div className="overflow-hidden rounded-lg border border-border bg-card">
           <table className="w-full">
             <thead>
@@ -221,7 +259,7 @@ export function LibraryView() {
               </tr>
             </thead>
             <tbody>
-              {entities.map((e) => {
+              {filteredEntities.map((e) => {
                 const meta = ENTITY_TYPE_META[e.type]
                 const Icon = TYPE_ICONS[e.type]
                 return (
@@ -271,9 +309,14 @@ export function LibraryView() {
         </div>
       )}
 
-      <div className="mt-4 flex items-center gap-2 text-[11px] text-ink-faint">
-        <ArrowUpDown className="h-3 w-3" />
-        Showing {entities.length} {entities.length === 1 ? 'entity' : 'entities'}
+      <div className="mt-4 flex items-center justify-between">
+        <div className="flex items-center gap-2 text-[11px] text-ink-faint">
+          <ArrowUpDown className="h-3 w-3" />
+          Showing {filteredEntities.length} {filteredEntities.length === 1 ? 'entity' : 'entities'}
+        </div>
+        <div className="sr-only" role="status" aria-live="polite">
+          Showing {filteredEntities.length} {filteredEntities.length === 1 ? 'entity' : 'entities'}
+        </div>
       </div>
     </div>
   )
