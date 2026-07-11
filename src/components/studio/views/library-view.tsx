@@ -180,7 +180,7 @@ export function LibraryView() {
           </div>
           <h3 className="font-serif text-lg font-semibold text-ink">No matches found</h3>
           <p className="mt-1 max-w-sm text-[13px] text-ink-mute">
-            Try adjusting your search terms or filters to find what you're looking for.
+            Try adjusting your search terms or filters to find what you&apos;re looking for.
           </p>
           <button
             onClick={clearFilters}
