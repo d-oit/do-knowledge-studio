@@ -45,19 +45,16 @@ step() { echo -e "${MAGENTA}[STEP]${NC} $*"; }
 # Helpers
 # ---------------------------------------------------------------------------
 # Safe JSON parsing with Python (avoids grep fragility)
+# Usage: echo "JSON" | json_get_failed_checks
 json_get_failed_checks() {
-    local json="$1"
     python3 -c "
 import json, sys
 try:
-    data = json.loads('''$json''')
+    data = json.load(sys.stdin)
     failures = []
     for c in data:
         s = c.get('state', '')
         n = c.get('name', '')
-        # SUCCESS, SKIPPED, NEUTRAL are all OK
-        # PENDING, QUEUED, IN_PROGRESS are still running
-        # FAILURE, ERROR, CANCELLED, ACTION_REQUIRED are problems
         if s in ('FAILURE', 'ERROR', 'CANCELLED', 'ACTION_REQUIRED'):
             failures.append({'name': n, 'state': s})
     print(json.dumps(failures))
@@ -68,11 +65,10 @@ except Exception as e:
 
 
 json_has_pending() {
-    local json="$1"
     python3 -c "
 import json, sys
 try:
-    data = json.loads('''$json''')
+    data = json.load(sys.stdin)
     for c in data:
         s = c.get('state', '')
         if s in ('PENDING', 'QUEUED', 'IN_PROGRESS', 'EXPECTED'):
@@ -315,7 +311,7 @@ phase_monitor_ci() {
 
         # Check for pending/running checks
         local has_pending
-        has_pending=$(json_has_pending "$checks_json")
+        has_pending=$(echo "$checks_json" | json_has_pending)
 
         # Count states for display
         local total pending failed
@@ -361,10 +357,14 @@ phase_analyze_failures() {
 
     # Use the Python helper to extract failed checks
     local failed_checks
-    failed_checks=$(json_get_failed_checks "$checks_json")
+    failed_checks=$(echo "$checks_json" | json_get_failed_checks)
 
     # Check if we got parse errors
-    if echo "$failed_checks" | python3 -c "import json,sys; d=json.load(sys.stdin); sys.exit(0 if any(c.get('name')=='parse_error' for c in d) else 1)" 2>/dev/null; then
+    if echo "$failed_checks" | python3 -c "
+import json,sys
+d=json.load(sys.stdin)
+sys.exit(0 if any(c.get('name')=='parse_error' for c in d) else 1)
+" 2>/dev/null; then
         warn "Failed to parse checks JSON."
         echo "[]"
         return 0
