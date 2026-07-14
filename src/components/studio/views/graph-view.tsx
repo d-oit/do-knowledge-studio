@@ -194,9 +194,9 @@ export function GraphView() {
                   key={n.id}
                   transform={`translate(${n.x}, ${n.y})`}
                   onClick={() => selectEntity(isSelected ? null : n.id)}
-                  onKeyDown={(e) => handleNodeKeyDown(n.id, e)}
-                  onFocus={() => setFocusedNodeId(n.id)}
-                  onBlur={() => setFocusedNodeId(null)}
+                  onKeyDown={(e) => { handleNodeKeyDown(n.id, e) }}
+                  onFocus={() => { setFocusedNodeId(n.id) }}
+                  onBlur={() => { setFocusedNodeId(null) }}
                   tabIndex={0}
                   role="button"
                   aria-label={`${n.label} — ${meta.label}${isSelected ? ' (selected)' : ''}`}
