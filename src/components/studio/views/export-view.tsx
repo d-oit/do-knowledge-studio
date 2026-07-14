@@ -72,20 +72,6 @@ export function ExportView() {
       return
     }
 
-    if (format === 'pdf') {
-      toast.info('PDF export coming soon', {
-        description: 'Will require a headless render library. Use the Markdown or HTML export for now.',
-      })
-      return
-    }
-
-    if (format === 'docx') {
-      toast.info('DOCX export coming soon', {
-        description: 'Will require a docx-generation library. Use the Markdown export for now.',
-      })
-      return
-    }
-
     if (format === 'encrypted') {
       if (!password || password !== confirm) {
         toast.error('Password fields must match and not be empty.')
@@ -172,12 +158,27 @@ export function ExportView() {
         <div className="stagger-children grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {FORMATS.map((f, i) => {
             const Icon = f.icon
+            const isAvailable = f.available !== false
+            const badgeStyle = f.badge === 'Secure'
+              ? 'bg-emerald-100 px-2 py-0 text-badge font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+              : 'bg-muted px-2 py-0 text-badge font-semibold uppercase tracking-wide text-ink-mute'
             return (
               <button
                 key={f.id}
                 style={{ '--i': i } as React.CSSProperties}
-                onClick={() => (f.id === 'encrypted' ? setShowPassword(true) : handleExport(f.id))}
-                className="group flex flex-col rounded-lg border border-border bg-card p-4 text-left transition-all hover:border-saffron/30 hover:shadow-md hover-lift focus-ring"
+                disabled={!isAvailable}
+                aria-disabled={!isAvailable}
+                onClick={() => {
+                  if (!isAvailable) return
+                  if (f.id === 'encrypted') setShowPassword(true)
+                  else handleExport(f.id)
+                }}
+                className={cn(
+                  'group flex flex-col rounded-lg border bg-card p-4 text-left transition-all focus-ring',
+                  isAvailable
+                    ? 'border-border hover:border-saffron/30 hover:shadow-md hover-lift'
+                    : 'cursor-not-allowed border-dashed border-border/60 opacity-60',
+                )}
               >
                 <div className="mb-3 flex items-center justify-between">
                   <div
@@ -189,23 +190,32 @@ export function ExportView() {
                     <Icon className="h-5 w-5" />
                   </div>
                   {f.badge && (
-                    <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0 text-badge font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
-                      <Shield className="h-2.5 w-2.5" />
+                    <span className={cn('flex items-center gap-1 rounded-full', badgeStyle)}>
+                      {f.badge === 'Secure' && <Shield className="h-2.5 w-2.5" />}
                       {f.badge}
                     </span>
                   )}
                 </div>
-                <h3 className="mb-1 font-serif text-[15px] font-semibold text-ink group-hover:text-saffron-deep">
+                <h3 className={cn(
+                  'mb-1 font-serif text-[15px] font-semibold',
+                  isAvailable ? 'text-ink group-hover:text-saffron-deep' : 'text-ink-mute',
+                )}>
                   {f.name}
                 </h3>
                 <p className="flex-1 text-[12px] leading-relaxed text-ink-mute">
                   {f.description}
                 </p>
-                <div className="mt-3 flex items-center gap-1 text-label font-medium text-saffron-deep opacity-0 transition-opacity group-hover:opacity-100">
-                  <Download className="h-3 w-3" />
-                  Export now
-                  <ArrowRight className="h-3 w-3" />
-                </div>
+                {isAvailable ? (
+                  <div className="mt-3 flex items-center gap-1 text-label font-medium text-saffron-deep opacity-0 transition-opacity group-hover:opacity-100">
+                    <Download className="h-3 w-3" />
+                    Export now
+                    <ArrowRight className="h-3 w-3" />
+                  </div>
+                ) : (
+                  <div className="mt-3 flex items-center gap-1 text-label font-medium text-ink-faint">
+                    Not yet available
+                  </div>
+                )}
               </button>
             )
           })}
