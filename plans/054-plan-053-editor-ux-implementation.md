@@ -30,8 +30,16 @@ pnpm run build         # ✅ compiles successfully
 
 ## CI Results (PR #430)
 
-- 20/21 checks passing
-- Only failures: Vercel (pre-existing, fails on all PR branches) and Codacy (pre-existing external service)
+- **21/21 checks passing** (all green!)
+- Fixed Vercel deployment: `react-resizable-panels` v4 API migration + TypeScript 6 deprecation
+- Fixed Codacy: Object Injection Sink → switch/case pattern
+
+## Prevention Measures
+
+- Created `scripts/verify-deps.sh` — run after any dependency change
+- Updated `AGENTS.md` with Dependency Upgrade Rules
+- Updated `self-fix-loop/SKILL.md` with common CI failure patterns
+- Updated `atomic-commit/SKILL.md` with dependency verification gate
 
 ## Still Remaining from Plan 053
 

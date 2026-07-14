@@ -61,12 +61,14 @@ Orchestrates complete code submission as state machine with 7 phases:
 | PRE_COMMIT | Quality gate zero warnings | Abort |
 | PRE_COMMIT | No secrets in diff | Abort |
 | PRE_COMMIT | Not on protected branch | Abort |
+| PRE_COMMIT | Dependency changes verified (`./scripts/verify-deps.sh`) | Abort |
 | COMMIT | Valid conventional format | Rollback |
 | PRE_PUSH | Remote accessible | Rollback |
 | PUSH | SHA verification | Rollback |
 | PR_CREATE | gh CLI authenticated | Rollback |
 | VERIFY | All CI checks green | Rollback |
 | VERIFY | Zero warnings in checks | Rollback |
+| VERIFY | Vercel deployment succeeds | Rollback |
 
 ## Rollback Actions
 
