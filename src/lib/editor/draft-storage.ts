@@ -10,8 +10,10 @@ export function saveDraft(draft: EditorDraft): void {
   try {
     const parsed = EditorDraftSchema.parse(draft)
     localStorage.setItem(getDraftKey(parsed.id), JSON.stringify(parsed))
-  } catch {
-    // Storage quota or validation — caller handles via error return
+  } catch (error) {
+    // Storage quota exceeded or validation failure — caller handles via error return
+    console.error('Failed to save draft:', error instanceof Error ? error.message : 'Unknown error')
+    throw error
   }
 }
 

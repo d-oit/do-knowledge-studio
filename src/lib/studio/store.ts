@@ -62,8 +62,8 @@ interface StudioState {
   // Theme handled by next-themes — store tracks UI side effects only
 }
 
-function generateId(prefix = 'e'): string {
-  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
+function generateId(): string {
+  return crypto.randomUUID()
 }
 
 // The default (seed) state — used on first load and as a fallback when a
@@ -159,7 +159,7 @@ export const useStudioStore = create<StudioState>()(
 
       sendMessage: (content) => {
         const userMsg: ChatMessage = {
-          id: generateId('m'),
+          id: generateId(),
           role: 'user',
           content,
           timestamp: new Date().toISOString(),
@@ -193,7 +193,7 @@ export const useStudioStore = create<StudioState>()(
             snippet: e.description.slice(0, 140) + '…',
           }))
           const reply: ChatMessage = {
-            id: generateId('m'),
+            id: generateId(),
             role: 'assistant',
             content: matched.length
               ? `Based on ${matched.length === 1 ? 'an entity' : `${matched.length} entities`} in your library, here is what I found. ${matched[0].description.slice(0, 200)} You can open the cited sources for full detail, or ask me to compare them.`

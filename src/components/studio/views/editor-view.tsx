@@ -12,17 +12,13 @@ import {
   Save,
   X,
   Plus,
-  ChevronDown,
   ExternalLink,
   Tag,
-  FileText,
-  Lightbulb,
-  User,
-  FolderKanban,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { EditorToolbar } from './editor-toolbar'
 import { ClaimsPanel } from './editor-claims-panel'
+import { TypeSelector } from './type-selector'
 import {
   applyBold,
   applyItalic,
@@ -38,13 +34,6 @@ import {
   removeDraft,
   type EditorDraft,
 } from '@/lib/editor'
-
-const TYPE_ICONS: Record<EntityType, typeof FileText> = {
-  note: FileText,
-  concept: Lightbulb,
-  person: User,
-  project: FolderKanban,
-}
 
 function restoreSelection(textarea: HTMLTextAreaElement, start: number, end: number) {
   textarea.focus()
@@ -75,7 +64,7 @@ export function EditorView() {
   const [newTag, setNewTag] = useState('')
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [showTypeMenu, setShowTypeMenu] = useState(false)
-  const [previewMode, setPreviewMode] = useState(false)
+  const [editMode, setEditMode] = useState<'edit' | 'preview' | 'split'>('edit')
   const [draftStatus, setDraftStatus] = useState<'saved' | 'unsaved' | 'error' | null>(null)
 
   // Initialize draft ID on mount
@@ -158,7 +147,9 @@ export function EditorView() {
     ? editing.name !== name ||
       editing.content !== content ||
       editing.type !== type ||
-      editing.description !== description
+      editing.description !== description ||
+      (editing.sourceUrl || '') !== sourceUrl ||
+      JSON.stringify(editing.tags) !== JSON.stringify(tags)
     : name.trim() !== '' || content.trim() !== ''
 
   const handleFormat = useCallback((command: string) => {
@@ -200,7 +191,7 @@ export function EditorView() {
       return
     }
     const entity: Entity = {
-      id: editing?.id || `e-${Date.now().toString(36)}`,
+      id: editing?.id || crypto.randomUUID(),
       name: name.trim(),
       type,
       description: description.trim() || content.slice(0, 200).replace(/[#*]/g, '').trim(),
@@ -260,14 +251,12 @@ export function EditorView() {
   }
 
   const meta = ENTITY_TYPE_META[type]
-  const TypeIcon = TYPE_ICONS[type]
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-6 lg:px-10 lg:py-8">
       <div className="mb-6">
         <div className="mb-3 flex items-center gap-2">
           <span className={cn('flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold', meta.bg, meta.text)}>
-            <TypeIcon className="h-3 w-3" />
             {meta.label}
           </span>
           {editing && (
@@ -297,40 +286,12 @@ export function EditorView() {
       </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <div className="relative">
-          <button
-            onClick={() => setShowTypeMenu(!showTypeMenu)}
-            className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
-          >
-            <TypeIcon className={cn('h-3.5 w-3.5', meta.text)} />
-            Type: {meta.label}
-            <ChevronDown className="h-3 w-3" />
-          </button>
-          {showTypeMenu && (
-            <div className="absolute left-0 top-full z-20 mt-1 w-44 rounded-md border border-border bg-popover p-1 shadow-lg">
-              {(Object.keys(ENTITY_TYPE_META) as EntityType[]).map((t) => {
-                const m = ENTITY_TYPE_META[t]
-                const Icon = TYPE_ICONS[t]
-                return (
-                  <button
-                    key={t}
-                    onClick={() => {
-                      setType(t)
-                      setShowTypeMenu(false)
-                    }}
-                    className={cn(
-                      'flex w-full items-center gap-2 rounded px-2 py-1.5 text-[12px] transition-colors hover:bg-muted',
-                      t === type ? 'font-semibold text-ink' : 'text-ink-soft',
-                    )}
-                  >
-                    <Icon className={cn('h-3.5 w-3.5', m.text)} />
-                    {m.label}
-                  </button>
-                )
-              })}
-            </div>
-          )}
-        </div>
+        <TypeSelector
+          type={type}
+          showMenu={showTypeMenu}
+          onToggleMenu={() => { setShowTypeMenu(!showTypeMenu) }}
+          onSelect={(t) => { setType(t); setShowTypeMenu(false) }}
+        />
 
         {tags.map((t) => (
           <span
@@ -395,30 +356,22 @@ export function EditorView() {
       )}
 
       <div className="mb-4 flex items-center gap-2 border-b border-border pb-2" role="radiogroup" aria-label="Editor mode">
-        <button
-          role="radio"
-          aria-checked={!previewMode}
-          onClick={() => { setPreviewMode(false) }}
-          className={`rounded px-2 py-1 text-[11px] font-medium transition-colors ${!previewMode ? 'bg-muted text-ink' : 'text-ink-mute hover:bg-muted/50'}`}
-        >
-          Edit
-        </button>
-        <button
-          role="radio"
-          aria-checked={previewMode}
-          onClick={() => { setPreviewMode(true) }}
-          className={`rounded px-2 py-1 text-[11px] font-medium transition-colors ${previewMode ? 'bg-muted text-ink' : 'text-ink-mute hover:bg-muted/50'}`}
-        >
-          Preview
-        </button>
+        {(['edit', 'preview', 'split'] as const).map((mode) => (
+          <button
+            key={mode}
+            role="radio"
+            type="button"
+            aria-checked={editMode === mode}
+            onClick={() => { setEditMode(mode) }}
+            className={`rounded px-2.5 py-1.5 text-[11px] font-medium transition-colors focus-ring ${editMode === mode ? 'bg-muted text-ink' : 'text-ink-mute hover:bg-muted/50'}`}
+          >
+            {mode.charAt(0).toUpperCase() + mode.slice(1)}
+          </button>
+        ))}
       </div>
 
-      <div className="relative">
-        {previewMode ? (
-          <div className="prose prose-sm dark:prose-invert max-w-none min-h-[420px] rounded-lg border border-border bg-background p-4">
-            <Markdown>{content || '_Nothing to preview._'}</Markdown>
-          </div>
-        ) : (
+      <div className={editMode === 'split' ? 'grid grid-cols-2 gap-4' : 'relative'}>
+        {(editMode === 'edit' || editMode === 'split') && (
           <textarea
             ref={textareaRef}
             value={content}
@@ -427,10 +380,15 @@ export function EditorView() {
               setDraftStatus('unsaved')
             }}
             placeholder="Start writing. Use markdown for headings, lists, and emphasis…"
-            className="min-h-[420px] w-full resize-none bg-transparent font-serif text-[16px] leading-[1.75] text-ink placeholder:text-ink-faint/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-saffron/40 focus-visible:ring-inset"
+            className={`min-h-[420px] w-full resize-none bg-transparent font-serif text-[16px] leading-[1.75] text-ink placeholder:text-ink-faint/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-saffron/40 focus-visible:ring-inset ${editMode === 'split' ? 'rounded-lg border border-border p-4' : ''}`}
             style={{ fontFamily: 'var(--font-newsreader), Georgia, serif' }}
             aria-label="Editor content"
           />
+        )}
+        {(editMode === 'preview' || editMode === 'split') && (
+          <div className="prose prose-sm dark:prose-invert max-w-none min-h-[420px] rounded-lg border border-border bg-background p-4">
+            <Markdown>{content || '_Nothing to preview._'}</Markdown>
+          </div>
         )}
       </div>
 
@@ -443,7 +401,7 @@ export function EditorView() {
       )}
 
       <div className="sticky bottom-0 -mx-6 mt-6 flex items-center justify-between border-t border-border bg-background/90 px-6 py-3 backdrop-blur-sm lg:-mx-10 lg:px-10">
-        <div className="flex items-center gap-3 text-[11px] text-ink-faint">
+        <div className="flex items-center gap-3 text-[11px] text-ink-faint" aria-live="polite" aria-atomic="true">
           <span>{wordCount} words</span>
           <span>·</span>
           <span>{charCount} chars</span>
