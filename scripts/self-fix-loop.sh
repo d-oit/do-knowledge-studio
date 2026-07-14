@@ -379,14 +379,15 @@ sys.exit(0 if any(c.get('name')=='parse_error' for c in d) else 1)
         return 0
     fi
 
-    # Display failures
-    info "Failed checks:"
+    # Display failures to stderr
+    info "Failed checks:" >&2
     echo "$failed_checks" | python3 -c "
 import json,sys
 for c in json.load(sys.stdin):
     print(f'  ❌ {c[\"name\"]}: {c[\"state\"]}')
-" 2>/dev/null || echo "  (parse error)"
+" 2>/dev/null || echo "  (parse error)" >&2
 
+    # Output only the JSON to stdout for the caller
     echo "$failed_checks"
     return 1
 }
