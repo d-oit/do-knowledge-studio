@@ -32,9 +32,6 @@ export function HomeView() {
   const heroAnim = reducedMotion
     ? { initial: false as const, animate: { opacity: 1, y: 0 }, transition: { duration: 0 } }
     : { initial: { opacity: 0, y: 8 } as const, animate: { opacity: 1, y: 0 }, transition: { duration: 0.4 } }
-  const barAnim = reducedMotion
-    ? { initial: false as const, animate: {}, transition: { duration: 0 } }
-    : { initial: { width: 0 } as const, animate: { width: 'var(--bar-width)' }, transition: { duration: 0.6, ease: 'easeOut' as const } }
 
   const typeEntries = (Object.entries(stats.byType) as [string, number][]) as [
     keyof typeof ENTITY_TYPE_META,
@@ -196,9 +193,9 @@ export function HomeView() {
                     </div>
                     <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                       <motion.div
-                        {...barAnim}
-                        style={{ '--bar-width': `${pct}%` } as React.CSSProperties}
-                        animate={{ width: reducedMotion ? `${pct}%` : barAnim.animate.width }}
+                        initial={reducedMotion ? false : { width: 0 }}
+                        animate={{ width: `${pct}%` }}
+                        transition={reducedMotion ? { duration: 0 } : { duration: 0.6, ease: 'easeOut' }}
                         className={cn('h-full rounded-full', meta.dot)}
                       />
                     </div>

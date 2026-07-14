@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { renderHook, act } from '@testing-library/react'
+import { useReducedMotion } from './use-reduced-motion'
 
-// Mock matchMedia for the module
+// Mock matchMedia
 const listeners: Set<(e: MediaQueryListEvent) => void> = new Set()
 let mockMatches = false
 
@@ -26,43 +28,45 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('useReducedMotion (module contract)', () => {
-  it('matchMedia query is prefers-reduced-motion: reduce', () => {
-    // Import triggers the module — verify matchMedia is called with correct query
-    // We test the query string used by the hook indirectly
-    const mql = globalThis.matchMedia('(prefers-reduced-motion: reduce)')
-    expect(mql).toBeDefined()
+describe('useReducedMotion', () => {
+  it('returns false when matchMedia does not match', () => {
+    const { result } = renderHook(() => useReducedMotion())
+    expect(result.current).toBe(false)
   })
 
-  it('matchMedia returns correct matches value', () => {
+  it('returns true when matchMedia matches', () => {
     mockMatches = true
-    const mql = globalThis.matchMedia('(prefers-reduced-motion: reduce)')
-    expect(mql.matches).toBe(true)
-
-    mockMatches = false
-    const mql2 = globalThis.matchMedia('(prefers-reduced-motion: reduce)')
-    expect(mql2.matches).toBe(false)
+    const { result } = renderHook(() => useReducedMotion())
+    expect(result.current).toBe(true)
   })
 
-  it('listeners can be registered and deregistered', () => {
-    const mql = globalThis.matchMedia('(prefers-reduced-motion: reduce)')
-    const handler = vi.fn()
-    mql.addEventListener('change', handler)
-    expect(listeners.size).toBe(1)
+  it('responds to runtime preference changes', () => {
+    const { result } = renderHook(() => useReducedMotion())
+    expect(result.current).toBe(false)
 
-    mql.removeEventListener('change', handler)
+    act(() => {
+      mockMatches = true
+      for (const listener of listeners) {
+        listener({ matches: true } as MediaQueryListEvent)
+      }
+    })
+    expect(result.current).toBe(true)
+
+    act(() => {
+      mockMatches = false
+      for (const listener of listeners) {
+        listener({ matches: false } as MediaQueryListEvent)
+      }
+    })
+    expect(result.current).toBe(false)
+  })
+
+  it('cleans up listener on unmount', () => {
+    const { unmount } = renderHook(() => useReducedMotion())
+    expect(listeners.size).toBe(1)
+    unmount()
     expect(listeners.size).toBe(0)
   })
-
-  it('change events propagate to registered listeners', () => {
-    const mql = globalThis.matchMedia('(prefers-reduced-motion: reduce)')
-    const handler = vi.fn()
-    mql.addEventListener('change', handler)
-
-    for (const listener of listeners) {
-      listener({ matches: true } as MediaQueryListEvent)
-    }
-    expect(handler).toHaveBeenCalledWith({ matches: true })
-  })
 })
+
 

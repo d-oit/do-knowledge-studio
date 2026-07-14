@@ -13,11 +13,11 @@ import {
   RotateCcw,
   RotateCw,
   Download,
-  Maximize2,
 } from 'lucide-react'
 import { useState, useRef, useMemo, useCallback } from 'react'
 import { cn } from '@/lib/utils'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
+import { buildAdjacencyIndex } from '@/lib/studio/graph-index'
 
 type LayoutType = 'force' | 'circular' | 'hierarchical'
 
@@ -26,7 +26,9 @@ export function GraphView() {
   const [layout, setLayout] = useState<LayoutType>('force')
   const [focusMode, setFocusMode] = useState(false)
 
-  // Build nodes from entities + seed positions
+  // Build adjacency index for O(1) focus-mode neighbor lookups
+  const adjacency = useMemo(() => buildAdjacencyIndex(entities), [entities])
+
   const { nodes, edges } = useMemo(() => {
     const seedMap = new Map(seedGraph.nodes.map((n) => [n.id, n]))
     const nodes = entities.map((e) => {
@@ -77,7 +79,11 @@ export function GraphView() {
   }, [nodes, layout])
 
   const visibleNodes = focusMode && selectedEntityId
-    ? positioned.filter((n) => n.id === selectedEntityId || edges.some(e => (e.source === selectedEntityId && e.target === n.id) || (e.target === selectedEntityId && e.source === n.id)))
+    ? positioned.filter((n) => {
+        if (n.id === selectedEntityId) return true
+        const neighbors = adjacency.get(selectedEntityId)
+        return neighbors?.has(n.id) ?? false
+      })
     : positioned
 
   const visibleNodeIds = new Set(visibleNodes.map((n) => n.id))
@@ -147,40 +153,43 @@ export function GraphView() {
           role="img"
           aria-label={`Knowledge graph with ${visibleNodes.length} entities and ${visibleEdges.length} connections`}
         >
-          {/* Edges */}
+          {/* Edges — use Map for O(1) node lookups */}
           <g>
-            {visibleEdges.map((e) => {
-              const s = visibleNodes.find((n) => n.id === e.source)
-              const t = visibleNodes.find((n) => n.id === e.target)
-              if (!s || !t) return null
-              const isHighlight =
-                selectedEntityId && (e.source === selectedEntityId || e.target === selectedEntityId)
-              return (
-                <g key={e.id}>
-                  <line
-                    x1={s.x}
-                    y1={s.y}
-                    x2={t.x}
-                    y2={t.y}
-                    className={cn(
-                      'transition-all',
-                      isHighlight ? 'stroke-saffron' : 'stroke-border',
+            {(() => {
+              const nodeMap = new Map(visibleNodes.map((n) => [n.id, n]))
+              return visibleEdges.map((e) => {
+                const s = nodeMap.get(e.source)
+                const t = nodeMap.get(e.target)
+                if (!s || !t) return null
+                const isHighlight =
+                  selectedEntityId && (e.source === selectedEntityId || e.target === selectedEntityId)
+                return (
+                  <g key={e.id}>
+                    <line
+                      x1={s.x}
+                      y1={s.y}
+                      x2={t.x}
+                      y2={t.y}
+                      className={cn(
+                        'transition-all',
+                        isHighlight ? 'stroke-saffron' : 'stroke-border',
+                      )}
+                      strokeWidth={isHighlight ? 2 : 1.5}
+                    />
+                    {isHighlight && (
+                      <text
+                        x={(s.x + t.x) / 2}
+                        y={(s.y + t.y) / 2 - 4}
+                        textAnchor="middle"
+                        className="fill-ink-mute font-sans text-[9px] italic"
+                      >
+                        {e.relation}
+                      </text>
                     )}
-                    strokeWidth={isHighlight ? 2 : 1.5}
-                  />
-                  {isHighlight && (
-                    <text
-                      x={(s.x + t.x) / 2}
-                      y={(s.y + t.y) / 2 - 4}
-                      textAnchor="middle"
-                      className="fill-ink-mute font-sans text-[9px] italic"
-                    >
-                      {e.relation}
-                    </text>
-                  )}
-                </g>
-              )
-            })}
+                  </g>
+                )
+              })
+            })()}
           </g>
 
           {/* Nodes */}
@@ -265,12 +274,6 @@ export function GraphView() {
           </div>
         </div>
 
-        {/* Zoom hint */}
-        <div className="absolute right-4 top-4 flex flex-col gap-1 rounded-md border border-border bg-background/90 p-1 backdrop-blur-sm">
-          <button className="rounded p-1.5 text-ink-mute hover:bg-muted hover:text-ink" aria-label="Zoom in">
-            <Maximize2 className="h-3.5 w-3.5" />
-          </button>
-        </div>
       </div>
     </div>
   )

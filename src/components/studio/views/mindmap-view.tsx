@@ -19,6 +19,7 @@ import { useState, useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { motion, AnimatePresence } from 'framer-motion'
+import { buildEntityIndex } from '@/lib/studio/graph-index'
 
 interface TreeNode {
   entity: { id: string; name: string; type: keyof typeof ENTITY_TYPE_META }
@@ -32,9 +33,11 @@ export function MindMapView() {
   const [depth, setDepth] = useState(3)
   const [compact, setCompact] = useState(false)
   const reducedMotion = useReducedMotion()
+  const entityIndex = useMemo(() => buildEntityIndex(entities), [entities])
+  const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null)
 
   const tree = useMemo(() => {
-    const root = entities.find((e) => e.id === rootId) || entities[0]
+    const root = entityIndex.get(rootId) || entities[0]
     if (!root) return null
 
     const build = (
@@ -46,7 +49,7 @@ export function MindMapView() {
       if (currentDepth > 0) {
         for (const link of entity.links) {
           if (visited.has(link.targetId)) continue
-          const child = entities.find((e) => e.id === link.targetId)
+          const child = entityIndex.get(link.targetId)
           if (child) {
             children.push(
               build(child, currentDepth - 1, new Set([...visited, entity.id])),
@@ -61,7 +64,7 @@ export function MindMapView() {
       }
     }
     return build(root, depth, new Set())
-  }, [entities, rootId, depth])
+  }, [entityIndex, entities, rootId, depth])
 
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())
 
@@ -107,8 +110,10 @@ export function MindMapView() {
           <div
             role="treeitem"
             tabIndex={0}
-            aria-selected={level === 0 ? true : undefined}
+            aria-selected={focusedNodeId === node.entity.id ? true : undefined}
             aria-expanded={hasChildren ? isExpanded : undefined}
+            onFocus={() => { setFocusedNodeId(node.entity.id) }}
+            onBlur={() => { setFocusedNodeId(null) }}
             onClick={() => {
               selectEntity(node.entity.id)
               setView('editor')
