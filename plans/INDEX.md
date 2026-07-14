@@ -1,14 +1,16 @@
 # Plans Index — do-knowledge-studio
 
 **Generated**: 2026-05-27  
-**Updated**: 2026-07-09
-**Source**: 6-agent parallel swarm analysis + GitHub issue audit (#168–#240) + open issues (#280-#289) + all PRs merged (#292-#307) + 3-agent UI/UX/feature-gap analysis (plan 041, ADRs 013–016) + 4-wave master GOAP swarm execution (plan 042, 2026-06-22) + Next.js cleanup & feature implementation (plans 048-049, 051)
+**Updated**: 2026-07-12
+**Source**: 6-agent parallel swarm analysis + GitHub issue audit (#168–#240) + open issues (#280-#289) + all PRs merged (#292-#307) + 3-agent UI/UX/feature-gap analysis (plan 041, ADRs 013–016) + 4-wave master GOAP swarm execution (plan 042, 2026-06-22) + Next.js cleanup & feature implementation (plans 048-049, 051) + current Next.js UI/UX technical audit + Markdown editor GOAP and ADR review
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
 ## Quick Reference — Active Plans
 
 | Priority | Plan | Description | Effort | Status | Issues |
 |----------|------|-------------|--------|--------|--------|
+| **P0** | [053-goap-markdown-editor-ux-2026-07-12.md](053-goap-markdown-editor-ux-2026-07-12.md) | Markdown editor: real formatting, safe local drafts, quiet feedback, responsive modes, accessibility, and verification | 8-14d | 📝 PLANNED | — |
+| **P1** | [ui-ux-audit-2026-07-11.md](ui-ux-audit-2026-07-11.md) | Current Next.js UI/UX audit: WCAG, responsiveness, interaction trust, rendering performance, and anti-pattern review | 20-30h remediation | 📝 AUDIT | — |
 | **P0** | [048-nextjs-cleanup-and-deprecation-audit-2026-07-09.md](048-nextjs-cleanup-and-deprecation-audit-2026-07-09.md) | Next.js migration cleanup: remove dead deps, fix configs, add tests, align docs | 8-12h | ✅ MERGED | #399 |
 | **P0** | [049-goap-nextjs-feature-implementation-2026-07-09.md](049-goap-nextjs-feature-implementation-2026-07-09.md) | AI provider integration, encrypted export, zod schemas, BM25 retrieval, markdown rendering | 40-60h | ✅ MERGED | #399 |
 | **P0** | [051-vercel-deployment-fix-2026-07-09.md](051-vercel-deployment-fix-2026-07-09.md) | Fix Vercel deployment failure, add Node 20+ requirement, document prevention | 1-2h | ✅ MERGED | #400 |
@@ -119,7 +121,7 @@ Wave 4 (P1/P2 — QUALITY — PARALLEL) ──→ ✅ MERGED
 | [03-core-implementation.md](03-core-implementation.md) | CLI architecture, export, test coverage | ✅ COMPLETED (853 tests) |
 | [04-feature-roadmap.md](04-feature-roadmap.md) | AI Harness, claim provenance, semantic search | ✅ COMPLETED |
 | [05-documentation-overhaul.md](05-documentation-overhaul.md) | README, JSDoc, PHASES.md | ✅ COMPLETED |
-| [06-llm-provider-system.md](06-llm-provider-system.md) | OpenRouter + Kilo plugin system | ✅ COMPLETED |
+| [ADRs/06-llm-provider-system.md](ADRs/06-llm-provider-system.md) | OpenRouter + Kilo plugin system | ✅ COMPLETED |
 | [07-github-template-alignment.md](07-github-template-alignment.md) | Architecture validation | ✅ COMPLETED |
 | [08-perplexity-removal.md](08-perplexity-removal.md) | Perplexity deletion | ✅ COMPLETED |
 | [09-ui-style-alignment.md](09-ui-style-alignment.md) | Multi-mode atmospheric UI | ✅ COMPLETED |
@@ -185,6 +187,14 @@ Wave 4 (P1/P2 — QUALITY — PARALLEL) ──→ ✅ MERGED
 | 014 | Overlay/Modal Accessibility Primitive | 📝 Proposed | Shared `<Overlay>` (focus-trap, Escape, scroll-lock, dialog roles) → plan 041 |
 | 015 | Responsive & Visualization Theming | 📝 Proposed | Dynamic viewport, 44px targets, viz CSS-token bridge, mobile controls → plan 041 |
 | 016 | Feature-Gap Closure | 📝 Proposed | Import persistence, tags, version history, notes search, chat unification → plan 041 |
+| 017 | Chat Unification Strategy | ✅ Accepted | Shared chat flow and provider integration baseline |
+| 018 | Next.js Architecture Baseline | 📝 Proposed | Local-first Zustand + localStorage; no required backend |
+| 019 | AI Harness Provider Integration | 📝 Proposed | Client-side BYO-key provider contract |
+| 020 | Markdown Content and Editor Engine | ✅ Accepted | Markdown-source editing, textarea proof gate, CodeMirror fallback → plan 053 |
+| 021 | Real Encrypted Export | 📝 Proposed | WebCrypto AES-GCM export strategy |
+| 022 | Client-Side Retrieval Engine | 📝 Proposed | Shared in-browser retrieval for Chat and Search |
+| 023 | Editor Draft Persistence and Commit Lifecycle | 📝 Proposed | Versioned recovery drafts, acknowledged writes, in-place commits, and conflicts → plan 053 |
+| 024 | Editor Feedback and Notification Policy | 📝 Proposed | Inline routine feedback; exceptional and cross-context toasts only → plan 053 |
 
 ## Verification Commands
 ```bash

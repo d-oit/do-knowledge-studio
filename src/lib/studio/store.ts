@@ -20,6 +20,9 @@ interface StudioState {
   startEdit: (id: string) => void
   startNew: () => void
   saveEntity: (e: Entity) => void
+  commitEntity: (e: Entity) => void
+  finishEditing: () => void
+  navigateToView: (v: ViewId) => void
   deleteEntity: (id: string) => void
 
   // Claims
@@ -118,6 +121,25 @@ export const useStudioStore = create<StudioState>()(
           }
         })
       },
+
+      commitEntity: (e) => {
+        set((state) => {
+          const exists = state.entities.some((x) => x.id === e.id)
+          const entities = exists
+            ? state.entities.map((x) => (x.id === e.id ? e : x))
+            : [e, ...state.entities]
+          return { entities }
+        })
+      },
+
+      finishEditing: () => {
+        set({ editingEntityId: null })
+      },
+
+      navigateToView: (v: ViewId) => {
+        set({ currentView: v })
+      },
+
       deleteEntity: (id) =>
         set((state) => ({
           entities: state.entities.filter((x) => x.id !== id),
