@@ -120,7 +120,7 @@ export function EditorView() {
         setDraftStatus('error')
       }
     }, 500)
-    return () => clearTimeout(timer)
+    return () => { clearTimeout(timer) }
   }, [name, content, description, type, sourceUrl, tags, editing?.id, editing?.createdAt])
 
   // Flush draft on unmount
@@ -224,8 +224,8 @@ export function EditorView() {
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      const el = e.target as HTMLElement
-      if (el.tagName !== 'TEXTAREA' && el.tagName !== 'INPUT') return
+      if (!(e.target instanceof HTMLElement)) return
+      if (e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'INPUT') return
       const mod = e.metaKey || e.ctrlKey
       if (!mod) return
       switch (e.key) {
