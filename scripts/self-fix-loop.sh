@@ -35,11 +35,11 @@ else
     export MAGENTA=''; export CYAN=''; export NC=''
 fi
 
-log()  { echo -e "${GREEN}[SELF-FIX]${NC} $*"; }
+log()  { echo -e "${GREEN}[SELF-FIX]${NC} $*" >&2; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $*" >&2; }
 error(){ echo -e "${RED}[ERROR]${NC} $*" >&2; }
-info() { echo -e "${CYAN}[INFO]${NC} $*"; }
-step() { echo -e "${MAGENTA}[STEP]${NC} $*"; }
+info() { echo -e "${CYAN}[INFO]${NC} $*" >&2; }
+step() { echo -e "${MAGENTA}[STEP]${NC} $*" >&2; }
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -289,7 +289,6 @@ phase_monitor_ci() {
     fi
 
     info "Monitoring PR #${pr_number} checks every ${POLL_INTERVAL}s (timeout: ${TIMEOUT}s)..."
-    echo "" >&2
 
     local poll_count=0
     while true; do
