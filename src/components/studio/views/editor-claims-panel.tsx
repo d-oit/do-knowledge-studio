@@ -62,7 +62,6 @@ export function ClaimsPanel({
       confidence: confidence / 100,
       source: source.trim() || undefined,
     })
-    toast.success('Claim added')
     resetForm()
   }
 
