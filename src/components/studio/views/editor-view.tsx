@@ -41,7 +41,12 @@ function restoreSelection(textarea: HTMLTextAreaElement, start: number, end: num
 }
 
 export function EditorView() {
-  const { entities, editingEntityId, commitEntity, finishEditing, claims, addClaim } = useStudioStore()
+  const entities = useStudioStore((s) => s.entities)
+  const editingEntityId = useStudioStore((s) => s.editingEntityId)
+  const commitEntity = useStudioStore((s) => s.commitEntity)
+  const finishEditing = useStudioStore((s) => s.finishEditing)
+  const claims = useStudioStore((s) => s.claims)
+  const addClaim = useStudioStore((s) => s.addClaim)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const draftIdRef = useRef<string>('')
 
@@ -256,11 +261,11 @@ export function EditorView() {
     <div className="mx-auto max-w-3xl px-6 py-6 lg:px-10 lg:py-8">
       <div className="mb-6">
         <div className="mb-3 flex items-center gap-2">
-          <span className={cn('flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold', meta.bg, meta.text)}>
+          <span className={cn('flex items-center gap-1.5 rounded-full px-2.5 py-1 text-label font-semibold', meta.bg, meta.text)}>
             {meta.label}
           </span>
           {editing && (
-            <span className="text-[11px] text-ink-faint">
+            <span className="text-label text-ink-faint">
               Edited {new Date(editing.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </span>
           )}
@@ -296,7 +301,7 @@ export function EditorView() {
         {tags.map((t) => (
           <span
             key={t}
-            className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-ink-soft"
+            className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-label font-medium text-ink-soft"
           >
             #{t}
             <button
@@ -320,7 +325,7 @@ export function EditorView() {
               }
             }}
             placeholder="add tag"
-            className="w-16 bg-transparent text-[11px] text-ink-soft placeholder:text-ink-faint focus:outline-none"
+            className="w-16 bg-transparent text-label text-ink-soft placeholder:text-ink-faint focus:outline-none"
             aria-label="Add tag"
           />
           {newTag && (
@@ -340,7 +345,7 @@ export function EditorView() {
       {showAdvanced && (
         <div className="mb-4 space-y-3 rounded-lg border border-dashed border-border bg-muted/30 p-4">
           <div>
-            <label htmlFor="source-url" className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+            <label htmlFor="source-url" className="mb-1 flex items-center gap-1.5 text-label font-semibold uppercase tracking-wide text-ink-faint">
               <ExternalLink className="h-3 w-3" />
               Source URL
             </label>
@@ -363,7 +368,7 @@ export function EditorView() {
             type="button"
             aria-checked={editMode === mode}
             onClick={() => { setEditMode(mode) }}
-            className={`rounded px-2.5 py-1.5 text-[11px] font-medium transition-colors focus-ring ${editMode === mode ? 'bg-muted text-ink' : 'text-ink-mute hover:bg-muted/50'}`}
+            className={`rounded px-2.5 py-1.5 text-label font-medium transition-colors focus-ring ${editMode === mode ? 'bg-muted text-ink' : 'text-ink-mute hover:bg-muted/50'}`}
           >
             {mode.charAt(0).toUpperCase() + mode.slice(1)}
           </button>
@@ -401,7 +406,7 @@ export function EditorView() {
       )}
 
       <div className="sticky bottom-0 -mx-6 mt-6 flex items-center justify-between border-t border-border bg-background/90 px-6 py-3 backdrop-blur-sm lg:-mx-10 lg:px-10">
-        <div className="flex items-center gap-3 text-[11px] text-ink-faint" aria-live="polite" aria-atomic="true">
+        <div className="flex items-center gap-3 text-label text-ink-faint" aria-live="polite" aria-atomic="true">
           <span>{wordCount} words</span>
           <span>·</span>
           <span>{charCount} chars</span>

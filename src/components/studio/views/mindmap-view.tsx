@@ -28,7 +28,9 @@ interface TreeNode {
 }
 
 export function MindMapView() {
-  const { entities, selectEntity, setView } = useStudioStore()
+  const entities = useStudioStore((s) => s.entities)
+  const selectEntity = useStudioStore((s) => s.selectEntity)
+  const setView = useStudioStore((s) => s.setView)
   const [rootId, setRootId] = useState(entities[0]?.id || '')
   const [depth, setDepth] = useState(3)
   const [compact, setCompact] = useState(false)
@@ -145,7 +147,7 @@ export function MindMapView() {
             >
               {node.entity.name}
             </span>
-            <span className="rounded bg-muted px-1.5 py-0 text-[9px] uppercase tracking-wide text-ink-faint">
+            <span className="rounded bg-muted px-1.5 py-0 text-badge uppercase tracking-wide text-ink-faint">
               {meta.label}
             </span>
           </div>
@@ -193,7 +195,7 @@ export function MindMapView() {
 
         <div className="flex items-center gap-1.5">
           <Sliders className="h-3 w-3 text-ink-faint" />
-          <span className="text-[11px] text-ink-mute">Depth</span>
+          <span className="text-label text-ink-mute">Depth</span>
           <input
             type="range"
             min={1}
@@ -202,7 +204,7 @@ export function MindMapView() {
             onChange={(e) => setDepth(Number(e.target.value))}
             className="w-20 accent-saffron"
           />
-          <span className="font-mono text-[11px] text-ink">{depth}</span>
+          <span className="font-mono text-label text-ink">{depth}</span>
         </div>
 
         <Divider />
@@ -218,7 +220,7 @@ export function MindMapView() {
         <button
           onClick={() => setCompact(!compact)}
           className={cn(
-            'rounded-md px-2 py-1.5 text-[11px] font-medium transition-colors',
+            'rounded-md px-2 py-1.5 text-label font-medium transition-colors',
             compact ? 'bg-saffron-soft text-saffron-deep' : 'text-ink-mute hover:bg-muted hover:text-ink',
           )}
         >
@@ -229,7 +231,7 @@ export function MindMapView() {
       </div>
 
       {/* Hint */}
-      <div className="border-b border-border bg-muted/30 px-5 py-1.5 text-[11px] text-ink-faint">
+      <div className="border-b border-border bg-muted/30 px-5 py-1.5 text-label text-ink-faint">
         <kbd className="rounded border border-border bg-background px-1 font-mono">Tab</kbd> add child ·{' '}
         <kbd className="rounded border border-border bg-background px-1 font-mono">F2</kbd> rename ·{' '}
         <kbd className="rounded border border-border bg-background px-1 font-mono">Del</kbd> delete
@@ -254,7 +256,7 @@ export function MindMapView() {
       </div>
 
       {/* Summary */}
-      <div className="border-t border-border bg-card/50 px-5 py-2 text-[11px] text-ink-faint">
+      <div className="border-t border-border bg-card/50 px-5 py-2 text-label text-ink-faint">
         {tree ? `Root: ${tree.entity.name} · ${tree.children.length} direct children · depth ${depth}` : 'No data'}
       </div>
     </div>
@@ -278,7 +280,7 @@ function ToolbarBtn({
       disabled={disabled}
       title={disabled ? `${label} (coming soon)` : label}
       aria-label={label}
-      className="flex items-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-medium text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink-mute"
+      className="flex items-center gap-1 rounded-md px-2 py-1.5 text-label font-medium text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink-mute"
     >
       <Icon className="h-3.5 w-3.5" />
       <span className="hidden md:inline">{label}</span>

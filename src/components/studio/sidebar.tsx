@@ -78,7 +78,7 @@ export function Sidebar() {
           <span className="font-serif text-[15px] font-semibold leading-tight tracking-tight">
             Knowledge Studio
           </span>
-          <span className="text-[10px] uppercase tracking-[0.14em] text-ink-faint">
+          <span className="text-caption uppercase tracking-[0.14em] text-ink-faint">
             Local-first · v0.2
           </span>
         </div>
@@ -93,7 +93,7 @@ export function Sidebar() {
         >
           <Search className="h-3.5 w-3.5" />
           <span className="flex-1">Search…</span>
-          <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-ink-faint">
+          <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-caption text-ink-faint">
             ⌘K
           </kbd>
         </button>
@@ -103,7 +103,7 @@ export function Sidebar() {
       <nav className="flex-1 overflow-y-auto px-3 pb-2" aria-label="Main navigation">
         {NAV_GROUPS.map((group) => (
           <div key={group.label} className="mb-4">
-            <div className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+            <div className="mb-1.5 px-2 text-caption font-semibold uppercase tracking-[0.14em] text-ink-faint">
               {group.label}
             </div>
             <ul className="space-y-0.5">
@@ -130,12 +130,12 @@ export function Sidebar() {
                       />
                       <span className="flex-1 text-left">{item.label}</span>
                       {item.experimental && (
-                        <span className="rounded-full border border-dashed border-saffron/40 px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide text-saffron">
+                        <span className="rounded-full border border-dashed border-saffron/40 px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-saffron">
                           Lab
                         </span>
                       )}
                       {item.shortcut && !item.experimental && (
-                        <kbd className="hidden font-mono text-[9px] text-ink-faint/70 opacity-0 transition-opacity group-hover:opacity-100 lg:inline">
+                        <kbd className="hidden font-mono text-badge text-ink-faint/70 opacity-0 transition-opacity group-hover:opacity-100 lg:inline">
                           {item.shortcut}
                         </kbd>
                       )}

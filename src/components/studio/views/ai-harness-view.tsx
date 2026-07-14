@@ -36,7 +36,7 @@ const PROVIDERS: ProviderOption[] = [
 ]
 
 export function AIHarnessView() {
-  const { entities } = useStudioStore()
+  const entities = useStudioStore((s) => s.entities)
   const [provider, setProvider] = useState<AIProvider>('ollama')
   const [model, setModel] = useState('llama3')
   const [apiKey, setApiKey] = useState('')
@@ -113,7 +113,7 @@ export function AIHarnessView() {
         <div className="flex-1">
           <div className="mb-1 flex items-center gap-2">
             <h1 className="font-serif text-2xl font-semibold text-ink">AI Harness</h1>
-            <span className="rounded-full border border-dashed border-saffron/50 px-2 py-0 text-[9px] font-semibold uppercase tracking-wide text-saffron">
+            <span className="rounded-full border border-dashed border-saffron/50 px-2 py-0 text-badge font-semibold uppercase tracking-wide text-saffron">
               Lab
             </span>
           </div>
@@ -153,7 +153,7 @@ export function AIHarnessView() {
                       <Check className="h-3.5 w-3.5 text-emerald-500" />
                       Connected · {entities.length} entities
                     </span>
-                    <span className="text-[10px] text-ink-faint">Re-sync</span>
+                    <span className="text-caption text-ink-faint">Re-sync</span>
                   </button>
                 </Field>
 
@@ -202,12 +202,12 @@ export function AIHarnessView() {
                       />
                       <button
                         onClick={() => setShowKey(!showKey)}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-medium text-ink-faint hover:text-ink"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-caption font-medium text-ink-faint hover:text-ink"
                       >
                         {showKey ? 'Hide' : 'Show'}
                       </button>
                     </div>
-                    <p className="mt-1.5 text-[10px] text-ink-faint">
+                    <p className="mt-1.5 text-caption text-ink-faint">
                       Stored in this browser only — sent directly to the provider.
                     </p>
                   </Field>
@@ -218,7 +218,7 @@ export function AIHarnessView() {
                     <BookOpen className="h-3.5 w-3.5 text-saffron" />
                     <div>
                       <div className="text-[12px] font-medium text-ink">Augment with local knowledge</div>
-                      <div className="text-[10px] text-ink-faint">RAG over your entities</div>
+                      <div className="text-caption text-ink-faint">RAG over your entities</div>
                     </div>
                   </div>
                   <button
@@ -252,14 +252,14 @@ export function AIHarnessView() {
             </div>
 
             <div className="mt-3 rounded-lg border border-border bg-card p-4">
-              <div className="flex items-center justify-between text-[11px]">
+              <div className="flex items-center justify-between text-label">
                 <span className="flex items-center gap-1.5 text-ink-mute">
                   <Zap className="h-3 w-3 text-saffron" />
                   Status
                 </span>
                 <span className="font-mono text-ink">{isLoading ? 'Thinking…' : 'Ready'}</span>
               </div>
-              <div className="mt-1.5 flex items-center justify-between text-[11px]">
+              <div className="mt-1.5 flex items-center justify-between text-label">
                 <span className="flex items-center gap-1.5 text-ink-mute">
                   <Cpu className="h-3 w-3 text-ink-faint" />
                   Active model
@@ -340,7 +340,7 @@ export function AIHarnessView() {
                   <Send className="h-3.5 w-3.5" />
                 </button>
               </div>
-              <div className="mt-1.5 flex items-center justify-between px-1 text-[10px] text-ink-faint">
+              <div className="mt-1.5 flex items-center justify-between px-1 text-caption text-ink-faint">
                 <span className="flex items-center gap-1">
                   <Sparkles className="h-2.5 w-2.5" />
                   {augment ? 'Augmented with local knowledge' : 'No augmentation'}
@@ -414,7 +414,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+      <label className="mb-1.5 flex items-center gap-1.5 text-label font-semibold uppercase tracking-wide text-ink-faint">
         <Icon className="h-3 w-3" />
         {label}
       </label>

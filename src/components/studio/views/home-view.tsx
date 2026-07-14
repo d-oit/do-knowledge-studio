@@ -26,7 +26,10 @@ const ICONS: Record<string, typeof FileText> = {
 }
 
 export function HomeView() {
-  const { setView, startNew, entities, startEdit } = useStudioStore()
+  const setView = useStudioStore((s) => s.setView)
+  const startNew = useStudioStore((s) => s.startNew)
+  const entities = useStudioStore((s) => s.entities)
+  const startEdit = useStudioStore((s) => s.startEdit)
   const stats = useStats()
   const reducedMotion = useReducedMotion()
   const heroAnim = reducedMotion
@@ -156,13 +159,13 @@ export function HomeView() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="truncate text-[14px] font-semibold text-ink">{e.name}</span>
-                      <span className="shrink-0 text-[10px] uppercase tracking-wide text-ink-faint">
+                      <span className="shrink-0 text-caption uppercase tracking-wide text-ink-faint">
                         {meta.label}
                       </span>
                     </div>
                     <p className="truncate text-[12px] text-ink-mute">{e.description}</p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-1 text-[11px] text-ink-faint">
+                  <div className="flex shrink-0 items-center gap-1 text-label text-ink-faint">
                     <Clock className="h-3 w-3" />
                     {new Date(e.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </div>
@@ -208,12 +211,12 @@ export function HomeView() {
           <div className="mt-4 rounded-lg border border-dashed border-saffron/40 bg-saffron-soft/40 p-4">
             <div className="mb-1 flex items-center gap-1.5">
               <Sparkles className="h-3.5 w-3.5 text-saffron" />
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-saffron-deep">
+              <span className="text-label font-semibold uppercase tracking-wide text-saffron-deep">
                 Tip
               </span>
             </div>
             <p className="text-[12px] leading-relaxed text-ink-soft">
-              Use <kbd className="rounded border border-border bg-background px-1 font-mono text-[10px]">⌘K</kbd> to
+              Use <kbd className="rounded border border-border bg-background px-1 font-mono text-caption">⌘K</kbd> to
               jump anywhere, or mark text in the Editor as a Claim to add evidence and verification.
             </p>
           </div>
@@ -253,7 +256,7 @@ function StatCard({
       </div>
       <div>
         <div className="font-mono text-2xl font-semibold leading-none text-ink">{value}</div>
-        <div className="mt-1 text-[11px] uppercase tracking-wide text-ink-faint">{label}</div>
+        <div className="mt-1 text-label uppercase tracking-wide text-ink-faint">{label}</div>
       </div>
     </button>
   )

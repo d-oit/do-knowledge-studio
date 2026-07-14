@@ -30,7 +30,11 @@ import {
 import { encryptData, buildEncryptedReaderHtml } from '@/lib/export/encrypt'
 
 export function ExportView() {
-  const { entities, claims, importData, resetStore, setView } = useStudioStore()
+  const entities = useStudioStore((s) => s.entities)
+  const claims = useStudioStore((s) => s.claims)
+  const importData = useStudioStore((s) => s.importData)
+  const resetStore = useStudioStore((s) => s.resetStore)
+  const setView = useStudioStore((s) => s.setView)
   const reducedMotion = useReducedMotion()
 
   const [showPassword, setShowPassword] = useState(false)
@@ -185,7 +189,7 @@ export function ExportView() {
                     <Icon className="h-5 w-5" />
                   </div>
                   {f.badge && (
-                    <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0 text-[9px] font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+                    <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0 text-badge font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
                       <Shield className="h-2.5 w-2.5" />
                       {f.badge}
                     </span>
@@ -197,7 +201,7 @@ export function ExportView() {
                 <p className="flex-1 text-[12px] leading-relaxed text-ink-mute">
                   {f.description}
                 </p>
-                <div className="mt-3 flex items-center gap-1 text-[11px] font-medium text-saffron-deep opacity-0 transition-opacity group-hover:opacity-100">
+                <div className="mt-3 flex items-center gap-1 text-label font-medium text-saffron-deep opacity-0 transition-opacity group-hover:opacity-100">
                   <Download className="h-3 w-3" />
                   Export now
                   <ArrowRight className="h-3 w-3" />
@@ -253,7 +257,7 @@ export function ExportView() {
       <section className="rounded-lg border border-dashed border-saffron/40 bg-saffron-soft/30 p-4">
         <div className="mb-1.5 flex items-center gap-1.5">
           <Sparkles className="h-3.5 w-3.5 text-saffron" />
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-saffron-deep">
+          <span className="text-label font-semibold uppercase tracking-wide text-saffron-deep">
             Backup tips
           </span>
         </div>
@@ -274,7 +278,7 @@ export function ExportView() {
       </section>
 
       <div className="mt-8 flex items-center justify-between border-t border-border pt-4">
-        <p className="text-[11px] text-ink-faint">
+        <p className="text-label text-ink-faint">
           {entities.length} entities · {claims.length} claims · saved to this browser
         </p>
         <button
@@ -305,7 +309,7 @@ export function ExportView() {
               </div>
               <div>
                 <h3 className="font-serif text-[15px] font-semibold text-ink">Encrypt export</h3>
-                <p className="text-[11px] text-ink-faint">
+                <p className="text-label text-ink-faint">
                   AES-256-GCM encryption with PBKDF2 key derivation.
                 </p>
               </div>
@@ -313,7 +317,7 @@ export function ExportView() {
 
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+                <label className="mb-1 block text-label font-semibold uppercase tracking-wide text-ink-faint">
                   Password
                 </label>
                 <div className="relative">
@@ -326,14 +330,14 @@ export function ExportView() {
                   />
                   <button
                     onClick={() => setShowPass(!showPass)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-medium text-ink-faint hover:text-ink"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-caption font-medium text-ink-faint hover:text-ink"
                   >
                     {showPass ? 'Hide' : 'Show'}
                   </button>
                 </div>
               </div>
               <div>
-                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+                <label className="mb-1 block text-label font-semibold uppercase tracking-wide text-ink-faint">
                   Confirm password
                 </label>
                 <input
@@ -345,7 +349,7 @@ export function ExportView() {
                 />
               </div>
               {password && confirm && password !== confirm && (
-                <p className="text-[11px] text-red-500">Passwords do not match.</p>
+                <p className="text-label text-red-500">Passwords do not match.</p>
               )}
             </div>
 

@@ -36,7 +36,12 @@ function formatTime(timestamp: string) {
 }
 
 export function ChatView() {
-  const { chat, chatLoading, sendMessage, clearChat, setView, selectEntity } = useStudioStore()
+  const chat = useStudioStore((s) => s.chat)
+  const chatLoading = useStudioStore((s) => s.chatLoading)
+  const sendMessage = useStudioStore((s) => s.sendMessage)
+  const clearChat = useStudioStore((s) => s.clearChat)
+  const setView = useStudioStore((s) => s.setView)
+  const selectEntity = useStudioStore((s) => s.selectEntity)
   const reducedMotion = useReducedMotion()
   const [input, setInput] = useState('')
   const [showCitations, setShowCitations] = useState<string | null>(null)
@@ -141,7 +146,7 @@ export function ChatView() {
 
                   {/* Timestamp */}
                   <p className={cn(
-                    'text-[10px] text-ink-faint',
+                    'text-caption text-ink-faint',
                     m.role === 'user' ? 'text-right' : 'text-left',
                   )}>
                     {formatTime(m.timestamp)}
@@ -152,7 +157,7 @@ export function ChatView() {
                     <div className="rounded-lg border border-dashed border-saffron/40 bg-saffron-soft/30 p-2.5">
                       <button
                         onClick={() => setShowCitations(showCitations === m.id ? null : m.id)}
-                        className="flex w-full items-center gap-1.5 text-[11px] font-semibold text-saffron-deep"
+                        className="flex w-full items-center gap-1.5 text-label font-semibold text-saffron-deep"
                       >
                         <Quote className="h-3 w-3" />
                         Used {m.citations.length} local {m.citations.length === 1 ? 'item' : 'items'}
@@ -173,9 +178,9 @@ export function ChatView() {
                               <button
                                 key={i}
                                 onClick={() => handleCitationClick(c.entityId)}
-                                className="flex w-full gap-2 rounded-md bg-background/60 p-2 text-left text-[11px] transition-colors hover:bg-muted focus-ring"
+                                className="flex w-full gap-2 rounded-md bg-background/60 p-2 text-left text-label transition-colors hover:bg-muted focus-ring"
                               >
-                                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-saffron text-[9px] font-bold text-white">
+                                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-saffron text-badge font-bold text-white">
                                   {i + 1}
                                 </span>
                                 <div className="min-w-0 flex-1">
@@ -205,7 +210,7 @@ export function ChatView() {
       {chat.length <= 1 && !chatLoading && (
         <div className="border-t border-border bg-muted/20 px-5 py-3 lg:px-10">
           <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-2">
-            <span className="flex items-center gap-1 text-[11px] font-medium text-ink-faint">
+            <span className="flex items-center gap-1 text-label font-medium text-ink-faint">
               <Sparkles className="h-3 w-3" />
               Try:
             </span>
@@ -251,7 +256,7 @@ export function ChatView() {
               <Send className="h-4 w-4" />
             </button>
           </div>
-          <div className="mt-2 flex items-center justify-between text-[10px] text-ink-faint">
+          <div className="mt-2 flex items-center justify-between text-caption text-ink-faint">
             <div className="flex items-center gap-2">
               <span className="flex items-center gap-1">
                 <span className="h-1.5 w-1.5 rounded-full bg-saffron" />

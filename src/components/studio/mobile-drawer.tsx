@@ -172,7 +172,7 @@ function DrawerHeader({
         <span className="truncate font-serif text-[15px] font-semibold leading-tight tracking-tight">
           Knowledge Studio
         </span>
-        <span className="text-[10px] uppercase tracking-[0.14em] text-ink-faint">
+        <span className="text-caption uppercase tracking-[0.14em] text-ink-faint">
           Local-first · v0.2
         </span>
       </div>
@@ -250,7 +250,7 @@ function NavTab({ onNavigate }: { onNavigate: () => void }) {
     <nav className="px-3 pb-3 pt-3" aria-label="Main navigation">
       {NAV_GROUPS.map((group) => (
         <div key={group.label} className="mb-3.5">
-          <div className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+          <div className="mb-1.5 px-2 text-caption font-semibold uppercase tracking-[0.14em] text-ink-faint">
             {group.label}
           </div>
           <ul className="space-y-0.5">
@@ -279,12 +279,12 @@ function NavTab({ onNavigate }: { onNavigate: () => void }) {
                     />
                     <span className="flex-1 text-left">{item.label}</span>
                     {item.experimental && (
-                      <span className="rounded-full border border-dashed border-saffron/40 px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide text-saffron">
+                      <span className="rounded-full border border-dashed border-saffron/40 px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-saffron">
                         Lab
                       </span>
                     )}
                     {item.shortcut && (
-                      <kbd className="font-mono text-[10px] text-ink-faint/70">
+                      <kbd className="font-mono text-caption text-ink-faint/70">
                         {item.shortcut}
                       </kbd>
                     )}
@@ -325,7 +325,7 @@ function SearchTab({ onSelect }: { onSelect: () => void }) {
             className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-3 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/30"
           />
         </div>
-        <div className="mt-2 flex items-center gap-1 rounded-md bg-muted p-0.5 text-[11px]">
+        <div className="mt-2 flex items-center gap-1 rounded-md bg-muted p-0.5 text-label">
           <button
             onClick={() => setMode('keyword')}
             aria-pressed={mode === 'keyword'}
@@ -374,14 +374,14 @@ function SearchTab({ onSelect }: { onSelect: () => void }) {
                   >
                     <div className="mb-1 flex items-center gap-2">
                       <span className={cn('h-1.5 w-1.5 rounded-full', meta.dot)} />
-                      <span className="rounded px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide text-ink-faint">
+                      <span className="rounded px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-ink-faint">
                         {meta.label}
                       </span>
                     </div>
                     <div className="truncate text-[13px] font-medium text-ink">
                       {e.name}
                     </div>
-                    <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-ink-mute">
+                    <p className="mt-0.5 line-clamp-2 text-label leading-snug text-ink-mute">
                       {e.description}
                     </p>
                   </button>
@@ -394,11 +394,11 @@ function SearchTab({ onSelect }: { onSelect: () => void }) {
 
       <div className="border-t border-sidebar-border px-3 py-2.5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-400">
+          <div className="flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-label font-medium text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-400">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
             Offline ready
           </div>
-          <span className="text-[11px] text-ink-faint">
+          <span className="text-label text-ink-faint">
             {entities.length} entities
           </span>
         </div>
@@ -440,7 +440,7 @@ function DrawerFooter() {
           )}
         </button>
       </div>
-      <div className="mt-2 flex items-center gap-1.5 px-2.5 text-[11px] text-ink-faint">
+      <div className="mt-2 flex items-center gap-1.5 px-2.5 text-label text-ink-faint">
         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
         Local search · {entities.length} entities
       </div>

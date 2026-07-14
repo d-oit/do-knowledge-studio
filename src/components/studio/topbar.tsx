@@ -101,14 +101,14 @@ export function Topbar() {
           type="button"
           onClick={() => setCommandOpen(true)}
           aria-label="Open command palette"
-          className="absolute right-1.5 top-1/2 flex h-6 -translate-y-1/2 items-center rounded border border-border bg-muted px-1.5 font-mono text-[10px] text-ink-faint transition-colors hover:bg-muted/70 hover:text-ink-soft focus-ring"
+          className="absolute right-1.5 top-1/2 flex h-6 -translate-y-1/2 items-center rounded border border-border bg-muted px-1.5 font-mono text-caption text-ink-faint transition-colors hover:bg-muted/70 hover:text-ink-soft focus-ring"
         >
           ⌘K
         </button>
       </div>
 
       {/* Offline-ready badge — hidden on mobile (< 768px) */}
-      <div className="hidden flex-shrink-0 items-center gap-1.5 rounded-full border border-saffron/30 bg-saffron-soft px-2.5 py-1 text-[11px] font-medium text-saffron-deep md:flex">
+      <div className="hidden flex-shrink-0 items-center gap-1.5 rounded-full border border-saffron/30 bg-saffron-soft px-2.5 py-1 text-label font-medium text-saffron-deep md:flex">
         <span className="h-1.5 w-1.5 rounded-full bg-saffron" />
         Offline ready
       </div>
