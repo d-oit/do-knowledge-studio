@@ -245,6 +245,8 @@ export function EditorView() {
           e.preventDefault()
           handleSave()
           break
+        default:
+          break
       }
     }
     document.addEventListener('keydown', handler)

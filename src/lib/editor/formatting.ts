@@ -65,7 +65,7 @@ export function applyItalic(text: string, sel: MarkdownSelection): MarkdownComma
 }
 
 export function applyHeading(text: string, sel: MarkdownSelection, level: 1 | 2 | 3): MarkdownCommandResult {
-  const prefix = '#'.repeat(level) + ' '
+  const prefix = `${'#'.repeat(level)} `
   return toggleLinePrefix(text, sel, prefix)
 }
 
