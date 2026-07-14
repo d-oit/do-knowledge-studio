@@ -22,7 +22,7 @@
 
 ## Atomic Commit Workflow
 
-The atomic commit pattern validates, commits, pushes, creates PR, and verifies CI.
+The atomic commit pattern validates, commits, pushes, creates PR, verifies CI, and runs code review.
 
 ```bash
 # Create feature branch
@@ -30,11 +30,16 @@ git checkout -b feat/your-feature-name
 
 # Make changes
 
-# Run atomic commit (validates, commits, pushes, creates PR, verifies)
+# Run atomic commit (validates, commits, pushes, creates PR, verifies, reviews)
 ./scripts/atomic-commit/run.sh
 
 # If checks fail, fix and retry
 ```
+
+The workflow includes a mandatory code review phase after CI passes:
+1. `code-review-assistant` skill analyzes the PR diff
+2. All P1/P2 findings must be addressed before merge
+3. Re-review after fixes until clean
 
 See `.opencode/commands/atomic-commit.md` for the full command specification.
 

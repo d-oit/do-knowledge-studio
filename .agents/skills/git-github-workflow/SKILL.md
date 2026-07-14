@@ -30,6 +30,15 @@ See `references/SWARM.md` for detailed agent definitions and coordination patter
 - Push to new feature branch
 - Create comprehensive PR with commit summary and context
 
+### Phase 3.5: CODE REVIEW (Agent: review-agent)
+**REQUIRED before merge. No exceptions.**
+- Invoke `code-review-assistant` skill on the PR diff
+- Analyze all changed files for: AGENTS.md compliance, security, accessibility, performance, test coverage
+- Check LOC limits (500 max per file), named exports, design token usage
+- Generate structured review with P1/P2/P3 findings
+- Address all P1 and P2 findings before proceeding
+- Re-review after fixes until clean
+
 ### Phase 4: MONITOR ALL ACTIONS (Agent: monitor-agent)
 **CRITICAL:** ALL GitHub Actions must pass, including pre-existing issues
 - Monitor PR checks continuously
@@ -167,10 +176,11 @@ Workflow succeeds when:
 2. ✓ GitHub issues checked (none blocking or all resolved)
 3. ✓ PR created and pushed
 4. ✓ ALL GitHub Actions passing (including pre-existing)
-5. ✓ Any issues fixed via web research
-6. ✓ Successfully merged to main
-7. ✓ Post-merge validation passes
-8. ✓ All files and docs validated
+5. ✓ Code review completed with all findings addressed
+6. ✓ Any issues fixed via web research
+7. ✓ Successfully merged to main
+8. ✓ Post-merge validation passes
+9. ✓ All files and docs validated
 
 ## See Also
 

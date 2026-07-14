@@ -39,6 +39,7 @@ Local-first knowledge studio built with Next.js 16 / React 19 / Tailwind 4 / sha
 - Prefer `Intl.Segmenter` over manual string splitting for i18n-safe text processing.
 - **Always use named exports.** Never use `export default`. Named exports enable better tree-shaking, safer refactoring (find-all-references works), and consistent import style across the codebase.
 - **Never ignore pre-existing issues or warnings.** Every warning, lint error, or failing check must be fixed or documented as a follow-up task in `plans/`. Ignoring issues compounds technical debt and erodes trust in the pipeline.
+- **Always run code review before merge.** After CI passes and before requesting merge, invoke the `code-review-assistant` skill to perform a structured review of all changed files. Address all P1/P2 findings. No PR merges without a completed review pass.
 
 ## Repository Shape
 
@@ -117,6 +118,14 @@ Required before commit:
 ./scripts/quality_gate.sh
 ```
 
+Required after CI passes, before merge:
+
+```bash
+# Invoke code-review-assistant skill on the PR
+# Review all changed files for AGENTS.md compliance, security, a11y, performance
+# Address all P1/P2 findings before requesting merge
+```
+
 Useful fast path:
 
 ```bash
@@ -173,6 +182,14 @@ Use conventional commits:
 
 ```bash
 git commit -m "feat(scope): short description"
+```
+
+After CI passes on a PR, always run a code review before merge:
+
+```bash
+# Invoke code-review-assistant skill on the PR
+# Review must cover: AGENTS.md compliance, security, a11y, performance, test coverage
+# Address all P1/P2 findings before merge
 ```
 
 If hooks are needed locally:

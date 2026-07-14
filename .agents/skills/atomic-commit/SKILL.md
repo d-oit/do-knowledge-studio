@@ -9,14 +9,15 @@ Atomic workflow: validate → commit → push → PR → verify. All changes com
 
 ## Overview
 
-Orchestrates complete code submission as state machine with 7 phases:
+Orchestrates complete code submission as state machine with 8 phases:
 1. PRE_COMMIT - Validation (quality gate, secrets scan)
 2. COMMIT - Atomic commit creation (conventional format)
 3. PRE_PUSH - Remote sync check
 4. PUSH - Upload to origin
 5. PR_CREATE - Open pull request
 6. VERIFY - Wait for CI checks
-7. REPORT - Success summary
+7. REVIEW - Code review (invoke code-review-assistant skill)
+8. REPORT - Success summary
 
 **Zero warnings policy**: Any warning fails the workflow and triggers rollback.
 
@@ -48,10 +49,10 @@ Orchestrates complete code submission as state machine with 7 phases:
 
 ## State Machine
 
-```
-[Start] → PRE_COMMIT → COMMIT → PRE_PUSH → PUSH → PR_CREATE → VERIFY → REPORT → [Success]
-              ↓           ↓         ↓         ↓          ↓         ↓
-            [Fail]      Rollback  Rollback  Rollback   Rollback  Rollback
+```text
+[Start] → PRE_COMMIT → COMMIT → PRE_PUSH → PUSH → PR_CREATE → VERIFY → REVIEW → REPORT → [Success]
+              ↓           ↓         ↓         ↓          ↓         ↓        ↓
+            [Fail]      Rollback  Rollback  Rollback   Rollback  Rollback  Fix
 ```
 
 ## Quality Gates
@@ -69,6 +70,8 @@ Orchestrates complete code submission as state machine with 7 phases:
 | VERIFY | All CI checks green | Rollback |
 | VERIFY | Zero warnings in checks | Rollback |
 | VERIFY | Vercel deployment succeeds | Rollback |
+| REVIEW | Code review completed (code-review-assistant skill) | Fix & re-review |
+| REVIEW | All P1/P2 findings addressed | Fix & re-review |
 
 ## Rollback Actions
 
@@ -135,6 +138,7 @@ Command succeeds only when:
 4. ✓ PR created with valid URL
 5. ✓ All GitHub Actions pass
 6. ✓ Zero warnings in all checks
+7. ✓ Code review completed with all findings addressed
 
 ## See Also
 
