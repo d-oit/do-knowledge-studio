@@ -8,8 +8,13 @@ import { ENTITY_TYPE_META, type EntityType } from '@/lib/studio/types'
 const ENTITY_TYPES: EntityType[] = ['note', 'concept', 'person', 'project']
 
 function getTypeMeta(t: EntityType) {
-  if (Object.prototype.hasOwnProperty.call(ENTITY_TYPE_META, t)) return ENTITY_TYPE_META[t]
-  return ENTITY_TYPE_META.note
+  switch (t) {
+    case 'note': return ENTITY_TYPE_META.note
+    case 'concept': return ENTITY_TYPE_META.concept
+    case 'person': return ENTITY_TYPE_META.person
+    case 'project': return ENTITY_TYPE_META.project
+    default: return ENTITY_TYPE_META.note
+  }
 }
 
 function renderTypeIcon(t: EntityType, className?: string) {
