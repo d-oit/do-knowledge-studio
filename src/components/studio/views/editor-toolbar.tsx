@@ -25,9 +25,9 @@ function ToolbarButton({
       title={label}
       aria-label={label}
       onClick={onClick}
-      className="rounded p-1.5 text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
+      className="flex h-[44px] w-[44px] items-center justify-center rounded text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
     >
-      <Icon className="h-3.5 w-3.5" />
+      <Icon className="h-4 w-4" />
     </button>
   )
 }
@@ -64,14 +64,6 @@ export function EditorToolbar({
         <Divider />
         <ToolbarButton icon={Link2} label="Insert link" onClick={() => { handleFormat('link') }} />
         <div className="flex-1" />
-        <button
-          type="button"
-          disabled
-          className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-ink-faint cursor-not-allowed"
-        >
-          <span className="h-3 w-3">✦</span>
-          AI Extract
-        </button>
         <button
           type="button"
           onClick={onToggleAdvanced}

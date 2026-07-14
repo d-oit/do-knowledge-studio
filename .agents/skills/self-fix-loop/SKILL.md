@@ -92,7 +92,19 @@ Phase 6: RETRY LOOP
 | Security warnings | `security-code-auditor` |
 | Link/reference errors | `validate-links.sh` |
 | Skill format issues | `validate-skill-format.sh` |
+| Codacy blocked | `codacy` (triage, suppress false positives, fix real issues) |
+| Vercel deployment failure | Run `./scripts/verify-deps.sh`, check for breaking API changes in major dep bumps |
 | Unknown errors | `web-search-researcher` + `do-web-doc-resolver` |
+
+## Common Failure Patterns
+
+| CI Check | Root Cause | Fix |
+|----------|-----------|-----|
+| Vercel — Type error: Property does not exist | Major dependency bump changed API (e.g. `react-resizable-panels` v3→v4 renamed exports) | Update imports to match new API, run `pnpm run build` to verify |
+| Vercel — TSconfig deprecated option | TypeScript major bump deprecated `baseUrl` or other options | Add `"ignoreDeprecations": "6.0"` to `tsconfig.base.json` |
+| Codacy — Object Injection Sink | ESLint `security/detect-object-injection` flags `OBJ[variable]` bracket access | Use switch/case pattern or `Object.prototype.hasOwnProperty.call()` guard |
+| Codacy — static-components | `react-hooks/static-components` flags component creation during render | Use render function returning JSX instead of assigning component variable |
+| Quality Gate — lockfile mismatch | `pnpm-lock.yaml` out of sync after dep bump | Run `pnpm install` and commit updated lockfile |
 
 ## Swarm Agent Coordination
 

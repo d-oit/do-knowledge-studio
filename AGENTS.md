@@ -128,6 +128,7 @@ Useful validation helpers:
 ```bash
 ./scripts/validate-package-manager.sh
 ./scripts/validate-git-hooks.sh
+./scripts/verify-deps.sh
 ./scripts/verify.sh
 ./scripts/docs-sync.sh
 ```
@@ -232,6 +233,18 @@ pnpm run build
 | `pnpm-lock.yaml` out of date | Install fails | Run `pnpm install` and commit lockfile |
 | TypeScript errors | Build fails | Run `pnpm run typecheck` before pushing |
 | Missing dependencies | Import errors | Run `pnpm install` and commit changes |
+| Major dependency bump (breaking API) | Type errors in build only | Run `./scripts/verify-deps.sh` after any dependabot merge |
+| TypeScript major bump (deprecations) | TSconfig option deprecated | Add `"ignoreDeprecations": "6.0"` to tsconfig.base.json |
+
+### Dependency Upgrade Rules
+
+When merging dependabot PRs or manually bumping dependencies:
+
+1. **Always run `./scripts/verify-deps.sh`** after any dependency version change.
+2. **Major version bumps** (semver X.0.0) require checking the changelog for breaking API changes — do not auto-merge.
+3. **TypeScript major bumps** may deprecate tsconfig options — check `pnpm run typecheck` output for deprecation warnings treated as errors.
+4. **UI library major bumps** (shadcn primitives, react-resizable-panels, radix) may rename exports — check `pnpm run build` for type errors.
+5. **After merging any dependabot PR**, immediately run the full quality workflow including `pnpm run build` and push a fix if needed.
 
 ## Skills
 
