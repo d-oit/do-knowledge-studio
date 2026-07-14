@@ -17,8 +17,9 @@ import {
 } from 'lucide-react'
 import { useState, useMemo } from 'react'
 import { cn } from '@/lib/utils'
-import { toast } from 'sonner'
+import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { motion, AnimatePresence } from 'framer-motion'
+import { buildEntityIndex } from '@/lib/studio/graph-index'
 
 interface TreeNode {
   entity: { id: string; name: string; type: keyof typeof ENTITY_TYPE_META }
@@ -27,13 +28,16 @@ interface TreeNode {
 }
 
 export function MindMapView() {
-  const { entities } = useStudioStore()
+  const { entities, selectEntity, setView } = useStudioStore()
   const [rootId, setRootId] = useState(entities[0]?.id || '')
   const [depth, setDepth] = useState(3)
   const [compact, setCompact] = useState(false)
+  const reducedMotion = useReducedMotion()
+  const entityIndex = useMemo(() => buildEntityIndex(entities), [entities])
+  const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null)
 
   const tree = useMemo(() => {
-    const root = entities.find((e) => e.id === rootId) || entities[0]
+    const root = entityIndex.get(rootId) || entities[0]
     if (!root) return null
 
     const build = (
@@ -45,7 +49,7 @@ export function MindMapView() {
       if (currentDepth > 0) {
         for (const link of entity.links) {
           if (visited.has(link.targetId)) continue
-          const child = entities.find((e) => e.id === link.targetId)
+          const child = entityIndex.get(link.targetId)
           if (child) {
             children.push(
               build(child, currentDepth - 1, new Set([...visited, entity.id])),
@@ -60,7 +64,7 @@ export function MindMapView() {
       }
     }
     return build(root, depth, new Set())
-  }, [entities, rootId, depth])
+  }, [entityIndex, entities, rootId, depth])
 
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())
 
@@ -81,9 +85,9 @@ export function MindMapView() {
     return (
       <div key={node.entity.id} className="relative">
         <motion.div
-          initial={{ opacity: 0, x: -8 }}
+          initial={reducedMotion ? false : { opacity: 0, x: -8 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.2, delay: level * 0.05 }}
+          transition={reducedMotion ? { duration: 0 } : { duration: 0.2, delay: level * 0.05 }}
           className="flex items-center"
           style={{ paddingLeft: `${level * 28}px` }}
         >
@@ -104,6 +108,29 @@ export function MindMapView() {
           )}
 
           <div
+            role="treeitem"
+            tabIndex={0}
+            aria-selected={focusedNodeId === node.entity.id ? true : undefined}
+            aria-expanded={hasChildren ? isExpanded : undefined}
+            onFocus={() => { setFocusedNodeId(node.entity.id) }}
+            onBlur={() => { setFocusedNodeId(null) }}
+            onClick={() => {
+              selectEntity(node.entity.id)
+              setView('editor')
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                selectEntity(node.entity.id)
+                setView('editor')
+              }
+              if (e.key === 'ArrowRight' && hasChildren && !isExpanded) {
+                toggleNode(node.entity.id)
+              }
+              if (e.key === 'ArrowLeft' && hasChildren && isExpanded) {
+                toggleNode(node.entity.id)
+              }
+            }}
             className={cn(
               'group flex cursor-pointer items-center gap-2 rounded-md border bg-card py-1.5 pr-3 transition-all hover:border-saffron/40 hover:shadow-sm',
               level === 0 ? 'border-saffron/40 px-4' : 'border-border px-3',
@@ -132,10 +159,10 @@ export function MindMapView() {
         <AnimatePresence>
           {isExpanded && hasChildren && (
             <motion.div
-              initial={{ opacity: 0, height: 0 }}
+              initial={reducedMotion ? false : { opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
+              exit={reducedMotion ? { opacity: 0 } : { opacity: 0, height: 0 }}
+              transition={reducedMotion ? { duration: 0 } : { duration: 0.2 }}
               className="ml-4 border-l border-border pl-2"
             >
               {node.children.map((child) => renderNode(child, level + 1))}
@@ -180,11 +207,11 @@ export function MindMapView() {
 
         <Divider />
 
-        <ToolbarBtn icon={Plus} label="Add child" onClick={() => toast.info('Add child node')} />
-        <ToolbarBtn icon={Edit3} label="Rename" onClick={() => toast.info('Rename')} />
-        <ToolbarBtn icon={Trash2} label="Delete" onClick={() => toast.info('Delete')} />
-        <ToolbarBtn icon={Undo2} label="Undo" onClick={() => toast.info('Undo')} />
-        <ToolbarBtn icon={Redo2} label="Redo" onClick={() => toast.info('Redo')} />
+        <ToolbarBtn icon={Plus} label="Add child" disabled />
+        <ToolbarBtn icon={Edit3} label="Rename" disabled />
+        <ToolbarBtn icon={Trash2} label="Delete" disabled />
+        <ToolbarBtn icon={Undo2} label="Undo" disabled />
+        <ToolbarBtn icon={Redo2} label="Redo" disabled />
 
         <div className="flex-1" />
 
@@ -197,8 +224,8 @@ export function MindMapView() {
         >
           Compact
         </button>
-        <ToolbarBtn icon={RefreshCw} label="Sync" onClick={() => toast.success('Synced with graph')} />
-        <ToolbarBtn icon={Download} label="Export PNG" onClick={() => toast.success('Mind map exported')} />
+        <ToolbarBtn icon={RefreshCw} label="Sync" disabled />
+        <ToolbarBtn icon={Download} label="Export PNG" disabled />
       </div>
 
       {/* Hint */}
@@ -238,17 +265,20 @@ function ToolbarBtn({
   icon: Icon,
   label,
   onClick,
+  disabled,
 }: {
   icon: typeof Plus
   label: string
   onClick?: () => void
+  disabled?: boolean
 }) {
   return (
     <button
       onClick={onClick}
-      title={label}
+      disabled={disabled}
+      title={disabled ? `${label} (coming soon)` : label}
       aria-label={label}
-      className="flex items-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-medium text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
+      className="flex items-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-medium text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink-mute"
     >
       <Icon className="h-3.5 w-3.5" />
       <span className="hidden md:inline">{label}</span>

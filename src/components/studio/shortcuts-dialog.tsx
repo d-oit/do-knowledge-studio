@@ -6,6 +6,7 @@ import { X, Keyboard } from 'lucide-react'
 import { useStudioStore } from '@/lib/studio/store'
 import type { ViewId } from '@/lib/studio/types'
 import { cn } from '@/lib/utils'
+import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 
 interface ShortcutRow {
   keys: string
@@ -76,6 +77,7 @@ export function ShortcutsDialog() {
   const [open, setOpen] = useShortcutsOpen()
   const { setView, currentView, commandOpen, mobileDrawerOpen, setCommandOpen, setMobileDrawerOpen } =
     useStudioStore()
+  const reducedMotion = useReducedMotion()
 
   // Close button ref — focused when the dialog opens.
   const closeBtnRef = React.useRef<HTMLButtonElement | null>(null)
@@ -205,10 +207,10 @@ export function ShortcutsDialog() {
           <motion.div
             key="shortcuts-backdrop"
             className="fixed inset-0 z-[850] flex items-center justify-center bg-ink/30 backdrop-blur-sm"
-            initial={{ opacity: 0 }}
+            initial={reducedMotion ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
+            transition={reducedMotion ? { duration: 0 } : { duration: 0.15 }}
             onClick={() => setOpen(false)}
             aria-hidden="true"
           >
@@ -217,10 +219,10 @@ export function ShortcutsDialog() {
               role="dialog"
               aria-modal="true"
               aria-label="Keyboard shortcuts"
-              initial={{ opacity: 0, scale: 0.96 }}
+              initial={reducedMotion ? false : { opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.96 }}
-              transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+              transition={reducedMotion ? { duration: 0 } : { duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
               onClick={(e) => e.stopPropagation()}
               className="w-[560px] max-w-[92vw] overflow-hidden rounded-xl border border-border bg-popover shadow-2xl"
             >
@@ -285,10 +287,10 @@ export function ShortcutsDialog() {
         {gPending && (
           <motion.div
             key="g-indicator"
-            initial={{ opacity: 0, y: 8 }}
+            initial={reducedMotion ? false : { opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
-            transition={{ duration: 0.15 }}
+            transition={reducedMotion ? { duration: 0 } : { duration: 0.15 }}
             className={cn(
               'fixed bottom-4 left-4 z-[700] flex items-center gap-2 rounded-full border border-saffron/40 bg-popover px-3 py-1.5 shadow-lifted',
             )}

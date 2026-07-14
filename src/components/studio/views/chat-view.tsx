@@ -6,6 +6,7 @@ import { useState, useRef, useEffect } from 'react'
 import Markdown from 'react-markdown'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 
 const SUGGESTIONS = [
   { label: 'Summarize recent projects', query: 'Give me a summary of the projects in my library.' },
@@ -36,6 +37,7 @@ function formatTime(timestamp: string) {
 
 export function ChatView() {
   const { chat, chatLoading, sendMessage, clearChat, setView, selectEntity } = useStudioStore()
+  const reducedMotion = useReducedMotion()
   const [input, setInput] = useState('')
   const [showCitations, setShowCitations] = useState<string | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
@@ -71,8 +73,9 @@ export function ChatView() {
         <div className="mx-auto max-w-3xl space-y-5">
           {chat.length === 0 && !chatLoading ? (
             <motion.div
-              initial={{ opacity: 0, y: 8 }}
+              initial={reducedMotion ? false : { opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
+              transition={reducedMotion ? { duration: 0 } : undefined}
               className="flex flex-col items-center justify-center py-20 text-center"
             >
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-saffron-soft text-saffron-deep">
@@ -100,9 +103,9 @@ export function ChatView() {
             chat.map((m) => (
               <motion.div
                 key={m.id}
-                initial={{ opacity: 0, y: 8 }}
+                initial={reducedMotion ? false : { opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25 }}
+                transition={reducedMotion ? { duration: 0 } : { duration: 0.25 }}
                 className={cn('flex gap-3', m.role === 'user' ? 'flex-row-reverse' : 'flex-row')}
               >
                 {/* Avatar */}
@@ -160,9 +163,10 @@ export function ChatView() {
                       <AnimatePresence>
                         {showCitations === m.id && (
                           <motion.div
-                            initial={{ height: 0, opacity: 0 }}
+                            initial={reducedMotion ? false : { height: 0, opacity: 0 }}
                             animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
+                            exit={reducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
+                            transition={reducedMotion ? { duration: 0 } : undefined}
                             className="mt-2 space-y-1.5 overflow-hidden"
                           >
                             {m.citations.map((c, i) => (

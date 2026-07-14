@@ -8,8 +8,11 @@ license: MIT
 
 Automated code review with intelligent analysis of changes, quality checks, and actionable feedback generation.
 
+**MANDATORY**: This skill MUST be invoked before any PR merge. No exceptions. See AGENTS.md Hard Rules.
+
 ## When to Use
 
+- **Before every merge (REQUIRED)** — Run after CI passes, before requesting merge
 - **Reviewing pull requests** - Analyze diffs and provide feedback
 - **Change summarization** - Generate PR descriptions from code changes
 - **Quality checks** - Style guide compliance, best practices

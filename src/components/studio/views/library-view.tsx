@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
+import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 
 const TYPE_ICONS: Record<EntityType, typeof FileText> = {
   note: FileText,
@@ -53,6 +54,7 @@ export function LibraryView() {
   } = useStudioStore()
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const filteredEntities = useFilteredEntities()
+  const reducedMotion = useReducedMotion()
 
   const clearFilters = () => {
     setSearchQuery('')
@@ -201,9 +203,9 @@ export function LibraryView() {
             return (
               <motion.button
                 key={e.id}
-                initial={{ opacity: 0, y: 6 }}
+                initial={reducedMotion ? false : { opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25, delay: Math.min(i * 0.03, 0.3) }}
+                transition={reducedMotion ? { duration: 0 } : { duration: 0.25, delay: Math.min(i * 0.03, 0.3) }}
                 onClick={() => startEdit(e.id)}
                 className="group flex flex-col rounded-lg border border-border bg-card p-4 text-left transition-all hover:border-saffron/30 hover:shadow-md hover-lift focus-ring"
               >
@@ -266,7 +268,16 @@ export function LibraryView() {
                   <tr
                     key={e.id}
                     onClick={() => startEdit(e.id)}
-                    className="group cursor-pointer border-b border-border last:border-0 transition-colors hover:bg-muted/30"
+                    onKeyDown={(ev) => {
+                      if (ev.key === 'Enter' || ev.key === ' ') {
+                        ev.preventDefault()
+                        startEdit(e.id)
+                      }
+                    }}
+                    tabIndex={0}
+                    role="link"
+                    aria-label={`Open ${e.name}`}
+                    className="group cursor-pointer border-b border-border last:border-0 transition-colors hover:bg-muted/30 focus-ring"
                   >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">

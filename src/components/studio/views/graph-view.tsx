@@ -13,11 +13,11 @@ import {
   RotateCcw,
   RotateCw,
   Download,
-  Maximize2,
 } from 'lucide-react'
-import { useState, useRef, useMemo } from 'react'
+import { useState, useRef, useMemo, useCallback } from 'react'
 import { cn } from '@/lib/utils'
-import { toast } from 'sonner'
+import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
+import { buildAdjacencyIndex } from '@/lib/studio/graph-index'
 
 type LayoutType = 'force' | 'circular' | 'hierarchical'
 
@@ -26,7 +26,9 @@ export function GraphView() {
   const [layout, setLayout] = useState<LayoutType>('force')
   const [focusMode, setFocusMode] = useState(false)
 
-  // Build nodes from entities + seed positions
+  // Build adjacency index for O(1) focus-mode neighbor lookups
+  const adjacency = useMemo(() => buildAdjacencyIndex(entities), [entities])
+
   const { nodes, edges } = useMemo(() => {
     const seedMap = new Map(seedGraph.nodes.map((n) => [n.id, n]))
     const nodes = entities.map((e) => {
@@ -77,17 +79,31 @@ export function GraphView() {
   }, [nodes, layout])
 
   const visibleNodes = focusMode && selectedEntityId
-    ? positioned.filter((n) => n.id === selectedEntityId || edges.some(e => (e.source === selectedEntityId && e.target === n.id) || (e.target === selectedEntityId && e.source === n.id)))
+    ? positioned.filter((n) => {
+        if (n.id === selectedEntityId) return true
+        const neighbors = adjacency.get(selectedEntityId)
+        return neighbors?.has(n.id) ?? false
+      })
     : positioned
 
   const visibleNodeIds = new Set(visibleNodes.map((n) => n.id))
   const visibleEdges = edges.filter((e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target))
 
   const svgRef = useRef<SVGSVGElement>(null)
+  const reducedMotion = useReducedMotion()
+  // Gate the rotation animation on the selected node indicator
+  const animDur = reducedMotion ? '0s' : '8s'
+  const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null)
 
-  const handleExport = () => {
-    toast.success('Graph exported as PNG (demo)')
-  }
+  const handleNodeKeyDown = useCallback(
+    (nodeId: string, e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        selectEntity(nodeId)
+      }
+    },
+    [selectEntity],
+  )
 
   return (
     <div className="flex h-full flex-col">
@@ -98,8 +114,9 @@ export function GraphView() {
             <button
               key={l}
               onClick={() => setLayout(l)}
+              aria-pressed={layout === l}
               className={cn(
-                'flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium capitalize transition-colors',
+                'flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium capitalize transition-colors focus-ring',
                 layout === l ? 'bg-primary text-primary-foreground shadow-sm' : 'text-ink-mute hover:text-ink',
               )}
             >
@@ -114,16 +131,16 @@ export function GraphView() {
         <Divider />
 
         <ToolbarBtn icon={Focus} label="Focus neighborhood" active={focusMode} onClick={() => setFocusMode(!focusMode)} />
-        <ToolbarBtn icon={RotateCcw} label="Undo" onClick={() => toast.info('Undo last change')} />
-        <ToolbarBtn icon={RotateCw} label="Redo" onClick={() => toast.info('Redo')} />
-        <ToolbarBtn icon={Camera} label="Save snapshot" onClick={() => toast.success('Snapshot saved')} />
+        <ToolbarBtn icon={RotateCcw} label="Undo" disabled />
+        <ToolbarBtn icon={RotateCw} label="Redo" disabled />
+        <ToolbarBtn icon={Camera} label="Save snapshot" disabled />
 
         <div className="flex-1" />
 
         <span className="hidden text-[11px] text-ink-faint sm:inline">
           {visibleNodes.length} nodes · {visibleEdges.length} edges
         </span>
-        <ToolbarBtn icon={Download} label="Export PNG" onClick={handleExport} />
+        <ToolbarBtn icon={Download} label="Export PNG" disabled />
       </div>
 
       {/* Canvas */}
@@ -136,40 +153,43 @@ export function GraphView() {
           role="img"
           aria-label={`Knowledge graph with ${visibleNodes.length} entities and ${visibleEdges.length} connections`}
         >
-          {/* Edges */}
+          {/* Edges — use Map for O(1) node lookups */}
           <g>
-            {visibleEdges.map((e) => {
-              const s = visibleNodes.find((n) => n.id === e.source)
-              const t = visibleNodes.find((n) => n.id === e.target)
-              if (!s || !t) return null
-              const isHighlight =
-                selectedEntityId && (e.source === selectedEntityId || e.target === selectedEntityId)
-              return (
-                <g key={e.id}>
-                  <line
-                    x1={s.x}
-                    y1={s.y}
-                    x2={t.x}
-                    y2={t.y}
-                    className={cn(
-                      'transition-all',
-                      isHighlight ? 'stroke-saffron' : 'stroke-border',
+            {(() => {
+              const nodeMap = new Map(visibleNodes.map((n) => [n.id, n]))
+              return visibleEdges.map((e) => {
+                const s = nodeMap.get(e.source)
+                const t = nodeMap.get(e.target)
+                if (!s || !t) return null
+                const isHighlight =
+                  selectedEntityId && (e.source === selectedEntityId || e.target === selectedEntityId)
+                return (
+                  <g key={e.id}>
+                    <line
+                      x1={s.x}
+                      y1={s.y}
+                      x2={t.x}
+                      y2={t.y}
+                      className={cn(
+                        'transition-all',
+                        isHighlight ? 'stroke-saffron' : 'stroke-border',
+                      )}
+                      strokeWidth={isHighlight ? 2 : 1.5}
+                    />
+                    {isHighlight && (
+                      <text
+                        x={(s.x + t.x) / 2}
+                        y={(s.y + t.y) / 2 - 4}
+                        textAnchor="middle"
+                        className="fill-ink-mute font-sans text-[9px] italic"
+                      >
+                        {e.relation}
+                      </text>
                     )}
-                    strokeWidth={isHighlight ? 2 : 1.5}
-                  />
-                  {isHighlight && (
-                    <text
-                      x={(s.x + t.x) / 2}
-                      y={(s.y + t.y) / 2 - 4}
-                      textAnchor="middle"
-                      className="fill-ink-mute font-sans text-[9px] italic"
-                    >
-                      {e.relation}
-                    </text>
-                  )}
-                </g>
-              )
-            })}
+                  </g>
+                )
+              })
+            })()}
           </g>
 
           {/* Nodes */}
@@ -183,11 +203,21 @@ export function GraphView() {
                   key={n.id}
                   transform={`translate(${n.x}, ${n.y})`}
                   onClick={() => selectEntity(isSelected ? null : n.id)}
-                  className="cursor-pointer"
+                  onKeyDown={(e) => { handleNodeKeyDown(n.id, e) }}
+                  onFocus={() => { setFocusedNodeId(n.id) }}
+                  onBlur={() => { setFocusedNodeId(null) }}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`${n.label} — ${meta.label}${isSelected ? ' (selected)' : ''}`}
+                  className={cn(
+                    'cursor-pointer outline-none',
+                    (focusedNodeId === n.id || isSelected) && 'focus-visible:ring-2 focus-visible:ring-saffron/60',
+                  )}
+                  style={focusedNodeId === n.id ? { filter: 'drop-shadow(0 0 3px var(--saffron))' } : undefined}
                 >
                   {isSelected && (
                     <circle r={r + 6} fill="none" className="stroke-saffron" strokeWidth={1.5} strokeDasharray="3 3" opacity={0.6}>
-                      <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="8s" repeatCount="indefinite" />
+                      <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur={animDur} repeatCount="indefinite" />
                     </circle>
                   )}
                   <circle
@@ -244,12 +274,6 @@ export function GraphView() {
           </div>
         </div>
 
-        {/* Zoom hint */}
-        <div className="absolute right-4 top-4 flex flex-col gap-1 rounded-md border border-border bg-background/90 p-1 backdrop-blur-sm">
-          <button className="rounded p-1.5 text-ink-mute hover:bg-muted hover:text-ink" aria-label="Zoom in">
-            <Maximize2 className="h-3.5 w-3.5" />
-          </button>
-        </div>
       </div>
     </div>
   )
@@ -260,19 +284,23 @@ function ToolbarBtn({
   label,
   active,
   onClick,
+  disabled,
 }: {
   icon: typeof Focus
   label: string
   active?: boolean
   onClick?: () => void
+  disabled?: boolean
 }) {
   return (
     <button
       onClick={onClick}
-      title={label}
+      disabled={disabled}
+      title={disabled ? `${label} (coming soon)` : label}
       aria-label={label}
+      aria-pressed={active}
       className={cn(
-        'flex items-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-medium transition-colors focus-ring',
+        'flex items-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-medium transition-colors focus-ring disabled:cursor-not-allowed disabled:opacity-40',
         active ? 'bg-saffron-soft text-saffron-deep' : 'text-ink-mute hover:bg-muted hover:text-ink',
       )}
     >
