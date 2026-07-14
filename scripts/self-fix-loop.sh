@@ -13,22 +13,22 @@ cd "$REPO_ROOT"
 MAX_RETRIES="${SELF_FIX_LOOP_MAX_RETRIES:-5}"
 TIMEOUT="${SELF_FIX_LOOP_TIMEOUT:-1800}"
 POLL_INTERVAL="${SELF_FIX_LOOP_POLL_INTERVAL:-30}"
-AUTO_RESEARCH="${SELF_FIX_LOOP_AUTO_RESEARCH:-1}"
+export AUTO_RESEARCH="${SELF_FIX_LOOP_AUTO_RESEARCH:-1}"
 STRICT_VALIDATION="${SELF_FIX_LOOP_STRICT_VALIDATION:-1}"
 BASE_BRANCH="main"
 DRY_RUN=false
 
 # Colors
 if [[ -t 1 ]] && [[ "${FORCE_COLOR:-}" != "0" ]]; then
-    RED='\033[0;31m'
-    GREEN='\033[0;32m'
-    YELLOW='\033[1;33m'
-    BLUE='\033[0;34m'
-    MAGENTA='\033[0;35m'
-    CYAN='\033[0;36m'
-    NC='\033[0m'
+    export RED='\033[0;31m'
+    export GREEN='\033[0;32m'
+    export YELLOW='\033[1;33m'
+    export BLUE='\033[0;34m'
+    export MAGENTA='\033[0;35m'
+    export CYAN='\033[0;36m'
+    export NC='\033[0m'
 else
-    RED=''; GREEN=''; YELLOW=''; BLUE=''; MAGENTA=''; CYAN=''; NC=''
+    export RED=''; export GREEN=''; export YELLOW=''; export BLUE=''; export MAGENTA=''; export CYAN=''; export NC=''
 fi
 
 log()  { echo -e "${GREEN}[SELF-FIX]${NC} $*"; }
@@ -164,7 +164,7 @@ phase_create_or_update_pr() {
 This PR was automatically created by the self-fix loop.
 
 ### Changes
-$(git log --oneline origin/${BASE_BRANCH}..HEAD 2>/dev/null || echo "Initial commit")
+$(git log --oneline "origin/${BASE_BRANCH}..HEAD" 2>/dev/null || echo "Initial commit")
 
 ### Status
 ⏳ Waiting for CI checks to pass..." \
