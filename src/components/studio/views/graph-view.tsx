@@ -22,7 +22,9 @@ import { buildAdjacencyIndex } from '@/lib/studio/graph-index'
 type LayoutType = 'force' | 'circular' | 'hierarchical'
 
 export function GraphView() {
-  const { entities, selectedEntityId, selectEntity } = useStudioStore()
+  const entities = useStudioStore((s) => s.entities)
+  const selectedEntityId = useStudioStore((s) => s.selectedEntityId)
+  const selectEntity = useStudioStore((s) => s.selectEntity)
   const [layout, setLayout] = useState<LayoutType>('force')
   const [focusMode, setFocusMode] = useState(false)
 
@@ -116,7 +118,7 @@ export function GraphView() {
               onClick={() => setLayout(l)}
               aria-pressed={layout === l}
               className={cn(
-                'flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium capitalize transition-colors focus-ring',
+                'flex items-center gap-1 rounded px-2 py-1 text-label font-medium capitalize transition-colors focus-ring',
                 layout === l ? 'bg-primary text-primary-foreground shadow-sm' : 'text-ink-mute hover:text-ink',
               )}
             >
@@ -137,7 +139,7 @@ export function GraphView() {
 
         <div className="flex-1" />
 
-        <span className="hidden text-[11px] text-ink-faint sm:inline">
+        <span className="hidden text-label text-ink-faint sm:inline">
           {visibleNodes.length} nodes · {visibleEdges.length} edges
         </span>
         <ToolbarBtn icon={Download} label="Export PNG" disabled />
@@ -234,7 +236,7 @@ export function GraphView() {
                     y={r + 14}
                     textAnchor="middle"
                     className={cn(
-                      'font-sans text-[10px] font-medium transition-colors',
+                      'font-sans text-caption font-medium transition-colors',
                       isSelected ? 'fill-ink' : 'fill-ink-soft',
                     )}
                   >
@@ -258,14 +260,14 @@ export function GraphView() {
 
         {/* Floating legend */}
         <div className="absolute bottom-4 left-4 rounded-lg border border-border bg-background/90 p-3 backdrop-blur-sm">
-          <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-ink-faint">
+          <div className="mb-2 text-caption font-semibold uppercase tracking-wide text-ink-faint">
             Entity types
           </div>
           <div className="space-y-1">
             {(Object.keys(ENTITY_TYPE_META) as (keyof typeof ENTITY_TYPE_META)[]).map((t) => {
               const m = ENTITY_TYPE_META[t]
               return (
-                <div key={t} className="flex items-center gap-2 text-[11px] text-ink-soft">
+                <div key={t} className="flex items-center gap-2 text-label text-ink-soft">
                   <span className={cn('h-2 w-2 rounded-full', m.dot)} />
                   {m.label}
                 </div>
@@ -300,7 +302,7 @@ function ToolbarBtn({
       aria-label={label}
       aria-pressed={active}
       className={cn(
-        'flex items-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-medium transition-colors focus-ring disabled:cursor-not-allowed disabled:opacity-40',
+        'flex items-center gap-1 rounded-md px-2 py-1.5 text-label font-medium transition-colors focus-ring disabled:cursor-not-allowed disabled:opacity-40',
         active ? 'bg-saffron-soft text-saffron-deep' : 'text-ink-mute hover:bg-muted hover:text-ink',
       )}
     >

@@ -67,7 +67,7 @@ export function EditorToolbar({
         <button
           type="button"
           onClick={onToggleAdvanced}
-          className={`flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors hover:bg-muted focus-ring ${
+          className={`flex items-center gap-1 rounded-md px-2 py-1 text-label font-medium transition-colors hover:bg-muted focus-ring ${
             showAdvanced ? 'text-ink' : 'text-ink-mute'
           }`}
         >

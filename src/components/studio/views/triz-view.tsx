@@ -66,7 +66,7 @@ export function TrizView() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="font-serif text-2xl font-semibold text-ink">TRIZ Contradiction Matrix</h1>
-              <span className="rounded-full border border-dashed border-saffron/50 px-2 py-0 text-[9px] font-semibold uppercase tracking-wide text-saffron">
+              <span className="rounded-full border border-dashed border-saffron/50 px-2 py-0 text-badge font-semibold uppercase tracking-wide text-saffron">
                 Lab
               </span>
             </div>
@@ -88,7 +88,7 @@ export function TrizView() {
           {(improving !== null || worsening !== null) && (
             <button
               onClick={handleReset}
-              className="ml-auto flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1.5 text-[11px] font-medium text-ink-soft transition-colors hover:text-ink focus-ring"
+              className="ml-auto flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1.5 text-label font-medium text-ink-soft transition-colors hover:text-ink focus-ring"
             >
               <RotateCcw className="h-3 w-3" />
               Reset
@@ -146,7 +146,7 @@ export function TrizView() {
         >
           {/* Contradiction summary */}
           <div className="mb-6 rounded-lg border border-border bg-card p-4">
-            <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+            <div className="mb-3 text-label font-semibold uppercase tracking-[0.14em] text-ink-faint">
               Your contradiction
             </div>
             <div className="flex flex-wrap items-center gap-3">
@@ -167,7 +167,7 @@ export function TrizView() {
             <h2 className="font-serif text-lg font-semibold text-ink">
               Suggested inventive principles
             </h2>
-            <span className="rounded-full bg-saffron-soft px-2 py-0 text-[11px] font-semibold text-saffron-deep">
+            <span className="rounded-full bg-saffron-soft px-2 py-0 text-label font-semibold text-saffron-deep">
               {suggestedPrinciples.length}
             </span>
           </div>
@@ -247,7 +247,7 @@ function Step({
     >
       <span
         className={cn(
-          'flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold',
+          'flex h-4 w-4 items-center justify-center rounded-full text-caption font-bold',
           active ? 'bg-saffron text-white' : done ? 'bg-emerald-500 text-white' : 'bg-muted text-ink-faint',
         )}
       >
@@ -291,7 +291,7 @@ function ParamPicker({
           <span className={cn('h-2 w-2 rounded-full', accents.dot)} />
           <h2 className="font-serif text-[15px] font-semibold text-ink">{title}</h2>
         </div>
-        <p className="mt-0.5 text-[11px] text-ink-faint">{subtitle}</p>
+        <p className="mt-0.5 text-label text-ink-faint">{subtitle}</p>
       </div>
 
       <div className="relative mb-3">
@@ -324,7 +324,7 @@ function ParamPicker({
             >
               <span
                 className={cn(
-                  'flex h-5 w-5 shrink-0 items-center justify-center rounded font-mono text-[10px] font-bold',
+                  'flex h-5 w-5 shrink-0 items-center justify-center rounded font-mono text-caption font-bold',
                   isSelected ? 'bg-paper-raised text-ink' : 'bg-muted text-ink-faint',
                 )}
               >
@@ -347,7 +347,7 @@ function ContradictionChip({ n, label, accent }: { n: number; label: string; acc
   }[accent]
   return (
     <div className={cn('flex items-center gap-2 rounded-lg border px-3 py-2', accents)}>
-      <span className="flex h-6 w-6 items-center justify-center rounded bg-paper-raised font-mono text-[11px] font-bold text-ink">
+      <span className="flex h-6 w-6 items-center justify-center rounded bg-paper-raised font-mono text-label font-bold text-ink">
         {n}
       </span>
       <span className="text-[13px] font-semibold">{label}</span>

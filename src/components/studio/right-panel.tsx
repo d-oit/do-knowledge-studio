@@ -7,7 +7,9 @@ import { useState } from 'react'
 import { cn } from '@/lib/utils'
 
 export function RightPanel() {
-  const { currentView, rightPanelOpen, chat } = useStudioStore()
+  const currentView = useStudioStore((s) => s.currentView)
+  const rightPanelOpen = useStudioStore((s) => s.rightPanelOpen)
+  const chat = useStudioStore((s) => s.chat)
 
   if (!rightPanelOpen) return null
 
@@ -25,7 +27,10 @@ export function RightPanel() {
 }
 
 function SearchPanel() {
-  const { searchQuery, setSearchQuery, entities, startEdit } = useStudioStore()
+  const searchQuery = useStudioStore((s) => s.searchQuery)
+  const setSearchQuery = useStudioStore((s) => s.setSearchQuery)
+  const entities = useStudioStore((s) => s.entities)
+  const startEdit = useStudioStore((s) => s.startEdit)
   const [mode, setMode] = useState<'keyword' | 'semantic'>('keyword')
   const filtered = useFilteredEntities()
 
@@ -50,7 +55,7 @@ function SearchPanel() {
             className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-3 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
           />
         </div>
-        <div className="mt-2 flex items-center gap-1 rounded-md bg-muted p-0.5 text-[11px]">
+        <div className="mt-2 flex items-center gap-1 rounded-md bg-muted p-0.5 text-label">
           <button
             onClick={() => setMode('keyword')}
             className={cn(
@@ -92,12 +97,12 @@ function SearchPanel() {
                   >
                     <div className="mb-1 flex items-center gap-2">
                       <span className={cn('h-1.5 w-1.5 rounded-full', meta.dot)} />
-                      <span className="rounded px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide text-ink-faint">
+                      <span className="rounded px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-ink-faint">
                         {meta.label}
                       </span>
                     </div>
                     <div className="truncate text-[13px] font-medium text-ink">{e.name}</div>
-                    <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-ink-mute">
+                    <p className="mt-0.5 line-clamp-2 text-label leading-snug text-ink-mute">
                       {e.description}
                     </p>
                   </button>
@@ -109,7 +114,7 @@ function SearchPanel() {
       </div>
 
       <div className="border-t border-border px-4 py-2.5">
-        <div className="flex items-center gap-1.5 text-[11px] text-ink-faint">
+        <div className="flex items-center gap-1.5 text-label text-ink-faint">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
           Local search · {entities.length} entities
         </div>
@@ -119,7 +124,11 @@ function SearchPanel() {
 }
 
 function InspectorPanel() {
-  const { entities, selectedEntityId, startEdit, deleteEntity, selectEntity } = useStudioStore()
+  const entities = useStudioStore((s) => s.entities)
+  const selectedEntityId = useStudioStore((s) => s.selectedEntityId)
+  const startEdit = useStudioStore((s) => s.startEdit)
+  const deleteEntity = useStudioStore((s) => s.deleteEntity)
+  const selectEntity = useStudioStore((s) => s.selectEntity)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const entity = entities.find((e) => e.id === selectedEntityId) || entities[0]
 
@@ -157,7 +166,7 @@ function InspectorPanel() {
       <div className="flex-1 overflow-y-auto p-4">
         <div className="mb-3 flex items-center gap-2">
           <span className={cn('h-2 w-2 rounded-full', meta.dot)} />
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-ink-faint">
+          <span className="text-caption font-semibold uppercase tracking-wide text-ink-faint">
             {meta.label}
           </span>
         </div>
@@ -168,7 +177,7 @@ function InspectorPanel() {
           {entity.tags.map((t) => (
             <span
               key={t}
-              className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-ink-mute"
+              className="rounded-full bg-muted px-2 py-0.5 text-caption font-medium text-ink-mute"
             >
               #{t}
             </span>
@@ -177,7 +186,7 @@ function InspectorPanel() {
 
         {entity.links.length > 0 && (
           <div className="mt-5">
-            <h4 className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+            <h4 className="mb-2 text-caption font-semibold uppercase tracking-[0.14em] text-ink-faint">
               Connections ({entity.links.length})
             </h4>
             <ul className="space-y-1">
@@ -192,7 +201,7 @@ function InspectorPanel() {
                     >
                       <ArrowRight className="h-3 w-3 shrink-0 text-ink-faint" />
                       <span className="flex-1 truncate">{target.name}</span>
-                      <span className="text-[10px] italic text-ink-faint">{l.relation}</span>
+                      <span className="text-caption italic text-ink-faint">{l.relation}</span>
                     </button>
                   </li>
                 )
@@ -201,7 +210,7 @@ function InspectorPanel() {
           </div>
         )}
 
-        <div className="mt-5 border-t border-border pt-3 text-[11px] text-ink-faint">
+        <div className="mt-5 border-t border-border pt-3 text-label text-ink-faint">
           Updated {new Date(entity.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
         </div>
       </div>
@@ -250,7 +259,8 @@ function InspectorPanel() {
 }
 
 function CitationsPanel() {
-  const { chat, entities } = useStudioStore()
+  const chat = useStudioStore((s) => s.chat)
+  const entities = useStudioStore((s) => s.entities)
   const lastAssistant = [...chat].reverse().find((m) => m.role === 'assistant')
   const citations = lastAssistant?.citations || []
 
@@ -277,12 +287,12 @@ function CitationsPanel() {
                 className="rounded-md border border-border bg-muted/30 p-3"
               >
                 <div className="mb-1 flex items-center gap-2">
-                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-saffron text-[9px] font-bold text-white">
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-saffron text-badge font-bold text-white">
                     {i + 1}
                   </span>
                   <span className="text-[12px] font-medium text-ink">{c.entityName}</span>
                 </div>
-                <p className="text-[11px] leading-snug text-ink-mute">{c.snippet}</p>
+                <p className="text-label leading-snug text-ink-mute">{c.snippet}</p>
               </li>
             ))}
           </ul>
@@ -290,7 +300,7 @@ function CitationsPanel() {
       </div>
 
       <div className="border-t border-border px-4 py-2.5">
-        <div className="flex items-center gap-1.5 text-[11px] text-ink-faint">
+        <div className="flex items-center gap-1.5 text-label text-ink-faint">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
           Grounded in {entities.length} local entities
         </div>

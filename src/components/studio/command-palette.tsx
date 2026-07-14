@@ -29,7 +29,12 @@ interface CmdItem {
 }
 
 export function CommandPalette() {
-  const { commandOpen, setCommandOpen, setView, startNew, entities, startEdit } = useStudioStore()
+  const commandOpen = useStudioStore((s) => s.commandOpen)
+  const setCommandOpen = useStudioStore((s) => s.setCommandOpen)
+  const setView = useStudioStore((s) => s.setView)
+  const startNew = useStudioStore((s) => s.startNew)
+  const entities = useStudioStore((s) => s.entities)
+  const startEdit = useStudioStore((s) => s.startEdit)
   const [query, setQuery] = React.useState('')
 
   const close = React.useCallback(() => {
@@ -125,7 +130,7 @@ export function CommandPalette() {
             onValueChange={setQuery}
             className="flex-1 bg-transparent text-[14px] text-ink placeholder:text-ink-faint focus:outline-none"
           />
-          <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-ink-faint">
+          <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-caption text-ink-faint">
             ESC
           </kbd>
         </div>
@@ -138,7 +143,7 @@ export function CommandPalette() {
               <CommandPrimitive.Group
                 key={group}
                 heading={group}
-                className="mb-1 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.14em] [&_[cmdk-group-heading]]:text-ink-faint"
+                className="mb-1 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-caption [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.14em] [&_[cmdk-group-heading]]:text-ink-faint"
               >
                 {items.map((item) => {
                   const Icon = item.icon
@@ -152,7 +157,7 @@ export function CommandPalette() {
                       <Icon className="h-4 w-4 text-ink-faint data-[selected=true]:text-saffron" />
                       <span className="flex-1 font-medium">{item.label}</span>
                       {item.hint && (
-                        <span className="text-[11px] text-ink-faint">{item.hint}</span>
+                        <span className="text-label text-ink-faint">{item.hint}</span>
                       )}
                       <CornerDownLeft className="h-3 w-3 text-ink-faint opacity-0 transition-opacity group-data-[selected=true]:opacity-100" />
                     </CommandPrimitive.Item>
@@ -162,7 +167,7 @@ export function CommandPalette() {
             ) : null,
           )}
         </CommandPrimitive.List>
-        <div className="flex items-center justify-between border-t border-border px-4 py-2 text-[11px] text-ink-faint">
+        <div className="flex items-center justify-between border-t border-border px-4 py-2 text-label text-ink-faint">
           <span>↑↓ navigate · ↵ select · esc close</span>
           <span className="font-mono">{allItems.length} results</span>
         </div>

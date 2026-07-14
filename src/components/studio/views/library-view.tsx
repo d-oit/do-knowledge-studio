@@ -38,20 +38,18 @@ const FILTERS: { id: EntityType | 'all'; label: string }[] = [
 ]
 
 export function LibraryView() {
-  const {
-    entities: allEntities,
-    typeFilter,
-    setTypeFilter,
-    sortBy,
-    setSortBy,
-    sortDir,
-    setSortDir,
-    startEdit,
-    startNew,
-    searchQuery,
-    setSearchQuery,
-    rightPanelOpen,
-  } = useStudioStore()
+  const allEntities = useStudioStore((s) => s.entities)
+  const typeFilter = useStudioStore((s) => s.typeFilter)
+  const setTypeFilter = useStudioStore((s) => s.setTypeFilter)
+  const sortBy = useStudioStore((s) => s.sortBy)
+  const setSortBy = useStudioStore((s) => s.setSortBy)
+  const sortDir = useStudioStore((s) => s.sortDir)
+  const setSortDir = useStudioStore((s) => s.setSortDir)
+  const startEdit = useStudioStore((s) => s.startEdit)
+  const startNew = useStudioStore((s) => s.startNew)
+  const searchQuery = useStudioStore((s) => s.searchQuery)
+  const setSearchQuery = useStudioStore((s) => s.setSearchQuery)
+  const rightPanelOpen = useStudioStore((s) => s.rightPanelOpen)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const filteredEntities = useFilteredEntities()
   const reducedMotion = useReducedMotion()
@@ -213,7 +211,7 @@ export function LibraryView() {
                   <div className={cn('flex h-9 w-9 items-center justify-center rounded-md', meta.bg, meta.text)}>
                     <Icon className="h-4 w-4" />
                   </div>
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-ink-faint">
+                  <span className="text-caption font-semibold uppercase tracking-wide text-ink-faint">
                     {meta.label}
                   </span>
                 </div>
@@ -228,16 +226,16 @@ export function LibraryView() {
                     {e.tags.slice(0, 2).map((t) => (
                       <span
                         key={t}
-                        className="rounded-full bg-muted px-1.5 py-0 text-[9px] font-medium text-ink-faint"
+                        className="rounded-full bg-muted px-1.5 py-0 text-badge font-medium text-ink-faint"
                       >
                         #{t}
                       </span>
                     ))}
                     {e.tags.length > 2 && (
-                      <span className="text-[9px] text-ink-faint">+{e.tags.length - 2}</span>
+                      <span className="text-badge text-ink-faint">+{e.tags.length - 2}</span>
                     )}
                   </div>
-                  <div className="flex items-center gap-1 text-[10px] text-ink-faint">
+                  <div className="flex items-center gap-1 text-caption text-ink-faint">
                     <Clock className="h-2.5 w-2.5" />
                     {new Date(e.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </div>
@@ -253,7 +251,7 @@ export function LibraryView() {
         <div className="overflow-hidden rounded-lg border border-border bg-card">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-border bg-muted/30 text-left text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+              <tr className="border-b border-border bg-muted/30 text-left text-label font-semibold uppercase tracking-wide text-ink-faint">
                 <th className="px-4 py-2.5">Name</th>
                 <th className="hidden px-4 py-2.5 sm:table-cell">Type</th>
                 <th className="hidden px-4 py-2.5 lg:table-cell">Tags</th>
@@ -288,12 +286,12 @@ export function LibraryView() {
                           <div className="truncate text-[13px] font-semibold text-ink group-hover:text-saffron-deep">
                             {e.name}
                           </div>
-                          <div className="truncate text-[11px] text-ink-mute">{e.description}</div>
+                          <div className="truncate text-label text-ink-mute">{e.description}</div>
                         </div>
                       </div>
                     </td>
                     <td className="hidden px-4 py-3 sm:table-cell">
-                      <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-medium', meta.bg, meta.text)}>
+                      <span className={cn('rounded-full px-2 py-0.5 text-caption font-medium', meta.bg, meta.text)}>
                         {meta.label}
                       </span>
                     </td>
@@ -302,14 +300,14 @@ export function LibraryView() {
                         {e.tags.slice(0, 3).map((t) => (
                           <span
                             key={t}
-                            className="rounded-full bg-muted px-1.5 py-0 text-[10px] text-ink-faint"
+                            className="rounded-full bg-muted px-1.5 py-0 text-caption text-ink-faint"
                           >
                             #{t}
                           </span>
                         ))}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-right text-[11px] text-ink-faint">
+                    <td className="px-4 py-3 text-right text-label text-ink-faint">
                       {new Date(e.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </td>
                   </tr>
@@ -321,7 +319,7 @@ export function LibraryView() {
       )}
 
       <div className="mt-4 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-[11px] text-ink-faint">
+        <div className="flex items-center gap-2 text-label text-ink-faint">
           <ArrowUpDown className="h-3 w-3" />
           Showing {filteredEntities.length} {filteredEntities.length === 1 ? 'entity' : 'entities'}
         </div>

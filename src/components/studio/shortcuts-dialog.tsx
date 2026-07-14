@@ -249,7 +249,7 @@ export function ShortcutsDialog() {
                 <div className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
                   {SHORTCUTS.map((section) => (
                     <div key={section.group}>
-                      <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+                      <h3 className="mb-2 text-caption font-semibold uppercase tracking-[0.14em] text-ink-faint">
                         {section.group}
                       </h3>
                       <ul className="space-y-1.5">
@@ -260,7 +260,7 @@ export function ShortcutsDialog() {
                           >
                             <span className="text-[13px] text-ink-soft">{row.action}</span>
                             <kbd
-                              className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[11px] text-ink-soft whitespace-nowrap"
+                              className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-label text-ink-soft whitespace-nowrap"
                               aria-label={row.keys}
                             >
                               {row.keys}
@@ -272,8 +272,8 @@ export function ShortcutsDialog() {
                   ))}
                 </div>
 
-                <p className="mt-5 border-t border-border pt-3 text-[11px] leading-relaxed text-ink-faint">
-                  Tip: the <kbd className="rounded border border-border bg-muted px-1 font-mono text-[10px]">G</kbd>{' '}
+                <p className="mt-5 border-t border-border pt-3 text-label leading-relaxed text-ink-faint">
+                  Tip: the <kbd className="rounded border border-border bg-muted px-1 font-mono text-caption">G</kbd>{' '}
                   sequence waits 1 second for the next key — if you change your mind, just wait or press any other key to cancel.
                 </p>
               </div>
@@ -296,10 +296,10 @@ export function ShortcutsDialog() {
             )}
             aria-live="polite"
           >
-            <kbd className="rounded border border-saffron/40 bg-saffron-soft px-1.5 py-0 font-mono text-[10px] font-semibold text-saffron-deep">
+            <kbd className="rounded border border-saffron/40 bg-saffron-soft px-1.5 py-0 font-mono text-caption font-semibold text-saffron-deep">
               g
             </kbd>
-            <span className="text-[11px] font-medium text-ink-soft">Press a key…</span>
+            <span className="text-label font-medium text-ink-soft">Press a key…</span>
           </motion.div>
         )}
       </AnimatePresence>

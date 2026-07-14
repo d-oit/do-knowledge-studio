@@ -19,7 +19,8 @@ import { ExportView } from './views/export-view'
 import { ErrorBoundary } from './error-boundary'
 
 export function AppShell() {
-  const { currentView, editingEntityId } = useStudioStore()
+  const currentView = useStudioStore((s) => s.currentView)
+  const editingEntityId = useStudioStore((s) => s.editingEntityId)
 
   return (
     <div className="flex h-dvh w-full overflow-hidden bg-background text-foreground">
