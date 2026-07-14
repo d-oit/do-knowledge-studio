@@ -51,18 +51,18 @@ export function EditorToolbar({
   return (
     <div className="sticky top-0 z-10 -mx-6 mb-3 border-y border-border bg-background/90 px-6 py-2 backdrop-blur-sm lg:-mx-10 lg:px-10">
       <div className="flex flex-wrap items-center gap-0.5">
-        <ToolbarButton icon={Bold} label="Bold" onClick={() => handleFormat('bold')} />
-        <ToolbarButton icon={Italic} label="Italic" onClick={() => handleFormat('italic')} />
+        <ToolbarButton icon={Bold} label="Bold" onClick={() => { handleFormat('bold') }} />
+        <ToolbarButton icon={Italic} label="Italic" onClick={() => { handleFormat('italic') }} />
         <Divider />
-        <ToolbarButton icon={Heading1} label="Heading 1" onClick={() => handleFormat('h1')} />
-        <ToolbarButton icon={Heading2} label="Heading 2" onClick={() => handleFormat('h2')} />
+        <ToolbarButton icon={Heading1} label="Heading 1" onClick={() => { handleFormat('h1') }} />
+        <ToolbarButton icon={Heading2} label="Heading 2" onClick={() => { handleFormat('h2') }} />
         <Divider />
-        <ToolbarButton icon={List} label="Bullet list" onClick={() => handleFormat('bullet')} />
-        <ToolbarButton icon={ListOrdered} label="Numbered list" onClick={() => handleFormat('ordered')} />
-        <ToolbarButton icon={QuoteIcon} label="Quote" onClick={() => handleFormat('quote')} />
-        <ToolbarButton icon={Code} label="Code" onClick={() => handleFormat('code')} />
+        <ToolbarButton icon={List} label="Bullet list" onClick={() => { handleFormat('bullet') }} />
+        <ToolbarButton icon={ListOrdered} label="Numbered list" onClick={() => { handleFormat('ordered') }} />
+        <ToolbarButton icon={QuoteIcon} label="Quote" onClick={() => { handleFormat('quote') }} />
+        <ToolbarButton icon={Code} label="Code" onClick={() => { handleFormat('code') }} />
         <Divider />
-        <ToolbarButton icon={Link2} label="Insert link" onClick={() => handleFormat('link')} />
+        <ToolbarButton icon={Link2} label="Insert link" onClick={() => { handleFormat('link') }} />
         <div className="flex-1" />
         <button
           type="button"

@@ -189,7 +189,8 @@ export function EditorView() {
     }
     setContent(result.text)
     requestAnimationFrame(() => {
-      if (textarea) restoreSelection(textarea, result.selection.start, result.selection.end)
+      const el = textareaRef.current
+      if (el) restoreSelection(el, result.selection.start, result.selection.end)
     })
   }, [content])
 
@@ -223,8 +224,8 @@ export function EditorView() {
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement
-      if (target.tagName !== 'TEXTAREA' && target.tagName !== 'INPUT') return
+      const el = e.target as HTMLElement
+      if (el.tagName !== 'TEXTAREA' && el.tagName !== 'INPUT') return
       const mod = e.metaKey || e.ctrlKey
       if (!mod) return
       switch (e.key) {
@@ -247,7 +248,7 @@ export function EditorView() {
       }
     }
     document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
+    return () => { document.removeEventListener('keydown', handler) }
   }, [handleFormat, handleSave])
 
   const addTag = () => {
