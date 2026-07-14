@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { useStudioStore } from '@/lib/studio/store'
+import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import {
   FORMATS,
   COLOR_MAP,
@@ -30,6 +31,7 @@ import { encryptData, buildEncryptedReaderHtml } from '@/lib/export/encrypt'
 
 export function ExportView() {
   const { entities, claims, importData, resetStore, setView } = useStudioStore()
+  const reducedMotion = useReducedMotion()
 
   const [showPassword, setShowPassword] = useState(false)
   const [password, setPassword] = useState('')
@@ -138,8 +140,9 @@ export function ExportView() {
   return (
     <div className="mx-auto max-w-5xl px-6 py-6 lg:px-10 lg:py-8">
       <motion.section
-        initial={{ opacity: 0, y: 6 }}
+        initial={reducedMotion ? false : { opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={reducedMotion ? { duration: 0 } : undefined}
         className="mb-8"
       >
         <div className="mb-4">
@@ -207,9 +210,9 @@ export function ExportView() {
       </motion.section>
 
       <motion.section
-        initial={{ opacity: 0, y: 6 }}
+        initial={reducedMotion ? false : { opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
+        transition={reducedMotion ? { duration: 0 } : { delay: 0.1 }}
         className="mb-8"
       >
         <div className="mb-4">
@@ -290,8 +293,9 @@ export function ExportView() {
           onClick={() => setShowPassword(false)}
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.96 }}
+            initial={reducedMotion ? false : { opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
+            transition={reducedMotion ? { duration: 0 } : undefined}
             onClick={(e) => e.stopPropagation()}
             className="w-[420px] max-w-[92vw] rounded-xl border border-border bg-popover p-6 shadow-2xl"
           >
@@ -371,8 +375,9 @@ export function ExportView() {
           onClick={() => setShowResetConfirm(false)}
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.96 }}
+            initial={reducedMotion ? false : { opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
+            transition={reducedMotion ? { duration: 0 } : undefined}
             onClick={(e) => e.stopPropagation()}
             className="w-[380px] max-w-[92vw] rounded-xl border border-border bg-popover p-6 shadow-2xl"
           >

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
+import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 
 const ICONS: Record<string, typeof FileText> = {
   FileText,
@@ -27,6 +28,13 @@ const ICONS: Record<string, typeof FileText> = {
 export function HomeView() {
   const { setView, startNew, entities, startEdit } = useStudioStore()
   const stats = useStats()
+  const reducedMotion = useReducedMotion()
+  const heroAnim = reducedMotion
+    ? { initial: false as const, animate: { opacity: 1, y: 0 }, transition: { duration: 0 } }
+    : { initial: { opacity: 0, y: 8 } as const, animate: { opacity: 1, y: 0 }, transition: { duration: 0.4 } }
+  const barAnim = reducedMotion
+    ? { initial: false as const, animate: {}, transition: { duration: 0 } }
+    : { initial: { width: 0 } as const, animate: { width: 'var(--bar-width)' }, transition: { duration: 0.6, ease: 'easeOut' as const } }
 
   const typeEntries = (Object.entries(stats.byType) as [string, number][]) as [
     keyof typeof ENTITY_TYPE_META,
@@ -37,9 +45,7 @@ export function HomeView() {
     <div className="mx-auto max-w-5xl px-6 py-8 lg:px-10 lg:py-12">
       {/* Hero */}
       <motion.section
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
+        {...heroAnim}
         className="mb-8"
       >
         <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.18em] text-saffron">
@@ -190,9 +196,9 @@ export function HomeView() {
                     </div>
                     <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                       <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${pct}%` }}
-                        transition={{ duration: 0.6, ease: 'easeOut' }}
+                        {...barAnim}
+                        style={{ '--bar-width': `${pct}%` } as React.CSSProperties}
+                        animate={{ width: reducedMotion ? `${pct}%` : barAnim.animate.width }}
                         className={cn('h-full rounded-full', meta.dot)}
                       />
                     </div>
