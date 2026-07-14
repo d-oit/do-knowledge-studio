@@ -66,14 +66,6 @@ export function EditorToolbar({
         <div className="flex-1" />
         <button
           type="button"
-          disabled
-          className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-ink-faint cursor-not-allowed"
-        >
-          <span className="h-3 w-3">✦</span>
-          AI Extract
-        </button>
-        <button
-          type="button"
           onClick={onToggleAdvanced}
           className={`flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors hover:bg-muted focus-ring ${
             showAdvanced ? 'text-ink' : 'text-ink-mute'

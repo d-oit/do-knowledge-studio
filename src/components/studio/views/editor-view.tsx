@@ -420,7 +420,7 @@ export function EditorView() {
           {draftStatus === 'error' && (
             <>
               <span>·</span>
-              <span className="text-red-500">Could not save draft</span>
+              <span className="text-destructive">Could not save draft</span>
             </>
           )}
         </div>
