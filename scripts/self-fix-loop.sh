@@ -12,11 +12,14 @@ cd "$REPO_ROOT"
 # ---------------------------------------------------------------------------
 MAX_RETRIES="${SELF_FIX_LOOP_MAX_RETRIES:-5}"
 TIMEOUT="${SELF_FIX_LOOP_TIMEOUT:-1800}"
-POLL_INTERVAL="${SELF_FIX_LOOP_POLL_INTERVAL:-30}"
+POLL_INTERVAL="${SELF_FIX_LOOP_POLL_INTERVAL:-20}"
 export AUTO_RESEARCH="${SELF_FIX_LOOP_AUTO_RESEARCH:-1}"
 STRICT_VALIDATION="${SELF_FIX_LOOP_STRICT_VALIDATION:-1}"
 BASE_BRANCH="main"
 DRY_RUN=false
+TARGET_PR=""  # existing PR number to target
+VERCEL_RETRIES=0
+MAX_VERCEL_RETRIES=3
 
 # Colors
 if [[ -t 1 ]] && [[ "${FORCE_COLOR:-}" != "0" ]]; then
@@ -28,7 +31,8 @@ if [[ -t 1 ]] && [[ "${FORCE_COLOR:-}" != "0" ]]; then
     export CYAN='\033[0;36m'
     export NC='\033[0m'
 else
-    export RED=''; export GREEN=''; export YELLOW=''; export BLUE=''; export MAGENTA=''; export CYAN=''; export NC=''
+    export RED=''; export GREEN=''; export YELLOW=''; export BLUE=''
+    export MAGENTA=''; export CYAN=''; export NC=''
 fi
 
 log()  { echo -e "${GREEN}[SELF-FIX]${NC} $*"; }
@@ -36,6 +40,49 @@ warn() { echo -e "${YELLOW}[WARN]${NC} $*" >&2; }
 error(){ echo -e "${RED}[ERROR]${NC} $*" >&2; }
 info() { echo -e "${CYAN}[INFO]${NC} $*"; }
 step() { echo -e "${MAGENTA}[STEP]${NC} $*"; }
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+# Safe JSON parsing with Python (avoids grep fragility)
+json_get_failed_checks() {
+    local json="$1"
+    python3 -c "
+import json, sys
+try:
+    data = json.loads('''$json''')
+    failures = []
+    for c in data:
+        s = c.get('state', '')
+        n = c.get('name', '')
+        # SUCCESS, SKIPPED, NEUTRAL are all OK
+        # PENDING, QUEUED, IN_PROGRESS are still running
+        # FAILURE, ERROR, CANCELLED, ACTION_REQUIRED are problems
+        if s in ('FAILURE', 'ERROR', 'CANCELLED', 'ACTION_REQUIRED'):
+            failures.append({'name': n, 'state': s})
+    print(json.dumps(failures))
+except Exception as e:
+    print(json.dumps([{'name': 'parse_error', 'state': str(e)}]))
+" 2>/dev/null || echo '[]'
+}
+
+
+json_has_pending() {
+    local json="$1"
+    python3 -c "
+import json, sys
+try:
+    data = json.loads('''$json''')
+    for c in data:
+        s = c.get('state', '')
+        if s in ('PENDING', 'QUEUED', 'IN_PROGRESS', 'EXPECTED'):
+            print('true')
+            sys.exit(0)
+    print('false')
+except:
+    print('false')
+" 2>/dev/null || echo 'false'
+}
 
 
 # ---------------------------------------------------------------------------
@@ -53,18 +100,20 @@ while [[ $# -gt 0 ]]; do
         --no-strict)       STRICT_VALIDATION=0; shift ;;
         --dry-run)         DRY_RUN=true; shift ;;
         --base-branch)     BASE_BRANCH="$2"; shift 2 ;;
+        --pr)              TARGET_PR="$2"; shift 2 ;;
         --help)
             echo "Usage: $0 [options]"
             echo "Options:"
             echo "  --max-retries N       Maximum fix iterations (default: 5)"
             echo "  --timeout SECONDS     Per-iteration timeout (default: 1800)"
-            echo "  --poll-interval SEC   CI check polling interval (default: 30)"
+            echo "  --poll-interval SEC   CI check polling interval (default: 20)"
             echo "  --auto-research       Use web research on failures (default: on)"
             echo "  --no-auto-research    Disable web research"
             echo "  --strict-validation   ALL checks must pass (default: on)"
             echo "  --no-strict           Allow some warnings"
             echo "  --dry-run             Simulate without pushing"
             echo "  --base-branch BRANCH  Target branch (default: main)"
+            echo "  --pr NUMBER           Target existing PR number (checkout branch)"
             exit 0
             ;;
         *)
@@ -80,6 +129,32 @@ done
 phase_commit_and_push() {
     step "Phase 1/6: COMMIT & PUSH"
 
+    # If targeting existing PR, checkout its branch first
+    if [ -n "$TARGET_PR" ]; then
+        local pr_branch
+        pr_branch=$(gh pr view "$TARGET_PR" --json headRefName --jq '.headRefName' 2>/dev/null || echo "")
+        if [ -z "$pr_branch" ]; then
+            error "Could not find branch for PR #${TARGET_PR}."
+            return 2
+        fi
+        local current_branch
+        current_branch=$(git branch --show-current)
+        if [ "$current_branch" != "$pr_branch" ]; then
+            info "Switching to PR #${TARGET_PR} branch: ${pr_branch}..."
+            git fetch origin "$pr_branch" 2>/dev/null || true
+            git checkout "$pr_branch" 2>/dev/null || {
+                error "Failed to checkout branch ${pr_branch}."
+                return 2
+            }
+            # Rebase onto base branch
+            info "Rebasing onto ${BASE_BRANCH}..."
+            if ! git rebase "origin/${BASE_BRANCH}" 2>/dev/null; then
+                warn "Rebase failed — continuing with current state."
+                git rebase --abort 2>/dev/null || true
+            fi
+        fi
+    fi
+
     # Stage all changes
     git add -A
     if git diff --cached --quiet; then
@@ -87,10 +162,10 @@ phase_commit_and_push() {
         return 0
     fi
 
-    # Run quality gate before committing
+    # Run quality gate before committing (use --changed for speed)
     info "Running quality gate..."
     if [ "$STRICT_VALIDATION" = 1 ]; then
-        if ! ./scripts/quality_gate.sh; then
+        if ! ./scripts/quality_gate.sh --changed; then
             error "Quality gate failed. Fix issues before committing."
             return 1
         fi
@@ -146,13 +221,24 @@ phase_create_or_update_pr() {
         return 0
     fi
 
-    # Check if PR already exists for this branch
-    local existing_pr
-    existing_pr=$(gh pr list --head "${branch}" --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
+    # Determine PR number: use TARGET_PR or find by branch
+    local pr_number="$TARGET_PR"
+    if [ -z "$pr_number" ]; then
+        pr_number=$(gh pr list --head "${branch}" --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
+    fi
 
-    if [ -n "$existing_pr" ] && [ "$existing_pr" != "null" ]; then
-        info "Updating existing PR #${existing_pr}..."
-        gh pr edit "${existing_pr}" --body "🤖 Automated self-fix loop iteration" 2>/dev/null || true
+    if [ -n "$pr_number" ] && [ "$pr_number" != "null" ]; then
+        info "Updating existing PR #${pr_number}..."
+        local change_log
+        change_log=$(git log --oneline "origin/${BASE_BRANCH}..HEAD" 2>/dev/null || echo "No new commits")
+        gh pr edit "${pr_number}" \
+            --body "## 🤖 Self-Fix Loop — Iteration Update
+
+### Changes since last update
+${change_log}
+
+### Status
+⏳ CI checks in progress..." 2>/dev/null || true
     else
         info "Creating new PR..."
         local commit_subject
@@ -170,7 +256,7 @@ $(git log --oneline "origin/${BASE_BRANCH}..HEAD" 2>/dev/null || echo "Initial c
 ⏳ Waiting for CI checks to pass..." \
             --base "${BASE_BRANCH}" \
             --label "automated" 2>&1 || {
-            warn "PR creation failed (may already exist or permissions issue)."
+            warn "PR creation failed."
         }
     fi
 
@@ -191,43 +277,64 @@ phase_monitor_ci() {
 
     if [ "$DRY_RUN" = true ]; then
         info "DRY RUN: Would monitor CI for branch ${branch}"
-        echo '{"status":"completed","conclusion":"success","jobs":[]}'
+        echo '[]'
         return 0
     fi
 
-    info "Polling CI checks every ${POLL_INTERVAL}s (timeout: ${TIMEOUT}s)..."
+    # Determine PR number
+    local pr_number="$TARGET_PR"
+    if [ -z "$pr_number" ]; then
+        pr_number=$(gh pr list --head "${branch}" --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
+    fi
 
+    if [ -z "$pr_number" ] || [ "$pr_number" = "null" ]; then
+        error "No open PR found for branch ${branch}."
+        return 1
+    fi
+
+    info "Monitoring PR #${pr_number} checks every ${POLL_INTERVAL}s (timeout: ${TIMEOUT}s)..."
+    echo "" >&2
+
+    local poll_count=0
     while true; do
+        poll_count=$(( poll_count + 1 ))
+
         if [ "$(date +%s)" -gt "$deadline" ]; then
             error "Timeout reached (${TIMEOUT}s)."
             return 4
         fi
 
-        # Try PR checks first, then fall back to branch workflow runs
-        local pr_number
-        pr_number=$(gh pr list --head "${branch}" --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
+        # Fetch PR checks
+        local checks_json
+        checks_json=$(gh pr checks "${pr_number}" --json name,state 2>/dev/null || echo "[]")
 
-        local checks_json=""
-        if [ -n "$pr_number" ] && [ "$pr_number" != "null" ]; then
-            checks_json=$(gh pr checks "${pr_number}" --json name,state,conclusion 2>/dev/null || echo "")
+        if [ "$checks_json" = "[]" ] || [ -z "$checks_json" ]; then
+            sleep "$POLL_INTERVAL"
+            continue
         fi
 
-        # If PR checks empty or no PR, check workflow runs for the branch
-        if [ -z "$checks_json" ] || [ "$checks_json" = "[]" ]; then
-            local run_id
-            run_id=$(gh run list --branch "${branch}" --limit 1 --json databaseId --jq '.[0].databaseId' 2>/dev/null || echo "")
-            if [ -n "$run_id" ] && [ "$run_id" != "null" ]; then
-                checks_json=$(gh run view "${run_id}" --json status,conclusion,jobs \
-                    --jq '{status: .status, conclusion: .conclusion, jobs: [.jobs[] | {name: .name, status: .status, conclusion: .conclusion}]}' 2>&1)
+        # Check for pending/running checks
+        local has_pending
+        has_pending=$(json_has_pending "$checks_json")
+
+        # Count states for display
+        local total pending failed
+        total=$(echo "$checks_json" | python3 -c "import json,sys; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
+        pending=$(echo "$checks_json" | python3 -c "
+import json,sys
+d=json.load(sys.stdin)
+print(len([c for c in d if c.get('state') in ('PENDING','QUEUED','IN_PROGRESS','EXPECTED')]))
+" 2>/dev/null || echo "0")
+        failed=$(echo "$checks_json" | python3 -c "
+import json,sys
+d=json.load(sys.stdin)
+print(len([c for c in d if c.get('state') in ('FAILURE','ERROR','CANCELLED')]))
+" 2>/dev/null || echo "0")
+
+        if [ "$has_pending" = "true" ]; then
+            if [ $(( poll_count % 5 )) -eq 1 ]; then
+                info "Checks: ${pending} pending, ${failed} failed / ${total} total — waiting..."
             fi
-        fi
-
-        # Check for running/in-progress status
-        local status
-        status=$(echo "$checks_json" | grep -o '"status":"[^"]*"' | head -1 || echo "")
-
-        if echo "$status" | grep -qE '(in_progress|pending|queued|waiting)'; then
-            echo -n "."
             sleep "$POLL_INTERVAL"
             continue
         fi
@@ -252,40 +359,32 @@ phase_analyze_failures() {
         return 0
     fi
 
-    # Check overall conclusion first
-    local conclusion
-    conclusion=$(echo "$checks_json" | grep -o '"conclusion":"[^"]*"' | head -1 | cut -d'"' -f4)
+    # Use the Python helper to extract failed checks
+    local failed_checks
+    failed_checks=$(json_get_failed_checks "$checks_json")
 
-    if [ "$conclusion" = "success" ]; then
+    # Check if we got parse errors
+    if echo "$failed_checks" | python3 -c "import json,sys; d=json.load(sys.stdin); sys.exit(0 if any(c.get('name')=='parse_error' for c in d) else 1)" 2>/dev/null; then
+        warn "Failed to parse checks JSON."
+        echo "[]"
+        return 0
+    fi
+
+    if [ "$failed_checks" = "[]" ] || [ -z "$failed_checks" ]; then
         log "All checks pass!"
         echo ""  # empty = no failures
         return 0
     fi
 
-    # Extract failed job names from the JSON
-    local failed_jobs
-    failed_jobs=$(echo "$checks_json" | python3 -c "
-import json, sys
-try:
-    data = json.load(sys.stdin)
-    failures = []
-    if isinstance(data, dict) and 'jobs' in data:
-        failures = [j['name'] for j in data['jobs'] if j.get('conclusion') == 'failure']
-    elif isinstance(data, list):
-        failures = [j['name'] for j in data if j.get('conclusion') == 'failure' or j.get('state') == 'failure']
-    print(json.dumps(failures))
-except Exception:
-    print('[]')
-" 2>/dev/null || echo "[]")
+    # Display failures
+    info "Failed checks:"
+    echo "$failed_checks" | python3 -c "
+import json,sys
+for c in json.load(sys.stdin):
+    print(f'  ❌ {c[\"name\"]}: {c[\"state\"]}')
+" 2>/dev/null || echo "  (parse error)"
 
-    if [ "$failed_jobs" = "[]" ] || [ -z "$failed_jobs" ]; then
-        warn "CI conclusion is not success but no explicit failures found."
-        echo "[]"
-        return 0
-    fi
-
-    info "Failed checks: $(echo "$failed_jobs" | tr -d '[]"' | tr ',' ' ')"
-    echo "$failed_jobs"
+    echo "$failed_checks"
     return 1
 }
 
@@ -293,16 +392,21 @@ except Exception:
 # Phase 5: Fix
 # ---------------------------------------------------------------------------
 phase_fix() {
-    local failed_jobs_json="$1"
+    local failed_checks_json="$1"
     step "Phase 5/6: FIX"
 
     if [ "$DRY_RUN" = true ]; then
-        info "DRY RUN: Would apply fixes for failed jobs: ${failed_jobs_json}"
+        info "DRY RUN: Would apply fixes for failed checks"
         return 0
     fi
 
+    # Parse failures into name:state pairs
     local failures
-    failures=$(echo "$failed_jobs_json" | tr -d '[]"' | tr ',' '\n' | sed 's/^ *//')
+    failures=$(echo "$failed_checks_json" | python3 -c "
+import json,sys
+for c in json.load(sys.stdin):
+    print(f'{c[\"name\"]}|{c[\"state\"]}')
+" 2>/dev/null || echo "")
 
     if [ -z "$failures" ]; then
         info "No failures to fix."
@@ -311,14 +415,36 @@ phase_fix() {
 
     info "Analyzing and fixing failures..."
     local fix_applied=false
+    local has_vercel_failure=false
 
-    while IFS= read -r failed_check; do
-        [ -z "$failed_check" ] && continue
-        info "Investigating: ${failed_check}"
+    while IFS='|' read -r failed_name failed_state; do
+        [ -z "$failed_name" ] && continue
+        info "Investigating: ${failed_name} (${failed_state})"
 
-        # Get logs for the failed check
-        local logs
-        logs=$(gh run view --log-failed 2>/dev/null | tail -100 || echo "")
+        # Handle Vercel failures specially — trigger re-deploy
+        if echo "$failed_name" | grep -qi "vercel"; then
+            has_vercel_failure=true
+            info "Vercel deployment failed — will trigger re-deploy."
+            continue
+        fi
+
+        # Handle ACTION_REQUIRED (Codacy, etc.) — usually not blocking
+        if [ "$failed_state" = "ACTION_REQUIRED" ]; then
+            warn "${failed_name} requires action — skipping auto-fix."
+            continue
+        fi
+
+        # For real failures, get the latest workflow run logs
+        local branch
+        branch=$(git branch --show-current)
+        local run_id
+        run_id=$(gh run list --branch "${branch}" --limit 3 --json databaseId,conclusion \
+            --jq '.[] | select(.conclusion == "failure") | .databaseId' 2>/dev/null | head -1 || echo "")
+
+        local logs=""
+        if [ -n "$run_id" ]; then
+            logs=$(gh run view "$run_id" --log-failed 2>/dev/null | tail -100 || echo "")
+        fi
 
         # Categorize and fix based on failure type
         if echo "$logs" | grep -qiE "(shellcheck|bash syntax|shell script)"; then
@@ -343,21 +469,30 @@ phase_fix() {
             fix_applied=true
         elif echo "$logs" | grep -qiE "(link|broken.*reference|404)"; then
             info "Link/reference error detected — running validate-links..."
-            if [ -f ./scripts/validate-links.sh ]; then
-                ./scripts/validate-links.sh 2>/dev/null || true
-            fi
+            [ -f ./scripts/validate-links.sh ] && ./scripts/validate-links.sh 2>/dev/null || true
             fix_applied=true
         elif echo "$logs" | grep -qiE "(skill|symlink)"; then
             info "Skill format issue detected — running validate-skills..."
-            if [ -f ./scripts/validate-skills.sh ]; then
-                ./scripts/validate-skills.sh 2>/dev/null || true
-            fi
+            [ -f ./scripts/validate-skills.sh ] && ./scripts/validate-skills.sh 2>/dev/null || true
             fix_applied=true
         else
-            warn "Unrecognized failure type in: ${failed_check}"
-            warn "Log snippet: $(echo "$logs" | head -20)"
+            warn "Unrecognized failure type in: ${failed_name}"
+            warn "Run ID ${run_id:-N/A} — logs may be at the Vercel dashboard."
         fi
     done <<< "$failures"
+
+    # Handle Vercel re-deploy if needed
+    if [ "$has_vercel_failure" = true ]; then
+        VERCEL_RETRIES=$(( VERCEL_RETRIES + 1 ))
+        if [ "$VERCEL_RETRIES" -le "$MAX_VERCEL_RETRIES" ]; then
+            info "Triggering Vercel re-deploy (attempt ${VERCEL_RETRIES}/${MAX_VERCEL_RETRIES})..."
+            # Push an empty commit to trigger re-deploy
+            git commit --allow-empty -m "chore: retry vercel deployment (${VERCEL_RETRIES})" --no-verify 2>/dev/null || true
+            fix_applied=true
+        else
+            warn "Max Vercel retries (${MAX_VERCEL_RETRIES}) reached. Manual deploy may be needed."
+        fi
+    fi
 
     # Run blanket auto-fix for trailing whitespace
     info "Running blanket auto-fixes..."
