@@ -9,8 +9,11 @@
 
 | Priority | Plan | Description | Effort | Status | Issues |
 |----------|------|-------------|--------|--------|--------|
-| **P0** | [053-goap-markdown-editor-ux-2026-07-12.md](053-goap-markdown-editor-ux-2026-07-12.md) | Markdown editor: real formatting, safe local drafts, quiet feedback, responsive modes, accessibility, and verification | 8-14d | 📝 PLANNED | — |
-| **P1** | [ui-ux-audit-2026-07-11.md](ui-ux-audit-2026-07-11.md) | Current Next.js UI/UX audit: WCAG, responsiveness, interaction trust, rendering performance, and anti-pattern review | 20-30h remediation | 📝 AUDIT | — |
+| **P0** | [053-goap-markdown-editor-ux-2026-07-12.md](053-goap-markdown-editor-ux-2026-07-12.md) | Markdown editor: real formatting, safe local drafts, quiet feedback, responsive modes, accessibility, and verification | 8-14d | ✅ MERGED | #430, #431 |
+| **P1** | [ui-ux-audit-2026-07-11.md](ui-ux-audit-2026-07-11.md) | Current Next.js UI/UX audit: WCAG, responsiveness, interaction trust, rendering performance, and anti-pattern review | 20-30h remediation | ✅ MERGED | #431, #432 |
+| **P0** | [054-plan-053-editor-ux-implementation.md](054-plan-053-editor-ux-implementation.md) | Plan 053 editor UX implementation summary — split mode, dirty comparison, type selector, a11y, drafts | 1-2d | ✅ MERGED | #430 |
+| **P1** | [055-goap-remaining-053-uiux-tasks-2026-07-14.md](055-goap-remaining-053-uiux-tasks-2026-07-14.md) | Remaining plan 053 + UI/UX audit: reduced motion gating, keyboard a11y, inert control removal, graph index | 2-3d | ✅ MERGED | #431 |
+| **P2** | [056-store-selectors-and-typography-2026-07-14.md](056-store-selectors-and-typography-2026-07-14.md) | Store subscription narrowing + typography scale tokens | 1d | ✅ MERGED | #432 |
 | **P0** | [048-nextjs-cleanup-and-deprecation-audit-2026-07-09.md](048-nextjs-cleanup-and-deprecation-audit-2026-07-09.md) | Next.js migration cleanup: remove dead deps, fix configs, add tests, align docs | 8-12h | ✅ MERGED | #399 |
 | **P0** | [049-goap-nextjs-feature-implementation-2026-07-09.md](049-goap-nextjs-feature-implementation-2026-07-09.md) | AI provider integration, encrypted export, zod schemas, BM25 retrieval, markdown rendering | 40-60h | ✅ MERGED | #399 |
 | **P0** | [051-vercel-deployment-fix-2026-07-09.md](051-vercel-deployment-fix-2026-07-09.md) | Fix Vercel deployment failure, add Node 20+ requirement, document prevention | 1-2h | ✅ MERGED | #400 |
