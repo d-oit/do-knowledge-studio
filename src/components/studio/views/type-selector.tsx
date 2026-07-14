@@ -5,11 +5,21 @@ import { ChevronDown, FileText, Lightbulb, User, FolderKanban } from 'lucide-rea
 import { cn } from '@/lib/utils'
 import { ENTITY_TYPE_META, type EntityType } from '@/lib/studio/types'
 
-const TYPE_ICONS: Record<EntityType, typeof FileText> = {
-  note: FileText,
-  concept: Lightbulb,
-  person: User,
-  project: FolderKanban,
+const ENTITY_TYPES: EntityType[] = ['note', 'concept', 'person', 'project']
+
+function getTypeMeta(t: EntityType) {
+  if (Object.prototype.hasOwnProperty.call(ENTITY_TYPE_META, t)) return ENTITY_TYPE_META[t]
+  return ENTITY_TYPE_META.note
+}
+
+function renderTypeIcon(t: EntityType, className?: string) {
+  switch (t) {
+    case 'note': return <FileText className={className} />
+    case 'concept': return <Lightbulb className={className} />
+    case 'person': return <User className={className} />
+    case 'project': return <FolderKanban className={className} />
+    default: return <FileText className={className} />
+  }
 }
 
 export function TypeSelector({
@@ -24,8 +34,7 @@ export function TypeSelector({
   onSelect: (t: EntityType) => void
 }) {
   const menuRef = useRef<HTMLDivElement>(null)
-  const meta = ENTITY_TYPE_META[type]
-  const TypeIcon = TYPE_ICONS[type]
+  const meta = getTypeMeta(type)
 
   useEffect(() => {
     if (!showMenu) return
@@ -48,7 +57,7 @@ export function TypeSelector({
         aria-label={`Entity type: ${meta.label}. Change type`}
         className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
       >
-        <TypeIcon className={cn('h-3.5 w-3.5', meta.text)} />
+        {renderTypeIcon(type, cn('h-3.5 w-3.5', meta.text))}
         Type: {meta.label}
         <ChevronDown className="h-3 w-3" />
       </button>
@@ -58,9 +67,8 @@ export function TypeSelector({
           aria-label="Select entity type"
           className="absolute left-0 top-full z-20 mt-1 w-44 rounded-md border border-border bg-popover p-1 shadow-lg"
         >
-          {(Object.keys(ENTITY_TYPE_META) as EntityType[]).map((t) => {
-            const m = ENTITY_TYPE_META[t]
-            const Icon = TYPE_ICONS[t]
+          {ENTITY_TYPES.map((t) => {
+            const m = getTypeMeta(t)
             return (
               <button
                 key={t}
@@ -73,7 +81,7 @@ export function TypeSelector({
                   t === type ? 'font-semibold text-ink' : 'text-ink-soft',
                 )}
               >
-                <Icon className={cn('h-3.5 w-3.5', m.text)} />
+                {renderTypeIcon(t, cn('h-3.5 w-3.5', m.text))}
                 {m.label}
               </button>
             )
