@@ -113,7 +113,7 @@ describe('Studio Store', () => {
       useStudioStore.getState().addClaim(makeClaim({ entityId: 'e-1' }))
       const { claims } = useStudioStore.getState()
       expect(claims).toHaveLength(1)
-      expect(claims[0].id).toMatch(/^c-/)
+      expect(claims[0].id).toMatch(/^[0-9a-f-]{36}$/)
       expect(claims[0].entityId).toBe('e-1')
     })
   })

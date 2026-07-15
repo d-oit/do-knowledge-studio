@@ -96,6 +96,10 @@ export function todayStamp(): string {
 
 export function downloadFile(filename: string, content: string, mimeType: string = 'text/plain') {
   const blob = new Blob([content], { type: mimeType })
+  downloadBlob(filename, blob)
+}
+
+export function downloadBlob(filename: string, blob: Blob) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
@@ -230,7 +234,7 @@ export function buildHtmlExport(entities: Entity[], claims: Claim[]): string {
 </html>`
 }
 
-export async function buildPdfExport(entities: Entity[], claims: Claim[]): Promise<Blob> {
+export function buildPdfExport(entities: Entity[], claims: Claim[]): Blob {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const margin = 20
   const pageWidth = 210 - margin * 2

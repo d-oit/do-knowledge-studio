@@ -3,6 +3,7 @@
 import { useStudioStore } from '@/lib/studio/store'
 import { ENTITY_TYPE_META } from '@/lib/studio/types'
 import { seedGraph } from '@/lib/studio/seed-data'
+import { todayStamp, downloadBlob } from './export-helpers'
 import {
   CircleDot,
   Circle,
@@ -31,7 +32,6 @@ function seededRandom(seed: string): number {
 import { cn } from '@/lib/utils'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { buildAdjacencyIndex } from '@/lib/studio/graph-index'
-import { todayStamp } from './export-helpers'
 
 type LayoutType = 'force' | 'circular' | 'hierarchical'
 
@@ -140,14 +140,7 @@ export function GraphView() {
         ctx.drawImage(img, 0, 0)
         canvas.toBlob((blob) => {
           if (!blob) return
-          const pngUrl = URL.createObjectURL(blob)
-          const a = document.createElement('a')
-          a.href = pngUrl
-          a.download = `knowledge-graph-${todayStamp()}.png`
-          document.body.appendChild(a)
-          a.click()
-          document.body.removeChild(a)
-          URL.revokeObjectURL(pngUrl)
+          downloadBlob(`knowledge-graph-${todayStamp()}.png`, blob)
         }, 'image/png')
       } finally {
         URL.revokeObjectURL(url)

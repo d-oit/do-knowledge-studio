@@ -77,7 +77,11 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Validate scope
-if [[ -n "$SCOPE" ]] && [[ ! " ${VALID_SCOPES[*]} " =~ ${SCOPE} ]]; then
+scope_match=false
+for s in "${VALID_SCOPES[@]}"; do
+  [[ "$s" == "$SCOPE" ]] && scope_match=true && break
+done
+if [[ -n "$SCOPE" ]] && [[ "$scope_match" == false ]]; then
     echo -e "${RED}Error: Invalid scope '${SCOPE}'. Valid scopes are: ${VALID_SCOPES[*]}${NC}"
     exit 1
 fi

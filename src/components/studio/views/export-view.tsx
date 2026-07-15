@@ -22,6 +22,7 @@ import {
   COLOR_MAP,
   todayStamp,
   downloadFile,
+  downloadBlob,
   buildJsonExport,
   buildMarkdownExport,
   buildHtmlExport,
@@ -90,15 +91,8 @@ export function ExportView() {
 
     if (format === 'pdf') {
       try {
-        const blob = await buildPdfExport(entities, claims)
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `do-knowledge-studio-${todayStamp()}.pdf`
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        URL.revokeObjectURL(url)
+        const blob = buildPdfExport(entities, claims)
+        downloadBlob(`do-knowledge-studio-${todayStamp()}.pdf`, blob)
         toast.success('PDF export downloaded', {
           description: `${entities.length} entities formatted in a print-ready PDF.`,
         })
@@ -113,14 +107,7 @@ export function ExportView() {
     if (format === 'docx') {
       try {
         const blob = await buildDocxExport(entities, claims)
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `do-knowledge-studio-${todayStamp()}.docx`
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        URL.revokeObjectURL(url)
+        downloadBlob(`do-knowledge-studio-${todayStamp()}.docx`, blob)
         toast.success('DOCX export downloaded', {
           description: `${entities.length} entities in a Word document.`,
         })

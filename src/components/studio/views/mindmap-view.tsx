@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { cn } from '@/lib/utils'
-import { todayStamp } from './export-helpers'
+import { todayStamp, downloadBlob } from './export-helpers'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { motion, AnimatePresence } from 'framer-motion'
 import { buildEntityIndex } from '@/lib/studio/graph-index'
@@ -54,6 +54,31 @@ export function MindMapView() {
   const entityHistory = useStudioStore((s) => s.entityHistory)
   const historyIndex = useStudioStore((s) => s.historyIndex)
 
+  const addChildToNode = useCallback((parentId: string) => {
+    const nodeEntity = entityIndex.get(parentId)
+    if (!nodeEntity) return
+    const childId = crypto.randomUUID()
+    const childEntity = {
+      id: childId,
+      name: 'New child',
+      type: 'note' as const,
+      description: '',
+      content: '',
+      tags: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      links: [],
+    }
+    const parentWithLink = {
+      ...nodeEntity,
+      links: [...nodeEntity.links, { targetId: childId, relation: 'contains' }],
+      updatedAt: new Date().toISOString(),
+    }
+    commitEntity(childEntity)
+    commitEntity(parentWithLink)
+    setFocusedNodeId(childId)
+  }, [entityIndex, commitEntity])
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (!focusedNodeId) return
@@ -62,26 +87,7 @@ export function MindMapView() {
 
       if (e.key === 'Tab') {
         e.preventDefault()
-        const childId = crypto.randomUUID()
-        const childEntity = {
-          id: childId,
-          name: 'New child',
-          type: 'note' as const,
-          description: '',
-          content: '',
-          tags: [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          links: [],
-        }
-        const parentWithLink = {
-          ...nodeEntity,
-          links: [...nodeEntity.links, { targetId: childId, relation: 'contains' }],
-          updatedAt: new Date().toISOString(),
-        }
-        commitEntity(childEntity)
-        commitEntity(parentWithLink)
-        setFocusedNodeId(childId)
+        addChildToNode(focusedNodeId)
         return
       }
 
@@ -101,9 +107,11 @@ export function MindMapView() {
   )
 
   useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown)
+    const container = canvasRef.current
+    if (!container) return
+    container.addEventListener('keydown', handleKeyDown)
     return () => {
-      window.removeEventListener('keydown', handleKeyDown)
+      container.removeEventListener('keydown', handleKeyDown)
     }
   }, [handleKeyDown])
 
@@ -119,11 +127,11 @@ export function MindMapView() {
       const fo = document.createElementNS(svgNS, 'foreignObject')
       fo.setAttribute('width', '100%')
       fo.setAttribute('height', '100%')
-      // eslint-disable-next-line -- Codacy false positive: cloneNode result is used for PNG export, not user HTML
       const nodeCopy = el.cloneNode(true) as HTMLElement
+      const computedBg = getComputedStyle(el).backgroundColor
       nodeCopy.style.width = `${rect.width}px`
       nodeCopy.style.height = `${rect.height}px`
-      nodeCopy.style.background = '#faf8f3'
+      nodeCopy.style.background = computedBg || '#faf8f3'
       fo.appendChild(nodeCopy)
       svg.appendChild(fo)
       const serializer = new XMLSerializer()
@@ -141,14 +149,7 @@ export function MindMapView() {
           ctx.drawImage(img, 0, 0)
           canvas.toBlob((pngBlob) => {
             if (pngBlob) {
-              const pngUrl = URL.createObjectURL(pngBlob)
-              const a = document.createElement('a')
-              a.href = pngUrl
-              a.download = `mindmap-${todayStamp()}.png`
-              document.body.appendChild(a)
-              a.click()
-              document.body.removeChild(a)
-              URL.revokeObjectURL(pngUrl)
+              downloadBlob(`mindmap-${todayStamp()}.png`, pngBlob)
             }
           })
         }
@@ -337,23 +338,7 @@ export function MindMapView() {
         <Divider />
 
         <ToolbarBtn icon={Plus} label="Add child" onClick={() => {
-          if (!focusedNodeId) return
-          const nodeEntity = entityIndex.get(focusedNodeId)
-          if (!nodeEntity) return
-          const childId = crypto.randomUUID()
-          const childEntity = {
-            id: childId, name: 'New child', type: 'note' as const,
-            description: '', content: '', tags: [],
-            createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), links: [],
-          }
-          const parentWithLink = {
-            ...nodeEntity,
-            links: [...nodeEntity.links, { targetId: childId, relation: 'contains' }],
-            updatedAt: new Date().toISOString(),
-          }
-          commitEntity(childEntity)
-          commitEntity(parentWithLink)
-          setFocusedNodeId(childId)
+          if (focusedNodeId) addChildToNode(focusedNodeId)
         }} />
         <ToolbarBtn icon={Edit3} label="Rename" onClick={() => {
           if (focusedNodeId) startEdit(focusedNodeId)
@@ -387,7 +372,7 @@ export function MindMapView() {
       </div>
 
       {/* Canvas */}
-      <div ref={canvasRef} className="flex-1 canvas-grid overflow-auto p-6">
+      <div ref={canvasRef} tabIndex={-1} className="flex-1 canvas-grid overflow-auto p-6">
         {tree ? (
           <div className="mx-auto max-w-3xl">
             {renderNode(tree)}

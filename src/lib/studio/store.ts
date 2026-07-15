@@ -197,7 +197,7 @@ export const useStudioStore = create<StudioState>()(
       },
 
       addClaim: (claim) => {
-        const fullClaim: Claim = { ...claim, id: `c-${Date.now().toString(36)}` }
+        const fullClaim: Claim = { ...claim, id: crypto.randomUUID() }
         set((state) => ({ claims: [fullClaim, ...state.claims] }))
       },
 

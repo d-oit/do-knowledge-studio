@@ -7,6 +7,8 @@ import {
   buildJsonExport,
   buildMarkdownExport,
   buildHtmlExport,
+  buildPdfExport,
+  buildDocxExport,
   todayStamp,
 } from './export-helpers'
 import type { Entity, Claim } from '@/lib/studio/types'
@@ -204,5 +206,43 @@ describe('todayStamp', () => {
   it('returns YYYY-MM-DD format', () => {
     const stamp = todayStamp()
     expect(stamp).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  })
+})
+
+describe('buildPdfExport', () => {
+  it('returns a non-empty Blob', () => {
+    const blob = buildPdfExport(SAMPLE_ENTITIES, SAMPLE_CLAIMS)
+    expect(blob).toBeInstanceOf(Blob)
+    expect(blob.size).toBeGreaterThan(0)
+  })
+
+  it('returns a PDF blob with correct MIME type', () => {
+    const blob = buildPdfExport(SAMPLE_ENTITIES, SAMPLE_CLAIMS)
+    expect(blob.type).toBe('application/pdf')
+  })
+
+  it('handles empty entities', () => {
+    const blob = buildPdfExport([], [])
+    expect(blob).toBeInstanceOf(Blob)
+    expect(blob.size).toBeGreaterThan(0)
+  })
+})
+
+describe('buildDocxExport', () => {
+  it('returns a non-empty Blob', async () => {
+    const blob = await buildDocxExport(SAMPLE_ENTITIES, SAMPLE_CLAIMS)
+    expect(blob).toBeInstanceOf(Blob)
+    expect(blob.size).toBeGreaterThan(0)
+  })
+
+  it('returns a DOCX blob with correct MIME type', async () => {
+    const blob = await buildDocxExport(SAMPLE_ENTITIES, SAMPLE_CLAIMS)
+    expect(blob.type).toBe('application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+  })
+
+  it('handles empty entities', async () => {
+    const blob = await buildDocxExport([], [])
+    expect(blob).toBeInstanceOf(Blob)
+    expect(blob.size).toBeGreaterThan(0)
   })
 })
