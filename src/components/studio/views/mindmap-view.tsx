@@ -127,7 +127,6 @@ export function MindMapView() {
       const fo = document.createElementNS(svgNS, 'foreignObject')
       fo.setAttribute('width', '100%')
       fo.setAttribute('height', '100%')
-      // eslint-disable-next-line -- Codacy false positive: cloneNode result is a DOM element, not user HTML
       const nodeCopy = el.cloneNode(true) as HTMLElement
       const computedBg = getComputedStyle(el).backgroundColor
       nodeCopy.style.width = `${rect.width}px`
@@ -224,7 +223,7 @@ export function MindMapView() {
         >
           {hasChildren ? (
             <button
-              onClick={() => toggleNode(node.entity.id)}
+              onClick={() => { toggleNode(node.entity.id) }}
               className="mr-1 rounded p-0.5 text-ink-faint transition-colors hover:text-ink"
               aria-label={isExpanded ? 'Collapse' : 'Expand'}
             >
@@ -310,7 +309,7 @@ export function MindMapView() {
       <div className="flex flex-wrap items-center gap-2 border-b border-border bg-card/50 px-5 py-2.5">
         <select
           value={rootId}
-          onChange={(e) => setRootId(e.target.value)}
+          onChange={(e) => { setRootId(e.target.value) }}
           className="rounded-md border border-border bg-background px-2.5 py-1.5 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
         >
           {entities.map((e) => (
@@ -330,7 +329,7 @@ export function MindMapView() {
             min={1}
             max={5}
             value={depth}
-            onChange={(e) => setDepth(Number(e.target.value))}
+            onChange={(e) => { setDepth(Number(e.target.value)) }}
             className="w-20 accent-saffron"
           />
           <span className="font-mono text-label text-ink">{depth}</span>
@@ -353,7 +352,7 @@ export function MindMapView() {
         <div className="flex-1" />
 
         <button
-          onClick={() => setCompact(!compact)}
+          onClick={() => { setCompact(!compact) }}
           className={cn(
             'rounded-md px-2 py-1.5 text-label font-medium transition-colors',
             compact ? 'bg-saffron-soft text-saffron-deep' : 'text-ink-mute hover:bg-muted hover:text-ink',

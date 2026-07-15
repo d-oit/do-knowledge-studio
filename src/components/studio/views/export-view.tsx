@@ -343,7 +343,7 @@ export function ExportView() {
           {entities.length} entities · {claims.length} claims · saved to this browser
         </p>
         <button
-          onClick={() => setShowResetConfirm(true)}
+          onClick={() => { setShowResetConfirm(true) }}
           className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:border-red-300 hover:text-red-600 focus-ring"
           title="Clear the local store and restore the seed entities"
         >
@@ -355,7 +355,7 @@ export function ExportView() {
       {showPassword && (
         <div
           className="fixed inset-0 z-[800] flex items-center justify-center bg-ink/30 backdrop-blur-sm"
-          onClick={() => setShowPassword(false)}
+          onClick={() => { setShowPassword(false) }}
         >
           <motion.div
             initial={reducedMotion ? false : { opacity: 0, scale: 0.96 }}
@@ -385,12 +385,12 @@ export function ExportView() {
                   <input
                     type={showPass ? 'text' : 'password'}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => { setPassword(e.target.value) }}
                     placeholder="Choose a strong password"
                     className="w-full rounded-md border border-border bg-background px-3 py-2 pr-16 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
                   />
                   <button
-                    onClick={() => setShowPass(!showPass)}
+                    onClick={() => { setShowPass(!showPass) }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-caption font-medium text-ink-faint hover:text-ink"
                   >
                     {showPass ? 'Hide' : 'Show'}
@@ -404,7 +404,7 @@ export function ExportView() {
                 <input
                   type={showPass ? 'text' : 'password'}
                   value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
+                  onChange={(e) => { setConfirm(e.target.value) }}
                   placeholder="Re-enter password"
                   className="w-full rounded-md border border-border bg-background px-3 py-2 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
                 />
@@ -440,7 +440,7 @@ export function ExportView() {
           aria-modal="true"
           aria-label="Confirm reset"
           className="fixed inset-0 z-[800] flex items-center justify-center bg-ink/30 backdrop-blur-sm"
-          onClick={() => setShowResetConfirm(false)}
+          onClick={() => { setShowResetConfirm(false) }}
         >
           <motion.div
             initial={reducedMotion ? false : { opacity: 0, scale: 0.96 }}

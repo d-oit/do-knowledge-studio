@@ -191,7 +191,7 @@ export function GraphView() {
           {(['force', 'circular', 'hierarchical'] as LayoutType[]).map((l) => (
             <button
               key={l}
-              onClick={() => setLayout(l)}
+              onClick={() => { setLayout(l) }}
               aria-pressed={layout === l}
               className={cn(
                 'flex items-center gap-1 rounded px-2 py-1 text-label font-medium capitalize transition-colors focus-ring',
@@ -208,7 +208,7 @@ export function GraphView() {
 
         <Divider />
 
-        <ToolbarBtn icon={Focus} label="Focus neighborhood" active={focusMode} onClick={() => setFocusMode(!focusMode)} />
+        <ToolbarBtn icon={Focus} label="Focus neighborhood" active={focusMode} onClick={() => { setFocusMode(!focusMode) }} />
         <ToolbarBtn icon={RotateCcw} label="Undo" disabled={historyIndex <= 0} onClick={undo} />
         <ToolbarBtn icon={RotateCw} label="Redo" disabled={historyIndex >= entityHistory.length - 1} onClick={redo} />
         <ToolbarBtn icon={Camera} label="Save snapshot" onClick={saveSnapshot} />

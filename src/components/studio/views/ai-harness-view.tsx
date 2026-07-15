@@ -137,7 +137,7 @@ export function AIHarnessView() {
           </p>
         </div>
         <button
-          onClick={() => setShowSettings(!showSettings)}
+          onClick={() => { setShowSettings(!showSettings) }}
           className={cn(
             'flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium transition-colors hover:border-saffron/40 focus-ring',
             showSettings && 'border-saffron/40 text-saffron-deep',
@@ -194,7 +194,7 @@ export function AIHarnessView() {
                 <Field label="Model" icon={Cpu}>
                   <select
                     value={model}
-                    onChange={(e) => setModel(e.target.value)}
+                    onChange={(e) => { setModel(e.target.value) }}
                     className="w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
                   >
                     {activeProvider.models.map((m) => (
@@ -211,12 +211,12 @@ export function AIHarnessView() {
                       <input
                         type={showKey ? 'text' : 'password'}
                         value={apiKey}
-                        onChange={(e) => setApiKey(e.target.value)}
+                        onChange={(e) => { setApiKey(e.target.value) }}
                         placeholder="sk-…"
                         className="w-full rounded-md border border-border bg-background px-3 py-2 pr-16 text-[12px] font-mono text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
                       />
                       <button
-                        onClick={() => setShowKey(!showKey)}
+                        onClick={() => { setShowKey(!showKey) }}
                         className="absolute right-2 top-1/2 -translate-y-1/2 text-caption font-medium text-ink-faint hover:text-ink"
                       >
                         {showKey ? 'Hide' : 'Show'}
@@ -237,7 +237,7 @@ export function AIHarnessView() {
                     </div>
                   </div>
                   <button
-                    onClick={() => setAugment(!augment)}
+                    onClick={() => { setAugment(!augment) }}
                     className={cn(
                       'relative h-5 w-9 overflow-hidden rounded-full transition-colors',
                       augment ? 'bg-saffron' : 'bg-border',
@@ -334,7 +334,7 @@ export function AIHarnessView() {
               <div className="flex items-end gap-2 rounded-lg border border-border bg-background p-1.5 focus-within:border-saffron/40">
                 <textarea
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
+                  onChange={(e) => { setInput(e.target.value) }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault()

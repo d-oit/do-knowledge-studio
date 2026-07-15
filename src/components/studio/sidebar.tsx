@@ -87,7 +87,7 @@ export function Sidebar() {
       {/* Search trigger */}
       <div className="px-3 pb-3">
         <button
-          onClick={() => setCommandOpen(true)}
+          onClick={() => { setCommandOpen(true) }}
           className="group flex w-full items-center gap-2 rounded-lg border border-border bg-background/50 px-3 py-2 text-left text-[13px] text-ink-mute transition-colors hover:border-saffron/40 hover:text-ink-soft focus-ring"
           aria-label="Open command palette"
         >
@@ -113,7 +113,7 @@ export function Sidebar() {
                 return (
                   <li key={item.id}>
                     <button
-                      onClick={() => setView(item.id)}
+                      onClick={() => { setView(item.id) }}
                       aria-current={active ? 'page' : undefined}
                       className={cn(
                         'group flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] font-medium transition-all press-scale focus-ring',
@@ -151,7 +151,7 @@ export function Sidebar() {
       {/* Footer */}
       <div className="flex items-center gap-1 border-t border-border px-3 py-2.5">
         <button
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          onClick={() => { setTheme(theme === 'dark' ? 'light' : 'dark') }}
           className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[12px] font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
           aria-label="Toggle theme"
         >
@@ -174,7 +174,7 @@ export function Sidebar() {
         />
         <div className="flex-1" />
         <button
-          onClick={() => setRightPanelOpen(!rightPanelOpen)}
+          onClick={() => { setRightPanelOpen(!rightPanelOpen) }}
           className="rounded-md p-1.5 text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
           aria-label={rightPanelOpen ? 'Hide panel' : 'Show panel'}
           title={rightPanelOpen ? 'Hide right panel' : 'Show right panel'}

@@ -65,7 +65,7 @@ function SearchPanel() {
         </div>
         <div className="mt-2 flex items-center gap-1 rounded-md bg-muted p-0.5 text-label">
           <button
-            onClick={() => setMode('keyword')}
+            onClick={() => { setMode('keyword') }}
             className={cn(
               'flex-1 rounded px-2 py-1 font-medium transition-colors',
               mode === 'keyword' ? 'bg-background text-ink shadow-sm' : 'text-ink-mute',
@@ -74,7 +74,7 @@ function SearchPanel() {
             Keyword
           </button>
           <button
-            onClick={() => setMode('semantic')}
+            onClick={() => { setMode('semantic') }}
             className={cn(
               'flex-1 rounded px-2 py-1 font-medium transition-colors',
               mode === 'semantic' ? 'bg-background text-ink shadow-sm' : 'text-ink-mute',
@@ -278,7 +278,7 @@ function InspectorPanel() {
           Edit
         </button>
         <button
-          onClick={() => setShowDeleteConfirm(true)}
+          onClick={() => { setShowDeleteConfirm(true) }}
           className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:border-red-300 hover:text-red-600 focus-ring"
         >
           Delete
@@ -295,7 +295,7 @@ function InspectorPanel() {
             <div className="flex justify-end gap-2">
               <button
                 ref={deleteCancelRef}
-                onClick={() => setShowDeleteConfirm(false)}
+                onClick={() => { setShowDeleteConfirm(false) }}
                 className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
               >
                 Cancel
