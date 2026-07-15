@@ -1,43 +1,43 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
 import { CommandPalette } from './command-palette'
 
-// Mock framer-motion
-vi.mock('framer-motion', () => ({
-  motion: {
-    div: ({ children, initial: _i, animate: _a, transition: _t, ...props }: Record<string, unknown>) => (
-      <div {...props}>{children as React.ReactNode}</div>
-    ),
-    section: ({ children, initial: _i, animate: _a, transition: _t, ...props }: Record<string, unknown>) => (
-      <section {...props}>{children as React.ReactNode}</section>
-    ),
-  },
-  AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}))
+vi.mock('framer-motion', () => {
+  const div = ({ children, initial: _i, animate: _a, transition: _t, ...props }: { children?: ReactNode; [key: string]: unknown }) => (
+    <div {...(props as React.HTMLAttributes<HTMLDivElement>)}>{children}</div>
+  )
+  const section = ({ children, initial: _i, animate: _a, transition: _t, ...props }: { children?: ReactNode; [key: string]: unknown }) => (
+    <section {...(props as React.HTMLAttributes<HTMLElement>)}>{children}</section>
+  )
+  return { motion: { div, section }, AnimatePresence: ({ children }: { children: ReactNode }) => <>{children}</> }
+})
 
-// Mock cmdk
+// Mock cmdk — typed mock props with explicit children/label
+type CmdkMockProps = { children?: ReactNode; label?: string; heading?: string; onSelect?: () => void; value?: string; [key: string]: unknown }
+
 vi.mock('cmdk', () => ({
   Command: Object.assign(
-    ({ children, label, ...props }: Record<string, unknown>) => (
-      <div aria-label={label as string} {...props}>
-        {children as React.ReactNode}
+    ({ children, label, ...props }: CmdkMockProps) => (
+      <div aria-label={label} {...(props as React.HTMLAttributes<HTMLDivElement>)}>
+        {children}
       </div>
     ),
     {
-      Input: (props: Record<string, unknown>) => <input {...(props as object)} />,
-      List: ({ children, ...props }: Record<string, unknown>) => (
-        <div {...props}>{children as React.ReactNode}</div>
+      Input: ({ children: _c, ...props }: CmdkMockProps) => <input {...(props as React.InputHTMLAttributes<HTMLInputElement>)} />,
+      List: ({ children, ...props }: CmdkMockProps) => (
+        <div {...(props as React.HTMLAttributes<HTMLDivElement>)}>{children}</div>
       ),
-      Empty: ({ children, ...props }: Record<string, unknown>) => (
-        <div {...props}>{children as React.ReactNode}</div>
+      Empty: ({ children, ...props }: CmdkMockProps) => (
+        <div {...(props as React.HTMLAttributes<HTMLDivElement>)}>{children}</div>
       ),
-      Group: ({ children, heading, ...props }: Record<string, unknown>) => (
-        <div aria-label={heading as string} {...props}>
-          {children as React.ReactNode}
+      Group: ({ children, heading, ...props }: CmdkMockProps) => (
+        <div aria-label={heading} {...(props as React.HTMLAttributes<HTMLDivElement>)}>
+          {children}
         </div>
       ),
-      Item: ({ children, onSelect: _on, value: _v, ...props }: Record<string, unknown>) => (
-        <div {...props}>{children as React.ReactNode}</div>
+      Item: ({ children, onSelect: _on, value: _v, ...props }: CmdkMockProps) => (
+        <div {...(props as React.HTMLAttributes<HTMLDivElement>)}>{children}</div>
       ),
     },
   ),

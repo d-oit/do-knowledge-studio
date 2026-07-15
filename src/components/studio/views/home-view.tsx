@@ -27,18 +27,21 @@ const ENTITY_ICONS: Record<string, typeof FileText> = {
   FolderKanban,
 }
 
-const dateFormatter = new Intl.DateTimeFormat('en-US', {
+/** Locale for date/time formatting — extract to config when i18n lands. */
+const LOCALE = 'en-US'
+
+const dateFormatter = new Intl.DateTimeFormat(LOCALE, {
   weekday: 'long',
   month: 'long',
   day: 'numeric',
 })
 
-const shortDateFormatter = new Intl.DateTimeFormat('en-US', {
+const shortDateFormatter = new Intl.DateTimeFormat(LOCALE, {
   month: 'short',
   day: 'numeric',
 })
 
-const relativeTimeFormatter = new Intl.RelativeTimeFormat('en-US', {
+const relativeTimeFormatter = new Intl.RelativeTimeFormat(LOCALE, {
   numeric: 'auto',
 })
 
@@ -255,7 +258,7 @@ export function HomeView() {
                     <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                       <motion.div
                         initial={reducedMotion ? false : { width: 0 }}
-                        animate={{ width: pct + '%' }}
+                        animate={{ width: `${pct}%` }}
                         transition={
                           reducedMotion
                             ? { duration: 0 }

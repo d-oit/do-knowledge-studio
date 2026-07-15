@@ -1,18 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { ReactNode } from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { HomeView } from './home-view'
 
-// Mock framer-motion
-vi.mock('framer-motion', () => ({
-  motion: {
-    div: ({ children, initial: _i, animate: _a, transition: _t, ...props }: Record<string, unknown>) => (
-      <div {...props}>{children as React.ReactNode}</div>
-    ),
-    section: ({ children, initial: _i, animate: _a, transition: _t, ...props }: Record<string, unknown>) => (
-      <section {...props}>{children as React.ReactNode}</section>
-    ),
-  },
-}))
+vi.mock('framer-motion', () => {
+  const div = ({ children, initial: _i, animate: _a, transition: _t, ...props }: { children?: ReactNode; [key: string]: unknown }) => (
+    <div {...(props as React.HTMLAttributes<HTMLDivElement>)}>{children}</div>
+  )
+  const section = ({ children, initial: _i, animate: _a, transition: _t, ...props }: { children?: ReactNode; [key: string]: unknown }) => (
+    <section {...(props as React.HTMLAttributes<HTMLElement>)}>{children}</section>
+  )
+  return { motion: { div, section } }
+})
 
 // Mock lucide-react icons
 vi.mock('lucide-react', () => {
