@@ -413,7 +413,7 @@ export function EditorView() {
           {isDirty && (
             <>
               <span>·</span>
-              <span className="text-saffron">Unsaved changes</span>
+              <span className="text-saffron-deep">Unsaved changes</span>
             </>
           )}
           {draftStatus === 'saved' && !isDirty && (

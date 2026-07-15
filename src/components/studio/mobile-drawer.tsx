@@ -279,7 +279,7 @@ function NavTab({ onNavigate }: { onNavigate: () => void }) {
                     />
                     <span className="flex-1 text-left">{item.label}</span>
                     {item.experimental && (
-                      <span className="rounded-full border border-dashed border-saffron/40 px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-saffron">
+                      <span className="rounded-full border border-dashed border-saffron/40 px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-saffron-deep">
                         Lab
                       </span>
                     )}

@@ -3,7 +3,7 @@
 import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
 import { ENTITY_TYPE_META } from '@/lib/studio/types'
 import { Search, X, Sparkles, FileText, Quote, ArrowRight } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 
 export function RightPanel() {
@@ -35,7 +35,7 @@ function SearchPanel() {
   const filtered = useFilteredEntities()
 
   return (
-    <aside className="hidden h-full w-[320px] shrink-0 flex-col border-l border-border bg-background lg:flex">
+    <aside className="hidden h-full w-[320px] shrink-0 flex-col border-l border-border bg-background wide:flex">
       <div className="border-b border-border px-4 py-3">
         <div className="mb-2 flex items-center justify-between">
           <h2 className="font-serif text-[14px] font-semibold text-ink">Search</h2>
@@ -131,10 +131,24 @@ function InspectorPanel() {
   const selectEntity = useStudioStore((s) => s.selectEntity)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const entity = entities.find((e) => e.id === selectedEntityId) || entities[0]
+  const deleteCancelRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (!showDeleteConfirm) return
+    deleteCancelRef.current?.focus()
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowDeleteConfirm(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [showDeleteConfirm])
 
   if (!entity) {
     return (
-      <aside className="hidden h-full w-[320px] shrink-0 border-l border-border bg-background lg:flex">
+      <aside className="hidden h-full w-[320px] shrink-0 border-l border-border bg-background wide:flex">
         <div className="flex h-full flex-1 items-center justify-center p-6 text-center text-[12px] text-ink-mute">
           Select a node to inspect.
         </div>
@@ -151,7 +165,7 @@ function InspectorPanel() {
   }
 
   return (
-    <aside className="hidden h-full w-[340px] shrink-0 flex-col border-l border-border bg-background lg:flex">
+    <aside className="hidden h-full w-[340px] shrink-0 flex-col border-l border-border bg-background wide:flex">
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <h2 className="font-serif text-[14px] font-semibold text-ink">Inspector</h2>
         <button
@@ -231,7 +245,7 @@ function InspectorPanel() {
       </div>
 
       {showDeleteConfirm && (
-        <div className="fixed inset-0 z-[800] flex items-center justify-center bg-ink/30 backdrop-blur-sm">
+        <div role="dialog" aria-modal="true" aria-label="Confirm delete" className="fixed inset-0 z-[800] flex items-center justify-center bg-ink/30 backdrop-blur-sm">
           <div className="w-[340px] rounded-xl border border-border bg-popover p-5 shadow-2xl">
             <h3 className="mb-2 font-serif text-[14px] font-semibold text-ink">Delete entity?</h3>
             <p className="mb-4 text-[12px] text-ink-mute">
@@ -239,6 +253,7 @@ function InspectorPanel() {
             </p>
             <div className="flex justify-end gap-2">
               <button
+                ref={deleteCancelRef}
                 onClick={() => setShowDeleteConfirm(false)}
                 className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
               >
@@ -265,7 +280,7 @@ function CitationsPanel() {
   const citations = lastAssistant?.citations || []
 
   return (
-    <aside className="hidden h-full w-[320px] shrink-0 flex-col border-l border-border bg-background lg:flex">
+    <aside className="hidden h-full w-[320px] shrink-0 flex-col border-l border-border bg-background wide:flex">
       <div className="flex items-center gap-2 border-b border-border px-4 py-3">
         <Quote className="h-3.5 w-3.5 text-saffron" />
         <h2 className="font-serif text-[14px] font-semibold text-ink">Cited sources</h2>

@@ -10,21 +10,23 @@ The items below are lower-priority future work.
 
 | Priority | Item | Description | Status |
 |----------|------|-------------|--------|
-| P2 | Overlay/dialog semantics | Export, command palette, right panel need dialog primitives | OPEN |
-| P2 | Saffron text contrast | Use `--saffron-deep` for small text on paper backgrounds | OPEN |
 | P3 | CodeMirror evaluation | Spike to validate textarea vs CodeMirror for the markdown editor | OPEN |
-| P3 | Home view redesign | Remove hero-metric dashboard template; put recent work first | OPEN |
 | P3 | E2E test harness | Add Playwright or Cypress for keyboard/motion/a11y testing | OPEN |
-| P3 | Tablet breakpoint | Defer right panel to wider breakpoint or make on-demand drawer | OPEN |
 | P3 | Component consolidation | Extract Button, Field, Dialog primitives with shared behavior | OPEN |
 | P3 | Advanced TRIZ features | Full contradiction matrix and inventive principles UI | OPEN |
 | P3 | Phase 8 collaboration | P2P sync, multi-user, voice-to-knowledge | OPEN |
 
-## Completed - 2026-07-14 Session (Plan 057, PR TBD)
+## Completed - 2026-07-14 Session (Plan 058, PR TBD)
 
 | Plan | Description | PRs |
 |------|-------------|-----|
-| 057 | Missing task remediation: graph determinism, export honesty, contrast fixes, typography | TBD |
+| 058 | GOAP swarm: saffron contrast, dialog semantics, home redesign, tablet breakpoint, tests | TBD |
+
+## Completed - 2026-07-14 Session (Plan 057, PR #435)
+
+| Plan | Description | PRs |
+|------|-------------|-----|
+| 057 | Missing task remediation: graph determinism, export honesty, contrast fixes, typography | 435 |
 
 ## Completed - 2026-07-14 Session (PRs 430-433)
 
@@ -67,8 +69,8 @@ The items below are lower-priority future work.
 
 | Metric | Value |
 |--------|-------|
-| Test files | 9 |
-| Total tests | 114 |
+| Test files | 11 |
+| Total tests | 127 |
 | CI checks | 21/21 passing |
 | LOC violations | 0 |
 | Lint warnings | 0 |
@@ -76,6 +78,9 @@ The items below are lower-priority future work.
 | Broad store subscriptions | 0 (all narrowed) |
 | Reduced-motion gated components | 7/7 |
 | Keyboard-operable surfaces | library, graph, mindmap |
+| Dialog semantics | 3/3 overlays (command palette, export reset, right-panel delete) |
+| Home view | Recent-work-first layout with relative timestamps |
+| Tablet breakpoint | Right panel deferred to wide (1100px) |
 | `--ink-faint` AA contrast | ✅ 4.72:1 light, 4.94:1 dark |
 | `text-[9px]` remaining | 0 (all mapped to `text-badge` token) |
 | Math.random() in views | 0 (replaced with seededRandom) |
