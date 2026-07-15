@@ -119,15 +119,12 @@ export function MindMapView() {
       const fo = document.createElementNS(svgNS, 'foreignObject')
       fo.setAttribute('width', '100%')
       fo.setAttribute('height', '100%')
-      const wrapper = document.createElement('div')
-      wrapper.innerHTML = el.innerHTML
-      Object.assign(wrapper.style, {
-        width: `${rect.width}px`,
-        height: `${rect.height}px`,
-        background: '#faf8f3',
-        fontFamily: 'system-ui, sans-serif',
-      })
-      fo.appendChild(wrapper)
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- Codacy false positive: cloneNode result needs HTMLElement for style access
+      const nodeCopy = el.cloneNode(true) as HTMLElement
+      nodeCopy.style.width = `${rect.width}px`
+      nodeCopy.style.height = `${rect.height}px`
+      nodeCopy.style.background = '#faf8f3'
+      fo.appendChild(nodeCopy)
       svg.appendChild(fo)
       const serializer = new XMLSerializer()
       const svgStr = serializer.serializeToString(svg)
