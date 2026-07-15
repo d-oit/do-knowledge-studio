@@ -11,7 +11,7 @@ import {
   ArrowRight,
   RotateCcw,
 } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
@@ -43,6 +43,20 @@ export function ExportView() {
   const [showPass, setShowPass] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const resetCancelRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (!showResetConfirm) return
+    resetCancelRef.current?.focus()
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowResetConfirm(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => { window.removeEventListener('keydown', handleKeyDown) }
+  }, [showResetConfirm])
 
   const handleExport = async (format: string) => {
     if (format === 'json') {
@@ -385,6 +399,9 @@ export function ExportView() {
       {/* Reset confirmation dialog */}
       {showResetConfirm && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Confirm reset"
           className="fixed inset-0 z-[800] flex items-center justify-center bg-ink/30 backdrop-blur-sm"
           onClick={() => setShowResetConfirm(false)}
         >
@@ -409,6 +426,7 @@ export function ExportView() {
             </p>
             <div className="flex justify-end gap-2">
               <button
+                ref={resetCancelRef}
                 onClick={() => setShowResetConfirm(false)}
                 className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
               >

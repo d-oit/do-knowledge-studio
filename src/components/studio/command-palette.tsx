@@ -114,7 +114,7 @@ export function CommandPalette() {
   if (!commandOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[900] flex items-start justify-center bg-ink/30 backdrop-blur-sm animate-in fade-in duration-150">
+    <div role="dialog" aria-modal="true" aria-label="Command palette" className="fixed inset-0 z-[900] flex items-start justify-center bg-ink/30 backdrop-blur-sm animate-in fade-in duration-150">
       <CommandPrimitive
         className="mt-[12vh] w-[640px] max-w-[92vw] overflow-hidden rounded-xl border border-border bg-popover shadow-2xl"
         loop

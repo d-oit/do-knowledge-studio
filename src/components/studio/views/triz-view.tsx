@@ -66,7 +66,7 @@ export function TrizView() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="font-serif text-2xl font-semibold text-ink">TRIZ Contradiction Matrix</h1>
-              <span className="rounded-full border border-dashed border-saffron/50 px-2 py-0 text-badge font-semibold uppercase tracking-wide text-saffron">
+              <span className="rounded-full border border-dashed border-saffron/50 px-2 py-0 text-badge font-semibold uppercase tracking-wide text-saffron-deep">
                 Lab
               </span>
             </div>
