@@ -46,7 +46,7 @@ export function MobileDrawer() {
       }
     }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    return () => { window.removeEventListener('keydown', onKey) }
   }, [open, setOpen])
 
   // Auto-close when resizing up to desktop so the drawer never overlaps the
@@ -58,7 +58,7 @@ export function MobileDrawer() {
       if (e.matches) setOpen(false)
     }
     mql.addEventListener('change', onChange)
-    return () => mql.removeEventListener('change', onChange)
+    return () => { mql.removeEventListener('change', onChange) }
   }, [open, setOpen])
 
   // Focus the close button when the drawer opens (first interactive element)
@@ -67,7 +67,7 @@ export function MobileDrawer() {
     const t = window.setTimeout(() => {
       closeBtnRef.current?.focus()
     }, 60)
-    return () => window.clearTimeout(t)
+    return () => { window.clearTimeout(t) }
   }, [open])
 
   // Simple focus trap — Tab / Shift+Tab cycles within the panel
@@ -103,7 +103,7 @@ export function MobileDrawer() {
       if (e.key === 'Tab') handleTabKey(e)
     }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    return () => { window.removeEventListener('keydown', onKey) }
   }, [open, handleTabKey])
 
   return (
@@ -207,7 +207,7 @@ function TabSwitcher({
         <button
           role="tab"
           aria-selected={view === 'nav'}
-          onClick={() => setView('nav')}
+          onClick={() => { setView('nav') }}
           className={cn(
             'rounded-md px-3 py-1.5 text-[12px] font-semibold transition-colors focus-ring',
             view === 'nav'
@@ -220,7 +220,7 @@ function TabSwitcher({
         <button
           role="tab"
           aria-selected={view === 'search'}
-          onClick={() => setView('search')}
+          onClick={() => { setView('search') }}
           className={cn(
             'rounded-md px-3 py-1.5 text-[12px] font-semibold transition-colors focus-ring',
             view === 'search'
@@ -260,7 +260,7 @@ function NavTab({ onNavigate }: { onNavigate: () => void }) {
               return (
                 <li key={item.id}>
                   <button
-                    onClick={() => handleSelect(item.id)}
+                    onClick={() => { handleSelect(item.id) }}
                     aria-current={active ? 'page' : undefined}
                     className={cn(
                       'group flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-[14px] font-medium transition-all focus-ring',
@@ -327,7 +327,7 @@ function SearchTab({ onSelect }: { onSelect: () => void }) {
         </div>
         <div className="mt-2 flex items-center gap-1 rounded-md bg-muted p-0.5 text-label">
           <button
-            onClick={() => setMode('keyword')}
+            onClick={() => { setMode('keyword') }}
             aria-pressed={mode === 'keyword'}
             className={cn(
               'flex-1 rounded px-2 py-1 font-medium transition-colors focus-ring',
@@ -339,7 +339,7 @@ function SearchTab({ onSelect }: { onSelect: () => void }) {
             Keyword
           </button>
           <button
-            onClick={() => setMode('semantic')}
+            onClick={() => { setMode('semantic') }}
             aria-pressed={mode === 'semantic'}
             className={cn(
               'flex-1 rounded px-2 py-1 font-medium transition-colors focus-ring',

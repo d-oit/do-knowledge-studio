@@ -60,15 +60,15 @@ export function CommandPalette() {
   }
 
   const navItems: CmdItem[] = [
-    { id: 'nav-home', label: 'Home', icon: Home, onSelect: () => goTo('home'), group: 'Navigate' },
-    { id: 'nav-editor', label: 'Editor', icon: FileText, onSelect: () => goTo('editor'), group: 'Navigate' },
-    { id: 'nav-library', label: 'Library', icon: Library, onSelect: () => goTo('library'), group: 'Navigate' },
-    { id: 'nav-graph', label: 'Graph', icon: GitBranch, onSelect: () => goTo('graph'), group: 'Navigate' },
-    { id: 'nav-mindmap', label: 'Mind Map', icon: BrainCircuit, onSelect: () => goTo('mindmap'), group: 'Navigate' },
-    { id: 'nav-chat', label: 'Chat', icon: MessageSquare, onSelect: () => goTo('chat'), group: 'Navigate' },
-    { id: 'nav-ai', label: 'AI Harness', icon: FlaskConical, onSelect: () => goTo('ai'), group: 'Navigate' },
-    { id: 'nav-triz', label: 'TRIZ Matrix', icon: Grid3X3, onSelect: () => goTo('triz'), group: 'Navigate' },
-    { id: 'nav-export', label: 'Export', icon: Download, onSelect: () => goTo('export'), group: 'Navigate' },
+    { id: 'nav-home', label: 'Home', icon: Home, onSelect: () => { goTo('home') }, group: 'Navigate' },
+    { id: 'nav-editor', label: 'Editor', icon: FileText, onSelect: () => { goTo('editor') }, group: 'Navigate' },
+    { id: 'nav-library', label: 'Library', icon: Library, onSelect: () => { goTo('library') }, group: 'Navigate' },
+    { id: 'nav-graph', label: 'Graph', icon: GitBranch, onSelect: () => { goTo('graph') }, group: 'Navigate' },
+    { id: 'nav-mindmap', label: 'Mind Map', icon: BrainCircuit, onSelect: () => { goTo('mindmap') }, group: 'Navigate' },
+    { id: 'nav-chat', label: 'Chat', icon: MessageSquare, onSelect: () => { goTo('chat') }, group: 'Navigate' },
+    { id: 'nav-ai', label: 'AI Harness', icon: FlaskConical, onSelect: () => { goTo('ai') }, group: 'Navigate' },
+    { id: 'nav-triz', label: 'TRIZ Matrix', icon: Grid3X3, onSelect: () => { goTo('triz') }, group: 'Navigate' },
+    { id: 'nav-export', label: 'Export', icon: Download, onSelect: () => { goTo('export') }, group: 'Navigate' },
     {
       id: 'create-entity',
       label: 'Create new entity',

@@ -64,7 +64,7 @@ function setOpen(v: boolean) {
 function useShortcutsOpen(): [boolean, (v: boolean) => void] {
   const [open, setLocal] = React.useState(_open)
   React.useEffect(() => {
-    const l = (v: boolean) => setLocal(v)
+    const l = (v: boolean) => { setLocal(v) }
     listeners.add(l)
     return () => {
       listeners.delete(l)
@@ -166,7 +166,7 @@ export function ShortcutsDialog() {
       } else if (key === 'g') {
         // Pressing G twice is a no-op; keep waiting (reset the timer).
         if (gTimerRef.current) clearTimeout(gTimerRef.current)
-        gTimerRef.current = setTimeout(() => cancelG(), 1000)
+        gTimerRef.current = setTimeout(() => { cancelG() }, 1000)
       } else {
         // Any other key cancels the sequence.
         cancelG()
@@ -196,7 +196,7 @@ export function ShortcutsDialog() {
       const id = requestAnimationFrame(() => {
         closeBtnRef.current?.focus()
       })
-      return () => cancelAnimationFrame(id)
+      return () => { cancelAnimationFrame(id) }
     }
   }, [open])
 
@@ -211,7 +211,7 @@ export function ShortcutsDialog() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={reducedMotion ? { duration: 0 } : { duration: 0.15 }}
-            onClick={() => setOpen(false)}
+            onClick={() => { setOpen(false) }}
             aria-hidden="true"
           >
             <motion.div
@@ -317,7 +317,7 @@ export function ShortcutsTrigger({ className }: { className?: string }) {
   return (
     <button
       type="button"
-      onClick={() => setOpen(true)}
+      onClick={() => { setOpen(true) }}
       className={className}
       aria-label="Show keyboard shortcuts"
       title="Keyboard shortcuts (?)"

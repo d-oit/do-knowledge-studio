@@ -279,7 +279,7 @@ export function EditorView() {
         <input
           id="entity-name"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => { setName(e.target.value) }}
           placeholder="Entity name…"
           className="w-full bg-transparent font-serif text-3xl font-semibold leading-tight tracking-tight text-ink placeholder:text-ink-faint/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-saffron/40 focus-visible:ring-inset"
           autoFocus={!editing}
@@ -288,7 +288,7 @@ export function EditorView() {
         <textarea
           id="entity-description"
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          onChange={(e) => { setDescription(e.target.value) }}
           placeholder="A short description (optional)…"
           rows={2}
           className="mt-2 w-full resize-none bg-transparent text-[14px] leading-relaxed text-ink-mute placeholder:text-ink-faint/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-saffron/40 focus-visible:ring-inset"
@@ -310,7 +310,7 @@ export function EditorView() {
           >
             #{t}
             <button
-              onClick={() => setTags(tags.filter((x) => x !== t))}
+              onClick={() => { setTags(tags.filter((x) => x !== t)) }}
               className="text-ink-faint hover:text-red-500"
               aria-label={`Remove tag ${t}`}
             >
@@ -322,7 +322,7 @@ export function EditorView() {
           <Tag className="h-2.5 w-2.5 text-ink-faint" />
           <input
             value={newTag}
-            onChange={(e) => setNewTag(e.target.value)}
+            onChange={(e) => { setNewTag(e.target.value) }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault()
@@ -357,7 +357,7 @@ export function EditorView() {
             <input
               id="source-url"
               value={sourceUrl}
-              onChange={(e) => setSourceUrl(e.target.value)}
+              onChange={(e) => { setSourceUrl(e.target.value) }}
               placeholder="https://…"
               className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
             />

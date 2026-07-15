@@ -96,7 +96,7 @@ export function ChatView() {
                 {SUGGESTIONS.map((s) => (
                   <button
                     key={s.label}
-                    onClick={() => handleSend(s.query)}
+                    onClick={() => { handleSend(s.query) }}
                     className="rounded-full border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-all hover:border-saffron/40 hover:text-ink press-scale focus-ring"
                   >
                     {s.label}
@@ -156,7 +156,7 @@ export function ChatView() {
                   {m.citations && m.citations.length > 0 && (
                     <div className="rounded-lg border border-dashed border-saffron/40 bg-saffron-soft/30 p-2.5">
                       <button
-                        onClick={() => setShowCitations(showCitations === m.id ? null : m.id)}
+                        onClick={() => { setShowCitations(showCitations === m.id ? null : m.id) }}
                         className="flex w-full items-center gap-1.5 text-label font-semibold text-saffron-deep"
                       >
                         <Quote className="h-3 w-3" />
@@ -177,7 +177,7 @@ export function ChatView() {
                             {m.citations.map((c, i) => (
                               <button
                                 key={i}
-                                onClick={() => handleCitationClick(c.entityId)}
+                                onClick={() => { handleCitationClick(c.entityId) }}
                                 className="flex w-full gap-2 rounded-md bg-background/60 p-2 text-left text-label transition-colors hover:bg-muted focus-ring"
                               >
                                 <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-saffron text-badge font-bold text-white">
@@ -234,7 +234,7 @@ export function ChatView() {
             <textarea
               ref={inputRef}
               value={input}
-              onChange={(e) => setInput(e.target.value.slice(0, 2000))}
+              onChange={(e) => { setInput(e.target.value.slice(0, 2000)) }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault()
@@ -248,7 +248,7 @@ export function ChatView() {
               className="max-h-32 flex-1 resize-none bg-transparent px-2 py-1.5 text-[14px] text-ink placeholder:text-ink-faint focus:outline-none disabled:opacity-50"
             />
             <button
-              onClick={() => handleSend()}
+              onClick={() => { handleSend() }}
               disabled={!input.trim() || chatLoading}
               className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 press-scale focus-ring"
               aria-label="Send message"

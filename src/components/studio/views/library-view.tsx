@@ -104,7 +104,7 @@ export function LibraryView() {
 
         <div className="flex items-center gap-1 rounded-md border border-border p-0.5" role="group" aria-label="View mode">
           <button
-            onClick={() => setViewMode('grid')}
+            onClick={() => { setViewMode('grid') }}
             className={cn(
               'rounded p-1.5 transition-colors focus-ring',
               viewMode === 'grid' ? 'bg-muted text-ink' : 'text-ink-faint hover:text-ink',
@@ -115,7 +115,7 @@ export function LibraryView() {
             <LayoutGrid className="h-4 w-4" />
           </button>
           <button
-            onClick={() => setViewMode('list')}
+            onClick={() => { setViewMode('list') }}
             className={cn(
               'rounded p-1.5 transition-colors focus-ring',
               viewMode === 'list' ? 'bg-muted text-ink' : 'text-ink-faint hover:text-ink',

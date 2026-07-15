@@ -48,7 +48,7 @@ export function TrizView() {
     navigator.clipboard?.writeText(text)
     setCopied(id)
     toast.success('Principle copied to clipboard')
-    setTimeout(() => setCopied(null), 2000)
+    setTimeout(() => { setCopied(null) }, 2000)
   }
 
   return (
@@ -186,7 +186,7 @@ export function TrizView() {
                     #{p.id}
                   </div>
                   <button
-                    onClick={() => handleCopy(`${p.name}: ${p.description}`, p.id)}
+                    onClick={() => { handleCopy(`${p.name}: ${p.description}`, p.id) }}
                     className="rounded-md p-1.5 text-ink-faint transition-colors hover:bg-muted hover:text-ink focus-ring"
                     aria-label="Copy principle"
                   >
@@ -215,7 +215,7 @@ export function TrizView() {
               Try another contradiction
             </button>
             <button
-              onClick={() => setView('pick')}
+              onClick={() => { setView('pick') }}
               className="flex items-center gap-1.5 rounded-md border border-border bg-background px-4 py-2 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
             >
               Change parameters
@@ -298,7 +298,7 @@ function ParamPicker({
         <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-faint" />
         <input
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => { setSearch(e.target.value) }}
           placeholder="Search parameters…"
           className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-3 text-[12px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
         />
@@ -312,7 +312,7 @@ function ParamPicker({
             <button
               key={index}
               disabled={isDisabled}
-              onClick={() => onSelect(index)}
+              onClick={() => { onSelect(index) }}
               className={cn(
                 'flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[12px] transition-colors focus-ring',
                 isSelected
