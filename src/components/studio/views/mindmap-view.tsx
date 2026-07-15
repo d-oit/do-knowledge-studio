@@ -119,11 +119,11 @@ export function MindMapView() {
       const fo = document.createElementNS(svgNS, 'foreignObject')
       fo.setAttribute('width', '100%')
       fo.setAttribute('height', '100%')
-      const clonedEl = el.cloneNode(true) as HTMLElement
-      clonedEl.style.width = `${rect.width}px`
-      clonedEl.style.height = `${rect.height}px`
-      clonedEl.style.background = '#faf8f3'
-      fo.appendChild(clonedEl)
+      const fragment = el.cloneNode(true) as HTMLElement
+      fragment.style.width = `${rect.width}px`
+      fragment.style.height = `${rect.height}px`
+      fragment.style.background = '#faf8f3'
+      fo.appendChild(fragment)
       svg.appendChild(fo)
       const serializer = new XMLSerializer()
       const svgStr = serializer.serializeToString(svg)
