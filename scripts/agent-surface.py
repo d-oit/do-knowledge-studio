@@ -2,7 +2,6 @@
 """Validate agent-facing surfaces: SKILL.md files, AGENTS.md, skill structure."""
 
 import sys
-import os
 from pathlib import Path
 
 

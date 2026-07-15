@@ -102,7 +102,9 @@ export function MindMapView() {
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
   }, [handleKeyDown])
 
   const exportPng = useCallback(() => {
@@ -117,11 +119,11 @@ export function MindMapView() {
       const fo = document.createElementNS(svgNS, 'foreignObject')
       fo.setAttribute('width', '100%')
       fo.setAttribute('height', '100%')
-      const cloned = el.cloneNode(true) as HTMLElement
-      cloned.style.width = `${rect.width}px`
-      cloned.style.height = `${rect.height}px`
-      cloned.style.background = '#faf8f3'
-      fo.appendChild(cloned)
+      const clonedEl = el.cloneNode(true) as HTMLElement
+      clonedEl.style.width = `${rect.width}px`
+      clonedEl.style.height = `${rect.height}px`
+      clonedEl.style.background = '#faf8f3'
+      fo.appendChild(clonedEl)
       svg.appendChild(fo)
       const serializer = new XMLSerializer()
       const svgStr = serializer.serializeToString(svg)

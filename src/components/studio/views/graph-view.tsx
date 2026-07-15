@@ -287,7 +287,9 @@ export function GraphView() {
                 <g
                   key={n.id}
                   transform={`translate(${n.x}, ${n.y})`}
-                  onClick={() => handleNodeClick(n.id, isSelected)}
+                  onClick={() => {
+                    handleNodeClick(n.id, isSelected)
+                  }}
                   onKeyDown={(e) => { handleNodeKeyDown(n.id, e) }}
                   onFocus={() => { setFocusedNodeId(n.id) }}
                   onBlur={() => { setFocusedNodeId(null) }}
