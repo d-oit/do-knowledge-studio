@@ -72,6 +72,9 @@ export function EditorToolbar({
           }`}
         >
           Advanced
+          {!showAdvanced && (
+            <span className="ml-1.5 text-caption text-ink-faint">Source URL, tags</span>
+          )}
           <span className={`h-3 w-3 transition-transform ${showAdvanced ? 'rotate-180' : ''}`}>
             ▾
           </span>

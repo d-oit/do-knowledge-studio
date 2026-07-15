@@ -25,6 +25,8 @@ import {
   buildJsonExport,
   buildMarkdownExport,
   buildHtmlExport,
+  buildPdfExport,
+  buildDocxExport,
   parseImportFile,
 } from './export-helpers'
 import { encryptData, buildEncryptedReaderHtml } from '@/lib/export/encrypt'
@@ -83,6 +85,50 @@ export function ExportView() {
       toast.success('HTML export downloaded', {
         description: 'Self-contained .html page — open in any browser.',
       })
+      return
+    }
+
+    if (format === 'pdf') {
+      try {
+        const blob = await buildPdfExport(entities, claims)
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `do-knowledge-studio-${todayStamp()}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+        toast.success('PDF export downloaded', {
+          description: `${entities.length} entities formatted in a print-ready PDF.`,
+        })
+      } catch (err) {
+        toast.error('PDF export failed', {
+          description: err instanceof Error ? err.message : 'Unknown error',
+        })
+      }
+      return
+    }
+
+    if (format === 'docx') {
+      try {
+        const blob = await buildDocxExport(entities, claims)
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `do-knowledge-studio-${todayStamp()}.docx`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+        toast.success('DOCX export downloaded', {
+          description: `${entities.length} entities in a Word document.`,
+        })
+      } catch (err) {
+        toast.error('DOCX export failed', {
+          description: err instanceof Error ? err.message : 'Unknown error',
+        })
+      }
       return
     }
 
@@ -289,6 +335,10 @@ export function ExportView() {
           <li className="flex items-start gap-1.5">
             <Check className="mt-0.5 h-3 w-3 shrink-0 text-emerald-500" />
             JSON exports are the most complete — they preserve all entities, claims, links, and tags.
+          </li>
+          <li className="flex items-start gap-1.5">
+            <Check className="mt-0.5 h-3 w-3 shrink-0 text-emerald-500" />
+            PDF and DOCX are print-ready — great for sharing or archival.
           </li>
           <li className="flex items-start gap-1.5">
             <Check className="mt-0.5 h-3 w-3 shrink-0 text-emerald-500" />

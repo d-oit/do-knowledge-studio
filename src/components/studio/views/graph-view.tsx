@@ -31,13 +31,22 @@ function seededRandom(seed: string): number {
 import { cn } from '@/lib/utils'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { buildAdjacencyIndex } from '@/lib/studio/graph-index'
+import { todayStamp } from './export-helpers'
 
 type LayoutType = 'force' | 'circular' | 'hierarchical'
+
+const FOCUS_MODE_FILTER_STYLE: React.CSSProperties = {
+  filter: 'drop-shadow(0 0 3px var(--saffron))',
+} as const
 
 export function GraphView() {
   const entities = useStudioStore((s) => s.entities)
   const selectedEntityId = useStudioStore((s) => s.selectedEntityId)
   const selectEntity = useStudioStore((s) => s.selectEntity)
+  const undo = useStudioStore((s) => s.undo)
+  const redo = useStudioStore((s) => s.redo)
+  const entityHistory = useStudioStore((s) => s.entityHistory)
+  const historyIndex = useStudioStore((s) => s.historyIndex)
   const [layout, setLayout] = useState<LayoutType>('force')
   const [focusMode, setFocusMode] = useState(false)
 
@@ -101,11 +110,51 @@ export function GraphView() {
       })
     : positioned
 
-  const visibleNodeIds = new Set(visibleNodes.map((n) => n.id))
-  const visibleEdges = edges.filter((e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target))
+  const { visibleEdges } = useMemo(() => {
+    const ids = new Set(visibleNodes.map((n) => n.id))
+    const filtered = edges.filter((e) => ids.has(e.source) && ids.has(e.target))
+    return { visibleEdges: filtered }
+  }, [visibleNodes, edges, focusMode, selectedEntityId])
 
   const svgRef = useRef<SVGSVGElement>(null)
   const reducedMotion = useReducedMotion()
+
+  const handleExportPng = useCallback(() => {
+    const svg = svgRef.current
+    if (!svg) return
+
+    const serializer = new XMLSerializer()
+    const svgString = serializer.serializeToString(svg)
+    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' })
+    const url = URL.createObjectURL(svgBlob)
+
+    const img = new Image()
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas')
+        canvas.width = img.naturalWidth * 2
+        canvas.height = img.naturalHeight * 2
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return
+        ctx.scale(2, 2)
+        ctx.drawImage(img, 0, 0)
+        canvas.toBlob((blob) => {
+          if (!blob) return
+          const pngUrl = URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = pngUrl
+          a.download = `knowledge-graph-${todayStamp()}.png`
+          document.body.appendChild(a)
+          a.click()
+          document.body.removeChild(a)
+          URL.revokeObjectURL(pngUrl)
+        }, 'image/png')
+      } finally {
+        URL.revokeObjectURL(url)
+      }
+    }
+    img.src = url
+  }, [])
   // Gate the rotation animation on the selected node indicator
   const animDur = reducedMotion ? '0s' : '8s'
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null)
@@ -119,6 +168,27 @@ export function GraphView() {
     },
     [selectEntity],
   )
+
+  const handleNodeClick = useCallback(
+    (nodeId: string, isCurrentlySelected: boolean) => {
+      selectEntity(isCurrentlySelected ? null : nodeId)
+    },
+    [selectEntity],
+  )
+
+  const saveSnapshot = useCallback(() => {
+    try {
+      const snapshot = {
+        layout,
+        selectedEntityId,
+        focusMode,
+        timestamp: new Date().toISOString(),
+      }
+      localStorage.setItem('dks-graph-snapshot', JSON.stringify(snapshot))
+    } catch (error) {
+      console.error('Failed to save graph snapshot:', error instanceof Error ? error.message : error)
+    }
+  }, [layout, selectedEntityId, focusMode])
 
   return (
     <div className="flex h-full flex-col">
@@ -146,16 +216,16 @@ export function GraphView() {
         <Divider />
 
         <ToolbarBtn icon={Focus} label="Focus neighborhood" active={focusMode} onClick={() => setFocusMode(!focusMode)} />
-        <ToolbarBtn icon={RotateCcw} label="Undo" disabled />
-        <ToolbarBtn icon={RotateCw} label="Redo" disabled />
-        <ToolbarBtn icon={Camera} label="Save snapshot" disabled />
+        <ToolbarBtn icon={RotateCcw} label="Undo" disabled={historyIndex <= 0} onClick={undo} />
+        <ToolbarBtn icon={RotateCw} label="Redo" disabled={historyIndex >= entityHistory.length - 1} onClick={redo} />
+        <ToolbarBtn icon={Camera} label="Save snapshot" onClick={saveSnapshot} />
 
         <div className="flex-1" />
 
         <span className="hidden text-label text-ink-faint sm:inline">
           {visibleNodes.length} nodes · {visibleEdges.length} edges
         </span>
-        <ToolbarBtn icon={Download} label="Export PNG" disabled />
+        <ToolbarBtn icon={Download} label="Export PNG" onClick={handleExportPng} />
       </div>
 
       {/* Canvas */}
@@ -217,7 +287,7 @@ export function GraphView() {
                 <g
                   key={n.id}
                   transform={`translate(${n.x}, ${n.y})`}
-                  onClick={() => selectEntity(isSelected ? null : n.id)}
+                  onClick={() => handleNodeClick(n.id, isSelected)}
                   onKeyDown={(e) => { handleNodeKeyDown(n.id, e) }}
                   onFocus={() => { setFocusedNodeId(n.id) }}
                   onBlur={() => { setFocusedNodeId(null) }}
@@ -228,7 +298,7 @@ export function GraphView() {
                     'cursor-pointer outline-none',
                     (focusedNodeId === n.id || isSelected) && 'focus-visible:ring-2 focus-visible:ring-saffron/60',
                   )}
-                  style={focusedNodeId === n.id ? { filter: 'drop-shadow(0 0 3px var(--saffron))' } : undefined}
+                  style={focusedNodeId === n.id ? FOCUS_MODE_FILTER_STYLE : undefined}
                 >
                   {isSelected && (
                     <circle r={r + 6} fill="none" className="stroke-saffron" strokeWidth={1.5} strokeDasharray="3 3" opacity={0.6}>

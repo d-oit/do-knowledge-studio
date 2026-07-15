@@ -5,6 +5,9 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { Entity, Claim, ViewId, ChatMessage, EntityType } from './types'
 import { seedEntities, seedClaims, seedChat } from './seed-data'
+import { search } from '@/lib/search/retrieval'
+
+const MAX_HISTORY = 50
 
 interface StudioState {
   // Navigation
@@ -25,6 +28,13 @@ interface StudioState {
   finishEditing: () => void
   navigateToView: (v: ViewId) => void
   deleteEntity: (id: string) => void
+
+  // History (undo/redo)
+  entityHistory: Entity[][]
+  historyIndex: number
+  pushHistory: () => void
+  undo: () => void
+  redo: () => void
 
   // Claims
   claims: Claim[]
@@ -88,6 +98,9 @@ export const useStudioStore = create<StudioState>()(
     (set, get) => ({
       ...SEED_STATE,
 
+      entityHistory: [seedEntities],
+      historyIndex: 0,
+
       setView: (v) => set({ currentView: v }),
 
       commandOpen: false,
@@ -109,7 +122,37 @@ export const useStudioStore = create<StudioState>()(
           currentView: 'editor',
         })
       },
+
+      pushHistory: () => {
+        const { entities, historyIndex, entityHistory } = get()
+        const snapshot = entities.map((e) => ({ ...e }))
+        const trimmed = entityHistory.slice(0, historyIndex + 1)
+        const next = [...trimmed, snapshot]
+        if (next.length > MAX_HISTORY) next.shift()
+        set({
+          entityHistory: next,
+          historyIndex: next.length - 1,
+        })
+      },
+
+      undo: () => {
+        const { entityHistory, historyIndex } = get()
+        if (historyIndex <= 0) return
+        const newIndex = historyIndex - 1
+        const snapshot = entityHistory[newIndex].map((e) => ({ ...e }))
+        set({ entities: snapshot, historyIndex: newIndex })
+      },
+
+      redo: () => {
+        const { entityHistory, historyIndex } = get()
+        if (historyIndex >= entityHistory.length - 1) return
+        const newIndex = historyIndex + 1
+        const snapshot = entityHistory[newIndex].map((e) => ({ ...e }))
+        set({ entities: snapshot, historyIndex: newIndex })
+      },
       saveEntity: (e) => {
+        const { pushHistory } = get()
+        pushHistory()
         set((state) => {
           const exists = state.entities.some((x) => x.id === e.id)
           const entities = exists
@@ -124,6 +167,8 @@ export const useStudioStore = create<StudioState>()(
       },
 
       commitEntity: (e) => {
+        const { pushHistory } = get()
+        pushHistory()
         set((state) => {
           const exists = state.entities.some((x) => x.id === e.id)
           const entities = exists
@@ -141,12 +186,15 @@ export const useStudioStore = create<StudioState>()(
         set({ currentView: v })
       },
 
-      deleteEntity: (id) =>
+      deleteEntity: (id) => {
+        const { pushHistory } = get()
+        pushHistory()
         set((state) => ({
           entities: state.entities.filter((x) => x.id !== id),
           claims: state.claims.filter((c) => c.entityId !== id),
           selectedEntityId: state.selectedEntityId === id ? null : state.selectedEntityId,
-        })),
+        }))
+      },
 
       addClaim: (claim) => {
         const fullClaim: Claim = { ...claim, id: `c-${Date.now().toString(36)}` }
@@ -167,37 +215,19 @@ export const useStudioStore = create<StudioState>()(
         }
         set((state) => ({ chat: [...state.chat, userMsg], chatLoading: true }))
 
-        // Simulated RAG response — score entities by word overlap
         setTimeout(() => {
-          const { entities } = get()
-          const words = content
-            .toLowerCase()
-            .replace(/[^a-z0-9\s]/g, '')
-            .split(/\s+/)
-            .filter((w) => w.length > 3 && !['what', 'how', 'why', 'when', 'where', 'which', 'that', 'this', 'with', 'from', 'your', 'about', 'please', 'could', 'would', 'should'].includes(w))
-          const scored = entities
-            .map((e) => {
-              const haystack = `${e.name} ${e.description} ${e.tags.join(' ')}`.toLowerCase()
-              let score = 0
-              for (const w of words) {
-                if (haystack.includes(w)) score += 1
-                if (e.name.toLowerCase().includes(w)) score += 2
-              }
-              return { e, score }
-            })
-            .filter((x) => x.score > 0)
-            .sort((a, b) => b.score - a.score)
-          const matched = scored.slice(0, 3).map((x) => x.e)
-          const cited = matched.map((e) => ({
-            entityId: e.id,
-            entityName: e.name,
-            snippet: e.description.slice(0, 140) + '…',
+          const { entities, claims } = get()
+          const results = search(entities, claims, content, 5)
+          const cited = results.map((r) => ({
+            entityId: r.entityId ?? r.id,
+            entityName: r.entityName ?? r.name,
+            snippet: r.snippet,
           }))
           const reply: ChatMessage = {
             id: generateId(),
             role: 'assistant',
-            content: matched.length
-              ? `Based on ${matched.length === 1 ? 'an entity' : `${matched.length} entities`} in your library, here is what I found. ${matched[0].description.slice(0, 200)} You can open the cited sources for full detail, or ask me to compare them.`
+            content: results.length
+              ? `Based on ${results.length === 1 ? '1 match' : `${results.length} matches`} in your library, here is what I found. ${results[0].snippet} You can open the cited sources for full detail, or ask me to compare them.`
               : "I could not find a direct match in your local library. Try rephrasing with keywords that appear in your entity names or descriptions, or capture a new entity first via the Editor.",
             citations: cited,
             timestamp: new Date().toISOString(),
@@ -219,10 +249,11 @@ export const useStudioStore = create<StudioState>()(
         set({
           entities,
           claims,
-          // Reset transient selection / editing so we don't point at a stale id.
           selectedEntityId: null,
           editingEntityId: null,
           currentView: 'library',
+          entityHistory: [entities],
+          historyIndex: 0,
         }),
 
       resetStore: () =>
@@ -230,6 +261,8 @@ export const useStudioStore = create<StudioState>()(
           ...SEED_STATE,
           selectedEntityId: null,
           editingEntityId: null,
+          entityHistory: [seedEntities],
+          historyIndex: 0,
         }),
     }),
     {

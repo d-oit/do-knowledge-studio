@@ -28,7 +28,8 @@ export function loadDraft(id: string): EditorDraft | null {
       return null
     }
     return result.data
-  } catch {
+  } catch (error) {
+    console.error('Failed to load draft:', error instanceof Error ? error.message : error)
     removeDraft(id)
     return null
   }

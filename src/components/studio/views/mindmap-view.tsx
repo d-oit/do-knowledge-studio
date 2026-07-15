@@ -15,8 +15,9 @@ import {
   ChevronDown,
   Sliders,
 } from 'lucide-react'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { cn } from '@/lib/utils'
+import { todayStamp } from './export-helpers'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { motion, AnimatePresence } from 'framer-motion'
 import { buildEntityIndex } from '@/lib/studio/graph-index'
@@ -25,6 +26,12 @@ interface TreeNode {
   entity: { id: string; name: string; type: keyof typeof ENTITY_TYPE_META }
   children: TreeNode[]
   expanded: boolean
+}
+
+const NODE_INDENT_PX = 28
+
+function getNodeIndentStyle(level: number): React.CSSProperties {
+  return { paddingLeft: `${level * NODE_INDENT_PX}px` }
 }
 
 export function MindMapView() {
@@ -37,6 +44,118 @@ export function MindMapView() {
   const reducedMotion = useReducedMotion()
   const entityIndex = useMemo(() => buildEntityIndex(entities), [entities])
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null)
+  const canvasRef = useRef<HTMLDivElement>(null)
+  const [syncKey, setSyncKey] = useState(0)
+  const commitEntity = useStudioStore((s) => s.commitEntity)
+  const deleteEntity = useStudioStore((s) => s.deleteEntity)
+  const startEdit = useStudioStore((s) => s.startEdit)
+  const undo = useStudioStore((s) => s.undo)
+  const redo = useStudioStore((s) => s.redo)
+  const entityHistory = useStudioStore((s) => s.entityHistory)
+  const historyIndex = useStudioStore((s) => s.historyIndex)
+
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (!focusedNodeId) return
+      const nodeEntity = entityIndex.get(focusedNodeId)
+      if (!nodeEntity) return
+
+      if (e.key === 'Tab') {
+        e.preventDefault()
+        const childId = crypto.randomUUID()
+        const childEntity = {
+          id: childId,
+          name: 'New child',
+          type: 'note' as const,
+          description: '',
+          content: '',
+          tags: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          links: [],
+        }
+        const parentWithLink = {
+          ...nodeEntity,
+          links: [...nodeEntity.links, { targetId: childId, relation: 'contains' }],
+          updatedAt: new Date().toISOString(),
+        }
+        commitEntity(childEntity)
+        commitEntity(parentWithLink)
+        setFocusedNodeId(childId)
+        return
+      }
+
+      if (e.key === 'F2') {
+        e.preventDefault()
+        startEdit(focusedNodeId)
+        return
+      }
+
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault()
+        deleteEntity(focusedNodeId)
+        setFocusedNodeId(null)
+      }
+    },
+    [focusedNodeId, entityIndex, commitEntity, deleteEntity, startEdit],
+  )
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handleKeyDown])
+
+  const exportPng = useCallback(() => {
+    const el = canvasRef.current
+    if (!el) return
+    try {
+      const rect = el.getBoundingClientRect()
+      const svgNS = 'http://www.w3.org/2000/svg'
+      const svg = document.createElementNS(svgNS, 'svg')
+      svg.setAttribute('width', String(rect.width))
+      svg.setAttribute('height', String(rect.height))
+      const fo = document.createElementNS(svgNS, 'foreignObject')
+      fo.setAttribute('width', '100%')
+      fo.setAttribute('height', '100%')
+      const cloned = el.cloneNode(true) as HTMLElement
+      cloned.style.width = `${rect.width}px`
+      cloned.style.height = `${rect.height}px`
+      cloned.style.background = '#faf8f3'
+      fo.appendChild(cloned)
+      svg.appendChild(fo)
+      const serializer = new XMLSerializer()
+      const svgStr = serializer.serializeToString(svg)
+      const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        canvas.width = rect.width * 2
+        canvas.height = rect.height * 2
+        const ctx = canvas.getContext('2d')
+        if (ctx) {
+          ctx.scale(2, 2)
+          ctx.drawImage(img, 0, 0)
+          canvas.toBlob((pngBlob) => {
+            if (pngBlob) {
+              const pngUrl = URL.createObjectURL(pngBlob)
+              const a = document.createElement('a')
+              a.href = pngUrl
+              a.download = `mindmap-${todayStamp()}.png`
+              document.body.appendChild(a)
+              a.click()
+              document.body.removeChild(a)
+              URL.revokeObjectURL(pngUrl)
+            }
+          })
+        }
+        URL.revokeObjectURL(url)
+      }
+      img.src = url
+    } catch (error) {
+      console.error('Failed to export mind map as PNG:', error instanceof Error ? error.message : error)
+    }
+  }, [])
 
   const tree = useMemo(() => {
     const root = entityIndex.get(rootId) || entities[0]
@@ -66,7 +185,7 @@ export function MindMapView() {
       }
     }
     return build(root, depth, new Set())
-  }, [entityIndex, entities, rootId, depth])
+  }, [entityIndex, entities, rootId, depth, syncKey])
 
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())
 
@@ -78,6 +197,11 @@ export function MindMapView() {
       return next
     })
   }
+
+  const syncTree = useCallback(() => {
+    setExpandedNodes(new Set())
+    setSyncKey((k) => k + 1)
+  }, [])
 
   const renderNode = (node: TreeNode, level: number = 0): React.ReactNode => {
     const meta = ENTITY_TYPE_META[node.entity.type]
@@ -91,7 +215,7 @@ export function MindMapView() {
           animate={{ opacity: 1, x: 0 }}
           transition={reducedMotion ? { duration: 0 } : { duration: 0.2, delay: level * 0.05 }}
           className="flex items-center"
-          style={{ paddingLeft: `${level * 28}px` }}
+          style={getNodeIndentStyle(level)}
         >
           {hasChildren ? (
             <button
@@ -209,11 +333,33 @@ export function MindMapView() {
 
         <Divider />
 
-        <ToolbarBtn icon={Plus} label="Add child" disabled />
-        <ToolbarBtn icon={Edit3} label="Rename" disabled />
-        <ToolbarBtn icon={Trash2} label="Delete" disabled />
-        <ToolbarBtn icon={Undo2} label="Undo" disabled />
-        <ToolbarBtn icon={Redo2} label="Redo" disabled />
+        <ToolbarBtn icon={Plus} label="Add child" onClick={() => {
+          if (!focusedNodeId) return
+          const nodeEntity = entityIndex.get(focusedNodeId)
+          if (!nodeEntity) return
+          const childId = crypto.randomUUID()
+          const childEntity = {
+            id: childId, name: 'New child', type: 'note' as const,
+            description: '', content: '', tags: [],
+            createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), links: [],
+          }
+          const parentWithLink = {
+            ...nodeEntity,
+            links: [...nodeEntity.links, { targetId: childId, relation: 'contains' }],
+            updatedAt: new Date().toISOString(),
+          }
+          commitEntity(childEntity)
+          commitEntity(parentWithLink)
+          setFocusedNodeId(childId)
+        }} />
+        <ToolbarBtn icon={Edit3} label="Rename" onClick={() => {
+          if (focusedNodeId) startEdit(focusedNodeId)
+        }} />
+        <ToolbarBtn icon={Trash2} label="Delete" onClick={() => {
+          if (focusedNodeId) { deleteEntity(focusedNodeId); setFocusedNodeId(null) }
+        }} />
+        <ToolbarBtn icon={Undo2} label="Undo" disabled={historyIndex <= 0} onClick={undo} />
+        <ToolbarBtn icon={Redo2} label="Redo" disabled={historyIndex >= entityHistory.length - 1} onClick={redo} />
 
         <div className="flex-1" />
 
@@ -226,8 +372,8 @@ export function MindMapView() {
         >
           Compact
         </button>
-        <ToolbarBtn icon={RefreshCw} label="Sync" disabled />
-        <ToolbarBtn icon={Download} label="Export PNG" disabled />
+        <ToolbarBtn icon={RefreshCw} label="Sync" onClick={syncTree} />
+        <ToolbarBtn icon={Download} label="Export PNG" onClick={exportPng} />
       </div>
 
       {/* Hint */}
@@ -238,7 +384,7 @@ export function MindMapView() {
       </div>
 
       {/* Canvas */}
-      <div className="flex-1 canvas-grid overflow-auto p-6">
+      <div ref={canvasRef} className="flex-1 canvas-grid overflow-auto p-6">
         {tree ? (
           <div className="mx-auto max-w-3xl">
             {renderNode(tree)}
