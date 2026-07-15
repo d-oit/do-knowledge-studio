@@ -1,6 +1,6 @@
 # Plans Index
 
-**Updated**: 2026-07-14
+**Updated**: 2026-07-15
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
 ## Remaining Work
@@ -16,11 +16,23 @@ The items below are lower-priority future work.
 | P3 | Advanced TRIZ features | Full contradiction matrix and inventive principles UI | OPEN |
 | P3 | Phase 8 collaboration | P2P sync, multi-user, voice-to-knowledge | OPEN |
 
-## Completed - 2026-07-14 Session (Plan 058, PR TBD)
+## Completed - 2026-07-15 Session (Plan 059, PR #438)
 
 | Plan | Description | PRs |
 |------|-------------|-----|
-| 058 | GOAP swarm: saffron contrast, dialog semantics, home redesign, tablet breakpoint, tests | TBD |
+| 059 | Missing task remediation: sidebar Math.random, stale dist cleanup, INDEX update, docs alignment | 438 |
+
+## Completed - 2026-07-15 Session (Plan 058, PR #437)
+
+| Plan | Description | PRs |
+|------|-------------|-----|
+| 058 | GOAP swarm: saffron contrast, dialog semantics, home redesign, tablet breakpoint, tests | 437 |
+
+## Completed - 2026-07-15 Session (PR #436)
+
+| Plan | Description | PRs |
+|------|-------------|-----|
+| — | Optimize useFilteredEntities selector with atomic Zustand selectors + memoization | 436 |
 
 ## Completed - 2026-07-14 Session (Plan 057, PR #435)
 
@@ -65,12 +77,12 @@ The items below are lower-priority future work.
 | 046 | Test coverage expansion | - |
 | 047 | Master GOAP closeout | - |
 
-## Key Metrics (2026-07-14)
+## Key Metrics (2026-07-15)
 
 | Metric | Value |
 |--------|-------|
-| Test files | 11 |
-| Total tests | 127 |
+| Test files | 12 |
+| Total tests | 130 |
 | CI checks | 21/21 passing |
 | LOC violations | 0 |
 | Lint warnings | 0 |

@@ -308,11 +308,11 @@ absolutely-positioned icon at `left-3 top-1/2 -translate-y-1/2`.
 
 | Pattern        | Classes                                                                                                |
 |----------------|--------------------------------------------------------------------------------------------------------|
-| Tag chip       | `rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-ink-mute`                             |
-| Status dot     | `h-1.5 w-1.5 rounded-full bg-emerald-500` (paired with `text-[11px]` label)                           |
-| Type label     | `rounded px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide text-ink-faint`                 |
-| Kbd hint       | `rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-ink-faint`            |
-| Lab badge      | `rounded-full border border-dashed border-saffron/40 px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide text-saffron` |
+| Tag chip       | `rounded-full bg-muted px-2 py-0.5 text-caption font-medium text-ink-mute`                          |
+| Status dot     | `h-1.5 w-1.5 rounded-full bg-emerald-500` (paired with `text-caption` label)                        |
+| Type label     | `rounded px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-ink-faint`               |
+| Kbd hint       | `rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-caption text-ink-faint`         |
+| Lab badge      | `rounded-full border border-dashed border-saffron/40 px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-saffron` |
 
 ### 8.8 Toasts
 
