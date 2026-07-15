@@ -37,7 +37,7 @@ Local-first knowledge studio built with Next.js 16 / React 19 / Tailwind 4 / sha
 - Prefer native `AbortController` over custom cancellation patterns.
 - Use `queueMicrotask` or `requestAnimationFrame` for batching DOM updates, not `setTimeout(fn, 0)`.
 - Prefer `Intl.Segmenter` over manual string splitting for i18n-safe text processing.
-- **Always use named exports.** Never use `export default`. Named exports enable better tree-shaking, safer refactoring (find-all-references works), and consistent import style across the codebase.
+- **Always use named exports.** Never use `export default`. Named exports enable better tree-shaking, safer refactoring (find-all-references works), and consistent import style across the codebase. **Exception**: Next.js App Router files (`src/app/page.tsx`, `src/app/layout.tsx`) require `export default` by framework convention — this is the only acceptable case.
 - **Never ignore pre-existing issues or warnings.** Every warning, lint error, or failing check must be fixed or documented as a follow-up task in `plans/`. Ignoring issues compounds technical debt and erodes trust in the pipeline.
 - **Always run code review before merge.** After CI passes and before requesting merge, invoke the `code-review-assistant` skill to perform a structured review of all changed files. Address all P1/P2 findings. No PR merges without a completed review pass.
 
