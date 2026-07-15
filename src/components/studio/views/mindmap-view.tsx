@@ -127,6 +127,7 @@ export function MindMapView() {
       const fo = document.createElementNS(svgNS, 'foreignObject')
       fo.setAttribute('width', '100%')
       fo.setAttribute('height', '100%')
+      // eslint-disable-next-line -- Codacy false positive: cloneNode result is a DOM element, not user HTML
       const nodeCopy = el.cloneNode(true) as HTMLElement
       const computedBg = getComputedStyle(el).backgroundColor
       nodeCopy.style.width = `${rect.width}px`
