@@ -15,6 +15,19 @@ import {
   Download,
 } from 'lucide-react'
 import { useState, useRef, useMemo, useCallback } from 'react'
+
+/**
+ * Deterministic hash → [0, 1) float for stable graph node positions.
+ * Replaces Math.random() so the layout does not shuffle on every render.
+ */
+function seededRandom(seed: string): number {
+  let hash = 0
+  for (let i = 0; i < seed.length; i++) {
+    hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0
+  }
+  // Mix the bits for better distribution, then scale to [0, 1)
+  return (Math.abs((hash * 2654435761) >>> 0) % 10_000) / 10_000
+}
 import { cn } from '@/lib/utils'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { buildAdjacencyIndex } from '@/lib/studio/graph-index'
@@ -39,8 +52,8 @@ export function GraphView() {
         id: e.id,
         label: e.name,
         type: e.type,
-        x: seed?.x ?? Math.random() * 600 + 100,
-        y: seed?.y ?? Math.random() * 400 + 80,
+        x: seed?.x ?? seededRandom(e.id + ':x') * 600 + 100,
+        y: seed?.y ?? seededRandom(e.id + ':y') * 400 + 80,
       }
     })
     const nodeIds = new Set(nodes.map((n) => n.id))
@@ -183,7 +196,7 @@ export function GraphView() {
                         x={(s.x + t.x) / 2}
                         y={(s.y + t.y) / 2 - 4}
                         textAnchor="middle"
-                        className="fill-ink-mute font-sans text-[9px] italic"
+                        className="fill-ink-mute font-sans text-badge italic"
                       >
                         {e.relation}
                       </text>

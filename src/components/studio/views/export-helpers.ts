@@ -14,6 +14,7 @@ export interface ExportFormat {
   icon: typeof FileText
   color: string
   badge?: string
+  available?: boolean
 }
 
 export const FORMATS: ExportFormat[] = [
@@ -23,6 +24,7 @@ export const FORMATS: ExportFormat[] = [
     description: 'Single .md file with every entity (and its claims) separated by ---.',
     icon: FileText,
     color: 'saffron',
+    available: true,
   },
   {
     id: 'json',
@@ -30,6 +32,7 @@ export const FORMATS: ExportFormat[] = [
     description: 'Single .json file with all entities, claims, and links. Best for backup.',
     icon: FileJson,
     color: 'sky',
+    available: true,
   },
   {
     id: 'html',
@@ -37,20 +40,23 @@ export const FORMATS: ExportFormat[] = [
     description: 'Single self-contained .html page that renders all entities. Open in any browser.',
     icon: FileCode,
     color: 'sage',
+    available: true,
   },
   {
     id: 'pdf',
     name: 'PDF document',
-    description: 'Printable summary of all entities. Good for sharing a snapshot.',
+    description: 'Not yet available. Use Markdown or HTML export for now.',
     icon: FileArchive,
     color: 'clay',
+    badge: 'Planned',
   },
   {
     id: 'docx',
     name: 'DOCX document',
-    description: 'Word document with headings, lists, and tables. Edit in Word or Google Docs.',
+    description: 'Not yet available. Use Markdown export for now.',
     icon: FileText,
     color: 'saffron',
+    badge: 'Planned',
   },
   {
     id: 'encrypted',
@@ -59,6 +65,7 @@ export const FORMATS: ExportFormat[] = [
     icon: FileLock,
     color: 'clay',
     badge: 'Secure',
+    available: true,
   },
 ]
 
