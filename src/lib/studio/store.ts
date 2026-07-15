@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { Entity, Claim, ViewId, ChatMessage, EntityType } from './types'
@@ -259,26 +260,33 @@ export const useStudioStore = create<StudioState>()(
 
 // Selectors
 export function useFilteredEntities(): Entity[] {
-  const { entities, searchQuery, typeFilter, sortBy, sortDir } = useStudioStore()
-  let list = entities
-  if (typeFilter !== 'all') list = list.filter((e) => e.type === typeFilter)
-  if (searchQuery.trim()) {
-    const q = searchQuery.toLowerCase()
-    list = list.filter(
-      (e) =>
-        e.name.toLowerCase().includes(q) ||
-        e.description.toLowerCase().includes(q) ||
-        e.tags.some((t) => t.toLowerCase().includes(q)),
-    )
-  }
-  list = [...list].sort((a, b) => {
-    let cmp = 0
-    if (sortBy === 'name') cmp = a.name.localeCompare(b.name)
-    else if (sortBy === 'created') cmp = a.createdAt.localeCompare(b.createdAt)
-    else cmp = a.updatedAt.localeCompare(b.updatedAt)
-    return sortDir === 'asc' ? cmp : -cmp
-  })
-  return list
+  const entities = useStudioStore((s) => s.entities)
+  const searchQuery = useStudioStore((s) => s.searchQuery)
+  const typeFilter = useStudioStore((s) => s.typeFilter)
+  const sortBy = useStudioStore((s) => s.sortBy)
+  const sortDir = useStudioStore((s) => s.sortDir)
+
+  return useMemo(() => {
+    let list = entities
+    if (typeFilter !== 'all') list = list.filter((e) => e.type === typeFilter)
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase()
+      list = list.filter(
+        (e) =>
+          e.name.toLowerCase().includes(q) ||
+          e.description.toLowerCase().includes(q) ||
+          e.tags.some((t) => t.toLowerCase().includes(q)),
+      )
+    }
+    list = [...list].sort((a, b) => {
+      let cmp = 0
+      if (sortBy === 'name') cmp = a.name.localeCompare(b.name)
+      else if (sortBy === 'created') cmp = a.createdAt.localeCompare(b.createdAt)
+      else cmp = a.updatedAt.localeCompare(b.updatedAt)
+      return sortDir === 'asc' ? cmp : -cmp
+    })
+    return list
+  }, [entities, searchQuery, typeFilter, sortBy, sortDir])
 }
 
 export function useStats() {
