@@ -119,7 +119,7 @@ export function MindMapView() {
       const fo = document.createElementNS(svgNS, 'foreignObject')
       fo.setAttribute('width', '100%')
       fo.setAttribute('height', '100%')
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- Codacy false positive: cloneNode result needs HTMLElement for style access
+      // eslint-disable-next-line -- Codacy false positive: cloneNode result is used for PNG export, not user HTML
       const nodeCopy = el.cloneNode(true) as HTMLElement
       nodeCopy.style.width = `${rect.width}px`
       nodeCopy.style.height = `${rect.height}px`
