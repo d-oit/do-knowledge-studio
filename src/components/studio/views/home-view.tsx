@@ -166,7 +166,7 @@ export function HomeView() {
               return (
                 <li key={entity.id}>
                   <button
-                    onClick={() => handleOpenEntity(entity.id)}
+                    onClick={() => { handleOpenEntity(entity.id) }}
                     className="group flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-saffron-soft/30 focus-ring"
                   >
                     <span

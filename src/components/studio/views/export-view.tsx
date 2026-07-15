@@ -55,7 +55,7 @@ export function ExportView() {
       }
     }
     window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    return () => { window.removeEventListener('keydown', handleKeyDown) }
   }, [showResetConfirm])
 
   const handleExport = async (format: string) => {
