@@ -35,6 +35,10 @@ import {
   type EditorDraft,
 } from '@/lib/editor'
 
+const SERIF_FONT_STYLE: React.CSSProperties = {
+  fontFamily: 'var(--font-newsreader), Georgia, serif',
+} as const
+
 function restoreSelection(textarea: HTMLTextAreaElement, start: number, end: number) {
   textarea.focus()
   textarea.setSelectionRange(start, end)
@@ -110,7 +114,8 @@ export function EditorView() {
       try {
         saveDraft(draft)
         setDraftStatus('saved')
-      } catch {
+      } catch (error) {
+        console.error('Failed to save draft:', error instanceof Error ? error.message : error)
         setDraftStatus('error')
       }
     }, 500)
@@ -136,8 +141,8 @@ export function EditorView() {
         }
         try {
           saveDraft(draft)
-        } catch {
-          // Best-effort flush on unmount
+        } catch (error) {
+          console.error('Failed to flush draft on unmount:', error instanceof Error ? error.message : error)
         }
       }
     }
@@ -386,7 +391,7 @@ export function EditorView() {
             }}
             placeholder="Start writing. Use markdown for headings, lists, and emphasis…"
             className={`min-h-[420px] w-full resize-none bg-transparent font-serif text-[16px] leading-[1.75] text-ink placeholder:text-ink-faint/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-saffron/40 focus-visible:ring-inset ${editMode === 'split' ? 'rounded-lg border border-border p-4' : ''}`}
-            style={{ fontFamily: 'var(--font-newsreader), Georgia, serif' }}
+            style={SERIF_FONT_STYLE}
             aria-label="Editor content"
           />
         )}

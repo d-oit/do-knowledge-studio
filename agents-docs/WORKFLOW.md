@@ -7,7 +7,8 @@
 
 **Fix ALL pre-existing issues before completing any task:**
 
-- [ ] Lint warnings (shellcheck, markdownlint)
+- [ ] Lint warnings (shellcheck, markdownlint, eslint)
+- [ ] Build warnings (deprecation notices, lockfile conflicts, turbopack warnings)
 - [ ] Test failures
 - [ ] Security vulnerabilities
 - [ ] Documentation gaps (broken links, missing files)
@@ -16,9 +17,9 @@
 **Process:**
 
 1. Run quality gate: `./scripts/quality_gate.sh`
-2. Note all failures (even unrelated to your changes)
-3. Fix ALL issues
-4. Re-run quality gate to confirm zero failures
+2. Note all failures AND warnings (even unrelated to your changes)
+3. Fix ALL issues — treat warnings as errors
+4. Re-run quality gate to confirm zero failures and zero warnings
 
 ## Atomic Commit Workflow
 

@@ -84,10 +84,25 @@ export function AIHarnessView() {
     setIsLoading(true)
 
     try {
-      const response = await fetchProvider(provider, model, apiKey, [
+      const apiMessages: { role: string; content: string }[] = [
         ...messages.map((m) => ({ role: m.role, content: m.content })),
         { role: 'user' as const, content: input },
-      ])
+      ]
+
+      if (augment && entities.length > 0) {
+        const contextParts = entities.slice(0, 20).map((e) => {
+          const tags = e.tags.length ? ` [${e.tags.join(', ')}]` : ''
+          const desc = e.description ? `: ${e.description.slice(0, 200)}` : ''
+          return `- ${e.name} (${e.type})${tags}${desc}`
+        })
+        const systemMsg = {
+          role: 'system',
+          content: `You are assisting with a local knowledge base. Below are relevant entities from the user's library. Use them to inform your answers when applicable.\n\nEntities:\n${contextParts.join('\n')}`,
+        }
+        apiMessages.unshift(systemMsg)
+      }
+
+      const response = await fetchProvider(provider, model, apiKey, apiMessages)
       setMessages((m) => [...m, { role: 'assistant', content: response }])
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error'

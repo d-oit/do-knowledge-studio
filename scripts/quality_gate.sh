@@ -77,7 +77,11 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Validate scope
-if [[ -n "$SCOPE" ]] && [[ ! " ${VALID_SCOPES[*]} " =~ " ${SCOPE} " ]]; then
+scope_match=false
+for s in "${VALID_SCOPES[@]}"; do
+  [[ "$s" == "$SCOPE" ]] && scope_match=true && break
+done
+if [[ -n "$SCOPE" ]] && [[ "$scope_match" == false ]]; then
     echo -e "${RED}Error: Invalid scope '${SCOPE}'. Valid scopes are: ${VALID_SCOPES[*]}${NC}"
     exit 1
 fi
@@ -139,7 +143,6 @@ echo ""
 if [ "${SKIP_GLOBAL_HOOKS_CHECK:-false}" != "true" ]; then
     echo -e "${BLUE}Validating git hooks configuration...${NC}"
     if ! ./scripts/validate-git-hooks.sh; then
-        # Don't fail the quality gate, just warn
         FAILED=1
     fi
     echo ""
@@ -486,10 +489,9 @@ if [[ " ${DETECTED_LANGUAGES[*]} " =~ " shell " ]] && [[ "$SCOPE" == "all" || "$
             sc_failed=0
             while IFS= read -r script; do
                 [ -n "$script" ] || continue
-                # Use --severity=error to only fail on actual errors, not style warnings
                 # Use -f quiet to reduce output volume in CI environments
                 # lint_if_changed handles hashing and caching
-                if ! lint_if_changed "$script" "shellcheck" ".shellcheckrc" shellcheck --severity=error -f quiet "$script" 2>/dev/null; then
+                if ! lint_if_changed "$script" "shellcheck" ".shellcheckrc" shellcheck --severity=warning -f quiet "$script" 2>/dev/null; then
                     echo -e "${RED}  ✗ shellcheck failed: $script${NC}"
                     sc_failed=1
                 fi

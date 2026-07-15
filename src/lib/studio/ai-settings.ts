@@ -59,7 +59,8 @@ async function decryptApiKey(encrypted: string): Promise<string> {
     const data = combined.slice(12)
     const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, data)
     return new TextDecoder().decode(decrypted)
-  } catch {
+  } catch (error) {
+    console.error('Failed to decrypt API key:', error instanceof Error ? error.message : error)
     return ''
   }
 }
@@ -74,7 +75,8 @@ export async function loadAISettings(): Promise<AISettings> {
       ? await decryptApiKey(stored.encryptedApiKey)
       : (stored.apiKey ?? '')
     return { ...DEFAULT_SETTINGS, ...stored, apiKey }
-  } catch {
+  } catch (error) {
+    console.error('Failed to load AI settings:', error instanceof Error ? error.message : error)
     return DEFAULT_SETTINGS
   }
 }
@@ -90,8 +92,8 @@ export async function saveAISettings(settings: AISettings): Promise<void> {
       augmentWithLocal: settings.augmentWithLocal,
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore))
-  } catch {
-    // localStorage full or blocked — silently ignore
+  } catch (error) {
+    console.error('Failed to save AI settings:', error instanceof Error ? error.message : error)
   }
 }
 

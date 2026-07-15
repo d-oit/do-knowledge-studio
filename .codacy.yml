@@ -30,3 +30,6 @@ engines:
       - "ESLint8_no-unsafe-call"
       - "ESLint8_no-unsafe-assignment"
       - "ESLint8_no-unsafe-template-expression"
+      - "ESLint8_security_detect-non-literal-fs-filename"
+      - "ESLint8_no-unsanitized-property-assignment"
+      - "ESLint8_no-unsanitized-method-call"

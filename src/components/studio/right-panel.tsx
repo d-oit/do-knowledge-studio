@@ -2,8 +2,9 @@
 
 import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
 import { ENTITY_TYPE_META } from '@/lib/studio/types'
+import { search, type SearchResult } from '@/lib/search/retrieval'
 import { Search, X, Sparkles, FileText, Quote, ArrowRight } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 
 export function RightPanel() {
@@ -30,9 +31,16 @@ function SearchPanel() {
   const searchQuery = useStudioStore((s) => s.searchQuery)
   const setSearchQuery = useStudioStore((s) => s.setSearchQuery)
   const entities = useStudioStore((s) => s.entities)
+  const claims = useStudioStore((s) => s.claims)
   const startEdit = useStudioStore((s) => s.startEdit)
   const [mode, setMode] = useState<'keyword' | 'semantic'>('keyword')
   const filtered = useFilteredEntities()
+  const semanticResults = useMemo(
+    () => (mode === 'semantic' ? search(entities, claims, searchQuery) : []),
+    [mode, entities, claims, searchQuery],
+  )
+
+  const results = mode === 'semantic' ? semanticResults : filtered
 
   return (
     <aside className="hidden h-full w-[320px] shrink-0 flex-col border-l border-border bg-background wide:flex">
@@ -78,15 +86,48 @@ function SearchPanel() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-3">
-        {filtered.length === 0 ? (
+        {results.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
             <FileText className="h-8 w-8 text-ink-faint/50" />
             <p className="text-[12px] text-ink-mute">
               {searchQuery ? 'No matches found.' : 'Your library is empty.'}
             </p>
           </div>
+        ) : mode === 'semantic' ? (
+          <ul className="space-y-1.5" role="list" aria-label="Semantic search results">
+            {semanticResults.map((r: SearchResult) => {
+              const targetId = r.type === 'entity' ? r.id : r.entityId
+              const resolvedEntity = targetId ? entities.find((e) => e.id === targetId) : undefined
+              const meta = resolvedEntity ? ENTITY_TYPE_META[resolvedEntity.type] : undefined
+              return (
+                <li key={r.id}>
+                  <button
+                    onClick={() => targetId && startEdit(targetId)}
+                    className="group block w-full rounded-md border border-transparent p-2.5 text-left transition-colors hover:border-border hover:bg-muted/50 focus-ring"
+                    aria-label={`${r.name} — score ${r.score.toFixed(2)}`}
+                  >
+                    <div className="mb-1 flex items-center gap-2">
+                      {meta && <span className={cn('h-1.5 w-1.5 rounded-full', meta.dot)} />}
+                      {meta && (
+                        <span className="rounded px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-ink-faint">
+                          {meta.label}
+                        </span>
+                      )}
+                      <span className="ml-auto text-caption tabular-nums text-ink-faint">
+                        {r.score.toFixed(1)}
+                      </span>
+                    </div>
+                    <div className="truncate text-[13px] font-medium text-ink">{r.name}</div>
+                    <p className="mt-0.5 line-clamp-2 text-label leading-snug text-ink-mute">
+                      {r.snippet}
+                    </p>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
         ) : (
-          <ul className="space-y-1.5">
+          <ul className="space-y-1.5" role="list" aria-label="Keyword search results">
             {filtered.slice(0, 20).map((e) => {
               const meta = ENTITY_TYPE_META[e.type]
               return (
