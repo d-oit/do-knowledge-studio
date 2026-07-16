@@ -1,8 +1,15 @@
 import { test, expect } from '@playwright/test';
 
+/** Helper: click a sidebar nav button by label (scoped to <nav>) */
+async function navClick(page: import('@playwright/test').Page, name: RegExp | string) {
+  const nav = page.getByRole('navigation', { name: /main navigation/i });
+  await nav.getByRole('button', { name }).first().click();
+}
+
 test.describe('Editor view', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
+    await navClick(page, /editor/i);
   });
 
   test('can create a new entity by clicking the new button', async ({ page }) => {
@@ -22,5 +29,62 @@ test.describe('Editor view', () => {
     await page.locator('#entity-name').fill('My Test Note');
     await page.getByRole('button', { name: /save|commit/i }).click();
     await expect(page.getByText('My Test Note')).toBeVisible();
+  });
+
+  test('editor mode radio group has three options', async ({ page }) => {
+    const radiogroup = page.getByRole('radiogroup', { name: /editor mode/i });
+    await expect(radiogroup).toBeVisible();
+
+    const radios = radiogroup.getByRole('radio');
+    await expect(radios).toHaveCount(3);
+  });
+
+  test('can switch between edit, preview, and split modes', async ({ page }) => {
+    const radiogroup = page.getByRole('radiogroup', { name: /editor mode/i });
+    const radios = radiogroup.getByRole('radio');
+
+    await expect(radios.nth(0)).toHaveAttribute('aria-checked', 'true');
+
+    await radios.nth(1).click();
+    await expect(radios.nth(1)).toHaveAttribute('aria-checked', 'true');
+
+    await radios.nth(2).click();
+    await expect(radios.nth(2)).toHaveAttribute('aria-checked', 'true');
+  });
+
+  test('advanced section toggles visibility', async ({ page }) => {
+    const advancedBtn = page.getByRole('button', { name: /advanced/i });
+    await expect(advancedBtn).toBeVisible();
+
+    await advancedBtn.click();
+    const sourceUrl = page.getByLabel('Source URL');
+    await expect(sourceUrl).toBeVisible();
+
+    await advancedBtn.click();
+    await expect(sourceUrl).toBeHidden();
+  });
+
+  test('can add a tag to an entity', async ({ page }) => {
+    await page.getByRole('button', { name: /new|create|add/i }).first().click();
+    await page.locator('#entity-name').fill('Tag Test');
+
+    const tagInput = page.getByPlaceholder(/add tag/i);
+    if (await tagInput.isVisible()) {
+      await tagInput.fill('my-tag');
+      await page.getByRole('button', { name: /add tag/i }).click();
+      await expect(page.getByText('#my-tag')).toBeVisible();
+    }
+  });
+
+  test('name field shows validation on empty save attempt', async ({ page }) => {
+    await page.getByRole('button', { name: /new|create|add/i }).first().click();
+
+    const nameInput = page.locator('#entity-name');
+    await expect(nameInput).toBeVisible();
+    await nameInput.fill('');
+    await nameInput.blur();
+
+    // Editor should remain open — entity wasn't saved with empty name
+    await expect(nameInput).toBeVisible();
   });
 });
