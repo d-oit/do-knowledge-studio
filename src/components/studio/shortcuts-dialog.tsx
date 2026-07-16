@@ -236,7 +236,7 @@ export function ShortcutsDialog() {
                 </div>
                 <button
                   ref={closeBtnRef}
-                  onClick={() => setOpen(false)}
+                  onClick={() => { setOpen(false) }}
                   aria-label="Close shortcuts dialog"
                   className="rounded-md p-1.5 text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
                 >

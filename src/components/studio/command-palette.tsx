@@ -51,7 +51,9 @@ export function CommandPalette() {
       if (e.key === 'Escape' && commandOpen) close()
     }
     window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
+    return () => {
+      window.removeEventListener('keydown', handler)
+    }
   }, [commandOpen, setCommandOpen, close])
 
   const goTo = (v: ViewId) => {
