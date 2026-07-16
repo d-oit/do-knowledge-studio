@@ -343,7 +343,7 @@ export function GraphView() {
           </div>
           <div className="space-y-1">
             {(Object.keys(ENTITY_TYPE_META) as (keyof typeof ENTITY_TYPE_META)[]).map((t) => {
-              const m = ENTITY_TYPE_META[t]
+              const m = ENTITY_TYPE_META[t as keyof typeof ENTITY_TYPE_META]
               return (
                 <div key={t} className="flex items-center gap-2 text-label text-ink-soft">
                   <span className={cn('h-2 w-2 rounded-full', m.dot)} />

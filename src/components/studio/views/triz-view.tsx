@@ -27,7 +27,7 @@ export function TrizView() {
     if (improving === null || worsening === null) return []
     const seed = (improving * 7 + worsening * 13) % trizPrinciples.length
     const picks = [seed, (seed + 1) % trizPrinciples.length, (seed + 3) % trizPrinciples.length]
-    return picks.map((i) => trizPrinciples[i]).filter((p, i, arr) => arr.findIndex(x => x.id === p.id) === i)
+    return picks.map((i) => trizPrinciples[i] ?? trizPrinciples[0]).filter((p, i, arr) => arr.findIndex(x => x.id === p.id) === i)
   }, [improving, worsening])
 
   const filteredParams = useMemo(
@@ -150,13 +150,13 @@ export function TrizView() {
               Your contradiction
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <ContradictionChip n={improving + 1} label={trizParameters[improving]} accent="saffron" />
+              <ContradictionChip n={improving + 1} label={trizParameters[improving] ?? ''} accent="saffron" />
               <ArrowRight className="h-4 w-4 shrink-0 text-ink-faint" />
-              <ContradictionChip n={worsening + 1} label={trizParameters[worsening]} accent="clay" />
+              <ContradictionChip n={worsening + 1} label={trizParameters[worsening] ?? ''} accent="clay" />
             </div>
             <p className="mt-3 text-[13px] leading-relaxed text-ink-mute">
-              You want to improve <strong className="text-ink-soft">{trizParameters[improving].toLowerCase()}</strong>,
-              but doing so worsens <strong className="text-ink-soft">{trizParameters[worsening].toLowerCase()}</strong>.
+              You want to improve <strong className="text-ink-soft">{trizParameters[improving]?.toLowerCase() ?? ''}</strong>,
+              but doing so worsens <strong className="text-ink-soft">{trizParameters[worsening]?.toLowerCase() ?? ''}</strong>.
               TRIZ suggests these inventive principles:
             </p>
           </div>
@@ -279,10 +279,11 @@ function ParamPicker({
   filtered: { label: string; index: number }[]
   disabled: number[]
 }) {
-  const accents = {
+  const accentMap = {
     saffron: { dot: 'bg-saffron', text: 'text-saffron-deep', bg: 'bg-saffron-soft' },
     clay: { dot: 'bg-clay', text: 'text-clay', bg: 'bg-rose-100 dark:bg-rose-950/40' },
-  }[accent]
+  } as const
+  const accents = accentMap[accent as keyof typeof accentMap]
 
   return (
     <div className="rounded-lg border border-border bg-card p-4">

@@ -157,7 +157,7 @@ export function ShortcutsDialog() {
       // We have a pending "g" — wait for the second key.
       if (key in G_SEQ_MAP) {
         e.preventDefault()
-        const v = G_SEQ_MAP[key]
+        const v = G_SEQ_MAP[key as keyof typeof G_SEQ_MAP]
         // Read currentView from the store directly to avoid stale closure
         // captures when the effect re-binds between keystrokes.
         const liveView = useStudioStore.getState().currentView
