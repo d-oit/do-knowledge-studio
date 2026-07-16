@@ -27,7 +27,7 @@ export function Topbar() {
     setMobileDrawerOpen,
     setMobilePanelView,
   } = useStudioStore()
-  const meta = VIEW_TITLES[currentView]
+  const meta = VIEW_TITLES[currentView as keyof typeof VIEW_TITLES]
 
   // Inline input doubles as a quick filter for the Library + right-panel SearchPanel,
   // and as a launcher for the command palette (via ⌘K or the kbd chip).
