@@ -13,4 +13,9 @@ describe('getAdapter', () => {
     expect(adapter.id).toBe('ollama')
     expect(adapter.requiresKey).toBe(false)
   })
+
+  it('adapters have sendStream method', () => {
+    expect(typeof getAdapter('openrouter').sendStream).toBe('function')
+    expect(typeof getAdapter('ollama').sendStream).toBe('function')
+  })
 })

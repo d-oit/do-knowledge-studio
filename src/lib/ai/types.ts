@@ -25,6 +25,10 @@ export interface ProviderAdapter {
   readonly id: ProviderId
   readonly requiresKey: boolean
   send(request: ChatRequest): Promise<ChatResult>
+  sendStream(
+    request: ChatRequest,
+    onChunk: (chunk: string) => void,
+  ): Promise<ChatResult>
 }
 
 export const PROVIDER_LABELS: Record<ProviderId, string> = {
