@@ -1,6 +1,6 @@
 # Plans Index
 
-**Updated**: 2026-07-15
+**Updated**: 2026-07-16
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
 ## Remaining Work
@@ -11,10 +11,15 @@ The items below are lower-priority future work.
 | Priority | Item | Description | Status |
 |----------|------|-------------|--------|
 | P3 | CodeMirror evaluation | Spike to validate textarea vs CodeMirror for the markdown editor | OPEN |
-| P3 | E2E test harness | Add Playwright or Cypress for keyboard/motion/a11y testing | OPEN |
 | P3 | Component consolidation | Extract Button, Field, Dialog primitives with shared behavior | OPEN |
 | P3 | Advanced TRIZ features | Full contradiction matrix and inventive principles UI | OPEN |
 | P3 | Phase 8 collaboration | P2P sync, multi-user, voice-to-knowledge | OPEN |
+
+## Completed - 2026-07-16 Session (Plan 060, PR #446)
+
+| Plan | Description | PRs |
+|------|-------------|-----|
+| 060 | E2E test harness: Playwright — 58 tests for keyboard, a11y, CRUD, search, command palette, responsive | 446 |
 
 ## Completed - 2026-07-15 Session (Plan 059, PR #445)
 
@@ -83,13 +88,16 @@ The items below are lower-priority future work.
 | 046 | Test coverage expansion | - |
 | 047 | Master GOAP closeout | - |
 
-## Key Metrics (2026-07-15)
+## Key Metrics (2026-07-16)
 
 | Metric | Value |
 |--------|-------|
-| Test files | 12 |
-| Total tests | 130 |
-| CI checks | 21/21 passing |
+| Unit test files | 15 |
+| Unit tests | 176 |
+| E2E test files | 8 |
+| E2E tests | 58 |
+| Total tests | 234 |
+| CI checks | 22/22 passing |
 | LOC violations | 0 |
 | Lint warnings | 0 |
 | Type errors | 0 |
@@ -103,6 +111,7 @@ The items below are lower-priority future work.
 | `text-[9px]` remaining | 0 (all mapped to `text-badge` token) |
 | Math.random() in views | 0 (replaced with seededRandom) |
 | Toast-only controls | 0 (PDF/DOCX now honest disabled cards) |
+| E2E coverage | keyboard, a11y, CRUD, search, command palette, responsive |
 
 ## ADR Updates (2026-07-14)
 
