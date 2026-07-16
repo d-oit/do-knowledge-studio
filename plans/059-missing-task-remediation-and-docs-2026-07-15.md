@@ -1,5 +1,8 @@
 # 059 — Missing Task Remediation & Documentation Alignment (2026-07-15)
 
+> **Note**: This plan is superseded by plan 059 (P3 perf/disclosure/locale) for the
+> remaining open tasks. See PR #445 for the final completions.
+
 ## Summary
 
 Address discrepancies found during plans/ folder analysis and GitHub CI audit.

@@ -42,7 +42,7 @@ export function AIHarnessView() {
   const [apiKey, setApiKey] = useState('')
   const [showKey, setShowKey] = useState(false)
   const [augment, setAugment] = useState(true)
-  const [showSettings, setShowSettings] = useState(true)
+  const [showSettings, setShowSettings] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [settingsLoaded, setSettingsLoaded] = useState(false)
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
 import { ENTITY_TYPE_META, type EntityType } from '@/lib/studio/types'
 import {
@@ -54,10 +54,10 @@ export function LibraryView() {
   const filteredEntities = useFilteredEntities()
   const reducedMotion = useReducedMotion()
 
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setSearchQuery('')
     setTypeFilter('all')
-  }
+  }, [setSearchQuery, setTypeFilter])
 
   return (
     <div className={cn('mx-auto px-6 py-6 lg:px-10 lg:py-8', rightPanelOpen ? 'max-w-5xl' : 'max-w-6xl')}>
@@ -237,7 +237,7 @@ export function LibraryView() {
                   </div>
                   <div className="flex items-center gap-1 text-caption text-ink-faint">
                     <Clock className="h-2.5 w-2.5" />
-                    {new Date(e.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    {new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(new Date(e.updatedAt))}
                   </div>
                 </div>
               </motion.button>
@@ -308,7 +308,7 @@ export function LibraryView() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right text-label text-ink-faint">
-                      {new Date(e.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      {new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(new Date(e.updatedAt))}
                     </td>
                   </tr>
                 )
