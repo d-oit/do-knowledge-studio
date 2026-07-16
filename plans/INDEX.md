@@ -10,10 +10,15 @@ The items below are lower-priority future work.
 
 | Priority | Item | Description | Status |
 |----------|------|-------------|--------|
-| P3 | CodeMirror evaluation | Spike to validate textarea vs CodeMirror for the markdown editor | OPEN |
 | P3 | Component consolidation | Extract Button, Field, Dialog primitives with shared behavior | OPEN |
 | P3 | Advanced TRIZ features | Full contradiction matrix and inventive principles UI | OPEN |
 | P3 | Phase 8 collaboration | P2P sync, multi-user, voice-to-knowledge | OPEN |
+
+## Completed - 2026-07-16 Session (Plan 061, PR #447)
+
+| Plan | Description | PRs |
+|------|-------------|-----|
+| 061 | CodeMirror 6 evaluation spike: recommendation keep textarea, revisit when syntax-aware/multi-cursor needed | 447 |
 
 ## Completed - 2026-07-16 Session (Plan 060, PR #446)
 
