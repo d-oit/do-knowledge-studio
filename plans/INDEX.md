@@ -10,9 +10,14 @@ The items below are lower-priority future work.
 
 | Priority | Item | Description | Status |
 |----------|------|-------------|--------|
-| P3 | Component consolidation | Extract Button, Field, Dialog primitives with shared behavior | OPEN |
 | P3 | Advanced TRIZ features | Full contradiction matrix and inventive principles UI | OPEN |
 | P3 | Phase 8 collaboration | P2P sync, multi-user, voice-to-knowledge | OPEN |
+
+## Completed - 2026-07-16 Session (Plan 062, PR #448)
+
+| Plan | Description | PRs |
+|------|-------------|-----|
+| 062 | Component consolidation: Button, FieldLabel, TextInput, Divider, ToolbarBtn, ToggleButtonGroup primitives | 448 |
 
 ## Completed - 2026-07-16 Session (Plan 061, PR #447)
 
