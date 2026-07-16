@@ -260,7 +260,7 @@ export function EditorView() {
     setNewTag('')
   }
 
-  const meta = ENTITY_TYPE_META[type]
+  const meta = ENTITY_TYPE_META[type as keyof typeof ENTITY_TYPE_META]
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-6 lg:px-10 lg:py-8">

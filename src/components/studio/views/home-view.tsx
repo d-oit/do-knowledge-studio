@@ -244,7 +244,7 @@ export function HomeView() {
           <div className="rounded-lg border border-border bg-card p-4">
             <div className="space-y-3">
               {typeEntries.map(([type, count]) => {
-                const meta = ENTITY_TYPE_META[type]
+                const meta = ENTITY_TYPE_META[type as keyof typeof ENTITY_TYPE_META]
                 const pct = stats.total > 0 ? (count / stats.total) * 100 : 0
                 return (
                   <div key={type}>
