@@ -416,7 +416,7 @@ export function ExportView() {
 
             <div className="mt-5 flex justify-end gap-2">
               <button
-                onClick={() => setShowPassword(false)}
+                onClick={() => { setShowPassword(false) }}
                 className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
               >
                 Cancel
@@ -464,7 +464,7 @@ export function ExportView() {
             <div className="flex justify-end gap-2">
               <button
                 ref={resetCancelRef}
-                onClick={() => setShowResetConfirm(false)}
+                onClick={() => { setShowResetConfirm(false) }}
                 className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
               >
                 Cancel

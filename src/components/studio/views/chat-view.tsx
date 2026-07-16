@@ -217,7 +217,7 @@ export function ChatView() {
             {SUGGESTIONS.map((s) => (
               <button
                 key={s.label}
-                onClick={() => handleSend(s.query)}
+                onClick={() => { handleSend(s.query) }}
                 className="rounded-full border border-border bg-background px-3 py-1 text-[12px] font-medium text-ink-soft transition-all hover:border-saffron/40 hover:text-ink press-scale focus-ring"
               >
                 {s.label}
