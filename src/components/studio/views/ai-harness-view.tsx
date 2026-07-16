@@ -24,7 +24,7 @@ import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { loadAISettings, saveAISettings, type AIProvider } from '@/lib/studio/ai-settings'
 import {
-  sendChat,
+  sendChatStream,
   fetchOllamaModels,
   buildMessages,
   type ChatMessage,
@@ -133,25 +133,55 @@ export function AIHarnessView() {
     abortRef.current = controller
 
     try {
+      const { extractUrls, fetchUrls } = await import('@/lib/ai/research')
+      let researchResults: import('@/lib/ai/research').ResearchResult[] | undefined
+
+      if (allowWebResearch) {
+        const urls = extractUrls(input)
+        if (urls.length > 0) {
+          toast.info(`Fetching ${urls.length} URL(s)…`)
+          researchResults = await fetchUrls(urls, controller.signal)
+          const failed = researchResults.filter((r) => !r.success)
+          if (failed.length > 0) {
+            toast.warning(`Failed to fetch ${failed.length} URL(s)`)
+          }
+        }
+      }
+
       const apiMessages = buildMessages(
         messages.filter((m) => m.role !== 'system'),
         input,
         entities,
         claims,
         augment,
+        researchResults,
       )
 
-      const result = await sendChat({
-        provider,
-        model: effectiveModel,
-        apiKey,
-        messages: apiMessages,
-        signal: controller.signal,
-        ollamaCpuOnly,
-        ollamaBaseUrl,
-      })
+      let streamedContent = ''
+      setMessages((m) => [...m, { role: 'assistant', content: '' }])
 
-      setMessages((m) => [...m, { role: 'assistant', content: result.content }])
+      await sendChatStream(
+        {
+          provider,
+          model: effectiveModel,
+          apiKey,
+          messages: apiMessages,
+          signal: controller.signal,
+          ollamaCpuOnly,
+          ollamaBaseUrl,
+        },
+        (chunk) => {
+          streamedContent += chunk
+          setMessages((m) => {
+            const updated = [...m]
+            updated[updated.length - 1] = {
+              role: 'assistant',
+              content: streamedContent,
+            }
+            return updated
+          })
+        },
+      )
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return
       const msg = err instanceof Error ? err.message : 'Unknown error'

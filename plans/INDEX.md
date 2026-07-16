@@ -12,6 +12,18 @@ The items below are lower-priority future work.
 |----------|------|-------------|--------|
 | P3 | Phase 8 collaboration | P2P sync, multi-user, voice-to-knowledge | OPEN |
 
+## Completed - 2026-07-16 Session (Plan 065 B2+C1-C4, PR #462)
+
+| Plan | Description | PRs |
+|------|-------------|-----|
+| 065 | AI streaming (SSE/NDJSON) + Jina Reader web research | 462 |
+
+## Completed - 2026-07-16 Session (Plan 065, PR #461)
+
+| Plan | Description | PRs |
+|------|-------------|-----|
+| 065 | AI provider consolidation: OpenRouter + Ollama CPU-only, typed adapters, BM25 context, Zod validation | 461 |
+
 ## Completed - 2026-07-16 Session (Plan 063, PR #449)
 
 | Plan | Description | PRs |
@@ -107,11 +119,11 @@ The items below are lower-priority future work.
 
 | Metric | Value |
 |--------|-------|
-| Unit test files | 15 |
-| Unit tests | 176 |
+| Unit test files | 18 |
+| Unit tests | 188 |
 | E2E test files | 8 |
 | E2E tests | 58 |
-| Total tests | 234 |
+| Total tests | 246 |
 | CI checks | 22/22 passing |
 | LOC violations | 0 |
 | Lint warnings | 0 |

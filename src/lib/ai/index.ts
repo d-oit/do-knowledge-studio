@@ -14,5 +14,5 @@ export {
   DEFAULT_OLLAMA_BASE_URL,
 } from './types'
 
-export { getAdapter, sendChat, fetchOllamaModels } from './providers'
+export { getAdapter, sendChat, sendChatStream, fetchOllamaModels } from './providers'
 export { buildSystemPrompt, buildMessages } from './context'
