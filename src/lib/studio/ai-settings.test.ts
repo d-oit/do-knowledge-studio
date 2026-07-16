@@ -2,12 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { getProviderEndpoint } from './ai-settings'
 
 describe('getProviderEndpoint', () => {
-  it('returns OpenAI endpoint', () => {
-    expect(getProviderEndpoint('openai')).toBe('https://api.openai.com/v1/chat/completions')
-  })
-
-  it('returns Anthropic endpoint', () => {
-    expect(getProviderEndpoint('anthropic')).toBe('https://api.anthropic.com/v1/messages')
+  it('returns OpenRouter endpoint', () => {
+    expect(getProviderEndpoint('openrouter')).toBe('https://openrouter.ai/api/v1/chat/completions')
   })
 
   it('returns Ollama endpoint', () => {
