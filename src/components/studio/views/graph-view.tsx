@@ -16,6 +16,7 @@ import {
   Download,
 } from 'lucide-react'
 import { useState, useRef, useMemo, useCallback } from 'react'
+import { ToggleButtonGroup, Divider } from '../ui/shared-primitives'
 
 /**
  * Deterministic hash → [0, 1) float for stable graph node positions.
@@ -187,7 +188,7 @@ export function GraphView() {
     <div className="flex h-full flex-col">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-1.5 border-b border-border bg-card/50 px-5 py-2.5">
-        <div className="flex items-center gap-0.5 rounded-md border border-border p-0.5">
+        <ToggleButtonGroup label="Layout">
           {(['force', 'circular', 'hierarchical'] as LayoutType[]).map((l) => (
             <button
               key={l}
@@ -204,7 +205,7 @@ export function GraphView() {
               {l}
             </button>
           ))}
-        </div>
+        </ToggleButtonGroup>
 
         <Divider />
 
@@ -388,8 +389,4 @@ function ToolbarBtn({
       <span className="hidden sm:inline">{label}</span>
     </button>
   )
-}
-
-function Divider() {
-  return <span className="mx-1 h-4 w-px bg-border" />
 }

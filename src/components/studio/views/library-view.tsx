@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
 import { ENTITY_TYPE_META, type EntityType } from '@/lib/studio/types'
+import { ToggleButtonGroup } from '../ui/shared-primitives'
 import {
   FileText,
   Lightbulb,
@@ -84,7 +85,7 @@ export function LibraryView() {
           )}
         </div>
 
-        <div className="flex items-center gap-1 rounded-md border border-border p-0.5" role="group" aria-label="Filter by type">
+        <ToggleButtonGroup label="Filter by type">
           {FILTERS.map((f) => (
             <button
               key={f.id}
@@ -100,9 +101,9 @@ export function LibraryView() {
               {f.label}
             </button>
           ))}
-        </div>
+        </ToggleButtonGroup>
 
-        <div className="flex items-center gap-1 rounded-md border border-border p-0.5" role="group" aria-label="View mode">
+        <ToggleButtonGroup label="View mode">
           <button
             onClick={() => { setViewMode('grid') }}
             className={cn(
@@ -125,7 +126,7 @@ export function LibraryView() {
           >
             <ListIcon className="h-4 w-4" />
           </button>
-        </div>
+        </ToggleButtonGroup>
 
         <button
           onClick={() => setSortDir(sortDir === 'asc' ? 'desc' : 'asc')}
