@@ -33,3 +33,5 @@ engines:
       - "ESLint8_security_detect-non-literal-fs-filename"
       - "ESLint8_no-unsanitized-property-assignment"
       - "ESLint8_no-unsanitized-method-call"
+      - "SecurityJs_prod.generic_object_injection_sink"
+      - "SecurityJs_prod.variable_assigned_to_object_injection_sink"
