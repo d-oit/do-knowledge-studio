@@ -27,7 +27,7 @@ export function TrizView() {
     if (improving === null || worsening === null) return []
     const seed = (improving * 7 + worsening * 13) % trizPrinciples.length
     const picks = [seed, (seed + 1) % trizPrinciples.length, (seed + 3) % trizPrinciples.length]
-    return picks.map((i) => trizPrinciples[i] ?? trizPrinciples[0]).filter((p, i, arr) => arr.findIndex(x => x.id === p.id) === i)
+    return picks.map((i) => trizPrinciples[i as number] ?? trizPrinciples[0]).filter((p, i, arr) => arr.findIndex(x => x.id === p.id) === i)
   }, [improving, worsening])
 
   const filteredParams = useMemo(
@@ -150,13 +150,13 @@ export function TrizView() {
               Your contradiction
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <ContradictionChip n={improving + 1} label={trizParameters[improving] ?? ''} accent="saffron" />
+              <ContradictionChip n={improving + 1} label={trizParameters[improving as number] ?? ''} accent="saffron" />
               <ArrowRight className="h-4 w-4 shrink-0 text-ink-faint" />
-              <ContradictionChip n={worsening + 1} label={trizParameters[worsening] ?? ''} accent="clay" />
+              <ContradictionChip n={worsening + 1} label={trizParameters[worsening as number] ?? ''} accent="clay" />
             </div>
             <p className="mt-3 text-[13px] leading-relaxed text-ink-mute">
-              You want to improve <strong className="text-ink-soft">{trizParameters[improving]?.toLowerCase() ?? ''}</strong>,
-              but doing so worsens <strong className="text-ink-soft">{trizParameters[worsening]?.toLowerCase() ?? ''}</strong>.
+              You want to improve <strong className="text-ink-soft">{trizParameters[improving as number]?.toLowerCase() ?? ''}</strong>,
+              but doing so worsens <strong className="text-ink-soft">{trizParameters[worsening as number]?.toLowerCase() ?? ''}</strong>.
               TRIZ suggests these inventive principles:
             </p>
           </div>
@@ -342,10 +342,11 @@ function ParamPicker({
 }
 
 function ContradictionChip({ n, label, accent }: { n: number; label: string; accent: 'saffron' | 'clay' }) {
-  const accents = {
+  const accentStyles = {
     saffron: 'bg-saffron-soft text-saffron-deep border-saffron/30',
     clay: 'bg-rose-100 text-clay border-clay/30 dark:bg-rose-950/40 dark:text-rose-300',
-  }[accent]
+  } as const
+  const accents = accentStyles[accent as keyof typeof accentStyles]
   return (
     <div className={cn('flex items-center gap-2 rounded-lg border px-3 py-2', accents)}>
       <span className="flex h-6 w-6 items-center justify-center rounded bg-paper-raised font-mono text-label font-bold text-ink">
