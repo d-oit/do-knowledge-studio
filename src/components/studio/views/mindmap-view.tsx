@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { cn } from '@/lib/utils'
+import { Divider } from '../ui/shared-primitives'
 import { todayStamp, downloadBlob } from './export-helpers'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -420,8 +421,4 @@ function ToolbarBtn({
       <span className="hidden md:inline">{label}</span>
     </button>
   )
-}
-
-function Divider() {
-  return <span className="mx-1 h-4 w-px bg-border" />
 }

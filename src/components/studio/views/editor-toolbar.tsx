@@ -9,6 +9,7 @@ import {
   Code,
   Link2,
 } from 'lucide-react'
+import { Divider } from '../ui/shared-primitives'
 
 function ToolbarButton({
   icon: Icon,
@@ -30,10 +31,6 @@ function ToolbarButton({
       <Icon className="h-4 w-4" />
     </button>
   )
-}
-
-function Divider() {
-  return <span className="mx-1 h-4 w-px bg-border" />
 }
 
 export function EditorToolbar({
