@@ -1,21 +1,29 @@
+import type { ProviderId } from '@/lib/ai/types'
+
 const STORAGE_KEY = 'dks-ai-settings'
 const CRYPTO_KEY_STORAGE = 'dks-ai-enc-key'
 
-export type AIProvider = 'openai' | 'anthropic' | 'ollama'
+export type AIProvider = ProviderId
 
 export interface AISettings {
   provider: AIProvider
   model: string
   apiKey: string
   augmentWithLocal: boolean
+  ollamaCpuOnly: boolean
+  allowWebResearch: boolean
+  ollamaBaseUrl: string
 }
 
 interface StoredSettings {
-  provider: AIProvider
+  provider: string
   model: string
   encryptedApiKey?: string
   apiKey?: string
   augmentWithLocal: boolean
+  ollamaCpuOnly?: boolean
+  allowWebResearch?: boolean
+  ollamaBaseUrl?: string
 }
 
 const DEFAULT_SETTINGS: AISettings = {
@@ -23,6 +31,28 @@ const DEFAULT_SETTINGS: AISettings = {
   model: 'llama3',
   apiKey: '',
   augmentWithLocal: true,
+  ollamaCpuOnly: false,
+  allowWebResearch: false,
+  ollamaBaseUrl: 'http://localhost:11434',
+}
+
+function migrateProvider(stored: StoredSettings): AIProvider {
+  if (stored.provider === 'openrouter' || stored.provider === 'ollama') {
+    return stored.provider as AIProvider
+  }
+  return 'openrouter'
+}
+
+function migrateModel(provider: AIProvider, storedModel: string): string {
+  if (provider === 'openrouter') {
+    if (storedModel === 'gpt-4o' || storedModel === 'gpt-4o-mini' || storedModel === 'gpt-3.5-turbo') {
+      return 'openrouter/free'
+    }
+    if (storedModel.startsWith('claude-')) {
+      return `anthropic/${storedModel}`
+    }
+  }
+  return storedModel
 }
 
 async function getOrCreateEncryptionKey(): Promise<CryptoKey> {
@@ -71,10 +101,21 @@ export async function loadAISettings(): Promise<AISettings> {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return DEFAULT_SETTINGS
     const stored = JSON.parse(raw) as StoredSettings
+    const provider = migrateProvider(stored)
+    const model = migrateModel(provider, stored.model)
     const apiKey = stored.encryptedApiKey
       ? await decryptApiKey(stored.encryptedApiKey)
       : (stored.apiKey ?? '')
-    return { ...DEFAULT_SETTINGS, ...stored, apiKey }
+    return {
+      ...DEFAULT_SETTINGS,
+      ...stored,
+      provider,
+      model,
+      apiKey,
+      ollamaCpuOnly: stored.ollamaCpuOnly ?? false,
+      allowWebResearch: stored.allowWebResearch ?? false,
+      ollamaBaseUrl: stored.ollamaBaseUrl ?? DEFAULT_SETTINGS.ollamaBaseUrl,
+    }
   } catch (error) {
     console.error('Failed to load AI settings:', error instanceof Error ? error.message : error)
     return DEFAULT_SETTINGS
@@ -90,6 +131,9 @@ export async function saveAISettings(settings: AISettings): Promise<void> {
       model: settings.model,
       encryptedApiKey,
       augmentWithLocal: settings.augmentWithLocal,
+      ollamaCpuOnly: settings.ollamaCpuOnly,
+      allowWebResearch: settings.allowWebResearch,
+      ollamaBaseUrl: settings.ollamaBaseUrl,
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore))
   } catch (error) {
@@ -99,10 +143,8 @@ export async function saveAISettings(settings: AISettings): Promise<void> {
 
 export function getProviderEndpoint(provider: AIProvider): string {
   switch (provider) {
-    case 'openai':
-      return 'https://api.openai.com/v1/chat/completions'
-    case 'anthropic':
-      return 'https://api.anthropic.com/v1/messages'
+    case 'openrouter':
+      return 'https://openrouter.ai/api/v1/chat/completions'
     case 'ollama':
       return 'http://localhost:11434/api/chat'
   }

@@ -15,12 +15,27 @@ import {
   BookOpen,
   Sparkles,
   Zap,
+  RefreshCw,
+  Globe,
 } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { loadAISettings, saveAISettings, type AIProvider } from '@/lib/studio/ai-settings'
+import {
+  sendChat,
+  fetchOllamaModels,
+  buildMessages,
+  type ChatMessage,
+} from '@/lib/ai'
+import {
+  PROVIDER_LABELS,
+  OPENROUTER_DEFAULT_MODELS,
+  OLLAMA_DEFAULT_MODELS,
+  DEFAULT_MODEL,
+  DEFAULT_OLLAMA_BASE_URL,
+} from '@/lib/ai/types'
 
 interface ProviderOption {
   id: AIProvider
@@ -30,29 +45,35 @@ interface ProviderOption {
 }
 
 const PROVIDERS: ProviderOption[] = [
-  { id: 'openai', label: 'OpenAI', models: ['gpt-4o', 'gpt-4o-mini', 'gpt-3.5-turbo'], requiresKey: true },
-  { id: 'anthropic', label: 'Anthropic', models: ['claude-sonnet-4', 'claude-haiku-3.5', 'claude-opus-4'], requiresKey: true },
-  { id: 'ollama', label: 'Ollama (local)', models: ['llama3', 'mistral', 'qwen2.5', 'gemma2'], requiresKey: false },
+  { id: 'openrouter', label: PROVIDER_LABELS.openrouter, models: OPENROUTER_DEFAULT_MODELS, requiresKey: true },
+  { id: 'ollama', label: PROVIDER_LABELS.ollama, models: OLLAMA_DEFAULT_MODELS, requiresKey: false },
 ]
 
 export function AIHarnessView() {
   const entities = useStudioStore((s) => s.entities)
+  const claims = useStudioStore((s) => s.claims)
   const [provider, setProvider] = useState<AIProvider>('ollama')
   const [model, setModel] = useState('llama3')
   const [apiKey, setApiKey] = useState('')
   const [showKey, setShowKey] = useState(false)
   const [augment, setAugment] = useState(true)
+  const [ollamaCpuOnly, setOllamaCpuOnly] = useState(false)
+  const [ollamaBaseUrl, setOllamaBaseUrl] = useState(DEFAULT_OLLAMA_BASE_URL)
+  const [allowWebResearch, setAllowWebResearch] = useState(false)
+  const [customModel, setCustomModel] = useState('')
   const [showSettings, setShowSettings] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [settingsLoaded, setSettingsLoaded] = useState(false)
-  const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([
+  const [ollamaModels, setOllamaModels] = useState<string[]>(OLLAMA_DEFAULT_MODELS)
+  const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: 'assistant',
       content:
-        'AI agent ready to assist with TRIZ analysis and knowledge synthesis. Ask me anything about your local knowledge base, or paste URLs to have me fetch and analyze external content.',
+        'AI agent ready to assist with knowledge synthesis. Ask me anything about your local knowledge base.',
     },
   ])
   const [input, setInput] = useState('')
+  const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     loadAISettings().then((saved) => {
@@ -60,6 +81,9 @@ export function AIHarnessView() {
       setModel(saved.model)
       setApiKey(saved.apiKey)
       setAugment(saved.augmentWithLocal)
+      setOllamaCpuOnly(saved.ollamaCpuOnly)
+      setAllowWebResearch(saved.allowWebResearch)
+      setOllamaBaseUrl(saved.ollamaBaseUrl)
       setSettingsLoaded(true)
     })
   }, [])
@@ -68,8 +92,29 @@ export function AIHarnessView() {
 
   useEffect(() => {
     if (!settingsLoaded) return
-    saveAISettings({ provider, model, apiKey, augmentWithLocal: augment })
-  }, [provider, model, apiKey, augment, settingsLoaded])
+    saveAISettings({
+      provider,
+      model,
+      apiKey,
+      augmentWithLocal: augment,
+      ollamaCpuOnly,
+      allowWebResearch,
+      ollamaBaseUrl,
+    })
+  }, [provider, model, apiKey, augment, ollamaCpuOnly, allowWebResearch, ollamaBaseUrl, settingsLoaded])
+
+  const handleRefreshOllamaModels = useCallback(async () => {
+    try {
+      const models = await fetchOllamaModels(ollamaBaseUrl)
+      setOllamaModels(models.length > 0 ? models : OLLAMA_DEFAULT_MODELS)
+      toast.success(`Found ${models.length} Ollama models`)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unknown error'
+      toast.error(`Failed to fetch Ollama models: ${msg}`)
+    }
+  }, [ollamaBaseUrl])
+
+  const effectiveModel = customModel.trim() || model
 
   const handleSend = async () => {
     if (!input.trim()) return
@@ -78,37 +123,41 @@ export function AIHarnessView() {
       return
     }
 
-    const userMsg = { role: 'user' as const, content: input }
+    const userMsg: ChatMessage = { role: 'user', content: input }
     setMessages((m) => [...m, userMsg])
     setInput('')
     setIsLoading(true)
 
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+
     try {
-      const apiMessages: { role: string; content: string }[] = [
-        ...messages.map((m) => ({ role: m.role, content: m.content })),
-        { role: 'user' as const, content: input },
-      ]
+      const apiMessages = buildMessages(
+        messages.filter((m) => m.role !== 'system'),
+        input,
+        entities,
+        claims,
+        augment,
+      )
 
-      if (augment && entities.length > 0) {
-        const contextParts = entities.slice(0, 20).map((e) => {
-          const tags = e.tags.length ? ` [${e.tags.join(', ')}]` : ''
-          const desc = e.description ? `: ${e.description.slice(0, 200)}` : ''
-          return `- ${e.name} (${e.type})${tags}${desc}`
-        })
-        const systemMsg = {
-          role: 'system',
-          content: `You are assisting with a local knowledge base. Below are relevant entities from the user's library. Use them to inform your answers when applicable.\n\nEntities:\n${contextParts.join('\n')}`,
-        }
-        apiMessages.unshift(systemMsg)
-      }
+      const result = await sendChat({
+        provider,
+        model: effectiveModel,
+        apiKey,
+        messages: apiMessages,
+        signal: controller.signal,
+        ollamaCpuOnly,
+        ollamaBaseUrl,
+      })
 
-      const response = await fetchProvider(provider, model, apiKey, apiMessages)
-      setMessages((m) => [...m, { role: 'assistant', content: response }])
+      setMessages((m) => [...m, { role: 'assistant', content: result.content }])
     } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return
       const msg = err instanceof Error ? err.message : 'Unknown error'
       setMessages((m) => [
         ...m,
-        { role: 'assistant', content: `[Error] ${msg}\n\nThis is a demo fallback. Connect a real provider to get actual responses.` },
+        { role: 'assistant', content: `[Error] ${msg}\n\nCheck your provider settings and try again.` },
       ])
     } finally {
       setIsLoading(false)
@@ -178,8 +227,9 @@ export function AIHarnessView() {
                     onChange={(e) => {
                       const p = e.target.value as AIProvider
                       setProvider(p)
-                      const opt = PROVIDERS.find((x) => x.id === p)
-                      if (opt) { setModel(opt.models[0]) }
+                      const defaultModel = p === 'openrouter' ? DEFAULT_MODEL.openrouter : DEFAULT_MODEL.ollama
+                      setModel(defaultModel)
+                      setCustomModel('')
                     }}
                     className="w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
                   >
@@ -192,17 +242,35 @@ export function AIHarnessView() {
                 </Field>
 
                 <Field label="Model" icon={Cpu}>
-                  <select
-                    value={model}
-                    onChange={(e) => { setModel(e.target.value) }}
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
-                  >
-                    {activeProvider.models.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex gap-1.5">
+                    <select
+                      value={model}
+                      onChange={(e) => { setModel(e.target.value); setCustomModel('') }}
+                      className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+                    >
+                      {(provider === 'ollama' ? ollamaModels : activeProvider.models).map((m) => (
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
+                      ))}
+                    </select>
+                    {provider === 'ollama' && (
+                      <button
+                        onClick={() => { void handleRefreshOllamaModels() }}
+                        className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-md border border-border bg-background text-ink-faint transition-colors hover:border-saffron/40 hover:text-saffron focus-ring"
+                        aria-label="Refresh Ollama models"
+                      >
+                        <RefreshCw className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    value={customModel}
+                    onChange={(e) => { setCustomModel(e.target.value) }}
+                    placeholder="Or type a custom model name"
+                    className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-mono text-ink-soft placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+                  />
                 </Field>
 
                 {activeProvider.requiresKey && (
@@ -212,7 +280,7 @@ export function AIHarnessView() {
                         type={showKey ? 'text' : 'password'}
                         value={apiKey}
                         onChange={(e) => { setApiKey(e.target.value) }}
-                        placeholder="sk-…"
+                        placeholder="sk-or-…"
                         className="w-full rounded-md border border-border bg-background px-3 py-2 pr-16 text-[12px] font-mono text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
                       />
                       <button
@@ -223,9 +291,49 @@ export function AIHarnessView() {
                       </button>
                     </div>
                     <p className="mt-1.5 text-caption text-ink-faint">
-                      Stored in this browser only — sent directly to the provider.
+                      Stored in this browser only — sent directly to OpenRouter.
                     </p>
                   </Field>
+                )}
+
+                {provider === 'ollama' && (
+                  <>
+                    <Field label="Ollama Base URL" icon={Globe}>
+                      <input
+                        type="text"
+                        value={ollamaBaseUrl}
+                        onChange={(e) => { setOllamaBaseUrl(e.target.value) }}
+                        placeholder={DEFAULT_OLLAMA_BASE_URL}
+                        className="w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-mono text-ink-soft placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+                      />
+                    </Field>
+
+                    <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <Cpu className="h-3.5 w-3.5 text-saffron" />
+                        <div>
+                          <div className="text-[12px] font-medium text-ink">CPU only</div>
+                          <div className="text-caption text-ink-faint">Disable GPU acceleration</div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => { setOllamaCpuOnly(!ollamaCpuOnly) }}
+                        className={cn(
+                          'relative h-5 w-9 overflow-hidden rounded-full transition-colors',
+                          ollamaCpuOnly ? 'bg-saffron' : 'bg-border',
+                        )}
+                        role="switch"
+                        aria-checked={ollamaCpuOnly}
+                      >
+                        <span
+                          className={cn(
+                            'absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform',
+                            ollamaCpuOnly ? 'translate-x-[18px]' : 'translate-x-0',
+                          )}
+                        />
+                      </button>
+                    </div>
+                  </>
                 )}
 
                 <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2">
@@ -233,7 +341,7 @@ export function AIHarnessView() {
                     <BookOpen className="h-3.5 w-3.5 text-saffron" />
                     <div>
                       <div className="text-[12px] font-medium text-ink">Augment with local knowledge</div>
-                      <div className="text-caption text-ink-faint">RAG over your entities</div>
+                      <div className="text-caption text-ink-faint">BM25 retrieval over your entities</div>
                     </div>
                   </div>
                   <button
@@ -254,9 +362,43 @@ export function AIHarnessView() {
                   </button>
                 </div>
 
+                <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <Globe className="h-3.5 w-3.5 text-saffron" />
+                    <div>
+                      <div className="text-[12px] font-medium text-ink">Allow web research</div>
+                      <div className="text-caption text-ink-faint">Fetch URLs via Jina Reader</div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => { setAllowWebResearch(!allowWebResearch) }}
+                    className={cn(
+                      'relative h-5 w-9 overflow-hidden rounded-full transition-colors',
+                      allowWebResearch ? 'bg-saffron' : 'bg-border',
+                    )}
+                    role="switch"
+                    aria-checked={allowWebResearch}
+                  >
+                    <span
+                      className={cn(
+                        'absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform',
+                        allowWebResearch ? 'translate-x-[18px]' : 'translate-x-0',
+                      )}
+                    />
+                  </button>
+                </div>
+
                 <button
                   onClick={() => {
-                    saveAISettings({ provider, model, apiKey, augmentWithLocal: augment })
+                    saveAISettings({
+                      provider,
+                      model,
+                      apiKey,
+                      augmentWithLocal: augment,
+                      ollamaCpuOnly,
+                      allowWebResearch,
+                      ollamaBaseUrl,
+                    })
                     toast.success('Settings saved')
                   }}
                   className="w-full rounded-md bg-primary px-3 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
@@ -279,7 +421,7 @@ export function AIHarnessView() {
                   <Cpu className="h-3 w-3 text-ink-faint" />
                   Active model
                 </span>
-                <span className="font-mono text-ink-soft">{model}</span>
+                <span className="font-mono text-ink-soft">{effectiveModel}</span>
               </div>
             </div>
           </motion.aside>
@@ -360,7 +502,7 @@ export function AIHarnessView() {
                   <Sparkles className="h-2.5 w-2.5" />
                   {augment ? 'Augmented with local knowledge' : 'No augmentation'}
                 </span>
-                <span className="font-mono">{model}</span>
+                <span className="font-mono">{effectiveModel}</span>
               </div>
             </div>
           </div>
@@ -368,54 +510,6 @@ export function AIHarnessView() {
       </div>
     </div>
   )
-}
-
-async function fetchProvider(
-  provider: AIProvider,
-  model: string,
-  apiKey: string,
-  messages: { role: string; content: string }[],
-): Promise<string> {
-  if (provider === 'ollama') {
-    const res = await fetch('http://localhost:11434/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model, messages, stream: false }),
-    })
-    if (!res.ok) throw new Error(`Ollama returned ${res.status}`)
-    const data = await res.json()
-    return data.message?.content ?? '(Empty response)'
-  }
-
-  if (provider === 'openai') {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ model, messages }),
-    })
-    if (!res.ok) throw new Error(`OpenAI returned ${res.status}`)
-    const data = await res.json()
-    return data.choices?.[0]?.message?.content ?? '(Empty response)'
-  }
-
-  if (provider === 'anthropic') {
-    const systemMsg = messages.find((m) => m.role === 'system')?.content ?? ''
-    const chatMsgs = messages.filter((m) => m.role !== 'system')
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({ model, max_tokens: 1024, system: systemMsg, messages: chatMsgs }),
-    })
-    if (!res.ok) throw new Error(`Anthropic returned ${res.status}`)
-    const data = await res.json()
-    return data.content?.[0]?.text ?? '(Empty response)'
-  }
-
-  throw new Error(`Unknown provider: ${provider}`)
 }
 
 function Field({
