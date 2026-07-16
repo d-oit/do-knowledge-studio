@@ -35,3 +35,5 @@ engines:
       - "ESLint8_no-unsanitized-method-call"
       - "SecurityJs_prod.generic_object_injection_sink"
       - "SecurityJs_prod.variable_assigned_to_object_injection_sink"
+  opengrep:
+    enabled: true
