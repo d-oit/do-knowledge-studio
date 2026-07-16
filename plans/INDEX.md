@@ -16,6 +16,12 @@ The items below are lower-priority future work.
 | P3 | Advanced TRIZ features | Full contradiction matrix and inventive principles UI | OPEN |
 | P3 | Phase 8 collaboration | P2P sync, multi-user, voice-to-knowledge | OPEN |
 
+## Completed - 2026-07-15 Session (Plan 059, PR #445)
+
+| Plan | Description | PRs |
+|------|-------------|-----|
+| 059 | P3 perf/disclosure/locale: Intl.DateTimeFormat, settings collapsed, useCallback clearFilters | 445 |
+
 ## Completed - 2026-07-15 Session (Plan 059, PR #438)
 
 | Plan | Description | PRs |
