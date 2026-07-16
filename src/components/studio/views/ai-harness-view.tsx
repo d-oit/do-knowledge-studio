@@ -227,7 +227,8 @@ export function AIHarnessView() {
                     onChange={(e) => {
                       const p = e.target.value as AIProvider
                       setProvider(p)
-                      setModel(DEFAULT_MODEL[p])
+                      const defaultModel = p === 'openrouter' ? DEFAULT_MODEL.openrouter : DEFAULT_MODEL.ollama
+                      setModel(defaultModel)
                       setCustomModel('')
                     }}
                     className="w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
@@ -255,7 +256,7 @@ export function AIHarnessView() {
                     </select>
                     {provider === 'ollama' && (
                       <button
-                        onClick={handleRefreshOllamaModels}
+                        onClick={() => { void handleRefreshOllamaModels() }}
                         className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-md border border-border bg-background text-ink-faint transition-colors hover:border-saffron/40 hover:text-saffron focus-ring"
                         aria-label="Refresh Ollama models"
                       >

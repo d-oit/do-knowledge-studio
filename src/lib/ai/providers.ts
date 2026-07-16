@@ -104,6 +104,7 @@ class OllamaAdapter implements ProviderAdapter {
       body.options = { num_gpu: 0 }
     }
 
+    // URL is validated to localhost-only by validateOllamaUrl above
     const res = await fetch(`${validatedUrl}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -142,6 +143,7 @@ export async function fetchOllamaModels(
   signal?: AbortSignal,
 ): Promise<string[]> {
   const validatedUrl = validateOllamaUrl(baseUrl)
+  // URL is validated to localhost-only by validateOllamaUrl above
   const res = await fetch(`${validatedUrl}/api/tags`, { signal })
   if (!res.ok) throw new Error(`Ollama tags error ${res.status}`)
   const data = OllamaTagsSchema.parse(await res.json())
