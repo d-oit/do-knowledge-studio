@@ -83,19 +83,23 @@ async function networkFirst(request) {
 }
 
 async function staleWhileRevalidate(request) {
-  const cache = await caches.open(CACHE_NAME);
-  const cached = await cache.match(request);
+  try {
+    const cache = await caches.open(CACHE_NAME);
+    const cached = await cache.match(request);
 
-  const fetchPromise = fetch(request)
-    .then((response) => {
-      if (response.ok) {
-        cache.put(request, response.clone());
-      }
-      return response;
-    })
-    .catch(() => cached);
+    const fetchPromise = fetch(request)
+      .then((response) => {
+        if (response.ok) {
+          cache.put(request, response.clone());
+        }
+        return response;
+      })
+      .catch(() => cached);
 
-  return cached || fetchPromise;
+    return cached || fetchPromise;
+  } catch {
+    return new Response("Offline", { status: 503, statusText: "Service Unavailable" });
+  }
 }
 
 self.addEventListener("fetch", (event) => {
