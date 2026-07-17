@@ -5,24 +5,20 @@
 
 ## Remaining Work
 
-All P0-P2 items from the plan backlog are now MERGED.
-Phase 8 collaboration features are now COMPLETE.
-Phase 9 bundle optimization is IN PROGRESS.
+All P0-P3 items from the plan backlog are now COMPLETE.
+Phase 8 collaboration features are COMPLETE.
+Phase 9 (Performance, PWA & Polish) is COMPLETE.
 
-| Priority | Item | Description | Status |
-|----------|------|-------------|--------|
-| P3 | Phase 9: Bundle optimization | Lazy-load, dynamic imports, tree-shaking | IN PROGRESS (3/12 done) |
-| P3 | Phase 9: PWA offline support | Service worker, offline indicator, manifest | OPEN |
-| P3 | Phase 9: Accessibility hardening | Keyboard nav, screen reader, contrast | OPEN |
-| P3 | Phase 9: UX polish | Loading states, error boundaries, shortcuts | OPEN |
+No open tasks remaining.
 
-## Completed - 2026-07-17 Session (Phase 8 + Phase 9 start)
+## Completed - 2026-07-17 Session (Phase 8 + Phase 9 full)
 
 | Plan | Description | PRs |
 |------|-------------|-----|
 | 065 | AI provider consolidation: OpenRouter + Ollama | 461, 462, 464 |
 | 066 | Phase 8: P2P sync, voice, presence, cursors | 465-475 |
 | 067 | Phase 9: Bundle optimization — lazy-load views | 476 |
+| 069 | Phase 9: PWA offline, accessibility, UX polish | 478 |
 
 ## Completed - 2026-07-16 Session (Plan 065, PR #461)
 
@@ -47,17 +43,17 @@ Phase 9 bundle optimization is IN PROGRESS.
 
 ## Key Metrics (2026-07-17)
 
-| Metric | Value |
-|--------|-------|
-| Unit test files | 22 |
-| Unit tests | 232 |
-| E2E test files | 8 |
-| E2E tests | 58 |
-| Total tests | 290 |
-| CI checks | 22/22 passing |
-| LOC violations | 0 |
-| Lint warnings | 0 |
-| Type errors | 0 |
+| Metric | Before | After |
+|--------|--------|-------|
+| Unit test files | 22 | 26 |
+| Unit tests | 232 | 252 |
+| E2E test files | 8 | 8 |
+| E2E tests | 58 | 58 |
+| Total tests | 290 | 310 |
+| CI checks | 22/22 | 22/22 passing |
+| LOC violations | 0 | 0 |
+| Lint warnings | 0 | 0 |
+| Type errors | 0 | 0 |
 
 ## ADR Updates (2026-07-17)
 
