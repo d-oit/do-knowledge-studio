@@ -142,11 +142,16 @@ export function SyncView() {
   }, [roomId])
 
   const handleResync = useCallback(() => {
-    mergeIntoYjs(entities, claims)
+    const result = mergeIntoYjs(entities, claims)
     setSyncedEntities(getYjsEntities().length)
     setSyncedClaims(getYjsClaims().length)
-    addEvent('sync', `Re-synced ${entities.length} entities, ${claims.length} claims`)
-    toast.success('Re-synced local data')
+    if (result.conflicts.length > 0) {
+      addEvent('sync', `Re-synced with ${result.conflicts.length} conflict(s) resolved`)
+      toast.info(`Re-synced with ${result.conflicts.length} conflict(s) resolved`)
+    } else {
+      addEvent('sync', `Re-synced ${entities.length} entities, ${claims.length} claims`)
+      toast.success('Re-synced local data')
+    }
   }, [entities, claims, addEvent])
 
   return (
