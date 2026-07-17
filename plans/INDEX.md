@@ -6,11 +6,15 @@
 ## Remaining Work
 
 All P0-P2 items from the plan backlog are now MERGED.
-The items below are lower-priority future work.
 
 | Priority | Item | Description | Status |
 |----------|------|-------------|--------|
-| P3 | Phase 8 collaboration | P2P sync, multi-user, voice-to-knowledge | OPEN |
+| P3 | Phase 8: P2P sync engine | Yjs + WebRTC, delta sync, dual persistence | ADR done, implementation OPEN |
+| P3 | Phase 8: Device pairing | QR code flow | OPEN (depends on sync engine) |
+| P3 | Phase 8: CRDT merge | Conflict-free entity resolution | OPEN (depends on sync engine) |
+| P3 | Phase 8: Multi-user presence | Awareness protocol + live cursors | OPEN (depends on sync engine) |
+| P3 | Phase 8: Voice-to-knowledge | Speech-to-text + NLP | OPEN (independent) |
+| P3 | Phase 8: Sync UI | Status, history, controls | OPEN (depends on sync engine) |
 
 ## Completed - 2026-07-16 Session (Plan 065 B2+C1-C4, PR #462)
 
@@ -140,10 +144,11 @@ The items below are lower-priority future work.
 | Toast-only controls | 0 (PDF/DOCX now honest disabled cards) |
 | E2E coverage | keyboard, a11y, CRUD, search, command palette, responsive |
 
-## ADR Updates (2026-07-14)
+## ADR Updates (2026-07-17)
 
 | Title | Status | Notes |
 |-------|--------|-------|
+| P2P Sync Architecture | Accepted | Yjs + WebRTC + QR pairing, dual-layer persistence |
 | Markdown Content and Editor Engine | Accepted | Textarea validated; CodeMirror spike deferred to P3 |
 | Editor Draft Persistence | Implemented | Versioned drafts in localStorage, Zod validation |
 | Editor Feedback Policy | Implemented | Inline status, no routine toasts |
