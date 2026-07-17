@@ -345,6 +345,7 @@ export function EditorView() {
         showAdvanced={showAdvanced}
         onToggleAdvanced={() => { setShowAdvanced(!showAdvanced) }}
         onFormat={handleFormat}
+        onVoiceTranscript={(text) => { setContent((prev) => prev + ' ' + text) }}
       />
 
       {showAdvanced && (

@@ -10,6 +10,7 @@ import {
   Link2,
 } from 'lucide-react'
 import { Divider } from '../ui/shared-primitives'
+import { VoiceInput } from '../voice-input'
 
 function ToolbarButton({
   icon: Icon,
@@ -37,10 +38,12 @@ export function EditorToolbar({
   showAdvanced,
   onToggleAdvanced,
   onFormat,
+  onVoiceTranscript,
 }: {
   showAdvanced: boolean
   onToggleAdvanced: () => void
   onFormat?: (command: string) => void
+  onVoiceTranscript?: (text: string) => void
 }) {
   const handleFormat = (command: string) => {
     onFormat?.(command)
@@ -60,6 +63,8 @@ export function EditorToolbar({
         <ToolbarButton icon={Code} label="Code" onClick={() => { handleFormat('code') }} />
         <Divider />
         <ToolbarButton icon={Link2} label="Insert link" onClick={() => { handleFormat('link') }} />
+        {onVoiceTranscript && <Divider />}
+        {onVoiceTranscript && <VoiceInput onTranscript={onVoiceTranscript} />}
         <div className="flex-1" />
         <button
           type="button"
