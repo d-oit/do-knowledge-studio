@@ -11,6 +11,8 @@ import {
   Trash2,
   History,
   Loader2,
+  QrCode,
+  Camera,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -24,8 +26,10 @@ import {
 } from '@/lib/sync'
 import { useStudioStore } from '@/lib/studio/store'
 import { mergeIntoYjs } from '@/lib/sync/bridge'
+import { QRDisplay, QRScanner } from '../qr-pairing'
 
 type SyncStatus = 'disconnected' | 'connecting' | 'connected' | 'error'
+type PairingMode = 'none' | 'display' | 'scan'
 
 interface SyncEvent {
   id: string
@@ -51,6 +55,7 @@ export function SyncView() {
   const [events, setEvents] = useState<SyncEvent[]>([])
   const [syncedEntities, setSyncedEntities] = useState(0)
   const [syncedClaims, setSyncedClaims] = useState(0)
+  const [pairingMode, setPairingMode] = useState<PairingMode>('none')
 
   const addEvent = useCallback(
     (type: SyncEvent['type'], message: string) => {
@@ -154,6 +159,12 @@ export function SyncView() {
     }
   }, [entities, claims, addEvent])
 
+  const handleQrScan = useCallback((scannedRoomId: string) => {
+    setInputRoomId(scannedRoomId)
+    setPairingMode('none')
+    toast.info(`Scanned room: ${scannedRoomId}`)
+  }, [])
+
   return (
     <div className="mx-auto max-w-3xl px-6 py-6 lg:px-10 lg:py-8">
       <motion.div
@@ -202,7 +213,64 @@ export function SyncView() {
         </div>
 
         {status === 'disconnected' ? (
-          <div className="space-y-3">
+          <div className="space-y-4">
+            {/* QR Pairing Buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setPairingMode(pairingMode === 'display' ? 'none' : 'display') }}
+                className={cn(
+                  'flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-[12px] font-medium transition-colors focus-ring',
+                  pairingMode === 'display'
+                    ? 'border-saffron bg-saffron/10 text-saffron-deep'
+                    : 'border-border bg-background text-ink-soft hover:border-saffron/40',
+                )}
+              >
+                <QrCode className="h-4 w-4" />
+                Show QR Code
+              </button>
+              <button
+                onClick={() => { setPairingMode(pairingMode === 'scan' ? 'none' : 'scan') }}
+                className={cn(
+                  'flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-[12px] font-medium transition-colors focus-ring',
+                  pairingMode === 'scan'
+                    ? 'border-saffron bg-saffron/10 text-saffron-deep'
+                    : 'border-border bg-background text-ink-soft hover:border-saffron/40',
+                )}
+              >
+                <Camera className="h-4 w-4" />
+                Scan QR Code
+              </button>
+            </div>
+
+            {/* QR Display */}
+            {pairingMode === 'display' && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="rounded-lg border border-border bg-muted/30 p-4">
+                  <QRDisplay roomId={roomId || generateRoomId()} />
+                </div>
+              </motion.div>
+            )}
+
+            {/* QR Scanner */}
+            {pairingMode === 'scan' && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="rounded-lg border border-border bg-muted/30 p-4">
+                  <QRScanner onScan={handleQrScan} />
+                </div>
+              </motion.div>
+            )}
+
+            {/* Manual Input */}
             <div>
               <label className="mb-1.5 text-label font-semibold uppercase tracking-wide text-ink-faint">
                 Room ID
@@ -225,7 +293,7 @@ export function SyncView() {
               </div>
             </div>
             <p className="text-caption text-ink-faint">
-              Share the room ID with another device to start syncing. Both devices must be online simultaneously for initial connection.
+              Share the room ID or QR code with another device to start syncing. Both devices must be online simultaneously for initial connection.
             </p>
           </div>
         ) : (
@@ -235,14 +303,42 @@ export function SyncView() {
                 <div className="text-[12px] font-medium text-ink">Room</div>
                 <div className="font-mono text-[13px] text-ink-soft">{roomId}</div>
               </div>
-              <button
-                onClick={handleCopyRoomId}
-                className="flex h-7 w-7 items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-border hover:text-ink focus-ring"
-                aria-label="Copy room ID"
-              >
-                {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => { setPairingMode(pairingMode === 'display' ? 'none' : 'display') }}
+                  className={cn(
+                    'flex h-7 w-7 items-center justify-center rounded-md transition-colors focus-ring',
+                    pairingMode === 'display'
+                      ? 'bg-saffron/20 text-saffron-deep'
+                      : 'text-ink-faint hover:bg-border hover:text-ink',
+                  )}
+                  aria-label="Show QR code"
+                >
+                  <QrCode className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  onClick={handleCopyRoomId}
+                  className="flex h-7 w-7 items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-border hover:text-ink focus-ring"
+                  aria-label="Copy room ID"
+                >
+                  {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+                </button>
+              </div>
             </div>
+
+            {/* QR Display when connected */}
+            {pairingMode === 'display' && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="rounded-lg border border-border bg-muted/30 p-4">
+                  <QRDisplay roomId={roomId} />
+                </div>
+              </motion.div>
+            )}
 
             <div className="grid grid-cols-3 gap-3">
               <div className="rounded-md bg-muted/50 px-3 py-2 text-center">
