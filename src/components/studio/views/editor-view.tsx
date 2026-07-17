@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { EditorToolbar } from './editor-toolbar'
+import { CursorTracker } from '../remote-cursors'
 import { ClaimsPanel } from './editor-claims-panel'
 import { TypeSelector } from './type-selector'
 import {
@@ -381,7 +382,8 @@ export function EditorView() {
         ))}
       </div>
 
-      <div className={editMode === 'split' ? 'grid grid-cols-2 gap-4' : 'relative'}>
+      <CursorTracker view="editor">
+        <div className={editMode === 'split' ? 'grid grid-cols-2 gap-4' : 'relative'}>
         {(editMode === 'edit' || editMode === 'split') && (
           <textarea
             ref={textareaRef}
@@ -401,7 +403,8 @@ export function EditorView() {
             <Markdown>{content || '_Nothing to preview._'}</Markdown>
           </div>
         )}
-      </div>
+        </div>
+      </CursorTracker>
 
       {editing && (
         <ClaimsPanel
