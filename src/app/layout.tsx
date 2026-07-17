@@ -1,8 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Newsreader } from "next/font/google";
 import "./globals.css";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { StudioThemeProvider } from "@/components/studio/theme-provider";
+import { ServiceWorkerRegistration } from "@/components/studio/service-worker-registration";
+import { OfflineIndicator } from "@/components/studio/offline-indicator";
+import { Announcer } from "@/lib/a11y/announcer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -45,6 +48,15 @@ export const metadata: Metadata = {
     description: "Local-first thinking, connected. Rich notes, graphs, mind maps, semantic search, and AI agents.",
     type: "website",
   },
+  manifest: "/manifest.webmanifest",
+  other: {
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "black-translucent",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#c77d3a",
 };
 
 export default function RootLayout({
@@ -58,9 +70,12 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} antialiased bg-background text-foreground`}
       >
         <StudioThemeProvider>
+          <Announcer />
+          <OfflineIndicator />
           {children}
         </StudioThemeProvider>
         <SonnerToaster position="bottom-right" richColors closeButton />
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );

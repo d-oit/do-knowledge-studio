@@ -116,9 +116,9 @@
   --accent-foreground: #6a3d12;
   --saffron: #c77d3a;
   --saffron-soft: #f5e8d5;
-  --saffron-deep: #8a4f1c;
+  --saffron-deep: #6a4a1c;
   --saffron-hover: #b36a2e;        /* darker saffron for hover */
-  --saffron-active: #8a4f1c;       /* deeper still for active/pressed */
+  --saffron-active: #6a4a1c;       /* deeper still for active/pressed */
 
   /* Supporting palette */
   --sage: #5c7b6e;
@@ -318,6 +318,25 @@
   }
   .focus-ring:focus:not(:focus-visible) {
     outline: none;
+  }
+
+  /* Global focus-visible indicator for all focusable elements */
+  .focus-visible-global:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* Screen reader only utility */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
   }
 
   /* Animated dotted grid background for canvas views */
