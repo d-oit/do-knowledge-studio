@@ -59,10 +59,29 @@
 - [x] JSON schema v1.0 export
 - [x] Markdown round-trip import/export
 
-## Phase 8: Collaboration (In Progress - 2026-Q4)
+## Phase 8: Collaboration (Complete - 2026-07-17)
 - [x] ADR 026: P2P sync architecture (Yjs + WebRTC + QR pairing)
-- [ ] Local-first P2P sync (WebRTC)
-- [ ] Multi-user support
-- [ ] Voice-to-knowledge (Web Speech API)
-- [ ] Offline-ready web content caching
-- [ ] Visual query builder
+- [x] Sync engine core (yjs, y-webrtc, y-indexeddb)
+- [x] Device pairing — QR code flow
+- [x] CRDT merge — conflict-free entity resolution
+- [x] Sync UI — status, history, controls
+- [x] Network discovery — BroadcastChannel
+- [x] Conflict UI — manual merge
+- [x] Multi-user presence — awareness protocol
+- [x] Live cursors and selection indicators
+- [x] Voice-to-knowledge — speech-to-text
+- [x] Voice NLP — intent parsing
+
+## Phase 9: Performance, PWA & Polish (Planned - 2026-07)
+- [ ] Bundle analysis and tree-shaking audit
+- [ ] Lazy-load heavy components (graph, mindmap, AI)
+- [ ] Dynamic imports for sync module
+- [ ] Service worker with cache-first strategy
+- [ ] Offline indicator and sync queue
+- [ ] PWA manifest and installability
+- [ ] Keyboard navigation audit and fixes
+- [ ] Screen reader announcements for sync events
+- [ ] Color contrast and focus indicators
+- [ ] Loading states and skeleton screens
+- [ ] Error boundaries per view
+- [ ] Keyboard shortcuts help dialog

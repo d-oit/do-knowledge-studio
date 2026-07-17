@@ -1,6 +1,7 @@
 'use client'
 
 import { useStudioStore } from '@/lib/studio/store'
+import { Suspense, lazy } from 'react'
 import { Sidebar } from './sidebar'
 import { Topbar } from './topbar'
 import { CommandPalette } from './command-palette'
@@ -10,14 +11,23 @@ import { ShortcutsDialog } from './shortcuts-dialog'
 import { HomeView } from './views/home-view'
 import { EditorView } from './views/editor-view'
 import { LibraryView } from './views/library-view'
-import { GraphView } from './views/graph-view'
-import { MindMapView } from './views/mindmap-view'
 import { ChatView } from './views/chat-view'
-import { AIHarnessView } from './views/ai-harness-view'
-import { TrizView } from './views/triz-view'
-import { ExportView } from './views/export-view'
-import { SyncView } from './views/sync-view'
 import { ErrorBoundary } from './error-boundary'
+
+const GraphView = lazy(() => import('./views/graph-view').then((m) => ({ default: m.GraphView })))
+const MindMapView = lazy(() => import('./views/mindmap-view').then((m) => ({ default: m.MindMapView })))
+const AIHarnessView = lazy(() => import('./views/ai-harness-view').then((m) => ({ default: m.AIHarnessView })))
+const TrizView = lazy(() => import('./views/triz-view').then((m) => ({ default: m.TrizView })))
+const ExportView = lazy(() => import('./views/export-view').then((m) => ({ default: m.ExportView })))
+const SyncView = lazy(() => import('./views/sync-view').then((m) => ({ default: m.SyncView })))
+
+function ViewLoader() {
+  return (
+    <div className="flex h-full items-center justify-center">
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-saffron" />
+    </div>
+  )
+}
 
 export function AppShell() {
   const currentView = useStudioStore((s) => s.currentView)
@@ -31,18 +41,20 @@ export function AppShell() {
         <main className="flex min-h-0 flex-1">
           <div className="min-w-0 flex-1 overflow-y-auto">
             <ErrorBoundary key={currentView}>
-              {currentView === 'home' && <HomeView />}
-              {currentView === 'editor' && (
-                <EditorView key={editingEntityId || 'new'} />
-              )}
-              {currentView === 'library' && <LibraryView />}
-              {currentView === 'graph' && <GraphView />}
-              {currentView === 'mindmap' && <MindMapView />}
-              {currentView === 'chat' && <ChatView />}
-              {currentView === 'ai' && <AIHarnessView />}
-              {currentView === 'triz' && <TrizView />}
-              {currentView === 'export' && <ExportView />}
-              {currentView === 'sync' && <SyncView />}
+              <Suspense fallback={<ViewLoader />}>
+                {currentView === 'home' && <HomeView />}
+                {currentView === 'editor' && (
+                  <EditorView key={editingEntityId || 'new'} />
+                )}
+                {currentView === 'library' && <LibraryView />}
+                {currentView === 'graph' && <GraphView />}
+                {currentView === 'mindmap' && <MindMapView />}
+                {currentView === 'chat' && <ChatView />}
+                {currentView === 'ai' && <AIHarnessView />}
+                {currentView === 'triz' && <TrizView />}
+                {currentView === 'export' && <ExportView />}
+                {currentView === 'sync' && <SyncView />}
+              </Suspense>
             </ErrorBoundary>
           </div>
           <RightPanel />
