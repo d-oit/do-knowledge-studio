@@ -14,6 +14,7 @@ import {
   QrCode,
   Camera,
   Radio,
+  Users,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -35,6 +36,8 @@ import {
 } from '@/lib/sync/discovery'
 import { ConflictUI } from '../conflict-ui'
 import type { FieldConflict } from '@/lib/sync/merge'
+import { PresenceList } from '../presence-indicator'
+import { usePresence } from '@/lib/sync/use-presence'
 
 type SyncStatus = 'disconnected' | 'connecting' | 'connected' | 'error'
 type PairingMode = 'none' | 'display' | 'scan'
@@ -55,6 +58,7 @@ function generateRoomId(): string {
 export function SyncView() {
   const entities = useStudioStore((s) => s.entities)
   const claims = useStudioStore((s) => s.claims)
+  const { peers: presencePeers } = usePresence()
   const [status, setStatus] = useState<SyncStatus>('disconnected')
   const [roomId, setRoomId] = useState('')
   const [inputRoomId, setInputRoomId] = useState('')
@@ -477,6 +481,17 @@ export function SyncView() {
           </div>
         )}
       </div>
+
+      {/* Online Users */}
+      {presencePeers.length > 0 && (
+        <div className="mt-6 rounded-lg border border-border bg-card p-5">
+          <h2 className="mb-3 font-serif text-[15px] font-semibold text-ink">
+            <Users className="mr-1.5 inline h-4 w-4" />
+            Online Users
+          </h2>
+          <PresenceList />
+        </div>
+      )}
     </div>
   )
 }
