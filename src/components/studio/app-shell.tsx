@@ -16,6 +16,7 @@ import { ChatView } from './views/chat-view'
 import { AIHarnessView } from './views/ai-harness-view'
 import { TrizView } from './views/triz-view'
 import { ExportView } from './views/export-view'
+import { SyncView } from './views/sync-view'
 import { ErrorBoundary } from './error-boundary'
 
 export function AppShell() {
@@ -41,6 +42,7 @@ export function AppShell() {
               {currentView === 'ai' && <AIHarnessView />}
               {currentView === 'triz' && <TrizView />}
               {currentView === 'export' && <ExportView />}
+              {currentView === 'sync' && <SyncView />}
             </ErrorBoundary>
           </div>
           <RightPanel />
