@@ -52,8 +52,8 @@ const PROVIDERS: ProviderOption[] = [
 export function AIHarnessView() {
   const entities = useStudioStore((s) => s.entities)
   const claims = useStudioStore((s) => s.claims)
-  const [provider, setProvider] = useState<AIProvider>('ollama')
-  const [model, setModel] = useState('llama3')
+  const [provider, setProvider] = useState<AIProvider>('openrouter')
+  const [model, setModel] = useState('openrouter/free')
   const [apiKey, setApiKey] = useState('')
   const [showKey, setShowKey] = useState(false)
   const [augment, setAugment] = useState(true)
