@@ -33,6 +33,8 @@ import {
   stopDiscovery,
   type PeerInfo,
 } from '@/lib/sync/discovery'
+import { ConflictUI } from '../conflict-ui'
+import type { FieldConflict } from '@/lib/sync/merge'
 
 type SyncStatus = 'disconnected' | 'connecting' | 'connected' | 'error'
 type PairingMode = 'none' | 'display' | 'scan'
@@ -63,6 +65,7 @@ export function SyncView() {
   const [syncedClaims, setSyncedClaims] = useState(0)
   const [pairingMode, setPairingMode] = useState<PairingMode>('none')
   const [discoveredPeers, setDiscoveredPeers] = useState<PeerInfo[]>([])
+  const [pendingConflicts, setPendingConflicts] = useState<FieldConflict[]>([])
 
   const addEvent = useCallback(
     (type: SyncEvent['type'], message: string) => {
@@ -169,13 +172,23 @@ export function SyncView() {
     setSyncedEntities(getYjsEntities().length)
     setSyncedClaims(getYjsClaims().length)
     if (result.conflicts.length > 0) {
-      addEvent('sync', `Re-synced with ${result.conflicts.length} conflict(s) resolved`)
-      toast.info(`Re-synced with ${result.conflicts.length} conflict(s) resolved`)
+      setPendingConflicts(result.conflicts)
+      addEvent('sync', `Found ${result.conflicts.length} conflict(s) requiring resolution`)
     } else {
       addEvent('sync', `Re-synced ${entities.length} entities, ${claims.length} claims`)
       toast.success('Re-synced local data')
     }
   }, [entities, claims, addEvent])
+
+  const handleConflictResolve = useCallback((_resolutions: Map<string, 'local' | 'remote'>) => {
+    setPendingConflicts([])
+    addEvent('sync', 'Conflicts resolved by user')
+    toast.success('Conflicts resolved')
+  }, [addEvent])
+
+  const handleConflictDismiss = useCallback(() => {
+    setPendingConflicts([])
+  }, [])
 
   const handleQrScan = useCallback((scannedRoomId: string) => {
     setInputRoomId(scannedRoomId)
@@ -415,6 +428,21 @@ export function SyncView() {
           </div>
         )}
       </div>
+
+      {/* Conflict Resolution */}
+      {pendingConflicts.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6"
+        >
+          <ConflictUI
+            conflicts={pendingConflicts}
+            onResolve={handleConflictResolve}
+            onDismiss={handleConflictDismiss}
+          />
+        </motion.div>
+      )}
 
       {/* Sync History */}
       <div className="rounded-lg border border-border bg-card p-5">
