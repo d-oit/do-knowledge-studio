@@ -5,6 +5,7 @@ import {
   claimToYMap,
   ymapToClaim,
 } from './types'
+import { mergeEntities, mergeClaims } from './merge'
 import type { Entity, Claim } from '@/lib/studio/types'
 
 type Unsubscribe = () => void
@@ -52,30 +53,29 @@ export function removeYjsClaim(id: string): void {
 export function mergeIntoYjs(
   entities: Entity[],
   claims: Claim[],
-): void {
+): import('./merge').MergeResult<{ entities: Entity[]; claims: Claim[] }> {
   const sync = getSyncDoc()
   const doc = getDoc()
 
-  doc.transact(() => {
-    for (const entity of entities) {
-      const existing = sync.entities.get(entity.id) as Record<string, unknown> | undefined
-      if (!existing) {
-        sync.entities.set(entity.id, entityToYMap(entity))
-      } else {
-        const existingEntity = ymapToEntity(existing)
-        if (entity.updatedAt > existingEntity.updatedAt) {
-          sync.entities.set(entity.id, entityToYMap(entity))
-        }
-      }
-    }
+  const existingEntities = getYjsEntities()
+  const existingClaims = getYjsClaims()
 
-    for (const claim of claims) {
-      const existing = sync.claims.get(claim.id)
-      if (!existing) {
-        sync.claims.set(claim.id, claimToYMap(claim))
-      }
+  const entityResult = mergeEntities(existingEntities, entities)
+  const claimResult = mergeClaims(existingClaims, claims)
+
+  doc.transact(() => {
+    for (const entity of entityResult.merged) {
+      sync.entities.set(entity.id, entityToYMap(entity))
+    }
+    for (const claim of claimResult.merged) {
+      sync.claims.set(claim.id, claimToYMap(claim))
     }
   })
+
+  return {
+    merged: { entities: entityResult.merged, claims: claimResult.merged },
+    conflicts: [...entityResult.conflicts, ...claimResult.conflicts],
+  }
 }
 
 export function onYjsChange(
