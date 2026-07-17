@@ -68,6 +68,9 @@
     "tailwindcss-animate": "^1.0.7",
     "uuid": "^14.0.0",
     "vaul": "^1.1.2",
+    "y-indexeddb": "^9.0.12",
+    "y-webrtc": "^10.3.0",
+    "yjs": "^13.6.31",
     "zod": "^4.0.2",
     "zustand": "^5.0.6"
   },
