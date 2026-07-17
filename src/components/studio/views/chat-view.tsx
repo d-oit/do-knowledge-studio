@@ -2,6 +2,7 @@
 
 import { useStudioStore } from '@/lib/studio/store'
 import { Send, Sparkles, Trash2, Bot, User, Quote, ChevronDown, MessageSquare } from 'lucide-react'
+import { VoiceInput } from '../voice-input'
 import { useState, useRef, useEffect } from 'react'
 import Markdown from 'react-markdown'
 import { cn } from '@/lib/utils'
@@ -246,6 +247,10 @@ export function ChatView() {
               maxLength={2000}
               disabled={chatLoading}
               className="max-h-32 flex-1 resize-none bg-transparent px-2 py-1.5 text-[14px] text-ink placeholder:text-ink-faint focus:outline-none disabled:opacity-50"
+            />
+            <VoiceInput
+              onTranscript={(text) => { setInput((prev) => prev + ' ' + text) }}
+              disabled={chatLoading}
             />
             <button
               onClick={() => { handleSend() }}
