@@ -7,20 +7,22 @@
 
 All P0-P2 items from the plan backlog are now MERGED.
 Phase 8 collaboration features are now COMPLETE.
+Phase 9 bundle optimization is IN PROGRESS.
 
 | Priority | Item | Description | Status |
 |----------|------|-------------|--------|
-| P3 | Phase 9: Bundle optimization | Lazy-load, dynamic imports, tree-shaking | PLANNED |
-| P3 | Phase 9: PWA offline support | Service worker, offline indicator, manifest | PLANNED |
-| P3 | Phase 9: Accessibility hardening | Keyboard nav, screen reader, contrast | PLANNED |
-| P3 | Phase 9: UX polish | Loading states, error boundaries, shortcuts | PLANNED |
+| P3 | Phase 9: Bundle optimization | Lazy-load, dynamic imports, tree-shaking | IN PROGRESS (3/12 done) |
+| P3 | Phase 9: PWA offline support | Service worker, offline indicator, manifest | OPEN |
+| P3 | Phase 9: Accessibility hardening | Keyboard nav, screen reader, contrast | OPEN |
+| P3 | Phase 9: UX polish | Loading states, error boundaries, shortcuts | OPEN |
 
-## Completed - 2026-07-17 Session (Phase 8, PRs #461-#475)
+## Completed - 2026-07-17 Session (Phase 8 + Phase 9 start)
 
 | Plan | Description | PRs |
 |------|-------------|-----|
 | 065 | AI provider consolidation: OpenRouter + Ollama | 461, 462, 464 |
 | 066 | Phase 8: P2P sync, voice, presence, cursors | 465-475 |
+| 067 | Phase 9: Bundle optimization — lazy-load views | 476 |
 
 ## Completed - 2026-07-16 Session (Plan 065, PR #461)
 
