@@ -12,6 +12,7 @@ export type ViewId =
   | 'ai'
   | 'triz'
   | 'export'
+  | 'sync'
 
 export interface Entity {
   id: string

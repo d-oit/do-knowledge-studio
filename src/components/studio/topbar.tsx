@@ -15,6 +15,7 @@ const VIEW_TITLES: Record<ViewId, { title: string; subtitle: string }> = {
   ai: { title: 'AI Harness', subtitle: 'Configure and chat with LLMs' },
   triz: { title: 'TRIZ Matrix', subtitle: 'Solve inventive contradictions' },
   export: { title: 'Export', subtitle: 'Backup and share your knowledge' },
+  sync: { title: 'Sync', subtitle: 'Connect devices and sync peer-to-peer' },
 }
 
 export function Topbar() {

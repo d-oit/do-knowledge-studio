@@ -15,6 +15,7 @@ import {
   Search,
   PanelRight,
   PanelRightClose,
+  Wifi,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useStudioStore } from '@/lib/studio/store'
@@ -60,7 +61,10 @@ export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   },
   {
     label: 'Data',
-    items: [{ id: 'export', label: 'Export', icon: Download, shortcut: 'G X' }],
+    items: [
+      { id: 'sync', label: 'Sync', icon: Wifi, shortcut: 'G S' },
+      { id: 'export', label: 'Export', icon: Download, shortcut: 'G X' },
+    ],
   },
 ]
 
