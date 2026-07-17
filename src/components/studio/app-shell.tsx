@@ -55,6 +55,10 @@ const VIEW_NAMES: Record<ViewId, string> = {
   sync: 'Sync',
 }
 
+function getViewName(view: ViewId): string {
+  return VIEW_NAMES[view]
+}
+
 export function AppShell() {
   const currentView = useStudioStore((s) => s.currentView)
   const editingEntityId = useStudioStore((s) => s.editingEntityId)
@@ -75,7 +79,7 @@ export function AppShell() {
           <div className="min-w-0 flex-1 overflow-y-auto">
             <ErrorBoundary key={currentView}>
               <ViewErrorBoundary
-                viewName={VIEW_NAMES[currentView] ?? currentView}
+                viewName={getViewName(currentView)}
                 onError={handleViewError}
               >
                 <Suspense fallback={<ViewLoader />}>
