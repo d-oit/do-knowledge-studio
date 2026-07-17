@@ -1,17 +1,26 @@
 'use client'
 
-import { Mic, Loader2 } from 'lucide-react'
+import { Mic, Loader2, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useSpeechRecognition } from '@/lib/use-speech-recognition'
-import { useEffect } from 'react'
+import { useEffect, useState, useCallback } from 'react'
+import { parseIntent, formatIntentSummary, type Intent } from '@/lib/nlp'
 
 interface VoiceInputProps {
   onTranscript: (text: string) => void
+  onIntent?: (intent: Intent) => void
   className?: string
   disabled?: boolean
+  showIntentPreview?: boolean
 }
 
-export function VoiceInput({ onTranscript, className, disabled }: VoiceInputProps) {
+export function VoiceInput({
+  onTranscript,
+  onIntent,
+  className,
+  disabled,
+  showIntentPreview = false,
+}: VoiceInputProps) {
   const {
     isSupported,
     isListening,
@@ -23,11 +32,18 @@ export function VoiceInput({ onTranscript, className, disabled }: VoiceInputProp
     reset,
   } = useSpeechRecognition({ continuous: true, interimResults: true })
 
+  const [lastIntent, setLastIntent] = useState<Intent | null>(null)
+
   useEffect(() => {
     if (transcript) {
       onTranscript(transcript)
+      if (onIntent) {
+        const intent = parseIntent(transcript)
+        setLastIntent(intent)
+        onIntent(intent)
+      }
     }
-  }, [transcript, onTranscript])
+  }, [transcript, onTranscript, onIntent])
 
   useEffect(() => {
     if (error) {
@@ -35,16 +51,17 @@ export function VoiceInput({ onTranscript, className, disabled }: VoiceInputProp
     }
   }, [error])
 
-  if (!isSupported) return null
-
-  const handleClick = () => {
+  const handleClick = useCallback(() => {
     if (isListening) {
       stop()
     } else {
       reset()
+      setLastIntent(null)
       start()
     }
-  }
+  }, [isListening, stop, reset, start])
+
+  if (!isSupported) return null
 
   return (
     <div className={cn('flex items-center gap-1', className)}>
@@ -69,6 +86,12 @@ export function VoiceInput({ onTranscript, className, disabled }: VoiceInputProp
       {isListening && interimTranscript && (
         <span className="max-w-[200px] truncate text-[12px] text-ink-faint italic">
           {interimTranscript}
+        </span>
+      )}
+      {showIntentPreview && lastIntent && !isListening && (
+        <span className="flex items-center gap-1 text-[11px] text-saffron-deep">
+          <Sparkles className="h-3 w-3" />
+          {formatIntentSummary(lastIntent)}
         </span>
       )}
     </div>
