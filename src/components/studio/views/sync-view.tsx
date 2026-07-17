@@ -13,6 +13,7 @@ import {
   Loader2,
   QrCode,
   Camera,
+  Radio,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -27,6 +28,11 @@ import {
 import { useStudioStore } from '@/lib/studio/store'
 import { mergeIntoYjs } from '@/lib/sync/bridge'
 import { QRDisplay, QRScanner } from '../qr-pairing'
+import {
+  startDiscovery,
+  stopDiscovery,
+  type PeerInfo,
+} from '@/lib/sync/discovery'
 
 type SyncStatus = 'disconnected' | 'connecting' | 'connected' | 'error'
 type PairingMode = 'none' | 'display' | 'scan'
@@ -56,6 +62,7 @@ export function SyncView() {
   const [syncedEntities, setSyncedEntities] = useState(0)
   const [syncedClaims, setSyncedClaims] = useState(0)
   const [pairingMode, setPairingMode] = useState<PairingMode>('none')
+  const [discoveredPeers, setDiscoveredPeers] = useState<PeerInfo[]>([])
 
   const addEvent = useCallback(
     (type: SyncEvent['type'], message: string) => {
@@ -109,6 +116,15 @@ export function SyncView() {
     }
   }, [addEvent])
 
+  useEffect(() => {
+    if (status === 'connected' && roomId) {
+      startDiscovery(roomId, (peers) => {
+        setDiscoveredPeers(peers)
+      })
+      return () => { stopDiscovery() }
+    }
+  }, [status, roomId])
+
   const handleJoin = useCallback(async () => {
     const id = inputRoomId.trim() || generateRoomId()
     setStatus('connecting')
@@ -131,10 +147,12 @@ export function SyncView() {
   }, [inputRoomId, entities, claims, addEvent])
 
   const handleLeave = useCallback(() => {
+    stopDiscovery()
     destroy()
     setStatus('disconnected')
     setRoomId('')
     setPeerCount(0)
+    setDiscoveredPeers([])
     addEvent('leave', 'Left sync room')
     toast.info('Left sync room')
   }, [addEvent])
@@ -354,6 +372,29 @@ export function SyncView() {
                 <div className="font-mono text-[15px] font-semibold text-ink">{syncedClaims}</div>
               </div>
             </div>
+
+            {/* Discovered Peers */}
+            {discoveredPeers.length > 0 && (
+              <div className="rounded-md bg-muted/30 px-3 py-2">
+                <div className="mb-1.5 flex items-center gap-1.5 text-[12px] font-medium text-ink">
+                  <Radio className="h-3 w-3 text-emerald-500" />
+                  Local Network Peers
+                </div>
+                <div className="space-y-1">
+                  {discoveredPeers.map((peer) => (
+                    <div
+                      key={peer.deviceId}
+                      className="flex items-center justify-between text-[12px]"
+                    >
+                      <span className="text-ink-soft">{peer.deviceName}</span>
+                      <span className="text-caption text-ink-faint">
+                        {peer.capabilities.join(', ')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="flex gap-2">
               <button
