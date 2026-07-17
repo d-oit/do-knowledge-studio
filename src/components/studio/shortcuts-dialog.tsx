@@ -293,7 +293,7 @@ export function ShortcutsDialog() {
                     ref={filterInputRef}
                     type="text"
                     value={filter}
-                    onChange={(e) => setFilter(e.target.value)}
+                    onChange={(e) => { setFilter(e.target.value); }}
                     placeholder="Filter shortcuts..."
                     className="w-full rounded-md border border-border bg-background py-1.5 pl-8 pr-3 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
                     aria-label="Filter shortcuts"

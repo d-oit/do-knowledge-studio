@@ -1,6 +1,7 @@
 'use client'
 
 import { useStudioStore } from '@/lib/studio/store'
+import type { ViewId } from '@/lib/studio/types'
 import React, { Suspense, lazy } from 'react'
 import { Sidebar } from './sidebar'
 import { Topbar } from './topbar'
@@ -41,7 +42,7 @@ function ViewLoader() {
   )
 }
 
-const VIEW_NAMES: Record<string, string> = {
+const VIEW_NAMES: Record<ViewId, string> = {
   home: 'Home',
   editor: 'Editor',
   library: 'Library',
