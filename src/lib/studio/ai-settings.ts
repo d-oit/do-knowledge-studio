@@ -27,8 +27,8 @@ interface StoredSettings {
 }
 
 const DEFAULT_SETTINGS: AISettings = {
-  provider: 'openrouter',
-  model: 'openrouter/free',
+  provider: 'ollama',
+  model: 'llama3',
   apiKey: '',
   augmentWithLocal: true,
   ollamaCpuOnly: false,

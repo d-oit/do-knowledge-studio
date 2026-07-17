@@ -59,8 +59,7 @@
 - [x] JSON schema v1.0 export
 - [x] Markdown round-trip import/export
 
-## Phase 8: Collaboration (In Progress - 2026-Q4)
-- [x] ADR 026: P2P sync architecture (Yjs + WebRTC + QR pairing)
+## Phase 8: Collaboration (Planned - 2026-Q4)
 - [ ] Local-first P2P sync (WebRTC)
 - [ ] Multi-user support
 - [ ] Voice-to-knowledge (Web Speech API)

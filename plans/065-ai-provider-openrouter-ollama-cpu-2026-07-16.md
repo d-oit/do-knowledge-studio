@@ -226,13 +226,12 @@ Headers: `Authorization`, `Content-Type`, optional `HTTP-Referer` / `X-OpenRoute
 | 2 | B1–B3 | 4–6 h |
 | 3 | C1–C4 + ADR | 3–5 h |
 
-## Decisions
+## Decision needed from product owner
 
-1. **Drop direct OpenAI/Anthropic UI entirely?** → Yes — OpenRouter only for cloud.
-2. **Default model for OpenRouter?** → `openrouter/free` (zero-cost, auto-picks free models).
-3. **Ship web research in same PR as provider consolidation or follow-up?** → Follow-up (PR #462).
-4. **CPU-only default?** → `false` — opt-in toggle.
-5. **Default provider for new users?** → `openrouter` with `openrouter/free` model (changed 2026-07-16). Users without an API key see a clear error prompt instead of silently failing against Ollama.
+1. **Drop direct OpenAI/Anthropic UI entirely?** (Recommended: yes — OpenRouter only for cloud.)
+2. **Default model for OpenRouter?** (`openrouter/free` vs a specific free slug.)
+3. **Ship web research in same PR as provider consolidation or follow-up?**
+4. **CPU-only default?** (Recommended: `false` — opt-in.)
 
 ---
 

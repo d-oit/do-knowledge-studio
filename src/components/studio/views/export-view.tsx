@@ -50,7 +50,7 @@ export function ExportView() {
 
   // Refs for focusing and focus restoration in encrypt password dialog
   const passwordInputRef = useRef<HTMLInputElement | null>(null)
-  const previousActiveElementRef = useRef<HTMLElement | null>(null)
+  const previousActiveRef = useRef<null | { focus: () => void }>(null)
 
   useEffect(() => {
     if (!showResetConfirm) return
@@ -81,11 +81,11 @@ export function ExportView() {
   // Focus management: automatic focus and focus restoration
   useEffect(() => {
     if (showPassword) {
-      previousActiveElementRef.current = document.activeElement as HTMLElement
+      previousActiveRef.current = document.activeElement as HTMLElement
       passwordInputRef.current?.focus()
     } else {
-      previousActiveElementRef.current?.focus()
-      previousActiveElementRef.current = null
+      previousActiveRef.current?.focus()
+      previousActiveRef.current = null
     }
   }, [showPassword])
 
