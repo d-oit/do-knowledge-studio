@@ -48,6 +48,10 @@ export function ExportView() {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const resetCancelRef = useRef<HTMLButtonElement>(null)
 
+  // Refs for focusing and focus restoration in encrypt password dialog
+  const passwordInputRef = useRef<HTMLInputElement | null>(null)
+  const previousActiveElementRef = useRef<HTMLElement | null>(null)
+
   useEffect(() => {
     if (!showResetConfirm) return
     resetCancelRef.current?.focus()
@@ -60,6 +64,30 @@ export function ExportView() {
     window.addEventListener('keydown', handleKeyDown)
     return () => { window.removeEventListener('keydown', handleKeyDown) }
   }, [showResetConfirm])
+
+  // Escape key handler to close the encrypt password dialog
+  useEffect(() => {
+    if (!showPassword) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowPassword(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => { window.removeEventListener('keydown', handleKeyDown) }
+  }, [showPassword])
+
+  // Focus management: automatic focus and focus restoration
+  useEffect(() => {
+    if (showPassword) {
+      previousActiveElementRef.current = document.activeElement as HTMLElement
+      passwordInputRef.current?.focus()
+    } else {
+      previousActiveElementRef.current?.focus()
+      previousActiveElementRef.current = null
+    }
+  }, [showPassword])
 
   const handleExport = async (format: string) => {
     if (format === 'json') {
@@ -354,6 +382,9 @@ export function ExportView() {
 
       {showPassword && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="encrypt-dialog-title"
           className="fixed inset-0 z-[800] flex items-center justify-center bg-ink/30 backdrop-blur-sm"
           onClick={() => { setShowPassword(false) }}
         >
@@ -369,7 +400,7 @@ export function ExportView() {
                 <FileLock className="h-4 w-4" />
               </div>
               <div>
-                <h3 className="font-serif text-[15px] font-semibold text-ink">Encrypt export</h3>
+                <h3 id="encrypt-dialog-title" className="font-serif text-[15px] font-semibold text-ink">Encrypt export</h3>
                 <p className="text-label text-ink-faint">
                   AES-256-GCM encryption with PBKDF2 key derivation.
                 </p>
@@ -378,11 +409,13 @@ export function ExportView() {
 
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-label font-semibold uppercase tracking-wide text-ink-faint">
+                <label htmlFor="encrypt-password" className="mb-1 block text-label font-semibold uppercase tracking-wide text-ink-faint">
                   Password
                 </label>
                 <div className="relative">
                   <input
+                    ref={passwordInputRef}
+                    id="encrypt-password"
                     type={showPass ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => { setPassword(e.target.value) }}
@@ -390,6 +423,8 @@ export function ExportView() {
                     className="w-full rounded-md border border-border bg-background px-3 py-2 pr-16 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
                   />
                   <button
+                    type="button"
+                    aria-label={showPass ? 'Hide password' : 'Show password'}
                     onClick={() => { setShowPass(!showPass) }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-caption font-medium text-ink-faint hover:text-ink"
                   >
@@ -398,19 +433,22 @@ export function ExportView() {
                 </div>
               </div>
               <div>
-                <label className="mb-1 block text-label font-semibold uppercase tracking-wide text-ink-faint">
+                <label htmlFor="encrypt-confirm-password" className="mb-1 block text-label font-semibold uppercase tracking-wide text-ink-faint">
                   Confirm password
                 </label>
                 <input
+                  id="encrypt-confirm-password"
                   type={showPass ? 'text' : 'password'}
                   value={confirm}
                   onChange={(e) => { setConfirm(e.target.value) }}
                   placeholder="Re-enter password"
+                  aria-invalid={password && confirm && password !== confirm ? 'true' : 'false'}
+                  aria-describedby={password && confirm && password !== confirm ? 'password-mismatch-error' : undefined}
                   className="w-full rounded-md border border-border bg-background px-3 py-2 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
                 />
               </div>
               {password && confirm && password !== confirm && (
-                <p className="text-label text-red-500">Passwords do not match.</p>
+                <p id="password-mismatch-error" role="alert" className="text-label text-red-500">Passwords do not match.</p>
               )}
             </div>
 
