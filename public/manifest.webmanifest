@@ -1,0 +1,24 @@
+{
+  "name": "DO Knowledge Studio",
+  "short_name": "DKS",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#faf8f3",
+  "theme_color": "#c77d3a",
+  "scope": "/",
+  "description": "Local-first knowledge studio",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
