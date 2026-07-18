@@ -1,6 +1,6 @@
 # Plans Index
 
-**Updated**: 2026-07-17
+**Updated**: 2026-07-18
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
 ## Remaining Work
@@ -8,8 +8,15 @@
 All P0-P3 items from the plan backlog are now COMPLETE.
 Phase 8 collaboration features are COMPLETE.
 Phase 9 (Performance, PWA & Polish) is COMPLETE.
+Phase 10 (Docs & Code Hygiene) is COMPLETE.
 
 No open tasks remaining.
+
+## Completed - 2026-07-18 Session (Phase 10: Docs & Code Hygiene)
+
+| Plan | Description | PRs |
+|------|-------------|-----|
+| 070 | Docs alignment: PHASES.md, GOAP.md, INDEX.md; LOC remediation: triz-data split, ai-harness extraction | 481 |
 
 ## Completed - 2026-07-17 Session (Phase 8 + Phase 9 full)
 
@@ -41,15 +48,15 @@ No open tasks remaining.
 | 049 | AI provider integration, encrypted export, zod schemas, BM25 retrieval | 399 |
 | 040 | Complete export pipeline (PDF, JSON schema v1.0, MD round-trip) | 289 |
 
-## Key Metrics (2026-07-17)
+## Key Metrics (2026-07-18)
 
 | Metric | Before | After |
 |--------|--------|-------|
 | Unit test files | 22 | 26 |
-| Unit tests | 232 | 252 |
+| Unit tests | 232 | 254 |
 | E2E test files | 8 | 8 |
 | E2E tests | 58 | 58 |
-| Total tests | 290 | 310 |
+| Total tests | 290 | 312 |
 | CI checks | 22/22 | 22/22 passing |
 | LOC violations | 0 | 0 |
 | Lint warnings | 0 | 0 |
