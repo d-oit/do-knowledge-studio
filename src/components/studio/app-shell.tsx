@@ -1,7 +1,8 @@
 'use client'
 
 import { useStudioStore } from '@/lib/studio/store'
-import { Suspense, lazy } from 'react'
+import type { ViewId } from '@/lib/studio/types'
+import React, { Suspense, lazy } from 'react'
 import { Sidebar } from './sidebar'
 import { Topbar } from './topbar'
 import { CommandPalette } from './command-palette'
@@ -13,6 +14,8 @@ import { EditorView } from './views/editor-view'
 import { LibraryView } from './views/library-view'
 import { ChatView } from './views/chat-view'
 import { ErrorBoundary } from './error-boundary'
+import { ViewErrorBoundary } from './view-error-boundary'
+import { Skeleton } from './ui/skeleton'
 
 const GraphView = lazy(() => import('./views/graph-view').then((m) => ({ default: m.GraphView })))
 const MindMapView = lazy(() => import('./views/mindmap-view').then((m) => ({ default: m.MindMapView })))
@@ -23,15 +26,49 @@ const SyncView = lazy(() => import('./views/sync-view').then((m) => ({ default: 
 
 function ViewLoader() {
   return (
-    <div className="flex h-full items-center justify-center">
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-saffron" />
+    <div className="space-y-4 p-6">
+      <Skeleton className="h-6 w-48" />
+      <div className="space-y-3">
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-5/6" />
+        <Skeleton className="h-4 w-3/4" />
+      </div>
+      <div className="grid grid-cols-3 gap-4 pt-4">
+        <Skeleton className="h-24 w-full rounded-xl" />
+        <Skeleton className="h-24 w-full rounded-xl" />
+        <Skeleton className="h-24 w-full rounded-xl" />
+      </div>
     </div>
   )
+}
+
+const VIEW_NAMES: Record<ViewId, string> = {
+  home: 'Home',
+  editor: 'Editor',
+  library: 'Library',
+  graph: 'Graph',
+  mindmap: 'Mind Map',
+  chat: 'Chat',
+  ai: 'AI Harness',
+  triz: 'TRIZ Matrix',
+  export: 'Export',
+  sync: 'Sync',
+}
+
+function getViewName(view: ViewId): string {
+  return VIEW_NAMES[view]
 }
 
 export function AppShell() {
   const currentView = useStudioStore((s) => s.currentView)
   const editingEntityId = useStudioStore((s) => s.editingEntityId)
+
+  const handleViewError = React.useCallback(
+    (error: Error, _errorInfo: React.ErrorInfo) => {
+      console.error(`[ViewError] ${currentView}:`, error)
+    },
+    [currentView],
+  )
 
   return (
     <div className="flex h-dvh w-full overflow-hidden bg-background text-foreground">
@@ -41,20 +78,25 @@ export function AppShell() {
         <main className="flex min-h-0 flex-1">
           <div className="min-w-0 flex-1 overflow-y-auto">
             <ErrorBoundary key={currentView}>
-              <Suspense fallback={<ViewLoader />}>
-                {currentView === 'home' && <HomeView />}
-                {currentView === 'editor' && (
-                  <EditorView key={editingEntityId || 'new'} />
-                )}
-                {currentView === 'library' && <LibraryView />}
-                {currentView === 'graph' && <GraphView />}
-                {currentView === 'mindmap' && <MindMapView />}
-                {currentView === 'chat' && <ChatView />}
-                {currentView === 'ai' && <AIHarnessView />}
-                {currentView === 'triz' && <TrizView />}
-                {currentView === 'export' && <ExportView />}
-                {currentView === 'sync' && <SyncView />}
-              </Suspense>
+              <ViewErrorBoundary
+                viewName={getViewName(currentView)}
+                onError={handleViewError}
+              >
+                <Suspense fallback={<ViewLoader />}>
+                  {currentView === 'home' && <HomeView />}
+                  {currentView === 'editor' && (
+                    <EditorView key={editingEntityId || 'new'} />
+                  )}
+                  {currentView === 'library' && <LibraryView />}
+                  {currentView === 'graph' && <GraphView />}
+                  {currentView === 'mindmap' && <MindMapView />}
+                  {currentView === 'chat' && <ChatView />}
+                  {currentView === 'ai' && <AIHarnessView />}
+                  {currentView === 'triz' && <TrizView />}
+                  {currentView === 'export' && <ExportView />}
+                  {currentView === 'sync' && <SyncView />}
+                </Suspense>
+              </ViewErrorBoundary>
             </ErrorBoundary>
           </div>
           <RightPanel />

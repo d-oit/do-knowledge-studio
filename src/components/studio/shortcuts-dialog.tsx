@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Keyboard } from 'lucide-react'
+import { X, Keyboard, Search } from 'lucide-react'
 import { useStudioStore } from '@/lib/studio/store'
 import type { ViewId } from '@/lib/studio/types'
 import { cn } from '@/lib/utils'
@@ -34,6 +34,25 @@ const SHORTCUTS: { group: string; rows: ShortcutRow[] }[] = [
       { keys: 'G  A', action: 'Go to AI Harness' },
       { keys: 'G  T', action: 'Go to TRIZ Matrix' },
       { keys: 'G  X', action: 'Go to Export' },
+      { keys: 'G  S', action: 'Go to Sync' },
+    ],
+  },
+  {
+    group: 'Editor',
+    rows: [
+      { keys: '⌘B', action: 'Bold' },
+      { keys: '⌘I', action: 'Italic' },
+      { keys: '⌘U', action: 'Underline' },
+      { keys: '⌘⇧X', action: 'Strikethrough' },
+      { keys: '⌘⇧H', action: 'Highlight' },
+      { keys: '⌘⇧M', action: 'Code block' },
+    ],
+  },
+  {
+    group: 'Library',
+    rows: [
+      { keys: '⌘F', action: 'Focus search' },
+      { keys: '⌘N', action: 'New entity' },
     ],
   },
 ]
@@ -50,6 +69,7 @@ const G_SEQ_MAP: Record<string, ViewId> = {
   a: 'ai',
   t: 'triz',
   x: 'export',
+  s: 'sync',
 }
 
 // Open state for the shortcuts dialog lives in module scope so any consumer
@@ -78,6 +98,22 @@ export function ShortcutsDialog() {
   const { setView, currentView, commandOpen, mobileDrawerOpen, setCommandOpen, setMobileDrawerOpen } =
     useStudioStore()
   const reducedMotion = useReducedMotion()
+
+  const [filter, setFilter] = React.useState('')
+  const filterInputRef = React.useRef<HTMLInputElement | null>(null)
+
+  const filteredShortcuts = React.useMemo(() => {
+    if (!filter.trim()) return SHORTCUTS
+    const query = filter.toLowerCase()
+    return SHORTCUTS.map((section) => ({
+      ...section,
+      rows: section.rows.filter(
+        (row) =>
+          row.action.toLowerCase().includes(query) ||
+          row.keys.toLowerCase().includes(query),
+      ),
+    })).filter((section) => section.rows.length > 0)
+  }, [filter])
 
   // Close button ref — focused when the dialog opens.
   const closeBtnRef = React.useRef<HTMLButtonElement | null>(null)
@@ -189,6 +225,11 @@ export function ShortcutsDialog() {
     cancelG,
   ])
 
+  // Clear filter when dialog opens/closes.
+  React.useEffect(() => {
+    if (!open) setFilter('')
+  }, [open])
+
   // Move focus to the close button on open. Cleanup on close.
   React.useEffect(() => {
     if (open) {
@@ -244,33 +285,55 @@ export function ShortcutsDialog() {
                 </button>
               </div>
 
+              {/* Search filter */}
+              <div className="border-b border-border px-5 py-2.5">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-faint" />
+                  <input
+                    ref={filterInputRef}
+                    type="text"
+                    value={filter}
+                    onChange={(e) => { setFilter(e.target.value); }}
+                    placeholder="Filter shortcuts..."
+                    className="w-full rounded-md border border-border bg-background py-1.5 pl-8 pr-3 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+                    aria-label="Filter shortcuts"
+                  />
+                </div>
+              </div>
+
               {/* Body — two-column grouped list */}
               <div className="max-h-[70vh] overflow-y-auto px-5 py-4">
-                <div className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
-                  {SHORTCUTS.map((section) => (
-                    <div key={section.group}>
-                      <h3 className="mb-2 text-caption font-semibold uppercase tracking-[0.14em] text-ink-faint">
-                        {section.group}
-                      </h3>
-                      <ul className="space-y-1.5">
-                        {section.rows.map((row) => (
-                          <li
-                            key={row.keys}
-                            className="flex items-center justify-between gap-3"
-                          >
-                            <span className="text-[13px] text-ink-soft">{row.action}</span>
-                            <kbd
-                              className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-label text-ink-soft whitespace-nowrap"
-                              aria-label={row.keys}
+                {filteredShortcuts.length === 0 ? (
+                  <p className="py-8 text-center text-[13px] text-ink-mute">
+                    No shortcuts match &quot;{filter}&quot;
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
+                    {filteredShortcuts.map((section) => (
+                      <div key={section.group}>
+                        <h3 className="mb-2 text-caption font-semibold uppercase tracking-[0.14em] text-ink-faint">
+                          {section.group}
+                        </h3>
+                        <ul className="space-y-1.5">
+                          {section.rows.map((row) => (
+                            <li
+                              key={row.keys}
+                              className="flex items-center justify-between gap-3"
                             >
-                              {row.keys}
-                            </kbd>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
+                              <span className="text-[13px] text-ink-soft">{row.action}</span>
+                              <kbd
+                                className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-label text-ink-soft whitespace-nowrap"
+                                aria-label={row.keys}
+                              >
+                                {row.keys}
+                              </kbd>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 <p className="mt-5 border-t border-border pt-3 text-label leading-relaxed text-ink-faint">
                   Tip: the <kbd className="rounded border border-border bg-muted px-1 font-mono text-caption">G</kbd>{' '}

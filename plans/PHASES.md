@@ -72,16 +72,16 @@
 - [x] Voice-to-knowledge — speech-to-text
 - [x] Voice NLP — intent parsing
 
-## Phase 9: Performance, PWA & Polish (Planned - 2026-07)
-- [ ] Bundle analysis and tree-shaking audit
-- [ ] Lazy-load heavy components (graph, mindmap, AI)
-- [ ] Dynamic imports for sync module
-- [ ] Service worker with cache-first strategy
-- [ ] Offline indicator and sync queue
-- [ ] PWA manifest and installability
-- [ ] Keyboard navigation audit and fixes
-- [ ] Screen reader announcements for sync events
-- [ ] Color contrast and focus indicators
-- [ ] Loading states and skeleton screens
-- [ ] Error boundaries per view
-- [ ] Keyboard shortcuts help dialog
+## Phase 9: Performance, PWA & Polish (Complete - 2026-07-17)
+- [x] Bundle analysis and tree-shaking audit
+- [x] Lazy-load heavy components (graph, mindmap, AI)
+- [x] Dynamic imports for sync module
+- [x] Service worker with cache-first strategy
+- [x] Offline indicator and sync queue
+- [x] PWA manifest and installability
+- [x] Keyboard navigation audit and fixes
+- [x] Screen reader announcements for sync events
+- [x] Color contrast and focus indicators
+- [x] Loading states and skeleton screens
+- [x] Error boundaries per view
+- [x] Keyboard shortcuts help dialog
