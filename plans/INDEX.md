@@ -18,7 +18,7 @@ No open tasks remaining.
 | 065 | AI provider consolidation: OpenRouter + Ollama | 461, 462, 464 |
 | 066 | Phase 8: P2P sync, voice, presence, cursors | 465-475 |
 | 067 | Phase 9: Bundle optimization — lazy-load views | 476 |
-| 069 | Phase 9: PWA offline, accessibility, UX polish | 478 |
+| 069 | Phase 9: PWA offline, accessibility, UX polish | 478, 480 |
 
 ## Completed - 2026-07-16 Session (Plan 065, PR #461)
 
