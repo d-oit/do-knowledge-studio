@@ -59,13 +59,15 @@ async function getOrCreateEncryptionKey(): Promise<CryptoKey> {
   const stored = sessionStorage.getItem(CRYPTO_KEY_STORAGE)
   if (stored) {
     const raw = Uint8Array.from(atob(stored), (c) => c.charCodeAt(0))
-    return crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, true, ['encrypt', 'decrypt'])
+    return crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'])
   }
+  // Generate key with extractable set to true only to allow exporting and saving to sessionStorage
   const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt'])
   const exported = await crypto.subtle.exportKey('raw', key)
   const b64 = btoa(String.fromCharCode(...new Uint8Array(exported)))
   sessionStorage.setItem(CRYPTO_KEY_STORAGE, b64)
-  return key
+  // Re-import the key with extractable: false to protect it in-memory
+  return crypto.subtle.importKey('raw', exported, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'])
 }
 
 async function encryptApiKey(apiKey: string): Promise<string> {
