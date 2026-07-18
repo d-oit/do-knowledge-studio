@@ -1,0 +1,47 @@
+/**
+ * TRIZ: 39 Engineering Parameters.
+ *
+ * Used with the contradiction matrix to find inventive principles.
+ */
+
+export const TRIZ_PARAMETERS: string[] = [
+  'Weight of moving object',
+  'Weight of non-moving object',
+  'Length of moving object',
+  'Length of non-moving object',
+  'Area of moving object',
+  'Area of non-moving object',
+  'Volume of moving object',
+  'Volume of non-moving object',
+  'Speed',
+  'Force',
+  'Tension / Pressure',
+  'Shape',
+  'Stability of object',
+  'Strength',
+  'Duration of action — moving',
+  'Duration of action — non-moving',
+  'Temperature',
+  'Illumination intensity',
+  'Energy use — moving',
+  'Energy use — non-moving',
+  'Power',
+  'Loss of energy',
+  'Loss of substance',
+  'Loss of information',
+  'Loss of time',
+  'Amount of substance',
+  'Reliability',
+  'Measurement accuracy',
+  'Manufacturing precision',
+  'External harm',
+  'Object-generated harm',
+  'Ease of manufacture',
+  'Ease of operation',
+  'Ease of repair',
+  'Design complexity',
+  'Degree of automation',
+  'Device complexity',
+  'Manufacturing productivity',
+  'Adaptability / Versatility',
+]

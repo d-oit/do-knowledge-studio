@@ -30,24 +30,12 @@ import {
   type ChatMessage,
 } from '@/lib/ai'
 import {
-  PROVIDER_LABELS,
-  OPENROUTER_DEFAULT_MODELS,
-  OLLAMA_DEFAULT_MODELS,
   DEFAULT_MODEL,
+  OLLAMA_DEFAULT_MODELS,
   DEFAULT_OLLAMA_BASE_URL,
 } from '@/lib/ai/types'
-
-interface ProviderOption {
-  id: AIProvider
-  label: string
-  models: string[]
-  requiresKey: boolean
-}
-
-const PROVIDERS: ProviderOption[] = [
-  { id: 'openrouter', label: PROVIDER_LABELS.openrouter, models: OPENROUTER_DEFAULT_MODELS, requiresKey: true },
-  { id: 'ollama', label: PROVIDER_LABELS.ollama, models: OLLAMA_DEFAULT_MODELS, requiresKey: false },
-]
+import { Field, PROVIDERS } from './ai-harness-settings'
+import { SwitchToggle } from '../ui/shared-primitives'
 
 export function AIHarnessView() {
   const entities = useStudioStore((s) => s.entities)
@@ -338,86 +326,31 @@ export function AIHarnessView() {
                       />
                     </Field>
 
-                    <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2">
-                      <div className="flex items-center gap-2">
-                        <Cpu className="h-3.5 w-3.5 text-saffron" />
-                        <div>
-                          <div className="text-[12px] font-medium text-ink">CPU only</div>
-                          <div className="text-caption text-ink-faint">Disable GPU acceleration</div>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => { setOllamaCpuOnly(!ollamaCpuOnly) }}
-                        className={cn(
-                          'relative h-5 w-9 overflow-hidden rounded-full transition-colors',
-                          ollamaCpuOnly ? 'bg-saffron' : 'bg-border',
-                        )}
-                        role="switch"
-                        aria-checked={ollamaCpuOnly}
-                      >
-                        <span
-                          className={cn(
-                            'absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform',
-                            ollamaCpuOnly ? 'translate-x-[18px]' : 'translate-x-0',
-                          )}
-                        />
-                      </button>
-                    </div>
+                    <SwitchToggle
+                      label="CPU only"
+                      description="Disable GPU acceleration"
+                      icon={Cpu}
+                      checked={ollamaCpuOnly}
+                      onToggle={() => { setOllamaCpuOnly(!ollamaCpuOnly) }}
+                    />
                   </>
                 )}
 
-                <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2">
-                  <div className="flex items-center gap-2">
-                    <BookOpen className="h-3.5 w-3.5 text-saffron" />
-                    <div>
-                      <div className="text-[12px] font-medium text-ink">Augment with local knowledge</div>
-                      <div className="text-caption text-ink-faint">BM25 retrieval over your entities</div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => { setAugment(!augment) }}
-                    className={cn(
-                      'relative h-5 w-9 overflow-hidden rounded-full transition-colors',
-                      augment ? 'bg-saffron' : 'bg-border',
-                    )}
-                    role="switch"
-                    aria-checked={augment}
-                  >
-                    <span
-                      className={cn(
-                        'absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform',
-                        augment ? 'translate-x-[18px]' : 'translate-x-0',
-                      )}
-                    />
-                  </button>
-                </div>
+                <SwitchToggle
+                  label="Augment with local knowledge"
+                  description="BM25 retrieval over your entities"
+                  icon={BookOpen}
+                  checked={augment}
+                  onToggle={() => { setAugment(!augment) }}
+                />
 
-                <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2">
-                  <div className="flex items-center gap-2">
-                    <Globe className="h-3.5 w-3.5 text-saffron" />
-                    <div>
-                      <div className="text-[12px] font-medium text-ink">Allow web research</div>
-                      <div className="text-caption text-ink-faint">Fetch URLs via Jina Reader</div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => { setAllowWebResearch(!allowWebResearch) }}
-                    className={cn(
-                      'relative h-5 w-9 overflow-hidden rounded-full transition-colors',
-                      allowWebResearch ? 'bg-saffron' : 'bg-border',
-                    )}
-                    role="switch"
-                    aria-checked={allowWebResearch}
-                  >
-                    <span
-                      className={cn(
-                        'absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform',
-                        allowWebResearch ? 'translate-x-[18px]' : 'translate-x-0',
-                      )}
-                    />
-                  </button>
-                </div>
-
+                <SwitchToggle
+                  label="Allow web research"
+                  description="Fetch URLs via Jina Reader"
+                  icon={Globe}
+                  checked={allowWebResearch}
+                  onToggle={() => { setAllowWebResearch(!allowWebResearch) }}
+                />
                 <button
                   onClick={() => {
                     saveAISettings({
@@ -538,26 +471,6 @@ export function AIHarnessView() {
           </div>
         </div>
       </div>
-    </div>
-  )
-}
-
-function Field({
-  label,
-  icon: Icon,
-  children,
-}: {
-  label: string
-  icon: typeof Database
-  children: React.ReactNode
-}) {
-  return (
-    <div>
-      <label className="mb-1.5 flex items-center gap-1.5 text-label font-semibold uppercase tracking-wide text-ink-faint">
-        <Icon className="h-3 w-3" />
-        {label}
-      </label>
-      {children}
     </div>
   )
 }

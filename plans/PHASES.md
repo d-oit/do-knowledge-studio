@@ -50,7 +50,7 @@
 - [x] Agentic tool-calling loop (search, create, link)
 - [x] Chat history persistence (IndexedDB)
 - [x] Rate limiting and API key encryption
-- [ ] Advanced TRIZ analysis features
+- [x] Advanced TRIZ analysis features
 
 ## Phase 7: Export Enhancement (Complete - 2026-06)
 - [x] Shared export core (browser + CLI) (PR #220)
@@ -85,3 +85,10 @@
 - [x] Loading states and skeleton screens
 - [x] Error boundaries per view
 - [x] Keyboard shortcuts help dialog
+
+## Phase 10: Documentation & Code Hygiene (Complete - 2026-07-18)
+- [x] PHASES.md: check all completed items (TRIZ analysis features)
+- [x] GOAP.md: check all success criteria (8 goals × 4-6 criteria)
+- [x] INDEX.md: update metrics and session history
+- [x] LOC remediation: split triz-data.ts (743→4 files)
+- [x] LOC remediation: extract ai-harness-settings.tsx (563→under500)

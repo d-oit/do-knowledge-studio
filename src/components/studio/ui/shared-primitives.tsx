@@ -253,3 +253,49 @@ export function Skeleton({ className }: { className?: string }) {
     />
   )
 }
+
+// ---------------------------------------------------------------------------
+// SwitchToggle — accessible toggle switch for settings panels
+// ---------------------------------------------------------------------------
+
+export function SwitchToggle({
+  label,
+  description,
+  icon: Icon,
+  checked,
+  onToggle,
+}: {
+  label: string
+  description: string
+  icon: LucideIcon
+  checked: boolean
+  onToggle: () => void
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2">
+      <div className="flex items-center gap-2">
+        <Icon className="h-3.5 w-3.5 text-saffron" />
+        <div>
+          <div className="text-[12px] font-medium text-ink">{label}</div>
+          <div className="text-caption text-ink-faint">{description}</div>
+        </div>
+      </div>
+      <button
+        onClick={onToggle}
+        className={cn(
+          'relative h-5 w-9 overflow-hidden rounded-full transition-colors',
+          checked ? 'bg-saffron' : 'bg-border',
+        )}
+        role="switch"
+        aria-checked={checked}
+      >
+        <span
+          className={cn(
+            'absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform',
+            checked ? 'translate-x-[18px]' : 'translate-x-0',
+          )}
+        />
+      </button>
+    </div>
+  )
+}

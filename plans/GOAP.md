@@ -53,10 +53,10 @@ G-SECURITY ──→ G-STABILITY ──→ G-CONFIG ──→ G-QUALITY ──�
 | A6 | Audit all `VITE_` env usage in codebase | 0.5h | ADR-003 |
 
 ### Success Criteria
-- [ ] No unescaped user content in exported HTML (browser or CLI)
-- [ ] No `VITE_` environment variables expose API keys
-- [ ] Security test suite passes for XSS vectors
-- [ ] `npm audit` / `pnpm audit` shows zero critical vulnerabilities
+- [x] No unescaped user content in exported HTML (browser or CLI)
+- [x] No `VITE_` environment variables expose API keys
+- [x] Security test suite passes for XSS vectors
+- [x] `npm audit` / `pnpm audit` shows zero critical vulnerabilities
 
 ---
 
@@ -85,9 +85,9 @@ G-SECURITY ──→ G-STABILITY ──→ G-CONFIG ──→ G-QUALITY ──�
 | B7 | Fix broken discussions URL in ISSUE_TEMPLATE config | 0.5h |
 
 ### Success Criteria
-- [ ] All 7 bugs verified fixed via E2E or unit test
-- [ ] No dead code components in bundle
-- [ ] All version references match `VERSION` file
+- [x] All 7 bugs verified fixed via E2E or unit test
+- [x] No dead code components in bundle
+- [x] All version references match `VERSION` file
 
 ---
 
@@ -116,10 +116,10 @@ G-SECURITY ──→ G-STABILITY ──→ G-CONFIG ──→ G-QUALITY ──�
 | C6 | Add path filters for docs-only CI skipping | 0.5h |
 
 ### Success Criteria
-- [ ] All CI workflows have explicit `timeout-minutes`
-- [ ] Cache hit reduces CI run time by ≥40%
-- [ ] `tsc --noEmit` passes with browser-only types
-- [ ] Dependabot only opens PRs for existing ecosystems
+- [x] All CI workflows have explicit `timeout-minutes`
+- [x] Cache hit reduces CI run time by ≥40%
+- [x] `tsc --noEmit` passes with browser-only types
+- [x] Dependabot only opens PRs for existing ecosystems
 
 ---
 
@@ -152,12 +152,12 @@ G-SECURITY ──→ G-STABILITY ──→ G-CONFIG ──→ G-QUALITY ──�
 | Q10 | Extract shared export logic into `src/lib/export-core.ts` | 2h |
 
 ### Success Criteria
-- [ ] Test coverage ≥50% (lines, branches, functions)
-- [ ] `grep "as any" src/ --include="*.ts" --include="*.tsx"` returns zero
-- [ ] `grep "as unknown as" src/ --include="*.ts" --include="*.tsx"` returns zero
-- [ ] No file-level ESLint TS safety disables remaining
-- [ ] Feature crash only affects that feature, not entire app
-- [ ] ExportPanel and CLI use shared export core
+- [x] Test coverage ≥50% (lines, branches, functions)
+- [x] `grep "as any" src/ --include="*.ts" --include="*.tsx"` returns zero
+- [x] `grep "as unknown as" src/ --include="*.ts" --include="*.tsx"` returns zero
+- [x] No file-level ESLint TS safety disables remaining
+- [x] Feature crash only affects that feature, not entire app
+- [x] ExportPanel and CLI use shared export core
 
 ---
 
@@ -186,12 +186,12 @@ G-SECURITY ──→ G-STABILITY ──→ G-CONFIG ──→ G-QUALITY ──�
 | M6 | Write tests for migration idempotency and rollback | 2h |
 
 ### Success Criteria
-- [ ] New `schema_version` table exists after first run
-- [ ] Running `db:migrate` applies pending migrations
-- [ ] `db:rollback` reverts last migration
-- [ ] Auto-migration on app start runs without blocking UI > 500ms
-- [ ] Backup file created before each destructive migration
-- [ ] Tests verify up/down migration is lossless
+- [x] New `schema_version` table exists after first run
+- [x] Running `db:migrate` applies pending migrations
+- [x] `db:rollback` reverts last migration
+- [x] Auto-migration on app start runs without blocking UI > 500ms
+- [x] Backup file created before each destructive migration
+- [x] Tests verify up/down migration is lossless
 
 ---
 
@@ -224,12 +224,12 @@ G-SECURITY ──→ G-STABILITY ──→ G-CONFIG ──→ G-QUALITY ──�
 | P8 | Virtualize entity mention menu | 2h |
 
 ### Success Criteria
-- [ ] Export with 500 entities completes in <1s (was N+1 seconds)
-- [ ] `oramaIdMap` evicts entries beyond 10k limit
-- [ ] Chat sends are debounced — rapid clicks only trigger one search
-- [ ] Graph re-render with 1000 edges < 100ms (was clear/re-add)
-- [ ] Semantic search only loads transformers.js on first use
-- [ ] Mention menu renders 5000 entities without jank
+- [x] Export with 500 entities completes in <1s (was N+1 seconds)
+- [x] `oramaIdMap` evicts entries beyond 10k limit
+- [x] Chat sends are debounced — rapid clicks only trigger one search
+- [x] Graph re-render with 1000 edges < 100ms (was clear/re-add)
+- [x] Semantic search only loads transformers.js on first use
+- [x] Mention menu renders 5000 entities without jank
 
 ---
 
@@ -260,11 +260,11 @@ G-SECURITY ──→ G-STABILITY ──→ G-CONFIG ──→ G-QUALITY ──�
 | F8 | Accessibility audit + fix WCAG 2.2 AA violations | 3h |
 
 ### Success Criteria
-- [ ] Entity CRUD fully works in UI (create, read, update, delete)
-- [ ] Mind map nodes editable via click and context menu
-- [ ] Graph layout toggle switches between force-directed and hierarchical
-- [ ] Graph navigable entirely via keyboard
-- [ ] No WCAG 2.2 AA violations in automated audit
+- [x] Entity CRUD fully works in UI (create, read, update, delete)
+- [x] Mind map nodes editable via click and context menu
+- [x] Graph layout toggle switches between force-directed and hierarchical
+- [x] Graph navigable entirely via keyboard
+- [x] No WCAG 2.2 AA violations in automated audit
 
 ---
 
@@ -290,10 +290,10 @@ G-SECURITY ──→ G-STABILITY ──→ G-CONFIG ──→ G-QUALITY ──�
 | X4 | Add UI controls for format selection in ExportPanel | 1h |
 
 ### Success Criteria
-- [ ] Graph exports as 1080p PNG with transparent background option
-- [ ] PDF export preserves entity/claim structure
-- [ ] DOCX export produces valid `.docx` files
-- [ ] All export buttons show progress and completion states
+- [x] Graph exports as 1080p PNG with transparent background option
+- [x] PDF export preserves entity/claim structure
+- [x] DOCX export produces valid `.docx` files
+- [x] All export buttons show progress and completion states
 
 ---
 
