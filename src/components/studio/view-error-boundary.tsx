@@ -44,12 +44,12 @@ export class ViewErrorBoundary extends Component<
             <h2 className="mb-1 font-serif text-lg font-semibold text-ink">
               {this.props.viewName} failed to load
             </h2>
-            <p className="mb-4 max-w-sm text-[13px] text-ink-mute">
+            <p className="mb-4 max-w-sm text-body-sm text-ink-mute">
               {this.state.error?.message || 'An unexpected error occurred.'}
             </p>
             <button
               onClick={this.handleReset}
-              className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-[13px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+              className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-body-sm font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
             >
               <RefreshCcw className="h-3.5 w-3.5" />
               Reload view

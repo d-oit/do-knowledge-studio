@@ -41,10 +41,7 @@ export function OfflineIndicator() {
           exit="exit"
           variants={ANIMATION_VARIANTS}
           transition={ANIMATION_TRANSITION}
-          className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center gap-2 bg-[#b8593a] px-4 py-2 text-sm text-white"
-          style={{
-            backgroundColor: "var(--clay)",
-          }}
+          className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center gap-2 bg-clay px-4 py-2 text-sm text-white"
         >
           <WifiOff className="h-4 w-4 shrink-0" />
           <span>

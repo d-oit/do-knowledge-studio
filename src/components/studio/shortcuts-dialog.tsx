@@ -295,7 +295,7 @@ export function ShortcutsDialog() {
                     value={filter}
                     onChange={(e) => { setFilter(e.target.value); }}
                     placeholder="Filter shortcuts..."
-                    className="w-full rounded-md border border-border bg-background py-1.5 pl-8 pr-3 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+                    className="w-full rounded-md border border-border bg-background py-1.5 pl-8 pr-3 text-body-sm text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
                     aria-label="Filter shortcuts"
                   />
                 </div>
@@ -304,7 +304,7 @@ export function ShortcutsDialog() {
               {/* Body — two-column grouped list */}
               <div className="max-h-[70vh] overflow-y-auto px-5 py-4">
                 {filteredShortcuts.length === 0 ? (
-                  <p className="py-8 text-center text-[13px] text-ink-mute">
+                  <p className="py-8 text-center text-body-sm text-ink-mute">
                     No shortcuts match &quot;{filter}&quot;
                   </p>
                 ) : (
@@ -320,7 +320,7 @@ export function ShortcutsDialog() {
                               key={row.keys}
                               className="flex items-center justify-between gap-3"
                             >
-                              <span className="text-[13px] text-ink-soft">{row.action}</span>
+                              <span className="text-body-sm text-ink-soft">{row.action}</span>
                               <kbd
                                 className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-label text-ink-soft whitespace-nowrap"
                                 aria-label={row.keys}
