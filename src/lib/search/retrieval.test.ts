@@ -97,4 +97,35 @@ describe('BM25 Retrieval Engine', () => {
     expect(results.length).toBeGreaterThan(0)
     expect(results[0].id).toBe('e1')
   })
+
+  it('performance benchmark with large dataset', () => {
+    const largeEntities: Entity[] = Array.from({ length: 500 }, (_, i) =>
+      makeEntity({
+        id: `e-${i}`,
+        name: `Entity Name ${i}`,
+        description: `This is the description for entity number ${i} which discusses React, Hooks, TypeScript and CSS layouts.`,
+        content: `# Content ${i}\nHere is some body content with key terms like keyword-${i % 10}.`,
+        tags: [`tag-${i % 5}`, 'react', 'typescript'],
+      })
+    )
+
+    const largeClaims: Claim[] = Array.from({ length: 1500 }, (_, i) =>
+      makeClaim({
+        id: `c-${i}`,
+        entityId: `e-${i % 500}`,
+        statement: `Statement about entity number ${i % 500} regarding React hooks or CSS systems.`,
+        confidence: 0.9,
+      })
+    )
+
+    const start = performance.now()
+    const iterations = 10
+    for (let k = 0; k < iterations; k++) {
+      search(largeEntities, largeClaims, `React hooks keyword-${k % 10}`)
+    }
+    const end = performance.now()
+    const averageTime = (end - start) / iterations
+    console.log(`Average search execution time over 500 entities and 1500 claims: ${averageTime.toFixed(2)}ms`)
+    expect(averageTime).toBeLessThan(1000) // loose upper bound for sanity
+  })
 })

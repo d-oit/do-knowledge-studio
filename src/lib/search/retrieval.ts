@@ -25,6 +25,7 @@ interface IndexEntry {
   id: string
   type: 'entity' | 'claim'
   tokens: string[]
+  tokenSet: Set<string>
   entityId?: string
   entityName?: string
   fullText: string
@@ -38,26 +39,34 @@ function tokenize(text: string): string[] {
     .filter((w) => w.length > 2 && !STOP_WORDS.has(w))
 }
 
-function buildIndex(entities: Entity[], claims: Claim[]): IndexEntry[] {
+function buildIndex(
+  entities: Entity[],
+  claims: Claim[],
+  entityMap: Map<string, Entity>,
+): IndexEntry[] {
   const entries: IndexEntry[] = []
 
   for (const e of entities) {
     const text = `${e.name} ${e.description} ${e.content} ${e.tags.join(' ')}`
+    const tokens = tokenize(text)
     entries.push({
       id: e.id,
       type: 'entity',
-      tokens: tokenize(text),
+      tokens,
+      tokenSet: new Set(tokens),
       fullText: text,
     })
   }
 
   for (const c of claims) {
-    const entity = entities.find((e) => e.id === c.entityId)
+    const entity = entityMap.get(c.entityId)
     const text = `${c.statement} ${c.evidence ?? ''} ${c.source ?? ''}`
+    const tokens = tokenize(text)
     entries.push({
       id: c.id,
       type: 'claim',
-      tokens: tokenize(text),
+      tokens,
+      tokenSet: new Set(tokens),
       entityId: c.entityId,
       entityName: entity?.name,
       fullText: text,
@@ -71,7 +80,7 @@ function computeIDF(entries: IndexEntry[], queryTokens: string[]): Map<string, n
   const N = entries.length
   const idf = new Map<string, number>()
   for (const qt of queryTokens) {
-    const df = entries.filter((e) => e.tokens.includes(qt)).length
+    const df = entries.filter((e) => e.tokenSet.has(qt)).length
     idf.set(qt, Math.log((N - df + 0.5) / (df + 0.5) + 1))
   }
   return idf
@@ -111,7 +120,12 @@ export function search(
   query: string,
   limit: number = 5,
 ): SearchResult[] {
-  const entries = buildIndex(entities, claims)
+  const entityMap = new Map<string, Entity>()
+  for (const e of entities) {
+    entityMap.set(e.id, e)
+  }
+
+  const entries = buildIndex(entities, claims, entityMap)
   if (entries.length === 0) return []
 
   const queryTokens = tokenize(query)
@@ -133,7 +147,7 @@ export function search(
     id: entry.id,
     type: entry.type,
     name: entry.type === 'entity'
-      ? (entities.find((e) => e.id === entry.id)?.name ?? entry.id)
+      ? (entityMap.get(entry.id)?.name ?? entry.id)
       : (entry.entityName ?? entry.id),
     snippet: getSnippet(entry),
     score,
