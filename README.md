@@ -108,6 +108,48 @@ components or touching tokens in `globals.css`.
 - The AI Harness view supports local Ollama models so the entire workflow can
   stay on-device.
 
+## OpenRouter Integration & Routers
+
+The AI Harness integrates with [OpenRouter](https://openrouter.ai/), supporting both specific, concrete models (e.g. Claude 3.5 Sonnet) and OpenRouter's first-class **Routers** as selectable engines.
+
+### Why use a Router instead of a specific model?
+
+Routers expose higher-level, automated behaviors that optimize speed, cost, or response quality, making them incredibly useful for agentic, evaluation, or high-throughput workflows.
+
+| Router | Behavior & Recommended Workflow |
+|---|---|
+| **Auto Router** (`openrouter/auto`) | Dynamically selects the best model for your prompt. Recommended for general reasoning or tasks with highly variable complexity. |
+| **Free Models Router** (`openrouter/free`) | Cost-optimized routing that stays 100% free. Recommended for cost-sensitive experiments and high-volume local-first playground queries. |
+| **Fusion Router** (`openrouter/fusion`) | Runs multi-model deliberation and merges responses with a judge panel. Recommended for deep analysis, synthesis, or highly creative tasks. |
+| **Pareto Router** (`openrouter/pareto`) | Scores models based on speed/cost vs quality tradeoffs. Recommended for high-speed coding and instruction-following agent tasks. |
+| **Latest Model Resolution** (`openrouter/flavor-latest`) | Automatically resolves family-latest style slugs so you are always using the absolute latest model in a specific lineage. |
+
+### Example Configuration Snippet
+
+When calling OpenRouter programmatically, you can pass either a concrete model slug or a router target object:
+
+```typescript
+// Example 1: Passing a Router Slug
+await sendChat({
+  provider: 'openrouter',
+  model: 'openrouter/auto',
+  apiKey: 'YOUR_API_KEY',
+  messages: [...]
+})
+
+// Example 2: Passing an OpenRouterTarget Object
+await sendChat({
+  provider: 'openrouter',
+  model: {
+    kind: 'router',
+    slug: 'openrouter/fusion',
+    display_name: 'Fusion Router'
+  },
+  apiKey: 'YOUR_API_KEY',
+  messages: [...]
+})
+```
+
 ## License
 
 Internal project. See the original repository for licensing context.
