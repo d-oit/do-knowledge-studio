@@ -28,7 +28,6 @@ Build a local-first, structured knowledge engine that empowers users to capture,
 8. **Data Integrity** — Zod validation at all boundaries (Plan 072) ✓
 9. **Honest Product Surface** — Accurate labels, no false-success controls (Plan 072) ✓
 
-## Remaining Work (Plan 073)
+## Remaining Work (Plan 074)
 - Bidirectional Yjs/Zustand sync bridge
-- UI/UX hardening (44px targets, ARIA tree, Playwright device coverage)
-- Full accessibility audit
+- Full accessibility audit (axe scanning, screen reader verification, zoom/reflow)

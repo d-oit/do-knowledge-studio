@@ -5,8 +5,22 @@
 
 ## Current Status
 
-Plan 072 remediates findings from Plan 071 (codebase gap audit). The following
-changes have been implemented:
+Plan 073 closes out remaining gaps from Plan 072. All quality gates pass.
+
+### Plan 073 — Closeout of Plan 072 Remaining Gaps (2026-07-24)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W0 | Baseline & Verification | Done | 10 gaps verified from source |
+| W1 | Import Safety (P0) | Done | Import preview step, `importWithRollback` with atomic replacement and undo |
+| W2 | Product Honesty + CI (P1) | Done | Chat label fixed, mobile BM25 wired, claim CRUD (edit/delete), version-propagation removed, security scanners fail-closed |
+| W3 | UI/UX Polish (P2) | Done | Mind map ARIA tree + roving tabindex, Playwright mobile/tablet projects, coverage thresholds raised (30/30/25/20), 44px touch targets |
+| W4 | Documentation (P2) | Done | This update |
+
+### Deferred to Plan 074
+
+- G2: Bidirectional Yjs/Zustand sync bridge (requires G1 validation boundary)
+- Full accessibility audit (axe scanning, screen reader verification, 200% zoom)
 
 ### Plan 072 — GOAP Remediation (2026-07-24)
 
@@ -17,12 +31,6 @@ changes have been implemented:
 | W2 | Harness & CI (P1) | Done | Version-propagation disabled, security fail-closed, warnings-as-errors |
 | W3 | Product Honesty (P1) | Done | Semantic→Ranked labels, Re-sync removed, coming soon tooltips fixed |
 | W5 | Documentation (P2) | Done | This update |
-
-### Deferred to Plan 073
-
-- G2: Bidirectional Yjs/Zustand sync bridge (requires G1 validation boundary)
-- G5: UI/UX hardening (44px targets, ARIA tree, Playwright devices)
-- Full accessibility audit (axe, screen reader, zoom/reflow)
 
 ## Historical Completed Work
 

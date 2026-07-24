@@ -240,11 +240,10 @@ export function MindMapView() {
 
           <div
             role="treeitem"
-            tabIndex={0}
+            tabIndex={focusedNodeId === node.entity.id ? 0 : -1}
             aria-selected={focusedNodeId === node.entity.id ? true : undefined}
             aria-expanded={hasChildren ? isExpanded : undefined}
             onFocus={() => { setFocusedNodeId(node.entity.id) }}
-            onBlur={() => { setFocusedNodeId(null) }}
             onClick={() => {
               selectEntity(node.entity.id)
               setView('editor')
@@ -256,10 +255,44 @@ export function MindMapView() {
                 setView('editor')
               }
               if (e.key === 'ArrowRight' && hasChildren && !isExpanded) {
+                e.preventDefault()
                 toggleNode(node.entity.id)
               }
               if (e.key === 'ArrowLeft' && hasChildren && isExpanded) {
+                e.preventDefault()
                 toggleNode(node.entity.id)
+              }
+              if (e.key === 'ArrowDown') {
+                e.preventDefault()
+                const items = canvasRef.current?.querySelectorAll<HTMLElement>('[role="treeitem"]')
+                if (!items) return
+                const idx = Array.from(items).indexOf(e.currentTarget as HTMLElement)
+                if (idx < items.length - 1) {
+                  items[idx + 1].focus()
+                }
+              }
+              if (e.key === 'ArrowUp') {
+                e.preventDefault()
+                const items = canvasRef.current?.querySelectorAll<HTMLElement>('[role="treeitem"]')
+                if (!items) return
+                const idx = Array.from(items).indexOf(e.currentTarget as HTMLElement)
+                if (idx > 0) {
+                  items[idx - 1].focus()
+                }
+              }
+              if (e.key === 'Home') {
+                e.preventDefault()
+                const items = canvasRef.current?.querySelectorAll<HTMLElement>('[role="treeitem"]')
+                if (items && items.length > 0) {
+                  items[0].focus()
+                }
+              }
+              if (e.key === 'End') {
+                e.preventDefault()
+                const items = canvasRef.current?.querySelectorAll<HTMLElement>('[role="treeitem"]')
+                if (items && items.length > 0) {
+                  items[items.length - 1].focus()
+                }
               }
             }}
             className={cn(
@@ -375,7 +408,7 @@ export function MindMapView() {
       {/* Canvas */}
       <div ref={canvasRef} tabIndex={-1} className="flex-1 canvas-grid overflow-auto p-6">
         {tree ? (
-          <div className="mx-auto max-w-3xl">
+          <div role="tree" aria-label="Knowledge mind map" className="mx-auto max-w-3xl">
             {renderNode(tree)}
           </div>
         ) : (

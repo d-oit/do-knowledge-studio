@@ -10,6 +10,8 @@ import {
   Check,
   ArrowRight,
   RotateCcw,
+  Eye,
+  AlertTriangle,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -29,13 +31,14 @@ import {
   buildPdfExport,
   buildDocxExport,
   parseImportFile,
+  type ImportPreview,
 } from './export-helpers'
 import { encryptData, buildEncryptedReaderHtml } from '@/lib/export/encrypt'
 
 export function ExportView() {
   const entities = useStudioStore((s) => s.entities)
   const claims = useStudioStore((s) => s.claims)
-  const importData = useStudioStore((s) => s.importData)
+  const importWithRollback = useStudioStore((s) => s.importWithRollback)
   const resetStore = useStudioStore((s) => s.resetStore)
   const setView = useStudioStore((s) => s.setView)
   const reducedMotion = useReducedMotion()
@@ -45,21 +48,23 @@ export function ExportView() {
   const [confirm, setConfirm] = useState('')
   const [showPass, setShowPass] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
+  const [importPreview, setImportPreview] = useState<ImportPreview | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const resetCancelRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
-    if (!showResetConfirm) return
+    if (!showResetConfirm && !importPreview) return
     resetCancelRef.current?.focus()
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setShowResetConfirm(false)
+        setImportPreview(null)
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => { window.removeEventListener('keydown', handleKeyDown) }
-  }, [showResetConfirm])
+  }, [showResetConfirm, importPreview])
 
   const handleExport = async (format: string) => {
     if (format === 'json') {
@@ -151,22 +156,43 @@ export function ExportView() {
       const text = String(reader.result || '')
       const result = parseImportFile(text)
       if (!result.success) {
-        const errorMessages = result.errors.map((e) => `${e.path}: ${e.message}`).join('; ')
+        const errorMessages = result.errors.map((err) => `${err.path}: ${err.message}`).join('; ')
         toast.error('Import failed', {
           description: errorMessages,
         })
         return
       }
       const { entities: ents, claims: cls } = result
-      importData(ents, cls)
-      toast.success('Import complete', {
-        description: `${ents.length} entities · ${cls.length} claims replaced the current library.`,
+      const existingIds = new Set(entities.map((ent) => ent.id))
+      const duplicateIds = ents.filter((ent) => existingIds.has(ent.id)).map((ent) => ent.id)
+      setImportPreview({
+        entities: ents,
+        claims: cls,
+        entityCount: ents.length,
+        claimCount: cls.length,
+        version: 1,
+        duplicateIds,
       })
     }
     reader.onerror = () => {
       toast.error('Import failed', { description: 'Could not read the file.' })
     }
     reader.readAsText(file)
+  }
+
+  const handleConfirmImport = () => {
+    if (!importPreview) return
+    const result = importWithRollback(importPreview.entities, importPreview.claims)
+    if (result.success) {
+      toast.success('Import complete', {
+        description: `${importPreview.entityCount} entities · ${importPreview.claimCount} claims replaced the current library.`,
+      })
+    } else {
+      toast.error('Import failed — state restored', {
+        description: result.error,
+      })
+    }
+    setImportPreview(null)
   }
 
   const handleReset = () => {
@@ -479,6 +505,73 @@ export function ExportView() {
                 className="rounded-md bg-red-600 px-4 py-1.5 text-[12px] font-semibold text-white shadow-sm transition-all hover:bg-red-700 focus-ring"
               >
                 Reset everything
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Import preview dialog */}
+      {importPreview && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Confirm import"
+          className="fixed inset-0 z-[800] flex items-center justify-center bg-ink/30 backdrop-blur-sm"
+          onClick={() => { setImportPreview(null) }}
+        >
+          <motion.div
+            initial={reducedMotion ? false : { opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={reducedMotion ? { duration: 0 } : undefined}
+            onClick={(e) => e.stopPropagation()}
+            className="w-[420px] max-w-[92vw] rounded-xl border border-border bg-popover p-6 shadow-2xl"
+          >
+            <div className="mb-4 flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-saffron-soft text-saffron-deep">
+                <Eye className="h-4 w-4" />
+              </div>
+              <div>
+                <h3 className="font-serif text-[15px] font-semibold text-ink">Import preview</h3>
+                <p className="text-[12px] text-ink-mute">Review before replacing your library.</p>
+              </div>
+            </div>
+
+            <div className="mb-4 space-y-2 rounded-lg border border-border bg-background p-3">
+              <div className="flex items-center justify-between text-[13px]">
+                <span className="text-ink-mute">Entities</span>
+                <span className="font-semibold text-ink">{importPreview.entityCount}</span>
+              </div>
+              <div className="flex items-center justify-between text-[13px]">
+                <span className="text-ink-mute">Claims</span>
+                <span className="font-semibold text-ink">{importPreview.claimCount}</span>
+              </div>
+              {importPreview.duplicateIds.length > 0 && (
+                <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-2 dark:border-amber-900 dark:bg-amber-950/40">
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <p className="text-label text-amber-700 dark:text-amber-300">
+                    {importPreview.duplicateIds.length} existing {importPreview.duplicateIds.length === 1 ? 'entity' : 'entities'} will be replaced (matching IDs detected).
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <p className="mb-4 text-[12px] text-ink-mute">
+              This will replace all current entities and claims. A snapshot is taken so you can undo if something goes wrong.
+            </p>
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => { setImportPreview(null) }}
+                className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmImport}
+                className="rounded-md bg-primary px-4 py-1.5 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+              >
+                Confirm import
               </button>
             </div>
           </motion.div>

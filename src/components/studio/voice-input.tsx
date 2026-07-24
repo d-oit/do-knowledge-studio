@@ -69,7 +69,7 @@ export function VoiceInput({
         onClick={handleClick}
         disabled={disabled}
         className={cn(
-          'flex h-8 w-8 items-center justify-center rounded-md transition-colors focus-ring',
+          'flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md transition-colors focus-ring',
           isListening
             ? 'bg-red-500 text-white animate-pulse'
             : 'text-ink-faint hover:bg-border hover:text-ink',

@@ -22,6 +22,15 @@ export type ImportResult =
   | { success: true; entities: Entity[]; claims: Claim[] }
   | { success: false; errors: ValidationError[] }
 
+export interface ImportPreview {
+  entities: Entity[]
+  claims: Claim[]
+  entityCount: number
+  claimCount: number
+  version: number
+  duplicateIds: string[]
+}
+
 export interface ExportFormat {
   id: string
   name: string

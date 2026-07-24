@@ -52,6 +52,8 @@ export function EditorView() {
   const finishEditing = useStudioStore((s) => s.finishEditing)
   const claims = useStudioStore((s) => s.claims)
   const addClaim = useStudioStore((s) => s.addClaim)
+  const updateClaim = useStudioStore((s) => s.updateClaim)
+  const deleteClaim = useStudioStore((s) => s.deleteClaim)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const draftIdRef = useRef<string>('')
 
@@ -411,6 +413,8 @@ export function EditorView() {
           claims={entityClaims}
           editingEntityId={editing.id}
           addClaim={addClaim}
+          updateClaim={updateClaim}
+          deleteClaim={deleteClaim}
         />
       )}
 
