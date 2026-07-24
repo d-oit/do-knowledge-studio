@@ -1,22 +1,27 @@
 # PHASES
 
-## Phase 1: Foundation (Complete)
-- [x] SQLite WASM + OPFS Client
-- [x] Entity/Claim/Link Repository
-- [x] Basic UI with View Switching
-- [x] CLI Harness
+> **Note**: Phases 1-3 describe the original Vite/SQLite architecture and are
+> historical records. The project migrated to Next.js/Zustand/localStorage
+> (ADR 018). Items marked [historical] were completed in the prior architecture
+> and may not apply to the current codebase.
 
-## Phase 2: Integration (Complete)
-- [x] Tiptap claims extension (convert text to claims)
-- [x] Local search indexing (FTS5 + Orama)
+## Phase 1: Foundation (Historical — Vite/SQLite era)
+- [x] SQLite WASM + OPFS Client [historical — removed in ADR 018]
+- [x] Entity/Claim/Link Repository [historical — replaced by Zustand store]
+- [x] Basic UI with View Switching
+- [x] CLI Harness [historical — removed in Next.js migration]
+
+## Phase 2: Integration (Historical — Vite/SQLite era)
+- [x] Tiptap claims extension [historical — replaced with textarea]
+- [x] Local search indexing [historical — Orama removed, now BM25]
 - [x] Graph neighborhood rendering (Focus Mode)
 
-## Phase 3: Synthesis (Complete - 2026-05)
-- [x] Local RAG (Orama-based search)
-- [x] Bi-directional markdown sync (CLI Support)
+## Phase 3: Synthesis (Historical — Vite/SQLite era)
+- [x] Local RAG [historical — Orama removed, now BM25]
+- [x] Bi-directional markdown sync [historical — CLI removed]
 - [x] Export to static site (Markdown, JSON, HTML)
-- [x] Knowledge graph snapshots with diffing
-- [x] Node.js CLI with better-sqlite3 adapter
+- [x] Knowledge graph snapshots [historical — stores view bookmarks, not revisions]
+- [x] Node.js CLI [historical — removed in Next.js migration]
 
 ## Phase 4: Security & Quality (Complete - 2026-05)
 - [x] XSS fixes in all export paths (PR #200, #216)
@@ -42,14 +47,14 @@
 - [x] Import persistence (CLI + browser)
 
 ## Phase 6: Intelligence (Complete - 2026-06)
-- [x] Streaming AI chat with LLM provider integration (OpenRouter, Kilo, Anthropic, Ollama)
-- [x] Semantic search with embeddings (all-MiniLM-L6-v2)
+- [x] Streaming AI chat with LLM provider integration (OpenRouter, Ollama)
+- [x] BM25 keyword search with ranked results [renamed from "semantic search" in Plan 072]
 - [x] Entity auto-hydration from external sources (Jina AI reader)
 - [x] Claim provenance and verification tracking
 - [x] Entity-aware AI tools (list, query, link)
 - [x] Agentic tool-calling loop (search, create, link)
-- [x] Chat history persistence (IndexedDB)
-- [x] Rate limiting and API key encryption
+- [x] Chat history persistence [localStorage, not IndexedDB]
+- [x] Rate limiting and API key encryption [session-only, per ADR 028]
 - [x] Advanced TRIZ analysis features
 
 ## Phase 7: Export Enhancement (Complete - 2026-06)

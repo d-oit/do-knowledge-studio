@@ -143,6 +143,14 @@ export async function saveAISettings(settings: AISettings): Promise<void> {
   }
 }
 
+export function isSessionOnlyCredential(): boolean {
+  return true
+}
+
+export function getSessionOnlyMessage(): string {
+  return 'API key is stored for this browser session only. It will be cleared when you close the tab.'
+}
+
 export function getProviderEndpoint(provider: AIProvider): string {
   switch (provider) {
     case 'openrouter':

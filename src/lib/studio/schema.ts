@@ -39,6 +39,50 @@ export const ExportPayloadSchema = z.object({
   claims: z.array(ClaimSchema),
 })
 
+export const PersistedEnvelopeSchema = z.object({
+  version: z.number().int().positive(),
+  entities: z.array(EntitySchema),
+  claims: z.array(ClaimSchema),
+})
+
 export type ValidatedEntity = z.infer<typeof EntitySchema>
 export type ValidatedClaim = z.infer<typeof ClaimSchema>
 export type ValidatedExportPayload = z.infer<typeof ExportPayloadSchema>
+export type ValidatedPersistedEnvelope = z.infer<typeof PersistedEnvelopeSchema>
+
+export interface ValidationError {
+  path: string
+  message: string
+}
+
+export function validatePersistedState(
+  data: unknown,
+): { success: true; data: ValidatedPersistedEnvelope } | { success: false; errors: ValidationError[] } {
+  const result = PersistedEnvelopeSchema.safeParse(data)
+  if (result.success) {
+    return { success: true, data: result.data }
+  }
+  return {
+    success: false,
+    errors: result.error.issues.map((issue) => ({
+      path: issue.path.join('.'),
+      message: issue.message,
+    })),
+  }
+}
+
+export function validateImportPayload(
+  data: unknown,
+): { success: true; data: ValidatedExportPayload } | { success: false; errors: ValidationError[] } {
+  const result = ExportPayloadSchema.safeParse(data)
+  if (result.success) {
+    return { success: true, data: result.data }
+  }
+  return {
+    success: false,
+    errors: result.error.issues.map((issue) => ({
+      path: issue.path.join('.'),
+      message: issue.message,
+    })),
+  }
+}

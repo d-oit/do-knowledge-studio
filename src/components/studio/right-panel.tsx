@@ -33,14 +33,14 @@ function SearchPanel() {
   const entities = useStudioStore((s) => s.entities)
   const claims = useStudioStore((s) => s.claims)
   const startEdit = useStudioStore((s) => s.startEdit)
-  const [mode, setMode] = useState<'keyword' | 'semantic'>('keyword')
+  const [mode, setMode] = useState<'keyword' | 'ranked'>('keyword')
   const filtered = useFilteredEntities()
-  const semanticResults = useMemo(
-    () => (mode === 'semantic' ? search(entities, claims, searchQuery) : []),
+  const rankedResults = useMemo(
+    () => (mode === 'ranked' ? search(entities, claims, searchQuery) : []),
     [mode, entities, claims, searchQuery],
   )
 
-  const results = mode === 'semantic' ? semanticResults : filtered
+  const results = mode === 'ranked' ? rankedResults : filtered
 
   return (
     <aside className="hidden h-full w-[320px] shrink-0 flex-col border-l border-border bg-background wide:flex">
@@ -74,13 +74,13 @@ function SearchPanel() {
             Keyword
           </button>
           <button
-            onClick={() => { setMode('semantic') }}
+            onClick={() => { setMode('ranked') }}
             className={cn(
               'flex-1 rounded px-2 py-1 font-medium transition-colors',
-              mode === 'semantic' ? 'bg-background text-ink shadow-sm' : 'text-ink-mute',
+              mode === 'ranked' ? 'bg-background text-ink shadow-sm' : 'text-ink-mute',
             )}
           >
-            Semantic
+            Ranked
           </button>
         </div>
       </div>
@@ -93,9 +93,9 @@ function SearchPanel() {
               {searchQuery ? 'No matches found.' : 'Your library is empty.'}
             </p>
           </div>
-        ) : mode === 'semantic' ? (
-          <ul className="space-y-1.5" role="list" aria-label="Semantic search results">
-            {semanticResults.map((r: SearchResult) => {
+        ) : mode === 'ranked' ? (
+          <ul className="space-y-1.5" role="list" aria-label="Ranked search results">
+            {rankedResults.map((r: SearchResult) => {
               const targetId = r.type === 'entity' ? r.id : r.entityId
               const resolvedEntity = targetId ? entities.find((e) => e.id === targetId) : undefined
               const meta = resolvedEntity ? ENTITY_TYPE_META[resolvedEntity.type] : undefined

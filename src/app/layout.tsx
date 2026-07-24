@@ -27,13 +27,13 @@ const newsreader = Newsreader({
 export const metadata: Metadata = {
   title: "DO Knowledge Studio — Local-first thinking, connected",
   description:
-    "A local-first knowledge studio for rich notes, knowledge graphs, mind maps, semantic search, and AI-assisted thinking — all in your browser, no backend required.",
+    "A local-first knowledge studio for rich notes, knowledge graphs, mind maps, keyword search, and AI-assisted thinking — all in your browser, no backend required.",
   keywords: [
     "knowledge management",
     "local-first",
     "knowledge graph",
     "mind map",
-    "semantic search",
+    "keyword search",
     "AI agents",
     "TRIZ",
     "second brain",
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "DO Knowledge Studio",
-    description: "Local-first thinking, connected. Rich notes, graphs, mind maps, semantic search, and AI agents.",
+    description: "Local-first thinking, connected. Rich notes, graphs, mind maps, keyword search, and AI agents.",
     type: "website",
   },
   manifest: "/manifest.webmanifest",

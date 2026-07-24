@@ -307,7 +307,7 @@ function SearchTab({ onSelect }: { onSelect: () => void }) {
   const entities = useStudioStore((s) => s.entities)
   const startEdit = useStudioStore((s) => s.startEdit)
   const filtered = useFilteredEntities()
-  const [mode, setMode] = useState<'keyword' | 'semantic'>('keyword')
+  const [mode, setMode] = useState<'keyword' | 'ranked'>('keyword')
 
   // Empty-state copy follows the desktop SearchPanel exactly
   const emptyCopy = searchQuery ? 'No matches found.' : 'Your library is empty.'
@@ -339,16 +339,16 @@ function SearchTab({ onSelect }: { onSelect: () => void }) {
             Keyword
           </button>
           <button
-            onClick={() => { setMode('semantic') }}
-            aria-pressed={mode === 'semantic'}
+            onClick={() => { setMode('ranked') }}
+            aria-pressed={mode === 'ranked'}
             className={cn(
               'flex-1 rounded px-2 py-1 font-medium transition-colors focus-ring',
-              mode === 'semantic'
+              mode === 'ranked'
                 ? 'bg-background text-ink shadow-sm'
                 : 'text-ink-mute',
             )}
           >
-            Semantic
+            Ranked
           </button>
         </div>
       </div>

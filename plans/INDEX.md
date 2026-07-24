@@ -1,16 +1,30 @@
 # Plans Index
 
-**Updated**: 2026-07-18
+**Updated**: 2026-07-24
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
-## Remaining Work
+## Current Status
 
-All P0-P3 items from the plan backlog are now COMPLETE.
-Phase 8 collaboration features are COMPLETE.
-Phase 9 (Performance, PWA & Polish) is COMPLETE.
-Phase 10 (Docs & Code Hygiene) is COMPLETE.
+Plan 072 remediates findings from Plan 071 (codebase gap audit). The following
+changes have been implemented:
 
-No open tasks remaining.
+### Plan 072 — GOAP Remediation (2026-07-24)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W0 | Decisions & Baseline | Done | ADRs 027/028/029 accepted, broken symlinks fixed |
+| W1 | Data Integrity (P0) | Done | Zod hydration, import validation, deletion link cleanup, session-only credentials |
+| W2 | Harness & CI (P1) | Done | Version-propagation disabled, security fail-closed, warnings-as-errors |
+| W3 | Product Honesty (P1) | Done | Semantic→Ranked labels, Re-sync removed, coming soon tooltips fixed |
+| W5 | Documentation (P2) | Done | This update |
+
+### Deferred to Plan 073
+
+- G2: Bidirectional Yjs/Zustand sync bridge (requires G1 validation boundary)
+- G5: UI/UX hardening (44px targets, ARIA tree, Playwright devices)
+- Full accessibility audit (axe, screen reader, zoom/reflow)
+
+## Historical Completed Work
 
 ## Completed - 2026-07-18 Session (Phase 10: Docs & Code Hygiene)
 

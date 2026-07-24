@@ -39,6 +39,9 @@ fi
 # We don't exit immediately so we can report ALL issues, not just the first
 FAILED=0
 
+# Maximum allowed warnings across all checks. Zero means warnings are errors.
+MAX_ALLOWED_WARNINGS=0
+
 # DETECTED_LANGUAGES stores which language ecosystems are present in the repo
 # We use this array to conditionally run only relevant checks
 DETECTED_LANGUAGES=()
@@ -321,7 +324,15 @@ if [[ " ${DETECTED_LANGUAGES[*]} " =~ " typescript " ]] && [[ "$SCOPE" == "all" 
                 echo "$OUTPUT" >&2
                 FAILED=1
             else
-                echo -e "${GREEN}  ✓ pnpm lint passed${NC}"
+                # Enforce warnings-as-errors policy
+                WARNING_COUNT=$(echo "$OUTPUT" | grep -c -E '⚠|warning|Warning' || true)
+                if [ "$WARNING_COUNT" -gt "$MAX_ALLOWED_WARNINGS" ]; then
+                    echo -e "${RED}  ✗ pnpm lint: $WARNING_COUNT warnings found (max allowed: $MAX_ALLOWED_WARNINGS)${NC}"
+                    echo "$OUTPUT" >&2
+                    FAILED=1
+                else
+                    echo -e "${GREEN}  ✓ pnpm lint passed${NC}"
+                fi
             fi
         fi
 
