@@ -28,6 +28,9 @@ import {
   fetchOllamaModels,
   buildMessages,
   type ChatMessage,
+  OPENROUTER_ROUTERS,
+  OPENROUTER_MODELS,
+  OPENROUTER_DEFAULT_TARGETS,
 } from '@/lib/ai'
 import {
   DEFAULT_MODEL,
@@ -259,18 +262,37 @@ export function AIHarnessView() {
                   </select>
                 </Field>
 
-                <Field label="Model" icon={Cpu}>
+                <Field label="Engine" icon={Cpu}>
                   <div className="flex gap-1.5">
                     <select
                       value={model}
                       onChange={(e) => { setModel(e.target.value); setCustomModel('') }}
                       className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
                     >
-                      {(provider === 'ollama' ? ollamaModels : activeProvider.models).map((m) => (
-                        <option key={m} value={m}>
-                          {m}
-                        </option>
-                      ))}
+                      {provider === 'ollama' ? (
+                        ollamaModels.map((m) => (
+                          <option key={m} value={m}>
+                            {m}
+                          </option>
+                        ))
+                      ) : (
+                        <>
+                          <optgroup label="Routers">
+                            {OPENROUTER_ROUTERS.map((r) => (
+                              <option key={r.slug} value={r.slug}>
+                                {r.display_name}
+                              </option>
+                            ))}
+                          </optgroup>
+                          <optgroup label="Concrete Models">
+                            {OPENROUTER_MODELS.map((m) => (
+                              <option key={m.slug} value={m.slug}>
+                                {m.display_name}
+                              </option>
+                            ))}
+                          </optgroup>
+                        </>
+                      )}
                     </select>
                     {provider === 'ollama' && (
                       <button
@@ -286,9 +308,23 @@ export function AIHarnessView() {
                     type="text"
                     value={customModel}
                     onChange={(e) => { setCustomModel(e.target.value) }}
-                    placeholder="Or type a custom model name"
+                    placeholder="Or type a custom engine or model slug"
                     className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-mono text-ink-soft placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
                   />
+                  {provider === 'openrouter' && (
+                    (() => {
+                      const selectedTarget = OPENROUTER_DEFAULT_TARGETS.find((t) => t.slug === effectiveModel)
+                      if (selectedTarget?.description) {
+                        return (
+                          <div className="mt-2 rounded border border-border bg-muted/30 p-2 text-[11px] leading-relaxed text-ink-mute">
+                            <strong className="text-ink-soft">{selectedTarget.display_name}: </strong>
+                            {selectedTarget.description}
+                          </div>
+                        )
+                      }
+                      return null
+                    })()
+                  )}
                 </Field>
 
                 {activeProvider.requiresKey && (
@@ -382,7 +418,7 @@ export function AIHarnessView() {
               <div className="mt-1.5 flex items-center justify-between text-label">
                 <span className="flex items-center gap-1.5 text-ink-mute">
                   <Cpu className="h-3 w-3 text-ink-faint" />
-                  Active model
+                  Active engine
                 </span>
                 <span className="font-mono text-ink-soft">{effectiveModel}</span>
               </div>

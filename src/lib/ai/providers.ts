@@ -4,8 +4,9 @@ import type {
   ChatRequest,
   ChatResult,
   ProviderId,
+  OpenRouterTarget,
 } from './types'
-import { DEFAULT_OLLAMA_BASE_URL } from './types'
+import { DEFAULT_OLLAMA_BASE_URL, OPENROUTER_DEFAULT_TARGETS } from './types'
 
 const OPENROUTER_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions'
 const APP_TITLE = 'Do Knowledge Studio'
@@ -135,9 +136,25 @@ class OpenRouterAdapter implements ProviderAdapter {
   readonly id: ProviderId = 'openrouter'
   readonly requiresKey = true
 
+  private resolveTarget(model: string | OpenRouterTarget): OpenRouterTarget {
+    if (typeof model === 'object' && model !== null) {
+      return model
+    }
+    const found = OPENROUTER_DEFAULT_TARGETS.find((t) => t.slug === model)
+    if (found) return found
+    return {
+      kind: 'model',
+      slug: model,
+      display_name: model,
+    }
+  }
+
   async send(request: ChatRequest): Promise<ChatResult> {
     const { model, apiKey, messages, signal } = request
     if (!apiKey) throw new Error('OpenRouter API key is required')
+
+    const target = this.resolveTarget(model)
+    const modelSlug = target.slug
 
     const res = await fetch(OPENROUTER_ENDPOINT, {
       method: 'POST',
@@ -147,7 +164,7 @@ class OpenRouterAdapter implements ProviderAdapter {
         'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : '',
         'X-Title': APP_TITLE,
       },
-      body: JSON.stringify({ model, messages }),
+      body: JSON.stringify({ model: modelSlug, messages }),
       signal,
     })
 
@@ -159,7 +176,7 @@ class OpenRouterAdapter implements ProviderAdapter {
     const data = OpenRouterResponseSchema.parse(await res.json())
     const content = data.choices?.[0]?.message?.content
     if (!content) throw new Error('OpenRouter returned an empty response')
-    return { content, provider: 'openrouter', model }
+    return { content, provider: 'openrouter', model: modelSlug }
   }
 
   async sendStream(
@@ -169,6 +186,9 @@ class OpenRouterAdapter implements ProviderAdapter {
     const { model, apiKey, messages, signal } = request
     if (!apiKey) throw new Error('OpenRouter API key is required')
 
+    const target = this.resolveTarget(model)
+    const modelSlug = target.slug
+
     const res = await fetch(OPENROUTER_ENDPOINT, {
       method: 'POST',
       headers: {
@@ -177,7 +197,7 @@ class OpenRouterAdapter implements ProviderAdapter {
         'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : '',
         'X-Title': APP_TITLE,
       },
-      body: JSON.stringify({ model, messages, stream: true }),
+      body: JSON.stringify({ model: modelSlug, messages, stream: true }),
       signal,
     })
 
@@ -188,7 +208,7 @@ class OpenRouterAdapter implements ProviderAdapter {
 
     const content = await consumeSSE(res, onChunk)
     if (!content) throw new Error('OpenRouter returned an empty response')
-    return { content, provider: 'openrouter', model }
+    return { content, provider: 'openrouter', model: modelSlug }
   }
 }
 
@@ -205,10 +225,11 @@ class OllamaAdapter implements ProviderAdapter {
       ollamaBaseUrl = DEFAULT_OLLAMA_BASE_URL,
     } = request
 
+    const modelSlug = typeof model === 'string' ? model : model.slug
     const validatedUrl = validateOllamaUrl(ollamaBaseUrl)
 
     const body: Record<string, unknown> = {
-      model,
+      model: modelSlug,
       messages,
       stream: false,
     }
@@ -233,7 +254,7 @@ class OllamaAdapter implements ProviderAdapter {
     const data = OllamaResponseSchema.parse(await res.json())
     const content = data.message?.content
     if (!content) throw new Error('Ollama returned an empty response')
-    return { content, provider: 'ollama', model }
+    return { content, provider: 'ollama', model: modelSlug }
   }
 
   async sendStream(
@@ -248,10 +269,11 @@ class OllamaAdapter implements ProviderAdapter {
       ollamaBaseUrl = DEFAULT_OLLAMA_BASE_URL,
     } = request
 
+    const modelSlug = typeof model === 'string' ? model : model.slug
     const validatedUrl = validateOllamaUrl(ollamaBaseUrl)
 
     const body: Record<string, unknown> = {
-      model,
+      model: modelSlug,
       messages,
       stream: true,
     }
@@ -275,7 +297,7 @@ class OllamaAdapter implements ProviderAdapter {
 
     const content = await consumeNDJSON(res, onChunk)
     if (!content) throw new Error('Ollama returned an empty response')
-    return { content, provider: 'ollama', model }
+    return { content, provider: 'ollama', model: modelSlug }
   }
 }
 
