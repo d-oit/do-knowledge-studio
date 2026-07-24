@@ -245,6 +245,7 @@
 - [CREATE DOMAIN](https://docs.turso.tech/sql-reference/statements/create-domain.md): Define a named constraint wrapper over a base type for use in STRICT tables
 - [CREATE INDEX](https://docs.turso.tech/sql-reference/statements/create-index.md): Create an index on one or more columns or expressions to accelerate queries
 - [CREATE MATERIALIZED VIEW](https://docs.turso.tech/sql-reference/statements/create-materialized-view.md): Create a materialized view that stores precomputed results and updates automatically
+- [CREATE SEQUENCE](https://docs.turso.tech/sql-reference/statements/create-sequence.md): Define a named sequence generator for producing auto-incrementing numeric values
 - [CREATE TABLE](https://docs.turso.tech/sql-reference/statements/create-table.md): Create a new table in the database with column definitions, constraints, and table options
 - [CREATE TRIGGER](https://docs.turso.tech/sql-reference/statements/create-trigger.md): Create a trigger that executes statements automatically in response to table changes
 - [CREATE TYPE](https://docs.turso.tech/sql-reference/statements/create-type.md): Define a custom type with encoding, decoding, validation, operators, and defaults for use in STRICT tables
@@ -254,12 +255,14 @@
 - [DETACH DATABASE](https://docs.turso.tech/sql-reference/statements/detach-database.md): Remove an attached database from the current connection
 - [DROP DOMAIN](https://docs.turso.tech/sql-reference/statements/drop-domain.md): Remove a user-defined domain from the database
 - [DROP INDEX](https://docs.turso.tech/sql-reference/statements/drop-index.md): Remove an index from the database
+- [DROP SEQUENCE](https://docs.turso.tech/sql-reference/statements/drop-sequence.md): Remove a named sequence generator from the database
 - [DROP TABLE](https://docs.turso.tech/sql-reference/statements/drop-table.md): Remove a table and all its data from the database
 - [DROP TRIGGER](https://docs.turso.tech/sql-reference/statements/drop-trigger.md): Remove a trigger from the database
 - [DROP TYPE](https://docs.turso.tech/sql-reference/statements/drop-type.md): Remove a user-defined custom type from the database
 - [DROP VIEW](https://docs.turso.tech/sql-reference/statements/drop-view.md): Remove a view from the database
 - [EXPLAIN](https://docs.turso.tech/sql-reference/statements/explain.md): Display the execution plan or bytecode for a SQL statement
 - [INSERT](https://docs.turso.tech/sql-reference/statements/insert.md): Add new rows to a table using literal values, query results, or default values
+- [REINDEX](https://docs.turso.tech/sql-reference/statements/reindex.md): Rebuild indexes from scratch
 - [REPLACE](https://docs.turso.tech/sql-reference/statements/replace.md): Insert a row, replacing any existing row that conflicts on a unique constraint
 - [SELECT](https://docs.turso.tech/sql-reference/statements/select.md): Query rows from one or more tables using filtering, joining, grouping, sorting, and set operations
 - [Transactions](https://docs.turso.tech/sql-reference/statements/transactions.md): Start, commit, and roll back transactions to group operations atomically
