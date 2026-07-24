@@ -1,1 +1,25 @@
-bmFtZTogRGVwZW5kYWJvdCBBdXRvLU1lcmdlCgojIHlhbWxsaW50IGRpc2FibGUtbGluZSBydWxlOnRydWx5Cm9uOiBwdWxsX3JlcXVlc3QKCnBlcm1pc3Npb25zOgogIGNvbnRlbnRzOiByZWFkCgpqb2JzOgogIGF1dG8tbWVyZ2U6CiAgICBpZjogZ2l0aHViLmFjdG9yID09ICdkZXBlbmRhYm90W2JvdF0nIHx8IGdpdGh1Yi5hY3RvciA9PSAnZ29vZ2xlLWxhYnMtanVsZXNbYm90XScKICAgIHJ1bnMtb246IHVidW50dS1sYXRlc3QKICAgIHRpbWVvdXQtbWludXRlczogNQogICAgcGVybWlzc2lvbnM6CiAgICAgIHB1bGwtcmVxdWVzdHM6IHdyaXRlCiAgICAgIGNvbnRlbnRzOiB3cml0ZQogICAgc3RlcHM6CiAgICAgIC0gbmFtZTogQXBwcm92ZSBhbmQgZW5hYmxlIGF1dG8tbWVyZ2UKICAgICAgICBydW46IHwKICAgICAgICAgIGdoIHByIHJldmlldyAtLWFwcHJvdmUgIiRQUl9VUkwiCiAgICAgICAgICBnaCBwciBtZXJnZSAtLWF1dG8gLS1zcXVhc2ggIiRQUl9VUkwiCiAgICAgICAgZW52OgogICAgICAgICAgUFJfVVJMOiAkeyB7IGdpdGh1Yi5ldmVudC5wdWxsX3JlcXVlc3QuaHRtbF91cmwgfSB9CiAgICAgICAgICBHSF9UT0tFTjogJHt7IHNlY3JldHMuR0lUSFVCX1RPS0VOIH19Cg==
+---
+name: Dependabot Auto-Merge
+
+# yamllint disable-line rule:truthy
+on: pull_request
+
+permissions:
+  contents: read
+
+jobs:
+  auto-merge:
+    if: github.actor == 'dependabot[bot]' || github.actor == 'google-labs-jules[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - name: Approve and enable auto-merge
+        run: |
+          gh pr review --approve "$PR_URL"
+          gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
