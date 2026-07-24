@@ -413,7 +413,7 @@ function ToolbarBtn({
     <button
       onClick={onClick}
       disabled={disabled}
-      title={disabled ? `${label} (coming soon)` : label}
+      title={disabled ? `${label} (nothing to undo/redo)` : label}
       aria-label={label}
       className="flex items-center gap-1 rounded-md px-2 py-1.5 text-label font-medium text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink-mute"
     >

@@ -234,16 +234,14 @@ export function AIHarnessView() {
 
               <div className="space-y-3">
                 <Field label="Connect Local Database" icon={Database}>
-                  <button
-                    onClick={() => toast.success('Local database synced')}
-                    className="flex w-full items-center justify-between rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
+                  <div
+                    className="flex w-full items-center rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft"
                   >
                     <span className="flex items-center gap-2">
                       <Check className="h-3.5 w-3.5 text-emerald-500" />
                       Connected · {entities.length} entities
                     </span>
-                    <span className="text-caption text-ink-faint">Re-sync</span>
-                  </button>
+                  </div>
                 </Field>
 
                 <Field label="Provider" icon={Plug}>

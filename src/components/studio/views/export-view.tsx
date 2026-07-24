@@ -149,17 +149,19 @@ export function ExportView() {
     const reader = new FileReader()
     reader.onload = () => {
       const text = String(reader.result || '')
-      try {
-        const { entities: ents, claims: cls } = parseImportFile(text)
-        importData(ents, cls)
-        toast.success('Import complete', {
-          description: `${ents.length} entities · ${cls.length} claims replaced the current library.`,
-        })
-      } catch (err) {
+      const result = parseImportFile(text)
+      if (!result.success) {
+        const errorMessages = result.errors.map((e) => `${e.path}: ${e.message}`).join('; ')
         toast.error('Import failed', {
-          description: err instanceof Error ? err.message : 'Unknown error',
+          description: errorMessages,
         })
+        return
       }
+      const { entities: ents, claims: cls } = result
+      importData(ents, cls)
+      toast.success('Import complete', {
+        description: `${ents.length} entities · ${cls.length} claims replaced the current library.`,
+      })
     }
     reader.onerror = () => {
       toast.error('Import failed', { description: 'Could not read the file.' })

@@ -1,13 +1,11 @@
 ---
 name: Version Propagation
 
+# DISABLED: This workflow depends on VERSION, CHANGELOG.md, and
+# scripts/propagate-version.sh which are not present in the repository.
+# Re-enable when those artifacts are restored.
 "on":
-  push:
-    paths:
-      - VERSION
-    branches:
-      - main
-      - 'feat/**'
+  workflow_dispatch: {}
 
 permissions:
   contents: write

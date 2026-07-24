@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useStudioStore } from './store'
 import type { Entity, Claim } from './types'
-import { EntitySchema, ClaimSchema, ExportPayloadSchema } from './schema'
+import { EntitySchema, ClaimSchema, ExportPayloadSchema, validatePersistedState } from './schema'
 
 function resetStore() {
   useStudioStore.setState({
@@ -83,6 +83,42 @@ describe('Studio Store', () => {
       useStudioStore.getState().selectEntity('e-1')
       useStudioStore.getState().deleteEntity('e-1')
       expect(useStudioStore.getState().selectedEntityId).toBeNull()
+    })
+
+    it('removes incoming links from other entities when deleting', () => {
+      const target = makeEntity({ id: 'e-target', name: 'Target' })
+      const source = makeEntity({
+        id: 'e-source',
+        name: 'Source',
+        links: [{ targetId: 'e-target', relation: 'relates to' }],
+      })
+      useStudioStore.getState().saveEntity(target)
+      useStudioStore.getState().saveEntity(source)
+      useStudioStore.getState().deleteEntity('e-target')
+
+      const { entities } = useStudioStore.getState()
+      expect(entities).toHaveLength(1)
+      expect(entities[0].id).toBe('e-source')
+      expect(entities[0].links).toHaveLength(0)
+    })
+
+    it('preserves links to non-deleted entities', () => {
+      const a = makeEntity({ id: 'e-a', name: 'A' })
+      const b = makeEntity({
+        id: 'e-b',
+        name: 'B',
+        links: [{ targetId: 'e-a', relation: 'relates to' }, { targetId: 'e-c', relation: 'depends on' }],
+      })
+      const c = makeEntity({ id: 'e-c', name: 'C' })
+      useStudioStore.getState().saveEntity(a)
+      useStudioStore.getState().saveEntity(b)
+      useStudioStore.getState().saveEntity(c)
+      useStudioStore.getState().deleteEntity('e-a')
+
+      const remaining = useStudioStore.getState().entities
+      const entityB = remaining.find((e) => e.id === 'e-b')
+      expect(entityB?.links).toHaveLength(1)
+      expect(entityB?.links[0].targetId).toBe('e-c')
     })
 
     it('startEdit sets editingEntityId and navigates to editor', () => {
@@ -279,6 +315,63 @@ describe('Zod Schemas', () => {
         entities: [makeEntity()],
       })
       expect(result.success).toBe(false)
+    })
+  })
+
+  describe('validatePersistedState', () => {
+    it('accepts valid persisted state with entities and claims', () => {
+      const data = {
+        version: 1,
+        entities: [makeEntity()],
+        claims: [makeClaim()],
+      }
+      const result = validatePersistedState(data)
+      expect(result.success).toBe(true)
+    })
+
+    it('rejects persisted state with invalid entity fields', () => {
+      const data = {
+        version: 1,
+        entities: [{ ...makeEntity(), id: '' }],
+        claims: [],
+      }
+      const result = validatePersistedState(data)
+      expect(result.success).toBe(false)
+    })
+
+    it('rejects persisted state with invalid claim confidence', () => {
+      const data = {
+        version: 1,
+        entities: [makeEntity()],
+        claims: [makeClaim({ confidence: 2.0 })],
+      }
+      const result = validatePersistedState(data)
+      expect(result.success).toBe(false)
+    })
+
+    it('rejects non-object persisted state', () => {
+      const result = validatePersistedState('not an object')
+      expect(result.success).toBe(false)
+    })
+
+    it('rejects null persisted state', () => {
+      const result = validatePersistedState(null)
+      expect(result.success).toBe(false)
+    })
+
+    it('returns structured errors with path and message', () => {
+      const data = {
+        version: 1,
+        entities: [{ ...makeEntity(), name: '' }],
+        claims: [],
+      }
+      const result = validatePersistedState(data)
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.errors.length).toBeGreaterThan(0)
+        expect(result.errors[0]).toHaveProperty('path')
+        expect(result.errors[0]).toHaveProperty('message')
+      }
     })
   })
 })

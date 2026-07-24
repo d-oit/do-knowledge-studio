@@ -6,6 +6,7 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import type { Entity, Claim, ViewId, ChatMessage, EntityType } from './types'
 import { seedEntities, seedClaims, seedChat } from './seed-data'
 import { search } from '@/lib/search/retrieval'
+import { validatePersistedState } from './schema'
 
 const MAX_HISTORY = 50
 
@@ -190,7 +191,12 @@ export const useStudioStore = create<StudioState>()(
         const { pushHistory } = get()
         pushHistory()
         set((state) => ({
-          entities: state.entities.filter((x) => x.id !== id),
+          entities: state.entities
+            .filter((x) => x.id !== id)
+            .map((e) => ({
+              ...e,
+              links: e.links.filter((l) => l.targetId !== id),
+            })),
           claims: state.claims.filter((c) => c.entityId !== id),
           selectedEntityId: state.selectedEntityId === id ? null : state.selectedEntityId,
         }))
@@ -283,10 +289,16 @@ export const useStudioStore = create<StudioState>()(
         sortDir: state.sortDir,
         rightPanelOpen: state.rightPanelOpen,
       }),
-      // Forward-compatible: return persisted state as-is. The merge step
-      // below (default Zustand shallow merge) keeps any new fields from
-      // the seed defaults if the persisted state is missing them.
-      migrate: (persistedState: unknown) => persistedState as unknown,
+      // Validate persisted state with Zod schema. Invalid or corrupt data
+      // falls back to seed defaults rather than crashing the app.
+      migrate: (persistedState: unknown) => {
+        const result = validatePersistedState(persistedState)
+        if (result.success) {
+          return result.data
+        }
+        console.warn('Persisted state failed validation, using seed defaults:', result.errors)
+        return persistedState
+      },
     },
   ),
 )

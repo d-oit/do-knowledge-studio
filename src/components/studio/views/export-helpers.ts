@@ -16,6 +16,11 @@ import {
   AlignmentType,
   ExternalHyperlink,
 } from 'docx'
+import { validateImportPayload, type ValidationError } from '@/lib/studio/schema'
+
+export type ImportResult =
+  | { success: true; entities: Entity[]; claims: Claim[] }
+  | { success: false; errors: ValidationError[] }
 
 export interface ExportFormat {
   id: string
@@ -431,41 +436,34 @@ export async function buildDocxExport(entities: Entity[], claims: Claim[]): Prom
   return Packer.toBlob(doc)
 }
 
-export function isEntity(x: unknown): x is Entity {
-  if (!x || typeof x !== 'object') return false
-  const e = x as Record<string, unknown>
-  return (
-    typeof e.id === 'string' &&
-    typeof e.name === 'string' &&
-    typeof e.type === 'string' &&
-    typeof e.content === 'string'
-  )
-}
-
-export function isClaim(x: unknown): x is Claim {
-  if (!x || typeof x !== 'object') return false
-  const c = x as Record<string, unknown>
-  return (
-    typeof c.id === 'string' &&
-    typeof c.entityId === 'string' &&
-    typeof c.statement === 'string' &&
-    typeof c.verification === 'string'
-  )
-}
-
-export function parseImportFile(text: string): { entities: Entity[]; claims: Claim[] } {
+export function parseImportFile(text: string): ImportResult {
   let data: unknown
   try {
     data = JSON.parse(text)
   } catch {
-    throw new Error('File is not valid JSON.')
+    return { success: false, errors: [{ path: 'root', message: 'File is not valid JSON.' }] }
   }
-  if (!data || typeof data !== 'object') throw new Error('JSON root must be an object.')
+  if (!data || typeof data !== 'object') {
+    return { success: false, errors: [{ path: 'root', message: 'JSON root must be an object.' }] }
+  }
+
   const root = data as Record<string, unknown>
-  if (!Array.isArray(root.entities)) throw new Error('JSON must contain an "entities" array.')
-  if (!Array.isArray(root.claims)) throw new Error('JSON must contain a "claims" array.')
-  const entities = root.entities.filter(isEntity) as Entity[]
-  const claims = root.claims.filter(isClaim) as Claim[]
-  if (entities.length === 0) throw new Error('No valid entities found in file.')
-  return { entities, claims }
+  const payload = {
+    version: typeof root.version === 'number' ? root.version : 1,
+    exportedAt: typeof root.exportedAt === 'string' ? root.exportedAt : new Date().toISOString(),
+    entities: root.entities ?? [],
+    claims: root.claims ?? [],
+  }
+
+  const result = validateImportPayload(payload)
+  if (!result.success) {
+    return { success: false, errors: result.errors }
+  }
+
+  const { entities, claims } = result.data
+  if (entities.length === 0) {
+    return { success: false, errors: [{ path: 'entities', message: 'No valid entities found in file.' }] }
+  }
+
+  return { success: true, entities, claims }
 }

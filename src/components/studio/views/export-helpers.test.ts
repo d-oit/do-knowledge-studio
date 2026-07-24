@@ -2,8 +2,6 @@ import { describe, it, expect } from 'vitest'
 import {
   escapeHtml,
   parseImportFile,
-  isEntity,
-  isClaim,
   buildJsonExport,
   buildMarkdownExport,
   buildHtmlExport,
@@ -68,42 +66,6 @@ describe('escapeHtml', () => {
     expect(escapeHtml('<script>alert("xss")</script>')).toBe(
       '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;',
     )
-  })
-})
-
-describe('isEntity', () => {
-  it('returns true for valid entity', () => {
-    expect(isEntity(SAMPLE_ENTITIES[0])).toBe(true)
-  })
-
-  it('returns false for null', () => {
-    expect(isEntity(null)).toBe(false)
-  })
-
-  it('returns false for non-object', () => {
-    expect(isEntity('string')).toBe(false)
-  })
-
-  it('returns false for missing required fields', () => {
-    expect(isEntity({ id: '1', name: 'test' })).toBe(false)
-  })
-
-  it('returns false for wrong field types', () => {
-    expect(isEntity({ id: 1, name: 'test', type: 'note', content: 'x' })).toBe(false)
-  })
-})
-
-describe('isClaim', () => {
-  it('returns true for valid claim', () => {
-    expect(isClaim(SAMPLE_CLAIMS[0])).toBe(true)
-  })
-
-  it('returns false for null', () => {
-    expect(isClaim(null)).toBe(false)
-  })
-
-  it('returns false for missing required fields', () => {
-    expect(isClaim({ id: '1', entityId: 'e1' })).toBe(false)
   })
 })
 
@@ -172,33 +134,44 @@ describe('parseImportFile', () => {
   it('parses valid JSON export', () => {
     const json = buildJsonExport(SAMPLE_ENTITIES, SAMPLE_CLAIMS)
     const result = parseImportFile(json)
-    expect(result.entities).toHaveLength(1)
-    expect(result.claims).toHaveLength(1)
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.entities).toHaveLength(1)
+      expect(result.claims).toHaveLength(1)
+    }
   })
 
-  it('throws on invalid JSON', () => {
-    expect(() => parseImportFile('not json')).toThrow('File is not valid JSON')
+  it('returns error on invalid JSON', () => {
+    const result = parseImportFile('not json')
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.errors[0].message).toContain('not valid JSON')
+    }
   })
 
-  it('throws on missing entities array', () => {
-    expect(() => parseImportFile('{"claims":[]}')).toThrow('entities')
+  it('returns error on missing entities array', () => {
+    const result = parseImportFile('{"claims":[]}')
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.errors.some((e) => e.message.includes('entities') || e.path.includes('entities'))).toBe(true)
+    }
   })
 
-  it('throws on missing claims array', () => {
-    expect(() => parseImportFile('{"entities":[]}')).toThrow('claims')
+  it('returns error on empty entities', () => {
+    const result = parseImportFile('{"entities":[],"claims":[]}')
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.errors[0].message).toContain('No valid entities')
+    }
   })
 
-  it('throws on empty entities', () => {
-    expect(() => parseImportFile('{"entities":[],"claims":[]}')).toThrow('No valid entities')
-  })
-
-  it('filters out invalid entities', () => {
+  it('rejects invalid entities via Zod validation', () => {
     const data = {
       entities: [SAMPLE_ENTITIES[0], { invalid: true }],
       claims: [],
     }
     const result = parseImportFile(JSON.stringify(data))
-    expect(result.entities).toHaveLength(1)
+    expect(result.success).toBe(false)
   })
 })
 

@@ -377,7 +377,7 @@ function ToolbarBtn({
     <button
       onClick={onClick}
       disabled={disabled}
-      title={disabled ? `${label} (coming soon)` : label}
+      title={disabled ? `${label} (nothing to undo/redo)` : label}
       aria-label={label}
       aria-pressed={active}
       className={cn(
