@@ -107,6 +107,10 @@ export function AIHarnessView() {
 
   const effectiveModel = customModel.trim() || model
 
+  const selectedEngineTarget = provider === 'openrouter'
+    ? OPENROUTER_DEFAULT_TARGETS.find((t) => t.slug === effectiveModel)
+    : null
+
   const handleSend = async () => {
     if (!input.trim()) return
     if (!apiKey && activeProvider.requiresKey) {
@@ -311,19 +315,11 @@ export function AIHarnessView() {
                     placeholder="Or type a custom engine or model slug"
                     className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-mono text-ink-soft placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
                   />
-                  {provider === 'openrouter' && (
-                    (() => {
-                      const selectedTarget = OPENROUTER_DEFAULT_TARGETS.find((t) => t.slug === effectiveModel)
-                      if (selectedTarget?.description) {
-                        return (
-                          <div className="mt-2 rounded border border-border bg-muted/30 p-2 text-[11px] leading-relaxed text-ink-mute">
-                            <strong className="text-ink-soft">{selectedTarget.display_name}: </strong>
-                            {selectedTarget.description}
-                          </div>
-                        )
-                      }
-                      return null
-                    })()
+                  {selectedEngineTarget?.description && (
+                    <div className="mt-2 rounded border border-border bg-muted/30 p-2 text-[11px] leading-relaxed text-ink-mute">
+                      <strong className="text-ink-soft">{selectedEngineTarget.display_name}: </strong>
+                      {selectedEngineTarget.description}
+                    </div>
                   )}
                 </Field>
 

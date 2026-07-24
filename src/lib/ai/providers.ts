@@ -156,6 +156,11 @@ class OpenRouterAdapter implements ProviderAdapter {
     const target = this.resolveTarget(model)
     const modelSlug = target.slug
 
+    const body: Record<string, any> = { model: modelSlug, messages }
+    if (target.default_params) {
+      Object.assign(body, target.default_params)
+    }
+
     const res = await fetch(OPENROUTER_ENDPOINT, {
       method: 'POST',
       headers: {
@@ -164,7 +169,7 @@ class OpenRouterAdapter implements ProviderAdapter {
         'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : '',
         'X-Title': APP_TITLE,
       },
-      body: JSON.stringify({ model: modelSlug, messages }),
+      body: JSON.stringify(body),
       signal,
     })
 
@@ -189,6 +194,11 @@ class OpenRouterAdapter implements ProviderAdapter {
     const target = this.resolveTarget(model)
     const modelSlug = target.slug
 
+    const body: Record<string, any> = { model: modelSlug, messages, stream: true }
+    if (target.default_params) {
+      Object.assign(body, target.default_params)
+    }
+
     const res = await fetch(OPENROUTER_ENDPOINT, {
       method: 'POST',
       headers: {
@@ -197,7 +207,7 @@ class OpenRouterAdapter implements ProviderAdapter {
         'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : '',
         'X-Title': APP_TITLE,
       },
-      body: JSON.stringify({ model: modelSlug, messages, stream: true }),
+      body: JSON.stringify(body),
       signal,
     })
 

@@ -57,15 +57,15 @@ export const OPENROUTER_ROUTERS: OpenRouterTarget[] = [
 export const OPENROUTER_MODELS: OpenRouterTarget[] = [
   {
     kind: 'model',
-    slug: 'openrouter/free',
-    display_name: 'Free Models Router',
-    description: 'Cost-optimized routing that routes only to free models on OpenRouter.',
-  },
-  {
-    kind: 'model',
     slug: 'openai/gpt-4o-mini',
     display_name: 'GPT-4o Mini',
     description: 'Fast, lightweight and cost-efficient intelligence for everyday tasks.',
+  },
+  {
+    kind: 'model',
+    slug: 'anthropic/claude-3.5-sonnet',
+    display_name: 'Claude 3.5 Sonnet',
+    description: 'State-of-the-art model with exceptional coding, reasoning, and analysis capabilities.',
   },
   {
     kind: 'model',
@@ -114,6 +114,7 @@ export const PROVIDER_LABELS: Record<ProviderId, string> = {
 export const OPENROUTER_DEFAULT_MODELS = [
   'openrouter/free',
   'openai/gpt-4o-mini',
+  'anthropic/claude-sonnet-4',
   'meta-llama/llama-3.3-70b-instruct:free',
 ]
 
