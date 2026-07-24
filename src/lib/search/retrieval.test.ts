@@ -97,4 +97,67 @@ describe('BM25 Retrieval Engine', () => {
     expect(results.length).toBeGreaterThan(0)
     expect(results[0].id).toBe('e1')
   })
+
+  it('handles claim with a missing or non-existent entity ID gracefully', () => {
+    const claimWithMissingEntity = makeClaim({
+      id: 'c-missing',
+      entityId: 'e-nonexistent',
+      statement: 'This refers to a missing entity ID',
+    })
+    const results = search(entities, [claimWithMissingEntity], 'missing entity ID')
+    expect(results.length).toBeGreaterThan(0)
+    expect(results[0].id).toBe('c-missing')
+    // Should fallback to its ID or empty when parent entity name is missing
+    expect(results[0].name).toBe('c-missing')
+  })
+
+  it('handles special characters in query without crashing', () => {
+    const results = search(entities, claims, '!!! @@@ ### $$$ %%% ^^^ &*()_+')
+    expect(results).toBeDefined()
+    expect(results).toHaveLength(0)
+  })
+
+  it('performance benchmark with large dataset', () => {
+    const largeEntities: Entity[] = Array.from({ length: 500 }, (_, i) =>
+      makeEntity({
+        id: `e-${i}`,
+        name: `Entity Name ${i}`,
+        description: `This is the description for entity number ${i} which discusses React, Hooks, TypeScript and CSS layouts.`,
+        content: `# Content ${i}\nHere is some body content with key terms like keyword-${i % 10}.`,
+        tags: [`tag-${i % 5}`, 'react', 'typescript'],
+      })
+    )
+
+    const largeClaims: Claim[] = Array.from({ length: 1500 }, (_, i) =>
+      makeClaim({
+        id: `c-${i}`,
+        entityId: `e-${i % 500}`,
+        statement: `Statement about entity number ${i % 500} regarding React hooks or CSS systems.`,
+        confidence: 0.9,
+      })
+    )
+
+    const times: number[] = []
+    const iterations = 50
+    for (let k = 0; k < iterations; k++) {
+      const start = performance.now()
+      search(largeEntities, largeClaims, `React hooks keyword-${k % 10}`)
+      const end = performance.now()
+      times.push(end - start)
+    }
+
+    const minTime = Math.min(...times)
+    const maxTime = Math.max(...times)
+    const avgTime = times.reduce((sum, t) => sum + t, 0) / iterations
+
+    console.log(`--- BENCHMARK STATISTICS ---`)
+    console.log(`Dataset size: 500 entities, 1500 claims`)
+    console.log(`Iterations: ${iterations}`)
+    console.log(`Min execution time: ${minTime.toFixed(2)}ms`)
+    console.log(`Max execution time: ${maxTime.toFixed(2)}ms`)
+    console.log(`Average execution time: ${avgTime.toFixed(2)}ms`)
+    console.log(`-----------------------------`)
+
+    expect(avgTime).toBeLessThan(1000) // loose upper bound for sanity
+  })
 })
