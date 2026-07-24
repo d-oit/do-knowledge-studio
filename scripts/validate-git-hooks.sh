@@ -8,7 +8,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
 HOOK_DIR=".git/hooks"
-EXPECTED_HOOKS=("pre-commit")
+EXPECTED_HOOKS=("pre-commit" "commit-msg")
 
 MISSING=0
 
