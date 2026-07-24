@@ -8,6 +8,7 @@ import {
   Quote as QuoteIcon,
   Code,
   Link2,
+  ChevronDown,
 } from 'lucide-react'
 import { Divider } from '../ui/shared-primitives'
 import { VoiceInput } from '../voice-input'
@@ -69,6 +70,7 @@ export function EditorToolbar({
         <button
           type="button"
           onClick={onToggleAdvanced}
+          aria-expanded={showAdvanced}
           className={`flex items-center gap-1 rounded-md px-2 py-1 text-label font-medium transition-colors hover:bg-muted focus-ring ${
             showAdvanced ? 'text-ink' : 'text-ink-mute'
           }`}
@@ -77,9 +79,7 @@ export function EditorToolbar({
           {!showAdvanced && (
             <span className="ml-1.5 text-caption text-ink-faint">Source URL, tags</span>
           )}
-          <span className={`h-3 w-3 transition-transform ${showAdvanced ? 'rotate-180' : ''}`}>
-            ▾
-          </span>
+          <ChevronDown className={`h-3 w-3 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
         </button>
       </div>
     </div>
