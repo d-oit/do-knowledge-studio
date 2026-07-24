@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { getAdapter } from './providers'
+import { OPENROUTER_ROUTERS } from './types'
 
 describe('getAdapter', () => {
   it('returns OpenRouter adapter', () => {
@@ -17,5 +18,313 @@ describe('getAdapter', () => {
   it('adapters have sendStream method', () => {
     expect(typeof getAdapter('openrouter').sendStream).toBe('function')
     expect(typeof getAdapter('ollama').sendStream).toBe('function')
+  })
+})
+
+describe('OpenRouterAdapter integration', () => {
+  const originalFetch = globalThis.fetch
+
+  beforeEach(() => {
+    globalThis.fetch = vi.fn()
+  })
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch
+  })
+
+  it('calls OpenRouter API with Auto Router successfully', async () => {
+    const mockResponse = {
+      choices: [
+        {
+          message: {
+            content: 'Hello from Auto Router!'
+          }
+        }
+      ]
+    }
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockResponse,
+    } as Response)
+
+    const adapter = getAdapter('openrouter')
+    const result = await adapter.send({
+      provider: 'openrouter',
+      model: 'openrouter/auto',
+      apiKey: 'test-key',
+      messages: [{ role: 'user', content: 'hello' }]
+    })
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      'https://openrouter.ai/api/v1/chat/completions',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer test-key',
+        }),
+        body: expect.stringContaining('"model":"openrouter/auto"'),
+      })
+    )
+
+    expect(result).toEqual({
+      content: 'Hello from Auto Router!',
+      provider: 'openrouter',
+      model: 'openrouter/auto',
+    })
+  })
+
+  it('calls OpenRouter API with Free Router successfully', async () => {
+    const mockResponse = {
+      choices: [
+        {
+          message: {
+            content: 'Hello from Free Router!'
+          }
+        }
+      ]
+    }
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockResponse,
+    } as Response)
+
+    const adapter = getAdapter('openrouter')
+    const result = await adapter.send({
+      provider: 'openrouter',
+      model: 'openrouter/free',
+      apiKey: 'test-key',
+      messages: [{ role: 'user', content: 'hello' }]
+    })
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      'https://openrouter.ai/api/v1/chat/completions',
+      expect.objectContaining({
+        body: expect.stringContaining('"model":"openrouter/free"'),
+      })
+    )
+
+    expect(result.model).toBe('openrouter/free')
+  })
+
+  it('calls OpenRouter API with Fusion Router successfully', async () => {
+    const mockResponse = {
+      choices: [
+        {
+          message: {
+            content: 'Hello from Fusion Router!'
+          }
+        }
+      ]
+    }
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockResponse,
+    } as Response)
+
+    const adapter = getAdapter('openrouter')
+    const result = await adapter.send({
+      provider: 'openrouter',
+      model: 'openrouter/fusion',
+      apiKey: 'test-key',
+      messages: [{ role: 'user', content: 'hello' }]
+    })
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      'https://openrouter.ai/api/v1/chat/completions',
+      expect.objectContaining({
+        body: expect.stringContaining('"model":"openrouter/fusion"'),
+      })
+    )
+
+    expect(result.model).toBe('openrouter/fusion')
+  })
+
+  it('calls OpenRouter API with concrete model successfully', async () => {
+    const mockResponse = {
+      choices: [
+        {
+          message: {
+            content: 'Hello from GPT-4o Mini!'
+          }
+        }
+      ]
+    }
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockResponse,
+    } as Response)
+
+    const adapter = getAdapter('openrouter')
+    const result = await adapter.send({
+      provider: 'openrouter',
+      model: 'openai/gpt-4o-mini',
+      apiKey: 'test-key',
+      messages: [{ role: 'user', content: 'hello' }]
+    })
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      'https://openrouter.ai/api/v1/chat/completions',
+      expect.objectContaining({
+        body: expect.stringContaining('"model":"openai/gpt-4o-mini"'),
+      })
+    )
+
+    expect(result.model).toBe('openai/gpt-4o-mini')
+  })
+
+  it('correctly handles OpenRouter Target object as model parameter', async () => {
+    const mockResponse = {
+      choices: [
+        {
+          message: {
+            content: 'Hello from Target object!'
+          }
+        }
+      ]
+    }
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockResponse,
+    } as Response)
+
+    const target = OPENROUTER_ROUTERS[0] // openrouter/auto
+
+    const adapter = getAdapter('openrouter')
+    const result = await adapter.send({
+      provider: 'openrouter',
+      model: target,
+      apiKey: 'test-key',
+      messages: [{ role: 'user', content: 'hello' }]
+    })
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      'https://openrouter.ai/api/v1/chat/completions',
+      expect.objectContaining({
+        body: expect.stringContaining(`"model":"${target.slug}"`),
+      })
+    )
+
+    expect(result.model).toBe(target.slug)
+  })
+
+  it('calls OpenRouter API with Pareto Router successfully', async () => {
+    const mockResponse = {
+      choices: [{ message: { content: 'Hello from Pareto Router!' } }]
+    }
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockResponse,
+    } as Response)
+
+    const adapter = getAdapter('openrouter')
+    const result = await adapter.send({
+      provider: 'openrouter',
+      model: 'openrouter/pareto',
+      apiKey: 'test-key',
+      messages: [{ role: 'user', content: 'hello' }]
+    })
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      'https://openrouter.ai/api/v1/chat/completions',
+      expect.objectContaining({
+        body: expect.stringContaining('"model":"openrouter/pareto"'),
+      })
+    )
+
+    expect(result.model).toBe('openrouter/pareto')
+  })
+
+  it('calls OpenRouter API with Body Builder Router successfully', async () => {
+    const mockResponse = {
+      choices: [{ message: { content: 'Hello from Body Builder!' } }]
+    }
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockResponse,
+    } as Response)
+
+    const adapter = getAdapter('openrouter')
+    const result = await adapter.send({
+      provider: 'openrouter',
+      model: 'openrouter/body-builder',
+      apiKey: 'test-key',
+      messages: [{ role: 'user', content: 'hello' }]
+    })
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      'https://openrouter.ai/api/v1/chat/completions',
+      expect.objectContaining({
+        body: expect.stringContaining('"model":"openrouter/body-builder"'),
+      })
+    )
+
+    expect(result.model).toBe('openrouter/body-builder')
+  })
+
+  it('merges default_params into the request body correctly', async () => {
+    const mockResponse = {
+      choices: [{ message: { content: 'Params test' } }]
+    }
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockResponse,
+    } as Response)
+
+    const customTarget = {
+      kind: 'router' as const,
+      slug: 'openrouter/custom-router',
+      display_name: 'Custom Router',
+      default_params: {
+        temperature: 0.2,
+        max_tokens: 100,
+      }
+    }
+
+    const adapter = getAdapter('openrouter')
+    await adapter.send({
+      provider: 'openrouter',
+      model: customTarget,
+      apiKey: 'test-key',
+      messages: [{ role: 'user', content: 'hello' }]
+    })
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      'https://openrouter.ai/api/v1/chat/completions',
+      expect.objectContaining({
+        body: expect.stringContaining('"temperature":0.2'),
+      })
+    )
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      'https://openrouter.ai/api/v1/chat/completions',
+      expect.objectContaining({
+        body: expect.stringContaining('"max_tokens":100'),
+      })
+    )
+  })
+
+  it('behaves consistently on OpenRouter API failures', async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      text: async () => 'Internal Server Error fallback failure',
+    } as Response)
+
+    const adapter = getAdapter('openrouter')
+    await expect(
+      adapter.send({
+        provider: 'openrouter',
+        model: 'openrouter/auto',
+        apiKey: 'test-key',
+        messages: [{ role: 'user', content: 'hello' }]
+      })
+    ).rejects.toThrow('OpenRouter error 500: Internal Server Error fallback failure')
   })
 })
