@@ -226,7 +226,7 @@ export function ExportView() {
 
         {entities.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border bg-card/50 p-8 text-center">
-            <Download className="mx-auto mb-3 h-8 w-8 text-ink-faint/40" />
+            <Download aria-hidden="true" className="mx-auto mb-3 h-8 w-8 text-ink-faint/40" />
             <p className="text-[13px] text-ink-mute">No entities to export yet. Create some content first.</p>
             <button
               onClick={() => setView('editor')}
@@ -424,6 +424,8 @@ export function ExportView() {
                     value={password}
                     onChange={(e) => { setPassword(e.target.value) }}
                     placeholder="Choose a strong password"
+                    aria-invalid={Boolean(password && confirm && password !== confirm)}
+                    aria-describedby={password && confirm && password !== confirm ? 'password-mismatch-error' : undefined}
                     className="w-full rounded-md border border-border bg-background px-3 py-2 pr-16 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
                   />
                   <button
@@ -445,6 +447,7 @@ export function ExportView() {
                   value={confirm}
                   onChange={(e) => { setConfirm(e.target.value) }}
                   placeholder="Re-enter password"
+                  aria-invalid={Boolean(password && confirm && password !== confirm)}
                   aria-describedby={password && confirm && password !== confirm ? 'password-mismatch-error' : undefined}
                   className="w-full rounded-md border border-border bg-background px-3 py-2 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
                 />

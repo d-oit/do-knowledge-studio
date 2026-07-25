@@ -298,7 +298,7 @@ export function HomeView() {
 function EmptyState({ onCreate }: { onCreate: () => void }) {
   return (
     <div className="rounded-lg border border-dashed border-border bg-card/50 p-8 text-center">
-      <FileText className="mx-auto mb-3 h-8 w-8 text-ink-faint/40" />
+      <FileText aria-hidden="true" className="mx-auto mb-3 h-8 w-8 text-ink-faint/40" />
       <p className="text-[13px] text-ink-mute">
         No entities yet. Create your first one to get started.
       </p>

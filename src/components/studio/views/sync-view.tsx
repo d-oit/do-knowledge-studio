@@ -254,7 +254,7 @@ export function SyncView() {
               <button
                 onClick={() => { setPairingMode(pairingMode === 'display' ? 'none' : 'display') }}
                 className={cn(
-                  'flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-[12px] font-medium transition-colors focus-ring',
+                  'flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-[12px] font-medium transition-colors focus-ring min-h-[44px]',
                   pairingMode === 'display'
                     ? 'border-saffron bg-saffron/10 text-saffron-deep'
                     : 'border-border bg-background text-ink-soft hover:border-saffron/40',
@@ -266,7 +266,7 @@ export function SyncView() {
               <button
                 onClick={() => { setPairingMode(pairingMode === 'scan' ? 'none' : 'scan') }}
                 className={cn(
-                  'flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-[12px] font-medium transition-colors focus-ring',
+                  'flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-[12px] font-medium transition-colors focus-ring min-h-[44px]',
                   pairingMode === 'scan'
                     ? 'border-saffron bg-saffron/10 text-saffron-deep'
                     : 'border-border bg-background text-ink-soft hover:border-saffron/40',
@@ -322,7 +322,7 @@ export function SyncView() {
                 />
                 <button
                   onClick={() => void handleJoin()}
-                  className="rounded-md bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+                  className="rounded-md bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring min-h-[44px]"
                 >
                   Join
                 </button>
@@ -417,14 +417,14 @@ export function SyncView() {
             <div className="flex gap-2">
               <button
                 onClick={handleResync}
-                className="flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
+                className="flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring min-h-[44px]"
               >
                 <RefreshCw className="h-3.5 w-3.5" />
                 Re-sync
               </button>
               <button
                 onClick={handleLeave}
-                className="flex items-center gap-1.5 rounded-md border border-red-200 bg-background px-3 py-2 text-[12px] font-medium text-red-600 transition-colors hover:bg-red-50 focus-ring"
+                className="flex items-center gap-1.5 rounded-md border border-red-200 bg-background px-3 py-2 text-[12px] font-medium text-red-600 transition-colors hover:bg-red-50 focus-ring min-h-[44px]"
               >
                 <Trash2 className="h-3.5 w-3.5" />
                 Leave
