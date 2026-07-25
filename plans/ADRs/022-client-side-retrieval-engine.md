@@ -1,7 +1,7 @@
 # ADR 022 — Client-Side Retrieval Engine for Chat & Search
 
 **Date**: 2026-07-09
-**Status**: Proposed
+**Status**: Implemented — BM25 ranked retrieval in `src/lib/search/retrieval.ts`.
 **Related**: GOAP action C1; ADR 017 (chat unification), ADR 019 (AI provider)
 
 ## Context

@@ -1,7 +1,7 @@
 # ADR 002: XSS Prevention in Export Paths
 
 ## Status
-PROPOSED
+Implemented — XSS prevention via shared HTML sanitization; WebCrypto AES-GCM encryption added in Plan 050.
 
 ## Context
 Both browser (`ExportPanel.tsx`) and CLI (`cli/index.ts`) site export paths construct HTML by string concatenation without escaping user-provided content (entity names, descriptions, claim statements). Since entity descriptions originate from the TipTap editor and may contain arbitrary HTML, an attacker could inject JavaScript that executes when the exported page is opened.

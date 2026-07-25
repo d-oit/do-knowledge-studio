@@ -1,7 +1,7 @@
 # ADR 021 — Real Encrypted Export (WebCrypto AES-GCM)
 
 **Date**: 2026-07-09
-**Status**: Proposed
+**Status**: Implemented — WebCrypto AES-GCM encryption with PBKDF2 key derivation in `src/lib/export/encrypt.ts`.
 **Related**: GOAP action T3; ADR 002 (security export), ADR 006 (export dedup)
 
 ## Context

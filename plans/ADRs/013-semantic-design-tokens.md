@@ -1,7 +1,7 @@
 # ADR 013: Semantic Design Tokens & Complete Theme Coverage
 
 ## Status
-PROPOSED (2026-06-18) — Implementation tracked in `plans/041-goap-ui-ux-modernization-and-feature-gaps-2026-06-18.md` (G-TOKENS, G-PRIMITIVES, G-MOTION).
+Implemented — Design tokens in `src/app/globals.css` @theme block; light/dark themes via data-theme attribute.
 
 ## Context
 The studio has a 4px-grid token layer in `src/styles/tokens.css` with four themes (`app`, `game`, `neural`, `technical`). The system is good but incomplete, and several components bypass it:

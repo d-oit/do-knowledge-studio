@@ -1,7 +1,7 @@
 # ADR 010: Knowledge Studio Export Schema v1.0
 
 ## Status
-PROPOSED (2026-06-16) — Implementation tracked in `plans/040-goap-export-pipeline-and-pr-cleanup-2026-06-16.md`
+Implemented — Export schema v1 with Zod validators in `src/lib/studio/schema.ts` (ExportPayloadSchema, PersistedEnvelopeSchema).
 
 ## Context
 Issue #289 identifies that `src/lib/export-core.ts` produces JSON exports via `generateJsonExport()` but:

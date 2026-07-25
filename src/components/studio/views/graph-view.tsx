@@ -195,7 +195,7 @@ export function GraphView() {
               onClick={() => { setLayout(l) }}
               aria-pressed={layout === l}
               className={cn(
-                'flex items-center gap-1 rounded px-2 py-1 text-label font-medium capitalize transition-colors focus-ring',
+                'flex min-h-[44px] min-w-[44px] items-center gap-1 rounded px-2 py-1 text-label font-medium capitalize transition-colors focus-ring',
                 layout === l ? 'bg-primary text-primary-foreground shadow-sm' : 'text-ink-mute hover:text-ink',
               )}
             >
@@ -381,7 +381,7 @@ function ToolbarBtn({
       aria-label={label}
       aria-pressed={active}
       className={cn(
-        'flex items-center gap-1 rounded-md px-2 py-1.5 text-label font-medium transition-colors focus-ring disabled:cursor-not-allowed disabled:opacity-40',
+        'flex min-h-[44px] min-w-[44px] items-center gap-1 rounded-md px-2 py-1.5 text-label font-medium transition-colors focus-ring disabled:cursor-not-allowed disabled:opacity-40',
         active ? 'bg-saffron-soft text-saffron-deep' : 'text-ink-mute hover:bg-muted hover:text-ink',
       )}
     >
