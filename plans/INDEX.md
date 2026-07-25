@@ -5,7 +5,25 @@
 
 ## Current Status
 
-Plan 073 closes out remaining gaps from Plan 072. All quality gates pass.
+Plan 074 implements remaining gaps from Plan 071 deferred items: bidirectional
+sync bridge, claim provenance, ADR reconciliation, and accessibility hardening.
+
+### Plan 074 — Sync Bridge, A11y, Data Layer, and Documentation (2026-07-25)
+
+| Wave | Goal | Status | PR | Changes |
+|------|------|--------|-----|---------|
+| W0 | Baseline & ADR Classification | Done | — | Baseline: 361 tests, 28/19/20/28% coverage |
+| W1 | Data Layer (G1) + ADR Cleanup (G7) | Done | #502 | ClaimSchema `createdAt`/`updatedAt`, 13 ADR statuses updated |
+| W2 | Touch Targets (G3) + Export ARIA (G4) | Done | #502 | ≥44px targets in graph/mindmap/chat/shared, export dialog ARIA |
+| W3 | Sync Bridge (G2) | Done | #503 | Bidirectional Yjs/Zustand bridge, origin tagging, tombstones, inbound validation, conflict resolution |
+| W4 | Documentation (G6) | Done | This update | INDEX.md, Plan 071 status |
+
+### Deferred to Plan 075
+
+- Full accessibility audit (axe scanning, screen reader verification, 200% zoom, 400% reflow)
+- Coverage target to 50% (incremental, not one-shot)
+- Full overlay primitive (ADR 014)
+- Claims version history / audit trail
 
 ### Plan 073 — Closeout of Plan 072 Remaining Gaps (2026-07-24)
 
@@ -70,26 +88,39 @@ Plan 073 closes out remaining gaps from Plan 072. All quality gates pass.
 | 049 | AI provider integration, encrypted export, zod schemas, BM25 retrieval | 399 |
 | 040 | Complete export pipeline (PDF, JSON schema v1.0, MD round-trip) | 289 |
 
-## Key Metrics (2026-07-18)
+## Key Metrics (2026-07-25)
 
-| Metric | Before | After |
-|--------|--------|-------|
-| Unit test files | 22 | 26 |
-| Unit tests | 232 | 254 |
+| Metric | Before (073) | After (074) |
+|--------|-------------|-------------|
+| Unit test files | 27 | 30 |
+| Unit tests | 339 | 361 |
 | E2E test files | 8 | 8 |
 | E2E tests | 58 | 58 |
-| Total tests | 290 | 312 |
+| Total tests | 397 | 419 |
 | CI checks | 22/22 | 22/22 passing |
 | LOC violations | 0 | 0 |
 | Lint warnings | 0 | 0 |
 | Type errors | 0 | 0 |
+| Coverage (lines) | 25% | 28% |
+| Coverage (branches) | 15% | 19% |
+| Coverage (functions) | 18% | 20% |
+| Coverage (statements) | 25% | 28% |
+| ADRs with stale status | 17 | 4 |
 
-## ADR Updates (2026-07-17)
+## ADR Reconciliation (2026-07-25)
 
-| Title | Status | Notes |
-|-------|--------|-------|
-| P2P Sync Architecture | Accepted | Yjs + WebRTC + QR pairing, dual-layer persistence |
-| AI Provider Consolidation | Accepted | OpenRouter + Ollama, streaming, web research |
-| Markdown Content and Editor Engine | Accepted | Textarea validated; CodeMirror spike deferred to P3 |
-| Editor Draft Persistence | Implemented | Versioned drafts in localStorage, Zod validation |
-| Editor Feedback Policy | Implemented | Inline status, no routine toasts |
+| ADR | New Status | Reason |
+|-----|-----------|--------|
+| 002 Security Export | Implemented | XSS prevention via WebCrypto AES-GCM |
+| 004 DB Migration | Superseded by ADR 028 | localStorage replaces SQLite |
+| 005 Error Handling | Superseded by ADR 028 | Specific patterns replace generic |
+| 010 Export Schema v1 | Implemented | Zod validators in schema.ts |
+| 013 Design Tokens | Implemented | @theme block in globals.css |
+| 015 Responsive Theming | Implemented | Mobile-first Tailwind breakpoints |
+| 016 Feature Gap Closure | Superseded | By Plans 072/073 |
+| 018 Next.js Architecture | Implemented | Production baseline |
+| 019 AI Provider | Superseded by ADR 025 | OpenRouter + Ollama consolidation |
+| 021 Encrypted Export | Implemented | WebCrypto in encrypt.ts |
+| 022 Retrieval Engine | Implemented | BM25 in retrieval.ts |
+| 023 Draft Persistence | Implemented | Versioned localStorage drafts |
+| 024 Feedback Policy | Implemented | Inline status, no routine toasts |
