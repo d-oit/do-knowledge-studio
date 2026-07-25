@@ -81,7 +81,7 @@ test.describe('Search and filter', () => {
   });
 
   test('status region announces filter results', async ({ page }) => {
-    const status = page.getByRole('status');
+    const status = page.getByRole('status').first();
     await expect(status).toBeAttached();
   });
 });
