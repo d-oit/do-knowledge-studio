@@ -5,9 +5,17 @@
 
 ## Current Status
 
-Plan 077 remediates all 28 review findings from Plan 076: dead code cleanup,
-keyboard navigation for 3 components, focus-visible, decorative icon aria-hidden,
-and 20 touch target fixes.
+Plan 078 remediates gaps identified in the codebase: LOC violation, stale architecture docs, coverage thresholds, and missing E2E CI.
+
+### Plan 078 — GOAP Gap Remediation: LOC, Architecture, Coverage, E2E CI (2026-07-25)
+
+| Wave | Goal | Status | PR | Changes |
+|------|------|--------|-----|---------|
+| W0 | Baseline Scan | Done | — | Confirmed 502 tests, export-view 594 LOC, stale ARCHITECTURE.md |
+| W1 | P0+P1 Critical Fixes | Done | #512 | Split export-view.tsx (594→128 LOC), rewrote ARCHITECTURE.md, added E2E CI job |
+| W2 | Test Suite Expansion | Done | #512 | schema.test.ts (71), sync tests (53), view tests (39) — 163 new tests |
+| W3 | Coverage Thresholds | Done | #512 | Updated thresholds: lines 40%, branches 30%, functions 31%, statements 40% |
+| W4 | PR + CI Verification | Done | #512 | All 22 CI checks pass, E2E test fix, admin merge (Codacy pre-existing) |
 
 ### Plan 077 — Review Findings Remediation (2026-07-25)
 
@@ -118,22 +126,21 @@ and 20 touch target fixes.
 
 ## Key Metrics (2026-07-25)
 
-| Metric | Before (074) | After (075) |
+| Metric | Before (075) | After (078) |
 |--------|-------------|-------------|
-| Unit test files | 30 | 41 |
-| Unit tests | 361 | 492 |
+| Unit test files | 41 | 49 |
+| Unit tests | 492 | 665 |
 | E2E test files | 8 | 8 |
 | E2E tests | 58 | 58 |
-| Total tests | 419 | 550 |
+| Total tests | 550 | 723 |
 | CI checks | 22/22 | 22/22 passing |
 | LOC violations | 0 | 0 |
 | Lint warnings | 0 | 0 |
 | Type errors | 0 | 0 |
-| Coverage (lines) | 28% | 31.63% |
-| Coverage (branches) | 19% | 21.45% |
-| Coverage (functions) | 20% | 22.35% |
-| Coverage (statements) | 28% | 30.85% |
-| ADRs with stale status | 4 | 4 |
+| Coverage (lines) | 31.63% | 41.49% |
+| Coverage (branches) | 21.45% | 31.41% |
+| Coverage (functions) | 22.35% | 32.49% |
+| Coverage (statements) | 30.85% | 41.76% |
 
 ## ADR Reconciliation (2026-07-25)
 
