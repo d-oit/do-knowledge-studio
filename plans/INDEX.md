@@ -126,13 +126,13 @@ Plan 078 remediates gaps identified in the codebase: LOC violation, stale archit
 
 ## Key Metrics (2026-07-25)
 
-| Metric | Before (075) | After (078) |
+| Metric | Before (078) | After (078) |
 |--------|-------------|-------------|
 | Unit test files | 41 | 49 |
-| Unit tests | 492 | 665 |
+| Unit tests | 502 | 665 |
 | E2E test files | 8 | 8 |
 | E2E tests | 58 | 58 |
-| Total tests | 550 | 723 |
+| Total tests | 560 | 723 |
 | CI checks | 22/22 | 22/22 passing |
 | LOC violations | 0 | 0 |
 | Lint warnings | 0 | 0 |
