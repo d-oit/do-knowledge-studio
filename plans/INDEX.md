@@ -13,10 +13,10 @@ and 20 touch target fixes.
 
 | Wave | Goal | Status | PR | Changes |
 |------|------|--------|-----|---------|
-| W1 | Dead Code + ARIA (P1) | Done | (pending) | Removed redundant Escape listener, added aria-invalid/aria-describedby |
-| W2 | Keyboard Navigation (P2) | Done | (pending) | TRIZ matrix keyboard, radio group arrows, type selector Escape/arrows |
-| W3 | Focus & ARIA Polish (P2) | Done | (pending) | Claims slider focus-visible, 3 decorative icons aria-hidden |
-| W4 | Touch Targets (P3) | Done | (pending) | 20 buttons fixed to min-h-[44px] |
+| W1 | Dead Code + ARIA (P1) | Done | #510 | Removed redundant Escape listener, added aria-invalid/aria-describedby |
+| W2 | Keyboard Navigation (P2) | Done | #510 | TRIZ matrix keyboard, radio group arrows, type selector Escape/arrows |
+| W3 | Focus & ARIA Polish (P2) | Done | #510 | Claims slider focus-visible, 3 decorative icons aria-hidden |
+| W4 | Touch Targets (P3) | Done | #510 | 20 buttons fixed to min-h-[44px] |
 
 ### Plan 076 — Accessibility Audit, Overlay Migration, and Quick-Win Remediations (2026-07-25)
 
