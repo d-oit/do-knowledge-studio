@@ -139,7 +139,7 @@ export function TrizView() {
           {(improving !== null || worsening !== null) && (
             <button
               onClick={handleReset}
-              className="ml-auto flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1.5 text-label font-medium text-ink-soft transition-colors hover:text-ink focus-ring"
+              className="ml-auto flex min-h-[44px] items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1.5 text-label font-medium text-ink-soft transition-colors hover:text-ink focus-ring"
             >
               <RotateCcw className="h-3 w-3" />
               Reset
@@ -252,16 +252,27 @@ export function TrizView() {
                         return (
                           <td
                             key={colIndex}
+                            tabIndex={hasEntry ? 0 : undefined}
+                            role={hasEntry ? 'button' : undefined}
+                            aria-label={hasEntry ? `Principles for improving ${rowLabel} vs ${filteredMatrixParams[colIndex]?.label ?? colIndex}` : undefined}
                             className={cn(
-                              'px-1 py-1 text-center',
+                              'px-1 py-1 text-center min-h-[44px] min-w-[44px]',
                               isHighlighted
                                 ? 'bg-saffron-soft font-bold text-saffron-deep'
                                 : hasEntry
-                                  ? 'cursor-pointer bg-muted/50 text-ink-mute hover:bg-saffron-soft/50'
+                                  ? 'cursor-pointer bg-muted/50 text-ink-mute hover:bg-saffron-soft/50 focus-ring'
                                   : 'text-ink-faint/30',
                             )}
                             onClick={() => {
                               if (hasEntry) {
+                                setImproving(colIndex)
+                                setWorsening(rowIndex)
+                                setView('results')
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (hasEntry && (e.key === 'Enter' || e.key === ' ')) {
+                                e.preventDefault()
                                 setImproving(colIndex)
                                 setWorsening(rowIndex)
                                 setView('results')
@@ -334,7 +345,7 @@ export function TrizView() {
                       </div>
                       <button
                         onClick={() => { handleCopy(`${p.name}: ${p.description}`, p.id) }}
-                        className="rounded-md p-1.5 text-ink-faint transition-colors hover:bg-muted hover:text-ink focus-ring"
+                        className="rounded-md p-1.5 text-ink-faint transition-colors hover:bg-muted hover:text-ink focus-ring min-h-[44px] min-w-[44px] flex items-center justify-center"
                         aria-label="Copy principle"
                       >
                         {copied === p.id ? (
@@ -368,14 +379,14 @@ export function TrizView() {
           <div className="mt-6 flex items-center gap-2">
             <button
               onClick={handleReset}
-              className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+              className="flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               Try another contradiction
             </button>
             <button
               onClick={() => { setView('pick') }}
-              className="flex items-center gap-1.5 rounded-md border border-border bg-background px-4 py-2 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
+              className="flex min-h-[44px] items-center gap-1.5 rounded-md border border-border bg-background px-4 py-2 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
             >
               Change parameters
             </button>
@@ -443,7 +454,7 @@ function ParamPicker({
               disabled={isDisabled}
               onClick={() => { onSelect(index) }}
               className={cn(
-                'flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[12px] transition-colors focus-ring',
+                'flex min-h-[44px] w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[12px] transition-colors focus-ring',
                 isSelected
                   ? cn(accents.bg, accents.text, 'font-semibold')
                   : isDisabled

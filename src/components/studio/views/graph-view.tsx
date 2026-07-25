@@ -331,7 +331,7 @@ export function GraphView() {
         {nodes.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
-              <CircleDot className="mx-auto mb-2 h-8 w-8 text-ink-faint/40" />
+              <CircleDot aria-hidden="true" className="mx-auto mb-2 h-8 w-8 text-ink-faint/40" />
               <p className="text-[13px] text-ink-mute">No entities to graph yet.</p>
             </div>
           </div>

@@ -215,7 +215,7 @@ export function AIHarnessView() {
         <button
           onClick={() => { setShowSettings(!showSettings) }}
           className={cn(
-            'flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium transition-colors hover:border-saffron/40 focus-ring',
+            'flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium transition-colors hover:border-saffron/40 focus-ring min-h-[44px]',
             showSettings && 'border-saffron/40 text-saffron-deep',
           )}
         >
@@ -398,7 +398,7 @@ export function AIHarnessView() {
                     })
                     toast.success('Settings saved')
                   }}
-                  className="w-full rounded-md bg-primary px-3 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+                  className="w-full rounded-md bg-primary px-3 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring min-h-[44px]"
                 >
                   Save settings
                 </button>

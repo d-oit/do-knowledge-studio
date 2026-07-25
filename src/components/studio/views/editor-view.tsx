@@ -337,7 +337,7 @@ export function EditorView() {
             aria-label="Add tag"
           />
           {newTag && (
-            <button onClick={addTag} className="text-saffron hover:text-saffron-deep" aria-label="Add tag">
+            <button onClick={addTag} className="min-h-[44px] min-w-[44px] flex items-center justify-center text-saffron hover:text-saffron-deep focus-ring" aria-label="Add tag">
               <Plus className="h-2.5 w-2.5" />
             </button>
           )}
@@ -369,12 +369,30 @@ export function EditorView() {
         </div>
       )}
 
-      <div className="mb-4 flex items-center gap-2 border-b border-border pb-2" role="radiogroup" aria-label="Editor mode">
+      <div
+        className="mb-4 flex items-center gap-2 border-b border-border pb-2"
+        role="radiogroup"
+        aria-label="Editor mode"
+        onKeyDown={(e) => {
+          const modes = ['edit', 'preview', 'split'] as const
+          const currentIdx = modes.indexOf(editMode)
+          if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+            e.preventDefault()
+            const next = modes[(currentIdx + 1) % modes.length]
+            setEditMode(next)
+          } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+            e.preventDefault()
+            const prev = modes[(currentIdx - 1 + modes.length) % modes.length]
+            setEditMode(prev)
+          }
+        }}
+      >
         {(['edit', 'preview', 'split'] as const).map((mode) => (
           <button
             key={mode}
             role="radio"
             type="button"
+            tabIndex={editMode === mode ? 0 : -1}
             aria-checked={editMode === mode}
             onClick={() => { setEditMode(mode) }}
             className={`rounded px-2.5 py-1.5 text-label font-medium transition-colors focus-ring ${editMode === mode ? 'bg-muted text-ink' : 'text-ink-mute hover:bg-muted/50'}`}
@@ -446,7 +464,7 @@ export function EditorView() {
           {editing && (
             <button
               onClick={handleDiscard}
-              className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-red-50 hover:text-red-600 focus-ring"
+              className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-red-50 hover:text-red-600 focus-ring min-h-[44px]"
             >
               Discard changes
             </button>
@@ -454,7 +472,7 @@ export function EditorView() {
           <button
             onClick={handleSave}
             disabled={!name.trim()}
-            className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 press-scale focus-ring"
+            className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 press-scale focus-ring min-h-[44px]"
           >
             <Save className="h-3.5 w-3.5" />
             {editing ? 'Commit changes' : 'Save to library'}

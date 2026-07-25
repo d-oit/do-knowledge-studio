@@ -71,6 +71,21 @@ export function TypeSelector({
           role="listbox"
           aria-label="Select entity type"
           className="absolute left-0 top-full z-20 mt-1 w-44 rounded-md border border-border bg-popover p-1 shadow-lg"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              e.preventDefault()
+              onToggleMenu()
+            } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+              e.preventDefault()
+              const options = menuRef.current?.querySelectorAll<HTMLElement>('[role="option"]')
+              if (!options?.length) return
+              const currentIdx = Array.from(options).findIndex((o) => o === document.activeElement)
+              const nextIdx = e.key === 'ArrowDown'
+                ? (currentIdx + 1) % options.length
+                : (currentIdx - 1 + options.length) % options.length
+              options[nextIdx]?.focus()
+            }
+          }}
         >
           {ENTITY_TYPES.map((t) => {
             const m = getTypeMeta(t)
@@ -80,6 +95,7 @@ export function TypeSelector({
                 role="option"
                 aria-selected={type === t}
                 type="button"
+                tabIndex={t === type ? 0 : -1}
                 onClick={() => { onSelect(t) }}
                 className={cn(
                   'flex w-full items-center gap-2 rounded px-2 py-1.5 text-[12px] transition-colors hover:bg-muted focus-ring',

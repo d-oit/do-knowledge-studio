@@ -112,7 +112,7 @@ export function ClaimsPanel({
           <button
             type="button"
             onClick={() => { setShowForm(true) }}
-            className="flex items-center gap-1 rounded-md border border-dashed border-saffron/50 px-2.5 py-1 text-label font-medium text-saffron-deep transition-colors hover:bg-saffron-soft focus-ring"
+            className="flex min-h-[44px] items-center gap-1 rounded-md border border-dashed border-saffron/50 px-2.5 py-1 text-label font-medium text-saffron-deep transition-colors hover:bg-saffron-soft focus-ring"
           >
             <Plus className="h-3 w-3" />
             Add claim
@@ -234,7 +234,7 @@ export function ClaimsPanel({
                 step={5}
                 value={confidence}
                 onChange={(e) => { setConfidence(Number(e.target.value)) }}
-                className="h-7 w-full accent-[var(--saffron)]"
+                className="h-7 w-full accent-[var(--saffron)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]"
               />
             </div>
           </div>
@@ -256,7 +256,7 @@ export function ClaimsPanel({
             <button
               type="button"
               onClick={resetForm}
-              className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
+              className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring min-h-[44px]"
             >
               Cancel
             </button>
@@ -264,7 +264,7 @@ export function ClaimsPanel({
               type="button"
               onClick={handleSave}
               disabled={!statement.trim()}
-              className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 press-scale focus-ring"
+              className="flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 press-scale focus-ring"
             >
               <Save className="h-3.5 w-3.5" />
               {editingId ? 'Update claim' : 'Save claim'}

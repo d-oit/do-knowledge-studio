@@ -4,7 +4,7 @@ import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
 import { ENTITY_TYPE_META } from '@/lib/studio/types'
 import { search, type SearchResult } from '@/lib/search/retrieval'
 import { Search, X, Sparkles, FileText, Quote, ArrowRight } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Overlay } from '@/components/studio/ui/shared-primitives'
 
@@ -70,7 +70,7 @@ function SearchPanel() {
             onClick={() => { setMode('keyword') }}
             aria-pressed={mode === 'keyword'}
             className={cn(
-              'flex-1 rounded px-2 py-1 font-medium transition-colors focus-ring',
+              'flex-1 rounded px-2 py-1 font-medium transition-colors focus-ring min-h-[44px]',
               mode === 'keyword' ? 'bg-background text-ink shadow-sm' : 'text-ink-mute',
             )}
           >
@@ -80,7 +80,7 @@ function SearchPanel() {
             onClick={() => { setMode('ranked') }}
             aria-pressed={mode === 'ranked'}
             className={cn(
-              'flex-1 rounded px-2 py-1 font-medium transition-colors focus-ring',
+              'flex-1 rounded px-2 py-1 font-medium transition-colors focus-ring min-h-[44px]',
               mode === 'ranked' ? 'bg-background text-ink shadow-sm' : 'text-ink-mute',
             )}
           >
@@ -178,19 +178,6 @@ function InspectorPanel() {
   const entity = entities.find((e) => e.id === selectedEntityId) || entities[0]
   const deleteCancelRef = useRef<HTMLButtonElement>(null)
 
-  useEffect(() => {
-    if (!showDeleteConfirm) return
-    deleteCancelRef.current?.focus()
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setShowDeleteConfirm(false)
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => { window.removeEventListener('keydown', handleKeyDown) }
-  }, [showDeleteConfirm])
-
   if (!entity) {
     return (
       <aside className="hidden h-full w-[320px] shrink-0 border-l border-border bg-background wide:flex">
@@ -277,13 +264,13 @@ function InspectorPanel() {
       <div className="flex gap-2 border-t border-border p-3">
         <button
           onClick={() => startEdit(entity.id)}
-          className="flex-1 rounded-md bg-primary px-3 py-1.5 text-[12px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 press-scale focus-ring"
+          className="flex-1 rounded-md bg-primary px-3 py-1.5 text-[12px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 press-scale focus-ring min-h-[44px]"
         >
           Edit
         </button>
         <button
           onClick={() => { setShowDeleteConfirm(true) }}
-          className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:border-red-300 hover:text-red-600 focus-ring"
+          className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:border-red-300 hover:text-red-600 focus-ring min-h-[44px]"
         >
           Delete
         </button>
@@ -305,13 +292,13 @@ function InspectorPanel() {
               <button
                 ref={deleteCancelRef}
                 onClick={() => { setShowDeleteConfirm(false) }}
-                className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
+                className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring min-h-[44px]"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDelete}
-                className="rounded-md bg-red-600 px-3 py-1.5 text-[12px] font-semibold text-white transition-colors hover:bg-red-700 focus-ring"
+                className="rounded-md bg-red-600 px-3 py-1.5 text-[12px] font-semibold text-white transition-colors hover:bg-red-700 focus-ring min-h-[44px]"
               >
                 Delete
               </button>
