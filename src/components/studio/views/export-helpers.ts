@@ -18,6 +18,8 @@ import {
 } from 'docx'
 import { validateImportPayload, type ValidationError } from '@/lib/studio/schema'
 
+export type ExportFormatId = 'json' | 'markdown' | 'html' | 'pdf' | 'docx' | 'encrypted'
+
 export type ImportResult =
   | { success: true; entities: Entity[]; claims: Claim[] }
   | { success: false; errors: ValidationError[] }
@@ -31,12 +33,14 @@ export interface ImportPreview {
   duplicateIds: string[]
 }
 
+export type ExportColorKey = 'saffron' | 'sky' | 'sage' | 'clay'
+
 export interface ExportFormat {
-  id: string
+  id: ExportFormatId
   name: string
   description: string
   icon: typeof FileText
-  color: string
+  color: ExportColorKey
   badge?: string
   available?: boolean
 }
@@ -93,7 +97,7 @@ export const FORMATS: ExportFormat[] = [
   },
 ]
 
-export const COLOR_MAP: Record<string, string> = {
+export const COLOR_MAP: Record<ExportColorKey, string> = {
   saffron: 'bg-saffron-soft text-saffron-deep',
   sky: 'bg-sky-100 text-sky-600 dark:bg-sky-950/40 dark:text-sky-300',
   sage: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300',
