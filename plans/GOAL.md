@@ -9,7 +9,7 @@ Build a local-first, structured knowledge engine that empowers users to capture,
 - **Offline First**: Zero latency, zero dependency on external APIs for core functionality.
 - **Security First**: All user content is sanitized before export; API keys are session-only.
 
-## Current Architecture (as of 2026-07-24)
+## Current Architecture (as of 2026-07-25)
 - Next.js 16 / React 19 / Tailwind 4 / shadcn / Zustand
 - Persistence: Zustand + localStorage (validated with Zod schemas)
 - Search: BM25 keyword ranking (not semantic/vector)
