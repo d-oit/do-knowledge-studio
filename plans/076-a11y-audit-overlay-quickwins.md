@@ -5,7 +5,7 @@
 **Method**: GOAP with swarm agents
 **Orchestrator**: `goap-agent` skill
 **Branch**: `feat/076-a11y-audit-overlay-quickwins`
-**PR**: (pending)
+**PR**: #508 (merged 2026-07-25)
 
 ## Context
 
