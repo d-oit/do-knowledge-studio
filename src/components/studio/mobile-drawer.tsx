@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { X, Search, Sun, Moon, FileText } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
-import { ENTITY_TYPE_META } from '@/lib/studio/types'
+import { ENTITY_TYPE_META, type Entity } from '@/lib/studio/types'
 import { NAV_GROUPS } from './sidebar'
 import { cn } from '@/lib/utils'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
@@ -316,7 +316,10 @@ function SearchTab({ onSelect }: { onSelect: () => void }) {
     : []
 
   const displayEntities = mode === 'ranked' && searchQuery.trim()
-    ? rankedResults.map((r) => entities.find((e) => e.id === (r.entityId ?? r.id))).filter(Boolean).slice(0, 20) as typeof entities
+    ? rankedResults
+        .map((r) => entities.find((e) => e.id === (r.entityId ?? r.id)))
+        .filter((e): e is Entity => e !== undefined)
+        .slice(0, 20)
     : filtered
 
   // Empty-state copy follows the desktop SearchPanel exactly

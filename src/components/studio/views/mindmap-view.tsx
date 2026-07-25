@@ -46,6 +46,7 @@ export function MindMapView() {
   const entityIndex = useMemo(() => buildEntityIndex(entities), [entities])
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null)
   const canvasRef = useRef<HTMLDivElement>(null)
+  const treeItemsRef = useRef<NodeListOf<HTMLElement> | null>(null)
   const [syncKey, setSyncKey] = useState(0)
   const commitEntity = useStudioStore((s) => s.commitEntity)
   const deleteEntity = useStudioStore((s) => s.deleteEntity)
@@ -208,6 +209,10 @@ export function MindMapView() {
     setSyncKey((k) => k + 1)
   }, [])
 
+  useEffect(() => {
+    treeItemsRef.current = canvasRef.current?.querySelectorAll<HTMLElement>('[role="treeitem"]') ?? null
+  }, [tree, expandedNodes, syncKey])
+
   const renderNode = (node: TreeNode, level: number = 0): React.ReactNode => {
     const meta = ENTITY_TYPE_META[node.entity.type]
     const isExpanded = expandedNodes.has(node.entity.id) || level === 0
@@ -265,7 +270,7 @@ export function MindMapView() {
               }
               if (e.key === 'ArrowDown') {
                 e.preventDefault()
-                const items = canvasRef.current?.querySelectorAll<HTMLElement>('[role="treeitem"]')
+                const items = treeItemsRef.current
                 if (!items) return
                 const idx = Array.from(items).findIndex((el) => el.getAttribute('data-entity-id') === node.entity.id)
                 if (idx >= 0 && idx < items.length - 1) {
@@ -274,7 +279,7 @@ export function MindMapView() {
               }
               if (e.key === 'ArrowUp') {
                 e.preventDefault()
-                const items = canvasRef.current?.querySelectorAll<HTMLElement>('[role="treeitem"]')
+                const items = treeItemsRef.current
                 if (!items) return
                 const idx = Array.from(items).findIndex((el) => el.getAttribute('data-entity-id') === node.entity.id)
                 if (idx > 0) {
@@ -283,14 +288,14 @@ export function MindMapView() {
               }
               if (e.key === 'Home') {
                 e.preventDefault()
-                const items = canvasRef.current?.querySelectorAll<HTMLElement>('[role="treeitem"]')
+                const items = treeItemsRef.current
                 if (items && items.length > 0) {
                   items[0].focus()
                 }
               }
               if (e.key === 'End') {
                 e.preventDefault()
-                const items = canvasRef.current?.querySelectorAll<HTMLElement>('[role="treeitem"]')
+                const items = treeItemsRef.current
                 if (items && items.length > 0) {
                   items[items.length - 1].focus()
                 }

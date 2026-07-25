@@ -299,12 +299,22 @@ export const useStudioStore = create<StudioState>()(
           })
           return { success: true }
         } catch (err) {
-          set({
-            entities: snapshot.entities,
-            claims: snapshot.claims,
-            entityHistory: snapshot.entityHistory,
-            historyIndex: snapshot.historyIndex,
-          })
+          try {
+            set({
+              entities: snapshot.entities,
+              claims: snapshot.claims,
+              entityHistory: snapshot.entityHistory,
+              historyIndex: snapshot.historyIndex,
+            })
+          } catch {
+            set({
+              ...SEED_STATE,
+              selectedEntityId: null,
+              editingEntityId: null,
+              entityHistory: [seedEntities],
+              historyIndex: 0,
+            })
+          }
           return {
             success: false,
             error: err instanceof Error ? err.message : 'Import failed, state restored.',

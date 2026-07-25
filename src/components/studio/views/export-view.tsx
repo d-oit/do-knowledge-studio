@@ -53,18 +53,24 @@ export function ExportView() {
   const resetCancelRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
-    if (!showResetConfirm && !importPreview) return
+    if (!showResetConfirm) return
     resetCancelRef.current?.focus()
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setShowResetConfirm(false)
-        setImportPreview(null)
-      }
+      if (e.key === 'Escape') setShowResetConfirm(false)
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => { window.removeEventListener('keydown', handleKeyDown) }
-  }, [showResetConfirm, importPreview])
+  }, [showResetConfirm])
+
+  useEffect(() => {
+    if (!importPreview) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setImportPreview(null)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => { window.removeEventListener('keydown', handleKeyDown) }
+  }, [importPreview])
 
   const handleExport = async (format: string) => {
     if (format === 'json') {

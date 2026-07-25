@@ -14,7 +14,7 @@ Plan 073 closes out remaining gaps from Plan 072. All quality gates pass.
 | W0 | Baseline & Verification | Done | 10 gaps verified from source |
 | W1 | Import Safety (P0) | Done | Import preview step, `importWithRollback` with atomic replacement and undo |
 | W2 | Product Honesty + CI (P1) | Done | Chat label fixed, mobile BM25 wired, claim CRUD (edit/delete), version-propagation removed, security scanners fail-closed |
-| W3 | UI/UX Polish (P2) | Done | Mind map ARIA tree + roving tabindex, Playwright mobile/tablet projects, coverage thresholds raised (30/30/25/20), 44px touch targets |
+| W3 | UI/UX Polish (P2) | Done | Mind map ARIA tree + roving tabindex, Playwright mobile/tablet projects, coverage thresholds raised (25/25/18/15), 44px touch targets |
 | W4 | Documentation (P2) | Done | This update |
 
 ### Deferred to Plan 074
