@@ -240,6 +240,7 @@ export function MindMapView() {
 
           <div
             role="treeitem"
+            data-entity-id={node.entity.id}
             tabIndex={focusedNodeId === node.entity.id ? 0 : -1}
             aria-selected={focusedNodeId === node.entity.id ? true : undefined}
             aria-expanded={hasChildren ? isExpanded : undefined}
@@ -266,8 +267,8 @@ export function MindMapView() {
                 e.preventDefault()
                 const items = canvasRef.current?.querySelectorAll<HTMLElement>('[role="treeitem"]')
                 if (!items) return
-                const idx = Array.from(items).indexOf(e.currentTarget as HTMLElement)
-                if (idx < items.length - 1) {
+                const idx = Array.from(items).findIndex((el) => el.getAttribute('data-entity-id') === node.entity.id)
+                if (idx >= 0 && idx < items.length - 1) {
                   items[idx + 1].focus()
                 }
               }
@@ -275,7 +276,7 @@ export function MindMapView() {
                 e.preventDefault()
                 const items = canvasRef.current?.querySelectorAll<HTMLElement>('[role="treeitem"]')
                 if (!items) return
-                const idx = Array.from(items).indexOf(e.currentTarget as HTMLElement)
+                const idx = Array.from(items).findIndex((el) => el.getAttribute('data-entity-id') === node.entity.id)
                 if (idx > 0) {
                   items[idx - 1].focus()
                 }
