@@ -1,10 +1,10 @@
 # Plan 079 — View Test Coverage + PR for Plan 078
 
 **Date**: 2026-07-25
-**Status**: IN PROGRESS
+**Status**: DONE (verified 2026-07-25)
 **Method**: GOAP with parallel execution
 **Branch**: `feat/079-view-tests`
-**PR**: TBD
+**PR**: [#514](https://github.com/d-oit/do-knowledge-studio/pull/514) — all 22 CI checks pass
 
 ## Context
 
