@@ -14,9 +14,9 @@ audit) and implements 41 a11y fixes across 18 component files.
 |------|------|--------|-----|---------|
 | W0 | Baseline & Branch Setup | Done | — | Clean baseline: 502 tests, 31.63% coverage, 22/22 CI |
 | W1 | A11y Audit (Swarm) | Done | — | 3 parallel agents: 68 findings (21 critical, 15 serious, 24 moderate, 8 minor) |
-| W2 | ARIA & Semantic Fixes | Done | (pending) | 18 ARIA fixes: labels, roles, live regions, table captions |
-| W3 | Keyboard, Focus & Touch Target Fixes | Done | (pending) | 8 focus fixes + 12 touch target fixes + Overlay migration |
-| W4 | Motion & Polish | Done | (pending) | prefers-reduced-motion gating for ai-harness-view + TypingIndicator |
+| W2 | ARIA & Semantic Fixes | Done | #508 | 18 ARIA fixes: labels, roles, live regions, table captions |
+| W3 | Keyboard, Focus & Touch Target Fixes | Done | #508 | 8 focus fixes + 12 touch target fixes + Overlay migration |
+| W4 | Motion & Polish | Done | #508 | prefers-reduced-motion gating for ai-harness-view + TypingIndicator |
 
 ### Plan 075 — Coverage, Overlay, Claims History, and Docs Reconciliation (2026-07-25)
 
