@@ -6,6 +6,7 @@ import { search, type SearchResult } from '@/lib/search/retrieval'
 import { Search, X, Sparkles, FileText, Quote, ArrowRight } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
+import { Overlay } from '@/components/studio/ui/shared-primitives'
 
 export function RightPanel() {
   const currentView = useStudioStore((s) => s.currentView)
@@ -48,7 +49,7 @@ function SearchPanel() {
         <div className="mb-2 flex items-center justify-between">
           <h2 className="font-serif text-[14px] font-semibold text-ink">Search</h2>
           <button
-            className="text-ink-faint transition-colors hover:text-ink lg:hidden"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center text-ink-faint transition-colors hover:text-ink focus-ring"
             aria-label="Close"
           >
             <X className="h-4 w-4" />
@@ -60,14 +61,16 @@ function SearchPanel() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search knowledge base…"
+            aria-label="Search knowledge base"
             className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-3 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
           />
         </div>
         <div className="mt-2 flex items-center gap-1 rounded-md bg-muted p-0.5 text-label">
           <button
             onClick={() => { setMode('keyword') }}
+            aria-pressed={mode === 'keyword'}
             className={cn(
-              'flex-1 rounded px-2 py-1 font-medium transition-colors',
+              'flex-1 rounded px-2 py-1 font-medium transition-colors focus-ring',
               mode === 'keyword' ? 'bg-background text-ink shadow-sm' : 'text-ink-mute',
             )}
           >
@@ -75,8 +78,9 @@ function SearchPanel() {
           </button>
           <button
             onClick={() => { setMode('ranked') }}
+            aria-pressed={mode === 'ranked'}
             className={cn(
-              'flex-1 rounded px-2 py-1 font-medium transition-colors',
+              'flex-1 rounded px-2 py-1 font-medium transition-colors focus-ring',
               mode === 'ranked' ? 'bg-background text-ink shadow-sm' : 'text-ink-mute',
             )}
           >
@@ -211,7 +215,7 @@ function InspectorPanel() {
         <h2 className="font-serif text-[14px] font-semibold text-ink">Inspector</h2>
         <button
           onClick={() => selectEntity(null)}
-          className="text-ink-faint transition-colors hover:text-ink"
+          className="min-h-[44px] min-w-[44px] flex items-center justify-center text-ink-faint transition-colors hover:text-ink focus-ring"
           aria-label="Close inspector"
         >
           <X className="h-4 w-4" />
@@ -286,11 +290,16 @@ function InspectorPanel() {
       </div>
 
       {showDeleteConfirm && (
-        <div role="dialog" aria-modal="true" aria-label="Confirm delete" className="fixed inset-0 z-[800] flex items-center justify-center bg-ink/30 backdrop-blur-sm">
+        <Overlay
+          open={showDeleteConfirm}
+          onClose={() => { setShowDeleteConfirm(false) }}
+          aria-label="Confirm delete"
+          initialFocusRef={deleteCancelRef}
+        >
           <div className="w-[340px] rounded-xl border border-border bg-popover p-5 shadow-2xl">
             <h3 className="mb-2 font-serif text-[14px] font-semibold text-ink">Delete entity?</h3>
             <p className="mb-4 text-[12px] text-ink-mute">
-              "{entity.name}" will be permanently deleted. This cannot be undone.
+              &quot;{entity.name}&quot; will be permanently deleted. This cannot be undone.
             </p>
             <div className="flex justify-end gap-2">
               <button
@@ -308,7 +317,7 @@ function InspectorPanel() {
               </button>
             </div>
           </div>
-        </div>
+        </Overlay>
       )}
     </aside>
   )

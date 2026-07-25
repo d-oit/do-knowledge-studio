@@ -45,13 +45,13 @@ export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps)
         <div className="flex-1" />
         <button
           onClick={() => { handleResolveAll('local') }}
-          className="rounded px-2 py-1 text-[11px] font-medium text-amber-700 transition-colors hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-900"
+          className="rounded px-2 py-1 text-[11px] font-medium text-amber-700 transition-colors hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-900 min-h-[44px] focus-ring"
         >
           Keep all local
         </button>
         <button
           onClick={() => { handleResolveAll('remote') }}
-          className="rounded px-2 py-1 text-[11px] font-medium text-amber-700 transition-colors hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-900"
+          className="rounded px-2 py-1 text-[11px] font-medium text-amber-700 transition-colors hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-900 min-h-[44px] focus-ring"
         >
           Keep all remote
         </button>

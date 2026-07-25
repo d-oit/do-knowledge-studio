@@ -414,11 +414,12 @@ export function ExportView() {
 
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-label font-semibold uppercase tracking-wide text-ink-faint">
+                <label htmlFor="encrypt-password" className="mb-1 block text-label font-semibold uppercase tracking-wide text-ink-faint">
                   Password
                 </label>
                 <div className="relative">
                   <input
+                    id="encrypt-password"
                     type={showPass ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => { setPassword(e.target.value) }}
@@ -427,26 +428,29 @@ export function ExportView() {
                   />
                   <button
                     onClick={() => { setShowPass(!showPass) }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-caption font-medium text-ink-faint hover:text-ink"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] flex items-center justify-center text-caption font-medium text-ink-faint hover:text-ink focus-ring"
+                    aria-label={showPass ? 'Hide password' : 'Show password'}
                   >
                     {showPass ? 'Hide' : 'Show'}
                   </button>
                 </div>
               </div>
               <div>
-                <label className="mb-1 block text-label font-semibold uppercase tracking-wide text-ink-faint">
+                <label htmlFor="encrypt-confirm-password" className="mb-1 block text-label font-semibold uppercase tracking-wide text-ink-faint">
                   Confirm password
                 </label>
                 <input
+                  id="encrypt-confirm-password"
                   type={showPass ? 'text' : 'password'}
                   value={confirm}
                   onChange={(e) => { setConfirm(e.target.value) }}
                   placeholder="Re-enter password"
+                  aria-describedby={password && confirm && password !== confirm ? 'password-mismatch-error' : undefined}
                   className="w-full rounded-md border border-border bg-background px-3 py-2 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
                 />
               </div>
               {password && confirm && password !== confirm && (
-                <p className="text-label text-red-500">Passwords do not match.</p>
+                <p id="password-mismatch-error" className="text-label text-red-500">Passwords do not match.</p>
               )}
             </div>
 

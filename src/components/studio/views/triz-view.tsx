@@ -97,7 +97,7 @@ export function TrizView() {
               onClick={() => { setView('pick') }}
               aria-pressed={view === 'pick'}
               className={cn(
-                'rounded px-2.5 py-1 text-[12px] font-medium transition-colors focus-ring',
+                'rounded px-2.5 py-1 text-[12px] font-medium transition-colors focus-ring min-h-[44px]',
                 view === 'pick'
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'text-ink-mute hover:text-ink',
@@ -110,7 +110,7 @@ export function TrizView() {
               onClick={() => { setView('matrix') }}
               aria-pressed={view === 'matrix'}
               className={cn(
-                'rounded px-2.5 py-1 text-[12px] font-medium transition-colors focus-ring',
+                'rounded px-2.5 py-1 text-[12px] font-medium transition-colors focus-ring min-h-[44px]',
                 view === 'matrix'
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'text-ink-mute hover:text-ink',
@@ -124,7 +124,7 @@ export function TrizView() {
                 onClick={() => { setView('results') }}
                 aria-pressed={view === 'results'}
                 className={cn(
-                  'rounded px-2.5 py-1 text-[12px] font-medium transition-colors focus-ring',
+                  'rounded px-2.5 py-1 text-[12px] font-medium transition-colors focus-ring min-h-[44px]',
                   view === 'results'
                     ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'text-ink-mute hover:text-ink',
@@ -212,6 +212,7 @@ export function TrizView() {
             />
             <div className="overflow-auto rounded-md border border-border">
               <table className="w-full text-[10px]">
+                <caption className="sr-only">TRIZ Contradiction Matrix</caption>
                 <thead>
                   <tr>
                     <th className="sticky left-0 z-10 bg-card px-2 py-1.5 text-left font-semibold text-ink-faint">

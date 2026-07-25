@@ -314,7 +314,7 @@ export function EditorView() {
             #{t}
             <button
               onClick={() => { setTags(tags.filter((x) => x !== t)) }}
-              className="text-ink-faint hover:text-red-500"
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center text-ink-faint hover:text-red-500 focus-ring"
               aria-label={`Remove tag ${t}`}
             >
               <X className="h-2.5 w-2.5" />

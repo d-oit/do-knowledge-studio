@@ -187,7 +187,7 @@ export function GraphView() {
   return (
     <div className="flex h-full flex-col">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-1.5 border-b border-border bg-card/50 px-5 py-2.5">
+      <div className="flex flex-wrap items-center gap-1.5 border-b border-border bg-card/50 px-5 py-2.5" role="toolbar" aria-label="Graph controls">
         <ToggleButtonGroup label="Layout">
           {(['force', 'circular', 'hierarchical'] as LayoutType[]).map((l) => (
             <button

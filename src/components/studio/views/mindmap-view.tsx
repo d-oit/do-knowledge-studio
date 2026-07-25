@@ -346,10 +346,11 @@ export function MindMapView() {
   return (
     <div className="flex h-full flex-col">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-border bg-card/50 px-5 py-2.5">
+      <div className="flex flex-wrap items-center gap-2 border-b border-border bg-card/50 px-5 py-2.5" role="toolbar" aria-label="Mind map controls">
         <select
           value={rootId}
           onChange={(e) => { setRootId(e.target.value) }}
+          aria-label="Root entity"
           className="rounded-md border border-border bg-background px-2.5 py-1.5 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30 min-h-[44px]"
         >
           {entities.map((e) => (
@@ -370,6 +371,7 @@ export function MindMapView() {
             max={5}
             value={depth}
             onChange={(e) => { setDepth(Number(e.target.value)) }}
+            aria-label="Tree depth"
             className="w-20 accent-saffron min-h-[44px]"
           />
           <span className="font-mono text-label text-ink">{depth}</span>
@@ -393,8 +395,9 @@ export function MindMapView() {
 
         <button
           onClick={() => { setCompact(!compact) }}
+          aria-pressed={compact}
           className={cn(
-            'rounded-md px-2 py-1.5 text-label font-medium transition-colors min-h-[44px]',
+            'rounded-md px-2 py-1.5 text-label font-medium transition-colors min-h-[44px] focus-ring',
             compact ? 'bg-saffron-soft text-saffron-deep' : 'text-ink-mute hover:bg-muted hover:text-ink',
           )}
         >

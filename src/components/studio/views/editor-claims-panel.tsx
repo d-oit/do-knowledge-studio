@@ -167,11 +167,11 @@ export function ClaimsPanel({
               </p>
             )}
 
-            <div className="mt-2 flex items-center gap-1.5">
+            <div className="mt-2 flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => { startEdit(c) }}
-                className="flex items-center gap-1 rounded-md px-2 py-1 text-label font-medium text-ink-faint transition-colors hover:bg-muted hover:text-ink focus-ring"
+                className="flex min-h-[44px] items-center gap-1 rounded-md px-2 py-1 text-label font-medium text-ink-faint transition-colors hover:bg-muted hover:text-ink focus-ring"
                 aria-label="Edit claim"
               >
                 <Pencil className="h-3 w-3" />
@@ -180,7 +180,7 @@ export function ClaimsPanel({
               <button
                 type="button"
                 onClick={() => { handleDelete(c.id) }}
-                className="flex items-center gap-1 rounded-md px-2 py-1 text-label font-medium text-ink-faint transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40 focus-ring"
+                className="flex min-h-[44px] items-center gap-1 rounded-md px-2 py-1 text-label font-medium text-ink-faint transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40 focus-ring"
                 aria-label="Delete claim"
               >
                 <Trash2 className="h-3 w-3" />

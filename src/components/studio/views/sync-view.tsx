@@ -307,11 +307,12 @@ export function SyncView() {
 
             {/* Manual Input */}
             <div>
-              <label className="mb-1.5 text-label font-semibold uppercase tracking-wide text-ink-faint">
+              <label htmlFor="sync-room-id" className="mb-1.5 text-label font-semibold uppercase tracking-wide text-ink-faint">
                 Room ID
               </label>
               <div className="flex gap-2">
                 <input
+                  id="sync-room-id"
                   type="text"
                   value={inputRoomId}
                   onChange={(e) => { setInputRoomId(e.target.value) }}
@@ -338,11 +339,11 @@ export function SyncView() {
                 <div className="text-[12px] font-medium text-ink">Room</div>
                 <div className="font-mono text-[13px] text-ink-soft">{roomId}</div>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => { setPairingMode(pairingMode === 'display' ? 'none' : 'display') }}
                   className={cn(
-                    'flex h-7 w-7 items-center justify-center rounded-md transition-colors focus-ring',
+                    'flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md transition-colors focus-ring',
                     pairingMode === 'display'
                       ? 'bg-saffron/20 text-saffron-deep'
                       : 'text-ink-faint hover:bg-border hover:text-ink',
@@ -353,7 +354,7 @@ export function SyncView() {
                 </button>
                 <button
                   onClick={handleCopyRoomId}
-                  className="flex h-7 w-7 items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-border hover:text-ink focus-ring"
+                  className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-border hover:text-ink focus-ring"
                   aria-label="Copy room ID"
                 >
                   {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}

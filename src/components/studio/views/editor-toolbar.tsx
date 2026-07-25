@@ -51,7 +51,7 @@ export function EditorToolbar({
   }
   return (
     <div className="sticky top-0 z-10 -mx-6 mb-3 border-y border-border bg-background/90 px-6 py-2 backdrop-blur-sm lg:-mx-10 lg:px-10">
-      <div className="flex flex-wrap items-center gap-0.5">
+      <div className="flex flex-wrap items-center gap-0.5" role="toolbar" aria-label="Formatting">
         <ToolbarButton icon={Bold} label="Bold" onClick={() => { handleFormat('bold') }} />
         <ToolbarButton icon={Italic} label="Italic" onClick={() => { handleFormat('italic') }} />
         <Divider />
@@ -71,7 +71,7 @@ export function EditorToolbar({
           type="button"
           onClick={onToggleAdvanced}
           aria-expanded={showAdvanced}
-          className={`flex items-center gap-1 rounded-md px-2 py-1 text-label font-medium transition-colors hover:bg-muted focus-ring ${
+          className={`flex min-h-[44px] items-center gap-1 rounded-md px-2 py-1 text-label font-medium transition-colors hover:bg-muted focus-ring ${
             showAdvanced ? 'text-ink' : 'text-ink-mute'
           }`}
         >
