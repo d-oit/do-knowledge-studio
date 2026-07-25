@@ -13,10 +13,10 @@ primitive, claims version history, and documentation reconciliation.
 | Wave | Goal | Status | PR | Changes |
 |------|------|--------|-----|---------|
 | W0 | Baseline & Documentation Reconciliation | Done | — | Plan 072 OPEN→DONE, Plan 074 PLANNING→DONE, Plan 071 exit criteria checked |
-| W1 | Coverage Improvement (G2) | Done | This PR | 8 new test files, 492 tests, coverage 30.87%→31.63% lines |
-| W2 | Overlay Primitive (G4) | Done | This PR | Shared `<Overlay>` component with focus trap, Escape, backdrop, ARIA |
-| W3 | Claims Version History (G5) | Done | This PR | `version` field (auto-increment), `editHistory` array |
-| W4 | Final Verification & Documentation (G6) | Done | This PR | INDEX.md updated, quality gate passed |
+| W1 | Coverage Improvement (G2) | Done | #505 | 8 new test files, 492 tests, coverage 30.87%→31.63% lines |
+| W2 | Overlay Primitive (G4) | Done | #505 | Shared `<Overlay>` component with focus trap, Escape, backdrop, ARIA |
+| W3 | Claims Version History (G5) | Done | #505 | `version` field (auto-increment), `editHistory` array |
+| W4 | Final Verification & Documentation (G6) | Done | #505 | INDEX.md updated, quality gate passed |
 
 ### Plan 074 — Sync Bridge, A11y, Data Layer, and Documentation (2026-07-25)
 
