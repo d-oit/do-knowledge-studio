@@ -4,7 +4,7 @@
 **Status**: DONE
 **Method**: GOAP with swarm agents
 **Branch**: `feat/077-a11y-review-remediation`
-**PR**: (pending)
+**PR**: #510 (merged 2026-07-25)
 
 ## Context
 
