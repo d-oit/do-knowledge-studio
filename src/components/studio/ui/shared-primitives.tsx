@@ -1,4 +1,4 @@
-import { forwardRef } from 'react'
+import { forwardRef, useEffect, useRef, useCallback } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -296,6 +296,125 @@ export function SwitchToggle({
           )}
         />
       </button>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Overlay (Dialog)
+// ---------------------------------------------------------------------------
+
+interface OverlayProps {
+  open: boolean
+  onClose: () => void
+  /** Accessible label for the dialog */
+  'aria-label'?: string
+  /** ID of the element that labels the dialog */
+  'aria-labelledby'?: string
+  /** Whether clicking the backdrop closes the dialog */
+  closeOnBackdrop?: boolean
+  /** Whether pressing Escape closes the dialog */
+  closeOnEscape?: boolean
+  /** Whether to trap focus within the dialog */
+  trapFocus?: boolean
+  className?: string
+  children: React.ReactNode
+}
+
+export function Overlay({
+  open,
+  onClose,
+  'aria-label': ariaLabel,
+  'aria-labelledby': ariaLabelledBy,
+  closeOnBackdrop = true,
+  closeOnEscape = true,
+  trapFocus = true,
+  className,
+  children,
+}: OverlayProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const previousFocusRef = useRef<HTMLElement | null>(null)
+
+  // Save and restore focus
+  useEffect(() => {
+    if (open) {
+      previousFocusRef.current = document.activeElement as HTMLElement
+      // Focus the container or first focusable element
+      const container = containerRef.current
+      if (container) {
+        const firstFocusable = container.querySelector<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        )
+        ;(firstFocusable ?? container).focus()
+      }
+    } else if (previousFocusRef.current) {
+      previousFocusRef.current.focus()
+      previousFocusRef.current = null
+    }
+  }, [open])
+
+  // Escape key handler
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (closeOnEscape && e.key === 'Escape') {
+        e.stopPropagation()
+        onClose()
+      }
+
+      // Focus trap
+      if (trapFocus && e.key === 'Tab' && containerRef.current) {
+        const focusable = containerRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        )
+        if (focusable.length === 0) return
+
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault()
+            last.focus()
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault()
+            first.focus()
+          }
+        }
+      }
+    },
+    [closeOnEscape, onClose, trapFocus],
+  )
+
+  // Backdrop click handler
+  const handleBackdropClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (closeOnBackdrop && e.target === e.currentTarget) {
+        onClose()
+      }
+    },
+    [closeOnBackdrop, onClose],
+  )
+
+  if (!open) return null
+
+  return (
+    <div
+      ref={containerRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
+      tabIndex={-1}
+      onKeyDown={handleKeyDown}
+      onClick={handleBackdropClick}
+      className={cn(
+        'fixed inset-0 z-[800] flex items-center justify-center bg-ink/30 backdrop-blur-sm',
+        className,
+      )}
+    >
+      {children}
     </div>
   )
 }

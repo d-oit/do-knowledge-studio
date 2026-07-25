@@ -5,8 +5,18 @@
 
 ## Current Status
 
-Plan 074 implements remaining gaps from Plan 071 deferred items: bidirectional
-sync bridge, claim provenance, ADR reconciliation, and accessibility hardening.
+Plan 075 implements deferred items from Plan 074: coverage improvement, overlay
+primitive, claims version history, and documentation reconciliation.
+
+### Plan 075 — Coverage, Overlay, Claims History, and Docs Reconciliation (2026-07-25)
+
+| Wave | Goal | Status | PR | Changes |
+|------|------|--------|-----|---------|
+| W0 | Baseline & Documentation Reconciliation | Done | — | Plan 072 OPEN→DONE, Plan 074 PLANNING→DONE, Plan 071 exit criteria checked |
+| W1 | Coverage Improvement (G2) | Done | This PR | 8 new test files, 492 tests, coverage 30.87%→31.63% lines |
+| W2 | Overlay Primitive (G4) | Done | This PR | Shared `<Overlay>` component with focus trap, Escape, backdrop, ARIA |
+| W3 | Claims Version History (G5) | Done | This PR | `version` field (auto-increment), `editHistory` array |
+| W4 | Final Verification & Documentation (G6) | Done | This PR | INDEX.md updated, quality gate passed |
 
 ### Plan 074 — Sync Bridge, A11y, Data Layer, and Documentation (2026-07-25)
 
@@ -18,12 +28,10 @@ sync bridge, claim provenance, ADR reconciliation, and accessibility hardening.
 | W3 | Sync Bridge (G2) | Done | #503 | Bidirectional Yjs/Zustand bridge, origin tagging, tombstones, inbound validation, conflict resolution |
 | W4 | Documentation (G6) | Done | This update | INDEX.md, Plan 071 status |
 
-### Deferred to Plan 075
+### Deferred to Plan 076
 
 - Full accessibility audit (axe scanning, screen reader verification, 200% zoom, 400% reflow)
 - Coverage target to 50% (incremental, not one-shot)
-- Full overlay primitive (ADR 014)
-- Claims version history / audit trail
 
 ### Plan 073 — Closeout of Plan 072 Remaining Gaps (2026-07-24)
 
@@ -90,22 +98,22 @@ sync bridge, claim provenance, ADR reconciliation, and accessibility hardening.
 
 ## Key Metrics (2026-07-25)
 
-| Metric | Before (073) | After (074) |
+| Metric | Before (074) | After (075) |
 |--------|-------------|-------------|
-| Unit test files | 27 | 30 |
-| Unit tests | 339 | 361 |
+| Unit test files | 30 | 41 |
+| Unit tests | 361 | 492 |
 | E2E test files | 8 | 8 |
 | E2E tests | 58 | 58 |
-| Total tests | 397 | 419 |
+| Total tests | 419 | 550 |
 | CI checks | 22/22 | 22/22 passing |
 | LOC violations | 0 | 0 |
 | Lint warnings | 0 | 0 |
 | Type errors | 0 | 0 |
-| Coverage (lines) | 25% | 28% |
-| Coverage (branches) | 15% | 19% |
-| Coverage (functions) | 18% | 20% |
-| Coverage (statements) | 25% | 28% |
-| ADRs with stale status | 17 | 4 |
+| Coverage (lines) | 28% | 31.63% |
+| Coverage (branches) | 19% | 21.45% |
+| Coverage (functions) | 20% | 22.35% |
+| Coverage (statements) | 28% | 30.85% |
+| ADRs with stale status | 4 | 4 |
 
 ## ADR Reconciliation (2026-07-25)
 

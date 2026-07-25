@@ -207,15 +207,35 @@ export const useStudioStore = create<StudioState>()(
 
       addClaim: (claim) => {
         const now = new Date().toISOString()
-        const fullClaim: Claim = { ...claim, id: crypto.randomUUID(), createdAt: now, updatedAt: now }
+        const fullClaim: Claim = {
+          ...claim,
+          id: crypto.randomUUID(),
+          createdAt: now,
+          updatedAt: now,
+          version: 1,
+          editHistory: [],
+        }
         set((state) => ({ claims: [fullClaim, ...state.claims] }))
       },
 
       updateClaim: (id, updates) => {
         set((state) => ({
-          claims: state.claims.map((c) =>
-            c.id === id ? { ...c, ...updates, updatedAt: new Date().toISOString() } : c,
-          ),
+          claims: state.claims.map((c) => {
+            if (c.id !== id) return c
+            const now = new Date().toISOString()
+            const historyEntry = updates.statement && updates.statement !== c.statement
+              ? { statement: c.statement, editedAt: c.updatedAt ?? now }
+              : null
+            return {
+              ...c,
+              ...updates,
+              updatedAt: now,
+              version: (c.version ?? 1) + 1,
+              editHistory: historyEntry
+                ? [...(c.editHistory ?? []), historyEntry]
+                : c.editHistory ?? [],
+            }
+          }),
         }))
       },
 
