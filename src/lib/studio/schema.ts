@@ -32,6 +32,11 @@ export const ClaimSchema = z.object({
   source: z.string().optional(),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
+  version: z.number().int().min(1).default(1),
+  editHistory: z.array(z.object({
+    statement: z.string(),
+    editedAt: z.string(),
+  })).default([]),
 })
 
 export const ExportPayloadSchema = z.object({

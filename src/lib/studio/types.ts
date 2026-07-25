@@ -37,6 +37,8 @@ export interface Claim {
   source?: string
   createdAt?: string
   updatedAt?: string
+  version?: number
+  editHistory?: { statement: string; editedAt: string }[]
 }
 
 export interface ChatMessage {
