@@ -131,7 +131,7 @@ export function LibraryView() {
         <button
           onClick={() => setSortDir(sortDir === 'asc' ? 'desc' : 'asc')}
           className="flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-2 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
-          title="Toggle sort direction"
+          aria-label={sortDir === 'asc' ? 'Sort ascending' : 'Sort descending'}
         >
           {sortDir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
         </button>
@@ -139,6 +139,7 @@ export function LibraryView() {
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as 'name' | 'created' | 'updated')}
+          aria-label="Sort by"
           className="rounded-md border border-border bg-background px-2.5 py-2 text-[12px] font-medium text-ink-soft transition-colors focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
         >
           <option value="updated">Sort: Updated</option>
@@ -251,6 +252,7 @@ export function LibraryView() {
       {filteredEntities.length > 0 && viewMode === 'list' && (
         <div className="overflow-hidden rounded-lg border border-border bg-card">
           <table className="w-full">
+            <caption className="sr-only">Library entities</caption>
             <thead>
               <tr className="border-b border-border bg-muted/30 text-left text-label font-semibold uppercase tracking-wide text-ink-faint">
                 <th className="px-4 py-2.5">Name</th>

@@ -117,6 +117,7 @@ export function Topbar() {
       {/* New entity button — icon-only on mobile, "New" on md–lg, "New entity" on wide (≥ 1100px) */}
       <button
         onClick={startNew}
+        aria-label="New entity"
         className="flex flex-shrink-0 items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring sm:px-3"
       >
         <Plus className="h-3.5 w-3.5" />

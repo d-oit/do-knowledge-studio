@@ -72,10 +72,16 @@ export function AppShell() {
 
   return (
     <div className="flex h-dvh w-full overflow-hidden bg-background text-foreground">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[1000] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
+      >
+        Skip to main content
+      </a>
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />
-        <main className="flex min-h-0 flex-1">
+        <main id="main-content" className="flex min-h-0 flex-1">
           <div className="min-w-0 flex-1 overflow-y-auto">
             <ErrorBoundary key={currentView}>
               <ViewErrorBoundary

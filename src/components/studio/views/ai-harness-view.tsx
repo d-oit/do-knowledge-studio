@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { loadAISettings, saveAISettings, type AIProvider } from '@/lib/studio/ai-settings'
+import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import {
   sendChatStream,
   fetchOllamaModels,
@@ -43,6 +44,7 @@ import { SwitchToggle } from '../ui/shared-primitives'
 export function AIHarnessView() {
   const entities = useStudioStore((s) => s.entities)
   const claims = useStudioStore((s) => s.claims)
+  const reducedMotion = useReducedMotion()
   const [provider, setProvider] = useState<AIProvider>('openrouter')
   const [model, setModel] = useState('openrouter/free')
   const [apiKey, setApiKey] = useState('')
@@ -192,8 +194,8 @@ export function AIHarnessView() {
   return (
     <div className="mx-auto max-w-5xl px-6 py-6 lg:px-10 lg:py-8">
       <motion.div
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={reducedMotion ? false : { opacity: 0, y: 6 }}
+        animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
         className="mb-6 flex items-start gap-4"
       >
         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-saffron to-clay text-white shadow-sm">
@@ -225,8 +227,8 @@ export function AIHarnessView() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         {showSettings && (
           <motion.aside
-            initial={{ opacity: 0, x: -8 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={reducedMotion ? false : { opacity: 0, x: -8 }}
+            animate={reducedMotion ? undefined : { opacity: 1, x: 0 }}
             className="lg:col-span-2"
           >
             <div className="rounded-lg border border-border bg-card p-4">
@@ -299,7 +301,7 @@ export function AIHarnessView() {
                     {provider === 'ollama' && (
                       <button
                         onClick={() => { void handleRefreshOllamaModels() }}
-                        className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-md border border-border bg-background text-ink-faint transition-colors hover:border-saffron/40 hover:text-saffron focus-ring"
+                        className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-md border border-border bg-background text-ink-faint transition-colors hover:border-saffron/40 hover:text-saffron focus-ring"
                         aria-label="Refresh Ollama models"
                       >
                         <RefreshCw className="h-3.5 w-3.5" />
@@ -311,6 +313,7 @@ export function AIHarnessView() {
                     value={customModel}
                     onChange={(e) => { setCustomModel(e.target.value) }}
                     placeholder="Or type a custom engine or model slug"
+                    aria-label="Custom engine or model slug"
                     className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-mono text-ink-soft placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
                   />
                   {selectedEngineTarget?.description && (
@@ -333,7 +336,8 @@ export function AIHarnessView() {
                       />
                       <button
                         onClick={() => { setShowKey(!showKey) }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-caption font-medium text-ink-faint hover:text-ink"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] flex items-center justify-center text-caption font-medium text-ink-faint hover:text-ink focus-ring"
+                        aria-label={showKey ? 'Hide API key' : 'Show API key'}
                       >
                         {showKey ? 'Hide' : 'Show'}
                       </button>
@@ -426,9 +430,9 @@ export function AIHarnessView() {
               {messages.map((m, i) => (
                 <motion.div
                   key={i}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25 }}
+                  initial={reducedMotion ? false : { opacity: 0, y: 6 }}
+                  animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+                  transition={reducedMotion ? { duration: 0 } : { duration: 0.25 }}
                   className={cn('flex gap-2.5', m.role === 'user' ? 'flex-row-reverse' : 'flex-row')}
                 >
                   <div
@@ -479,12 +483,13 @@ export function AIHarnessView() {
                   placeholder="Ask the AI agent…"
                   rows={1}
                   disabled={isLoading}
+                  aria-label="AI agent message"
                   className="max-h-24 flex-1 resize-none bg-transparent px-2 py-1 text-[13px] text-ink placeholder:text-ink-faint focus:outline-none disabled:opacity-50"
                 />
                 <button
                   onClick={handleSend}
                   disabled={!input.trim() || isLoading}
-                  className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:opacity-40 press-scale focus-ring"
+                  className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:opacity-40 press-scale focus-ring"
                   aria-label="Send"
                 >
                   <Send className="h-3.5 w-3.5" />

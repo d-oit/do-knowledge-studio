@@ -148,7 +148,7 @@ export function HomeView() {
           {entities.length > 0 && (
             <button
               onClick={() => setView('library')}
-              className="flex items-center gap-1 text-[12px] font-medium text-saffron-deep transition-colors hover:text-saffron"
+              className="flex items-center gap-1 text-[12px] font-medium text-saffron-deep transition-colors hover:text-saffron focus-ring"
             >
               View all
               <ArrowUpRight className="h-3 w-3" />

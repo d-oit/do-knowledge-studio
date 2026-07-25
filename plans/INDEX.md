@@ -5,8 +5,18 @@
 
 ## Current Status
 
-Plan 075 implements deferred items from Plan 074: coverage improvement, overlay
-primitive, claims version history, and documentation reconciliation.
+Plan 076 completes the last unchecked Plan 071 exit criterion (full accessibility
+audit) and implements 41 a11y fixes across 18 component files.
+
+### Plan 076 — Accessibility Audit, Overlay Migration, and Quick-Win Remediations (2026-07-25)
+
+| Wave | Goal | Status | PR | Changes |
+|------|------|--------|-----|---------|
+| W0 | Baseline & Branch Setup | Done | — | Clean baseline: 502 tests, 31.63% coverage, 22/22 CI |
+| W1 | A11y Audit (Swarm) | Done | — | 3 parallel agents: 68 findings (21 critical, 15 serious, 24 moderate, 8 minor) |
+| W2 | ARIA & Semantic Fixes | Done | (pending) | 18 ARIA fixes: labels, roles, live regions, table captions |
+| W3 | Keyboard, Focus & Touch Target Fixes | Done | (pending) | 8 focus fixes + 12 touch target fixes + Overlay migration |
+| W4 | Motion & Polish | Done | (pending) | prefers-reduced-motion gating for ai-harness-view + TypingIndicator |
 
 ### Plan 075 — Coverage, Overlay, Claims History, and Docs Reconciliation (2026-07-25)
 
