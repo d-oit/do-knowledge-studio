@@ -34,6 +34,7 @@ import {
   type ImportPreview,
 } from './export-helpers'
 import { encryptData, buildEncryptedReaderHtml } from '@/lib/export/encrypt'
+import { Overlay } from '@/components/studio/ui/shared-primitives'
 
 export function ExportView() {
   const entities = useStudioStore((s) => s.entities)
@@ -387,12 +388,10 @@ export function ExportView() {
       </div>
 
       {showPassword && (
-        <div
-          role="dialog"
-          aria-modal="true"
+        <Overlay
+          open={showPassword}
+          onClose={() => { setShowPassword(false) }}
           aria-label="Encrypt export"
-          className="fixed inset-0 z-[800] flex items-center justify-center bg-ink/30 backdrop-blur-sm"
-          onClick={() => { setShowPassword(false) }}
         >
           <motion.div
             initial={reducedMotion ? false : { opacity: 0, scale: 0.96 }}
@@ -467,17 +466,16 @@ export function ExportView() {
               </button>
             </div>
           </motion.div>
-        </div>
+        </Overlay>
       )}
 
       {/* Reset confirmation dialog */}
       {showResetConfirm && (
-        <div
-          role="dialog"
-          aria-modal="true"
+        <Overlay
+          open={showResetConfirm}
+          onClose={() => { setShowResetConfirm(false) }}
           aria-label="Confirm reset"
-          className="fixed inset-0 z-[800] flex items-center justify-center bg-ink/30 backdrop-blur-sm"
-          onClick={() => { setShowResetConfirm(false) }}
+          initialFocusRef={resetCancelRef}
         >
           <motion.div
             initial={reducedMotion ? false : { opacity: 0, scale: 0.96 }}
@@ -517,17 +515,15 @@ export function ExportView() {
               </button>
             </div>
           </motion.div>
-        </div>
+        </Overlay>
       )}
 
       {/* Import preview dialog */}
       {importPreview && (
-        <div
-          role="dialog"
-          aria-modal="true"
+        <Overlay
+          open={!!importPreview}
+          onClose={() => { setImportPreview(null) }}
           aria-label="Confirm import"
-          className="fixed inset-0 z-[800] flex items-center justify-center bg-ink/30 backdrop-blur-sm"
-          onClick={() => { setImportPreview(null) }}
         >
           <motion.div
             initial={reducedMotion ? false : { opacity: 0, scale: 0.96 }}
@@ -584,7 +580,7 @@ export function ExportView() {
               </button>
             </div>
           </motion.div>
-        </div>
+        </Overlay>
       )}
     </div>
   )

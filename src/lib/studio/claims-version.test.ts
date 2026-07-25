@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { useStudioStore } from './store'
 import type { Claim } from './types'
 
@@ -39,6 +39,10 @@ describe('Claims version history', () => {
   beforeEach(() => {
     resetStore()
     vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('new claim starts with version 1 and empty editHistory', () => {

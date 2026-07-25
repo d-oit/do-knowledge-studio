@@ -1,7 +1,7 @@
 # ADR 014: Shared Overlay/Modal Accessibility Primitive
 
 ## Status
-PROPOSED (2026-06-18) — Implementation tracked in `plans/041-goap-ui-ux-modernization-and-feature-gaps-2026-06-18.md` (G-OVERLAY, G-A11Y).
+PARTIALLY IMPLEMENTED (2026-07-25) — Shared `<Overlay>` component created in `src/components/studio/ui/shared-primitives.tsx` with focus trap, Escape key, backdrop click, ARIA attributes, initialFocusRef, and body scroll lock. Migrated to by `export-view.tsx` (3 dialogs). Remaining: variant support (sheet-bottom, sheet-left, fullscreen), migration of other overlay surfaces (CommandPalette, MobileDrawer, SettingsWizard).
 
 ## Context
 The app has several overlay surfaces with **inconsistent accessibility and behavior** (verified):

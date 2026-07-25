@@ -372,7 +372,7 @@ export const useStudioStore = create<StudioState>()(
       }),
       // Validate persisted state with Zod schema. Invalid or corrupt data
       // falls back to seed defaults rather than crashing the app.
-      // Backfill createdAt/updatedAt on claims missing timestamps.
+      // Backfill createdAt/updatedAt/version/editHistory on claims missing fields.
       migrate: (persistedState: unknown) => {
         const result = validatePersistedState(persistedState)
         if (result.success) {
@@ -381,6 +381,8 @@ export const useStudioStore = create<StudioState>()(
             ...c,
             createdAt: c.createdAt ?? now,
             updatedAt: c.updatedAt ?? now,
+            version: c.version ?? 1,
+            editHistory: c.editHistory ?? [],
           }))
           return { ...result.data, claims }
         }

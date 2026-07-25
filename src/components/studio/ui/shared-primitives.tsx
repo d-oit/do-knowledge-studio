@@ -317,6 +317,8 @@ interface OverlayProps {
   closeOnEscape?: boolean
   /** Whether to trap focus within the dialog */
   trapFocus?: boolean
+  /** Ref to the element that should receive initial focus */
+  initialFocusRef?: React.RefObject<HTMLElement | null>
   className?: string
   children: React.ReactNode
 }
@@ -329,29 +331,43 @@ export function Overlay({
   closeOnBackdrop = true,
   closeOnEscape = true,
   trapFocus = true,
+  initialFocusRef,
   className,
   children,
 }: OverlayProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
 
+  // Body scroll lock
+  useEffect(() => {
+    if (open) {
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
+      document.body.style.overflow = 'hidden'
+      document.body.style.paddingRight = `${scrollbarWidth}px`
+      return () => {
+        document.body.style.overflow = ''
+        document.body.style.paddingRight = ''
+      }
+    }
+  }, [open])
+
   // Save and restore focus
   useEffect(() => {
     if (open) {
       previousFocusRef.current = document.activeElement as HTMLElement
-      // Focus the container or first focusable element
+      // Focus initialFocusRef, then first focusable, then container
       const container = containerRef.current
       if (container) {
-        const firstFocusable = container.querySelector<HTMLElement>(
+        const target = initialFocusRef?.current ?? container.querySelector<HTMLElement>(
           'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
         )
-        ;(firstFocusable ?? container).focus()
+        ;(target ?? container).focus()
       }
     } else if (previousFocusRef.current) {
       previousFocusRef.current.focus()
       previousFocusRef.current = null
     }
-  }, [open])
+  }, [open, initialFocusRef])
 
   // Escape key handler
   const handleKeyDown = useCallback(

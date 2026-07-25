@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import { EmptyState, Skeleton } from './shared-primitives'
+import { describe, it, expect, vi } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
+import { EmptyState, Skeleton, Overlay } from './shared-primitives'
 import { FileText } from 'lucide-react'
+import { createRef } from 'react'
 
 describe('EmptyState', () => {
   it('renders title and description', () => {
@@ -63,6 +64,114 @@ describe('Skeleton', () => {
     expect(el.className).toContain('skeleton')
     expect(el.className).toContain('h-8')
     expect(el.className).toContain('w-full')
+  })
+})
+
+describe('Overlay', () => {
+  it('renders with dialog role and aria-modal when open', () => {
+    render(
+      <Overlay open onClose={() => {}} aria-label="Test dialog">
+        <p>Content</p>
+      </Overlay>,
+    )
+    const dialog = screen.getByRole('dialog')
+    expect(dialog).toBeDefined()
+    expect(dialog.getAttribute('aria-modal')).toBe('true')
+    expect(dialog.getAttribute('aria-label')).toBe('Test dialog')
+  })
+
+  it('does not render when closed', () => {
+    render(
+      <Overlay open={false} onClose={() => {}} aria-label="Hidden">
+        <p>Content</p>
+      </Overlay>,
+    )
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('calls onClose when Escape is pressed', () => {
+    const onClose = vi.fn()
+    render(
+      <Overlay open onClose={onClose} aria-label="Escape test">
+        <p>Content</p>
+      </Overlay>,
+    )
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('does not call onClose on Escape when closeOnEscape is false', () => {
+    const onClose = vi.fn()
+    render(
+      <Overlay open onClose={onClose} closeOnEscape={false} aria-label="No escape">
+        <p>Content</p>
+      </Overlay>,
+    )
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('calls onClose when backdrop is clicked', () => {
+    const onClose = vi.fn()
+    render(
+      <Overlay open onClose={onClose} aria-label="Backdrop test">
+        <p>Content</p>
+      </Overlay>,
+    )
+    fireEvent.click(screen.getByRole('dialog'))
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('does not call onClose when child is clicked', () => {
+    const onClose = vi.fn()
+    render(
+      <Overlay open onClose={onClose} aria-label="Child click test">
+        <button>Click me</button>
+      </Overlay>,
+    )
+    fireEvent.click(screen.getByText('Click me'))
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('does not call onClose on backdrop click when closeOnBackdrop is false', () => {
+    const onClose = vi.fn()
+    render(
+      <Overlay open onClose={onClose} closeOnBackdrop={false} aria-label="No backdrop">
+        <p>Content</p>
+      </Overlay>,
+    )
+    fireEvent.click(screen.getByRole('dialog'))
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('supports aria-labelledby', () => {
+    render(
+      <Overlay open onClose={() => {}} aria-labelledby="title-id">
+        <h3 id="title-id">Dialog Title</h3>
+      </Overlay>,
+    )
+    const dialog = screen.getByRole('dialog')
+    expect(dialog.getAttribute('aria-labelledby')).toBe('title-id')
+  })
+
+  it('applies custom className', () => {
+    render(
+      <Overlay open onClose={() => {}} aria-label="Custom class" className="custom-overlay">
+        <p>Content</p>
+      </Overlay>,
+    )
+    const dialog = screen.getByRole('dialog')
+    expect(dialog.className).toContain('custom-overlay')
+  })
+
+  it('uses initialFocusRef when provided', () => {
+    const inputRef = createRef<HTMLInputElement>()
+    render(
+      <Overlay open onClose={() => {}} aria-label="Focus test" initialFocusRef={inputRef}>
+        <input ref={inputRef} data-testid="target-input" />
+      </Overlay>,
+    )
+    expect(document.activeElement).toBe(inputRef.current)
   })
 })
 
