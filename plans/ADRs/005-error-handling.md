@@ -1,7 +1,7 @@
 # ADR 005: Error Handling Architecture
 
 ## Status
-PROPOSED
+Superseded by ADR 028 — specific error patterns for import, hydration, and sync replace generic error handling.
 
 ## Context
 The codebase has widespread error handling issues:

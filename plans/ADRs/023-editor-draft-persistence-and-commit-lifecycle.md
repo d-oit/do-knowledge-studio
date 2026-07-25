@@ -1,7 +1,7 @@
 # ADR 023 — Editor Draft Persistence and Commit Lifecycle
 
 **Date**: 2026-07-12
-**Status**: Proposed
+**Status**: Implemented — Versioned drafts in localStorage with Zod validation.
 **Related**: ADR 018, ADR 020, ADR 024,
 `plans/053-goap-markdown-editor-ux-2026-07-12.md`
 

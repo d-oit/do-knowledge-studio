@@ -152,6 +152,37 @@ describe('Studio Store', () => {
       expect(claims[0].id).toMatch(/^[0-9a-f-]{36}$/)
       expect(claims[0].entityId).toBe('e-1')
     })
+
+    it('adds a claim with createdAt and updatedAt timestamps', () => {
+      const before = new Date().toISOString()
+      useStudioStore.getState().addClaim(makeClaim({ entityId: 'e-1' }))
+      const after = new Date().toISOString()
+      const { claims } = useStudioStore.getState()
+      expect(claims[0].createdAt).toBeDefined()
+      expect(claims[0].updatedAt).toBeDefined()
+      expect(claims[0].createdAt! >= before).toBe(true)
+      expect(claims[0].createdAt! <= after).toBe(true)
+    })
+
+    it('updates a claim and sets updatedAt', () => {
+      useStudioStore.getState().addClaim(makeClaim({ entityId: 'e-1', statement: 'Original' }))
+      const claimId = useStudioStore.getState().claims[0].id
+      const originalUpdatedAt = useStudioStore.getState().claims[0].updatedAt
+
+      vi.advanceTimersByTime(100)
+      useStudioStore.getState().updateClaim(claimId, { statement: 'Updated' })
+      const updated = useStudioStore.getState().claims[0]
+      expect(updated.statement).toBe('Updated')
+      expect(updated.updatedAt).toBeDefined()
+      expect(updated.updatedAt! > originalUpdatedAt!).toBe(true)
+    })
+
+    it('deletes a claim', () => {
+      useStudioStore.getState().addClaim(makeClaim({ entityId: 'e-1' }))
+      const claimId = useStudioStore.getState().claims[0].id
+      useStudioStore.getState().deleteClaim(claimId)
+      expect(useStudioStore.getState().claims).toHaveLength(0)
+    })
   })
 
   describe('Library controls', () => {
@@ -278,6 +309,22 @@ describe('Zod Schemas', () => {
   describe('ClaimSchema', () => {
     it('accepts a valid claim', () => {
       const result = ClaimSchema.safeParse(makeClaim())
+      expect(result.success).toBe(true)
+    })
+
+    it('accepts a claim with timestamps', () => {
+      const result = ClaimSchema.safeParse(makeClaim({
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      }))
+      expect(result.success).toBe(true)
+    })
+
+    it('accepts a claim without timestamps (backward compat)', () => {
+      const claim = makeClaim()
+      delete (claim as Record<string, unknown>).createdAt
+      delete (claim as Record<string, unknown>).updatedAt
+      const result = ClaimSchema.safeParse(claim)
       expect(result.success).toBe(true)
     })
 

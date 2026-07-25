@@ -1,7 +1,7 @@
 # ADR 019 — AI Harness Provider Integration (BYO-Key, Client-Side)
 
 **Date**: 2026-07-09
-**Status**: Proposed
+**Status**: Superseded by ADR 025 — OpenRouter + Ollama consolidation replaces multi-provider integration.
 **Related**: GOAP actions T1, T2; ADR 017 (chat unification), ADR 018
 
 ## Context

@@ -1,7 +1,7 @@
 # ADR 024 — Editor Feedback and Notification Policy
 
 **Date**: 2026-07-12
-**Status**: Proposed
+**Status**: Implemented — Inline status announcements; no routine toasts.
 **Related**: ADR 020, ADR 023,
 `plans/053-goap-markdown-editor-ux-2026-07-12.md`
 

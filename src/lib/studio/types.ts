@@ -35,6 +35,8 @@ export interface Claim {
   confidence: number
   verification: VerificationStatus
   source?: string
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface ChatMessage {

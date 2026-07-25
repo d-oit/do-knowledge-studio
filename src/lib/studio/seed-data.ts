@@ -134,6 +134,8 @@ export const seedClaims: Claim[] = [
     confidence: 0.85,
     verification: 'verified',
     source: 'TRIZ Journal',
+    createdAt: iso(28),
+    updatedAt: iso(2),
   },
   {
     id: 'c2',
@@ -144,6 +146,8 @@ export const seedClaims: Claim[] = [
     confidence: 0.95,
     verification: 'verified',
     source: 'Wikipedia',
+    createdAt: iso(25),
+    updatedAt: iso(10),
   },
   {
     id: 'c3',
@@ -154,6 +158,8 @@ export const seedClaims: Claim[] = [
     confidence: 0.98,
     verification: 'verified',
     source: 'inkandswitch.com',
+    createdAt: iso(22),
+    updatedAt: iso(7),
   },
   {
     id: 'c4',
@@ -164,6 +170,8 @@ export const seedClaims: Claim[] = [
     confidence: 0.55,
     verification: 'disputed',
     source: 'Research meta-analysis',
+    createdAt: iso(12),
+    updatedAt: iso(8),
   },
   {
     id: 'c5',
@@ -173,6 +181,8 @@ export const seedClaims: Claim[] = [
     evidence: 'Benchmark on internal dataset.',
     confidence: 0.75,
     verification: 'unverified',
+    createdAt: iso(10),
+    updatedAt: iso(4),
   },
 ]
 

@@ -206,14 +206,15 @@ export const useStudioStore = create<StudioState>()(
       },
 
       addClaim: (claim) => {
-        const fullClaim: Claim = { ...claim, id: crypto.randomUUID() }
+        const now = new Date().toISOString()
+        const fullClaim: Claim = { ...claim, id: crypto.randomUUID(), createdAt: now, updatedAt: now }
         set((state) => ({ claims: [fullClaim, ...state.claims] }))
       },
 
       updateClaim: (id, updates) => {
         set((state) => ({
           claims: state.claims.map((c) =>
-            c.id === id ? { ...c, ...updates } : c,
+            c.id === id ? { ...c, ...updates, updatedAt: new Date().toISOString() } : c,
           ),
         }))
       },
@@ -351,10 +352,17 @@ export const useStudioStore = create<StudioState>()(
       }),
       // Validate persisted state with Zod schema. Invalid or corrupt data
       // falls back to seed defaults rather than crashing the app.
+      // Backfill createdAt/updatedAt on claims missing timestamps.
       migrate: (persistedState: unknown) => {
         const result = validatePersistedState(persistedState)
         if (result.success) {
-          return result.data
+          const now = new Date().toISOString()
+          const claims = result.data.claims.map((c) => ({
+            ...c,
+            createdAt: c.createdAt ?? now,
+            updatedAt: c.updatedAt ?? now,
+          }))
+          return { ...result.data, claims }
         }
         console.warn('Persisted state failed validation, using seed defaults:', result.errors)
         return persistedState

@@ -98,7 +98,7 @@ export function ChatView() {
                   <button
                     key={s.label}
                     onClick={() => { handleSend(s.query) }}
-                    className="rounded-full border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-all hover:border-saffron/40 hover:text-ink press-scale focus-ring"
+                    className="rounded-full border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-all hover:border-saffron/40 hover:text-ink press-scale focus-ring min-h-[44px]"
                   >
                     {s.label}
                   </button>
@@ -158,7 +158,7 @@ export function ChatView() {
                     <div className="rounded-lg border border-dashed border-saffron/40 bg-saffron-soft/30 p-2.5">
                       <button
                         onClick={() => { setShowCitations(showCitations === m.id ? null : m.id) }}
-                        className="flex w-full items-center gap-1.5 text-label font-semibold text-saffron-deep"
+                        className="flex w-full items-center gap-1.5 text-label font-semibold text-saffron-deep min-h-[44px]"
                       >
                         <Quote className="h-3 w-3" />
                         Used {m.citations.length} local {m.citations.length === 1 ? 'item' : 'items'}
@@ -179,7 +179,7 @@ export function ChatView() {
                               <button
                                 key={i}
                                 onClick={() => { handleCitationClick(c.entityId) }}
-                                className="flex w-full gap-2 rounded-md bg-background/60 p-2 text-left text-label transition-colors hover:bg-muted focus-ring"
+                                className="flex w-full gap-2 rounded-md bg-background/60 p-2 text-left text-label transition-colors hover:bg-muted focus-ring min-h-[44px]"
                               >
                                 <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-saffron text-badge font-bold text-white">
                                   {i + 1}
@@ -219,7 +219,7 @@ export function ChatView() {
               <button
                 key={s.label}
                 onClick={() => { handleSend(s.query) }}
-                className="rounded-full border border-border bg-background px-3 py-1 text-[12px] font-medium text-ink-soft transition-all hover:border-saffron/40 hover:text-ink press-scale focus-ring"
+                className="rounded-full border border-border bg-background px-3 py-1 text-[12px] font-medium text-ink-soft transition-all hover:border-saffron/40 hover:text-ink press-scale focus-ring min-h-[44px]"
               >
                 {s.label}
               </button>
@@ -278,7 +278,7 @@ export function ChatView() {
             <button
               onClick={handleClear}
               disabled={chat.length === 0}
-              className="flex items-center gap-1 transition-colors hover:text-red-500 disabled:opacity-30 disabled:hover:text-red-500"
+              className="flex items-center gap-1 transition-colors hover:text-red-500 disabled:opacity-30 disabled:hover:text-red-500 min-h-[44px]"
             >
               <Trash2 className="h-3 w-3" />
               Clear

@@ -1,7 +1,7 @@
 # ADR 015: Mobile-First Responsive Strategy & Visualization Theming Contract
 
 ## Status
-PROPOSED (2026-06-18) — Implementation tracked in `plans/041-goap-ui-ux-modernization-and-feature-gaps-2026-06-18.md` (G-LAYOUT, G-TOUCH, G-VIZ-THEME).
+Implemented — Mobile-first responsive layout; Tailwind breakpoints; visualization theming in graph/mindmap views.
 
 ## Context
 AGENTS.md mandates **mobile-first** design with interactive targets **≥ 44×44px**. The shell is responsive, but feature views are desktop-first and several rules are violated (all verified):

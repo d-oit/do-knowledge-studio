@@ -167,7 +167,7 @@ export function ToolbarBtn({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'flex items-center gap-1 rounded-md px-2 py-1.5 text-label font-medium transition-colors focus-ring',
+        'flex min-h-[44px] items-center gap-1 rounded-md px-2 py-1.5 text-label font-medium transition-colors focus-ring',
         'disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink-mute',
         'text-ink-mute hover:bg-muted hover:text-ink',
         className,

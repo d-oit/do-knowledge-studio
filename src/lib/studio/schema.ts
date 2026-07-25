@@ -30,6 +30,8 @@ export const ClaimSchema = z.object({
   confidence: z.number().min(0).max(1),
   verification: VerificationStatusSchema,
   source: z.string().optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
 })
 
 export const ExportPayloadSchema = z.object({

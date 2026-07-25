@@ -1,7 +1,7 @@
 # ADR 018 — Next.js Architecture Baseline & Backend Decision
 
 **Date**: 2026-07-09
-**Status**: Proposed
+**Status**: Implemented — Next.js 16 / React 19 is the production architecture baseline.
 **Supersedes**: implicit assumptions in ADR 001 (SQLite WASM) and the Vite-era
 Repository Shape in AGENTS.md
 

@@ -1,7 +1,7 @@
 # ADR 004: Database Migration System for Schema Evolution
 
 ## Status
-PROPOSED
+Superseded by ADR 028 — localStorage persistence replaces SQLite; validation boundary covers data integrity.
 
 ## Context
 The current database schema is applied from `public/db/schema.sql` on every startup with no version tracking. Any schema change requires either:

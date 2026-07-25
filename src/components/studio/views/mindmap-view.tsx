@@ -230,7 +230,7 @@ export function MindMapView() {
           {hasChildren ? (
             <button
               onClick={() => { toggleNode(node.entity.id) }}
-              className="mr-1 rounded p-0.5 text-ink-faint transition-colors hover:text-ink"
+              className="mr-1 min-h-[44px] min-w-[44px] rounded p-0.5 text-ink-faint transition-colors hover:text-ink"
               aria-label={isExpanded ? 'Collapse' : 'Expand'}
             >
               {isExpanded ? (
@@ -350,7 +350,7 @@ export function MindMapView() {
         <select
           value={rootId}
           onChange={(e) => { setRootId(e.target.value) }}
-          className="rounded-md border border-border bg-background px-2.5 py-1.5 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+          className="rounded-md border border-border bg-background px-2.5 py-1.5 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30 min-h-[44px]"
         >
           {entities.map((e) => (
             <option key={e.id} value={e.id}>
@@ -370,7 +370,7 @@ export function MindMapView() {
             max={5}
             value={depth}
             onChange={(e) => { setDepth(Number(e.target.value)) }}
-            className="w-20 accent-saffron"
+            className="w-20 accent-saffron min-h-[44px]"
           />
           <span className="font-mono text-label text-ink">{depth}</span>
         </div>
@@ -394,7 +394,7 @@ export function MindMapView() {
         <button
           onClick={() => { setCompact(!compact) }}
           className={cn(
-            'rounded-md px-2 py-1.5 text-label font-medium transition-colors',
+            'rounded-md px-2 py-1.5 text-label font-medium transition-colors min-h-[44px]',
             compact ? 'bg-saffron-soft text-saffron-deep' : 'text-ink-mute hover:bg-muted hover:text-ink',
           )}
         >
@@ -454,7 +454,7 @@ function ToolbarBtn({
       disabled={disabled}
       title={disabled ? `${label} (nothing to undo/redo)` : label}
       aria-label={label}
-      className="flex items-center gap-1 rounded-md px-2 py-1.5 text-label font-medium text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink-mute"
+      className="flex items-center gap-1 rounded-md px-2 py-1.5 text-label font-medium text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink-mute min-h-[44px]"
     >
       <Icon className="h-3.5 w-3.5" />
       <span className="hidden md:inline">{label}</span>

@@ -1,7 +1,7 @@
 # ADR 016: Feature-Gap Closure — Import Persistence, Tags, Version History, Search & Chat
 
 ## Status
-PROPOSED (2026-06-18) — Implementation tracked in `plans/041-goap-ui-ux-modernization-and-feature-gaps-2026-06-18.md` (G-IMPORT, G-TAGS, G-HISTORY, G-SEARCH, G-CHAT).
+Superseded by Plans 072/073 — import, tags, history, search, and chat features implemented across multiple GOAP waves.
 
 ## Context
 A read-only audit verified several **incomplete or half-wired features**. The most user-impacting are below (with evidence). Many overlap with GitHub issues tracked in `plans/INDEX.md` (#227, #231–#236).

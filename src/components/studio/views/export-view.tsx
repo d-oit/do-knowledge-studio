@@ -388,6 +388,9 @@ export function ExportView() {
 
       {showPassword && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Encrypt export"
           className="fixed inset-0 z-[800] flex items-center justify-center bg-ink/30 backdrop-blur-sm"
           onClick={() => { setShowPassword(false) }}
         >
