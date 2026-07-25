@@ -4,34 +4,14 @@
 
 ## Overview
 
-Version propagation is fully automated. You only edit the `VERSION` file — everything else updates automatically.
+Version propagation is **manual** as of Plan 073 (2026-07-24). The `version-propagation.yml` workflow has been retired.
 
-## How It Works
+## Current Workflow
 
-```
-VERSION (single source)
-  ├── pre-commit hook (local dev)
-  │     └── scripts/propagate-version.sh
-  │
-  └── GitHub Actions (CI)
-        └── .github/workflows/version-propagation.yml
-```
-
-## Bumping Version
-
-```bash
-# Edit VERSION file only
-echo "0.3.0" > VERSION
-
-# Commit - pre-commit hook propagates automatically
-git add VERSION
-git commit -m "chore: bump version to 0.3.0"
-```
-
-The pre-commit hook detects the VERSION change and runs `propagate-version.sh`, which updates:
-- `README.md` - version badge
-- `agents-docs/MIGRATION.md` - version badge + template version text
-- `CHANGELOG.md` - adds `[Unreleased]` section if missing
+1. Edit `VERSION` file directly
+2. Run `./scripts/propagate-version.sh` locally to sync badge/version strings across files
+3. Commit and push
+4. After CI passes on `main`, use `gh release create` to create the release
 
 ## Manual Propagation
 
@@ -43,39 +23,19 @@ The pre-commit hook detects the VERSION change and runs `propagate-version.sh`, 
 
 | File | Pattern | Updated By |
 |------|---------|------------|
-| `VERSION` | `0.2.2` | Manual edit |
+| `VERSION` | `0.2.5` | Manual edit |
 | `README.md` | `version-X.Y.Z` badge | propagate-version.sh |
 | `agents-docs/MIGRATION.md` | badge + `Template version:` text | propagate-version.sh |
-| `CHANGELOG.md` | `[Unreleased]` section | propagate-version.sh (if missing) |
-
-## CI Workflow
-
-On push to `main` or `feat/**` branches that change `VERSION`:
-1. `.github/workflows/version-propagation.yml` triggers
-2. Runs `propagate-version.sh`
-3. Commits and pushes any remaining updates
-
-This catches cases where the pre-commit hook was skipped or failed.
-
-## Adding New Versioned Files
-
-If a new file needs version references:
-1. Add it to `FILES_TO_UPDATE` array in `scripts/propagate-version.sh`
-2. Add appropriate `sed` patterns for the file's version format
-3. Update this documentation
 
 ## Release Workflow
 
-GitHub releases are **fully automated** via `.github/workflows/version-propagation.yml`. Do NOT create releases manually with `gh release create`. The workflow:
+GitHub releases are created **manually** after CI passes:
 
-1. Triggers on push to `VERSION` file on `main` or `feat/**`
-2. Runs `scripts/propagate-version.sh` to sync version strings
-3. Commits and pushes any remaining updates
-4. Tags the release automatically
+```bash
+# After all checks pass on main
+gh release create vX.Y.Z --title "Release vX.Y.Z" --notes "Release notes here"
+```
 
-## Lessons
+## Historical Note
 
-- Never manually edit version strings in multiple files — always use `VERSION` + propagate
-- Never use `gh release create` — the version-propagation workflow handles releases
-- The pre-commit hook re-stages propagated files automatically (`git add`)
-- CI workflow is a safety net for missed propagations
+The `version-propagation.yml` workflow (automated VERSION-driven release) was retired in Plan 073 due to missing dependencies (`VERSION`, `CHANGELOG.md`, `scripts/propagate-version.sh` were not all present).

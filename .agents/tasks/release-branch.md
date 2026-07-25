@@ -43,7 +43,7 @@ You are preparing a release branch for this project. Follow these steps systemat
 
 ## Phase 3 — Push Branch
 
-1. Push the release branch (tagging is handled by the version-propagation workflow after merge):
+1. Push the release branch:
    ```bash
    git push -u origin release/vX.Y.Z
    ```
@@ -54,10 +54,11 @@ You are preparing a release branch for this project. Follow these steps systemat
    ```bash
    gh pr create --base main --title "Release vX.Y.Z" --body "$(cat CHANGELOG.md | sed -n '/## vX.Y.Z/,/## v/p' | head -n -1)"
    ```
-2. After merge, the version-propagation workflow handles everything:
-   - `.github/workflows/version-propagation.yml` triggers on `VERSION` change
-   - Runs `scripts/propagate-version.sh` to sync version across all files
-   - Tags the release automatically
+2. After merge, verify CI passes on `main`
+3. Create the release manually:
+   ```bash
+   gh release create vX.Y.Z --title "Release vX.Y.Z" --notes "Release notes here"
+   ```
 
 ## Phase 5 — Post-release
 
@@ -72,6 +73,5 @@ You are preparing a release branch for this project. Follow these steps systemat
 
 - **Never** skip the quality gate.
 - **Never** release without passing all CI checks.
-- **Never** create GitHub releases manually (`gh release create`). Use the version-propagation workflow.
 - **Always** use semantic versioning.
 - **Always** tag releases with `v` prefix.
