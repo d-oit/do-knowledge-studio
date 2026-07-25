@@ -40,6 +40,8 @@ interface StudioState {
   // Claims
   claims: Claim[]
   addClaim: (claim: Omit<Claim, 'id'>) => void
+  updateClaim: (id: string, updates: Partial<Omit<Claim, 'id' | 'entityId'>>) => void
+  deleteClaim: (id: string) => void
 
   // Library controls
   searchQuery: string
@@ -69,6 +71,7 @@ interface StudioState {
 
   // Import / reset
   importData: (entities: Entity[], claims: Claim[]) => void
+  importWithRollback: (entities: Entity[], claims: Claim[]) => { success: boolean; error?: string }
   resetStore: () => void
 
   // Theme handled by next-themes — store tracks UI side effects only
@@ -207,6 +210,20 @@ export const useStudioStore = create<StudioState>()(
         set((state) => ({ claims: [fullClaim, ...state.claims] }))
       },
 
+      updateClaim: (id, updates) => {
+        set((state) => ({
+          claims: state.claims.map((c) =>
+            c.id === id ? { ...c, ...updates } : c,
+          ),
+        }))
+      },
+
+      deleteClaim: (id) => {
+        set((state) => ({
+          claims: state.claims.filter((c) => c.id !== id),
+        }))
+      },
+
       setSearchQuery: (q) => set({ searchQuery: q }),
       setTypeFilter: (t) => set({ typeFilter: t }),
       setSortBy: (s) => set({ sortBy: s }),
@@ -261,6 +278,49 @@ export const useStudioStore = create<StudioState>()(
           entityHistory: [entities],
           historyIndex: 0,
         }),
+
+      importWithRollback: (entities, claims) => {
+        const state = get()
+        const snapshot = {
+          entities: structuredClone(state.entities),
+          claims: structuredClone(state.claims),
+          entityHistory: structuredClone(state.entityHistory),
+          historyIndex: state.historyIndex,
+        }
+        try {
+          set({
+            entities,
+            claims,
+            selectedEntityId: null,
+            editingEntityId: null,
+            currentView: 'library',
+            entityHistory: [entities],
+            historyIndex: 0,
+          })
+          return { success: true }
+        } catch (err) {
+          try {
+            set({
+              entities: snapshot.entities,
+              claims: snapshot.claims,
+              entityHistory: snapshot.entityHistory,
+              historyIndex: snapshot.historyIndex,
+            })
+          } catch {
+            set({
+              ...SEED_STATE,
+              selectedEntityId: null,
+              editingEntityId: null,
+              entityHistory: [seedEntities],
+              historyIndex: 0,
+            })
+          }
+          return {
+            success: false,
+            error: err instanceof Error ? err.message : 'Import failed, state restored.',
+          }
+        }
+      },
 
       resetStore: () =>
         set({

@@ -24,7 +24,7 @@ const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
   'danger-solid':
     'bg-red-600 px-4 py-1.5 text-[12px] text-white shadow-sm hover:bg-red-700',
   'icon-primary':
-    'h-9 w-9 rounded-md bg-primary text-primary-foreground shadow-sm hover:opacity-90 press-scale',
+    'min-h-[44px] min-w-[44px] rounded-md bg-primary text-primary-foreground shadow-sm hover:opacity-90 press-scale',
 }
 
 const BUTTON_SIZES: Record<ButtonSize, string> = {

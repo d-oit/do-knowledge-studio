@@ -91,7 +91,7 @@ export function ChatView() {
                 Ask your library
               </h2>
               <p className="mb-6 max-w-sm text-[14px] text-ink-mute">
-                Chat with your knowledge base. Ask questions, request summaries, or explore connections between entities.
+                Ask questions about your library. Answers are based on local search — no data leaves your device.
               </p>
               <div className="flex flex-wrap justify-center gap-2">
                 {SUGGESTIONS.map((s) => (
@@ -255,7 +255,7 @@ export function ChatView() {
             <button
               onClick={() => { handleSend() }}
               disabled={!input.trim() || chatLoading}
-              className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 press-scale focus-ring"
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 press-scale focus-ring"
               aria-label="Send message"
             >
               <Send className="h-4 w-4" />

@@ -111,10 +111,9 @@ jobs:
           ignore-unfixed: true
           trivyignores: '.trivyignore'
           hide-progress: true
-        # Trivy 0.70.0 emits a "Notices:" line on the version-check that
-        # makes the action exit 1 even with 0 vulnerabilities. The SARIF
-        # upload to GitHub code-scanning is the source of truth — humans
-        # review the Security tab. exit-code is 0 by design here.
+        # Trivy notices output can trigger exit 1 even with 0 actionable
+        # vulnerabilities. The SARIF upload to GitHub code-scanning is the
+        # source of truth — humans review the Security tab.
 
       - name: Upload Trivy SARIF
         if: always()
@@ -142,7 +141,6 @@ jobs:
       - name: Secret Detection with GitLeaks
         id: gitleaks
         uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e  # v3.0.0
-        continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}  # Optional
@@ -180,7 +178,7 @@ jobs:
           severity: 'CRITICAL,HIGH'
           format: 'sarif'
           output: 'trivy-config-results.sarif'
-          exit-code: '0'  # Don't fail, just report
+          exit-code: '0'  # SARIF upload is source of truth
           ignore-unfixed: true
 
       - name: Upload IaC Scan SARIF

@@ -5,10 +5,11 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { X, Search, Sun, Moon, FileText } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
-import { ENTITY_TYPE_META } from '@/lib/studio/types'
+import { ENTITY_TYPE_META, type Entity } from '@/lib/studio/types'
 import { NAV_GROUPS } from './sidebar'
 import { cn } from '@/lib/utils'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
+import { search } from '@/lib/search/retrieval'
 
 /**
  * MobileDrawer — slide-in drawer from the left, visible only below `lg`
@@ -305,9 +306,21 @@ function SearchTab({ onSelect }: { onSelect: () => void }) {
   const searchQuery = useStudioStore((s) => s.searchQuery)
   const setSearchQuery = useStudioStore((s) => s.setSearchQuery)
   const entities = useStudioStore((s) => s.entities)
+  const claims = useStudioStore((s) => s.claims)
   const startEdit = useStudioStore((s) => s.startEdit)
   const filtered = useFilteredEntities()
   const [mode, setMode] = useState<'keyword' | 'ranked'>('keyword')
+
+  const rankedResults = mode === 'ranked' && searchQuery.trim()
+    ? search(entities, claims, searchQuery, 20)
+    : []
+
+  const displayEntities = mode === 'ranked' && searchQuery.trim()
+    ? rankedResults
+        .map((r) => entities.find((e) => e.id === (r.entityId ?? r.id)))
+        .filter((e): e is Entity => e !== undefined)
+        .slice(0, 20)
+    : filtered
 
   // Empty-state copy follows the desktop SearchPanel exactly
   const emptyCopy = searchQuery ? 'No matches found.' : 'Your library is empty.'
@@ -354,14 +367,14 @@ function SearchTab({ onSelect }: { onSelect: () => void }) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-3">
-        {filtered.length === 0 ? (
+        {displayEntities.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
             <FileText className="h-8 w-8 text-ink-faint/50" />
             <p className="text-[12px] text-ink-mute">{emptyCopy}</p>
           </div>
         ) : (
           <ul className="space-y-1.5">
-            {filtered.slice(0, 20).map((e) => {
+            {displayEntities.map((e) => {
               const meta = ENTITY_TYPE_META[e.type]
               return (
                 <li key={e.id}>

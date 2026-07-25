@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, ExternalLink, ShieldCheck, CheckCircle2, AlertTriangle, Circle, Save } from 'lucide-react'
+import { Plus, ExternalLink, ShieldCheck, CheckCircle2, AlertTriangle, Circle, Save, Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Claim, VerificationStatus } from '@/lib/studio/types'
 
@@ -30,12 +30,17 @@ export function ClaimsPanel({
   claims,
   editingEntityId,
   addClaim,
+  updateClaim,
+  deleteClaim,
 }: {
   claims: Claim[]
   editingEntityId: string
   addClaim: (claim: Omit<Claim, 'id'>) => void
+  updateClaim: (id: string, updates: Partial<Omit<Claim, 'id' | 'entityId'>>) => void
+  deleteClaim: (id: string) => void
 }) {
   const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [statement, setStatement] = useState('')
   const [verification, setVerification] = useState<VerificationStatus>('unverified')
   const [confidence, setConfidence] = useState(50)
@@ -47,6 +52,16 @@ export function ClaimsPanel({
     setConfidence(50)
     setSource('')
     setShowForm(false)
+    setEditingId(null)
+  }
+
+  const startEdit = (claim: Claim) => {
+    setEditingId(claim.id)
+    setStatement(claim.statement)
+    setVerification(claim.verification)
+    setConfidence(Math.round(claim.confidence * 100))
+    setSource(claim.source ?? '')
+    setShowForm(true)
   }
 
   const handleSave = () => {
@@ -55,14 +70,29 @@ export function ClaimsPanel({
       toast.error('Claim statement is required')
       return
     }
-    addClaim({
-      entityId: editingEntityId,
-      statement: trimmed,
-      verification,
-      confidence: confidence / 100,
-      source: source.trim() || undefined,
-    })
+    if (editingId) {
+      updateClaim(editingId, {
+        statement: trimmed,
+        verification,
+        confidence: confidence / 100,
+        source: source.trim() || undefined,
+      })
+      toast.success('Claim updated')
+    } else {
+      addClaim({
+        entityId: editingEntityId,
+        statement: trimmed,
+        verification,
+        confidence: confidence / 100,
+        source: source.trim() || undefined,
+      })
+    }
     resetForm()
+  }
+
+  const handleDelete = (id: string) => {
+    deleteClaim(id)
+    toast.success('Claim deleted')
   }
 
   return (
@@ -136,6 +166,27 @@ export function ClaimsPanel({
                 {c.evidence}
               </p>
             )}
+
+            <div className="mt-2 flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => { startEdit(c) }}
+                className="flex items-center gap-1 rounded-md px-2 py-1 text-label font-medium text-ink-faint transition-colors hover:bg-muted hover:text-ink focus-ring"
+                aria-label="Edit claim"
+              >
+                <Pencil className="h-3 w-3" />
+                Edit
+              </button>
+              <button
+                type="button"
+                onClick={() => { handleDelete(c.id) }}
+                className="flex items-center gap-1 rounded-md px-2 py-1 text-label font-medium text-ink-faint transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40 focus-ring"
+                aria-label="Delete claim"
+              >
+                <Trash2 className="h-3 w-3" />
+                Delete
+              </button>
+            </div>
           </li>
         ))}
       </ul>
@@ -143,7 +194,7 @@ export function ClaimsPanel({
       {showForm && (
         <div className="mt-3 rounded-md border border-saffron/40 bg-background p-3">
           <label htmlFor="claim-statement" className="mb-1 block text-label font-semibold uppercase tracking-wide text-ink-faint">
-            Statement
+            {editingId ? 'Edit statement' : 'Statement'}
           </label>
           <textarea
             id="claim-statement"
@@ -216,7 +267,7 @@ export function ClaimsPanel({
               className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 press-scale focus-ring"
             >
               <Save className="h-3.5 w-3.5" />
-              Save claim
+              {editingId ? 'Update claim' : 'Save claim'}
             </button>
           </div>
         </div>
