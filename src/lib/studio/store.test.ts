@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { useStudioStore } from './store'
 import type { Entity, Claim } from './types'
 import { EntitySchema, ClaimSchema, ExportPayloadSchema, validatePersistedState } from './schema'
@@ -48,6 +48,10 @@ describe('Studio Store', () => {
   beforeEach(() => {
     resetStore()
     vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   describe('Entity CRUD', () => {

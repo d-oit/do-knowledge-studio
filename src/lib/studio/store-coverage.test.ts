@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { useStudioStore } from './store'
 import type { Entity, Claim } from './types'
 
@@ -54,6 +54,10 @@ describe('Store coverage: undo/redo', () => {
   beforeEach(() => {
     resetStore()
     vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('undo restores previous history snapshot', () => {
@@ -194,6 +198,10 @@ describe('Store coverage: clearChat', () => {
   beforeEach(() => {
     resetStore()
     vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('clears chat messages and loading state', () => {
