@@ -61,6 +61,8 @@ export function claimToYMap(claim: Claim): Record<string, unknown> {
   }
   if (claim.evidence !== undefined) data.evidence = claim.evidence
   if (claim.source !== undefined) data.source = claim.source
+  if (claim.createdAt !== undefined) data.createdAt = claim.createdAt
+  if (claim.updatedAt !== undefined) data.updatedAt = claim.updatedAt
   return data
 }
 
@@ -73,5 +75,7 @@ export function ymapToClaim(data: Record<string, unknown>): Claim {
     confidence: data.confidence as number,
     verification: data.verification as Claim['verification'],
     source: data.source as string | undefined,
+    createdAt: data.createdAt as string | undefined,
+    updatedAt: data.updatedAt as string | undefined,
   }
 }
