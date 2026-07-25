@@ -1,7 +1,7 @@
 # Plan 071 — Codebase Gap Audit and Remediation GOAP (2026-07-19)
 
 **Date**: 2026-07-19  
-**Status**: OPEN  
+**Status**: RESOLVED (by Plans 072, 073, 074)  
 **Method**: GOAP (Goal-Oriented Action Planning)  
 **Scope**: implementation completeness, product opportunities, agent harness,
 skills, instructions, coding workflow, tests, and UI/UX  
