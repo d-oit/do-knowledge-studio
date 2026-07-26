@@ -14,7 +14,7 @@ Build a local-first, structured knowledge engine that empowers users to capture,
 - Persistence: Zustand + localStorage (validated with Zod schemas)
 - Search: BM25 keyword ranking (not semantic/vector)
 - AI: OpenRouter and Ollama providers via AI Harness
-- Sync: Yjs/WebRTC infrastructure (opt-in, one-way snapshot)
+- Sync: Yjs/WebRTC infrastructure (opt-in, bidirectional sync bridge per ADR 027)
 - Export: JSON, Markdown, HTML, PDF, DOCX, Encrypted HTML
 
 ## 2026 Goals (from GitHub Issue Analysis)
@@ -28,6 +28,7 @@ Build a local-first, structured knowledge engine that empowers users to capture,
 8. **Data Integrity** — Zod validation at all boundaries (Plan 072) ✓
 9. **Honest Product Surface** — Accurate labels, no false-success controls (Plan 072) ✓
 
-## Remaining Work (Plan 074)
-- Bidirectional Yjs/Zustand sync bridge
-- Full accessibility audit (axe scanning, screen reader verification, zoom/reflow)
+## Remaining Work
+
+- Full accessibility audit: axe-core scanning, screen reader verification, 200% zoom, 400% reflow (Plan 071 exit criterion, partial progress in Plans 073–076)
+- Coverage target 50% (incremental, current: ~41% lines)
