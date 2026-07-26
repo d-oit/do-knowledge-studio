@@ -86,9 +86,10 @@ Refactor onto `<Overlay>`: mobile search overlay, `CommandPalette`, `SettingsWiz
 - Verification: unit tests for focus-trap + Escape + scroll-lock + variant classes; E2E that Tab cannot leave an open overlay and focus returns to the trigger on close.
 
 ## Files Affected (implementation)
-- NEW `src/components/Overlay.tsx`, `src/hooks/useScrollLock.ts`
-- `src/components/MobileDrawer.tsx`, `src/components/CommandPalette.tsx`
-- `src/features/ai/SettingsWizard.tsx`, `src/features/ai/EntityReviewDialog.tsx`
-- `src/features/graph/SnapshotBrowserModal.tsx`, `src/features/graph/SaveSnapshotModal.tsx`
-- `src/app/App.tsx` (mobile search overlay)
-- `src/features/editor/EditorToolbar.tsx`, `src/features/search/SearchPanel.tsx`, `src/features/library/LibraryView.tsx` (semantic cleanups)
+- `src/components/studio/ui/shared-primitives.tsx` — Overlay component (inline, with variants, ref-counted scroll lock, cached focus trap)
+- `src/components/studio/command-palette.tsx` — migrated to Overlay center variant
+- `src/components/studio/mobile-drawer.tsx` — migrated to Overlay sheet-left variant
+- `src/components/studio/shortcuts-dialog.tsx` — migrated to Overlay center variant
+- `src/components/studio/right-panel.tsx` — search listbox → role="group" semantics
+- `src/components/studio/ui/shared-primitives.test.tsx` — 25 Overlay tests
+- Deleted: `src/lib/a11y/use-keyboard-trap.ts`, `src/lib/a11y/use-keyboard-trap.test.ts` (dead code)
