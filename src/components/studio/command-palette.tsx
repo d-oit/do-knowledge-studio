@@ -29,7 +29,11 @@ interface CmdItem {
   group: 'Navigate' | 'Create' | 'Library'
 }
 
-export function CommandPalette() {
+interface CommandPaletteProps {
+  onEntitySelect?: (entityId: string) => void
+}
+
+export function CommandPalette({ onEntitySelect }: CommandPaletteProps) {
   const commandOpen = useStudioStore((s) => s.commandOpen)
   const setCommandOpen = useStudioStore((s) => s.setCommandOpen)
   const setView = useStudioStore((s) => s.setView)
@@ -98,7 +102,11 @@ export function CommandPalette() {
       hint: ENTITY_TYPE_META[e.type as EntityType].label,
       icon: FileText,
       onSelect: () => {
-        startEdit(e.id)
+        if (onEntitySelect) {
+          onEntitySelect(e.id)
+        } else {
+          startEdit(e.id)
+        }
         close()
       },
       group: 'Library',

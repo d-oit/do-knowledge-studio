@@ -4,7 +4,7 @@ import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
 import { ENTITY_TYPE_META } from '@/lib/studio/types'
 import { search, type SearchResult } from '@/lib/search/retrieval'
 import { Search, X, Sparkles, FileText, Quote, ArrowRight } from 'lucide-react'
-import { useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Overlay } from '@/components/studio/ui/shared-primitives'
 
@@ -12,6 +12,11 @@ export function RightPanel() {
   const currentView = useStudioStore((s) => s.currentView)
   const rightPanelOpen = useStudioStore((s) => s.rightPanelOpen)
   const chat = useStudioStore((s) => s.chat)
+  const startNew = useStudioStore((s) => s.startNew)
+
+  const handleCreateEntity = useCallback(() => {
+    startNew()
+  }, [startNew])
 
   if (!rightPanelOpen) return null
 
@@ -21,14 +26,14 @@ export function RightPanel() {
   }
   if (currentView === 'chat' || currentView === 'ai') {
     const hasCitations = chat.some((m) => m.citations && m.citations.length > 0)
-    if (!hasCitations) return <SearchPanel />
+    if (!hasCitations) return <SearchPanel onCreateEntity={handleCreateEntity} />
     return <CitationsPanel />
   }
 
-  return <SearchPanel />
+  return <SearchPanel onCreateEntity={handleCreateEntity} />
 }
 
-function SearchPanel() {
+function SearchPanel({ onCreateEntity }: { onCreateEntity?: (name: string) => void }) {
   const searchQuery = useStudioStore((s) => s.searchQuery)
   const setSearchQuery = useStudioStore((s) => s.setSearchQuery)
   const entities = useStudioStore((s) => s.entities)
@@ -96,6 +101,14 @@ function SearchPanel() {
             <p className="text-[12px] text-ink-mute">
               {searchQuery ? 'No matches found.' : 'Your library is empty.'}
             </p>
+            {searchQuery && onCreateEntity && (
+              <button
+                onClick={() => onCreateEntity(searchQuery)}
+                className="mt-2 rounded-md border border-saffron/30 bg-saffron-soft px-3 py-1.5 text-[12px] font-medium text-saffron-deep transition-colors hover:bg-saffron/10 focus-ring min-h-[44px]"
+              >
+                Create &quot;{searchQuery}&quot; as new entity
+              </button>
+            )}
           </div>
         ) : mode === 'ranked' ? (
           <ul className="space-y-1.5" role="group" aria-label="Ranked search results">

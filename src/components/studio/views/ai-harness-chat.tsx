@@ -14,6 +14,7 @@ interface ChatPanelProps {
   reducedMotion: boolean
   augment: boolean
   effectiveModel: string
+  cooldownMs?: number
 }
 
 export function AiHarnessChatPanel({
@@ -25,6 +26,7 @@ export function AiHarnessChatPanel({
   reducedMotion,
   augment,
   effectiveModel,
+  cooldownMs = 0,
 }: ChatPanelProps) {
   return (
     <div className="flex h-[520px] flex-col rounded-lg border border-border bg-card">
@@ -84,19 +86,24 @@ export function AiHarnessChatPanel({
             }}
             placeholder="Ask the AI agent…"
             rows={1}
-            disabled={isLoading}
+            disabled={isLoading || cooldownMs > 0}
             aria-label="AI agent message"
             className="max-h-24 flex-1 resize-none bg-transparent px-2 py-1 text-[13px] text-ink placeholder:text-ink-faint focus:outline-none disabled:opacity-50"
           />
           <button
             onClick={() => { void handleSend() }}
-            disabled={!input.trim() || isLoading}
+            disabled={!input.trim() || isLoading || cooldownMs > 0}
             className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:opacity-40 press-scale focus-ring"
             aria-label="Send"
           >
             <Send className="h-3.5 w-3.5" />
           </button>
         </div>
+        {cooldownMs > 0 && (
+          <p className="mt-1 text-center text-[11px] text-amber-600">
+            Wait {Math.ceil(cooldownMs / 1000)}s before sending again
+          </p>
+        )}
         <div className="mt-1.5 flex items-center justify-between px-1 text-caption text-ink-faint">
           <span className="flex items-center gap-1">
             <Sparkles className="h-2.5 w-2.5" />
