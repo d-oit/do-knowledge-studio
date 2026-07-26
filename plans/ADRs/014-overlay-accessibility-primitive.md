@@ -1,7 +1,7 @@
 # ADR 014: Shared Overlay/Modal Accessibility Primitive
 
 ## Status
-PARTIALLY IMPLEMENTED (2026-07-25) — Shared `<Overlay>` component created in `src/components/studio/ui/shared-primitives.tsx` with focus trap, Escape key, backdrop click, ARIA attributes, initialFocusRef, and body scroll lock. Migrated to by `export-view.tsx` (3 dialogs). Remaining: variant support (sheet-bottom, sheet-left, fullscreen), migration of other overlay surfaces (CommandPalette, MobileDrawer, SettingsWizard).
+IMPLEMENTED (2026-07-26) — Shared `<Overlay>` component in `src/components/studio/ui/shared-primitives.tsx` with focus trap, Escape key, backdrop click, ARIA attributes, initialFocusRef, body scroll lock, and 4 variants (center, sheet-bottom, sheet-left, fullscreen). Migrated: command-palette, mobile-drawer, shortcuts-dialog, import-preview-dialog, reset-confirm-dialog, encrypt-export-dialog, delete-confirm (right-panel). Search listbox semantics fixed. Dead useFocusTrap hook removed.
 
 ## Context
 The app has several overlay surfaces with **inconsistent accessibility and behavior** (verified):

@@ -113,12 +113,14 @@ describe('Overlay', () => {
 
   it('calls onClose when backdrop is clicked', () => {
     const onClose = vi.fn()
-    render(
+    const { container } = render(
       <Overlay open onClose={onClose} aria-label="Backdrop test">
         <p>Content</p>
       </Overlay>,
     )
-    fireEvent.click(screen.getByRole('dialog'))
+    // Backdrop is the outermost fixed div (first child of container)
+    const backdrop = container.firstElementChild as HTMLElement
+    fireEvent.click(backdrop)
     expect(onClose).toHaveBeenCalledOnce()
   })
 
@@ -135,12 +137,13 @@ describe('Overlay', () => {
 
   it('does not call onClose on backdrop click when closeOnBackdrop is false', () => {
     const onClose = vi.fn()
-    render(
+    const { container } = render(
       <Overlay open onClose={onClose} closeOnBackdrop={false} aria-label="No backdrop">
         <p>Content</p>
       </Overlay>,
     )
-    fireEvent.click(screen.getByRole('dialog'))
+    const backdrop = container.firstElementChild as HTMLElement
+    fireEvent.click(backdrop)
     expect(onClose).not.toHaveBeenCalled()
   })
 
@@ -172,6 +175,74 @@ describe('Overlay', () => {
       </Overlay>,
     )
     expect(document.activeElement).toBe(inputRef.current)
+  })
+
+  it('defaults to center variant', () => {
+    render(
+      <Overlay open onClose={() => {}} aria-label="Default variant">
+        <p>Content</p>
+      </Overlay>,
+    )
+    const dialog = screen.getByRole('dialog')
+    expect(dialog.className).toContain('m-auto')
+    expect(dialog.className).toContain('rounded-xl')
+  })
+
+  it('applies sheet-bottom variant classes', () => {
+    render(
+      <Overlay open onClose={() => {}} variant="sheet-bottom" aria-label="Sheet bottom">
+        <p>Content</p>
+      </Overlay>,
+    )
+    const dialog = screen.getByRole('dialog')
+    expect(dialog.className).toContain('mt-auto')
+    expect(dialog.className).toContain('rounded-t-xl')
+  })
+
+  it('applies sheet-left variant classes', () => {
+    render(
+      <Overlay open onClose={() => {}} variant="sheet-left" aria-label="Sheet left">
+        <p>Content</p>
+      </Overlay>,
+    )
+    const dialog = screen.getByRole('dialog')
+    expect(dialog.className).toContain('h-dvh')
+    expect(dialog.className).toContain('w-[min(86vw,340px)]')
+  })
+
+  it('applies fullscreen variant classes', () => {
+    render(
+      <Overlay open onClose={() => {}} variant="fullscreen" aria-label="Fullscreen">
+        <p>Content</p>
+      </Overlay>,
+    )
+    const dialog = screen.getByRole('dialog')
+    expect(dialog.className).toContain('h-full')
+    expect(dialog.className).toContain('w-full')
+  })
+
+  it('scroll lock is applied when open', () => {
+    render(
+      <Overlay open onClose={() => {}} aria-label="Scroll lock test">
+        <p>Content</p>
+      </Overlay>,
+    )
+    expect(document.body.style.overflow).toBe('hidden')
+  })
+
+  it('scroll lock is removed when closed', () => {
+    const { rerender } = render(
+      <Overlay open onClose={() => {}} aria-label="Scroll lock cleanup">
+        <p>Content</p>
+      </Overlay>,
+    )
+    expect(document.body.style.overflow).toBe('hidden')
+    rerender(
+      <Overlay open={false} onClose={() => {}} aria-label="Scroll lock cleanup">
+        <p>Content</p>
+      </Overlay>,
+    )
+    expect(document.body.style.overflow).toBe('')
   })
 })
 

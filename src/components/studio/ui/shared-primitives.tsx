@@ -301,8 +301,10 @@ export function SwitchToggle({
 }
 
 // ---------------------------------------------------------------------------
-// Overlay (Dialog)
+// Overlay (Dialog) — ADR 014
 // ---------------------------------------------------------------------------
+
+type OverlayVariant = 'center' | 'sheet-bottom' | 'sheet-left' | 'fullscreen'
 
 interface OverlayProps {
   open: boolean
@@ -311,6 +313,8 @@ interface OverlayProps {
   'aria-label'?: string
   /** ID of the element that labels the dialog */
   'aria-labelledby'?: string
+  /** Visual variant */
+  variant?: OverlayVariant
   /** Whether clicking the backdrop closes the dialog */
   closeOnBackdrop?: boolean
   /** Whether pressing Escape closes the dialog */
@@ -323,11 +327,23 @@ interface OverlayProps {
   children: React.ReactNode
 }
 
+const VARIANT_CONTAINER: Record<OverlayVariant, string> = {
+  center:
+    'm-auto max-h-[calc(100dvh-2rem)] w-[min(100%-2rem,32rem)] overflow-y-auto rounded-xl',
+  'sheet-bottom':
+    'mx-auto mt-auto max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-t-xl',
+  'sheet-left':
+    'h-dvh w-[min(86vw,340px)] overflow-y-auto',
+  fullscreen:
+    'h-full w-full overflow-y-auto',
+}
+
 export function Overlay({
   open,
   onClose,
   'aria-label': ariaLabel,
   'aria-labelledby': ariaLabelledBy,
+  variant = 'center',
   closeOnBackdrop = true,
   closeOnEscape = true,
   trapFocus = true,
@@ -355,7 +371,6 @@ export function Overlay({
   useEffect(() => {
     if (open) {
       previousFocusRef.current = document.activeElement as HTMLElement
-      // Focus initialFocusRef, then first focusable, then container
       const container = containerRef.current
       if (container) {
         const target = initialFocusRef?.current ?? container.querySelector<HTMLElement>(
@@ -417,20 +432,32 @@ export function Overlay({
 
   return (
     <div
-      ref={containerRef}
-      role="dialog"
-      aria-modal="true"
-      aria-label={ariaLabel}
-      aria-labelledby={ariaLabelledBy}
-      tabIndex={-1}
-      onKeyDown={handleKeyDown}
       onClick={handleBackdropClick}
       className={cn(
-        'fixed inset-0 z-[800] flex items-center justify-center bg-ink/30 backdrop-blur-sm',
-        className,
+        'fixed inset-0 z-[800] bg-ink/30 backdrop-blur-sm animate-in fade-in duration-150',
+        variant === 'sheet-left' && 'flex',
+        variant === 'fullscreen' && 'flex',
       )}
     >
-      {children}
+      <div
+        ref={containerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledBy}
+        tabIndex={-1}
+        onKeyDown={handleKeyDown}
+        className={cn(
+          'animate-in fade-in duration-150',
+          VARIANT_CONTAINER[variant],
+          variant === 'center' && 'slide-in-from-bottom-4',
+          variant === 'sheet-bottom' && 'slide-in-from-bottom-full',
+          variant === 'sheet-left' && 'slide-in-from-left-full',
+          className,
+        )}
+      >
+        {children}
+      </div>
     </div>
   )
 }
