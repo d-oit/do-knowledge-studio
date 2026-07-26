@@ -382,13 +382,14 @@ export const useStudioStore = create<StudioState>()(
           return persistedState
         }
 
-        // Then validate with Zod schema
+        // Then validate with Zod schema — on failure, return raw input
+        // so Zustand applies seed defaults (not the unvalidated migration output).
         const result = validatePersistedState(migrated)
         if (result.success) {
           return result.data
         }
         console.warn('Persisted state failed validation after migration:', result.errors)
-        return migrated
+        return persistedState
       },
     },
   ),

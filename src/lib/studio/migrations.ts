@@ -108,6 +108,12 @@ export function runMigrations(persistedState: unknown): PersistedStateV1 | null 
     }
 
     let state = persistedState as PersistedStateV1
+
+    // Guard against empty or incomplete objects before running migrations
+    if (!Array.isArray(state.entities) || !Array.isArray(state.claims)) {
+      return null
+    }
+
     const startVersion = state.version ?? 1
 
     // Run each migration from startVersion to current

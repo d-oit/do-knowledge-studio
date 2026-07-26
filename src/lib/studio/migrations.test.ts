@@ -106,6 +106,18 @@ describe('runMigrations', () => {
     expect(result!.version).toBe(CURRENT_SCHEMA_VERSION)
   })
 
+  it('handles state with version higher than current (forward-compatible)', () => {
+    const futureState = {
+      version: 999,
+      entities: [],
+      claims: [],
+    }
+
+    const result = runMigrations(futureState)
+    expect(result).not.toBeNull()
+    expect(result!.version).toBe(999)
+  })
+
   it('returns null if migration throws', () => {
     const invalidState = {
       version: 1,
