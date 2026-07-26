@@ -99,7 +99,7 @@ function SearchPanel({ onCreateEntity }: { onCreateEntity?: (name: string) => vo
             </p>
             {searchQuery && onCreateEntity && (
               <button
-                onClick={() => onCreateEntity(searchQuery)}
+                onClick={() => { onCreateEntity(searchQuery) }}
                 className="mt-2 rounded-md border border-saffron/30 bg-saffron-soft px-3 py-1.5 text-[12px] font-medium text-saffron-deep transition-colors hover:bg-saffron/10 focus-ring min-h-[44px]"
               >
                 Create &quot;{searchQuery}&quot; as new entity
