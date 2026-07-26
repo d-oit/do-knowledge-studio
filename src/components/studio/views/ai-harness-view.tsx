@@ -19,6 +19,7 @@ import { OLLAMA_DEFAULT_MODELS, DEFAULT_OLLAMA_BASE_URL } from '@/lib/ai/types'
 import { AiHarnessSettingsPanel } from './ai-harness-settings-panel'
 import { AiHarnessChatPanel } from './ai-harness-chat'
 import { PROVIDERS } from './ai-harness-settings'
+import { useRateLimiter } from '@/lib/ai'
 
 export function AIHarnessView() {
   const entities = useStudioStore((s) => s.entities)
@@ -45,7 +46,9 @@ export function AIHarnessView() {
     },
   ])
   const [input, setInput] = useState('')
+  const [cooldownMs, setCooldownMs] = useState(0)
   const abortRef = useRef<AbortController | null>(null)
+  const { canRequest } = useRateLimiter()
 
   useEffect(() => {
     loadAISettings().then((saved) => {
@@ -73,6 +76,12 @@ export function AIHarnessView() {
     })
   }, [provider, model, apiKey, augment, ollamaCpuOnly, allowWebResearch, ollamaBaseUrl, settingsLoaded])
 
+  useEffect(() => {
+    if (cooldownMs <= 0) return
+    const timer = setTimeout(() => { setCooldownMs((ms) => Math.max(0, ms - 1000)) }, 1000)
+    return () => { clearTimeout(timer) }
+  }, [cooldownMs])
+
   const handleRefreshOllamaModels = useCallback(async () => {
     try {
       const models = await fetchOllamaModels(ollamaBaseUrl)
@@ -94,6 +103,19 @@ export function AIHarnessView() {
     if (!input.trim()) return
     if (!apiKey && activeProvider.requiresKey) {
       toast.error('Set an API key in settings to send messages.')
+      return
+    }
+
+    const decision = canRequest()
+    if (!decision.allowed) {
+      setMessages((m) => [
+        ...m,
+        {
+          role: 'assistant',
+          content: "I\u2019m being rate-limited \u2014 please slow down and try again in a few seconds.",
+        },
+      ])
+      setCooldownMs(decision.retryAfterMs ?? 5000)
       return
     }
 
@@ -247,6 +269,7 @@ export function AIHarnessView() {
             reducedMotion={reducedMotion}
             augment={augment}
             effectiveModel={effectiveModel}
+            cooldownMs={cooldownMs}
           />
         </div>
       </div>

@@ -108,7 +108,11 @@ export function AppShell() {
           <RightPanel />
         </main>
       </div>
-      <CommandPalette />
+      <CommandPalette
+        onEntitySelect={(id) => {
+          useStudioStore.getState().startEdit(id)
+        }}
+      />
       <MobileDrawer />
       <ShortcutsDialog />
     </div>
