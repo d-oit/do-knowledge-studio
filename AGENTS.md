@@ -14,7 +14,7 @@ Local-first knowledge studio built with Next.js 16 / React 19 / Tailwind 4 / sha
 - Use strict TypeScript. Do not use `any`.
 - No magic numbers; extract descriptive named constants.
 - No hardcoded project-level settings outside config, constants, or env layers.
-- Max 500 LOC per source file; refactor before extending oversized files.
+- Max 500 LOC per source file; refactor before extending oversized files. Exception: shadcn-generated primitives (e.g., `sidebar.tsx`) may exceed this limit — document the exception in `plans/` rather than splitting vendor scaffolding.
 - Prefer small, composable modules over mixed-responsibility files.
 - Reuse existing abstractions before introducing new patterns.
 - Keep changes scoped; avoid unrelated refactors in the same commit.
@@ -41,6 +41,7 @@ Local-first knowledge studio built with Next.js 16 / React 19 / Tailwind 4 / sha
 - **Never ignore pre-existing issues or warnings.** Every warning, lint error, or failing check must be fixed or documented as a follow-up task in `plans/`. Ignoring issues compounds technical debt and erodes trust in the pipeline.
 - **Treat warnings as errors in quality gates.** When running `pnpm run lint`, `pnpm run typecheck`, `pnpm run test`, or `pnpm run build`, any output containing `⚠`, `warning`, `Warning`, or non-zero exit code must be addressed immediately — do not proceed to the next task until the warning is fixed or explicitly documented as a follow-up. Build warnings (e.g., deprecation notices, lockfile conflicts) are not informational — they are defects.
 - **Always run code review before merge.** After CI passes and before requesting merge, invoke the `code-review-assistant` skill to perform a structured review of all changed files. Address all P1/P2 findings. No PR merges without a completed review pass.
+- **Never merge with Codacy issues.** If Codacy reports `ACTION_REQUIRED`, `FAILED`, or any new issues on a PR, the PR must not be merged until all issues are resolved or explicitly suppressed with a documented reason. Zero tolerance: no warnings, no failures, no "action required" status.
 
 ## Repository Shape
 
