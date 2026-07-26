@@ -1,9 +1,11 @@
 # Plan 080 — Gap Remediation: GOAL.md, ai-harness split, branch cleanup
 
 **Date**: 2026-07-26
-**Status**: IN PROGRESS
+**Status**: DONE (verified 2026-07-26)
 **Method**: GOAP with swarm parallel execution
 **Orchestrator**: `goap-agent` skill with `parallel-execution` + `agent-coordination`
+**Branch**: `feat/080-gap-remediation`
+**PR**: [#515](https://github.com/d-oit/do-knowledge-studio/pull/515) — all 22 CI checks pass
 
 ## Context
 

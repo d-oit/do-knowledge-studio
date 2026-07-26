@@ -1,11 +1,20 @@
 # Plans Index
 
-**Updated**: 2026-07-25
+**Updated**: 2026-07-26
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
 ## Current Status
 
-Plan 079 adds view component tests for the 5 remaining untested views and updates coverage thresholds.
+Plan 080 closes documentation drift, splits ai-harness-view under 500 LOC, and adds shadcn vendor exception.
+
+### Plan 080 — Gap Remediation: GOAL.md, ai-harness split, shadcn exception (2026-07-26)
+
+| Wave | Goal | Status | PR | Changes |
+|------|------|--------|-----|---------|
+| W1 | GOAL.md stale remaining work + sync description | Done | #515 | Removed completed Plan 074 items, updated sync to bidirectional (ADR 027) |
+| W1 | AGENTS.md shadcn exception | Done | #515 | Added exception for vendor primitives (sidebar.tsx 733 LOC) |
+| W2 | ai-harness-view.tsx split (511→255 LOC) | Done | #515 | Extracted settings panel (272 LOC) and chat panel (112 LOC) |
+| W3 | PR + CI Verification | Done | #515 | All 22 CI checks pass, 0 Codacy issues |
 
 ### Plan 079 — View Test Coverage + PR (2026-07-25)
 
