@@ -4,6 +4,8 @@
 **Status**: DONE (verified 2026-07-26)
 **Method**: GOAP with swarm parallel execution
 **Orchestrator**: `goap-agent` skill with `parallel-execution` + `agent-coordination`
+**Branch**: `feat/081-overlay-migration-a11y`
+**PR**: [#516](https://github.com/d-oit/do-knowledge-studio/pull/516) — all 20 CI checks pass
 
 ## Context
 

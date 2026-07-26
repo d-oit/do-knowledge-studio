@@ -5,7 +5,18 @@
 
 ## Current Status
 
-Plan 080 closes documentation drift, splits ai-harness-view under 500 LOC, and adds shadcn vendor exception.
+Plan 081 completes ADR 014 overlay migration, adds variant support, fixes search semantics, and removes dead code.
+
+### Plan 081 — Overlay Migration, Semantic A11y, Dead Code Removal (2026-07-26)
+
+| Wave | Goal | Status | PR | Changes |
+|------|------|--------|-----|---------|
+| W1 | Overlay variant support (center, sheet-bottom, sheet-left, fullscreen) | Done | #516 | Added variant prop, backdrop/content split, 4 layout variants |
+| W2 | Migrate command-palette, mobile-drawer, shortcuts-dialog to Overlay | Done | #516 | Removed manual Escape/focus trap/scroll lock from 3 surfaces |
+| W2 | Search listbox ARIA semantics | Done | #516 | role="listbox" + role="option" + aria-selected in right-panel + mobile-drawer |
+| W2 | Remove dead useFocusTrap hook | Done | #516 | Deleted use-keyboard-trap.ts + test (never imported by components) |
+| W3 | Tests + docs | Done | #516 | 7 new Overlay variant tests, ADR 014 → IMPLEMENTED, GOAL.md updated |
+| W4 | PR + CI Verification | Done | #516 | All 20 CI checks pass, 0 Codacy issues |
 
 ### Plan 080 — Gap Remediation: GOAL.md, ai-harness split, shadcn exception (2026-07-26)
 
