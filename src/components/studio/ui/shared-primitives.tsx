@@ -353,6 +353,10 @@ function getVariantClasses(variant: OverlayVariant): string {
   }
 }
 
+// Module-level scroll lock ref-count for nested overlays
+let scrollLockCount = 0
+let savedScrollbarWidth = 0
+
 export function Overlay({
   open,
   onClose,
@@ -368,34 +372,47 @@ export function Overlay({
 }: OverlayProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
+  const focusableCacheRef = useRef<HTMLElement[]>([])
 
-  // Body scroll lock
+  // Body scroll lock with ref-counting for nested overlays
   useEffect(() => {
     if (open) {
-      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
-      document.body.style.overflow = 'hidden'
-      document.body.style.paddingRight = `${scrollbarWidth}px`
+      if (scrollLockCount === 0) {
+        savedScrollbarWidth = window.innerWidth - document.documentElement.clientWidth
+        document.body.style.overflow = 'hidden'
+        document.body.style.paddingRight = `${savedScrollbarWidth}px`
+      }
+      scrollLockCount++
       return () => {
-        document.body.style.overflow = ''
-        document.body.style.paddingRight = ''
+        scrollLockCount--
+        if (scrollLockCount === 0) {
+          document.body.style.overflow = ''
+          document.body.style.paddingRight = ''
+        }
       }
     }
   }, [open])
 
-  // Save and restore focus
+  // Save and restore focus; cache focusable elements on open
   useEffect(() => {
     if (open) {
       previousFocusRef.current = document.activeElement as HTMLElement
       const container = containerRef.current
       if (container) {
-        const target = initialFocusRef?.current ?? container.querySelector<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        focusableCacheRef.current = Array.from(
+          container.querySelectorAll<HTMLElement>(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+          ),
         )
+        const target = initialFocusRef?.current ?? focusableCacheRef.current[0]
         ;(target ?? container).focus()
       }
-    } else if (previousFocusRef.current) {
-      previousFocusRef.current.focus()
-      previousFocusRef.current = null
+    } else {
+      focusableCacheRef.current = []
+      if (previousFocusRef.current) {
+        previousFocusRef.current.focus()
+        previousFocusRef.current = null
+      }
     }
   }, [open, initialFocusRef])
 
@@ -408,10 +425,8 @@ export function Overlay({
       }
 
       // Focus trap
-      if (trapFocus && e.key === 'Tab' && containerRef.current) {
-        const focusable = containerRef.current.querySelectorAll<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-        )
+      if (trapFocus && e.key === 'Tab') {
+        const focusable = focusableCacheRef.current
         if (focusable.length === 0) return
 
         const first = focusable[0]

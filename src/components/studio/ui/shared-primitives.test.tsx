@@ -244,5 +244,35 @@ describe('Overlay', () => {
     )
     expect(document.body.style.overflow).toBe('')
   })
+
+  it('traps focus with Tab key — cycles from last to first', () => {
+    render(
+      <Overlay open onClose={() => {}} aria-label="Focus trap test">
+        <button data-testid="first">First</button>
+        <button data-testid="last">Last</button>
+      </Overlay>,
+    )
+    const last = screen.getByTestId('last')
+    const first = screen.getByTestId('first')
+    last.focus()
+    expect(document.activeElement).toBe(last)
+    fireEvent.keyDown(last, { key: 'Tab' })
+    expect(document.activeElement).toBe(first)
+  })
+
+  it('traps focus with Shift+Tab — cycles from first to last', () => {
+    render(
+      <Overlay open onClose={() => {}} aria-label="Focus trap shift test">
+        <button data-testid="first">First</button>
+        <button data-testid="last">Last</button>
+      </Overlay>,
+    )
+    const first = screen.getByTestId('first')
+    const last = screen.getByTestId('last')
+    first.focus()
+    expect(document.activeElement).toBe(first)
+    fireEvent.keyDown(first, { key: 'Tab', shiftKey: true })
+    expect(document.activeElement).toBe(last)
+  })
 })
 

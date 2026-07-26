@@ -287,11 +287,11 @@ function SearchTab({ onSelect }: { onSelect: () => void }) {
             <p className="text-[12px] text-ink-mute">{emptyCopy}</p>
           </div>
         ) : (
-          <ul className="space-y-1.5" role="listbox" aria-label="Search results">
+          <ul className="space-y-1.5" role="group" aria-label="Search results">
             {displayEntities.map((e) => {
               const meta = ENTITY_TYPE_META[e.type]
               return (
-                <li key={e.id} role="option" aria-selected="false">
+                <li key={e.id}>
                   <button
                     onClick={() => {
                       startEdit(e.id)
