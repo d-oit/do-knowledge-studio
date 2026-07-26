@@ -190,6 +190,64 @@ def validate_duplicate_names(repo_root: Path) -> list[str]:
     return errors
 
 
+def validate_broken_links(repo_root: Path) -> list[str]:
+    """Check for broken repository-relative links in skill content."""
+    import re
+    errors = []
+    skills_dir = repo_root / ".agents" / "skills"
+    if not skills_dir.exists():
+        return errors
+
+    # Pattern for markdown links: [text](path) or [text](path#anchor)
+    link_pattern = re.compile(r'\[([^\]]*)\]\(([^)]+)\)')
+
+    # Common placeholder patterns to skip
+    placeholder_patterns = ['image-url', 'your-', 'example', 'path/to/', '<', '>', 'architecture.svg']
+
+    for skill_md in skills_dir.rglob("SKILL.md"):
+        content = skill_md.read_text()
+        skill_dir = skill_md.parent
+        in_code_block = False
+
+        for line in content.split('\n'):
+            # Track code blocks
+            if line.strip().startswith('```'):
+                in_code_block = not in_code_block
+                continue
+
+            # Skip lines inside code blocks
+            if in_code_block:
+                continue
+
+            for match in link_pattern.finditer(line):
+                link_text, link_target = match.groups()
+
+                # Skip external URLs and anchors
+                if link_target.startswith(('http://', 'https://', '#', 'mailto:')):
+                    continue
+
+                # Skip common placeholder patterns
+                if any(pattern in link_target.lower() for pattern in placeholder_patterns):
+                    continue
+
+                # Remove anchor if present
+                link_path = link_target.split('#')[0]
+                if not link_path:
+                    continue
+
+                # Resolve relative to skill directory
+                target_path = (skill_dir / link_path).resolve()
+
+                # Check if target exists (file or directory)
+                if not target_path.exists():
+                    errors.append(
+                        f"{skill_md.relative_to(repo_root)}: broken link '{link_target}' "
+                        f"(target does not exist)"
+                    )
+
+    return errors
+
+
 def validate_agents_md(repo_root: Path) -> list[str]:
     """Validate AGENTS.md exists and has key sections."""
     errors = []
@@ -222,6 +280,7 @@ def main() -> int:
     errors.extend(validate_skill_name_mismatch(repo_root))
     errors.extend(validate_eval_json(repo_root))
     errors.extend(validate_duplicate_names(repo_root))
+    errors.extend(validate_broken_links(repo_root))
     errors.extend(validate_agents_md(repo_root))
 
     if errors:
