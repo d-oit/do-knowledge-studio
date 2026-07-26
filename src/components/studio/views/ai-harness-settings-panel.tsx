@@ -41,7 +41,7 @@ interface SettingsPanelProps {
   customModel: string
   setCustomModel: (m: string) => void
   ollamaModels: string[]
-  handleRefreshOllamaModels: () => void
+  handleRefreshOllamaModels: () => void | Promise<void>
   entityCount: number
   effectiveModel: string
   selectedEngineTarget: { slug: string; display_name: string; description?: string } | null
@@ -74,7 +74,7 @@ export function AiHarnessSettingsPanel({
   selectedEngineTarget,
   isLoading,
 }: SettingsPanelProps) {
-  const activeProvider = PROVIDERS.find((p) => p.id === provider)!
+  const activeProvider = PROVIDERS.find((p) => p.id === provider) ?? PROVIDERS[0]
 
   return (
     <aside className="lg:col-span-2">
@@ -145,7 +145,7 @@ export function AiHarnessSettingsPanel({
               </select>
               {provider === 'ollama' && (
                 <button
-                  onClick={() => { handleRefreshOllamaModels() }}
+                  onClick={() => { void handleRefreshOllamaModels() }}
                   className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-md border border-border bg-background text-ink-faint transition-colors hover:border-saffron/40 hover:text-saffron focus-ring"
                   aria-label="Refresh Ollama models"
                 >

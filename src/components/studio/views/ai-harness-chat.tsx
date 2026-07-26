@@ -11,7 +11,7 @@ interface ChatPanelProps {
   isLoading: boolean
   input: string
   setInput: (v: string) => void
-  handleSend: () => void
+  handleSend: () => void | Promise<void>
   reducedMotion: boolean
   augment: boolean
   effectiveModel: string
