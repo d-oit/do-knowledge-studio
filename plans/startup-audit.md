@@ -45,7 +45,8 @@ These can be delayed without affecting first paint or first interaction:
 | Time to first paint | < 1s | ~200ms (no WASM) | ✅ |
 | Time to interactive (editor) | < 2s | ~500ms (cold) | ✅ |
 | Time to search ready | < 5s | ~2s (with 1k entities) | ✅ |
-| Initial JS bundle | < 150KB | TBD | Need analysis |
+| Initial JS bundle | < 150KB | ~924KB (10 chunks) | ⚠️ Exceeds target |
+| Total JS bundle | — | ~2.82MB (all chunks) | ℹ️ Includes lazy-loaded chunks |
 
 ## Changes Made
 

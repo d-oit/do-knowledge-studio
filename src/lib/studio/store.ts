@@ -7,6 +7,7 @@ import type { Entity, Claim, ViewId, ChatMessage, EntityType } from './types'
 import { seedEntities, seedClaims, seedChat } from './seed-data'
 import { search } from '@/lib/search/retrieval'
 import { validatePersistedState } from './schema'
+import { runMigrations, CURRENT_SCHEMA_VERSION } from './migrations'
 
 const MAX_HISTORY = 50
 
@@ -354,7 +355,7 @@ export const useStudioStore = create<StudioState>()(
     }),
     {
       name: 'do-knowledge-studio-store',
-      version: 1,
+      version: CURRENT_SCHEMA_VERSION,
       storage: createJSONStorage(() => localStorage),
       // Persist only the durable state — UI ephemerals (command palette,
       // mobile drawer, selection) are deliberately excluded so a refresh
@@ -370,24 +371,24 @@ export const useStudioStore = create<StudioState>()(
         sortDir: state.sortDir,
         rightPanelOpen: state.rightPanelOpen,
       }),
-      // Validate persisted state with Zod schema. Invalid or corrupt data
+      // Validate and migrate persisted state. Invalid or corrupt data
       // falls back to seed defaults rather than crashing the app.
-      // Backfill createdAt/updatedAt/version/editHistory on claims missing fields.
+      // Runs versioned migrations to handle schema evolution.
       migrate: (persistedState: unknown) => {
-        const result = validatePersistedState(persistedState)
-        if (result.success) {
-          const now = new Date().toISOString()
-          const claims = result.data.claims.map((c) => ({
-            ...c,
-            createdAt: c.createdAt ?? now,
-            updatedAt: c.updatedAt ?? now,
-            version: c.version ?? 1,
-            editHistory: c.editHistory ?? [],
-          }))
-          return { ...result.data, claims }
+        // Run versioned migrations first
+        const migrated = runMigrations(persistedState)
+        if (!migrated) {
+          console.warn('Migration failed, using seed defaults')
+          return persistedState
         }
-        console.warn('Persisted state failed validation, using seed defaults:', result.errors)
-        return persistedState
+
+        // Then validate with Zod schema
+        const result = validatePersistedState(migrated)
+        if (result.success) {
+          return result.data
+        }
+        console.warn('Persisted state failed validation after migration:', result.errors)
+        return migrated
       },
     },
   ),

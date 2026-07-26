@@ -5,7 +5,18 @@
 
 ## Current Status
 
-Plan 081 completes ADR 014 overlay migration, adds variant support, fixes search semantics, and removes dead code.
+Plan 082 implements versioned hydration migrations (ADR 028), fixes ADR 001 status, completes bundle size analysis, and improves test coverage from 47% to 52%.
+
+### Plan 082 — GOAP: Address Missing Implementations from plans/ Analysis (2026-07-26)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Fix ADR 001 status to "Superseded" | Done | plans/ADRs/001-sqlite-wasm.md updated |
+| W1 | Complete bundle size analysis | Done | plans/startup-audit.md updated with actual metrics |
+| W2 | Implement versioned hydration migrations | Done | src/lib/studio/migrations.ts (new), store.ts updated to use migrations |
+| W3 | Add tests for TRIZ data, speech recognition, research, AI settings, sync bridge | Done | 6 new test files, 181 new tests |
+| W4 | Fix lint warnings | Done | 6 lint warnings resolved |
+| W5 | Quality gate verification | Done | Lint, typecheck, test, build all pass |
 
 ### Plan 081 — Overlay Migration, Semantic A11y, Dead Code Removal (2026-07-26)
 
@@ -152,23 +163,23 @@ Plan 081 completes ADR 014 overlay migration, adds variant support, fixes search
 | 049 | AI provider integration, encrypted export, zod schemas, BM25 retrieval | 399 |
 | 040 | Complete export pipeline (PDF, JSON schema v1.0, MD round-trip) | 289 |
 
-## Key Metrics (2026-07-25)
+## Key Metrics (2026-07-26)
 
-| Metric | Before (078) | After (078) |
+| Metric | Before (081) | After (082) |
 |--------|-------------|-------------|
-| Unit test files | 41 | 49 |
-| Unit tests | 502 | 665 |
+| Unit test files | 54 | 60 |
+| Unit tests | 732 | 923 |
 | E2E test files | 8 | 8 |
 | E2E tests | 58 | 58 |
-| Total tests | 560 | 723 |
+| Total tests | 790 | 981 |
 | CI checks | 22/22 | 22/22 passing |
 | LOC violations | 0 | 0 |
 | Lint warnings | 0 | 0 |
 | Type errors | 0 | 0 |
-| Coverage (lines) | 31.63% | 41.49% |
-| Coverage (branches) | 21.45% | 31.41% |
-| Coverage (functions) | 22.35% | 32.49% |
-| Coverage (statements) | 30.85% | 41.76% |
+| Coverage (lines) | 46.54% | 52.56% |
+| Coverage (branches) | 38.9% | 45.13% |
+| Coverage (functions) | 38.24% | 41.46% |
+| Coverage (statements) | 46.7% | 52.66% |
 
 ## ADR Reconciliation (2026-07-25)
 
