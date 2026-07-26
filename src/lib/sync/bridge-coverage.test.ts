@@ -5,10 +5,12 @@ import {
   setYjsEntity,
   setYjsClaim,
   removeYjsClaim,
+  removeYjsEntity,
   mergeIntoYjs,
   onYjsChange,
   subscribeToYjs,
   destroyBridge,
+  applyRemoteUpdate,
 } from './bridge'
 import { addTombstone, clearTombstones } from './tombstones'
 import { destroy } from './doc'
@@ -128,11 +130,112 @@ describe('Bridge coverage: setYjsClaim / removeYjsClaim', () => {
   })
 })
 
+describe('Bridge coverage: removeYjsEntity', () => {
+  it('removes entity and adds tombstone', () => {
+    const entity = makeEntity({ id: 'e-1' })
+    setYjsEntity(entity)
+    removeYjsEntity('e-1')
+    expect(getYjsEntities()).toEqual([])
+  })
+
+  it('tombstones removed entity', () => {
+    const entity = makeEntity({ id: 'e-1' })
+    setYjsEntity(entity)
+    removeYjsEntity('e-1')
+    const entities = getYjsEntities()
+    expect(entities.find((e) => e.id === 'e-1')).toBeUndefined()
+  })
+})
+
+describe('Bridge coverage: applyRemoteUpdate', () => {
+  it('applies remote entities to local state', () => {
+    const remote = [makeEntity({ id: 'e-1', name: 'Remote' })]
+    const local: Entity[] = []
+    const result = applyRemoteUpdate(remote, [], local, [])
+    expect(result.entities).toHaveLength(1)
+    expect(result.entities[0].name).toBe('Remote')
+  })
+
+  it('applies remote claims to local state', () => {
+    const remote = [makeClaim({ id: 'c-1', statement: 'Remote claim' })]
+    const local: Claim[] = []
+    const result = applyRemoteUpdate([], remote, [], local)
+    expect(result.claims).toHaveLength(1)
+    expect(result.claims[0].statement).toBe('Remote claim')
+  })
+
+  it('resolves conflicts with newer remote updates', () => {
+    const local = makeEntity({ id: 'e-1', name: 'Local', updatedAt: '2026-01-01' })
+    const remote = makeEntity({ id: 'e-1', name: 'Remote', updatedAt: '2026-06-01' })
+    const result = applyRemoteUpdate([remote], [], [local], [])
+    expect(result.entities).toHaveLength(1)
+    expect(result.entities[0].name).toBe('Remote')
+  })
+
+  it('keeps local when local is newer', () => {
+    const local = makeEntity({ id: 'e-1', name: 'Local', updatedAt: '2026-06-01' })
+    const remote = makeEntity({ id: 'e-1', name: 'Remote', updatedAt: '2026-01-01' })
+    const result = applyRemoteUpdate([remote], [], [local], [])
+    expect(result.entities).toHaveLength(1)
+    expect(result.entities[0].name).toBe('Local')
+  })
+
+  it('skips invalid remote entities', () => {
+    const remote = [{ id: '', name: '', type: 'invalid' as const, description: '', content: '', tags: [], createdAt: '', updatedAt: '', links: [] }]
+    const result = applyRemoteUpdate(remote as Entity[], [], [], [])
+    expect(result.entities).toHaveLength(0)
+  })
+
+  it('skips invalid remote claims', () => {
+    const remote = [{ id: '', entityId: '', statement: '', confidence: 2, verification: 'invalid' as const }]
+    const result = applyRemoteUpdate([], remote as Claim[], [], [])
+    expect(result.claims).toHaveLength(0)
+  })
+
+  it('does not apply tombstoned remote entities when local exists', () => {
+    const local = makeEntity({ id: 'e-tombstoned', name: 'Local' })
+    const remote = makeEntity({ id: 'e-tombstoned', name: 'Remote' })
+    addTombstone('e-tombstoned')
+    const result = applyRemoteUpdate([remote], [], [local], [])
+    expect(result.entities).toHaveLength(1)
+    expect(result.entities[0].name).toBe('Local')
+  })
+
+  it('does not apply tombstoned remote claims when local exists', () => {
+    const local = makeClaim({ id: 'c-tombstoned', statement: 'Local claim' })
+    const remote = makeClaim({ id: 'c-tombstoned', statement: 'Remote claim' })
+    addTombstone('c-tombstoned')
+    const result = applyRemoteUpdate([], [remote], [], [local])
+    expect(result.claims).toHaveLength(1)
+    expect(result.claims[0].statement).toBe('Local claim')
+  })
+})
+
 describe('Bridge coverage: destroyBridge', () => {
   it('cleans up subscriptions', () => {
     subscribeToYjs({ onEntities: vi.fn(), onClaims: vi.fn() })
     destroyBridge()
     // Should not throw after destroy
     expect(true).toBe(true)
+  })
+})
+
+describe('Bridge coverage: setYjsEntity', () => {
+  it('adds and retrieves entity', () => {
+    const entity = makeEntity({ id: 'e-1' })
+    setYjsEntity(entity)
+    const entities = getYjsEntities()
+    expect(entities).toHaveLength(1)
+    expect(entities[0].id).toBe('e-1')
+  })
+
+  it('overwrites existing entity', () => {
+    const entity1 = makeEntity({ id: 'e-1', name: 'Original' })
+    const entity2 = makeEntity({ id: 'e-1', name: 'Updated' })
+    setYjsEntity(entity1)
+    setYjsEntity(entity2)
+    const entities = getYjsEntities()
+    expect(entities).toHaveLength(1)
+    expect(entities[0].name).toBe('Updated')
   })
 })
