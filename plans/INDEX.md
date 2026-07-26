@@ -5,7 +5,15 @@
 
 ## Current Status
 
-Plan 078 remediates gaps identified in the codebase: LOC violation, stale architecture docs, coverage thresholds, and missing E2E CI.
+Plan 079 adds view component tests for the 5 remaining untested views and updates coverage thresholds.
+
+### Plan 079 — View Test Coverage + PR (2026-07-25)
+
+| Wave | Goal | Status | PR | Changes |
+|------|------|--------|-----|---------|
+| W1 | View Test Files | Done | #514 | Added 5 test files: ai-harness (12), chat (14), library (11), sync (13), triz (17) |
+| W2 | Coverage Thresholds | Done | #514 | Updated thresholds: lines 45%, branches 37%, functions 37%, statements 45% |
+| W3 | PR + CI Verification | Done | #514 | All 22 CI checks pass, 0 Codacy issues |
 
 ### Plan 078 — GOAP Gap Remediation: LOC, Architecture, Coverage, E2E CI (2026-07-25)
 
@@ -126,13 +134,13 @@ Plan 078 remediates gaps identified in the codebase: LOC violation, stale archit
 
 ## Key Metrics (2026-07-25)
 
-| Metric | Before (075) | After (078) |
+| Metric | Before (078) | After (078) |
 |--------|-------------|-------------|
 | Unit test files | 41 | 49 |
-| Unit tests | 492 | 665 |
+| Unit tests | 502 | 665 |
 | E2E test files | 8 | 8 |
 | E2E tests | 58 | 58 |
-| Total tests | 550 | 723 |
+| Total tests | 560 | 723 |
 | CI checks | 22/22 | 22/22 passing |
 | LOC violations | 0 | 0 |
 | Lint warnings | 0 | 0 |

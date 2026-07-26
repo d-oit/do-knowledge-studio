@@ -1,0 +1,209 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { ReactNode } from 'react'
+import { render, screen } from '@testing-library/react'
+
+vi.mock('framer-motion', () => ({
+  motion: {
+    button: ({ children, initial: _i, animate: _a, transition: _t, ...props }: { children?: ReactNode; [key: string]: unknown }) => (
+      <button {...(props as React.ButtonHTMLAttributes<HTMLButtonElement>)}>{children}</button>
+    ),
+    div: ({ children, initial: _i, animate: _a, transition: _t, ...props }: { children?: ReactNode; [key: string]: unknown }) => (
+      <div {...(props as React.HTMLAttributes<HTMLDivElement>)}>{children}</div>
+    ),
+  },
+  AnimatePresence: ({ children }: { children?: ReactNode }) => <>{children}</>,
+}))
+
+vi.mock('lucide-react', () => {
+  const Icon = ({ className }: { className?: string }) => (
+    <span data-testid="icon" className={className} />
+  )
+  return {
+    FileText: Icon,
+    Lightbulb: Icon,
+    User: Icon,
+    FolderKanban: Icon,
+    LayoutGrid: Icon,
+    List: Icon,
+    ArrowUpDown: Icon,
+    ArrowUp: Icon,
+    ArrowDown: Icon,
+    Plus: Icon,
+    Clock: Icon,
+    Search: Icon,
+    X: Icon,
+    Wifi: Icon,
+    WifiOff: Icon,
+    Copy: Icon,
+    Check: Icon,
+    RefreshCw: Icon,
+    Trash2: Icon,
+    History: Icon,
+    Loader2: Icon,
+    QrCode: Icon,
+    Camera: Icon,
+    Radio: Icon,
+    Users: Icon,
+  }
+})
+
+vi.mock('sonner', () => ({
+  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
+}))
+
+vi.mock('@/lib/utils', () => ({
+  cn: (...args: (string | undefined | false | null)[]) => args.filter(Boolean).join(' '),
+}))
+
+vi.mock('@/lib/studio/use-reduced-motion', () => ({
+  useReducedMotion: () => false,
+}))
+
+vi.mock('../ui/shared-primitives', () => ({
+  ToggleButtonGroup: ({ children }: { children?: ReactNode; label?: string }) => (
+    <div data-testid="toggle-group">{children}</div>
+  ),
+}))
+
+const mockSetTypeFilter = vi.fn()
+const mockSetSortBy = vi.fn()
+const mockSetSortDir = vi.fn()
+const mockStartEdit = vi.fn()
+const mockStartNew = vi.fn()
+const mockSetSearchQuery = vi.fn()
+
+const mockEntities = [
+  {
+    id: 'ent-1',
+    name: 'Alpha Concept',
+    type: 'concept' as const,
+    description: 'First concept',
+    content: '',
+    tags: ['alpha'],
+    createdAt: '2025-01-01T00:00:00Z',
+    updatedAt: '2025-06-15T00:00:00Z',
+    links: [],
+  },
+  {
+    id: 'ent-2',
+    name: 'Beta Note',
+    type: 'note' as const,
+    description: 'A note',
+    content: '',
+    tags: ['beta', 'gamma'],
+    createdAt: '2025-02-01T00:00:00Z',
+    updatedAt: '2025-07-01T00:00:00Z',
+    links: [],
+  },
+]
+
+let currentTypeFilter = 'all'
+let currentSortBy = 'updated'
+let currentSortDir = 'asc'
+let currentSearchQuery = ''
+let currentEntities = mockEntities
+let filteredEntities = mockEntities
+
+vi.mock('@/lib/studio/store', () => ({
+  useStudioStore: (selector: (s: Record<string, unknown>) => unknown) =>
+    selector({
+      entities: currentEntities,
+      typeFilter: currentTypeFilter,
+      setTypeFilter: mockSetTypeFilter,
+      sortBy: currentSortBy,
+      setSortBy: mockSetSortBy,
+      sortDir: currentSortDir,
+      setSortDir: mockSetSortDir,
+      startEdit: mockStartEdit,
+      startNew: mockStartNew,
+      searchQuery: currentSearchQuery,
+      setSearchQuery: mockSetSearchQuery,
+      rightPanelOpen: false,
+    }),
+  useFilteredEntities: () => filteredEntities,
+}))
+
+import { LibraryView } from './library-view'
+
+describe('LibraryView', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    currentEntities = mockEntities
+    filteredEntities = mockEntities
+    currentTypeFilter = 'all'
+    currentSortBy = 'updated'
+    currentSortDir = 'asc'
+    currentSearchQuery = ''
+  })
+
+  it('renders empty state when no entities', () => {
+    currentEntities = []
+    filteredEntities = []
+    render(<LibraryView />)
+    expect(screen.getByText('No entities yet')).toBeDefined()
+    expect(screen.getByText(/Create your first entity/)).toBeDefined()
+  })
+
+  it('renders entity cards in grid view', () => {
+    render(<LibraryView />)
+    expect(screen.getByText('Alpha Concept')).toBeDefined()
+    expect(screen.getByText('Beta Note')).toBeDefined()
+    expect(screen.getByText('First concept')).toBeDefined()
+    expect(screen.getByText('A note')).toBeDefined()
+  })
+
+  it('search input exists and has correct placeholder', () => {
+    render(<LibraryView />)
+    expect(screen.getByPlaceholderText('Filter by name, description, or tag…')).toBeDefined()
+  })
+
+  it('type filter buttons exist with correct labels', () => {
+    render(<LibraryView />)
+    expect(screen.getByText('All')).toBeDefined()
+    expect(screen.getByText('Notes')).toBeDefined()
+    expect(screen.getByText('Concepts')).toBeDefined()
+    expect(screen.getByText('People')).toBeDefined()
+    expect(screen.getByText('Projects')).toBeDefined()
+  })
+
+  it('sort controls exist', () => {
+    render(<LibraryView />)
+    expect(screen.getByLabelText('Sort by')).toBeDefined()
+    expect(screen.getByLabelText(/Sort (ascending|descending)/)).toBeDefined()
+  })
+
+  it('new button exists', () => {
+    render(<LibraryView />)
+    expect(screen.getByText('New')).toBeDefined()
+  })
+
+  it('clicking entity card calls startEdit', () => {
+    render(<LibraryView />)
+    const card = screen.getByText('Alpha Concept')
+    card.closest('button')?.click()
+    expect(mockStartEdit).toHaveBeenCalledWith('ent-1')
+  })
+
+  it('no-matches state shows when filters exclude all', () => {
+    filteredEntities = []
+    render(<LibraryView />)
+    expect(screen.getByText('No matches found')).toBeDefined()
+    expect(screen.getByText(/Try adjusting your search terms or filters/)).toBeDefined()
+  })
+
+  it('displays showing count', () => {
+    render(<LibraryView />)
+    expect(screen.getAllByText(/Showing 2 entit(y|ies)/).length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('shows singular entity count', () => {
+    filteredEntities = [mockEntities[0]]
+    render(<LibraryView />)
+    expect(screen.getAllByText(/Showing 1 entity/).length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('search input has correct aria-label', () => {
+    render(<LibraryView />)
+    expect(screen.getByLabelText('Search library')).toBeDefined()
+  })
+})

@@ -1,0 +1,196 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { ReactNode } from 'react'
+import { render, screen } from '@testing-library/react'
+
+vi.mock('framer-motion', () => ({
+  motion: {
+    div: ({ children, initial: _i, animate: _a, transition: _t, ...props }: { children?: ReactNode; [key: string]: unknown }) => (
+      <div {...(props as React.HTMLAttributes<HTMLDivElement>)}>{children}</div>
+    ),
+  },
+  AnimatePresence: ({ children }: { children?: ReactNode }) => <>{children}</>,
+}))
+
+vi.mock('lucide-react', () => {
+  const Icon = ({ className }: { className?: string }) => (
+    <span data-testid="icon" className={className} />
+  )
+  return {
+    Send: Icon,
+    Sparkles: Icon,
+    Trash2: Icon,
+    Bot: Icon,
+    User: Icon,
+    Quote: Icon,
+    ChevronDown: Icon,
+    MessageSquare: Icon,
+  }
+})
+
+vi.mock('sonner', () => ({
+  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
+}))
+
+vi.mock('react-markdown', () => ({
+  default: ({ children }: { children: string }) => <div data-testid="markdown">{children}</div>,
+}))
+
+vi.mock('@/lib/utils', () => ({
+  cn: (...args: (string | undefined | false | null)[]) => args.filter(Boolean).join(' '),
+}))
+
+vi.mock('@/lib/studio/use-reduced-motion', () => ({
+  useReducedMotion: () => false,
+}))
+
+vi.mock('../voice-input', () => ({
+  VoiceInput: () => <div data-testid="voice-input" />,
+}))
+
+const mockSendMessage = vi.fn()
+const mockClearChat = vi.fn()
+const mockSetView = vi.fn()
+const mockSelectEntity = vi.fn()
+
+let currentChat: Array<Record<string, unknown>> = []
+let currentChatLoading = false
+
+vi.mock('@/lib/studio/store', () => ({
+  useStudioStore: (selector: (s: Record<string, unknown>) => unknown) =>
+    selector({
+      chat: currentChat,
+      chatLoading: currentChatLoading,
+      sendMessage: mockSendMessage,
+      clearChat: mockClearChat,
+      setView: mockSetView,
+      selectEntity: mockSelectEntity,
+    }),
+}))
+
+import { ChatView } from './chat-view'
+
+describe('ChatView', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    currentChat = []
+    currentChatLoading = false
+  })
+
+  it('renders empty state when no messages', () => {
+    render(<ChatView />)
+    expect(screen.getByText('Ask your library')).toBeDefined()
+  })
+
+  it('shows suggestion chips in empty state', () => {
+    render(<ChatView />)
+    expect(screen.getAllByText('Summarize recent projects').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Key people').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('What is TRIZ useful for?').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('suggestion chip calls sendMessage', () => {
+    render(<ChatView />)
+    screen.getAllByText('Summarize recent projects')[0].click()
+    expect(mockSendMessage).toHaveBeenCalledWith('Give me a summary of the projects in my library.')
+  })
+
+  it('input textarea exists with maxLength 2000', () => {
+    render(<ChatView />)
+    const textarea = screen.getByPlaceholderText(/Ask about your library/)
+    expect(textarea).toBeDefined()
+    expect(textarea).toHaveAttribute('maxLength', '2000')
+  })
+
+  it('send button exists', () => {
+    render(<ChatView />)
+    expect(screen.getByLabelText('Send message')).toBeDefined()
+  })
+
+  it('clear chat button exists', () => {
+    render(<ChatView />)
+    expect(screen.getByText('Clear')).toBeDefined()
+  })
+
+  it('clear chat button is disabled when no messages', () => {
+    render(<ChatView />)
+    const clearBtn = screen.getByText('Clear').closest('button')!
+    expect(clearBtn).toHaveProperty('disabled', true)
+  })
+
+  it('clear button calls clearChat when clicked with messages', () => {
+    currentChat = [
+      {
+        id: 'msg-1',
+        role: 'user',
+        content: 'Hello',
+        timestamp: new Date().toISOString(),
+      },
+    ]
+    render(<ChatView />)
+    const clearBtn = screen.getByText('Clear').closest('button')!
+    clearBtn.click()
+    expect(mockClearChat).toHaveBeenCalled()
+  })
+
+  it('renders user and assistant messages', () => {
+    currentChat = [
+      {
+        id: 'msg-1',
+        role: 'user',
+        content: 'Hello there',
+        timestamp: new Date().toISOString(),
+      },
+      {
+        id: 'msg-2',
+        role: 'assistant',
+        content: 'Hi! How can I help?',
+        timestamp: new Date().toISOString(),
+      },
+    ]
+    render(<ChatView />)
+    expect(screen.getByText('Hello there')).toBeDefined()
+    expect(screen.getByText('Hi! How can I help?')).toBeDefined()
+  })
+
+  it('assistant messages render via Markdown', () => {
+    currentChat = [
+      {
+        id: 'msg-1',
+        role: 'assistant',
+        content: 'Some **bold** text',
+        timestamp: new Date().toISOString(),
+      },
+    ]
+    render(<ChatView />)
+    expect(screen.getByTestId('markdown')).toBeDefined()
+  })
+
+  it('shows TypingIndicator when chatLoading is true', () => {
+    currentChatLoading = true
+    render(<ChatView />)
+    expect(screen.getByLabelText('Assistant is typing')).toBeDefined()
+  })
+
+  it('hides TypingIndicator when chatLoading is false', () => {
+    currentChatLoading = false
+    render(<ChatView />)
+    expect(screen.queryByLabelText('Assistant is typing')).toBeNull()
+  })
+
+  it('character counter shows above 1800 chars', () => {
+    render(<ChatView />)
+    const textarea = screen.getByPlaceholderText(/Ask about your library/)
+    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+      window.HTMLTextAreaElement.prototype,
+      'value',
+    )!.set!
+    nativeInputValueSetter.call(textarea, 'a'.repeat(1850))
+    textarea.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(screen.getByText('1850/2000')).toBeDefined()
+  })
+
+  it('shows local search active indicator', () => {
+    render(<ChatView />)
+    expect(screen.getByText('Local search active')).toBeDefined()
+  })
+})
