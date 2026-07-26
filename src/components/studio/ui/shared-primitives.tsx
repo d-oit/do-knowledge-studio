@@ -338,6 +338,21 @@ const VARIANT_CONTAINER: Record<OverlayVariant, string> = {
     'h-full w-full overflow-y-auto',
 }
 
+function getVariantClasses(variant: OverlayVariant): string {
+  switch (variant) {
+    case 'center':
+      return VARIANT_CONTAINER.center
+    case 'sheet-bottom':
+      return VARIANT_CONTAINER['sheet-bottom']
+    case 'sheet-left':
+      return VARIANT_CONTAINER['sheet-left']
+    case 'fullscreen':
+      return VARIANT_CONTAINER.fullscreen
+    default:
+      return VARIANT_CONTAINER.center
+  }
+}
+
 export function Overlay({
   open,
   onClose,
@@ -449,7 +464,7 @@ export function Overlay({
         onKeyDown={handleKeyDown}
         className={cn(
           'animate-in fade-in duration-150',
-          VARIANT_CONTAINER[variant],
+          getVariantClasses(variant),
           variant === 'center' && 'slide-in-from-bottom-4',
           variant === 'sheet-bottom' && 'slide-in-from-bottom-full',
           variant === 'sheet-left' && 'slide-in-from-left-full',

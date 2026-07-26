@@ -235,7 +235,7 @@ export function ShortcutsDialog() {
     <>
       <Overlay
         open={open}
-        onClose={() => setOpen(false)}
+        onClose={() => { setOpen(false) }}
         aria-label="Keyboard shortcuts"
         variant="center"
         closeOnEscape={false}
