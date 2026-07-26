@@ -21,13 +21,13 @@ Current state: 550 tests (492 unit + 58 E2E), 22/22 CI checks passing, 0 lint wa
 
 | ID | Goal | Priority | Gap # | Status |
 |----|------|----------|-------|--------|
-| G1 | export-view.tsx under 500 LOC | **P0** | #1 | OPEN |
-| G2 | ARCHITECTURE.md reflects actual Zustand + localStorage architecture | **P1** | #2 | OPEN |
-| G3 | Coverage thresholds match actual values | **P1** | #3 | OPEN |
-| G4 | E2E tests run in CI | **P1** | #4 | OPEN |
-| G5 | View component unit tests (export, ai-harness, sync, editor, mindmap, graph) | **P2** | #5 | OPEN |
-| G6 | schema.ts has comprehensive Zod validation tests | **P2** | #6 | OPEN |
-| G7 | Sync module tests (discovery, presence, cursors) | **P2** | #7 | OPEN |
+| G1 | export-view.tsx under 500 LOC | **P0** | #1 | Done |
+| G2 | ARCHITECTURE.md reflects actual Zustand + localStorage architecture | **P1** | #2 | Done |
+| G3 | Coverage thresholds match actual values | **P1** | #3 | Done |
+| G4 | E2E tests run in CI | **P1** | #4 | Done |
+| G5 | View component unit tests (export, ai-harness, sync, editor, mindmap, graph) | **P2** | #5 | Done |
+| G6 | schema.ts has comprehensive Zod validation tests | **P2** | #6 | Done |
+| G7 | Sync module tests (discovery, presence, cursors) | **P2** | #7 | Done |
 
 ## Goal Dependency Graph
 

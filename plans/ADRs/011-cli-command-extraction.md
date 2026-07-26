@@ -1,7 +1,7 @@
 # ADR 011: CLI Command Module Extraction
 
 ## Status
-PROPOSED (2026-06-16) — Implementation tracked in `plans/040-goap-export-pipeline-and-pr-cleanup-2026-06-16.md`
+Superseded by ADR 018 (Next.js Architecture Baseline). The CLI was part of the old Vite SPA architecture and was removed during the Next.js migration. The `cli/` directory no longer exists in the project.
 
 ## Context
 `cli/index.ts` is a monolithic Commander.js program that currently contains:

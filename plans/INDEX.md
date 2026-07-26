@@ -5,7 +5,17 @@
 
 ## Current Status
 
-Plan 082 implements versioned hydration migrations (ADR 028), fixes ADR 001 status, completes bundle size analysis, and improves test coverage from 47% to 52%.
+Plan 083 improves test coverage from 52.5% to 57% lines, fixes stale plan statuses, marks ADR 011 as superseded, and raises vitest thresholds.
+
+### Plan 083 — GOAP: Coverage to 55%, Plan Status Fixes, ADR 011 Cleanup (2026-07-26)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Fix stale plan statuses (082, 078, 079) | Done | Plans 082, 078, 079 status fields corrected |
+| W1 | Mark ADR 011 as Superseded | Done | plans/ADRs/011-cli-command-extraction.md updated |
+| W2 | Add tests for 9 untested components/hooks | Done | 9 new test files, 109 new tests |
+| W3 | Raise vitest coverage thresholds | Done | lines 45→53, branches 37→45, functions 37→42, statements 45→53 |
+| W4 | Quality gate verification | Done | Lint, typecheck, test, build all pass |
 
 ### Plan 082 — GOAP: Address Missing Implementations from plans/ Analysis (2026-07-26)
 
@@ -165,21 +175,21 @@ Plan 082 implements versioned hydration migrations (ADR 028), fixes ADR 001 stat
 
 ## Key Metrics (2026-07-26)
 
-| Metric | Before (081) | After (082) |
+| Metric | Before (082) | After (083) |
 |--------|-------------|-------------|
-| Unit test files | 54 | 60 |
-| Unit tests | 732 | 923 |
+| Unit test files | 60 | 69 |
+| Unit tests | 923 | 1037 |
 | E2E test files | 8 | 8 |
 | E2E tests | 58 | 58 |
-| Total tests | 790 | 981 |
+| Total tests | 981 | 1095 |
 | CI checks | 22/22 | 22/22 passing |
 | LOC violations | 0 | 0 |
 | Lint warnings | 0 | 0 |
 | Type errors | 0 | 0 |
-| Coverage (lines) | 46.54% | 52.56% |
-| Coverage (branches) | 38.9% | 45.13% |
-| Coverage (functions) | 38.24% | 41.46% |
-| Coverage (statements) | 46.7% | 52.66% |
+| Coverage (lines) | 52.56% | 57.04% |
+| Coverage (branches) | 45.13% | 50.02% |
+| Coverage (functions) | 41.46% | 45.73% |
+| Coverage (statements) | 52.66% | 57.50% |
 
 ## ADR Reconciliation (2026-07-25)
 
@@ -198,3 +208,4 @@ Plan 082 implements versioned hydration migrations (ADR 028), fixes ADR 001 stat
 | 022 Retrieval Engine | Implemented | BM25 in retrieval.ts |
 | 023 Draft Persistence | Implemented | Versioned localStorage drafts |
 | 024 Feedback Policy | Implemented | Inline status, no routine toasts |
+| 011 CLI Extraction | Superseded by ADR 018 | CLI removed during Next.js migration |
