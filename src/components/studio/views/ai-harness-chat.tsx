@@ -81,7 +81,7 @@ export function AiHarnessChatPanel({
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault()
-                handleSend()
+                void handleSend()
               }
             }}
             placeholder="Ask the AI agent…"
@@ -91,7 +91,7 @@ export function AiHarnessChatPanel({
             className="max-h-24 flex-1 resize-none bg-transparent px-2 py-1 text-[13px] text-ink placeholder:text-ink-faint focus:outline-none disabled:opacity-50"
           />
           <button
-            onClick={handleSend}
+            onClick={() => { void handleSend() }}
             disabled={!input.trim() || isLoading}
             className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:opacity-40 press-scale focus-ring"
             aria-label="Send"
