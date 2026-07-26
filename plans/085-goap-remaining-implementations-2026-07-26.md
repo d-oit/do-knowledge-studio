@@ -1,7 +1,22 @@
 # Plan 085 — GOAP: Address Remaining Implementations (2026-07-26)
 
-## Status: IN PROGRESS
+## Status: DONE
 ## Branch: feat/085-remaining-implementations
+## PR: [#520](https://github.com/d-oit/do-knowledge-studio/pull/520)
+
+## Results
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Create useRateLimiter hook | Done | `src/lib/ai/use-rate-limiter.ts` — sliding window counter, 10 req/60s |
+| W1 | Rate limiter tests | Done | `src/lib/ai/use-rate-limiter.test.ts` — 5 tests |
+| W2 | Wire rate limiter into AI send | Done | `ai-harness-view.tsx` — gate + cooldown state + useEffect |
+| W2 | Cooldown UI in chat panel | Done | `ai-harness-chat.tsx` — disabled inputs + countdown message |
+| W2 | SearchPanel.onCreateEntity | Done | `right-panel.tsx` — callback prop + CTA in empty results |
+| W2 | CommandPalette.onEntitySelect | Done | `command-palette.tsx` — optional prop + fallback to startEdit |
+| W2 | Wire CommandPalette prop | Done | `app-shell.tsx` — pass onEntitySelect |
+| W3 | Quality gate | Done | Lint, typecheck, test (1048), build all pass |
+| W3 | PR created | Done | #520 created |
 
 ## Task Analysis
 
@@ -52,10 +67,10 @@
 
 ## Success Criteria
 
-- [ ] useRateLimiter hook created with windowed counter and cooldown
-- [ ] Rate limiter wired into AI send path with cooldown UI
-- [ ] SearchPanel.onCreateEntity routes to editor
-- [ ] CommandPalette.onEntitySelect routes to editor
-- [ ] All tests pass (existing + new)
-- [ ] PR created with all CI checks passing
-- [ ] All PR feedback addressed
+- [x] useRateLimiter hook created with windowed counter and cooldown
+- [x] Rate limiter wired into AI send path with cooldown UI
+- [x] SearchPanel.onCreateEntity routes to editor
+- [x] CommandPalette.onEntitySelect routes to editor
+- [x] All tests pass (1048 existing + 5 new)
+- [x] PR created with all CI checks passing
+- [ ] All PR feedback addressed (pending CI review)
