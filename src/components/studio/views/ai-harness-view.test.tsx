@@ -66,6 +66,7 @@ vi.mock('@/lib/ai', () => ({
   sendChatStream: vi.fn(),
   fetchOllamaModels: vi.fn(() => Promise.resolve([])),
   buildMessages: vi.fn(() => []),
+  useRateLimiter: () => ({ canRequest: () => ({ allowed: true, count: 0, limit: 10 }) }),
   OPENROUTER_ROUTERS: [{ slug: 'openrouter/auto', display_name: 'Auto Router' }],
   OPENROUTER_MODELS: [{ slug: 'openai/gpt-4o-mini', display_name: 'GPT-4o Mini' }],
   OPENROUTER_DEFAULT_TARGETS: [

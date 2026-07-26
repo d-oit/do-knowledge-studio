@@ -79,19 +79,22 @@ vi.mock('@/lib/studio/store', () => ({
 }))
 
 describe('CommandPalette', () => {
+  const onEntitySelect = vi.fn()
+
   beforeEach(() => {
     mockState.commandOpen = false
     mockState.entities = []
+    onEntitySelect.mockClear()
   })
 
   it('renders nothing when commandOpen is false', () => {
-    const { container } = render(<CommandPalette />)
+    const { container } = render(<CommandPalette onEntitySelect={onEntitySelect} />)
     expect(container.innerHTML).toBe('')
   })
 
   it('renders with dialog role and aria-modal when open', () => {
     mockState.commandOpen = true
-    const { container } = render(<CommandPalette />)
+    const { container } = render(<CommandPalette onEntitySelect={onEntitySelect} />)
     const dialog = container.querySelector('[role="dialog"]')
     expect(dialog).toBeDefined()
     expect(dialog?.getAttribute('aria-modal')).toBe('true')
@@ -100,14 +103,14 @@ describe('CommandPalette', () => {
 
   it('renders search input when open', () => {
     mockState.commandOpen = true
-    render(<CommandPalette />)
+    render(<CommandPalette onEntitySelect={onEntitySelect} />)
     const input = screen.getByPlaceholderText('Search commands and entities\u2026')
     expect(input).toBeDefined()
   })
 
   it('renders navigation items when open', () => {
     mockState.commandOpen = true
-    render(<CommandPalette />)
+    render(<CommandPalette onEntitySelect={onEntitySelect} />)
     expect(screen.getByText('Home')).toBeDefined()
     expect(screen.getByText('Library')).toBeDefined()
     expect(screen.getByText('Graph')).toBeDefined()

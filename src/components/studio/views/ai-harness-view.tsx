@@ -19,7 +19,7 @@ import { OLLAMA_DEFAULT_MODELS, DEFAULT_OLLAMA_BASE_URL } from '@/lib/ai/types'
 import { AiHarnessSettingsPanel } from './ai-harness-settings-panel'
 import { AiHarnessChatPanel } from './ai-harness-chat'
 import { PROVIDERS } from './ai-harness-settings'
-import { useRateLimiter } from '@/lib/ai/use-rate-limiter'
+import { useRateLimiter } from '@/lib/ai'
 
 export function AIHarnessView() {
   const entities = useStudioStore((s) => s.entities)
@@ -108,12 +108,11 @@ export function AIHarnessView() {
 
     const decision = canRequest()
     if (!decision.allowed) {
-      const retrySec = decision.retryAfterMs ? Math.ceil(decision.retryAfterMs / 1000) : 5
       setMessages((m) => [
         ...m,
         {
           role: 'assistant',
-          content: `Rate limit reached (${decision.count}/${decision.limit}). Please wait ${retrySec}s before sending again.`,
+          content: "I\u2019m being rate-limited \u2014 please slow down and try again in a few seconds.",
         },
       ])
       setCooldownMs(decision.retryAfterMs ?? 5000)

@@ -30,7 +30,7 @@ interface CmdItem {
 }
 
 interface CommandPaletteProps {
-  onEntitySelect?: (entityId: string) => void
+  onEntitySelect: (entityId: string) => void
 }
 
 export function CommandPalette({ onEntitySelect }: CommandPaletteProps) {
@@ -39,7 +39,6 @@ export function CommandPalette({ onEntitySelect }: CommandPaletteProps) {
   const setView = useStudioStore((s) => s.setView)
   const startNew = useStudioStore((s) => s.startNew)
   const entities = useStudioStore((s) => s.entities)
-  const startEdit = useStudioStore((s) => s.startEdit)
   const [query, setQuery] = React.useState('')
 
   const close = React.useCallback(() => {
@@ -102,11 +101,7 @@ export function CommandPalette({ onEntitySelect }: CommandPaletteProps) {
       hint: ENTITY_TYPE_META[e.type as EntityType].label,
       icon: FileText,
       onSelect: () => {
-        if (onEntitySelect) {
-          onEntitySelect(e.id)
-        } else {
-          startEdit(e.id)
-        }
+        onEntitySelect(e.id)
         close()
       },
       group: 'Library',

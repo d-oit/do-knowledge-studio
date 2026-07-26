@@ -1,7 +1,7 @@
 # ADR 017 — Chat Unification Strategy
 
 **Date**: 2026-06-22
-**Status**: Accepted
+**Status**: Implemented (PR #520, 2026-07-26)
 **Supersedes**: partial #227
 
 ## Context
@@ -79,3 +79,11 @@ again in a few seconds." No network call is made.
    privacy boundary violation — Ask is local-only by design.
 3. **Make the rate-limit silent.** Rejected: opaque failures
    confuse users and bury real issues.
+
+## Implementation Notes (PR #520)
+
+- `useRateLimiter` created at `src/lib/ai/use-rate-limiter.ts` with sliding window counter (10 req/60s)
+- `onEntitySelect` is required on `CommandPalette` as specified
+- `onCreateEntity` callback routes to editor via `startNew()` — entity name pre-fill is a follow-up (requires store support for named entity creation)
+- Rate limiter wired into `ai-harness-view.tsx` handleSend with cooldown UI
+- Cooldown countdown displayed in `ai-harness-chat.tsx` with disabled inputs during cooldown

@@ -4,7 +4,7 @@ import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
 import { ENTITY_TYPE_META } from '@/lib/studio/types'
 import { search, type SearchResult } from '@/lib/search/retrieval'
 import { Search, X, Sparkles, FileText, Quote, ArrowRight } from 'lucide-react'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Overlay } from '@/components/studio/ui/shared-primitives'
 
@@ -14,10 +14,6 @@ export function RightPanel() {
   const chat = useStudioStore((s) => s.chat)
   const startNew = useStudioStore((s) => s.startNew)
 
-  const handleCreateEntity = useCallback(() => {
-    startNew()
-  }, [startNew])
-
   if (!rightPanelOpen) return null
 
   // Contextual content per view
@@ -26,11 +22,11 @@ export function RightPanel() {
   }
   if (currentView === 'chat' || currentView === 'ai') {
     const hasCitations = chat.some((m) => m.citations && m.citations.length > 0)
-    if (!hasCitations) return <SearchPanel onCreateEntity={handleCreateEntity} />
+    if (!hasCitations) return <SearchPanel onCreateEntity={() => startNew()} />
     return <CitationsPanel />
   }
 
-  return <SearchPanel onCreateEntity={handleCreateEntity} />
+  return <SearchPanel onCreateEntity={() => startNew()} />
 }
 
 function SearchPanel({ onCreateEntity }: { onCreateEntity?: (name: string) => void }) {
