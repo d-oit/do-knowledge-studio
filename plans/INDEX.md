@@ -5,7 +5,15 @@
 
 ## Current Status
 
-Plan 083 improves test coverage from 52.5% to 57% lines, fixes stale plan statuses, marks ADR 011 as superseded, and raises vitest thresholds.
+Plan 084 addresses remaining implementation gaps: ADR 012 status correction, ADR 029 validator enhancement, and accessibility audit documentation.
+
+### Plan 084 — GOAP: Address Remaining Implementation Gaps (2026-07-26)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Update ADR 012 status to "Implemented" | Done | plans/ADRs/012-pdf-export-strategy.md updated to reflect jsPDF implementation |
+| W2 | Enhance ADR 029 validator | Done | scripts/agent-surface.py now validates broken symlinks, frontmatter, name mismatches, eval JSON, duplicate names |
+| W3 | Accessibility audit documentation | Done | plans/084-accessibility-audit-report.md created with findings and recommendations |
 
 ### Plan 083 — GOAP: Coverage to 55%, Plan Status Fixes, ADR 011 Cleanup (2026-07-26)
 
