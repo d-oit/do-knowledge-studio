@@ -301,8 +301,10 @@ export function SwitchToggle({
 }
 
 // ---------------------------------------------------------------------------
-// Overlay (Dialog)
+// Overlay (Dialog) — ADR 014
 // ---------------------------------------------------------------------------
+
+type OverlayVariant = 'center' | 'sheet-bottom' | 'sheet-left' | 'fullscreen'
 
 interface OverlayProps {
   open: boolean
@@ -311,6 +313,8 @@ interface OverlayProps {
   'aria-label'?: string
   /** ID of the element that labels the dialog */
   'aria-labelledby'?: string
+  /** Visual variant */
+  variant?: OverlayVariant
   /** Whether clicking the backdrop closes the dialog */
   closeOnBackdrop?: boolean
   /** Whether pressing Escape closes the dialog */
@@ -323,11 +327,42 @@ interface OverlayProps {
   children: React.ReactNode
 }
 
+const VARIANT_CONTAINER: Record<OverlayVariant, string> = {
+  center:
+    'm-auto max-h-[calc(100dvh-2rem)] w-[min(100%-2rem,32rem)] overflow-y-auto rounded-xl',
+  'sheet-bottom':
+    'mx-auto mt-auto max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-t-xl',
+  'sheet-left':
+    'h-dvh w-[min(86vw,340px)] overflow-y-auto',
+  fullscreen:
+    'h-full w-full overflow-y-auto',
+}
+
+function getVariantClasses(variant: OverlayVariant): string {
+  switch (variant) {
+    case 'center':
+      return VARIANT_CONTAINER.center
+    case 'sheet-bottom':
+      return VARIANT_CONTAINER['sheet-bottom']
+    case 'sheet-left':
+      return VARIANT_CONTAINER['sheet-left']
+    case 'fullscreen':
+      return VARIANT_CONTAINER.fullscreen
+    default:
+      return VARIANT_CONTAINER.center
+  }
+}
+
+// Module-level scroll lock ref-count for nested overlays
+let scrollLockCount = 0
+let savedScrollbarWidth = 0
+
 export function Overlay({
   open,
   onClose,
   'aria-label': ariaLabel,
   'aria-labelledby': ariaLabelledBy,
+  variant = 'center',
   closeOnBackdrop = true,
   closeOnEscape = true,
   trapFocus = true,
@@ -337,35 +372,47 @@ export function Overlay({
 }: OverlayProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
+  const focusableCacheRef = useRef<HTMLElement[]>([])
 
-  // Body scroll lock
+  // Body scroll lock with ref-counting for nested overlays
   useEffect(() => {
     if (open) {
-      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
-      document.body.style.overflow = 'hidden'
-      document.body.style.paddingRight = `${scrollbarWidth}px`
+      if (scrollLockCount === 0) {
+        savedScrollbarWidth = window.innerWidth - document.documentElement.clientWidth
+        document.body.style.overflow = 'hidden'
+        document.body.style.paddingRight = `${savedScrollbarWidth}px`
+      }
+      scrollLockCount++
       return () => {
-        document.body.style.overflow = ''
-        document.body.style.paddingRight = ''
+        scrollLockCount--
+        if (scrollLockCount === 0) {
+          document.body.style.overflow = ''
+          document.body.style.paddingRight = ''
+        }
       }
     }
   }, [open])
 
-  // Save and restore focus
+  // Save and restore focus; cache focusable elements on open
   useEffect(() => {
     if (open) {
       previousFocusRef.current = document.activeElement as HTMLElement
-      // Focus initialFocusRef, then first focusable, then container
       const container = containerRef.current
       if (container) {
-        const target = initialFocusRef?.current ?? container.querySelector<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        focusableCacheRef.current = Array.from(
+          container.querySelectorAll<HTMLElement>(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+          ),
         )
+        const target = initialFocusRef?.current ?? focusableCacheRef.current[0]
         ;(target ?? container).focus()
       }
-    } else if (previousFocusRef.current) {
-      previousFocusRef.current.focus()
-      previousFocusRef.current = null
+    } else {
+      focusableCacheRef.current = []
+      if (previousFocusRef.current) {
+        previousFocusRef.current.focus()
+        previousFocusRef.current = null
+      }
     }
   }, [open, initialFocusRef])
 
@@ -378,10 +425,8 @@ export function Overlay({
       }
 
       // Focus trap
-      if (trapFocus && e.key === 'Tab' && containerRef.current) {
-        const focusable = containerRef.current.querySelectorAll<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-        )
+      if (trapFocus && e.key === 'Tab') {
+        const focusable = focusableCacheRef.current
         if (focusable.length === 0) return
 
         const first = focusable[0]
@@ -417,20 +462,32 @@ export function Overlay({
 
   return (
     <div
-      ref={containerRef}
-      role="dialog"
-      aria-modal="true"
-      aria-label={ariaLabel}
-      aria-labelledby={ariaLabelledBy}
-      tabIndex={-1}
-      onKeyDown={handleKeyDown}
       onClick={handleBackdropClick}
       className={cn(
-        'fixed inset-0 z-[800] flex items-center justify-center bg-ink/30 backdrop-blur-sm',
-        className,
+        'fixed inset-0 z-[800] bg-ink/30 backdrop-blur-sm animate-in fade-in duration-150',
+        variant === 'sheet-left' && 'flex',
+        variant === 'fullscreen' && 'flex',
       )}
     >
-      {children}
+      <div
+        ref={containerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledBy}
+        tabIndex={-1}
+        onKeyDown={handleKeyDown}
+        className={cn(
+          'animate-in fade-in duration-150',
+          getVariantClasses(variant),
+          variant === 'center' && 'slide-in-from-bottom-4',
+          variant === 'sheet-bottom' && 'slide-in-from-bottom-full',
+          variant === 'sheet-left' && 'slide-in-from-left-full',
+          className,
+        )}
+      >
+        {children}
+      </div>
     </div>
   )
 }

@@ -98,7 +98,7 @@ function SearchPanel() {
             </p>
           </div>
         ) : mode === 'ranked' ? (
-          <ul className="space-y-1.5" role="list" aria-label="Ranked search results">
+          <ul className="space-y-1.5" role="group" aria-label="Ranked search results">
             {rankedResults.map((r: SearchResult) => {
               const targetId = r.type === 'entity' ? r.id : r.entityId
               const resolvedEntity = targetId ? entities.find((e) => e.id === targetId) : undefined
@@ -131,7 +131,7 @@ function SearchPanel() {
             })}
           </ul>
         ) : (
-          <ul className="space-y-1.5" role="list" aria-label="Keyword search results">
+          <ul className="space-y-1.5" role="group" aria-label="Keyword search results">
             {filtered.slice(0, 20).map((e) => {
               const meta = ENTITY_TYPE_META[e.type]
               return (

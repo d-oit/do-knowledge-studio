@@ -31,4 +31,4 @@ Build a local-first, structured knowledge engine that empowers users to capture,
 ## Remaining Work
 
 - Full accessibility audit: axe-core scanning, screen reader verification, 200% zoom, 400% reflow (Plan 071 exit criterion, partial progress in Plans 073–076)
-- Coverage target 50% (incremental, current: ~41% lines)
+- Coverage target 55% (incremental, current: ~47% lines)

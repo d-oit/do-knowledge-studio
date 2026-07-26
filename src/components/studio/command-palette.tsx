@@ -16,6 +16,7 @@ import {
   CornerDownLeft,
 } from 'lucide-react'
 import { useStudioStore } from '@/lib/studio/store'
+import { Overlay } from '@/components/studio/ui/shared-primitives'
 import type { ViewId, EntityType } from '@/lib/studio/types'
 import { ENTITY_TYPE_META } from '@/lib/studio/types'
 
@@ -48,13 +49,12 @@ export function CommandPalette() {
         e.preventDefault()
         setCommandOpen(!commandOpen)
       }
-      if (e.key === 'Escape' && commandOpen) close()
     }
     window.addEventListener('keydown', handler)
     return () => {
       window.removeEventListener('keydown', handler)
     }
-  }, [commandOpen, setCommandOpen, close])
+  }, [commandOpen, setCommandOpen])
 
   const goTo = (v: ViewId) => {
     setView(v)
@@ -116,9 +116,8 @@ export function CommandPalette() {
   if (!commandOpen) return null
 
   return (
-    <div role="dialog" aria-modal="true" aria-label="Command palette" className="fixed inset-0 z-[900] flex items-start justify-center bg-ink/30 backdrop-blur-sm animate-in fade-in duration-150">
+    <Overlay open={commandOpen} onClose={close} aria-label="Command palette" variant="center" className="mt-[12vh] w-[640px] max-w-[92vw] overflow-hidden rounded-xl border border-border bg-popover shadow-2xl">
       <CommandPrimitive
-        className="mt-[12vh] w-[640px] max-w-[92vw] overflow-hidden rounded-xl border border-border bg-popover shadow-2xl"
         loop
         label="Command palette"
         shouldFilter={false}
@@ -174,6 +173,6 @@ export function CommandPalette() {
           <span className="font-mono">{allItems.length} results</span>
         </div>
       </CommandPrimitive>
-    </div>
+    </Overlay>
   )
 }

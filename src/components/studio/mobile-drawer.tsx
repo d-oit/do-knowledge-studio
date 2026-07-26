@@ -1,14 +1,13 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback, type RefObject } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { useEffect, useRef, useState, type RefObject } from 'react'
+import { Overlay } from '@/components/studio/ui/shared-primitives'
 import { X, Search, Sun, Moon, FileText } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
 import { ENTITY_TYPE_META, type Entity } from '@/lib/studio/types'
 import { NAV_GROUPS } from './sidebar'
 import { cn } from '@/lib/utils'
-import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { search } from '@/lib/search/retrieval'
 
 /**
@@ -31,24 +30,7 @@ export function MobileDrawer() {
   const setOpen = useStudioStore((s) => s.setMobileDrawerOpen)
   const view = useStudioStore((s) => s.mobilePanelView)
   const setView = useStudioStore((s) => s.setMobilePanelView)
-  const reducedMotion = useReducedMotion()
-
-  const panelRef = useRef<HTMLDivElement>(null)
   const closeBtnRef = useRef<HTMLButtonElement>(null)
-
-  // Escape to close — only attached while open
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        e.stopPropagation()
-        setOpen(false)
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => { window.removeEventListener('keydown', onKey) }
-  }, [open, setOpen])
 
   // Auto-close when resizing up to desktop so the drawer never overlaps the
   // desktop sidebar.
@@ -62,96 +44,28 @@ export function MobileDrawer() {
     return () => { mql.removeEventListener('change', onChange) }
   }, [open, setOpen])
 
-  // Focus the close button when the drawer opens (first interactive element)
-  useEffect(() => {
-    if (!open) return
-    const t = window.setTimeout(() => {
-      closeBtnRef.current?.focus()
-    }, 60)
-    return () => { window.clearTimeout(t) }
-  }, [open])
-
-  // Simple focus trap — Tab / Shift+Tab cycles within the panel
-  const handleTabKey = useCallback(
-    (e: KeyboardEvent) => {
-      const panel = panelRef.current
-      if (!panel) return
-      const focusable = panel.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])',
-      )
-      if (focusable.length === 0) return
-      const first = focusable[0]
-      const last = focusable[focusable.length - 1]
-      const active = document.activeElement as HTMLElement | null
-      if (e.shiftKey) {
-        if (active === first || !panel.contains(active)) {
-          e.preventDefault()
-          last.focus()
-        }
-      } else {
-        if (active === last) {
-          e.preventDefault()
-          first.focus()
-        }
-      }
-    },
-    [],
-  )
-
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Tab') handleTabKey(e)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => { window.removeEventListener('keydown', onKey) }
-  }, [open, handleTabKey])
-
   return (
-    <AnimatePresence>
-      {open && (
-        <>
-          {/* Backdrop — fade in, tap to close */}
-          <motion.div
-            key="mobile-drawer-backdrop"
-            initial={reducedMotion ? false : { opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={reducedMotion ? { duration: 0 } : { duration: 0.2, ease: 'easeOut' }}
-            className="fixed inset-0 z-[80] bg-ink/40 backdrop-blur-sm lg:hidden"
-            onClick={() => setOpen(false)}
-            aria-hidden
-          />
+    <Overlay
+      open={open}
+      onClose={() => setOpen(false)}
+      aria-label="Navigation and search"
+      variant="sheet-left"
+      initialFocusRef={closeBtnRef}
+      className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-lifted lg:hidden"
+    >
+      <DrawerHeader closeBtnRef={closeBtnRef} onClose={() => setOpen(false)} />
+      <TabSwitcher view={view} setView={setView} />
 
-          {/* Panel — slide in from the left */}
-          <motion.div
-            key="mobile-drawer-panel"
-            ref={panelRef}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Navigation and search"
-            initial={reducedMotion ? { x: 0 } : { x: '-100%' }}
-            animate={{ x: 0 }}
-            exit={reducedMotion ? { x: 0, opacity: 0 } : { x: '-100%' }}
-            transition={reducedMotion ? { duration: 0 } : { type: 'tween', duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
-            className="fixed inset-y-0 left-0 z-[90] flex h-dvh w-[min(86vw,340px)] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-lifted lg:hidden"
-          >
-            <DrawerHeader closeBtnRef={closeBtnRef} onClose={() => setOpen(false)} />
-            <TabSwitcher view={view} setView={setView} />
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {view === 'nav' ? (
+          <NavTab onNavigate={() => setOpen(false)} />
+        ) : (
+          <SearchTab onSelect={() => setOpen(false)} />
+        )}
+      </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto">
-              {view === 'nav' ? (
-                <NavTab onNavigate={() => setOpen(false)} />
-              ) : (
-                <SearchTab onSelect={() => setOpen(false)} />
-              )}
-            </div>
-
-            <DrawerFooter />
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+      <DrawerFooter />
+    </Overlay>
   )
 }
 
@@ -373,7 +287,7 @@ function SearchTab({ onSelect }: { onSelect: () => void }) {
             <p className="text-[12px] text-ink-mute">{emptyCopy}</p>
           </div>
         ) : (
-          <ul className="space-y-1.5">
+          <ul className="space-y-1.5" role="group" aria-label="Search results">
             {displayEntities.map((e) => {
               const meta = ENTITY_TYPE_META[e.type]
               return (

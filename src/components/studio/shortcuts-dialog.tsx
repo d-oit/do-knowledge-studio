@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Keyboard, Search } from 'lucide-react'
 import { useStudioStore } from '@/lib/studio/store'
 import type { ViewId } from '@/lib/studio/types'
+import { Overlay } from '@/components/studio/ui/shared-primitives'
 import { cn } from '@/lib/utils'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 
@@ -230,120 +231,91 @@ export function ShortcutsDialog() {
     if (!open) setFilter('')
   }, [open])
 
-  // Move focus to the close button on open. Cleanup on close.
-  React.useEffect(() => {
-    if (open) {
-      // Defer to next frame so the button is mounted.
-      const id = requestAnimationFrame(() => {
-        closeBtnRef.current?.focus()
-      })
-      return () => { cancelAnimationFrame(id) }
-    }
-  }, [open])
-
   return (
     <>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            key="shortcuts-backdrop"
-            className="fixed inset-0 z-[850] flex items-center justify-center bg-ink/30 backdrop-blur-sm"
-            initial={reducedMotion ? false : { opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={reducedMotion ? { duration: 0 } : { duration: 0.15 }}
+      <Overlay
+        open={open}
+        onClose={() => { setOpen(false) }}
+        aria-label="Keyboard shortcuts"
+        variant="center"
+        closeOnEscape={false}
+        initialFocusRef={closeBtnRef}
+        className="w-[560px] max-w-[92vw] overflow-hidden rounded-xl"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
+          <div className="flex items-center gap-2">
+            <Keyboard className="h-4 w-4 text-saffron" />
+            <h2 className="font-serif text-[15px] font-semibold text-ink">
+              Keyboard shortcuts
+            </h2>
+          </div>
+          <button
+            ref={closeBtnRef}
             onClick={() => { setOpen(false) }}
-            aria-hidden="true"
+            aria-label="Close shortcuts dialog"
+            className="rounded-md p-1.5 text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
           >
-            <motion.div
-              key="shortcuts-panel"
-              role="dialog"
-              aria-modal="true"
-              aria-label="Keyboard shortcuts"
-              initial={reducedMotion ? false : { opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.96 }}
-              transition={reducedMotion ? { duration: 0 } : { duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-[560px] max-w-[92vw] overflow-hidden rounded-xl border border-border bg-popover shadow-2xl"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
-                <div className="flex items-center gap-2">
-                  <Keyboard className="h-4 w-4 text-saffron" />
-                  <h2 className="font-serif text-[15px] font-semibold text-ink">
-                    Keyboard shortcuts
-                  </h2>
-                </div>
-                <button
-                  ref={closeBtnRef}
-                  onClick={() => { setOpen(false) }}
-                  aria-label="Close shortcuts dialog"
-                  className="rounded-md p-1.5 text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
+            <X className="h-4 w-4" />
+          </button>
+        </div>
 
-              {/* Search filter */}
-              <div className="border-b border-border px-5 py-2.5">
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-faint" />
-                  <input
-                    ref={filterInputRef}
-                    type="text"
-                    value={filter}
-                    onChange={(e) => { setFilter(e.target.value); }}
-                    placeholder="Filter shortcuts..."
-                    className="w-full rounded-md border border-border bg-background py-1.5 pl-8 pr-3 text-body-sm text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
-                    aria-label="Filter shortcuts"
-                  />
-                </div>
-              </div>
+        {/* Search filter */}
+        <div className="border-b border-border px-5 py-2.5">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-faint" />
+            <input
+              ref={filterInputRef}
+              type="text"
+              value={filter}
+              onChange={(e) => { setFilter(e.target.value); }}
+              placeholder="Filter shortcuts..."
+              className="w-full rounded-md border border-border bg-background py-1.5 pl-8 pr-3 text-body-sm text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+              aria-label="Filter shortcuts"
+            />
+          </div>
+        </div>
 
-              {/* Body — two-column grouped list */}
-              <div className="max-h-[70vh] overflow-y-auto px-5 py-4">
-                {filteredShortcuts.length === 0 ? (
-                  <p className="py-8 text-center text-body-sm text-ink-mute">
-                    No shortcuts match &quot;{filter}&quot;
-                  </p>
-                ) : (
-                  <div className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
-                    {filteredShortcuts.map((section) => (
-                      <div key={section.group}>
-                        <h3 className="mb-2 text-caption font-semibold uppercase tracking-[0.14em] text-ink-faint">
-                          {section.group}
-                        </h3>
-                        <ul className="space-y-1.5">
-                          {section.rows.map((row) => (
-                            <li
-                              key={row.keys}
-                              className="flex items-center justify-between gap-3"
-                            >
-                              <span className="text-body-sm text-ink-soft">{row.action}</span>
-                              <kbd
-                                className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-label text-ink-soft whitespace-nowrap"
-                                aria-label={row.keys}
-                              >
-                                {row.keys}
-                              </kbd>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+        {/* Body — two-column grouped list */}
+        <div className="max-h-[70vh] overflow-y-auto px-5 py-4">
+          {filteredShortcuts.length === 0 ? (
+            <p className="py-8 text-center text-body-sm text-ink-mute">
+              No shortcuts match &quot;{filter}&quot;
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
+              {filteredShortcuts.map((section) => (
+                <div key={section.group}>
+                  <h3 className="mb-2 text-caption font-semibold uppercase tracking-[0.14em] text-ink-faint">
+                    {section.group}
+                  </h3>
+                  <ul className="space-y-1.5">
+                    {section.rows.map((row) => (
+                      <li
+                        key={row.keys}
+                        className="flex items-center justify-between gap-3"
+                      >
+                        <span className="text-body-sm text-ink-soft">{row.action}</span>
+                        <kbd
+                          className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-label text-ink-soft whitespace-nowrap"
+                          aria-label={row.keys}
+                        >
+                          {row.keys}
+                        </kbd>
+                      </li>
                     ))}
-                  </div>
-                )}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
 
-                <p className="mt-5 border-t border-border pt-3 text-label leading-relaxed text-ink-faint">
-                  Tip: the <kbd className="rounded border border-border bg-muted px-1 font-mono text-caption">G</kbd>{' '}
-                  sequence waits 1 second for the next key — if you change your mind, just wait or press any other key to cancel.
-                </p>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          <p className="mt-5 border-t border-border pt-3 text-label leading-relaxed text-ink-faint">
+            Tip: the <kbd className="rounded border border-border bg-muted px-1 font-mono text-caption">G</kbd>{' '}
+            sequence waits 1 second for the next key — if you change your mind, just wait or press any other key to cancel.
+          </p>
+        </div>
+      </Overlay>
 
       {/* "g…" indicator pill — bottom-left, dismisses on navigation or timeout */}
       <AnimatePresence>

@@ -1,7 +1,7 @@
 # ADR 014: Shared Overlay/Modal Accessibility Primitive
 
 ## Status
-PARTIALLY IMPLEMENTED (2026-07-25) — Shared `<Overlay>` component created in `src/components/studio/ui/shared-primitives.tsx` with focus trap, Escape key, backdrop click, ARIA attributes, initialFocusRef, and body scroll lock. Migrated to by `export-view.tsx` (3 dialogs). Remaining: variant support (sheet-bottom, sheet-left, fullscreen), migration of other overlay surfaces (CommandPalette, MobileDrawer, SettingsWizard).
+IMPLEMENTED (2026-07-26) — Shared `<Overlay>` component in `src/components/studio/ui/shared-primitives.tsx` with focus trap, Escape key, backdrop click, ARIA attributes, initialFocusRef, body scroll lock, and 4 variants (center, sheet-bottom, sheet-left, fullscreen). Migrated: command-palette, mobile-drawer, shortcuts-dialog, import-preview-dialog, reset-confirm-dialog, encrypt-export-dialog, delete-confirm (right-panel). Search listbox semantics fixed. Dead useFocusTrap hook removed.
 
 ## Context
 The app has several overlay surfaces with **inconsistent accessibility and behavior** (verified):
@@ -25,40 +25,44 @@ Problems:
 There is duplicated logic (`useFocusTrap`, `useEscapeKey`) and missing logic (scroll lock) spread unevenly across components.
 
 ## Decision
-Introduce **one shared `<Overlay>` primitive** (plus a `useScrollLock` hook) that all modal/drawer/sheet surfaces use. It encapsulates the full accessibility contract.
+Introduce **one shared `<Overlay>` primitive** that all modal/drawer/sheet surfaces use. It encapsulates the full accessibility contract.
 
 ### API
 ```tsx
+type OverlayVariant = 'center' | 'sheet-bottom' | 'sheet-left' | 'fullscreen';
+
 interface OverlayProps {
-  isOpen: boolean;
+  open: boolean;
   onClose: () => void;
-  labelledBy?: string;          // id of the title element
-  ariaLabel?: string;           // fallback when no title element
-  variant?: 'center' | 'sheet-bottom' | 'sheet-left' | 'fullscreen';
-  initialFocusRef?: React.RefObject<HTMLElement>;
-  closeOnBackdrop?: boolean;    // default true
+  'aria-label'?: string;           // accessible label for the dialog
+  'aria-labelledby'?: string;      // id of the element that labels the dialog
+  variant?: OverlayVariant;        // default 'center'
+  closeOnBackdrop?: boolean;       // default true
+  closeOnEscape?: boolean;         // default true
+  trapFocus?: boolean;             // default true
+  initialFocusRef?: React.RefObject<HTMLElement | null>;
+  className?: string;
   children: React.ReactNode;
 }
 ```
 
 ### Accessibility contract (every overlay)
-1. Backdrop is a **non-focusable** `div` (not `role="button"`); click closes when `closeOnBackdrop`.
+1. Backdrop is a **non-focusable** `div`; click closes when `closeOnBackdrop`.
 2. Content container is `role="dialog"` `aria-modal="true"` with `aria-labelledby` or `aria-label`.
-3. **Focus trap** while open (reuse existing `useFocusTrap`).
-4. **Escape** closes (reuse existing `useEscapeKey`).
-5. **Background scroll lock** via new `useScrollLock` (set `overflow: hidden` + compensate scrollbar width, restore on close).
+3. **Focus trap** while open (inline implementation, cached on open).
+4. **Escape** closes (inline `onKeyDown` handler with `stopPropagation`).
+5. **Background scroll lock** with ref-counting for nested overlays (set `overflow: hidden` + compensate scrollbar width, restore on last overlay close).
 6. **Focus restoration** to the previously focused element on close.
-7. Responsive sizing from variant: `width: min(100% - 2rem, <max>)`, `max-height: calc(100dvh - 2rem)`, `overflow-y: auto`, `padding-bottom: env(safe-area-inset-bottom)`.
-8. Respects `prefers-reduced-motion` for enter/exit (see ADR 013).
+7. Responsive sizing from variant: center (`width: min(100%-2rem, 32rem)`), sheet-bottom (full-width, rounded-t), sheet-left (86vw/340px, h-dvh), fullscreen.
+8. `prefers-reduced-motion` handled by Tailwind `animate-in` classes (see ADR 013).
 
 ### Migration targets
 Refactor onto `<Overlay>`: mobile search overlay, `CommandPalette`, `SettingsWizard`, `EntityReviewDialog`, `MobileDrawer` (variant `sheet-left`), `SnapshotBrowserModal`, `SaveSnapshotModal`, graph mobile inspector bottom-sheet (ADR 015).
 
 ### Related semantic cleanups (G-A11Y)
-- Command-palette listbox: keep DOM focus on the input; use `aria-activedescendant` only; options not individually tabbable (`CommandPalette.tsx:400-415`).
-- Editor toolbar toggles get `aria-pressed` (`EditorToolbar.tsx:26-145`).
-- Search virtualization: fix `ul > div > li` nesting to valid `listbox`/`option` markup (`SearchPanel.tsx:316-351`).
-- Library row: prefer native `<button>` row or a single action button instead of `div role="button"` containing a nested button (`LibraryView.tsx:175-215`).
+- Search results: `role="group"` with `aria-label` for navigation lists containing buttons (not `role="listbox"` which implies selectable options).
+- Command-palette: cmdk library handles `aria-activedescendant` natively — no changes needed.
+- Editor toolbar: `aria-expanded` on Advanced toggle (action buttons, not stateful toggles).`aria-pressed` used on toggle buttons in right-panel, mobile-drawer, library-view, graph-view, triz-view, mindmap-view.
 
 ## Alternatives Considered
 - **A headless dialog library (e.g. Radix/Headless UI)**: rejected — adds a dependency; existing `useFocusTrap`/`useEscapeKey` already cover most needs; local-first/minimal-deps preference.
@@ -75,15 +79,17 @@ Refactor onto `<Overlay>`: mobile search overlay, `CommandPalette`, `SettingsWiz
 - Refactor touches many components in one wave; needs E2E coverage to avoid regressions.
 
 ## Implementation Notes
-- New files: `src/components/Overlay.tsx`, `src/hooks/useScrollLock.ts` (+ tests).
-- Reuse existing `useFocusTrap`, `useEscapeKey` hooks.
+- Implemented inline in `src/components/studio/ui/shared-primitives.tsx` (Overlay component).
+- Scroll lock uses module-level ref-counting for nested overlay support.
+- Focus trap caches focusable elements on open for performance.
 - Keep each refactored component under 500 LOC; extract sub-views if needed.
-- Verification: unit tests for focus-trap + Escape + scroll-lock; E2E that Tab cannot leave an open overlay and focus returns to the trigger on close.
+- Verification: unit tests for focus-trap + Escape + scroll-lock + variant classes; E2E that Tab cannot leave an open overlay and focus returns to the trigger on close.
 
 ## Files Affected (implementation)
-- NEW `src/components/Overlay.tsx`, `src/hooks/useScrollLock.ts`
-- `src/components/MobileDrawer.tsx`, `src/components/CommandPalette.tsx`
-- `src/features/ai/SettingsWizard.tsx`, `src/features/ai/EntityReviewDialog.tsx`
-- `src/features/graph/SnapshotBrowserModal.tsx`, `src/features/graph/SaveSnapshotModal.tsx`
-- `src/app/App.tsx` (mobile search overlay)
-- `src/features/editor/EditorToolbar.tsx`, `src/features/search/SearchPanel.tsx`, `src/features/library/LibraryView.tsx` (semantic cleanups)
+- `src/components/studio/ui/shared-primitives.tsx` — Overlay component (inline, with variants, ref-counted scroll lock, cached focus trap)
+- `src/components/studio/command-palette.tsx` — migrated to Overlay center variant
+- `src/components/studio/mobile-drawer.tsx` — migrated to Overlay sheet-left variant
+- `src/components/studio/shortcuts-dialog.tsx` — migrated to Overlay center variant
+- `src/components/studio/right-panel.tsx` — search listbox → role="group" semantics
+- `src/components/studio/ui/shared-primitives.test.tsx` — 25 Overlay tests
+- Deleted: `src/lib/a11y/use-keyboard-trap.ts`, `src/lib/a11y/use-keyboard-trap.test.ts` (dead code)
