@@ -88,7 +88,7 @@ export function AIHarnessView() {
   const selectedEngineTarget = provider === 'openrouter'
     ? OPENROUTER_DEFAULT_TARGETS.find((t) => t.slug === effectiveModel) ?? null
     : null
-  const activeProvider = PROVIDERS.find((p) => p.id === provider)!
+  const activeProvider = PROVIDERS.find((p) => p.id === provider) ?? PROVIDERS[0]
 
   const handleSend = async () => {
     if (!input.trim()) return
@@ -206,6 +206,7 @@ export function AIHarnessView() {
           <motion.div
             initial={reducedMotion ? false : { opacity: 0, x: -8 }}
             animate={reducedMotion ? undefined : { opacity: 1, x: 0 }}
+            className="lg:col-span-2"
           >
             <AiHarnessSettingsPanel
               provider={provider}
@@ -246,7 +247,6 @@ export function AIHarnessView() {
             reducedMotion={reducedMotion}
             augment={augment}
             effectiveModel={effectiveModel}
-            abortRef={abortRef}
           />
         </div>
       </div>

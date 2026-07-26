@@ -8,9 +8,6 @@ vi.mock('framer-motion', () => ({
     div: ({ children, initial: _i, animate: _a, transition: _t, ...props }: { children?: ReactNode; [key: string]: unknown }) => (
       <div {...(props as React.HTMLAttributes<HTMLDivElement>)}>{children}</div>
     ),
-    aside: ({ children, initial: _i, animate: _a, ...props }: { children?: ReactNode; [key: string]: unknown }) => (
-      <aside {...(props as React.HTMLAttributes<HTMLElement>)}>{children}</aside>
-    ),
   },
   AnimatePresence: ({ children }: { children?: ReactNode }) => <>{children}</>,
 }))
@@ -181,10 +178,11 @@ describe('AIHarnessView', () => {
     expect(screen.getByText(/AI agent ready to assist/)).toBeDefined()
   })
 
-  it('shows save button when settings open', () => {
+  it('auto-saves settings (no manual save button)', () => {
     render(<AIHarnessView />)
     act(() => { screen.getByText('Show settings').click() })
-    expect(screen.getByText('Save settings')).toBeDefined()
+    expect(screen.queryByText('Save settings')).toBeNull()
+    expect(screen.getByText('Augment with local knowledge')).toBeDefined()
   })
 
   it('shows status as Ready when not loading', () => {

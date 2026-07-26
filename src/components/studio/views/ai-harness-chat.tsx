@@ -4,7 +4,6 @@ import { Bot, User, Send, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import type { ChatMessage } from '@/lib/ai'
-import type { RefObject } from 'react'
 
 interface ChatPanelProps {
   messages: ChatMessage[]
@@ -15,7 +14,6 @@ interface ChatPanelProps {
   reducedMotion: boolean
   augment: boolean
   effectiveModel: string
-  abortRef: RefObject<AbortController | null>
 }
 
 export function AiHarnessChatPanel({

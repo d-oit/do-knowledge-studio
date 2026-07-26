@@ -11,8 +11,7 @@ import {
   RefreshCw,
   Globe,
 } from 'lucide-react'
-import { toast } from 'sonner'
-import { saveAISettings, type AIProvider } from '@/lib/studio/ai-settings'
+import { type AIProvider } from '@/lib/studio/ai-settings'
 import {
   OPENROUTER_ROUTERS,
   OPENROUTER_MODELS,
@@ -77,7 +76,7 @@ export function AiHarnessSettingsPanel({
   const activeProvider = PROVIDERS.find((p) => p.id === provider) ?? PROVIDERS[0]
 
   return (
-    <aside className="lg:col-span-2">
+    <aside>
       <div className="rounded-lg border border-border bg-card p-4">
         <h2 className="mb-4 font-serif text-[15px] font-semibold text-ink">Provider</h2>
 
@@ -95,9 +94,10 @@ export function AiHarnessSettingsPanel({
             <select
               value={provider}
               onChange={(e) => {
-                const p = e.target.value as AIProvider
-                setProvider(p)
-                const defaultModel = p === 'openrouter' ? DEFAULT_MODEL.openrouter : DEFAULT_MODEL.ollama
+                const val = e.target.value
+                if (!PROVIDERS.some((pr) => pr.id === val)) return
+                setProvider(val as AIProvider)
+                const defaultModel = val === 'openrouter' ? DEFAULT_MODEL.openrouter : DEFAULT_MODEL.ollama
                 setModel(defaultModel)
                 setCustomModel('')
               }}
@@ -230,23 +230,6 @@ export function AiHarnessSettingsPanel({
             checked={allowWebResearch}
             onToggle={() => { setAllowWebResearch(!allowWebResearch) }}
           />
-          <button
-            onClick={() => {
-              saveAISettings({
-                provider,
-                model,
-                apiKey,
-                augmentWithLocal: augment,
-                ollamaCpuOnly,
-                allowWebResearch,
-                ollamaBaseUrl,
-              })
-              toast.success('Settings saved')
-            }}
-            className="w-full rounded-md bg-primary px-3 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring min-h-[44px]"
-          >
-            Save settings
-          </button>
         </div>
       </div>
 
