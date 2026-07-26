@@ -29,9 +29,9 @@ verification evidence with new test coverage.
 
 | ID | Goal | Priority | Status |
 |----|------|----------|--------|
-| G1 | Add test files for 5 missing view components | P1 | OPEN |
-| G2 | Create PR with all Plan 078 + Plan 079 changes | P1 | OPEN |
-| G3 | All CI checks pass | P1 | OPEN |
+| G1 | Add test files for 5 missing view components | P1 | Done |
+| G2 | Create PR with all Plan 078 + Plan 079 changes | P1 | Done |
+| G3 | All CI checks pass | P1 | Done |
 
 ## Wave Structure
 

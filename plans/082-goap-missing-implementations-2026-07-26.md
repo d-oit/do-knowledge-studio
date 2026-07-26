@@ -1,7 +1,7 @@
 # Plan 082 — GOAP: Address Missing Implementations from plans/ Analysis
 
 **Date**: 2026-07-26
-**Status**: IN PROGRESS
+**Status**: DONE (verified 2026-07-26, PR #517 merged)
 **Method**: GOAP with hybrid execution
 **Orchestrator**: `goap-agent` skill with `parallel-execution`
 **Branch**: `feat/082-missing-implementations`
