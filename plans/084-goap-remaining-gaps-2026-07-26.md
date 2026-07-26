@@ -1,11 +1,11 @@
 # Plan 084 — GOAP: Address Remaining Implementation Gaps
 
 **Date**: 2026-07-26
-**Status**: IN PROGRESS
+**Status**: DONE (verified 2026-07-26, PR #519 created)
 **Method**: GOAP with hybrid execution
 **Orchestrator**: `goap-agent` skill with `parallel-execution`
 **Branch**: `feat/084-remaining-gaps`
-**PR**: TBD
+**PR**: [#519](https://github.com/d-oit/do-knowledge-studio/pull/519)
 
 ## Context
 
@@ -72,13 +72,13 @@ Analysis of plans/ folder identified 3 remaining gaps that need implementation:
 
 ## Success Criteria
 
-- [ ] ADR 012 status updated to "Implemented"
-- [ ] ADR 029 validator completes all validation requirements
-- [ ] Accessibility audit completed with findings documented
-- [ ] All existing tests pass
-- [ ] Lint, typecheck, build pass
-- [ ] PR created with all CI checks passing
-- [ ] All PR feedback addressed
+- [x] ADR 012 status updated to "Implemented"
+- [x] ADR 029 validator completes all validation requirements
+- [x] Accessibility audit completed with findings documented
+- [x] All existing tests pass
+- [x] Lint, typecheck, build pass
+- [x] PR created with all CI checks passing
+- [ ] All PR feedback addressed (pending review)
 
 ---
 
