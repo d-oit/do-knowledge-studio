@@ -148,27 +148,21 @@ describe('AIHarnessView', () => {
 
   it('shows settings panel when toggle clicked', () => {
     render(<AIHarnessView />)
-    act(() => {
-      screen.getByText('Show settings').click()
-    })
+    act(() => { screen.getByText('Show settings').click() })
     expect(screen.getByText('Hide settings')).toBeDefined()
     expect(screen.getByText('Augment with local knowledge')).toBeDefined()
   })
 
   it('provider dropdown exists in settings panel', () => {
     render(<AIHarnessView />)
-    act(() => {
-      screen.getByText('Show settings').click()
-    })
+    act(() => { screen.getByText('Show settings').click() })
     const selects = screen.getAllByRole('combobox')
     expect(selects.length).toBeGreaterThanOrEqual(1)
   })
 
   it('API key input field exists when settings open', () => {
     render(<AIHarnessView />)
-    act(() => {
-      screen.getByText('Show settings').click()
-    })
+    act(() => { screen.getByText('Show settings').click() })
     expect(screen.getByPlaceholderText('sk-or-\u2026')).toBeDefined()
   })
 
@@ -189,25 +183,19 @@ describe('AIHarnessView', () => {
 
   it('shows save button when settings open', () => {
     render(<AIHarnessView />)
-    act(() => {
-      screen.getByText('Show settings').click()
-    })
+    act(() => { screen.getByText('Show settings').click() })
     expect(screen.getByText('Save settings')).toBeDefined()
   })
 
   it('shows status as Ready when not loading', () => {
     render(<AIHarnessView />)
-    act(() => {
-      screen.getByText('Show settings').click()
-    })
+    act(() => { screen.getByText('Show settings').click() })
     expect(screen.getByText('Ready')).toBeDefined()
   })
 
   it('shows connected database field in settings', () => {
     render(<AIHarnessView />)
-    act(() => {
-      screen.getByText('Show settings').click()
-    })
+    act(() => { screen.getByText('Show settings').click() })
     expect(screen.getByText(/Connected/)).toBeDefined()
   })
 })

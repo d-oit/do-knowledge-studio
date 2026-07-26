@@ -28,19 +28,6 @@ vi.mock('lucide-react', () => {
     Camera: Icon,
     Radio: Icon,
     Users: Icon,
-    FileText: Icon,
-    Lightbulb: Icon,
-    User: Icon,
-    FolderKanban: Icon,
-    Plus: Icon,
-    Search: Icon,
-    X: Icon,
-    LayoutGrid: Icon,
-    List: Icon,
-    ArrowUpDown: Icon,
-    ArrowUp: Icon,
-    ArrowDown: Icon,
-    Clock: Icon,
   }
 })
 
