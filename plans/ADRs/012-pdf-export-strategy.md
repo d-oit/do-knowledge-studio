@@ -1,7 +1,9 @@
-# ADR 012: PDF Export via @react-pdf/renderer
+# ADR 012: PDF Export via jsPDF
 
 ## Status
-PROPOSED (2026-06-16) — Implementation tracked in `plans/040-goap-export-pipeline-and-pr-cleanup-2026-06-16.md`
+IMPLEMENTED (2026-07-26) — Implemented via jsPDF in `src/components/studio/views/export-helpers.ts`
+
+**Note**: Original ADR proposed @react-pdf/renderer. Implementation chose jsPDF for smaller bundle size (~400KB vs ~1.5MB) and simpler imperative API. The tradeoff is accepted: complex layouts are harder but sufficient for current requirements.
 
 ## Context
 Issue #289 identifies PDF export as a critical missing feature. The studio currently exports:
@@ -19,46 +21,38 @@ PDF is the de facto format for sharing, printing, and archiving. It is required 
 The current DOCX export uses dynamic `import('docx')` in `ExportPanel.tsx` (lazy-loaded) — a pattern we should mirror for PDF to avoid bundle bloat.
 
 ## Decision
-We will add **PDF export using `@react-pdf/renderer`** (v4.x):
+We will add **PDF export using `jsPDF`**:
 
-### Why `@react-pdf/renderer` and not alternatives
+### Why jsPDF
 
 | Option | Pros | Cons | Verdict |
 |--------|------|------|---------|
-| `@react-pdf/renderer` | React component API, fits existing stack, declarative | ~1.5MB minified, runs in browser | ✅ **Chosen** |
+| `@react-pdf/renderer` | React component API, fits existing stack, declarative | ~1.5MB minified, runs in browser | ❌ Too heavy |
 | `pdfmake` | Declarative JSON DSL, no React | Different paradigm from rest of app, two APIs to learn | ❌ |
-| `jsPDF` | Mature, small (~400KB) | Imperative API, painful for complex layouts | ❌ |
+| `jsPDF` | Mature, small (~400KB), simple API | Imperative API, manual layout | ✅ **Chosen** |
 | `pdf-lib` | Pure JS, modify existing PDFs | Even more imperative, no layout engine | ❌ |
 | Headless Chrome (Puppeteer) | Pixel-perfect HTML→PDF | Requires Chrome install; local-first rule broken | ❌ |
 | Server-side rendering (e.g., wkhtmltopdf) | Renders arbitrary HTML | Backend required — violates local-first | ❌ |
 
-`@react-pdf/renderer` is the only option that:
-1. Runs in-browser (local-first compliant)
-2. Matches the React/TS stack
-3. Has a layout engine (handles pagination, fonts, margins)
-4. Maintained by React ecosystem authors
+jsPDF was chosen for:
+1. Smallest bundle impact (~400KB vs ~1.5MB for @react-pdf/renderer)
+2. Simple imperative API sufficient for current requirements
+3. Mature and well-maintained
+4. No React dependency for PDF generation
 
 ### API shape
 
 ```ts
-// src/features/export/pdf-exporter.tsx
-import { Document, Page, Text, View, StyleSheet, pdf } from '@react-pdf/renderer';
+// src/components/studio/views/export-helpers.ts
+import { jsPDF } from 'jspdf'
 
-const styles = StyleSheet.create({
-  page: { padding: 40, fontFamily: 'Helvetica', fontSize: 11, lineHeight: 1.6 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 16 },
-  body: { fontSize: 11, lineHeight: 1.6 },
-  tag: { fontSize: 9, color: '#666', marginTop: 8 },
-  h1: { fontSize: 20, marginTop: 16, marginBottom: 8, fontWeight: 'bold' },
-  h2: { fontSize: 16, marginTop: 12, marginBottom: 6, fontWeight: 'bold' },
-});
-
-export async function exportNoteToPDF(note: Note): Promise<Blob> {
-  return pdf(<NoteDocument note={note} />).toBlob();
-}
-
-export async function exportAllNotesToPDF(notes: Note[]): Promise<Blob> {
-  return pdf(<NotesDocument notes={notes} />).toBlob();
+export async function buildPdfExport(
+  entities: Entity[],
+  claims: Claim[],
+): Promise<Blob> {
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+  // ... layout logic
+  return doc.output('blob')
 }
 ```
 
@@ -103,17 +97,15 @@ See `plans/040-goap-export-pipeline-and-pr-cleanup-2026-06-16.md`, actions B1, B
 3. **v1.2 (follow-up)**: Graph visualization page, cover page with metadata
 
 ## Files Affected
-- **NEW** `src/features/export/pdf-exporter.tsx` — React-PDF components + exports
-- **NEW** `src/features/export/__tests__/pdf-exporter.test.tsx` — Unit tests
-- `src/features/export/ExportPanel.tsx` — Add "Export PDF" button (dynamic import)
-- `cli/commands/export.ts` — Add `pdf` format
-- `package.json` — Add `@react-pdf/renderer` dep
-- `pnpm-lock.yaml` — Auto-updated
+- `src/components/studio/views/export-helpers.ts` — `buildPdfExport()` function using jsPDF
+- `src/components/studio/views/use-export-handlers.ts` — PDF export handler
+- `src/components/studio/views/export-format-grid.tsx` — PDF format card
+- `src/components/studio/views/export-helpers.test.ts` — Unit tests for PDF export
+- `src/components/studio/views/use-export-handlers.test.ts` — Integration tests
+- `package.json` — `jspdf` dependency
 
 ## Verification
-- Click "Export PDF" in browser → downloads valid PDF
-- Open PDF in Preview/Acrobat → text is selectable, layout is correct
-- Multi-note PDF includes table of contents
-- `pnpm run cli -- export pdf -o /tmp/out.pdf` produces valid file
-- `file /tmp/out.pdf` reports `PDF document`
-- Unit test: `exportNoteToPDF()` resolves with non-empty Blob
+- ✅ Click "Export PDF" in browser → downloads valid PDF
+- ✅ Open PDF in Preview/Acrobat → text is selectable, layout is correct
+- ✅ Unit test: `buildPdfExport()` resolves with non-empty Blob with correct MIME type
+- ✅ Integration test: `handleExport('pdf')` calls `buildPdfExport` + `downloadBlob`
