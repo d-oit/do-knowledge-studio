@@ -1,10 +1,26 @@
 # Plan 086 — GOAP: Accessibility Audit & WCAG 2.2 AA Fixes
 
 **Date**: 2026-07-26
-**Status**: IN PROGRESS
+**Status**: DONE (PR #521 created, CI pending)
 **Method**: GOAP with hybrid execution (parallel swarm within waves)
 **Orchestrator**: `goap-agent` skill with `parallel-execution`
 **Branch**: `feat/086-accessibility-audit-wcag-fixes`
+**PR**: [#521](https://github.com/d-oit/do-knowledge-studio/pull/521)
+
+## Results
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Fix mind map Tab keyboard trap | Done | `mindmap-view.tsx` — Tab exits tree, Ctrl+Tab adds child |
+| W2 | Fix color contrast | Done | `globals.css` — saffron `#c77d3a` → `#9a5c2a` (5.0:1 ratio) |
+| W2 | Fix form labels | Done | `ai-harness-settings.tsx` — Field htmlFor + React import; `shared-primitives.tsx` — SwitchToggle aria-label; `triz-view.tsx` — input aria-labels |
+| W2 | Add aria-live regions | Done | `right-panel.tsx`, `ai-harness-chat.tsx`, `sync-view.tsx`, `triz-view.tsx` |
+| W2 | Fix prefers-reduced-motion | Done | `sync-view.tsx`, `triz-view.tsx`, `offline-indicator.tsx` — useReducedMotion added |
+| W2 | Fix focus indicators | Done | `mindmap-view.tsx` — focus-ring on expand button |
+| W3 | Add contentinfo landmark | Done | `app-shell.tsx` — footer with role="contentinfo" |
+| W3 | Add validation error feedback | Done | `editor-view.tsx` — toast on empty name save |
+| W4 | Integrate axe-core | Done | `@axe-core/playwright` installed, `e2e/accessibility.spec.ts` — 9 view scans |
+| W5 | Quality gate | Done | Lint, typecheck, test (1048), build all pass |
 
 ## Context
 
