@@ -1,7 +1,7 @@
 # ADR 027 — Canonical State and P2P Synchronization Bridge
 
 **Date**: 2026-07-19  
-**Status**: Accepted  
+**Status**: Implemented  
 **Related**: ADR 018, ADR 026, Plan 071  
 **Supersedes**: ADR 026 statements that make Yjs primary or Zustand read-only
 

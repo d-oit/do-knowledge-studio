@@ -1,7 +1,6 @@
 # ADR 003: API Key Isolation from VITE_ Environment Variables
 
-## Status
-ACCEPTED (VITE_ env var references removed from LLM providers; audit script created; security model documented)
+**Status**: Implemented
 
 ## Context
 API keys for LLM providers (OpenRouter, Kilo Gateway) are currently read from `import.meta.env.VITE_OPENROUTER_API_KEY` and `import.meta.env.VITE_KILO_API_KEY`. Vite environment variables prefixed with `VITE_` are exposed to the client-side bundle at build time. If the application is deployed (even as a static site), these keys would be visible in the JavaScript bundle.

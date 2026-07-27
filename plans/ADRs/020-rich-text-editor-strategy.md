@@ -1,7 +1,7 @@
 # ADR 020 — Markdown Content and Editor Engine
 
 **Date**: 2026-07-12
-**Status**: Accepted for implementation
+**Status**: Implemented
 **Supersedes**: ADR 020 revision dated 2026-07-09
 **Related**: `plans/053-goap-markdown-editor-ux-2026-07-12.md`, ADR 023, ADR 024
 

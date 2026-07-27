@@ -55,13 +55,13 @@ Plan 071 exit criterion (a11y evidence) is partial but deferred to a future plan
 
 ## Success Criteria
 
-- [ ] GOAL.md no longer references completed Plan 074 items as remaining
-- [ ] ai-harness-view.tsx under 500 LOC
-- [ ] New extracted files under 500 LOC each
-- [ ] All existing tests pass
-- [ ] Lint, typecheck, build pass
-- [ ] PR created with all CI checks passing
-- [ ] All PR feedback addressed
+- [x] GOAL.md no longer references completed Plan 074 items as remaining
+- [x] ai-harness-view.tsx under 500 LOC
+- [x] New extracted files under 500 LOC each
+- [x] All existing tests pass
+- [x] Lint, typecheck, build pass
+- [x] PR created with all CI checks passing
+- [x] All PR feedback addressed
 
 ---
 

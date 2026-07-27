@@ -1,7 +1,7 @@
 # ADR 028 — Validated and Recoverable Local Data Boundaries
 
 **Date**: 2026-07-19  
-**Status**: Accepted  
+**Status**: Implemented  
 **Related**: ADR 010, ADR 018, Plan 071
 
 ## Context

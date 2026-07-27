@@ -1,7 +1,7 @@
 # ADR 026: P2P Sync Architecture
 
 **Date**: 2026-07-17  
-**Status**: Accepted  
+**Status**: Implemented  
 **Related**: Plan 064, Issues #450-#460, ADR 018 (local-first), ADR 025 (AI provider)
 
 ## Context

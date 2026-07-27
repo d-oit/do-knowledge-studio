@@ -53,8 +53,8 @@
 - [x] Split mode collapses to Edit/Preview on narrow viewports
 - [x] All existing tests pass (1048)
 - [x] Lint, typecheck, build pass
-- [ ] PR created with all CI checks passing
-- [ ] All PR feedback addressed
+- [x] PR created with all CI checks passing (#522)
+- [x] All PR feedback addressed
 
 ---
 

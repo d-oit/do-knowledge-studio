@@ -1,6 +1,6 @@
 # Plan 06: LLM Provider Plugin System
 
-**Priority**: Completed (Foundation for AI Harness)  
+**Status**: Superseded by ADR 019, further superseded by ADR 025  
 **Date**: 2026-04-23  
 **Estimated Effort**: 3-4 hours (done)  
 **Sources**: Web research - OpenRouter & Kilo Gateway APIs

@@ -90,14 +90,14 @@ Items NOT addressed in this plan (deferred to future plans):
 
 ## Success Criteria
 
-- [ ] ADR 001 status corrected to "Superseded"
-- [ ] Bundle size analysis completed in startup-audit.md
-- [ ] Versioned hydration migrations implemented and tested
-- [ ] Test coverage >= 55% lines
-- [ ] All existing tests pass
-- [ ] Lint, typecheck, build pass
-- [ ] PR created with all CI checks passing
-- [ ] All PR feedback addressed
+- [x] ADR 001 status corrected to "Superseded"
+- [x] Bundle size analysis completed in startup-audit.md
+- [x] Versioned hydration migrations implemented and tested
+- [x] Test coverage >= 55% lines
+- [x] All existing tests pass
+- [x] Lint, typecheck, build pass
+- [x] PR created with all CI checks passing
+- [x] All PR feedback addressed
 
 ---
 

@@ -5,6 +5,15 @@
 
 ## Current Status
 
+### Plan 088 — GOAP: Address Remaining plans/ Documentation & A11y Gaps (2026-07-27)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Update 8 ADR statuses to Implemented/Superseded | Done | ADRs 003, 020, 025, 026, 027, 028, 029 → Implemented; ADR 06 → Superseded |
+| W2 | Add skip navigation link + zoom/reflow CSS | Done | app-shell.tsx skip-nav, globals.css prefers-reduced-motion + 225px viewport |
+| W3 | Fix GOAL.md stale coverage, check plan checkboxes | Done | GOAL.md updated to 57%, plan success criteria checked |
+| W4 | Quality gate | Done | Lint, typecheck, test (1048), build all pass |
+
 Plan 087 addresses remaining ADR implementation gaps: P2P sync conflict resolution, bidirectional sync bridge, recovery snapshots, import referential integrity, agent harness manifest integration, and editor enhancements.
 
 ### Plan 087 — GOAP: Address Remaining ADR Implementation Gaps (2026-07-27)
@@ -208,7 +217,7 @@ Plan 087 addresses remaining ADR implementation gaps: P2P sync conflict resoluti
 | LOC violations | 0 | 0 |
 | Lint warnings | 0 | 0 |
 | Type errors | 0 | 0 |
-| Coverage (lines) | 52.56% | 57.04% |
+| Coverage (lines) | 52.56% | 57.04% (targets met) |
 | Coverage (branches) | 45.13% | 50.02% |
 | Coverage (functions) | 41.46% | 45.73% |
 | Coverage (statements) | 52.66% | 57.50% |

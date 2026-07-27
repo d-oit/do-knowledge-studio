@@ -5,7 +5,7 @@
 **Method**: GOAP with hybrid execution
 **Orchestrator**: `goap-agent` skill with `parallel-execution`
 **Branch**: `feat/083-coverage-plan-cleanup`
-**PR**: TBD
+**PR**: #518
 
 ## Context
 
@@ -76,14 +76,14 @@ Post-Plan 082 analysis found:
 
 ## Success Criteria
 
-- [ ] All stale plan statuses corrected
-- [ ] ADR 011 marked Superseded
-- [ ] Test coverage >= 55% lines
-- [ ] All existing tests pass
-- [ ] Lint, typecheck, build pass
-- [ ] Coverage thresholds raised
-- [ ] PR created with all CI checks passing
-- [ ] All PR feedback addressed
+- [x] All stale plan statuses corrected
+- [x] ADR 011 marked Superseded
+- [x] Test coverage >= 55% lines
+- [x] All existing tests pass
+- [x] Lint, typecheck, build pass
+- [x] Coverage thresholds raised
+- [x] PR created with all CI checks passing
+- [x] All PR feedback addressed
 
 ---
 
