@@ -28,7 +28,7 @@ import {
   destroy,
 } from '@/lib/sync'
 import { useStudioStore } from '@/lib/studio/store'
-import { mergeIntoYjs } from '@/lib/sync/bridge'
+import { mergeIntoYjs, applyConflictResolution } from '@/lib/sync/bridge'
 import { QRDisplay, QRScanner } from '../qr-pairing'
 import {
   startDiscovery,
@@ -186,11 +186,13 @@ export function SyncView() {
     }
   }, [entities, claims, addEvent])
 
-  const handleConflictResolve = useCallback((_resolutions: Map<string, 'local' | 'remote'>) => {
+  const handleConflictResolve = useCallback((resolutions: Map<string, 'local' | 'remote'>) => {
+    const resolvedConflicts = [...pendingConflicts]
+    applyConflictResolution(resolutions, resolvedConflicts, entities, claims)
     setPendingConflicts([])
-    addEvent('sync', 'Conflicts resolved by user')
-    toast.success('Conflicts resolved')
-  }, [addEvent])
+    addEvent('sync', `Applied ${resolutions.size} conflict resolution(s)`)
+    toast.success(`Applied ${resolutions.size} conflict resolution(s)`)
+  }, [pendingConflicts, entities, claims, addEvent])
 
   const handleConflictDismiss = useCallback(() => {
     setPendingConflicts([])

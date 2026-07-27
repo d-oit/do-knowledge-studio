@@ -264,32 +264,93 @@ def validate_agents_md(repo_root: Path) -> list[str]:
     return errors
 
 
+def sync_managed_surfaces(repo_root: Path, manifest: dict) -> list[str]:
+    """Create or repair managed skill symlinks for all declared tools."""
+    errors = []
+    canonical_skills = manifest.get("canonical_skills", ".agents/skills")
+    tools = manifest.get("tools", {})
+
+    for tool_name, config in tools.items():
+        strategy = config.get("symlink_strategy", "none")
+        if strategy == "none":
+            continue
+
+        tool_dir = config.get("directory", "")
+        skills_dir = config.get("skills_directory", "")
+        if not tool_dir or not skills_dir:
+            continue
+
+        full_tool_dir = repo_root / tool_dir
+        full_skills_dir = repo_root / skills_dir
+        canonical_path = repo_root / canonical_skills
+
+        if not canonical_path.exists():
+            errors.append(f"Canonical skills directory not found: {canonical_skills}")
+            continue
+
+        full_tool_dir.mkdir(parents=True, exist_ok=True)
+
+        if full_skills_dir.is_symlink():
+            target = full_skills_dir.resolve()
+            if not target.exists():
+                errors.append(f"Broken symlink: {skills_dir} -> {full_skills_dir.readlink()}")
+            elif target != canonical_path.resolve():
+                errors.append(
+                    f"Symlink mismatch: {skills_dir} -> {full_skills_dir.readlink()}"
+                )
+        elif full_skills_dir.exists():
+            errors.append(f"Warning: {skills_dir} exists and is not a symlink")
+        else:
+            import os
+            relative_target = os.path.relpath(str(canonical_path), str(full_tool_dir))
+            full_skills_dir.symlink_to(relative_target)
+            print(f"Created symlink: {skills_dir} -> {relative_target}")
+
+    return errors
+
+
 def main() -> int:
-    if len(sys.argv) < 2 or sys.argv[1] != "validate":
-        print("Usage: agent-surface.py validate")
+    if len(sys.argv) < 2:
+        print("Usage: agent-surface.py <validate|sync>")
         return 1
 
+    command = sys.argv[1]
     repo_root = Path(__file__).resolve().parent.parent
     manifest = load_manifest(repo_root)
-    errors = []
 
-    # ADR 029 validation requirements
-    errors.extend(validate_broken_symlinks(repo_root))
-    errors.extend(validate_canonical_skills(repo_root, manifest))
-    errors.extend(validate_skill_frontmatter(repo_root))
-    errors.extend(validate_skill_name_mismatch(repo_root))
-    errors.extend(validate_eval_json(repo_root))
-    errors.extend(validate_duplicate_names(repo_root))
-    errors.extend(validate_broken_links(repo_root))
-    errors.extend(validate_agents_md(repo_root))
+    if command == "validate":
+        errors = []
+        errors.extend(validate_broken_symlinks(repo_root))
+        errors.extend(validate_canonical_skills(repo_root, manifest))
+        errors.extend(validate_skill_frontmatter(repo_root))
+        errors.extend(validate_skill_name_mismatch(repo_root))
+        errors.extend(validate_eval_json(repo_root))
+        errors.extend(validate_duplicate_names(repo_root))
+        errors.extend(validate_broken_links(repo_root))
+        errors.extend(validate_agents_md(repo_root))
 
-    if errors:
-        for e in errors:
-            print(f"ERROR: {e}", file=sys.stderr)
+        if errors:
+            for e in errors:
+                print(f"ERROR: {e}", file=sys.stderr)
+            return 1
+
+        print("Agent surface validation passed.")
+        return 0
+
+    elif command == "sync":
+        errors = sync_managed_surfaces(repo_root, manifest)
+        if errors:
+            for e in errors:
+                print(f"ERROR: {e}", file=sys.stderr)
+            return 1
+
+        print("Agent surface sync completed.")
+        return 0
+
+    else:
+        print(f"Unknown command: {command}")
+        print("Usage: agent-surface.py <validate|sync>")
         return 1
-
-    print("Agent surface validation passed.")
-    return 0
 
 
 if __name__ == "__main__":

@@ -11,6 +11,7 @@ import { isTombstoned, addTombstone } from './tombstones'
 import { validateInboundEntity, validateInboundClaim } from './inbound'
 import { resolveEntityConflict, resolveClaimConflict } from './conflict'
 import type { Entity, Claim } from '@/lib/studio/types'
+import { useStudioStore } from '@/lib/studio/store'
 
 type Unsubscribe = () => void
 
@@ -21,6 +22,7 @@ let inboundCallbacks: {
   onEntities?: (entities: Entity[]) => void
   onClaims?: (claims: Claim[]) => void
 } = {}
+let outboundSubscribed = false
 
 export function getYjsEntities(): Entity[] {
   const sync = getSyncDoc()
@@ -185,9 +187,123 @@ export function destroyBridge(): void {
   for (const unsub of unsubscribeFns) unsub()
   unsubscribeFns = []
   inboundCallbacks = {}
+  outboundSubscribed = false
 }
 
 export async function initSync(): Promise<void> {
   const { initPersistence } = await import('./doc')
   await initPersistence()
+}
+
+export function applyConflictResolution(
+  resolutions: Map<string, 'local' | 'remote'>,
+  conflicts: import('./merge').FieldConflict[],
+  localEntities: Entity[],
+  localClaims: Claim[],
+): void {
+  const sync = getSyncDoc()
+  const doc = getDoc()
+
+  const entityUpdates = collectUpdates<Entity>(
+    conflicts.filter((c) => c.entityType === 'entity'),
+    resolutions,
+    localEntities,
+  )
+  const claimUpdates = collectUpdates<Claim>(
+    conflicts.filter((c) => c.entityType === 'claim'),
+    resolutions,
+    localClaims,
+  )
+
+  doc.transact(() => {
+    for (const [id, updates] of entityUpdates) {
+      const local = localEntities.find((e) => e.id === id)
+      if (local) {
+        sync.entities.set(id, entityToYMap({ ...local, ...updates, updatedAt: new Date().toISOString() }))
+      }
+    }
+    for (const [id, updates] of claimUpdates) {
+      const local = localClaims.find((c) => c.id === id)
+      if (local) {
+        sync.claims.set(id, claimToYMap({ ...local, ...updates }))
+      }
+    }
+  }, ORIGIN_OUTBOUND)
+}
+
+function collectUpdates<T extends Entity | Claim>(
+  conflicts: import('./merge').FieldConflict[],
+  resolutions: Map<string, 'local' | 'remote'>,
+  locals: T[],
+): Map<string, T> {
+  const updates = new Map<string, T>()
+  for (const conflict of conflicts) {
+    const key = `${conflict.entityId}:${conflict.field}`
+    if ((resolutions.get(key) ?? conflict.winner) === 'local') continue
+    const local = locals.find((item) => item.id === conflict.entityId)
+    if (!local) continue
+    const existing = updates.get(conflict.entityId) ?? { ...local }
+    const field = conflict.field as keyof T
+    if (field in existing) {
+      Object.assign(existing, { [field]: conflict.remoteValue })
+      updates.set(conflict.entityId, existing)
+    }
+  }
+  return updates
+}
+
+export function startBidirectionalSync(): Unsubscribe {
+  if (outboundSubscribed) return () => {}
+  outboundSubscribed = true
+
+  const store = useStudioStore.getState
+
+  const unsubOutbound = onYjsChange((remoteEntities, remoteClaims) => {
+    const state = store()
+    const result = applyRemoteUpdate(
+      remoteEntities,
+      remoteClaims,
+      state.entities,
+      state.claims,
+    )
+    useStudioStore.setState({
+      entities: result.entities,
+      claims: result.claims,
+    })
+  })
+
+  const unsubInbound = subscribeToYjs(
+    (remoteEntities) => {
+      const state = store()
+      const result = applyRemoteUpdate(
+        remoteEntities,
+        getYjsClaims(),
+        state.entities,
+        state.claims,
+      )
+      useStudioStore.setState({
+        entities: result.entities,
+        claims: result.claims,
+      })
+    },
+    (remoteClaims) => {
+      const state = store()
+      const result = applyRemoteUpdate(
+        getYjsEntities(),
+        remoteClaims,
+        state.entities,
+        state.claims,
+      )
+      useStudioStore.setState({
+        entities: result.entities,
+        claims: result.claims,
+      })
+    },
+  )
+
+  return () => {
+    unsubOutbound()
+    unsubInbound()
+    outboundSubscribed = false
+  }
 }

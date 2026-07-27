@@ -80,6 +80,18 @@ export function EditorView() {
   const [editMode, setEditMode] = useState<'edit' | 'preview' | 'split'>('edit')
   const [draftStatus, setDraftStatus] = useState<'saved' | 'unsaved' | 'error' | null>(null)
 
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)')
+    const handleChange = (e: MediaQueryListEvent | MediaQueryList) => {
+      if (e.matches) {
+        setEditMode((prev) => prev === 'split' ? 'edit' : prev)
+      }
+    }
+    handleChange(mq)
+    mq.addEventListener('change', handleChange)
+    return () => { mq.removeEventListener('change', handleChange) }
+  }, [])
+
   // Initialize draft ID on mount
   useEffect(() => {
     if (editing?.id) {

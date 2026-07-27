@@ -2,7 +2,7 @@
 
 import { useStudioStore } from '@/lib/studio/store'
 import type { ViewId } from '@/lib/studio/types'
-import React, { Suspense, lazy } from 'react'
+import React, { Suspense, lazy, useEffect } from 'react'
 import { Sidebar } from './sidebar'
 import { Topbar } from './topbar'
 import { CommandPalette } from './command-palette'
@@ -16,6 +16,7 @@ import { ChatView } from './views/chat-view'
 import { ErrorBoundary } from './error-boundary'
 import { ViewErrorBoundary } from './view-error-boundary'
 import { Skeleton } from './ui/skeleton'
+import { startBidirectionalSync } from '@/lib/sync/bridge'
 
 const GraphView = lazy(() => import('./views/graph-view').then((m) => ({ default: m.GraphView })))
 const MindMapView = lazy(() => import('./views/mindmap-view').then((m) => ({ default: m.MindMapView })))
@@ -62,6 +63,11 @@ function getViewName(view: ViewId): string {
 export function AppShell() {
   const currentView = useStudioStore((s) => s.currentView)
   const editingEntityId = useStudioStore((s) => s.editingEntityId)
+
+  useEffect(() => {
+    const unsub = startBidirectionalSync()
+    return unsub
+  }, [])
 
   const handleViewError = React.useCallback(
     (error: Error, _errorInfo: React.ErrorInfo) => {
