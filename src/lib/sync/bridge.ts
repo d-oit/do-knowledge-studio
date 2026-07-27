@@ -216,9 +216,9 @@ export function applyConflictResolution(
       const local = localEntities.find((e) => e.id === conflict.entityId)
       if (local) {
         const existing = entityUpdates.get(conflict.entityId) ?? { ...local }
-        const field = conflict.field
+        const field = conflict.field as keyof Entity
         if (field in existing) {
-          ;(existing as unknown as Record<string, unknown>)[field] = conflict.remoteValue
+          Object.assign(existing, { [field]: conflict.remoteValue })
           entityUpdates.set(conflict.entityId, existing)
         }
       }
@@ -226,9 +226,9 @@ export function applyConflictResolution(
       const local = localClaims.find((c) => c.id === conflict.entityId)
       if (local) {
         const existing = claimUpdates.get(conflict.entityId) ?? { ...local }
-        const field = conflict.field
+        const field = conflict.field as keyof Claim
         if (field in existing) {
-          ;(existing as unknown as Record<string, unknown>)[field] = conflict.remoteValue
+          Object.assign(existing, { [field]: conflict.remoteValue })
           claimUpdates.set(conflict.entityId, existing)
         }
       }

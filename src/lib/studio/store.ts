@@ -426,7 +426,7 @@ const RecoverySnapshotSchema = z.object({
       })),
       createdAt: z.string(),
       updatedAt: z.string(),
-    }).passthrough()),
+    })),
     claims: z.array(z.object({
       id: z.string(),
       entityId: z.string(),
@@ -435,8 +435,8 @@ const RecoverySnapshotSchema = z.object({
       confidence: z.number(),
       verification: z.string(),
       source: z.string().optional(),
-    }).passthrough()),
-    entityHistory: z.array(z.array(z.object({ id: z.string() }).passthrough())),
+    })),
+    entityHistory: z.array(z.array(z.object({ id: z.string() }))),
     historyIndex: z.number(),
   }),
   timestamp: z.number(),
@@ -461,9 +461,9 @@ export function restoreFromRecovery(): { success: boolean; error?: string } {
       return { success: false, error: 'Recovery snapshot has expired.' }
     }
     useStudioStore.setState({
-      entities: snapshot.entities as unknown as Entity[],
-      claims: snapshot.claims as unknown as Claim[],
-      entityHistory: snapshot.entityHistory as unknown as Entity[][],
+      entities: snapshot.entities as Entity[],
+      claims: snapshot.claims as Claim[],
+      entityHistory: snapshot.entityHistory as Entity[][],
       historyIndex: snapshot.historyIndex,
     })
     localStorage.removeItem(RECOVERY_KEY)
