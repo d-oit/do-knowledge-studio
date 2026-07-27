@@ -5,7 +5,7 @@
 **Method**: GOAP with hybrid execution (parallel swarm within waves)
 **Orchestrator**: `goap-agent` skill with `parallel-execution`
 **Branch**: `feat/087-remaining-adr-gaps`
-**PR**: TBD
+**PR**: [#522](https://github.com/d-oit/do-knowledge-studio/pull/522)
 
 ## Results
 
