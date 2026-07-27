@@ -1,5 +1,6 @@
 'use client'
 
+import * as React from 'react'
 import type { LucideIcon } from 'lucide-react'
 import type { AIProvider } from '@/lib/studio/ai-settings'
 import {
@@ -30,13 +31,33 @@ export function Field({
   icon: LucideIcon
   children: React.ReactNode
 }) {
+  const fieldId = `field-${label.toLowerCase().replace(/\s+/g, '-')}`
+
+  function injectId(child: React.ReactNode): React.ReactNode {
+    if (!React.isValidElement(child)) return child
+    const el = child as React.ReactElement<Record<string, unknown>>
+    const tag = typeof el.type === 'string' ? el.type : ''
+    if (['input', 'select', 'textarea'].includes(tag)) {
+      return React.cloneElement(el, { id: fieldId } as Record<string, unknown>)
+    }
+    if (el.props.children) {
+      return React.cloneElement(el, {
+        children: React.Children.map(el.props.children as React.ReactNode, injectId),
+      })
+    }
+    return child
+  }
+
   return (
     <div>
-      <label className="mb-1.5 flex items-center gap-1.5 text-label font-semibold uppercase tracking-wide text-ink-faint">
+      <label
+        htmlFor={fieldId}
+        className="mb-1.5 flex items-center gap-1.5 text-label font-semibold uppercase tracking-wide text-ink-faint"
+      >
         <Icon className="h-3 w-3" />
         {label}
       </label>
-      {children}
+      {React.Children.map(children, injectId)}
     </div>
   )
 }

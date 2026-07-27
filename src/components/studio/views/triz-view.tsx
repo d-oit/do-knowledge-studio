@@ -11,18 +11,20 @@ import {
   Eye,
   List,
 } from 'lucide-react'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { TRIZ_PARAMETERS, TRIZ_PRINCIPLES, TRIZ_MATRIX, lookupPrinciples } from '@/lib/studio/triz-data'
 import { TextInput, ToggleButtonGroup } from '../ui/shared-primitives'
+import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 
 export function TrizView() {
   const [improving, setImproving] = useState<number | null>(null)
   const [worsening, setWorsening] = useState<number | null>(null)
   const [search, setSearch] = useState('')
   const [copied, setCopied] = useState<number | null>(null)
+  const reducedMotion = useReducedMotion()
   const [view, setView] = useState<'pick' | 'results' | 'matrix'>('pick')
   const [matrixSearch, setMatrixSearch] = useState('')
 
@@ -62,15 +64,23 @@ export function TrizView() {
     navigator.clipboard?.writeText(text)
     setCopied(id)
     toast.success('Principle copied to clipboard')
-    setTimeout(() => { setCopied(null) }, 2000)
+    clearTimeout(copiedTimerRef.current)
+    copiedTimerRef.current = setTimeout(() => { setCopied(null) }, 2000)
   }
+
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  useEffect(() => {
+    return () => { if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current) }
+  }, [])
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-6 lg:px-10 lg:py-8">
       {/* Header */}
       <motion.div
-        initial={{ opacity: 0, y: 6 }}
+        initial={reducedMotion ? false : { opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={reducedMotion ? { duration: 0 } : undefined}
         className="mb-6"
       >
         <div className="mb-2 flex items-center gap-2">
@@ -151,8 +161,9 @@ export function TrizView() {
       {/* Step 1: Pick contradiction */}
       {view === 'pick' && (
         <motion.div
-          initial={{ opacity: 0 }}
+          initial={reducedMotion ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
+          transition={reducedMotion ? { duration: 0 } : undefined}
           className="grid grid-cols-1 gap-6 lg:grid-cols-2"
         >
           <ParamPicker
@@ -190,8 +201,9 @@ export function TrizView() {
       {/* Matrix view */}
       {view === 'matrix' && (
         <motion.div
-          initial={{ opacity: 0 }}
+          initial={reducedMotion ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
+          transition={reducedMotion ? { duration: 0 } : undefined}
         >
           <div className="mb-4 rounded-lg border border-border bg-card p-4">
             <div className="mb-3 flex items-center gap-2">
@@ -208,6 +220,7 @@ export function TrizView() {
               value={matrixSearch}
               onChange={(e) => { setMatrixSearch(e.target.value) }}
               placeholder="Filter parameters…"
+              aria-label="Filter TRIZ contradiction matrix parameters"
               className="mb-3"
             />
             <div className="overflow-auto rounded-md border border-border">
@@ -295,8 +308,10 @@ export function TrizView() {
       {/* Step 2: Results */}
       {view === 'results' && improving !== null && worsening !== null && (
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
+          initial={reducedMotion ? false : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={reducedMotion ? { duration: 0 } : undefined}
+          aria-live="polite"
         >
           {/* Contradiction summary */}
           <div className="mb-6 rounded-lg border border-border bg-card p-4">
@@ -334,9 +349,9 @@ export function TrizView() {
                 {suggestedPrinciples.map((p, i) => (
                   <motion.div
                     key={p.id}
-                    initial={{ opacity: 0, y: 8 }}
+                    initial={reducedMotion ? false : { opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: i * 0.08 }}
+                    transition={reducedMotion ? { duration: 0 } : { duration: 0.3, delay: i * 0.08 }}
                     className="group flex flex-col rounded-lg border border-border bg-card p-4 transition-all hover:border-saffron/30 hover:shadow-sm hover-lift"
                   >
                     <div className="mb-2 flex items-start justify-between">
@@ -440,6 +455,7 @@ function ParamPicker({
           value={search}
           onChange={(e) => { setSearch(e.target.value) }}
           placeholder="Search parameters…"
+          aria-label="Search TRIZ parameters"
           className="pl-9"
         />
       </div>

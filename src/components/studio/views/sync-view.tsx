@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import {
   initSync,
   joinRoom,
@@ -70,6 +71,7 @@ export function SyncView() {
   const [pairingMode, setPairingMode] = useState<PairingMode>('none')
   const [discoveredPeers, setDiscoveredPeers] = useState<PeerInfo[]>([])
   const [pendingConflicts, setPendingConflicts] = useState<FieldConflict[]>([])
+  const reducedMotion = useReducedMotion()
 
   const addEvent = useCallback(
     (type: SyncEvent['type'], message: string) => {
@@ -203,8 +205,9 @@ export function SyncView() {
   return (
     <div className="mx-auto max-w-3xl px-6 py-6 lg:px-10 lg:py-8">
       <motion.div
-        initial={{ opacity: 0, y: 6 }}
+        initial={reducedMotion ? false : { opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={reducedMotion ? { duration: 0 } : undefined}
         className="mb-6 flex items-start gap-4"
       >
         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-sage to-emerald-600 text-white shadow-sm">
@@ -222,7 +225,7 @@ export function SyncView() {
       <div className="mb-6 rounded-lg border border-border bg-card p-5">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-serif text-[15px] font-semibold text-ink">Connection</h2>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" aria-live="polite">
             {status === 'connected' ? (
               <span className="flex items-center gap-1.5 text-[12px] font-medium text-emerald-600">
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />
@@ -280,9 +283,10 @@ export function SyncView() {
             {/* QR Display */}
             {pairingMode === 'display' && (
               <motion.div
-                initial={{ opacity: 0, height: 0 }}
+                initial={reducedMotion ? false : { opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
+                exit={reducedMotion ? undefined : { opacity: 0, height: 0 }}
+                transition={reducedMotion ? { duration: 0 } : undefined}
                 className="overflow-hidden"
               >
                 <div className="rounded-lg border border-border bg-muted/30 p-4">
@@ -294,9 +298,10 @@ export function SyncView() {
             {/* QR Scanner */}
             {pairingMode === 'scan' && (
               <motion.div
-                initial={{ opacity: 0, height: 0 }}
+                initial={reducedMotion ? false : { opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
+                exit={reducedMotion ? undefined : { opacity: 0, height: 0 }}
+                transition={reducedMotion ? { duration: 0 } : undefined}
                 className="overflow-hidden"
               >
                 <div className="rounded-lg border border-border bg-muted/30 p-4">
@@ -365,9 +370,10 @@ export function SyncView() {
             {/* QR Display when connected */}
             {pairingMode === 'display' && (
               <motion.div
-                initial={{ opacity: 0, height: 0 }}
+                initial={reducedMotion ? false : { opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
+                exit={reducedMotion ? undefined : { opacity: 0, height: 0 }}
+                transition={reducedMotion ? { duration: 0 } : undefined}
                 className="overflow-hidden"
               >
                 <div className="rounded-lg border border-border bg-muted/30 p-4">
@@ -437,8 +443,9 @@ export function SyncView() {
       {/* Conflict Resolution */}
       {pendingConflicts.length > 0 && (
         <motion.div
-          initial={{ opacity: 0, y: 6 }}
+          initial={reducedMotion ? false : { opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={reducedMotion ? { duration: 0 } : undefined}
           className="mb-6"
         >
           <ConflictUI

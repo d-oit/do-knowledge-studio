@@ -161,7 +161,7 @@ If CI fails after pushing, use the existing repair workflow:
 
 - Use design tokens from `src/app/globals.css` `@theme` block (source of truth).
 - Two themes: `light` and `dark` via `data-theme` attribute.
-- Accent color: Saffron (`#c77d3a` light, `#e5944a` dark).
+- Accent color: Saffron (`#9a5c2a` light, `#e5944a` dark).
 - Font: Geist Sans (body) + Newsreader (serif headings).
 - Build mobile-first.
 - Keep interactive targets at least 44x44px.
