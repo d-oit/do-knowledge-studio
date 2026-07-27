@@ -87,7 +87,7 @@ export function MindMapView() {
       const nodeEntity = entityIndex.get(focusedNodeId)
       if (!nodeEntity) return
 
-      if (e.key === 'Tab') {
+      if (e.key === 'Tab' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault()
         addChildToNode(focusedNodeId)
         return
@@ -230,7 +230,7 @@ export function MindMapView() {
           {hasChildren ? (
             <button
               onClick={() => { toggleNode(node.entity.id) }}
-              className="mr-1 min-h-[44px] min-w-[44px] rounded p-0.5 text-ink-faint transition-colors hover:text-ink"
+              className="mr-1 min-h-[44px] min-w-[44px] rounded p-0.5 text-ink-faint transition-colors hover:text-ink focus-ring"
               aria-label={isExpanded ? 'Collapse' : 'Expand'}
             >
               {isExpanded ? (
@@ -409,7 +409,7 @@ export function MindMapView() {
 
       {/* Hint */}
       <div className="border-b border-border bg-muted/30 px-5 py-1.5 text-label text-ink-faint">
-        <kbd className="rounded border border-border bg-background px-1 font-mono">Tab</kbd> add child ·{' '}
+        <kbd className="rounded border border-border bg-background px-1 font-mono">Ctrl+Tab</kbd> add child ·{' '}
         <kbd className="rounded border border-border bg-background px-1 font-mono">F2</kbd> rename ·{' '}
         <kbd className="rounded border border-border bg-background px-1 font-mono">Del</kbd> delete
       </div>

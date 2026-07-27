@@ -107,6 +107,9 @@ export function AppShell() {
           </div>
           <RightPanel />
         </main>
+        <footer role="contentinfo" className="border-t border-border px-5 py-2 text-[11px] text-ink-faint">
+          Knowledge Studio — local-first knowledge engine
+        </footer>
       </div>
       <CommandPalette
         onEntitySelect={(id) => {

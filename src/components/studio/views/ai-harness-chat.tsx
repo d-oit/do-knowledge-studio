@@ -30,7 +30,7 @@ export function AiHarnessChatPanel({
 }: ChatPanelProps) {
   return (
     <div className="flex h-[520px] flex-col rounded-lg border border-border bg-card">
-      <div className="flex-1 space-y-4 overflow-y-auto p-4">
+      <div className="flex-1 space-y-4 overflow-y-auto p-4" aria-live="polite" aria-atomic="false">
         {messages.map((m, i) => (
           <motion.div
             key={i}

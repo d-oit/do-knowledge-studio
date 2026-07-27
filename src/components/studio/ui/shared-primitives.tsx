@@ -288,6 +288,7 @@ export function SwitchToggle({
         )}
         role="switch"
         aria-checked={checked}
+        aria-label={label}
       >
         <span
           className={cn(

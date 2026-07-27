@@ -90,7 +90,7 @@ function SearchPanel({ onCreateEntity }: { onCreateEntity?: (name: string) => vo
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3">
+      <div className="flex-1 overflow-y-auto p-3" aria-live="polite" aria-atomic="false">
         {results.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
             <FileText className="h-8 w-8 text-ink-faint/50" />

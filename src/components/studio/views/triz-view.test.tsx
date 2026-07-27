@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 
+vi.mock('@/lib/studio/use-reduced-motion', () => ({
+  useReducedMotion: () => false,
+}))
+
 vi.mock('framer-motion', () => ({
   motion: {
     div: ({ children, initial: _i, animate: _a, transition: _t, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (

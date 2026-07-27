@@ -3,6 +3,10 @@ import { render, screen, act, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { OfflineIndicator } from "./offline-indicator";
 
+vi.mock('@/lib/studio/use-reduced-motion', () => ({
+  useReducedMotion: () => false,
+}));
+
 describe("OfflineIndicator", () => {
   afterEach(() => {
     vi.restoreAllMocks();

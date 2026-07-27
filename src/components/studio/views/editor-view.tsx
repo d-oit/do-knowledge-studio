@@ -7,6 +7,7 @@ import {
   type EntityType,
 } from '@/lib/studio/types'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import Markdown from 'react-markdown'
 import {
   Save,
@@ -200,7 +201,7 @@ export function EditorView() {
 
   const handleSave = () => {
     if (!name.trim()) {
-      // Validation error toast — exceptional, keep
+      toast.error('Entity name cannot be empty')
       return
     }
     const entity: Entity = {
