@@ -478,5 +478,17 @@ export function parseImportFile(text: string): ImportResult {
     return { success: false, errors: [{ path: 'entities', message: 'No valid entities found in file.' }] }
   }
 
+  const entityIds = new Set(entities.map((e) => e.id))
+  const orphanedClaims = claims.filter((c) => !entityIds.has(c.entityId))
+  if (orphanedClaims.length > 0) {
+    return {
+      success: false,
+      errors: orphanedClaims.map((c) => ({
+        path: `claims[${c.id}]`,
+        message: `Claim references non-existent entity "${c.entityId}".`,
+      })),
+    }
+  }
+
   return { success: true, entities, claims }
 }

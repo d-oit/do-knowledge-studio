@@ -309,6 +309,16 @@ export const useStudioStore = create<StudioState>()(
           entityHistory: structuredClone(state.entityHistory),
           historyIndex: state.historyIndex,
         }
+        const RECOVERY_KEY = 'do-knowledge-studio-recovery'
+        const RECOVERY_TTL_MS = 24 * 60 * 60 * 1000
+        try {
+          localStorage.setItem(
+            RECOVERY_KEY,
+            JSON.stringify({ snapshot, timestamp: Date.now(), ttl: RECOVERY_TTL_MS }),
+          )
+        } catch {
+          console.warn('Failed to persist recovery snapshot')
+        }
         try {
           set({
             entities,
@@ -394,6 +404,38 @@ export const useStudioStore = create<StudioState>()(
     },
   ),
 )
+
+const RECOVERY_KEY = 'do-knowledge-studio-recovery'
+const RECOVERY_TTL_MS = 24 * 60 * 60 * 1000
+
+export function restoreFromRecovery(): { success: boolean; error?: string } {
+  try {
+    const raw = localStorage.getItem(RECOVERY_KEY)
+    if (!raw) return { success: false, error: 'No recovery snapshot found.' }
+    const { snapshot, timestamp, ttl } = JSON.parse(raw) as {
+      snapshot: { entities: Entity[]; claims: Claim[]; entityHistory: Entity[][]; historyIndex: number }
+      timestamp: number
+      ttl: number
+    }
+    if (Date.now() - timestamp > (ttl ?? RECOVERY_TTL_MS)) {
+      localStorage.removeItem(RECOVERY_KEY)
+      return { success: false, error: 'Recovery snapshot has expired.' }
+    }
+    useStudioStore.setState({
+      entities: snapshot.entities,
+      claims: snapshot.claims,
+      entityHistory: snapshot.entityHistory,
+      historyIndex: snapshot.historyIndex,
+    })
+    localStorage.removeItem(RECOVERY_KEY)
+    return { success: true }
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'Failed to restore recovery snapshot.',
+    }
+  }
+}
 
 // Selectors
 export function useFilteredEntities(): Entity[] {

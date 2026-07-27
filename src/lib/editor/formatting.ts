@@ -100,6 +100,18 @@ export function applyQuote(text: string, sel: MarkdownSelection): MarkdownComman
 }
 
 export function applyInlineCode(text: string, sel: MarkdownSelection): MarkdownCommandResult {
+  const { text: selected, range } = sel
+  if (!selected) {
+    return wrapInlineMarker(text, sel, '`')
+  }
+  const lines = selected.split('\n')
+  if (lines.length > 1) {
+    const fenced = `\`\`\`\n${selected}\n\`\`\``
+    return {
+      text: text.slice(0, range.start) + fenced + text.slice(range.end),
+      selection: { start: range.start + 4, end: range.start + 4 + selected.length },
+    }
+  }
   return wrapInlineMarker(text, sel, '`')
 }
 

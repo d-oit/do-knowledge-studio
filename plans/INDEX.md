@@ -1,11 +1,25 @@
 # Plans Index
 
-**Updated**: 2026-07-26
+**Updated**: 2026-07-27
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
 ## Current Status
 
-Plan 084 addresses remaining implementation gaps: ADR 012 status correction, ADR 029 validator enhancement, and accessibility audit documentation.
+Plan 087 addresses remaining ADR implementation gaps: P2P sync conflict resolution, bidirectional sync bridge, recovery snapshots, import referential integrity, agent harness manifest integration, and editor enhancements.
+
+### Plan 087 — GOAP: Address Remaining ADR Implementation Gaps (2026-07-27)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Implement conflict resolution application | Done | `sync-view.tsx` — handleConflictResolve applies resolutions; `bridge.ts` — applyConflictResolution function |
+| W1 | Implement bidirectional sync bridge lifecycle | Done | `bridge.ts` — startBidirectionalSync, `app-shell.tsx` — wired into app lifecycle |
+| W2 | Persist recovery snapshots across sessions | Done | `store.ts` — importWithRollback persists to localStorage with 24h TTL |
+| W2 | Add referential integrity check on import | Done | `export-helpers.ts` — parseImportFile validates claim entityId references |
+| W3 | Setup reads manifest for all tools | Done | `setup-skills.sh` — reads manifest.json, creates symlinks for all declared tools |
+| W3 | Add sync command to agent-surface.py | Done | `agent-surface.py` — sync_managed_surfaces function |
+| W4 | Add fenced code block for multiline selections | Done | `formatting.ts` — applyInlineCode detects multiline and wraps in fenced block |
+| W4 | Add split-mode width collapse | Done | `editor-view.tsx` — useEffect collapses split on narrow viewports |
+| W5 | Quality gate | Done | Lint, typecheck, test (1048), build all pass |
 
 ### Plan 084 — GOAP: Address Remaining Implementation Gaps (2026-07-26)
 

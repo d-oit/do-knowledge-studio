@@ -11,6 +11,7 @@ import { isTombstoned, addTombstone } from './tombstones'
 import { validateInboundEntity, validateInboundClaim } from './inbound'
 import { resolveEntityConflict, resolveClaimConflict } from './conflict'
 import type { Entity, Claim } from '@/lib/studio/types'
+import { useStudioStore } from '@/lib/studio/store'
 
 type Unsubscribe = () => void
 
@@ -21,6 +22,7 @@ let inboundCallbacks: {
   onEntities?: (entities: Entity[]) => void
   onClaims?: (claims: Claim[]) => void
 } = {}
+let outboundSubscribed = false
 
 export function getYjsEntities(): Entity[] {
   const sync = getSyncDoc()
@@ -185,9 +187,103 @@ export function destroyBridge(): void {
   for (const unsub of unsubscribeFns) unsub()
   unsubscribeFns = []
   inboundCallbacks = {}
+  outboundSubscribed = false
 }
 
 export async function initSync(): Promise<void> {
   const { initPersistence } = await import('./doc')
   await initPersistence()
+}
+
+export function applyConflictResolution(
+  resolutions: Map<string, 'local' | 'remote'>,
+  conflicts: import('./merge').FieldConflict[],
+  localEntities: Entity[],
+  localClaims: Claim[],
+): void {
+  const sync = getSyncDoc()
+  const doc = getDoc()
+
+  const entityUpdates = new Map<string, Partial<Entity>>()
+  const claimUpdates = new Map<string, Partial<Claim>>()
+
+  for (const conflict of conflicts) {
+    const key = `${conflict.entityId}:${conflict.field}`
+    const choice = resolutions.get(key) ?? conflict.winner
+    if (choice === 'local') continue
+
+    if (conflict.entityType === 'entity') {
+      const existing = entityUpdates.get(conflict.entityId) ?? {}
+      existing[conflict.field as keyof Entity] = conflict.remoteValue as never
+      entityUpdates.set(conflict.entityId, existing)
+    } else {
+      const existing = claimUpdates.get(conflict.entityId) ?? {}
+      existing[conflict.field as keyof Claim] = conflict.remoteValue as never
+      claimUpdates.set(conflict.entityId, existing)
+    }
+  }
+
+  doc.transact(() => {
+    for (const [id, updates] of entityUpdates) {
+      const local = localEntities.find((e) => e.id === id)
+      if (local) {
+        const updated = { ...local, ...updates, updatedAt: new Date().toISOString() }
+        sync.entities.set(id, entityToYMap(updated))
+      }
+    }
+    for (const [id, updates] of claimUpdates) {
+      const local = localClaims.find((c) => c.id === id)
+      if (local) {
+        const updated = { ...local, ...updates }
+        sync.claims.set(id, claimToYMap(updated))
+      }
+    }
+  }, ORIGIN_OUTBOUND)
+}
+
+export function startBidirectionalSync(): Unsubscribe {
+  if (outboundSubscribed) return () => {}
+  outboundSubscribed = true
+
+  const store = useStudioStore.getState
+
+  const unsubOutbound = onYjsChange(() => {
+    const state = store()
+    void state
+  })
+
+  const unsubInbound = subscribeToYjs(
+    (remoteEntities) => {
+      const state = store()
+      const result = applyRemoteUpdate(
+        remoteEntities,
+        getYjsClaims(),
+        state.entities,
+        state.claims,
+      )
+      useStudioStore.setState({
+        entities: result.entities,
+        claims: result.claims,
+      })
+    },
+    (remoteClaims) => {
+      const state = store()
+      const result = applyRemoteUpdate(
+        getYjsEntities(),
+        remoteClaims,
+        state.entities,
+        state.claims,
+      )
+      useStudioStore.setState({
+        entities: result.entities,
+        claims: result.claims,
+      })
+    },
+  )
+
+  return () => {
+    unsubOutbound()
+    unsubInbound()
+    outboundSubscribed = false
+  }
 }
