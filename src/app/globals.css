@@ -259,8 +259,8 @@
   }
 }
 
-/* Ensure content reflows at 400% zoom (225px viewport width) */
-@media screen and (max-width: 225px) {
+/* WCAG 2.1 1.4.10 Reflow: content reflows at 320px CSS width (200% zoom on 640px) */
+@media screen and (max-width: 320px) {
   body {
     overflow-x: hidden;
   }

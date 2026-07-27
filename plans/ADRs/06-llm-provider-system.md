@@ -1,4 +1,4 @@
-# Plan 06: LLM Provider Plugin System
+# ADR 06: LLM Provider Plugin System
 
 **Status**: Superseded by ADR 019, further superseded by ADR 025  
 **Date**: 2026-04-23  
