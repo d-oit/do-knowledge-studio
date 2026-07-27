@@ -81,8 +81,10 @@ export function EditorView() {
   const [draftStatus, setDraftStatus] = useState<'saved' | 'unsaved' | 'error' | null>(null)
 
   useEffect(() => {
-    if (!window.matchMedia) return
-    const mq = window.matchMedia('(max-width: 768px)')
+    const mq = typeof window !== 'undefined' && window.matchMedia
+      ? window.matchMedia('(max-width: 768px)')
+      : null
+    if (!mq) return
     const handleChange = (e: MediaQueryListEvent | MediaQueryList) => {
       if (e.matches) {
         setEditMode((prev) => prev === 'split' ? 'edit' : prev)
