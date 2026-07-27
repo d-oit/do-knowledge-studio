@@ -251,7 +251,19 @@
 
 @media (prefers-reduced-motion: reduce) {
   html { transition: none; }
-  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* WCAG 2.1 1.4.10 Reflow: content reflows at 320px CSS width (200% zoom on 640px) */
+@media screen and (max-width: 320px) {
+  body {
+    overflow-x: hidden;
+  }
 }
 
 @layer utilities {

@@ -80,7 +80,7 @@ export function AppShell() {
     <div className="flex h-dvh w-full overflow-hidden bg-background text-foreground">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[1000] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[1000] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:ring-2 focus:ring-saffron focus:ring-offset-2 focus:ring-offset-background"
       >
         Skip to main content
       </a>

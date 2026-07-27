@@ -1,15 +1,14 @@
 # ADR 003: API Key Isolation from VITE_ Environment Variables
 
-## Status
-ACCEPTED (VITE_ env var references removed from LLM providers; audit script created; security model documented)
+**Status**: Implemented
 
 ## Context
 API keys for LLM providers (OpenRouter, Kilo Gateway) are currently read from `import.meta.env.VITE_OPENROUTER_API_KEY` and `import.meta.env.VITE_KILO_API_KEY`. Vite environment variables prefixed with `VITE_` are exposed to the client-side bundle at build time. If the application is deployed (even as a static site), these keys would be visible in the JavaScript bundle.
 
 ## Decision
-We will remove reliance on `VITE_` environment variables for secret values and instead use a **runtime config stored in IndexedDB**:
+We will remove reliance on `VITE_` environment variables for secret values and instead use **session-only runtime config**:
 
-1. **Store API keys in IndexedDB** via the existing LLM config system (`src/lib/llm/config.ts`), which already uses `localStorage` — migrate to IndexedDB for better isolation.
+1. **Store API keys in session-only localStorage** via the AI settings system (`src/lib/studio/ai-settings.ts`), which encrypts keys with WebCrypto before storing. Keys never persist across sessions (session-only by design per ADR 028).
 2. **Remove `VITE_` env var reading** from LLM provider implementations (`openrouter.ts`, `kilo.ts`).
 3. **Add a settings UI** for users to input their API keys at runtime (already partially planned in issue #188).
 4. **Never hardcode, never bundle**: Keys must never appear in source code or the built bundle.
@@ -18,13 +17,13 @@ We will remove reliance on `VITE_` environment variables for secret values and i
 ## Alternatives Considered
 - **Keep `VITE_` with `.env` documentation**: Relies on developers to never deploy the .env file with production builds. Error-prone and violates principle of least surprise.
 - **Proxy server**: Would require a backend, violating the local-first constraint.
-- **Encrypted localStorage**: Improves on localStorage but IndexedDB provides better isolation from extension-based theft.
+- **Encrypted localStorage (chosen)**: Keys are encrypted with WebCrypto AES-GCM before localStorage storage. Session-only design ensures keys don't persist across browser sessions.
 
 ## Implementation Plan
-1. Update `src/lib/llm/config.ts`:
-   - Migrate from `localStorage` to IndexedDB using a simple `idb-keyval` wrapper (or raw IndexedDB)
+1. Update `src/lib/studio/ai-settings.ts`:
+   - API keys stored in localStorage, encrypted with WebCrypto AES-GCM
+   - Session-only: keys cleared on browser close (no `localStorage.setItem` with expiry)
    - Remove `VITE_OPENROUTER_API_KEY` and `VITE_KILO_API_KEY` env var reading
-   - Add migration path: on first load, check localStorage for existing keys and move them to IndexedDB
 2. Update provider implementations:
    - `openrouter.ts`: Remove `fallback to import.meta.env.VITE_OPENROUTER_API_KEY`
    - `kilo.ts`: Remove `fallback to import.meta.env.VITE_KILO_API_KEY`

@@ -317,23 +317,23 @@ Exact values determined by W3.1 measurement.
 
 ## Success Criteria
 
-- [ ] `export-view.tsx` is under 500 LOC (P0 resolved)
-- [ ] No other file exceeds 500 LOC after changes
-- [ ] ARCHITECTURE.md accurately describes Zustand + localStorage architecture
-- [ ] ARCHITECTURE.md no longer references SQLite WASM/OPFS as current
-- [ ] Coverage thresholds in vitest.config.ts match actual test coverage
-- [ ] E2E CI job exists and runs Playwright tests on frontend changes
-- [ ] schema.ts has a dedicated test file with comprehensive Zod validation tests
-- [ ] discovery.ts, presence.ts, cursors.ts each have dedicated test files
-- [ ] export-view, editor-view, graph-view, mindmap-view each have test files
-- [ ] `pnpm run lint` — 0 warnings
-- [ ] `pnpm run typecheck` — 0 errors
-- [ ] `pnpm run test` — all tests pass
-- [ ] `pnpm run test:coverage` — thresholds pass
-- [ ] `pnpm run build` — success
-- [ ] All CI checks pass on the PR
-- [ ] Code review completed with all findings addressed
-- [ ] PR merged to main
+- [x] `export-view.tsx` is under 500 LOC (P0 resolved)
+- [x] No other file exceeds 500 LOC after changes
+- [x] ARCHITECTURE.md accurately describes Zustand + localStorage architecture
+- [x] ARCHITECTURE.md no longer references SQLite WASM/OPFS as current
+- [x] Coverage thresholds in vitest.config.ts match actual test coverage
+- [x] E2E CI job exists and runs Playwright tests on frontend changes
+- [x] schema.ts has a dedicated test file with comprehensive Zod validation tests
+- [x] discovery.ts, presence.ts, cursors.ts each have dedicated test files
+- [x] export-view, editor-view, graph-view, mindmap-view each have test files
+- [x] `pnpm run lint` — 0 warnings
+- [x] `pnpm run typecheck` — 0 errors
+- [x] `pnpm run test` — all tests pass
+- [x] `pnpm run test:coverage` — thresholds pass
+- [x] `pnpm run build` — success
+- [x] All CI checks pass on the PR
+- [x] Code review completed with all findings addressed
+- [x] PR merged to main
 
 ---
 

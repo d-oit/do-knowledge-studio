@@ -1,7 +1,7 @@
 # ADR 029 — Manifest-Driven Agent Harness and Skill Validation
 
 **Date**: 2026-07-19  
-**Status**: Accepted  
+**Status**: Implemented  
 **Related**: Plan 071
 
 ## Context

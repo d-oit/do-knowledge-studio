@@ -1,7 +1,7 @@
 # ADR 025: AI Provider Consolidation — OpenRouter + Ollama
 
 **Date**: 2026-07-16  
-**Status**: Accepted  
+**Status**: Implemented  
 **Supersedes**: ADR 019 (partial — vendor-specific endpoints)  
 **Related**: Plan 065
 

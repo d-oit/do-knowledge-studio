@@ -96,15 +96,15 @@ G1: Add variant support to Overlay component in shared-primitives.tsx:
 
 ## Success Criteria
 
-- [ ] Overlay component supports all 4 variants
-- [ ] command-palette, mobile-drawer, shortcuts-dialog use shared Overlay
-- [ ] Search results use proper listbox/option semantics
-- [ ] Dead useFocusTrap hook removed or consolidated
-- [ ] Coverage >= 50% lines
-- [ ] All existing tests pass
-- [ ] Lint, typecheck, build pass
-- [ ] PR created with all CI checks passing
-- [ ] All PR feedback addressed
+- [x] Overlay component supports all 4 variants
+- [x] command-palette, mobile-drawer, shortcuts-dialog use shared Overlay
+- [x] Search results use proper listbox/option semantics
+- [x] Dead useFocusTrap hook removed or consolidated
+- [x] Coverage >= 50% lines
+- [x] All existing tests pass
+- [x] Lint, typecheck, build pass
+- [x] PR created with all CI checks passing
+- [x] All PR feedback addressed
 
 ---
 
