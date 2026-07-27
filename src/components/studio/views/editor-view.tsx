@@ -84,14 +84,14 @@ export function EditorView() {
     if (typeof window === 'undefined' || !window.matchMedia) return
     const mq = window.matchMedia('(max-width: 768px)')
     const handleChange = (e: MediaQueryListEvent | MediaQueryList) => {
-      if (e.matches && editMode === 'split') {
-        setEditMode('edit')
+      if (e.matches) {
+        setEditMode((prev) => prev === 'split' ? 'edit' : prev)
       }
     }
     handleChange(mq)
     mq.addEventListener('change', handleChange)
     return () => mq.removeEventListener('change', handleChange)
-  }, [editMode])
+  }, [])
 
   // Initialize draft ID on mount
   useEffect(() => {

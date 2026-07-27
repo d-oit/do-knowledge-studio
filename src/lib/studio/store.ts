@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
+import { z } from 'zod'
 import type { Entity, Claim, ViewId, ChatMessage, EntityType } from './types'
 import { seedEntities, seedClaims, seedChat } from './seed-data'
 import { search } from '@/lib/search/retrieval'
@@ -309,13 +310,13 @@ export const useStudioStore = create<StudioState>()(
           entityHistory: structuredClone(state.entityHistory),
           historyIndex: state.historyIndex,
         }
-        const RECOVERY_KEY = 'do-knowledge-studio-recovery'
-        const RECOVERY_TTL_MS = 24 * 60 * 60 * 1000
         try {
-          localStorage.setItem(
-            RECOVERY_KEY,
-            JSON.stringify({ snapshot, timestamp: Date.now(), ttl: RECOVERY_TTL_MS }),
-          )
+          const serialized = JSON.stringify({ snapshot, timestamp: Date.now(), ttl: RECOVERY_TTL_MS })
+          if (serialized.length > MAX_RECOVERY_SIZE_BYTES) {
+            console.warn('Recovery snapshot exceeds size limit, skipping persistence')
+          } else {
+            localStorage.setItem(RECOVERY_KEY, serialized)
+          }
         } catch {
           console.warn('Failed to persist recovery snapshot')
         }
@@ -407,24 +408,62 @@ export const useStudioStore = create<StudioState>()(
 
 const RECOVERY_KEY = 'do-knowledge-studio-recovery'
 const RECOVERY_TTL_MS = 24 * 60 * 60 * 1000
+const MAX_RECOVERY_SIZE_BYTES = 4 * 1024 * 1024
+
+const RecoverySnapshotSchema = z.object({
+  snapshot: z.object({
+    entities: z.array(z.object({
+      id: z.string(),
+      name: z.string(),
+      type: z.string(),
+      description: z.string(),
+      content: z.string(),
+      sourceUrl: z.string().optional(),
+      tags: z.array(z.string()),
+      links: z.array(z.object({
+        targetId: z.string(),
+        relation: z.string(),
+      })),
+      createdAt: z.string(),
+      updatedAt: z.string(),
+    }).passthrough()),
+    claims: z.array(z.object({
+      id: z.string(),
+      entityId: z.string(),
+      statement: z.string(),
+      evidence: z.string(),
+      confidence: z.number(),
+      verification: z.string(),
+      source: z.string().optional(),
+    }).passthrough()),
+    entityHistory: z.array(z.array(z.object({ id: z.string() }).passthrough())),
+    historyIndex: z.number(),
+  }),
+  timestamp: z.number(),
+  ttl: z.number().optional(),
+})
 
 export function restoreFromRecovery(): { success: boolean; error?: string } {
   try {
     const raw = localStorage.getItem(RECOVERY_KEY)
     if (!raw) return { success: false, error: 'No recovery snapshot found.' }
-    const { snapshot, timestamp, ttl } = JSON.parse(raw) as {
-      snapshot: { entities: Entity[]; claims: Claim[]; entityHistory: Entity[][]; historyIndex: number }
-      timestamp: number
-      ttl: number
+
+    const parsed: unknown = JSON.parse(raw)
+    const result = RecoverySnapshotSchema.safeParse(parsed)
+    if (!result.success) {
+      localStorage.removeItem(RECOVERY_KEY)
+      return { success: false, error: 'Recovery snapshot is corrupted.' }
     }
+
+    const { snapshot, timestamp, ttl } = result.data
     if (Date.now() - timestamp > (ttl ?? RECOVERY_TTL_MS)) {
       localStorage.removeItem(RECOVERY_KEY)
       return { success: false, error: 'Recovery snapshot has expired.' }
     }
     useStudioStore.setState({
-      entities: snapshot.entities,
-      claims: snapshot.claims,
-      entityHistory: snapshot.entityHistory,
+      entities: snapshot.entities as unknown as Entity[],
+      claims: snapshot.claims as unknown as Claim[],
+      entityHistory: snapshot.entityHistory as unknown as Entity[][],
       historyIndex: snapshot.historyIndex,
     })
     localStorage.removeItem(RECOVERY_KEY)

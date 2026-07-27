@@ -291,16 +291,18 @@ def sync_managed_surfaces(repo_root: Path, manifest: dict) -> list[str]:
         full_tool_dir.mkdir(parents=True, exist_ok=True)
 
         if full_skills_dir.is_symlink():
-            target = full_skills_dir.readlink()
-            expected = Path(canonical_skills).relative_to(Path(tool_dir).parent)
-            if str(target) != str(expected):
+            target = full_skills_dir.resolve()
+            if not target.exists():
+                errors.append(f"Broken symlink: {skills_dir} -> {full_skills_dir.readlink()}")
+            elif target != canonical_path.resolve():
                 errors.append(
-                    f"Symlink mismatch: {skills_dir} -> {target} (expected {expected})"
+                    f"Symlink mismatch: {skills_dir} -> {full_skills_dir.readlink()}"
                 )
         elif full_skills_dir.exists():
             errors.append(f"Warning: {skills_dir} exists and is not a symlink")
         else:
-            relative_target = Path(canonical_skills).relative_to(Path(tool_dir).parent)
+            import os
+            relative_target = os.path.relpath(str(canonical_path), str(full_tool_dir))
             full_skills_dir.symlink_to(relative_target)
             print(f"Created symlink: {skills_dir} -> {relative_target}")
 

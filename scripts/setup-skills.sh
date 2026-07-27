@@ -22,13 +22,14 @@ fi
 # Parse manifest with node (available in Node.js projects)
 TOOLS=$(node -e "
 const fs = require('fs');
-const manifest = JSON.parse(fs.readFileSync('$MANIFEST', 'utf8'));
+const manifestPath = process.argv[1];
+const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 const tools = manifest.tools || {};
 for (const [name, config] of Object.entries(tools)) {
   if (config.symlink_strategy === 'none') continue;
   console.log(name + '|' + (config.directory || '') + '|' + (config.skills_directory || ''));
 }
-")
+" -- "$MANIFEST")
 
 while IFS='|' read -r tool_name tool_dir skills_dir; do
   if [ -z "$tool_name" ] || [ -z "$tool_dir" ] || [ -z "$skills_dir" ]; then

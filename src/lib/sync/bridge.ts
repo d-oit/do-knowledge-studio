@@ -204,8 +204,8 @@ export function applyConflictResolution(
   const sync = getSyncDoc()
   const doc = getDoc()
 
-  const entityUpdates = new Map<string, Partial<Entity>>()
-  const claimUpdates = new Map<string, Partial<Claim>>()
+  const entityUpdates = new Map<string, Entity>()
+  const claimUpdates = new Map<string, Claim>()
 
   for (const conflict of conflicts) {
     const key = `${conflict.entityId}:${conflict.field}`
@@ -213,13 +213,25 @@ export function applyConflictResolution(
     if (choice === 'local') continue
 
     if (conflict.entityType === 'entity') {
-      const existing = entityUpdates.get(conflict.entityId) ?? {}
-      existing[conflict.field as keyof Entity] = conflict.remoteValue as never
-      entityUpdates.set(conflict.entityId, existing)
+      const local = localEntities.find((e) => e.id === conflict.entityId)
+      if (local) {
+        const existing = entityUpdates.get(conflict.entityId) ?? { ...local }
+        const field = conflict.field
+        if (field in existing) {
+          ;(existing as unknown as Record<string, unknown>)[field] = conflict.remoteValue
+          entityUpdates.set(conflict.entityId, existing)
+        }
+      }
     } else {
-      const existing = claimUpdates.get(conflict.entityId) ?? {}
-      existing[conflict.field as keyof Claim] = conflict.remoteValue as never
-      claimUpdates.set(conflict.entityId, existing)
+      const local = localClaims.find((c) => c.id === conflict.entityId)
+      if (local) {
+        const existing = claimUpdates.get(conflict.entityId) ?? { ...local }
+        const field = conflict.field
+        if (field in existing) {
+          ;(existing as unknown as Record<string, unknown>)[field] = conflict.remoteValue
+          claimUpdates.set(conflict.entityId, existing)
+        }
+      }
     }
   }
 
@@ -247,9 +259,18 @@ export function startBidirectionalSync(): Unsubscribe {
 
   const store = useStudioStore.getState
 
-  const unsubOutbound = onYjsChange(() => {
+  const unsubOutbound = onYjsChange((remoteEntities, remoteClaims) => {
     const state = store()
-    void state
+    const result = applyRemoteUpdate(
+      remoteEntities,
+      remoteClaims,
+      state.entities,
+      state.claims,
+    )
+    useStudioStore.setState({
+      entities: result.entities,
+      claims: result.claims,
+    })
   })
 
   const unsubInbound = subscribeToYjs(
