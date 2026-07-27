@@ -81,7 +81,7 @@ export function EditorView() {
   const [draftStatus, setDraftStatus] = useState<'saved' | 'unsaved' | 'error' | null>(null)
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) return
+    if (!window.matchMedia) return
     const mq = window.matchMedia('(max-width: 768px)')
     const handleChange = (e: MediaQueryListEvent | MediaQueryList) => {
       if (e.matches) {
@@ -90,7 +90,7 @@ export function EditorView() {
     }
     handleChange(mq)
     mq.addEventListener('change', handleChange)
-    return () => mq.removeEventListener('change', handleChange)
+    return () => { mq.removeEventListener('change', handleChange) }
   }, [])
 
   // Initialize draft ID on mount
