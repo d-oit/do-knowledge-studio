@@ -32,6 +32,22 @@ export function Field({
   children: React.ReactNode
 }) {
   const fieldId = `field-${label.toLowerCase().replace(/\s+/g, '-')}`
+
+  function injectId(child: React.ReactNode): React.ReactNode {
+    if (!React.isValidElement(child)) return child
+    const el = child as React.ReactElement<Record<string, unknown>>
+    const tag = typeof el.type === 'string' ? el.type : ''
+    if (['input', 'select', 'textarea'].includes(tag)) {
+      return React.cloneElement(el, { id: fieldId } as Record<string, unknown>)
+    }
+    if (el.props.children) {
+      return React.cloneElement(el, {
+        children: React.Children.map(el.props.children as React.ReactNode, injectId),
+      })
+    }
+    return child
+  }
+
   return (
     <div>
       <label
@@ -41,12 +57,7 @@ export function Field({
         <Icon className="h-3 w-3" />
         {label}
       </label>
-      {React.Children.map(children, (child) => {
-        if (React.isValidElement(child)) {
-          return React.cloneElement(child as React.ReactElement<{ id?: string }>, { id: fieldId })
-        }
-        return child
-      })}
+      {React.Children.map(children, injectId)}
     </div>
   )
 }

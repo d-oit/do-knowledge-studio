@@ -11,7 +11,7 @@ import {
   Eye,
   List,
 } from 'lucide-react'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
@@ -64,8 +64,15 @@ export function TrizView() {
     navigator.clipboard?.writeText(text)
     setCopied(id)
     toast.success('Principle copied to clipboard')
-    setTimeout(() => { setCopied(null) }, 2000)
+    clearTimeout(copiedTimerRef.current)
+    copiedTimerRef.current = setTimeout(() => { setCopied(null) }, 2000)
   }
+
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  useEffect(() => {
+    return () => { if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current) }
+  }, [])
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-6 lg:px-10 lg:py-8">

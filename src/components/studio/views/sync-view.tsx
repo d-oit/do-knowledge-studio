@@ -222,10 +222,10 @@ export function SyncView() {
       </motion.div>
 
       {/* Status Card */}
-      <div className="mb-6 rounded-lg border border-border bg-card p-5" aria-live="polite">
+      <div className="mb-6 rounded-lg border border-border bg-card p-5">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-serif text-[15px] font-semibold text-ink">Connection</h2>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" aria-live="polite">
             {status === 'connected' ? (
               <span className="flex items-center gap-1.5 text-[12px] font-medium text-emerald-600">
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />

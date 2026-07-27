@@ -282,20 +282,24 @@ export function SwitchToggle({
       </div>
       <button
         onClick={onToggle}
-        className={cn(
-          'relative h-5 w-9 overflow-hidden rounded-full transition-colors',
-          checked ? 'bg-saffron' : 'bg-border',
-        )}
+        className="relative flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md"
         role="switch"
         aria-checked={checked}
         aria-label={label}
       >
         <span
           className={cn(
-            'absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform',
-            checked ? 'translate-x-[18px]' : 'translate-x-0',
+            'relative h-5 w-9 overflow-hidden rounded-full transition-colors',
+            checked ? 'bg-saffron' : 'bg-border',
           )}
-        />
+        >
+          <span
+            className={cn(
+              'absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform',
+              checked ? 'translate-x-[18px]' : 'translate-x-0',
+            )}
+          />
+        </span>
       </button>
     </div>
   )
