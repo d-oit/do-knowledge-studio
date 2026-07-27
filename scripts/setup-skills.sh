@@ -38,7 +38,6 @@ while IFS='|' read -r tool_name tool_dir skills_dir; do
 
   FULL_TOOL_DIR="$REPO_ROOT/$tool_dir"
   FULL_SKILLS_DIR="$REPO_ROOT/$skills_dir"
-  CANONICAL_SKILLS="$REPO_ROOT/$AGENTS_DIR"
 
   # Create tool directory if it doesn't exist
   mkdir -p "$FULL_TOOL_DIR"
