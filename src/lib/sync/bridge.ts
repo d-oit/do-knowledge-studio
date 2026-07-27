@@ -204,53 +204,52 @@ export function applyConflictResolution(
   const sync = getSyncDoc()
   const doc = getDoc()
 
-  const entityUpdates = new Map<string, Entity>()
-  const claimUpdates = new Map<string, Claim>()
-
-  for (const conflict of conflicts) {
-    const key = `${conflict.entityId}:${conflict.field}`
-    const choice = resolutions.get(key) ?? conflict.winner
-    if (choice === 'local') continue
-
-    if (conflict.entityType === 'entity') {
-      const local = localEntities.find((e) => e.id === conflict.entityId)
-      if (local) {
-        const existing = entityUpdates.get(conflict.entityId) ?? { ...local }
-        const field = conflict.field as keyof Entity
-        if (field in existing) {
-          Object.assign(existing, { [field]: conflict.remoteValue })
-          entityUpdates.set(conflict.entityId, existing)
-        }
-      }
-    } else {
-      const local = localClaims.find((c) => c.id === conflict.entityId)
-      if (local) {
-        const existing = claimUpdates.get(conflict.entityId) ?? { ...local }
-        const field = conflict.field as keyof Claim
-        if (field in existing) {
-          Object.assign(existing, { [field]: conflict.remoteValue })
-          claimUpdates.set(conflict.entityId, existing)
-        }
-      }
-    }
-  }
+  const entityUpdates = collectUpdates<Entity>(
+    conflicts.filter((c) => c.entityType === 'entity'),
+    resolutions,
+    localEntities,
+  )
+  const claimUpdates = collectUpdates<Claim>(
+    conflicts.filter((c) => c.entityType === 'claim'),
+    resolutions,
+    localClaims,
+  )
 
   doc.transact(() => {
     for (const [id, updates] of entityUpdates) {
       const local = localEntities.find((e) => e.id === id)
       if (local) {
-        const updated = { ...local, ...updates, updatedAt: new Date().toISOString() }
-        sync.entities.set(id, entityToYMap(updated))
+        sync.entities.set(id, entityToYMap({ ...local, ...updates, updatedAt: new Date().toISOString() }))
       }
     }
     for (const [id, updates] of claimUpdates) {
       const local = localClaims.find((c) => c.id === id)
       if (local) {
-        const updated = { ...local, ...updates }
-        sync.claims.set(id, claimToYMap(updated))
+        sync.claims.set(id, claimToYMap({ ...local, ...updates }))
       }
     }
   }, ORIGIN_OUTBOUND)
+}
+
+function collectUpdates<T extends Entity | Claim>(
+  conflicts: import('./merge').FieldConflict[],
+  resolutions: Map<string, 'local' | 'remote'>,
+  locals: T[],
+): Map<string, T> {
+  const updates = new Map<string, T>()
+  for (const conflict of conflicts) {
+    const key = `${conflict.entityId}:${conflict.field}`
+    if ((resolutions.get(key) ?? conflict.winner) === 'local') continue
+    const local = locals.find((item) => item.id === conflict.entityId)
+    if (!local) continue
+    const existing = updates.get(conflict.entityId) ?? { ...local }
+    const field = conflict.field as keyof T
+    if (field in existing) {
+      Object.assign(existing, { [field]: conflict.remoteValue })
+      updates.set(conflict.entityId, existing)
+    }
+  }
+  return updates
 }
 
 export function startBidirectionalSync(): Unsubscribe {
