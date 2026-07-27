@@ -227,22 +227,6 @@ export function MindMapView() {
           className="flex items-center"
           style={getNodeIndentStyle(level)}
         >
-          {hasChildren ? (
-            <button
-              onClick={() => { toggleNode(node.entity.id) }}
-              className="mr-1 min-h-[44px] min-w-[44px] rounded p-0.5 text-ink-faint transition-colors hover:text-ink focus-ring"
-              aria-label={isExpanded ? 'Collapse' : 'Expand'}
-            >
-              {isExpanded ? (
-                <ChevronDown className="h-3.5 w-3.5" />
-              ) : (
-                <ChevronRight className="h-3.5 w-3.5" />
-              )}
-            </button>
-          ) : (
-            <span className="mr-1 inline-block w-[18px]" />
-          )}
-
           <div
             role="treeitem"
             data-entity-id={node.entity.id}
@@ -289,32 +273,41 @@ export function MindMapView() {
               if (e.key === 'Home') {
                 e.preventDefault()
                 const items = treeItemsRef.current
-                if (items && items.length > 0) {
-                  items[0].focus()
-                }
+                if (items && items.length > 0) items[0].focus()
               }
               if (e.key === 'End') {
                 e.preventDefault()
                 const items = treeItemsRef.current
-                if (items && items.length > 0) {
-                  items[items.length - 1].focus()
-                }
+                if (items && items.length > 0) items[items.length - 1].focus()
               }
             }}
             className={cn(
-              'group flex cursor-pointer items-center gap-2 rounded-md border bg-card py-1.5 pr-3 transition-all hover:border-saffron/40 hover:shadow-sm',
+              'group flex flex-1 cursor-pointer items-center gap-2 rounded-md border bg-card py-1.5 pr-3 transition-all hover:border-saffron/40 hover:shadow-sm',
               level === 0 ? 'border-saffron/40 px-4' : 'border-border px-3',
             )}
           >
+            {hasChildren ? (
+              <button
+                onClick={(e) => { e.stopPropagation(); toggleNode(node.entity.id) }}
+                className="mr-1 min-h-[44px] min-w-[44px] rounded p-0.5 text-ink-faint transition-colors hover:text-ink focus-ring"
+                aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                tabIndex={-1}
+              >
+                {isExpanded ? (
+                  <ChevronDown className="h-3.5 w-3.5" />
+                ) : (
+                  <ChevronRight className="h-3.5 w-3.5" />
+                )}
+              </button>
+            ) : (
+              <span className="mr-1 inline-block w-[18px]" />
+            )}
+
             <span className={cn('h-2 w-2 rounded-full', meta.dot)} />
-            <span
-              className={cn(
-                'font-medium',
-                level === 0 ? 'font-serif text-[15px] text-ink' : 'text-[13px] text-ink-soft',
-              )}
-            >
-              {node.entity.name}
-            </span>
+            <span className={cn(
+              'truncate font-medium',
+              level === 0 ? 'font-serif text-[15px] text-ink' : 'text-[13px] text-ink-soft',
+            )}>{node.entity.name}</span>
             <span className="rounded bg-muted px-1.5 py-0 text-badge uppercase tracking-wide text-ink-faint">
               {meta.label}
             </span>
