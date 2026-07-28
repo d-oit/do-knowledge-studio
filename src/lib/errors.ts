@@ -71,9 +71,4 @@ export class AppError extends Error {
     this.code = code
     this.userMessage = USER_MESSAGES[code]
   }
-
-  /** Return the user-facing message, never the raw stack or internal detail. */
-  toUserString(): string {
-    return this.userMessage
-  }
 }

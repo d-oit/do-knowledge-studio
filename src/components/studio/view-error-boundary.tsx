@@ -3,7 +3,6 @@
 import { Component, type ReactNode } from 'react'
 import { AlertTriangle, RefreshCcw } from 'lucide-react'
 import { AppError } from '@/lib/errors'
-import { sanitizeText } from '@/lib/security'
 
 interface ViewErrorBoundaryProps {
   viewName: string
@@ -17,9 +16,8 @@ interface ViewErrorBoundaryState {
 }
 
 function userFacingMessage(error: Error | null): string {
-  if (error instanceof AppError) return error.toUserString()
-  if (!error?.message) return 'An unexpected error occurred.'
-  return sanitizeText(error.message)
+  if (error instanceof AppError) return error.userMessage
+  return 'An unexpected error occurred. Please try reloading this view.'
 }
 
 export class ViewErrorBoundary extends Component<

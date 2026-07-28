@@ -124,6 +124,17 @@ describe('buildHtmlExport', () => {
     expect(html).toContain('&lt;script&gt;')
   })
 
+  it('preserves Markdown angle brackets in entity content', () => {
+    const md: Entity[] = [{
+      ...SAMPLE_ENTITIES[0],
+      content: 'Use <div> wrappers and Array<string> types',
+    }]
+    const html = buildHtmlExport(md, [])
+    expect(html).toContain('Use &lt;div&gt; wrappers and Array&lt;string&gt; types')
+    expect(html).not.toContain('<div>')
+    expect(html).not.toContain('<string>')
+  })
+
   it('includes CSP header', () => {
     const html = buildHtmlExport(SAMPLE_ENTITIES, [])
     expect(html).toContain('Content-Security-Policy')

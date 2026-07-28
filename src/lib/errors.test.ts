@@ -22,9 +22,9 @@ describe('AppError', () => {
     expect(err.cause).toBe(cause)
   })
 
-  it('toUserString returns user-facing message', () => {
+  it('userMessage returns the user-facing message', () => {
     const err = new AppError(ErrorCode.AI_PROVIDER_RATE_LIMITED, 'rate limit 429')
-    expect(err.toUserString()).toBe('Too many requests. Please wait a moment and try again.')
+    expect(err.userMessage).toBe('Too many requests. Please wait a moment and try again.')
   })
 
   it('is instanceof Error', () => {

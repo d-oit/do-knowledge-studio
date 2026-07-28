@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
-# audit-vite-env.sh — Audit VITE_ environment variable usage in the codebase.
-# Reports any import.meta.env.VITE_* references and warns if they lack defaults,
-# since VITE_ env vars are baked into the client bundle at build time.
+# audit-env-secrets.sh — Audit environment variable secret exposure in the codebase.
+# Reports any NEXT_PUBLIC_ or VITE_ references that may leak secrets into client bundles,
+# and scans .env files for accidental secret declarations.
+#
+# For Next.js projects, NEXT_PUBLIC_* vars are inlined into the client bundle at build
+# time and are therefore public. For Vite projects, VITE_* vars are the equivalent.
+# Neither prefix should ever carry a secret.
 
 set -euo pipefail
 
@@ -13,14 +17,40 @@ YELLOW='\033[0;33m'
 GREEN='\033[0;32m'
 NC='\033[0m'
 
-echo "=== VITE_ Environment Variable Audit ==="
+EXIT_CODE=0
+
+# Preflight: ensure rg is available
+if ! command -v rg >/dev/null 2>&1; then
+  echo -e "${RED}ERROR: ripgrep (rg) is required but not installed.${NC}" >&2
+  exit 1
+fi
+
+echo "=== Client-Bundle Secret Exposure Audit ==="
 echo ""
 
-# 1. Find all VITE_ references in source files
+# ── 1. NEXT_PUBLIC_ references in source (Next.js leak vector) ────────
+echo "--- NEXT_PUBLIC_ references in source code ---"
+NEXT_REFS=$(rg --no-heading -n 'process\.env\.NEXT_PUBLIC_' \
+  -g '*.ts' -g '*.tsx' -g '*.js' -g '*.jsx' \
+  -g '!node_modules' -g '!dist' -g '!*.d.ts' \
+  "$REPO_ROOT/src" 2>/dev/null || true)
+
+if [ -z "$NEXT_REFS" ]; then
+  echo -e "${GREEN}No NEXT_PUBLIC_ env references found in source code.${NC}"
+else
+  echo "$NEXT_REFS"
+  echo ""
+  REF_COUNT=$(echo "$NEXT_REFS" | wc -l | tr -d ' ')
+  echo -e "${YELLOW}Found ${REF_COUNT} NEXT_PUBLIC_ reference(s).${NC}"
+fi
+
+echo ""
+
+# ── 2. VITE_ references in source (Vite leak vector) ─────────────────
 echo "--- VITE_ references in source code ---"
 VITE_REFS=$(rg --no-heading -n 'import\.meta\.env\.VITE_' \
-  --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' \
-  --glob='!node_modules' --glob='!dist' --glob='!*.d.ts' \
+  -g '*.ts' -g '*.tsx' -g '*.js' -g '*.jsx' \
+  -g '!node_modules' -g '!dist' -g '!*.d.ts' \
   "$REPO_ROOT/src" 2>/dev/null || true)
 
 if [ -z "$VITE_REFS" ]; then
@@ -34,59 +64,44 @@ fi
 
 echo ""
 
-# 2. Find VITE_ references without defaults (risky — will be undefined at runtime if not set)
-echo "--- VITE_ references without fallback defaults ---"
-NO_DEFAULT=$(rg --no-heading -n 'import\.meta\.env\.VITE_[A-Z_]+(?!\s*\?\?)' \
-  --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' \
-  --glob='!node_modules' --glob='!dist' --glob='!*.d.ts' \
-  "$REPO_ROOT/src" 2>/dev/null || true)
-
-if [ -z "$NO_DEFAULT" ]; then
-  echo -e "${GREEN}All VITE_ references have fallback defaults, or none exist.${NC}"
-else
-  echo -e "${RED}The following VITE_ references lack fallback defaults:${NC}"
-  echo "$NO_DEFAULT"
-  echo ""
-  echo -e "${YELLOW}These will be undefined if the env var is not set at build time.${NC}"
-fi
-
-echo ""
-
-# 3. Check .env files for VITE_ declarations
-echo "--- .env files with VITE_ declarations ---"
-ENV_FILES=$(find "$REPO_ROOT" -maxdepth 2 -name '.env*' -not -name '.env.example' -not -path '*/node_modules/*' 2>/dev/null || true)
+# ── 3. .env files with secret-like declarations ──────────────────────
+echo "--- .env files with potential secret declarations ---"
+ENV_FILES=$(find "$REPO_ROOT" -maxdepth 3 -name '.env*' \
+  -not -name '.env.example' -not -path '*/node_modules/*' 2>/dev/null || true)
 
 if [ -z "$ENV_FILES" ]; then
   echo -e "${GREEN}No .env files found.${NC}"
 else
   for f in $ENV_FILES; do
-    VITE_ENTRIES=$(grep -c '^VITE_' "$f" 2>/dev/null || true)
-    if [ "$VITE_ENTRIES" -gt 0 ]; then
-      echo -e "${YELLOW}${f}:${NC} ${VITE_ENTRIES} VITE_ declaration(s)"
-      grep '^VITE_' "$f" | sed 's/=.*/=***/'  # mask values
+    # Check for NEXT_PUBLIC_ or VITE_ prefixed secrets
+    SECRET_ENTRIES=$(grep -cE '^(NEXT_PUBLIC_|VITE_).*(KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL)' "$f" 2>/dev/null || true)
+    if [ "$SECRET_ENTRIES" -gt 0 ]; then
+      echo -e "${RED}${f}: ${SECRET_ENTRIES} potential secret(s) with client-prefixed names:${NC}"
+      grep -nE '^(NEXT_PUBLIC_|VITE_).*(KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL)' "$f" | sed 's/=.*/=***/'
+      EXIT_CODE=1
     else
-      echo -e "${GREEN}${f}: No VITE_ declarations.${NC}"
+      echo -e "${GREEN}${f}: No client-prefixed secrets found.${NC}"
     fi
   done
 fi
 
 echo ""
 
-# 4. Check for secrets accidentally prefixed with VITE_
-echo "--- Potential secrets in VITE_ env ---"
-SECRETS=$(rg --no-heading -n '^VITE_.*(KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL)' \
-  --glob='.env*' --glob='!.env.example' \
+# ── 4. Any env var with KEY/SECRET/TOKEN in name (catch-all) ─────────
+echo "--- Potential secrets in ANY env var (catch-all) ---"
+ALL_SECRETS=$(rg --no-heading -n \
+  '^(NEXT_PUBLIC_|VITE_|).*(KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL)\s*=' \
+  -g '.env*' -g '!.env.example' -g '!node_modules' \
   "$REPO_ROOT" 2>/dev/null || true)
 
-if [ -z "$SECRETS" ]; then
-  echo -e "${GREEN}No potential secrets found in VITE_ env declarations.${NC}"
+if [ -z "$ALL_SECRETS" ]; then
+  echo -e "${GREEN}No potential secrets found in .env files.${NC}"
 else
-  echo -e "${RED}WARNING: Potential secrets found with VITE_ prefix:${NC}"
-  echo "$SECRETS"
+  echo "$ALL_SECRETS"
   echo ""
-  echo -e "${RED}VITE_ env vars are embedded in the client bundle and are NOT secret.${NC}"
-  echo -e "${RED}Remove VITE_ prefix or use a server-side proxy for sensitive values.${NC}"
+  echo -e "${YELLOW}Review these entries: ensure no secrets have client-prefixed names.${NC}"
 fi
 
 echo ""
 echo "=== Audit complete ==="
+exit $EXIT_CODE

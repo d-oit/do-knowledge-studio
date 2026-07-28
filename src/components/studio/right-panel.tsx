@@ -107,13 +107,13 @@ function SearchPanel({ onCreateEntity }: { onCreateEntity?: (name: string) => vo
             )}
           </div>
         ) : mode === 'ranked' ? (
-          <ul className="space-y-1.5" role="listbox" aria-label="Ranked search results">
+          <ul className="space-y-1.5" role="list" aria-label="Ranked search results">
             {rankedResults.map((r: SearchResult) => {
               const targetId = r.type === 'entity' ? r.id : r.entityId
               const resolvedEntity = targetId ? entities.find((e) => e.id === targetId) : undefined
               const meta = resolvedEntity ? ENTITY_TYPE_META[resolvedEntity.type] : undefined
               return (
-                <li key={r.id} role="option" aria-selected="false">
+                <li key={r.id}>
                   <button
                     onClick={() => targetId && startEdit(targetId)}
                     className="group block w-full rounded-md border border-transparent p-2.5 text-left transition-colors hover:border-border hover:bg-muted/50 focus-ring"
@@ -140,11 +140,11 @@ function SearchPanel({ onCreateEntity }: { onCreateEntity?: (name: string) => vo
             })}
           </ul>
         ) : (
-          <ul className="space-y-1.5" role="listbox" aria-label="Keyword search results">
+          <ul className="space-y-1.5" role="list" aria-label="Keyword search results">
             {filtered.slice(0, 20).map((e) => {
               const meta = ENTITY_TYPE_META[e.type]
               return (
-                <li key={e.id} role="option" aria-selected="false">
+                <li key={e.id}>
                   <button
                     onClick={() => startEdit(e.id)}
                     className="group block w-full rounded-md border border-transparent p-2.5 text-left transition-colors hover:border-border hover:bg-muted/50 focus-ring"

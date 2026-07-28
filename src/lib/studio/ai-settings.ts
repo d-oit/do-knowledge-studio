@@ -61,11 +61,21 @@ function openDB(): Promise<IDBDatabase> {
         db.createObjectStore(IDB_STORE_NAME)
       }
     }
-    request.onsuccess = () => resolve(request.result)
+    request.onsuccess = () => {
+      const db = request.result
+      db.onversionchange = () => {
+        db.close()
+        idbPromise = null
+      }
+      resolve(db)
+    }
     request.onerror = () => {
-      request.result?.close() // Close partially-opened connection to prevent leak
       idbPromise = null // Reset on error so next call retries
       reject(request.error)
+    }
+    request.onblocked = () => {
+      idbPromise = null
+      reject(new Error('IndexedDB upgrade blocked by another open tab'))
     }
   })
   return idbPromise
@@ -209,11 +219,10 @@ async function applyStoredSettings(stored: StoredSettings): Promise<AISettings> 
     ? await decryptApiKey(stored.encryptedApiKey)
     : (stored.apiKey ?? '')
   return {
-    ...DEFAULT_SETTINGS,
-    ...stored,
     provider,
     model,
     apiKey,
+    augmentWithLocal: stored.augmentWithLocal,
     ollamaCpuOnly: stored.ollamaCpuOnly ?? false,
     allowWebResearch: stored.allowWebResearch ?? false,
     ollamaBaseUrl: stored.ollamaBaseUrl ?? DEFAULT_SETTINGS.ollamaBaseUrl,

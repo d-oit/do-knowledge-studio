@@ -16,7 +16,7 @@
 - **T1.1**: Verify ADR 002 (Security Export) acceptance criteria and check off.
 - **T1.2**: Verify ADR 003 (Vite Env Security) acceptance criteria and check off.
 - **T1.3**: Verify ADR 005 (Error Handling) acceptance criteria and check off.
-- **T1.4**: Fix Overlay search listbox ARIA and remove dead `useFocusTrap` (ADR 014).
+- **T1.4**: Fix Overlay search list ARIA roles.
 
 ### Wave 2: Manual Accessibility Verification (P0)
 - **T2.1**: Verify skip navigation link and keyboard navigation.
@@ -42,7 +42,7 @@
 ## Success Criteria
 
 - [x] All ADR 002, 003, 005 acceptance criteria checked off.
-- [x] Overlay A11y fixes implemented (search listbox roles corrected).
+- [x] Overlay A11y fixes implemented (search list uses native `<ul>/<li>` with `role="list"` and proper `aria-label`).
 - [ ] Manual A11y evidence captured (zoom, reflow, keyboard) — **deferred to follow-up**
 - [ ] PWA service worker and manifest functional — **deferred to follow-up**
 - [ ] AI provider unit tests added — **deferred to follow-up**
