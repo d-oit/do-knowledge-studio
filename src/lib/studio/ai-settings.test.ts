@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { getProviderEndpoint, loadAISettings, saveAISettings, isSessionOnlyCredential, getSessionOnlyMessage } from './ai-settings'
+import { getProviderEndpoint, loadAISettings, saveAISettings, isSessionOnlyCredential, getSessionOnlyMessage, resetIDBConnection } from './ai-settings'
 
 // ── In-memory IndexedDB mock ─────────────────────────────────────────
 // Uses a shared Map so that multiple openDB() calls within the same test
@@ -9,7 +9,8 @@ const idbStores = new Map<string, Map<string, unknown>>()
 
 function createMockIDBRequest(result?: unknown): IDBRequest {
   const req = { result: result ?? undefined, onsuccess: null as ((this: IDBRequest) => void) | null, onerror: null as ((this: IDBRequest) => void) | null, error: null }
-  queueMicrotask(() => { if (req.onsuccess) req.onsuccess.call(req as unknown as IDBRequest) })
+  // Defer the callback so the caller has a chance to set req.onsuccess
+  setTimeout(() => { if (req.onsuccess) req.onsuccess.call(req as unknown as IDBRequest) }, 0)
   return req as unknown as IDBRequest
 }
 
@@ -120,6 +121,7 @@ describe('ai-settings encryption and persistence', () => {
     })
 
     installMockIDB()
+    resetIDBConnection()
   })
 
   afterEach(() => {

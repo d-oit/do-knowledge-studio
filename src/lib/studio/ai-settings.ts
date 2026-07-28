@@ -43,8 +43,16 @@ const DEFAULT_SETTINGS: AISettings = {
 
 // ── IndexedDB helpers ────────────────────────────────────────────────
 
+let idbPromise: Promise<IDBDatabase> | null = null
+
+/** Reset cached IDB connection. Used by tests to isolate between test cases. */
+export function resetIDBConnection(): void {
+  idbPromise = null
+}
+
 function openDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
+  if (idbPromise) return idbPromise
+  idbPromise = new Promise((resolve, reject) => {
     const request = indexedDB.open(IDB_DATABASE_NAME, IDB_VERSION)
     request.onupgradeneeded = () => {
       const db = request.result
@@ -53,8 +61,12 @@ function openDB(): Promise<IDBDatabase> {
       }
     }
     request.onsuccess = () => resolve(request.result)
-    request.onerror = () => reject(request.error)
+    request.onerror = () => {
+      idbPromise = null // Reset on error so next call retries
+      reject(request.error)
+    }
   })
+  return idbPromise
 }
 
 function idbGet<T>(key: IDBValidKey): Promise<T | undefined> {
