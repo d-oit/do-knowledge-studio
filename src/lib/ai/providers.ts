@@ -13,7 +13,7 @@ const APP_TITLE = 'Do Knowledge Studio'
 
 const ALLOWED_OLLAMA_HOSTS = new Set(['localhost', '127.0.0.1', '::1'])
 
-function validateOllamaUrl(baseUrl: string): string {
+export function validateOllamaUrl(baseUrl: string): string {
   let url: URL
   try {
     url = new URL(baseUrl)

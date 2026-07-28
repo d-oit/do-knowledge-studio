@@ -21,26 +21,23 @@ We will implement a layered error handling architecture:
 ```typescript
 class AppError extends Error {
   constructor(
-    message: string,
-    public readonly code: ErrorCode,
-    public readonly context?: Record<string, unknown>,
-    public readonly userMessage?: string,
-    public readonly recoverable: boolean = false
+    code: ErrorCode,
+    message?: string,
+    options?: ErrorOptions,
   ) {
-    super(message);
+    super(message ?? USER_MESSAGES[code], options);
+    this.code = code;
+    this.userMessage = USER_MESSAGES[code];
   }
 }
 
-type ErrorCode =
-  | 'DB_INIT_FAILED'
-  | 'DB_QUERY_FAILED'
-  | 'SEARCH_FAILED'
-  | 'EXPORT_FAILED'
-  | 'LLM_FAILED'
-  | 'WORKER_TIMEOUT'
-  | 'VALIDATION_FAILED'
-  | 'NOT_FOUND'
-  | 'UNKNOWN';
+enum ErrorCode {
+  ENTITY_NOT_FOUND, ENTITY_CREATE_FAILED, ENTITY_UPDATE_FAILED, ENTITY_DELETE_FAILED,
+  CLAIM_NOT_FOUND, CLAIM_CREATE_FAILED, CLAIM_UPDATE_FAILED, CLAIM_DELETE_FAILED,
+  IMPORT_INVALID_JSON, IMPORT_INVALID_PAYLOAD, IMPORT_EMPTY_ENTITIES, IMPORT_ORPHANED_CLAIMS,
+  EXPORT_FAILED, STORAGE_READ_FAILED, STORAGE_WRITE_FAILED, SEARCH_FAILED,
+  AI_PROVIDER_ERROR, AI_PROVIDER_TIMEOUT, AI_PROVIDER_RATE_LIMITED, UNKNOWN,
+}
 ```
 
 ### 2. Error boundaries (feature isolation)
@@ -96,11 +93,11 @@ type ErrorCode =
 - **Risk**: Some callers may need updating if they relied on silent fallback behavior
 
 ## Acceptance Criteria
-- [ ] `AppError` class created with error codes and user messages
-- [ ] All `catch` blocks either rethrow `AppError` or provide user feedback
-- [ ] Per-feature ErrorBoundaries in App.tsx (at minimum: Editor, Graph, Chat, Export)
-- [ ] ErrorBoundary fallback shows feature name + retry button
-- [ ] CLI calls `closeDb()` on exit
-- [ ] CLI synchronous FS ops are wrapped in try/catch
-- [ ] Error screen does not render raw error strings
-- [ ] `npm run typecheck` and `npm test` pass
+- [x] `AppError` class created with error codes and user messages
+- [ ] All `catch` blocks either rethrow `AppError` or provide user feedback — infrastructure created, adoption deferred to follow-up
+- [x] Per-feature ErrorBoundaries in App.tsx (at minimum: Editor, Graph, Chat, Export)
+- [x] ErrorBoundary fallback shows feature name + retry button
+- ~~CLI calls `closeDb()` on exit~~ — No CLI exists in the codebase
+- ~~CLI synchronous FS ops are wrapped in try/catch~~ — No CLI exists in the codebase
+- [x] Error screen does not render raw error strings
+- [x] `npm run typecheck` and `npm test` pass

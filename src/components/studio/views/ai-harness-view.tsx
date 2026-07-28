@@ -73,6 +73,9 @@ export function AIHarnessView() {
       ollamaCpuOnly,
       allowWebResearch,
       ollamaBaseUrl,
+    }).catch((err) => {
+      console.error('Failed to save AI settings:', err)
+      toast.error('Failed to save settings. Your changes may not persist.')
     })
   }, [provider, model, apiKey, augment, ollamaCpuOnly, allowWebResearch, ollamaBaseUrl, settingsLoaded])
 

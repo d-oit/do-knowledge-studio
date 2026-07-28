@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import {
-  escapeHtml,
   parseImportFile,
   buildJsonExport,
   buildMarkdownExport,
@@ -9,6 +8,7 @@ import {
   buildDocxExport,
   todayStamp,
 } from './export-helpers'
+import { escapeHtml } from '@/lib/security'
 import type { Entity, Claim } from '@/lib/studio/types'
 
 const SAMPLE_ENTITIES: Entity[] = [
@@ -122,6 +122,17 @@ describe('buildHtmlExport', () => {
     const html = buildHtmlExport(malicious, [])
     expect(html).not.toContain('<script>alert("xss")</script>')
     expect(html).toContain('&lt;script&gt;')
+  })
+
+  it('preserves Markdown angle brackets in entity content', () => {
+    const md: Entity[] = [{
+      ...SAMPLE_ENTITIES[0],
+      content: 'Use <div> wrappers and Array<string> types',
+    }]
+    const html = buildHtmlExport(md, [])
+    expect(html).toContain('Use &lt;div&gt; wrappers and Array&lt;string&gt; types')
+    expect(html).not.toContain('<div>')
+    expect(html).not.toContain('<string>')
   })
 
   it('includes CSP header', () => {

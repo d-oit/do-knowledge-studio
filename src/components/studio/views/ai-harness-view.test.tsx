@@ -55,7 +55,7 @@ vi.mock('@/lib/studio/ai-settings', () => ({
       ollamaBaseUrl: 'http://localhost:11434',
     }),
   ),
-  saveAISettings: vi.fn(),
+  saveAISettings: vi.fn(() => Promise.resolve()),
 }))
 
 vi.mock('@/lib/studio/use-reduced-motion', () => ({
@@ -129,72 +129,72 @@ describe('AIHarnessView', () => {
     vi.clearAllMocks()
   })
 
-  it('renders the AI Harness header', () => {
-    render(<AIHarnessView />)
+  it('renders the AI Harness header', async () => {
+    await act(async () => { render(<AIHarnessView />) })
     expect(screen.getByText('AI Harness')).toBeDefined()
   })
 
-  it('renders the Lab badge', () => {
-    render(<AIHarnessView />)
+  it('renders the Lab badge', async () => {
+    await act(async () => { render(<AIHarnessView />) })
     expect(screen.getByText('Lab')).toBeDefined()
   })
 
-  it('renders settings toggle button', () => {
-    render(<AIHarnessView />)
+  it('renders settings toggle button', async () => {
+    await act(async () => { render(<AIHarnessView />) })
     expect(screen.getByText('Show settings')).toBeDefined()
   })
 
-  it('shows settings panel when toggle clicked', () => {
-    render(<AIHarnessView />)
-    act(() => { screen.getByText('Show settings').click() })
+  it('shows settings panel when toggle clicked', async () => {
+    await act(async () => { render(<AIHarnessView />) })
+    await act(async () => { screen.getByText('Show settings').click() })
     expect(screen.getByText('Hide settings')).toBeDefined()
     expect(screen.getByText('Augment with local knowledge')).toBeDefined()
   })
 
-  it('provider dropdown exists in settings panel', () => {
-    render(<AIHarnessView />)
-    act(() => { screen.getByText('Show settings').click() })
+  it('provider dropdown exists in settings panel', async () => {
+    await act(async () => { render(<AIHarnessView />) })
+    await act(async () => { screen.getByText('Show settings').click() })
     const selects = screen.getAllByRole('combobox')
     expect(selects.length).toBeGreaterThanOrEqual(1)
   })
 
-  it('API key input field exists when settings open', () => {
-    render(<AIHarnessView />)
-    act(() => { screen.getByText('Show settings').click() })
+  it('API key input field exists when settings open', async () => {
+    await act(async () => { render(<AIHarnessView />) })
+    await act(async () => { screen.getByText('Show settings').click() })
     expect(screen.getByPlaceholderText('sk-or-\u2026')).toBeDefined()
   })
 
-  it('chat textarea exists', () => {
-    render(<AIHarnessView />)
+  it('chat textarea exists', async () => {
+    await act(async () => { render(<AIHarnessView />) })
     expect(screen.getByPlaceholderText(/Ask the AI agent/)).toBeDefined()
   })
 
-  it('send button exists', () => {
-    render(<AIHarnessView />)
+  it('send button exists', async () => {
+    await act(async () => { render(<AIHarnessView />) })
     expect(screen.getByLabelText('Send')).toBeDefined()
   })
 
-  it('renders initial assistant message', () => {
-    render(<AIHarnessView />)
+  it('renders initial assistant message', async () => {
+    await act(async () => { render(<AIHarnessView />) })
     expect(screen.getByText(/AI agent ready to assist/)).toBeDefined()
   })
 
-  it('auto-saves settings (no manual save button)', () => {
-    render(<AIHarnessView />)
-    act(() => { screen.getByText('Show settings').click() })
+  it('auto-saves settings (no manual save button)', async () => {
+    await act(async () => { render(<AIHarnessView />) })
+    await act(async () => { screen.getByText('Show settings').click() })
     expect(screen.queryByText('Save settings')).toBeNull()
     expect(screen.getByText('Augment with local knowledge')).toBeDefined()
   })
 
-  it('shows status as Ready when not loading', () => {
-    render(<AIHarnessView />)
-    act(() => { screen.getByText('Show settings').click() })
+  it('shows status as Ready when not loading', async () => {
+    await act(async () => { render(<AIHarnessView />) })
+    await act(async () => { screen.getByText('Show settings').click() })
     expect(screen.getByText('Ready')).toBeDefined()
   })
 
-  it('shows connected database field in settings', () => {
-    render(<AIHarnessView />)
-    act(() => { screen.getByText('Show settings').click() })
+  it('shows connected database field in settings', async () => {
+    await act(async () => { render(<AIHarnessView />) })
+    await act(async () => { screen.getByText('Show settings').click() })
     expect(screen.getByText(/Connected/)).toBeDefined()
   })
 })
