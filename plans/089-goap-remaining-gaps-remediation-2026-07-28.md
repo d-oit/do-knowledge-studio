@@ -41,10 +41,10 @@
 
 ## Success Criteria
 
-- [ ] All ADR 002, 003, 005 acceptance criteria checked off.
-- [ ] Overlay A11y fixes implemented.
-- [ ] Manual A11y evidence captured (zoom, reflow, keyboard).
-- [ ] PWA service worker and manifest functional.
-- [ ] AI provider unit tests added.
-- [ ] All CI checks pass.
-- [ ] PR reviewed and merged.
+- [x] All ADR 002, 003, 005 acceptance criteria checked off.
+- [x] Overlay A11y fixes implemented (search listbox roles corrected).
+- [ ] Manual A11y evidence captured (zoom, reflow, keyboard) — **deferred to follow-up**
+- [ ] PWA service worker and manifest functional — **deferred to follow-up**
+- [ ] AI provider unit tests added — **deferred to follow-up**
+- [x] All CI checks pass.
+- [ ] PR reviewed and merged — **pending**

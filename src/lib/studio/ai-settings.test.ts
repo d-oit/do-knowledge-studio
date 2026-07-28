@@ -95,7 +95,7 @@ describe('isSessionOnlyCredential', () => {
 describe('getSessionOnlyMessage', () => {
   it('returns a message about session-only storage', () => {
     const msg = getSessionOnlyMessage()
-    expect(msg).toContain('session only')
+    expect(msg).toContain('session-only')
     expect(msg.length).toBeGreaterThan(0)
   })
 })

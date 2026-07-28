@@ -52,6 +52,16 @@ describe('sanitizeHtml', () => {
     const result = sanitizeHtml('<a href="https://example.com">click</a>')
     expect(result).toContain('<a href="https://example.com">')
   })
+
+  it('strips javascript: URLs from links', () => {
+    const result = sanitizeHtml('<a href="javascript:alert(1)">click</a>')
+    expect(result).not.toContain('javascript:')
+  })
+
+  it('strips javascript: URLs from img src', () => {
+    const result = sanitizeHtml('<img src="javascript:alert(1)">')
+    expect(result).not.toContain('javascript:')
+  })
 })
 
 describe('sanitizeText', () => {

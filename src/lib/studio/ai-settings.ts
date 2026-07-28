@@ -1,4 +1,5 @@
 import type { ProviderId } from '@/lib/ai/types'
+import { AppError, ErrorCode } from '@/lib/errors'
 
 const LEGACY_STORAGE_KEY = 'dks-ai-settings'
 const CRYPTO_KEY_STORAGE = 'dks-ai-enc-key'
@@ -62,6 +63,7 @@ function openDB(): Promise<IDBDatabase> {
     }
     request.onsuccess = () => resolve(request.result)
     request.onerror = () => {
+      request.result?.close() // Close partially-opened connection to prevent leak
       idbPromise = null // Reset on error so next call retries
       reject(request.error)
     }
@@ -233,7 +235,9 @@ export async function saveAISettings(settings: AISettings): Promise<void> {
     }
     await idbSet(SETTINGS_RECORD_KEY, toStore)
   } catch (error) {
-    console.error('Failed to save AI settings:', error instanceof Error ? error.message : error)
+    const message = error instanceof Error ? error.message : String(error)
+    console.error('Failed to save AI settings:', message)
+    throw new AppError(ErrorCode.STORAGE_WRITE_FAILED, message, { cause: error })
   }
 }
 
@@ -242,7 +246,7 @@ export function isSessionOnlyCredential(): boolean {
 }
 
 export function getSessionOnlyMessage(): string {
-  return 'API key is stored for this browser session only. It will be cleared when you close the tab.'
+  return 'API key is encrypted and stored locally. The encryption key is session-only — it will be cleared when you close the tab.'
 }
 
 export function getProviderEndpoint(provider: AIProvider): string {

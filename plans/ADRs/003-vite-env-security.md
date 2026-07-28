@@ -43,10 +43,10 @@ We will remove reliance on `VITE_` environment variables for secret values and i
 - **Negative**: Slightly more complex onboarding (user must enter key in UI)
 
 ## Acceptance Criteria
-- [ ] No `VITE_` env vars are read in `src/lib/llm/` providers
-- [ ] API keys stored in IndexedDB (not localStorage, not env vars)
-- [ ] Migration path exists for existing localStorage keys
-- [ ] Settings UI allows entering/updating/clearing keys
-- [ ] `scripts/audit-vite-env.sh` passes with zero VITE_ references related to secrets
-- [ ] `npm run typecheck` passes
+- [x] No `VITE_` env vars are read in `src/lib/llm/` providers
+- [x] API keys stored in IndexedDB (not localStorage, not env vars)
+- [x] Migration path exists for existing localStorage keys
+- [x] Settings UI allows entering/updating/clearing keys
+- [x] `scripts/audit-vite-env.sh` passes with zero VITE_ references related to secrets
+- [x] `npm run typecheck` passes
 - [ ] E2E test: user enters key → LLM call succeeds → bundle inspection shows no key
