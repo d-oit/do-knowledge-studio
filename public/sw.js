@@ -1,29 +1,40 @@
-const CACHE_NAME = "dks-v1";
-const PRECACHE_URLS = ["/", "/favicon.svg", "/logo.svg"];
+const STATIC_CACHE = "dks-static-v2";
+const API_CACHE = "dks-api-v2";
 
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches
-      .open(CACHE_NAME)
-      .then((cache) => cache.addAll(PRECACHE_URLS))
-      .then(() => self.skipWaiting())
-  );
-});
+const STATIC_EXTENSIONS = [
+  ".js",
+  ".mjs",
+  ".css",
+  ".svg",
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".webp",
+  ".gif",
+  ".ico",
+  ".woff",
+  ".woff2",
+  ".ttf",
+  ".eot",
+  ".otf",
+  ".json",
+  ".txt",
+];
 
-self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches
-      .keys()
-      .then((cacheNames) =>
-        Promise.all(
-          cacheNames
-            .filter((name) => name !== CACHE_NAME)
-            .map((name) => caches.delete(name))
-        )
-      )
-      .then(() => self.clients.claim())
-  );
-});
+const PRECACHE_URLS = [
+  "/",
+  "/favicon.svg",
+  "/logo.svg",
+  "/manifest.webmanifest",
+];
+
+function isStaticAsset(url) {
+  return STATIC_EXTENSIONS.some((ext) => url.pathname.endsWith(ext));
+}
+
+function isApiRequest(url) {
+  return url.pathname.startsWith("/api/");
+}
 
 function isNavigationRequest(request) {
   return (
@@ -33,37 +44,53 @@ function isNavigationRequest(request) {
   );
 }
 
-function isStaticAsset(url) {
-  const pathname = url.pathname;
-  return (
-    pathname.endsWith(".js") ||
-    pathname.endsWith(".css") ||
-    pathname.endsWith(".svg") ||
-    pathname.endsWith(".png") ||
-    pathname.endsWith(".jpg") ||
-    pathname.endsWith(".ico") ||
-    pathname.endsWith(".woff2") ||
-    pathname.endsWith(".woff")
-  );
-}
+// ── Install: pre-cache static app shell ──
 
-function isApiRequest(url) {
-  return url.pathname.startsWith("/api/");
-}
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches
+      .open(STATIC_CACHE)
+      .then((cache) => cache.addAll(PRECACHE_URLS))
+      .then(() => self.skipWaiting())
+  );
+});
+
+// ── Activate: purge old caches ──
+
+self.addEventListener("activate", (event) => {
+  const validCaches = [STATIC_CACHE, API_CACHE];
+  event.waitUntil(
+    caches
+      .keys()
+      .then((cacheNames) =>
+        Promise.all(
+          cacheNames
+            .filter((name) => !validCaches.includes(name))
+            .map((name) => caches.delete(name))
+        )
+      )
+      .then(() => self.clients.claim())
+  );
+});
+
+// ── Strategies ──
 
 async function cacheFirst(request) {
-  try {
-    const cached = await caches.match(request);
-    if (cached) return cached;
+  const cached = await caches.match(request);
+  if (cached) return cached;
 
+  try {
     const response = await fetch(request);
     if (response.ok) {
-      const cache = await caches.open(CACHE_NAME);
-      cache.put(request, response.clone());
+      const cache = await caches.open(STATIC_CACHE);
+      await cache.put(request, response.clone());
     }
     return response;
   } catch {
-    return new Response("Offline", { status: 503, statusText: "Service Unavailable" });
+    return new Response("Offline — resource not cached", {
+      status: 503,
+      statusText: "Service Unavailable",
+    });
   }
 }
 
@@ -71,55 +98,68 @@ async function networkFirst(request) {
   try {
     const response = await fetch(request);
     if (response.ok) {
-      const cache = await caches.open(CACHE_NAME);
-      cache.put(request, response.clone());
+      const cache = await caches.open(API_CACHE);
+      await cache.put(request, response.clone());
     }
     return response;
   } catch {
     const cached = await caches.match(request);
     if (cached) return cached;
-    return new Response("Offline", { status: 503, statusText: "Service Unavailable" });
+    return new Response(
+      JSON.stringify({ error: "offline", message: "No cached response available" }),
+      {
+        status: 503,
+        statusText: "Service Unavailable",
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
 }
 
-async function staleWhileRevalidate(request) {
+async function navigationFallback(request) {
   try {
-    const cache = await caches.open(CACHE_NAME);
-    const cached = await cache.match(request);
-
-    const fetchPromise = fetch(request)
-      .then((response) => {
-        if (response.ok) {
-          cache.put(request, response.clone());
-        }
-        return response;
-      })
-      .catch(() => cached);
-
-    return cached || fetchPromise;
+    const response = await fetch(request);
+    if (response.ok) {
+      const cache = await caches.open(STATIC_CACHE);
+      await cache.put(request, response.clone());
+    }
+    return response;
   } catch {
-    return new Response("Offline", { status: 503, statusText: "Service Unavailable" });
+    const cached = await caches.match("/");
+    return cached || new Response("Offline — page not available", {
+      status: 503,
+      statusText: "Service Unavailable",
+    });
   }
 }
+
+// ── Fetch handler ──
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  if (url.protocol !== "http:" && url.protocol !== "https:") return;
+  // Skip non-HTTP(S) and chrome-extension requests
+  if (!url.protocol.startsWith("http")) return;
 
+  // Page navigations: network-first with / fallback
   if (isNavigationRequest(request)) {
-    event.respondWith(networkFirst(request));
+    event.respondWith(navigationFallback(request));
     return;
   }
 
+  // Static assets: cache-first
   if (isStaticAsset(url)) {
     event.respondWith(cacheFirst(request));
     return;
   }
 
+  // API calls: network-first
   if (isApiRequest(url)) {
-    event.respondWith(staleWhileRevalidate(request));
+    event.respondWith(networkFirst(request));
     return;
   }
+
+  // Default: network-first pass-through (no caching)
+  event.respondWith(fetch(request));
 });

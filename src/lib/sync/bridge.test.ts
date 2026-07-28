@@ -184,11 +184,15 @@ describe('subscribeToYjs', () => {
 
 describe('destroyBridge', () => {
   it('cleans up all subscriptions', () => {
+    const yjsSpy = vi.spyOn(console, 'error').mockImplementation((msg: string) => {
+      if (typeof msg === 'string' && msg.includes('[yjs]')) return
+    })
     const callback = vi.fn()
     onYjsChange(callback)
     destroyBridge()
     callback.mockClear()
     setYjsEntity(makeEntity({ id: 'entity-after-destroy' }))
     expect(callback).not.toHaveBeenCalled()
+    yjsSpy.mockRestore()
   })
 })
