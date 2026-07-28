@@ -213,14 +213,14 @@ export function LibraryView() {
                   <div className={cn('flex h-9 w-9 items-center justify-center rounded-md', meta.bg, meta.text)}>
                     <Icon className="h-4 w-4" />
                   </div>
-                  <span className="text-caption font-semibold uppercase tracking-wide text-ink-faint">
+                  <span className="text-caption font-semibold uppercase tracking-wide text-ink">
                     {meta.label}
                   </span>
                 </div>
                 <h3 className="mb-1.5 font-serif text-[15px] font-semibold leading-snug text-ink group-hover:text-saffron-deep">
                   {e.name}
                 </h3>
-                <p className="line-clamp-3 flex-1 text-[12px] leading-relaxed text-ink-mute">
+                <p className="line-clamp-3 flex-1 text-[12px] leading-relaxed text-ink-soft">
                   {e.description}
                 </p>
                 <div className="mt-3 flex items-center justify-between border-t border-border pt-2.5">
@@ -228,16 +228,16 @@ export function LibraryView() {
                     {e.tags.slice(0, 2).map((t) => (
                       <span
                         key={t}
-                        className="rounded-full bg-muted px-1.5 py-0 text-badge font-medium text-ink-faint"
+                        className="rounded-full bg-muted px-1.5 py-0 text-badge font-medium text-ink"
                       >
                         #{t}
                       </span>
                     ))}
                     {e.tags.length > 2 && (
-                      <span className="text-badge text-ink-faint">+{e.tags.length - 2}</span>
+                      <span className="text-badge text-ink">+{e.tags.length - 2}</span>
                     )}
                   </div>
-                  <div className="flex items-center gap-1 text-caption text-ink-faint">
+                  <div className="flex items-center gap-1 text-caption text-ink">
                     <Clock className="h-2.5 w-2.5" />
                     {new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(new Date(e.updatedAt))}
                   </div>

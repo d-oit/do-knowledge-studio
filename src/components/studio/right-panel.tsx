@@ -93,8 +93,8 @@ function SearchPanel({ onCreateEntity }: { onCreateEntity?: (name: string) => vo
       <div className="flex-1 overflow-y-auto p-3" aria-live="polite" aria-atomic="false">
         {results.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-            <FileText className="h-8 w-8 text-ink-faint/50" />
-            <p className="text-[12px] text-ink-mute">
+            <FileText className="h-8 w-8 text-ink-mute/50" />
+            <p className="text-[12px] text-ink-soft">
               {searchQuery ? 'No matches found.' : 'Your library is empty.'}
             </p>
             {searchQuery && onCreateEntity && (
@@ -122,16 +122,16 @@ function SearchPanel({ onCreateEntity }: { onCreateEntity?: (name: string) => vo
                     <div className="mb-1 flex items-center gap-2">
                       {meta && <span className={cn('h-1.5 w-1.5 rounded-full', meta.dot)} />}
                       {meta && (
-                        <span className="rounded px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-ink-faint">
+                        <span className="rounded px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-ink-mute">
                           {meta.label}
                         </span>
                       )}
-                      <span className="ml-auto text-caption tabular-nums text-ink-faint">
+                      <span className="ml-auto text-caption tabular-nums text-ink-mute">
                         {r.score.toFixed(1)}
                       </span>
                     </div>
                     <div className="truncate text-[13px] font-medium text-ink">{r.name}</div>
-                    <p className="mt-0.5 line-clamp-2 text-label leading-snug text-ink-mute">
+                    <p className="mt-0.5 line-clamp-2 text-label leading-snug text-ink-soft">
                       {r.snippet}
                     </p>
                   </button>
@@ -151,12 +151,12 @@ function SearchPanel({ onCreateEntity }: { onCreateEntity?: (name: string) => vo
                   >
                     <div className="mb-1 flex items-center gap-2">
                       <span className={cn('h-1.5 w-1.5 rounded-full', meta.dot)} />
-                      <span className="rounded px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-ink-faint">
+                      <span className="rounded px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-ink-mute">
                         {meta.label}
                       </span>
                     </div>
                     <div className="truncate text-[13px] font-medium text-ink">{e.name}</div>
-                    <p className="mt-0.5 line-clamp-2 text-label leading-snug text-ink-mute">
+                    <p className="mt-0.5 line-clamp-2 text-label leading-snug text-ink-soft">
                       {e.description}
                     </p>
                   </button>
@@ -168,7 +168,7 @@ function SearchPanel({ onCreateEntity }: { onCreateEntity?: (name: string) => vo
       </div>
 
       <div className="border-t border-border px-4 py-2.5">
-        <div className="flex items-center gap-1.5 text-label text-ink-faint">
+        <div className="flex items-center gap-1.5 text-label text-ink-mute">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
           Local search · {entities.length} entities
         </div>
@@ -221,18 +221,18 @@ function InspectorPanel() {
       <div className="flex-1 overflow-y-auto p-4">
         <div className="mb-3 flex items-center gap-2">
           <span className={cn('h-2 w-2 rounded-full', meta.dot)} />
-          <span className="text-caption font-semibold uppercase tracking-wide text-ink-faint">
+          <span className="text-caption font-semibold uppercase tracking-wide text-ink-mute">
             {meta.label}
           </span>
         </div>
         <h3 className="font-serif text-lg font-semibold leading-tight text-ink">{entity.name}</h3>
-        <p className="mt-2 text-[12px] leading-relaxed text-ink-mute">{entity.description}</p>
+        <p className="mt-2 text-[12px] leading-relaxed text-ink-soft">{entity.description}</p>
 
         <div className="mt-4 flex flex-wrap gap-1.5">
           {entity.tags.map((t) => (
             <span
               key={t}
-              className="rounded-full bg-muted px-2 py-0.5 text-caption font-medium text-ink-mute"
+              className="rounded-full bg-muted px-2 py-0.5 text-caption font-medium text-ink-soft"
             >
               #{t}
             </span>
@@ -241,7 +241,7 @@ function InspectorPanel() {
 
         {entity.links.length > 0 && (
           <div className="mt-5">
-            <h4 className="mb-2 text-caption font-semibold uppercase tracking-[0.14em] text-ink-faint">
+            <h4 className="mb-2 text-caption font-semibold uppercase tracking-[0.14em] text-ink-mute">
               Connections ({entity.links.length})
             </h4>
             <ul className="space-y-1">
@@ -254,9 +254,9 @@ function InspectorPanel() {
                       onClick={() => selectEntity(target.id)}
                       className="flex w-full items-center gap-2 rounded-md p-1.5 text-left text-[12px] text-ink-soft transition-colors hover:bg-muted focus-ring"
                     >
-                      <ArrowRight className="h-3 w-3 shrink-0 text-ink-faint" />
+                      <ArrowRight className="h-3 w-3 shrink-0 text-ink-mute" />
                       <span className="flex-1 truncate">{target.name}</span>
-                      <span className="text-caption italic text-ink-faint">{l.relation}</span>
+                      <span className="text-caption italic text-ink-mute">{l.relation}</span>
                     </button>
                   </li>
                 )
@@ -361,7 +361,7 @@ function CitationsPanel() {
       </div>
 
       <div className="border-t border-border px-4 py-2.5">
-        <div className="flex items-center gap-1.5 text-label text-ink-faint">
+        <div className="flex items-center gap-1.5 text-label text-ink-mute">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
           Grounded in {entities.length} local entities
         </div>
