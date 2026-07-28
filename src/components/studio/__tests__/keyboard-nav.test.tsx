@@ -51,19 +51,24 @@ type CmdkMockProps = {
   heading?: string
   onSelect?: () => void
   value?: string
+  onValueChange?: (value: string) => void
   [key: string]: unknown
 }
 
 vi.mock('cmdk', () => ({
   Command: Object.assign(
-    ({ children, label, ...props }: CmdkMockProps) => (
+    ({ children, label, shouldFilter: _sf, value: _v, onValueChange: _ovc, filter: _f, loop: _l, defaultValue: _d, ...props }: CmdkMockProps) => (
       <div aria-label={label} {...(props as React.HTMLAttributes<HTMLDivElement>)}>
         {children}
       </div>
     ),
     {
-      Input: ({ children: _c, ...props }: CmdkMockProps) => (
-        <input {...(props as React.InputHTMLAttributes<HTMLInputElement>)} />
+      Input: ({ children: _c, onValueChange, value, ...props }: CmdkMockProps) => (
+        <input
+          value={value ?? ''}
+          onChange={(e) => { onValueChange?.(e.target.value) }}
+          {...(props as React.InputHTMLAttributes<HTMLInputElement>)}
+        />
       ),
       List: ({ children, ...props }: CmdkMockProps) => (
         <div role="listbox" {...(props as React.HTMLAttributes<HTMLDivElement>)}>
