@@ -92,7 +92,7 @@ export function Sidebar() {
       <div className="px-3 pb-3">
         <button
           onClick={() => { setCommandOpen(true) }}
-          className="group flex w-full items-center gap-2 rounded-lg border border-border bg-background/50 px-3 py-2 text-left text-[13px] text-ink-mute transition-colors hover:border-saffron/40 hover:text-ink-soft focus-ring"
+          className="group flex w-full items-center gap-2 rounded-lg border border-border bg-background/50 px-3 min-h-[44px] py-3 text-left text-[13px] text-ink-mute transition-colors hover:border-saffron/40 hover:text-ink-soft focus-ring"
           aria-label="Open command palette"
         >
           <Search className="h-3.5 w-3.5" />
@@ -120,7 +120,7 @@ export function Sidebar() {
                       onClick={() => { setView(item.id) }}
                       aria-current={active ? 'page' : undefined}
                       className={cn(
-                        'group flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] font-medium transition-all press-scale focus-ring',
+                        'group flex w-full items-center gap-2.5 rounded-md px-2.5 min-h-[44px] py-2.5 text-[13px] font-medium transition-all press-scale focus-ring',
                         active
                           ? 'bg-saffron-soft text-saffron-deep'
                           : 'text-ink-soft hover:bg-sidebar-accent hover:text-ink',
@@ -156,7 +156,7 @@ export function Sidebar() {
       <div className="flex items-center gap-1 border-t border-border px-3 py-2.5">
         <button
           onClick={() => { setTheme(theme === 'dark' ? 'light' : 'dark') }}
-          className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[12px] font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
+          className="flex items-center gap-2 rounded-md px-2.5 min-h-[44px] py-2.5 text-[12px] font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
           aria-label="Toggle theme"
         >
           {theme === 'dark' ? (
@@ -173,13 +173,13 @@ export function Sidebar() {
         </button>
         <ShortcutsTrigger
           className={cn(
-            'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12px] font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring',
+            'flex items-center gap-1.5 rounded-md px-2.5 min-h-[44px] py-2.5 text-[12px] font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring',
           )}
         />
         <div className="flex-1" />
         <button
           onClick={() => { setRightPanelOpen(!rightPanelOpen) }}
-          className="rounded-md p-1.5 text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
+          className="rounded-md min-h-[44px] min-w-[44px] p-2 text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
           aria-label={rightPanelOpen ? 'Hide panel' : 'Show panel'}
           title={rightPanelOpen ? 'Hide right panel' : 'Show right panel'}
         >

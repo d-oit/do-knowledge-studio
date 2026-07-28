@@ -77,7 +77,7 @@ export function LibraryView() {
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink focus-ring rounded"
+              className="absolute right-3 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] p-2.5 text-ink-faint hover:text-ink focus-ring rounded"
               aria-label="Clear search"
             >
               <X className="h-3.5 w-3.5" />
@@ -92,7 +92,7 @@ export function LibraryView() {
               onClick={() => setTypeFilter(f.id)}
               aria-pressed={typeFilter === f.id}
               className={cn(
-                'rounded px-2.5 py-1 text-[12px] font-medium transition-colors focus-ring',
+                'rounded px-2.5 min-h-[44px] py-2.5 text-[12px] font-medium transition-colors focus-ring',
                 typeFilter === f.id
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'text-ink-mute hover:text-ink',
@@ -107,7 +107,7 @@ export function LibraryView() {
           <button
             onClick={() => { setViewMode('grid') }}
             className={cn(
-              'rounded p-1.5 transition-colors focus-ring',
+              'rounded min-h-[44px] min-w-[44px] p-2 transition-colors focus-ring',
               viewMode === 'grid' ? 'bg-muted text-ink' : 'text-ink-faint hover:text-ink',
             )}
             aria-label="Grid view"
@@ -118,7 +118,7 @@ export function LibraryView() {
           <button
             onClick={() => { setViewMode('list') }}
             className={cn(
-              'rounded p-1.5 transition-colors focus-ring',
+              'rounded min-h-[44px] min-w-[44px] p-2 transition-colors focus-ring',
               viewMode === 'list' ? 'bg-muted text-ink' : 'text-ink-faint hover:text-ink',
             )}
             aria-label="List view"
@@ -130,7 +130,7 @@ export function LibraryView() {
 
         <button
           onClick={() => setSortDir(sortDir === 'asc' ? 'desc' : 'asc')}
-          className="flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-2 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
+          className="flex items-center gap-1 rounded-md border border-border bg-background px-2.5 min-h-[44px] py-2.5 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
           aria-label={sortDir === 'asc' ? 'Sort ascending' : 'Sort descending'}
         >
           {sortDir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
@@ -140,7 +140,7 @@ export function LibraryView() {
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as 'name' | 'created' | 'updated')}
           aria-label="Sort by"
-          className="rounded-md border border-border bg-background px-2.5 py-2 text-[12px] font-medium text-ink-soft transition-colors focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+          className="rounded-md border border-border bg-background px-2.5 min-h-[44px] py-2 text-[12px] font-medium text-ink-soft transition-colors focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
         >
           <option value="updated">Sort: Updated</option>
           <option value="created">Sort: Created</option>
@@ -149,7 +149,7 @@ export function LibraryView() {
 
         <button
           onClick={startNew}
-          className="flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+          className="flex items-center gap-1 rounded-md bg-primary px-3 min-h-[44px] py-2.5 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
         >
           <Plus className="h-3.5 w-3.5" />
           New
@@ -169,7 +169,7 @@ export function LibraryView() {
           </p>
           <button
             onClick={startNew}
-            className="mt-4 flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-[13px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+            className="mt-4 flex items-center gap-1.5 rounded-md bg-primary px-4 min-h-[44px] py-3 text-[13px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
           >
             <Plus className="h-4 w-4" />
             Create your first entity
@@ -186,7 +186,7 @@ export function LibraryView() {
           </p>
           <button
             onClick={clearFilters}
-            className="mt-4 flex items-center gap-1.5 rounded-md bg-secondary px-4 py-2 text-[13px] font-semibold text-ink transition-all hover:opacity-90 press-scale focus-ring"
+            className="mt-4 flex items-center gap-1.5 rounded-md bg-secondary px-4 min-h-[44px] py-3 text-[13px] font-semibold text-ink transition-all hover:opacity-90 press-scale focus-ring"
           >
             <X className="h-4 w-4" />
             Clear all filters

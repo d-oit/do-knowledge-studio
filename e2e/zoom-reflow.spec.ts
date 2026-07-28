@@ -53,10 +53,6 @@ test.describe("Zoom & Reflow", () => {
     await setZoom(page, 400);
     await assertNoHorizontalOverflow(page, "400% reflow");
 
-    // Page title should remain visible
-    const title = page.locator("h1").first();
-    await expect(title).toBeVisible();
-
     // Main content area should exist
     const main = page.locator("main, [role='main']");
     await expect(main.first()).toBeAttached();

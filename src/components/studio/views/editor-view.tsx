@@ -56,6 +56,7 @@ export function EditorView() {
   const updateClaim = useStudioStore((s) => s.updateClaim)
   const deleteClaim = useStudioStore((s) => s.deleteClaim)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const radioGroupRef = useRef<HTMLDivElement>(null)
   const draftIdRef = useRef<string>('')
 
   const editing = useMemo(
@@ -91,6 +92,14 @@ export function EditorView() {
     mq.addEventListener('change', handleChange)
     return () => { mq.removeEventListener('change', handleChange) }
   }, [])
+
+  // Focus the newly selected radio button per WAI-ARIA radio-group pattern
+  useEffect(() => {
+    const group = radioGroupRef.current
+    if (!group) return
+    const checked = group.querySelector<HTMLButtonElement>('[aria-checked="true"]')
+    checked?.focus()
+  }, [editMode])
 
   // Initialize draft ID on mount
   useEffect(() => {
@@ -383,6 +392,7 @@ export function EditorView() {
       )}
 
       <div
+        ref={radioGroupRef}
         className="mb-4 flex items-center gap-2 border-b border-border pb-2"
         role="radiogroup"
         aria-label="Editor mode"

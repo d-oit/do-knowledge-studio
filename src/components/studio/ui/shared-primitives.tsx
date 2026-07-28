@@ -398,7 +398,18 @@ export function Overlay({
     }
   }, [open])
 
-  // Save and restore focus; cache focusable elements on open
+  // Restore focus on unmount — consumers like CommandPalette return null
+  // when closed, so the component unmounts rather than staying mounted with
+  // open=false. The cleanup here handles that case.
+  useEffect(() => {
+    return () => {
+      if (previousFocusRef.current?.isConnected) {
+        previousFocusRef.current.focus()
+      }
+    }
+  }, [])
+
+  // Save focus and cache focusable elements on open
   useEffect(() => {
     if (open) {
       previousFocusRef.current = document.activeElement as HTMLElement
@@ -411,12 +422,6 @@ export function Overlay({
         )
         const target = initialFocusRef?.current ?? focusableCacheRef.current[0]
         ;(target ?? container).focus()
-      }
-    } else {
-      focusableCacheRef.current = []
-      if (previousFocusRef.current) {
-        previousFocusRef.current.focus()
-        previousFocusRef.current = null
       }
     }
   }, [open, initialFocusRef])
