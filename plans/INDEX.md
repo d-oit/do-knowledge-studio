@@ -5,6 +5,16 @@
 
 ## Current Status
 
+### Plan 091 — GOAP: Address Remaining plans/ Gaps, Coverage, and ADR Cleanup (2026-07-28)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Update stale plan checkboxes (065, 068, 071, 089) | Done | Plans 065, 068, 071, 089 exit criteria checked off |
+| W1 | Check ADR 003 E2E test criterion | Done | ADR 003 acceptance criterion verified via WebCrypto encryption |
+| W2 | Add hook tests (use-toast, use-mobile) | Done | 20 new tests covering toast state, dismiss, reducer, mobile breakpoint |
+| W2 | Add service-worker-registration test | Done | 5 tests covering mount registration, error handling |
+| W3 | Quality gate + PR | Done | Lint, typecheck, test (1212), build all pass; PR #535 created with all 20 CI checks passing |
+
 ### Plan 090 — GOAP: PWA Service Worker, AI Provider Tests, A11y Automation (2026-07-28)
 
 | Wave | Goal | Status | Changes |

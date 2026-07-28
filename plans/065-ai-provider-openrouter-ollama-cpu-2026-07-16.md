@@ -1,7 +1,7 @@
 # Plan 065 — AI Provider Consolidation: OpenRouter + Ollama CPU-Only
 
 **Date**: 2026-07-16  
-**Status**: Analysis / proposal  
+**Status**: Implemented  
 **Related**: ADR 019, ADR 06 (legacy `src/lib/llm`), plan 041, plan 049 T1/T2  
 
 ## Executive summary
@@ -209,14 +209,14 @@ Headers: `Authorization`, `Content-Type`, optional `HTTP-Referer` / `X-OpenRoute
 
 ## Success criteria
 
-- [ ] Single cloud key path: OpenRouter only (no separate OpenAI/Anthropic endpoints in app code)
-- [ ] Ollama still default local provider
-- [ ] CPU-only toggle persists and sets `num_gpu: 0`
-- [ ] Unit tests for endpoint selection, migration, and Ollama options payload
-- [ ] No empty catch; AbortController on fetch
-- [ ] Named exports; strings in constants
-- [ ] ADR 019 updated or ADR 025 written
-- [ ] Quality gate green after implementation
+- [x] Single cloud key path: OpenRouter only (no separate OpenAI/Anthropic endpoints in app code)
+- [x] Ollama still default local provider
+- [x] CPU-only toggle persists and sets `num_gpu: 0`
+- [x] Unit tests for endpoint selection, migration, and Ollama options payload
+- [x] No empty catch; AbortController on fetch
+- [x] Named exports; strings in constants
+- [x] ADR 019 updated or ADR 025 written
+- [x] Quality gate green after implementation
 
 ## Effort estimate
 
