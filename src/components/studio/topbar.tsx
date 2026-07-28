@@ -118,7 +118,7 @@ export function Topbar() {
       <button
         onClick={startNew}
         aria-label="New entity"
-        className="flex flex-shrink-0 items-center gap-1.5 rounded-md bg-primary px-2.5 py-2.5 min-h-[44px] text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring sm:px-3"
+        className="flex flex-shrink-0 items-center gap-1.5 rounded-md bg-primary px-2.5 py-2.5 min-h-[44px] min-w-[44px] text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring sm:px-3"
       >
         <Plus className="h-3.5 w-3.5" />
         <span className="hidden sm:inline wide:hidden">New</span>

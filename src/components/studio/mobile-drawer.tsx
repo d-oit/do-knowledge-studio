@@ -95,7 +95,7 @@ function DrawerHeader({
         ref={closeBtnRef}
         onClick={onClose}
         aria-label="Close drawer"
-        className="-mr-1 flex-shrink-0 rounded-md p-2 text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
+        className="-mr-1 flex-shrink-0 rounded-md min-h-[44px] min-w-[44px] p-2.5 text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
       >
         <X className="h-4 w-4" />
       </button>
@@ -124,7 +124,7 @@ function TabSwitcher({
           aria-selected={view === 'nav'}
           onClick={() => { setView('nav') }}
           className={cn(
-            'rounded-md px-3 py-1.5 text-[12px] font-semibold transition-colors focus-ring',
+            'rounded-md px-3 min-h-[44px] py-2.5 text-[12px] font-semibold transition-colors focus-ring',
             view === 'nav'
               ? 'bg-saffron text-white shadow-sm'
               : 'text-ink-mute hover:text-ink',
@@ -137,7 +137,7 @@ function TabSwitcher({
           aria-selected={view === 'search'}
           onClick={() => { setView('search') }}
           className={cn(
-            'rounded-md px-3 py-1.5 text-[12px] font-semibold transition-colors focus-ring',
+            'rounded-md px-3 min-h-[44px] py-2.5 text-[12px] font-semibold transition-colors focus-ring',
             view === 'search'
               ? 'bg-saffron text-white shadow-sm'
               : 'text-ink-mute hover:text-ink',
@@ -178,7 +178,7 @@ function NavTab({ onNavigate }: { onNavigate: () => void }) {
                     onClick={() => { handleSelect(item.id) }}
                     aria-current={active ? 'page' : undefined}
                     className={cn(
-                      'group flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-[14px] font-medium transition-all focus-ring',
+                      'group flex w-full items-center gap-2.5 rounded-md px-2.5 min-h-[44px] py-2.5 text-[14px] font-medium transition-all focus-ring',
                       active
                         ? 'bg-saffron-soft text-saffron-deep'
                         : 'text-ink-soft hover:bg-sidebar-accent hover:text-ink',
@@ -257,7 +257,7 @@ function SearchTab({ onSelect }: { onSelect: () => void }) {
             onClick={() => { setMode('keyword') }}
             aria-pressed={mode === 'keyword'}
             className={cn(
-              'flex-1 rounded px-2 py-1 font-medium transition-colors focus-ring',
+              'flex-1 rounded px-2 min-h-[44px] py-2 font-medium transition-colors focus-ring',
               mode === 'keyword'
                 ? 'bg-background text-ink shadow-sm'
                 : 'text-ink-mute',
@@ -269,7 +269,7 @@ function SearchTab({ onSelect }: { onSelect: () => void }) {
             onClick={() => { setMode('ranked') }}
             aria-pressed={mode === 'ranked'}
             className={cn(
-              'flex-1 rounded px-2 py-1 font-medium transition-colors focus-ring',
+              'flex-1 rounded px-2 min-h-[44px] py-2 font-medium transition-colors focus-ring',
               mode === 'ranked'
                 ? 'bg-background text-ink shadow-sm'
                 : 'text-ink-mute',
@@ -352,7 +352,7 @@ function DrawerFooter() {
         <button
           onClick={toggle}
           aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
-          className="flex flex-1 items-center gap-2 rounded-md px-2.5 py-1.5 text-[12px] font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
+          className="flex flex-1 items-center gap-2 rounded-md px-2.5 min-h-[44px] py-2 text-[12px] font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
         >
           {isDark ? (
             <>
