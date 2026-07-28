@@ -71,7 +71,7 @@ describe('useToast', () => {
         returned = toast({ title: 'Test' })
       })
 
-      expect(typeof returned!).toBe('object')
+      expect(returned!).toBeDefined()
       expect(typeof returned!.id).toBe('string')
       expect(typeof returned!.dismiss).toBe('function')
       expect(typeof returned!.update).toBe('function')
@@ -139,6 +139,8 @@ describe('useToast', () => {
         const t = toast({ title: 'Original' })
         updateFn = t.update
       })
+
+      expect(updateFn!).toBeDefined()
 
       act(() => {
         updateFn!({ title: 'Updated' } as Parameters<typeof toast>[0] & { id: string })

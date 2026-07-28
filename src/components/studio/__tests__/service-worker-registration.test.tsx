@@ -72,12 +72,12 @@ describe("ServiceWorkerRegistration", () => {
 
     it("does not attempt to register", () => {
       render(<ServiceWorkerRegistration />);
-      // No crash or console.error from missing serviceWorker
+      expect(register).not.toHaveBeenCalled();
     });
   });
 
   describe("registration error handling", () => {
-    it("logs an error when registration fails", () => {
+    it("logs an error when registration fails", async () => {
       const consoleError = vi
         .spyOn(console, "error")
         .mockImplementation(() => {});
@@ -87,15 +87,15 @@ describe("ServiceWorkerRegistration", () => {
 
       render(<ServiceWorkerRegistration />);
 
-      // Need to wait for the microtask — the effect fires synchronously but
+      // Wait for the microtask — the effect fires synchronously but
       // the .catch handler is a microtask.
-      return Promise.resolve().then(() => {
-        expect(consoleError).toHaveBeenCalledWith(
-          "Service worker registration failed:",
-          error,
-        );
-        consoleError.mockRestore();
-      });
+      await Promise.resolve();
+
+      expect(consoleError).toHaveBeenCalledWith(
+        "Service worker registration failed:",
+        error,
+      );
+      consoleError.mockRestore();
     });
   });
 });
