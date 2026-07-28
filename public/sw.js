@@ -83,7 +83,7 @@ async function cacheFirst(request: Request): Promise<Response> {
     const response = await fetch(request);
     if (response.ok) {
       const cache = await caches.open(STATIC_CACHE);
-      cache.put(request, response.clone());
+      await cache.put(request, response.clone());
     }
     return response;
   } catch {
@@ -99,7 +99,7 @@ async function networkFirst(request: Request): Promise<Response> {
     const response = await fetch(request);
     if (response.ok) {
       const cache = await caches.open(API_CACHE);
-      cache.put(request, response.clone());
+      await cache.put(request, response.clone());
     }
     return response;
   } catch {
@@ -121,7 +121,7 @@ async function navigationFallback(request: Request): Promise<Response> {
     const response = await fetch(request);
     if (response.ok) {
       const cache = await caches.open(STATIC_CACHE);
-      cache.put(request, response.clone());
+      await cache.put(request, response.clone());
     }
     return response;
   } catch {

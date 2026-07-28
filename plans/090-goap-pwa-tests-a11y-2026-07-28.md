@@ -17,7 +17,7 @@
 | ID | Task | Priority | Agent | Files |
 |----|------|----------|-------|-------|
 | T1.1 | Implement service worker with cache-first strategy | P1 | general | `public/sw.js` (new), `src/app/layout.tsx` |
-| T1.2 | Add offline indicator component | P1 | general | `src/components/studio/offline-indicator.tsx` (new) |
+| T1.2 | Add offline indicator to app shell | P1 | general | `src/components/studio/app-shell.tsx` (component already existed) |
 | T1.3 | Write AI provider endpoint selection tests | P2 | general | `src/lib/ai/providers.test.ts` (new) |
 | T1.4 | Add automated keyboard navigation tests | P2 | general | `src/components/studio/__tests__/keyboard-nav.test.tsx` (new) |
 
@@ -31,13 +31,13 @@
 
 ## Success Criteria
 
-- [ ] Service worker registered and caching static assets
-- [ ] Offline indicator shows connection status
-- [ ] AI provider tests cover endpoint selection, validation, error handling
-- [ ] Keyboard navigation tests verify tab order and focus management
-- [ ] All existing tests pass (1073+)
-- [ ] Lint, typecheck, build pass
-- [ ] PR created with all CI checks passing
+- [x] Service worker registered and caching static assets
+- [x] Offline indicator shows connection status
+- [x] AI provider tests cover endpoint selection, validation, error handling
+- [x] Keyboard navigation tests verify tab order and focus management
+- [x] All existing tests pass (1143)
+- [x] Lint, typecheck, build pass
+- [x] PR created with all CI checks passing
 
 ## Key Files
 
@@ -45,9 +45,16 @@
 |------|--------|
 | `public/sw.js` | Create: service worker with cache-first strategy |
 | `src/app/layout.tsx` | Edit: register service worker |
-| `src/components/studio/offline-indicator.tsx` | Create: connection status component |
+| `src/components/studio/app-shell.tsx` | Edit: add OfflineIndicator import (component already existed) |
+| `src/lib/ai/providers.ts` | Edit: export validateOllamaUrl for testing |
+| `src/lib/ai/index.ts` | Edit: update barrel export |
 | `src/lib/ai/providers.test.ts` | Create: provider unit tests |
 | `src/components/studio/__tests__/keyboard-nav.test.tsx` | Create: keyboard nav tests |
+
+## PR Review Feedback Addressed
+
+- [x] Awaited `cache.put()` calls in service worker for reliability
+- [x] Updated plan to reflect offline indicator already existed
 
 ---
 
