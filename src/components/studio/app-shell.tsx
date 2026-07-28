@@ -87,7 +87,7 @@ export function AppShell() {
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />
-        <main id="main-content" className="flex min-h-0 flex-1">
+        <main id="main-content" tabIndex={-1} className="flex min-h-0 flex-1">
           <div className="min-w-0 flex-1 overflow-y-auto">
             <ErrorBoundary key={currentView}>
               <ViewErrorBoundary
