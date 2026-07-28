@@ -101,40 +101,6 @@ vi.mock('cmdk', () => ({
   ),
 }))
 
-vi.mock('lucide-react', () => {
-  const Icon = ({ className }: { className?: string }) => (
-    <span data-testid="icon" className={className} />
-  )
-  return {
-    Home: Icon,
-    FileText: Icon,
-    Library: Icon,
-    GitBranch: Icon,
-    BrainCircuit: Icon,
-    MessageSquare: Icon,
-    FlaskConical: Icon,
-    Grid3X3: Icon,
-    Download: Icon,
-    Search: Icon,
-    CornerDownLeft: Icon,
-    Sun: Icon,
-    Moon: Icon,
-    Menu: Icon,
-    Plus: Icon,
-    X: Icon,
-    Keyboard: Icon,
-    PanelRight: Icon,
-    PanelRightClose: Icon,
-    Wifi: Icon,
-    ChevronDown: Icon,
-    Lightbulb: Icon,
-    User: Icon,
-    FolderKanban: Icon,
-    AlertTriangle: Icon,
-    RefreshCcw: Icon,
-  }
-})
-
 vi.mock('next-themes', () => ({
   useTheme: () => ({ theme: 'light', setTheme: vi.fn() }),
 }))
@@ -193,6 +159,13 @@ vi.mock('@/lib/studio/store', () => ({
     return storeState
   },
   useFilteredEntities: () => [],
+  useStats: () => ({
+    total: 0,
+    claims: 0,
+    verified: 0,
+    byType: {},
+    recent: [],
+  }),
 }))
 
 // Import components AFTER mocks

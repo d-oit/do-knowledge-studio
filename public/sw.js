@@ -28,15 +28,15 @@ const PRECACHE_URLS = [
   "/manifest.webmanifest",
 ];
 
-function isStaticAsset(url: URL) {
+function isStaticAsset(url) {
   return STATIC_EXTENSIONS.some((ext) => url.pathname.endsWith(ext));
 }
 
-function isApiRequest(url: URL) {
+function isApiRequest(url) {
   return url.pathname.startsWith("/api/");
 }
 
-function isNavigationRequest(request: Request) {
+function isNavigationRequest(request) {
   return (
     request.mode === "navigate" ||
     (request.method === "GET" &&
@@ -75,7 +75,7 @@ self.addEventListener("activate", (event) => {
 
 // ── Strategies ──
 
-async function cacheFirst(request: Request): Promise<Response> {
+async function cacheFirst(request) {
   const cached = await caches.match(request);
   if (cached) return cached;
 
@@ -94,7 +94,7 @@ async function cacheFirst(request: Request): Promise<Response> {
   }
 }
 
-async function networkFirst(request: Request): Promise<Response> {
+async function networkFirst(request) {
   try {
     const response = await fetch(request);
     if (response.ok) {
@@ -116,7 +116,7 @@ async function networkFirst(request: Request): Promise<Response> {
   }
 }
 
-async function navigationFallback(request: Request): Promise<Response> {
+async function navigationFallback(request) {
   try {
     const response = await fetch(request);
     if (response.ok) {

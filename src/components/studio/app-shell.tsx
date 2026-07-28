@@ -13,7 +13,6 @@ import { HomeView } from './views/home-view'
 import { EditorView } from './views/editor-view'
 import { LibraryView } from './views/library-view'
 import { ChatView } from './views/chat-view'
-import { OfflineIndicator } from './offline-indicator'
 import { ErrorBoundary } from './error-boundary'
 import { ViewErrorBoundary } from './view-error-boundary'
 import { Skeleton } from './ui/skeleton'
@@ -85,7 +84,6 @@ export function AppShell() {
       >
         Skip to main content
       </a>
-      <OfflineIndicator />
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />
