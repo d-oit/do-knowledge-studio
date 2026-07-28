@@ -36,11 +36,11 @@ We will implement a shared HTML sanitization layer that all export paths must us
 - **Risk**: DOMPurify configuration must be reviewed when new rich content types are added
 
 ## Acceptance Criteria
-- [ ] DOMPurify added as dependency, verified bundle size impact
-- [ ] `sanitizeHtml()` and `escapeHtml()` exported from `src/lib/security.ts`
-- [ ] `ExportPanel.tsx` uses sanitization for all user fields in static site export
-- [ ] `cli/index.ts` uses the same shared functions
-- [ ] XSS test vectors (script tags, event handlers, javascript: URLs) are all neutralized
-- [ ] Safe HTML (bold, italic, lists) is preserved in exported content
-- [ ] `npm run typecheck` passes with no errors
-- [ ] Existing tests pass
+- [x] DOMPurify added as dependency, verified bundle size impact
+- [x] `sanitizeHtml()` and `escapeHtml()` exported from `src/lib/security.ts`
+- [x] `ExportPanel.tsx` uses sanitization for all user fields in static site export (via `export-helpers.ts`)
+- ~~`cli/index.ts` uses the same shared functions~~ — No CLI exists in the codebase (removed during Next.js migration)
+- [x] XSS test vectors (script tags, event handlers, javascript: URLs) are all neutralized
+- [x] Safe HTML (bold, italic, lists) is preserved in exported content
+- [x] `npm run typecheck` passes with no errors
+- [x] Existing tests pass

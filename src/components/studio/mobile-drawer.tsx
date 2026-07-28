@@ -287,7 +287,7 @@ function SearchTab({ onSelect }: { onSelect: () => void }) {
             <p className="text-[12px] text-ink-mute">{emptyCopy}</p>
           </div>
         ) : (
-          <ul className="space-y-1.5" role="group" aria-label="Search results">
+          <ul className="space-y-1.5" role="list" aria-label="Search results">
             {displayEntities.map((e) => {
               const meta = ENTITY_TYPE_META[e.type]
               return (

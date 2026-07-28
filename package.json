@@ -51,6 +51,7 @@
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
     "docx": "^9.7.1",
+    "dompurify": "^3.4.12",
     "framer-motion": "^12.23.2",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.24.0",

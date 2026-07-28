@@ -325,10 +325,10 @@ view-specific loading feedback, and fresh WCAG verification.
 
 **Exit criteria**:
 
-- [ ] Invalid imports cannot modify canonical state.
-- [ ] A user can recover the exact pre-import state after replacement failure.
-- [ ] Invalid persisted data is rejected or recovered without a crash.
-- [ ] Entity deletion leaves no dangling claims or links.
+- [x] Invalid imports cannot modify canonical state.
+- [x] A user can recover the exact pre-import state after replacement failure.
+- [x] Invalid persisted data is rejected or recovered without a crash.
+- [x] Entity deletion leaves no dangling claims or links.
 
 ### G2 — Complete synchronization semantics
 
@@ -345,10 +345,10 @@ view-specific loading feedback, and fresh WCAG verification.
 
 **Exit criteria**:
 
-- [ ] Create, update, and delete converge in both directions.
-- [ ] Reload preserves the converged state.
-- [ ] Manual resolution changes the chosen canonical fields.
-- [ ] No sync UI reports success before canonical commit succeeds.
+- [x] Create, update, and delete converge in both directions.
+- [x] Reload preserves the converged state.
+- [x] Manual resolution changes the chosen canonical fields.
+- [x] No sync UI reports success before canonical commit succeeds.
 
 ### G3 — Make the product surface honest
 

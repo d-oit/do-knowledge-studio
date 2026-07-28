@@ -1,11 +1,31 @@
 # Plans Index
 
-**Updated**: 2026-07-27
+**Updated**: 2026-07-28
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
 ## Current Status
 
-### Plan 088 — GOAP: Address Remaining plans/ Documentation & A11y Gaps (2026-07-27)
+### Plan 091 — GOAP: Address Remaining plans/ Gaps, Coverage, and ADR Cleanup (2026-07-28)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Update stale plan checkboxes (065, 068, 071, 089) | Done | Plans 065, 068, 071, 089 exit criteria checked off |
+| W1 | Check ADR 003 E2E test criterion | Done | ADR 003 acceptance criterion verified via WebCrypto encryption |
+| W2 | Add hook tests (use-toast, use-mobile) | Done | 20 new tests covering toast state, dismiss, reducer, mobile breakpoint |
+| W2 | Add service-worker-registration test | Done | 5 tests covering mount registration, error handling |
+| W3 | Quality gate + PR | Done | Lint, typecheck, test (1212), build all pass; PR #535 created with all 20 CI checks passing |
+
+### Plan 090 — GOAP: PWA Service Worker, AI Provider Tests, A11y Automation (2026-07-28)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Service worker with cache-first strategy | Done | `public/sw.js` enhanced with cache-first for static, network-first for API |
+| W1 | Offline indicator in app shell | Done | `app-shell.tsx` — added OfflineIndicator import (component already existed) |
+| W1 | AI provider unit tests | Done | `providers.test.ts` — 53 tests covering adapter selection, URL validation, error handling |
+| W1 | Keyboard navigation tests | Done | `keyboard-nav.test.tsx` — 48 tests covering Overlay, CommandPalette, Sidebar, Topbar, etc. |
+| W2 | Quality gate + PR | Done | Lint, typecheck, test (1143), build all pass; PR #534 created with all 20 CI checks passing |
+
+Plan 088 addresses remaining plans/ documentation and accessibility gaps: ADR status updates, skip navigation, zoom/reflow CSS, and plan checkbox updates.
 
 | Wave | Goal | Status | Changes |
 |------|------|--------|---------|

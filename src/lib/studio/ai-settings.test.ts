@@ -1,5 +1,80 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { getProviderEndpoint, loadAISettings, saveAISettings, isSessionOnlyCredential, getSessionOnlyMessage } from './ai-settings'
+import { getProviderEndpoint, loadAISettings, saveAISettings, isSessionOnlyCredential, getSessionOnlyMessage, resetIDBConnection } from './ai-settings'
+
+// ── In-memory IndexedDB mock ─────────────────────────────────────────
+// Uses a shared Map so that multiple openDB() calls within the same test
+// return the same in-memory store.
+
+const idbStores = new Map<string, Map<string, unknown>>()
+
+function createMockIDBRequest(result?: unknown): IDBRequest {
+  const req = { result: result ?? undefined, onsuccess: null as ((this: IDBRequest) => void) | null, onerror: null as ((this: IDBRequest) => void) | null, error: null }
+  // Defer the callback so the caller has a chance to set req.onsuccess
+  setTimeout(() => { if (req.onsuccess) req.onsuccess.call(req as unknown as IDBRequest) }, 0)
+  return req as unknown as IDBRequest
+}
+
+function createObjectStore(name: string): {
+  _get(key: string): unknown
+  _set(key: string, value: unknown): void
+  get(key: IDBValidKey): IDBRequest
+  put(value: unknown, key?: IDBValidKey): IDBRequest
+} {
+  if (!idbStores.has(name)) idbStores.set(name, new Map())
+  const store = idbStores.get(name)!
+  return {
+    _get: (key: string) => store.get(key),
+    _set: (key: string, value: unknown) => { store.set(key, value) },
+    get(key: IDBValidKey) { return createMockIDBRequest(store.get(key as string)) },
+    put(value: unknown, key?: IDBValidKey) { if (key !== undefined) store.set(key as string, value); return createMockIDBRequest() },
+  }
+}
+
+function installMockIDB() {
+  idbStores.clear()
+
+  const mockIDB = {
+    open: vi.fn((_name: string, _version?: number) => {
+      const storeName = 'settings' // matches IDB_STORE_NAME
+      const idbStore = createObjectStore(storeName)
+
+      const mockDB = {
+        objectStoreNames: {
+          contains: (n: string) => n === storeName,
+          length: 1,
+          item: (i: number) => i === 0 ? storeName : null,
+          [Symbol.iterator]: function* () { yield storeName },
+        } as unknown as DOMStringList,
+        createObjectStore: (name: string) => createObjectStore(name),
+        transaction: (_names: string | string[], _mode?: IDBTransactionMode) => {
+          return {
+            objectStore: (name: string) => {
+              if (name === storeName) return idbStore
+              return createObjectStore(name)
+            },
+          } as unknown as IDBTransaction
+        },
+      }
+
+      const req = {
+        result: mockDB as unknown as IDBDatabase,
+        onupgradeneeded: null as ((e: unknown) => void) | null,
+        onsuccess: null as ((this: IDBOpenDBRequest) => void) | null,
+        onerror: null as ((this: IDBOpenDBRequest) => void) | null,
+        error: null,
+      }
+
+      queueMicrotask(() => {
+        if (req.onsuccess) req.onsuccess.call(req as unknown as IDBOpenDBRequest)
+      })
+      return req as unknown as IDBOpenDBRequest
+    }),
+    deleteDatabase: vi.fn(),
+  }
+
+  vi.stubGlobal('indexedDB', mockIDB)
+  return mockIDB
+}
 
 describe('getProviderEndpoint', () => {
   it('returns OpenRouter endpoint', () => {
@@ -20,7 +95,7 @@ describe('isSessionOnlyCredential', () => {
 describe('getSessionOnlyMessage', () => {
   it('returns a message about session-only storage', () => {
     const msg = getSessionOnlyMessage()
-    expect(msg).toContain('session only')
+    expect(msg).toContain('session-only')
     expect(msg.length).toBeGreaterThan(0)
   })
 })
@@ -44,6 +119,9 @@ describe('ai-settings encryption and persistence', () => {
       setItem: (key: string, value: string) => { sessionStorageMock[key] = value },
       removeItem: (key: string) => { delete sessionStorageMock[key] },
     })
+
+    installMockIDB()
+    resetIDBConnection()
   })
 
   afterEach(() => {
@@ -62,17 +140,6 @@ describe('ai-settings encryption and persistence', () => {
     }
 
     await saveAISettings(settings)
-
-    // Verify localStorage has encryptedApiKey but not plain apiKey
-    const rawSaved = localStorageMock['dks-ai-settings']
-    expect(rawSaved).toBeDefined()
-    const parsed = JSON.parse(rawSaved)
-    expect(parsed.apiKey).toBeUndefined()
-    expect(parsed.encryptedApiKey).toBeDefined()
-    expect(parsed.encryptedApiKey).not.toBe('test-api-key-123456789')
-
-    // Verify sessionStorage has the key stored (to allow reuse)
-    expect(sessionStorageMock['dks-ai-enc-key']).toBeDefined()
 
     // Load settings and verify API key is correctly decrypted
     const loaded = await loadAISettings()
@@ -94,11 +161,8 @@ describe('ai-settings encryption and persistence', () => {
 
     await saveAISettings(settings)
 
-    // Find the call that produces the key used for crypt operations
     const importKeyCalls = importKeySpy.mock.calls
-    // The keys returned by importKey used for encrypt/decrypt should have extractable as false (the 4th argument)
     expect(importKeyCalls.length).toBeGreaterThan(0)
-    // The final keys used for operations (not keyMaterial) are imported with GCM and extractable=false
     const finalKeyImports = importKeyCalls.filter(call => {
       const algorithm = call[2]
       return typeof algorithm === 'object' && algorithm.name === 'AES-GCM'
@@ -117,6 +181,7 @@ describe('ai-settings encryption and persistence', () => {
   })
 
   it('migrates old provider names to valid providers', async () => {
+    // Pre-seed localStorage with legacy data
     localStorageMock['dks-ai-settings'] = JSON.stringify({
       provider: 'invalid-provider',
       model: 'some-model',
@@ -162,12 +227,14 @@ describe('ai-settings encryption and persistence', () => {
     expect(loaded.apiKey).toBe('')
   })
 
-  it('handles invalid JSON in localStorage', async () => {
+  it('handles invalid JSON in localStorage during migration', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
     localStorageMock['dks-ai-settings'] = 'invalid json'
 
     const loaded = await loadAISettings()
     expect(loaded.provider).toBe('openrouter')
     expect(loaded.model).toBe('openrouter/free')
+    spy.mockRestore()
   })
 
   it('preserves all settings fields', async () => {
@@ -201,5 +268,58 @@ describe('ai-settings encryption and persistence', () => {
     expect(loaded.ollamaCpuOnly).toBe(false)
     expect(loaded.allowWebResearch).toBe(false)
     expect(loaded.ollamaBaseUrl).toBe('http://localhost:11434')
+  })
+
+  it('cleans up localStorage after migration', async () => {
+    localStorageMock['dks-ai-settings'] = JSON.stringify({
+      provider: 'openrouter',
+      model: 'openrouter/free',
+      apiKey: '',
+    })
+
+    await loadAISettings()
+
+    // localStorage should be cleaned up
+    expect(localStorageMock['dks-ai-settings']).toBeUndefined()
+    // Migration flag should be set
+    expect(localStorageMock['dks-ls-migrated-to-idb']).toBe('1')
+  })
+
+  it('skips migration if already migrated', async () => {
+    // Mark as already migrated
+    localStorageMock['dks-ls-migrated-to-idb'] = '1'
+    // Legacy key still exists (should not be read)
+    localStorageMock['dks-ai-settings'] = JSON.stringify({
+      provider: 'ollama',
+      model: 'old-model',
+    })
+
+    // IDB is empty, so should return defaults
+    const loaded = await loadAISettings()
+    expect(loaded.provider).toBe('openrouter')
+    expect(loaded.model).toBe('openrouter/free')
+  })
+
+  it('persists encryptedApiKey to IndexedDB, not plain apiKey', async () => {
+    const settings = {
+      provider: 'openrouter' as const,
+      model: 'openrouter/free',
+      apiKey: 'secret-key-abc',
+      augmentWithLocal: true,
+      ollamaCpuOnly: false,
+      allowWebResearch: false,
+      ollamaBaseUrl: 'http://localhost:11434',
+    }
+
+    await saveAISettings(settings)
+    const loaded = await loadAISettings()
+    expect(loaded.apiKey).toBe('secret-key-abc')
+
+    // Verify stored data has encryptedApiKey, not plain apiKey
+    const stored = idbStores.get('settings')?.get('ai-settings') as Record<string, unknown> | undefined
+    expect(stored).toBeDefined()
+    expect(stored!.apiKey).toBeUndefined()
+    expect(stored!.encryptedApiKey).toBeDefined()
+    expect(stored!.encryptedApiKey).not.toBe('secret-key-abc')
   })
 })
