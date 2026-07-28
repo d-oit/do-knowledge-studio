@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import {
-  escapeHtml,
   parseImportFile,
   buildJsonExport,
   buildMarkdownExport,
@@ -9,6 +8,7 @@ import {
   buildDocxExport,
   todayStamp,
 } from './export-helpers'
+import { escapeHtml } from '@/lib/security'
 import type { Entity, Claim } from '@/lib/studio/types'
 
 const SAMPLE_ENTITIES: Entity[] = [

@@ -17,6 +17,7 @@ import {
   ExternalHyperlink,
 } from 'docx'
 import { validateImportPayload, type ValidationError } from '@/lib/studio/schema'
+import { escapeHtml, sanitizeHtml } from '@/lib/security'
 
 export type ExportFormatId = 'json' | 'markdown' | 'html' | 'pdf' | 'docx' | 'encrypted'
 
@@ -128,15 +129,6 @@ export function downloadBlob(filename: string, blob: Blob) {
   URL.revokeObjectURL(url)
 }
 
-export function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-}
-
 export function buildJsonExport(entities: Entity[], claims: Claim[]): string {
   const payload = {
     version: 1,
@@ -210,7 +202,7 @@ export function buildHtmlExport(entities: Entity[], claims: Claim[]): string {
     <p class="meta">${e.tags.map((t) => `#${escapeHtml(t)}`).join(' ')}</p>
   </header>
   <p class="desc">${escapeHtml(e.description)}</p>
-  <pre>${escapeHtml(e.content)}</pre>
+  <div class="content">${sanitizeHtml(e.content)}</div>
   <h3>Claims</h3>
   ${claimsHtml}
 </article>`
@@ -235,7 +227,11 @@ export function buildHtmlExport(entities: Entity[], claims: Claim[]): string {
     .type.person { background: #f3dcd2; color: #8a3320; }
     .type.project { background: #dce8df; color: #2f5b4a; }
     .desc { color: #6b6760; }
-    pre { white-space: pre-wrap; word-wrap: break-word; background: #f1ede4; padding: 0.75rem 1rem; border-radius: 6px; }
+    .content { white-space: pre-wrap; word-wrap: break-word; background: #f1ede4; padding: 0.75rem 1rem; border-radius: 6px; }
+    .content p { margin: 0.4rem 0; }
+    .content ul, .content ol { padding-left: 1.5rem; }
+    .content code { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.9em; background: #e8e4db; padding: 0.1em 0.3em; border-radius: 3px; }
+    .content pre { white-space: pre-wrap; word-wrap: break-word; background: #e8e4db; padding: 0.5rem 0.75rem; border-radius: 4px; }
     .claims { padding-left: 1.2rem; }
     .claims .v { font-size: 10px; padding: 1px 6px; border-radius: 4px; margin-right: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
     .claims .v.verified { background: #d4ead4; color: #1f6b1f; }
