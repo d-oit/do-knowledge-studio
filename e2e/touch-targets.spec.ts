@@ -34,6 +34,9 @@ async function assertTouchTargets(page: import('@playwright/test').Page, viewNam
           (el.getAttribute('aria-label') || '').toLowerCase().includes('skip'))
       ) continue;
 
+      // Skip SVG <g> elements (data visualization nodes, not UI controls)
+      if (el.tagName === 'G' || el instanceof SVGGElement) continue;
+
       if (rect.width < min || rect.height < min) {
         issues.push({
           tag: el.tagName.toLowerCase(),
