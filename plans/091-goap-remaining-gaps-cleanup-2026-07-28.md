@@ -45,7 +45,7 @@
 - [x] ADR 004 formally superseded (already done in prior commit)
 - [x] ADR 003 E2E test criterion checked
 - [x] Plan 089 deferred items marked as completed
-- [ ] New smoke tests for shadcn UI components added (deferred — agent timed out)
+- [x] New smoke tests for shadcn UI components added — **completed in Plan 092** (dialog, input, badge, card)
 - [x] New smoke tests for hooks added (use-toast: 15, use-mobile: 5)
 - [x] Service worker registration test added (5 tests)
 - [x] All existing tests pass (1212)
