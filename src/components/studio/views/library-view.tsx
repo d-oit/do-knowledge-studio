@@ -92,7 +92,7 @@ export function LibraryView() {
               onClick={() => setTypeFilter(f.id)}
               aria-pressed={typeFilter === f.id}
               className={cn(
-                'rounded min-h-[44px] px-2.5 text-[12px] font-medium transition-colors focus-ring',
+                'rounded min-h-[44px] min-w-[44px] px-2.5 text-[12px] font-medium transition-colors focus-ring',
                 typeFilter === f.id
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'text-ink-mute hover:text-ink',
@@ -130,7 +130,7 @@ export function LibraryView() {
 
         <button
           onClick={() => setSortDir(sortDir === 'asc' ? 'desc' : 'asc')}
-          className="flex min-h-[44px] items-center justify-center gap-1 rounded-md border border-border bg-background px-2.5 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
+          className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded-md border border-border bg-background px-2.5 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
           aria-label={sortDir === 'asc' ? 'Sort ascending' : 'Sort descending'}
         >
           {sortDir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
