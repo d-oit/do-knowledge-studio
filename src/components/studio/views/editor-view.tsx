@@ -391,23 +391,24 @@ export function EditorView() {
         onKeyDown={(e) => {
           const modes = ['edit', 'preview', 'split'] as const
           const currentIdx = modes.indexOf(editMode)
-          let nextMode: (typeof modes)[number] | null = null
+          let nextIdx = -1
           if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
             e.preventDefault()
-            nextMode = modes[(currentIdx + 1) % modes.length]
+            nextIdx = (currentIdx + 1) % modes.length
           } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
             e.preventDefault()
-            nextMode = modes[(currentIdx - 1 + modes.length) % modes.length]
+            nextIdx = (currentIdx - 1 + modes.length) % modes.length
           }
-          if (nextMode) {
+          if (nextIdx >= 0) {
+            const nextMode = modes[nextIdx]
             setEditMode(nextMode)
             // Per ARIA radiogroup pattern, arrow keys must move focus to the newly selected radio
             const group = modeGroupRef.current
             if (group) {
               const buttons = group.querySelectorAll<HTMLButtonElement>('[role="radio"]')
-              const nextIdx = modes.indexOf(nextMode)
-              if (buttons[nextIdx]) {
-                buttons[nextIdx].focus()
+              const targetButton = buttons.item(nextIdx)
+              if (targetButton) {
+                targetButton.focus()
               }
             }
           }
