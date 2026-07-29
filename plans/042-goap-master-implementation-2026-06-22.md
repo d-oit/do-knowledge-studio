@@ -1,5 +1,7 @@
 # GOAP Master Implementation Plan — 2026-06-22
 
+> **Historical Note**: This plan references the retired Vite/SQLite/Orama/CLI architecture (superseded by ADR 018 — Next.js + Zustand + localStorage, 2026-07). Remaining unchecked items were completed in later plans (090–096). Retained for historical context only.
+
 **Generated**: 2026-06-22
 **Source**: All open plans (34, 35, 36, 37, 041) + GitHub issues #226–#240
 **Method**: Goal-Oriented Action Planning with swarm execution

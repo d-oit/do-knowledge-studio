@@ -1,5 +1,7 @@
 # Plan 070 — Phase 10: Documentation & Code Hygiene (2026-07-18)
 
+> **Historical Note**: This plan references the retired project architecture (superseded by ADR 018 — Next.js + Zustand + localStorage, 2026-07). Remaining unchecked items were completed in later plans (090–096). Retained for historical context only.
+
 **Date**: 2026-07-18
 **Branch**: feat/phase10-docs-and-code-hygiene
 **Status**: ✅ COMPLETE

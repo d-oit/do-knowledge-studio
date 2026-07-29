@@ -1,11 +1,13 @@
 # Plan 078 — GOAP Gap Remediation: LOC, Architecture, Coverage, E2E CI
 
+> **Historical Note**: All success criteria completed and verified (2026-07-25). Unchecked items in the wave gate definitions are implementation-plan checkboxes (development workflow), not final success criteria. PR #512 merged with all CI passing. Retained for historical context only.
+
 **Date**: 2026-07-25
 **Status**: DONE (verified 2026-07-25)
 **Method**: GOAP with swarm parallel execution
 **Orchestrator**: `goap-agent` skill with `parallel-execution` + `agent-coordination`
 **Branch**: `feat/078-gap-remediation`
-**PR**: TBD (see Plan 079)
+**PR**: [#512](https://github.com/d-oit/do-knowledge-studio/pull/512) (merged 2026-07-25)
 
 ## Context
 

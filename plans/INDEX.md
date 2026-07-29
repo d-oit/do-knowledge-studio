@@ -5,6 +5,21 @@
 
 ## Current Status
 
+### Historical Plan Reconciliation (2026-07-29)
+
+Added `Historical Note` blockquotes to 9 superseded plans (040–078) documenting their
+relationship to the retired Vite/SQLite/Orama/CLI architecture (superseded by ADR 018 —
+Next.js + Zustand + localStorage). Plans retain historical context; remaining unchecked
+items were completed in later plans (090–096).
+
+| Plan | Note |
+|------|------|
+| 040, 041-ui, 042, 05, 070 | Retired architecture note |
+| 041-ai-harness | Retired AI architecture (superseded by ADR 025) |
+| 051 | Superseded Vercel config |
+| 068 | Follow-ups completed in 090–096 |
+| 078 | Implementation-plan checkboxes, all success criteria done |
+
 ### Plan 096 — WCAG Touch Target and E2E Learnings (2026-07-29)
 
 | Wave | Goal | Status | Changes |
