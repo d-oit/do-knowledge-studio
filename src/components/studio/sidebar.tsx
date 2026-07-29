@@ -139,7 +139,7 @@ export function Sidebar() {
                         </span>
                       )}
                       {item.shortcut && !item.experimental && (
-                        <kbd className="hidden font-mono text-badge text-ink-faint/70 opacity-0 transition-opacity group-hover:opacity-100 lg:inline">
+                        <kbd className="hidden font-mono text-badge text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 lg:inline">
                           {item.shortcut}
                         </kbd>
                       )}

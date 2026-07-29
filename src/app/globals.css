@@ -92,8 +92,8 @@
   --foreground: #1a1814;          /* deep warm ink */
   --ink: #1a1814;
   --ink-soft: #3a3530;
-  --ink-mute: #6b6760;
-  --ink-faint: #6a6660;
+  --ink-mute: #5c5852;           /* WCAG AA: 6.1:1 on muted, 6.7:1 on background */
+  --ink-faint: #5c5852;          /* unified with ink-mute — was #6a6660 (borderline) */
 
   --card: #ffffff;
   --card-foreground: #1a1814;
@@ -109,7 +109,7 @@
   --secondary-foreground: #1a1814;
 
   --muted: #f1ede4;
-  --muted-foreground: #6b6760;
+  --muted-foreground: #5c5852;   /* WCAG AA: 6.1:1 on muted — was #6b6760 (borderline) */
 
   /* Accent = saffron */
   --accent: #f5e8d5;
@@ -156,8 +156,8 @@
   --foreground: #f2eee5;
   --ink: #f2eee5;
   --ink-soft: #d4cec0;
-  --ink-mute: #9b958a;
-  --ink-faint: #827d72;
+  --ink-mute: #a09a8e;           /* WCAG AA: 5.8:1 on muted, 7.0:1 on background */
+  --ink-faint: #a09a8e;          /* unified with ink-mute — was #827d72 (failed 4.5:1) */
 
   --card: #1c1814;
   --card-foreground: #f2eee5;
@@ -171,7 +171,7 @@
   --secondary-foreground: #f2eee5;
 
   --muted: #25201a;
-  --muted-foreground: #9b958a;
+  --muted-foreground: #a09a8e;   /* WCAG AA: 5.8:1 on muted — was #9b958a (borderline) */
 
   --accent: #2a2018;
   --accent-foreground: #e5944a;

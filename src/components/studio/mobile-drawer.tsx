@@ -199,7 +199,7 @@ function NavTab({ onNavigate }: { onNavigate: () => void }) {
                       </span>
                     )}
                     {item.shortcut && (
-                      <kbd className="font-mono text-caption text-ink-faint/70">
+                      <kbd className="font-mono text-caption text-ink-faint">
                         {item.shortcut}
                       </kbd>
                     )}
