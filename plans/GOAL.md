@@ -31,4 +31,4 @@ Build a local-first, structured knowledge engine that empowers users to capture,
 ## Remaining Work
 
 - Coverage target 55% — DONE (current: 57% lines)
-- Full accessibility audit — axe-core integrated (Plan 086), manual screen reader/zoom/reflow testing still pending
+- Full accessibility audit — E2E suite added in Plan 093 (keyboard, zoom, reflow, touch targets, contrast). Pre-existing color-contrast issues (58+ serious violations) surfaced and tracked in Plan 095.

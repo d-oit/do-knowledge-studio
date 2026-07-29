@@ -1,29 +1,10 @@
 import { test, expect } from '@playwright/test';
-import AxeBuilder from '@axe-core/playwright';
+import { assertNoCriticalAxeViolations, assertNoAxeViolations } from './helpers/a11y';
 
 /** Helper: click a sidebar nav button by label (scoped to <nav>) */
 async function navClick(page: import('@playwright/test').Page, name: RegExp | string) {
   const nav = page.getByRole('navigation', { name: /main navigation/i });
   await nav.getByRole('button', { name }).first().click();
-}
-
-/** Helper: run axe-core and assert no critical violations, log serious as warnings */
-async function assertNoCriticalAxeViolations(page: import('@playwright/test').Page) {
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze();
-
-  const critical = results.violations.filter((v) => v.impact === 'critical');
-  const serious = results.violations.filter((v) => v.impact === 'serious');
-
-  if (serious.length > 0) {
-    console.warn(
-      `[a11y] ${serious.length} serious violations found (not blocking):`,
-      serious.map((v) => `  - ${v.id}: ${v.description}`).join('\n'),
-    );
-  }
-
-  expect(critical, `Found ${critical.length} critical axe violations`).toEqual([]);
 }
 
 test.describe('Accessibility', () => {
@@ -115,6 +96,10 @@ test.describe('Accessibility', () => {
 });
 
 test.describe('axe-core automated accessibility', () => {
+  // NOTE: Pre-existing serious color-contrast violations exist across views
+  // (58+ nodes). Views below use critical-only assertion. Follow-up in Plan 095.
+  // The home page has an additional strict (serious+) test.
+
   test('home page has no critical axe violations', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
@@ -191,5 +176,13 @@ test.describe('axe-core automated accessibility', () => {
     await nav.getByRole('button', { name: /ai/i }).first().click();
     await page.waitForLoadState('networkidle');
     await assertNoCriticalAxeViolations(page);
+  });
+
+  // Strict (serious+) test for the home page only — once color-contrast issues
+  // are fixed (Plan 095), can be extended to all views.
+  test('home page has no critical or serious axe violations (strict)', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+    await assertNoAxeViolations(page);
   });
 });
