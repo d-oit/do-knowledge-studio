@@ -95,13 +95,13 @@ Massive session delivering **17 PRs** across AI consolidation, P2P sync collabor
 
 ### Short-term
 - [x] #482: Keyboard navigation audit → **Done (Plan 086)**
-- [ ] #483: Screen reader announcements
+- [x] #483: Screen reader announcements → **Done (announcer.tsx + aria-live regions across 10+ components: library-view, editor-view, chat-view, triz-view, sonner, offline-indicator, ai-harness-chat, right-panel, sync-view, shortcuts-dialog)**
 - [x] #484: Color contrast and focus indicators → **Done (Plan 086)**
-- [ ] #485: Loading states and skeleton screens
+- [x] #485: Loading states and skeleton screens → **Done (Skeleton, EntityCardSkeleton, ListSkeleton, GraphSkeleton, ChatSkeleton in shared-primitives.tsx + skeleton.tsx; used in app-shell.tsx + sidebar; tested in skeleton.test.tsx + shared-primitives.test.tsx)**
 
 ### Medium-term
-- [ ] #486: Error boundaries per view
-- [ ] #487: Keyboard shortcuts help dialog
+- [x] #486: Error boundaries per view → **Done (ErrorBoundary + ViewErrorBoundary in app-shell.tsx, wrapping each view)**
+- [x] #487: Keyboard shortcuts help dialog → **Done (ShortcutsDialog component in app-shell.tsx with keyboard nav tests)**
 
 ### Future Work
 - [ ] Advanced TRIZ analysis features
