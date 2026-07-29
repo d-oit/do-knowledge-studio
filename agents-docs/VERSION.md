@@ -6,12 +6,14 @@
 
 Version propagation is **manual** as of Plan 073 (2026-07-24). The `version-propagation.yml` workflow has been retired.
 
+> **IMPORTANT: AI agents must NEVER create a GitHub release (`gh release create`) without explicit human instruction.** Releases are cut by the maintainer only. An agent may prepare draft release notes in `plans/` when asked, but must never publish a release autonomously.
+
 ## Current Workflow
 
-1. Edit `VERSION` file directly
+1. **Maintainer only**: Edit `VERSION` file directly (the current version is `0.1.0`)
 2. Run `./scripts/propagate-version.sh` locally to sync badge/version strings across files
 3. Commit and push
-4. After CI passes on `main`, use `gh release create` to create the release
+4. **Maintainer only**: After CI passes on `main` and with explicit instruction, use `gh release create` to publish the release
 
 ## Manual Propagation
 
@@ -23,7 +25,7 @@ Version propagation is **manual** as of Plan 073 (2026-07-24). The `version-prop
 
 | File | Pattern | Updated By |
 |------|---------|------------|
-| `VERSION` | `0.2.5` | Manual edit |
+| `VERSION` | `0.1.0` | Manual edit (maintainer) |
 | `README.md` | `version-X.Y.Z` badge | propagate-version.sh |
 | `agents-docs/MIGRATION.md` | badge + `Template version:` text | propagate-version.sh |
 

@@ -18,7 +18,7 @@ Local-first knowledge studio built with Next.js 16 / React 19 / Tailwind 4 / sha
 - Prefer small, composable modules over mixed-responsibility files.
 - Reuse existing abstractions before introducing new patterns.
 - Keep changes scoped; avoid unrelated refactors in the same commit.
-- Releases are coordinated manually — the `version-propagation.yml` workflow was retired in Plan 073. Use `gh release create` only after verifying all CI passes on `main`.
+- **Never create a GitHub release without explicit human instruction.** Releases are coordinated manually by the maintainer — the `version-propagation.yml` workflow was retired in Plan 073. Do NOT run `gh release create` unless the user explicitly asks you to cut a release. You may prepare draft release notes in `plans/` on request, but never publish a release autonomously.
 - Never modify `biome.json`, any `eslint` configuration file, or lint suppressions/ignore settings unless I explicitly request that change. If such a change seems necessary, stop, explain why, and ask for approval before editing.
 - Escape JSX text content — use `&apos;` for apostrophes, `&quot;` for quotes in JSX text nodes. Do not rely on raw punctuation in JSX strings.
 - All `catch` blocks must handle errors meaningfully — log, toast, or rethrow. Never use empty `catch {}` blocks.
