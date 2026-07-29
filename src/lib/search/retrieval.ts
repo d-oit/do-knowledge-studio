@@ -24,7 +24,7 @@ export interface SearchResult {
 interface IndexEntry {
   id: string
   type: 'entity' | 'claim'
-  tokens: string[]
+  tokenCount: number
   tfMap: Map<string, number>
   entityId?: string
   entityName?: string
@@ -39,6 +39,14 @@ function tokenize(text: string): string[] {
     .filter((w) => w.length > 2 && !STOP_WORDS.has(w))
 }
 
+function buildTfMap(tokens: string[]): Map<string, number> {
+  const tfMap = new Map<string, number>()
+  for (const t of tokens) {
+    tfMap.set(t, (tfMap.get(t) ?? 0) + 1)
+  }
+  return tfMap
+}
+
 function buildIndex(
   entities: Entity[],
   claims: Claim[],
@@ -46,39 +54,27 @@ function buildIndex(
 ): IndexEntry[] {
   const entries: IndexEntry[] = []
 
-  for (let i = 0; i < entities.length; i++) {
-    const e = entities[i]
+  for (const e of entities) {
     const text = `${e.name} ${e.description} ${e.content} ${e.tags.join(' ')}`
     const tokens = tokenize(text)
-    const tfMap = new Map<string, number>()
-    for (let j = 0; j < tokens.length; j++) {
-      const t = tokens[j]
-      tfMap.set(t, (tfMap.get(t) ?? 0) + 1)
-    }
     entries.push({
       id: e.id,
       type: 'entity',
-      tokens,
-      tfMap,
+      tokenCount: tokens.length,
+      tfMap: buildTfMap(tokens),
       fullText: text,
     })
   }
 
-  for (let i = 0; i < claims.length; i++) {
-    const c = claims[i]
+  for (const c of claims) {
     const entity = entityMap.get(c.entityId)
     const text = `${c.statement} ${c.evidence ?? ''} ${c.source ?? ''}`
     const tokens = tokenize(text)
-    const tfMap = new Map<string, number>()
-    for (let j = 0; j < tokens.length; j++) {
-      const t = tokens[j]
-      tfMap.set(t, (tfMap.get(t) ?? 0) + 1)
-    }
     entries.push({
       id: c.id,
       type: 'claim',
-      tokens,
-      tfMap,
+      tokenCount: tokens.length,
+      tfMap: buildTfMap(tokens),
       entityId: c.entityId,
       entityName: entity?.name,
       fullText: text,
@@ -91,11 +87,10 @@ function buildIndex(
 function computeIDF(entries: IndexEntry[], queryTokens: string[]): Map<string, number> {
   const N = entries.length
   const idf = new Map<string, number>()
-  for (let i = 0; i < queryTokens.length; i++) {
-    const qt = queryTokens[i]
+  for (const qt of queryTokens) {
     let df = 0
-    for (let j = 0; j < N; j++) {
-      if (entries[j].tfMap.has(qt)) {
+    for (const e of entries) {
+      if (e.tfMap.has(qt)) {
         df++
       }
     }
@@ -111,14 +106,13 @@ function bm25Score(
   avgDl: number,
 ): number {
   let score = 0
-  const dl = entry.tokens.length
+  const dl = entry.tokenCount
   const tfMap = entry.tfMap
 
   // Pre-calculate parts of denominator that don't depend on termFreq
   const bDenom = K1 * (1 - B + B * (dl / avgDl))
 
-  for (let i = 0; i < queryTokens.length; i++) {
-    const qt = queryTokens[i]
+  for (const qt of queryTokens) {
     const termFreq = tfMap.get(qt) ?? 0
     if (termFreq === 0) continue
 
@@ -143,8 +137,7 @@ export function search(
   limit: number = 5,
 ): SearchResult[] {
   const entityMap = new Map<string, Entity>()
-  for (let i = 0; i < entities.length; i++) {
-    const e = entities[i]
+  for (const e of entities) {
     entityMap.set(e.id, e)
   }
 
@@ -155,10 +148,7 @@ export function search(
   if (queryTokens.length === 0) return []
 
   const idf = computeIDF(entries, queryTokens)
-  let totalLength = 0
-  for (let i = 0; i < entries.length; i++) {
-    totalLength += entries[i].tokens.length
-  }
+  const totalLength = entries.reduce((sum, e) => sum + e.tokenCount, 0)
   const avgDl = totalLength / entries.length
 
   const scored = entries
