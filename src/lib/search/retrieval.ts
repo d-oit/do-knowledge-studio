@@ -24,8 +24,8 @@ export interface SearchResult {
 interface IndexEntry {
   id: string
   type: 'entity' | 'claim'
-  tokens: string[]
-  tokenSet: Set<string>
+  tokenCount: number
+  tfMap: Map<string, number>
   entityId?: string
   entityName?: string
   fullText: string
@@ -37,6 +37,14 @@ function tokenize(text: string): string[] {
     .replace(/[^a-z0-9\s]/g, ' ')
     .split(/\s+/)
     .filter((w) => w.length > 2 && !STOP_WORDS.has(w))
+}
+
+function buildTfMap(tokens: string[]): Map<string, number> {
+  const tfMap = new Map<string, number>()
+  for (const t of tokens) {
+    tfMap.set(t, (tfMap.get(t) ?? 0) + 1)
+  }
+  return tfMap
 }
 
 function buildIndex(
@@ -52,8 +60,8 @@ function buildIndex(
     entries.push({
       id: e.id,
       type: 'entity',
-      tokens,
-      tokenSet: new Set(tokens),
+      tokenCount: tokens.length,
+      tfMap: buildTfMap(tokens),
       fullText: text,
     })
   }
@@ -65,8 +73,8 @@ function buildIndex(
     entries.push({
       id: c.id,
       type: 'claim',
-      tokens,
-      tokenSet: new Set(tokens),
+      tokenCount: tokens.length,
+      tfMap: buildTfMap(tokens),
       entityId: c.entityId,
       entityName: entity?.name,
       fullText: text,
@@ -80,7 +88,12 @@ function computeIDF(entries: IndexEntry[], queryTokens: string[]): Map<string, n
   const N = entries.length
   const idf = new Map<string, number>()
   for (const qt of queryTokens) {
-    const df = entries.filter((e) => e.tokenSet.has(qt)).length
+    let df = 0
+    for (const e of entries) {
+      if (e.tfMap.has(qt)) {
+        df++
+      }
+    }
     idf.set(qt, Math.log((N - df + 0.5) / (df + 0.5) + 1))
   }
   return idf
@@ -93,16 +106,19 @@ function bm25Score(
   avgDl: number,
 ): number {
   let score = 0
-  const dl = entry.tokens.length
-  const tf = new Map<string, number>()
-  for (const t of entry.tokens) {
-    tf.set(t, (tf.get(t) ?? 0) + 1)
-  }
+  const dl = entry.tokenCount
+  const tfMap = entry.tfMap
+
+  // Pre-calculate parts of denominator that don't depend on termFreq
+  const bDenom = K1 * (1 - B + B * (dl / avgDl))
+
   for (const qt of queryTokens) {
-    const termFreq = tf.get(qt) ?? 0
+    const termFreq = tfMap.get(qt) ?? 0
+    if (termFreq === 0) continue
+
     const idfVal = idf.get(qt) ?? 0
     const numerator = termFreq * (K1 + 1)
-    const denominator = termFreq + K1 * (1 - B + B * (dl / avgDl))
+    const denominator = termFreq + bDenom
     score += idfVal * (numerator / denominator)
   }
   return score
@@ -132,7 +148,8 @@ export function search(
   if (queryTokens.length === 0) return []
 
   const idf = computeIDF(entries, queryTokens)
-  const avgDl = entries.reduce((sum, e) => sum + e.tokens.length, 0) / entries.length
+  const totalLength = entries.reduce((sum, e) => sum + e.tokenCount, 0)
+  const avgDl = totalLength / entries.length
 
   const scored = entries
     .map((entry) => ({
