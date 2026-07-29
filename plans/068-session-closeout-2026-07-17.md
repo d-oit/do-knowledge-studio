@@ -88,8 +88,8 @@ Massive session delivering **17 PRs** across AI consolidation, P2P sync collabor
 
 ### Immediate (next session)
 - [x] #479: Service worker with cache-first strategy → **Done (Plan 090)**
-- [ ] #480: Offline indicator and sync queue
-- [ ] #481: PWA manifest and installability
+- [x] #480: Offline indicator and sync queue → **Done (Plan 090: offline indicator; sync queue deferred)**
+- [x] #481: PWA manifest and installability → **Done (Plan 090)**
 
 ### Short-term
 - [x] #482: Keyboard navigation audit → **Done (Plan 086)**
