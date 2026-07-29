@@ -95,23 +95,12 @@ test.describe('Accessibility', () => {
   });
 });
 
-<<<<<<< Updated upstream
-=======
-<<<<<<< HEAD
-test.describe('axe-core automated accessibility (serious+ violations fail)', () => {
-  test('home page has no critical or serious axe violations', async ({ page }) => {
-=======
->>>>>>> Stashed changes
 test.describe('axe-core automated accessibility', () => {
   // NOTE: Pre-existing serious color-contrast violations exist across views
   // (58+ nodes). Views below use critical-only assertion. Follow-up in Plan 095.
   // The home page has an additional strict (serious+) test.
 
   test('home page has no critical axe violations', async ({ page }) => {
-<<<<<<< Updated upstream
-=======
->>>>>>> 7aed992 (fix: use shared axe helper, keep critical-only for existing views, add strict test for home page)
->>>>>>> Stashed changes
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     await assertNoCriticalAxeViolations(page);
@@ -187,14 +176,6 @@ test.describe('axe-core automated accessibility', () => {
     await nav.getByRole('button', { name: /ai/i }).first().click();
     await page.waitForLoadState('networkidle');
     await assertNoCriticalAxeViolations(page);
-  });
-
-  // Strict (serious+) test for the home page only — once color-contrast issues
-  // are fixed (Plan 095), can be extended to all views.
-  test('home page has no critical or serious axe violations (strict)', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    await assertNoAxeViolations(page);
   });
 
   // Strict (serious+) test for the home page only — once color-contrast issues
