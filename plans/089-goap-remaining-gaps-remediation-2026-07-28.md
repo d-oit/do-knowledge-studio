@@ -47,4 +47,4 @@
 - [x] PWA service worker and manifest functional — **completed in Plan 090**
 - [x] AI provider unit tests added — **completed in Plan 090**
 - [x] All CI checks pass.
-- [ ] PR reviewed and merged — **pending**
+- [ ] PR reviewed and merged — **pending; PWA/AI test items completed in Plan 090, manual a11y evidence tracked separately in `docs/compose/spec/full-accessibility-audit.md`**

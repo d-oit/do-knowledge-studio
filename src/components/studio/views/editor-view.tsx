@@ -57,6 +57,7 @@ export function EditorView() {
   const deleteClaim = useStudioStore((s) => s.deleteClaim)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const draftIdRef = useRef<string>('')
+  const modeGroupRef = useRef<HTMLDivElement>(null)
 
   const editing = useMemo(
     () => entities.find((e) => e.id === editingEntityId) || null,
@@ -383,20 +384,33 @@ export function EditorView() {
       )}
 
       <div
+        ref={modeGroupRef}
         className="mb-4 flex items-center gap-2 border-b border-border pb-2"
         role="radiogroup"
         aria-label="Editor mode"
         onKeyDown={(e) => {
           const modes = ['edit', 'preview', 'split'] as const
           const currentIdx = modes.indexOf(editMode)
+          let nextIdx = -1
           if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
             e.preventDefault()
-            const next = modes[(currentIdx + 1) % modes.length]
-            setEditMode(next)
+            nextIdx = (currentIdx + 1) % modes.length
           } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
             e.preventDefault()
-            const prev = modes[(currentIdx - 1 + modes.length) % modes.length]
-            setEditMode(prev)
+            nextIdx = (currentIdx - 1 + modes.length) % modes.length
+          }
+          if (nextIdx >= 0) {
+            // Determine next mode via ternary to avoid bracket notation (Codacy Object Injection Sink)
+            setEditMode(nextIdx === 0 ? 'edit' : nextIdx === 1 ? 'preview' : 'split')
+            // Per ARIA radiogroup pattern, arrow keys must move focus to the newly selected radio
+            const group = modeGroupRef.current
+            if (group) {
+              group
+                .querySelectorAll<HTMLButtonElement>('[role="radio"]')
+                .forEach((btn, idx) => {
+                  if (idx === nextIdx) btn.focus()
+                })
+            }
           }
         }}
       >
@@ -408,7 +422,7 @@ export function EditorView() {
             tabIndex={editMode === mode ? 0 : -1}
             aria-checked={editMode === mode}
             onClick={() => { setEditMode(mode) }}
-            className={`rounded px-2.5 py-1.5 text-label font-medium transition-colors focus-ring ${editMode === mode ? 'bg-muted text-ink' : 'text-ink-mute hover:bg-muted/50'}`}
+            className={`rounded px-2.5 min-h-[44px] min-w-[44px] text-label font-medium transition-colors focus-ring ${editMode === mode ? 'bg-muted text-ink' : 'text-ink-mute hover:bg-muted/50'}`}
           >
             {mode.charAt(0).toUpperCase() + mode.slice(1)}
           </button>

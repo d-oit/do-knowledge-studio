@@ -1,9 +1,17 @@
 # Plans Index
 
-**Updated**: 2026-07-28
+**Updated**: 2026-07-29
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
 ## Current Status
+
+### Plan 092 — GOAP: Complete Plan 091 Deferred Smoke Tests & Reconcile Stale Plan Checkboxes (2026-07-29)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Add 4 missing shadcn UI smoke tests (dialog, input, badge, card) | Done | 4 new test files, 39 new tests covering rendering, variants, data-slots, disabled state, asChild, Escape-to-close |
+| W2 | Reconcile stale plan checkboxes (091, 068, 089) | Done | Plan 091 deferred item checked; Plan 068 #480/#481 marked done; Plan 089 PWA/AI items updated |
+| W3 | Quality gate + PR | Done | Lint, typecheck, test, build pass; PR created |
 
 ### Plan 091 — GOAP: Address Remaining plans/ Gaps, Coverage, and ADR Cleanup (2026-07-28)
 
