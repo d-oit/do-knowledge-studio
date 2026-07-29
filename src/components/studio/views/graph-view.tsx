@@ -296,31 +296,34 @@ export function GraphView() {
                   )}
                   style={focusedNodeId === n.id ? FOCUS_MODE_FILTER_STYLE : undefined}
                 >
-                  {isSelected && (
-                    <circle r={r + 6} fill="none" className="stroke-saffron" strokeWidth={1.5} strokeDasharray="3 3" opacity={0.6}>
-                      <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur={animDur} repeatCount="indefinite" />
-                    </circle>
-                  )}
-                  <circle
-                    r={r}
-                    className={cn(
-                      'transition-all',
-                      isSelected ? 'fill-saffron' : meta.dot.replace('bg-', 'fill-'),
+                  {/* Visual children wrapped in aria-hidden <g> — the parent <g> aria-label provides the full accessible name. This prevents axe-core nested-interactive violations. */}
+                  <g aria-hidden="true">
+                    {isSelected && (
+                      <circle r={r + 6} fill="none" className="stroke-saffron" strokeWidth={1.5} strokeDasharray="3 3" opacity={0.6}>
+                        <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur={animDur} repeatCount="indefinite" />
+                      </circle>
                     )}
-                    stroke="var(--background)"
-                    strokeWidth={2}
-                  />
-                  <circle r={r * 0.4} fill="var(--background)" opacity={0.3} />
-                  <text
-                    y={r + 14}
-                    textAnchor="middle"
-                    className={cn(
-                      'font-sans text-caption font-medium transition-colors',
-                      isSelected ? 'fill-ink' : 'fill-ink-soft',
-                    )}
-                  >
-                    {n.label.length > 24 ? n.label.slice(0, 22) + '…' : n.label}
-                  </text>
+                    <circle
+                      r={r}
+                      className={cn(
+                        'transition-all',
+                        isSelected ? 'fill-saffron' : meta.dot.replace('bg-', 'fill-'),
+                      )}
+                      stroke="var(--background)"
+                      strokeWidth={2}
+                    />
+                    <circle r={r * 0.4} fill="var(--background)" opacity={0.3} />
+                    <text
+                      y={r + 14}
+                      textAnchor="middle"
+                      className={cn(
+                        'font-sans text-caption font-medium transition-colors',
+                        isSelected ? 'fill-ink' : 'fill-ink-soft',
+                      )}
+                    >
+                      {n.label.length > 24 ? n.label.slice(0, 22) + '…' : n.label}
+                    </text>
+                  </g>
                 </g>
               )
             })}
