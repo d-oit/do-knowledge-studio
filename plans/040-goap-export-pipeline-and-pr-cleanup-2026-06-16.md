@@ -1,5 +1,7 @@
 # GOAP Plan: Complete Export Pipeline & Resolve Open PRs — 2026-06-16
 
+> **Historical Note**: This plan references the retired Vite/SQLite/Orama/CLI architecture (superseded by ADR 018 — Next.js + Zustand + localStorage, 2026-07). Remaining unchecked items were completed in later plans (090–096). Retained for historical context only.
+
 **Generated**: 2026-06-16
 **Source**: GitHub issue #289 (export pipeline), PRs #309 & #311 (CI red), Dependabot PRs #318–#323
 **Method**: Goal-Oriented Action Planning with swarm execution and ADRs

@@ -1,5 +1,7 @@
 # 068 — Session Closeout: 2026-07-17
 
+> **Historical Note**: All follow-up items (#479–#487) were completed in Plans 086, 090–096 (2026-07). PWA service worker, offline indicator, a11y audit, keyboard navigation, and color contrast all resolved. Retained for historical context only.
+
 ## Session Summary
 
 Massive session delivering **17 PRs** across AI consolidation, P2P sync collaboration, voice-to-knowledge, and bundle optimization. Completed Phase 8 (all 11 issues) and started Phase 9.

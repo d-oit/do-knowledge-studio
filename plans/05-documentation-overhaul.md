@@ -1,5 +1,7 @@
 # Plan 05: Documentation Overhaul
 
+> **Historical Note**: This plan references the retired project architecture (superseded by ADR 018 — Next.js + Zustand + localStorage, 2026-07). Remaining unchecked items were completed in later plans (090–096). Retained for historical context only.
+
 **Priority**: P3 (Complete)  
 **Estimated Total Effort**: 6-8 hours  
 **Status**: ✅ COMPLETE (2026-06-25)  

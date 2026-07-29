@@ -1,5 +1,7 @@
 # Implementation Plan: 4.1 AI Harness Integration
 
+> **Historical Note**: This plan references the retired AI harness architecture (superseded by ADR 025 — OpenRouter + Ollama consolidation, 2026-07). Remaining unchecked items were completed in later plans (090–096). Retained for historical context only.
+
 **Date**: 2026-06-25
 **Priority**: P0 (highest user value)
 **Estimated Effort**: 6-8h (3 waves)

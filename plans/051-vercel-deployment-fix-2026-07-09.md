@@ -1,5 +1,7 @@
 # 051 — Vercel Deployment Fix & Prevention (2026-07-09)
 
+> **Historical Note**: The Vercel deployment configuration described here was superseded by the current CI/CD pipeline (2026-07). Remaining unchecked items were completed in later plans (090–096). Retained for historical context only.
+
 ## Problem
 
 After merging the Next.js cleanup PR (#399), the production deployment at

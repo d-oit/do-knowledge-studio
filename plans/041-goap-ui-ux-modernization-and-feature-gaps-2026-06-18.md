@@ -1,5 +1,7 @@
 # GOAP Plan: UI Modernization, Full Responsiveness & Feature-Gap Closure — 2026-06-18
 
+> **Historical Note**: This plan references the retired Vite/SQLite/Orama/CLI architecture (superseded by ADR 018 — Next.js + Zustand + localStorage, 2026-07). Remaining unchecked items were completed in later plans (090–096). Retained for historical context only.
+
 **Generated**: 2026-06-18
 **Source**: 3-agent parallel codebase analysis (UI modernization, UX/responsiveness, missing implementations) against `origin/main` @ `5172ee8`
 **Method**: Goal-Oriented Action Planning with ADRs
