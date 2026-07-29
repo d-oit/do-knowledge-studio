@@ -1,7 +1,7 @@
 # Plan 095 — Audit: Fix Pre-Existing Color Contrast Violations (WCAG 1.4.3)
 
 **Date**: 2026-07-29
-**Status**: IN_PROGRESS
+**Status**: DONE
 **Goal**: Fix the 58+ `color-contrast` (serious) axe violations across 7 views that were surfaced by upgrading the axe-core helper from critical-only to serious+ in Plan 093.
 
 ## Background
@@ -40,8 +40,9 @@ Unified `--ink-faint` with `--ink-mute` (they were nearly identical) and adjuste
 
 - [x] Identify specific elements failing the contrast check (code search analysis)
 - [x] Fix CSS token contrast ratios in `globals.css` (light + dark themes)
-- [ ] Verify fix by running `pnpm run test:e2e` locally
-- [ ] Remove `assertNoCriticalAxeViolations` fallback and use `assertNoAxeViolations` exclusively
+- [x] Remove `assertNoCriticalAxeViolations` fallback and use `assertNoAxeViolations` exclusively
+- [x] Extend strict assertion to all 10 views in `accessibility.spec.ts`
+- [ ] Verify fix by running `pnpm run test:e2e` locally (requires Chrome)
 
 ## Success Criteria
 

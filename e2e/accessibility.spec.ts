@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { assertNoCriticalAxeViolations, assertNoAxeViolations } from './helpers/a11y';
+import { assertNoAxeViolations } from './helpers/a11y';
 
 /** Helper: click a sidebar nav button by label (scoped to <nav>) */
 async function navClick(page: import('@playwright/test').Page, name: RegExp | string) {
@@ -96,92 +96,83 @@ test.describe('Accessibility', () => {
 });
 
 test.describe('axe-core automated accessibility', () => {
-  // NOTE: Pre-existing serious color-contrast violations exist across views
-  // (58+ nodes). Views below use critical-only assertion. Follow-up in Plan 095.
-  // The home page has an additional strict (serious+) test.
+  // Plan 095: color-contrast token fixes applied (globals.css).
+  // All views now use the strict assertion (critical + serious).
 
-  test('home page has no critical axe violations', async ({ page }) => {
+  test('home page has no critical or serious axe violations', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
-    await assertNoCriticalAxeViolations(page);
+    await assertNoAxeViolations(page);
   });
 
-  test('library page has no critical axe violations', async ({ page }) => {
+  test('library page has no critical or serious axe violations', async ({ page }) => {
     await page.goto('/');
     const nav = page.getByRole('navigation', { name: /main navigation/i });
     await nav.getByRole('button', { name: /library/i }).first().click();
     await page.waitForLoadState('networkidle');
-    await assertNoCriticalAxeViolations(page);
+    await assertNoAxeViolations(page);
   });
 
-  test('editor page has no critical axe violations', async ({ page }) => {
+  test('editor page has no critical or serious axe violations', async ({ page }) => {
     await page.goto('/');
     const nav = page.getByRole('navigation', { name: /main navigation/i });
     await nav.getByRole('button', { name: /editor/i }).first().click();
     await page.waitForLoadState('networkidle');
-    await assertNoCriticalAxeViolations(page);
+    await assertNoAxeViolations(page);
   });
 
-  test('chat page has no critical axe violations', async ({ page }) => {
+  test('chat page has no critical or serious axe violations', async ({ page }) => {
     await page.goto('/');
     const nav = page.getByRole('navigation', { name: /main navigation/i });
     await nav.getByRole('button', { name: /chat/i }).first().click();
     await page.waitForLoadState('networkidle');
-    await assertNoCriticalAxeViolations(page);
+    await assertNoAxeViolations(page);
   });
 
-  test('mind map page has no critical axe violations', async ({ page }) => {
+  test('mind map page has no critical or serious axe violations', async ({ page }) => {
     await page.goto('/');
     const nav = page.getByRole('navigation', { name: /main navigation/i });
     await nav.getByRole('button', { name: /mind map/i }).first().click();
     await page.waitForLoadState('networkidle');
-    await assertNoCriticalAxeViolations(page);
+    await assertNoAxeViolations(page);
   });
 
-  test('graph page has no critical axe violations', async ({ page }) => {
+  test('graph page has no critical or serious axe violations', async ({ page }) => {
     await page.goto('/');
     const nav = page.getByRole('navigation', { name: /main navigation/i });
     await nav.getByRole('button', { name: /graph/i }).first().click();
     await page.waitForLoadState('networkidle');
-    await assertNoCriticalAxeViolations(page);
+    await assertNoAxeViolations(page);
   });
 
-  test('TRIZ page has no critical axe violations', async ({ page }) => {
+  test('TRIZ page has no critical or serious axe violations', async ({ page }) => {
     await page.goto('/');
     const nav = page.getByRole('navigation', { name: /main navigation/i });
     await nav.getByRole('button', { name: /triz/i }).first().click();
     await page.waitForLoadState('networkidle');
-    await assertNoCriticalAxeViolations(page);
+    await assertNoAxeViolations(page);
   });
 
-  test('export page has no critical axe violations', async ({ page }) => {
+  test('export page has no critical or serious axe violations', async ({ page }) => {
     await page.goto('/');
     const nav = page.getByRole('navigation', { name: /main navigation/i });
     await nav.getByRole('button', { name: /export/i }).first().click();
     await page.waitForLoadState('networkidle');
-    await assertNoCriticalAxeViolations(page);
+    await assertNoAxeViolations(page);
   });
 
-  test('sync page has no critical axe violations', async ({ page }) => {
+  test('sync page has no critical or serious axe violations', async ({ page }) => {
     await page.goto('/');
     const nav = page.getByRole('navigation', { name: /main navigation/i });
     await nav.getByRole('button', { name: /sync/i }).first().click();
     await page.waitForLoadState('networkidle');
-    await assertNoCriticalAxeViolations(page);
+    await assertNoAxeViolations(page);
   });
 
-  test('AI harness page has no critical axe violations', async ({ page }) => {
+  test('AI harness page has no critical or serious axe violations', async ({ page }) => {
     await page.goto('/');
     const nav = page.getByRole('navigation', { name: /main navigation/i });
     await nav.getByRole('button', { name: /ai/i }).first().click();
-    await page.waitForLoadState('networkidle');
-    await assertNoCriticalAxeViolations(page);
-  });
-
-  // Strict (serious+) test for the home page only — once color-contrast issues
-  // are fixed (Plan 095), can be extended to all views.
-  test('home page has no critical or serious axe violations (strict)', async ({ page }) => {
-    await page.goto('/');
     await page.waitForLoadState('networkidle');
     await assertNoAxeViolations(page);
   });

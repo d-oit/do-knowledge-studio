@@ -5,6 +5,42 @@
 
 ## Current Status
 
+### Plan 096 — WCAG Touch Target and E2E Learnings (2026-07-29)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Document touch target and E2E learnings | Done | plans/096-wcag-touch-target-and-e2e-learnings-2026-07-29.md created |
+
+### Plan 095 — Fix Pre-Existing Color Contrast Violations (2026-07-29)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Fix CSS token contrast ratios in globals.css | Done | Light: --ink-faint/--ink-mute/--muted-foreground #6a6660/#6b6760 -> #5c5852 (6.1:1); Dark: #827d72/#9b958a -> #a09a8e (5.8:1) |
+| W1 | Remove kbd opacity modifiers | Done | mobile-drawer.tsx, sidebar.tsx: removed /70 opacity (was 3.2:1) |
+| W2 | Fix react-day-picker v10 breaking change | Done | calendar.tsx: renamed `table` -> `month_grid` in classNames (v10 UI enum key) |
+| W2 | Bump @radix-ui/react-alert-dialog | Done | ^1.1.14 -> ^1.1.23 (replaces closed dependabot PR #532) |
+| W3 | Extend strict axe assertions to all 10 views | Done | accessibility.spec.ts: all views now use assertNoAxeViolations (critical + serious) |
+| W3 | Fix pre-existing lint warning | Done | collapsible.test.tsx: removed unused `container` destructuring |
+| W4 | Quality gate + PR | Done | PR #541 merged — all CI checks pass, 1379 tests, Codacy clean |
+
+### Plan 094 — Smoke Tests for Remaining 9 shadcn UI Primitives (2026-07-29)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Extract shared a11y helpers | Done | e2e/helpers/a11y.ts — assertNoCriticalAxeViolations, assertNoAxeViolations with WCAG 2.2 AA tags |
+| W1 | Add 9 shadcn UI primitive test files | Done | 782 additions across 14 files: ToggleGroup, Slider, Popover, HoverCard, Progress, Breadcrumb, Avatar, AspectRatio, Collapsible tests |
+| W2 | Quality gate + PR | Done | PR #540 merged — all CI checks pass, Codacy clean |
+
+### Plan 093 — Full Accessibility Audit E2E Suite and UI Primitive Tests (2026-07-29)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | ARIA radiogroup keyboard focus fix | Done | editor-view.tsx: arrow keys now move focus to selected radio (ARIA pattern) |
+| W1 | WCAG 2.5.5 touch targets (min-h/min-w 44px) | Done | 12+ component files: sidebar, topbar, home, library, editor, chat, type-selector, right-panel |
+| W2 | E2E touch-target test | Done | Desktop viewport, skip-nav + SVG <g> graph node exclusions |
+| W2 | Codacy compliance | Done | 5 issues resolved (3 Object Injection Sink + 2 ErrorProne false positives) |
+| W3 | Quality gate + PR | Done | PR #539 merged — all CI checks pass, 1322 tests, Codacy clean |
+
 ### Plan 092 — GOAP: Complete Plan 091 Deferred Smoke Tests & Reconcile Stale Plan Checkboxes (2026-07-29)
 
 | Wave | Goal | Status | Changes |
