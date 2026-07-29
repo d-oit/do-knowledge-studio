@@ -421,7 +421,7 @@ export function EditorView() {
             tabIndex={editMode === mode ? 0 : -1}
             aria-checked={editMode === mode}
             onClick={() => { setEditMode(mode) }}
-            className={`rounded px-2.5 py-1.5 text-label font-medium transition-colors focus-ring ${editMode === mode ? 'bg-muted text-ink' : 'text-ink-mute hover:bg-muted/50'}`}
+            className={`rounded px-2.5 min-h-[44px] text-label font-medium transition-colors focus-ring ${editMode === mode ? 'bg-muted text-ink' : 'text-ink-mute hover:bg-muted/50'}`}
           >
             {mode.charAt(0).toUpperCase() + mode.slice(1)}
           </button>
