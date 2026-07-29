@@ -2,7 +2,7 @@
 
 > Step-by-step guide for adopting the AI agent template in existing projects.
 
-[![Template Version](https://img.shields.io/badge/version-0.2.5-blue)](VERSION)
+[![Template Version](https://img.shields.io/badge/version-0.1.0-blue)](VERSION)
 
 ---
 
