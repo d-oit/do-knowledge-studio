@@ -26,6 +26,14 @@ async function assertTouchTargets(page: import('@playwright/test').Page, viewNam
       if (style.display === 'none' || style.visibility === 'hidden') continue;
       if (style.opacity === '0') continue;
 
+      // Skip skip-to-content links (sr-only until focused — intentional WCAG pattern)
+      if (
+        el.tagName === 'A' &&
+        (el as HTMLAnchorElement).href?.includes('#') &&
+        ((el.textContent || '').toLowerCase().includes('skip') ||
+          (el.getAttribute('aria-label') || '').toLowerCase().includes('skip'))
+      ) continue;
+
       if (rect.width < min || rect.height < min) {
         issues.push({
           tag: el.tagName.toLowerCase(),
