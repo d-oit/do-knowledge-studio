@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { act } from 'react'
 import type { ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
 
@@ -177,15 +178,17 @@ describe('ChatView', () => {
     expect(screen.queryByLabelText('Assistant is typing')).toBeNull()
   })
 
-  it('character counter shows above 1800 chars', () => {
+  it('character counter shows above 1800 chars', async () => {
     render(<ChatView />)
     const textarea = screen.getByPlaceholderText(/Ask about your library/)
     const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
       window.HTMLTextAreaElement.prototype,
       'value',
     )!.set!
-    nativeInputValueSetter.call(textarea, 'a'.repeat(1850))
-    textarea.dispatchEvent(new Event('input', { bubbles: true }))
+    await act(async () => {
+      nativeInputValueSetter.call(textarea, 'a'.repeat(1850))
+      textarea.dispatchEvent(new Event('input', { bubbles: true }))
+    })
     expect(screen.getByText('1850/2000')).toBeDefined()
   })
 

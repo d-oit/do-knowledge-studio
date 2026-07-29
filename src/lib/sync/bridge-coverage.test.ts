@@ -213,10 +213,14 @@ describe('Bridge coverage: applyRemoteUpdate', () => {
 
 describe('Bridge coverage: destroyBridge', () => {
   it('cleans up subscriptions', () => {
+    const yjsSpy = vi.spyOn(console, 'error').mockImplementation((msg: string) => {
+      if (typeof msg === 'string' && msg.includes('[yjs]')) return
+    })
     subscribeToYjs({ onEntities: vi.fn(), onClaims: vi.fn() })
     destroyBridge()
     // Should not throw after destroy
     expect(true).toBe(true)
+    yjsSpy.mockRestore()
   })
 })
 

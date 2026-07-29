@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { saveDraft, loadDraft, removeDraft, generateDraftId, listDraftKeys, listAllDrafts } from './draft-storage'
 import type { EditorDraft } from './draft-schema'
 
@@ -50,8 +50,10 @@ describe('saveDraft', () => {
   })
 
   it('throws on invalid draft data', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const invalid = { ...VALID_DRAFT, id: '' }
     expect(() => saveDraft(invalid as EditorDraft)).toThrow()
+    spy.mockRestore()
   })
 })
 
@@ -68,10 +70,12 @@ describe('loadDraft', () => {
   })
 
   it('returns null and removes invalid JSON', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
     localStorage.setItem('draft:bad-json', 'not json')
     const result = loadDraft('bad-json')
     expect(result).toBeNull()
     expect(localStorage.getItem('draft:bad-json')).toBeNull()
+    spy.mockRestore()
   })
 })
 
@@ -125,10 +129,12 @@ describe('listAllDrafts', () => {
   })
 
   it('skips corrupted drafts', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
     saveDraft(VALID_DRAFT)
     localStorage.setItem('draft:broken', 'not json')
     const all = listAllDrafts()
     expect(all).toHaveLength(1)
     expect(all[0].id).toBe('test-draft-1')
+    spy.mockRestore()
   })
 })

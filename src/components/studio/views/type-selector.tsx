@@ -60,7 +60,7 @@ export function TypeSelector({
         aria-haspopup="listbox"
         aria-expanded={showMenu}
         aria-label={`Entity type: ${meta.label}. Change type`}
-        className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
+        className="flex min-h-[44px] items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
       >
         {renderTypeIcon(type, cn('h-3.5 w-3.5', meta.text))}
         Type: {meta.label}
