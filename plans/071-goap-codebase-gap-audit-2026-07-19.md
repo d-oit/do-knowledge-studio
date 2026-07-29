@@ -325,10 +325,10 @@ view-specific loading feedback, and fresh WCAG verification.
 
 **Exit criteria**:
 
-- [ ] Invalid imports cannot modify canonical state.
-- [ ] A user can recover the exact pre-import state after replacement failure.
-- [ ] Invalid persisted data is rejected or recovered without a crash.
-- [ ] Entity deletion leaves no dangling claims or links.
+- [x] Invalid imports cannot modify canonical state.
+- [x] A user can recover the exact pre-import state after replacement failure.
+- [x] Invalid persisted data is rejected or recovered without a crash.
+- [x] Entity deletion leaves no dangling claims or links.
 
 ### G2 — Complete synchronization semantics
 
@@ -345,10 +345,10 @@ view-specific loading feedback, and fresh WCAG verification.
 
 **Exit criteria**:
 
-- [ ] Create, update, and delete converge in both directions.
-- [ ] Reload preserves the converged state.
-- [ ] Manual resolution changes the chosen canonical fields.
-- [ ] No sync UI reports success before canonical commit succeeds.
+- [x] Create, update, and delete converge in both directions.
+- [x] Reload preserves the converged state.
+- [x] Manual resolution changes the chosen canonical fields.
+- [x] No sync UI reports success before canonical commit succeeds.
 
 ### G3 — Make the product surface honest
 
@@ -499,6 +499,6 @@ Additionally:
 - [x] Skill/harness validation fails on broken symlinks and invalid manifests. *(Plan 072 W0: broken symlinks fixed)*
 - [x] Security and warning gates cannot summarize known findings as success. *(Plan 072 W2: security fail-closed, warnings-as-errors)*
 - [x] Playwright runs in CI with meaningful mobile/tablet/desktop assertions. *(Plan 073 W3: Playwright mobile/tablet device projects added)*
-- [ ] Fresh accessibility evidence covers keyboard, semantics, contrast, zoom, reflow, and target size. *(Partial: touch targets + ARIA done in 073/074; full axe audit deferred to Plan 075)*
+- [x] Fresh accessibility evidence covers keyboard, semantics, contrast, zoom, reflow, and target size. *(Completed in Plan 093/PR #539: E2E specs for keyboard-a11y, zoom-reflow, touch-targets, contrast, and upgraded axe-core. Note: 58+ pre-existing serious color-contrast issues surfaced — tracked in Plan 095.)*
 - [x] Product copy and plans describe only behavior verified in current source. *(Plans 072/073: semantic→ranked labels, coming-soon tooltips)*
 - [x] `plans/INDEX.md` is updated with measured, fresh closeout metrics. *(Plan 074: INDEX.md updated with 361 tests, 28/19/20/28% coverage)*

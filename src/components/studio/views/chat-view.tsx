@@ -280,7 +280,7 @@ export function ChatView() {
             <button
               onClick={handleClear}
               disabled={chat.length === 0}
-              className="flex items-center gap-1 transition-colors hover:text-red-500 disabled:opacity-30 disabled:hover:text-red-500 min-h-[44px] focus-ring"
+              className="flex min-h-[44px] min-w-[44px] items-center gap-1 transition-colors hover:text-red-500 disabled:opacity-30 disabled:hover:text-red-500 focus-ring"
             >
               <Trash2 className="h-3 w-3" />
               Clear

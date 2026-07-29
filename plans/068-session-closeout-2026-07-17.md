@@ -87,19 +87,21 @@ Massive session delivering **17 PRs** across AI consolidation, P2P sync collabor
 ## Followups
 
 ### Immediate (next session)
-- [ ] #479: Service worker with cache-first strategy
-- [ ] #480: Offline indicator and sync queue
-- [ ] #481: PWA manifest and installability
+- [x] #479: Service worker with cache-first strategy → **Done (Plan 090)**
+- [x] #480: Offline indicator and sync queue → **Done (Plan 090: offline indicator; sync queue deferred)**
+- [x] #481: PWA manifest and installability → **Done (Plan 090)**
 
 ### Short-term
-- [ ] #482: Keyboard navigation audit
+- [x] #482: Keyboard navigation audit → **Done (Plan 086)**
 - [ ] #483: Screen reader announcements
-- [ ] #484: Color contrast and focus indicators
+- [x] #484: Color contrast and focus indicators → **Done (Plan 086)**
 - [ ] #485: Loading states and skeleton screens
 
 ### Medium-term
 - [ ] #486: Error boundaries per view
 - [ ] #487: Keyboard shortcuts help dialog
+
+### Future Work
 - [ ] Advanced TRIZ analysis features
 - [ ] Visual query builder
 

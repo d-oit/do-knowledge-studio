@@ -228,11 +228,13 @@ describe('ai-settings encryption and persistence', () => {
   })
 
   it('handles invalid JSON in localStorage during migration', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
     localStorageMock['dks-ai-settings'] = 'invalid json'
 
     const loaded = await loadAISettings()
     expect(loaded.provider).toBe('openrouter')
     expect(loaded.model).toBe('openrouter/free')
+    spy.mockRestore()
   })
 
   it('preserves all settings fields', async () => {
