@@ -53,10 +53,9 @@ dist/
 playwright-report/
 test-results/
 coverage/
+*.tsbuildinfo
 
-# OS
-.DS_Store
-Thumbs.db
+
 
 # CLI database
 .studio-cli.db
@@ -79,8 +78,6 @@ db/*.db
 
 # Logs
 *.log
-dev.log
-server.log
 
 # Research screenshots (not source)
 research/
