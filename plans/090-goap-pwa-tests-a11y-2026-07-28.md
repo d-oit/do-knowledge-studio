@@ -1,5 +1,10 @@
 # Plan 090 — GOAP: PWA Service Worker, AI Provider Tests, A11y Automation
 
+## Status: DONE
+
+**Branch**: feat/090-pwa-tests-a11y
+**PR**: [#534](https://github.com/d-oit/do-knowledge-studio/pull/534) (merged 2026-07-28)
+
 **Generated**: 2026-07-28
 **Method**: GOAP with Swarm Agents (Parallel Execution)
 **Goal**: Implement deferred items from Plan 089: PWA service worker, AI provider unit tests, and automated a11y checks.

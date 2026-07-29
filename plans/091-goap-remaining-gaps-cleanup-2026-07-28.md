@@ -1,5 +1,10 @@
 # Plan 091 — GOAP: Address Remaining plans/ Gaps, Coverage, and ADR Cleanup
 
+## Status: DONE
+
+**Branch**: feat/plans-address-remaining-gaps
+**PR**: [#535](https://github.com/d-oit/do-knowledge-studio/pull/535) (merged 2026-07-28)
+
 **Generated**: 2026-07-28
 **Method**: GOAP with Swarm Agents (Parallel Execution)
 **Goal**: Close all identified gaps from plans/ analysis: stale checkboxes, test coverage, ADR inconsistencies.
