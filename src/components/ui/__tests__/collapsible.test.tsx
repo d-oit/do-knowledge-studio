@@ -28,7 +28,7 @@ describe('Collapsible', () => {
   })
 
   it('renders open by default when defaultOpen is set', () => {
-    const { container } = render(
+    render(
       <Collapsible defaultOpen>
         <CollapsibleTrigger>Default open</CollapsibleTrigger>
         <CollapsibleContent>Visible content</CollapsibleContent>

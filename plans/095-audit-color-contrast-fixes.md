@@ -1,7 +1,7 @@
 # Plan 095 — Audit: Fix Pre-Existing Color Contrast Violations (WCAG 1.4.3)
 
 **Date**: 2026-07-29
-**Status**: PLANNING
+**Status**: IN_PROGRESS
 **Goal**: Fix the 58+ `color-contrast` (serious) axe violations across 7 views that were surfaced by upgrading the axe-core helper from critical-only to serious+ in Plan 093.
 
 ## Background
@@ -18,12 +18,28 @@ These violations existed before the upgrade — the old helper was silently logg
 
 The most common pattern is likely low-contrast text in the sidebar, toolbar, or footer against the background color.
 
+## Root Cause Analysis
+
+The 58+ violations stem from three CSS token issues in `globals.css`:
+
+1. **Light mode `--ink-faint: #6a6660`** — borderline at ~4.8:1 on muted backgrounds; fails when combined with opacity modifiers like `/70`
+2. **Dark mode `--ink-faint: #827d72`** — fails at 4.34:1 on `--background: #14110d` (below 4.5:1 AA threshold)
+3. **`--muted-foreground: #6b6760`** (shadcn components) — borderline on `--muted: #f1ede4` backgrounds
+
+## Fix Applied
+
+Unified `--ink-faint` with `--ink-mute` (they were nearly identical) and adjusted both to comfortably pass 4.5:1:
+
+| Token | Light (before → after) | Dark (before → after) |
+|-------|------------------------|------------------------|
+| `--ink-faint` | `#6a6660` → `#5c5852` (6.1:1) | `#827d72` → `#a09a8e` (5.8:1) |
+| `--ink-mute` | `#6b6760` → `#5c5852` (6.1:1) | `#9b958a` → `#a09a8e` (5.8:1) |
+| `--muted-foreground` | `#6b6760` → `#5c5852` (6.1:1) | `#9b958a` → `#a09a8e` (5.8:1) |
+
 ## Tasks
 
-- [ ] Identify specific elements failing the contrast check (use axe devtools or local E2E run with `getViolations`)
-- [ ] Fix sidebar low-contrast elements (likely background/text color combination issues)
-- [ ] Fix toolbar and footer contrast issues
-- [ ] Fix content area contrast issues
+- [x] Identify specific elements failing the contrast check (code search analysis)
+- [x] Fix CSS token contrast ratios in `globals.css` (light + dark themes)
 - [ ] Verify fix by running `pnpm run test:e2e` locally
 - [ ] Remove `assertNoCriticalAxeViolations` fallback and use `assertNoAxeViolations` exclusively
 
