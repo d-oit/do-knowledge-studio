@@ -73,4 +73,4 @@
 - [x] CommandPalette.onEntitySelect routes to editor
 - [x] All tests pass (1048 existing + 5 new)
 - [x] PR created with all CI checks passing
-- [ ] All PR feedback addressed (pending CI review)
+- [x] All PR feedback addressed (PR #520 merged 2026-07-29)
