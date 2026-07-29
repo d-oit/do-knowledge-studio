@@ -32,22 +32,27 @@ vi.mock('@/lib/utils', () => ({
   cn: (...args: string[]) => args.filter(Boolean).join(' '),
 }))
 
-vi.mock('./export-helpers', () => ({
-  FORMATS: [
-    { id: 'markdown', name: 'Markdown', description: 'Single .md file', icon: 'FileText', color: 'saffron', available: true },
-    { id: 'json', name: 'JSON', description: 'Backup file', icon: 'FileJson', color: 'sky', available: true },
-    { id: 'html', name: 'Static HTML', description: 'Self-contained page', icon: 'FileCode', color: 'sage', available: true },
-    { id: 'pdf', name: 'PDF document', description: 'Print-ready', icon: 'FileArchive', color: 'clay', available: true },
-    { id: 'docx', name: 'DOCX document', description: 'Word document', icon: 'FileText', color: 'saffron', available: true },
-    { id: 'encrypted', name: 'Encrypted HTML', description: 'Password-protected', icon: 'FileLock', color: 'clay', badge: 'Secure', available: true },
-  ],
-  COLOR_MAP: {
-    saffron: 'bg-saffron-soft text-saffron-deep',
-    sky: 'bg-sky-100 text-sky-600',
-    sage: 'bg-emerald-100 text-emerald-600',
-    clay: 'bg-rose-100 text-clay',
-  },
-}))
+vi.mock('./export-helpers', () => {
+  const I = ({ className }: { className?: string }) => (
+    <span data-testid="icon" className={className} />
+  )
+  return {
+    FORMATS: [
+      { id: 'markdown', name: 'Markdown', description: 'Single .md file', icon: I, color: 'saffron', available: true },
+      { id: 'json', name: 'JSON', description: 'Backup file', icon: I, color: 'sky', available: true },
+      { id: 'html', name: 'Static HTML', description: 'Self-contained page', icon: I, color: 'sage', available: true },
+      { id: 'pdf', name: 'PDF document', description: 'Print-ready', icon: I, color: 'clay', available: true },
+      { id: 'docx', name: 'DOCX document', description: 'Word document', icon: I, color: 'saffron', available: true },
+      { id: 'encrypted', name: 'Encrypted HTML', description: 'Password-protected', icon: I, color: 'clay', badge: 'Secure', available: true },
+    ],
+    COLOR_MAP: {
+      saffron: 'bg-saffron-soft text-saffron-deep',
+      sky: 'bg-sky-100 text-sky-600',
+      sage: 'bg-emerald-100 text-emerald-600',
+      clay: 'bg-rose-100 text-clay',
+    },
+  }
+})
 
 import { ExportFormatGrid } from './export-format-grid'
 

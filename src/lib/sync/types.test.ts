@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import {
   entityToYMap,
   ymapToEntity,
@@ -36,10 +36,14 @@ function makeClaim(overrides: Partial<Claim> = {}): Claim {
 
 describe('createSyncDoc', () => {
   it('creates empty sync doc', () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const doc = createSyncDoc()
     expect(doc.entities.size).toBe(0)
     expect(doc.claims.size).toBe(0)
     expect(doc.meta.size).toBe(0)
+    errSpy.mockRestore()
+    warnSpy.mockRestore()
   })
 })
 
