@@ -96,13 +96,13 @@ export function Topbar() {
           onKeyDown={handleSearchKeyDown}
           placeholder={placeholder}
           aria-label={inputAriaLabel}
-          className="h-9 w-full rounded-md border border-border bg-background pl-9 pr-12 text-[13px] text-ink placeholder:text-ink-faint transition-colors focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/40"
+          className="min-h-[44px] w-full rounded-md border border-border bg-background pl-9 pr-12 text-[13px] text-ink placeholder:text-ink-faint transition-colors focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/40"
         />
         <button
           type="button"
           onClick={() => setCommandOpen(true)}
           aria-label="Open command palette"
-          className="absolute right-1.5 top-1/2 flex h-6 -translate-y-1/2 items-center rounded border border-border bg-muted px-1.5 font-mono text-caption text-ink-faint transition-colors hover:bg-muted/70 hover:text-ink-soft focus-ring"
+          className="absolute right-1.5 top-1/2 flex min-h-[44px] min-w-[44px] items-center justify-center -translate-y-1/2 rounded border border-border bg-muted px-1.5 font-mono text-caption text-ink-faint transition-colors hover:bg-muted/70 hover:text-ink-soft focus-ring overflow-hidden"
         >
           ⌘K
         </button>
@@ -118,7 +118,7 @@ export function Topbar() {
       <button
         onClick={startNew}
         aria-label="New entity"
-        className="flex flex-shrink-0 items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring sm:px-3"
+        className="flex flex-shrink-0 min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-2.5 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring sm:px-3"
       >
         <Plus className="h-3.5 w-3.5" />
         <span className="hidden sm:inline wide:hidden">New</span>
