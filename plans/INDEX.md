@@ -5,7 +5,7 @@
 
 ## Current Status
 
-### Session Summary (2026-07-29 — 21 PRs merged)
+### Session Summary (2026-07-29 — 22 PRs merged)
 
 | Area | PRs | Key Changes |
 |------|-----|-------------|
@@ -23,8 +23,9 @@
 | Studio component tests | #557 | 74 unit tests for sidebar, topbar, voice-input, command-palette |
 | Studio component tests R2 | #559 | 45 unit tests for theme-provider, presence-indicator, conflict-ui, shortcuts-dialog |
 | Studio component tests R3 | #560 | 71 unit tests for remote-cursors, voice-capture, qr-pairing, app-shell |
+| Studio component tests R4 | #561 | 51 unit tests for mobile-drawer, right-panel — **all studio components tested** |
 
-**Final metrics**: 1,664 unit tests, 111 E2E tests, 0 open PRs, quality gate green, Codacy clean. Coverage: 67.8% stmts / 58.45% branches / 61.46% funcs / 68.79% lines.
+**Final metrics**: 1,715 unit tests, 111 E2E tests, 0 open PRs, quality gate green, Codacy clean. Coverage: 67.8% stmts / 58.45% branches / 61.46% funcs / 68.79% lines. All 17 studio components have unit test coverage (255 tests).
 
 ### Historical Plan Reconciliation (2026-07-29)
 
