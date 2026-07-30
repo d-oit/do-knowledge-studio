@@ -24,8 +24,9 @@
 | Studio component tests R2 | #559 | 45 unit tests for theme-provider, presence-indicator, conflict-ui, shortcuts-dialog |
 | Studio component tests R3 | #560 | 71 unit tests for remote-cursors, voice-capture, qr-pairing, app-shell |
 | Studio component tests R4 | #561 | 51 unit tests for mobile-drawer, right-panel — **all studio components tested** |
+| Branch coverage round 1 | #563 | 51 branch-coverage tests for shortcuts-dialog keyboard handler (33) and bridge.ts (18) |
 
-**Final metrics**: 1,715 unit tests, 111 E2E tests, 0 open PRs, quality gate green, Codacy clean. Coverage: 67.8% stmts / 58.45% branches / 61.46% funcs / 68.79% lines. All 17 studio components have unit test coverage (255 tests).
+**Final metrics**: 1,766 unit tests, 111 E2E tests, 0 open PRs, quality gate green, Codacy clean. Coverage: 67.8% stmts / 58.45% branches / 61.46% funcs / 68.79% lines. All 17 studio components have unit test coverage (255 tests). PR #563 discovered dead code in shortcuts-dialog (`else if (key === 'g')` branch is unreachable because 'g' ∈ G_SEQ_MAP).
 
 ### Historical Plan Reconciliation (2026-07-29)
 

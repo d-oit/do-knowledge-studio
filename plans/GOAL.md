@@ -42,3 +42,4 @@ Build a local-first, structured knowledge engine that empowers users to capture,
 - Studio component tests round 4 — DONE. 51 unit tests for mobile-drawer (23), right-panel (28) (PR #561). **Milestone: all 17 studio components now have unit test coverage (255 total tests).**
 - Version reconciled to 0.1.0 — DONE (PR #546). VERSION file, package.json, MIGRATION.md badge all aligned.
 - Release policy clarified — DONE (PR #545). AGENTS.md and VERSION.md explicitly prohibit autonomous release creation.
+- Branch coverage round 1 — DONE. 51 targeted tests for shortcuts-dialog.tsx keyboard handler (33 tests, 8.95% → ~65% branches) and bridge.ts conflict resolution (18 tests, 47.22% → ~65% branches) (PR #563). Discovered dead code in shortcuts-dialog (`else if (key === 'g')` branch unreachable because 'g' is in G_SEQ_MAP).
