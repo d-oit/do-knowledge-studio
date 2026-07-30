@@ -38,6 +38,7 @@ Build a local-first, structured knowledge engine that empowers users to capture,
 - Studio component branch coverage — DONE. 74 unit tests for 4 low-coverage components: sidebar (21), topbar (19), voice-input (17), command-palette (17) (PR #557). Branch coverage improved from 54.46% to 57%.
 - Coverage thresholds raised — DONE (PR #554). Thresholds raised to 55%/48%/50%/55% with current levels at 66.93%/57%/60.23%/67.99%.
 - Studio component tests round 2 — DONE. 45 unit tests for theme-provider (5), presence-indicator (12), conflict-ui (19), shortcuts-dialog (9) (PR #559). Coverage improved to 67.8%/58.45%/61.46%/68.79%.
-- Studio component tests round 3 — DONE. 71 unit tests for remote-cursors (13), voice-capture (20), qr-pairing (13), app-shell (25) (PR #560). All studio components now have test coverage.
+- Studio component tests round 3 — DONE. 71 unit tests for remote-cursors (13), voice-capture (20), qr-pairing (13), app-shell (25) (PR #560).
+- Studio component tests round 4 — DONE. 51 unit tests for mobile-drawer (23), right-panel (28) (PR #561). **Milestone: all 17 studio components now have unit test coverage (255 total tests).**
 - Version reconciled to 0.1.0 — DONE (PR #546). VERSION file, package.json, MIGRATION.md badge all aligned.
 - Release policy clarified — DONE (PR #545). AGENTS.md and VERSION.md explicitly prohibit autonomous release creation.

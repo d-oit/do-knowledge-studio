@@ -157,3 +157,100 @@ expect(screen.getAllByText('Lab').length).toBeGreaterThanOrEqual(2)
 ```
 
 **When to use**: Any time a text label appears in multiple contexts within the same component — group headings + items, badges + labels, or filter text + display text. Prefer `getByRole` with `name` when possible; fall back to `getAllByText` only when semantic selectors are unavailable.
+
+## 12. Overlay Mock Split — Backdrop/Content for Click Isolation
+
+**Problem**: Mocking `Overlay` with `onClick={onClose}` on the container div means ANY child click (tabs, nav items, buttons) bubbles up and fires onClose, making it impossible to test interactive content inside the overlay.
+
+**Pattern**: Split the mock into a backdrop div (fires onClose) and a content div (stops propagation):
+
+```ts
+vi.mock('@/components/studio/ui/shared-primitives', () => ({
+  Overlay: ({ children, open, onClose, 'aria-label': ariaLabel }) =>
+    open ? (
+      <div data-testid="overlay-backdrop" onClick={onClose}>
+        <div data-testid="overlay" role="dialog" aria-label={ariaLabel}
+             onClick={(e) => { e.stopPropagation() }}>
+          {children}
+        </div>
+      </div>
+    ) : null,
+}))
+```
+
+**Test pattern**: Click the backdrop to test close behavior, click children to test interactive content:
+```ts
+// Close via backdrop
+fireEvent.click(screen.getByTestId('overlay-backdrop'))
+expect(mockClose).toHaveBeenCalled()
+
+// Child clicks don't close
+fireEvent.click(screen.getByText('Navigate')) // tab inside drawer
+expect(mockClose).not.toHaveBeenCalled()
+```
+
+## 13. `window.matchMedia` Mock for JSDOM
+
+**Problem**: `window.matchMedia` is not available in JSDOM. Components using `matchMedia` for responsive behavior (e.g., auto-closing a mobile drawer on resize to desktop) throw `TypeError: window.matchMedia is not a function`.
+
+**Pattern**: Define the mock before the component import:
+
+```ts
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: vi.fn().mockImplementation((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
+})
+```
+
+**Gotcha**: Must be defined before the component module is imported, not just before the test runs. Place it at the top of the file after `vi.mock` calls but before the component import.
+
+## 14. `React.lazy` in Tests — Async Rendering Required
+
+**Problem**: Even when `vi.mock` provides a synchronous implementation for a lazy-loaded component, `React.lazy` still wraps it in a promise. `render()` alone doesn't resolve the lazy promise, so the component doesn't appear in the DOM.
+
+**Pattern**: Wrap lazy-loaded view renders in `await act(async () => { ... })`:
+
+```ts
+// WRONG — lazy component may not render
+it('renders GraphView', () => {
+  currentView = 'graph'
+  render(<AppShell />)
+  expect(screen.getByTestId('graph-view')).toBeDefined() // FAILS
+})
+
+// RIGHT — async act resolves the lazy promise
+it('renders GraphView', async () => {
+  currentView = 'graph'
+  await act(async () => { render(<AppShell />) })
+  expect(screen.getByTestId('graph-view')).toBeDefined() // PASSES
+})
+```
+
+**When to use**: Any component wrapped in `React.lazy()` or `<Suspense>`. Non-lazy synchronous components don't need this.
+
+## 15. JSDOM Style Values Include 'px' Suffix
+
+**Problem**: JSDOM normalizes numeric CSS style values to include the 'px' suffix. `element.style.left` returns `'150px'` not `'150'`.
+
+**Pattern**: Always expect the 'px' suffix when asserting numeric style values:
+
+```ts
+// WRONG
+expect(overlay?.style.left).toBe('150')
+expect(overlay?.style.top).toBe('250')
+
+// RIGHT
+expect(overlay?.style.left).toBe('150px')
+expect(overlay?.style.top).toBe('250px')
+```
+
+**Gotcha**: This only applies to JSDOM's style normalization. Browser environments return the value as set. Also, the `as HTMLElement` cast is needed when accessing `.style` on a `querySelector` result (TypeScript types `querySelector` as returning `Element`, not `HTMLElement`).
