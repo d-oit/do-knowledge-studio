@@ -17,7 +17,7 @@ test.describe('AI Harness view', () => {
   });
 
   test('shows Lab badge', async ({ page }) => {
-    await expect(page.getByText('Lab')).toBeVisible();
+    await expect(page.locator('.rounded-full').filter({ hasText: 'Lab' }).first()).toBeVisible();
   });
 
   test('shows description text', async ({ page }) => {
@@ -36,7 +36,7 @@ test.describe('AI Harness view', () => {
 
     // Settings panel should appear
     await expect(page.getByText('Hide settings')).toBeVisible();
-    await expect(page.getByText('Provider')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Provider' })).toBeVisible();
 
     // Hide settings
     await page.getByRole('button', { name: /hide settings/i }).click();
@@ -80,7 +80,8 @@ test.describe('AI Harness view', () => {
   test('settings panel shows status section', async ({ page }) => {
     await page.getByRole('button', { name: /show settings/i }).click();
     await expect(page.getByText('Status')).toBeVisible();
-    await expect(page.getByText('Ready')).toBeVisible();
+    // Use exact match to avoid 'Offline ready' and 'AI agent ready' false positives
+    await expect(page.locator('span.font-mono', { hasText: /^Ready$/ })).toBeVisible();
   });
 
   test('augmented indicator shows in chat footer', async ({ page }) => {
