@@ -391,11 +391,11 @@ export function SyncView() {
               </div>
               <div className="rounded-md bg-muted/50 px-3 py-2 text-center">
                 <div className="text-[12px] text-ink-faint">Entities</div>
-                <div className="font-mono text-[15px] font-semibold text-ink">{syncedEntities}</div>
+                <div data-testid="synced-entities" className="font-mono text-[15px] font-semibold text-ink">{syncedEntities}</div>
               </div>
               <div className="rounded-md bg-muted/50 px-3 py-2 text-center">
                 <div className="text-[12px] text-ink-faint">Claims</div>
-                <div className="font-mono text-[15px] font-semibold text-ink">{syncedClaims}</div>
+                <div data-testid="synced-claims" className="font-mono text-[15px] font-semibold text-ink">{syncedClaims}</div>
               </div>
             </div>
 
