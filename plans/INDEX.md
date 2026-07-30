@@ -17,8 +17,9 @@
 | Historical annotations | #548 | 9 superseded plans annotated with Historical Notes |
 | Error boundary tests | #551 | 14 new tests for ErrorBoundary + ViewErrorBoundary |
 | .gitignore cleanup | #550 | Added *.tsbuildinfo, removed duplicates |
+| AI Harness E2E + component tests | #555 | 13 E2E tests + 81 unit tests for 6 untested components |
 
-**Final metrics**: 1,393 unit tests, 98 E2E tests, 0 open PRs, quality gate green, Codacy clean.
+**Final metrics**: 1,567 unit tests, 111 E2E tests, 0 open PRs, quality gate green, Codacy clean.
 
 ### Historical Plan Reconciliation (2026-07-29)
 
