@@ -79,3 +79,42 @@ expect(screen.getByText('Recovered content')).toBeDefined()
 **Problem**: Multiple times, commits landed on `main` instead of the feature branch (quality gate script switched branches). Branch protection caught the push, but the fix (cherry-pick + reset) was manual.
 
 **Prevention**: Always verify `git branch --show-current` before committing. The `--no-verify` flag on commit bypasses the pre-commit hook but doesn't prevent branch mistakes.
+
+## 8. Playwright Selector Strategy — Prefer Semantic over CSS
+
+**Problem**: E2E tests broke in CI because `getByText('Ready')` matched 3 elements ("Offline ready", the status "Ready", and "AI agent ready to assist"). Similarly, `getByText('Lab')` matched sidebar badges and view badges. CSS class selectors (`.rounded-full`) worked but were brittle.
+
+**Selector hierarchy (preferred order)**:
+1. `getByRole('heading', { name: '...' })` — semantic, most resilient
+2. `getByText('...', { exact: true })` — fast, avoids substring matches
+3. `getByLabelText('...')` / `getByPlaceholderText('...')` — for form elements
+4. `locator('...').filter({ hasText: ... })` — when scoping to a parent
+5. CSS class selectors — last resort, breaks on Tailwind changes
+
+**Pattern for disambiguating common text**: Scope to a parent element using the heading's parent:
+```ts
+// BAD — matches 3 elements
+text
+await expect(page.getByText('Lab')).toBeVisible();
+
+// GOOD — exact match for standalone text
+await expect(page.getByText('Lab', { exact: true })).toBeVisible();
+
+// BEST — scope to the heading's parent container
+await expect(
+  page.getByRole('heading', { name: 'AI Harness' }).locator('..').getByText('Lab'),
+).toBeVisible();
+```
+
+**Gotcha**: The sidebar repeats the same badges ("Lab", "Experimental") for multiple nav items. Always scope E2E selectors to the main content area, not the full page.
+
+## 9. Unit Test Isolation — always use `beforeEach` with shared `vi.fn()`
+
+**Problem**: Tests in `ai-harness-chat.test.tsx` shared `vi.fn()` instances in `defaultProps` without `beforeEach(() => vi.clearAllMocks())`. Mock call counts accumulated across tests, causing false positives/negatives.
+
+**Rule**: Any test file that uses `vi.fn()` in shared `defaultProps` must have:
+```ts
+beforeEach(() => { vi.clearAllMocks() })
+```
+
+**Exception**: If every test creates its own local `vi.fn()`, `beforeEach` is optional (e.g., `import-dropzone.test.tsx` uses local mocks per test).
