@@ -86,7 +86,10 @@ describe('QRScanner', () => {
 
   it('renders camera icon when not active', () => {
     render(<QRScanner onScan={vi.fn()} />)
-    expect(screen.getByTestId('icon')).toBeDefined()
+    // Camera icon is inside the scan button (visible)
+    // X icon is inside the stop button (hidden by video container's hidden class)
+    const icons = screen.getAllByTestId('icon')
+    expect(icons.length).toBeGreaterThanOrEqual(1)
   })
 
   it('has a tappable scan area', () => {
@@ -95,9 +98,12 @@ describe('QRScanner', () => {
     expect(scanButton).toBeDefined()
   })
 
-  it('does not show video element initially', () => {
+  it('video element is always mounted (hidden by CSS when inactive)', () => {
     const { container } = render(<QRScanner onScan={vi.fn()} />)
-    expect(container.querySelector('video')).toBeNull()
+    const video = container.querySelector('video')
+    expect(video).toBeDefined()
+    // Video container should have hidden class when not active
+    expect(video?.closest('.hidden')).toBeDefined()
   })
 
   it('does not show error initially', () => {

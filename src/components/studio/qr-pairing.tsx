@@ -132,24 +132,25 @@ export function QRScanner({ onScan }: { onScan: (roomId: string) => void }) {
 
   return (
     <div className="flex flex-col items-center gap-3">
-      {isActive ? (
-        <div className="relative overflow-hidden rounded-lg border border-border">
-          <video
-            ref={videoRef}
-            className="h-48 w-48 object-cover"
-            playsInline
-            muted
-          />
-          <canvas ref={canvasRef} className="hidden" />
-          <button
-            onClick={stopCamera}
-            className="absolute right-1 top-1 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-black/50 text-white transition-colors hover:bg-black/70 focus-ring"
-            aria-label="Stop camera"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      ) : (
+      {/* Video container always mounted so videoRef is available for startCamera */}
+      <div className={`relative overflow-hidden rounded-lg border border-border ${isActive ? '' : 'hidden'}`}>
+        <video
+          ref={videoRef}
+          className="h-48 w-48 object-cover"
+          playsInline
+          muted
+        />
+        <canvas ref={canvasRef} className="hidden" />
+        <button
+          onClick={stopCamera}
+          className="absolute right-1 top-1 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-black/50 text-white transition-colors hover:bg-black/70 focus-ring"
+          aria-label="Stop camera"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      {/* Scan button — only shown when not active */}
+      {!isActive && (
         <button
           onClick={() => { void startCamera() }}
           className="flex h-48 w-48 flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/30 transition-colors hover:border-saffron/40 hover:bg-muted/50"
