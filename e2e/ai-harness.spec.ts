@@ -17,7 +17,10 @@ test.describe('AI Harness view', () => {
   });
 
   test('shows Lab badge', async ({ page }) => {
-    await expect(page.getByText('Lab', { exact: true })).toBeVisible();
+    // Scope to the AI Harness heading's parent to avoid matching sidebar Lab badges
+    await expect(
+      page.getByRole('heading', { name: 'AI Harness' }).locator('..').getByText('Lab', { exact: true }),
+    ).toBeVisible();
   });
 
   test('shows description text', async ({ page }) => {
