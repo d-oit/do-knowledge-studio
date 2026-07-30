@@ -17,7 +17,7 @@ test.describe('AI Harness view', () => {
   });
 
   test('shows Lab badge', async ({ page }) => {
-    await expect(page.locator('.rounded-full').filter({ hasText: 'Lab' }).first()).toBeVisible();
+    await expect(page.getByText('Lab', { exact: true })).toBeVisible();
   });
 
   test('shows description text', async ({ page }) => {
@@ -80,8 +80,7 @@ test.describe('AI Harness view', () => {
   test('settings panel shows status section', async ({ page }) => {
     await page.getByRole('button', { name: /show settings/i }).click();
     await expect(page.getByText('Status')).toBeVisible();
-    // Use exact match to avoid 'Offline ready' and 'AI agent ready' false positives
-    await expect(page.locator('span.font-mono', { hasText: /^Ready$/ })).toBeVisible();
+    await expect(page.getByText('Ready', { exact: true })).toBeVisible();
   });
 
   test('augmented indicator shows in chat footer', async ({ page }) => {
