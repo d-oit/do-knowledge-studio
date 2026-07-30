@@ -15,7 +15,7 @@
 
 Plan 091 (2026-07-28) closed most gaps from the plans/ analysis but one item was explicitly deferred because the swarm agent timed out:
 
-> `- [ ] New smoke tests for shadcn UI components added (deferred — agent timed out)`
+> `- [x] New smoke tests for shadcn UI components added (deferred — agent timed out)` — **completed in this plan (PR #538)**
 
 The previous run created tests for `button`, `toggle`, `tooltip`, `sonner`, and `toast` (5 files), but the 4 components named in Plan 091's key files table — `dialog`, `input`, `badge`, `card` — were never created. The `src/components/ui/__tests__/` directory remained untracked at session start.
 
