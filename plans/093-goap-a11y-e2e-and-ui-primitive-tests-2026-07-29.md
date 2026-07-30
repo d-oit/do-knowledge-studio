@@ -8,7 +8,7 @@
 ## Task Analysis
 
 **Primary Goal**: Close two followups from Plan 092:
-1. **Full accessibility audit E2E** — the 11-task spec in `docs/compose/spec/full-accessibility-audit.md` addressing Plan 071's deferred G5.5 requirement
+1. **Full accessibility audit E2E** — the 11-task spec in `plans/full-accessibility-audit-spec.md` addressing Plan 071's deferred G5.5 requirement
 2. **Remaining UI primitive smoke tests** — add coverage for checkbox, switch, label, textarea, separator, radio-group, tabs, accordion, scroll-area
 
 **Constraints**: All CI must pass, new PR required, no `any` types, E2E tests must be deterministic.

@@ -76,7 +76,7 @@ Separately, Plan 068's follow-up checkboxes for #480 (offline indicator) and #48
 ## Notes
 
 - Older plans (040–042, 14–20, 34, 36, 37) and ADR 004 reference the retired Vite/SQLite/Orama/CLI architecture. Their unchecked items are **historical** and not actionable in the current Next.js + Zustand + localStorage baseline. They are correctly superseded and were intentionally left unchecked.
-- The deferred G5.5 full accessibility audit (Plan 071) is tracked in the untracked `docs/compose/spec/full-accessibility-audit.md` as an 11-task E2E effort. That is a separate, larger follow-up beyond this PR's scope.
+- The deferred G5.5 full accessibility audit (Plan 071) is tracked in the untracked `plans/full-accessibility-audit-spec.md` as an 11-task E2E effort. That is a separate, larger follow-up beyond this PR's scope.
 
 ---
 
