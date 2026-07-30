@@ -35,5 +35,7 @@ Build a local-first, structured knowledge engine that empowers users to capture,
 - Error boundary test coverage — DONE. 14 tests for ErrorBoundary + ViewErrorBoundary (PR #551). Per-view isolation via ViewErrorBoundary wrapping each view in app-shell.tsx.
 - AI Harness E2E coverage — DONE. 13 E2E tests for the only untested view (PR #555). All views now have E2E coverage.
 - Untested component unit tests — DONE. 81 unit tests for 6 previously untested components: ai-harness-chat (20), ai-harness-settings (12), ai-harness-settings-panel (19), backup-tips (7), import-dropzone (10), reset-confirm-dialog (13) (PR #555).
+- Studio component branch coverage — DONE. 74 unit tests for 4 low-coverage components: sidebar (21), topbar (19), voice-input (17), command-palette (17) (PR #557). Branch coverage improved from 54.46% to 57%.
+- Coverage thresholds raised — DONE (PR #554). Thresholds raised to 55%/48%/50%/55% with current levels at 66.93%/57%/60.23%/67.99%.
 - Version reconciled to 0.1.0 — DONE (PR #546). VERSION file, package.json, MIGRATION.md badge all aligned.
 - Release policy clarified — DONE (PR #545). AGENTS.md and VERSION.md explicitly prohibit autonomous release creation.

@@ -5,7 +5,7 @@
 
 ## Current Status
 
-### Session Summary (2026-07-29 — 13 PRs merged)
+### Session Summary (2026-07-29 — 18 PRs merged)
 
 | Area | PRs | Key Changes |
 |------|-----|-------------|
@@ -18,8 +18,11 @@
 | Error boundary tests | #551 | 14 new tests for ErrorBoundary + ViewErrorBoundary |
 | .gitignore cleanup | #550 | Added *.tsbuildinfo, removed duplicates |
 | AI Harness E2E + component tests | #555 | 13 E2E tests + 81 unit tests for 6 untested components |
+| Coverage thresholds raised | #554 | Thresholds raised to 55%/48%/50%/55% |
+| Session learnings & tracking | #556 | GOAL.md, INDEX.md updates, Playwright selector + test isolation learnings |
+| Studio component tests | #557 | 74 unit tests for sidebar, topbar, voice-input, command-palette |
 
-**Final metrics**: 1,567 unit tests, 111 E2E tests, 0 open PRs, quality gate green, Codacy clean.
+**Final metrics**: 1,548 unit tests, 111 E2E tests, 0 open PRs, quality gate green, Codacy clean. Coverage: 66.93% stmts / 57% branches / 60.23% funcs / 67.99% lines.
 
 ### Historical Plan Reconciliation (2026-07-29)
 
