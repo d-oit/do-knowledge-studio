@@ -118,3 +118,42 @@ beforeEach(() => { vi.clearAllMocks() })
 ```
 
 **Exception**: If every test creates its own local `vi.fn()`, `beforeEach` is optional (e.g., `import-dropzone.test.tsx` uses local mocks per test).
+
+## 10. Vitest `vi.hoisted()` for Mock Dependencies
+
+**Problem**: When a `vi.mock()` factory references variables defined in module scope, Vitest throws `ReferenceError: Cannot access 'X' before initialization` because `vi.mock` is hoisted above all imports and top-level declarations.
+
+**Pattern**: Use `vi.hoisted()` to define mock components/variables that need to be available when `vi.mock` executes:
+
+```ts
+// WRONG — MockCommand is defined after vi.mock is hoisted
+const MockCommand = ({ children }) => <div>{children}</div>
+MockCommand.Input = (props) => <input {...props} />
+vi.mock('cmdk', () => ({ Command: MockCommand }))
+
+// RIGHT — vi.hoisted runs before vi.mock
+const { MockCommand } = vi.hoisted(() => {
+  const Root = ({ children }) => <div>{children}</div>
+  Root.Input = (props) => <input {...props} />
+  return { MockCommand: Root }
+})
+vi.mock('cmdk', () => ({ Command: MockCommand }))
+```
+
+**Gotcha**: Don't define mock components with sub-properties (`.Input`, `.List`) outside `vi.hoisted` — the hoisted mock factory runs first, so all dependencies must be in the hoisted scope.
+
+## 11. Disambiguating Text in Unit Tests — `getAllByText` for Overlapping Labels
+
+**Problem**: Labels like "Lab", "Library", "Navigate" appear both as group headings and as item labels (or badges) in the same component. `getByText` throws "strict mode violation: resolved to N elements."
+
+**Pattern**: Use `getAllByText` with a count assertion:
+
+```ts
+// BAD — throws when 'Lab' appears as both group heading and experimental badge
+expect(screen.getByText('Lab')).toBeDefined()
+
+// GOOD — assert at least the expected number of matches
+expect(screen.getAllByText('Lab').length).toBeGreaterThanOrEqual(2)
+```
+
+**When to use**: Any time a text label appears in multiple contexts within the same component — group headings + items, badges + labels, or filter text + display text. Prefer `getByRole` with `name` when possible; fall back to `getAllByText` only when semantic selectors are unavailable.
