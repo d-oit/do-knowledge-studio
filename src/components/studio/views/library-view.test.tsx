@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { ReactNode } from 'react'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 
 vi.mock('framer-motion', () => ({
   motion: {
@@ -101,6 +101,7 @@ let currentTypeFilter = 'all'
 let currentSortBy = 'updated'
 let currentSortDir = 'asc'
 let currentSearchQuery = ''
+let currentRightPanelOpen = false
 let currentEntities = mockEntities
 let filteredEntities = mockEntities
 
@@ -118,7 +119,7 @@ vi.mock('@/lib/studio/store', () => ({
       startNew: mockStartNew,
       searchQuery: currentSearchQuery,
       setSearchQuery: mockSetSearchQuery,
-      rightPanelOpen: false,
+      rightPanelOpen: currentRightPanelOpen,
     }),
   useFilteredEntities: () => filteredEntities,
 }))
@@ -134,6 +135,7 @@ describe('LibraryView', () => {
     currentSortBy = 'updated'
     currentSortDir = 'asc'
     currentSearchQuery = ''
+    currentRightPanelOpen = false
   })
 
   it('renders empty state when no entities', () => {
@@ -205,5 +207,85 @@ describe('LibraryView', () => {
   it('search input has correct aria-label', () => {
     render(<LibraryView />)
     expect(screen.getByLabelText('Search library')).toBeDefined()
+  })
+
+  it('updates the search query and clears an active search', () => {
+    currentSearchQuery = 'alpha'
+    render(<LibraryView />)
+    const searchInput = screen.getByLabelText('Search library')
+    fireEvent.change(searchInput, { target: { value: 'beta' } })
+    expect(mockSetSearchQuery).toHaveBeenCalledWith('beta')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Clear search' }))
+    expect(mockSetSearchQuery).toHaveBeenCalledWith('')
+  })
+
+  it('clears all filters from the no-matches state', () => {
+    currentSearchQuery = 'missing'
+    currentTypeFilter = 'concept'
+    filteredEntities = []
+    render(<LibraryView />)
+    fireEvent.click(screen.getByRole('button', { name: 'Clear all filters' }))
+    expect(mockSetSearchQuery).toHaveBeenCalledWith('')
+    expect(mockSetTypeFilter).toHaveBeenCalledWith('all')
+  })
+
+  it('changes type, sort, and sort direction controls', () => {
+    render(<LibraryView />)
+    fireEvent.click(screen.getByRole('button', { name: 'Notes' }))
+    expect(mockSetTypeFilter).toHaveBeenCalledWith('note')
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Sort by' }), {
+      target: { value: 'name' },
+    })
+    expect(mockSetSortBy).toHaveBeenCalledWith('name')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sort ascending' }))
+    expect(mockSetSortDir).toHaveBeenCalledWith('desc')
+  })
+
+  it('renders list view and opens entities by click and keyboard', () => {
+    render(<LibraryView />)
+    fireEvent.click(screen.getByRole('button', { name: 'List view' }))
+
+    const rows = within(screen.getByRole('table')).getAllByRole('link')
+    expect(rows).toHaveLength(2)
+    fireEvent.click(rows[0])
+    expect(mockStartEdit).toHaveBeenCalledWith('ent-1')
+
+    fireEvent.keyDown(rows[1], { key: 'Enter' })
+    fireEvent.keyDown(rows[1], { key: ' ' })
+    expect(mockStartEdit).toHaveBeenCalledWith('ent-2')
+    expect(mockStartEdit).toHaveBeenCalledTimes(3)
+  })
+
+  it('renders tag overflow in grid view', () => {
+    currentEntities = [{ ...mockEntities[0], tags: ['one', 'two', 'three'] }]
+    filteredEntities = currentEntities
+    render(<LibraryView />)
+    expect(screen.getByText('+1')).toBeDefined()
+  })
+
+  it('uses the wider layout when the right panel is closed', () => {
+    currentRightPanelOpen = false
+    const { container, rerender } = render(<LibraryView />)
+    expect(container.firstElementChild).toHaveClass('max-w-6xl')
+
+    currentRightPanelOpen = true
+    rerender(<LibraryView />)
+    expect(container.firstElementChild).toHaveClass('max-w-5xl')
+  })
+
+  it('starts a new entity from both New actions', () => {
+    const { unmount } = render(<LibraryView />)
+    fireEvent.click(screen.getByRole('button', { name: /^New$/ }))
+    expect(mockStartNew).toHaveBeenCalledTimes(1)
+    unmount()
+
+    currentEntities = []
+    filteredEntities = []
+    render(<LibraryView />)
+    fireEvent.click(screen.getByRole('button', { name: /Create your first entity/ }))
+    expect(mockStartNew).toHaveBeenCalledTimes(2)
   })
 })
