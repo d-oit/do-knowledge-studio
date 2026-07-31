@@ -94,6 +94,8 @@ vi.mock('./import-preview-dialog', () => ({
 const mockSetView = vi.fn()
 const mockImportWithRollback = vi.fn()
 const mockResetStore = vi.fn()
+const mockHandleImportClick = vi.fn()
+const mockHandleFileChange = vi.fn()
 
 const mockEntities = [
   {
@@ -138,8 +140,8 @@ vi.mock('@/lib/studio/store', () => ({
 vi.mock('./use-export-handlers', () => ({
   useExportHandlers: () => ({
     handleExport: mockHandleExport,
-    handleImportClick: vi.fn(),
-    handleFileChange: vi.fn(),
+    handleImportClick: mockHandleImportClick,
+    handleFileChange: mockHandleFileChange,
     handleConfirmImport: vi.fn(),
     handleReset: mockHandleReset,
     showPassword: false,
@@ -218,7 +220,8 @@ describe('ExportView branch coverage', () => {
   it('handles import dropzone click', () => {
     render(<ExportView />)
     fireEvent.click(screen.getByTestId('dropzone'))
-    // The dropzone mock calls handleImportClick + handleFileChange (both vi.fn())
+    expect(mockHandleImportClick).toHaveBeenCalled()
+    expect(mockHandleFileChange).toHaveBeenCalled()
   })
 
   it('renders import preview dialog closed by default', () => {
