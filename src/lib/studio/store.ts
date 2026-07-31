@@ -444,8 +444,9 @@ const RecoverySnapshotSchema = z.object({
 })
 
 export function restoreFromRecovery(): { success: boolean; error?: string } {
+  let raw: string | null = null
   try {
-    const raw = localStorage.getItem(RECOVERY_KEY)
+    raw = localStorage.getItem(RECOVERY_KEY)
     if (!raw) return { success: false, error: 'No recovery snapshot found.' }
 
     const parsed: unknown = JSON.parse(raw)
@@ -469,6 +470,15 @@ export function restoreFromRecovery(): { success: boolean; error?: string } {
     localStorage.removeItem(RECOVERY_KEY)
     return { success: true }
   } catch (err) {
+    // A readable but corrupt snapshot (e.g., unparseable JSON) would otherwise
+    // linger forever — clear it so the next restore attempt starts fresh.
+    if (raw !== null) {
+      try {
+        localStorage.removeItem(RECOVERY_KEY)
+      } catch {
+        console.warn('Failed to clear corrupt recovery snapshot')
+      }
+    }
     return {
       success: false,
       error: err instanceof Error ? err.message : 'Failed to restore recovery snapshot.',
@@ -488,7 +498,7 @@ export function useFilteredEntities(): Entity[] {
     let list = entities
     if (typeFilter !== 'all') list = list.filter((e) => e.type === typeFilter)
     if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase()
+      const q = searchQuery.trim().toLowerCase()
       list = list.filter(
         (e) =>
           e.name.toLowerCase().includes(q) ||

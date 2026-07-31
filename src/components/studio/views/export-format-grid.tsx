@@ -73,7 +73,7 @@ export const ExportFormatGrid = memo(function ExportFormatGrid({
                 'group flex flex-col rounded-lg border bg-card p-4 text-left transition-all focus-ring',
                 isAvailable
                   ? 'border-border hover:border-saffron/30 hover:shadow-md hover-lift'
-                  : 'cursor-not-allowed border-dashed border-border/60 opacity-60',
+                  : 'cursor-not-allowed border-dashed border-border/60 bg-muted/40',
               )}
             >
               <div className="mb-3 flex items-center justify-between">
@@ -81,6 +81,7 @@ export const ExportFormatGrid = memo(function ExportFormatGrid({
                   className={cn(
                     'flex h-10 w-10 items-center justify-center rounded-md',
                     COLOR_MAP[f.color],
+                    !isAvailable && 'opacity-50 grayscale',
                   )}
                 >
                   <Icon className="h-5 w-5" />

@@ -108,7 +108,12 @@ export function onYjsChange(
   }
 
   doc.on('update', handler)
-  const unsub = () => doc.off('update', handler)
+  let active = true
+  const unsub = () => {
+    if (!active) return
+    active = false
+    doc.off('update', handler)
+  }
   unsubscribeFns.push(unsub)
   return unsub
 }
@@ -137,7 +142,10 @@ export function subscribeToYjs(
   sync.entities.observe(entityObserver)
   sync.claims.observe(claimObserver)
 
+  let active = true
   const unsub = () => {
+    if (!active) return
+    active = false
     sync.entities.unobserve(entityObserver)
     sync.claims.unobserve(claimObserver)
     inboundCallbacks = {}

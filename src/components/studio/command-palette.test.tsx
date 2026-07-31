@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import type { ReactNode } from 'react'
+import type { InputHTMLAttributes, ReactNode } from 'react'
 
 // cmdk mock — must use vi.hoisted so the mock is available when vi.mock is hoisted.
 // Command is the default export, used as `Command as CommandPrimitive`.
@@ -8,8 +8,20 @@ const { MockCommand } = vi.hoisted(() => {
   const Root = ({ children, label }: { children?: ReactNode; label?: string }) => (
     <div data-testid="cmdk-root" aria-label={label}>{children}</div>
   )
-  Root.Input = ({ placeholder, ...props }: { placeholder?: string; [key: string]: unknown }) => (
-    <input placeholder={placeholder} {...(props as React.InputHTMLAttributes<HTMLInputElement>)} />
+  Root.Input = ({
+    placeholder,
+    value,
+    onValueChange,
+    ...props
+  }: InputHTMLAttributes<HTMLInputElement> & {
+    onValueChange?: (value: string) => void
+  }) => (
+    <input
+      placeholder={placeholder}
+      value={value ?? ''}
+      onChange={(event) => { onValueChange?.(event.target.value) }}
+      {...props}
+    />
   )
   Root.List = ({ children }: { children?: ReactNode }) => <div>{children}</div>
   Root.Empty = ({ children }: { children?: ReactNode }) => <div>{children}</div>
