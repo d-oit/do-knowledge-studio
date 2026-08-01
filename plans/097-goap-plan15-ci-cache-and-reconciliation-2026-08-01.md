@@ -1,7 +1,7 @@
 # Plan 097 — GOAP: Complete Plan 15 CI Caching and Reconcile Infrastructure Criteria
 
 **Date**: 2026-08-01
-**Status**: IN PROGRESS
+**Status**: DONE
 **Method**: GOAP with targeted swarm investigation
 **Goal**: Implement the remaining actionable current-architecture item from Plan 15 and reconcile its completion criteria with the repository’s actual CI design.
 
@@ -19,7 +19,7 @@ The skipped IndexedDB persistence test in `src/lib/sync/bridge-branch-coverage.t
 | G2 | Verify explicit timeout bounds across all workflow jobs | Done |
 | G3 | Verify pnpm caching, browser-only app types, Dependabot ecosystems, and manual Jules dispatch | Done |
 | G4 | Verify docs-only pull requests skip expensive jobs through the existing `changes` gate | Done |
-| G5 | Run quality gates, review, create PR, and monitor all checks | In progress |
+| G5 | Run quality gates, review, create PR, and monitor all checks | Done |
 
 ## Evidence
 
@@ -33,11 +33,15 @@ The skipped IndexedDB persistence test in `src/lib/sync/bridge-branch-coverage.t
 
 ## Quality Gates
 
-- [ ] `pnpm run lint`
-- [ ] `pnpm run typecheck`
-- [ ] `pnpm run test`
-- [ ] `pnpm run test:coverage`
-- [ ] `pnpm run build`
-- [ ] `./scripts/quality_gate.sh`
-- [ ] Structured code review
-- [ ] PR checks all green
+- [x] `pnpm run lint`
+- [x] `pnpm run typecheck`
+- [x] `pnpm run test`
+- [x] `pnpm run test:coverage`
+- [x] `pnpm run build`
+- [x] CI quality job (equivalent of `./scripts/quality_gate.sh`)
+- [x] Structured code review
+- [x] PR checks all green
+
+## Merge
+
+- [x] Merged via PR #584 (squash, `720df58`) with maintainer approval after GitHub's stale merge-state cache blocked the protected auto-merge.

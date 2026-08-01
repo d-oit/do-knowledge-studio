@@ -1,6 +1,6 @@
 # Plan 15: Build/CI/Infrastructure Fixes (P1)
 
-**Status**: IN PROGRESS — implementation verified locally; PR CI pending
+**Status**: DONE — merged via PR #584; all CI checks green
 
 **GOAP Goal**: G-CONFIG  
 **Priority**: P1  
@@ -150,4 +150,4 @@ Plus additional infrastructure gaps discovered during analysis.
 
 ### Verification note — 2026-08-01
 
-Plan 097 completed the remaining actionable CI implementation by adding a lockfile-keyed Playwright browser cache to `.github/workflows/ci-and-labels.yml`. The cache covers Playwright browser archives under `~/.cache/ms-playwright`; Linux system packages installed by `playwright install --with-deps` remain runner-provided and are intentionally not represented as cached state. The original “all jobs have `timeout-minutes: 15`” wording was corrected because the repository already uses deliberately different limits for lightweight, standard, E2E, and coverage jobs; the enforceable requirement is explicit bounded timeouts on every job. Plan 15 will be marked DONE after the PR’s required checks pass.
+Plan 097 completed the remaining actionable CI implementation by adding a lockfile-keyed Playwright browser cache to `.github/workflows/ci-and-labels.yml`. The cache covers Playwright browser archives under `~/.cache/ms-playwright`; Linux system packages installed by `playwright install --with-deps` remain runner-provided and are intentionally not represented as cached state. The original “all jobs have `timeout-minutes: 15`” wording was corrected because the repository already uses deliberately different limits for lightweight, standard, E2E, and coverage jobs; the enforceable requirement is explicit bounded timeouts on every job. Plan 15 was marked DONE on 2026-08-01 after PR #584 passed all required checks and merged (squash `720df58`).
