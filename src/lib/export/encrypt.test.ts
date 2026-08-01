@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { encryptData, decryptData } from './encrypt'
+import {
+  encryptData,
+  decryptData,
+  buildEncryptedReaderHtml,
+  MIN_ITERATIONS,
+  MAX_ITERATIONS,
+} from './encrypt'
 
 describe('WebCrypto AES-GCM Encryption', () => {
   it('round-trips: encrypt then decrypt returns original data', async () => {
@@ -127,5 +133,11 @@ describe('WebCrypto AES-GCM Encryption', () => {
       parsed.iterations = 10000001
       await expect(decryptData(JSON.stringify(parsed), 'password')).rejects.toThrow('Iteration count exceeds maximum allowable limit')
     })
+  })
+
+  it('renders the encrypted reader HTML with current iteration bounds', () => {
+    const html = buildEncryptedReaderHtml('{"v":1}')
+    expect(html).toContain(`iterations < ${MIN_ITERATIONS}`)
+    expect(html).toContain(`iterations > ${MAX_ITERATIONS}`)
   })
 })

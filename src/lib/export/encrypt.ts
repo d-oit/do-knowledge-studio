@@ -82,7 +82,7 @@ function parseEncryptedPayload(payload: string): EncryptedPayload {
   if (typeof data !== 'string' || !data) {
     throw new Error('Invalid or missing data')
   }
-  if (typeof iterations !== 'number' || Number.isNaN(iterations) || !Number.isInteger(iterations)) {
+  if (typeof iterations !== 'number' || !Number.isInteger(iterations)) {
     throw new Error('Invalid iterations parameter')
   }
   if (iterations < MIN_ITERATIONS) {
