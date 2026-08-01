@@ -60,30 +60,42 @@ export async function encryptData(data: string, password: string): Promise<strin
   })
 }
 
-export async function decryptData(payload: string, password: string): Promise<string> {
-  const parsed = JSON.parse(payload)
+interface EncryptedPayload {
+  salt: string
+  iv: string
+  data: string
+  iterations: number
+}
+
+function parseEncryptedPayload(payload: string): EncryptedPayload {
+  const parsed: unknown = JSON.parse(payload)
   if (!parsed || typeof parsed !== 'object') {
     throw new Error('Invalid encrypted payload structure')
   }
-  const { salt, iv, data, iterations } = parsed
+  const { salt, iv, data, iterations } = parsed as Partial<EncryptedPayload>
   if (typeof salt !== 'string' || !salt) {
-    throw new Error('Invalid or missing salt in payload')
+    throw new Error('Invalid or missing salt')
   }
   if (typeof iv !== 'string' || !iv) {
-    throw new Error('Invalid or missing IV in payload')
+    throw new Error('Invalid or missing IV')
   }
   if (typeof data !== 'string' || !data) {
-    throw new Error('Invalid or missing data in payload')
+    throw new Error('Invalid or missing data')
   }
-  if (typeof iterations !== 'number' || isNaN(iterations) || !Number.isInteger(iterations)) {
-    throw new Error('Invalid iterations parameter in payload')
+  if (typeof iterations !== 'number' || Number.isNaN(iterations) || !Number.isInteger(iterations)) {
+    throw new Error('Invalid iterations parameter')
   }
   if (iterations < MIN_ITERATIONS) {
-    throw new Error(`Iteration count is too low for safe decryption (minimum: ${MIN_ITERATIONS})`)
+    throw new Error('Iteration count is too low')
   }
   if (iterations > MAX_ITERATIONS) {
-    throw new Error(`Iteration count exceeds maximum allowable limit to prevent denial of service (maximum: ${MAX_ITERATIONS})`)
+    throw new Error('Iteration count exceeds maximum allowable limit')
   }
+  return { salt, iv, data, iterations }
+}
+
+export async function decryptData(payload: string, password: string): Promise<string> {
+  const { salt, iv, data, iterations } = parseEncryptedPayload(payload)
 
   const saltBuf = base64ToArrayBuffer(salt)
   const ivBuf = base64ToArrayBuffer(iv)
@@ -147,10 +159,10 @@ export function buildEncryptedReaderHtml(cipherPayload: string): string {
       if (typeof iterations !== 'number' || isNaN(iterations) || !Number.isInteger(iterations)) {
         throw new Error('Invalid iteration parameter.');
       }
-      if (iterations < 100000) {
+      if (iterations < ${MIN_ITERATIONS}) {
         throw new Error('Iteration count is too low for safe decryption.');
       }
-      if (iterations > 10000000) {
+      if (iterations > ${MAX_ITERATIONS}) {
         throw new Error('Iteration count exceeds the maximum allowable limit.');
       }
 
