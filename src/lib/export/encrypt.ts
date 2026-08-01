@@ -67,13 +67,14 @@ interface EncryptedPayload {
   iterations: number
 }
 
-function validateBase64Field(value: unknown, message: string): asserts value is string {
+const validateBase64Field = (value: unknown, message: string): string => {
   if (typeof value !== 'string' || !value) {
     throw new Error(message)
   }
+  return value
 }
 
-function validateIterations(value: unknown): asserts value is number {
+const validateIterations = (value: unknown): number => {
   if (typeof value !== 'number' || !Number.isInteger(value)) {
     throw new Error('Invalid iterations parameter')
   }
@@ -83,19 +84,21 @@ function validateIterations(value: unknown): asserts value is number {
   if (value > MAX_ITERATIONS) {
     throw new Error('Iteration count exceeds maximum allowable limit')
   }
+  return value
 }
 
-function parseEncryptedPayload(payload: string): EncryptedPayload {
+const parseEncryptedPayload = (payload: string): EncryptedPayload => {
   const parsed: unknown = JSON.parse(payload)
   if (!parsed || typeof parsed !== 'object') {
     throw new Error('Invalid encrypted payload structure')
   }
-  const { salt, iv, data, iterations } = parsed as Partial<EncryptedPayload>
-  validateBase64Field(salt, 'Invalid or missing salt')
-  validateBase64Field(iv, 'Invalid or missing IV')
-  validateBase64Field(data, 'Invalid or missing data')
-  validateIterations(iterations)
-  return { salt, iv, data, iterations }
+  const candidate = parsed as Partial<EncryptedPayload>
+  return {
+    salt: validateBase64Field(candidate.salt, 'Invalid or missing salt'),
+    iv: validateBase64Field(candidate.iv, 'Invalid or missing IV'),
+    data: validateBase64Field(candidate.data, 'Invalid or missing data'),
+    iterations: validateIterations(candidate.iterations),
+  }
 }
 
 export async function decryptData(payload: string, password: string): Promise<string> {
