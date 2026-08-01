@@ -2,6 +2,9 @@ const PBKDF2_ITERATIONS = 600000
 const SALT_LENGTH = 16
 const IV_LENGTH = 12
 
+export const MIN_ITERATIONS = 100000
+export const MAX_ITERATIONS = 10000000
+
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer)
   let binary = ''
@@ -57,8 +60,50 @@ export async function encryptData(data: string, password: string): Promise<strin
   })
 }
 
-export async function decryptData(payload: string, password: string): Promise<string> {
-  const { salt, iv, data, iterations } = JSON.parse(payload)
+interface EncryptedPayload {
+  salt: string
+  iv: string
+  data: string
+  iterations: number
+}
+
+const validateBase64Field = (value: unknown, message: string): string => {
+  if (typeof value !== 'string' || !value) {
+    throw new Error(message)
+  }
+  return value
+}
+
+const validateIterations = (value: unknown): number => {
+  if (typeof value !== 'number' || !Number.isInteger(value)) {
+    throw new Error('Invalid iterations parameter')
+  }
+  if (value < MIN_ITERATIONS) {
+    throw new Error('Iteration count is too low')
+  }
+  if (value > MAX_ITERATIONS) {
+    throw new Error('Iteration count exceeds maximum allowable limit')
+  }
+  return value
+}
+
+const parseEncryptedPayload = (payload: string): EncryptedPayload => {
+  const parsed: unknown = JSON.parse(payload)
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('Invalid encrypted payload structure')
+  }
+  const candidate = parsed as Partial<EncryptedPayload>
+  return {
+    salt: validateBase64Field(candidate.salt, 'Invalid or missing salt'),
+    iv: validateBase64Field(candidate.iv, 'Invalid or missing IV'),
+    data: validateBase64Field(candidate.data, 'Invalid or missing data'),
+    iterations: validateIterations(candidate.iterations),
+  }
+}
+
+export const decryptData = async (payload: string, password: string): Promise<string> => {
+  const { salt, iv, data, iterations } = parseEncryptedPayload(payload)
+
   const saltBuf = base64ToArrayBuffer(salt)
   const ivBuf = base64ToArrayBuffer(iv)
   const dataBuf = base64ToArrayBuffer(data)
@@ -71,7 +116,7 @@ export async function decryptData(payload: string, password: string): Promise<st
   return new TextDecoder().decode(decrypted)
 }
 
-export function buildEncryptedReaderHtml(cipherPayload: string): string {
+export const buildEncryptedReaderHtml = (cipherPayload: string): string => {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -104,11 +149,35 @@ export function buildEncryptedReaderHtml(cipherPayload: string): string {
     var PAYLOAD = ${JSON.stringify(cipherPayload)};
     async function decrypt(password) {
       var obj = JSON.parse(PAYLOAD);
+      if (!obj || typeof obj !== 'object') {
+        throw new Error('Invalid export payload structure.');
+      }
+      if (typeof obj.salt !== 'string' || !obj.salt) {
+        throw new Error('Missing or invalid salt.');
+      }
+      if (typeof obj.iv !== 'string' || !obj.iv) {
+        throw new Error('Missing or invalid IV.');
+      }
+      if (typeof obj.data !== 'string' || !obj.data) {
+        throw new Error('Missing or invalid ciphertext data.');
+      }
+
+      var iterations = obj.iterations;
+      if (typeof iterations !== 'number' || isNaN(iterations) || !Number.isInteger(iterations)) {
+        throw new Error('Invalid iteration parameter.');
+      }
+      if (iterations < ${MIN_ITERATIONS}) {
+        throw new Error('Iteration count is too low for safe decryption.');
+      }
+      if (iterations > ${MAX_ITERATIONS}) {
+        throw new Error('Iteration count exceeds the maximum allowable limit.');
+      }
+
       var salt = Uint8Array.from(atob(obj.salt), function(c) { return c.charCodeAt(0); });
       var iv = Uint8Array.from(atob(obj.iv), function(c) { return c.charCodeAt(0); });
       var data = Uint8Array.from(atob(obj.data), function(c) { return c.charCodeAt(0); });
       var keyMaterial = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
-      var key = await crypto.subtle.deriveKey({ name: "PBKDF2", salt: salt, iterations: obj.iterations, hash: "SHA-256" }, keyMaterial, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+      var key = await crypto.subtle.deriveKey({ name: "PBKDF2", salt: salt, iterations: iterations, hash: "SHA-256" }, keyMaterial, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
       var decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, data);
       return new TextDecoder().decode(decrypted);
     }
@@ -124,7 +193,7 @@ export function buildEncryptedReaderHtml(cipherPayload: string): string {
         out.textContent = JSON.stringify(data, null, 2);
       } catch (e) {
         out.textContent = "";
-        err.textContent = "Decryption failed — wrong password or corrupted file.";
+        err.textContent = "Decryption failed — " + e.message;
       }
     });
     document.getElementById("pw").addEventListener("keydown", function(e) {
