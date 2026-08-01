@@ -67,30 +67,34 @@ interface EncryptedPayload {
   iterations: number
 }
 
+function validateBase64Field(value: unknown, message: string): asserts value is string {
+  if (typeof value !== 'string' || !value) {
+    throw new Error(message)
+  }
+}
+
+function validateIterations(value: unknown): asserts value is number {
+  if (typeof value !== 'number' || !Number.isInteger(value)) {
+    throw new Error('Invalid iterations parameter')
+  }
+  if (value < MIN_ITERATIONS) {
+    throw new Error('Iteration count is too low')
+  }
+  if (value > MAX_ITERATIONS) {
+    throw new Error('Iteration count exceeds maximum allowable limit')
+  }
+}
+
 function parseEncryptedPayload(payload: string): EncryptedPayload {
   const parsed: unknown = JSON.parse(payload)
   if (!parsed || typeof parsed !== 'object') {
     throw new Error('Invalid encrypted payload structure')
   }
   const { salt, iv, data, iterations } = parsed as Partial<EncryptedPayload>
-  if (typeof salt !== 'string' || !salt) {
-    throw new Error('Invalid or missing salt')
-  }
-  if (typeof iv !== 'string' || !iv) {
-    throw new Error('Invalid or missing IV')
-  }
-  if (typeof data !== 'string' || !data) {
-    throw new Error('Invalid or missing data')
-  }
-  if (typeof iterations !== 'number' || !Number.isInteger(iterations)) {
-    throw new Error('Invalid iterations parameter')
-  }
-  if (iterations < MIN_ITERATIONS) {
-    throw new Error('Iteration count is too low')
-  }
-  if (iterations > MAX_ITERATIONS) {
-    throw new Error('Iteration count exceeds maximum allowable limit')
-  }
+  validateBase64Field(salt, 'Invalid or missing salt')
+  validateBase64Field(iv, 'Invalid or missing IV')
+  validateBase64Field(data, 'Invalid or missing data')
+  validateIterations(iterations)
   return { salt, iv, data, iterations }
 }
 
