@@ -203,6 +203,16 @@ If hooks are needed locally:
 
 Do not finish with failing lint, typecheck, tests, build, or quality gate output.
 
+### GitHub merge-state staleness
+
+After changing branch protection or rulesets, GitHub may report a PR as `BLOCKED` for minutes-to-hours even when every gate is satisfied (see `plans/098-audit-github-merge-state-staleness.md`). Do not treat `BLOCKED` as a real blocker before verifying against the rule endpoints (`gh api repos/<owner>/<repo>/rules/branches/<ref>` and `rulesets/<id>`), not `mergeStateStatus` alone.
+
+1. Confirm the ruleset-required checks (currently `Codacy Static Code Analysis`) are green on the head commit, review threads are resolved, and the configured approvals requirement is met.
+2. Re-arm a protected auto-merge: `gh pr merge <PR> --auto --squash --delete-branch`.
+3. If still `BLOCKED`, nudge GitHub with an empty-commit push, then close/reopen as last resorts.
+4. Never use `--admin` to bypass protections without explicit user approval.
+5. `required_linear_history` makes plain merge commits invalid — always squash or rebase on this repo.
+
 ## Deployment (Vercel)
 
 **Critical**: This project uses Vercel for production deployment. Breaking the build breaks the live site.
