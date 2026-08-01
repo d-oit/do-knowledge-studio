@@ -55,8 +55,10 @@ ruleset/branch-protection edits even when all gates pass. The authoritative
 signals are the rule endpoints
 (`GET /repos/{owner}/{repo}/rules/branches/{branch}` and
 `GET /repos/{owner}/{repo}/rulesets/{id}`), not `mergeStateStatus` alone.
-Unblock order: verify gates → `gh pr merge <PR> --auto --squash --delete-branch`
-→ empty-commit push → close/reopen. Never use `--admin` without explicit
+The verified unblock order and guardrails are documented once in
+`AGENTS.md` ("GitHub merge-state staleness") and in
+`plans/098-audit-github-merge-state-staleness.md`; this ADR does not
+replicate them. Never use `--admin` to bypass protections without explicit
 maintainer approval.
 
 ## Consequences
@@ -64,7 +66,7 @@ maintainer approval.
 ### Positive
 
 - One protection layer instead of two; no conflicting approval counts.
-- PRs #583/#585 and future agent PRs merge through a single verifiable gate.
+- PRs #583/#584/#585 and future agent PRs merge through a single verifiable gate.
 - The required-check list is minimal (Codacy) and strict.
 
 ### Negative
