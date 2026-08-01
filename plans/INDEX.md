@@ -3,6 +3,14 @@
 **Updated**: 2026-07-29
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
+### Plan 097 — CI Cache Completion and Plan 15 Reconciliation (2026-08-01)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Complete remaining actionable Plan 15 CI work | Done | Added lockfile-keyed Playwright browser cache to `.github/workflows/ci-and-labels.yml` |
+| W2 | Verify CI/config criteria against current source | Done | Confirmed explicit job timeouts, pnpm cache, browser-only app types, Dependabot ecosystems, manual Jules workflow, and docs-only change gating |
+| W3 | Quality gate + PR | In progress | Local validation, review, commit, PR creation, and CI monitoring |
+
 ## Current Status
 
 ### Session Summary (2026-07-29 — 22 PRs merged)

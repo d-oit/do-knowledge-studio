@@ -1,5 +1,7 @@
 # Plan 15: Build/CI/Infrastructure Fixes (P1)
 
+**Status**: IN PROGRESS — implementation verified locally; PR CI pending
+
 **GOAP Goal**: G-CONFIG  
 **Priority**: P1  
 **Estimated Total Effort**: 4-6 hours  
@@ -137,10 +139,15 @@ Plus additional infrastructure gaps discovered during analysis.
 ---
 
 ## Completion Criteria
-- [ ] All CI jobs have `timeout-minutes: 15`
-- [ ] pnpm store and Playwright are cached in CI
-- [ ] `tsconfig.app.json` only includes `vite/client` types
-- [ ] `tsc --noEmit` passes with browser-only types
-- [ ] Dependabot only configured for npm and GitHub Actions
-- [ ] `create-jules-issues.yml` disabled or removed
-- [ ] Path filters skip CI for docs-only changes
+
+- [x] All CI jobs have an explicit `timeout-minutes` value. Values are tuned by workflow: 5 minutes for Dependabot auto-merge, 10 minutes for change detection, 15 minutes for standard jobs, and 20 minutes for E2E/coverage jobs.
+- [x] The CI workflow caches the pnpm store through `actions/setup-node` and caches Playwright browsers with a lockfile-keyed `actions/cache` entry.
+- [x] `tsconfig.app.json` only includes `vite/client` types.
+- [x] `pnpm run typecheck` passes with browser-only types.
+- [x] Dependabot is configured only for npm and GitHub Actions.
+- [x] `create-jules-issues.yml` is manual-dispatch only and does not run automatically.
+- [x] The `changes` job skips expensive quality, unit-test, build, and E2E jobs for docs-only pull requests while retaining dedicated documentation/workflow validation where configured.
+
+### Verification note — 2026-08-01
+
+Plan 097 completed the remaining actionable CI implementation by adding a lockfile-keyed Playwright browser cache to `.github/workflows/ci-and-labels.yml`. The cache covers Playwright browser archives under `~/.cache/ms-playwright`; Linux system packages installed by `playwright install --with-deps` remain runner-provided and are intentionally not represented as cached state. The original “all jobs have `timeout-minutes: 15`” wording was corrected because the repository already uses deliberately different limits for lightweight, standard, E2E, and coverage jobs; the enforceable requirement is explicit bounded timeouts on every job. Plan 15 will be marked DONE after the PR’s required checks pass.
