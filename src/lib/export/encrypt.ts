@@ -101,7 +101,7 @@ const parseEncryptedPayload = (payload: string): EncryptedPayload => {
   }
 }
 
-export async function decryptData(payload: string, password: string): Promise<string> {
+export const decryptData = async (payload: string, password: string): Promise<string> => {
   const { salt, iv, data, iterations } = parseEncryptedPayload(payload)
 
   const saltBuf = base64ToArrayBuffer(salt)
@@ -116,7 +116,7 @@ export async function decryptData(payload: string, password: string): Promise<st
   return new TextDecoder().decode(decrypted)
 }
 
-export function buildEncryptedReaderHtml(cipherPayload: string): string {
+export const buildEncryptedReaderHtml = (cipherPayload: string): string => {
   return `<!doctype html>
 <html lang="en">
 <head>
