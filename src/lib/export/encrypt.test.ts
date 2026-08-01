@@ -58,4 +58,74 @@ describe('WebCrypto AES-GCM Encryption', () => {
     const decrypted = await decryptData(encrypted, 'password')
     expect(decrypted).toBe(large)
   })
+
+  describe('Security: Input validation and Iteration bounds protection', () => {
+    it('throws error when payload is not a valid JSON object', async () => {
+      await expect(decryptData('null', 'password')).rejects.toThrow('Invalid encrypted payload structure')
+      await expect(decryptData('"not-an-object"', 'password')).rejects.toThrow('Invalid encrypted payload structure')
+    })
+
+    it('throws error on missing salt', async () => {
+      const encrypted = await encryptData('secret', 'password')
+      const parsed = JSON.parse(encrypted)
+      delete parsed.salt
+      await expect(decryptData(JSON.stringify(parsed), 'password')).rejects.toThrow('Invalid or missing salt')
+    })
+
+    it('throws error on invalid salt type', async () => {
+      const encrypted = await encryptData('secret', 'password')
+      const parsed = JSON.parse(encrypted)
+      parsed.salt = 123
+      await expect(decryptData(JSON.stringify(parsed), 'password')).rejects.toThrow('Invalid or missing salt')
+    })
+
+    it('throws error on missing IV', async () => {
+      const encrypted = await encryptData('secret', 'password')
+      const parsed = JSON.parse(encrypted)
+      delete parsed.iv
+      await expect(decryptData(JSON.stringify(parsed), 'password')).rejects.toThrow('Invalid or missing IV')
+    })
+
+    it('throws error on missing data', async () => {
+      const encrypted = await encryptData('secret', 'password')
+      const parsed = JSON.parse(encrypted)
+      delete parsed.data
+      await expect(decryptData(JSON.stringify(parsed), 'password')).rejects.toThrow('Invalid or missing data')
+    })
+
+    it('throws error on missing iterations', async () => {
+      const encrypted = await encryptData('secret', 'password')
+      const parsed = JSON.parse(encrypted)
+      delete parsed.iterations
+      await expect(decryptData(JSON.stringify(parsed), 'password')).rejects.toThrow('Invalid iterations parameter')
+    })
+
+    it('throws error on non-integer iterations', async () => {
+      const encrypted = await encryptData('secret', 'password')
+      const parsed = JSON.parse(encrypted)
+      parsed.iterations = 600000.5
+      await expect(decryptData(JSON.stringify(parsed), 'password')).rejects.toThrow('Invalid iterations parameter')
+    })
+
+    it('throws error on non-number iterations', async () => {
+      const encrypted = await encryptData('secret', 'password')
+      const parsed = JSON.parse(encrypted)
+      parsed.iterations = '600000'
+      await expect(decryptData(JSON.stringify(parsed), 'password')).rejects.toThrow('Invalid iterations parameter')
+    })
+
+    it('throws error when iterations count is below secure threshold (Downgrade protection)', async () => {
+      const encrypted = await encryptData('secret', 'password')
+      const parsed = JSON.parse(encrypted)
+      parsed.iterations = 99999
+      await expect(decryptData(JSON.stringify(parsed), 'password')).rejects.toThrow('Iteration count is too low')
+    })
+
+    it('throws error when iterations count is above secure threshold (DoS protection)', async () => {
+      const encrypted = await encryptData('secret', 'password')
+      const parsed = JSON.parse(encrypted)
+      parsed.iterations = 10000001
+      await expect(decryptData(JSON.stringify(parsed), 'password')).rejects.toThrow('Iteration count exceeds maximum allowable limit')
+    })
+  })
 })
