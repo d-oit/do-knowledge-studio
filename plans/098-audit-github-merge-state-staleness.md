@@ -15,7 +15,7 @@ PRs #583 and #584 reported `mergeStateStatus: BLOCKED` and rejected `gh pr merge
 |-------|-------|---------|
 | Legacy branch protection | **Deleted 2026-08-01** | Previously had `required_approving_review_count: 1`, which caused the original false `REVIEW_REQUIRED`. Removed via GitHub UI; `GET /branches/main/protection` now returns 404. |
 | Active repository ruleset `main` (id 15161694) | **active** | `deletion`, `required_linear_history`, `required_status_checks` (only `Codacy Static Code Analysis`, strict), `pull_request` (approvals: **0**, review-thread resolution: required, methods: merge/squash/rebase), `code_quality` (errors), `code_scanning` (Codacy + CodeQL, high_or_higher) |
-| Org-level rulesets | **None** | `GET /orgs/d-oit/rulesets` → 404 (no org rulesets) |
+| Org-level rulesets | **None detected** | `GET /orgs/d-oit/rulesets` → 404 (could be permissions — needs `admin:org`); primary evidence: `GET /rules/branches/main` returns only the repo ruleset (org rulesets, if any applied, would appear there) |
 
 ### Why PR #584 appeared BLOCKED despite all gates passing
 
