@@ -125,6 +125,13 @@ jobs:
         with:
           node-version: '22'
           cache: 'pnpm'
+      - name: Cache Playwright browsers
+        uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a  # v4.2.4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Install Playwright Chromium
