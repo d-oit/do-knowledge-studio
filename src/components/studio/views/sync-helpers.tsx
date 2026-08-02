@@ -21,6 +21,12 @@ import type { PeerInfo } from '@/lib/sync/discovery'
 type SyncStatus = 'disconnected' | 'connecting' | 'connected' | 'error'
 type PairingMode = 'none' | 'display' | 'scan'
 
+export function generateRoomId(): string {
+  const bytes = new Uint8Array(6)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes, (b) => b.toString(36).padStart(2, '0')).join('').slice(0, 10)
+}
+
 export function SyncStatusCard({
   status,
   roomId,
@@ -61,12 +67,6 @@ export function SyncStatusCard({
     setCopied(true)
     setTimeout(() => { setCopied(false) }, 2000)
   }, [roomId])
-
-  const generateRoomId = () => {
-    const bytes = new Uint8Array(6)
-    crypto.getRandomValues(bytes)
-    return Array.from(bytes, (b) => b.toString(36).padStart(2, '0')).join('').slice(0, 10)
-  }
 
   return (
     <div className="mb-6 rounded-lg border border-border bg-card p-5">

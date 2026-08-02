@@ -10,7 +10,7 @@ import {
 import { toast } from 'sonner'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { cn } from '@/lib/utils'
-import { SyncStatusCard } from './sync-helpers'
+import { SyncStatusCard, generateRoomId } from './sync-helpers'
 import {
   initSync,
   joinRoom,
@@ -39,12 +39,6 @@ interface SyncEvent {
   type: 'join' | 'leave' | 'sync' | 'error'
   message: string
   timestamp: number
-}
-
-function generateRoomId(): string {
-  const bytes = new Uint8Array(6)
-  crypto.getRandomValues(bytes)
-  return Array.from(bytes, (b) => b.toString(36).padStart(2, '0')).join('').slice(0, 10)
 }
 
 export function SyncView() {
