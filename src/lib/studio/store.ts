@@ -261,25 +261,23 @@ export const useStudioStore = create<StudioState>()(
         }
         set((state) => ({ chat: [...state.chat, userMsg], chatLoading: true }))
 
-        setTimeout(() => {
-          const { entities, claims } = get()
-          const results = search(entities, claims, content, 5)
-          const cited = results.map((r) => ({
-            entityId: r.entityId ?? r.id,
-            entityName: r.entityName ?? r.name,
-            snippet: r.snippet,
-          }))
-          const reply: ChatMessage = {
-            id: generateId(),
-            role: 'assistant',
-            content: results.length
-              ? `Based on ${results.length === 1 ? '1 match' : `${results.length} matches`} in your library, here is what I found. ${results[0].snippet} You can open the cited sources for full detail, or ask me to compare them.`
-              : "I could not find a direct match in your local library. Try rephrasing with keywords that appear in your entity names or descriptions, or capture a new entity first via the Editor.",
-            citations: cited,
-            timestamp: new Date().toISOString(),
-          }
-          set((state) => ({ chat: [...state.chat, reply], chatLoading: false }))
-        }, 700)
+        const { entities, claims } = get()
+        const results = search(entities, claims, content, 5)
+        const cited = results.map((r) => ({
+          entityId: r.entityId ?? r.id,
+          entityName: r.entityName ?? r.name,
+          snippet: r.snippet,
+        }))
+        const reply: ChatMessage = {
+          id: generateId(),
+          role: 'assistant',
+          content: results.length
+            ? `Based on ${results.length === 1 ? '1 match' : `${results.length} matches`} in your library, here is what I found. ${results[0].snippet} You can open the cited sources for full detail, or ask me to compare them.`
+            : "I could not find a direct match in your local library. Try rephrasing with keywords that appear in your entity names or descriptions, or capture a new entity first via the Editor.",
+          citations: cited,
+          timestamp: new Date().toISOString(),
+        }
+        set((state) => ({ chat: [...state.chat, reply], chatLoading: false }))
       },
 
       clearChat: () => set({ chat: [], chatLoading: false }),

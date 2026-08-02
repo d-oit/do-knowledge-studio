@@ -24,14 +24,10 @@ enabled = true
   [analyzers.meta]
   cyclomatic_complexity_threshold = "critical"
   max_functions = "100"
-  skip_doc_coverage = ["test", "src"]
   plugins = ["react"]
   environment = ["nodejs", "browser"]
   module_system = "es-modules"
   dialect = "typescript"
-
-  [analyzers.meta.ratings]
-    documentation_coverage = "A"
 
   [analyzers.meta.checks]
   # Disable Qwik-specific rules (project doesn't use Qwik)
