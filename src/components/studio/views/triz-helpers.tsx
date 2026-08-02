@@ -25,11 +25,9 @@ export function ParamPicker({
   filtered: { label: string; index: number }[]
   disabled: number[]
 }) {
-  const accentMap = {
-    saffron: { dot: 'bg-saffron', text: 'text-saffron-deep', bg: 'bg-saffron-soft' },
-    clay: { dot: 'bg-clay', text: 'text-clay', bg: 'bg-rose-100 dark:bg-rose-950/40' },
-  } as const
-  const accents = accentMap[accent]
+  const accents = accent === 'saffron'
+    ? { dot: 'bg-saffron', text: 'text-saffron-deep', bg: 'bg-saffron-soft' }
+    : { dot: 'bg-clay', text: 'text-clay', bg: 'bg-rose-100 dark:bg-rose-950/40' }
 
   return (
     <div className="rounded-lg border border-border bg-card p-4">
@@ -89,11 +87,9 @@ export function ParamPicker({
 }
 
 export function ContradictionChip({ n, label, accent }: { n: number; label: string; accent: 'saffron' | 'clay' }) {
-  const accentStyles = {
-    saffron: 'bg-saffron-soft text-saffron-deep border-saffron/30',
-    clay: 'bg-rose-100 text-clay border-clay/30 dark:bg-rose-950/40 dark:text-rose-300',
-  } as const
-  const accents = accentStyles[accent]
+  const accents = accent === 'saffron'
+    ? 'bg-saffron-soft text-saffron-deep border-saffron/30'
+    : 'bg-rose-100 text-clay border-clay/30 dark:bg-rose-950/40 dark:text-rose-300'
   return (
     <div className={cn('flex items-center gap-2 rounded-lg border px-3 py-2', accents)}>
       <span className="flex h-6 w-6 items-center justify-center rounded bg-paper-raised font-mono text-label font-bold text-ink">
