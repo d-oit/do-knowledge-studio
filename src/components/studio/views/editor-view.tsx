@@ -130,7 +130,7 @@ export function EditorView() {
         setDraftStatus('error')
       }
     }, 500)
-    return () => { clearTimeout(timer) }
+    return () => { clearTimeout(timer); }
   }, [name, content, description, type, sourceUrl, tags, editing?.id, editing?.createdAt])
 
   // Flush draft on unmount
@@ -289,7 +289,7 @@ export function EditorView() {
         showAdvanced={showAdvanced}
         onToggleAdvanced={() => { setShowAdvanced(!showAdvanced) }}
         onFormat={handleFormat}
-        onVoiceTranscript={(text) => { setContent((prev) => prev + ' ' + text) }}
+        onVoiceTranscript={(text) => { setContent((prev) => `${prev} ${text}`) }}
       />
 
       {showAdvanced && (

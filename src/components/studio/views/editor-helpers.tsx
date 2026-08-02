@@ -42,7 +42,6 @@ export function EditorHeader({
         onChange={(e) => { onNameChange(e.target.value) }}
         placeholder="Entity name…"
         className="w-full bg-transparent font-serif text-3xl font-semibold leading-tight tracking-tight text-ink placeholder:text-ink-faint/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-saffron/40 focus-visible:ring-inset"
-        autoFocus={!editing}
       />
       <label htmlFor="entity-description" className="sr-only">Description</label>
       <textarea
@@ -75,8 +74,8 @@ export function EditorTags({
   const [newTag, setNewTag] = useState('')
 
   const addTag = () => {
-    const t = newTag.trim().replace(/^#/, '')
-    if (t && !tags.includes(t)) onTagsChange([...tags, t])
+    const tagName = newTag.trim().replace(/^#/, '')
+    if (tagName && !tags.includes(tagName)) onTagsChange([...tags, tagName])
     setNewTag('')
   }
 
