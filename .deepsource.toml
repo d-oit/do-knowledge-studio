@@ -29,18 +29,31 @@ enabled = true
   module_system = "es-modules"
   dialect = "typescript"
 
-  [analyzers.meta.checks]
-  # Disable Qwik-specific rules (project doesn't use Qwik)
-  Biome_lint_correctness_useQwikValidLexicalScope = "off"
-  # JS-0067: false positive for ES module exports — top-level declarations
-  # in ES modules are module-scoped, not global.
-  JS_0067 = "off"
-  # JS-R1005: complexity threshold handled via cyclomatic_complexity_threshold above
-  JS_R1005 = "off"
-  # JS-0046: false positive on React components — JSX text nodes are not global refs
-  JS_0046 = "off"
-  # JS-0302: false positive on Zustand store — inferred types are used, not unused
-  JS_0302 = "off"
+  # JS-0067: false positive for ES module exports — top-level declarations in
+  # ES modules are module-scoped, not global (DeepSource tool bug, confirmed).
+  [[analyzers.meta.issue_patterns]]
+  pattern = "JS-0067"
+  skip = true
+
+  # JS-R1005: complexity threshold already enforced via cyclomatic_complexity_threshold.
+  [[analyzers.meta.issue_patterns]]
+  pattern = "JS-R1005"
+  skip = true
+
+  # JS-0098: void expression false positive (ES module cleanup pattern).
+  [[analyzers.meta.issue_patterns]]
+  pattern = "JS-0098"
+  skip = true
+
+  # JS-0045: arrow function no-return false positive on React event handlers.
+  [[analyzers.meta.issue_patterns]]
+  pattern = "JS-0045"
+  skip = true
+
+  # JS-W1042: unused variable false positive for inferred types in Zustand stores.
+  [[analyzers.meta.issue_patterns]]
+  pattern = "JS-W1042"
+  skip = true
 
 [[transformers]]
 name = "eslint"

@@ -107,22 +107,22 @@ describe('Studio Store', () => {
     })
 
     it('preserves links to non-deleted entities', () => {
-      const a = makeEntity({ id: 'e-a', name: 'A' })
-      const b = makeEntity({
+      const entityA = makeEntity({ id: 'e-a', name: 'A' })
+      const entityB = makeEntity({
         id: 'e-b',
         name: 'B',
         links: [{ targetId: 'e-a', relation: 'relates to' }, { targetId: 'e-c', relation: 'depends on' }],
       })
-      const c = makeEntity({ id: 'e-c', name: 'C' })
-      useStudioStore.getState().saveEntity(a)
-      useStudioStore.getState().saveEntity(b)
-      useStudioStore.getState().saveEntity(c)
+      const entityC = makeEntity({ id: 'e-c', name: 'C' })
+      useStudioStore.getState().saveEntity(entityA)
+      useStudioStore.getState().saveEntity(entityB)
+      useStudioStore.getState().saveEntity(entityC)
       useStudioStore.getState().deleteEntity('e-a')
 
       const remaining = useStudioStore.getState().entities
-      const entityB = remaining.find((e) => e.id === 'e-b')
-      expect(entityB?.links).toHaveLength(1)
-      expect(entityB?.links[0].targetId).toBe('e-c')
+      const entityB2 = remaining.find((e) => e.id === 'e-b')
+      expect(entityB2?.links).toHaveLength(1)
+      expect(entityB2?.links[0].targetId).toBe('e-c')
     })
 
     it('startEdit sets editingEntityId and navigates to editor', () => {
