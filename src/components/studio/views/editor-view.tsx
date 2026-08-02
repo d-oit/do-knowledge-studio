@@ -130,7 +130,7 @@ export function EditorView() {
         setDraftStatus('error')
       }
     }, 500)
-    return () => { clearTimeout(timer); }
+    return () => clearTimeout(timer)
   }, [name, content, description, type, sourceUrl, tags, editing?.id, editing?.createdAt])
 
   // Flush draft on unmount

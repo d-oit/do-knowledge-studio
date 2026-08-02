@@ -63,7 +63,7 @@ export function SyncStatusCard({
 
   const handleCopyRoomId = useCallback(() => {
     if (!roomId) return
-    void navigator.clipboard.writeText(roomId)
+    navigator.clipboard.writeText(roomId).catch(() => {})
     setCopied(true)
     setTimeout(() => { setCopied(false) }, 2000)
   }, [roomId])
