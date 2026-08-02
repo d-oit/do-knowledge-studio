@@ -1,7 +1,18 @@
 # Plans Index
 
-**Updated**: 2026-08-01
+**Updated**: 2026-08-02
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
+
+### Plan 101 — ADR 022 setTimeout Removal & Plan Status Reconciliation (2026-08-02)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Update ADR 007 status to Superseded | Done | `plans/ADRs/007-doc-resolver-integration.md` — marked Superseded with 5-point justification |
+| W1 | Update Plan 084 status to DONE | Done | `plans/084-accessibility-audit-report.md` — axe-core scan completed in Plans 093-096 |
+| W1 | Update Plan 10 status to DONE | Done | `plans/10-implementation-audit-v1-completed.md` — all items completed |
+| W2 | Remove setTimeout fake delay in sendMessage | Done | `src/lib/studio/store.ts` — ADR 022 compliance: synchronous BM25 search |
+| W3 | Update tests for synchronous behavior | Done | `src/lib/studio/store.test.ts`, `src/lib/studio/store-coverage.test.ts` — removed timer advancements |
+| W4 | Quality gate + PR | Done | 1992 tests pass, lint/typecheck/build clean |
 
 ### Plan 097 — CI Cache Completion and Plan 15 Reconciliation (2026-08-01)
 

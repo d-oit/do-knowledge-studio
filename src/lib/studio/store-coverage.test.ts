@@ -192,8 +192,6 @@ describe('Studio Store branch coverage', () => {
   describe('sendMessage reply branches', () => {
     it('produces a no-match reply when search returns nothing', () => {
       useStudioStore.getState().sendMessage('quantum flux')
-      expect(useStudioStore.getState().chatLoading).toBe(true)
-      vi.advanceTimersByTime(800)
       const { chat, chatLoading } = useStudioStore.getState()
       expect(chatLoading).toBe(false)
       expect(chat).toHaveLength(2)
@@ -206,7 +204,6 @@ describe('Studio Store branch coverage', () => {
         makeEntity({ id: 'e-solar', name: 'Solar Panel', description: 'solar energy technology' }),
       )
       useStudioStore.getState().sendMessage('solar')
-      vi.advanceTimersByTime(800)
       const chat = useStudioStore.getState().chat
       expect(chat[1].content).toContain('Based on 1 match')
     })
@@ -219,7 +216,6 @@ describe('Studio Store branch coverage', () => {
         makeEntity({ id: 'e-b', name: 'Reactor B', description: 'reactor coolant' }),
       )
       useStudioStore.getState().sendMessage('reactor')
-      vi.advanceTimersByTime(800)
       expect(useStudioStore.getState().chat[1].content).toContain('Based on 2 matches')
     })
 
@@ -228,7 +224,6 @@ describe('Studio Store branch coverage', () => {
         makeEntity({ id: 'e-solar', name: 'Solar Panel', description: 'solar energy technology' }),
       )
       useStudioStore.getState().sendMessage('solar')
-      vi.advanceTimersByTime(800)
       const citations = useStudioStore.getState().chat[1].citations ?? []
       expect(citations).toHaveLength(1)
       expect(citations[0].entityId).toBe('e-solar')
@@ -247,7 +242,6 @@ describe('Studio Store branch coverage', () => {
         }),
       )
       useStudioStore.getState().sendMessage('neutron')
-      vi.advanceTimersByTime(800)
       const citations = useStudioStore.getState().chat[1].citations ?? []
       expect(citations).toHaveLength(1)
       expect(citations[0].entityId).toBe('e-reactor')

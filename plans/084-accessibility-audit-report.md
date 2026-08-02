@@ -2,7 +2,7 @@
 
 **Date**: 2026-07-26
 **Scope**: Full application accessibility audit
-**Status**: Partial — based on code analysis (axe-core scan pending)
+**Status**: DONE — code analysis complete, axe-core scan completed in Plans 093-096 (see `e2e/accessibility.spec.ts` with 10 axe-core tests covering all views)
 
 ## Summary
 
@@ -114,9 +114,9 @@ pnpm run build
 
 ## Conclusion
 
-The application has strong accessibility foundations with extensive ARIA support. The main gaps are:
-1. Automated axe-core scanning (not yet integrated)
-2. Manual screen reader testing
-3. Zoom/reflow verification
+The application has strong accessibility foundations with extensive ARIA support. The originally identified gaps have been addressed:
 
-These gaps are documented and can be addressed in future iterations.
+1. ~~Automated axe-core scanning~~ — **Completed** in Plans 093-096. `e2e/accessibility.spec.ts` contains 10 axe-core tests covering Home, Library, Editor, Chat, Mind Map, Graph, TRIZ, Export, Sync, and AI Harness views.
+2. ~~Color contrast verification~~ — **Completed** in Plan 095. CSS token adjustments resolved 58+ serious violations.
+3. Manual screen reader testing — deferred to future iteration.
+4. Zoom/reflow verification — deferred to future iteration.
