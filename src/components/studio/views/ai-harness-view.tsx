@@ -253,7 +253,7 @@ export function AIHarnessView() {
               customModel={customModel}
               setCustomModel={setCustomModel}
               ollamaModels={ollamaModels}
-              handleRefreshOllamaModels={() => { handleRefreshOllamaModels().catch(() => {}) }}
+              handleRefreshOllamaModels={handleRefreshOllamaModels}
               entityCount={entities.length}
               effectiveModel={effectiveModel}
               selectedEngineTarget={selectedEngineTarget}
@@ -268,7 +268,7 @@ export function AIHarnessView() {
             isLoading={isLoading}
             input={input}
             setInput={setInput}
-            handleSend={() => { handleSend().catch(() => {}) }}
+            handleSend={handleSend}
             reducedMotion={reducedMotion}
             augment={augment}
             effectiveModel={effectiveModel}
