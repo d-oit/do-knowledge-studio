@@ -56,7 +56,7 @@ export function ExportView() {
       if (e.key === 'Escape') setShowResetConfirm(false)
     }
     window.addEventListener('keydown', handleKeyDown)
-    return () => { window.removeEventListener('keydown', handleKeyDown) }
+    return () => { window.removeEventListener('keydown', handleKeyDown); return undefined }
   }, [showResetConfirm])
 
   useEffect(() => {
@@ -65,7 +65,7 @@ export function ExportView() {
       if (e.key === 'Escape') setImportPreview(null)
     }
     window.addEventListener('keydown', handleKeyDown)
-    return () => { window.removeEventListener('keydown', handleKeyDown) }
+    return () => { window.removeEventListener('keydown', handleKeyDown); return undefined }
   }, [importPreview])
 
   return (

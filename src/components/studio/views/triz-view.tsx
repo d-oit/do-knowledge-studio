@@ -71,7 +71,7 @@ export function TrizView() {
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   useEffect(() => {
-    return () => { if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current) }
+    return () => { if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current); return undefined }
   }, [])
 
   return (
