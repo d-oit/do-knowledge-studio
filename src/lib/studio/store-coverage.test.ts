@@ -262,7 +262,7 @@ describe('Studio Store branch coverage', () => {
     })
 
     it('warns and skips persistence when snapshot exceeds size limit', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
       const big = makeEntity({ id: 'big', content: 'a'.repeat(5 * 1024 * 1024) })
       // The recovery snapshot is taken from the CURRENT state — seed the store
       // with the oversized entity so the serialized blob exceeds the size limit.
@@ -273,7 +273,7 @@ describe('Studio Store branch coverage', () => {
     })
 
     it('warns and continues when recovery persistence fails', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
       stubLocalStorage({
         setItem: (key: string) => {
           if (key === RECOVERY_KEY) throw new Error('quota exceeded')

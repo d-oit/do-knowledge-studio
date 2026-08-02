@@ -11,6 +11,9 @@ import { validatePersistedState } from './schema'
 import { runMigrations, CURRENT_SCHEMA_VERSION } from './migrations'
 
 const MAX_HISTORY = 50
+const RECOVERY_KEY = 'do-knowledge-studio-recovery'
+const RECOVERY_TTL_MS = 24 * 60 * 60 * 1000
+const MAX_RECOVERY_SIZE_BYTES = 4 * 1024 * 1024
 
 interface StudioState {
   // Navigation
@@ -117,8 +120,8 @@ export const useStudioStore = create<StudioState>()(
 
       selectEntity: (id) => set({ selectedEntityId: id }),
       startEdit: (id) => {
-        const e = get().entities.find((x) => x.id === id)
-        if (!e) return
+        const entity = get().entities.find((x) => x.id === id)
+        if (!entity) return
         set({ editingEntityId: id, currentView: 'editor' })
       },
       startNew: () => {
@@ -222,20 +225,20 @@ export const useStudioStore = create<StudioState>()(
 
       updateClaim: (id, updates) => {
         set((state) => ({
-          claims: state.claims.map((c) => {
-            if (c.id !== id) return c
+          claims: state.claims.map((claim) => {
+            if (claim.id !== id) return claim
             const now = new Date().toISOString()
-            const historyEntry = updates.statement && updates.statement !== c.statement
-              ? { statement: c.statement, editedAt: c.updatedAt ?? now }
+            const historyEntry = updates.statement && updates.statement !== claim.statement
+              ? { statement: claim.statement, editedAt: claim.updatedAt ?? now }
               : null
             return {
-              ...c,
+              ...claim,
               ...updates,
               updatedAt: now,
-              version: (c.version ?? 1) + 1,
+              version: (claim.version ?? 1) + 1,
               editHistory: historyEntry
-                ? [...(c.editHistory ?? []), historyEntry]
-                : c.editHistory ?? [],
+                ? [...(claim.editHistory ?? []), historyEntry]
+                : claim.editHistory ?? [],
             }
           }),
         }))
@@ -243,7 +246,7 @@ export const useStudioStore = create<StudioState>()(
 
       deleteClaim: (id) => {
         set((state) => ({
-          claims: state.claims.filter((c) => c.id !== id),
+          claims: state.claims.filter((claim) => claim.id !== id),
         }))
       },
 
@@ -403,10 +406,6 @@ export const useStudioStore = create<StudioState>()(
     },
   ),
 )
-
-const RECOVERY_KEY = 'do-knowledge-studio-recovery'
-const RECOVERY_TTL_MS = 24 * 60 * 60 * 1000
-const MAX_RECOVERY_SIZE_BYTES = 4 * 1024 * 1024
 
 const RecoverySnapshotSchema = z.object({
   snapshot: z.object({
