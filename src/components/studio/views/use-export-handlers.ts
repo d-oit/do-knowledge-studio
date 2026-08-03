@@ -73,25 +73,25 @@ export const useExportHandlers = ({
   const exportOptions: ExportOptions = { graph, mindMap, links, tags }
   const stamp = todayStamp()
 
-  const handleExportJson = () => {
+  const handleExportJson = async () => {
     const content = buildJsonExport(entities, claims, exportOptions)
     downloadFile(`do-knowledge-studio-export-${stamp}.json`, content, 'application/json')
     toast.success('JSON export downloaded', { description: buildExportSummary(entities.length, claims.length, graph, mindMap, links, tags) })
   }
 
-  const handleExportMarkdown = () => {
+  const handleExportMarkdown = async () => {
     const content = buildMarkdownExport(entities, claims)
     downloadFile(`do-knowledge-studio-${stamp}.md`, content, 'text/markdown')
     toast.success('Markdown export downloaded', { description: `${entities.length} entities concatenated into one .md file` })
   }
 
-  const handleExportHtml = () => {
+  const handleExportHtml = async () => {
     const content = buildHtmlExport(entities, claims)
     downloadFile(`do-knowledge-studio-${stamp}.html`, content, 'text/html')
     toast.success('HTML export downloaded', { description: 'Self-contained .html page — open in any browser.' })
   }
 
-  const handleExportPdf = () => {
+  const handleExportPdf = async () => {
     try {
       const blob = buildPdfExport(entities, claims)
       downloadBlob(`do-knowledge-studio-${stamp}.pdf`, blob)
