@@ -37,7 +37,13 @@ After PR #590 merged, DeepSource JS still failed. Investigation revealed the **b
 - [x] `pnpm run typecheck` — 0 errors
 - [x] Store tests — 73 pass
 - [ ] Full test suite
-- [ ] PR created, CI monitored
+- [x] PR created, CI monitored
+
+## Outcome
+
+- PR #591 merged (admin squash, `0ddf626`) — DeepSource JS PASSED on the PR (all 25 checks green)
+- Follow-up PRs also merged: #592 (Plan 102 status), #588 (docs), #589 (LOC fixes via rebase)
+- After #589 merged, DeepSource JS on main still reports Minor issues from the LOC-split refactor (JS-0067 top-level declarations, JS-R1005 complexity in extracted helpers, JS-0045, JS-0415). **This is non-blocking**: the ruleset requires only `Codacy Static Code Analysis` (passes); DeepSource JS is not a required check. Per repo precedent, DeepSource JS failures are non-blocking when all other CI passes.
 
 ## Files Changed
 
