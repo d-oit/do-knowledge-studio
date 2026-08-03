@@ -89,10 +89,15 @@ describe('ChatView', () => {
     expect(screen.getAllByText('What is TRIZ useful for?').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('suggestion chip calls sendMessage', () => {
+  it('suggestion chip calls sendMessage', async () => {
+    vi.useFakeTimers()
     render(<ChatView />)
     screen.getAllByText('Summarize recent projects')[0].click()
+    await act(async () => {
+      vi.advanceTimersByTime(300)
+    })
     expect(mockSendMessage).toHaveBeenCalledWith('Give me a summary of the projects in my library.')
+    vi.useRealTimers()
   })
 
   it('input textarea exists with maxLength 2000', () => {

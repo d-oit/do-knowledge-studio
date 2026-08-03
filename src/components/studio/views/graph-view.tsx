@@ -50,6 +50,8 @@ export function GraphView() {
   const historyIndex = useStudioStore((s) => s.historyIndex)
   const [layout, setLayout] = useState<LayoutType>('force')
   const [focusMode, setFocusMode] = useState(false)
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
+  const [zoom, setZoom] = useState(1)
 
   // Build adjacency index for O(1) focus-mode neighbor lookups
   const adjacency = useMemo(() => buildAdjacencyIndex(entities), [entities])
@@ -118,7 +120,57 @@ export function GraphView() {
   }, [visibleNodes, edges, focusMode, selectedEntityId])
 
   const svgRef = useRef<SVGSVGElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const reducedMotion = useReducedMotion()
+
+  const handleGraphKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      const PAN_STEP = 30
+      const ZOOM_STEP = 0.15
+      switch (e.key) {
+        case 'ArrowLeft':
+          e.preventDefault()
+          setPanOffset((p) => ({ x: p.x + PAN_STEP, y: p.y }))
+          break
+        case 'ArrowRight':
+          e.preventDefault()
+          setPanOffset((p) => ({ x: p.x - PAN_STEP, y: p.y }))
+          break
+        case 'ArrowUp':
+          e.preventDefault()
+          setPanOffset((p) => ({ x: p.x, y: p.y + PAN_STEP }))
+          break
+        case 'ArrowDown':
+          e.preventDefault()
+          setPanOffset((p) => ({ x: p.x, y: p.y - PAN_STEP }))
+          break
+        case '+':
+        case '=':
+          e.preventDefault()
+          setZoom((z) => Math.min(z + ZOOM_STEP, 3))
+          break
+        case '-':
+          e.preventDefault()
+          setZoom((z) => Math.max(z - ZOOM_STEP, 0.3))
+          break
+        case 'Home':
+          e.preventDefault()
+          setPanOffset({ x: 0, y: 0 })
+          setZoom(1)
+          break
+        case 'Delete':
+        case 'Backspace':
+          if (selectedEntityId) {
+            e.preventDefault()
+            useStudioStore.getState().deleteEntity(selectedEntityId)
+          }
+          break
+        default:
+          break
+      }
+    },
+    [selectedEntityId],
+  )
 
   const handleExportPng = useCallback(() => {
     const svg = svgRef.current
@@ -223,10 +275,17 @@ export function GraphView() {
       </div>
 
       {/* Canvas */}
-      <div className="relative flex-1 canvas-grid overflow-hidden">
+      <div
+        ref={containerRef}
+        className="relative flex-1 canvas-grid overflow-hidden"
+        tabIndex={0}
+        role="application"
+        aria-label="Graph canvas — use arrow keys to pan, +/- to zoom, Home to reset, Delete to remove selected entity"
+        onKeyDown={handleGraphKeyDown}
+      >
         <svg
           ref={svgRef}
-          viewBox="0 0 800 560"
+          viewBox={`${-panOffset.x / zoom} ${-panOffset.y / zoom} ${800 / zoom} ${560 / zoom}`}
           className="h-full w-full"
           preserveAspectRatio="xMidYMid meet"
           role="img"

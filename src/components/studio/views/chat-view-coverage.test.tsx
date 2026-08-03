@@ -127,11 +127,16 @@ describe('ChatView branch coverage', () => {
     expect(storeState.sendMessage).not.toHaveBeenCalled()
   })
 
-  it('sends message on Enter key', () => {
+  it('sends message on Enter key', async () => {
+    vi.useFakeTimers()
     render(<ChatView />)
     const textarea = setInput('Hello')
     fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false })
+    await act(async () => {
+      vi.advanceTimersByTime(300)
+    })
     expect(storeState.sendMessage).toHaveBeenCalledWith('Hello')
+    vi.useRealTimers()
   })
 
   it('does not send on Shift+Enter and allows newline', () => {
@@ -265,14 +270,19 @@ describe('ChatView branch coverage', () => {
     expect(screen.getByText('Try:')).toBeDefined()
   })
 
-  it('suggestion chip in bottom bar calls sendMessage', () => {
+  it('suggestion chip in bottom bar calls sendMessage', async () => {
+    vi.useFakeTimers()
     storeState.chat = [
       { id: 'msg-1', role: 'user', content: 'Hello', timestamp: new Date().toISOString() },
     ]
     render(<ChatView />)
     fireEvent.click(screen.getAllByText('Summarize recent projects')[0])
+    await act(async () => {
+      vi.advanceTimersByTime(300)
+    })
     expect(storeState.sendMessage).toHaveBeenCalledWith(
       'Give me a summary of the projects in my library.',
     )
+    vi.useRealTimers()
   })
 })
