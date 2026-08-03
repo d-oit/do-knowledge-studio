@@ -43,7 +43,6 @@ jobs:
             frontend:
               - 'src/**'
               - 'public/**'
-              - 'vite.config.ts'
               - 'package.json'
             tooling:
               - 'scripts/**'

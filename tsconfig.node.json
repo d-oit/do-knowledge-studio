@@ -19,10 +19,9 @@
     "src/lib/validation.ts",
     "src/lib/security.ts",
     "src/lib/export-core.ts",
-    "vite.config.ts",
     "vitest.config.ts",
     "playwright.config.ts",
-    "eslint.config.js",
+    "eslint.config.mjs",
     "commitlint.config.cjs",
     "src/test/setup.ts"
   ]

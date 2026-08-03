@@ -169,6 +169,59 @@ The Analysis CLI may show "0 issues" even when the Cloud CLI reports many — al
 | `Issue #NNNNN not found in this pull request` | Wrong PR or stale analysis | Run `--reanalyze` first or check PR number |
 | Local analysis = 0 issues, Cloud = many | Cloud runs tools not available locally | Always use Cloud CLI for actual PR data |
 | Analysis CLI install fails | Missing Python/Ruby/Java runtime | Use only JS/TS tools locally; skip auto-install |
+| `.codacy.yml` disable_rules not taking effect | Using `ESLint8_` prefix instead of `ESLint9_` | Use `ESLint9_<rule-id>` format for ESLint 9+ |
+| `.codacy/codacy.config.json` references `eslint.config.js` | Stale reference | Change to `eslint.config.mjs` |
+| `.mimicode/` exclude not working | Typo — actual dir is `.mimocode/` | Fix to `.mimocode/**` in `.codacy.yml` |
+
+## Codacy 2026 Configuration
+
+### .codacy.yml Format
+
+```yaml
+---
+exclude_paths:
+  - "dist/**"
+  - "node_modules/**"
+  - "coverage/**"
+  - ".mimocode/**"
+  - ".agents/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+engines:
+  biome:
+    enabled: true
+    config: biome.json
+  eslint-9:
+    enabled: true
+    exclude_paths:
+      - "**/__tests__/**"
+      - "**/*.test.*"
+      - "**/*.spec.*"
+  opengrep:
+    enabled: true
+```
+
+**Key 2026 changes:**
+- Use `eslint-9` (NOT `eslint-8`) for ESLint 9+ flat config
+- `.codacy.yml` is the primary config file (NOT `codacy.config.json`)
+- `disable_rules` uses `ESLint9_<rule-id>` format (NOT `ESLint8_<rule-id>`)
+- Codacy automatically picks up `.codacy.yml` from the default branch
+- If `.codacy.yml` exists, UI-defined ignore settings are overridden
+
+### Tool Names (2026)
+
+Use these names in `.codacy.yml` `engines` section:
+
+| Tool | Config Name |
+|------|-------------|
+| ESLint 9+ | `eslint-9` |
+| ESLint 8 (legacy) | `eslint-8` |
+| Biome | `biome` |
+| Opengrep | `opengrep` |
+| ShellCheck | `shellcheck` |
+| Trivy | `trivy` |
+| Stylelint | `stylelint` |
 
 ## Best Practices
 

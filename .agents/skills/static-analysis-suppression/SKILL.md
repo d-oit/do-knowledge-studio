@@ -29,13 +29,18 @@ PR blocked by static analysis check?
 │   ├── DeepSource: use code rewrite (const → arrow, etc.)
 │   ├── Codacy ESLint: use `// eslint-disable-next-line <rule>` inline
 │   ├── Codacy Biome/Qwik: check .codacy.yml `engines.biome.config` rules
-│   └── Pre-existing complexity: .deepsource.toml analyzer.meta.checks
+│   └── Pre-existing complexity: .deepsource.toml analyzer.meta.issue_patterns
 ├── ✗ Config-only fix (no code change)?
-│   ├── Codacy: .codacy.yml `engines.eslint-8.disable_rules` or `exclude_paths`
-│   └── DeepSource: .deepsource.toml `[analyzers.meta.checks]`
+│   ├── Codacy: .codacy.yml `engines.eslint-9` or `exclude_paths`
+│   └── DeepSource: .deepsource.toml `[[analyzers.meta.issue_patterns]]` with `skip = true`
 └── ✗ All real checks pass, only policy tool blocks?
-    → `gh pr merge --admin` override
+    → `gh pr merge --admin` override (requires user approval)
 ```
+
+**2026 Key Changes:**
+- Codacy: Use `eslint-9` (NOT `eslint-8`) in `.codacy.yml`
+- DeepSource: Use `[[analyzers.meta.issue_patterns]]` (NOT `[analyzers.meta.checks]`)
+- Both tools: Fix `.mimocode/` typo (NOT `.mimicode/`) in exclude paths
 
 ## Workflow
 
@@ -95,25 +100,52 @@ useHook(other);
 
 ```yaml
 engines:
-  eslint-8:
-    disable_rules:
-      - "ESLint8_security_detect-object-injection"
+  eslint-9:
+    enabled: true
+    exclude_paths:
+      - "**/__tests__/**"
+      - "**/*.test.*"
+      - "**/*.spec.*"
 ```
 
-Codacy YAML requires `---` preamble on line 1.
+**Codacy 2026 config format:**
+- Use `eslint-9` (NOT `eslint-8`) for ESLint 9+ flat config
+- Tool names: `eslint-8`, `eslint-9`, `biome`, `opengrep`, `shellcheck`, `trivy`
+- `.codacy.yml` is the primary config file (NOT `codacy.config.json` which is auto-generated)
+- Codacy automatically picks up `.codacy.yml` from the default branch
+- If `.codacy.yml` exists, UI-defined ignore settings are overridden
+- The `disable_rules` format uses `ESLint9_<rule-id>` prefix (e.g., `ESLint9_no-unsafe-finally`)
 
 #### DeepSource config (.deepsource.toml)
 
 ```toml
-[analyzers.meta.checks]
-Biome_lint_correctness_useQwikValidLexicalScope = "off"
-# JS-0067 is a false positive for ES module exports
-JS_0067 = "off"
+[[analyzers]]
+name = "javascript-typescript"
+enabled = true
+
+  [analyzers.meta]
+  cyclomatic_complexity_threshold = "critical"  # allows up to ~50 complexity
+  max_functions = "100"
+  plugins = ["react"]
+  environment = ["nodejs", "browser"]
+  module_system = "es-modules"
+  dialect = "typescript"
+  skip_doc_coverage = ["function-declaration", "function-expression", "arrow-function-expression"]
+
+  # Suppress specific false-positive rules
+  [[analyzers.meta.issue_patterns]]
+  pattern = "JS-0067"
+  skip = true
 ```
 
-**Known False Positives:**
-- **JS-0067**: DeepSource flags `export function` declarations as "global scope" but they are module-scoped in ES modules. DeepSource docs confirm: "Top-level declarations in ES modules create module-scoped variables." Suppress with `JS_0067 = "off"`.
-- **JS-R1005**: Use `cyclomatic_complexity_threshold = "critical"` (up to ~50 complexity) instead of `"very-high"` (up to ~25) to allow complex but necessary functions.
+**DeepSource 2026 config format:**
+- `.deepsource.toml` must be committed to the repository's **default branch**
+- `cyclomatic_complexity_threshold` options: `low`, `medium`, `high`, `very-high`, `critical`
+- `skip_doc_coverage` excludes artifact types from documentation coverage metric
+- `issue_patterns` with `skip = true` suppresses specific rules
+- The `transformers` section configures external tools (ESLint)
+- The `test_runners` section configures test runners (vitest)
+- **DCV metric**: The documentation-coverage metric is dashboard-only and cannot be disabled from code. Use `skip_doc_coverage` to exclude artifact types.
 
 ### 3. Admin merge (last resort)
 
@@ -141,8 +173,10 @@ gh pr merge <PR#> --squash --admin --subject "<message>"
 
 | Code | Issue | Fix |
 |------|-------|-----|
-| `security/detect-object-injection` | `obj[key]` access | Not in local ESLint — `disable_rules` only |
-| `no-confusing-void-expression` | Arrow returning void | `{ fn(); }` braces |
-| `useImportType` | Value import for type-only | Split `import { foo, type Bar }` |
-| `react-hooks/refs` | Ref not in dependency array | `// eslint-disable-next-line` |
-| `react-hooks/set-state-in-effect` | setState inside effect | `// eslint-disable-next-line` |
+| `ESLint9_security_detect-object-injection` | `obj[key]` access | Not in local ESLint — `disable_rules` only |
+| `ESLint9_no-confusing-void-expression` | Arrow returning void | `{ fn(); }` braces |
+| `ESLint9_useImportType` | Value import for type-only | Split `import { foo, type Bar }` |
+| `ESLint9_react-hooks/refs` | Ref not in dependency array | `// eslint-disable-next-line` |
+| `ESLint9_react-hooks/set-state-in-effect` | setState inside effect | `// eslint-disable-next-line` |
+
+**Note:** Codacy 2026 uses `ESLint9_` prefix for ESLint 9 rules (NOT `ESLint8_`).
