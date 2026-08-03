@@ -80,7 +80,7 @@ async function consumeSSE(
             onChunk(content)
           }
         } catch {
-          // skip malformed SSE lines
+          // Skip malformed SSE lines — streaming responses may contain partial JSON or control frames
         }
       }
     }
@@ -121,7 +121,7 @@ async function consumeNDJSON(
             onChunk(content)
           }
         } catch {
-          // skip malformed NDJSON lines
+          // Skip malformed NDJSON lines — Ollama streaming may emit partial or non-JSON frames
         }
       }
     }

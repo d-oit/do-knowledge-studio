@@ -65,7 +65,7 @@ vi.mock('framer-motion', () => ({
       <div {...(props as React.HTMLAttributes<HTMLDivElement>)}>{children}</div>
     ),
   },
-  AnimatePresence: ({ children }: { children?: ReactNode }) => <>{children}</>,
+  AnimatePresence: ({ children }: { children?: ReactNode }) => children,
 }))
 
 vi.mock('lucide-react', () => {
@@ -191,7 +191,7 @@ describe('AIHarnessView branch coverage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     rateLimitState.decision = { allowed: true, count: 0, limit: 10, retryAfterMs: 5000 }
-    aiMocks.mockSendChatStream.mockImplementation(async () => {})
+    aiMocks.mockSendChatStream.mockImplementation(() => Promise.resolve())
     aiMocks.mockFetchOllamaModels.mockImplementation(() => Promise.resolve(['llama3']))
     aiMocks.mockBuildMessages.mockReturnValue([])
   })
@@ -268,7 +268,7 @@ describe('AIHarnessView branch coverage', () => {
   })
 
   it('fetches URLs when web research is allowed', async () => {
-    aiMocks.mockSendChatStream.mockImplementation(async () => {})
+    aiMocks.mockSendChatStream.mockImplementation(() => Promise.resolve())
     await act(async () => {
       render(<AIHarnessView />)
     })

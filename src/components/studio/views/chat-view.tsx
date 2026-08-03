@@ -3,7 +3,7 @@
 import { useStudioStore } from '@/lib/studio/store'
 import { Send, Sparkles, Trash2, Bot, User, Quote, ChevronDown, MessageSquare } from 'lucide-react'
 import { VoiceInput } from '../voice-input'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import Markdown from 'react-markdown'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -48,17 +48,35 @@ export function ChatView() {
   const [showCitations, setShowCitations] = useState<string | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [chat, chatLoading])
 
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
+    }
+  }, [])
+
+  const sendMessageDebounced = useCallback(
+    (content: string) => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
+      debounceTimerRef.current = setTimeout(() => {
+        sendMessage(content)
+        setInput('')
+        inputRef.current?.focus()
+        debounceTimerRef.current = null
+      }, 300)
+    },
+    [sendMessage],
+  )
+
   const handleSend = (text?: string) => {
     const content = (text ?? input).trim()
     if (!content || chatLoading) return
-    sendMessage(content)
-    setInput('')
-    inputRef.current?.focus()
+    sendMessageDebounced(content)
   }
 
   const handleCitationClick = (entityId: string) => {

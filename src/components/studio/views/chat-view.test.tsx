@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act } from 'react'
 import type { ReactNode } from 'react'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 
 vi.mock('framer-motion', () => ({
   motion: {
@@ -73,8 +73,13 @@ import { ChatView } from './chat-view'
 describe('ChatView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.useRealTimers()
     currentChat = []
     currentChatLoading = false
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('renders empty state when no messages', () => {
@@ -89,10 +94,38 @@ describe('ChatView', () => {
     expect(screen.getAllByText('What is TRIZ useful for?').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('suggestion chip calls sendMessage', () => {
+  it('suggestion chip calls sendMessage', async () => {
+    vi.useFakeTimers()
     render(<ChatView />)
     screen.getAllByText('Summarize recent projects')[0].click()
+    await act(async () => {
+      vi.advanceTimersByTime(300)
+    })
     expect(mockSendMessage).toHaveBeenCalledWith('Give me a summary of the projects in my library.')
+    vi.useRealTimers()
+  })
+
+  it('debounces rapid sends to only one call', async () => {
+    vi.useFakeTimers()
+    render(<ChatView />)
+    const textarea = screen.getByPlaceholderText(/Ask about your library/)
+    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+      window.HTMLTextAreaElement.prototype,
+      'value',
+    )!.set!
+    await act(async () => {
+      nativeInputValueSetter.call(textarea, 'Hello')
+      textarea.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false })
+    // Immediately send again before debounce fires
+    fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false })
+    await act(async () => {
+      vi.advanceTimersByTime(300)
+    })
+    expect(mockSendMessage).toHaveBeenCalledTimes(1)
+    expect(mockSendMessage).toHaveBeenCalledWith('Hello')
+    vi.useRealTimers()
   })
 
   it('input textarea exists with maxLength 2000', () => {

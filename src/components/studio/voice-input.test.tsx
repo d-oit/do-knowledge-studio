@@ -153,7 +153,7 @@ describe('VoiceInput', () => {
   })
 
   it('logs speech recognition errors to console', () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     error = 'not-allowed'
     render(<VoiceInput {...defaultProps} />)
     expect(consoleSpy).toHaveBeenCalledWith('Speech recognition error:', 'not-allowed')

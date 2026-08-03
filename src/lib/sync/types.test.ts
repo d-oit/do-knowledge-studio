@@ -36,8 +36,8 @@ function makeClaim(overrides: Partial<Claim> = {}): Claim {
 
 describe('createSyncDoc', () => {
   it('creates empty sync doc', () => {
-    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     const doc = createSyncDoc()
     expect(doc.entities.size).toBe(0)
     expect(doc.claims.size).toBe(0)

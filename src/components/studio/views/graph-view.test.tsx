@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { ReactNode } from 'react'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 
 vi.mock('lucide-react', () => {
   const I = ({ className }: { className?: string }) => (
@@ -43,9 +43,12 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }))
 
-const mockSelectEntity = vi.fn()
-const mockUndo = vi.fn()
-const mockRedo = vi.fn()
+const mocks = vi.hoisted(() => ({
+  selectEntity: vi.fn(),
+  undo: vi.fn(),
+  redo: vi.fn(),
+  deleteEntity: vi.fn(),
+}))
 
 const mockEntities = [
   {
@@ -73,18 +76,27 @@ const mockEntities = [
 ]
 
 let currentEntities = mockEntities
+let currentSelectedEntityId: string | null = null
 
 vi.mock('@/lib/studio/store', () => ({
-  useStudioStore: (selector: (s: Record<string, unknown>) => unknown) =>
-    selector({
-      entities: currentEntities,
-      selectedEntityId: null,
-      selectEntity: mockSelectEntity,
-      undo: mockUndo,
-      redo: mockRedo,
-      entityHistory: [[]],
-      historyIndex: 0,
-    }),
+  useStudioStore: Object.assign(
+    (selector: (s: Record<string, unknown>) => unknown) =>
+      selector({
+        entities: currentEntities,
+        selectedEntityId: currentSelectedEntityId,
+        selectEntity: mocks.selectEntity,
+        undo: mocks.undo,
+        redo: mocks.redo,
+        deleteEntity: mocks.deleteEntity,
+        entityHistory: [[]],
+        historyIndex: 0,
+      }),
+    {
+      getState: () => ({
+        deleteEntity: mocks.deleteEntity,
+      }),
+    },
+  ),
 }))
 
 import { GraphView } from './graph-view'
@@ -93,6 +105,7 @@ describe('GraphView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     currentEntities = mockEntities
+    currentSelectedEntityId = null
   })
 
   it('renders graph container with SVG', () => {
@@ -148,5 +161,51 @@ describe('GraphView', () => {
   it('renders save snapshot button', () => {
     render(<GraphView />)
     expect(screen.getByLabelText('Save snapshot')).toBeDefined()
+  })
+
+  it('graph container is keyboard focusable with role application', () => {
+    render(<GraphView />)
+    const container = screen.getByRole('application', { name: /graph canvas/i })
+    expect(container).toBeDefined()
+    expect(container).toHaveAttribute('tabIndex', '0')
+  })
+
+  it('arrow keys pan the graph viewBox', () => {
+    render(<GraphView />)
+    const container = screen.getByRole('application', { name: /graph canvas/i })
+    const svg = screen.getByRole('img', { name: /knowledge graph/i })
+    const initialViewBox = svg.getAttribute('viewBox')
+    fireEvent.keyDown(container, { key: 'ArrowRight' })
+    const afterViewBox = svg.getAttribute('viewBox')
+    expect(afterViewBox).not.toBe(initialViewBox)
+  })
+
+  it('Home key resets pan and zoom', () => {
+    render(<GraphView />)
+    const container = screen.getByRole('application', { name: /graph canvas/i })
+    const svg = screen.getByRole('img', { name: /knowledge graph/i })
+    // Pan first
+    fireEvent.keyDown(container, { key: 'ArrowRight' })
+    const pannedViewBox = svg.getAttribute('viewBox')
+    // Reset with Home
+    fireEvent.keyDown(container, { key: 'Home' })
+    const resetViewBox = svg.getAttribute('viewBox')
+    expect(resetViewBox).not.toBe(pannedViewBox)
+  })
+
+  it('Delete key calls deleteEntity when entity is selected', () => {
+    currentSelectedEntityId = 'ent-1'
+    render(<GraphView />)
+    const container = screen.getByRole('application', { name: /graph canvas/i })
+    fireEvent.keyDown(container, { key: 'Delete' })
+    expect(mocks.deleteEntity).toHaveBeenCalledWith('ent-1')
+  })
+
+  it('Delete key does nothing when no entity is selected', () => {
+    currentSelectedEntityId = null
+    render(<GraphView />)
+    const container = screen.getByRole('application', { name: /graph canvas/i })
+    fireEvent.keyDown(container, { key: 'Delete' })
+    expect(mocks.deleteEntity).not.toHaveBeenCalled()
   })
 })

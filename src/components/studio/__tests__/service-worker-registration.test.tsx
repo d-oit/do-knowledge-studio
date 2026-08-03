@@ -7,8 +7,8 @@ import { ServiceWorkerRegistration } from "@/components/studio/service-worker-re
 // Helpers
 // ---------------------------------------------------------------------------
 
-function mockServiceWorker() {
-  const register = vi.fn().mockResolvedValue(undefined);
+const mockServiceWorker = () => {
+  const register = vi.fn().mockResolvedValue();
   Object.defineProperty(globalThis.navigator, "serviceWorker", {
     writable: true,
     configurable: true,
@@ -18,21 +18,21 @@ function mockServiceWorker() {
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
       getRegistrations: vi.fn().mockResolvedValue([]),
-      getRegistration: vi.fn().mockResolvedValue(undefined),
+      getRegistration: vi.fn().mockResolvedValue(),
       controller: null,
       oncontrollerchange: null,
       onmessage: null,
     },
   });
   return register;
-}
+};
 
-function removeServiceWorker() {
+const removeServiceWorker = () => {
   // delete is enough — JSDOM constructs a fresh navigator per test file but
   // not per test, so we need to clean up between describe blocks if needed.
   // The mock above sets configurable: true so delete works.
   delete (globalThis.navigator as Record<string, unknown>).serviceWorker;
-}
+};
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -80,7 +80,7 @@ describe("ServiceWorkerRegistration", () => {
     it("logs an error when registration fails", async () => {
       const consoleError = vi
         .spyOn(console, "error")
-        .mockImplementation(() => {});
+        .mockImplementation(() => undefined);
 
       const error = new Error("SW registration rejected");
       register.mockRejectedValueOnce(error);

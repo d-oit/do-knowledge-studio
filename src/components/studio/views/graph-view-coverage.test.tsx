@@ -99,7 +99,7 @@ describe('GraphView branch coverage', () => {
     currentSelectedEntityId = null
     currentHistoryIndex = 0
     currentEntityHistory = [[]]
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {})
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => undefined)
     vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(null)
   })
 

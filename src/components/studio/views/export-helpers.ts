@@ -106,11 +106,11 @@ export const COLOR_MAP: Record<ExportColorKey, string> = {
 }
 
 export function todayStamp(): string {
-  const d = new Date()
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
+  const date = new Date()
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 export function downloadFile(filename: string, content: string, mimeType: string = 'text/plain') {
@@ -120,13 +120,26 @@ export function downloadFile(filename: string, content: string, mimeType: string
 
 export function downloadBlob(filename: string, blob: Blob) {
   const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = filename
+  document.body.appendChild(anchor)
+  anchor.click()
+  document.body.removeChild(anchor)
   URL.revokeObjectURL(url)
+}
+
+export function buildClaimsByEntityId(claims: Claim[]): Map<string, Claim[]> {
+  const map = new Map<string, Claim[]>()
+  for (const c of claims) {
+    const list = map.get(c.entityId)
+    if (list) {
+      list.push(c)
+    } else {
+      map.set(c.entityId, [c])
+    }
+  }
+  return map
 }
 
 export function buildJsonExport(entities: Entity[], claims: Claim[]): string {
@@ -140,6 +153,7 @@ export function buildJsonExport(entities: Entity[], claims: Claim[]): string {
 }
 
 export function buildMarkdownExport(entities: Entity[], claims: Claim[]): string {
+  const claimsByEntity = buildClaimsByEntityId(claims)
   const parts: string[] = []
   parts.push(`# DO Knowledge Studio — export\n`)
   parts.push(`Exported ${new Date().toLocaleString()}. ${entities.length} entities, ${claims.length} claims.\n`)
@@ -162,7 +176,7 @@ export function buildMarkdownExport(entities: Entity[], claims: Claim[]): string
     parts.push(`\n${e.content || '_(no body content)_'}\n`)
     parts.push(`\n**Links:**\n${links}\n`)
 
-    const entityClaims = claims.filter((c) => c.entityId === e.id)
+    const entityClaims = claimsByEntity.get(e.id) ?? []
     if (entityClaims.length) {
       parts.push('\n## Claims\n')
       for (const c of entityClaims) {
@@ -182,9 +196,10 @@ export function buildMarkdownExport(entities: Entity[], claims: Claim[]): string
 }
 
 export function buildHtmlExport(entities: Entity[], claims: Claim[]): string {
+  const claimsByEntity = buildClaimsByEntityId(claims)
   const rows = entities
     .map((e) => {
-      const entityClaims = claims.filter((c) => c.entityId === e.id)
+      const entityClaims = claimsByEntity.get(e.id) ?? []
       const claimsHtml = entityClaims.length
         ? `<ul class="claims">${entityClaims
             .map(
@@ -245,6 +260,7 @@ export function buildHtmlExport(entities: Entity[], claims: Claim[]): string {
 }
 
 export function buildPdfExport(entities: Entity[], claims: Claim[]): Blob {
+  const claimsByEntity = buildClaimsByEntityId(claims)
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const margin = 20
   const pageWidth = 210 - margin * 2
@@ -308,7 +324,7 @@ export function buildPdfExport(entities: Entity[], claims: Claim[]): Blob {
       y += 2
     }
 
-    const entityClaims = claims.filter((c) => c.entityId === e.id)
+    const entityClaims = claimsByEntity.get(e.id) ?? []
     if (entityClaims.length) {
       addPageIfNeeded(8)
       doc.setFont('helvetica', 'bold')
@@ -339,6 +355,7 @@ export function buildPdfExport(entities: Entity[], claims: Claim[]): Blob {
 }
 
 export async function buildDocxExport(entities: Entity[], claims: Claim[]): Promise<Blob> {
+  const claimsByEntity = buildClaimsByEntityId(claims)
   const children: Paragraph[] = []
 
   children.push(
@@ -406,7 +423,7 @@ export async function buildDocxExport(entities: Entity[], claims: Claim[]): Prom
       )
     }
 
-    const entityClaims = claims.filter((c) => c.entityId === e.id)
+    const entityClaims = claimsByEntity.get(e.id) ?? []
     if (entityClaims.length) {
       children.push(
         new Paragraph({

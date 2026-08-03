@@ -44,28 +44,28 @@ import { AppError } from '@/lib/errors'
 // Test helper — component that throws on first render
 // ---------------------------------------------------------------------------
 
-function ThrowError({ message = 'Test error' }: { message?: string }) {
+const ThrowError = ({ message = 'Test error' }: { message?: string }) => {
   throw new Error(message)
 }
 
-function ConditionalThrow({
+const ConditionalThrow = ({
   shouldThrow = true,
   message = 'Test error',
 }: {
   shouldThrow?: boolean
   message?: string
-}) {
+}) => {
   if (shouldThrow) throw new Error(message)
   return <p>Recovered content</p>
 }
 
-function ThrowAppError({
+const ThrowAppError = ({
   message = 'Internal error',
   userMessage = 'Something went wrong. Please try again.',
 }: {
   message?: string
   userMessage?: string
-}) {
+}) => {
   throw new AppError(message, userMessage)
 }
 
@@ -75,7 +75,7 @@ function ThrowAppError({
 
 describe('ErrorBoundary', () => {
   beforeEach(() => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
   })
 
   it('renders children when no error occurs', () => {
@@ -130,7 +130,7 @@ describe('ErrorBoundary', () => {
   it('resets error state when Try again is clicked', () => {
     const { rerender } = render(
       <ErrorBoundary>
-        <ConditionalThrow shouldThrow={true} />
+        <ConditionalThrow shouldThrow />
       </ErrorBoundary>,
     )
     expect(screen.getByText('Something went wrong')).toBeDefined()
@@ -165,7 +165,7 @@ describe('ErrorBoundary', () => {
 
 describe('ViewErrorBoundary', () => {
   beforeEach(() => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
   })
 
   it('renders children when no error occurs', () => {
@@ -228,7 +228,7 @@ describe('ViewErrorBoundary', () => {
   it('resets error state when Reload view is clicked', () => {
     const { rerender } = render(
       <ViewErrorBoundary viewName="Export">
-        <ConditionalThrow shouldThrow={true} />
+        <ConditionalThrow shouldThrow />
       </ViewErrorBoundary>,
     )
     expect(screen.getByText('Export failed to load')).toBeDefined()

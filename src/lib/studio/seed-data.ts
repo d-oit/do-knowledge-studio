@@ -2,9 +2,9 @@ import type { Entity, Claim, GraphNode, GraphEdge, ChatMessage } from './types'
 
 const now = new Date()
 const iso = (daysAgo: number) => {
-  const d = new Date(now)
-  d.setDate(d.getDate() - daysAgo)
-  return d.toISOString()
+  const date = new Date(now)
+  date.setDate(date.getDate() - daysAgo)
+  return date.toISOString()
 }
 
 export const seedEntities: Entity[] = [
