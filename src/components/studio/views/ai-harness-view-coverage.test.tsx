@@ -191,7 +191,7 @@ describe('AIHarnessView branch coverage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     rateLimitState.decision = { allowed: true, count: 0, limit: 10, retryAfterMs: 5000 }
-    aiMocks.mockSendChatStream.mockImplementation(async () => {})
+    aiMocks.mockSendChatStream.mockImplementation(async () => undefined)
     aiMocks.mockFetchOllamaModels.mockImplementation(() => Promise.resolve(['llama3']))
     aiMocks.mockBuildMessages.mockReturnValue([])
   })
@@ -268,7 +268,7 @@ describe('AIHarnessView branch coverage', () => {
   })
 
   it('fetches URLs when web research is allowed', async () => {
-    aiMocks.mockSendChatStream.mockImplementation(async () => {})
+    aiMocks.mockSendChatStream.mockImplementation(async () => undefined)
     await act(async () => {
       render(<AIHarnessView />)
     })

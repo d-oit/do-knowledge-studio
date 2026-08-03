@@ -238,7 +238,7 @@ describe('Overlay keyboard navigation', () => {
   describe('Tab / Shift+Tab focus trapping', () => {
     it('wraps Tab from last focusable back to first', () => {
       render(
-        <Overlay open onClose={() => {}} aria-label="Focus trap test">
+        <Overlay open onClose={() => undefined} aria-label="Focus trap test">
           <button data-testid="first">First</button>
           <button data-testid="last">Last</button>
         </Overlay>,
@@ -252,7 +252,7 @@ describe('Overlay keyboard navigation', () => {
 
     it('wraps Shift+Tab from first focusable back to last', () => {
       render(
-        <Overlay open onClose={() => {}} aria-label="Focus trap shift test">
+        <Overlay open onClose={() => undefined} aria-label="Focus trap shift test">
           <button data-testid="first">First</button>
           <button data-testid="last">Last</button>
         </Overlay>,
@@ -266,7 +266,7 @@ describe('Overlay keyboard navigation', () => {
 
     it('focuses first interactive element on open', () => {
       render(
-        <Overlay open onClose={() => {}} aria-label="Autofocus test">
+        <Overlay open onClose={() => undefined} aria-label="Autofocus test">
           <button data-testid="first">First</button>
           <button data-testid="last">Last</button>
         </Overlay>,
@@ -277,7 +277,7 @@ describe('Overlay keyboard navigation', () => {
 
     it('does not trap when trapFocus is disabled', () => {
       render(
-        <Overlay open onClose={() => {}} trapFocus={false} aria-label="No trap">
+        <Overlay open onClose={() => undefined} trapFocus={false} aria-label="No trap">
           <button data-testid="first">First</button>
           <button data-testid="last">Last</button>
         </Overlay>,

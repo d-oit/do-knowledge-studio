@@ -75,7 +75,7 @@ function ThrowAppError({
 
 describe('ErrorBoundary', () => {
   beforeEach(() => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
   })
 
   it('renders children when no error occurs', () => {
@@ -165,7 +165,7 @@ describe('ErrorBoundary', () => {
 
 describe('ViewErrorBoundary', () => {
   beforeEach(() => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
   })
 
   it('renders children when no error occurs', () => {

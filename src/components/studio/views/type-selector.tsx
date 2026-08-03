@@ -49,7 +49,7 @@ export function TypeSelector({
       }
     }
     document.addEventListener('mousedown', handleClick)
-    return () => { document.removeEventListener('mousedown', handleClick); return undefined }
+    return () => { document.removeEventListener('mousedown', handleClick) }
   }, [showMenu, onToggleMenu])
 
   return (

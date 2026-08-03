@@ -71,9 +71,9 @@ describe('useRateLimiter', () => {
     const { result } = renderHook(() => useRateLimiter())
 
     for (let i = 0; i < 10; i++) {
-      const d = result.current.canRequest()
-      expect(d.allowed).toBe(true)
-      expect(d.limit).toBe(10)
+      const decision = result.current.canRequest()
+      expect(decision.allowed).toBe(true)
+      expect(decision.limit).toBe(10)
     }
 
     const denied = result.current.canRequest()

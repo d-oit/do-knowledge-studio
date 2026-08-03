@@ -65,7 +65,7 @@ describe('Announcer', () => {
 
 describe('useAnnouncer', () => {
   it('throws when used outside Announcer provider', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
 
     function BadComponent() {
       useAnnouncer()

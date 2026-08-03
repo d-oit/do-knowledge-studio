@@ -28,9 +28,9 @@ describe('generateDraftId', () => {
   })
 
   it('returns unique values on successive calls', () => {
-    const a = generateDraftId()
-    const b = generateDraftId()
-    expect(a).not.toBe(b)
+    const firstId = generateDraftId()
+    const secondId = generateDraftId()
+    expect(firstId).not.toBe(secondId)
   })
 })
 
@@ -50,7 +50,7 @@ describe('saveDraft', () => {
   })
 
   it('throws on invalid draft data', () => {
-    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     const invalid = { ...VALID_DRAFT, id: '' }
     expect(() => saveDraft(invalid as EditorDraft)).toThrow()
     spy.mockRestore()
@@ -70,7 +70,7 @@ describe('loadDraft', () => {
   })
 
   it('returns null and removes invalid JSON', () => {
-    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     localStorage.setItem('draft:bad-json', 'not json')
     const result = loadDraft('bad-json')
     expect(result).toBeNull()
@@ -129,7 +129,7 @@ describe('listAllDrafts', () => {
   })
 
   it('skips corrupted drafts', () => {
-    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     saveDraft(VALID_DRAFT)
     localStorage.setItem('draft:broken', 'not json')
     const all = listAllDrafts()

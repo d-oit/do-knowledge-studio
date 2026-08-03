@@ -313,7 +313,7 @@ describe('MindMapView branch coverage', () => {
   })
 
   it('exports PNG when export button is clicked', () => {
-    const downloadBlobMock = vi.spyOn(exportHelpers, 'downloadBlob').mockImplementation(() => {})
+    const downloadBlobMock = vi.spyOn(exportHelpers, 'downloadBlob').mockImplementation(() => undefined)
     render(<MindMapView />)
     fireEvent.click(screen.getByLabelText('Export PNG'))
     expect(downloadBlobMock).not.toHaveBeenCalled()

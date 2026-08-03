@@ -228,7 +228,7 @@ describe('ai-settings encryption and persistence', () => {
   })
 
   it('handles invalid JSON in localStorage during migration', async () => {
-    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     localStorageMock['dks-ai-settings'] = 'invalid json'
 
     const loaded = await loadAISettings()
