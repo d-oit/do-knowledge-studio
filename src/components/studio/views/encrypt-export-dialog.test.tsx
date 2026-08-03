@@ -40,7 +40,7 @@ describe('EncryptExportDialog', () => {
     setConfirm: vi.fn(),
     showPass: false,
     setShowPass: vi.fn(),
-    handleExport: vi.fn(async () => undefined),
+    handleExport: vi.fn(() => Promise.resolve()),
   }
 
   beforeEach(() => {

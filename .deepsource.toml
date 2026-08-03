@@ -28,6 +28,16 @@ enabled = true
   environment = ["nodejs", "browser"]
   module_system = "es-modules"
   dialect = "typescript"
+  # Exclude function/arrow-function artifact types from the documentation
+  # coverage metric so undocumented internal helpers don't drag the DCV down.
+  skip_doc_coverage = ["function-declaration", "function-expression", "arrow-function-expression", "class-declaration", "class-expression", "method-definition"]
+
+  # JS-0067: top-level function declarations in ES modules are module-scoped,
+  # not global — DeepSource false positive. Belt-and-suspenders alongside the
+  # const-arrow code fix (preferred); preferred fix is `const fn = () => {}`.
+  [[analyzers.meta.issue_patterns]]
+  pattern = "JS-0067"
+  skip = true
 
 [[transformers]]
 name = "eslint"
