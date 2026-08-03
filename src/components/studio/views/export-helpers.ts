@@ -117,11 +117,6 @@ export const todayStamp = (): string => {
   return `${year}-${month}-${day}`
 }
 
-export const downloadFile = (filename: string, content: string, mimeType: string = 'text/plain') => {
-  const blob = new Blob([content], { type: mimeType })
-  downloadBlob(filename, blob)
-}
-
 export const downloadBlob = (filename: string, blob: Blob) => {
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
@@ -131,6 +126,11 @@ export const downloadBlob = (filename: string, blob: Blob) => {
   anchor.click()
   document.body.removeChild(anchor)
   URL.revokeObjectURL(url)
+}
+
+export const downloadFile = (filename: string, content: string, mimeType: string = 'text/plain') => {
+  const blob = new Blob([content], { type: mimeType })
+  downloadBlob(filename, blob)
 }
 
 export const buildClaimsByEntityId = (claims: Claim[]): Map<string, Claim[]> => {

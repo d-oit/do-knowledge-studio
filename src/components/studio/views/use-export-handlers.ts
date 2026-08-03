@@ -10,6 +10,22 @@ import {
 import { encryptData, buildEncryptedReaderHtml } from '@/lib/export/encrypt'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from '@/lib/studio/schema'
 
+const buildExportSummary = (
+  entityCount: number,
+  claimCount: number,
+  graph?: ValidatedGraph,
+  mindMap?: ValidatedMindMap,
+  links?: ValidatedLink[],
+  tags?: ValidatedTag[],
+): string => {
+  const parts = [`${entityCount} entities`, `${claimCount} claims`]
+  if (graph?.nodes?.length) parts.push(`${graph.nodes.length} graph nodes`)
+  if (mindMap?.nodes?.length) parts.push(`${mindMap.nodes.length} mind map nodes`)
+  if (links?.length) parts.push(`${links.length} links`)
+  if (tags?.length) parts.push(`${tags.length} tags`)
+  return parts.join(' · ')
+}
+
 interface ImportRollbackResult {
   success: boolean
   error?: string
@@ -115,17 +131,27 @@ export const useExportHandlers = ({
     }
   }
 
-  const formatHandlers: Record<ExportFormatId, () => void | Promise<void>> = {
-    json: handleExportJson,
-    markdown: handleExportMarkdown,
-    html: handleExportHtml,
-    pdf: handleExportPdf,
-    docx: handleExportDocx,
-    encrypted: handleExportEncrypted,
-  }
-
   const handleExport = async (format: ExportFormatId) => {
-    await formatHandlers[format]()
+    switch (format) {
+      case 'json':
+        await handleExportJson()
+        break
+      case 'markdown':
+        await handleExportMarkdown()
+        break
+      case 'html':
+        await handleExportHtml()
+        break
+      case 'pdf':
+        await handleExportPdf()
+        break
+      case 'docx':
+        await handleExportDocx()
+        break
+      case 'encrypted':
+        await handleExportEncrypted()
+        break
+    }
   }
 
   const handleImportClick = () => { fileInputRef.current?.click() }
@@ -189,20 +215,4 @@ export const useExportHandlers = ({
     handleExport, handleImportClick, handleFileChange, handleConfirmImport, handleReset,
     showPassword, setShowPassword, password, setPassword, confirm, setConfirm, showPass, setShowPass,
   }
-}
-
-const buildExportSummary = (
-  entityCount: number,
-  claimCount: number,
-  graph?: ValidatedGraph,
-  mindMap?: ValidatedMindMap,
-  links?: ValidatedLink[],
-  tags?: ValidatedTag[],
-): string => {
-  const parts = [`${entityCount} entities`, `${claimCount} claims`]
-  if (graph?.nodes?.length) parts.push(`${graph.nodes.length} graph nodes`)
-  if (mindMap?.nodes?.length) parts.push(`${mindMap.nodes.length} mind map nodes`)
-  if (links?.length) parts.push(`${links.length} links`)
-  if (tags?.length) parts.push(`${tags.length} tags`)
-  return parts.join(' · ')
 }
