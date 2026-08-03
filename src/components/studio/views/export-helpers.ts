@@ -109,7 +109,7 @@ export const COLOR_MAP: Record<ExportColorKey, string> = {
   clay: 'bg-rose-100 text-clay dark:bg-rose-950/40 dark:text-rose-300',
 }
 
-export function todayStamp(): string {
+export const todayStamp = (): string => {
   const date = new Date()
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -117,12 +117,12 @@ export function todayStamp(): string {
   return `${year}-${month}-${day}`
 }
 
-export function downloadFile(filename: string, content: string, mimeType: string = 'text/plain') {
+export const downloadFile = (filename: string, content: string, mimeType: string = 'text/plain') => {
   const blob = new Blob([content], { type: mimeType })
   downloadBlob(filename, blob)
 }
 
-export function downloadBlob(filename: string, blob: Blob) {
+export const downloadBlob = (filename: string, blob: Blob) => {
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
   anchor.href = url
@@ -133,7 +133,7 @@ export function downloadBlob(filename: string, blob: Blob) {
   URL.revokeObjectURL(url)
 }
 
-export function buildClaimsByEntityId(claims: Claim[]): Map<string, Claim[]> {
+export const buildClaimsByEntityId = (claims: Claim[]): Map<string, Claim[]> => {
   const map = new Map<string, Claim[]>()
   for (const c of claims) {
     const list = map.get(c.entityId)
@@ -153,11 +153,11 @@ export interface ExportOptions {
   tags?: ValidatedTag[]
 }
 
-export function buildJsonExport(
+export const buildJsonExport = (
   entities: Entity[],
   claims: Claim[],
   options?: ExportOptions,
-): string {
+): string => {
   const payload = {
     version: 1,
     exportedAt: new Date().toISOString(),
@@ -171,7 +171,7 @@ export function buildJsonExport(
   return JSON.stringify(payload, null, 2)
 }
 
-export function buildMarkdownExport(entities: Entity[], claims: Claim[]): string {
+export const buildMarkdownExport = (entities: Entity[], claims: Claim[]): string => {
   const claimsByEntity = buildClaimsByEntityId(claims)
   const parts: string[] = []
   parts.push(`# DO Knowledge Studio — export\n`)
@@ -214,7 +214,7 @@ export function buildMarkdownExport(entities: Entity[], claims: Claim[]): string
   return parts.join('\n')
 }
 
-export function buildHtmlExport(entities: Entity[], claims: Claim[]): string {
+export const buildHtmlExport = (entities: Entity[], claims: Claim[]): string => {
   const claimsByEntity = buildClaimsByEntityId(claims)
   const rows = entities
     .map((e) => {
@@ -278,7 +278,7 @@ export function buildHtmlExport(entities: Entity[], claims: Claim[]): string {
 </html>`
 }
 
-export function buildPdfExport(entities: Entity[], claims: Claim[]): Blob {
+export const buildPdfExport = (entities: Entity[], claims: Claim[]): Blob => {
   const claimsByEntity = buildClaimsByEntityId(claims)
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const margin = 20
@@ -373,7 +373,7 @@ export function buildPdfExport(entities: Entity[], claims: Claim[]): Blob {
   return doc.output('blob')
 }
 
-export async function buildDocxExport(entities: Entity[], claims: Claim[]): Promise<Blob> {
+export const buildDocxExport = async (entities: Entity[], claims: Claim[]): Promise<Blob> => {
   const claimsByEntity = buildClaimsByEntityId(claims)
   const children: Paragraph[] = []
 
@@ -477,7 +477,7 @@ export async function buildDocxExport(entities: Entity[], claims: Claim[]): Prom
   return Packer.toBlob(doc)
 }
 
-export function parseImportFile(text: string): ImportResult {
+export const parseImportFile = (text: string): ImportResult => {
   let data: unknown
   try {
     data = JSON.parse(text)

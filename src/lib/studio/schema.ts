@@ -132,9 +132,9 @@ export interface ValidationError {
   message: string
 }
 
-export function validatePersistedState(
+export const validatePersistedState = (
   data: unknown,
-): { success: true; data: ValidatedPersistedEnvelope } | { success: false; errors: ValidationError[] } {
+): { success: true; data: ValidatedPersistedEnvelope } | { success: false; errors: ValidationError[] } => {
   const result = PersistedEnvelopeSchema.safeParse(data)
   if (result.success) {
     return { success: true, data: result.data }
@@ -148,9 +148,9 @@ export function validatePersistedState(
   }
 }
 
-export function validateImportPayload(
+export const validateImportPayload = (
   data: unknown,
-): { success: true; data: ValidatedExportPayload } | { success: false; errors: ValidationError[] } {
+): { success: true; data: ValidatedExportPayload } | { success: false; errors: ValidationError[] } => {
   const result = ExportPayloadSchema.safeParse(data)
   if (result.success) {
     return { success: true, data: result.data }

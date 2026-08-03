@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { search } from './retrieval'
 import type { Entity, Claim } from '@/lib/studio/types'
 
-function makeEntity(overrides: Partial<Entity> = {}): Entity {
+const makeEntity = (overrides: Partial<Entity> = {}): Entity => {
   return {
     id: `e-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`,
     name: 'Test Entity',
@@ -17,7 +17,7 @@ function makeEntity(overrides: Partial<Entity> = {}): Entity {
   }
 }
 
-function makeClaim(overrides: Partial<Claim> = {}): Claim {
+const makeClaim = (overrides: Partial<Claim> = {}): Claim => {
   return {
     id: `c-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`,
     entityId: 'e-1',
@@ -150,13 +150,13 @@ describe('BM25 Retrieval Engine', () => {
     const maxTime = Math.max(...times)
     const avgTime = times.reduce((sum, t) => sum + t, 0) / iterations
 
-    console.warn(`--- BENCHMARK STATISTICS ---`)
-    console.warn(`Dataset size: 500 entities, 1500 claims`)
+    console.warn("--- BENCHMARK STATISTICS ---")
+    console.warn("Dataset size: 500 entities, 1500 claims")
     console.warn(`Iterations: ${iterations}`)
     console.warn(`Min execution time: ${minTime.toFixed(2)}ms`)
     console.warn(`Max execution time: ${maxTime.toFixed(2)}ms`)
     console.warn(`Average execution time: ${avgTime.toFixed(2)}ms`)
-    console.warn(`-----------------------------`)
+    console.warn("-----------------------------")
 
     expect(avgTime).toBeLessThan(1000) // loose upper bound for sanity
   })

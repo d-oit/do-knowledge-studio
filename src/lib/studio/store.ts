@@ -96,8 +96,41 @@ interface StudioState {
   // Theme handled by next-themes — store tracks UI side effects only
 }
 
-function generateId(): string {
-  return crypto.randomUUID()
+const generateId = (): string => crypto.randomUUID()
+
+interface RecoverySnapshot {
+  entities: Entity[]
+  claims: Claim[]
+  entityHistory: Entity[][]
+  historyIndex: number
+  graph?: ValidatedGraph
+  mindMap?: ValidatedMindMap
+  links?: ValidatedLink[]
+  tags?: ValidatedTag[]
+}
+
+const buildRecoverySnapshot = (state: StudioState): RecoverySnapshot => ({
+  entities: structuredClone(state.entities),
+  claims: structuredClone(state.claims),
+  entityHistory: structuredClone(state.entityHistory),
+  historyIndex: state.historyIndex,
+  graph: state.graph ? structuredClone(state.graph) : undefined,
+  mindMap: state.mindMap ? structuredClone(state.mindMap) : undefined,
+  links: state.links ? structuredClone(state.links) : undefined,
+  tags: state.tags ? structuredClone(state.tags) : undefined,
+})
+
+const persistRecoverySnapshot = (snapshot: RecoverySnapshot): void => {
+  try {
+    const serialized = JSON.stringify({ snapshot, timestamp: Date.now(), ttl: RECOVERY_TTL_MS })
+    if (serialized.length > MAX_RECOVERY_SIZE_BYTES) {
+      console.warn('Recovery snapshot exceeds size limit, skipping persistence')
+    } else {
+      localStorage.setItem(RECOVERY_KEY, serialized)
+    }
+  } catch {
+    console.warn('Failed to persist recovery snapshot')
+  }
 }
 
 // The default (seed) state — used on first load and as a fallback when a
@@ -327,26 +360,8 @@ export const useStudioStore = create<StudioState>()(
 
       importWithRollback: (entities, claims, options) => {
         const state = get()
-        const snapshot = {
-          entities: structuredClone(state.entities),
-          claims: structuredClone(state.claims),
-          entityHistory: structuredClone(state.entityHistory),
-          historyIndex: state.historyIndex,
-          graph: state.graph ? structuredClone(state.graph) : undefined,
-          mindMap: state.mindMap ? structuredClone(state.mindMap) : undefined,
-          links: state.links ? structuredClone(state.links) : undefined,
-          tags: state.tags ? structuredClone(state.tags) : undefined,
-        }
-        try {
-          const serialized = JSON.stringify({ snapshot, timestamp: Date.now(), ttl: RECOVERY_TTL_MS })
-          if (serialized.length > MAX_RECOVERY_SIZE_BYTES) {
-            console.warn('Recovery snapshot exceeds size limit, skipping persistence')
-          } else {
-            localStorage.setItem(RECOVERY_KEY, serialized)
-          }
-        } catch {
-          console.warn('Failed to persist recovery snapshot')
-        }
+        const snapshot = buildRecoverySnapshot(state)
+        persistRecoverySnapshot(snapshot)
         try {
           set({
             entities,
@@ -460,7 +475,7 @@ const RecoverySnapshotSchema = z.object({
   ttl: z.number().optional(),
 })
 
-export function restoreFromRecovery(): { success: boolean; error?: string } {
+export const restoreFromRecovery = (): { success: boolean; error?: string } => {
   let raw: string | null = null
   try {
     raw = localStorage.getItem(RECOVERY_KEY)
@@ -508,7 +523,7 @@ export function restoreFromRecovery(): { success: boolean; error?: string } {
 }
 
 // Selectors
-export function useFilteredEntities(): Entity[] {
+export const useFilteredEntities = (): Entity[] => {
   const entities = useStudioStore((s) => s.entities)
   const searchQuery = useStudioStore((s) => s.searchQuery)
   const typeFilter = useStudioStore((s) => s.typeFilter)
@@ -538,7 +553,7 @@ export function useFilteredEntities(): Entity[] {
   }, [entities, searchQuery, typeFilter, sortBy, sortDir])
 }
 
-export function useStats() {
+export const useStats = () => {
   const { entities, claims } = useStudioStore()
   const byType = entities.reduce(
     (acc, e) => {

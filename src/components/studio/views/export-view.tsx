@@ -12,7 +12,7 @@ import { EncryptExportDialog } from './encrypt-export-dialog'
 import { ResetConfirmDialog } from './reset-confirm-dialog'
 import { ImportPreviewDialog } from './import-preview-dialog'
 
-export function ExportView() {
+export const ExportView = () => {
   const entities = useStudioStore((s) => s.entities)
   const claims = useStudioStore((s) => s.claims)
   const graph = useStudioStore((s) => s.graph)

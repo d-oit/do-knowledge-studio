@@ -44,11 +44,11 @@ const mockClaims = [
   { id: 'claim-1', entityId: 'ent-1', statement: 's', confidence: 0.5, verification: 'unverified' as const },
 ]
 
-function createFileInputRef(): RefObject<HTMLInputElement | null> {
+const createFileInputRef = (): RefObject<HTMLInputElement | null> => {
   return { current: document.createElement('input') }
 }
 
-function renderUseExportHandlers(overrides: Partial<Parameters<typeof useExportHandlers>[0]> = {}) {
+const renderUseExportHandlers = (overrides: Partial<Parameters<typeof useExportHandlers>[0]> = {}) => {
   const params = {
     entities: mockEntities,
     claims: mockClaims,

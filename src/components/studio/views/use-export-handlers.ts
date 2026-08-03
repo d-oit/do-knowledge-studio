@@ -45,78 +45,87 @@ export interface UseExportHandlersReturn {
   setShowPass: React.Dispatch<React.SetStateAction<boolean>>
 }
 
-export function useExportHandlers({
+export const useExportHandlers = ({
   entities, claims, graph, mindMap, links, tags, importWithRollback, resetStore,
   importPreview, setImportPreview, fileInputRef,
-}: UseExportHandlersParams): UseExportHandlersReturn {
+}: UseExportHandlersParams): UseExportHandlersReturn => {
   const [showPassword, setShowPassword] = useState(false)
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [showPass, setShowPass] = useState(false)
 
+  const exportOptions: ExportOptions = { graph, mindMap, links, tags }
+  const stamp = todayStamp()
+
+  const handleExportJson = () => {
+    const content = buildJsonExport(entities, claims, exportOptions)
+    downloadFile(`do-knowledge-studio-export-${stamp}.json`, content, 'application/json')
+    toast.success('JSON export downloaded', { description: buildExportSummary(entities.length, claims.length, graph, mindMap, links, tags) })
+  }
+
+  const handleExportMarkdown = () => {
+    const content = buildMarkdownExport(entities, claims)
+    downloadFile(`do-knowledge-studio-${stamp}.md`, content, 'text/markdown')
+    toast.success('Markdown export downloaded', { description: `${entities.length} entities concatenated into one .md file` })
+  }
+
+  const handleExportHtml = () => {
+    const content = buildHtmlExport(entities, claims)
+    downloadFile(`do-knowledge-studio-${stamp}.html`, content, 'text/html')
+    toast.success('HTML export downloaded', { description: 'Self-contained .html page — open in any browser.' })
+  }
+
+  const handleExportPdf = () => {
+    try {
+      const blob = buildPdfExport(entities, claims)
+      downloadBlob(`do-knowledge-studio-${stamp}.pdf`, blob)
+      toast.success('PDF export downloaded', { description: `${entities.length} entities formatted in a print-ready PDF.` })
+    } catch (err) {
+      toast.error('PDF export failed', { description: err instanceof Error ? err.message : 'Unknown error' })
+    }
+  }
+
+  const handleExportDocx = async () => {
+    try {
+      const blob = await buildDocxExport(entities, claims)
+      downloadBlob(`do-knowledge-studio-${stamp}.docx`, blob)
+      toast.success('DOCX export downloaded', { description: `${entities.length} entities in a Word document.` })
+    } catch (err) {
+      toast.error('DOCX export failed', { description: err instanceof Error ? err.message : 'Unknown error' })
+    }
+  }
+
+  const handleExportEncrypted = async () => {
+    if (!password || password !== confirm) {
+      toast.error('Password fields must match and not be empty.')
+      return
+    }
+    try {
+      const json = buildJsonExport(entities, claims, exportOptions)
+      const encrypted = await encryptData(json, password)
+      const html = buildEncryptedReaderHtml(encrypted)
+      downloadFile(`do-knowledge-studio-encrypted-${stamp}.html`, html, 'text/html')
+      toast.success('Encrypted export downloaded', { description: 'AES-256-GCM encrypted with PBKDF2 key derivation.' })
+    } catch (err) {
+      toast.error('Encrypted export failed', { description: err instanceof Error ? err.message : 'Unknown error' })
+    } finally {
+      setShowPassword(false)
+      setPassword('')
+      setConfirm('')
+    }
+  }
+
+  const formatHandlers: Record<ExportFormatId, () => void | Promise<void>> = {
+    json: handleExportJson,
+    markdown: handleExportMarkdown,
+    html: handleExportHtml,
+    pdf: handleExportPdf,
+    docx: handleExportDocx,
+    encrypted: handleExportEncrypted,
+  }
+
   const handleExport = async (format: ExportFormatId) => {
-    if (format === 'json') {
-      const content = buildJsonExport(entities, claims, { graph, mindMap, links, tags })
-      downloadFile(`do-knowledge-studio-export-${todayStamp()}.json`, content, 'application/json')
-      const parts = [`${entities.length} entities`, `${claims.length} claims`]
-      if (graph?.nodes?.length) parts.push(`${graph.nodes.length} graph nodes`)
-      if (mindMap?.nodes?.length) parts.push(`${mindMap.nodes.length} mind map nodes`)
-      if (links?.length) parts.push(`${links.length} links`)
-      if (tags?.length) parts.push(`${tags.length} tags`)
-      toast.success('JSON export downloaded', { description: parts.join(' · ') })
-      return
-    }
-    if (format === 'markdown') {
-      const content = buildMarkdownExport(entities, claims)
-      downloadFile(`do-knowledge-studio-${todayStamp()}.md`, content, 'text/markdown')
-      toast.success('Markdown export downloaded', { description: `${entities.length} entities concatenated into one .md file` })
-      return
-    }
-    if (format === 'html') {
-      const content = buildHtmlExport(entities, claims)
-      downloadFile(`do-knowledge-studio-${todayStamp()}.html`, content, 'text/html')
-      toast.success('HTML export downloaded', { description: 'Self-contained .html page — open in any browser.' })
-      return
-    }
-    if (format === 'pdf') {
-      try {
-        const blob = buildPdfExport(entities, claims)
-        downloadBlob(`do-knowledge-studio-${todayStamp()}.pdf`, blob)
-        toast.success('PDF export downloaded', { description: `${entities.length} entities formatted in a print-ready PDF.` })
-      } catch (err) {
-        toast.error('PDF export failed', { description: err instanceof Error ? err.message : 'Unknown error' })
-      }
-      return
-    }
-    if (format === 'docx') {
-      try {
-        const blob = await buildDocxExport(entities, claims)
-        downloadBlob(`do-knowledge-studio-${todayStamp()}.docx`, blob)
-        toast.success('DOCX export downloaded', { description: `${entities.length} entities in a Word document.` })
-      } catch (err) {
-        toast.error('DOCX export failed', { description: err instanceof Error ? err.message : 'Unknown error' })
-      }
-      return
-    }
-    if (format === 'encrypted') {
-      if (!password || password !== confirm) {
-        toast.error('Password fields must match and not be empty.')
-        return
-      }
-      try {
-        const json = buildJsonExport(entities, claims, { graph, mindMap, links, tags })
-        const encrypted = await encryptData(json, password)
-        const html = buildEncryptedReaderHtml(encrypted)
-        downloadFile(`do-knowledge-studio-encrypted-${todayStamp()}.html`, html, 'text/html')
-        toast.success('Encrypted export downloaded', { description: 'AES-256-GCM encrypted with PBKDF2 key derivation.' })
-      } catch (err) {
-        toast.error('Encrypted export failed', { description: err instanceof Error ? err.message : 'Unknown error' })
-      } finally {
-        setShowPassword(false)
-        setPassword('')
-        setConfirm('')
-      }
-    }
+    await formatHandlers[format]()
   }
 
   const handleImportClick = () => { fileInputRef.current?.click() }
@@ -154,13 +163,16 @@ export function useExportHandlers({
       { graph: importPreview.graph, mindMap: importPreview.mindMap, links: importPreview.links, tags: importPreview.tags },
     )
     if (result.success) {
-      const parts = [`${importPreview.entityCount} entities`, `${importPreview.claimCount} claims`]
-      if (importPreview.graph?.nodes?.length) parts.push(`${importPreview.graph.nodes.length} graph nodes`)
-      if (importPreview.mindMap?.nodes?.length) parts.push(`${importPreview.mindMap.nodes.length} mind map nodes`)
-      if (importPreview.links?.length) parts.push(`${importPreview.links.length} links`)
-      if (importPreview.tags?.length) parts.push(`${importPreview.tags.length} tags`)
+      const summary = buildExportSummary(
+        importPreview.entityCount,
+        importPreview.claimCount,
+        importPreview.graph,
+        importPreview.mindMap,
+        importPreview.links,
+        importPreview.tags,
+      )
       toast.success('Import complete', {
-        description: `${parts.join(' · ')} replaced the current library.`,
+        description: `${summary} replaced the current library.`,
       })
     } else {
       toast.error('Import failed — state restored', { description: result.error })
@@ -177,4 +189,20 @@ export function useExportHandlers({
     handleExport, handleImportClick, handleFileChange, handleConfirmImport, handleReset,
     showPassword, setShowPassword, password, setPassword, confirm, setConfirm, showPass, setShowPass,
   }
+}
+
+const buildExportSummary = (
+  entityCount: number,
+  claimCount: number,
+  graph?: ValidatedGraph,
+  mindMap?: ValidatedMindMap,
+  links?: ValidatedLink[],
+  tags?: ValidatedTag[],
+): string => {
+  const parts = [`${entityCount} entities`, `${claimCount} claims`]
+  if (graph?.nodes?.length) parts.push(`${graph.nodes.length} graph nodes`)
+  if (mindMap?.nodes?.length) parts.push(`${mindMap.nodes.length} mind map nodes`)
+  if (links?.length) parts.push(`${links.length} links`)
+  if (tags?.length) parts.push(`${tags.length} tags`)
+  return parts.join(' · ')
 }
