@@ -82,7 +82,7 @@ export function AIHarnessView() {
   useEffect(() => {
     if (cooldownMs <= 0) return
     const timer = setTimeout(() => { setCooldownMs((ms) => Math.max(0, ms - 1000)) }, 1000)
-    return () => { clearTimeout(timer) }
+    return () => { clearTimeout(timer); return undefined }
   }, [cooldownMs])
 
   const handleRefreshOllamaModels = useCallback(async () => {
@@ -253,7 +253,7 @@ export function AIHarnessView() {
               customModel={customModel}
               setCustomModel={setCustomModel}
               ollamaModels={ollamaModels}
-              handleRefreshOllamaModels={() => { void handleRefreshOllamaModels() }}
+              handleRefreshOllamaModels={handleRefreshOllamaModels}
               entityCount={entities.length}
               effectiveModel={effectiveModel}
               selectedEngineTarget={selectedEngineTarget}
@@ -268,7 +268,7 @@ export function AIHarnessView() {
             isLoading={isLoading}
             input={input}
             setInput={setInput}
-            handleSend={() => { void handleSend() }}
+            handleSend={handleSend}
             reducedMotion={reducedMotion}
             augment={augment}
             effectiveModel={effectiveModel}

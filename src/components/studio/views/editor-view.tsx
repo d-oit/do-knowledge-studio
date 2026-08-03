@@ -2,7 +2,6 @@
 
 import { useStudioStore } from '@/lib/studio/store'
 import {
-  ENTITY_TYPE_META,
   type Entity,
   type EntityType,
 } from '@/lib/studio/types'
@@ -11,16 +10,12 @@ import { toast } from 'sonner'
 import Markdown from 'react-markdown'
 import {
   Save,
-  X,
-  Plus,
   ExternalLink,
-  Tag,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { EditorToolbar } from './editor-toolbar'
 import { CursorTracker } from '../remote-cursors'
 import { ClaimsPanel } from './editor-claims-panel'
-import { TypeSelector } from './type-selector'
+import { EditorHeader, EditorTags } from './editor-helpers'
 import {
   applyBold,
   applyItalic,
@@ -75,7 +70,6 @@ export function EditorView() {
   const [description, setDescription] = useState(editing?.description || '')
   const [sourceUrl, setSourceUrl] = useState(editing?.sourceUrl || '')
   const [tags, setTags] = useState<string[]>(editing?.tags || [])
-  const [newTag, setNewTag] = useState('')
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [showTypeMenu, setShowTypeMenu] = useState(false)
   const [editMode, setEditMode] = useState<'edit' | 'preview' | 'split'>('edit')
@@ -90,7 +84,7 @@ export function EditorView() {
     }
     handleChange(mq)
     mq.addEventListener('change', handleChange)
-    return () => { mq.removeEventListener('change', handleChange) }
+    return () => { mq.removeEventListener('change', handleChange); return undefined }
   }, [])
 
   // Initialize draft ID on mount
@@ -136,7 +130,7 @@ export function EditorView() {
         setDraftStatus('error')
       }
     }, 500)
-    return () => { clearTimeout(timer) }
+    return () => { clearTimeout(timer); return undefined }
   }, [name, content, description, type, sourceUrl, tags, editing?.id, editing?.createdAt])
 
   // Flush draft on unmount
@@ -268,101 +262,34 @@ export function EditorView() {
       }
     }
     document.addEventListener('keydown', handler)
-    return () => { document.removeEventListener('keydown', handler) }
+    return () => { document.removeEventListener('keydown', handler); return undefined }
   }, [handleFormat, handleSave])
-
-  const addTag = () => {
-    const t = newTag.trim().replace(/^#/, '')
-    if (t && !tags.includes(t)) setTags([...tags, t])
-    setNewTag('')
-  }
-
-  const meta = ENTITY_TYPE_META[type as keyof typeof ENTITY_TYPE_META]
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-6 lg:px-10 lg:py-8">
-      <div className="mb-6">
-        <div className="mb-3 flex items-center gap-2">
-          <span className={cn('flex items-center gap-1.5 rounded-full px-2.5 py-1 text-label font-semibold', meta.bg, meta.text)}>
-            {meta.label}
-          </span>
-          {editing && (
-            <span className="text-label text-ink-faint">
-              Edited {new Date(editing.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-            </span>
-          )}
-        </div>
-        <label htmlFor="entity-name" className="sr-only">Entity name</label>
-        <input
-          id="entity-name"
-          value={name}
-          onChange={(e) => { setName(e.target.value) }}
-          placeholder="Entity name…"
-          className="w-full bg-transparent font-serif text-3xl font-semibold leading-tight tracking-tight text-ink placeholder:text-ink-faint/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-saffron/40 focus-visible:ring-inset"
-          autoFocus={!editing}
-        />
-        <label htmlFor="entity-description" className="sr-only">Description</label>
-        <textarea
-          id="entity-description"
-          value={description}
-          onChange={(e) => { setDescription(e.target.value) }}
-          placeholder="A short description (optional)…"
-          rows={2}
-          className="mt-2 w-full resize-none bg-transparent text-[14px] leading-relaxed text-ink-mute placeholder:text-ink-faint/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-saffron/40 focus-visible:ring-inset"
-        />
-      </div>
+      <EditorHeader
+        editing={editing}
+        name={name}
+        onNameChange={setName}
+        type={type}
+        description={description}
+        onDescriptionChange={setDescription}
+      />
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <TypeSelector
-          type={type}
-          showMenu={showTypeMenu}
-          onToggleMenu={() => { setShowTypeMenu(!showTypeMenu) }}
-          onSelect={(t) => { setType(t); setShowTypeMenu(false) }}
-        />
-
-        {tags.map((t) => (
-          <span
-            key={t}
-            className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-label font-medium text-ink-soft"
-          >
-            #{t}
-            <button
-              onClick={() => { setTags(tags.filter((x) => x !== t)) }}
-              className="min-h-[44px] min-w-[44px] flex items-center justify-center text-ink-faint hover:text-red-500 focus-ring"
-              aria-label={`Remove tag ${t}`}
-            >
-              <X className="h-2.5 w-2.5" />
-            </button>
-          </span>
-        ))}
-        <div className="flex items-center gap-1 rounded-full border border-dashed border-border px-2 py-0.5">
-          <Tag className="h-2.5 w-2.5 text-ink-faint" />
-          <input
-            value={newTag}
-            onChange={(e) => { setNewTag(e.target.value) }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                addTag()
-              }
-            }}
-            placeholder="add tag"
-            className="w-16 bg-transparent text-label text-ink-soft placeholder:text-ink-faint focus:outline-none"
-            aria-label="Add tag"
-          />
-          {newTag && (
-            <button onClick={addTag} className="min-h-[44px] min-w-[44px] flex items-center justify-center text-saffron hover:text-saffron-deep focus-ring" aria-label="Add tag">
-              <Plus className="h-2.5 w-2.5" />
-            </button>
-          )}
-        </div>
-      </div>
+      <EditorTags
+        tags={tags}
+        onTagsChange={setTags}
+        type={type}
+        showTypeMenu={showTypeMenu}
+        onToggleTypeMenu={() => { setShowTypeMenu(!showTypeMenu) }}
+        onSelectType={(t) => { setType(t); setShowTypeMenu(false) }}
+      />
 
       <EditorToolbar
         showAdvanced={showAdvanced}
         onToggleAdvanced={() => { setShowAdvanced(!showAdvanced) }}
         onFormat={handleFormat}
-        onVoiceTranscript={(text) => { setContent((prev) => prev + ' ' + text) }}
+        onVoiceTranscript={(text) => { setContent((prev) => `${prev} ${text}`) }}
       />
 
       {showAdvanced && (
