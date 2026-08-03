@@ -120,7 +120,6 @@ export function GraphView() {
   }, [visibleNodes, edges, focusMode, selectedEntityId])
 
   const svgRef = useRef<SVGSVGElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
   const reducedMotion = useReducedMotion()
 
   const handleGraphKeyDown = useCallback(
@@ -276,7 +275,6 @@ export function GraphView() {
 
       {/* Canvas */}
       <div
-        ref={containerRef}
         className="relative flex-1 canvas-grid overflow-hidden"
         tabIndex={0}
         role="application"

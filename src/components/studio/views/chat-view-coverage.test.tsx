@@ -101,6 +101,7 @@ describe('ChatView branch coverage', () => {
 
   afterEach(() => {
     cleanup()
+    vi.useRealTimers()
     vi.restoreAllMocks()
   })
 
