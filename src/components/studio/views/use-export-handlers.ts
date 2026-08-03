@@ -120,7 +120,8 @@ export const useExportHandlers = ({
       const json = buildJsonExport(entities, claims, exportOptions)
       const encrypted = await encryptData(json, password)
       const html = buildEncryptedReaderHtml(encrypted)
-      downloadFile(`do-knowledge-studio-encrypted-${stamp}.html`, html, 'text/html')
+      const blob = new Blob([html], { type: 'text/html' })
+      downloadBlob(`do-knowledge-studio-encrypted-${stamp}.html`, blob)
       toast.success('Encrypted export downloaded', { description: 'AES-256-GCM encrypted with PBKDF2 key derivation.' })
     } catch (err) {
       toast.error('Encrypted export failed', { description: err instanceof Error ? err.message : 'Unknown error' })
