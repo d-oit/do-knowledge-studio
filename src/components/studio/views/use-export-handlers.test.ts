@@ -79,7 +79,7 @@ describe('useExportHandlers', () => {
   it('handleExport json calls buildJsonExport + downloadFile', async () => {
     const { result } = renderUseExportHandlers()
     await act(async () => { await result.current.handleExport('json') })
-    expect(buildJsonExport).toHaveBeenCalledWith(mockEntities, mockClaims, undefined, undefined, undefined, undefined)
+    expect(buildJsonExport).toHaveBeenCalledWith(mockEntities, mockClaims, { graph: undefined, mindMap: undefined, links: undefined, tags: undefined })
     expect(downloadFile).toHaveBeenCalledWith(
       'do-knowledge-studio-export-2026-07-26.json',
       '{"json":true}',
@@ -188,7 +188,7 @@ describe('useExportHandlers', () => {
       importPreview: preview, setImportPreview, importWithRollback,
     })
     act(() => { result.current.handleConfirmImport() })
-    expect(importWithRollback).toHaveBeenCalledWith(mockEntities, mockClaims, undefined, undefined, undefined, undefined)
+    expect(importWithRollback).toHaveBeenCalledWith(mockEntities, mockClaims, { graph: undefined, mindMap: undefined, links: undefined, tags: undefined })
     expect(setImportPreview).toHaveBeenCalledWith(null)
     expect(toast.success).toHaveBeenCalledWith('Import complete', expect.anything())
   })

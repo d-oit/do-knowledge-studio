@@ -7,7 +7,7 @@ import { z } from 'zod'
 import type { Entity, Claim, ViewId, ChatMessage, EntityType } from './types'
 import { seedEntities, seedClaims, seedChat } from './seed-data'
 import { search } from '@/lib/search/retrieval'
-import { validatePersistedState, GraphSchema, MindMapSchema, LinkSchema, TagSchema } from './schema'
+import { validatePersistedState, GraphSchema, MindMapSchema, LinkSchema, TagSchema, EntitySchema, ClaimSchema } from './schema'
 import { runMigrations, CURRENT_SCHEMA_VERSION } from './migrations'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from './schema'
 
@@ -15,6 +15,13 @@ const MAX_HISTORY = 50
 const RECOVERY_KEY = 'do-knowledge-studio-recovery'
 const RECOVERY_TTL_MS = 24 * 60 * 60 * 1000
 const MAX_RECOVERY_SIZE_BYTES = 4 * 1024 * 1024
+
+interface ImportOptions {
+  graph?: ValidatedGraph
+  mindMap?: ValidatedMindMap
+  links?: ValidatedLink[]
+  tags?: ValidatedTag[]
+}
 
 interface StudioState {
   // Navigation
@@ -76,8 +83,8 @@ interface StudioState {
   setMobilePanelView: (v: 'nav' | 'search') => void
 
   // Import / reset
-  importData: (entities: Entity[], claims: Claim[], graph?: ValidatedGraph, mindMap?: ValidatedMindMap, links?: ValidatedLink[], tags?: ValidatedTag[]) => void
-  importWithRollback: (entities: Entity[], claims: Claim[], graph?: ValidatedGraph, mindMap?: ValidatedMindMap, links?: ValidatedLink[], tags?: ValidatedTag[]) => { success: boolean; error?: string }
+  importData: (entities: Entity[], claims: Claim[], options?: ImportOptions) => void
+  importWithRollback: (entities: Entity[], claims: Claim[], options?: ImportOptions) => { success: boolean; error?: string }
   resetStore: () => void
 
   // Graph, mind map, links, and tags
@@ -303,14 +310,14 @@ export const useStudioStore = create<StudioState>()(
       mobilePanelView: 'nav',
       setMobilePanelView: (v) => set({ mobilePanelView: v }),
 
-      importData: (entities, claims, graph, mindMap, links, tags) =>
+      importData: (entities, claims, options) =>
         set({
           entities,
           claims,
-          graph,
-          mindMap,
-          links,
-          tags,
+          graph: options?.graph,
+          mindMap: options?.mindMap,
+          links: options?.links,
+          tags: options?.tags,
           selectedEntityId: null,
           editingEntityId: null,
           currentView: 'library',
@@ -318,7 +325,7 @@ export const useStudioStore = create<StudioState>()(
           historyIndex: 0,
         }),
 
-      importWithRollback: (entities, claims, graph, mindMap, links, tags) => {
+      importWithRollback: (entities, claims, options) => {
         const state = get()
         const snapshot = {
           entities: structuredClone(state.entities),
@@ -344,10 +351,10 @@ export const useStudioStore = create<StudioState>()(
           set({
             entities,
             claims,
-            graph,
-            mindMap,
-            links,
-            tags,
+            graph: options?.graph,
+            mindMap: options?.mindMap,
+            links: options?.links,
+            tags: options?.tags,
             selectedEntityId: null,
             editingEntityId: null,
             currentView: 'library',
@@ -440,30 +447,8 @@ export const useStudioStore = create<StudioState>()(
 
 const RecoverySnapshotSchema = z.object({
   snapshot: z.object({
-    entities: z.array(z.object({
-      id: z.string(),
-      name: z.string(),
-      type: z.string(),
-      description: z.string(),
-      content: z.string(),
-      sourceUrl: z.string().optional(),
-      tags: z.array(z.string()),
-      links: z.array(z.object({
-        targetId: z.string(),
-        relation: z.string(),
-      })),
-      createdAt: z.string(),
-      updatedAt: z.string(),
-    })),
-    claims: z.array(z.object({
-      id: z.string(),
-      entityId: z.string(),
-      statement: z.string(),
-      evidence: z.string(),
-      confidence: z.number(),
-      verification: z.string(),
-      source: z.string().optional(),
-    })),
+    entities: z.array(EntitySchema),
+    claims: z.array(ClaimSchema),
     entityHistory: z.array(z.array(z.object({ id: z.string() }))),
     historyIndex: z.number(),
     graph: GraphSchema.optional(),

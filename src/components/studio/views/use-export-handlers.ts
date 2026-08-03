@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import type { Entity, Claim } from '@/lib/studio/types'
-import type { ImportPreview, ExportFormatId } from './export-helpers'
+import type { ImportPreview, ExportFormatId, ExportOptions } from './export-helpers'
 import {
   todayStamp, downloadFile, downloadBlob,
   buildJsonExport, buildMarkdownExport, buildHtmlExport,
@@ -22,7 +22,7 @@ interface UseExportHandlersParams {
   mindMap?: ValidatedMindMap
   links?: ValidatedLink[]
   tags?: ValidatedTag[]
-  importWithRollback: (entities: Entity[], claims: Claim[], graph?: ValidatedGraph, mindMap?: ValidatedMindMap, links?: ValidatedLink[], tags?: ValidatedTag[]) => ImportRollbackResult
+  importWithRollback: (entities: Entity[], claims: Claim[], options?: ExportOptions) => ImportRollbackResult
   resetStore: () => void
   importPreview: ImportPreview | null
   setImportPreview: (preview: ImportPreview | null) => void
@@ -56,7 +56,7 @@ export function useExportHandlers({
 
   const handleExport = async (format: ExportFormatId) => {
     if (format === 'json') {
-      const content = buildJsonExport(entities, claims, graph, mindMap, links, tags)
+      const content = buildJsonExport(entities, claims, { graph, mindMap, links, tags })
       downloadFile(`do-knowledge-studio-export-${todayStamp()}.json`, content, 'application/json')
       const parts = [`${entities.length} entities`, `${claims.length} claims`]
       if (graph?.nodes?.length) parts.push(`${graph.nodes.length} graph nodes`)
@@ -104,7 +104,7 @@ export function useExportHandlers({
         return
       }
       try {
-        const json = buildJsonExport(entities, claims, graph, mindMap, links, tags)
+        const json = buildJsonExport(entities, claims, { graph, mindMap, links, tags })
         const encrypted = await encryptData(json, password)
         const html = buildEncryptedReaderHtml(encrypted)
         downloadFile(`do-knowledge-studio-encrypted-${todayStamp()}.html`, html, 'text/html')
@@ -151,10 +151,7 @@ export function useExportHandlers({
     const result = importWithRollback(
       importPreview.entities,
       importPreview.claims,
-      importPreview.graph,
-      importPreview.mindMap,
-      importPreview.links,
-      importPreview.tags,
+      { graph: importPreview.graph, mindMap: importPreview.mindMap, links: importPreview.links, tags: importPreview.tags },
     )
     if (result.success) {
       const parts = [`${importPreview.entityCount} entities`, `${importPreview.claimCount} claims`]

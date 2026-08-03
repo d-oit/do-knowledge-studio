@@ -108,6 +108,10 @@ export const PersistedEnvelopeSchema = z.object({
   version: z.number().int().positive(),
   entities: z.array(EntitySchema),
   claims: z.array(ClaimSchema),
+  graph: GraphSchema.optional(),
+  mindMap: MindMapSchema.optional(),
+  links: z.array(LinkSchema).optional(),
+  tags: z.array(TagSchema).optional(),
 })
 
 export type ValidatedEntity = z.infer<typeof EntitySchema>

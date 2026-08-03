@@ -106,7 +106,7 @@ describe('buildJsonExport', () => {
   })
 
   it('includes graph, mindMap, links, and tags when provided', () => {
-    const json = buildJsonExport(SAMPLE_ENTITIES, SAMPLE_CLAIMS, SAMPLE_GRAPH, SAMPLE_MIND_MAP, SAMPLE_LINKS, SAMPLE_TAGS)
+    const json = buildJsonExport(SAMPLE_ENTITIES, SAMPLE_CLAIMS, { graph: SAMPLE_GRAPH, mindMap: SAMPLE_MIND_MAP, links: SAMPLE_LINKS, tags: SAMPLE_TAGS })
     const parsed = JSON.parse(json)
     expect(parsed.graph).toEqual(SAMPLE_GRAPH)
     expect(parsed.mindMap).toEqual(SAMPLE_MIND_MAP)
@@ -223,7 +223,7 @@ describe('parseImportFile', () => {
   })
 
   it('extracts graph, mindMap, links, and tags from JSON', () => {
-    const json = buildJsonExport(SAMPLE_ENTITIES, SAMPLE_CLAIMS, SAMPLE_GRAPH, SAMPLE_MIND_MAP, SAMPLE_LINKS, SAMPLE_TAGS)
+    const json = buildJsonExport(SAMPLE_ENTITIES, SAMPLE_CLAIMS, { graph: SAMPLE_GRAPH, mindMap: SAMPLE_MIND_MAP, links: SAMPLE_LINKS, tags: SAMPLE_TAGS })
     const result = parseImportFile(json)
     expect(result.success).toBe(true)
     if (result.success) {

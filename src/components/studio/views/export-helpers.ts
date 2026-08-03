@@ -146,23 +146,27 @@ export function buildClaimsByEntityId(claims: Claim[]): Map<string, Claim[]> {
   return map
 }
 
+export interface ExportOptions {
+  graph?: ValidatedGraph
+  mindMap?: ValidatedMindMap
+  links?: ValidatedLink[]
+  tags?: ValidatedTag[]
+}
+
 export function buildJsonExport(
   entities: Entity[],
   claims: Claim[],
-  graph?: ValidatedGraph,
-  mindMap?: ValidatedMindMap,
-  links?: ValidatedLink[],
-  tags?: ValidatedTag[],
+  options?: ExportOptions,
 ): string {
   const payload = {
     version: 1,
     exportedAt: new Date().toISOString(),
     entities,
     claims,
-    ...(graph && { graph }),
-    ...(mindMap && { mindMap }),
-    ...(links && { links }),
-    ...(tags && { tags }),
+    ...(options?.graph && { graph: options.graph }),
+    ...(options?.mindMap && { mindMap: options.mindMap }),
+    ...(options?.links && { links: options.links }),
+    ...(options?.tags && { tags: options.tags }),
   }
   return JSON.stringify(payload, null, 2)
 }
