@@ -261,7 +261,7 @@ function collectUpdates<T extends Entity | Claim>(
 }
 
 export function startBidirectionalSync(): Unsubscribe {
-  if (outboundSubscribed) return () => {}
+  if (outboundSubscribed) return () => undefined
   outboundSubscribed = true
 
   const store = useStudioStore.getState

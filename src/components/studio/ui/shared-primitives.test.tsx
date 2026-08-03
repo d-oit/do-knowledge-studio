@@ -70,7 +70,7 @@ describe('Skeleton', () => {
 describe('Overlay', () => {
   it('renders with dialog role and aria-modal when open', () => {
     render(
-      <Overlay open onClose={() => {}} aria-label="Test dialog">
+      <Overlay open onClose={() => undefined} aria-label="Test dialog">
         <p>Content</p>
       </Overlay>,
     )
@@ -82,7 +82,7 @@ describe('Overlay', () => {
 
   it('does not render when closed', () => {
     render(
-      <Overlay open={false} onClose={() => {}} aria-label="Hidden">
+      <Overlay open={false} onClose={() => undefined} aria-label="Hidden">
         <p>Content</p>
       </Overlay>,
     )
@@ -149,7 +149,7 @@ describe('Overlay', () => {
 
   it('supports aria-labelledby', () => {
     render(
-      <Overlay open onClose={() => {}} aria-labelledby="title-id">
+      <Overlay open onClose={() => undefined} aria-labelledby="title-id">
         <h3 id="title-id">Dialog Title</h3>
       </Overlay>,
     )
@@ -159,7 +159,7 @@ describe('Overlay', () => {
 
   it('applies custom className', () => {
     render(
-      <Overlay open onClose={() => {}} aria-label="Custom class" className="custom-overlay">
+      <Overlay open onClose={() => undefined} aria-label="Custom class" className="custom-overlay">
         <p>Content</p>
       </Overlay>,
     )
@@ -170,7 +170,7 @@ describe('Overlay', () => {
   it('uses initialFocusRef when provided', () => {
     const inputRef = createRef<HTMLInputElement>()
     render(
-      <Overlay open onClose={() => {}} aria-label="Focus test" initialFocusRef={inputRef}>
+      <Overlay open onClose={() => undefined} aria-label="Focus test" initialFocusRef={inputRef}>
         <input ref={inputRef} data-testid="target-input" />
       </Overlay>,
     )
@@ -179,7 +179,7 @@ describe('Overlay', () => {
 
   it('defaults to center variant', () => {
     render(
-      <Overlay open onClose={() => {}} aria-label="Default variant">
+      <Overlay open onClose={() => undefined} aria-label="Default variant">
         <p>Content</p>
       </Overlay>,
     )
@@ -190,7 +190,7 @@ describe('Overlay', () => {
 
   it('applies sheet-bottom variant classes', () => {
     render(
-      <Overlay open onClose={() => {}} variant="sheet-bottom" aria-label="Sheet bottom">
+      <Overlay open onClose={() => undefined} variant="sheet-bottom" aria-label="Sheet bottom">
         <p>Content</p>
       </Overlay>,
     )
@@ -201,7 +201,7 @@ describe('Overlay', () => {
 
   it('applies sheet-left variant classes', () => {
     render(
-      <Overlay open onClose={() => {}} variant="sheet-left" aria-label="Sheet left">
+      <Overlay open onClose={() => undefined} variant="sheet-left" aria-label="Sheet left">
         <p>Content</p>
       </Overlay>,
     )
@@ -212,7 +212,7 @@ describe('Overlay', () => {
 
   it('applies fullscreen variant classes', () => {
     render(
-      <Overlay open onClose={() => {}} variant="fullscreen" aria-label="Fullscreen">
+      <Overlay open onClose={() => undefined} variant="fullscreen" aria-label="Fullscreen">
         <p>Content</p>
       </Overlay>,
     )
@@ -223,7 +223,7 @@ describe('Overlay', () => {
 
   it('scroll lock is applied when open', () => {
     render(
-      <Overlay open onClose={() => {}} aria-label="Scroll lock test">
+      <Overlay open onClose={() => undefined} aria-label="Scroll lock test">
         <p>Content</p>
       </Overlay>,
     )
@@ -232,13 +232,13 @@ describe('Overlay', () => {
 
   it('scroll lock is removed when closed', () => {
     const { rerender } = render(
-      <Overlay open onClose={() => {}} aria-label="Scroll lock cleanup">
+      <Overlay open onClose={() => undefined} aria-label="Scroll lock cleanup">
         <p>Content</p>
       </Overlay>,
     )
     expect(document.body.style.overflow).toBe('hidden')
     rerender(
-      <Overlay open={false} onClose={() => {}} aria-label="Scroll lock cleanup">
+      <Overlay open={false} onClose={() => undefined} aria-label="Scroll lock cleanup">
         <p>Content</p>
       </Overlay>,
     )
@@ -247,7 +247,7 @@ describe('Overlay', () => {
 
   it('traps focus with Tab key — cycles from last to first', () => {
     render(
-      <Overlay open onClose={() => {}} aria-label="Focus trap test">
+      <Overlay open onClose={() => undefined} aria-label="Focus trap test">
         <button data-testid="first">First</button>
         <button data-testid="last">Last</button>
       </Overlay>,
@@ -262,7 +262,7 @@ describe('Overlay', () => {
 
   it('traps focus with Shift+Tab — cycles from first to last', () => {
     render(
-      <Overlay open onClose={() => {}} aria-label="Focus trap shift test">
+      <Overlay open onClose={() => undefined} aria-label="Focus trap shift test">
         <button data-testid="first">First</button>
         <button data-testid="last">Last</button>
       </Overlay>,

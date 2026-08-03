@@ -8,14 +8,14 @@ const MIN_CONTRAST_RATIO = 4.5;
  * https://www.w3.org/TR/WCAG21/#dfn-relative-luminance
  */
 function relativeLuminance(hex: string): number {
-  const r = parseInt(hex.slice(1, 3), 16) / 255;
-  const g = parseInt(hex.slice(3, 5), 16) / 255;
-  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  const red = parseInt(hex.slice(1, 3), 16) / 255;
+  const green = parseInt(hex.slice(3, 5), 16) / 255;
+  const blue = parseInt(hex.slice(5, 7), 16) / 255;
 
   const linearize = (c: number) =>
     c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
 
-  return 0.2126 * linearize(r) + 0.7152 * linearize(g) + 0.0722 * linearize(b);
+  return 0.2126 * linearize(red) + 0.7152 * linearize(green) + 0.0722 * linearize(blue);
 }
 
 /** Calculate contrast ratio between two hex colors */

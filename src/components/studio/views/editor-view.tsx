@@ -84,7 +84,7 @@ export function EditorView() {
     }
     handleChange(mq)
     mq.addEventListener('change', handleChange)
-    return () => { mq.removeEventListener('change', handleChange); return undefined }
+    return () => { mq.removeEventListener('change', handleChange) }
   }, [])
 
   // Initialize draft ID on mount
@@ -130,7 +130,7 @@ export function EditorView() {
         setDraftStatus('error')
       }
     }, 500)
-    return () => { clearTimeout(timer); return undefined }
+    return () => { clearTimeout(timer) }
   }, [name, content, description, type, sourceUrl, tags, editing?.id, editing?.createdAt])
 
   // Flush draft on unmount
@@ -262,7 +262,7 @@ export function EditorView() {
       }
     }
     document.addEventListener('keydown', handler)
-    return () => { document.removeEventListener('keydown', handler); return undefined }
+    return () => { document.removeEventListener('keydown', handler) }
   }, [handleFormat, handleSave])
 
   return (

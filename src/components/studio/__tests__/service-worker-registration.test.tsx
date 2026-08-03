@@ -80,7 +80,7 @@ describe("ServiceWorkerRegistration", () => {
     it("logs an error when registration fails", async () => {
       const consoleError = vi
         .spyOn(console, "error")
-        .mockImplementation(() => {});
+        .mockImplementation(() => undefined);
 
       const error = new Error("SW registration rejected");
       register.mockRejectedValueOnce(error);

@@ -82,7 +82,7 @@ export function AIHarnessView() {
   useEffect(() => {
     if (cooldownMs <= 0) return
     const timer = setTimeout(() => { setCooldownMs((ms) => Math.max(0, ms - 1000)) }, 1000)
-    return () => { clearTimeout(timer); return undefined }
+    return () => { clearTimeout(timer) }
   }, [cooldownMs])
 
   const handleRefreshOllamaModels = useCallback(async () => {

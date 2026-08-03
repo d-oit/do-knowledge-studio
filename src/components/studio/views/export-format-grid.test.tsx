@@ -63,7 +63,7 @@ const mockEntities = [
 describe('ExportFormatGrid', () => {
   const mockSetView = vi.fn()
   const mockSetShowPassword = vi.fn()
-  const mockHandleExport = vi.fn(async () => {})
+  const mockHandleExport = vi.fn(async () => undefined)
 
   beforeEach(() => {
     vi.clearAllMocks()
