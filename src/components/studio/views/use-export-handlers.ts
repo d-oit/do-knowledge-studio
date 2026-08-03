@@ -152,6 +152,8 @@ export const useExportHandlers = ({
       case 'encrypted':
         await handleExportEncrypted()
         break
+      default:
+        break
     }
   }
 
