@@ -16,18 +16,22 @@ import {
   AlignmentType,
   ExternalHyperlink,
 } from 'docx'
-import { validateImportPayload, type ValidationError } from '@/lib/studio/schema'
+import { validateImportPayload, type ValidationError, type ValidatedGraph, type ValidatedMindMap, type ValidatedLink, type ValidatedTag } from '@/lib/studio/schema'
 import { escapeHtml } from '@/lib/security'
 
 export type ExportFormatId = 'json' | 'markdown' | 'html' | 'pdf' | 'docx' | 'encrypted'
 
 export type ImportResult =
-  | { success: true; entities: Entity[]; claims: Claim[] }
+  | { success: true; entities: Entity[]; claims: Claim[]; graph?: ValidatedGraph; mindMap?: ValidatedMindMap; links?: ValidatedLink[]; tags?: ValidatedTag[] }
   | { success: false; errors: ValidationError[] }
 
 export interface ImportPreview {
   entities: Entity[]
   claims: Claim[]
+  graph?: ValidatedGraph
+  mindMap?: ValidatedMindMap
+  links?: ValidatedLink[]
+  tags?: ValidatedTag[]
   entityCount: number
   claimCount: number
   version: number
@@ -142,12 +146,23 @@ export function buildClaimsByEntityId(claims: Claim[]): Map<string, Claim[]> {
   return map
 }
 
-export function buildJsonExport(entities: Entity[], claims: Claim[]): string {
+export function buildJsonExport(
+  entities: Entity[],
+  claims: Claim[],
+  graph?: ValidatedGraph,
+  mindMap?: ValidatedMindMap,
+  links?: ValidatedLink[],
+  tags?: ValidatedTag[],
+): string {
   const payload = {
     version: 1,
     exportedAt: new Date().toISOString(),
     entities,
     claims,
+    ...(graph && { graph }),
+    ...(mindMap && { mindMap }),
+    ...(links && { links }),
+    ...(tags && { tags }),
   }
   return JSON.stringify(payload, null, 2)
 }
@@ -475,6 +490,10 @@ export function parseImportFile(text: string): ImportResult {
     exportedAt: typeof root.exportedAt === 'string' ? root.exportedAt : new Date().toISOString(),
     entities: root.entities ?? [],
     claims: root.claims ?? [],
+    graph: root.graph,
+    mindMap: root.mindMap,
+    links: root.links,
+    tags: root.tags,
   }
 
   const result = validateImportPayload(payload)
@@ -482,7 +501,7 @@ export function parseImportFile(text: string): ImportResult {
     return { success: false, errors: result.errors }
   }
 
-  const { entities, claims } = result.data
+  const { entities, claims, graph, mindMap, links, tags } = result.data
   if (entities.length === 0) {
     return { success: false, errors: [{ path: 'entities', message: 'No valid entities found in file.' }] }
   }
@@ -499,5 +518,5 @@ export function parseImportFile(text: string): ImportResult {
     }
   }
 
-  return { success: true, entities, claims }
+  return { success: true, entities, claims, graph, mindMap, links, tags }
 }

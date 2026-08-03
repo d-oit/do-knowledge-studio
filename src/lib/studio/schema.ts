@@ -39,11 +39,69 @@ export const ClaimSchema = z.object({
   })).default([]),
 })
 
+export const GraphNodeSchema = z.object({
+  id: z.string().min(1),
+  label: z.string(),
+  type: EntityTypeSchema,
+  x: z.number(),
+  y: z.number(),
+})
+
+export const GraphEdgeSchema = z.object({
+  id: z.string().min(1),
+  source: z.string(),
+  target: z.string(),
+  relation: z.string(),
+})
+
+export const GraphSchema = z.object({
+  nodes: z.array(GraphNodeSchema),
+  edges: z.array(GraphEdgeSchema),
+})
+
+export const MindMapNodeSchema = z.object({
+  id: z.string().min(1),
+  label: z.string(),
+  type: EntityTypeSchema,
+  x: z.number().optional(),
+  y: z.number().optional(),
+})
+
+export const MindMapEdgeSchema = z.object({
+  id: z.string().min(1),
+  source: z.string(),
+  target: z.string(),
+  relation: z.string(),
+})
+
+export const MindMapSchema = z.object({
+  nodes: z.array(MindMapNodeSchema),
+  edges: z.array(MindMapEdgeSchema),
+})
+
+export const LinkSchema = z.object({
+  id: z.string().min(1),
+  sourceId: z.string(),
+  targetId: z.string(),
+  type: z.string(),
+  createdAt: z.string(),
+})
+
+export const TagSchema = z.object({
+  id: z.string().min(1),
+  name: z.string(),
+  color: z.string().optional(),
+})
+
 export const ExportPayloadSchema = z.object({
   version: z.number(),
   exportedAt: z.string(),
   entities: z.array(EntitySchema),
   claims: z.array(ClaimSchema),
+  graph: GraphSchema.optional(),
+  mindMap: MindMapSchema.optional(),
+  links: z.array(LinkSchema).optional(),
+  tags: z.array(TagSchema).optional(),
 })
 
 export const PersistedEnvelopeSchema = z.object({
@@ -54,6 +112,14 @@ export const PersistedEnvelopeSchema = z.object({
 
 export type ValidatedEntity = z.infer<typeof EntitySchema>
 export type ValidatedClaim = z.infer<typeof ClaimSchema>
+export type ValidatedGraphNode = z.infer<typeof GraphNodeSchema>
+export type ValidatedGraphEdge = z.infer<typeof GraphEdgeSchema>
+export type ValidatedGraph = z.infer<typeof GraphSchema>
+export type ValidatedMindMapNode = z.infer<typeof MindMapNodeSchema>
+export type ValidatedMindMapEdge = z.infer<typeof MindMapEdgeSchema>
+export type ValidatedMindMap = z.infer<typeof MindMapSchema>
+export type ValidatedLink = z.infer<typeof LinkSchema>
+export type ValidatedTag = z.infer<typeof TagSchema>
 export type ValidatedExportPayload = z.infer<typeof ExportPayloadSchema>
 export type ValidatedPersistedEnvelope = z.infer<typeof PersistedEnvelopeSchema>
 

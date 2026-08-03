@@ -79,7 +79,7 @@ describe('useExportHandlers', () => {
   it('handleExport json calls buildJsonExport + downloadFile', async () => {
     const { result } = renderUseExportHandlers()
     await act(async () => { await result.current.handleExport('json') })
-    expect(buildJsonExport).toHaveBeenCalledWith(mockEntities, mockClaims)
+    expect(buildJsonExport).toHaveBeenCalledWith(mockEntities, mockClaims, undefined, undefined, undefined, undefined)
     expect(downloadFile).toHaveBeenCalledWith(
       'do-knowledge-studio-export-2026-07-26.json',
       '{"json":true}',
@@ -188,7 +188,7 @@ describe('useExportHandlers', () => {
       importPreview: preview, setImportPreview, importWithRollback,
     })
     act(() => { result.current.handleConfirmImport() })
-    expect(importWithRollback).toHaveBeenCalledWith(mockEntities, mockClaims)
+    expect(importWithRollback).toHaveBeenCalledWith(mockEntities, mockClaims, undefined, undefined, undefined, undefined)
     expect(setImportPreview).toHaveBeenCalledWith(null)
     expect(toast.success).toHaveBeenCalledWith('Import complete', expect.anything())
   })
@@ -246,7 +246,7 @@ describe('useExportHandlers', () => {
         this.onload?.()
       }
     }
-    global.FileReader = StubFileReader as any
+    global.FileReader = StubFileReader as unknown as typeof FileReader
 
     const { result } = renderUseExportHandlers({ setImportPreview })
 
@@ -286,7 +286,7 @@ describe('useExportHandlers', () => {
         this.onload?.()
       }
     }
-    global.FileReader = StubFileReader as any
+    global.FileReader = StubFileReader as unknown as typeof FileReader
 
     const { result } = renderUseExportHandlers()
 
@@ -325,7 +325,7 @@ describe('useExportHandlers', () => {
         this.onload?.()
       }
     }
-    global.FileReader = StubFileReader as any
+    global.FileReader = StubFileReader as unknown as typeof FileReader
 
     const { result } = renderUseExportHandlers({ setImportPreview })
 

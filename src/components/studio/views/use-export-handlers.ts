@@ -8,6 +8,7 @@ import {
   buildPdfExport, buildDocxExport, parseImportFile,
 } from './export-helpers'
 import { encryptData, buildEncryptedReaderHtml } from '@/lib/export/encrypt'
+import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from '@/lib/studio/schema'
 
 interface ImportRollbackResult {
   success: boolean
@@ -17,7 +18,11 @@ interface ImportRollbackResult {
 interface UseExportHandlersParams {
   entities: Entity[]
   claims: Claim[]
-  importWithRollback: (entities: Entity[], claims: Claim[]) => ImportRollbackResult
+  graph?: ValidatedGraph
+  mindMap?: ValidatedMindMap
+  links?: ValidatedLink[]
+  tags?: ValidatedTag[]
+  importWithRollback: (entities: Entity[], claims: Claim[], graph?: ValidatedGraph, mindMap?: ValidatedMindMap, links?: ValidatedLink[], tags?: ValidatedTag[]) => ImportRollbackResult
   resetStore: () => void
   importPreview: ImportPreview | null
   setImportPreview: (preview: ImportPreview | null) => void
@@ -41,7 +46,7 @@ export interface UseExportHandlersReturn {
 }
 
 export function useExportHandlers({
-  entities, claims, importWithRollback, resetStore,
+  entities, claims, graph, mindMap, links, tags, importWithRollback, resetStore,
   importPreview, setImportPreview, fileInputRef,
 }: UseExportHandlersParams): UseExportHandlersReturn {
   const [showPassword, setShowPassword] = useState(false)
@@ -51,7 +56,7 @@ export function useExportHandlers({
 
   const handleExport = async (format: ExportFormatId) => {
     if (format === 'json') {
-      const content = buildJsonExport(entities, claims)
+      const content = buildJsonExport(entities, claims, graph, mindMap, links, tags)
       downloadFile(`do-knowledge-studio-export-${todayStamp()}.json`, content, 'application/json')
       toast.success('JSON export downloaded', { description: `${entities.length} entities · ${claims.length} claims` })
       return
@@ -94,7 +99,7 @@ export function useExportHandlers({
         return
       }
       try {
-        const json = buildJsonExport(entities, claims)
+        const json = buildJsonExport(entities, claims, graph, mindMap, links, tags)
         const encrypted = await encryptData(json, password)
         const html = buildEncryptedReaderHtml(encrypted)
         downloadFile(`do-knowledge-studio-encrypted-${todayStamp()}.html`, html, 'text/html')
@@ -123,10 +128,11 @@ export function useExportHandlers({
         toast.error('Import failed', { description: result.errors.map((err) => `${err.path}: ${err.message}`).join('; ') })
         return
       }
-      const { entities: ents, claims: cls } = result
+      const { entities: ents, claims: cls, graph: g, mindMap: m, links: l, tags: t } = result
       const existingIds = new Set(entities.map((ent) => ent.id))
       setImportPreview({
-        entities: ents, claims: cls, entityCount: ents.length,
+        entities: ents, claims: cls, graph: g, mindMap: m, links: l, tags: t,
+        entityCount: ents.length,
         claimCount: cls.length, version: 1,
         duplicateIds: ents.filter((ent) => existingIds.has(ent.id)).map((ent) => ent.id),
       })
@@ -137,7 +143,14 @@ export function useExportHandlers({
 
   const handleConfirmImport = () => {
     if (!importPreview) return
-    const result = importWithRollback(importPreview.entities, importPreview.claims)
+    const result = importWithRollback(
+      importPreview.entities,
+      importPreview.claims,
+      importPreview.graph,
+      importPreview.mindMap,
+      importPreview.links,
+      importPreview.tags,
+    )
     if (result.success) {
       toast.success('Import complete', {
         description: `${importPreview.entityCount} entities · ${importPreview.claimCount} claims replaced the current library.`,

@@ -71,8 +71,8 @@
 - [x] Tests updated for synchronous behavior
 - [x] All tests pass (1992)
 - [x] Lint, typecheck, build pass
-- [ ] PR created with all CI checks passing
-- [ ] PR reviewed
+- [x] PR created with all CI checks passing
+- [x] PR reviewed
 
 ---
 

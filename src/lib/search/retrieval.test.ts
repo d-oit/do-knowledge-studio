@@ -150,13 +150,13 @@ describe('BM25 Retrieval Engine', () => {
     const maxTime = Math.max(...times)
     const avgTime = times.reduce((sum, t) => sum + t, 0) / iterations
 
-    console.log(`--- BENCHMARK STATISTICS ---`)
-    console.log(`Dataset size: 500 entities, 1500 claims`)
-    console.log(`Iterations: ${iterations}`)
-    console.log(`Min execution time: ${minTime.toFixed(2)}ms`)
-    console.log(`Max execution time: ${maxTime.toFixed(2)}ms`)
-    console.log(`Average execution time: ${avgTime.toFixed(2)}ms`)
-    console.log(`-----------------------------`)
+    console.warn(`--- BENCHMARK STATISTICS ---`)
+    console.warn(`Dataset size: 500 entities, 1500 claims`)
+    console.warn(`Iterations: ${iterations}`)
+    console.warn(`Min execution time: ${minTime.toFixed(2)}ms`)
+    console.warn(`Max execution time: ${maxTime.toFixed(2)}ms`)
+    console.warn(`Average execution time: ${avgTime.toFixed(2)}ms`)
+    console.warn(`-----------------------------`)
 
     expect(avgTime).toBeLessThan(1000) // loose upper bound for sanity
   })

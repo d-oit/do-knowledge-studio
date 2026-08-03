@@ -1,7 +1,7 @@
 # Plan 104 — Address Remaining Implementation Gaps from plans/ Analysis
 
 **Date**: 2026-08-03
-**Status**: IN PROGRESS
+**Status**: DONE (merged via PR #597, `c908089`)
 **Method**: GOAP with parallel agent execution
 **Goal**: Address the genuine remaining implementation gaps identified from plans/ analysis.
 
@@ -55,9 +55,32 @@ From the 14 items checked against the codebase:
 
 ## Success Criteria
 
-- [ ] Chat submit debounced at 300ms
-- [ ] Graph keyboard navigation complete (arrow keys, zoom, Home, Delete)
-- [ ] Empty catch blocks resolved
-- [ ] Export claims lookup optimized
-- [ ] All quality gates pass
-- [ ] PR created and reviewed
+- [x] Chat submit debounced at 300ms
+- [x] Graph keyboard navigation complete (arrow keys, zoom, Home, Delete)
+- [x] Empty catch blocks resolved
+- [x] Export claims lookup optimized
+- [x] All quality gates pass
+- [x] PR created and reviewed
+
+## Quality Gates
+
+- [x] `pnpm run lint` — 0 errors
+- [x] `pnpm run typecheck` — 0 errors
+- [x] `pnpm run test` — 1998 pass, 1 skip
+- [x] `pnpm run build` — success
+- [x] `./scripts/minimal_quality_gate.sh` — passed
+- [x] Codacy Static Code Analysis — pass
+- [x] E2E Tests — pass (after flaky re-run)
+
+## Files Changed (8)
+
+| File | Change |
+|------|--------|
+| `src/components/studio/views/chat-view.tsx` | Added 300ms debounce to sendMessage via ref-based timer |
+| `src/components/studio/views/graph-view.tsx` | Added pan/zoom state, keyboard handler for arrow/+/-/Home/Delete |
+| `src/lib/ai/providers.ts` | Added descriptive comments to streaming parser catch blocks |
+| `src/components/studio/views/export-helpers.ts` | Added `buildClaimsByEntityId()` Map helper, replaced 4× `.filter()` calls |
+| `src/components/studio/views/chat-view.test.tsx` | Updated to use fake timers for debounce testing + debounce cancellation test |
+| `src/components/studio/views/chat-view-coverage.test.tsx` | Updated to use fake timers for debounce testing |
+| `src/components/studio/views/graph-view.test.tsx` | Added 6 keyboard navigation tests + fixed vi.mock hoisting |
+| `plans/104-remaining-gap-remediation-2026-08-03.md` | Plan documenting the gap analysis and implementation |
