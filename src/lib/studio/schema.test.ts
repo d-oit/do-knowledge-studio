@@ -4,6 +4,14 @@ import {
   EntitySchema,
   EntityTypeSchema,
   ExportPayloadSchema,
+  GraphNodeSchema,
+  GraphEdgeSchema,
+  GraphSchema,
+  MindMapNodeSchema,
+  MindMapEdgeSchema,
+  MindMapSchema,
+  LinkSchema,
+  TagSchema,
   PersistedEnvelopeSchema,
   VerificationStatusSchema,
   validateImportPayload,
@@ -147,6 +155,184 @@ describe('ClaimSchema', () => {
   })
 })
 
+// ── GraphNodeSchema ────────────────────────────────────────────────
+
+describe('GraphNodeSchema', () => {
+  it('accepts valid node', () => {
+    const node = { id: 'n1', label: 'Node 1', type: 'note' as const, x: 10, y: 20 }
+    expect(GraphNodeSchema.parse(node)).toEqual(node)
+  })
+
+  it.each(['note', 'concept', 'person', 'project'])('accepts type %s', (type) => {
+    expect(GraphNodeSchema.parse({ id: 'n1', label: 'A', type, x: 0, y: 0 })).toBeDefined()
+  })
+
+  it('rejects empty id', () => {
+    expect(() => GraphNodeSchema.parse({ id: '', label: 'A', type: 'note', x: 0, y: 0 })).toThrow()
+  })
+
+  it('rejects invalid type', () => {
+    expect(() => GraphNodeSchema.parse({ id: 'n1', label: 'A', type: 'bad', x: 0, y: 0 })).toThrow()
+  })
+
+  it('rejects non-number x', () => {
+    expect(() => GraphNodeSchema.parse({ id: 'n1', label: 'A', type: 'note', x: '0', y: 0 })).toThrow()
+  })
+
+  it('accepts negative coordinates', () => {
+    expect(GraphNodeSchema.parse({ id: 'n1', label: 'A', type: 'note', x: -5, y: -10 })).toBeDefined()
+  })
+})
+
+// ── GraphEdgeSchema ────────────────────────────────────────────────
+
+describe('GraphEdgeSchema', () => {
+  it('accepts valid edge', () => {
+    const edge = { id: 'e1', source: 'n1', target: 'n2', relation: 'relates to' }
+    expect(GraphEdgeSchema.parse(edge)).toEqual(edge)
+  })
+
+  it('rejects empty id', () => {
+    expect(() => GraphEdgeSchema.parse({ id: '', source: 'n1', target: 'n2', relation: 'r' })).toThrow()
+  })
+
+  it('accepts empty source/target/relation', () => {
+    const edge = { id: 'e1', source: '', target: '', relation: '' }
+    expect(GraphEdgeSchema.parse(edge)).toBeDefined()
+  })
+})
+
+// ── GraphSchema ────────────────────────────────────────────────────
+
+describe('GraphSchema', () => {
+  it('accepts valid graph', () => {
+    const graph = {
+      nodes: [{ id: 'n1', label: 'A', type: 'note' as const, x: 0, y: 0 }],
+      edges: [{ id: 'e1', source: 'n1', target: 'n1', relation: 'self' }],
+    }
+    expect(GraphSchema.parse(graph)).toEqual(graph)
+  })
+
+  it('accepts empty graph', () => {
+    expect(GraphSchema.parse({ nodes: [], edges: [] })).toEqual({ nodes: [], edges: [] })
+  })
+
+  it('rejects invalid node in nodes array', () => {
+    const graph = { nodes: [{ id: '', label: 'A', type: 'note', x: 0, y: 0 }], edges: [] }
+    expect(() => GraphSchema.parse(graph)).toThrow()
+  })
+
+  it('rejects invalid edge in edges array', () => {
+    const graph = { nodes: [], edges: [{ id: '', source: '', target: '', relation: '' }] }
+    expect(() => GraphSchema.parse(graph)).toThrow()
+  })
+})
+
+// ── MindMapNodeSchema ──────────────────────────────────────────────
+
+describe('MindMapNodeSchema', () => {
+  it('accepts valid node without coordinates', () => {
+    const node = { id: 'n1', label: 'Node', type: 'concept' as const }
+    expect(MindMapNodeSchema.parse(node)).toEqual(node)
+  })
+
+  it('accepts node with optional coordinates', () => {
+    const node = { id: 'n1', label: 'Node', type: 'note' as const, x: 10, y: 20 }
+    expect(MindMapNodeSchema.parse(node)).toEqual(node)
+  })
+
+  it('rejects empty id', () => {
+    expect(() => MindMapNodeSchema.parse({ id: '', label: 'A', type: 'note' })).toThrow()
+  })
+
+  it('rejects invalid type', () => {
+    expect(() => MindMapNodeSchema.parse({ id: 'n1', label: 'A', type: 'bad' })).toThrow()
+  })
+
+  it('rejects non-number x when provided', () => {
+    expect(() => MindMapNodeSchema.parse({ id: 'n1', label: 'A', type: 'note', x: '10' })).toThrow()
+  })
+})
+
+// ── MindMapEdgeSchema ──────────────────────────────────────────────
+
+describe('MindMapEdgeSchema', () => {
+  it('accepts valid edge', () => {
+    const edge = { id: 'e1', source: 'n1', target: 'n2', relation: 'child' }
+    expect(MindMapEdgeSchema.parse(edge)).toEqual(edge)
+  })
+
+  it('rejects empty id', () => {
+    expect(() => MindMapEdgeSchema.parse({ id: '', source: 'n1', target: 'n2', relation: 'r' })).toThrow()
+  })
+})
+
+// ── MindMapSchema ──────────────────────────────────────────────────
+
+describe('MindMapSchema', () => {
+  it('accepts valid mind map', () => {
+    const map = {
+      nodes: [{ id: 'n1', label: 'Root', type: 'concept' as const }],
+      edges: [],
+    }
+    expect(MindMapSchema.parse(map)).toEqual(map)
+  })
+
+  it('accepts empty mind map', () => {
+    expect(MindMapSchema.parse({ nodes: [], edges: [] })).toEqual({ nodes: [], edges: [] })
+  })
+
+  it('rejects invalid node', () => {
+    const map = { nodes: [{ id: '', label: 'A', type: 'note' }], edges: [] }
+    expect(() => MindMapSchema.parse(map)).toThrow()
+  })
+
+  it('rejects invalid edge', () => {
+    const map = { nodes: [], edges: [{ id: '', source: '', target: '', relation: '' }] }
+    expect(() => MindMapSchema.parse(map)).toThrow()
+  })
+})
+
+// ── LinkSchema ─────────────────────────────────────────────────────
+
+describe('LinkSchema', () => {
+  it('accepts valid link', () => {
+    const link = { id: 'l1', sourceId: 'e1', targetId: 'e2', type: 'related', createdAt: '2025-01-01' }
+    expect(LinkSchema.parse(link)).toEqual(link)
+  })
+
+  it('rejects empty id', () => {
+    expect(() => LinkSchema.parse({ id: '', sourceId: 'e1', targetId: 'e2', type: 'r', createdAt: '2025-01-01' })).toThrow()
+  })
+
+  it('accepts empty sourceId/targetId/type', () => {
+    const link = { id: 'l1', sourceId: '', targetId: '', type: '', createdAt: '' }
+    expect(LinkSchema.parse(link)).toBeDefined()
+  })
+})
+
+// ── TagSchema ──────────────────────────────────────────────────────
+
+describe('TagSchema', () => {
+  it('accepts valid tag with color', () => {
+    const tag = { id: 't1', name: 'important', color: '#ff0000' }
+    expect(TagSchema.parse(tag)).toEqual(tag)
+  })
+
+  it('accepts tag without color', () => {
+    const tag = { id: 't1', name: 'important' }
+    expect(TagSchema.parse(tag)).toEqual(tag)
+  })
+
+  it('rejects empty id', () => {
+    expect(() => TagSchema.parse({ id: '', name: 'tag' })).toThrow()
+  })
+
+  it('accepts empty name', () => {
+    expect(TagSchema.parse({ id: 't1', name: '' })).toBeDefined()
+  })
+})
+
 // ── ExportPayloadSchema ─────────────────────────────────────────────
 
 describe('ExportPayloadSchema', () => {
@@ -191,6 +377,46 @@ describe('ExportPayloadSchema', () => {
     expect(() =>
       ExportPayloadSchema.parse({ ...payload, claims: [{ id: 'c1' }] }),
     ).toThrow()
+  })
+
+  it('accepts payload with graph, mindMap, links, and tags', () => {
+    const graph = { nodes: [{ id: 'n1', label: 'A', type: 'note' as const, x: 0, y: 0 }], edges: [] }
+    const mindMap = { nodes: [{ id: 'm1', label: 'B', type: 'concept' as const }], edges: [] }
+    const links = [{ id: 'l1', sourceId: 'e1', targetId: 'e2', type: 'related', createdAt: '2025-01-01' }]
+    const tags = [{ id: 't1', name: 'tag1', color: '#ff0000' }]
+    const result = ExportPayloadSchema.parse({ ...payload, graph, mindMap, links, tags })
+    expect(result.graph).toEqual(graph)
+    expect(result.mindMap).toEqual(mindMap)
+    expect(result.links).toEqual(links)
+    expect(result.tags).toEqual(tags)
+  })
+
+  it('accepts payload without graph, mindMap, links, or tags (backward compat)', () => {
+    const result = ExportPayloadSchema.parse(payload)
+    expect(result.graph).toBeUndefined()
+    expect(result.mindMap).toBeUndefined()
+    expect(result.links).toBeUndefined()
+    expect(result.tags).toBeUndefined()
+  })
+
+  it('rejects invalid graph nodes', () => {
+    const graph = { nodes: [{ id: '', label: 'A', type: 'note', x: 0, y: 0 }], edges: [] }
+    expect(() => ExportPayloadSchema.parse({ ...payload, graph })).toThrow()
+  })
+
+  it('rejects invalid mindMap edges', () => {
+    const mindMap = { nodes: [], edges: [{ id: '', source: '', target: '', relation: '' }] }
+    expect(() => ExportPayloadSchema.parse({ ...payload, mindMap })).toThrow()
+  })
+
+  it('rejects invalid links', () => {
+    const links = [{ id: '', sourceId: '', targetId: '', type: '', createdAt: '' }]
+    expect(() => ExportPayloadSchema.parse({ ...payload, links })).toThrow()
+  })
+
+  it('rejects invalid tags', () => {
+    const tags = [{ id: '', name: '' }]
+    expect(() => ExportPayloadSchema.parse({ ...payload, tags })).toThrow()
   })
 })
 

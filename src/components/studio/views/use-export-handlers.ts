@@ -58,7 +58,12 @@ export function useExportHandlers({
     if (format === 'json') {
       const content = buildJsonExport(entities, claims, graph, mindMap, links, tags)
       downloadFile(`do-knowledge-studio-export-${todayStamp()}.json`, content, 'application/json')
-      toast.success('JSON export downloaded', { description: `${entities.length} entities · ${claims.length} claims` })
+      const parts = [`${entities.length} entities`, `${claims.length} claims`]
+      if (graph?.nodes?.length) parts.push(`${graph.nodes.length} graph nodes`)
+      if (mindMap?.nodes?.length) parts.push(`${mindMap.nodes.length} mind map nodes`)
+      if (links?.length) parts.push(`${links.length} links`)
+      if (tags?.length) parts.push(`${tags.length} tags`)
+      toast.success('JSON export downloaded', { description: parts.join(' · ') })
       return
     }
     if (format === 'markdown') {
@@ -152,8 +157,13 @@ export function useExportHandlers({
       importPreview.tags,
     )
     if (result.success) {
+      const parts = [`${importPreview.entityCount} entities`, `${importPreview.claimCount} claims`]
+      if (importPreview.graph?.nodes?.length) parts.push(`${importPreview.graph.nodes.length} graph nodes`)
+      if (importPreview.mindMap?.nodes?.length) parts.push(`${importPreview.mindMap.nodes.length} mind map nodes`)
+      if (importPreview.links?.length) parts.push(`${importPreview.links.length} links`)
+      if (importPreview.tags?.length) parts.push(`${importPreview.tags.length} tags`)
       toast.success('Import complete', {
-        description: `${importPreview.entityCount} entities · ${importPreview.claimCount} claims replaced the current library.`,
+        description: `${parts.join(' · ')} replaced the current library.`,
       })
     } else {
       toast.error('Import failed — state restored', { description: result.error })

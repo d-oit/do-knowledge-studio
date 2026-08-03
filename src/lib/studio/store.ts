@@ -7,7 +7,7 @@ import { z } from 'zod'
 import type { Entity, Claim, ViewId, ChatMessage, EntityType } from './types'
 import { seedEntities, seedClaims, seedChat } from './seed-data'
 import { search } from '@/lib/search/retrieval'
-import { validatePersistedState } from './schema'
+import { validatePersistedState, GraphSchema, MindMapSchema, LinkSchema, TagSchema } from './schema'
 import { runMigrations, CURRENT_SCHEMA_VERSION } from './migrations'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from './schema'
 
@@ -466,48 +466,10 @@ const RecoverySnapshotSchema = z.object({
     })),
     entityHistory: z.array(z.array(z.object({ id: z.string() }))),
     historyIndex: z.number(),
-    graph: z.object({
-      nodes: z.array(z.object({
-        id: z.string(),
-        label: z.string(),
-        type: z.string(),
-        x: z.number(),
-        y: z.number(),
-      })),
-      edges: z.array(z.object({
-        id: z.string(),
-        source: z.string(),
-        target: z.string(),
-        relation: z.string(),
-      })),
-    }).optional(),
-    mindMap: z.object({
-      nodes: z.array(z.object({
-        id: z.string(),
-        label: z.string(),
-        type: z.string(),
-        x: z.number().optional(),
-        y: z.number().optional(),
-      })),
-      edges: z.array(z.object({
-        id: z.string(),
-        source: z.string(),
-        target: z.string(),
-        relation: z.string(),
-      })),
-    }).optional(),
-    links: z.array(z.object({
-      id: z.string(),
-      sourceId: z.string(),
-      targetId: z.string(),
-      type: z.string(),
-      createdAt: z.string(),
-    })).optional(),
-    tags: z.array(z.object({
-      id: z.string(),
-      name: z.string(),
-      color: z.string().optional(),
-    })).optional(),
+    graph: GraphSchema.optional(),
+    mindMap: MindMapSchema.optional(),
+    links: z.array(LinkSchema).optional(),
+    tags: z.array(TagSchema).optional(),
   }),
   timestamp: z.number(),
   ttl: z.number().optional(),

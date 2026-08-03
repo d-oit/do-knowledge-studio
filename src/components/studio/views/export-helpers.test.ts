@@ -10,6 +10,7 @@ import {
 } from './export-helpers'
 import { escapeHtml } from '@/lib/security'
 import type { Entity, Claim } from '@/lib/studio/types'
+import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from '@/lib/studio/schema'
 
 const SAMPLE_ENTITIES: Entity[] = [
   {
@@ -35,6 +36,24 @@ const SAMPLE_CLAIMS: Claim[] = [
     evidence: 'Some evidence',
     source: 'Test source',
   },
+]
+
+const SAMPLE_GRAPH: ValidatedGraph = {
+  nodes: [{ id: 'n1', label: 'Node 1', type: 'note', x: 0, y: 0 }],
+  edges: [{ id: 'ge1', source: 'n1', target: 'n1', relation: 'self' }],
+}
+
+const SAMPLE_MIND_MAP: ValidatedMindMap = {
+  nodes: [{ id: 'mn1', label: 'Root', type: 'concept' }],
+  edges: [],
+}
+
+const SAMPLE_LINKS: ValidatedLink[] = [
+  { id: 'l1', sourceId: 'e1', targetId: 'e2', type: 'related', createdAt: '2026-01-01T00:00:00.000Z' },
+]
+
+const SAMPLE_TAGS: ValidatedTag[] = [
+  { id: 't1', name: 'important', color: '#ff0000' },
 ]
 
 describe('escapeHtml', () => {
@@ -84,6 +103,24 @@ describe('buildJsonExport', () => {
     const parsed = JSON.parse(json)
     expect(parsed.entities[0].name).toBe('Test Entity')
     expect(parsed.entities[0].type).toBe('note')
+  })
+
+  it('includes graph, mindMap, links, and tags when provided', () => {
+    const json = buildJsonExport(SAMPLE_ENTITIES, SAMPLE_CLAIMS, SAMPLE_GRAPH, SAMPLE_MIND_MAP, SAMPLE_LINKS, SAMPLE_TAGS)
+    const parsed = JSON.parse(json)
+    expect(parsed.graph).toEqual(SAMPLE_GRAPH)
+    expect(parsed.mindMap).toEqual(SAMPLE_MIND_MAP)
+    expect(parsed.links).toEqual(SAMPLE_LINKS)
+    expect(parsed.tags).toEqual(SAMPLE_TAGS)
+  })
+
+  it('omits graph, mindMap, links, and tags when not provided', () => {
+    const json = buildJsonExport(SAMPLE_ENTITIES, SAMPLE_CLAIMS)
+    const parsed = JSON.parse(json)
+    expect(parsed.graph).toBeUndefined()
+    expect(parsed.mindMap).toBeUndefined()
+    expect(parsed.links).toBeUndefined()
+    expect(parsed.tags).toBeUndefined()
   })
 })
 
@@ -183,6 +220,30 @@ describe('parseImportFile', () => {
     }
     const result = parseImportFile(JSON.stringify(data))
     expect(result.success).toBe(false)
+  })
+
+  it('extracts graph, mindMap, links, and tags from JSON', () => {
+    const json = buildJsonExport(SAMPLE_ENTITIES, SAMPLE_CLAIMS, SAMPLE_GRAPH, SAMPLE_MIND_MAP, SAMPLE_LINKS, SAMPLE_TAGS)
+    const result = parseImportFile(json)
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.graph).toEqual(SAMPLE_GRAPH)
+      expect(result.mindMap).toEqual(SAMPLE_MIND_MAP)
+      expect(result.links).toEqual(SAMPLE_LINKS)
+      expect(result.tags).toEqual(SAMPLE_TAGS)
+    }
+  })
+
+  it('returns undefined for graph/mindMap/links/tags when absent', () => {
+    const json = buildJsonExport(SAMPLE_ENTITIES, SAMPLE_CLAIMS)
+    const result = parseImportFile(json)
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.graph).toBeUndefined()
+      expect(result.mindMap).toBeUndefined()
+      expect(result.links).toBeUndefined()
+      expect(result.tags).toBeUndefined()
+    }
   })
 })
 

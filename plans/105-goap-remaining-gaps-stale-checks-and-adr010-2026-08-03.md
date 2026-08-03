@@ -45,12 +45,12 @@
 
 ## Success Criteria
 
-- [ ] All stale plan checkboxes reconciled
-- [ ] ADR 010 export schema fully implemented (graph, mindMap, links, tags in JSON export)
-- [ ] console.log replaced with console.warn in test benchmark
-- [ ] `as any` casts replaced with proper typing
-- [ ] All quality gates pass
-- [ ] PR created and reviewed
+- [x] All stale plan checkboxes reconciled
+- [x] ADR 010 export schema fully implemented (graph, mindMap, links, tags in JSON export)
+- [x] console.log replaced with console.warn in test benchmark
+- [x] `as any` casts replaced with proper typing
+- [x] All quality gates pass
+- [x] PR created and reviewed
 
 ## Files to Change
 
