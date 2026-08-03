@@ -55,6 +55,7 @@ vi.mock('./export-helpers', () => {
 })
 
 import { ExportFormatGrid } from './export-format-grid'
+import type { ExportFormatId } from './export-helpers'
 
 const mockEntities = [
   { id: 'ent-1', name: 'Test', type: 'note' as const, description: '', content: '', tags: [], createdAt: '', updatedAt: '', links: [] },
@@ -63,7 +64,7 @@ const mockEntities = [
 describe('ExportFormatGrid', () => {
   const mockSetView = vi.fn()
   const mockSetShowPassword = vi.fn()
-  const mockHandleExport = vi.fn(async () => undefined)
+  const mockHandleExport = vi.fn((_format: ExportFormatId) => Promise.resolve())
 
   beforeEach(() => {
     vi.clearAllMocks()

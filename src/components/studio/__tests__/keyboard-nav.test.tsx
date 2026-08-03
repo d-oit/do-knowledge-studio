@@ -41,7 +41,7 @@ vi.mock('framer-motion', () => {
     }
   return {
     motion: { div: factory('div'), section: factory('section') },
-    AnimatePresence: ({ children }: { children: ReactNode }) => <>{children}</>,
+    AnimatePresence: ({ children }: { children: ReactNode }) => children,
   }
 })
 
@@ -554,7 +554,7 @@ describe('Arrow key navigation in menus/lists', () => {
     render(
       <TypeSelector
         type="note"
-        showMenu={true}
+        showMenu
         onToggleMenu={onToggle}
         onSelect={onSelect}
       />,
