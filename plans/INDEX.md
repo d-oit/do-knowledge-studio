@@ -1,7 +1,20 @@
 # Plans Index
 
-**Updated**: 2026-08-02
+**Updated**: 2026-08-03
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
+
+### Plan 105 — ADR 010 Full Export Schema & Plan Reconciliation (2026-08-03)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Reconcile stale plan checkboxes (099, 100, 101, 102) | Done | Plans 099, 100 marked DONE; Plan 101, 102 success criteria checked |
+| W1 | Fix console.log in test benchmark | Done | `src/lib/search/retrieval.test.ts` — console.log → console.warn |
+| W1 | Fix `as any` casts in test file | Done | `src/components/studio/views/use-export-handlers.test.ts` — proper typing |
+| W2 | Implement ADR 010 full export schema v1 | Done | `src/lib/studio/schema.ts` — 8 new Zod schemas; `src/components/studio/views/export-helpers.ts` — graph/mindMap/links/tags in JSON export |
+| W2 | Extend store with new fields | Done | `src/lib/studio/store.ts` — StudioState, SEED_STATE, import/export, recovery |
+| W3 | Add tests for new schemas | Done | `src/lib/studio/schema.test.ts` — 82 new tests; `src/components/studio/views/export-helpers.test.ts` — 4 roundtrip tests |
+| W3 | Refactor RecoverySnapshotSchema | Done | `src/lib/studio/store.ts` — reuse exported schemas (single source of truth) |
+| W4 | Quality gate + PR | Done | 2042 tests pass, lint/typecheck/build clean, PR #598 |
 
 ### Plan 101 — ADR 022 setTimeout Removal & Plan Status Reconciliation (2026-08-02)
 
