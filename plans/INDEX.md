@@ -24,6 +24,18 @@
 
 ## Current Status
 
+### Session Summary (2026-08-01 — 5 PRs merged)
+
+| Area | PRs | Key Changes |
+|------|-----|-------------|
+| ESLint peer alignment | #583 | `@eslint/js` 10.x → 9.39.4 to match `eslint` 9 toolchain; removed pnpm peer warning (`fa205fc`) |
+| CI Playwright cache | #584 | Lockfile-keyed `~/.cache/ms-playwright` cache in `ci-and-labels.yml`; Plan 15/097 completed (`720df58`) |
+| Merge-state staleness audit | #585 | `plans/098` root-cause doc + AGENTS.md "GitHub merge-state staleness" guidance (`fe1e58f`) |
+| Branch protection ADR | #586 | `plans/ADRs/030` records single-source `main` ruleset config (0 approvals, linear history) (`148ca71`) |
+| Plan status reconciliation | #587 | Plans 097 + 15 marked DONE; INDEX date + W3 wave updated (`6614240`) |
+
+Session notes: GitHub's mergeability cache reported stale `BLOCKED` after the legacy branch protection removal; after verified-gate diagnosis and maintainer approval, the four PRs were merged via protected `--admin` squash (documented in Plan 098 / ADR 030). Final state: 0 open PRs, 0 open issues, 0 open Dependabot alerts, quality gate green (1,992 tests).
+
 ### Session Summary (2026-07-29 — 22 PRs merged)
 
 | Area | PRs | Key Changes |
