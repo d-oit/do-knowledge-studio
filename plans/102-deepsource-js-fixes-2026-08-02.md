@@ -1,7 +1,7 @@
 # Plan 102 — Fix DeepSource JS Introduced Issues (Follow-up to PR #590)
 
 **Date**: 2026-08-02
-**Status**: IN PROGRESS
+**Status**: DONE (merged via PR #591, `0ddf626`)
 **Goal**: Fix the DeepSource: JavaScript check that remains red after PR #590's config change.
 
 ## Root Cause Analysis
