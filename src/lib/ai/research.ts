@@ -130,7 +130,7 @@ function isPrivateIPv6(normalized: string): boolean {
   return false
 }
 
-export function isPrivateIP(hostname: string): boolean {
+export const isPrivateIP = (hostname: string): boolean => {
   const normalized = hostname.toLowerCase().replace(/\.$/, '').replace(/^\[(.+)\]$/, '$1')
 
   if (normalized === 'localhost') {
@@ -166,7 +166,7 @@ export function isPrivateIP(hostname: string): boolean {
   return false
 }
 
-export function extractUrls(text: string): string[] {
+export const extractUrls = (text: string): string[] => {
   const matches = text.match(URL_REGEX)
   if (!matches) return []
   return [...new Set(matches)].filter((url) => {
@@ -190,10 +190,10 @@ export interface ResearchResult {
   error?: string
 }
 
-export async function fetchUrlContent(
+export const fetchUrlContent = async (
   url: string,
   signal?: AbortSignal,
-): Promise<ResearchResult> {
+): Promise<ResearchResult> => {
   try {
     const parsed = new URL(url)
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
@@ -235,14 +235,14 @@ export async function fetchUrlContent(
   }
 }
 
-export async function fetchUrls(
+export const fetchUrls = (
   urls: string[],
   signal?: AbortSignal,
-): Promise<ResearchResult[]> {
+): Promise<ResearchResult[]> => {
   return Promise.all(urls.map((url) => fetchUrlContent(url, signal)))
 }
 
-export function buildResearchContext(results: ResearchResult[]): string {
+export const buildResearchContext = (results: ResearchResult[]): string => {
   const successful = results.filter((r) => r.success)
   if (successful.length === 0) return ''
 

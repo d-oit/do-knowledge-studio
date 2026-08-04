@@ -264,5 +264,7 @@ export function getProviderEndpoint(provider: AIProvider): string {
       return 'https://openrouter.ai/api/v1/chat/completions'
     case 'ollama':
       return 'http://localhost:11434/api/chat'
+    default:
+      return ''
   }
 }
