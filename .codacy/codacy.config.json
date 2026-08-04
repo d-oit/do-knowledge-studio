@@ -24,7 +24,7 @@
   "tools": [
     {
       "toolId": "ESLint9",
-      "localConfigurationFile": "/home/doit/git/do-knowledge-studio/eslint.config.js",
+      "localConfigurationFile": "/home/doit/git/do-knowledge-studio/eslint.config.mjs",
       "useLocalConfigurationFile": true,
       "patterns": []
     },
