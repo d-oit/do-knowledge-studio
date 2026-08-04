@@ -14,12 +14,12 @@ vi.mock('./export-helpers', () => ({
   buildMarkdownExport: vi.fn(() => '# Markdown'),
   buildHtmlExport: vi.fn(() => '<html></html>'),
   buildPdfExport: vi.fn(() => new Blob(['pdf'])),
-  buildDocxExport: vi.fn(async () => new Blob(['docx'])),
+  buildDocxExport: vi.fn(() => Promise.resolve(new Blob(['docx']))),
   parseImportFile: vi.fn(),
 }))
 
 vi.mock('@/lib/export/encrypt', () => ({
-  encryptData: vi.fn(async (data: string) => `encrypted-${data}`),
+  encryptData: vi.fn((data: string) => Promise.resolve(`encrypted-${data}`)),
   buildEncryptedReaderHtml: vi.fn((enc: string) => `<html>${enc}</html>`),
 }))
 
@@ -222,7 +222,7 @@ describe('useExportHandlers', () => {
     expect(toast.success).toHaveBeenCalledWith('Restored to demo data', expect.anything())
   })
 
-  it('handleFileChange sets import preview on successful parse', async () => {
+  it('handleFileChange sets import preview on successful parse', () => {
     const setImportPreview = vi.fn()
     const importedEntities = [
       { id: 'new-1', name: 'New', type: 'note' as const, description: '', content: '', tags: [], createdAt: '', updatedAt: '', links: [] },
@@ -269,7 +269,7 @@ describe('useExportHandlers', () => {
     global.FileReader = OriginalFileReader
   })
 
-  it('handleFileChange shows error when parse fails', async () => {
+  it('handleFileChange shows error when parse fails', () => {
     vi.mocked(parseImportFile).mockReturnValue({
       success: false, entities: [], claims: [],
       errors: [{ path: 'entities[0]', message: 'Invalid type' }],
@@ -305,7 +305,7 @@ describe('useExportHandlers', () => {
     global.FileReader = OriginalFileReader
   })
 
-  it('handleFileChange detects duplicate entity IDs', async () => {
+  it('handleFileChange detects duplicate entity IDs', () => {
     const setImportPreview = vi.fn()
     const importedEntities = [
       { id: 'ent-1', name: 'Existing', type: 'note' as const, description: '', content: '', tags: [], createdAt: '', updatedAt: '', links: [] },

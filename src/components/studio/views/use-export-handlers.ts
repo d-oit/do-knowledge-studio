@@ -10,6 +10,7 @@ import {
 import { encryptData, buildEncryptedReaderHtml } from '@/lib/export/encrypt'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from '@/lib/studio/schema'
 
+/** Builds a human-readable summary string of export contents. */
 const buildExportSummary = (
   entityCount: number,
   claimCount: number,
@@ -26,11 +27,13 @@ const buildExportSummary = (
   return parts.join(' · ')
 }
 
+/** Outcome of an import-with-rollback store operation. */
 interface ImportRollbackResult {
   success: boolean
   error?: string
 }
 
+/** Inputs consumed by the export/import handlers hook. */
 interface UseExportHandlersParams {
   entities: Entity[]
   claims: Claim[]
@@ -45,6 +48,7 @@ interface UseExportHandlersParams {
   fileInputRef: React.RefObject<HTMLInputElement | null>
 }
 
+/** Handlers and password state exposed to the export view. */
 export interface UseExportHandlersReturn {
   handleExport: (format: ExportFormatId) => Promise<void>
   handleImportClick: () => void
@@ -61,6 +65,7 @@ export interface UseExportHandlersReturn {
   setShowPass: React.Dispatch<React.SetStateAction<boolean>>
 }
 
+/** Hook providing all export, import, and reset handlers for the export view. */
 export const useExportHandlers = ({
   entities, claims, graph, mindMap, links, tags, importWithRollback, resetStore,
   importPreview, setImportPreview, fileInputRef,
@@ -73,25 +78,25 @@ export const useExportHandlers = ({
   const exportOptions: ExportOptions = { graph, mindMap, links, tags }
   const stamp = todayStamp()
 
-  const handleExportJson = async () => {
+  const handleExportJson = () => {
     const content = buildJsonExport(entities, claims, exportOptions)
     downloadFile(`do-knowledge-studio-export-${stamp}.json`, content, 'application/json')
     toast.success('JSON export downloaded', { description: buildExportSummary(entities.length, claims.length, graph, mindMap, links, tags) })
   }
 
-  const handleExportMarkdown = async () => {
+  const handleExportMarkdown = () => {
     const content = buildMarkdownExport(entities, claims)
     downloadFile(`do-knowledge-studio-${stamp}.md`, content, 'text/markdown')
     toast.success('Markdown export downloaded', { description: `${entities.length} entities concatenated into one .md file` })
   }
 
-  const handleExportHtml = async () => {
+  const handleExportHtml = () => {
     const content = buildHtmlExport(entities, claims)
     downloadFile(`do-knowledge-studio-${stamp}.html`, content, 'text/html')
     toast.success('HTML export downloaded', { description: 'Self-contained .html page — open in any browser.' })
   }
 
-  const handleExportPdf = async () => {
+  const handleExportPdf = () => {
     try {
       const blob = buildPdfExport(entities, claims)
       downloadBlob(`do-knowledge-studio-${stamp}.pdf`, blob)
@@ -120,8 +125,8 @@ export const useExportHandlers = ({
       const json = buildJsonExport(entities, claims, exportOptions)
       const encrypted = await encryptData(json, password)
       const html = buildEncryptedReaderHtml(encrypted)
-      const blob = new Blob([html], { type: 'text/html' })
-      downloadBlob(`do-knowledge-studio-encrypted-${stamp}.html`, blob)
+      const htmlBlob = new Blob([html], { type: 'text/html' })
+      downloadBlob(`do-knowledge-studio-encrypted-${stamp}.html`, htmlBlob)
       toast.success('Encrypted export downloaded', { description: 'AES-256-GCM encrypted with PBKDF2 key derivation.' })
     } catch (err) {
       toast.error('Encrypted export failed', { description: err instanceof Error ? err.message : 'Unknown error' })
@@ -135,16 +140,16 @@ export const useExportHandlers = ({
   const handleExport = async (format: ExportFormatId) => {
     switch (format) {
       case 'json':
-        await handleExportJson()
+        handleExportJson()
         break
       case 'markdown':
-        await handleExportMarkdown()
+        handleExportMarkdown()
         break
       case 'html':
-        await handleExportHtml()
+        handleExportHtml()
         break
       case 'pdf':
-        await handleExportPdf()
+        handleExportPdf()
         break
       case 'docx':
         await handleExportDocx()
