@@ -39,6 +39,44 @@ enabled = true
   pattern = "JS-0067"
   skip = true
 
+  # JS-C1002: Single-letter variables in short arrow callbacks (e, c, t) are
+  # idiomatic JavaScript/TypeScript. Renaming all instances creates noise diffs
+  # for no readability gain.
+  [[analyzers.meta.issue_patterns]]
+  pattern = "JS-C1002"
+  skip = true
+
+  # JS-0331: Redundant type annotations — TypeScript can infer types from
+  # default values and initializers. Suppress to avoid trivial code churn.
+  [[analyzers.meta.issue_patterns]]
+  pattern = "JS-0331"
+  skip = true
+
+  # JS-R1005: Cyclomatic complexity — the threshold is set to "critical" (>=16
+  # blocks), but DeepSource still posts inline review comments for medium-risk
+  # functions (complexity 6-14). Suppress to prevent noise on stable, tested code.
+  [[analyzers.meta.issue_patterns]]
+  pattern = "JS-R1005"
+  skip = true
+
+  # JS-0321: Template literals without interpolation — flagged as "can be
+  # replaced with regular string literal". Low-signal finding; suppress.
+  [[analyzers.meta.issue_patterns]]
+  pattern = "JS-0321"
+  skip = true
+
+  # JS-0116: Async functions without await — some functions are async for API
+  # consistency even when they delegate to promise-returning helpers. Suppress.
+  [[analyzers.meta.issue_patterns]]
+  pattern = "JS-0116"
+  skip = true
+
+  # JS-W1041: Boolean return can be simplified — explicit return false is more
+  # readable than implicit negation in complex boolean chains. Suppress.
+  [[analyzers.meta.issue_patterns]]
+  pattern = "JS-W1041"
+  skip = true
+
 [[transformers]]
 name = "eslint"
 enabled = true
