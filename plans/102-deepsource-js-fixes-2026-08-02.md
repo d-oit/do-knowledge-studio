@@ -36,7 +36,7 @@ After PR #590 merged, DeepSource JS still failed. Investigation revealed the **b
 - [x] `pnpm run lint` — 0 errors
 - [x] `pnpm run typecheck` — 0 errors
 - [x] Store tests — 73 pass
-- [ ] Full test suite
+- [x] Full test suite
 - [x] PR created, CI monitored
 
 ## Outcome

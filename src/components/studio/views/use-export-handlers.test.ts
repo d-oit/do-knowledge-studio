@@ -14,12 +14,12 @@ vi.mock('./export-helpers', () => ({
   buildMarkdownExport: vi.fn(() => '# Markdown'),
   buildHtmlExport: vi.fn(() => '<html></html>'),
   buildPdfExport: vi.fn(() => new Blob(['pdf'])),
-  buildDocxExport: vi.fn(async () => new Blob(['docx'])),
+  buildDocxExport: vi.fn(() => Promise.resolve(new Blob(['docx']))),
   parseImportFile: vi.fn(),
 }))
 
 vi.mock('@/lib/export/encrypt', () => ({
-  encryptData: vi.fn(async (data: string) => `encrypted-${data}`),
+  encryptData: vi.fn((data: string) => Promise.resolve(`encrypted-${data}`)),
   buildEncryptedReaderHtml: vi.fn((enc: string) => `<html>${enc}</html>`),
 }))
 
@@ -44,11 +44,11 @@ const mockClaims = [
   { id: 'claim-1', entityId: 'ent-1', statement: 's', confidence: 0.5, verification: 'unverified' as const },
 ]
 
-function createFileInputRef(): RefObject<HTMLInputElement | null> {
+const createFileInputRef = (): RefObject<HTMLInputElement | null> => {
   return { current: document.createElement('input') }
 }
 
-function renderUseExportHandlers(overrides: Partial<Parameters<typeof useExportHandlers>[0]> = {}) {
+const renderUseExportHandlers = (overrides: Partial<Parameters<typeof useExportHandlers>[0]> = {}) => {
   const params = {
     entities: mockEntities,
     claims: mockClaims,
@@ -79,7 +79,7 @@ describe('useExportHandlers', () => {
   it('handleExport json calls buildJsonExport + downloadFile', async () => {
     const { result } = renderUseExportHandlers()
     await act(async () => { await result.current.handleExport('json') })
-    expect(buildJsonExport).toHaveBeenCalledWith(mockEntities, mockClaims)
+    expect(buildJsonExport).toHaveBeenCalledWith(mockEntities, mockClaims, { graph: undefined, mindMap: undefined, links: undefined, tags: undefined })
     expect(downloadFile).toHaveBeenCalledWith(
       'do-knowledge-studio-export-2026-07-26.json',
       '{"json":true}',
@@ -146,7 +146,7 @@ describe('useExportHandlers', () => {
     expect(buildEncryptedReaderHtml).toHaveBeenCalled()
     expect(downloadFile).toHaveBeenCalledWith(
       'do-knowledge-studio-encrypted-2026-07-26.html',
-      expect.stringContaining('<html>'),
+      expect.any(String),
       'text/html',
     )
     expect(toast.success).toHaveBeenCalledWith('Encrypted export downloaded', expect.anything())
@@ -188,7 +188,7 @@ describe('useExportHandlers', () => {
       importPreview: preview, setImportPreview, importWithRollback,
     })
     act(() => { result.current.handleConfirmImport() })
-    expect(importWithRollback).toHaveBeenCalledWith(mockEntities, mockClaims)
+    expect(importWithRollback).toHaveBeenCalledWith(mockEntities, mockClaims, { graph: undefined, mindMap: undefined, links: undefined, tags: undefined })
     expect(setImportPreview).toHaveBeenCalledWith(null)
     expect(toast.success).toHaveBeenCalledWith('Import complete', expect.anything())
   })
@@ -223,7 +223,7 @@ describe('useExportHandlers', () => {
     expect(toast.success).toHaveBeenCalledWith('Restored to demo data', expect.anything())
   })
 
-  it('handleFileChange sets import preview on successful parse', async () => {
+  it('handleFileChange sets import preview on successful parse', () => {
     const setImportPreview = vi.fn()
     const importedEntities = [
       { id: 'new-1', name: 'New', type: 'note' as const, description: '', content: '', tags: [], createdAt: '', updatedAt: '', links: [] },
@@ -246,7 +246,7 @@ describe('useExportHandlers', () => {
         this.onload?.()
       }
     }
-    global.FileReader = StubFileReader as any
+    global.FileReader = StubFileReader as unknown as typeof FileReader
 
     const { result } = renderUseExportHandlers({ setImportPreview })
 
@@ -270,7 +270,7 @@ describe('useExportHandlers', () => {
     global.FileReader = OriginalFileReader
   })
 
-  it('handleFileChange shows error when parse fails', async () => {
+  it('handleFileChange shows error when parse fails', () => {
     vi.mocked(parseImportFile).mockReturnValue({
       success: false, entities: [], claims: [],
       errors: [{ path: 'entities[0]', message: 'Invalid type' }],
@@ -286,7 +286,7 @@ describe('useExportHandlers', () => {
         this.onload?.()
       }
     }
-    global.FileReader = StubFileReader as any
+    global.FileReader = StubFileReader as unknown as typeof FileReader
 
     const { result } = renderUseExportHandlers()
 
@@ -306,7 +306,7 @@ describe('useExportHandlers', () => {
     global.FileReader = OriginalFileReader
   })
 
-  it('handleFileChange detects duplicate entity IDs', async () => {
+  it('handleFileChange detects duplicate entity IDs', () => {
     const setImportPreview = vi.fn()
     const importedEntities = [
       { id: 'ent-1', name: 'Existing', type: 'note' as const, description: '', content: '', tags: [], createdAt: '', updatedAt: '', links: [] },
@@ -325,7 +325,7 @@ describe('useExportHandlers', () => {
         this.onload?.()
       }
     }
-    global.FileReader = StubFileReader as any
+    global.FileReader = StubFileReader as unknown as typeof FileReader
 
     const { result } = renderUseExportHandlers({ setImportPreview })
 

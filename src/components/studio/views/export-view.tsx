@@ -12,9 +12,13 @@ import { EncryptExportDialog } from './encrypt-export-dialog'
 import { ResetConfirmDialog } from './reset-confirm-dialog'
 import { ImportPreviewDialog } from './import-preview-dialog'
 
-export function ExportView() {
+export const ExportView = () => {
   const entities = useStudioStore((s) => s.entities)
   const claims = useStudioStore((s) => s.claims)
+  const graph = useStudioStore((s) => s.graph)
+  const mindMap = useStudioStore((s) => s.mindMap)
+  const links = useStudioStore((s) => s.links)
+  const tags = useStudioStore((s) => s.tags)
   const importWithRollback = useStudioStore((s) => s.importWithRollback)
   const resetStore = useStudioStore((s) => s.resetStore)
   const setView = useStudioStore((s) => s.setView)
@@ -41,6 +45,10 @@ export function ExportView() {
   } = useExportHandlers({
     entities,
     claims,
+    graph,
+    mindMap,
+    links,
+    tags,
     importWithRollback,
     resetStore,
     importPreview,

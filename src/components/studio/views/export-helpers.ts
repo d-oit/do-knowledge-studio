@@ -16,26 +16,35 @@ import {
   AlignmentType,
   ExternalHyperlink,
 } from 'docx'
-import { validateImportPayload, type ValidationError } from '@/lib/studio/schema'
+import { validateImportPayload, type ValidationError, type ValidatedGraph, type ValidatedMindMap, type ValidatedLink, type ValidatedTag } from '@/lib/studio/schema'
 import { escapeHtml } from '@/lib/security'
 
+/** Supported export output formats. */
 export type ExportFormatId = 'json' | 'markdown' | 'html' | 'pdf' | 'docx' | 'encrypted'
 
+/** Result of parsing an import file: either validated data or a list of errors. */
 export type ImportResult =
-  | { success: true; entities: Entity[]; claims: Claim[] }
+  | { success: true; entities: Entity[]; claims: Claim[]; graph?: ValidatedGraph; mindMap?: ValidatedMindMap; links?: ValidatedLink[]; tags?: ValidatedTag[] }
   | { success: false; errors: ValidationError[] }
 
+/** Preview of an import shown to the user before confirmation. */
 export interface ImportPreview {
   entities: Entity[]
   claims: Claim[]
+  graph?: ValidatedGraph
+  mindMap?: ValidatedMindMap
+  links?: ValidatedLink[]
+  tags?: ValidatedTag[]
   entityCount: number
   claimCount: number
   version: number
   duplicateIds: string[]
 }
 
+/** Theme color keys used by export format cards. */
 export type ExportColorKey = 'saffron' | 'sky' | 'sage' | 'clay'
 
+/** Display metadata for a single export format option. */
 export interface ExportFormat {
   id: ExportFormatId
   name: string
@@ -46,6 +55,7 @@ export interface ExportFormat {
   available?: boolean
 }
 
+/** All export formats offered in the export view, in display order. */
 export const FORMATS: ExportFormat[] = [
   {
     id: 'markdown',
@@ -98,6 +108,7 @@ export const FORMATS: ExportFormat[] = [
   },
 ]
 
+/** Tailwind color classes for each export format color key. */
 export const COLOR_MAP: Record<ExportColorKey, string> = {
   saffron: 'bg-saffron-soft text-saffron-deep',
   sky: 'bg-sky-100 text-sky-600 dark:bg-sky-950/40 dark:text-sky-300',
@@ -105,7 +116,8 @@ export const COLOR_MAP: Record<ExportColorKey, string> = {
   clay: 'bg-rose-100 text-clay dark:bg-rose-950/40 dark:text-rose-300',
 }
 
-export function todayStamp(): string {
+/** Returns today's date formatted as YYYY-MM-DD for export filenames. */
+export const todayStamp = (): string => {
   const date = new Date()
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -113,12 +125,8 @@ export function todayStamp(): string {
   return `${year}-${month}-${day}`
 }
 
-export function downloadFile(filename: string, content: string, mimeType: string = 'text/plain') {
-  const blob = new Blob([content], { type: mimeType })
-  downloadBlob(filename, blob)
-}
-
-export function downloadBlob(filename: string, blob: Blob) {
+/** Triggers a browser download for the given blob. */
+export const downloadBlob = (filename: string, blob: Blob) => {
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
   anchor.href = url
@@ -129,7 +137,14 @@ export function downloadBlob(filename: string, blob: Blob) {
   URL.revokeObjectURL(url)
 }
 
-export function buildClaimsByEntityId(claims: Claim[]): Map<string, Claim[]> {
+/** Triggers a browser download for the given text content. */
+export const downloadFile = (filename: string, content: string, mimeType = 'text/plain') => {
+  const blob = new Blob([content], { type: mimeType })
+  downloadBlob(filename, blob)
+}
+
+/** Groups claims by their owning entity id. */
+export const buildClaimsByEntityId = (claims: Claim[]): Map<string, Claim[]> => {
   const map = new Map<string, Claim[]>()
   for (const c of claims) {
     const list = map.get(c.entityId)
@@ -142,17 +157,35 @@ export function buildClaimsByEntityId(claims: Claim[]): Map<string, Claim[]> {
   return map
 }
 
-export function buildJsonExport(entities: Entity[], claims: Claim[]): string {
+/** Optional export payload sections beyond entities and claims. */
+export interface ExportOptions {
+  graph?: ValidatedGraph
+  mindMap?: ValidatedMindMap
+  links?: ValidatedLink[]
+  tags?: ValidatedTag[]
+}
+
+/** Builds a JSON export string including graph, mind map, links, and tags. */
+export const buildJsonExport = (
+  entities: Entity[],
+  claims: Claim[],
+  options?: ExportOptions,
+): string => {
   const payload = {
     version: 1,
     exportedAt: new Date().toISOString(),
     entities,
     claims,
+    ...(options?.graph && { graph: options.graph }),
+    ...(options?.mindMap && { mindMap: options.mindMap }),
+    ...(options?.links && { links: options.links }),
+    ...(options?.tags && { tags: options.tags }),
   }
   return JSON.stringify(payload, null, 2)
 }
 
-export function buildMarkdownExport(entities: Entity[], claims: Claim[]): string {
+/** Builds a Markdown export string with every entity and its claims. */
+export const buildMarkdownExport = (entities: Entity[], claims: Claim[]): string => {
   const claimsByEntity = buildClaimsByEntityId(claims)
   const parts: string[] = []
   parts.push(`# DO Knowledge Studio — export\n`)
@@ -195,7 +228,8 @@ export function buildMarkdownExport(entities: Entity[], claims: Claim[]): string
   return parts.join('\n')
 }
 
-export function buildHtmlExport(entities: Entity[], claims: Claim[]): string {
+/** Builds a self-contained HTML export page (with CSP) for all entities. */
+export const buildHtmlExport = (entities: Entity[], claims: Claim[]): string => {
   const claimsByEntity = buildClaimsByEntityId(claims)
   const rows = entities
     .map((e) => {
@@ -259,7 +293,8 @@ export function buildHtmlExport(entities: Entity[], claims: Claim[]): string {
 </html>`
 }
 
-export function buildPdfExport(entities: Entity[], claims: Claim[]): Blob {
+/** Builds a print-ready PDF blob for all entities and claims. */
+export const buildPdfExport = (entities: Entity[], claims: Claim[]): Blob => {
   const claimsByEntity = buildClaimsByEntityId(claims)
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const margin = 20
@@ -354,7 +389,8 @@ export function buildPdfExport(entities: Entity[], claims: Claim[]): Blob {
   return doc.output('blob')
 }
 
-export async function buildDocxExport(entities: Entity[], claims: Claim[]): Promise<Blob> {
+/** Builds a Word (.docx) blob for all entities and claims. */
+export const buildDocxExport = (entities: Entity[], claims: Claim[]): Promise<Blob> => {
   const claimsByEntity = buildClaimsByEntityId(claims)
   const children: Paragraph[] = []
 
@@ -458,7 +494,8 @@ export async function buildDocxExport(entities: Entity[], claims: Claim[]): Prom
   return Packer.toBlob(doc)
 }
 
-export function parseImportFile(text: string): ImportResult {
+/** Parses and validates an imported JSON export file. */
+export const parseImportFile = (text: string): ImportResult => {
   let data: unknown
   try {
     data = JSON.parse(text)
@@ -475,6 +512,10 @@ export function parseImportFile(text: string): ImportResult {
     exportedAt: typeof root.exportedAt === 'string' ? root.exportedAt : new Date().toISOString(),
     entities: root.entities ?? [],
     claims: root.claims ?? [],
+    graph: root.graph,
+    mindMap: root.mindMap,
+    links: root.links,
+    tags: root.tags,
   }
 
   const result = validateImportPayload(payload)
@@ -482,7 +523,7 @@ export function parseImportFile(text: string): ImportResult {
     return { success: false, errors: result.errors }
   }
 
-  const { entities, claims } = result.data
+  const { entities, claims, graph, mindMap, links, tags } = result.data
   if (entities.length === 0) {
     return { success: false, errors: [{ path: 'entities', message: 'No valid entities found in file.' }] }
   }
@@ -499,5 +540,5 @@ export function parseImportFile(text: string): ImportResult {
     }
   }
 
-  return { success: true, entities, claims }
+  return { success: true, entities, claims, graph, mindMap, links, tags }
 }
