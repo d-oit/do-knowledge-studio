@@ -127,15 +127,15 @@ function bm25Score(
 function getSnippet(entry: IndexEntry, maxLength: number = 140): string {
   const text = entry.fullText.trim()
   if (text.length <= maxLength) return text
-  return text.slice(0, maxLength) + '…'
+  return `${text.slice(0, maxLength)}…`
 }
 
-export function search(
+export const search = (
   entities: Entity[],
   claims: Claim[],
   query: string,
-  limit: number = 5,
-): SearchResult[] {
+  limit = 5,
+): SearchResult[] => {
   const entityMap = new Map<string, Entity>()
   for (const e of entities) {
     entityMap.set(e.id, e)

@@ -13,7 +13,10 @@ const APP_TITLE = 'Do Knowledge Studio'
 
 const ALLOWED_OLLAMA_HOSTS = new Set(['localhost', '127.0.0.1', '::1'])
 
-export function validateOllamaUrl(baseUrl: string): string {
+const isAllowedOllamaHost = (hostname: string): boolean =>
+  ALLOWED_OLLAMA_HOSTS.has(hostname) || hostname.endsWith('.local')
+
+export const validateOllamaUrl = (baseUrl: string): string => {
   let url: URL
   try {
     url = new URL(baseUrl)
@@ -23,11 +26,8 @@ export function validateOllamaUrl(baseUrl: string): string {
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     throw new Error('Ollama base URL must use http or https protocol')
   }
-  const hostname = url.hostname
-  if (!ALLOWED_OLLAMA_HOSTS.has(hostname) && !hostname.endsWith('.local')) {
-    throw new Error(
-      'Ollama base URL must point to localhost or a .local hostname',
-    )
+  if (!isAllowedOllamaHost(url.hostname)) {
+    throw new Error('Ollama base URL must point to localhost or a .local hostname')
   }
   return baseUrl.replace(/\/+$/, '')
 }
@@ -80,7 +80,7 @@ async function consumeSSE(
             onChunk(content)
           }
         } catch {
-          // Skip malformed SSE lines — streaming responses may contain partial JSON or control frames
+          console.warn('Skipping malformed SSE frame during streaming')
         }
       }
     }
@@ -121,7 +121,7 @@ async function consumeNDJSON(
             onChunk(content)
           }
         } catch {
-          // Skip malformed NDJSON lines — Ollama streaming may emit partial or non-JSON frames
+          console.warn('Skipping malformed NDJSON frame during streaming')
         }
       }
     }
@@ -316,27 +316,27 @@ const adapters: Record<ProviderId, ProviderAdapter> = {
   ollama: new OllamaAdapter(),
 }
 
-export function getAdapter(provider: ProviderId): ProviderAdapter {
+export const getAdapter = (provider: ProviderId): ProviderAdapter => {
   return adapters[provider]
 }
 
-export async function sendChat(request: ChatRequest): Promise<ChatResult> {
+export const sendChat = (request: ChatRequest): Promise<ChatResult> => {
   const adapter = getAdapter(request.provider)
   return adapter.send(request)
 }
 
-export async function sendChatStream(
+export const sendChatStream = (
   request: ChatRequest,
   onChunk: (chunk: string) => void,
-): Promise<ChatResult> {
+): Promise<ChatResult> => {
   const adapter = getAdapter(request.provider)
   return adapter.sendStream(request, onChunk)
 }
 
-export async function fetchOllamaModels(
+export const fetchOllamaModels = async (
   baseUrl: string = DEFAULT_OLLAMA_BASE_URL,
   signal?: AbortSignal,
-): Promise<string[]> {
+): Promise<string[]> => {
   const validatedUrl = validateOllamaUrl(baseUrl)
   const res = await fetch(`${validatedUrl}/api/tags`, { signal })
   if (!res.ok) throw new Error(`Ollama tags error ${res.status}`)

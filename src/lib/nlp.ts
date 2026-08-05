@@ -133,5 +133,7 @@ export function formatIntentSummary(intent: Intent): string {
       return `Search: "${intent.query}"`
     case 'unknown':
       return `Unrecognized: "${intent.raw.slice(0, 60)}${intent.raw.length > 60 ? '…' : ''}"`
+    default:
+      return `Unknown intent`
   }
 }
