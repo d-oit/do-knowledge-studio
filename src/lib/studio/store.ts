@@ -7,21 +7,13 @@ import { z } from 'zod'
 import type { Entity, Claim, ViewId, ChatMessage, EntityType } from './types'
 import { seedEntities, seedClaims, seedChat } from './seed-data'
 import { search } from '@/lib/search/retrieval'
-import { validatePersistedState, GraphSchema, MindMapSchema, LinkSchema, TagSchema, EntitySchema, ClaimSchema } from './schema'
+import { validatePersistedState } from './schema'
 import { runMigrations, CURRENT_SCHEMA_VERSION } from './migrations'
-import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from './schema'
 
 const MAX_HISTORY = 50
 const RECOVERY_KEY = 'do-knowledge-studio-recovery'
 const RECOVERY_TTL_MS = 24 * 60 * 60 * 1000
 const MAX_RECOVERY_SIZE_BYTES = 4 * 1024 * 1024
-
-interface ImportOptions {
-  graph?: ValidatedGraph
-  mindMap?: ValidatedMindMap
-  links?: ValidatedLink[]
-  tags?: ValidatedTag[]
-}
 
 interface StudioState {
   // Navigation
@@ -83,54 +75,15 @@ interface StudioState {
   setMobilePanelView: (v: 'nav' | 'search') => void
 
   // Import / reset
-  importData: (entities: Entity[], claims: Claim[], options?: ImportOptions) => void
-  importWithRollback: (entities: Entity[], claims: Claim[], options?: ImportOptions) => { success: boolean; error?: string }
+  importData: (entities: Entity[], claims: Claim[]) => void
+  importWithRollback: (entities: Entity[], claims: Claim[]) => { success: boolean; error?: string }
   resetStore: () => void
-
-  // Graph, mind map, links, and tags
-  graph: ValidatedGraph | undefined
-  mindMap: ValidatedMindMap | undefined
-  links: ValidatedLink[] | undefined
-  tags: ValidatedTag[] | undefined
 
   // Theme handled by next-themes — store tracks UI side effects only
 }
 
-const generateId = (): string => crypto.randomUUID()
-
-interface RecoverySnapshot {
-  entities: Entity[]
-  claims: Claim[]
-  entityHistory: Entity[][]
-  historyIndex: number
-  graph?: ValidatedGraph
-  mindMap?: ValidatedMindMap
-  links?: ValidatedLink[]
-  tags?: ValidatedTag[]
-}
-
-const buildRecoverySnapshot = (state: StudioState): RecoverySnapshot => ({
-  entities: structuredClone(state.entities),
-  claims: structuredClone(state.claims),
-  entityHistory: structuredClone(state.entityHistory),
-  historyIndex: state.historyIndex,
-  graph: state.graph ? structuredClone(state.graph) : undefined,
-  mindMap: state.mindMap ? structuredClone(state.mindMap) : undefined,
-  links: state.links ? structuredClone(state.links) : undefined,
-  tags: state.tags ? structuredClone(state.tags) : undefined,
-})
-
-const persistRecoverySnapshot = (snapshot: RecoverySnapshot): void => {
-  try {
-    const serialized = JSON.stringify({ snapshot, timestamp: Date.now(), ttl: RECOVERY_TTL_MS })
-    if (serialized.length > MAX_RECOVERY_SIZE_BYTES) {
-      console.warn('Recovery snapshot exceeds size limit, skipping persistence')
-    } else {
-      localStorage.setItem(RECOVERY_KEY, serialized)
-    }
-  } catch {
-    console.warn('Failed to persist recovery snapshot')
-  }
+function generateId(): string {
+  return crypto.randomUUID()
 }
 
 // The default (seed) state — used on first load and as a fallback when a
@@ -147,10 +100,6 @@ const SEED_STATE = {
   sortBy: 'updated' as 'name' | 'created' | 'updated',
   sortDir: 'desc' as 'asc' | 'desc',
   rightPanelOpen: true,
-  graph: undefined as ValidatedGraph | undefined,
-  mindMap: undefined as ValidatedMindMap | undefined,
-  links: undefined as ValidatedLink[] | undefined,
-  tags: undefined as ValidatedTag[] | undefined,
 }
 
 export const useStudioStore = create<StudioState>()(
@@ -343,14 +292,10 @@ export const useStudioStore = create<StudioState>()(
       mobilePanelView: 'nav',
       setMobilePanelView: (v) => set({ mobilePanelView: v }),
 
-      importData: (entities, claims, options) =>
+      importData: (entities, claims) =>
         set({
           entities,
           claims,
-          graph: options?.graph,
-          mindMap: options?.mindMap,
-          links: options?.links,
-          tags: options?.tags,
           selectedEntityId: null,
           editingEntityId: null,
           currentView: 'library',
@@ -358,18 +303,28 @@ export const useStudioStore = create<StudioState>()(
           historyIndex: 0,
         }),
 
-      importWithRollback: (entities, claims, options) => {
+      importWithRollback: (entities, claims) => {
         const state = get()
-        const snapshot = buildRecoverySnapshot(state)
-        persistRecoverySnapshot(snapshot)
+        const snapshot = {
+          entities: structuredClone(state.entities),
+          claims: structuredClone(state.claims),
+          entityHistory: structuredClone(state.entityHistory),
+          historyIndex: state.historyIndex,
+        }
+        try {
+          const serialized = JSON.stringify({ snapshot, timestamp: Date.now(), ttl: RECOVERY_TTL_MS })
+          if (serialized.length > MAX_RECOVERY_SIZE_BYTES) {
+            console.warn('Recovery snapshot exceeds size limit, skipping persistence')
+          } else {
+            localStorage.setItem(RECOVERY_KEY, serialized)
+          }
+        } catch {
+          console.warn('Failed to persist recovery snapshot')
+        }
         try {
           set({
             entities,
             claims,
-            graph: options?.graph,
-            mindMap: options?.mindMap,
-            links: options?.links,
-            tags: options?.tags,
             selectedEntityId: null,
             editingEntityId: null,
             currentView: 'library',
@@ -384,10 +339,6 @@ export const useStudioStore = create<StudioState>()(
               claims: snapshot.claims,
               entityHistory: snapshot.entityHistory,
               historyIndex: snapshot.historyIndex,
-              graph: snapshot.graph,
-              mindMap: snapshot.mindMap,
-              links: snapshot.links,
-              tags: snapshot.tags,
             })
           } catch {
             set({
@@ -431,10 +382,6 @@ export const useStudioStore = create<StudioState>()(
         sortBy: state.sortBy,
         sortDir: state.sortDir,
         rightPanelOpen: state.rightPanelOpen,
-        graph: state.graph,
-        mindMap: state.mindMap,
-        links: state.links,
-        tags: state.tags,
       }),
       // Validate and migrate persisted state. Invalid or corrupt data
       // falls back to seed defaults rather than crashing the app.
@@ -462,20 +409,38 @@ export const useStudioStore = create<StudioState>()(
 
 const RecoverySnapshotSchema = z.object({
   snapshot: z.object({
-    entities: z.array(EntitySchema),
-    claims: z.array(ClaimSchema),
+    entities: z.array(z.object({
+      id: z.string(),
+      name: z.string(),
+      type: z.string(),
+      description: z.string(),
+      content: z.string(),
+      sourceUrl: z.string().optional(),
+      tags: z.array(z.string()),
+      links: z.array(z.object({
+        targetId: z.string(),
+        relation: z.string(),
+      })),
+      createdAt: z.string(),
+      updatedAt: z.string(),
+    })),
+    claims: z.array(z.object({
+      id: z.string(),
+      entityId: z.string(),
+      statement: z.string(),
+      evidence: z.string(),
+      confidence: z.number(),
+      verification: z.string(),
+      source: z.string().optional(),
+    })),
     entityHistory: z.array(z.array(z.object({ id: z.string() }))),
     historyIndex: z.number(),
-    graph: GraphSchema.optional(),
-    mindMap: MindMapSchema.optional(),
-    links: z.array(LinkSchema).optional(),
-    tags: z.array(TagSchema).optional(),
   }),
   timestamp: z.number(),
   ttl: z.number().optional(),
 })
 
-export const restoreFromRecovery = (): { success: boolean; error?: string } => {
+export function restoreFromRecovery(): { success: boolean; error?: string } {
   let raw: string | null = null
   try {
     raw = localStorage.getItem(RECOVERY_KEY)
@@ -498,10 +463,6 @@ export const restoreFromRecovery = (): { success: boolean; error?: string } => {
       claims: snapshot.claims as Claim[],
       entityHistory: snapshot.entityHistory as Entity[][],
       historyIndex: snapshot.historyIndex,
-      graph: snapshot.graph as ValidatedGraph | undefined,
-      mindMap: snapshot.mindMap as ValidatedMindMap | undefined,
-      links: snapshot.links as ValidatedLink[] | undefined,
-      tags: snapshot.tags as ValidatedTag[] | undefined,
     })
     localStorage.removeItem(RECOVERY_KEY)
     return { success: true }
@@ -523,7 +484,7 @@ export const restoreFromRecovery = (): { success: boolean; error?: string } => {
 }
 
 // Selectors
-export const useFilteredEntities = (): Entity[] => {
+export function useFilteredEntities(): Entity[] {
   const entities = useStudioStore((s) => s.entities)
   const searchQuery = useStudioStore((s) => s.searchQuery)
   const typeFilter = useStudioStore((s) => s.typeFilter)
@@ -553,22 +514,26 @@ export const useFilteredEntities = (): Entity[] => {
   }, [entities, searchQuery, typeFilter, sortBy, sortDir])
 }
 
-export const useStats = () => {
-  const { entities, claims } = useStudioStore()
-  const byType = entities.reduce(
-    (acc, e) => {
-      acc[e.type] = (acc[e.type] || 0) + 1
-      return acc
-    },
-    {} as Record<EntityType, number>,
-  )
-  const verified = claims.filter((c) => c.verification === 'verified').length
-  const recent = [...entities].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 5)
-  return {
-    total: entities.length,
-    claims: claims.length,
-    verified,
-    byType,
-    recent,
-  }
+export function useStats() {
+  const entities = useStudioStore((s) => s.entities)
+  const claims = useStudioStore((s) => s.claims)
+
+  return useMemo(() => {
+    const byType = entities.reduce(
+      (acc, e) => {
+        acc[e.type] = (acc[e.type] || 0) + 1
+        return acc
+      },
+      {} as Record<EntityType, number>,
+    )
+    const verified = claims.filter((c) => c.verification === 'verified').length
+    const recent = [...entities].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 5)
+    return {
+      total: entities.length,
+      claims: claims.length,
+      verified,
+      byType,
+      recent,
+    }
+  }, [entities, claims])
 }
