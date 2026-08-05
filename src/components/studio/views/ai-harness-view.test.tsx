@@ -32,6 +32,7 @@ vi.mock('lucide-react', () => {
     Zap: Icon,
     RefreshCw: Icon,
     Globe: Icon,
+    KeyRound: Icon,
   }
 })
 
@@ -137,6 +138,19 @@ describe('AIHarnessView', () => {
   it('renders the Lab badge', async () => {
     await act(async () => { render(<AIHarnessView />) })
     expect(screen.getByText('Lab')).toBeDefined()
+  })
+
+  it('renders a getting-started prompt when the provider needs setup', async () => {
+    await act(async () => { render(<AIHarnessView />) })
+    expect(screen.getByText('Connect an AI provider')).toBeDefined()
+    expect(screen.getByText('Add an API key to ask a hosted model, or switch to Ollama for a local model. Your prompt is sent to the selected provider; your library stays in this browser until you choose to include local context in a request.')).toBeDefined()
+    expect(screen.getByText('With local augmentation on, selected notes and claims are included in requests. Turn it off to send only your prompt.')).toBeDefined()
+  })
+
+  it('opens provider settings from the getting-started prompt', async () => {
+    await act(async () => { render(<AIHarnessView />) })
+    await act(async () => { screen.getByRole('button', { name: 'Open provider settings' }).click() })
+    expect(screen.getByText('Hide settings')).toBeDefined()
   })
 
   it('renders settings toggle button', async () => {

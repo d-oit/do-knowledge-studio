@@ -36,6 +36,9 @@ const SERIF_FONT_STYLE: React.CSSProperties = {
   fontFamily: 'var(--font-newsreader), Georgia, serif',
 } as const
 
+const ADVANCED_METADATA_TITLE = 'Metadata & source'
+const ADVANCED_METADATA_DESCRIPTION = 'Optional context that helps you find and revisit this note later. Tags stay visible above for quick editing.'
+
 function restoreSelection(textarea: HTMLTextAreaElement, start: number, end: number) {
   textarea.focus()
   textarea.setSelectionRange(start, end)
@@ -293,7 +296,19 @@ export function EditorView() {
       />
 
       {showAdvanced && (
-        <div className="mb-4 space-y-3 rounded-lg border border-dashed border-border bg-muted/30 p-4">
+        <div
+          className="mb-4 space-y-3 rounded-lg border border-dashed border-border bg-muted/30 p-4"
+          role="group"
+          aria-labelledby="advanced-fields-heading"
+        >
+          <div>
+            <h3 id="advanced-fields-heading" className="font-serif text-[15px] font-semibold text-ink">
+              {ADVANCED_METADATA_TITLE}
+            </h3>
+            <p className="mt-1 text-label leading-relaxed text-ink-mute">
+              {ADVANCED_METADATA_DESCRIPTION}
+            </p>
+          </div>
           <div>
             <label htmlFor="source-url" className="mb-1 flex items-center gap-1.5 text-label font-semibold uppercase tracking-wide text-ink-faint">
               <ExternalLink className="h-3 w-3" />

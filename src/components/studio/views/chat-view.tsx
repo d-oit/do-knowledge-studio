@@ -15,6 +15,21 @@ const SUGGESTIONS = [
   { label: 'What is TRIZ useful for?', query: 'What is the TRIZ contradiction matrix useful for?' },
 ]
 
+const CHAT_CAPABILITIES = [
+  'Search notes, people, projects, and claims in this browser',
+  'Synthesize connections across your local knowledge base',
+  'Show the local items used to support each answer',
+]
+
+const CHAT_WELCOME_DESCRIPTION = 'Ask questions about your library, find connections, or start a synthesis. Your content stays in this browser.'
+const CHAT_CAPABILITIES_LABEL = 'What you can ask'
+const CHAT_SUGGESTION_LABEL = 'Try a prompt'
+
+const SUGGESTIONS_LABEL = 'Try:'
+const LOCAL_SEARCH_STATUS = 'Local search active'
+const CHAT_SHORTCUT_HINT = 'Enter to send · Shift+Enter for newline'
+const CLEAR_CHAT_LABEL = 'Clear'
+
 function TypingIndicator({ reducedMotion }: { reducedMotion?: boolean }) {
   return (
     <div className="flex gap-3" aria-live="polite" aria-label="Assistant is typing">
@@ -108,8 +123,24 @@ export function ChatView() {
               <h2 className="mb-2 font-serif text-lg font-semibold text-ink">
                 Ask your library
               </h2>
-              <p className="mb-6 max-w-sm text-[14px] text-ink-mute">
-                Ask questions about your library. Answers are based on local search — no data leaves your device.
+              <p className="mb-4 max-w-sm text-[14px] text-ink-mute">
+                {CHAT_WELCOME_DESCRIPTION}
+              </p>
+              <div className="mb-6 max-w-md text-left">
+                <p className="mb-2 text-label font-semibold uppercase tracking-wide text-ink-faint">
+                  {CHAT_CAPABILITIES_LABEL}
+                </p>
+                <ul className="space-y-1.5 text-[13px] text-ink-mute">
+                  {CHAT_CAPABILITIES.map((capability) => (
+                    <li key={capability} className="flex gap-2">
+                      <span aria-hidden="true" className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-saffron" />
+                      <span>{capability}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <p className="mb-2 text-label font-semibold uppercase tracking-wide text-ink-faint">
+                {CHAT_SUGGESTION_LABEL}
               </p>
               <div className="flex flex-wrap justify-center gap-2">
                 {SUGGESTIONS.map((s) => (
@@ -232,7 +263,7 @@ export function ChatView() {
           <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-2">
             <span className="flex items-center gap-1 text-label font-medium text-ink-faint">
               <Sparkles className="h-3 w-3" />
-              Try:
+              {SUGGESTIONS_LABEL}
             </span>
             {SUGGESTIONS.map((s) => (
               <button
@@ -285,10 +316,10 @@ export function ChatView() {
             <div className="flex items-center gap-2">
               <span className="flex items-center gap-1">
                 <span className="h-1.5 w-1.5 rounded-full bg-saffron" />
-                Local search active
+                {LOCAL_SEARCH_STATUS}
               </span>
               <span>·</span>
-              <span>Enter to send · Shift+Enter for newline</span>
+              <span>{CHAT_SHORTCUT_HINT}</span>
               {input.length > 1800 && (
                 <span className={cn('font-mono', input.length >= 2000 ? 'text-clay' : 'text-ink-faint')}>
                   {input.length}/2000
@@ -301,7 +332,7 @@ export function ChatView() {
               className="flex min-h-[44px] min-w-[44px] items-center gap-1 transition-colors hover:text-red-500 disabled:opacity-30 disabled:hover:text-red-500 focus-ring"
             >
               <Trash2 className="h-3 w-3" />
-              Clear
+              {CLEAR_CHAT_LABEL}
             </button>
           </div>
         </div>

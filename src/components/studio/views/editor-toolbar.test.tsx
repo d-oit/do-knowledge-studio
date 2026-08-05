@@ -144,6 +144,17 @@ describe('EditorToolbar', () => {
     expect(screen.getByText('Source URL, tags')).toBeDefined()
   })
 
+  it('explains advanced metadata when the section is closed', () => {
+    render(
+      <EditorToolbar
+        showAdvanced={false}
+        onToggleAdvanced={mockOnToggleAdvanced}
+        onFormat={mockOnFormat}
+      />,
+    )
+    expect(screen.getByText('Source URL, tags')).toBeDefined()
+  })
+
   it('hides advanced label when showAdvanced is true', () => {
     render(
       <EditorToolbar
