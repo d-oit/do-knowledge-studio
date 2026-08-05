@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 import { ENTITY_TYPE_META, type EntityType } from '@/lib/studio/types'
 import { TypeSelector } from './type-selector'
 
-export function EditorHeader({
+export const EditorHeader = ({
   editing,
   name,
   onNameChange,
@@ -20,7 +20,7 @@ export function EditorHeader({
   type: EntityType
   description: string
   onDescriptionChange: (description: string) => void
-}) {
+}) => {
   const meta = ENTITY_TYPE_META[type as keyof typeof ENTITY_TYPE_META]
 
   return (
@@ -56,7 +56,7 @@ export function EditorHeader({
   )
 }
 
-export function EditorTags({
+export const EditorTags = ({
   tags,
   onTagsChange,
   type,
@@ -70,7 +70,7 @@ export function EditorTags({
   showTypeMenu: boolean
   onToggleTypeMenu: () => void
   onSelectType: (type: EntityType) => void
-}) {
+}) => {
   const [newTag, setNewTag] = useState('')
 
   const addTag = () => {

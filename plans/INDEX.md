@@ -1,7 +1,19 @@
 # Plans Index
 
-**Updated**: 2026-08-03
+**Updated**: 2026-08-05
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
+
+### Plan 106 — DeepSource Remediation, CI Fix, and Coverage (2026-08-05)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | DeepSource JS code fixes | Done | `store.ts`, `sync-helpers.tsx`, `editor-helpers.tsx`, `triz-helpers.tsx` — `function` → `const` arrow, `q` → `query` |
+| W2 | Fix store regression from PR #610 merge | Done | PR #611 — restored `graph`/`mindMap`/`links`/`tags` in `StudioState`, `ImportOptions`, recovery snapshot, `SEED_STATE`, `partialize`, `RecoverySnapshotSchema` |
+| W3 | Coverage: store-graph tests | Done | `store-graph.test.ts` — 7 tests guarding import/rollback/recovery of graph fields |
+| W3 | Coverage: helper component tests | Done | `sync-helpers.test.tsx` (14), `editor-helpers.test.tsx` (13), `triz-helpers.test.tsx` (9) |
+| W3 | Coverage: seed-data integrity | Done | `seed-data.test.ts` — 7 referential-integrity tests |
+| W4 | Documentation reconciliation | Done | INDEX.md updated (099/100/102/103/104 sections added, 106 added, plan 104 collision renumbered) |
+| W4 | Quality gate | Done | 2095 tests pass, lint/typecheck/build clean |
 
 ### Plan 105 — ADR 010 Full Export Schema & Plan Reconciliation (2026-08-03)
 
@@ -15,6 +27,38 @@
 | W3 | Add tests for new schemas | Done | `src/lib/studio/schema.test.ts` — 82 new tests; `src/components/studio/views/export-helpers.test.ts` — 4 roundtrip tests |
 | W3 | Refactor RecoverySnapshotSchema | Done | `src/lib/studio/store.ts` — reuse exported schemas (single source of truth) |
 | W4 | Quality gate + PR | Done | 2042 tests pass, lint/typecheck/build clean, PR #598 |
+
+### Plan 104 — Long-Term DeepSource JS CI Fix (2026-08-03)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Root-cause recurring DeepSource JS failures | Done | `.deepsource.toml` — issue pattern suppressions (JS-0067, JS-C1002, JS-0331, JS-R1005, JS-0321, JS-0116, JS-W1041) and `skip_doc_coverage` for function types |
+
+### Plan 103 — Resolve DeepSource JS Findings (2026-08-03)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Fix DeepSource JS findings in code | Done | Arrow-function conversions, complexity refactors, redundant annotation removal across `src/lib` |
+| W1 | Suppress remaining false-positive patterns | Done | `.deepsource.toml` — added suppression entries with justification comments |
+
+### Plan 102 — Fix DeepSource JS Introduced Issues (2026-08-02)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Fix issues introduced by PR #590 | Done | Merged via PR #591 (`0ddf626`) — resolved DeepSource flagged patterns in newly added code |
+
+### Plan 100 — GOAP: ADR 007 Stale Status & Codebase Gap Analysis (2026-08-02)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Mark ADR 007 as Superseded | Done | Superseded by ADR 022; 5-point justification |
+| W1 | Codebase gap analysis | Done | Identified implementation debt; fed into Plans 101-105 |
+
+### Plan 099 — GOAP: Address Remaining Gaps and Create PR (2026-08-02)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Address remaining codebase gaps | Done | Consolidated outstanding fixes; merged via PR |
 
 ### Plan 101 — ADR 022 setTimeout Removal & Plan Status Reconciliation (2026-08-02)
 

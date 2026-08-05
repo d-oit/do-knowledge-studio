@@ -21,13 +21,13 @@ import type { PeerInfo } from '@/lib/sync/discovery'
 type SyncStatus = 'disconnected' | 'connecting' | 'connected' | 'error'
 type PairingMode = 'none' | 'display' | 'scan'
 
-export function generateRoomId(): string {
+export const generateRoomId = (): string => {
   const bytes = new Uint8Array(6)
   crypto.getRandomValues(bytes)
   return Array.from(bytes, (b) => b.toString(36).padStart(2, '0')).join('').slice(0, 10)
 }
 
-export function SyncStatusCard({
+export const SyncStatusCard = ({
   status,
   roomId,
   inputRoomId,
@@ -57,7 +57,7 @@ export function SyncStatusCard({
   onResync: () => void
   onLeave: () => void
   onQrScan: (roomId: string) => void
-}) {
+}) => {
   const [copied, setCopied] = useState(false)
   const reducedMotion = useReducedMotion()
 
