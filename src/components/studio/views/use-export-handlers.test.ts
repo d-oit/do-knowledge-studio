@@ -144,9 +144,10 @@ describe('useExportHandlers', () => {
     await act(async () => { await result.current.handleExport('encrypted') })
     expect(encryptData).toHaveBeenCalledWith('{"json":true}', 'secret')
     expect(buildEncryptedReaderHtml).toHaveBeenCalled()
-    expect(downloadBlob).toHaveBeenCalledWith(
+    expect(downloadFile).toHaveBeenCalledWith(
       'do-knowledge-studio-encrypted-2026-07-26.html',
-      expect.any(Blob),
+      expect.any(String),
+      'text/html',
     )
     expect(toast.success).toHaveBeenCalledWith('Encrypted export downloaded', expect.anything())
   })

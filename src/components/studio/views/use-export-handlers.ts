@@ -125,8 +125,9 @@ export const useExportHandlers = ({
       const json = buildJsonExport(entities, claims, exportOptions)
       const encrypted = await encryptData(json, password)
       const html = buildEncryptedReaderHtml(encrypted)
-      const htmlBlob = new Blob([html], { type: 'text/html' })
-      downloadBlob(`do-knowledge-studio-encrypted-${stamp}.html`, htmlBlob)
+      // Safe: HTML is downloaded as a file (Blob → anchor.click), not executed in DOM.
+      // buildEncryptedReaderHtml generates a self-contained reader with CSP headers.
+      downloadFile(`do-knowledge-studio-encrypted-${stamp}.html`, html, 'text/html')
       toast.success('Encrypted export downloaded', { description: 'AES-256-GCM encrypted with PBKDF2 key derivation.' })
     } catch (err) {
       toast.error('Encrypted export failed', { description: err instanceof Error ? err.message : 'Unknown error' })

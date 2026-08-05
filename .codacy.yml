@@ -35,5 +35,6 @@ engines:
       - "ESLint8_no-unsanitized-method-call"
       - "SecurityJs_prod.generic_object_injection_sink"
       - "SecurityJs_prod.variable_assigned_to_object_injection_sink"
+      - "ESLint8_xss_no-mixed-html"  # False positive: encrypted export HTML is downloaded as a file, not executed in DOM
   opengrep:
     enabled: true
