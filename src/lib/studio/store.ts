@@ -475,7 +475,7 @@ const RecoverySnapshotSchema = z.object({
   ttl: z.number().optional(),
 })
 
-export function restoreFromRecovery(): { success: boolean; error?: string } {
+export const restoreFromRecovery = (): { success: boolean; error?: string } => {
   let raw: string | null = null
   try {
     raw = localStorage.getItem(RECOVERY_KEY)
@@ -523,7 +523,7 @@ export function restoreFromRecovery(): { success: boolean; error?: string } {
 }
 
 // Selectors
-export function useFilteredEntities(): Entity[] {
+export const useFilteredEntities = (): Entity[] => {
   const entities = useStudioStore((s) => s.entities)
   const searchQuery = useStudioStore((s) => s.searchQuery)
   const typeFilter = useStudioStore((s) => s.typeFilter)
@@ -534,12 +534,12 @@ export function useFilteredEntities(): Entity[] {
     let list = entities
     if (typeFilter !== 'all') list = list.filter((e) => e.type === typeFilter)
     if (searchQuery.trim()) {
-      const q = searchQuery.trim().toLowerCase()
+      const query = searchQuery.trim().toLowerCase()
       list = list.filter(
         (e) =>
-          e.name.toLowerCase().includes(q) ||
-          e.description.toLowerCase().includes(q) ||
-          e.tags.some((t) => t.toLowerCase().includes(q)),
+          e.name.toLowerCase().includes(query) ||
+          e.description.toLowerCase().includes(query) ||
+          e.tags.some((t) => t.toLowerCase().includes(query)),
       )
     }
     list = [...list].sort((a, b) => {
@@ -553,7 +553,7 @@ export function useFilteredEntities(): Entity[] {
   }, [entities, searchQuery, typeFilter, sortBy, sortDir])
 }
 
-export function useStats() {
+export const useStats = () => {
   const entities = useStudioStore((s) => s.entities)
   const claims = useStudioStore((s) => s.claims)
 
