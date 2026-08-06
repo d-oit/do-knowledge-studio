@@ -48,7 +48,7 @@ function TypingIndicator({ reducedMotion }: { reducedMotion?: boolean }) {
 }
 
 function formatTime(timestamp: string) {
-  return new Date(timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(new Date(timestamp))
 }
 
 export const ChatView = () => {

@@ -34,7 +34,7 @@ interface UseAiHarnessChatOptions {
  * rate limiting, and the streaming send pipeline. Kept outside the view
  * component so the view stays small and the send flow is unit-testable.
  */
-export function useAiHarnessChat({
+export const useAiHarnessChat = ({
   provider,
   model,
   apiKey,
@@ -45,7 +45,7 @@ export function useAiHarnessChat({
   entities,
   claims,
   requiresKey,
-}: UseAiHarnessChatOptions) {
+}: UseAiHarnessChatOptions) => {
   const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_ASSISTANT_MESSAGE])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
