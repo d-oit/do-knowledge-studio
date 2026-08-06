@@ -27,7 +27,7 @@ export const generateRoomId = (): string => {
   return Array.from(bytes, (b) => b.toString(36).padStart(2, '0')).join('').slice(0, 10)
 }
 
-function StatusBadge({ status }: { status: SyncStatus }) {
+const StatusBadge = ({ status }: { status: SyncStatus }) => {
   if (status === 'connected') {
     return (
       <span className="flex items-center gap-1.5 text-[12px] font-medium text-emerald-600">
@@ -60,13 +60,13 @@ function StatusBadge({ status }: { status: SyncStatus }) {
   )
 }
 
-function PairingButtons({
+const PairingButtons = ({
   pairingMode,
   onPairingModeChange,
 }: {
   pairingMode: PairingMode
   onPairingModeChange: (mode: PairingMode) => void
-}) {
+}) => {
   return (
     <div className="flex gap-2">
       <button
@@ -97,7 +97,7 @@ function PairingButtons({
   )
 }
 
-function QrPanel({
+const QrPanel = ({
   mode,
   roomId,
   onQrScan,
@@ -107,7 +107,7 @@ function QrPanel({
   roomId: string
   onQrScan: (roomId: string) => void
   reducedMotion: boolean
-}) {
+}) => {
   if (mode === 'none') return null
   return (
     <motion.div
@@ -124,7 +124,7 @@ function QrPanel({
   )
 }
 
-function SyncStatsGrid({
+const SyncStatsGrid = ({
   peerCount,
   syncedEntities,
   syncedClaims,
@@ -132,7 +132,7 @@ function SyncStatsGrid({
   peerCount: number
   syncedEntities: number
   syncedClaims: number
-}) {
+}) => {
   return (
     <div className="grid grid-cols-3 gap-3">
       <div className="rounded-md bg-muted/50 px-3 py-2 text-center">
@@ -151,7 +151,7 @@ function SyncStatsGrid({
   )
 }
 
-function PeerList({ peers }: { peers: PeerInfo[] }) {
+const PeerList = ({ peers }: { peers: PeerInfo[] }) => {
   if (peers.length === 0) return null
   return (
     <div className="rounded-md bg-muted/30 px-3 py-2">
@@ -176,7 +176,7 @@ function PeerList({ peers }: { peers: PeerInfo[] }) {
   )
 }
 
-function ConnectedControls({
+const ConnectedControls = ({
   roomId,
   pairingMode,
   onPairingModeChange,
@@ -192,7 +192,7 @@ function ConnectedControls({
   copied: boolean
   onResync: () => void
   onLeave: () => void
-}) {
+}) => {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2">
@@ -243,7 +243,7 @@ function ConnectedControls({
   )
 }
 
-function DisconnectedPanel({
+const DisconnectedPanel = ({
   inputRoomId,
   onInputChange,
   onJoin,
@@ -259,7 +259,7 @@ function DisconnectedPanel({
   onPairingModeChange: (mode: PairingMode) => void
   onQrScan: (roomId: string) => void
   reducedMotion: boolean
-}) {
+}) => {
   return (
     <div className="space-y-4">
       <PairingButtons pairingMode={pairingMode} onPairingModeChange={onPairingModeChange} />

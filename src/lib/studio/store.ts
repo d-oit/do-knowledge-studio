@@ -3,18 +3,16 @@
 import { useMemo } from 'react'
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import { z } from 'zod'
 import type { Entity, Claim, ViewId, ChatMessage, EntityType } from './types'
 import { seedEntities, seedClaims, seedChat } from './seed-data'
 import { search } from '@/lib/search/retrieval'
-import { validatePersistedState, GraphSchema, MindMapSchema, LinkSchema, TagSchema, EntitySchema, ClaimSchema } from './schema'
+import { validatePersistedState } from './schema'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from './schema'
 import { runMigrations, CURRENT_SCHEMA_VERSION } from './migrations'
+import { buildRecoverySnapshot, persistRecoverySnapshot } from './recovery-helpers'
+export { restoreFromRecovery } from './recovery-helpers'
 
 const MAX_HISTORY = 50
-const RECOVERY_KEY = 'do-knowledge-studio-recovery'
-const RECOVERY_TTL_MS = 24 * 60 * 60 * 1000
-const MAX_RECOVERY_SIZE_BYTES = 4 * 1024 * 1024
 
 interface ImportOptions {
   graph?: ValidatedGraph
@@ -97,41 +95,6 @@ interface StudioState {
 }
 
 const generateId = (): string => crypto.randomUUID()
-
-interface RecoverySnapshot {
-  entities: Entity[]
-  claims: Claim[]
-  entityHistory: Entity[][]
-  historyIndex: number
-  graph?: ValidatedGraph
-  mindMap?: ValidatedMindMap
-  links?: ValidatedLink[]
-  tags?: ValidatedTag[]
-}
-
-const buildRecoverySnapshot = (state: StudioState): RecoverySnapshot => ({
-  entities: structuredClone(state.entities),
-  claims: structuredClone(state.claims),
-  entityHistory: structuredClone(state.entityHistory),
-  historyIndex: state.historyIndex,
-  graph: state.graph ? structuredClone(state.graph) : undefined,
-  mindMap: state.mindMap ? structuredClone(state.mindMap) : undefined,
-  links: state.links ? structuredClone(state.links) : undefined,
-  tags: state.tags ? structuredClone(state.tags) : undefined,
-})
-
-const persistRecoverySnapshot = (snapshot: RecoverySnapshot): void => {
-  try {
-    const serialized = JSON.stringify({ snapshot, timestamp: Date.now(), ttl: RECOVERY_TTL_MS })
-    if (serialized.length > MAX_RECOVERY_SIZE_BYTES) {
-      console.warn('Recovery snapshot exceeds size limit, skipping persistence')
-    } else {
-      localStorage.setItem(RECOVERY_KEY, serialized)
-    }
-  } catch {
-    console.warn('Failed to persist recovery snapshot')
-  }
-}
 
 // The default (seed) state — used on first load and as a fallback when a
 // persisted state is missing fields. Kept here so both the store initializer
@@ -459,85 +422,6 @@ export const useStudioStore = create<StudioState>()(
     },
   ),
 )
-
-const RecoverySnapshotSchema = z.object({
-  snapshot: z.object({
-    entities: z.array(EntitySchema),
-    claims: z.array(ClaimSchema),
-    entityHistory: z.array(z.array(z.object({ id: z.string() }))),
-    historyIndex: z.number(),
-    graph: GraphSchema.optional(),
-    mindMap: MindMapSchema.optional(),
-    links: z.array(LinkSchema).optional(),
-    tags: z.array(TagSchema).optional(),
-  }),
-  timestamp: z.number(),
-  ttl: z.number().optional(),
-})
-
-type RecoveryReadResult =
-  | { ok: true; data: z.infer<typeof RecoverySnapshotSchema> }
-  | { ok: false; error: string }
-
-const clearRecoverySnapshot = (): void => {
-  try {
-    localStorage.removeItem(RECOVERY_KEY)
-  } catch {
-    console.warn('Failed to clear corrupt recovery snapshot')
-  }
-}
-
-const readRecoverySnapshot = (): RecoveryReadResult => {
-  const raw = localStorage.getItem(RECOVERY_KEY)
-  if (!raw) return { ok: false, error: 'No recovery snapshot found.' }
-
-  const parsed: unknown = JSON.parse(raw)
-  const result = RecoverySnapshotSchema.safeParse(parsed)
-  if (!result.success) {
-    clearRecoverySnapshot()
-    return { ok: false, error: 'Recovery snapshot is corrupted.' }
-  }
-
-  const { timestamp, ttl } = result.data
-  if (Date.now() - timestamp > (ttl ?? RECOVERY_TTL_MS)) {
-    clearRecoverySnapshot()
-    return { ok: false, error: 'Recovery snapshot has expired.' }
-  }
-  return { ok: true, data: result.data }
-}
-
-type ValidatedRecoverySnapshot = z.infer<typeof RecoverySnapshotSchema>['snapshot']
-
-const applyRecoverySnapshot = (snapshot: ValidatedRecoverySnapshot): void => {
-  useStudioStore.setState({
-    entities: snapshot.entities as Entity[],
-    claims: snapshot.claims as Claim[],
-    entityHistory: snapshot.entityHistory as Entity[][],
-    historyIndex: snapshot.historyIndex,
-    graph: snapshot.graph as ValidatedGraph | undefined,
-    mindMap: snapshot.mindMap as ValidatedMindMap | undefined,
-    links: snapshot.links as ValidatedLink[] | undefined,
-    tags: snapshot.tags as ValidatedTag[] | undefined,
-  })
-}
-
-export const restoreFromRecovery = (): { success: boolean; error?: string } => {
-  try {
-    const result = readRecoverySnapshot()
-    if (!result.ok) return { success: false, error: result.error }
-    applyRecoverySnapshot(result.data.snapshot)
-    clearRecoverySnapshot()
-    return { success: true }
-  } catch (err) {
-    // A readable but corrupt snapshot (e.g., unparseable JSON) would otherwise
-    // linger forever — clear it so the next restore attempt starts fresh.
-    clearRecoverySnapshot()
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : 'Failed to restore recovery snapshot.',
-    }
-  }
-}
 
 // Selectors
 export const useFilteredEntities = (): Entity[] => {

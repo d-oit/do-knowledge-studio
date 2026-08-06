@@ -30,26 +30,23 @@ const LOCAL_SEARCH_STATUS = 'Local search active'
 const CHAT_SHORTCUT_HINT = 'Enter to send · Shift+Enter for newline'
 const CLEAR_CHAT_LABEL = 'Clear'
 
-function TypingIndicator({ reducedMotion }: { reducedMotion?: boolean }) {
-  return (
-    <div className="flex gap-3" aria-live="polite" aria-label="Assistant is typing">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-saffron-soft text-saffron-deep">
-        <Bot className="h-4 w-4" />
-      </div>
-      <div className="rounded-2xl rounded-tl-sm border border-border bg-card px-4 py-3">
-        <div className="flex items-center gap-1.5">
-          <span className={cn('h-1.5 w-1.5 rounded-full bg-ink-faint [animation-delay:-0.3s]', reducedMotion ? '' : 'animate-bounce')} />
-          <span className={cn('h-1.5 w-1.5 rounded-full bg-ink-faint [animation-delay:-0.15s]', reducedMotion ? '' : 'animate-bounce')} />
-          <span className={cn('h-1.5 w-1.5 rounded-full bg-ink-faint', reducedMotion ? '' : 'animate-bounce')} />
-        </div>
+const TypingIndicator = ({ reducedMotion }: { reducedMotion?: boolean }) => (
+  <div className="flex gap-3" aria-live="polite" aria-label="Assistant is typing">
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-saffron-soft text-saffron-deep">
+      <Bot className="h-4 w-4" />
+    </div>
+    <div className="rounded-2xl rounded-tl-sm border border-border bg-card px-4 py-3">
+      <div className="flex items-center gap-1.5">
+        <span className={cn('h-1.5 w-1.5 rounded-full bg-ink-faint [animation-delay:-0.3s]', reducedMotion ? '' : 'animate-bounce')} />
+        <span className={cn('h-1.5 w-1.5 rounded-full bg-ink-faint [animation-delay:-0.15s]', reducedMotion ? '' : 'animate-bounce')} />
+        <span className={cn('h-1.5 w-1.5 rounded-full bg-ink-faint', reducedMotion ? '' : 'animate-bounce')} />
       </div>
     </div>
-  )
-}
+  </div>
+)
 
-function formatTime(timestamp: string) {
-  return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(new Date(timestamp))
-}
+const formatTime = (timestamp: string): string =>
+  new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(new Date(timestamp))
 
 export const ChatView = () => {
   const chat = useStudioStore((s) => s.chat)

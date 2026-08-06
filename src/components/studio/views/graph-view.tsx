@@ -25,7 +25,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
  * Deterministic hash → [0, 1) float for stable graph node positions.
  * Replaces Math.random() so the layout does not shuffle on every render.
  */
-function seededRandom(seed: string): number {
+const seededRandom = (seed: string): number => {
   let hash = 0
   for (let i = 0; i < seed.length; i++) {
     hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0

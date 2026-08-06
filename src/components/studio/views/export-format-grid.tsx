@@ -67,7 +67,7 @@ export const ExportFormatGrid = memo(({
               onClick={() => {
                 if (!isAvailable) return
                 if (f.id === 'encrypted') setShowPassword(true)
-                else void handleExport(f.id)
+                else { handleExport(f.id) }
               }}
               className={cn(
                 'group flex flex-col rounded-lg border bg-card p-4 text-left transition-all focus-ring',
@@ -121,3 +121,5 @@ export const ExportFormatGrid = memo(({
     </motion.section>
   )
 })
+
+ExportFormatGrid.displayName = 'ExportFormatGrid'
