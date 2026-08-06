@@ -1,17 +1,20 @@
 import type { Entity, Claim } from '@/lib/studio/types'
 
+/** Resolve an entity conflict by picking the more recently updated version. */
 export function resolveEntityConflict(local: Entity, remote: Entity): Entity {
   const localTime = local.updatedAt ?? local.createdAt ?? ''
   const remoteTime = remote.updatedAt ?? remote.createdAt ?? ''
   return remoteTime >= localTime ? remote : local
 }
 
+/** Resolve a claim conflict by picking the more recently updated version. */
 export function resolveClaimConflict(local: Claim, remote: Claim): Claim {
   const localTime = local.updatedAt ?? local.createdAt ?? ''
   const remoteTime = remote.updatedAt ?? remote.createdAt ?? ''
   return remoteTime >= localTime ? remote : local
 }
 
+/** Batch-resolve entity conflicts and return merged results with resolution log. */
 export function resolveEntityConflicts(
   localEntities: Entity[],
   remoteEntities: Entity[],
@@ -39,6 +42,7 @@ export function resolveEntityConflicts(
   return { merged, conflicts }
 }
 
+/** Batch-resolve claim conflicts and return merged results with resolution log. */
 export function resolveClaimConflicts(
   localClaims: Claim[],
   remoteClaims: Claim[],

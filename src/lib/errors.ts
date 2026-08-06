@@ -1,3 +1,4 @@
+/** Machine-readable error codes for the application. */
 export enum ErrorCode {
   /** Entity CRUD failures */
   ENTITY_NOT_FOUND = 'ENTITY_NOT_FOUND',
@@ -34,6 +35,7 @@ export enum ErrorCode {
   UNKNOWN = 'UNKNOWN',
 }
 
+/** User-friendly message map for each error code. */
 const USER_MESSAGES: Record<ErrorCode, string> = {
   [ErrorCode.ENTITY_NOT_FOUND]: 'The requested entity could not be found.',
   [ErrorCode.ENTITY_CREATE_FAILED]: 'Could not create the entity. Please try again.',
@@ -57,6 +59,7 @@ const USER_MESSAGES: Record<ErrorCode, string> = {
   [ErrorCode.UNKNOWN]: 'An unexpected error occurred.',
 }
 
+/** Application error class with machine-readable code and user-friendly message. */
 export class AppError extends Error {
   readonly code: ErrorCode
   readonly userMessage: string

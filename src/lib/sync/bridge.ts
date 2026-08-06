@@ -15,6 +15,7 @@ import { useStudioStore } from '@/lib/studio/store'
 
 type Unsubscribe = () => void
 
+/** Origin tag for outbound Yjs transactions to prevent echo loops. */
 const ORIGIN_OUTBOUND = 'zustand-outbound'
 
 let unsubscribeFns: Unsubscribe[] = []
@@ -24,6 +25,7 @@ let inboundCallbacks: {
 } = {}
 let outboundSubscribed = false
 
+/** Read all non-tombstoned entities from the Yjs sync document. */
 export function getYjsEntities(): Entity[] {
   const sync = getSyncDoc()
   const entities: Entity[] = []
@@ -36,6 +38,7 @@ export function getYjsEntities(): Entity[] {
   return entities
 }
 
+/** Read all non-tombstoned claims from the Yjs sync document. */
 export function getYjsClaims(): Claim[] {
   const sync = getSyncDoc()
   const claims: Claim[] = []
@@ -48,28 +51,33 @@ export function getYjsClaims(): Claim[] {
   return claims
 }
 
+/** Write an entity to the Yjs sync document. */
 export function setYjsEntity(entity: Entity): void {
   const sync = getSyncDoc()
   sync.entities.set(entity.id, entityToYMap(entity))
 }
 
+/** Delete an entity from the Yjs sync document and add a tombstone. */
 export function removeYjsEntity(id: string): void {
   const sync = getSyncDoc()
   sync.entities.delete(id)
   addTombstone(id)
 }
 
+/** Write a claim to the Yjs sync document. */
 export function setYjsClaim(claim: Claim): void {
   const sync = getSyncDoc()
   sync.claims.set(claim.id, claimToYMap(claim))
 }
 
+/** Delete a claim from the Yjs sync document and add a tombstone. */
 export function removeYjsClaim(id: string): void {
   const sync = getSyncDoc()
   sync.claims.delete(id)
   addTombstone(id)
 }
 
+/** Merge local entities and claims into the Yjs sync document with conflict tracking. */
 export function mergeIntoYjs(
   entities: Entity[],
   claims: Claim[],
@@ -98,6 +106,7 @@ export function mergeIntoYjs(
   }
 }
 
+/** Subscribe to Yjs document changes and invoke the callback with current entities/claims. */
 export function onYjsChange(
   callback: (entities: Entity[], claims: Claim[]) => void,
 ): Unsubscribe {
@@ -118,6 +127,7 @@ export function onYjsChange(
   return unsub
 }
 
+/** Subscribe to Yjs map changes and route inbound updates to callbacks. */
 export function subscribeToYjs(
   onEntitiesChange: (entities: Entity[]) => void,
   onClaimsChange: (claims: Claim[]) => void,
@@ -154,6 +164,7 @@ export function subscribeToYjs(
   return unsub
 }
 
+/** Apply validated remote updates to local state with conflict resolution. */
 export function applyRemoteUpdate(
   remoteEntities: Entity[],
   remoteClaims: Claim[],
@@ -191,6 +202,7 @@ export function applyRemoteUpdate(
   }
 }
 
+/** Tear down all Yjs subscriptions and reset bridge state. */
 export function destroyBridge(): void {
   for (const unsub of unsubscribeFns) unsub()
   unsubscribeFns = []
@@ -198,11 +210,13 @@ export function destroyBridge(): void {
   outboundSubscribed = false
 }
 
+/** Initialize Yjs persistence and indexing. */
 export async function initSync(): Promise<void> {
   const { initPersistence } = await import('./doc')
   await initPersistence()
 }
 
+/** Apply user-chosen conflict resolutions to the Yjs sync document. */
 export function applyConflictResolution(
   resolutions: Map<string, 'local' | 'remote'>,
   conflicts: import('./merge').FieldConflict[],
@@ -260,6 +274,7 @@ function collectUpdates<T extends Entity | Claim>(
   return updates
 }
 
+/** Start bidirectional sync between Zustand store and Yjs document. */
 export function startBidirectionalSync(): Unsubscribe {
   if (outboundSubscribed) return () => undefined
   outboundSubscribed = true

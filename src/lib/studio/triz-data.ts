@@ -12,17 +12,23 @@ import { TRIZ_PARAMETERS } from './triz-parameters'
 import { TRIZ_MATRIX_1 } from './triz-matrix-1'
 import { TRIZ_MATRIX_2 } from './triz-matrix-2'
 
+/** Re-exported TRIZ principle type from sub-module. */
 export type { TrizPrinciple }
+/** Re-exported TRIZ principles array from sub-module. */
 export { TRIZ_PRINCIPLES }
+/** Re-exported TRIZ parameters array from sub-module. */
 export { TRIZ_PARAMETERS }
 
+/** Sparse contradiction matrix mapping "improving-worsening" keys to principle IDs. */
 const TRIZ_MATRIX: Record<string, number[]> = {
   ...TRIZ_MATRIX_1,
   ...TRIZ_MATRIX_2,
 }
 
+/** Re-exported merged contradiction matrix. */
 export { TRIZ_MATRIX }
 
+/** Look up inventive principles for an improving/worsening parameter pair. */
 export function lookupPrinciples(
   improving: number,
   worsening: number,

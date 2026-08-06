@@ -4,9 +4,11 @@ import { search } from '@/lib/search/retrieval'
 import type { ResearchResult } from './research'
 import { buildResearchContext } from './research'
 
+/** Base system prompt instructing the assistant to use local library context. */
 const SYSTEM_PROMPT_BASE =
   'You are assisting with a local knowledge base. Use the provided entities to inform your answers when applicable. Be concise and cite entity names when relevant.'
 
+/** Build the system prompt enriched with local entity context and research results. */
 export function buildSystemPrompt(
   query: string,
   entities: Entity[],
@@ -42,6 +44,7 @@ export function buildSystemPrompt(
   return prompt
 }
 
+/** Build the full message array (system + history + user) for an AI chat request. */
 export function buildMessages(
   history: ChatMessage[],
   userMessage: string,

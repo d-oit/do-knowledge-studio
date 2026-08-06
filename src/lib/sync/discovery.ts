@@ -1,7 +1,11 @@
+/** BroadcastChannel name used for local peer discovery. */
 const DISCOVERY_CHANNEL = 'dks-discovery'
+/** Interval in ms between discovery heartbeats. */
 const DISCOVERY_INTERVAL = 5000
+/** Time in ms before a unseen peer is considered offline. */
 const PEER_TIMEOUT = 15000
 
+/** Metadata broadcast by a discoverable peer. */
 export interface PeerInfo {
   deviceId: string
   deviceName: string
@@ -20,6 +24,7 @@ let localDeviceName: string = ''
 let localRoomId: string = ''
 let onPeersChange: DiscoveryCallback | null = null
 
+/** Get or generate a persistent device ID stored in localStorage. */
 export function getDeviceId(): string {
   if (!localDeviceId) {
     const stored = localStorage.getItem('dks-device-id')
@@ -33,6 +38,7 @@ export function getDeviceId(): string {
   return localDeviceId
 }
 
+/** Get the local device name from localStorage or generate a default. */
 export function getDeviceName(): string {
   if (!localDeviceName) {
     const stored = localStorage.getItem('dks-device-name')
@@ -41,11 +47,13 @@ export function getDeviceName(): string {
   return localDeviceName
 }
 
+/** Persist the local device name to localStorage. */
 export function setDeviceName(name: string): void {
   localDeviceName = name
   localStorage.setItem('dks-device-name', name)
 }
 
+/** Start broadcasting and receiving peer discovery heartbeats for a room. */
 export function startDiscovery(roomId: string, callback: DiscoveryCallback): void {
   stopDiscovery()
 
@@ -94,6 +102,7 @@ export function startDiscovery(roomId: string, callback: DiscoveryCallback): voi
   }
 }
 
+/** Stop peer discovery and clean up the BroadcastChannel. */
 export function stopDiscovery(): void {
   if (discoveryInterval) {
     clearInterval(discoveryInterval)
@@ -122,6 +131,7 @@ function getLocalPeers(): PeerInfo[] {
   )
 }
 
+/** Get a list of rooms with their current peer counts from discovery state. */
 export function getAvailableRooms(): { roomId: string; peerCount: number }[] {
   const roomMap = new Map<string, number>()
   for (const peer of knownPeers.values()) {
@@ -134,6 +144,7 @@ export function getAvailableRooms(): { roomId: string; peerCount: number }[] {
   }))
 }
 
+/** Default signaling server URLs for WebRTC peer connection. */
 export const SIGNALING_SERVERS = [
   'wss://signaling.yjs.dev',
   'wss://y-webrtc-signaling.herokuapp.com',

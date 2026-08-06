@@ -1,12 +1,16 @@
+/** Supported AI provider identifiers. */
 export type ProviderId = 'openrouter' | 'ollama'
 
+/** Chat message with role and content for AI conversation. */
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant'
   content: string
 }
 
+/** Discriminator for OpenRouter target kinds. */
 export type OpenRouterTargetKind = 'model' | 'router'
 
+/** An OpenRouter model or router target with display metadata. */
 export interface OpenRouterTarget {
   kind: OpenRouterTargetKind
   slug: string
@@ -15,6 +19,7 @@ export interface OpenRouterTarget {
   default_params?: Record<string, any>
 }
 
+/** Built-in OpenRouter smart router targets. */
 export const OPENROUTER_ROUTERS: OpenRouterTarget[] = [
   {
     kind: 'router',
@@ -54,6 +59,7 @@ export const OPENROUTER_ROUTERS: OpenRouterTarget[] = [
   },
 ]
 
+/** Pre-configured OpenRouter model targets. */
 export const OPENROUTER_MODELS: OpenRouterTarget[] = [
   {
     kind: 'model',
@@ -75,11 +81,13 @@ export const OPENROUTER_MODELS: OpenRouterTarget[] = [
   },
 ]
 
+/** Combined list of all default OpenRouter targets (routers + models). */
 export const OPENROUTER_DEFAULT_TARGETS: OpenRouterTarget[] = [
   ...OPENROUTER_ROUTERS,
   ...OPENROUTER_MODELS,
 ]
 
+/** Parameters for a chat completion request. */
 export interface ChatRequest {
   provider: ProviderId
   model: string | OpenRouterTarget
@@ -90,12 +98,14 @@ export interface ChatRequest {
   ollamaBaseUrl?: string
 }
 
+/** Result returned by a chat completion call. */
 export interface ChatResult {
   content: string
   provider: ProviderId
   model: string
 }
 
+/** Interface for provider-specific chat adapters. */
 export interface ProviderAdapter {
   readonly id: ProviderId
   readonly requiresKey: boolean
@@ -106,11 +116,13 @@ export interface ProviderAdapter {
   ): Promise<ChatResult>
 }
 
+/** Human-readable labels for each provider. */
 export const PROVIDER_LABELS: Record<ProviderId, string> = {
   openrouter: 'OpenRouter',
   ollama: 'Ollama (local)',
 }
 
+/** Default model slugs for the OpenRouter provider. */
 export const OPENROUTER_DEFAULT_MODELS = [
   'openrouter/free',
   'openai/gpt-4o-mini',
@@ -118,6 +130,7 @@ export const OPENROUTER_DEFAULT_MODELS = [
   'meta-llama/llama-3.3-70b-instruct:free',
 ]
 
+/** Default model slugs for the local Ollama provider. */
 export const OLLAMA_DEFAULT_MODELS = [
   'llama3',
   'mistral',
@@ -125,9 +138,11 @@ export const OLLAMA_DEFAULT_MODELS = [
   'gemma2',
 ]
 
+/** Default model selected for each provider. */
 export const DEFAULT_MODEL: Record<ProviderId, string> = {
   openrouter: 'openrouter/free',
   ollama: 'llama3',
 }
 
+/** Default base URL for a local Ollama instance. */
 export const DEFAULT_OLLAMA_BASE_URL = 'http://localhost:11434'

@@ -8,6 +8,7 @@ import { useMemo, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Overlay } from '@/components/studio/ui/shared-primitives'
 
+/** Right sidebar panel that switches between search, inspector, and citations based on the active view. */
 export function RightPanel() {
   const currentView = useStudioStore((s) => s.currentView)
   const rightPanelOpen = useStudioStore((s) => s.rightPanelOpen)
@@ -29,6 +30,7 @@ export function RightPanel() {
   return <SearchPanel onCreateEntity={() => startNew()} />
 }
 
+/** Search panel with keyword/ranked mode toggle and entity results. */
 function SearchPanel({ onCreateEntity }: { onCreateEntity?: (name: string) => void }) {
   const searchQuery = useStudioStore((s) => s.searchQuery)
   const setSearchQuery = useStudioStore((s) => s.setSearchQuery)
@@ -177,6 +179,7 @@ function SearchPanel({ onCreateEntity }: { onCreateEntity?: (name: string) => vo
   )
 }
 
+/** Inspector panel showing details, connections, and actions for the selected graph/mind map node. */
 function InspectorPanel() {
   const entities = useStudioStore((s) => s.entities)
   const selectedEntityId = useStudioStore((s) => s.selectedEntityId)
@@ -319,6 +322,7 @@ function InspectorPanel() {
   )
 }
 
+/** Citations panel listing sources cited by the AI assistant in chat. */
 function CitationsPanel() {
   const chat = useStudioStore((s) => s.chat)
   const entities = useStudioStore((s) => s.entities)

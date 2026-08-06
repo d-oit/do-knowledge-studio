@@ -15,6 +15,7 @@ export { restoreFromRecovery } from './recovery-helpers'
 /** Maximum number of undo history snapshots retained in memory. */
 const MAX_HISTORY = 50
 
+/** Optional graph/mindmap metadata attached to an import operation. */
 interface ImportOptions {
   graph?: ValidatedGraph
   mindMap?: ValidatedMindMap
@@ -22,6 +23,7 @@ interface ImportOptions {
   tags?: ValidatedTag[]
 }
 
+/** Full shape of the Zustand store state and actions. */
 interface StudioState {
   // Navigation
   currentView: ViewId

@@ -3,6 +3,7 @@ import { Plus, ExternalLink, ShieldCheck, CheckCircle2, AlertTriangle, Circle, S
 import { toast } from 'sonner'
 import type { Claim, VerificationStatus } from '@/lib/studio/types'
 
+/** Colored badge indicating a claim&apos;s verification status. */
 export function VerificationBadge({ status }: { status: VerificationStatus }) {
   if (status === 'verified')
     return (
@@ -26,6 +27,7 @@ export function VerificationBadge({ status }: { status: VerificationStatus }) {
   )
 }
 
+/** Panel for viewing, creating, editing, and deleting claims on an entity. */
 export function ClaimsPanel({
   claims,
   editingEntityId,

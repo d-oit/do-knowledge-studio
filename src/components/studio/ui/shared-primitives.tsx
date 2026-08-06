@@ -33,6 +33,7 @@ const BUTTON_SIZES: Record<ButtonSize, string> = {
   lg: 'px-5 py-2.5 text-[13px]',
 }
 
+/** Styled button with configurable variant, size, and ref forwarding. */
 export const Button = forwardRef<
   HTMLButtonElement,
   {
@@ -61,6 +62,7 @@ export const Button = forwardRef<
 // FieldLabel
 // ---------------------------------------------------------------------------
 
+/** Accessible form field label with optional leading icon. */
 export function FieldLabel({
   children,
   icon: Icon,
@@ -90,6 +92,7 @@ export function FieldLabel({
 // TextInput
 // ---------------------------------------------------------------------------
 
+/** Styled text input with optional monospace font and ref forwarding. */
 export const TextInput = forwardRef<
   HTMLInputElement,
   {
@@ -115,6 +118,7 @@ export const TextInput = forwardRef<
 // SelectInput
 // ---------------------------------------------------------------------------
 
+/** Styled select dropdown with ref forwarding. */
 export const SelectInput = forwardRef<
   HTMLSelectElement,
   {
@@ -138,6 +142,7 @@ export const SelectInput = forwardRef<
 // Divider (toolbar)
 // ---------------------------------------------------------------------------
 
+/** Vertical divider line for toolbar grouping. */
 export function Divider({ className }: { className?: string }) {
   return <span className={cn('mx-1 h-4 w-px bg-border', className)} aria-hidden="true" />
 }
@@ -146,6 +151,7 @@ export function Divider({ className }: { className?: string }) {
 // ToolbarBtn
 // ---------------------------------------------------------------------------
 
+/** Toolbar button with icon, label, and accessible hover/focus states. */
 export function ToolbarBtn({
   icon: Icon,
   label,
@@ -183,6 +189,7 @@ export function ToolbarBtn({
 // ToggleButtonGroup (container)
 // ---------------------------------------------------------------------------
 
+/** Grouped toggle buttons rendered as an ARIA group container. */
 export function ToggleButtonGroup({
   label,
   children,
@@ -207,6 +214,7 @@ export function ToggleButtonGroup({
 // EmptyState (existing)
 // ---------------------------------------------------------------------------
 
+/** Centered empty-state placeholder with icon, title, description, and optional action. */
 export function EmptyState({
   icon: Icon,
   title,
@@ -244,6 +252,7 @@ export function EmptyState({
 // Skeleton (existing)
 // ---------------------------------------------------------------------------
 
+/** Generic animated skeleton placeholder for loading states. */
 export function Skeleton({ className }: { className?: string }) {
   return (
     <div
@@ -258,6 +267,7 @@ export function Skeleton({ className }: { className?: string }) {
 // SwitchToggle — accessible toggle switch for settings panels
 // ---------------------------------------------------------------------------
 
+/** Accessible toggle switch with label, description, and icon for settings panels. */
 export function SwitchToggle({
   label,
   description,
@@ -362,6 +372,7 @@ function getVariantClasses(variant: OverlayVariant): string {
 let scrollLockCount = 0
 let savedScrollbarWidth = 0
 
+/** Accessible modal overlay with focus trap, scroll lock, and configurable layout variant. */
 export function Overlay({
   open,
   onClose,

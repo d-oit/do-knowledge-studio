@@ -1,18 +1,21 @@
 import * as Y from 'yjs'
 import type { Entity, Claim } from '@/lib/studio/types'
 
+/** Metadata about a synced device. */
 export interface SyncMeta {
   deviceId: string
   deviceName: string
   lastSeen: number
 }
 
+/** Typed view over a Yjs document holding entities, claims, and metadata maps. */
 export interface SyncDoc {
   entities: Y.Map<Record<string, unknown>>
   claims: Y.Map<Record<string, unknown>>
   meta: Y.Map<unknown>
 }
 
+/** Create an empty SyncDoc with fresh Yjs maps. */
 export function createSyncDoc(): SyncDoc {
   return {
     entities: new Y.Map(),
@@ -21,6 +24,7 @@ export function createSyncDoc(): SyncDoc {
   }
 }
 
+/** Convert an Entity to a plain object suitable for Yjs map storage. */
 export function entityToYMap(entity: Entity): Record<string, unknown> {
   return {
     id: entity.id,
@@ -36,6 +40,7 @@ export function entityToYMap(entity: Entity): Record<string, unknown> {
   }
 }
 
+/** Deserialize a plain object from a Yjs map back into an Entity. */
 export function ymapToEntity(data: Record<string, unknown>): Entity {
   return {
     id: data.id as string,
@@ -51,6 +56,7 @@ export function ymapToEntity(data: Record<string, unknown>): Entity {
   }
 }
 
+/** Convert a Claim to a plain object suitable for Yjs map storage. */
 export function claimToYMap(claim: Claim): Record<string, unknown> {
   const data: Record<string, unknown> = {
     id: claim.id,
@@ -66,6 +72,7 @@ export function claimToYMap(claim: Claim): Record<string, unknown> {
   return data
 }
 
+/** Deserialize a plain object from a Yjs map back into a Claim. */
 export function ymapToClaim(data: Record<string, unknown>): Claim {
   return {
     id: data.id as string,

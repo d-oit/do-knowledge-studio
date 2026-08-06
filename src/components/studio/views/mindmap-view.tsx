@@ -31,10 +31,12 @@ interface TreeNode {
 
 const NODE_INDENT_PX = 28
 
+/** Returns inline CSS for indenting a mind map tree node by level. */
 function getNodeIndentStyle(level: number): React.CSSProperties {
   return { paddingLeft: `${level * NODE_INDENT_PX}px` }
 }
 
+/** Interactive mind map view with expandable tree, keyboard navigation, and PNG export. */
 export function MindMapView() {
   const entities = useStudioStore((s) => s.entities)
   const selectEntity = useStudioStore((s) => s.selectEntity)
@@ -433,6 +435,7 @@ export function MindMapView() {
   )
 }
 
+/** Small icon button for mind map toolbar actions. */
 function ToolbarBtn({
   icon: Icon,
   label,

@@ -9,6 +9,7 @@ import {
   OLLAMA_DEFAULT_MODELS,
 } from '@/lib/ai/types'
 
+/** Configuration entry for a supported AI provider. */
 export interface ProviderOption {
   id: AIProvider
   label: string
@@ -16,6 +17,7 @@ export interface ProviderOption {
   requiresKey: boolean
 }
 
+/** List of all supported AI providers with their default models and key requirements. */
 export const PROVIDERS: ProviderOption[] = [
   { id: 'openrouter', label: PROVIDER_LABELS.openrouter, models: OPENROUTER_DEFAULT_MODELS, requiresKey: true },
   { id: 'ollama', label: PROVIDER_LABELS.ollama, models: OLLAMA_DEFAULT_MODELS, requiresKey: false },

@@ -56,23 +56,28 @@ function toggleLinePrefix(
   }
 }
 
+/** Wrap or unwrap bold markdown markers around the current selection. */
 export function applyBold(text: string, sel: MarkdownSelection): MarkdownCommandResult {
   return wrapInlineMarker(text, sel, '**')
 }
 
+/** Wrap or unwrap italic markdown markers around the current selection. */
 export function applyItalic(text: string, sel: MarkdownSelection): MarkdownCommandResult {
   return wrapInlineMarker(text, sel, '_')
 }
 
+/** Toggle heading prefix (h1/h2/h3) on selected lines. */
 export function applyHeading(text: string, sel: MarkdownSelection, level: 1 | 2 | 3): MarkdownCommandResult {
   const prefix = `${'#'.repeat(level)} `
   return toggleLinePrefix(text, sel, prefix)
 }
 
+/** Toggle unordered list bullet prefix on selected lines. */
 export function applyBulletList(text: string, sel: MarkdownSelection): MarkdownCommandResult {
   return toggleLinePrefix(text, sel, '- ')
 }
 
+/** Toggle ordered list numbering on selected lines. */
 export function applyOrderedList(text: string, sel: MarkdownSelection): MarkdownCommandResult {
   const lines = text.split('\n')
   const startLine = text.slice(0, sel.range.start).split('\n').length - 1
@@ -95,10 +100,12 @@ export function applyOrderedList(text: string, sel: MarkdownSelection): Markdown
   return { text: newText, selection: { start: sel.range.start, end: sel.range.end } }
 }
 
+/** Toggle blockquote prefix on selected lines. */
 export function applyQuote(text: string, sel: MarkdownSelection): MarkdownCommandResult {
   return toggleLinePrefix(text, sel, '> ')
 }
 
+/** Toggle inline code or fenced code block around the selection. */
 export function applyInlineCode(text: string, sel: MarkdownSelection): MarkdownCommandResult {
   const { text: selected, range } = sel
   if (!selected) {
@@ -123,6 +130,7 @@ export function applyInlineCode(text: string, sel: MarkdownSelection): MarkdownC
   return wrapInlineMarker(text, sel, '`')
 }
 
+/** Insert or wrap a markdown link around the selection. */
 export function applyLink(text: string, sel: MarkdownSelection): MarkdownCommandResult {
   const { text: selected, range } = sel
   if (!selected) {

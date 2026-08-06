@@ -18,6 +18,7 @@ const VIEW_TITLES: Record<ViewId, { title: string; subtitle: string }> = {
   sync: { title: 'Sync', subtitle: 'Connect devices and sync peer-to-peer' },
 }
 
+/** Top header bar with view title, inline search, offline badge, and new entity button. */
 export const Topbar = () => {
   const {
     currentView,

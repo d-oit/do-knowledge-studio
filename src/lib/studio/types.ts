@@ -1,7 +1,10 @@
+/** Discriminated union of entity categories. */
 export type EntityType = 'note' | 'concept' | 'person' | 'project'
 
+/** Verification lifecycle of a claim. */
 export type VerificationStatus = 'unverified' | 'verified' | 'disputed'
 
+/** All navigable view identifiers. */
 export type ViewId =
   | 'home'
   | 'editor'
@@ -14,6 +17,7 @@ export type ViewId =
   | 'export'
   | 'sync'
 
+/** Core knowledge entity representing a note, concept, person, or project. */
 export interface Entity {
   id: string
   name: string
@@ -27,6 +31,7 @@ export interface Entity {
   links: { targetId: string; relation: string }[]
 }
 
+/** Verifiable assertion linked to an entity. */
 export interface Claim {
   id: string
   entityId: string
@@ -41,6 +46,7 @@ export interface Claim {
   editHistory?: { statement: string; editedAt: string }[]
 }
 
+/** Single message in the AI chat conversation. */
 export interface ChatMessage {
   id: string
   role: 'user' | 'assistant'
@@ -49,6 +55,7 @@ export interface ChatMessage {
   timestamp: string
 }
 
+/** Visual node in the knowledge graph renderer. */
 export interface GraphNode {
   id: string
   label: string
@@ -57,6 +64,7 @@ export interface GraphNode {
   y: number
 }
 
+/** Directed edge connecting two nodes in the knowledge graph. */
 export interface GraphEdge {
   id: string
   source: string
@@ -64,6 +72,7 @@ export interface GraphEdge {
   relation: string
 }
 
+/** UI metadata (colors, labels, icons) keyed by entity type. */
 export const ENTITY_TYPE_META: Record<
   EntityType,
   { label: string; color: string; bg: string; text: string; dot: string; icon: string }

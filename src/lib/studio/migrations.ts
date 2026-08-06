@@ -10,6 +10,7 @@
 
 import type { Entity, Claim } from './types'
 
+/** Shape of persisted state before migrations. */
 interface PersistedStateV1 {
   version?: number
   entities: Entity[]
@@ -23,6 +24,7 @@ interface PersistedStateV1 {
   rightPanelOpen?: boolean
 }
 
+/** Signature for a single migration function. */
 type MigrationFn = (state: PersistedStateV1) => PersistedStateV1
 
 /**

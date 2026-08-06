@@ -1,7 +1,10 @@
 import type { Entity, Claim } from '@/lib/studio/types'
 
+/** BM25 tuning constant for term frequency saturation. */
 const K1 = 1.5
+/** BM25 tuning constant for document length normalization. */
 const B = 0.75
+/** Common English stop words excluded from indexing. */
 const STOP_WORDS = new Set([
   'what', 'how', 'why', 'when', 'where', 'which', 'that', 'this',
   'with', 'from', 'your', 'about', 'please', 'could', 'would',
@@ -11,6 +14,7 @@ const STOP_WORDS = new Set([
   'most', 'such', 'each', 'every', 'both', 'much', 'many',
 ])
 
+/** A single search result with relevance score and snippet. */
 export interface SearchResult {
   id: string
   type: 'entity' | 'claim'
@@ -130,6 +134,7 @@ function getSnippet(entry: IndexEntry, maxLength: number = 140): string {
   return `${text.slice(0, maxLength)}…`
 }
 
+/** Run a BM25 full-text search over entities and claims. */
 export const search = (
   entities: Entity[],
   claims: Claim[],

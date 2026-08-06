@@ -1,5 +1,6 @@
 import type { Entity, Claim } from '@/lib/studio/types'
 
+/** A labeled prompt suggestion shown in the AI Harness chat welcome screen. */
 export interface PromptSuggestion {
   label: string
   prompt: string

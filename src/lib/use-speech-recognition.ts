@@ -7,6 +7,7 @@ import {
   type SpeechRecognitionOptions,
 } from './speech'
 
+/** Return type for the useSpeechRecognition hook. */
 export interface UseSpeechRecognitionReturn {
   isSupported: boolean
   isListening: boolean
@@ -18,6 +19,7 @@ export interface UseSpeechRecognitionReturn {
   reset: () => void
 }
 
+/** React hook providing speech recognition state and controls. */
 export function useSpeechRecognition(
   options: SpeechRecognitionOptions = {},
 ): UseSpeechRecognitionReturn {

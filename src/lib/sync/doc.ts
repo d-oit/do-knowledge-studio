@@ -3,7 +3,9 @@ import { IndexeddbPersistence } from 'y-indexeddb'
 import { WebrtcProvider } from 'y-webrtc'
 import type { SyncDoc } from './types'
 
+/** IndexedDB database name for Yjs persistence. */
 const DB_NAME = 'dks-sync'
+/** Prefix for WebRTC room names. */
 const ROOM_PREFIX = 'dks-room'
 
 let currentDoc: Y.Doc | null = null
@@ -11,6 +13,7 @@ let currentSync: SyncDoc | null = null
 let currentPersistence: IndexeddbPersistence | null = null
 let currentProvider: WebrtcProvider | null = null
 
+/** Get or create the shared Yjs document. */
 export function getDoc(): Y.Doc {
   if (!currentDoc) {
     currentDoc = new Y.Doc()
@@ -18,6 +21,7 @@ export function getDoc(): Y.Doc {
   return currentDoc
 }
 
+/** Get or create the typed sync document view over the Yjs doc. */
 export function getSyncDoc(): SyncDoc {
   if (!currentSync) {
     const doc = getDoc()
@@ -30,6 +34,7 @@ export function getSyncDoc(): SyncDoc {
   return currentSync
 }
 
+/** Initialize IndexedDB persistence for the Yjs document. */
 export async function initPersistence(): Promise<void> {
   if (currentPersistence) return
   const doc = getDoc()
@@ -37,6 +42,7 @@ export async function initPersistence(): Promise<void> {
   await currentPersistence.whenSynced
 }
 
+/** Join a WebRTC signaling room for peer-to-peer sync. */
 export function joinRoom(
   roomId: string,
   opts?: { signaling?: string[] },
@@ -55,14 +61,17 @@ export function joinRoom(
   return currentProvider
 }
 
+/** Get the active WebRTC provider or null. */
 export function getProvider(): WebrtcProvider | null {
   return currentProvider
 }
 
+/** Get the awareness instance from the active provider, or null. */
 export function getAwareness(): WebrtcProvider['awareness'] | null {
   return currentProvider?.awareness ?? null
 }
 
+/** Destroy the provider, persistence, and Yjs document, cleaning up all resources. */
 export function destroy(): void {
   currentProvider?.destroy()
   currentProvider = null

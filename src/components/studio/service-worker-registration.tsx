@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 
+/** Registers the service worker for offline caching on mount. */
 export function ServiceWorkerRegistration() {
   useEffect(() => {
     if ("serviceWorker" in navigator) {

@@ -16,6 +16,7 @@ const ALLOWED_OLLAMA_HOSTS = new Set(['localhost', '127.0.0.1', '::1'])
 const isAllowedOllamaHost = (hostname: string): boolean =>
   ALLOWED_OLLAMA_HOSTS.has(hostname) || hostname.endsWith('.local')
 
+/** Validate and normalize an Ollama base URL to localhost-only. */
 export const validateOllamaUrl = (baseUrl: string): string => {
   let url: URL
   try {
@@ -316,15 +317,18 @@ const adapters: Record<ProviderId, ProviderAdapter> = {
   ollama: new OllamaAdapter(),
 }
 
+/** Return the provider adapter for the given provider ID. */
 export const getAdapter = (provider: ProviderId): ProviderAdapter => {
   return adapters[provider]
 }
 
+/** Send a single-shot chat request to the specified provider. */
 export const sendChat = (request: ChatRequest): Promise<ChatResult> => {
   const adapter = getAdapter(request.provider)
   return adapter.send(request)
 }
 
+/** Send a streaming chat request, invoking onChunk for each content delta. */
 export const sendChatStream = (
   request: ChatRequest,
   onChunk: (chunk: string) => void,
@@ -333,6 +337,7 @@ export const sendChatStream = (
   return adapter.sendStream(request, onChunk)
 }
 
+/** Fetch the list of model names available on a local Ollama instance. */
 export const fetchOllamaModels = async (
   baseUrl: string = DEFAULT_OLLAMA_BASE_URL,
   signal?: AbortSignal,

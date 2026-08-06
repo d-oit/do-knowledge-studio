@@ -1,18 +1,23 @@
+/** Result from a speech recognition event. */
 export interface SpeechRecognitionResult {
   transcript: string
   confidence: number
   isFinal: boolean
 }
 
+/** Configuration options for the speech recognition instance. */
 export interface SpeechRecognitionOptions {
   lang?: string
   continuous?: boolean
   interimResults?: boolean
 }
 
+/** Callback type for speech recognition results. */
 type SpeechRecognitionCallback = (result: SpeechRecognitionResult) => void
+/** Callback type for speech recognition errors. */
 type ErrorCallback = (error: string) => void
 
+/** Minimal interface for the Web Speech API recognition object. */
 interface SpeechRecognitionInstance {
   start(): void
   stop(): void
@@ -32,6 +37,7 @@ declare global {
   }
 }
 
+/** Check whether the browser supports the Web Speech API. */
 export function isSpeechRecognitionSupported(): boolean {
   return (
     typeof window !== 'undefined' &&
@@ -39,6 +45,7 @@ export function isSpeechRecognitionSupported(): boolean {
   )
 }
 
+/** Create a configured speech recognition instance with result and error callbacks. */
 export function createSpeechRecognition(
   onResult: SpeechRecognitionCallback,
   onError: ErrorCallback,

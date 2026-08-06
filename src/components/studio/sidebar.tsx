@@ -31,6 +31,7 @@ interface NavItem {
   experimental?: boolean
 }
 
+/** Navigation groups defining the sidebar menu structure with labels, icons, and keyboard shortcuts. */
 export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: 'Overview',
@@ -68,6 +69,7 @@ export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   },
 ]
 
+/** Sidebar navigation with grouped nav items, search trigger, and theme toggle. */
 export function Sidebar() {
   const { currentView, setView, setCommandOpen, rightPanelOpen, setRightPanelOpen } =
     useStudioStore()

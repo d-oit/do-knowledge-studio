@@ -88,6 +88,7 @@ export const ParamPicker = ({
 }
 
 /** Display chip showing a numbered TRIZ contradiction parameter. */
+/** Display chip showing a numbered TRIZ contradiction parameter. */
 export const ContradictionChip = ({ n, label, accent }: { n: number; label: string; accent: 'saffron' | 'clay' }) => {
   const accents = accent === 'saffron'
     ? 'bg-saffron-soft text-saffron-deep border-saffron/30'

@@ -47,6 +47,7 @@ type Action =
 
 let count = 0
 
+/** Generate a unique incremental toast ID. */
 function genId() {
   count = (count + 1) % Number.MAX_SAFE_INTEGER
   return count.toString()
@@ -74,6 +75,7 @@ const addToRemoveQueue = (toastId: string) => {
   toastTimeouts.set(toastId, timeout)
 }
 
+/** Pure reducer that manages the toast queue state. */
 export const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case "ADD_TOAST":
@@ -129,10 +131,13 @@ export const reducer = (state: State, action: Action): State => {
   }
 }
 
+/** Subscribers that re-render when toast state changes. */
 const listeners: Array<(state: State) => void> = []
 
+/** In-memory source of truth for the toast queue. */
 let memoryState: State = { toasts: [] }
 
+/** Dispatch an action to update the toast state and notify subscribers. */
 function dispatch(action: Action) {
   memoryState = reducer(memoryState, action)
   listeners.forEach((listener) => {
@@ -142,6 +147,7 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">
 
+/** Create and dispatch a new toast, returning dismiss/update controls. */
 function toast({ ...props }: Toast) {
   const id = genId()
 
@@ -172,6 +178,7 @@ function toast({ ...props }: Toast) {
   }
 }
 
+/** Hook that subscribes to the toast queue and exposes create/dismiss helpers. */
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState)
 

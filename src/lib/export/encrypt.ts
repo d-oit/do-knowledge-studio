@@ -1,8 +1,13 @@
+/** PBKDF2 iteration count for key derivation. */
 const PBKDF2_ITERATIONS = 600000
+/** Salt length in bytes for PBKDF2. */
 const SALT_LENGTH = 16
+/** Initialization vector length in bytes for AES-GCM. */
 const IV_LENGTH = 12
 
+/** Minimum allowed PBKDF2 iteration count for encrypted exports. */
 export const MIN_ITERATIONS = 100000
+/** Maximum allowed PBKDF2 iteration count for encrypted exports. */
 export const MAX_ITERATIONS = 10000000
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
@@ -41,6 +46,7 @@ async function deriveKey(
   )
 }
 
+/** Encrypt a string with AES-256-GCM using PBKDF2 key derivation. */
 export async function encryptData(data: string, password: string): Promise<string> {
   const encoder = new TextEncoder()
   const salt = crypto.getRandomValues(new Uint8Array(SALT_LENGTH))
@@ -60,6 +66,7 @@ export async function encryptData(data: string, password: string): Promise<strin
   })
 }
 
+/** Shape of the JSON-encrypted payload envelope. */
 interface EncryptedPayload {
   salt: string
   iv: string
@@ -101,6 +108,7 @@ const parseEncryptedPayload = (payload: string): EncryptedPayload => {
   }
 }
 
+/** Decrypt an AES-256-GCM encrypted payload using the provided password. */
 export const decryptData = async (payload: string, password: string): Promise<string> => {
   const { salt, iv, data, iterations } = parseEncryptedPayload(payload)
 
@@ -116,6 +124,7 @@ export const decryptData = async (payload: string, password: string): Promise<st
   return new TextDecoder().decode(decrypted)
 }
 
+/** Generate a self-contained HTML page that decrypts and displays the exported data. */
 export const buildEncryptedReaderHtml = (cipherPayload: string): string => {
   return `<!doctype html>
 <html lang="en">

@@ -7,6 +7,7 @@ import { ENTITY_TYPE_META, type EntityType } from '@/lib/studio/types'
 
 const ENTITY_TYPES: EntityType[] = ['note', 'concept', 'person', 'project']
 
+/** Returns the entity type metadata (label, colors) for a given type. */
 function getTypeMeta(t: EntityType) {
   switch (t) {
     case 'note': return ENTITY_TYPE_META.note
@@ -17,6 +18,7 @@ function getTypeMeta(t: EntityType) {
   }
 }
 
+/** Renders the appropriate Lucide icon for an entity type. */
 function renderTypeIcon(t: EntityType, className?: string) {
   switch (t) {
     case 'note': return <FileText className={className} />
@@ -27,6 +29,7 @@ function renderTypeIcon(t: EntityType, className?: string) {
   }
 }
 
+/** Dropdown selector for choosing an entity type with keyboard navigation. */
 export function TypeSelector({
   type,
   showMenu,

@@ -59,6 +59,7 @@ export const viewport: Viewport = {
   themeColor: "#c77d3a",
 };
 
+/** Root layout that wraps the app with theme, accessibility, and offline providers. */
 export default function RootLayout({
   children,
 }: Readonly<{

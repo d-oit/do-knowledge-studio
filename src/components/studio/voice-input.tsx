@@ -14,6 +14,7 @@ interface VoiceInputProps {
   showIntentPreview?: boolean
 }
 
+/** Toggle button for browser speech recognition with live interim transcript display. */
 export function VoiceInput({
   onTranscript,
   onIntent,
