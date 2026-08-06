@@ -145,7 +145,7 @@ export function AiHarnessSettingsPanel({
               </select>
               {provider === 'ollama' && (
                 <button
-                  onClick={() => { void handleRefreshOllamaModels() }}
+                  onClick={() => { handleRefreshOllamaModels() }}
                   className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-md border border-border bg-background text-ink-faint transition-colors hover:border-saffron/40 hover:text-saffron focus-ring"
                   aria-label="Refresh Ollama models"
                 >

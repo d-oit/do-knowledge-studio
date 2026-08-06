@@ -9,7 +9,7 @@ export function QRDisplay({ roomId }: { roomId: string }) {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = useCallback(() => {
-    void navigator.clipboard.writeText(roomId)
+    navigator.clipboard.writeText(roomId).catch(() => { /* ignore clipboard errors */ })
     setCopied(true)
     setTimeout(() => { setCopied(false) }, 2000)
   }, [roomId])
@@ -152,7 +152,7 @@ export function QRScanner({ onScan }: { onScan: (roomId: string) => void }) {
       {/* Scan button — only shown when not active */}
       {!isActive && (
         <button
-          onClick={() => { void startCamera() }}
+          onClick={() => { startCamera() }}
           className="flex h-48 w-48 flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/30 transition-colors hover:border-saffron/40 hover:bg-muted/50"
         >
           <Camera className="h-8 w-8 text-ink-faint" />
