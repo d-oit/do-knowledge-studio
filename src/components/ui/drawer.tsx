@@ -5,30 +5,35 @@ import { Drawer as DrawerPrimitive } from "vaul"
 
 import { cn } from "@/lib/utils"
 
+/** Root component that manages the open/close state of a drawer. */
 function Drawer({
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Root>) {
   return <DrawerPrimitive.Root data-slot="drawer" {...props} />
 }
 
+/** Element that opens the drawer when clicked. */
 function DrawerTrigger({
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Trigger>) {
   return <DrawerPrimitive.Trigger data-slot="drawer-trigger" {...props} />
 }
 
+/** Portal container that renders drawer content outside the DOM hierarchy. */
 function DrawerPortal({
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Portal>) {
   return <DrawerPrimitive.Portal data-slot="drawer-portal" {...props} />
 }
 
+/** Element that closes the drawer when clicked. */
 function DrawerClose({
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Close>) {
   return <DrawerPrimitive.Close data-slot="drawer-close" {...props} />
 }
 
+/** Semi-transparent overlay behind the drawer content. */
 function DrawerOverlay({
   className,
   ...props
@@ -45,6 +50,7 @@ function DrawerOverlay({
   )
 }
 
+/** Slide-in panel content that appears from a specified direction. */
 function DrawerContent({
   className,
   children,
@@ -72,6 +78,7 @@ function DrawerContent({
   )
 }
 
+/** Layout wrapper for the drawer header area. */
 function DrawerHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -85,6 +92,7 @@ function DrawerHeader({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/** Layout wrapper for the drawer footer area. */
 function DrawerFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -95,6 +103,7 @@ function DrawerFooter({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/** Title text displayed in the drawer header. */
 function DrawerTitle({
   className,
   ...props
@@ -108,6 +117,7 @@ function DrawerTitle({
   )
 }
 
+/** Descriptive text displayed below the drawer title. */
 function DrawerDescription({
   className,
   ...props

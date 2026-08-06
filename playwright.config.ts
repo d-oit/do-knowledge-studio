@@ -22,6 +22,13 @@ export default defineConfig({
       name: 'tablet',
       use: { ...devices['iPad Pro 11'] },
     },
+    {
+      name: 'desktop-xl',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1920, height: 1080 },
+      },
+    },
   ],
   webServer: {
     command: 'pnpm run dev',

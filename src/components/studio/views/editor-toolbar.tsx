@@ -13,6 +13,7 @@ import {
 import { Divider } from '../ui/shared-primitives'
 import { VoiceInput } from '../voice-input'
 
+/** Single icon-only toolbar button with an accessible label. */
 function ToolbarButton({
   icon: Icon,
   label,
@@ -35,6 +36,7 @@ function ToolbarButton({
   )
 }
 
+/** Rich-text formatting toolbar with bold, italic, headings, lists, and voice input. */
 export function EditorToolbar({
   showAdvanced,
   onToggleAdvanced,

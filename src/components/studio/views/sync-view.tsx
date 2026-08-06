@@ -41,6 +41,7 @@ interface SyncEvent {
   timestamp: number
 }
 
+/** Peer-to-peer sync view with room management, QR pairing, conflict resolution, and presence. */
 export function SyncView() {
   const entities = useStudioStore((s) => s.entities)
   const claims = useStudioStore((s) => s.claims)
@@ -205,7 +206,7 @@ export function SyncView() {
         roomId={roomId}
         inputRoomId={inputRoomId}
         onInputChange={setInputRoomId}
-        onJoin={() => void handleJoin()}
+        onJoin={() => { void handleJoin() }}
         peerCount={peerCount}
         syncedEntities={syncedEntities}
         syncedClaims={syncedClaims}

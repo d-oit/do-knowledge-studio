@@ -1,10 +1,5 @@
 import { test, expect } from '@playwright/test';
-
-/** Helper: click a sidebar nav button by label (scoped to <nav>) */
-async function navClick(page: import('@playwright/test').Page, name: RegExp | string) {
-  const nav = page.getByRole('navigation', { name: /main navigation/i });
-  await nav.getByRole('button', { name }).first().click();
-}
+import { expectNavigationReachable, navClick, openNavIfHidden } from './helpers/navigation';
 
 test.describe('Home page', () => {
   test.beforeEach(async ({ page }) => {
@@ -15,14 +10,14 @@ test.describe('Home page', () => {
     await expect(page).toHaveTitle(/DO Knowledge Studio/);
   });
 
-  test('sidebar navigation is visible', async ({ page }) => {
-    const sidebar = page.getByRole('navigation', { name: /main navigation/i });
-    await expect(sidebar).toBeVisible();
+  test('navigation is reachable (sidebar on desktop, drawer trigger below lg)', async ({ page }) => {
+    await expectNavigationReachable(page);
   });
 
   test('home view shows greeting or welcome content', async ({ page }) => {
-    const content = page.locator('text=/welcome|hello|good|recent|home/i').first();
-    await expect(content).toBeVisible();
+    // The home view always renders a "Recent work" section (empty state or list).
+    // Scoped by role so the sidebar label (hidden on mobile) never matches.
+    await expect(page.getByRole('heading', { name: /recent work/i })).toBeVisible();
   });
 
   test('can navigate to library view', async ({ page }) => {
@@ -40,8 +35,10 @@ test.describe('Home page', () => {
 
   test('can navigate to mindmap view', async ({ page }) => {
     await navClick(page, /mind\s?map/i);
-    // Mindmap renders an SVG canvas or shows an empty state
-    await expect(page.locator('svg, canvas, [role="img"]').first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: /mind map/i })).toBeVisible();
+    // Mindmap renders an SVG canvas inside the main content area
+    const canvas = page.locator('#main-content svg, #main-content canvas').first();
+    await expect(canvas).toBeVisible();
   });
 
   test('can navigate to editor view', async ({ page }) => {
@@ -56,6 +53,7 @@ test.describe('Home page', () => {
   });
 
   test('sidebar shows all navigation groups', async ({ page }) => {
+    await openNavIfHidden(page);
     const nav = page.getByRole('navigation', { name: /main navigation/i });
     await expect(nav.getByText('Overview')).toBeVisible();
     await expect(nav.getByText('Capture')).toBeVisible();
@@ -63,13 +61,21 @@ test.describe('Home page', () => {
   });
 
   test('active nav item has aria-current="page"', async ({ page }) => {
+    await openNavIfHidden(page);
     const nav = page.getByRole('navigation', { name: /main navigation/i });
     const homeBtn = nav.getByRole('button', { name: /home/i }).first();
     await expect(homeBtn).toHaveAttribute('aria-current', 'page');
 
     await navClick(page, /library/i);
-    const libraryBtn = nav.getByRole('button', { name: /library/i }).first();
+
+    // The mobile drawer closes after navigating; reopen it (no-op on desktop)
+    // and re-query both buttons from the same post-reopen nav locator so the
+    // assertions never couple to the pre-navigation drawer instance.
+    await openNavIfHidden(page);
+    const reopenedNav = page.getByRole('navigation', { name: /main navigation/i });
+    const libraryBtn = reopenedNav.getByRole('button', { name: /library/i }).first();
+    const reopenedHomeBtn = reopenedNav.getByRole('button', { name: /home/i }).first();
     await expect(libraryBtn).toHaveAttribute('aria-current', 'page');
-    await expect(homeBtn).not.toHaveAttribute('aria-current', 'page');
+    await expect(reopenedHomeBtn).not.toHaveAttribute('aria-current', 'page');
   });
 });

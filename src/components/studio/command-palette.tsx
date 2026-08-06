@@ -33,6 +33,7 @@ interface CommandPaletteProps {
   onEntitySelect: (entityId: string) => void
 }
 
+/** Command palette overlay for navigating views, creating entities, and searching the library. */
 export function CommandPalette({ onEntitySelect }: CommandPaletteProps) {
   const commandOpen = useStudioStore((s) => s.commandOpen)
   const setCommandOpen = useStudioStore((s) => s.setCommandOpen)

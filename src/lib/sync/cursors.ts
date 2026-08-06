@@ -1,17 +1,20 @@
 import { getAwareness } from './doc'
 import { getDeviceId, getDeviceName } from './discovery'
 
+/** 2D cursor position on the canvas. */
 export interface CursorPosition {
   x: number
   y: number
 }
 
+/** Text selection range broadcast by a remote peer. */
 export interface SelectionRange {
   start: number
   end: number
   text: string
 }
 
+/** Remote peer cursor state including position, selection, and metadata. */
 export interface RemoteCursor {
   deviceId: string
   name: string
@@ -22,6 +25,7 @@ export interface RemoteCursor {
   lastUpdate: number
 }
 
+/** Color palette for cursor indicators. */
 const CURSOR_COLORS = [
   '#ef4444', '#f97316', '#eab308', '#22c55e',
   '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899',
@@ -37,6 +41,7 @@ function getNextColor(): string {
 
 const LOCAL_COLOR = getNextColor()
 
+/** Broadcast the local cursor position to remote peers. */
 export function setCursorPosition(x: number, y: number): void {
   const awareness = getAwareness()
   if (!awareness) return
@@ -52,6 +57,7 @@ export function setCursorPosition(x: number, y: number): void {
   })
 }
 
+/** Clear the local cursor position from the awareness state. */
 export function clearCursorPosition(): void {
   const awareness = getAwareness()
   if (!awareness) return
@@ -63,6 +69,7 @@ export function clearCursorPosition(): void {
   })
 }
 
+/** Broadcast the local text selection to remote peers. */
 export function setSelection(start: number, end: number, text: string): void {
   const awareness = getAwareness()
   if (!awareness) return
@@ -74,6 +81,7 @@ export function setSelection(start: number, end: number, text: string): void {
   })
 }
 
+/** Clear the local text selection from the awareness state. */
 export function clearSelection(): void {
   const awareness = getAwareness()
   if (!awareness) return
@@ -85,6 +93,7 @@ export function clearSelection(): void {
   })
 }
 
+/** Read the local cursor state from the awareness protocol. */
 export function getLocalCursor(): RemoteCursor | null {
   const awareness = getAwareness()
   if (!awareness) return null
@@ -93,6 +102,7 @@ export function getLocalCursor(): RemoteCursor | null {
   return (state?.cursor as RemoteCursor) ?? null
 }
 
+/** Get all remote cursors excluding the local device. */
 export function getRemoteCursors(): RemoteCursor[] {
   const awareness = getAwareness()
   if (!awareness) return []
@@ -111,6 +121,7 @@ export function getRemoteCursors(): RemoteCursor[] {
   return cursors
 }
 
+/** Get remote cursors visible on a specific view. */
 export function getCursorsForView(view: string): RemoteCursor[] {
   return getRemoteCursors().filter((c) => c.currentView === view)
 }
@@ -119,6 +130,7 @@ type CursorCallback = (cursors: RemoteCursor[]) => void
 
 let cursorCallbacks: CursorCallback[] = []
 
+/** Subscribe to changes in remote cursor positions. */
 export function onCursorChange(callback: CursorCallback): () => void {
   cursorCallbacks.push(callback)
 

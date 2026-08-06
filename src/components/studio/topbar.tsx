@@ -18,7 +18,8 @@ const VIEW_TITLES: Record<ViewId, { title: string; subtitle: string }> = {
   sync: { title: 'Sync', subtitle: 'Connect devices and sync peer-to-peer' },
 }
 
-export function Topbar() {
+/** Top header bar with view title, inline search, offline badge, and new entity button. */
+export const Topbar = () => {
   const {
     currentView,
     startNew,
@@ -60,14 +61,14 @@ export function Topbar() {
           the Navigate tab; the search icon opens it on the Search tab. */}
       <button
         onClick={() => setMobileDrawerOpen(true)}
-        className="flex-shrink-0 rounded-md p-2 text-ink-soft hover:bg-muted focus-ring lg:hidden"
+        className="flex min-h-[44px] min-w-[44px] flex-shrink-0 items-center justify-center rounded-md p-2 text-ink-soft hover:bg-muted focus-ring lg:hidden"
         aria-label="Open menu"
       >
         <Menu className="h-5 w-5" />
       </button>
       <button
         onClick={openMobileSearch}
-        className="flex-shrink-0 rounded-md p-2 text-ink-soft hover:bg-muted focus-ring lg:hidden"
+        className="flex min-h-[44px] min-w-[44px] flex-shrink-0 items-center justify-center rounded-md p-2 text-ink-soft hover:bg-muted focus-ring lg:hidden"
         aria-label="Search knowledge base"
       >
         <Search className="h-5 w-5" />

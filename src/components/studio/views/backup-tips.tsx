@@ -3,6 +3,7 @@
 import { memo } from 'react'
 import { Sparkles, Check } from 'lucide-react'
 
+/** Tip card listing best practices for backing up the local knowledge base. */
 export const BackupTips = memo(function BackupTips() {
   return (
     <section className="rounded-lg border border-dashed border-saffron/40 bg-saffron-soft/30 p-4">

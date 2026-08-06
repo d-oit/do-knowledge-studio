@@ -9,7 +9,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import Markdown from 'react-markdown'
 import {
-  Save,
   ExternalLink,
 } from 'lucide-react'
 import { EditorToolbar } from './editor-toolbar'
@@ -25,23 +24,29 @@ import {
   applyQuote,
   applyInlineCode,
   applyLink,
-  generateDraftId,
-  saveDraft,
-  loadDraft,
   removeDraft,
-  type EditorDraft,
 } from '@/lib/editor'
+import {
+  useEditorDraft,
+  useEditorKeyboardShortcuts,
+  EditorModeSelector,
+  EditorStatusBar,
+} from '../editor-hooks'
 
 const SERIF_FONT_STYLE: React.CSSProperties = {
   fontFamily: 'var(--font-newsreader), Georgia, serif',
 } as const
 
-function restoreSelection(textarea: HTMLTextAreaElement, start: number, end: number) {
+const ADVANCED_METADATA_TITLE = 'Metadata & source'
+const ADVANCED_METADATA_DESCRIPTION = 'Optional context that helps you find and revisit this note later. Tags stay visible above for quick editing.'
+
+const restoreSelection = (textarea: HTMLTextAreaElement, start: number, end: number) => {
   textarea.focus()
   textarea.setSelectionRange(start, end)
 }
 
-export function EditorView() {
+/** Rich-text entity editor with markdown preview, claims panel, and draft persistence. */
+export const EditorView = () => {
   const entities = useStudioStore((s) => s.entities)
   const editingEntityId = useStudioStore((s) => s.editingEntityId)
   const commitEntity = useStudioStore((s) => s.commitEntity)
@@ -51,8 +56,6 @@ export function EditorView() {
   const updateClaim = useStudioStore((s) => s.updateClaim)
   const deleteClaim = useStudioStore((s) => s.deleteClaim)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const draftIdRef = useRef<string>('')
-  const modeGroupRef = useRef<HTMLDivElement>(null)
 
   const editing = useMemo(
     () => entities.find((e) => e.id === editingEntityId) || null,
@@ -73,7 +76,22 @@ export function EditorView() {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [showTypeMenu, setShowTypeMenu] = useState(false)
   const [editMode, setEditMode] = useState<'edit' | 'preview' | 'split'>('edit')
-  const [draftStatus, setDraftStatus] = useState<'saved' | 'unsaved' | 'error' | null>(null)
+
+  const { draftStatus, draftIdRef } = useEditorDraft({
+    editing,
+    name,
+    content,
+    description,
+    type,
+    sourceUrl,
+    tags,
+    setName,
+    setContent,
+    setDescription,
+    setType,
+    setSourceUrl,
+    setTags,
+  })
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 768px)')
@@ -86,78 +104,6 @@ export function EditorView() {
     mq.addEventListener('change', handleChange)
     return () => { mq.removeEventListener('change', handleChange) }
   }, [])
-
-  // Initialize draft ID on mount
-  useEffect(() => {
-    if (editing?.id) {
-      draftIdRef.current = `draft-${editing.id}`
-      const existing = loadDraft(draftIdRef.current)
-      if (existing) {
-        setName(existing.name)
-        setContent(existing.content)
-        setDescription(existing.description)
-        setType(existing.type as EntityType)
-        setSourceUrl(existing.sourceUrl)
-        setTags(existing.tags)
-      }
-    } else {
-      draftIdRef.current = generateDraftId()
-    }
-  }, [editing?.id])
-
-  // Debounced draft persistence
-  useEffect(() => {
-    if (!draftIdRef.current) return
-    const timer = setTimeout(() => {
-      const draft: EditorDraft = {
-        id: draftIdRef.current,
-        entityId: editing?.id || null,
-        name,
-        content,
-        description,
-        type,
-        sourceUrl,
-        tags,
-        createdAt: editing?.createdAt || new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        version: 1,
-      }
-      try {
-        saveDraft(draft)
-        setDraftStatus('saved')
-      } catch (error) {
-        console.error('Failed to save draft:', error instanceof Error ? error.message : error)
-        setDraftStatus('error')
-      }
-    }, 500)
-    return () => { clearTimeout(timer) }
-  }, [name, content, description, type, sourceUrl, tags, editing?.id, editing?.createdAt])
-
-  // Flush draft on unmount
-  useEffect(() => {
-    return () => {
-      if (draftIdRef.current) {
-        const draft: EditorDraft = {
-          id: draftIdRef.current,
-          entityId: editing?.id || null,
-          name,
-          content,
-          description,
-          type,
-          sourceUrl,
-          tags,
-          createdAt: editing?.createdAt || new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          version: 1,
-        }
-        try {
-          saveDraft(draft)
-        } catch (error) {
-          console.error('Failed to flush draft on unmount:', error instanceof Error ? error.message : error)
-        }
-      }
-    }
-  }, [name, content, description, type, sourceUrl, tags, editing?.id, editing?.createdAt])
 
   const wordCount = useMemo(
     () => content.trim().split(/\s+/).filter(Boolean).length,
@@ -233,37 +179,7 @@ export function EditorView() {
     finishEditing()
   }
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (!(e.target instanceof HTMLElement)) return
-      if (e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'INPUT') return
-      const mod = e.metaKey || e.ctrlKey
-      if (!mod) return
-      switch (e.key) {
-        case 'b':
-          e.preventDefault()
-          handleFormat('bold')
-          break
-        case 'i':
-          e.preventDefault()
-          handleFormat('italic')
-          break
-        case 'k':
-          e.preventDefault()
-          handleFormat('link')
-          break
-        case 's':
-          e.preventDefault()
-          handleSave()
-          break
-        default:
-          break
-      }
-    }
-    document.addEventListener('keydown', handler)
-    return () => { document.removeEventListener('keydown', handler) }
-  }, [handleFormat, handleSave])
+  useEditorKeyboardShortcuts({ handleFormat, handleSave })
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-6 lg:px-10 lg:py-8">
@@ -293,7 +209,19 @@ export function EditorView() {
       />
 
       {showAdvanced && (
-        <div className="mb-4 space-y-3 rounded-lg border border-dashed border-border bg-muted/30 p-4">
+        <div
+          className="mb-4 space-y-3 rounded-lg border border-dashed border-border bg-muted/30 p-4"
+          role="group"
+          aria-labelledby="advanced-fields-heading"
+        >
+          <div>
+            <h3 id="advanced-fields-heading" className="font-serif text-[15px] font-semibold text-ink">
+              {ADVANCED_METADATA_TITLE}
+            </h3>
+            <p className="mt-1 text-label leading-relaxed text-ink-mute">
+              {ADVANCED_METADATA_DESCRIPTION}
+            </p>
+          </div>
           <div>
             <label htmlFor="source-url" className="mb-1 flex items-center gap-1.5 text-label font-semibold uppercase tracking-wide text-ink-faint">
               <ExternalLink className="h-3 w-3" />
@@ -310,51 +238,7 @@ export function EditorView() {
         </div>
       )}
 
-      <div
-        ref={modeGroupRef}
-        className="mb-4 flex items-center gap-2 border-b border-border pb-2"
-        role="radiogroup"
-        aria-label="Editor mode"
-        onKeyDown={(e) => {
-          const modes = ['edit', 'preview', 'split'] as const
-          const currentIdx = modes.indexOf(editMode)
-          let nextIdx = -1
-          if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-            e.preventDefault()
-            nextIdx = (currentIdx + 1) % modes.length
-          } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-            e.preventDefault()
-            nextIdx = (currentIdx - 1 + modes.length) % modes.length
-          }
-          if (nextIdx >= 0) {
-            // Determine next mode via ternary to avoid bracket notation (Codacy Object Injection Sink)
-            setEditMode(nextIdx === 0 ? 'edit' : nextIdx === 1 ? 'preview' : 'split')
-            // Per ARIA radiogroup pattern, arrow keys must move focus to the newly selected radio
-            const group = modeGroupRef.current
-            if (group) {
-              group
-                .querySelectorAll<HTMLButtonElement>('[role="radio"]')
-                .forEach((btn, idx) => {
-                  if (idx === nextIdx) btn.focus()
-                })
-            }
-          }
-        }}
-      >
-        {(['edit', 'preview', 'split'] as const).map((mode) => (
-          <button
-            key={mode}
-            role="radio"
-            type="button"
-            tabIndex={editMode === mode ? 0 : -1}
-            aria-checked={editMode === mode}
-            onClick={() => { setEditMode(mode) }}
-            className={`rounded px-2.5 min-h-[44px] min-w-[44px] text-label font-medium transition-colors focus-ring ${editMode === mode ? 'bg-muted text-ink' : 'text-ink-mute hover:bg-muted/50'}`}
-          >
-            {mode.charAt(0).toUpperCase() + mode.slice(1)}
-          </button>
-        ))}
-      </div>
+      <EditorModeSelector editMode={editMode} onEditModeChange={setEditMode} />
 
       <CursorTracker view="editor">
         <div className={editMode === 'split' ? 'grid grid-cols-2 gap-4' : 'relative'}>
@@ -364,7 +248,6 @@ export function EditorView() {
             value={content}
             onChange={(e) => {
               setContent(e.target.value)
-              setDraftStatus('unsaved')
             }}
             placeholder="Start writing. Use markdown for headings, lists, and emphasis…"
             className={`min-h-[420px] w-full resize-none bg-transparent font-serif text-[16px] leading-[1.75] text-ink placeholder:text-ink-faint/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-saffron/40 focus-visible:ring-inset ${editMode === 'split' ? 'rounded-lg border border-border p-4' : ''}`}
@@ -390,49 +273,16 @@ export function EditorView() {
         />
       )}
 
-      <div className="sticky bottom-0 -mx-6 mt-6 flex items-center justify-between border-t border-border bg-background/90 px-6 py-3 backdrop-blur-sm lg:-mx-10 lg:px-10">
-        <div className="flex items-center gap-3 text-label text-ink-faint" aria-live="polite" aria-atomic="true">
-          <span>{wordCount} words</span>
-          <span>·</span>
-          <span>{charCount} chars</span>
-          {isDirty && (
-            <>
-              <span>·</span>
-              <span className="text-saffron-deep">Unsaved changes</span>
-            </>
-          )}
-          {draftStatus === 'saved' && !isDirty && (
-            <>
-              <span>·</span>
-              <span className="text-sage">Draft saved</span>
-            </>
-          )}
-          {draftStatus === 'error' && (
-            <>
-              <span>·</span>
-              <span className="text-destructive">Could not save draft</span>
-            </>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {editing && (
-            <button
-              onClick={handleDiscard}
-              className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-red-50 hover:text-red-600 focus-ring min-h-[44px]"
-            >
-              Discard changes
-            </button>
-          )}
-          <button
-            onClick={handleSave}
-            disabled={!name.trim()}
-            className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 press-scale focus-ring min-h-[44px]"
-          >
-            <Save className="h-3.5 w-3.5" />
-            {editing ? 'Commit changes' : 'Save to library'}
-          </button>
-        </div>
-      </div>
+      <EditorStatusBar
+        wordCount={wordCount}
+        charCount={charCount}
+        isDirty={isDirty}
+        draftStatus={draftStatus}
+        editing={editing}
+        onDiscard={handleDiscard}
+        onSave={handleSave}
+        nameValid={name.trim().length > 0}
+      />
     </div>
   )
 }

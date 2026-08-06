@@ -88,6 +88,8 @@ vi.mock('lucide-react', () => {
     Zap: Icon,
     RefreshCw: Icon,
     Globe: Icon,
+    KeyRound: Icon,
+    Lightbulb: Icon,
   }
 })
 

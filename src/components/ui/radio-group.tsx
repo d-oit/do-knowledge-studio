@@ -6,6 +6,7 @@ import { CircleIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
+/** Groups radio items together for single selection within a form. */
 function RadioGroup({
   className,
   ...props
@@ -19,6 +20,7 @@ function RadioGroup({
   )
 }
 
+/** Individual selectable radio button within a radio group. */
 function RadioGroupItem({
   className,
   ...props

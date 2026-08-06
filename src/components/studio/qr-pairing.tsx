@@ -5,11 +5,12 @@ import { QRCodeSVG } from 'qrcode.react'
 import { Camera, X, Copy, Check } from 'lucide-react'
 import { toast } from 'sonner'
 
-export function QRDisplay({ roomId }: { roomId: string }) {
+/** Renders a QR code for the given room ID with a copy button. */
+export const QRDisplay = ({ roomId }: { roomId: string }) => {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = useCallback(() => {
-    void navigator.clipboard.writeText(roomId)
+    navigator.clipboard.writeText(roomId).catch(() => { /* ignore clipboard errors */ })
     setCopied(true)
     setTimeout(() => { setCopied(false) }, 2000)
   }, [roomId])
@@ -41,7 +42,8 @@ export function QRDisplay({ roomId }: { roomId: string }) {
   )
 }
 
-export function QRScanner({ onScan }: { onScan: (roomId: string) => void }) {
+/** Camera-based QR code scanner for room pairing. */
+export const QRScanner = ({ onScan }: { onScan: (roomId: string) => void }) => {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isActive, setIsActive] = useState(false)
@@ -53,6 +55,7 @@ export function QRScanner({ onScan }: { onScan: (roomId: string) => void }) {
     onScanRef.current = onScan
   }, [onScan])
 
+  /** Stops the active camera stream and resets the scanner state. */
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
       for (const track of streamRef.current.getTracks()) {
@@ -63,6 +66,7 @@ export function QRScanner({ onScan }: { onScan: (roomId: string) => void }) {
     setIsActive(false)
   }, [])
 
+  /** Requests camera access and begins the QR code detection loop. */
   const startCamera = useCallback(async () => {
     setError(null)
     try {

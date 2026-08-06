@@ -87,6 +87,14 @@ describe('ChatView', () => {
     expect(screen.getByText('Ask your library')).toBeDefined()
   })
 
+  it('explains local capabilities in the empty state', () => {
+    render(<ChatView />)
+    expect(screen.getByText('What you can ask')).toBeDefined()
+    expect(screen.getByText('Search notes, people, projects, and claims in this browser')).toBeDefined()
+    expect(screen.getByText('Synthesize connections across your local knowledge base')).toBeDefined()
+    expect(screen.getByText('Show the local items used to support each answer')).toBeDefined()
+  })
+
   it('shows suggestion chips in empty state', () => {
     render(<ChatView />)
     expect(screen.getAllByText('Summarize recent projects').length).toBeGreaterThanOrEqual(1)

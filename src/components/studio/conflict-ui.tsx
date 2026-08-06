@@ -11,6 +11,7 @@ interface ConflictUIProps {
   onDismiss: () => void
 }
 
+/** Conflict resolution UI for choosing between local and remote field values during sync. */
 export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps) {
   const [resolutions, setResolutions] = useState<Map<string, 'local' | 'remote'>>(
     () => new Map(conflicts.map((c) => [`${c.entityId}:${c.field}`, c.winner])),
@@ -157,6 +158,7 @@ export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps)
   )
 }
 
+/** Formats a conflict value into a human-readable string for display. */
 function formatValue(value: unknown): string {
   if (value === null || value === undefined) return '(empty)'
   if (typeof value === 'string') return value || '(empty)'

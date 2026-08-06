@@ -25,6 +25,7 @@ const TrizView = lazy(() => import('./views/triz-view').then((m) => ({ default: 
 const ExportView = lazy(() => import('./views/export-view').then((m) => ({ default: m.ExportView })))
 const SyncView = lazy(() => import('./views/sync-view').then((m) => ({ default: m.SyncView })))
 
+/** Loading skeleton placeholder shown while lazy-loaded views are being fetched. */
 function ViewLoader() {
   return (
     <div className="space-y-4 p-6">
@@ -56,10 +57,12 @@ const VIEW_NAMES: Record<ViewId, string> = {
   sync: 'Sync',
 }
 
+/** Returns a human-readable display name for a given view ID. */
 function getViewName(view: ViewId): string {
   return VIEW_NAMES[view]
 }
 
+/** Root application shell composing sidebar, topbar, view router, right panel, and overlays. */
 export function AppShell() {
   const currentView = useStudioStore((s) => s.currentView)
   const editingEntityId = useStudioStore((s) => s.editingEntityId)

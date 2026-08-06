@@ -5,6 +5,7 @@ import * as SwitchPrimitive from "@radix-ui/react-switch"
 
 import { cn } from "@/lib/utils"
 
+/** Toggle switch for boolean on/off state. */
 function Switch({
   className,
   ...props

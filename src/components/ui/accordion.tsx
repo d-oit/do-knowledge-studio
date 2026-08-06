@@ -6,12 +6,14 @@ import { ChevronDownIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
+/** Container for collapsible accordion sections. */
 function Accordion({
   ...props
 }: React.ComponentProps<typeof AccordionPrimitive.Root>) {
   return <AccordionPrimitive.Root data-slot="accordion" {...props} />
 }
 
+/** A single collapsible item within an accordion. */
 function AccordionItem({
   className,
   ...props
@@ -25,6 +27,7 @@ function AccordionItem({
   )
 }
 
+/** Clickable trigger that toggles an accordion item open. */
 function AccordionTrigger({
   className,
   children,
@@ -47,6 +50,7 @@ function AccordionTrigger({
   )
 }
 
+/** Collapsible content panel of an accordion item. */
 function AccordionContent({
   className,
   children,

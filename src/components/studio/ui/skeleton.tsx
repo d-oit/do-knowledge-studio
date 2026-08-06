@@ -3,6 +3,7 @@
 import { cn } from '@/lib/utils'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 
+/** Animated skeleton placeholder for loading states. */
 export function Skeleton({ className }: { className?: string }) {
   return (
     <div
@@ -13,6 +14,7 @@ export function Skeleton({ className }: { className?: string }) {
   )
 }
 
+/** Skeleton placeholder shaped like an entity card with avatar and text lines. */
 export function EntityCardSkeleton({ className }: { className?: string }) {
   const reducedMotion = useReducedMotion()
 
@@ -57,6 +59,7 @@ export function EntityCardSkeleton({ className }: { className?: string }) {
   )
 }
 
+/** Stack of skeleton list items for loading list views. */
 export function ListSkeleton({ count = 5, className }: { count?: number; className?: string }) {
   const reducedMotion = useReducedMotion()
 
@@ -94,6 +97,7 @@ export function ListSkeleton({ count = 5, className }: { count?: number; classNa
   )
 }
 
+/** Skeleton placeholder that mimics a knowledge graph node layout. */
 export function GraphSkeleton({ className }: { className?: string }) {
   const reducedMotion = useReducedMotion()
 
@@ -154,6 +158,7 @@ export function GraphSkeleton({ className }: { className?: string }) {
   )
 }
 
+/** Skeleton placeholder that mimics a chat message thread. */
 export function ChatSkeleton({ className }: { className?: string }) {
   const reducedMotion = useReducedMotion()
 

@@ -19,6 +19,7 @@ import { TextInput, ToggleButtonGroup } from '../ui/shared-primitives'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { ParamPicker, ContradictionChip } from './triz-helpers'
 
+/** TRIZ contradiction matrix view for picking parameters and viewing suggested inventive principles. */
 export function TrizView() {
   const [improving, setImproving] = useState<number | null>(null)
   const [worsening, setWorsening] = useState<number | null>(null)

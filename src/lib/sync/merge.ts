@@ -1,10 +1,12 @@
 import type { Entity, Claim } from '@/lib/studio/types'
 
+/** Result of a merge operation including merged data and detected conflicts. */
 export interface MergeResult<T> {
   merged: T
   conflicts: FieldConflict[]
 }
 
+/** Description of a single field-level conflict between local and remote values. */
 export interface FieldConflict {
   entityId: string
   entityType: 'entity' | 'claim'
@@ -24,6 +26,7 @@ function arraysEqual(a: unknown[], b: unknown[]): boolean {
   return JSON.stringify(a) === JSON.stringify(b)
 }
 
+/** Merge two entity lists, resolving conflicts by timestamp and tracking field-level disagreements. */
 export function mergeEntities(
   local: Entity[],
   remote: Entity[],
@@ -207,6 +210,7 @@ function mergeLinks(
   return Array.from(linkMap.values())
 }
 
+/** Merge two claim lists, resolving conflicts by timestamp and tracking field-level disagreements. */
 export function mergeClaims(
   local: Claim[],
   remote: Claim[],

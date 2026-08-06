@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
 import { ENTITY_TYPE_META, type EntityType } from '@/lib/studio/types'
 import { ToggleButtonGroup } from '../ui/shared-primitives'
@@ -18,11 +18,15 @@ import {
   Clock,
   Search,
   X,
+  SlidersHorizontal,
+  Tag,
+  ChevronDown,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 
+/** Lucide icon mapping for each entity type. */
 const TYPE_ICONS: Record<EntityType, typeof FileText> = {
   note: FileText,
   concept: Lightbulb,
@@ -30,6 +34,7 @@ const TYPE_ICONS: Record<EntityType, typeof FileText> = {
   project: FolderKanban,
 }
 
+/** Entity type filter options including the "all" sentinel. */
 const FILTERS: { id: EntityType | 'all'; label: string }[] = [
   { id: 'all', label: 'All' },
   { id: 'note', label: 'Notes' },
@@ -38,7 +43,21 @@ const FILTERS: { id: EntityType | 'all'; label: string }[] = [
   { id: 'project', label: 'Projects' },
 ]
 
-export function LibraryView() {
+/** Label for the advanced filters disclosure toggle. */
+const ADVANCED_FILTERS_LABEL = 'Advanced filters'
+/** Helper text shown inside the advanced filters panel. */
+const ADVANCED_FILTERS_HINT = 'Narrow results with type-specific options'
+/** Label for the tag filter input. */
+const TAG_FILTER_LABEL = 'Tag contains'
+/** Placeholder text for the tag filter input. */
+const TAG_FILTER_PLACEHOLDER = 'e.g. research'
+/** Checkbox label for filtering to entities with descriptions. */
+const HAS_DESCRIPTION_LABEL = 'Only show entities with a description'
+/** Button label to clear only the advanced filter values. */
+const CLEAR_ADVANCED_LABEL = 'Clear advanced filters'
+
+/** Entity library view with grid/list layout, search, type filters, and sort controls. */
+export const LibraryView = () => {
   const allEntities = useStudioStore((s) => s.entities)
   const typeFilter = useStudioStore((s) => s.typeFilter)
   const setTypeFilter = useStudioStore((s) => s.setTypeFilter)
@@ -52,13 +71,37 @@ export function LibraryView() {
   const setSearchQuery = useStudioStore((s) => s.setSearchQuery)
   const rightPanelOpen = useStudioStore((s) => s.rightPanelOpen)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [advancedOpen, setAdvancedOpen] = useState(false)
+  const [tagQuery, setTagQuery] = useState('')
+  const [hasDescriptionOnly, setHasDescriptionOnly] = useState(false)
   const filteredEntities = useFilteredEntities()
   const reducedMotion = useReducedMotion()
 
+  const advancedFilteredEntities = useMemo(() => {
+    const tag = tagQuery.trim().toLowerCase()
+    if (!tag && !hasDescriptionOnly) return filteredEntities
+    return filteredEntities.filter((e) => {
+      if (tag && !e.tags.some((t) => t.toLowerCase().includes(tag))) return false
+      if (hasDescriptionOnly && !e.description.trim()) return false
+      return true
+    })
+  }, [filteredEntities, tagQuery, hasDescriptionOnly])
+
+  const hasAdvancedFilters = tagQuery.trim().length > 0 || hasDescriptionOnly
+
+  /** Resets all filter and search state to defaults. */
   const clearFilters = useCallback(() => {
     setSearchQuery('')
     setTypeFilter('all')
+    setTagQuery('')
+    setHasDescriptionOnly(false)
   }, [setSearchQuery, setTypeFilter])
+
+  /** Clears only the advanced filter values (tag query and description toggle). */
+  const clearAdvancedFilters = useCallback(() => {
+    setTagQuery('')
+    setHasDescriptionOnly(false)
+  }, [])
 
   return (
     <div className={cn('mx-auto px-6 py-6 lg:px-10 lg:py-8', rightPanelOpen ? 'max-w-5xl' : 'max-w-6xl')}>
@@ -156,6 +199,79 @@ export function LibraryView() {
         </button>
       </div>
 
+      {/* Advanced filters disclosure */}
+      <div className="mb-4">
+        <button
+          onClick={() => { setAdvancedOpen(!advancedOpen) }}
+          aria-expanded={advancedOpen}
+          aria-controls="library-advanced-filters"
+          className={cn(
+            'flex min-h-[44px] items-center gap-1.5 rounded-md border px-3 text-[12px] font-medium transition-colors focus-ring',
+            hasAdvancedFilters
+              ? 'border-saffron/40 bg-saffron-soft/40 text-saffron-deep'
+              : 'border-border bg-background text-ink-soft hover:border-saffron/40',
+          )}
+        >
+          <SlidersHorizontal className="h-3.5 w-3.5" />
+          {ADVANCED_FILTERS_LABEL}
+          <ChevronDown
+            className={cn('h-3 w-3 transition-transform', advancedOpen && 'rotate-180')}
+            aria-hidden="true"
+          />
+          {hasAdvancedFilters && (
+            <span className="ml-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-saffron px-1 text-badge font-bold text-white">
+              {Number(hasDescriptionOnly) + (tagQuery.trim() ? 1 : 0)}
+            </span>
+          )}
+        </button>
+
+        {advancedOpen && (
+          <div
+            id="library-advanced-filters"
+            className="mt-2 flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card/60 p-3"
+          >
+            <div className="w-full max-w-xs sm:w-56">
+              <label
+                htmlFor="library-tag-filter"
+                className="mb-1 flex items-center gap-1 text-label font-semibold uppercase tracking-wide text-ink-faint"
+              >
+                <Tag className="h-3 w-3" aria-hidden="true" />
+                {TAG_FILTER_LABEL}
+              </label>
+              <input
+                id="library-tag-filter"
+                type="text"
+                value={tagQuery}
+                onChange={(e) => { setTagQuery(e.target.value) }}
+                placeholder={TAG_FILTER_PLACEHOLDER}
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+              />
+            </div>
+
+            <label className="flex min-h-[44px] cursor-pointer items-center gap-2 rounded-md border border-border bg-background px-3 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring">
+              <input
+                type="checkbox"
+                checked={hasDescriptionOnly}
+                onChange={(e) => { setHasDescriptionOnly(e.target.checked) }}
+                className="h-4 w-4 rounded border-border accent-saffron"
+              />
+              {HAS_DESCRIPTION_LABEL}
+            </label>
+
+            {hasAdvancedFilters && (
+              <button
+                onClick={clearAdvancedFilters}
+                className="flex min-h-[44px] items-center gap-1 rounded-md px-2 text-[12px] font-medium text-ink-faint transition-colors hover:text-ink focus-ring"
+              >
+                <X className="h-3 w-3" aria-hidden="true" />
+                {CLEAR_ADVANCED_LABEL}
+              </button>
+            )}
+            <p className="w-full text-caption text-ink-faint">{ADVANCED_FILTERS_HINT}</p>
+          </div>
+        )}
+      </div>
+
       {/* Empty states */}
       {allEntities.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 py-20 text-center">
@@ -175,7 +291,7 @@ export function LibraryView() {
             Create your first entity
           </button>
         </div>
-      ) : filteredEntities.length === 0 ? (
+      ) : advancedFilteredEntities.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 py-20 text-center">
           <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
             <Search className="h-6 w-6 text-ink-faint" />
@@ -195,9 +311,9 @@ export function LibraryView() {
       ) : null}
 
       {/* Grid view */}
-      {filteredEntities.length > 0 && viewMode === 'grid' && (
+      {advancedFilteredEntities.length > 0 && viewMode === 'grid' && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredEntities.map((e, i) => {
+          {advancedFilteredEntities.map((e, i) => {
             const meta = ENTITY_TYPE_META[e.type]
             const Icon = TYPE_ICONS[e.type]
             return (
@@ -249,7 +365,7 @@ export function LibraryView() {
       )}
 
       {/* List view */}
-      {filteredEntities.length > 0 && viewMode === 'list' && (
+      {advancedFilteredEntities.length > 0 && viewMode === 'list' && (
         <div className="overflow-hidden rounded-lg border border-border bg-card">
           <table className="w-full">
             <caption className="sr-only">Library entities</caption>
@@ -262,7 +378,7 @@ export function LibraryView() {
               </tr>
             </thead>
             <tbody>
-              {filteredEntities.map((e) => {
+              {advancedFilteredEntities.map((e) => {
                 const meta = ENTITY_TYPE_META[e.type]
                 const Icon = TYPE_ICONS[e.type]
                 return (
@@ -324,10 +440,10 @@ export function LibraryView() {
       <div className="mt-4 flex items-center justify-between">
         <div className="flex items-center gap-2 text-label text-ink-faint">
           <ArrowUpDown className="h-3 w-3" />
-          Showing {filteredEntities.length} {filteredEntities.length === 1 ? 'entity' : 'entities'}
+          Showing {advancedFilteredEntities.length} {advancedFilteredEntities.length === 1 ? 'entity' : 'entities'}
         </div>
         <div className="sr-only" role="status" aria-live="polite">
-          Showing {filteredEntities.length} {filteredEntities.length === 1 ? 'entity' : 'entities'}
+          Showing {advancedFilteredEntities.length} {advancedFilteredEntities.length === 1 ? 'entity' : 'entities'}
         </div>
       </div>
     </div>

@@ -9,6 +9,7 @@ import {
   OLLAMA_DEFAULT_MODELS,
 } from '@/lib/ai/types'
 
+/** Configuration entry for a supported AI provider. */
 export interface ProviderOption {
   id: AIProvider
   label: string
@@ -16,13 +17,15 @@ export interface ProviderOption {
   requiresKey: boolean
 }
 
+/** List of all supported AI providers with their default models and key requirements. */
 export const PROVIDERS: ProviderOption[] = [
   { id: 'openrouter', label: PROVIDER_LABELS.openrouter, models: OPENROUTER_DEFAULT_MODELS, requiresKey: true },
   { id: 'ollama', label: PROVIDER_LABELS.ollama, models: OLLAMA_DEFAULT_MODELS, requiresKey: false },
 ]
 
 
-export function Field({
+/** Form field wrapper with auto-generated label and input ID binding. */
+export const Field = ({
   label,
   icon: Icon,
   children,
@@ -30,9 +33,10 @@ export function Field({
   label: string
   icon: LucideIcon
   children: React.ReactNode
-}) {
+}) => {
   const fieldId = `field-${label.toLowerCase().replace(/\s+/g, '-')}`
 
+  /** Recursively injects the field ID into the first input/select/textarea child. */
   function injectId(child: React.ReactNode): React.ReactNode {
     if (!React.isValidElement(child)) return child
     const el = child as React.ReactElement<Record<string, unknown>>

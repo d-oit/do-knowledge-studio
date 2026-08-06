@@ -10,6 +10,7 @@ import {
   ToastViewport,
 } from "@/components/ui/toast"
 
+/** Renders all active toasts from the toast queue. */
 export function Toaster() {
   const { toasts } = useToast()
 

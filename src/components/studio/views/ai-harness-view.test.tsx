@@ -9,7 +9,7 @@ vi.mock('framer-motion', () => ({
       <div {...(props as React.HTMLAttributes<HTMLDivElement>)}>{children}</div>
     ),
   },
-  AnimatePresence: ({ children }: { children?: ReactNode }) => <>{children}</>,
+  AnimatePresence: ({ children }: { children?: ReactNode }) => children,
 }))
 
 vi.mock('lucide-react', () => {
@@ -32,6 +32,8 @@ vi.mock('lucide-react', () => {
     Zap: Icon,
     RefreshCw: Icon,
     Globe: Icon,
+    KeyRound: Icon,
+    Lightbulb: Icon,
   }
 })
 
@@ -130,71 +132,84 @@ describe('AIHarnessView', () => {
   })
 
   it('renders the AI Harness header', async () => {
-    await act(async () => { render(<AIHarnessView />) })
+    await act(async () => { render(<AIHarnessView />); await Promise.resolve() })
     expect(screen.getByText('AI Harness')).toBeDefined()
   })
 
   it('renders the Lab badge', async () => {
-    await act(async () => { render(<AIHarnessView />) })
+    await act(async () => { render(<AIHarnessView />); await Promise.resolve() })
     expect(screen.getByText('Lab')).toBeDefined()
   })
 
+  it('renders a getting-started prompt when the provider needs setup', async () => {
+    await act(async () => { render(<AIHarnessView />); await Promise.resolve() })
+    expect(screen.getByText('Connect an AI provider')).toBeDefined()
+    expect(screen.getByText('Add an API key to ask a hosted model, or switch to Ollama for a local model. Your prompt is sent to the selected provider; your library stays in this browser until you choose to include local context in a request.')).toBeDefined()
+    expect(screen.getByText('With local augmentation on, selected notes and claims are included in requests. Turn it off to send only your prompt.')).toBeDefined()
+  })
+
+  it('opens provider settings from the getting-started prompt', async () => {
+    await act(async () => { render(<AIHarnessView />); await Promise.resolve() })
+    await act(() => { screen.getByRole('button', { name: 'Open provider settings' }).click() })
+    expect(screen.getByText('Hide settings')).toBeDefined()
+  })
+
   it('renders settings toggle button', async () => {
-    await act(async () => { render(<AIHarnessView />) })
+    await act(async () => { render(<AIHarnessView />); await Promise.resolve() })
     expect(screen.getByText('Show settings')).toBeDefined()
   })
 
   it('shows settings panel when toggle clicked', async () => {
-    await act(async () => { render(<AIHarnessView />) })
-    await act(async () => { screen.getByText('Show settings').click() })
+    await act(async () => { render(<AIHarnessView />); await Promise.resolve() })
+    await act(() => { screen.getByText('Show settings').click() })
     expect(screen.getByText('Hide settings')).toBeDefined()
     expect(screen.getByText('Augment with local knowledge')).toBeDefined()
   })
 
   it('provider dropdown exists in settings panel', async () => {
-    await act(async () => { render(<AIHarnessView />) })
-    await act(async () => { screen.getByText('Show settings').click() })
+    await act(async () => { render(<AIHarnessView />); await Promise.resolve() })
+    await act(() => { screen.getByText('Show settings').click() })
     const selects = screen.getAllByRole('combobox')
     expect(selects.length).toBeGreaterThanOrEqual(1)
   })
 
   it('API key input field exists when settings open', async () => {
-    await act(async () => { render(<AIHarnessView />) })
-    await act(async () => { screen.getByText('Show settings').click() })
+    await act(async () => { render(<AIHarnessView />); await Promise.resolve() })
+    await act(() => { screen.getByText('Show settings').click() })
     expect(screen.getByPlaceholderText('sk-or-\u2026')).toBeDefined()
   })
 
   it('chat textarea exists', async () => {
-    await act(async () => { render(<AIHarnessView />) })
+    await act(async () => { render(<AIHarnessView />); await Promise.resolve() })
     expect(screen.getByPlaceholderText(/Ask the AI agent/)).toBeDefined()
   })
 
   it('send button exists', async () => {
-    await act(async () => { render(<AIHarnessView />) })
+    await act(async () => { render(<AIHarnessView />); await Promise.resolve() })
     expect(screen.getByLabelText('Send')).toBeDefined()
   })
 
   it('renders initial assistant message', async () => {
-    await act(async () => { render(<AIHarnessView />) })
+    await act(async () => { render(<AIHarnessView />); await Promise.resolve() })
     expect(screen.getByText(/AI agent ready to assist/)).toBeDefined()
   })
 
   it('auto-saves settings (no manual save button)', async () => {
-    await act(async () => { render(<AIHarnessView />) })
-    await act(async () => { screen.getByText('Show settings').click() })
+    await act(async () => { render(<AIHarnessView />); await Promise.resolve() })
+    await act(() => { screen.getByText('Show settings').click() })
     expect(screen.queryByText('Save settings')).toBeNull()
     expect(screen.getByText('Augment with local knowledge')).toBeDefined()
   })
 
   it('shows status as Ready when not loading', async () => {
-    await act(async () => { render(<AIHarnessView />) })
-    await act(async () => { screen.getByText('Show settings').click() })
+    await act(async () => { render(<AIHarnessView />); await Promise.resolve() })
+    await act(() => { screen.getByText('Show settings').click() })
     expect(screen.getByText('Ready')).toBeDefined()
   })
 
   it('shows connected database field in settings', async () => {
-    await act(async () => { render(<AIHarnessView />) })
-    await act(async () => { screen.getByText('Show settings').click() })
+    await act(async () => { render(<AIHarnessView />); await Promise.resolve() })
+    await act(() => { screen.getByText('Show settings').click() })
     expect(screen.getByText(/Connected/)).toBeDefined()
   })
 })

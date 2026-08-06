@@ -1,10 +1,9 @@
 import { test, expect } from '@playwright/test';
-
-/** Helper: click a sidebar nav button by label (scoped to <nav>) */
-async function navClick(page: import('@playwright/test').Page, name: RegExp | string) {
-  const nav = page.getByRole('navigation', { name: /main navigation/i });
-  await nav.getByRole('button', { name }).first().click();
-}
+import {
+  expectNavigationReachable,
+  navClick,
+  openNavIfHidden,
+} from './helpers/navigation';
 
 test.describe('Keyboard navigation', () => {
   test.beforeEach(async ({ page }) => {
@@ -12,6 +11,7 @@ test.describe('Keyboard navigation', () => {
   });
 
   test('Tab moves focus through sidebar navigation items', async ({ page }) => {
+    await openNavIfHidden(page);
     const nav = page.getByRole('navigation', { name: /main navigation/i });
     await expect(nav).toBeVisible();
 
@@ -25,6 +25,8 @@ test.describe('Keyboard navigation', () => {
   });
 
   test('Escape closes command palette', async ({ page }) => {
+    // Wait for the app shell to hydrate so the Ctrl+K window listener is attached.
+    await expectNavigationReachable(page);
     await page.keyboard.press('Control+k');
     const dialog = page.getByRole('dialog', { name: /command/i });
     await expect(dialog).toBeVisible();
@@ -34,6 +36,7 @@ test.describe('Keyboard navigation', () => {
   });
 
   test('Enter activates focused sidebar item', async ({ page }) => {
+    await openNavIfHidden(page);
     const nav = page.getByRole('navigation', { name: /main navigation/i });
     const libraryBtn = nav.getByRole('button', { name: /library/i }).first();
     await libraryBtn.focus();

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 
+/** Result of a rate limit check indicating whether the request is allowed. */
 export type RateLimitDecision = {
   allowed: boolean
   count: number
@@ -9,14 +10,18 @@ export type RateLimitDecision = {
   retryAfterMs?: number
 }
 
+/** Configuration for the sliding-window rate limiter hook. */
 interface UseRateLimiterOptions {
   maxRequests?: number
   windowMs?: number
 }
 
+/** Default maximum requests per window. */
 const DEFAULT_MAX_REQUESTS = 10
+/** Default sliding window duration in milliseconds. */
 const DEFAULT_WINDOW_MS = 60_000
 
+/** React hook providing a sliding-window rate limiter for AI requests. */
 export function useRateLimiter({
   maxRequests = DEFAULT_MAX_REQUESTS,
   windowMs = DEFAULT_WINDOW_MS,

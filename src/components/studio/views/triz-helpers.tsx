@@ -4,7 +4,8 @@ import { Check, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { TextInput } from '../ui/shared-primitives'
 
-export function ParamPicker({
+/** Searchable TRIZ parameter picker with selection highlight. */
+export const ParamPicker = ({
   title,
   subtitle,
   accent,
@@ -24,7 +25,7 @@ export function ParamPicker({
   setSearch: (s: string) => void
   filtered: { label: string; index: number }[]
   disabled: number[]
-}) {
+}) => {
   const accents = accent === 'saffron'
     ? { dot: 'bg-saffron', text: 'text-saffron-deep', bg: 'bg-saffron-soft' }
     : { dot: 'bg-clay', text: 'text-clay', bg: 'bg-rose-100 dark:bg-rose-950/40' }
@@ -86,7 +87,9 @@ export function ParamPicker({
   )
 }
 
-export function ContradictionChip({ n, label, accent }: { n: number; label: string; accent: 'saffron' | 'clay' }) {
+/** Display chip showing a numbered TRIZ contradiction parameter. */
+/** Display chip showing a numbered TRIZ contradiction parameter. */
+export const ContradictionChip = ({ n, label, accent }: { n: number; label: string; accent: 'saffron' | 'clay' }) => {
   const accents = accent === 'saffron'
     ? 'bg-saffron-soft text-saffron-deep border-saffron/30'
     : 'bg-rose-100 text-clay border-clay/30 dark:bg-rose-950/40 dark:text-rose-300'

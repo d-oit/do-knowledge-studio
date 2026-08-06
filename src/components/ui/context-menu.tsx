@@ -6,12 +6,14 @@ import { CheckIcon, ChevronRightIcon, CircleIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
+/** Root component that manages a context menu. */
 function ContextMenu({
   ...props
 }: React.ComponentProps<typeof ContextMenuPrimitive.Root>) {
   return <ContextMenuPrimitive.Root data-slot="context-menu" {...props} />
 }
 
+/** Element that opens the context menu on right-click. */
 function ContextMenuTrigger({
   ...props
 }: React.ComponentProps<typeof ContextMenuPrimitive.Trigger>) {
@@ -20,6 +22,7 @@ function ContextMenuTrigger({
   )
 }
 
+/** Groups related context menu items together. */
 function ContextMenuGroup({
   ...props
 }: React.ComponentProps<typeof ContextMenuPrimitive.Group>) {
@@ -28,6 +31,7 @@ function ContextMenuGroup({
   )
 }
 
+/** Portal container that renders context menu content outside the DOM hierarchy. */
 function ContextMenuPortal({
   ...props
 }: React.ComponentProps<typeof ContextMenuPrimitive.Portal>) {
@@ -36,12 +40,14 @@ function ContextMenuPortal({
   )
 }
 
+/** Nested sub-menu within a context menu. */
 function ContextMenuSub({
   ...props
 }: React.ComponentProps<typeof ContextMenuPrimitive.Sub>) {
   return <ContextMenuPrimitive.Sub data-slot="context-menu-sub" {...props} />
 }
 
+/** Groups context menu radio items together for single selection. */
 function ContextMenuRadioGroup({
   ...props
 }: React.ComponentProps<typeof ContextMenuPrimitive.RadioGroup>) {
@@ -53,6 +59,7 @@ function ContextMenuRadioGroup({
   )
 }
 
+/** Trigger element that opens a nested sub-menu. */
 function ContextMenuSubTrigger({
   className,
   inset,
@@ -77,6 +84,7 @@ function ContextMenuSubTrigger({
   )
 }
 
+/** Content panel of a nested sub-menu. */
 function ContextMenuSubContent({
   className,
   ...props
@@ -93,6 +101,7 @@ function ContextMenuSubContent({
   )
 }
 
+/** Content panel that holds context menu items. */
 function ContextMenuContent({
   className,
   ...props
@@ -111,6 +120,7 @@ function ContextMenuContent({
   )
 }
 
+/** Selectable action item within the context menu. */
 function ContextMenuItem({
   className,
   inset,
@@ -134,6 +144,7 @@ function ContextMenuItem({
   )
 }
 
+/** Toggleable checkbox item within the context menu. */
 function ContextMenuCheckboxItem({
   className,
   children,
@@ -160,6 +171,7 @@ function ContextMenuCheckboxItem({
   )
 }
 
+/** Radio-selectable item within the context menu. */
 function ContextMenuRadioItem({
   className,
   children,
@@ -184,6 +196,7 @@ function ContextMenuRadioItem({
   )
 }
 
+/** Non-interactive label for a group of context menu items. */
 function ContextMenuLabel({
   className,
   inset,
@@ -204,6 +217,7 @@ function ContextMenuLabel({
   )
 }
 
+/** Visual divider between context menu items. */
 function ContextMenuSeparator({
   className,
   ...props
@@ -217,6 +231,7 @@ function ContextMenuSeparator({
   )
 }
 
+/** Displays a keyboard shortcut next to a context menu item. */
 function ContextMenuShortcut({
   className,
   ...props

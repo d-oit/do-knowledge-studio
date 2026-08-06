@@ -78,10 +78,12 @@ const G_SEQ_MAP: Record<string, ViewId> = {
 // toggle it without prop-drilling.
 let _open = false
 const listeners = new Set<(v: boolean) => void>()
+/** Sets the open state of the shortcuts dialog and notifies all subscribers. */
 function setOpen(v: boolean) {
   _open = v
   for (const l of listeners) l(v)
 }
+/** Returns the current open state and a setter for the shortcuts dialog, using module-scope state. */
 function useShortcutsOpen(): [boolean, (v: boolean) => void] {
   const [open, setLocal] = React.useState(_open)
   React.useEffect(() => {
@@ -94,6 +96,7 @@ function useShortcutsOpen(): [boolean, (v: boolean) => void] {
   return [open, setOpen]
 }
 
+/** Keyboard shortcuts dialog with filterable grouped list and G-key navigation indicator. */
 export function ShortcutsDialog() {
   const [open, setOpen] = useShortcutsOpen()
   const { setView, currentView, commandOpen, mobileDrawerOpen, setCommandOpen, setMobileDrawerOpen } =

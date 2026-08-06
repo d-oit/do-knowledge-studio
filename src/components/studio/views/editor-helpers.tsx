@@ -6,7 +6,8 @@ import { cn } from '@/lib/utils'
 import { ENTITY_TYPE_META, type EntityType } from '@/lib/studio/types'
 import { TypeSelector } from './type-selector'
 
-export function EditorHeader({
+/** Entity editor header with type badge, name input, and description. */
+export const EditorHeader = ({
   editing,
   name,
   onNameChange,
@@ -20,7 +21,7 @@ export function EditorHeader({
   type: EntityType
   description: string
   onDescriptionChange: (description: string) => void
-}) {
+}) => {
   const meta = ENTITY_TYPE_META[type as keyof typeof ENTITY_TYPE_META]
 
   return (
@@ -56,7 +57,8 @@ export function EditorHeader({
   )
 }
 
-export function EditorTags({
+/** Tag list editor with type selector, add/remove controls. */
+export const EditorTags = ({
   tags,
   onTagsChange,
   type,
@@ -70,9 +72,10 @@ export function EditorTags({
   showTypeMenu: boolean
   onToggleTypeMenu: () => void
   onSelectType: (type: EntityType) => void
-}) {
+}) => {
   const [newTag, setNewTag] = useState('')
 
+  /** Normalizes and adds a new tag to the list if not already present. */
   const addTag = () => {
     const tagName = newTag.trim().replace(/^#/, '')
     if (tagName && !tags.includes(tagName)) onTagsChange([...tags, tagName])

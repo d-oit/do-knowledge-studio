@@ -8,7 +8,7 @@ vi.mock('framer-motion', () => ({
       <div {...(props as React.HTMLAttributes<HTMLDivElement>)}>{children}</div>
     ),
   },
-  AnimatePresence: ({ children }: { children?: ReactNode }) => <>{children}</>,
+  AnimatePresence: ({ children }: { children?: ReactNode }) => children,
 }))
 
 vi.mock('lucide-react', () => {
@@ -73,8 +73,9 @@ vi.mock('@/lib/utils', () => ({
 }))
 
 vi.mock('./editor-toolbar', () => ({
-  EditorToolbar: ({ onFormat, onVoiceTranscript }: { onFormat?: (cmd: string) => void; onVoiceTranscript?: (text: string) => void }) => (
+  EditorToolbar: ({ showAdvanced, onToggleAdvanced, onFormat, onVoiceTranscript }: { showAdvanced?: boolean; onToggleAdvanced?: () => void; onFormat?: (cmd: string) => void; onVoiceTranscript?: (text: string) => void }) => (
     <div data-testid="editor-toolbar">
+      <button data-testid="toggle-advanced" onClick={() => onToggleAdvanced?.()} aria-expanded={showAdvanced}>Advanced</button>
       <button data-testid="fmt-bold" onClick={() => onFormat?.('bold')}>Bold</button>
       <button data-testid="fmt-italic" onClick={() => onFormat?.('italic')}>Italic</button>
       <button data-testid="fmt-link" onClick={() => onFormat?.('link')}>Link</button>
@@ -90,7 +91,7 @@ vi.mock('./editor-toolbar', () => ({
 }))
 
 vi.mock('../remote-cursors', () => ({
-  CursorTracker: ({ children }: { children?: ReactNode }) => <>{children}</>,
+  CursorTracker: ({ children }: { children?: ReactNode }) => children,
 }))
 
 vi.mock('./editor-claims-panel', () => ({
@@ -173,6 +174,13 @@ describe('EditorView branch coverage', () => {
   it('hides source URL section by default', () => {
     render(<EditorView />)
     expect(screen.queryByLabelText('Source URL')).toBeNull()
+  })
+
+  it('groups advanced metadata under a descriptive heading', () => {
+    render(<EditorView />)
+    fireEvent.click(screen.getByTestId('toggle-advanced'))
+    expect(screen.getByText('Metadata & source')).toBeDefined()
+    expect(screen.getByText(/Optional context that helps you find and revisit this note later/)).toBeDefined()
   })
 
   it('adds a tag when add tag button is clicked', () => {

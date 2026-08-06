@@ -13,6 +13,7 @@ const ANIMATION_VARIANTS = {
 
 const ANIMATION_TRANSITION = { duration: 0.3, ease: "easeInOut" } as const;
 
+/** Animated banner that appears when the browser goes offline. */
 export function OfflineIndicator() {
   const [isOffline, setIsOffline] = useState(false);
   const reducedMotion = useReducedMotion();

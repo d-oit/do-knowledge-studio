@@ -55,6 +55,7 @@ const RELATIVE_DIVISIONS: [number, Intl.RelativeTimeFormatUnit][] = [
   [Number.POSITIVE_INFINITY, 'year'],
 ]
 
+/** Converts an ISO date string into a human-readable relative time (e.g. "3 hours ago"). */
 function formatRelativeTime(dateStr: string): string {
   const diffSeconds = Math.round(
     (new Date(dateStr).getTime() - Date.now()) / 1000,
@@ -71,6 +72,7 @@ function formatRelativeTime(dateStr: string): string {
 
 const RECENT_LIMIT = 6
 
+/** Home dashboard showing recent work, stats, type breakdown, and tips. */
 export function HomeView() {
   const setView = useStudioStore((s) => s.setView)
   const startNew = useStudioStore((s) => s.startNew)
@@ -295,6 +297,7 @@ export function HomeView() {
   )
 }
 
+/** Empty-state placeholder prompting the user to create their first entity. */
 function EmptyState({ onCreate }: { onCreate: () => void }) {
   return (
     <div className="rounded-lg border border-dashed border-border bg-card/50 p-8 text-center">
@@ -313,6 +316,7 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
   )
 }
 
+/** Compact stat card showing a numeric value with an icon and label. */
 function CompactStat({
   label,
   value,

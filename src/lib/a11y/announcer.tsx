@@ -6,6 +6,7 @@ const SCREEN_READER_DELAY_MS = 50
 
 const AnnouncerContext = React.createContext<((msg: string) => void) | null>(null)
 
+/** Provider that exposes a screen-reader live-region for non-visual announcements. */
 export function Announcer({ children }: { children?: React.ReactNode }) {
   const ref = React.useRef<HTMLDivElement>(null)
 
@@ -33,6 +34,7 @@ export function Announcer({ children }: { children?: React.ReactNode }) {
   )
 }
 
+/** Hook that returns a function to announce messages to screen readers. */
 export function useAnnouncer(): (msg: string) => void {
   const announce = React.useContext(AnnouncerContext)
   if (!announce) {

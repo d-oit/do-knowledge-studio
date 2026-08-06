@@ -1,10 +1,5 @@
 import { test, expect } from '@playwright/test';
-
-/** Helper: click a sidebar nav button by label (scoped to <nav>) */
-async function navClick(page: import('@playwright/test').Page, name: RegExp | string) {
-  const nav = page.getByRole('navigation', { name: /main navigation/i });
-  await nav.getByRole('button', { name }).first().click();
-}
+import { navClick } from './helpers/navigation';
 
 test.describe('AI Harness view', () => {
   test.beforeEach(async ({ page }) => {
@@ -39,7 +34,8 @@ test.describe('AI Harness view', () => {
 
     // Settings panel should appear
     await expect(page.getByText('Hide settings')).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Provider' })).toBeVisible();
+    // Exact match — the "Connect an AI provider" setup card heading also contains "Provider".
+    await expect(page.getByRole('heading', { name: 'Provider', exact: true })).toBeVisible();
 
     // Hide settings
     await page.getByRole('button', { name: /hide settings/i }).click();

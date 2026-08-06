@@ -16,12 +16,13 @@ interface ExportFormatGridProps {
   handleExport: (format: ExportFormatId) => Promise<void>
 }
 
-export const ExportFormatGrid = memo(function ExportFormatGrid({
+/** Grid of export format options with empty state and format cards. */
+export const ExportFormatGrid = memo(({
   entities,
   setView,
   setShowPassword,
   handleExport,
-}: ExportFormatGridProps) {
+}: ExportFormatGridProps) => {
   const reducedMotion = useReducedMotion()
 
   return (
@@ -56,7 +57,7 @@ export const ExportFormatGrid = memo(function ExportFormatGrid({
           const Icon = f.icon
           const isAvailable = f.available !== false
           const badgeStyle = f.badge === 'Secure'
-            ? 'bg-emerald-100 px-2 py-0 text-badge font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+            ? 'bg-emerald-100 px-2 py-0 text-badge font-semibold uppercase tracking-wide text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400'
             : 'bg-muted px-2 py-0 text-badge font-semibold uppercase tracking-wide text-ink-mute'
           return (
             <button
@@ -67,7 +68,7 @@ export const ExportFormatGrid = memo(function ExportFormatGrid({
               onClick={() => {
                 if (!isAvailable) return
                 if (f.id === 'encrypted') setShowPassword(true)
-                else void handleExport(f.id)
+                else { void handleExport(f.id) }
               }}
               className={cn(
                 'group flex flex-col rounded-lg border bg-card p-4 text-left transition-all focus-ring',
@@ -121,3 +122,5 @@ export const ExportFormatGrid = memo(function ExportFormatGrid({
     </motion.section>
   )
 })
+
+ExportFormatGrid.displayName = 'ExportFormatGrid'

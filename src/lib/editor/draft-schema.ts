@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+/** Zod schema validating an editor draft record. */
 export const EditorDraftSchema = z.object({
   id: z.string().min(1),
   entityId: z.string().nullable(),
@@ -14,6 +15,8 @@ export const EditorDraftSchema = z.object({
   version: z.number().int().min(1),
 })
 
+/** Type inferred from the EditorDraft schema. */
 export type EditorDraft = z.infer<typeof EditorDraftSchema>
 
+/** Current draft schema version for forward-compatible migrations. */
 export const CURRENT_DRAFT_VERSION = 1

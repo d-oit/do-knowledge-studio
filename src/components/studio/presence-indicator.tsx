@@ -7,6 +7,7 @@ interface PresenceIndicatorProps {
   className?: string
 }
 
+/** Compact avatar stack showing the count of online peers. */
 export function PresenceIndicator({ className }: PresenceIndicatorProps) {
   const { peers, peerCount } = usePresence()
 
@@ -38,6 +39,7 @@ export function PresenceIndicator({ className }: PresenceIndicatorProps) {
   )
 }
 
+/** Full list of connected peers with names, colors, and current view. */
 export function PresenceList({ className }: { className?: string }) {
   const { peers, localPresence } = usePresence()
 
@@ -53,6 +55,7 @@ export function PresenceList({ className }: { className?: string }) {
   )
 }
 
+/** Single row in the presence list showing a peer&apos;s avatar, name, and view. */
 function PresenceRow({
   presence,
   isLocal = false,

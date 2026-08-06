@@ -1,23 +1,18 @@
 import { test, expect } from '@playwright/test';
-
-/** Helper: click a sidebar nav button by label (scoped to <nav>) */
-async function navClick(page: import('@playwright/test').Page, name: RegExp | string) {
-  const nav = page.getByRole('navigation', { name: /main navigation/i });
-  await nav.getByRole('button', { name }).first().click();
-}
+import { navClick, openNavIfHidden } from './helpers/navigation';
 
 /**
  * Inject CSS to set the root font-size to the given percentage.
  * This simulates browser text zoom (which scales font-size on <html>).
  */
-async function setTextZoom(page: import('@playwright/test').Page, percentage: number) {
+const setTextZoom = async (page: import('@playwright/test').Page, percentage: number) => {
   await page.addStyleTag({
     content: `html { font-size: ${percentage}% !important; }`,
   });
 }
 
 /** Check that the page has no horizontal overflow (scrollbar) */
-async function assertNoHorizontalOverflow(page: import('@playwright/test').Page) {
+const assertNoHorizontalOverflow = async (page: import('@playwright/test').Page) => {
   const overflow = await page.evaluate(() => {
     return {
       scrollWidth: document.documentElement.scrollWidth,
@@ -52,7 +47,7 @@ test.describe('Zoom and reflow — WCAG 1.4.4 (200%) and 1.4.10 (400% reflow)', 
 
   test('200% text zoom: no horizontal overflow on library', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    navClick(page, /library/i);
+    await navClick(page, /library/i);
     await page.waitForLoadState('networkidle');
     await setTextZoom(page, 200);
     await page.waitForTimeout(500);
@@ -62,7 +57,7 @@ test.describe('Zoom and reflow — WCAG 1.4.4 (200%) and 1.4.10 (400% reflow)', 
 
   test('200% text zoom: no horizontal overflow on editor', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    navClick(page, /editor/i);
+    await navClick(page, /editor/i);
     await page.waitForLoadState('networkidle');
     await setTextZoom(page, 200);
     await page.waitForTimeout(500);
@@ -118,6 +113,7 @@ test.describe('Zoom and reflow — WCAG 1.4.4 (200%) and 1.4.10 (400% reflow)', 
     await setTextZoom(page, 200);
     await page.waitForTimeout(500);
 
+    await openNavIfHidden(page);
     const nav = page.getByRole('navigation', { name: /main navigation/i });
     await expect(nav).toBeVisible();
 

@@ -71,6 +71,7 @@ export function MobileDrawer() {
 
 /* ---------------------------------- Header --------------------------------- */
 
+/** Header of the mobile drawer with brand logo and close button. */
 function DrawerHeader({
   closeBtnRef,
   onClose,
@@ -105,6 +106,7 @@ function DrawerHeader({
 
 /* ------------------------------- Tab switcher ------------------------------ */
 
+/** Tab switcher for toggling between navigation and search modes. */
 function TabSwitcher({
   view,
   setView,
@@ -152,6 +154,7 @@ function TabSwitcher({
 
 /* --------------------------------- Nav tab --------------------------------- */
 
+/** Navigation tab listing all sidebar nav groups with active state. */
 function NavTab({ onNavigate }: { onNavigate: () => void }) {
   const currentView = useStudioStore((s) => s.currentView)
   const setView = useStudioStore((s) => s.setView)
@@ -216,6 +219,7 @@ function NavTab({ onNavigate }: { onNavigate: () => void }) {
 
 /* ------------------------------- Search tab -------------------------------- */
 
+/** Search tab with keyword/ranked toggle and entity results list. */
 function SearchTab({ onSelect }: { onSelect: () => void }) {
   const searchQuery = useStudioStore((s) => s.searchQuery)
   const setSearchQuery = useStudioStore((s) => s.setSearchQuery)
@@ -336,6 +340,7 @@ function SearchTab({ onSelect }: { onSelect: () => void }) {
 
 /* --------------------------------- Footer ---------------------------------- */
 
+/** Footer of the mobile drawer with theme toggle and entity count. */
 function DrawerFooter() {
   const { theme, setTheme } = useTheme()
   const entities = useStudioStore((s) => s.entities)

@@ -7,6 +7,7 @@ const iso = (daysAgo: number) => {
   return date.toISOString()
 }
 
+/** Default entity library seeded on first load. */
 export const seedEntities: Entity[] = [
   {
     id: 'e1',
@@ -124,6 +125,7 @@ export const seedEntities: Entity[] = [
   },
 ]
 
+/** Default claims seeded on first load. */
 export const seedClaims: Claim[] = [
   {
     id: 'c1',
@@ -186,6 +188,7 @@ export const seedClaims: Claim[] = [
   },
 ]
 
+/** Default knowledge graph nodes and edges seeded on first load. */
 export const seedGraph: { nodes: GraphNode[]; edges: GraphEdge[] } = {
   nodes: [
     { id: 'e1', label: 'TRIZ Contradiction Matrix', type: 'concept', x: 400, y: 300 },
@@ -209,6 +212,7 @@ export const seedGraph: { nodes: GraphNode[]; edges: GraphEdge[] } = {
   ],
 }
 
+/** Default chat history seeded on first load. */
 export const seedChat: ChatMessage[] = [
   {
     id: 'm1',
@@ -219,6 +223,7 @@ export const seedChat: ChatMessage[] = [
   },
 ]
 
+/** The 39 TRIZ engineering parameters in classic order. */
 export const trizParameters: string[] = [
   'Weight of moving object',
   'Weight of non-moving object',
@@ -261,6 +266,7 @@ export const trizParameters: string[] = [
   'Adaptability / Versatility',
 ]
 
+/** Subset of the 40 TRIZ inventive principles with descriptions. */
 export const trizPrinciples: { id: number; name: string; description: string }[] = [
   { id: 1, name: 'Segmentation', description: 'Divide an object into independent parts; make an object sectional; increase the degree of fragmentation.' },
   { id: 2, name: 'Taking out', description: 'Separate the interfering part or property from an object, or single out the only necessary part.' },

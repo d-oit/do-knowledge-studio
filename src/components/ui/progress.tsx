@@ -5,6 +5,7 @@ import * as ProgressPrimitive from "@radix-ui/react-progress"
 
 import { cn } from "@/lib/utils"
 
+/** Horizontal bar showing completion percentage. */
 function Progress({
   className,
   value,

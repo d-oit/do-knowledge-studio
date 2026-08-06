@@ -13,6 +13,7 @@ interface ResetConfirmDialogProps {
   resetCancelRef: React.RefObject<HTMLButtonElement | null>
 }
 
+/** Confirmation dialog warning the user before resetting all data to demo state. */
 export const ResetConfirmDialog = memo(function ResetConfirmDialog({
   showResetConfirm,
   setShowResetConfirm,

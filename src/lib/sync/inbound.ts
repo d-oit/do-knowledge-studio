@@ -1,10 +1,12 @@
 import { EntitySchema, ClaimSchema, type ValidationError } from '@/lib/studio/schema'
 import type { Entity, Claim } from '@/lib/studio/types'
 
+/** Result type for inbound validation of a single item. */
 export type InboundResult<T> =
   | { success: true; data: T }
   | { success: false; errors: ValidationError[] }
 
+/** Validate unknown data as an Entity using the Zod schema. */
 export function validateInboundEntity(data: unknown): InboundResult<Entity> {
   const result = EntitySchema.safeParse(data)
   if (result.success) {
@@ -19,6 +21,7 @@ export function validateInboundEntity(data: unknown): InboundResult<Entity> {
   }
 }
 
+/** Validate unknown data as a Claim using the Zod schema. */
 export function validateInboundClaim(data: unknown): InboundResult<Claim> {
   const result = ClaimSchema.safeParse(data)
   if (result.success) {
@@ -33,6 +36,7 @@ export function validateInboundClaim(data: unknown): InboundResult<Claim> {
   }
 }
 
+/** Batch-validate an array of unknown items as Entities, returning valid and rejected. */
 export function validateInboundEntities(items: unknown[]): {
   valid: Entity[]
   rejected: { index: number; errors: ValidationError[] }[]
@@ -50,6 +54,7 @@ export function validateInboundEntities(items: unknown[]): {
   return { valid, rejected }
 }
 
+/** Batch-validate an array of unknown items as Claims, returning valid and rejected. */
 export function validateInboundClaims(items: unknown[]): {
   valid: Claim[]
   rejected: { index: number; errors: ValidationError[] }[]

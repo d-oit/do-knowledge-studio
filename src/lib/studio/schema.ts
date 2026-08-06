@@ -1,9 +1,12 @@
 import { z } from 'zod'
 
+/** Zod enum schema for EntityType. */
 export const EntityTypeSchema = z.enum(['note', 'concept', 'person', 'project'])
 
+/** Zod enum schema for VerificationStatus. */
 export const VerificationStatusSchema = z.enum(['unverified', 'verified', 'disputed'])
 
+/** Zod object schema validating an Entity record. */
 export const EntitySchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -22,6 +25,7 @@ export const EntitySchema = z.object({
   ),
 })
 
+/** Zod object schema validating a Claim record. */
 export const ClaimSchema = z.object({
   id: z.string().min(1),
   entityId: z.string().min(1),
@@ -155,6 +159,7 @@ export interface ValidationError {
   message: string
 }
 
+/** Validate unknown data against the persisted envelope schema. */
 export const validatePersistedState = (
   data: unknown,
 ): { success: true; data: ValidatedPersistedEnvelope } | { success: false; errors: ValidationError[] } => {
@@ -171,6 +176,7 @@ export const validatePersistedState = (
   }
 }
 
+/** Validate unknown data against the export payload schema. */
 export const validateImportPayload = (
   data: unknown,
 ): { success: true; data: ValidatedExportPayload } | { success: false; errors: ValidationError[] } => {

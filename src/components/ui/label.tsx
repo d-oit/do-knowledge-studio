@@ -5,6 +5,7 @@ import * as LabelPrimitive from "@radix-ui/react-label"
 
 import { cn } from "@/lib/utils"
 
+/** Label for form controls, linked via peer selectors. */
 function Label({
   className,
   ...props

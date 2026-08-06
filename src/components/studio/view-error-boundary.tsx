@@ -15,11 +15,13 @@ interface ViewErrorBoundaryState {
   error: Error | null
 }
 
+/** Converts an error into a user-friendly message, using AppError.userMessage when available. */
 function userFacingMessage(error: Error | null): string {
   if (error instanceof AppError) return error.userMessage
   return 'An unexpected error occurred. Please try reloading this view.'
 }
 
+/** Error boundary that catches render errors in a view and shows a reload fallback. */
 export class ViewErrorBoundary extends Component<
   ViewErrorBoundaryProps,
   ViewErrorBoundaryState

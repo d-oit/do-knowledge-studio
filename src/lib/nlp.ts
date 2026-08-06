@@ -1,11 +1,13 @@
 import type { EntityType } from '@/lib/studio/types'
 
+/** Discriminated union of parsed user intents. */
 export type Intent =
   | { type: 'create_entity'; name: string; entityType: EntityType; description: string; tags: string[] }
   | { type: 'add_claim'; entityId?: string; statement: string; confidence: number }
   | { type: 'search'; query: string }
   | { type: 'unknown'; raw: string }
 
+/** Keyword sets used to classify entity types from natural language. */
 const ENTITY_TYPE_KEYWORDS: Record<EntityType, string[]> = {
   person: ['person', 'people', 'contact', 'someone'],
   project: ['project', 'task', 'todo', 'initiative', 'effort'],
@@ -13,7 +15,9 @@ const ENTITY_TYPE_KEYWORDS: Record<EntityType, string[]> = {
   note: ['note', 'jot', 'write down', 'record', 'memo'],
 }
 
+/** Keywords indicating a claim intent. */
 const CLAIM_KEYWORDS = ['claim', 'fact', 'statement', 'believe', 'think', 'assert', 'evidence shows']
+/** Keywords indicating a search intent. */
 const SEARCH_KEYWORDS = ['search', 'find', 'look for', 'show me', 'what do i have']
 
 function classifyEntityType(text: string): EntityType {
@@ -93,6 +97,7 @@ function extractStatement(text: string): string {
   return text.trim()
 }
 
+/** Parse natural language text into a structured user intent. */
 export function parseIntent(text: string): Intent {
   const lower = text.toLowerCase().trim()
 
@@ -123,6 +128,7 @@ export function parseIntent(text: string): Intent {
   return { type: 'unknown', raw: text }
 }
 
+/** Format a parsed intent into a human-readable summary string. */
 export function formatIntentSummary(intent: Intent): string {
   switch (intent.type) {
     case 'create_entity':

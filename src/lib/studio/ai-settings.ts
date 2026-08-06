@@ -9,8 +9,10 @@ const IDB_VERSION = 1
 const SETTINGS_RECORD_KEY = 'ai-settings'
 const MIGRATION_KEY = 'dks-ls-migrated-to-idb'
 
+/** Supported AI provider identifiers. */
 export type AIProvider = ProviderId
 
+/** Persisted AI provider configuration. */
 export interface AISettings {
   provider: AIProvider
   model: string
@@ -21,6 +23,7 @@ export interface AISettings {
   ollamaBaseUrl: string
 }
 
+/** Stored settings shape before decryption. */
 interface StoredSettings {
   provider: string
   model: string
@@ -32,6 +35,7 @@ interface StoredSettings {
   ollamaBaseUrl?: string
 }
 
+/** Default AI settings applied on first load. */
 const DEFAULT_SETTINGS: AISettings = {
   provider: 'openrouter',
   model: 'openrouter/free',
@@ -191,6 +195,7 @@ async function migrateFromLocalStorage(): Promise<StoredSettings | null> {
 
 // ── Public API ───────────────────────────────────────────────────────
 
+/** Load AI settings from IndexedDB, migrating from localStorage if needed. */
 export async function loadAISettings(): Promise<AISettings> {
   if (typeof window === 'undefined') return DEFAULT_SETTINGS
   try {
@@ -229,6 +234,7 @@ async function applyStoredSettings(stored: StoredSettings): Promise<AISettings> 
   }
 }
 
+/** Persist AI settings to IndexedDB with encrypted API key. */
 export async function saveAISettings(settings: AISettings): Promise<void> {
   if (typeof window === 'undefined') return
   try {
@@ -250,14 +256,17 @@ export async function saveAISettings(settings: AISettings): Promise<void> {
   }
 }
 
+/** Returns true — API keys are stored in session-scoped encrypted form. */
 export function isSessionOnlyCredential(): boolean {
   return true
 }
 
+/** User-facing message explaining session-only credential storage. */
 export function getSessionOnlyMessage(): string {
   return 'API key is encrypted and stored locally. The encryption key is session-only — it will be cleared when you close the tab.'
 }
 
+/** Return the API endpoint URL for a given provider. */
 export function getProviderEndpoint(provider: AIProvider): string {
   switch (provider) {
     case 'openrouter':

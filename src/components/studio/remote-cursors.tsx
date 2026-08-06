@@ -9,6 +9,7 @@ interface RemoteCursorsProps {
   view?: string
 }
 
+/** Renders remote peer cursors as positioned SVG arrows with name labels. */
 export function RemoteCursors({ className, view }: RemoteCursorsProps) {
   const { cursorsInView } = useCursors(view)
 
@@ -21,6 +22,7 @@ export function RemoteCursors({ className, view }: RemoteCursorsProps) {
   )
 }
 
+/** SVG cursor arrow with a name label for a single remote peer. */
 function CursorOverlay({ cursor }: { cursor: RemoteCursor }) {
   if (!cursor.position) return null
 
@@ -64,6 +66,7 @@ interface CursorTrackerProps {
   children: React.ReactNode
 }
 
+/** Wrapper that tracks local mouse position and text selection, broadcasting them as remote cursors. */
 export function CursorTracker({ view, children }: CursorTrackerProps) {
   const { setCursor, clearCursor, select, clearSelect } = useCursors(view)
   const containerRef = useRef<HTMLDivElement>(null)

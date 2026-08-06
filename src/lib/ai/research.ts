@@ -1,5 +1,8 @@
+/** Jina Reader API endpoint for URL-to-markdown conversion. */
 const JINA_READER_ENDPOINT = 'https://r.jina.ai/'
+/** Regex for extracting URLs from text. */
 const URL_REGEX = /https?:\/\/[^\s<>")\]]+/gi
+/** Maximum content length retained from a fetched URL. */
 const MAX_CONTENT_LENGTH = 8000
 
 // Private and reserved network constants for IPv4
@@ -130,6 +133,7 @@ function isPrivateIPv6(normalized: string): boolean {
   return false
 }
 
+/** Check whether a hostname resolves to a private or reserved IP address. */
 export const isPrivateIP = (hostname: string): boolean => {
   const normalized = hostname.toLowerCase().replace(/\.$/, '').replace(/^\[(.+)\]$/, '$1')
 
@@ -166,6 +170,7 @@ export const isPrivateIP = (hostname: string): boolean => {
   return false
 }
 
+/** Extract unique public URLs from text, filtering out private IPs. */
 export const extractUrls = (text: string): string[] => {
   const matches = text.match(URL_REGEX)
   if (!matches) return []
@@ -182,6 +187,7 @@ export const extractUrls = (text: string): string[] => {
   })
 }
 
+/** Result of fetching a URL for research context. */
 export interface ResearchResult {
   url: string
   title: string
@@ -190,6 +196,7 @@ export interface ResearchResult {
   error?: string
 }
 
+/** Fetch URL content via Jina Reader, returning markdown with SSRF protection. */
 export const fetchUrlContent = async (
   url: string,
   signal?: AbortSignal,
@@ -235,6 +242,7 @@ export const fetchUrlContent = async (
   }
 }
 
+/** Fetch content for multiple URLs in parallel. */
 export const fetchUrls = (
   urls: string[],
   signal?: AbortSignal,
@@ -242,6 +250,7 @@ export const fetchUrls = (
   return Promise.all(urls.map((url) => fetchUrlContent(url, signal)))
 }
 
+/** Build a context string from successful research results for AI prompt injection. */
 export const buildResearchContext = (results: ResearchResult[]): string => {
   const successful = results.filter((r) => r.success)
   if (successful.length === 0) return ''

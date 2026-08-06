@@ -14,6 +14,7 @@ interface VoiceCaptureProps {
   className?: string
 }
 
+/** Voice-driven entity creation flow with NLP intent parsing, editable fields, and confirm/dismiss. */
 export function VoiceCapture({ onEntityCreated, className }: VoiceCaptureProps) {
   const saveEntity = useStudioStore((s) => s.saveEntity)
   const [pendingIntent, setPendingIntent] = useState<Intent | null>(null)
