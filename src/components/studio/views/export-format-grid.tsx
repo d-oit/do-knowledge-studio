@@ -16,6 +16,7 @@ interface ExportFormatGridProps {
   handleExport: (format: ExportFormatId) => Promise<void>
 }
 
+/** Grid of export format options with empty state and format cards. */
 export const ExportFormatGrid = memo(({
   entities,
   setView,

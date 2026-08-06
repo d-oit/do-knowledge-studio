@@ -48,6 +48,7 @@ const TAG_FILTER_PLACEHOLDER = 'e.g. research'
 const HAS_DESCRIPTION_LABEL = 'Only show entities with a description'
 const CLEAR_ADVANCED_LABEL = 'Clear advanced filters'
 
+/** Entity library view with grid/list layout, search, type filters, and sort controls. */
 export const LibraryView = () => {
   const allEntities = useStudioStore((s) => s.entities)
   const typeFilter = useStudioStore((s) => s.typeFilter)

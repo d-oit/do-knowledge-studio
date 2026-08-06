@@ -21,6 +21,7 @@ import type { PeerInfo } from '@/lib/sync/discovery'
 type SyncStatus = 'disconnected' | 'connecting' | 'connected' | 'error'
 type PairingMode = 'none' | 'display' | 'scan'
 
+/** Generates a short random room ID for peer-to-peer sync pairing. */
 export const generateRoomId = (): string => {
   const bytes = new Uint8Array(6)
   crypto.getRandomValues(bytes)
@@ -293,6 +294,7 @@ const DisconnectedPanel = ({
   )
 }
 
+/** Connection status card with room management, QR pairing, and peer list. */
 export const SyncStatusCard = ({
   status,
   roomId,

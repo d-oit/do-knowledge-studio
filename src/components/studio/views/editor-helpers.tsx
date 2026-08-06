@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import { ENTITY_TYPE_META, type EntityType } from '@/lib/studio/types'
 import { TypeSelector } from './type-selector'
 
+/** Entity editor header with type badge, name input, and description. */
 export const EditorHeader = ({
   editing,
   name,
@@ -56,6 +57,7 @@ export const EditorHeader = ({
   )
 }
 
+/** Tag list editor with type selector, add/remove controls. */
 export const EditorTags = ({
   tags,
   onTagsChange,

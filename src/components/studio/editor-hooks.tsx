@@ -92,6 +92,7 @@ const buildDraft = (
   version: 1,
 })
 
+/** Auto-saves editor drafts to localStorage with debounced persistence. */
 export const useEditorDraft = ({
   editing,
   name,
@@ -164,6 +165,7 @@ export const useEditorDraft = ({
 
 // --- Hook: useEditorKeyboardShortcuts ---
 
+/** Registers Ctrl/Cmd+B/I/K/S keyboard shortcuts for the editor. */
 export const useEditorKeyboardShortcuts = ({
   handleFormat,
   handleSave,
@@ -202,6 +204,7 @@ export const useEditorKeyboardShortcuts = ({
 
 // --- Component: EditorModeSelector ---
 
+/** Radio-group toggle for switching between edit, preview, and split modes. */
 export const EditorModeSelector = ({ editMode, onEditModeChange }: EditorModeSelectorProps) => {
   const modeGroupRef = useRef<HTMLDivElement>(null)
 
@@ -255,6 +258,7 @@ export const EditorModeSelector = ({ editMode, onEditModeChange }: EditorModeSel
 
 // --- Component: EditorStatusBar ---
 
+/** Sticky bottom bar showing word count, draft status, and save/discard actions. */
 export const EditorStatusBar = ({
   wordCount,
   charCount,

@@ -30,6 +30,7 @@ const LOCAL_SEARCH_STATUS = 'Local search active'
 const CHAT_SHORTCUT_HINT = 'Enter to send · Shift+Enter for newline'
 const CLEAR_CHAT_LABEL = 'Clear'
 
+/** Animated bouncing-dot typing indicator for the chat assistant. */
 const TypingIndicator = ({ reducedMotion }: { reducedMotion?: boolean }) => (
   <div className="flex gap-3" aria-live="polite" aria-label="Assistant is typing">
     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-saffron-soft text-saffron-deep">
@@ -45,9 +46,11 @@ const TypingIndicator = ({ reducedMotion }: { reducedMotion?: boolean }) => (
   </div>
 )
 
+/** Formats an ISO timestamp into a localized time string. */
 const formatTime = (timestamp: string): string =>
   new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(new Date(timestamp))
 
+/** Local-first chat view with BM25 search, citations, and voice input. */
 export const ChatView = () => {
   const chat = useStudioStore((s) => s.chat)
   const chatLoading = useStudioStore((s) => s.chatLoading)

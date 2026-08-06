@@ -25,6 +25,7 @@ interface ChatPanelProps {
 
 const SUGGESTIONS_LABEL = 'Try asking'
 
+/** Sets input text and triggers send for a prompt suggestion. */
 const sendSuggestion = async (
   setInput: (v: string) => void,
   handleSend: () => void | Promise<void>,
@@ -34,6 +35,7 @@ const sendSuggestion = async (
   await handleSend()
 }
 
+/** Single chat message row with avatar and bubble styling. */
 const ChatMessageRow = ({ message, reducedMotion }: { message: ChatMessage; reducedMotion: boolean }) => (
   <motion.div
     initial={reducedMotion ? false : { opacity: 0, y: 6 }}
@@ -64,6 +66,7 @@ const ChatMessageRow = ({ message, reducedMotion }: { message: ChatMessage; redu
   </motion.div>
 )
 
+/** Animated typing indicator shown while the AI is processing. */
 const ChatTypingIndicator = () => (
   <div className="flex gap-2.5">
     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-saffron-soft text-saffron-deep">
@@ -75,6 +78,7 @@ const ChatTypingIndicator = () => (
   </div>
 )
 
+/** Row of clickable prompt suggestion chips. */
 const ChatSuggestionChips = ({
   suggestions,
   onSend,
@@ -102,6 +106,7 @@ const ChatSuggestionChips = ({
   </div>
 )
 
+/** Message input area with send button, cooldown timer, and augmentation status. */
 const ChatComposer = ({
   input,
   setInput,
@@ -160,6 +165,7 @@ const ChatComposer = ({
   </div>
 )
 
+/** Full AI harness chat panel with messages, suggestions, and composer. */
 export const AiHarnessChatPanel = ({
   messages,
   isLoading,

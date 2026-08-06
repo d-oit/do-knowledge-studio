@@ -22,6 +22,7 @@ export const PROVIDERS: ProviderOption[] = [
 ]
 
 
+/** Form field wrapper with auto-generated label and input ID binding. */
 export function Field({
   label,
   icon: Icon,

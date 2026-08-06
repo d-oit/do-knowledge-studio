@@ -92,6 +92,7 @@ const ToolbarBtn = ({
   )
 }
 
+/** Interactive knowledge graph view with force, circular, and hierarchical layouts. */
 export const GraphView = () => {
   const entities = useStudioStore((s) => s.entities)
   const selectedEntityId = useStudioStore((s) => s.selectedEntityId)

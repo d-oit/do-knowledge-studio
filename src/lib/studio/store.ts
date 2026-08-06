@@ -116,6 +116,7 @@ const SEED_STATE = {
   tags: undefined as ValidatedTag[] | undefined,
 }
 
+/** Primary Zustand store for the knowledge studio with persistence and undo/redo. */
 export const useStudioStore = create<StudioState>()(
   persist(
     (set, get) => ({
@@ -424,6 +425,7 @@ export const useStudioStore = create<StudioState>()(
 )
 
 // Selectors
+/** Returns entities filtered by search query, type, and sorted by the active sort criteria. */
 export const useFilteredEntities = (): Entity[] => {
   const entities = useStudioStore((s) => s.entities)
   const searchQuery = useStudioStore((s) => s.searchQuery)
@@ -454,6 +456,7 @@ export const useFilteredEntities = (): Entity[] => {
   }, [entities, searchQuery, typeFilter, sortBy, sortDir])
 }
 
+/** Computes library statistics: entity counts by type, claim totals, and recent items. */
 export const useStats = () => {
   const entities = useStudioStore((s) => s.entities)
   const claims = useStudioStore((s) => s.claims)

@@ -26,6 +26,7 @@ export interface RecoverySnapshot {
   tags?: ValidatedTag[]
 }
 
+/** Creates a deep-cloned recovery snapshot from the current store state. */
 export const buildRecoverySnapshot = (state: {
   entities: Entity[]
   claims: Claim[]
@@ -46,6 +47,7 @@ export const buildRecoverySnapshot = (state: {
   tags: state.tags ? structuredClone(state.tags) : undefined,
 })
 
+/** Persists a recovery snapshot to localStorage with size and TTL guards. */
 export const persistRecoverySnapshot = (snapshot: RecoverySnapshot): void => {
   try {
     const serialized = JSON.stringify({ snapshot, timestamp: Date.now(), ttl: RECOVERY_TTL_MS })
@@ -86,6 +88,7 @@ const clearRecoverySnapshot = (): void => {
   }
 }
 
+/** Reads and validates the recovery snapshot from localStorage, returning it if valid. */
 export const readRecoverySnapshot = (): RecoveryReadResult => {
   const raw = localStorage.getItem(RECOVERY_KEY)
   if (!raw) return { ok: false, error: 'No recovery snapshot found.' }
@@ -120,6 +123,7 @@ const applyRecoverySnapshot = (snapshot: ValidatedRecoverySnapshot): void => {
   })
 }
 
+/** Restores store state from the recovery snapshot and clears it afterward. */
 export const restoreFromRecovery = (): { success: boolean; error?: string } => {
   try {
     const result = readRecoverySnapshot()

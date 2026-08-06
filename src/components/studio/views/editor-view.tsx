@@ -45,6 +45,7 @@ const restoreSelection = (textarea: HTMLTextAreaElement, start: number, end: num
   textarea.setSelectionRange(start, end)
 }
 
+/** Rich-text entity editor with markdown preview, claims panel, and draft persistence. */
 export const EditorView = () => {
   const entities = useStudioStore((s) => s.entities)
   const editingEntityId = useStudioStore((s) => s.editingEntityId)

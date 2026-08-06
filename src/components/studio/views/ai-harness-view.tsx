@@ -23,6 +23,7 @@ const LAB_LABEL = 'Lab'
 const SHOW_SETTINGS_LABEL = 'Show settings'
 const HIDE_SETTINGS_LABEL = 'Hide settings'
 
+/** Manages AI harness view state including provider settings, model selection, and chat. */
 const useAIHarnessViewState = () => {
   const entities = useStudioStore((s) => s.entities)
   const claims = useStudioStore((s) => s.claims)
@@ -189,6 +190,7 @@ const AIHarnessHeader = ({
   </motion.div>
 )
 
+/** Main AI harness view with settings panel and chat interface. */
 export const AIHarnessView = () => {
   const {
     reducedMotion,
