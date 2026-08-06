@@ -183,7 +183,7 @@ export const useEditorKeyboardShortcuts = ({
   handleSave,
 }: UseEditorKeyboardShortcutsParams) => {
   useEffect(() => {
-    const onkeydown = (e: KeyboardEvent) => {
+    const keydownListener = (e: KeyboardEvent) => {
       if (!(e.target instanceof HTMLElement)) return
       if (e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'INPUT') return
       const mod = e.metaKey || e.ctrlKey
@@ -209,8 +209,8 @@ export const useEditorKeyboardShortcuts = ({
           break
       }
     }
-    document.addEventListener('keydown', onkeydown)
-    return () => { document.removeEventListener('keydown', onkeydown) }
+    document.addEventListener('keydown', keydownListener)
+    return () => { document.removeEventListener('keydown', keydownListener) }
   }, [handleFormat, handleSave])
 }
 
