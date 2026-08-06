@@ -77,6 +77,14 @@ enabled = true
   pattern = "JS-W1041"
   skip = true
 
+  # JS-0045: Arrow function expected no return value — DeepSource flags
+  # `useEffect` cleanup returns (`return () => { clearTimeout(timer) }`) as
+  # "arrow function should not return a value". This is the standard React
+  # cleanup pattern; suppress.
+  [[analyzers.meta.issue_patterns]]
+  pattern = "JS-0045"
+  skip = true
+
 [[transformers]]
 name = "eslint"
 enabled = true
