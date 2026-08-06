@@ -98,4 +98,4 @@ Result: `npx playwright test` passes on all 4 projects — chromium 120/120, mob
 - [x] `pnpm run test` — 2115 passed, 1 skipped
 - [x] `pnpm run build` — success
 - [x] `npx playwright test` — all 4 projects pass (119 each)
-- [ ] `./scripts/minimal_quality_gate.sh` — pass (run before commit)
+- [x] `./scripts/minimal_quality_gate.sh` — pass (run before commit)

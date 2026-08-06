@@ -43,6 +43,55 @@ const FOCUS_MODE_FILTER_STYLE: React.CSSProperties = {
   filter: 'drop-shadow(0 0 3px var(--saffron))',
 } as const
 
+const ToolbarBtn = ({
+  icon: Icon,
+  label,
+  help,
+  active,
+  onClick,
+  disabled,
+}: {
+  icon: typeof Focus
+  label: string
+  /** Contextual help shown on hover (progressive disclosure). */
+  help?: string
+  active?: boolean
+  onClick?: () => void
+  disabled?: boolean
+}) => {
+  const button = (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      aria-pressed={active}
+      className={cn(
+        'flex min-h-[44px] min-w-[44px] items-center gap-1 rounded-md px-2 py-1.5 text-label font-medium transition-colors focus-ring disabled:cursor-not-allowed disabled:opacity-40',
+        active ? 'bg-saffron-soft text-saffron-deep' : 'text-ink-mute hover:bg-muted hover:text-ink',
+      )}
+    >
+      <Icon className="h-3.5 w-3.5" />
+      <span className="hidden sm:inline">{label}</span>
+    </button>
+  )
+
+  if (!help) return button
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>{button}</TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-52 text-center">
+          <span className="flex items-center justify-center gap-1">
+            <HelpCircle className="h-3 w-3 shrink-0" aria-hidden="true" />
+            {help}
+          </span>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  )
+}
+
 export const GraphView = () => {
   const entities = useStudioStore((s) => s.entities)
   const selectedEntityId = useStudioStore((s) => s.selectedEntityId)
@@ -427,54 +476,5 @@ export const GraphView = () => {
 
       </div>
     </div>
-  )
-}
-
-const ToolbarBtn = ({
-  icon: Icon,
-  label,
-  help,
-  active,
-  onClick,
-  disabled,
-}: {
-  icon: typeof Focus
-  label: string
-  /** Contextual help shown on hover (progressive disclosure). */
-  help?: string
-  active?: boolean
-  onClick?: () => void
-  disabled?: boolean
-}) => {
-  const button = (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={label}
-      aria-pressed={active}
-      className={cn(
-        'flex min-h-[44px] min-w-[44px] items-center gap-1 rounded-md px-2 py-1.5 text-label font-medium transition-colors focus-ring disabled:cursor-not-allowed disabled:opacity-40',
-        active ? 'bg-saffron-soft text-saffron-deep' : 'text-ink-mute hover:bg-muted hover:text-ink',
-      )}
-    >
-      <Icon className="h-3.5 w-3.5" />
-      <span className="hidden sm:inline">{label}</span>
-    </button>
-  )
-
-  if (!help) return button
-
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>{button}</TooltipTrigger>
-        <TooltipContent side="bottom" className="max-w-52 text-center">
-          <span className="flex items-center justify-center gap-1">
-            <HelpCircle className="h-3 w-3 shrink-0" aria-hidden="true" />
-            {help}
-          </span>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
   )
 }

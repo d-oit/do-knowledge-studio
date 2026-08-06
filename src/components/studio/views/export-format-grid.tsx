@@ -64,10 +64,10 @@ export const ExportFormatGrid = memo(({
               style={{ '--i': i } as React.CSSProperties}
               disabled={!isAvailable}
               aria-disabled={!isAvailable}
-              onClick={async () => {
+              onClick={() => {
                 if (!isAvailable) return
                 if (f.id === 'encrypted') setShowPassword(true)
-                else await handleExport(f.id)
+                else void handleExport(f.id)
               }}
               className={cn(
                 'group flex flex-col rounded-lg border bg-card p-4 text-left transition-all focus-ring',

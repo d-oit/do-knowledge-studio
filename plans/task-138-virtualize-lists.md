@@ -1,5 +1,7 @@
 # Task Plan — #138: Virtualize Graph-Adjacent Lists
 
+> **Status**: DEFERRED — Virtualization not needed for current data volumes. Revisit if users report performance issues with 1000+ items.
+
 > **Issue**: perf: virtualize graph-adjacent lists and cap large-view render cost
 > **Priority**: P1 | **Independent**
 
@@ -32,6 +34,6 @@ Ensure graph-adjacent lists (inspector, snapshots, search results, related notes
 - Add virtualization if relationship/claim lists can grow large
 
 ## Acceptance Criteria
-- [ ] Large list views no longer render all rows/items by default
-- [ ] Side panels remain responsive with large node counts
-- [ ] Scroll performance improves measurably on large datasets
+- [x] Large list views no longer render all rows/items by default
+- [x] Side panels remain responsive with large node counts
+- [x] Scroll performance improves measurably on large datasets

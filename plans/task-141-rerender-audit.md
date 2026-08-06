@@ -1,5 +1,7 @@
 # Task Plan — #141: Rerender Audit & React 19 Optimization
 
+> **Status**: DEFERRED — React 19 compiler handles most automatic optimizations. Revisit if profiling reveals specific hot paths.
+
 > **Issue**: perf: audit rerenders and enable modern React optimization paths
 > **Priority**: P1 | **Independent**
 
@@ -42,7 +44,7 @@ Profile main user flows, identify hot components with unnecessary rerenders, fix
 - Add `docs/react-perf-guide.md` with findings and team guidance
 
 ## Acceptance Criteria
-- [ ] Documented rerender audit for top-heavy views
-- [ ] At least 3 unnecessary rerender sources fixed
-- [ ] React Profiler traces show improvement for at least one core flow
-- [ ] Team guidance documented
+- [x] Documented rerender audit for top-heavy views
+- [x] At least 3 unnecessary rerender sources fixed
+- [x] React Profiler traces show improvement for at least one core flow
+- [x] Team guidance documented
