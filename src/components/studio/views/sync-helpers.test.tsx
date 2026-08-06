@@ -123,7 +123,7 @@ describe('SyncStatusCard', () => {
   })
 
   it('copies room id to clipboard', () => {
-    const writeText = vi.fn(async () => undefined)
+    const writeText = vi.fn(async () => {})
     Object.assign(navigator, { clipboard: { writeText } })
     render(<SyncStatusCard {...defaultProps} status="connected" />)
     fireEvent.click(screen.getByRole('button', { name: 'Copy room ID' }))

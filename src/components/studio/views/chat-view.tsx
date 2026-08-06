@@ -51,7 +51,7 @@ function formatTime(timestamp: string) {
   return new Date(timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 
-export function ChatView() {
+export const ChatView = () => {
   const chat = useStudioStore((s) => s.chat)
   const chatLoading = useStudioStore((s) => s.chatLoading)
   const sendMessage = useStudioStore((s) => s.sendMessage)

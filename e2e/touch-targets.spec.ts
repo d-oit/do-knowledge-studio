@@ -4,45 +4,52 @@ import { navClick } from './helpers/navigation';
 const MIN_TOUCH_TARGET = 44;
 
 /**
+ * Runs inside the page and collects every visible interactive element smaller
+ * than the given minimum. Kept as a module-level function so Playwright can
+ * serialize it into `page.evaluate` without an inline callback.
+ */
+const collectTouchTargetViolations = (min: number) => {
+  const selectors = 'button, a[href], input[type="checkbox"], input[type="radio"], [role="button"]';
+  const els = Array.from(document.querySelectorAll<HTMLElement>(selectors));
+  const issues: { tag: string; text: string; width: number; height: number }[] = [];
+
+  for (const el of els) {
+    // Skip elements that are not visible
+    const rect = el.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) continue;
+    const style = window.getComputedStyle(el);
+    if (style.display === 'none' || style.visibility === 'hidden') continue;
+    if (style.opacity === '0') continue;
+
+    // Skip skip-to-content links (sr-only until focused — intentional WCAG pattern)
+    if (
+      el.tagName === 'A' &&
+      (el as HTMLAnchorElement).href?.includes('#') &&
+      ((el.textContent || '').toLowerCase().includes('skip') ||
+        (el.getAttribute('aria-label') || '').toLowerCase().includes('skip'))
+    ) continue;
+
+    // Skip SVG <g> elements (data visualization nodes, not UI controls)
+    if (el.tagName === 'G' || el instanceof SVGGElement) continue;
+
+    if (rect.width < min || rect.height < min) {
+      issues.push({
+        tag: el.tagName.toLowerCase(),
+        text: (el.textContent || el.getAttribute('aria-label') || '').trim().slice(0, 40),
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+      });
+    }
+  }
+  return issues;
+}
+
+/**
  * Enumerate all interactive elements and verify each meets the 44x44px
  * minimum touch target size (WCAG 2.5.5 / 2.5.8).
  */
 const assertTouchTargets = async (page: import('@playwright/test').Page, viewName: string) => {
-  const violations = await page.evaluate((min: number) => {
-    const selectors = 'button, a[href], input[type="checkbox"], input[type="radio"], [role="button"]';
-    const els = Array.from(document.querySelectorAll<HTMLElement>(selectors));
-    const issues: { tag: string; text: string; width: number; height: number }[] = [];
-
-    for (const el of els) {
-      // Skip elements that are not visible
-      const rect = el.getBoundingClientRect();
-      if (rect.width === 0 || rect.height === 0) continue;
-      const style = window.getComputedStyle(el);
-      if (style.display === 'none' || style.visibility === 'hidden') continue;
-      if (style.opacity === '0') continue;
-
-      // Skip skip-to-content links (sr-only until focused — intentional WCAG pattern)
-      if (
-        el.tagName === 'A' &&
-        (el as HTMLAnchorElement).href?.includes('#') &&
-        ((el.textContent || '').toLowerCase().includes('skip') ||
-          (el.getAttribute('aria-label') || '').toLowerCase().includes('skip'))
-      ) continue;
-
-      // Skip SVG <g> elements (data visualization nodes, not UI controls)
-      if (el.tagName === 'G' || el instanceof SVGGElement) continue;
-
-      if (rect.width < min || rect.height < min) {
-        issues.push({
-          tag: el.tagName.toLowerCase(),
-          text: (el.textContent || el.getAttribute('aria-label') || '').trim().slice(0, 40),
-          width: Math.round(rect.width),
-          height: Math.round(rect.height),
-        });
-      }
-    }
-    return issues;
-  }, MIN_TOUCH_TARGET);
+  const violations = await page.evaluate(collectTouchTargetViolations, MIN_TOUCH_TARGET);
 
   const details = violations
     .map((v) => `  - <${v.tag}> "${v.text}" — ${v.width}x${v.height}px`)

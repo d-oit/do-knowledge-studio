@@ -13,12 +13,25 @@ interface AiHarnessProviderSetupProps {
   onOpenSettings: () => void
 }
 
+const ProviderSetupBadges = () => (
+  <div className="mt-3 flex flex-wrap gap-2 text-label text-ink-soft">
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1">
+      <Database className="h-3 w-3 text-saffron-deep" aria-hidden="true" />
+      {LOCAL_KNOWLEDGE_LABEL}
+    </span>
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1">
+      <Sparkles className="h-3 w-3 text-saffron-deep" aria-hidden="true" />
+      {AUTO_SAVE_LABEL}
+    </span>
+  </div>
+)
+
 /**
  * First-use guidance card shown when the selected provider requires an API key
  * that has not been configured yet. Progressive disclosure: explains the flow
  * and offers a single action to open settings.
  */
-export function AiHarnessProviderSetup({ onOpenSettings }: AiHarnessProviderSetupProps) {
+export const AiHarnessProviderSetup = ({ onOpenSettings }: AiHarnessProviderSetupProps) => {
   return (
     <div
       className="mb-4 rounded-lg border border-saffron/30 bg-saffron-soft/40 p-4"
@@ -39,16 +52,7 @@ export function AiHarnessProviderSetup({ onOpenSettings }: AiHarnessProviderSetu
           <p className="mt-2 text-[12px] leading-relaxed text-ink-mute">
             {PROVIDER_SETUP_CONTEXT_NOTE}
           </p>
-          <div className="mt-3 flex flex-wrap gap-2 text-label text-ink-soft">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1">
-              <Database className="h-3 w-3 text-saffron-deep" aria-hidden="true" />
-              {LOCAL_KNOWLEDGE_LABEL}
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1">
-              <Sparkles className="h-3 w-3 text-saffron-deep" aria-hidden="true" />
-              {AUTO_SAVE_LABEL}
-            </span>
-          </div>
+          <ProviderSetupBadges />
           <button
             type="button"
             onClick={onOpenSettings}

@@ -158,7 +158,7 @@ describe('EditorToolbar', () => {
   it('hides advanced label when showAdvanced is true', () => {
     render(
       <EditorToolbar
-        showAdvanced={true}
+        showAdvanced
         onToggleAdvanced={mockOnToggleAdvanced}
         onFormat={mockOnFormat}
       />,
@@ -201,7 +201,7 @@ describe('EditorToolbar', () => {
     expect(advButton.getAttribute('aria-expanded')).toBe('false')
     rerender(
       <EditorToolbar
-        showAdvanced={true}
+        showAdvanced
         onToggleAdvanced={mockOnToggleAdvanced}
         onFormat={mockOnFormat}
       />,

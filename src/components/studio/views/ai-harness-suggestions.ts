@@ -13,11 +13,11 @@ const MAX_SUGGESTIONS = 3
  * Shown in the AI Harness chat before the first user message so first-use
  * screens stay guided without exposing the full prompt surface.
  */
-export function buildContextSuggestions(
+export const buildContextSuggestions = (
   entities: Entity[],
   claims: Claim[],
   selectedEntityId: string | null,
-): PromptSuggestion[] {
+): PromptSuggestion[] => {
   const suggestions: PromptSuggestion[] = []
 
   const selected = entities.find((e) => e.id === selectedEntityId)
