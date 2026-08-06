@@ -1,32 +1,21 @@
 'use client'
 
 import { useStudioStore } from '@/lib/studio/store'
-import { FlaskConical, Settings, KeyRound, Database, Sparkles } from 'lucide-react'
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { FlaskConical, Settings } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { loadAISettings, saveAISettings, type AIProvider } from '@/lib/studio/ai-settings'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
-import {
-  sendChatStream,
-  fetchOllamaModels,
-  buildMessages,
-  type ChatMessage,
-  OPENROUTER_DEFAULT_TARGETS,
-} from '@/lib/ai'
+import { fetchOllamaModels, OPENROUTER_DEFAULT_TARGETS } from '@/lib/ai'
 import { OLLAMA_DEFAULT_MODELS, DEFAULT_OLLAMA_BASE_URL } from '@/lib/ai/types'
 import { AiHarnessSettingsPanel } from './ai-harness-settings-panel'
 import { AiHarnessChatPanel } from './ai-harness-chat'
+import { AiHarnessProviderSetup } from './ai-harness-provider-setup'
 import { PROVIDERS } from './ai-harness-settings'
-import { useRateLimiter } from '@/lib/ai'
-
-const PROVIDER_SETUP_TITLE = 'Connect an AI provider'
-const PROVIDER_SETUP_DESCRIPTION = 'Add an API key to ask a hosted model, or switch to Ollama for a local model. Your prompt is sent to the selected provider; your library stays in this browser until you choose to include local context in a request.'
-const PROVIDER_SETUP_CONTEXT_NOTE = 'With local augmentation on, selected notes and claims are included in requests. Turn it off to send only your prompt.'
-const LOCAL_KNOWLEDGE_LABEL = 'Local knowledge stays available'
-const AUTO_SAVE_LABEL = 'Settings save automatically'
-const OPEN_PROVIDER_SETTINGS_LABEL = 'Open provider settings'
+import { useAiHarnessChat } from './use-ai-harness-chat'
+import { buildContextSuggestions } from './ai-harness-suggestions'
 
 export function AIHarnessView() {
   const entities = useStudioStore((s) => s.entities)
@@ -42,20 +31,33 @@ export function AIHarnessView() {
   const [allowWebResearch, setAllowWebResearch] = useState(false)
   const [customModel, setCustomModel] = useState('')
   const [showSettings, setShowSettings] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
   const [settingsLoaded, setSettingsLoaded] = useState(false)
   const [ollamaModels, setOllamaModels] = useState<string[]>(OLLAMA_DEFAULT_MODELS)
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      role: 'assistant',
-      content:
-        'AI agent ready to assist with knowledge synthesis. Ask me anything about your local knowledge base.',
-    },
-  ])
-  const [input, setInput] = useState('')
-  const [cooldownMs, setCooldownMs] = useState(0)
-  const abortRef = useRef<AbortController | null>(null)
-  const { canRequest } = useRateLimiter()
+
+  const activeProvider = PROVIDERS.find((p) => p.id === provider) ?? PROVIDERS[0]
+  const needsProviderSetup = activeProvider.requiresKey && !apiKey
+  const selectedEntityId = useStudioStore((s) => s.selectedEntityId)
+  const suggestions = buildContextSuggestions(entities, claims, selectedEntityId)
+
+  const {
+    messages,
+    input,
+    setInput,
+    isLoading,
+    cooldownMs,
+    handleSend,
+  } = useAiHarnessChat({
+    provider,
+    model,
+    apiKey,
+    augment,
+    allowWebResearch,
+    ollamaCpuOnly,
+    ollamaBaseUrl,
+    entities,
+    claims,
+    requiresKey: activeProvider.requiresKey,
+  })
 
   useEffect(() => {
     loadAISettings().then((saved) => {
@@ -86,12 +88,6 @@ export function AIHarnessView() {
     })
   }, [provider, model, apiKey, augment, ollamaCpuOnly, allowWebResearch, ollamaBaseUrl, settingsLoaded])
 
-  useEffect(() => {
-    if (cooldownMs <= 0) return
-    const timer = setTimeout(() => { setCooldownMs((ms) => Math.max(0, ms - 1000)) }, 1000)
-    return () => { clearTimeout(timer) }
-  }, [cooldownMs])
-
   const handleRefreshOllamaModels = useCallback(async () => {
     try {
       const models = await fetchOllamaModels(ollamaBaseUrl)
@@ -107,100 +103,6 @@ export function AIHarnessView() {
   const selectedEngineTarget = provider === 'openrouter'
     ? OPENROUTER_DEFAULT_TARGETS.find((t) => t.slug === effectiveModel) ?? null
     : null
-  const activeProvider = PROVIDERS.find((p) => p.id === provider) ?? PROVIDERS[0]
-  const needsProviderSetup = activeProvider.requiresKey && !apiKey
-
-  const handleSend = async () => {
-    if (!input.trim()) return
-    if (!apiKey && activeProvider.requiresKey) {
-      toast.error('Set an API key in settings to send messages.')
-      return
-    }
-
-    const decision = canRequest()
-    if (!decision.allowed) {
-      setMessages((m) => [
-        ...m,
-        {
-          role: 'assistant',
-          content: "I\u2019m being rate-limited \u2014 please slow down and try again in a few seconds.",
-        },
-      ])
-      setCooldownMs(decision.retryAfterMs ?? 5000)
-      return
-    }
-
-    const userMsg: ChatMessage = { role: 'user', content: input }
-    setMessages((m) => [...m, userMsg])
-    setInput('')
-    setIsLoading(true)
-
-    abortRef.current?.abort()
-    const controller = new AbortController()
-    abortRef.current = controller
-
-    try {
-      const { extractUrls, fetchUrls } = await import('@/lib/ai/research')
-      let researchResults: import('@/lib/ai/research').ResearchResult[] | undefined
-
-      if (allowWebResearch) {
-        const urls = extractUrls(input)
-        if (urls.length > 0) {
-          toast.info(`Fetching ${urls.length} URL(s)…`)
-          researchResults = await fetchUrls(urls, controller.signal)
-          const failed = researchResults.filter((r) => !r.success)
-          if (failed.length > 0) {
-            toast.warning(`Failed to fetch ${failed.length} URL(s)`)
-          }
-        }
-      }
-
-      const apiMessages = buildMessages(
-        messages.filter((m) => m.role !== 'system'),
-        input,
-        entities,
-        claims,
-        augment,
-        researchResults,
-      )
-
-      let streamedContent = ''
-      setMessages((m) => [...m, { role: 'assistant', content: '' }])
-
-      await sendChatStream(
-        {
-          provider,
-          model: effectiveModel,
-          apiKey,
-          messages: apiMessages,
-          signal: controller.signal,
-          ollamaCpuOnly,
-          ollamaBaseUrl,
-        },
-        (chunk) => {
-          streamedContent += chunk
-          setMessages((m) => {
-            const updated = [...m]
-            updated[updated.length - 1] = {
-              role: 'assistant',
-              content: streamedContent,
-            }
-            return updated
-          })
-        },
-      )
-    } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') return
-      const msg = err instanceof Error ? err.message : 'Unknown error'
-      setMessages((m) => [
-        ...m,
-        { role: 'assistant', content: `[Error] ${msg}\n\nCheck your provider settings and try again.` },
-      ])
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
   return (
     <div className="mx-auto max-w-5xl px-6 py-6 lg:px-10 lg:py-8">
       <motion.div
@@ -272,39 +174,7 @@ export function AIHarnessView() {
 
         <div className={cn('flex flex-col', showSettings ? 'lg:col-span-3' : 'lg:col-span-5')}>
           {needsProviderSetup && messages.length === 1 && !isLoading && (
-            <div className="mb-4 rounded-lg border border-saffron/30 bg-saffron-soft/40 p-4" role="region" aria-labelledby="provider-setup-title">
-              <div className="flex items-start gap-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-saffron text-white">
-                  <KeyRound className="h-4 w-4" aria-hidden="true" />
-                </div>
-                <div>
-                  <h2 id="provider-setup-title" className="font-serif text-[15px] font-semibold text-ink">{PROVIDER_SETUP_TITLE}</h2>
-                  <p className="mt-1 text-[13px] leading-relaxed text-ink-mute">
-                    {PROVIDER_SETUP_DESCRIPTION}
-                  </p>
-                  <p className="mt-2 text-[12px] leading-relaxed text-ink-mute">
-                    {PROVIDER_SETUP_CONTEXT_NOTE}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2 text-label text-ink-soft">
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1">
-                      <Database className="h-3 w-3 text-saffron-deep" aria-hidden="true" />
-                      {LOCAL_KNOWLEDGE_LABEL}
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1">
-                      <Sparkles className="h-3 w-3 text-saffron-deep" aria-hidden="true" />
-                      {AUTO_SAVE_LABEL}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => { setShowSettings(true) }}
-                    className="mt-3 min-h-[44px] rounded-md bg-primary px-3 py-1.5 text-label font-semibold text-primary-foreground transition-opacity hover:opacity-90 focus-ring"
-                  >
-                    {OPEN_PROVIDER_SETTINGS_LABEL}
-                  </button>
-                </div>
-              </div>
-            </div>
+            <AiHarnessProviderSetup onOpenSettings={() => { setShowSettings(true) }} />
           )}
           <AiHarnessChatPanel
             messages={messages}
@@ -316,6 +186,7 @@ export function AIHarnessView() {
             augment={augment}
             effectiveModel={effectiveModel}
             cooldownMs={cooldownMs}
+            suggestions={suggestions}
           />
         </div>
       </div>

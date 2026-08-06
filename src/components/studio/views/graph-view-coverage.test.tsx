@@ -16,6 +16,8 @@ vi.mock('lucide-react', () => {
     RotateCcw: I,
     RotateCw: I,
     Download: I,
+    MoreHorizontal: I,
+    HelpCircle: I,
     FileText: I,
     FileJson: I,
     FileCode: I,
@@ -182,18 +184,20 @@ describe('GraphView branch coverage', () => {
     expect(node).toHaveAttribute('tabindex', '0')
   })
 
-  it('calls undo when undo button clicked', () => {
+  it('calls undo when undo button clicked (behind More)', () => {
     currentHistoryIndex = 1
     currentEntityHistory = [[], []]
     render(<GraphView />)
+    fireEvent.click(screen.getByLabelText('More controls'))
     const undoBtn = screen.getByLabelText('Undo')
     fireEvent.click(undoBtn)
     expect(mockUndo).toHaveBeenCalled()
   })
 
-  it('calls redo when redo button clicked', () => {
+  it('calls redo when redo button clicked (behind More)', () => {
     currentEntityHistory = [[], []]
     render(<GraphView />)
+    fireEvent.click(screen.getByLabelText('More controls'))
     const redoBtn = screen.getByLabelText('Redo')
     fireEvent.click(redoBtn)
     expect(mockRedo).toHaveBeenCalled()

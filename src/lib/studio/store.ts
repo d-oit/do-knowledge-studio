@@ -475,46 +475,63 @@ const RecoverySnapshotSchema = z.object({
   ttl: z.number().optional(),
 })
 
-export const restoreFromRecovery = (): { success: boolean; error?: string } => {
-  let raw: string | null = null
+type RecoveryReadResult =
+  | { ok: true; data: z.infer<typeof RecoverySnapshotSchema> }
+  | { ok: false; error: string }
+
+const clearRecoverySnapshot = (): void => {
   try {
-    raw = localStorage.getItem(RECOVERY_KEY)
-    if (!raw) return { success: false, error: 'No recovery snapshot found.' }
-
-    const parsed: unknown = JSON.parse(raw)
-    const result = RecoverySnapshotSchema.safeParse(parsed)
-    if (!result.success) {
-      localStorage.removeItem(RECOVERY_KEY)
-      return { success: false, error: 'Recovery snapshot is corrupted.' }
-    }
-
-    const { snapshot, timestamp, ttl } = result.data
-    if (Date.now() - timestamp > (ttl ?? RECOVERY_TTL_MS)) {
-      localStorage.removeItem(RECOVERY_KEY)
-      return { success: false, error: 'Recovery snapshot has expired.' }
-    }
-    useStudioStore.setState({
-      entities: snapshot.entities as Entity[],
-      claims: snapshot.claims as Claim[],
-      entityHistory: snapshot.entityHistory as Entity[][],
-      historyIndex: snapshot.historyIndex,
-      graph: snapshot.graph as ValidatedGraph | undefined,
-      mindMap: snapshot.mindMap as ValidatedMindMap | undefined,
-      links: snapshot.links as ValidatedLink[] | undefined,
-      tags: snapshot.tags as ValidatedTag[] | undefined,
-    })
     localStorage.removeItem(RECOVERY_KEY)
+  } catch {
+    console.warn('Failed to clear corrupt recovery snapshot')
+  }
+}
+
+const readRecoverySnapshot = (): RecoveryReadResult => {
+  const raw = localStorage.getItem(RECOVERY_KEY)
+  if (!raw) return { ok: false, error: 'No recovery snapshot found.' }
+
+  const parsed: unknown = JSON.parse(raw)
+  const result = RecoverySnapshotSchema.safeParse(parsed)
+  if (!result.success) {
+    clearRecoverySnapshot()
+    return { ok: false, error: 'Recovery snapshot is corrupted.' }
+  }
+
+  const { timestamp, ttl } = result.data
+  if (Date.now() - timestamp > (ttl ?? RECOVERY_TTL_MS)) {
+    clearRecoverySnapshot()
+    return { ok: false, error: 'Recovery snapshot has expired.' }
+  }
+  return { ok: true, data: result.data }
+}
+
+type ValidatedRecoverySnapshot = z.infer<typeof RecoverySnapshotSchema>['snapshot']
+
+const applyRecoverySnapshot = (snapshot: ValidatedRecoverySnapshot): void => {
+  useStudioStore.setState({
+    entities: snapshot.entities as Entity[],
+    claims: snapshot.claims as Claim[],
+    entityHistory: snapshot.entityHistory as Entity[][],
+    historyIndex: snapshot.historyIndex,
+    graph: snapshot.graph as ValidatedGraph | undefined,
+    mindMap: snapshot.mindMap as ValidatedMindMap | undefined,
+    links: snapshot.links as ValidatedLink[] | undefined,
+    tags: snapshot.tags as ValidatedTag[] | undefined,
+  })
+}
+
+export const restoreFromRecovery = (): { success: boolean; error?: string } => {
+  try {
+    const result = readRecoverySnapshot()
+    if (!result.ok) return { success: false, error: result.error }
+    applyRecoverySnapshot(result.data.snapshot)
+    clearRecoverySnapshot()
     return { success: true }
   } catch (err) {
     // A readable but corrupt snapshot (e.g., unparseable JSON) would otherwise
     // linger forever — clear it so the next restore attempt starts fresh.
-    if (raw !== null) {
-      try {
-        localStorage.removeItem(RECOVERY_KEY)
-      } catch {
-        console.warn('Failed to clear corrupt recovery snapshot')
-      }
-    }
+    clearRecoverySnapshot()
     return {
       success: false,
       error: err instanceof Error ? err.message : 'Failed to restore recovery snapshot.',

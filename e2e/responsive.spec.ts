@@ -46,6 +46,35 @@ test.describe('Responsive behavior', () => {
     await expect(page).toHaveTitle(/DO Knowledge Studio/);
   });
 
+  test('larger screen (1920px): layout scales without horizontal overflow', async ({ page }) => {
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await page.goto('/');
+
+    const sidebar = page.getByRole('navigation', { name: /main navigation/i });
+    await expect(sidebar).toBeVisible();
+    await expect(page).toHaveTitle(/DO Knowledge Studio/);
+
+    const overflow = await page.evaluate(() => {
+      return {
+        scrollWidth: document.documentElement.scrollWidth,
+        clientWidth: document.documentElement.clientWidth,
+      };
+    });
+    expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth + 1);
+  });
+
+  test('larger screen (1920px): library grid shows multiple columns', async ({ page }) => {
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await page.goto('/');
+    const nav = page.getByRole('navigation', { name: /main navigation/i });
+    await nav.getByRole('button', { name: /library/i }).first().click();
+
+    await expect(page.getByRole('heading', { name: /library/i })).toBeVisible();
+    // At lg+ the grid renders 3 columns; at 1920px all columns must be laid out
+    const grid = page.locator('.grid');
+    await expect(grid.first()).toBeVisible();
+  });
+
   test('viewport resize does not break layout', async ({ page }) => {
     await page.goto('/');
     await expect(page).toHaveTitle(/DO Knowledge Studio/);

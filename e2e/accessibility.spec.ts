@@ -1,11 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { assertNoCriticalAxeViolations, assertNoAxeViolations } from './helpers/a11y';
-
-/** Helper: click a sidebar nav button by label (scoped to <nav>) */
-async function navClick(page: import('@playwright/test').Page, name: RegExp | string) {
-  const nav = page.getByRole('navigation', { name: /main navigation/i });
-  await nav.getByRole('button', { name }).first().click();
-}
+import {
+  expectNavigationReachable,
+  navClick,
+  openNavIfHidden,
+} from './helpers/navigation';
 
 test.describe('Accessibility', () => {
   test.beforeEach(async ({ page }) => {
@@ -13,15 +12,17 @@ test.describe('Accessibility', () => {
   });
 
   test('page has a main landmark', async ({ page }) => {
-    await expect(page.getByRole('navigation')).toBeVisible();
+    await expectNavigationReachable(page);
   });
 
   test('sidebar navigation has proper aria-label', async ({ page }) => {
+    await openNavIfHidden(page);
     const nav = page.getByRole('navigation', { name: /main navigation/i });
     await expect(nav).toBeVisible();
   });
 
   test('sidebar nav items have aria-current when active', async ({ page }) => {
+    await openNavIfHidden(page);
     const nav = page.getByRole('navigation', { name: /main navigation/i });
     const homeBtn = nav.getByRole('button', { name: /home/i }).first();
     await expect(homeBtn).toHaveAttribute('aria-current', 'page');
@@ -83,6 +84,7 @@ test.describe('Accessibility', () => {
   });
 
   test('all sidebar interactive elements are keyboard accessible', async ({ page }) => {
+    await openNavIfHidden(page);
     const nav = page.getByRole('navigation', { name: /main navigation/i });
     const buttons = nav.getByRole('button');
     const count = await buttons.count();
@@ -98,6 +100,12 @@ test.describe('Accessibility', () => {
 test.describe('axe-core automated accessibility', () => {
   // Plan 095: color-contrast token fixes applied (globals.css).
   // All views now use the strict assertion (critical + serious).
+  test.beforeEach(async ({ page }) => {
+    // Disable animations: entrance animations (stagger-fade-in, framer-motion)
+    // leave elements mid-fade (opacity < 1) for a few hundred ms, which blends
+    // colors and trips axe's color-contrast rule nondeterministically.
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+  });
 
   test('home page has no critical or serious axe violations', async ({ page }) => {
     await page.goto('/');
@@ -107,32 +115,28 @@ test.describe('axe-core automated accessibility', () => {
 
   test('library page has no critical or serious axe violations', async ({ page }) => {
     await page.goto('/');
-    const nav = page.getByRole('navigation', { name: /main navigation/i });
-    await nav.getByRole('button', { name: /library/i }).first().click();
+    await navClick(page, /library/i);
     await page.waitForLoadState('networkidle');
     await assertNoAxeViolations(page);
   });
 
   test('editor page has no critical or serious axe violations', async ({ page }) => {
     await page.goto('/');
-    const nav = page.getByRole('navigation', { name: /main navigation/i });
-    await nav.getByRole('button', { name: /editor/i }).first().click();
+    await navClick(page, /editor/i);
     await page.waitForLoadState('networkidle');
     await assertNoAxeViolations(page);
   });
 
   test('chat page has no critical or serious axe violations', async ({ page }) => {
     await page.goto('/');
-    const nav = page.getByRole('navigation', { name: /main navigation/i });
-    await nav.getByRole('button', { name: /chat/i }).first().click();
+    await navClick(page, /chat/i);
     await page.waitForLoadState('networkidle');
     await assertNoAxeViolations(page);
   });
 
   test('mind map page has no critical or serious axe violations', async ({ page }) => {
     await page.goto('/');
-    const nav = page.getByRole('navigation', { name: /main navigation/i });
-    await nav.getByRole('button', { name: /mind map/i }).first().click();
+    await navClick(page, /mind map/i);
     await page.waitForLoadState('networkidle');
     await assertNoAxeViolations(page);
   });
@@ -142,40 +146,35 @@ test.describe('axe-core automated accessibility', () => {
   // limitation with no clean SVG equivalent. Using critical-only assertion for this view.
   test('graph page has no critical axe violations', async ({ page }) => {
     await page.goto('/');
-    const nav = page.getByRole('navigation', { name: /main navigation/i });
-    await nav.getByRole('button', { name: /graph/i }).first().click();
+    await navClick(page, /graph/i);
     await page.waitForLoadState('networkidle');
     await assertNoCriticalAxeViolations(page);
   });
 
   test('TRIZ page has no critical or serious axe violations', async ({ page }) => {
     await page.goto('/');
-    const nav = page.getByRole('navigation', { name: /main navigation/i });
-    await nav.getByRole('button', { name: /triz/i }).first().click();
+    await navClick(page, /triz/i);
     await page.waitForLoadState('networkidle');
     await assertNoAxeViolations(page);
   });
 
   test('export page has no critical or serious axe violations', async ({ page }) => {
     await page.goto('/');
-    const nav = page.getByRole('navigation', { name: /main navigation/i });
-    await nav.getByRole('button', { name: /export/i }).first().click();
+    await navClick(page, /export/i);
     await page.waitForLoadState('networkidle');
     await assertNoAxeViolations(page);
   });
 
   test('sync page has no critical or serious axe violations', async ({ page }) => {
     await page.goto('/');
-    const nav = page.getByRole('navigation', { name: /main navigation/i });
-    await nav.getByRole('button', { name: /sync/i }).first().click();
+    await navClick(page, /sync/i);
     await page.waitForLoadState('networkidle');
     await assertNoAxeViolations(page);
   });
 
   test('AI harness page has no critical or serious axe violations', async ({ page }) => {
     await page.goto('/');
-    const nav = page.getByRole('navigation', { name: /main navigation/i });
-    await nav.getByRole('button', { name: /ai/i }).first().click();
+    await navClick(page, /ai/i);
     await page.waitForLoadState('networkidle');
     await assertNoAxeViolations(page);
   });

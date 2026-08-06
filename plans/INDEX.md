@@ -1,7 +1,18 @@
 # Plans Index
 
-**Updated**: 2026-08-05
+**Updated**: 2026-08-06
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
+
+### Plan 108 — Complete Task 143 Progressive Disclosure, Fix PR #613 CI, Viewport E2E (2026-08-06)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Fix PR #613 E2E failures | Done | `ai-harness.spec.ts` strict-mode `Provider` heading (`exact: true`); `keyboard-navigation.spec.ts` flaky Ctrl+K (wait for hydration) |
+| W1 | Resolve 8 DeepSource JS findings | Done | `use-ai-harness-chat.ts` hook + `ai-harness-provider-setup.tsx` (complexity 17→low, JSX depth); `sync-helpers.tsx` status indicator extraction (23→low); `store.ts` recovery helpers; async-without-await + redundant `undefined` in tests |
+| W2 | Task-143 deferred items S1/S2/G1/G2/A1 | Done | Library advanced filters collapsible (tag + has-description); Graph "More" control grouping + contextual tooltips; AI Harness context-based prompt suggestions (`ai-harness-suggestions.ts`) |
+| W2 | E2E viewport matrix (4 projects) | Done | `desktop-xl` project (1920×1080) added; `progressive-disclosure.spec.ts` (5 tests) runs on all projects; `responsive.spec.ts` extended |
+| W3 | Viewport E2E hardening | Done | Shared `e2e/helpers/navigation.ts` (viewport-aware `navClick`/`openNavIfHidden`/`expectNavigationReachable`); 11 specs migrated; axe runs with `reducedMotion: 'reduce'` (kills entrance-animation contrast flakes); un-awaited `navClick` fixed; home/mindmap/editor selectors made viewport-agnostic; topbar mobile buttons 44px; export `Secure` badge `text-emerald-800` |
+| W4 | Quality gate | Done | Lint/typecheck clean; 2115 unit tests; build passes; E2E 476/476 across chromium/mobile/tablet/desktop-xl (0 failures, 0 flakes) |
 
 ### Plan 106 — DeepSource Remediation, CI Fix, and Coverage (2026-08-05)
 

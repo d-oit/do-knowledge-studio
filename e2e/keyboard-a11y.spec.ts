@@ -1,10 +1,5 @@
 import { test, expect } from '@playwright/test';
-
-/** Helper: click a sidebar nav button by label (scoped to <nav>) */
-async function navClick(page: import('@playwright/test').Page, name: RegExp | string) {
-  const nav = page.getByRole('navigation', { name: /main navigation/i });
-  await nav.getByRole('button', { name }).first().click();
-}
+import { navClick, openNavIfHidden } from './helpers/navigation';
 
 test.describe('Keyboard accessibility — comprehensive', () => {
   test.beforeEach(async ({ page }) => {
@@ -134,6 +129,7 @@ test.describe('Keyboard accessibility — comprehensive', () => {
   });
 
   test('sidebar: Tab order follows DOM order with no gaps', async ({ page }) => {
+    await openNavIfHidden(page);
     const nav = page.getByRole('navigation', { name: /main navigation/i });
     const buttons = nav.getByRole('button');
     const count = await buttons.count();

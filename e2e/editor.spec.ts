@@ -1,10 +1,5 @@
 import { test, expect } from '@playwright/test';
-
-/** Helper: click a sidebar nav button by label (scoped to <nav>) */
-async function navClick(page: import('@playwright/test').Page, name: RegExp | string) {
-  const nav = page.getByRole('navigation', { name: /main navigation/i });
-  await nav.getByRole('button', { name }).first().click();
-}
+import { navClick } from './helpers/navigation';
 
 test.describe('Editor view', () => {
   test.beforeEach(async ({ page }) => {
@@ -28,7 +23,13 @@ test.describe('Editor view', () => {
     await page.getByRole('button', { name: /new|create|add/i }).first().click();
     await page.locator('#entity-name').fill('My Test Note');
     await page.getByRole('button', { name: /save|commit/i }).click();
-    await expect(page.getByText('My Test Note')).toBeVisible();
+    // The saved entity appears in the library on every viewport.
+    // Scoped to the card heading role: the right-panel search results render
+    // the same name as a plain div (and are hidden below 1100px anyway).
+    await navClick(page, /library/i);
+    await expect(
+      page.getByRole('heading', { name: 'My Test Note', exact: true }),
+    ).toBeVisible();
   });
 
   test('editor mode radio group has three options', async ({ page }) => {

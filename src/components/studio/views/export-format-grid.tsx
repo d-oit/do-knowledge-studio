@@ -56,7 +56,7 @@ export const ExportFormatGrid = memo(function ExportFormatGrid({
           const Icon = f.icon
           const isAvailable = f.available !== false
           const badgeStyle = f.badge === 'Secure'
-            ? 'bg-emerald-100 px-2 py-0 text-badge font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+            ? 'bg-emerald-100 px-2 py-0 text-badge font-semibold uppercase tracking-wide text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400'
             : 'bg-muted px-2 py-0 text-badge font-semibold uppercase tracking-wide text-ink-mute'
           return (
             <button

@@ -44,6 +44,9 @@ vi.mock('lucide-react', () => {
     Camera: Icon,
     Radio: Icon,
     Users: Icon,
+    SlidersHorizontal: Icon,
+    Tag: Icon,
+    ChevronDown: Icon,
   }
 })
 
@@ -264,6 +267,53 @@ describe('LibraryView', () => {
     filteredEntities = currentEntities
     render(<LibraryView />)
     expect(screen.getByText('+1')).toBeDefined()
+  })
+
+  it('advanced filters disclosure is collapsed by default', () => {
+    render(<LibraryView />)
+    const toggle = screen.getByRole('button', { name: /Advanced filters/i })
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByLabelText('Tag contains')).toBeNull()
+  })
+
+  it('opens advanced filters and filters by tag', () => {
+    render(<LibraryView />)
+    fireEvent.click(screen.getByRole('button', { name: /Advanced filters/i }))
+    expect(screen.getByLabelText('Tag contains')).toBeDefined()
+
+    const tagInput = screen.getByLabelText('Tag contains')
+    fireEvent.change(tagInput, { target: { value: 'alpha' } })
+    // Only Alpha Concept has the 'alpha' tag
+    expect(screen.getByText('Alpha Concept')).toBeDefined()
+    expect(screen.queryByText('Beta Note')).toBeNull()
+  })
+
+  it('filters to entities with descriptions when toggled', () => {
+    filteredEntities = [
+      mockEntities[0],
+      { ...mockEntities[1], description: '' },
+    ]
+    render(<LibraryView />)
+    fireEvent.click(screen.getByRole('button', { name: /Advanced filters/i }))
+    const checkbox = screen.getByLabelText('Only show entities with a description')
+    fireEvent.click(checkbox)
+    expect(screen.getByText('Alpha Concept')).toBeDefined()
+    expect(screen.queryByText('Beta Note')).toBeNull()
+  })
+
+  it('shows active-filter badge and clears advanced filters', () => {
+    render(<LibraryView />)
+    fireEvent.click(screen.getByRole('button', { name: /Advanced filters/i }))
+    const tagInput = screen.getByLabelText('Tag contains')
+    fireEvent.change(tagInput, { target: { value: 'alpha' } })
+
+    const badge = screen.getByText('1')
+    expect(badge).toBeDefined()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Clear advanced filters' }))
+    expect(screen.getByLabelText('Tag contains')).toHaveValue('')
+    expect(screen.getByText('Alpha Concept')).toBeDefined()
+    expect(screen.getByText('Beta Note')).toBeDefined()
   })
 
   it('uses the wider layout when the right panel is closed', () => {

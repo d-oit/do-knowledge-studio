@@ -16,6 +16,8 @@ vi.mock('lucide-react', () => {
     RotateCcw: I,
     RotateCw: I,
     Download: I,
+    MoreHorizontal: I,
+    HelpCircle: I,
     FileText: I,
     FileJson: I,
     FileCode: I,
@@ -126,14 +128,16 @@ describe('GraphView', () => {
     expect(screen.getByLabelText('Focus neighborhood')).toBeDefined()
   })
 
-  it('renders undo and redo buttons', () => {
+  it('renders undo and redo buttons behind More controls', () => {
     render(<GraphView />)
+    fireEvent.click(screen.getByLabelText('More controls'))
     expect(screen.getByLabelText('Undo')).toBeDefined()
     expect(screen.getByLabelText('Redo')).toBeDefined()
   })
 
-  it('renders export PNG button', () => {
+  it('renders export PNG button behind More controls', () => {
     render(<GraphView />)
+    fireEvent.click(screen.getByLabelText('More controls'))
     expect(screen.getByLabelText('Export PNG')).toBeDefined()
   })
 
@@ -161,6 +165,16 @@ describe('GraphView', () => {
   it('renders save snapshot button', () => {
     render(<GraphView />)
     expect(screen.getByLabelText('Save snapshot')).toBeDefined()
+  })
+
+  it('toggles More controls disclosure', () => {
+    render(<GraphView />)
+    const more = screen.getByLabelText('More controls')
+    expect(screen.queryByLabelText('Export PNG')).toBeNull()
+    fireEvent.click(more)
+    expect(screen.getByLabelText('Export PNG')).toBeDefined()
+    fireEvent.click(more)
+    expect(screen.queryByLabelText('Export PNG')).toBeNull()
   })
 
   it('graph container is keyboard focusable with role application', () => {

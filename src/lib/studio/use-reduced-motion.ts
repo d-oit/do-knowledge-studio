@@ -10,7 +10,14 @@ const QUERY = '(prefers-reduced-motion: reduce)'
  * immediately disables/enables animations.
  */
 export function useReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(false)
+  // Read the media query synchronously on first render so animated components
+  // never start a motion run before the effect fires (which would freeze them
+  // mid-fade and trip axe color-contrast under reduced motion). SSR keeps the
+  // non-reduced default; the client first render corrects immediately.
+  const [reduced, setReduced] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.matchMedia(QUERY).matches
+  })
 
   useEffect(() => {
     if (typeof window === 'undefined') return

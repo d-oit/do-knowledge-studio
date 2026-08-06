@@ -1,9 +1,14 @@
 'use client'
 
-import { Bot, User, Send, Sparkles } from 'lucide-react'
+import { Bot, User, Send, Sparkles, Lightbulb } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import type { ChatMessage } from '@/lib/ai'
+
+interface PromptSuggestion {
+  label: string
+  prompt: string
+}
 
 interface ChatPanelProps {
   messages: ChatMessage[]
@@ -15,6 +20,14 @@ interface ChatPanelProps {
   augment: boolean
   effectiveModel: string
   cooldownMs?: number
+  suggestions?: PromptSuggestion[]
+}
+
+const SUGGESTIONS_LABEL = 'Try asking'
+
+function sendSuggestion(setInput: (v: string) => void, handleSend: () => void | Promise<void>, prompt: string) {
+  setInput(prompt)
+  void handleSend()
 }
 
 export function AiHarnessChatPanel({
@@ -27,7 +40,9 @@ export function AiHarnessChatPanel({
   augment,
   effectiveModel,
   cooldownMs = 0,
+  suggestions = [],
 }: ChatPanelProps) {
+  const showSuggestions = suggestions.length > 0 && messages.length <= 1 && !isLoading && input.trim() === ''
   return (
     <div className="flex h-[520px] flex-col rounded-lg border border-border bg-card">
       <div className="flex-1 space-y-4 overflow-y-auto p-4" aria-live="polite" aria-atomic="false">
@@ -72,6 +87,27 @@ export function AiHarnessChatPanel({
           </div>
         )}
       </div>
+
+      {showSuggestions && (
+        <div className="border-t border-border bg-muted/20 px-3 py-2">
+          <p className="mb-1.5 flex items-center gap-1 text-label font-semibold uppercase tracking-wide text-ink-faint">
+            <Lightbulb className="h-3 w-3 text-saffron" aria-hidden="true" />
+            {SUGGESTIONS_LABEL}
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {suggestions.map((s) => (
+              <button
+                key={s.label}
+                type="button"
+                onClick={() => { sendSuggestion(setInput, handleSend, s.prompt) }}
+                className="rounded-full border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-ink-soft transition-all hover:border-saffron/40 hover:text-ink press-scale focus-ring min-h-[44px]"
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="border-t border-border p-3">
         <div className="flex items-end gap-2 rounded-lg border border-border bg-background p-1.5 focus-within:border-saffron/40">

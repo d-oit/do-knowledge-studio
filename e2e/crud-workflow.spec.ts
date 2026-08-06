@@ -1,10 +1,5 @@
 import { test, expect } from '@playwright/test';
-
-/** Helper: click a sidebar nav button by label (scoped to <nav>) */
-async function navClick(page: import('@playwright/test').Page, name: RegExp | string) {
-  const nav = page.getByRole('navigation', { name: /main navigation/i });
-  await nav.getByRole('button', { name }).first().click();
-}
+import { navClick } from './helpers/navigation';
 
 test.describe('Entity CRUD workflow', () => {
   test.beforeEach(async ({ page }) => {

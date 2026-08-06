@@ -14,7 +14,7 @@ vi.mock('lucide-react', () => {
   const Icon = ({ className }: { className?: string }) => (
     <span data-testid="icon" className={className} />
   )
-  return { Bot: Icon, User: Icon, Send: Icon, Sparkles: Icon }
+  return { Bot: Icon, User: Icon, Send: Icon, Sparkles: Icon, Lightbulb: Icon }
 })
 
 vi.mock('@/lib/utils', () => ({
@@ -160,5 +160,59 @@ describe('AiHarnessChatPanel', () => {
   it('textarea has aria-label', () => {
     render(<AiHarnessChatPanel {...defaultProps} />)
     expect(screen.getByLabelText('AI agent message')).toBeDefined()
+  })
+
+  it('shows suggestions when provided and conversation is fresh', () => {
+    render(
+      <AiHarnessChatPanel
+        {...defaultProps}
+        suggestions={[
+          { label: 'Summarize my library', prompt: 'Summarize the main entities.' },
+        ]}
+      />,
+    )
+    expect(screen.getByText('Try asking')).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Summarize my library' })).toBeDefined()
+  })
+
+  it('hides suggestions once the user has typed input', () => {
+    render(
+      <AiHarnessChatPanel
+        {...defaultProps}
+        input="Hello"
+        suggestions={[{ label: 'Summarize', prompt: 'Summarize.' }]}
+      />,
+    )
+    expect(screen.queryByText('Try asking')).toBeNull()
+  })
+
+  it('hides suggestions when messages exist beyond the first', () => {
+    render(
+      <AiHarnessChatPanel
+        {...defaultProps}
+        messages={[
+          { role: 'assistant', content: 'hi' },
+          { role: 'user', content: 'hello' },
+        ]}
+        suggestions={[{ label: 'Summarize', prompt: 'Summarize.' }]}
+      />,
+    )
+    expect(screen.queryByText('Try asking')).toBeNull()
+  })
+
+  it('sends the suggestion prompt when a suggestion is clicked', () => {
+    const setInput = vi.fn()
+    const handleSend = vi.fn()
+    render(
+      <AiHarnessChatPanel
+        {...defaultProps}
+        setInput={setInput}
+        handleSend={handleSend}
+        suggestions={[{ label: 'Summarize my library', prompt: 'Summarize the main entities.' }]}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Summarize my library' }))
+    expect(setInput).toHaveBeenCalledWith('Summarize the main entities.')
+    expect(handleSend).toHaveBeenCalled()
   })
 })
