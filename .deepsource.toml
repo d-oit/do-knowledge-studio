@@ -85,6 +85,18 @@ enabled = true
   pattern = "JS-0045"
   skip = true
 
+  # JS-0415: JSX tree is too deeply nested — some components like settings
+  # panels legitimately need 6+ levels of nesting. Suppress to avoid noise.
+  [[analyzers.meta.issue_patterns]]
+  pattern = "JS-0415"
+  skip = true
+
+  # JS-C1003: "Explicitly import the specific method needed" — `import * as
+  # React` is the canonical React import pattern for JSX transform compatibility.
+  [[analyzers.meta.issue_patterns]]
+  pattern = "JS-C1003"
+  skip = true
+
 [[transformers]]
 name = "eslint"
 enabled = true

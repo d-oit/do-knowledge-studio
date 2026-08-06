@@ -75,6 +75,7 @@ export const EditorTags = ({
 }) => {
   const [newTag, setNewTag] = useState('')
 
+  /** Normalizes and adds a new tag to the list if not already present. */
   const addTag = () => {
     const tagName = newTag.trim().replace(/^#/, '')
     if (tagName && !tags.includes(tagName)) onTagsChange([...tags, tagName])

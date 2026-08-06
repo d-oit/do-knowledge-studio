@@ -39,10 +39,12 @@ import { buildAdjacencyIndex } from '@/lib/studio/graph-index'
 
 type LayoutType = 'force' | 'circular' | 'hierarchical'
 
+/** CSS filter applied to focused nodes in focus mode. */
 const FOCUS_MODE_FILTER_STYLE: React.CSSProperties = {
   filter: 'drop-shadow(0 0 3px var(--saffron))',
 } as const
 
+/** Icon button with optional tooltip for progressive disclosure. */
 const ToolbarBtn = ({
   icon: Icon,
   label,

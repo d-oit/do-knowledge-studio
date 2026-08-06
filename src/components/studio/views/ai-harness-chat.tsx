@@ -23,6 +23,7 @@ interface ChatPanelProps {
   suggestions?: PromptSuggestion[]
 }
 
+/** Label text for the prompt suggestions section. */
 const SUGGESTIONS_LABEL = 'Try asking'
 
 /** Sets input text and triggers send for a prompt suggestion. */

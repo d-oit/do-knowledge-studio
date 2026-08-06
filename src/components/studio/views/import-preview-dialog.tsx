@@ -13,6 +13,7 @@ interface ImportPreviewDialogProps {
   handleConfirmImport: () => void
 }
 
+/** Dialog showing entity and claim counts before confirming a destructive import. */
 export const ImportPreviewDialog = memo(function ImportPreviewDialog({
   importPreview,
   setImportPreview,

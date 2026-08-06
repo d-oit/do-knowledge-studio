@@ -55,6 +55,7 @@ export const QRScanner = ({ onScan }: { onScan: (roomId: string) => void }) => {
     onScanRef.current = onScan
   }, [onScan])
 
+  /** Stops the active camera stream and resets the scanner state. */
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
       for (const track of streamRef.current.getTracks()) {
@@ -65,6 +66,7 @@ export const QRScanner = ({ onScan }: { onScan: (roomId: string) => void }) => {
     setIsActive(false)
   }, [])
 
+  /** Requests camera access and begins the QR code detection loop. */
   const startCamera = useCallback(async () => {
     setError(null)
     try {

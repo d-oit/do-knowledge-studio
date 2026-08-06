@@ -23,7 +23,7 @@ export const PROVIDERS: ProviderOption[] = [
 
 
 /** Form field wrapper with auto-generated label and input ID binding. */
-export function Field({
+export const Field = ({
   label,
   icon: Icon,
   children,
@@ -31,9 +31,10 @@ export function Field({
   label: string
   icon: LucideIcon
   children: React.ReactNode
-}) {
+}) => {
   const fieldId = `field-${label.toLowerCase().replace(/\s+/g, '-')}`
 
+  /** Recursively injects the field ID into the first input/select/textarea child. */
   function injectId(child: React.ReactNode): React.ReactNode {
     if (!React.isValidElement(child)) return child
     const el = child as React.ReactElement<Record<string, unknown>>

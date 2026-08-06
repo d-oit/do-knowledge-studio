@@ -28,6 +28,7 @@ export const generateRoomId = (): string => {
   return Array.from(bytes, (b) => b.toString(36).padStart(2, '0')).join('').slice(0, 10)
 }
 
+/** Visual badge indicating the current sync connection status. */
 const StatusBadge = ({ status }: { status: SyncStatus }) => {
   if (status === 'connected') {
     return (
@@ -61,6 +62,7 @@ const StatusBadge = ({ status }: { status: SyncStatus }) => {
   )
 }
 
+/** Toggle buttons for switching between QR display and scan pairing modes. */
 const PairingButtons = ({
   pairingMode,
   onPairingModeChange,
@@ -98,6 +100,7 @@ const PairingButtons = ({
   )
 }
 
+/** Animated panel that renders the QR display or scanner based on the active mode. */
 const QrPanel = ({
   mode,
   roomId,
@@ -125,6 +128,7 @@ const QrPanel = ({
   )
 }
 
+/** Three-column grid showing peer count, synced entities, and synced claims. */
 const SyncStatsGrid = ({
   peerCount,
   syncedEntities,
@@ -152,6 +156,7 @@ const SyncStatsGrid = ({
   )
 }
 
+/** List of discovered local network peers with device names and capabilities. */
 const PeerList = ({ peers }: { peers: PeerInfo[] }) => {
   if (peers.length === 0) return null
   return (
@@ -177,6 +182,7 @@ const PeerList = ({ peers }: { peers: PeerInfo[] }) => {
   )
 }
 
+/** Controls shown when connected: room info, QR, re-sync, and leave actions. */
 const ConnectedControls = ({
   roomId,
   pairingMode,
@@ -244,6 +250,7 @@ const ConnectedControls = ({
   )
 }
 
+/** Panel shown when disconnected: room ID input, QR pairing, and join controls. */
 const DisconnectedPanel = ({
   inputRoomId,
   onInputChange,

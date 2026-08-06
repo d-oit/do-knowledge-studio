@@ -11,8 +11,11 @@ import {
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from './schema'
 import { useStudioStore } from './store'
 
+/** localStorage key for the recovery snapshot. */
 const RECOVERY_KEY = 'do-knowledge-studio-recovery'
+/** Time-to-live for recovery snapshots (24 hours). */
 const RECOVERY_TTL_MS = 24 * 60 * 60 * 1000
+/** Maximum serialized size in bytes for a recovery snapshot (4 MB). */
 const MAX_RECOVERY_SIZE_BYTES = 4 * 1024 * 1024
 
 export interface RecoverySnapshot {
@@ -61,6 +64,7 @@ export const persistRecoverySnapshot = (snapshot: RecoverySnapshot): void => {
   }
 }
 
+/** Zod schema for validating persisted recovery snapshot structure. */
 const RecoverySnapshotSchema = z.object({
   snapshot: z.object({
     entities: z.array(EntitySchema),
@@ -76,10 +80,12 @@ const RecoverySnapshotSchema = z.object({
   ttl: z.number().optional(),
 })
 
+/** Result type for reading a recovery snapshot from localStorage. */
 type RecoveryReadResult =
   | { ok: true; data: z.infer<typeof RecoverySnapshotSchema> }
   | { ok: false; error: string }
 
+/** Removes the recovery snapshot from localStorage. */
 const clearRecoverySnapshot = (): void => {
   try {
     localStorage.removeItem(RECOVERY_KEY)
@@ -108,8 +114,10 @@ export const readRecoverySnapshot = (): RecoveryReadResult => {
   return { ok: true, data: result.data }
 }
 
+/** Validated snapshot shape extracted from the Zod schema. */
 type ValidatedRecoverySnapshot = z.infer<typeof RecoverySnapshotSchema>['snapshot']
 
+/** Applies a validated recovery snapshot to the Zustand store. */
 const applyRecoverySnapshot = (snapshot: ValidatedRecoverySnapshot): void => {
   useStudioStore.setState({
     entities: snapshot.entities as Entity[],

@@ -19,6 +19,7 @@ interface EncryptExportDialogProps {
   handleExport: (format: ExportFormatId) => Promise<void>
 }
 
+/** Dialog for setting a password to AES-256-GCM encrypt the exported file. */
 export const EncryptExportDialog = memo(function EncryptExportDialog({
   showPassword,
   setShowPassword,

@@ -11,6 +11,7 @@ interface ImportDropzoneProps {
   fileInputRef: React.RefObject<HTMLInputElement | null>
 }
 
+/** Dropzone for importing a JSON export file to replace the current library. */
 export const ImportDropzone = memo(function ImportDropzone({
   handleImportClick,
   handleFileChange,

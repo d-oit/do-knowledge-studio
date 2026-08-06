@@ -12,20 +12,31 @@ import {
 
 // --- Constants ---
 
+/** Milliseconds to debounce draft auto-save writes to localStorage. */
 const DRAFT_DEBOUNCE_MS = 500
 
+/** Available editor layout modes for the mode selector. */
 const EDIT_MODES = ['edit', 'preview', 'split'] as const
 type EditMode = (typeof EDIT_MODES)[number]
 type DraftStatus = 'saved' | 'unsaved' | 'error' | null
 
+/** Accessible label for the editor mode radio group. */
 const MODE_GROUP_ARIA_LABEL = 'Editor mode'
+/** Label suffix for word count display. */
 const WORDS_LABEL = 'words'
+/** Label suffix for character count display. */
 const CHARS_LABEL = 'chars'
+/** Status text indicating unsaved draft changes. */
 const UNSAVED_CHANGES_TEXT = 'Unsaved changes'
+/** Status text confirming the draft was saved. */
 const DRAFT_SAVED_TEXT = 'Draft saved'
+/** Error text shown when draft persistence fails. */
 const DRAFT_ERROR_TEXT = 'Could not save draft'
+/** Button label to discard unsaved draft changes. */
 const DISCARD_CHANGES_TEXT = 'Discard changes'
+/** Button label to save edits to an existing entity. */
 const COMMIT_CHANGES_TEXT = 'Commit changes'
+/** Button label to save a new entity to the library. */
 const SAVE_TO_LIBRARY_TEXT = 'Save to library'
 
 // --- Types ---
@@ -69,6 +80,7 @@ interface EditorStatusBarProps {
 
 // --- Hook: useEditorDraft ---
 
+/** Constructs a draft object from the current editor field values. */
 const buildDraft = (
   draftId: string,
   editing: Entity | null,

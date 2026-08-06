@@ -17,10 +17,15 @@ import { PROVIDERS } from './ai-harness-settings'
 import { useAiHarnessChat } from './use-ai-harness-chat'
 import { buildContextSuggestions } from './ai-harness-suggestions'
 
+/** Accessible label for the AI Harness page heading. */
 const AI_HARNESS_TITLE = 'AI Harness'
+/** Short description displayed below the AI Harness heading. */
 const AI_HARNESS_DESCRIPTION = 'Connect a language model and augment its answers with your local knowledge base.'
+/** Badge label indicating experimental lab feature. */
 const LAB_LABEL = 'Lab'
+/** Button label to reveal the settings panel. */
 const SHOW_SETTINGS_LABEL = 'Show settings'
+/** Button label to hide the settings panel. */
 const HIDE_SETTINGS_LABEL = 'Hide settings'
 
 /** Manages AI harness view state including provider settings, model selection, and chat. */
@@ -149,6 +154,7 @@ const useAIHarnessViewState = () => {
   }
 }
 
+/** Header bar with title, description, and settings toggle button. */
 const AIHarnessHeader = ({
   showSettings,
   onToggleSettings,

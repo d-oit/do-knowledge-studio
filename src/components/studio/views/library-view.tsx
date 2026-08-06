@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 
+/** Lucide icon mapping for each entity type. */
 const TYPE_ICONS: Record<EntityType, typeof FileText> = {
   note: FileText,
   concept: Lightbulb,
@@ -33,6 +34,7 @@ const TYPE_ICONS: Record<EntityType, typeof FileText> = {
   project: FolderKanban,
 }
 
+/** Entity type filter options including the "all" sentinel. */
 const FILTERS: { id: EntityType | 'all'; label: string }[] = [
   { id: 'all', label: 'All' },
   { id: 'note', label: 'Notes' },
@@ -41,11 +43,17 @@ const FILTERS: { id: EntityType | 'all'; label: string }[] = [
   { id: 'project', label: 'Projects' },
 ]
 
+/** Label for the advanced filters disclosure toggle. */
 const ADVANCED_FILTERS_LABEL = 'Advanced filters'
+/** Helper text shown inside the advanced filters panel. */
 const ADVANCED_FILTERS_HINT = 'Narrow results with type-specific options'
+/** Label for the tag filter input. */
 const TAG_FILTER_LABEL = 'Tag contains'
+/** Placeholder text for the tag filter input. */
 const TAG_FILTER_PLACEHOLDER = 'e.g. research'
+/** Checkbox label for filtering to entities with descriptions. */
 const HAS_DESCRIPTION_LABEL = 'Only show entities with a description'
+/** Button label to clear only the advanced filter values. */
 const CLEAR_ADVANCED_LABEL = 'Clear advanced filters'
 
 /** Entity library view with grid/list layout, search, type filters, and sort controls. */
@@ -81,6 +89,7 @@ export const LibraryView = () => {
 
   const hasAdvancedFilters = tagQuery.trim().length > 0 || hasDescriptionOnly
 
+  /** Resets all filter and search state to defaults. */
   const clearFilters = useCallback(() => {
     setSearchQuery('')
     setTypeFilter('all')
@@ -88,6 +97,7 @@ export const LibraryView = () => {
     setHasDescriptionOnly(false)
   }, [setSearchQuery, setTypeFilter])
 
+  /** Clears only the advanced filter values (tag query and description toggle). */
   const clearAdvancedFilters = useCallback(() => {
     setTagQuery('')
     setHasDescriptionOnly(false)

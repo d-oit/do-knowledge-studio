@@ -9,25 +9,34 @@ import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 
+/** Predefined prompt suggestions shown in the chat welcome screen. */
 const SUGGESTIONS = [
   { label: 'Summarize recent projects', query: 'Give me a summary of the projects in my library.' },
   { label: 'Key people', query: 'Who are the key people in my knowledge base?' },
   { label: 'What is TRIZ useful for?', query: 'What is the TRIZ contradiction matrix useful for?' },
 ]
 
+/** List of chat capabilities displayed on the welcome screen. */
 const CHAT_CAPABILITIES = [
   'Search notes, people, projects, and claims in this browser',
   'Synthesize connections across your local knowledge base',
   'Show the local items used to support each answer',
 ]
 
+/** Welcome message describing the local-first chat feature. */
 const CHAT_WELCOME_DESCRIPTION = 'Ask questions about your library, find connections, or start a synthesis. Your content stays in this browser.'
+/** Section heading for the capabilities list. */
 const CHAT_CAPABILITIES_LABEL = 'What you can ask'
+/** Section heading for the prompt suggestion chips. */
 const CHAT_SUGGESTION_LABEL = 'Try a prompt'
 
+/** Label prefix for the inline suggestion chips. */
 const SUGGESTIONS_LABEL = 'Try:'
+/** Status indicator label for the local search engine. */
 const LOCAL_SEARCH_STATUS = 'Local search active'
+/** Keyboard shortcut hint shown below the input. */
 const CHAT_SHORTCUT_HINT = 'Enter to send · Shift+Enter for newline'
+/** Button label to clear the chat history. */
 const CLEAR_CHAT_LABEL = 'Clear'
 
 /** Animated bouncing-dot typing indicator for the chat assistant. */

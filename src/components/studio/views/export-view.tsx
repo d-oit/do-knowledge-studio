@@ -12,6 +12,7 @@ import { EncryptExportDialog } from './encrypt-export-dialog'
 import { ResetConfirmDialog } from './reset-confirm-dialog'
 import { ImportPreviewDialog } from './import-preview-dialog'
 
+/** Export and import view with format grid, dropzone, backup tips, and dialogs. */
 export const ExportView = () => {
   const entities = useStudioStore((s) => s.entities)
   const claims = useStudioStore((s) => s.claims)

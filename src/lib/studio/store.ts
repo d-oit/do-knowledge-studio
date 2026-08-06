@@ -12,6 +12,7 @@ import { runMigrations, CURRENT_SCHEMA_VERSION } from './migrations'
 import { buildRecoverySnapshot, persistRecoverySnapshot } from './recovery-helpers'
 export { restoreFromRecovery } from './recovery-helpers'
 
+/** Maximum number of undo history snapshots retained in memory. */
 const MAX_HISTORY = 50
 
 interface ImportOptions {
@@ -94,11 +95,13 @@ interface StudioState {
   // Theme handled by next-themes — store tracks UI side effects only
 }
 
+/** Generates a new UUID for entities, claims, and chat messages. */
 const generateId = (): string => crypto.randomUUID()
 
 // The default (seed) state — used on first load and as a fallback when a
 // persisted state is missing fields. Kept here so both the store initializer
 // and `resetStore` reference the same defaults.
+/** Default seed state used on first load and as the reset baseline. */
 const SEED_STATE = {
   entities: seedEntities,
   claims: seedClaims,
