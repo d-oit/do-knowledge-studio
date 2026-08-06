@@ -5,6 +5,7 @@ import * as AvatarPrimitive from "@radix-ui/react-avatar"
 
 import { cn } from "@/lib/utils"
 
+/** Circular image container for user avatars. */
 function Avatar({
   className,
   ...props
@@ -21,6 +22,7 @@ function Avatar({
   )
 }
 
+/** Image displayed inside an avatar. */
 function AvatarImage({
   className,
   ...props
@@ -34,6 +36,7 @@ function AvatarImage({
   )
 }
 
+/** Fallback content shown when the avatar image fails to load. */
 function AvatarFallback({
   className,
   ...props

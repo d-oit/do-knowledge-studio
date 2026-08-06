@@ -4,10 +4,12 @@ import { ChevronRight, MoreHorizontal } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
+/** Navigation landmark for breadcrumbs. */
 function Breadcrumb({ ...props }: React.ComponentProps<"nav">) {
   return <nav aria-label="breadcrumb" data-slot="breadcrumb" {...props} />
 }
 
+/** Ordered list of breadcrumb items. */
 function BreadcrumbList({ className, ...props }: React.ComponentProps<"ol">) {
   return (
     <ol
@@ -21,6 +23,7 @@ function BreadcrumbList({ className, ...props }: React.ComponentProps<"ol">) {
   )
 }
 
+/** Single item within a breadcrumb list. */
 function BreadcrumbItem({ className, ...props }: React.ComponentProps<"li">) {
   return (
     <li
@@ -31,6 +34,7 @@ function BreadcrumbItem({ className, ...props }: React.ComponentProps<"li">) {
   )
 }
 
+/** Clickable link within a breadcrumb item. */
 function BreadcrumbLink({
   asChild,
   className,
@@ -49,6 +53,7 @@ function BreadcrumbLink({
   )
 }
 
+/** Current page indicator in a breadcrumb, not clickable. */
 function BreadcrumbPage({ className, ...props }: React.ComponentProps<"span">) {
   return (
     <span
@@ -62,6 +67,7 @@ function BreadcrumbPage({ className, ...props }: React.ComponentProps<"span">) {
   )
 }
 
+/** Visual separator between breadcrumb items. */
 function BreadcrumbSeparator({
   children,
   className,
@@ -80,6 +86,7 @@ function BreadcrumbSeparator({
   )
 }
 
+/** Ellipsis indicator for collapsed breadcrumb items. */
 function BreadcrumbEllipsis({
   className,
   ...props

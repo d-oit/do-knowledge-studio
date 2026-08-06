@@ -5,12 +5,14 @@ import * as HoverCardPrimitive from "@radix-ui/react-hover-card"
 
 import { cn } from "@/lib/utils"
 
+/** Container for a hover-triggered floating card. */
 function HoverCard({
   ...props
 }: React.ComponentProps<typeof HoverCardPrimitive.Root>) {
   return <HoverCardPrimitive.Root data-slot="hover-card" {...props} />
 }
 
+/** Element that shows the hover card on hover or focus. */
 function HoverCardTrigger({
   ...props
 }: React.ComponentProps<typeof HoverCardPrimitive.Trigger>) {
@@ -19,6 +21,7 @@ function HoverCardTrigger({
   )
 }
 
+/** Floating content panel displayed on hover. */
 function HoverCardContent({
   className,
   align = "center",

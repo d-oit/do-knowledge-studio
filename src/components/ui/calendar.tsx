@@ -11,6 +11,7 @@ import { DayButton, DayPicker, getDefaultClassNames } from "react-day-picker"
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
 
+/** A date picker calendar component built on react-day-picker. */
 function Calendar({
   className,
   classNames,
@@ -172,6 +173,7 @@ function Calendar({
   )
 }
 
+/** Button component rendered for each day cell in the calendar. */
 function CalendarDayButton({
   className,
   day,

@@ -8,6 +8,7 @@ import {
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
 
+/** Root navigation container for pagination controls. */
 function Pagination({ className, ...props }: React.ComponentProps<"nav">) {
   return (
     <nav
@@ -20,6 +21,7 @@ function Pagination({ className, ...props }: React.ComponentProps<"nav">) {
   )
 }
 
+/** Unordered list that holds pagination items. */
 function PaginationContent({
   className,
   ...props
@@ -33,6 +35,7 @@ function PaginationContent({
   )
 }
 
+/** Individual item within the pagination list. */
 function PaginationItem({ ...props }: React.ComponentProps<"li">) {
   return <li data-slot="pagination-item" {...props} />
 }
@@ -42,6 +45,7 @@ type PaginationLinkProps = {
 } & Pick<React.ComponentProps<typeof Button>, "size"> &
   React.ComponentProps<"a">
 
+/** A clickable link styled as a pagination button. */
 function PaginationLink({
   className,
   isActive,
@@ -65,6 +69,7 @@ function PaginationLink({
   )
 }
 
+/** Link that navigates to the previous page. */
 function PaginationPrevious({
   className,
   ...props
@@ -82,6 +87,7 @@ function PaginationPrevious({
   )
 }
 
+/** Link that navigates to the next page. */
 function PaginationNext({
   className,
   ...props
@@ -99,6 +105,7 @@ function PaginationNext({
   )
 }
 
+/** Placeholder indicating omitted page numbers between items. */
 function PaginationEllipsis({
   className,
   ...props

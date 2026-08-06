@@ -19,6 +19,7 @@ const alertVariants = cva(
   }
 )
 
+/** A banner component that displays an important message with optional icon. */
 function Alert({
   className,
   variant,
@@ -34,6 +35,7 @@ function Alert({
   )
 }
 
+/** Title text displayed in the alert banner. */
 function AlertTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -47,6 +49,7 @@ function AlertTitle({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/** Descriptive text displayed below the alert title. */
 function AlertDescription({
   className,
   ...props

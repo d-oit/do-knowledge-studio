@@ -28,6 +28,7 @@ const toggleVariants = cva(
   }
 )
 
+/** Two-state button that can be toggled on or off. */
 function Toggle({
   className,
   variant,

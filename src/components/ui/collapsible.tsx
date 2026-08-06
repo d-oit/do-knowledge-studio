@@ -2,12 +2,14 @@
 
 import * as CollapsiblePrimitive from "@radix-ui/react-collapsible"
 
+/** Container that can be expanded or collapsed. */
 function Collapsible({
   ...props
 }: React.ComponentProps<typeof CollapsiblePrimitive.Root>) {
   return <CollapsiblePrimitive.Root data-slot="collapsible" {...props} />
 }
 
+/** Element that toggles a collapsible section. */
 function CollapsibleTrigger({
   ...props
 }: React.ComponentProps<typeof CollapsiblePrimitive.CollapsibleTrigger>) {
@@ -19,6 +21,7 @@ function CollapsibleTrigger({
   )
 }
 
+/** Content revealed when a collapsible is expanded. */
 function CollapsibleContent({
   ...props
 }: React.ComponentProps<typeof CollapsiblePrimitive.CollapsibleContent>) {

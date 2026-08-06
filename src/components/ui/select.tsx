@@ -6,24 +6,28 @@ import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
+/** Root component that manages the state of a select dropdown. */
 function Select({
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Root>) {
   return <SelectPrimitive.Root data-slot="select" {...props} />
 }
 
+/** Groups related select items together. */
 function SelectGroup({
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Group>) {
   return <SelectPrimitive.Group data-slot="select-group" {...props} />
 }
 
+/** Renders the currently selected value inside the trigger. */
 function SelectValue({
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Value>) {
   return <SelectPrimitive.Value data-slot="select-value" {...props} />
 }
 
+/** Button that opens the select dropdown and displays the selected value. */
 function SelectTrigger({
   className,
   size = "default",
@@ -50,6 +54,7 @@ function SelectTrigger({
   )
 }
 
+/** Content panel that holds the list of select items. */
 function SelectContent({
   className,
   children,
@@ -85,6 +90,7 @@ function SelectContent({
   )
 }
 
+/** Non-interactive label for a group of select items. */
 function SelectLabel({
   className,
   ...props
@@ -98,6 +104,7 @@ function SelectLabel({
   )
 }
 
+/** A single selectable option within the select dropdown. */
 function SelectItem({
   className,
   children,
@@ -122,6 +129,7 @@ function SelectItem({
   )
 }
 
+/** Visual divider between select items. */
 function SelectSeparator({
   className,
   ...props
@@ -135,6 +143,7 @@ function SelectSeparator({
   )
 }
 
+/** Scroll button that reveals items above the visible area. */
 function SelectScrollUpButton({
   className,
   ...props
@@ -153,6 +162,7 @@ function SelectScrollUpButton({
   )
 }
 
+/** Scroll button that reveals items below the visible area. */
 function SelectScrollDownButton({
   className,
   ...props

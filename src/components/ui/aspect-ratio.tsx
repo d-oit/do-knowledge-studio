@@ -2,6 +2,7 @@
 
 import * as AspectRatioPrimitive from "@radix-ui/react-aspect-ratio"
 
+/** Container that maintains a fixed aspect ratio. */
 function AspectRatio({
   ...props
 }: React.ComponentProps<typeof AspectRatioPrimitive.Root>) {

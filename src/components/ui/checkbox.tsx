@@ -6,6 +6,7 @@ import { CheckIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
+/** Checkable box input for boolean values. */
 function Checkbox({
   className,
   ...props
