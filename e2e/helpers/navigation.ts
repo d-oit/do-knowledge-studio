@@ -12,7 +12,7 @@ import { expect, type Page } from '@playwright/test';
  * action (app behavior), so assertions after navClick must target view
  * content rather than drawer state.
  */
-export async function navClick(page: Page, name: RegExp | string): Promise<void> {
+export const navClick = async (page: Page, name: RegExp | string): Promise<void> => {
   await openNavIfHidden(page);
   await page
     .getByRole('navigation', { name: /main navigation/i })
@@ -27,7 +27,7 @@ export async function navClick(page: Page, name: RegExp | string): Promise<void>
  * After this resolves, `getByRole('navigation', { name: /main navigation/i })`
  * matches the visible navigation on every viewport.
  */
-export async function openNavIfHidden(page: Page): Promise<void> {
+export const openNavIfHidden = async (page: Page): Promise<void> => {
   const nav = page.getByRole('navigation', { name: /main navigation/i });
   if (await nav.isVisible()) return;
   await page.getByRole('button', { name: /open menu/i }).first().click();
@@ -39,7 +39,7 @@ export async function openNavIfHidden(page: Page): Promise<void> {
  * desktop, or the "Open menu" trigger (which reveals the drawer navigation)
  * below the lg breakpoint.
  */
-export async function expectNavigationReachable(page: Page): Promise<void> {
+export const expectNavigationReachable = async (page: Page): Promise<void> => {
   const nav = page.getByRole('navigation', { name: /main navigation/i });
   if (await nav.isVisible()) {
     await expect(nav).toBeVisible();

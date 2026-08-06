@@ -18,7 +18,7 @@ const VIEW_TITLES: Record<ViewId, { title: string; subtitle: string }> = {
   sync: { title: 'Sync', subtitle: 'Connect devices and sync peer-to-peer' },
 }
 
-export function Topbar() {
+export const Topbar = () => {
   const {
     currentView,
     startNew,

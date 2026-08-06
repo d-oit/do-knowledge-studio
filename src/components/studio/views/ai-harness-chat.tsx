@@ -25,12 +25,16 @@ interface ChatPanelProps {
 
 const SUGGESTIONS_LABEL = 'Try asking'
 
-function sendSuggestion(setInput: (v: string) => void, handleSend: () => void | Promise<void>, prompt: string) {
+const sendSuggestion = async (
+  setInput: (v: string) => void,
+  handleSend: () => void | Promise<void>,
+  prompt: string,
+) => {
   setInput(prompt)
-  void handleSend()
+  await handleSend()
 }
 
-export function AiHarnessChatPanel({
+export const AiHarnessChatPanel = ({
   messages,
   isLoading,
   input,
@@ -41,7 +45,7 @@ export function AiHarnessChatPanel({
   effectiveModel,
   cooldownMs = 0,
   suggestions = [],
-}: ChatPanelProps) {
+}: ChatPanelProps) => {
   const showSuggestions = suggestions.length > 0 && messages.length <= 1 && !isLoading && input.trim() === ''
   return (
     <div className="flex h-[520px] flex-col rounded-lg border border-border bg-card">
@@ -99,7 +103,7 @@ export function AiHarnessChatPanel({
               <button
                 key={s.label}
                 type="button"
-                onClick={() => { sendSuggestion(setInput, handleSend, s.prompt) }}
+                onClick={async () => { await sendSuggestion(setInput, handleSend, s.prompt) }}
                 className="rounded-full border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-ink-soft transition-all hover:border-saffron/40 hover:text-ink press-scale focus-ring min-h-[44px]"
               >
                 {s.label}
@@ -114,10 +118,10 @@ export function AiHarnessChatPanel({
           <textarea
             value={input}
             onChange={(e) => { setInput(e.target.value) }}
-            onKeyDown={(e) => {
+            onKeyDown={async (e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault()
-                void handleSend()
+                await handleSend()
               }
             }}
             placeholder="Ask the AI agent…"
@@ -127,7 +131,7 @@ export function AiHarnessChatPanel({
             className="max-h-24 flex-1 resize-none bg-transparent px-2 py-1 text-[13px] text-ink placeholder:text-ink-faint focus:outline-none disabled:opacity-50"
           />
           <button
-            onClick={() => { void handleSend() }}
+            onClick={async () => { await handleSend() }}
             disabled={!input.trim() || isLoading || cooldownMs > 0}
             className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:opacity-40 press-scale focus-ring"
             aria-label="Send"

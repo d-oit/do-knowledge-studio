@@ -7,7 +7,7 @@ const MIN_TOUCH_TARGET = 44;
  * Enumerate all interactive elements and verify each meets the 44x44px
  * minimum touch target size (WCAG 2.5.5 / 2.5.8).
  */
-async function assertTouchTargets(page: import('@playwright/test').Page, viewName: string) {
+const assertTouchTargets = async (page: import('@playwright/test').Page, viewName: string) => {
   const violations = await page.evaluate((min: number) => {
     const selectors = 'button, a[href], input[type="checkbox"], input[type="radio"], [role="button"]';
     const els = Array.from(document.querySelectorAll<HTMLElement>(selectors));
@@ -44,10 +44,12 @@ async function assertTouchTargets(page: import('@playwright/test').Page, viewNam
     return issues;
   }, MIN_TOUCH_TARGET);
 
+  const details = violations
+    .map((v) => `  - <${v.tag}> "${v.text}" — ${v.width}x${v.height}px`)
+    .join('\n')
   expect(
     violations,
-    `[${viewName}] Found ${violations.length} interactive elements below ${MIN_TOUCH_TARGET}px:\n` +
-      violations.map((v) => `  - <${v.tag}> "${v.text}" — ${v.width}x${v.height}px`).join('\n'),
+    `[${viewName}] Found ${violations.length} interactive elements below ${MIN_TOUCH_TARGET}px:\n${details}`,
   ).toEqual([]);
 }
 

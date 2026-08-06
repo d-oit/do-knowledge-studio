@@ -62,7 +62,7 @@ describe('AiHarnessChatPanel', () => {
   })
 
   it('shows Thinking indicator when loading', () => {
-    render(<AiHarnessChatPanel {...defaultProps} isLoading={true} />)
+    render(<AiHarnessChatPanel {...defaultProps} isLoading />)
     expect(screen.getByText('Thinking…')).toBeDefined()
   })
 
@@ -89,13 +89,13 @@ describe('AiHarnessChatPanel', () => {
   })
 
   it('disables send button when loading', () => {
-    render(<AiHarnessChatPanel {...defaultProps} input="Hello" isLoading={true} />)
+    render(<AiHarnessChatPanel {...defaultProps} input="Hello" isLoading />)
     const sendBtn = screen.getByLabelText('Send')
     expect(sendBtn).toBeDisabled()
   })
 
   it('disables textarea when loading', () => {
-    render(<AiHarnessChatPanel {...defaultProps} isLoading={true} />)
+    render(<AiHarnessChatPanel {...defaultProps} isLoading />)
     const textarea = screen.getByPlaceholderText(/Ask the AI agent/)
     expect(textarea).toBeDisabled()
   })
@@ -112,7 +112,7 @@ describe('AiHarnessChatPanel', () => {
   })
 
   it('shows augmented indicator when augment is true', () => {
-    render(<AiHarnessChatPanel {...defaultProps} augment={true} />)
+    render(<AiHarnessChatPanel {...defaultProps} augment />)
     expect(screen.getByText('Augmented with local knowledge')).toBeDefined()
   })
 

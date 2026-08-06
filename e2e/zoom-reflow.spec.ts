@@ -5,14 +5,14 @@ import { navClick, openNavIfHidden } from './helpers/navigation';
  * Inject CSS to set the root font-size to the given percentage.
  * This simulates browser text zoom (which scales font-size on <html>).
  */
-async function setTextZoom(page: import('@playwright/test').Page, percentage: number) {
+const setTextZoom = async (page: import('@playwright/test').Page, percentage: number) => {
   await page.addStyleTag({
     content: `html { font-size: ${percentage}% !important; }`,
   });
 }
 
 /** Check that the page has no horizontal overflow (scrollbar) */
-async function assertNoHorizontalOverflow(page: import('@playwright/test').Page) {
+const assertNoHorizontalOverflow = async (page: import('@playwright/test').Page) => {
   const overflow = await page.evaluate(() => {
     return {
       scrollWidth: document.documentElement.scrollWidth,
