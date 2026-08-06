@@ -156,7 +156,7 @@ export const QRScanner = ({ onScan }: { onScan: (roomId: string) => void }) => {
       {/* Scan button — only shown when not active */}
       {!isActive && (
         <button
-          onClick={() => { startCamera() }}
+          onClick={() => { void startCamera() }}
           className="flex h-48 w-48 flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/30 transition-colors hover:border-saffron/40 hover:bg-muted/50"
         >
           <Camera className="h-8 w-8 text-ink-faint" />

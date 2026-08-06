@@ -205,7 +205,7 @@ export function SyncView() {
         roomId={roomId}
         inputRoomId={inputRoomId}
         onInputChange={setInputRoomId}
-        onJoin={() => { handleJoin() }}
+        onJoin={() => { void handleJoin() }}
         peerCount={peerCount}
         syncedEntities={syncedEntities}
         syncedClaims={syncedClaims}

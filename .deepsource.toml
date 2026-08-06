@@ -85,6 +85,12 @@ enabled = true
   pattern = "JS-0045"
   skip = true
 
+  # JS-0098: 'Expected undefined and instead saw void' — `void` is required
+  # by Codacy's no-floating-promises rule for fire-and-forget promise calls.
+  [[analyzers.meta.issue_patterns]]
+  pattern = "JS-0098"
+  skip = true
+
   # JS-0415: JSX tree is too deeply nested — some components like settings
   # panels legitimately need 6+ levels of nesting. Suppress to avoid noise.
   [[analyzers.meta.issue_patterns]]
