@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label"
 /** Form provider component that wraps react-hook-form FormProvider. */
 const Form = FormProvider
 
+/** Shape of the form field context value — holds the field name. */
 type FormFieldContextValue<
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
@@ -26,6 +27,7 @@ type FormFieldContextValue<
   name: TName
 }
 
+/** React context that provides the current form field name. */
 const FormFieldContext = React.createContext<FormFieldContextValue>(
   {} as FormFieldContextValue
 )
@@ -68,10 +70,12 @@ const useFormField = () => {
   }
 }
 
+/** Shape of the form item context value — holds the unique element ID. */
 type FormItemContextValue = {
   id: string
 }
 
+/** React context that provides a unique ID for each form item. */
 const FormItemContext = React.createContext<FormItemContextValue>(
   {} as FormItemContextValue
 )
