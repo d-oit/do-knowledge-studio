@@ -3,6 +3,14 @@
 **Updated**: 2026-08-06
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
+### Plan 109 — Gap Remediation, CI Fix, and PR Cleanup (2026-08-06)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Documentation & Plan Reconciliation | Done | Created missing `094-smoke-tests-shadcn-primitives.md`; checked Plan 108 quality gate checkbox; reconciled Task 138 and Task 141 as DEFERRED |
+| W2 | CI Failure Investigation & Fix | Done | Fixed 4 Codacy `no-misused-promises` violations in `ai-harness-chat.tsx` and `export-format-grid.tsx`; fixed DeepSource JS-0357 "used before defined" in `graph-view.tsx` by moving `ToolbarBtn` before usage |
+| W3 | PR Creation & Review | Done | Created PR #614; quality gate passes (lint, typecheck, 2115 tests, build) |
+
 ### Plan 108 — Complete Task 143 Progressive Disclosure, Fix PR #613 CI, Viewport E2E (2026-08-06)
 
 | Wave | Goal | Status | Changes |
