@@ -16,12 +16,12 @@ interface ExportFormatGridProps {
   handleExport: (format: ExportFormatId) => Promise<void>
 }
 
-export const ExportFormatGrid = memo(function ExportFormatGrid({
+export const ExportFormatGrid = memo(({
   entities,
   setView,
   setShowPassword,
   handleExport,
-}: ExportFormatGridProps) {
+}: ExportFormatGridProps) => {
   const reducedMotion = useReducedMotion()
 
   return (
@@ -64,10 +64,10 @@ export const ExportFormatGrid = memo(function ExportFormatGrid({
               style={{ '--i': i } as React.CSSProperties}
               disabled={!isAvailable}
               aria-disabled={!isAvailable}
-              onClick={() => {
+              onClick={async () => {
                 if (!isAvailable) return
                 if (f.id === 'encrypted') setShowPassword(true)
-                else void handleExport(f.id)
+                else await handleExport(f.id)
               }}
               className={cn(
                 'group flex flex-col rounded-lg border bg-card p-4 text-left transition-all focus-ring',

@@ -48,7 +48,7 @@ const TAG_FILTER_PLACEHOLDER = 'e.g. research'
 const HAS_DESCRIPTION_LABEL = 'Only show entities with a description'
 const CLEAR_ADVANCED_LABEL = 'Clear advanced filters'
 
-export function LibraryView() {
+export const LibraryView = () => {
   const allEntities = useStudioStore((s) => s.entities)
   const typeFilter = useStudioStore((s) => s.typeFilter)
   const setTypeFilter = useStudioStore((s) => s.setTypeFilter)

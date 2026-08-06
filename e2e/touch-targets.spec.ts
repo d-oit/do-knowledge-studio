@@ -5,32 +5,42 @@ const MIN_TOUCH_TARGET = 44;
 
 /**
  * Runs inside the page and collects every visible interactive element smaller
- * than the given minimum. Kept as a module-level function so Playwright can
- * serialize it into `page.evaluate` without an inline callback.
+ * than the given minimum. All helpers are nested so Playwright can serialize
+ * the whole closure into `page.evaluate`.
  */
 const collectTouchTargetViolations = (min: number) => {
   const selectors = 'button, a[href], input[type="checkbox"], input[type="radio"], [role="button"]';
+
+  // True when the element is actually rendered and visible. Elements with zero
+  // size, `display:none`, `visibility:hidden`, or `opacity:0` are not targets.
+  const isVisibleElement = (el: HTMLElement, rect: DOMRect) => {
+    if (rect.width === 0 || rect.height === 0) return false;
+    const style = window.getComputedStyle(el);
+    if (style.display === 'none' || style.visibility === 'hidden') return false;
+    return style.opacity !== '0';
+  }
+
+  // Skip-to-content links are sr-only until focused — an intentional WCAG
+  // pattern, so they are exempt from the minimum target size check.
+  const isSkipToContentLink = (el: HTMLElement) => {
+    if (el.tagName !== 'A') return false;
+    if (!(el as HTMLAnchorElement).href?.includes('#')) return false;
+    const text = (el.textContent || '').toLowerCase();
+    const label = (el.getAttribute('aria-label') || '').toLowerCase();
+    return text.includes('skip') || label.includes('skip');
+  }
+
+  // SVG <g> elements are data-visualization nodes, not UI controls.
+  const isSvgGroupNode = (el: HTMLElement) => el.tagName === 'G' || el instanceof SVGGElement;
+
   const els = Array.from(document.querySelectorAll<HTMLElement>(selectors));
   const issues: { tag: string; text: string; width: number; height: number }[] = [];
 
   for (const el of els) {
-    // Skip elements that are not visible
     const rect = el.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) continue;
-    const style = window.getComputedStyle(el);
-    if (style.display === 'none' || style.visibility === 'hidden') continue;
-    if (style.opacity === '0') continue;
-
-    // Skip skip-to-content links (sr-only until focused — intentional WCAG pattern)
-    if (
-      el.tagName === 'A' &&
-      (el as HTMLAnchorElement).href?.includes('#') &&
-      ((el.textContent || '').toLowerCase().includes('skip') ||
-        (el.getAttribute('aria-label') || '').toLowerCase().includes('skip'))
-    ) continue;
-
-    // Skip SVG <g> elements (data visualization nodes, not UI controls)
-    if (el.tagName === 'G' || el instanceof SVGGElement) continue;
+    if (!isVisibleElement(el, rect)) continue;
+    if (isSkipToContentLink(el)) continue;
+    if (isSvgGroupNode(el)) continue;
 
     if (rect.width < min || rect.height < min) {
       issues.push({

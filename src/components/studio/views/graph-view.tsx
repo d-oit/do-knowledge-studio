@@ -43,7 +43,7 @@ const FOCUS_MODE_FILTER_STYLE: React.CSSProperties = {
   filter: 'drop-shadow(0 0 3px var(--saffron))',
 } as const
 
-export function GraphView() {
+export const GraphView = () => {
   const entities = useStudioStore((s) => s.entities)
   const selectedEntityId = useStudioStore((s) => s.selectedEntityId)
   const selectEntity = useStudioStore((s) => s.selectEntity)
@@ -430,7 +430,7 @@ export function GraphView() {
   )
 }
 
-function ToolbarBtn({
+const ToolbarBtn = ({
   icon: Icon,
   label,
   help,
@@ -445,7 +445,7 @@ function ToolbarBtn({
   active?: boolean
   onClick?: () => void
   disabled?: boolean
-}) {
+}) => {
   const button = (
     <button
       onClick={onClick}

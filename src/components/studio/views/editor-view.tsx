@@ -44,7 +44,7 @@ function restoreSelection(textarea: HTMLTextAreaElement, start: number, end: num
   textarea.setSelectionRange(start, end)
 }
 
-export function EditorView() {
+export const EditorView = () => {
   const entities = useStudioStore((s) => s.entities)
   const editingEntityId = useStudioStore((s) => s.editingEntityId)
   const commitEntity = useStudioStore((s) => s.commitEntity)
