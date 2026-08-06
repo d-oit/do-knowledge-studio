@@ -47,7 +47,8 @@ interface SettingsPanelProps {
   isLoading: boolean
 }
 
-export function AiHarnessSettingsPanel({
+/** Settings panel for AI provider configuration, model selection, and augmentation options. */
+export const AiHarnessSettingsPanel = ({
   provider,
   setProvider,
   model,
@@ -72,7 +73,7 @@ export function AiHarnessSettingsPanel({
   effectiveModel,
   selectedEngineTarget,
   isLoading,
-}: SettingsPanelProps) {
+}: SettingsPanelProps) => {
   const activeProvider = PROVIDERS.find((p) => p.id === provider) ?? PROVIDERS[0]
 
   return (

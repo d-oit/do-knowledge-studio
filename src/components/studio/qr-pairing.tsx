@@ -5,7 +5,8 @@ import { QRCodeSVG } from 'qrcode.react'
 import { Camera, X, Copy, Check } from 'lucide-react'
 import { toast } from 'sonner'
 
-export function QRDisplay({ roomId }: { roomId: string }) {
+/** Renders a QR code for the given room ID with a copy button. */
+export const QRDisplay = ({ roomId }: { roomId: string }) => {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = useCallback(() => {
@@ -41,7 +42,8 @@ export function QRDisplay({ roomId }: { roomId: string }) {
   )
 }
 
-export function QRScanner({ onScan }: { onScan: (roomId: string) => void }) {
+/** Camera-based QR code scanner for room pairing. */
+export const QRScanner = ({ onScan }: { onScan: (roomId: string) => void }) => {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isActive, setIsActive] = useState(false)
