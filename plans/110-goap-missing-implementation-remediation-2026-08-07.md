@@ -35,7 +35,7 @@
 4. `pnpm run build`
 
 ### Phase 3 — PR creation & review
-- Branch created, committed, pushed; PR opened
+- Branch `feat/plan-110-export-helpers-split` pushed; **PR #616** opened (`8a3e720`)
 - Code review performed; findings addressed
 
 ## Success Criteria
