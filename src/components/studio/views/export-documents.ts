@@ -11,24 +11,96 @@ import {
 } from 'docx'
 import { buildClaimsByEntityId } from './export-types'
 
+/** A4 PDF layout constants shared by the PDF builder helpers. */
+const PDF_MARGIN = 20
+const PDF_PAGE_WIDTH = 210 - PDF_MARGIN * 2
+const PDF_PAGE_HEIGHT = 297
+
+/** Returns the metadata line for an entity (type, tags, created date). */
+const pdfEntityMeta = (e: Entity): string =>
+  `Type: ${e.type} | Tags: ${e.tags.join(', ') || 'none'} | Created: ${e.createdAt?.slice(0, 10) ?? '—'}`
+
+/** Draws one entity (header, description, content, claims) and returns the updated cursor y. */
+const renderPdfEntity = (
+  doc: jsPDF,
+  e: Entity,
+  claimsByEntity: Map<string, Claim[]>,
+  y: number,
+): number => {
+  let cursor = y
+  const addPageIfNeeded = (needed: number) => {
+    if (cursor + needed > PDF_PAGE_HEIGHT - PDF_MARGIN) {
+      doc.addPage()
+      cursor = PDF_MARGIN
+    }
+  }
+
+  addPageIfNeeded(30)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(14)
+  doc.setTextColor(30)
+  doc.text(e.name, PDF_MARGIN, cursor)
+  cursor += 6
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  doc.setTextColor(120)
+  doc.text(pdfEntityMeta(e), PDF_MARGIN, cursor)
+  cursor += 5
+
+  if (e.description) {
+    doc.setFontSize(10)
+    doc.setTextColor(60)
+    const descLines = doc.splitTextToSize(e.description, PDF_PAGE_WIDTH)
+    doc.text(descLines, PDF_MARGIN, cursor)
+    cursor += descLines.length * 4.5 + 2
+  }
+
+  if (e.content) {
+    doc.setFontSize(10)
+    doc.setTextColor(30)
+    const contentLines = doc.splitTextToSize(e.content, PDF_PAGE_WIDTH)
+    for (const line of contentLines) {
+      addPageIfNeeded(5)
+      doc.text(line, PDF_MARGIN, cursor)
+      cursor += 4.5
+    }
+    cursor += 2
+  }
+
+  const entityClaims = claimsByEntity.get(e.id) ?? []
+  if (entityClaims.length) {
+    addPageIfNeeded(8)
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(11)
+    doc.setTextColor(30)
+    doc.text('Claims', PDF_MARGIN, cursor)
+    cursor += 5
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(9)
+    for (const c of entityClaims) {
+      addPageIfNeeded(8)
+      const pct = Math.round(c.confidence * 100)
+      const line = `[${c.verification}] ${c.statement} (${pct}%)`
+      const lines = doc.splitTextToSize(line, PDF_PAGE_WIDTH)
+      doc.text(lines, PDF_MARGIN, cursor)
+      cursor += lines.length * 4 + 2
+    }
+  }
+
+  return cursor
+}
+
 /** Builds a print-ready PDF blob for all entities and claims. */
 export const buildPdfExport = (entities: Entity[], claims: Claim[]): Blob => {
   const claimsByEntity = buildClaimsByEntityId(claims)
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
-  const margin = 20
-  const pageWidth = 210 - margin * 2
-  let y = margin
-
-  const addPageIfNeeded = (needed: number) => {
-    if (y + needed > 297 - margin) {
-      doc.addPage()
-      y = margin
-    }
-  }
+  let y = PDF_MARGIN
 
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(18)
-  doc.text('DO Knowledge Studio', margin, y)
+  doc.text('DO Knowledge Studio', PDF_MARGIN, y)
   y += 8
 
   doc.setFont('helvetica', 'normal')
@@ -36,173 +108,126 @@ export const buildPdfExport = (entities: Entity[], claims: Claim[]): Blob => {
   doc.setTextColor(120)
   doc.text(
     `Exported ${new Date().toLocaleString()}. ${entities.length} entities, ${claims.length} claims.`,
-    margin,
+    PDF_MARGIN,
     y,
   )
   y += 10
 
   for (const e of entities) {
-    addPageIfNeeded(30)
-
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(14)
-    doc.setTextColor(30)
-    doc.text(e.name, margin, y)
-    y += 6
-
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(9)
-    doc.setTextColor(120)
-    const meta = `Type: ${e.type} | Tags: ${e.tags.join(', ') || 'none'} | Created: ${e.createdAt?.slice(0, 10) ?? '—'}`
-    doc.text(meta, margin, y)
-    y += 5
-
-    if (e.description) {
-      doc.setFontSize(10)
-      doc.setTextColor(60)
-      const descLines = doc.splitTextToSize(e.description, pageWidth)
-      doc.text(descLines, margin, y)
-      y += descLines.length * 4.5 + 2
-    }
-
-    if (e.content) {
-      doc.setFontSize(10)
-      doc.setTextColor(30)
-      const contentLines = doc.splitTextToSize(e.content, pageWidth)
-      for (const line of contentLines) {
-        addPageIfNeeded(5)
-        doc.text(line, margin, y)
-        y += 4.5
-      }
-      y += 2
-    }
-
-    const entityClaims = claimsByEntity.get(e.id) ?? []
-    if (entityClaims.length) {
-      addPageIfNeeded(8)
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(11)
-      doc.setTextColor(30)
-      doc.text('Claims', margin, y)
-      y += 5
-
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(9)
-      for (const c of entityClaims) {
-        addPageIfNeeded(8)
-        const pct = Math.round(c.confidence * 100)
-        const line = `[${c.verification}] ${c.statement} (${pct}%)`
-        const lines = doc.splitTextToSize(line, pageWidth)
-        doc.text(lines, margin, y)
-        y += lines.length * 4 + 2
-      }
-    }
-
+    y = renderPdfEntity(doc, e, claimsByEntity, y)
     y += 4
     doc.setDrawColor(200)
-    doc.line(margin, y, margin + pageWidth, y)
+    doc.line(PDF_MARGIN, y, PDF_MARGIN + PDF_PAGE_WIDTH, y)
     y += 6
   }
 
   return doc.output('blob')
 }
 
-/** Builds a Word (.docx) blob for all entities and claims. */
-export const buildDocxExport = (entities: Entity[], claims: Claim[]): Promise<Blob> => {
-  const claimsByEntity = buildClaimsByEntityId(claims)
-  const children: Paragraph[] = []
+/** Builds the intro paragraphs (title + export metadata) for the DOCX document. */
+const buildDocxIntro = (entities: Entity[], claims: Claim[]): Paragraph[] => [
+  new Paragraph({
+    children: [new TextRun({ text: 'DO Knowledge Studio', bold: true, size: 36 })],
+    heading: HeadingLevel.TITLE,
+    alignment: AlignmentType.LEFT,
+  }),
+  new Paragraph({
+    children: [
+      new TextRun({
+        text: `Exported ${new Date().toLocaleString()}. ${entities.length} entities, ${claims.length} claims.`,
+        size: 20,
+        color: '6B6760',
+      }),
+    ],
+    spacing: { after: 300 },
+  }),
+]
 
-  children.push(
+/** Builds the paragraphs describing a single entity and its claims. */
+const buildDocxEntityParagraphs = (e: Entity, claimsByEntity: Map<string, Claim[]>): Paragraph[] => {
+  const paragraphs: Paragraph[] = []
+  paragraphs.push(
     new Paragraph({
-      children: [new TextRun({ text: 'DO Knowledge Studio', bold: true, size: 36 })],
-      heading: HeadingLevel.TITLE,
-      alignment: AlignmentType.LEFT,
-    }),
-    new Paragraph({
-      children: [
-        new TextRun({
-          text: `Exported ${new Date().toLocaleString()}. ${entities.length} entities, ${claims.length} claims.`,
-          size: 20,
-          color: '6B6760',
-        }),
-      ],
-      spacing: { after: 300 },
+      children: [new TextRun({ text: e.name, bold: true, size: 28 })],
+      heading: HeadingLevel.HEADING_1,
+      spacing: { before: 300, after: 100 },
     }),
   )
 
-  for (const e of entities) {
-    children.push(
-      new Paragraph({
-        children: [new TextRun({ text: e.name, bold: true, size: 28 })],
-        heading: HeadingLevel.HEADING_1,
-        spacing: { before: 300, after: 100 },
-      }),
-    )
+  const metaText = `Type: ${e.type} | Tags: ${e.tags.join(', ') || 'none'} | Created: ${e.createdAt?.slice(0, 10) ?? '—'}`
+  paragraphs.push(
+    new Paragraph({
+      children: [new TextRun({ text: metaText, size: 18, color: '6B6760' })],
+      spacing: { after: 100 },
+    }),
+  )
 
-    const metaText = `Type: ${e.type} | Tags: ${e.tags.join(', ') || 'none'} | Created: ${e.createdAt?.slice(0, 10) ?? '—'}`
-    children.push(
+  if (e.description) {
+    paragraphs.push(
       new Paragraph({
-        children: [new TextRun({ text: metaText, size: 18, color: '6B6760' })],
+        children: [new TextRun({ text: e.description, size: 22 })],
         spacing: { after: 100 },
       }),
     )
+  }
 
-    if (e.description) {
-      children.push(
-        new Paragraph({
-          children: [new TextRun({ text: e.description, size: 22 })],
-          spacing: { after: 100 },
-        }),
-      )
-    }
+  if (e.content) {
+    paragraphs.push(
+      new Paragraph({
+        children: [new TextRun({ text: e.content, size: 22 })],
+        spacing: { after: 100 },
+      }),
+    )
+  }
 
-    if (e.content) {
-      children.push(
-        new Paragraph({
-          children: [new TextRun({ text: e.content, size: 22 })],
-          spacing: { after: 100 },
-        }),
-      )
-    }
+  if (e.sourceUrl) {
+    paragraphs.push(
+      new Paragraph({
+        children: [
+          new TextRun({ text: 'Source: ', size: 18, color: '6B6760' }),
+          new ExternalHyperlink({ children: [new TextRun({ text: e.sourceUrl, style: 'Hyperlink', size: 18 })], link: e.sourceUrl }),
+        ],
+        spacing: { after: 100 },
+      }),
+    )
+  }
 
-    if (e.sourceUrl) {
-      children.push(
+  const entityClaims = claimsByEntity.get(e.id) ?? []
+  if (entityClaims.length) {
+    paragraphs.push(
+      new Paragraph({
+        children: [new TextRun({ text: 'Claims', bold: true, size: 24 })],
+        heading: HeadingLevel.HEADING_2,
+        spacing: { before: 150, after: 100 },
+      }),
+    )
+
+    for (const c of entityClaims) {
+      const pct = Math.round(c.confidence * 100)
+      paragraphs.push(
         new Paragraph({
           children: [
-            new TextRun({ text: 'Source: ', size: 18, color: '6B6760' }),
-            new ExternalHyperlink({ children: [new TextRun({ text: e.sourceUrl, style: 'Hyperlink', size: 18 })], link: e.sourceUrl }),
+            new TextRun({ text: `[${c.verification}] `, bold: true, size: 20 }),
+            new TextRun({ text: `${c.statement} `, size: 20 }),
+            new TextRun({ text: `(${pct}%)`, size: 18, color: '6B6760' }),
           ],
-          spacing: { after: 100 },
+          spacing: { after: 50 },
         }),
       )
     }
+  }
 
-    const entityClaims = claimsByEntity.get(e.id) ?? []
-    if (entityClaims.length) {
-      children.push(
-        new Paragraph({
-          children: [new TextRun({ text: 'Claims', bold: true, size: 24 })],
-          heading: HeadingLevel.HEADING_2,
-          spacing: { before: 150, after: 100 },
-        }),
-      )
+  paragraphs.push(new Paragraph({ spacing: { after: 200 } }))
+  return paragraphs
+}
 
-      for (const c of entityClaims) {
-        const pct = Math.round(c.confidence * 100)
-        children.push(
-          new Paragraph({
-            children: [
-              new TextRun({ text: `[${c.verification}] `, bold: true, size: 20 }),
-              new TextRun({ text: `${c.statement} `, size: 20 }),
-              new TextRun({ text: `(${pct}%)`, size: 18, color: '6B6760' }),
-            ],
-            spacing: { after: 50 },
-          }),
-        )
-      }
-    }
+/** Builds a Word (.docx) blob for all entities and claims. */
+export const buildDocxExport = (entities: Entity[], claims: Claim[]): Promise<Blob> => {
+  const claimsByEntity = buildClaimsByEntityId(claims)
+  const children: Paragraph[] = [...buildDocxIntro(entities, claims)]
 
-    children.push(new Paragraph({ spacing: { after: 200 } }))
+  for (const e of entities) {
+    children.push(...buildDocxEntityParagraphs(e, claimsByEntity))
   }
 
   const doc = new Document({

@@ -25,7 +25,7 @@ vi.mock('framer-motion', () => ({
       <div {...(props as React.HTMLAttributes<HTMLDivElement>)}>{children}</div>
     ),
   },
-  AnimatePresence: ({ children }: { children?: ReactNode }) => <>{children}</>,
+  AnimatePresence: ({ children }: { children?: ReactNode }) => children,
 }))
 
 vi.mock('lucide-react', () => {
