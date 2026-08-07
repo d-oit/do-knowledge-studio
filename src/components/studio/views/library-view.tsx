@@ -4,6 +4,7 @@ import { useState, useCallback, useMemo } from 'react'
 import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
 import { ENTITY_TYPE_META, type EntityType } from '@/lib/studio/types'
 import { ToggleButtonGroup } from '../ui/shared-primitives'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   FileText,
   Lightbulb,
@@ -248,15 +249,19 @@ export const LibraryView = () => {
               />
             </div>
 
-            <label className="flex min-h-[44px] cursor-pointer items-center gap-2 rounded-md border border-border bg-background px-3 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring">
-              <input
-                type="checkbox"
-                checked={hasDescriptionOnly}
-                onChange={(e) => { setHasDescriptionOnly(e.target.checked) }}
-                className="h-4 w-4 rounded border-border accent-saffron"
-              />
-              {HAS_DESCRIPTION_LABEL}
-            </label>
+            <div className="flex min-h-[44px] items-center">
+              <label
+                htmlFor="library-desc-only"
+                className="flex min-h-[44px] cursor-pointer items-center gap-2 rounded-md border border-border bg-background px-3 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
+              >
+                <Checkbox
+                  id="library-desc-only"
+                  checked={hasDescriptionOnly}
+                  onCheckedChange={(checked) => { setHasDescriptionOnly(Boolean(checked)) }}
+                />
+                {HAS_DESCRIPTION_LABEL}
+              </label>
+            </div>
 
             {hasAdvancedFilters && (
               <button

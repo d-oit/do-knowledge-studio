@@ -47,6 +47,7 @@ vi.mock('lucide-react', () => {
     SlidersHorizontal: Icon,
     Tag: Icon,
     ChevronDown: Icon,
+    CheckIcon: Icon,
   }
 })
 
