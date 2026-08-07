@@ -32,7 +32,7 @@ vi.mock('@/lib/utils', () => ({
   cn: (...args: string[]) => args.filter(Boolean).join(' '),
 }))
 
-vi.mock('./export-helpers', () => {
+vi.mock('./export-types', () => {
   const I = ({ className }: { className?: string }) => (
     <span data-testid="icon" className={className} />
   )
@@ -55,7 +55,7 @@ vi.mock('./export-helpers', () => {
 })
 
 import { ExportFormatGrid } from './export-format-grid'
-import type { ExportFormatId } from './export-helpers'
+import type { ExportFormatId } from './export-types'
 
 const mockEntities = [
   { id: 'ent-1', name: 'Test', type: 'note' as const, description: '', content: '', tags: [], createdAt: '', updatedAt: '', links: [] },

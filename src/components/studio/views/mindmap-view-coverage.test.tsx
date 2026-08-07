@@ -46,7 +46,7 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }))
 
-vi.mock('./export-helpers', () => ({
+vi.mock('./export-types', () => ({
   todayStamp: () => '2026-01-01',
   downloadBlob: vi.fn(),
 }))
@@ -124,7 +124,7 @@ vi.mock('@/lib/studio/store', () => ({
 }))
 
 import { MindMapView } from './mindmap-view'
-import * as exportHelpers from './export-helpers'
+import * as exportTypes from './export-types'
 
 describe('MindMapView branch coverage', () => {
   beforeEach(() => {
@@ -313,7 +313,7 @@ describe('MindMapView branch coverage', () => {
   })
 
   it('exports PNG when export button is clicked', () => {
-    const downloadBlobMock = vi.spyOn(exportHelpers, 'downloadBlob').mockImplementation(() => undefined)
+    const downloadBlobMock = vi.spyOn(exportTypes, 'downloadBlob').mockImplementation(() => undefined)
     render(<MindMapView />)
     fireEvent.click(screen.getByLabelText('Export PNG'))
     expect(downloadBlobMock).not.toHaveBeenCalled()

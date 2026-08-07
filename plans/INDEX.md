@@ -1,7 +1,17 @@
 # Plans Index
 
-**Updated**: 2026-08-06
+**Updated**: 2026-08-07
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
+
+### Plan 110 — GOAP: Missing Implementation Remediation (2026-08-07)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Split `export-helpers.ts` (544 LOC → 3 files) | Done | `export-types.ts` (155 LOC, types/formats/file utils), `export-documents.ts` (213 LOC, PDF/DOCX builders), `export-helpers.ts` (181 LOC, core builders) — all 12 importers + test mocks updated |
+| W1 | Commit `next-env.d.ts` Next.js 16 artifact | Done | `next-env.d.ts` path updated to `.next/types/routes.d.ts` and committed |
+| W1 | Close Plan 109 | Done | Plan 109 marked COMPLETE; its waves already merged via PR #614 |
+| W2 | Quality gate | Done | Lint/typecheck/test/build green |
+| W3 | PR creation & review | Done | PR opened with code review |
 
 ### Plan 109 — Gap Remediation, CI Fix, and PR Cleanup (2026-08-06)
 

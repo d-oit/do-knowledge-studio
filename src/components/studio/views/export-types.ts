@@ -1,0 +1,155 @@
+import type { Entity, Claim } from '@/lib/studio/types'
+import {
+  FileText,
+  FileJson,
+  FileCode,
+  FileArchive,
+  FileLock,
+} from 'lucide-react'
+import { type ValidationError, type ValidatedGraph, type ValidatedMindMap, type ValidatedLink, type ValidatedTag } from '@/lib/studio/schema'
+
+/** Supported export output formats. */
+export type ExportFormatId = 'json' | 'markdown' | 'html' | 'pdf' | 'docx' | 'encrypted'
+
+/** Result of parsing an import file: either validated data or a list of errors. */
+export type ImportResult =
+  | { success: true; entities: Entity[]; claims: Claim[]; graph?: ValidatedGraph; mindMap?: ValidatedMindMap; links?: ValidatedLink[]; tags?: ValidatedTag[] }
+  | { success: false; errors: ValidationError[] }
+
+/** Preview of an import shown to the user before confirmation. */
+export interface ImportPreview {
+  entities: Entity[]
+  claims: Claim[]
+  graph?: ValidatedGraph
+  mindMap?: ValidatedMindMap
+  links?: ValidatedLink[]
+  tags?: ValidatedTag[]
+  entityCount: number
+  claimCount: number
+  version: number
+  duplicateIds: string[]
+}
+
+/** Theme color keys used by export format cards. */
+export type ExportColorKey = 'saffron' | 'sky' | 'sage' | 'clay'
+
+/** Display metadata for a single export format option. */
+export interface ExportFormat {
+  id: ExportFormatId
+  name: string
+  description: string
+  icon: typeof FileText
+  color: ExportColorKey
+  badge?: string
+  available?: boolean
+}
+
+/** All export formats offered in the export view, in display order. */
+export const FORMATS: ExportFormat[] = [
+  {
+    id: 'markdown',
+    name: 'Markdown',
+    description: 'Single .md file with every entity (and its claims) separated by ---.',
+    icon: FileText,
+    color: 'saffron',
+    available: true,
+  },
+  {
+    id: 'json',
+    name: 'JSON',
+    description: 'Single .json file with all entities, claims, and links. Best for backup.',
+    icon: FileJson,
+    color: 'sky',
+    available: true,
+  },
+  {
+    id: 'html',
+    name: 'Static HTML',
+    description: 'Single self-contained .html page that renders all entities. Open in any browser.',
+    icon: FileCode,
+    color: 'sage',
+    available: true,
+  },
+  {
+    id: 'pdf',
+    name: 'PDF document',
+    description: 'Formatted PDF with all entities, claims, and metadata. Print-ready.',
+    icon: FileArchive,
+    color: 'clay',
+    available: true,
+  },
+  {
+    id: 'docx',
+    name: 'DOCX document',
+    description: 'Word document with structured entities, claims, and hyperlinks.',
+    icon: FileText,
+    color: 'saffron',
+    available: true,
+  },
+  {
+    id: 'encrypted',
+    name: 'Encrypted HTML',
+    description: 'Self-contained reader protected by a password. Safe to share privately.',
+    icon: FileLock,
+    color: 'clay',
+    badge: 'Secure',
+    available: true,
+  },
+]
+
+/** Tailwind color classes for each export format color key. */
+export const COLOR_MAP: Record<ExportColorKey, string> = {
+  saffron: 'bg-saffron-soft text-saffron-deep',
+  sky: 'bg-sky-100 text-sky-600 dark:bg-sky-950/40 dark:text-sky-300',
+  sage: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300',
+  clay: 'bg-rose-100 text-clay dark:bg-rose-950/40 dark:text-rose-300',
+}
+
+/** Returns today's date formatted as YYYY-MM-DD for export filenames. */
+export const todayStamp = (): string => {
+  const date = new Date()
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+/** Triggers a browser download for the given blob. */
+export const downloadBlob = (filename: string, blob: Blob) => {
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = filename
+  document.body.appendChild(anchor)
+  anchor.click()
+  document.body.removeChild(anchor)
+  URL.revokeObjectURL(url)
+}
+
+/** Triggers a browser download for the given text content. */
+export const downloadFile = (filename: string, content: string, mimeType = 'text/plain') => {
+  const blob = new Blob([content], { type: mimeType })
+  downloadBlob(filename, blob)
+}
+
+/** Groups claims by their owning entity id. */
+export const buildClaimsByEntityId = (claims: Claim[]): Map<string, Claim[]> => {
+  const map = new Map<string, Claim[]>()
+  for (const c of claims) {
+    const list = map.get(c.entityId)
+    if (list) {
+      list.push(c)
+    } else {
+      map.set(c.entityId, [c])
+    }
+  }
+  return map
+}
+
+/** Optional export payload sections beyond entities and claims. */
+export interface ExportOptions {
+  graph?: ValidatedGraph
+  mindMap?: ValidatedMindMap
+  links?: ValidatedLink[]
+  tags?: ValidatedTag[]
+}

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { RotateCcw } from 'lucide-react'
 import { useStudioStore } from '@/lib/studio/store'
-import type { ImportPreview } from './export-helpers'
+import type { ImportPreview } from './export-types'
 import { useExportHandlers } from './use-export-handlers'
 import { ExportFormatGrid } from './export-format-grid'
 import { ImportDropzone } from './import-dropzone'

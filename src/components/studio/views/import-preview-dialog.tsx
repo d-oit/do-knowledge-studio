@@ -5,7 +5,7 @@ import { Eye, AlertTriangle } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { Overlay } from '@/components/studio/ui/shared-primitives'
-import type { ImportPreview } from './export-helpers'
+import type { ImportPreview } from './export-types'
 
 interface ImportPreviewDialogProps {
   importPreview: ImportPreview | null

@@ -29,7 +29,7 @@ vi.mock('@/components/studio/ui/shared-primitives', () => ({
 }))
 
 import { ImportPreviewDialog } from './import-preview-dialog'
-import type { ImportPreview } from './export-helpers'
+import type { ImportPreview } from './export-types'
 
 const basePreview: ImportPreview = {
   entities: [], claims: [], entityCount: 5, claimCount: 12, version: 1, duplicateIds: [],
