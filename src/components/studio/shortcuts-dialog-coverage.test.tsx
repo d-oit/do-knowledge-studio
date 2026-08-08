@@ -80,20 +80,19 @@ import { ShortcutsDialog } from './shortcuts-dialog'
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 /** Dispatch a real KeyboardEvent on the window. */
-function pressKey(key: string, mods: { meta?: boolean; ctrl?: boolean; shift?: boolean; alt?: boolean } = {}) {
+const pressKey = (key: string, mods: { meta?: boolean; ctrl?: boolean; shift?: boolean; alt?: boolean } = {}) => {
+  const { meta = false, ctrl = false, shift = false, alt = false } = mods
   fireEvent.keyDown(window, {
     key,
     code: key.length === 1 ? `Key${key.toUpperCase()}` : key,
-    metaKey: mods.meta ?? false,
-    ctrlKey: mods.ctrl ?? false,
-    shiftKey: mods.shift ?? false,
-    altKey: mods.alt ?? false,
+    metaKey: meta,
+    ctrlKey: ctrl,
+    shiftKey: shift,
+    altKey: alt,
   })
 }
 
-function renderDialog() {
-  return render(<ShortcutsDialog />)
-}
+const renderDialog = () => render(<ShortcutsDialog />)
 
 describe('ShortcutsDialog — branch coverage', () => {
   beforeEach(() => {

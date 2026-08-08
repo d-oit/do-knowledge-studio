@@ -77,7 +77,7 @@ vi.mock('./editor-toolbar', () => ({
 }))
 
 vi.mock('../remote-cursors', () => ({
-  CursorTracker: ({ children }: { children?: ReactNode }) => <>{children}</>,
+  CursorTracker: ({ children }: { children?: ReactNode }) => children,
 }))
 
 vi.mock('./editor-claims-panel', () => ({

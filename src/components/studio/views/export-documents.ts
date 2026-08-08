@@ -20,22 +20,58 @@ const PDF_PAGE_HEIGHT = 297
 const pdfEntityMeta = (e: Entity): string =>
   `Type: ${e.type} | Tags: ${e.tags.join(', ') || 'none'} | Created: ${e.createdAt?.slice(0, 10) ?? '—'}`
 
-/** Draws one entity (header, description, content, claims) and returns the updated cursor y. */
-const renderPdfEntity = (
+/** Draws a wrapped text block, adding pages as needed; returns the new cursor y. */
+const drawWrappedText = (
   doc: jsPDF,
-  e: Entity,
-  claimsByEntity: Map<string, Claim[]>,
+  text: string,
   y: number,
+  fontSize: number,
+  lineHeight: number,
+  needed: number,
 ): number => {
-  let cursor = y
-  const addPageIfNeeded = (needed: number) => {
-    if (cursor + needed > PDF_PAGE_HEIGHT - PDF_MARGIN) {
+  doc.setFontSize(fontSize)
+  const lines = doc.splitTextToSize(text, PDF_PAGE_WIDTH)
+  for (const line of lines) {
+    if (y + needed > PDF_PAGE_HEIGHT - PDF_MARGIN) {
       doc.addPage()
-      cursor = PDF_MARGIN
+      y = PDF_MARGIN
     }
+    doc.text(line, PDF_MARGIN, y)
+    y += lineHeight
   }
+  return y
+}
 
-  addPageIfNeeded(30)
+/** Draws the claims section for an entity and returns the updated cursor y. */
+const renderPdfClaims = (doc: jsPDF, claims: Claim[], y: number): number => {
+  let cursor = y
+  if (cursor + 8 > PDF_PAGE_HEIGHT - PDF_MARGIN) {
+    doc.addPage()
+    cursor = PDF_MARGIN
+  }
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(11)
+  doc.setTextColor(30)
+  doc.text('Claims', PDF_MARGIN, cursor)
+  cursor += 5
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  for (const c of claims) {
+    const pct = Math.round(c.confidence * 100)
+    cursor = drawWrappedText(doc, `[${c.verification}] ${c.statement} (${pct}%)`, cursor, 9, 4, 8)
+    cursor += 2
+  }
+  return cursor
+}
+
+/** Draws the entity name header and metadata line; returns the updated cursor y. */
+const renderPdfHeader = (doc: jsPDF, e: Entity, y: number): number => {
+  let cursor = y
+  if (cursor + 30 > PDF_PAGE_HEIGHT - PDF_MARGIN) {
+    doc.addPage()
+    cursor = PDF_MARGIN
+  }
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(14)
   doc.setTextColor(30)
@@ -46,47 +82,35 @@ const renderPdfEntity = (
   doc.setFontSize(9)
   doc.setTextColor(120)
   doc.text(pdfEntityMeta(e), PDF_MARGIN, cursor)
-  cursor += 5
+  return cursor + 5
+}
+
+/** Draws one entity (header, description, content, claims) and returns the updated cursor y. */
+const renderPdfEntity = (
+  doc: jsPDF,
+  e: Entity,
+  claimsByEntity: Map<string, Claim[]>,
+  y: number,
+): number => {
+  let cursor = renderPdfHeader(doc, e, y)
 
   if (e.description) {
     doc.setFontSize(10)
     doc.setTextColor(60)
-    const descLines = doc.splitTextToSize(e.description, PDF_PAGE_WIDTH)
-    doc.text(descLines, PDF_MARGIN, cursor)
-    cursor += descLines.length * 4.5 + 2
+    cursor = drawWrappedText(doc, e.description, cursor, 10, 4.5, 5)
+    cursor += 2
   }
 
   if (e.content) {
     doc.setFontSize(10)
     doc.setTextColor(30)
-    const contentLines = doc.splitTextToSize(e.content, PDF_PAGE_WIDTH)
-    for (const line of contentLines) {
-      addPageIfNeeded(5)
-      doc.text(line, PDF_MARGIN, cursor)
-      cursor += 4.5
-    }
+    cursor = drawWrappedText(doc, e.content, cursor, 10, 4.5, 5)
     cursor += 2
   }
 
   const entityClaims = claimsByEntity.get(e.id) ?? []
   if (entityClaims.length) {
-    addPageIfNeeded(8)
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(11)
-    doc.setTextColor(30)
-    doc.text('Claims', PDF_MARGIN, cursor)
-    cursor += 5
-
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(9)
-    for (const c of entityClaims) {
-      addPageIfNeeded(8)
-      const pct = Math.round(c.confidence * 100)
-      const line = `[${c.verification}] ${c.statement} (${pct}%)`
-      const lines = doc.splitTextToSize(line, PDF_PAGE_WIDTH)
-      doc.text(lines, PDF_MARGIN, cursor)
-      cursor += lines.length * 4 + 2
-    }
+    cursor = renderPdfClaims(doc, entityClaims, cursor)
   }
 
   return cursor
@@ -124,6 +148,10 @@ export const buildPdfExport = (entities: Entity[], claims: Claim[]): Blob => {
   return doc.output('blob')
 }
 
+/** Returns the metadata text for an entity (type, tags, created date). */
+const docxMetaText = (e: Entity): string =>
+  `Type: ${e.type} | Tags: ${e.tags.join(', ') || 'none'} | Created: ${e.createdAt?.slice(0, 10) ?? '—'}`
+
 /** Builds the intro paragraphs (title + export metadata) for the DOCX document. */
 const buildDocxIntro = (entities: Entity[], claims: Claim[]): Paragraph[] => [
   new Paragraph({
@@ -143,24 +171,45 @@ const buildDocxIntro = (entities: Entity[], claims: Claim[]): Paragraph[] => [
   }),
 ]
 
-/** Builds the paragraphs describing a single entity and its claims. */
-const buildDocxEntityParagraphs = (e: Entity, claimsByEntity: Map<string, Claim[]>): Paragraph[] => {
-  const paragraphs: Paragraph[] = []
-  paragraphs.push(
+/** Builds the claim paragraphs for an entity. */
+const buildDocxClaimParagraphs = (claims: Claim[]): Paragraph[] => {
+  const paragraphs: Paragraph[] = [
+    new Paragraph({
+      children: [new TextRun({ text: 'Claims', bold: true, size: 24 })],
+      heading: HeadingLevel.HEADING_2,
+      spacing: { before: 150, after: 100 },
+    }),
+  ]
+
+  for (const c of claims) {
+    const pct = Math.round(c.confidence * 100)
+    paragraphs.push(
+      new Paragraph({
+        children: [
+          new TextRun({ text: `[${c.verification}] `, bold: true, size: 20 }),
+          new TextRun({ text: `${c.statement} `, size: 20 }),
+          new TextRun({ text: `(${pct}%)`, size: 18, color: '6B6760' }),
+        ],
+        spacing: { after: 50 },
+      }),
+    )
+  }
+  return paragraphs
+}
+
+/** Builds the paragraphs describing a single entity (header, body, source). */
+const buildDocxEntityParagraphs = (e: Entity): Paragraph[] => {
+  const paragraphs: Paragraph[] = [
     new Paragraph({
       children: [new TextRun({ text: e.name, bold: true, size: 28 })],
       heading: HeadingLevel.HEADING_1,
       spacing: { before: 300, after: 100 },
     }),
-  )
-
-  const metaText = `Type: ${e.type} | Tags: ${e.tags.join(', ') || 'none'} | Created: ${e.createdAt?.slice(0, 10) ?? '—'}`
-  paragraphs.push(
     new Paragraph({
-      children: [new TextRun({ text: metaText, size: 18, color: '6B6760' })],
+      children: [new TextRun({ text: docxMetaText(e), size: 18, color: '6B6760' })],
       spacing: { after: 100 },
     }),
-  )
+  ]
 
   if (e.description) {
     paragraphs.push(
@@ -192,32 +241,6 @@ const buildDocxEntityParagraphs = (e: Entity, claimsByEntity: Map<string, Claim[
     )
   }
 
-  const entityClaims = claimsByEntity.get(e.id) ?? []
-  if (entityClaims.length) {
-    paragraphs.push(
-      new Paragraph({
-        children: [new TextRun({ text: 'Claims', bold: true, size: 24 })],
-        heading: HeadingLevel.HEADING_2,
-        spacing: { before: 150, after: 100 },
-      }),
-    )
-
-    for (const c of entityClaims) {
-      const pct = Math.round(c.confidence * 100)
-      paragraphs.push(
-        new Paragraph({
-          children: [
-            new TextRun({ text: `[${c.verification}] `, bold: true, size: 20 }),
-            new TextRun({ text: `${c.statement} `, size: 20 }),
-            new TextRun({ text: `(${pct}%)`, size: 18, color: '6B6760' }),
-          ],
-          spacing: { after: 50 },
-        }),
-      )
-    }
-  }
-
-  paragraphs.push(new Paragraph({ spacing: { after: 200 } }))
   return paragraphs
 }
 
@@ -227,7 +250,12 @@ export const buildDocxExport = (entities: Entity[], claims: Claim[]): Promise<Bl
   const children: Paragraph[] = [...buildDocxIntro(entities, claims)]
 
   for (const e of entities) {
-    children.push(...buildDocxEntityParagraphs(e, claimsByEntity))
+    children.push(...buildDocxEntityParagraphs(e))
+    const entityClaims = claimsByEntity.get(e.id) ?? []
+    if (entityClaims.length) {
+      children.push(...buildDocxClaimParagraphs(entityClaims))
+    }
+    children.push(new Paragraph({ spacing: { after: 200 } }))
   }
 
   const doc = new Document({
