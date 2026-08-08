@@ -374,16 +374,32 @@ export const GraphView = () => {
                       )}
                       strokeWidth={isHighlight ? 2 : 1.5}
                     />
-                    {isHighlight && (
-                      <text
-                        x={(s.x + t.x) / 2}
-                        y={(s.y + t.y) / 2 - 4}
-                        textAnchor="middle"
-                        className="fill-ink-mute font-sans text-badge italic"
-                      >
-                        {e.relation}
-                      </text>
-                    )}
+                    {isHighlight && (() => {
+                      const dx = t.x - s.x
+                      const dy = t.y - s.y
+                      const length = Math.hypot(dx, dy) || 1
+                      const isAttachedToSelected = selectedEntityId && (e.source === selectedEntityId || e.target === selectedEntityId)
+                      const labelOffset = isAttachedToSelected ? 14 : 8
+
+                      const labelX = (s.x + t.x) / 2 + (-dy / length) * labelOffset
+                      const labelY = (s.y + t.y) / 2 + (dx / length) * labelOffset
+
+                      return (
+                        <text
+                          x={labelX}
+                          y={labelY}
+                          textAnchor="middle"
+                          dominantBaseline="central"
+                          stroke="var(--background)"
+                          strokeWidth={4}
+                          strokeLinejoin="round"
+                          paintOrder="stroke fill"
+                          className="fill-ink-mute font-sans text-badge italic"
+                        >
+                          {e.relation}
+                        </text>
+                      )
+                    })()}
                   </g>
                 )
               })
