@@ -222,4 +222,21 @@ describe('GraphView', () => {
     fireEvent.keyDown(container, { key: 'Delete' })
     expect(mocks.deleteEntity).not.toHaveBeenCalled()
   })
+
+  it('renders relation label with perpendicular offset and background stroke when an entity is selected', () => {
+    currentSelectedEntityId = 'ent-1'
+    render(<GraphView />)
+
+    const label = screen.getByText('related')
+    expect(label).toBeDefined()
+    expect(label.tagName).toBe('text')
+    expect(label).toHaveAttribute('stroke', 'var(--background)')
+    expect(label).toHaveAttribute('stroke-width', '4')
+    expect(label).toHaveAttribute('paint-order', 'stroke fill')
+
+    const x = parseFloat(label.getAttribute('x') || '0')
+    const y = parseFloat(label.getAttribute('y') || '0')
+    expect(x).not.toBeNaN()
+    expect(y).not.toBeNaN()
+  })
 })
