@@ -128,11 +128,11 @@ export const decryptData = async (payload: string, password: string): Promise<st
 export const buildEncryptedReaderHtml = (cipherPayload: string): string => {
   // Prevent XSS/HTML breakout within the inline script tag by escaping HTML-sensitive characters inside the JSON literal
   const safeSerializedPayload = JSON.stringify(cipherPayload)
-    .replace(/</g, '\\u003c')
-    .replace(/>/g, '\\u003e')
-    .replace(/&/g, '\\u0026')
-    .replace(/\u2028/g, '\\u2028')
-    .replace(/\u2029/g, '\\u2029')
+    .replace(/</gu, '\\u003c')
+    .replace(/>/gu, '\\u003e')
+    .replace(/&/gu, '\\u0026')
+    .replace(/\u2028/gu, '\\u2028')
+    .replace(/\u2029/gu, '\\u2029')
 
   return `<!doctype html>
 <html lang="en">
