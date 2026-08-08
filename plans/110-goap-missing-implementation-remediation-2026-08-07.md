@@ -38,6 +38,12 @@
 - Branch `feat/plan-110-export-helpers-split` pushed; **PR #616** opened (`8a3e720`)
 - Code review performed; findings addressed
 
+### Phase 4 — DeepSource JS remediation (2 rounds)
+DeepSource flagged findings on the PR diff; resolved at code level in `e2e34c9` + `7e6f5b3`:
+- **Round 1** (`e2e34c9`): JS-R1005 complexity on `buildPdfExport`/`buildDocxExport` (extracted `renderPdfEntity`/`buildDocxIntro`/`buildDocxEntityParagraphs`); JS-C1003 wildcard import; JS-0424 single-child fragments in 16 test `AnimatePresence` mocks.
+- **Round 2** (`7e6f5b3`): JS-0357 used-before-defined in `export-view.test.tsx`; JS-0424 `CursorTracker` mock; JS-R1005 further complexity splits (`renderPdfHeader`/`renderPdfClaims`/`drawWrappedText`/`docxMetaText`/`buildDocxClaimParagraphs` — all functions ≤5) + `pressKey` destructured defaults; JS-0067 `function`→`const` arrows; JS-0320 dynamic `delete` replaced.
+- **Result**: DeepSource: JavaScript green — "Analysis passed: No blocking issues or failing metrics found". All CI checks on PR #616 pass (Unit Tests, E2E, Build, Coverage, Codacy, CodeQL, Vercel).
+
 ## Success Criteria
 - [x] `export-helpers.ts` split into files under 500 LOC each
 - [x] All imports updated across codebase
