@@ -140,4 +140,22 @@ describe('WebCrypto AES-GCM Encryption', () => {
     expect(html).toContain(`iterations < ${MIN_ITERATIONS}`)
     expect(html).toContain(`iterations > ${MAX_ITERATIONS}`)
   })
+
+  it('safely serializes payload to prevent HTML injection and XSS', () => {
+    const dangerousPayload = '</script><script>alert("XSS")</script>&<more_tags>'
+    const html = buildEncryptedReaderHtml(dangerousPayload)
+
+    // Find the inline script line declaring the PAYLOAD variable
+    const payloadLine = html.split('\n').find(line => line.includes('var PAYLOAD ='))
+    expect(payloadLine).toBeDefined()
+
+    // Verify it doesn't contain the raw script/HTML tags or ampersands that would break out of the context
+    expect(payloadLine).not.toContain('</script><script>')
+    expect(payloadLine).not.toContain('<more_tags>')
+    expect(payloadLine).not.toContain('&')
+
+    // Verify it contains the escaped Unicode representations
+    expect(payloadLine).toContain('\\u003c/script\\u003e\\u003cscript\\u003e')
+    expect(payloadLine).toContain('\\u0026\\u003cmore_tags\\u003e')
+  })
 })
