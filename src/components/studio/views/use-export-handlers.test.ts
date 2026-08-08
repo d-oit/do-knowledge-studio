@@ -6,15 +6,21 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }))
 
-vi.mock('./export-helpers', () => ({
+vi.mock('./export-types', () => ({
   todayStamp: vi.fn(() => '2026-07-26'),
   downloadFile: vi.fn(),
   downloadBlob: vi.fn(),
+}))
+
+vi.mock('./export-documents', () => ({
+  buildPdfExport: vi.fn(() => new Blob(['pdf'])),
+  buildDocxExport: vi.fn(() => Promise.resolve(new Blob(['docx']))),
+}))
+
+vi.mock('./export-helpers', () => ({
   buildJsonExport: vi.fn(() => '{"json":true}'),
   buildMarkdownExport: vi.fn(() => '# Markdown'),
   buildHtmlExport: vi.fn(() => '<html></html>'),
-  buildPdfExport: vi.fn(() => new Blob(['pdf'])),
-  buildDocxExport: vi.fn(() => Promise.resolve(new Blob(['docx']))),
   parseImportFile: vi.fn(),
 }))
 
@@ -25,10 +31,11 @@ vi.mock('@/lib/export/encrypt', () => ({
 
 import { useExportHandlers } from './use-export-handlers'
 import { toast } from 'sonner'
+import { downloadFile, downloadBlob } from './export-types'
+import { buildPdfExport, buildDocxExport } from './export-documents'
 import {
-  downloadFile, downloadBlob,
   buildJsonExport, buildMarkdownExport, buildHtmlExport,
-  buildPdfExport, buildDocxExport, parseImportFile,
+  parseImportFile,
 } from './export-helpers'
 import { encryptData, buildEncryptedReaderHtml } from '@/lib/export/encrypt'
 

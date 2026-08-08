@@ -8,7 +8,7 @@ vi.mock('framer-motion', () => ({
       <div {...(props as React.HTMLAttributes<HTMLDivElement>)}>{children}</div>
     ),
   },
-  AnimatePresence: ({ children }: { children?: ReactNode }) => <>{children}</>,
+  AnimatePresence: ({ children }: { children?: ReactNode }) => children,
 }))
 
 vi.mock('lucide-react', () => {
@@ -147,7 +147,7 @@ describe('SyncView branch coverage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    Object.keys(callbacks).forEach((key) => { delete callbacks[key] })
+    Object.keys(callbacks).forEach((key) => { callbacks[key] = [] })
     vi.mocked(mergeIntoYjs).mockReturnValue({ merged: { entities: [], claims: [] }, conflicts: [] })
     originalClipboard = globalThis.navigator.clipboard
     vi.stubGlobal('navigator', {

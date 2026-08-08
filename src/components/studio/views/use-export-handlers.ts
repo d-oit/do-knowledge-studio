@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import type { Entity, Claim } from '@/lib/studio/types'
-import type { ImportPreview, ExportFormatId, ExportOptions } from './export-helpers'
+import type { ImportPreview, ExportFormatId, ExportOptions } from './export-types'
+import { todayStamp, downloadFile, downloadBlob } from './export-types'
 import {
-  todayStamp, downloadFile, downloadBlob,
   buildJsonExport, buildMarkdownExport, buildHtmlExport,
-  buildPdfExport, buildDocxExport, parseImportFile,
+  parseImportFile,
 } from './export-helpers'
+import { buildPdfExport, buildDocxExport } from './export-documents'
 import { encryptData, buildEncryptedReaderHtml } from '@/lib/export/encrypt'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from '@/lib/studio/schema'
 

@@ -3,7 +3,7 @@
 import { useStudioStore } from '@/lib/studio/store'
 import { ENTITY_TYPE_META } from '@/lib/studio/types'
 import { seedGraph } from '@/lib/studio/seed-data'
-import { todayStamp, downloadBlob } from './export-helpers'
+import { todayStamp, downloadBlob } from './export-types'
 import {
   CircleDot,
   Circle,

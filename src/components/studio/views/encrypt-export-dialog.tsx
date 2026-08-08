@@ -5,7 +5,7 @@ import { FileLock } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { Overlay } from '@/components/studio/ui/shared-primitives'
-import type { ExportFormatId } from './export-helpers'
+import type { ExportFormatId } from './export-types'
 
 interface EncryptExportDialogProps {
   showPassword: boolean

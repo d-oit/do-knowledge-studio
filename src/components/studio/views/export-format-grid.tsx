@@ -5,8 +5,8 @@ import { FileText, Download, Shield, ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
-import { FORMATS, COLOR_MAP } from './export-helpers'
-import type { ExportFormatId } from './export-helpers'
+import { FORMATS, COLOR_MAP } from './export-types'
+import type { ExportFormatId } from './export-types'
 import type { Entity, ViewId } from '@/lib/studio/types'
 
 interface ExportFormatGridProps {

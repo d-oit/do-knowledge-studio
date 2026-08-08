@@ -8,7 +8,7 @@ vi.mock('framer-motion', () => ({
       <div {...(props as React.HTMLAttributes<HTMLDivElement>)}>{children}</div>
     ),
   },
-  AnimatePresence: ({ children }: { children?: ReactNode }) => <>{children}</>,
+  AnimatePresence: ({ children }: { children?: ReactNode }) => children,
 }))
 
 vi.mock('lucide-react', () => {
@@ -46,7 +46,7 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }))
 
-vi.mock('./export-helpers', () => ({
+vi.mock('./export-types', () => ({
   todayStamp: () => '2026-01-01',
   downloadBlob: vi.fn(),
 }))
@@ -124,7 +124,7 @@ vi.mock('@/lib/studio/store', () => ({
 }))
 
 import { MindMapView } from './mindmap-view'
-import * as exportHelpers from './export-helpers'
+import { downloadBlob } from './export-types'
 
 describe('MindMapView branch coverage', () => {
   beforeEach(() => {
@@ -313,10 +313,9 @@ describe('MindMapView branch coverage', () => {
   })
 
   it('exports PNG when export button is clicked', () => {
-    const downloadBlobMock = vi.spyOn(exportHelpers, 'downloadBlob').mockImplementation(() => undefined)
     render(<MindMapView />)
     fireEvent.click(screen.getByLabelText('Export PNG'))
-    expect(downloadBlobMock).not.toHaveBeenCalled()
+    expect(downloadBlob).not.toHaveBeenCalled()
   })
 
   it('undoes last action when undo is clicked and history allows', () => {

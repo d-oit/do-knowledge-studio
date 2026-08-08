@@ -11,7 +11,7 @@ vi.mock('framer-motion', () => ({
       <div {...(props as React.HTMLAttributes<HTMLDivElement>)}>{children}</div>
     ),
   },
-  AnimatePresence: ({ children }: { children?: ReactNode }) => <>{children}</>,
+  AnimatePresence: ({ children }: { children?: ReactNode }) => children,
 }))
 
 vi.mock('lucide-react', () => {
@@ -84,6 +84,9 @@ const mockClaims = [
   },
 ]
 
+let currentEntities = mockEntities
+let currentClaims = mockClaims
+
 vi.mock('@/lib/studio/store', () => ({
   useStudioStore: (selector: (s: Record<string, unknown>) => unknown) =>
     selector({
@@ -112,9 +115,6 @@ vi.mock('./use-export-handlers', () => ({
     setShowPass: vi.fn(),
   }),
 }))
-
-let currentEntities = mockEntities
-let currentClaims = mockClaims
 
 import { ExportView } from './export-view'
 

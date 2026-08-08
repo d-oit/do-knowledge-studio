@@ -10,7 +10,7 @@ vi.mock('framer-motion', () => {
   const section = ({ children, initial: _i, animate: _a, transition: _t, ...props }: { children?: ReactNode; [key: string]: unknown }) => (
     <section {...(props as React.HTMLAttributes<HTMLElement>)}>{children}</section>
   )
-  return { motion: { div, section }, AnimatePresence: ({ children }: { children: ReactNode }) => <>{children}</> }
+  return { motion: { div, section }, AnimatePresence: ({ children }: { children: ReactNode }) => children }
 })
 
 // Mock cmdk — typed mock props with explicit children/label
