@@ -9,7 +9,7 @@ import {
 import { type ValidationError, type ValidatedGraph, type ValidatedMindMap, type ValidatedLink, type ValidatedTag } from '@/lib/studio/schema'
 
 /** Supported export output formats. */
-export type ExportFormatId = 'json' | 'markdown' | 'html' | 'pdf' | 'docx' | 'encrypted'
+export type ExportFormatId = 'json' | 'markdown' | 'html' | 'pdf' | 'docx' | 'encrypted' | 'okf'
 
 /** Result of parsing an import file: either validated data or a list of errors. */
 export type ImportResult =
@@ -52,6 +52,15 @@ export const FORMATS: ExportFormat[] = [
     description: 'Single .md file with every entity (and its claims) separated by ---.',
     icon: FileText,
     color: 'saffron',
+    available: true,
+  },
+  {
+    id: 'okf',
+    name: 'OKF Bundle',
+    description:
+      'Open Knowledge Format v0.2 — agent-readable Markdown bundle with provenance, trust & lifecycle frontmatter',
+    icon: FileText,
+    color: 'sky',
     available: true,
   },
   {

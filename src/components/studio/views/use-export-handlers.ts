@@ -8,6 +8,9 @@ import {
   parseImportFile,
 } from './export-helpers'
 import { buildPdfExport, buildDocxExport } from './export-documents'
+import { zipSync, unzipSync, strToU8, strFromU8 } from 'fflate'
+import { buildOkfBundle } from '@/lib/okf/bundle'
+import { parseOkfBundle } from '@/lib/okf/import'
 import { encryptData, buildEncryptedReaderHtml } from '@/lib/export/encrypt'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from '@/lib/studio/schema'
 
@@ -107,6 +110,27 @@ export const useExportHandlers = ({
     }
   }
 
+  const handleExportOkf = () => {
+    try {
+      const edges = graph?.edges ?? []
+      const bundle = buildOkfBundle(entities, claims, edges, '0.1.0')
+      const filesRecord: Record<string, Uint8Array> = {}
+      for (const f of bundle.files) {
+        filesRecord[`okf-bundle/${f.path}`] = strToU8(f.content)
+      }
+      const zipped = zipSync(filesRecord)
+      downloadBlob(
+        `do-knowledge-studio-okf-${stamp}.zip`,
+        new Blob([zipped], { type: 'application/zip' }),
+      )
+      toast.success('OKF v0.2 bundle exported', {
+        description: `${bundle.files.length} files — consumable by any OKF-aware agent, no SDK required`,
+      })
+    } catch (err) {
+      toast.error('OKF export failed', { description: err instanceof Error ? err.message : 'Unknown error' })
+    }
+  }
+
   const handleExportDocx = async () => {
     try {
       const blob = await buildDocxExport(entities, claims)
@@ -159,6 +183,9 @@ export const useExportHandlers = ({
       case 'encrypted':
         await handleExportEncrypted()
         break
+      case 'okf':
+        handleExportOkf()
+        break
       default:
         break
     }
@@ -170,25 +197,63 @@ export const useExportHandlers = ({
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      const text = String(reader.result || '')
-      const result = parseImportFile(text)
-      if (!result.success) {
-        toast.error('Import failed', { description: result.errors.map((err) => `${err.path}: ${err.message}`).join('; ') })
-        return
+
+    if (file.name.endsWith('.zip')) {
+      const reader = new FileReader()
+      reader.onload = async () => {
+        try {
+          const buffer = reader.result as ArrayBuffer
+          const entries = unzipSync(new Uint8Array(buffer))
+          const filesMap = new Map<string, string>()
+          for (const [p, data] of Object.entries(entries)) {
+            if (p.endsWith('.md')) {
+              filesMap.set(p.replace(/^okf-bundle\//, ''), strFromU8(data))
+            }
+          }
+          const rootIndex = filesMap.get('index.md') ?? ''
+          if (!rootIndex.includes('okf_version')) {
+            toast.error('Import failed', { description: 'zip does not contain an OKF bundle (no okf_version in index.md)' })
+            return
+          }
+          const { entities: ents, claims: cls, errors } = parseOkfBundle(filesMap)
+          if (errors.length > 0 && ents.length === 0) {
+            toast.error('Import failed', { description: errors.join('; ') })
+            return
+          }
+          const existingIds = new Set(entities.map((ent) => ent.id))
+          setImportPreview({
+            entities: ents, claims: cls,
+            entityCount: ents.length,
+            claimCount: cls.length, version: 1,
+            duplicateIds: ents.filter((ent) => existingIds.has(ent.id)).map((ent) => ent.id),
+          })
+        } catch (err) {
+          toast.error('Import failed', { description: err instanceof Error ? err.message : 'Could not unzip OKF bundle.' })
+        }
       }
-      const { entities: ents, claims: cls, graph: g, mindMap: m, links: l, tags: t } = result
-      const existingIds = new Set(entities.map((ent) => ent.id))
-      setImportPreview({
-        entities: ents, claims: cls, graph: g, mindMap: m, links: l, tags: t,
-        entityCount: ents.length,
-        claimCount: cls.length, version: 1,
-        duplicateIds: ents.filter((ent) => existingIds.has(ent.id)).map((ent) => ent.id),
-      })
+      reader.onerror = () => { toast.error('Import failed', { description: 'Could not read the file.' }) }
+      reader.readAsArrayBuffer(file)
+    } else {
+      const reader = new FileReader()
+      reader.onload = () => {
+        const text = String(reader.result || '')
+        const result = parseImportFile(text)
+        if (!result.success) {
+          toast.error('Import failed', { description: result.errors.map((err) => `${err.path}: ${err.message}`).join('; ') })
+          return
+        }
+        const { entities: ents, claims: cls, graph: g, mindMap: m, links: l, tags: t } = result
+        const existingIds = new Set(entities.map((ent) => ent.id))
+        setImportPreview({
+          entities: ents, claims: cls, graph: g, mindMap: m, links: l, tags: t,
+          entityCount: ents.length,
+          claimCount: cls.length, version: 1,
+          duplicateIds: ents.filter((ent) => existingIds.has(ent.id)).map((ent) => ent.id),
+        })
+      }
+      reader.onerror = () => { toast.error('Import failed', { description: 'Could not read the file.' }) }
+      reader.readAsText(file)
     }
-    reader.onerror = () => { toast.error('Import failed', { description: 'Could not read the file.' }) }
-    reader.readAsText(file)
   }
 
   const handleConfirmImport = () => {

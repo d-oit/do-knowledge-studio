@@ -107,6 +107,16 @@ describe('useExportHandlers', () => {
     expect(toast.success).toHaveBeenCalledWith('Markdown export downloaded', expect.anything())
   })
 
+  it('handleExport okf calls buildOkfBundle + downloadBlob', async () => {
+    const { result } = renderUseExportHandlers()
+    await act(async () => { await result.current.handleExport('okf') })
+    expect(downloadBlob).toHaveBeenCalledWith(
+      'do-knowledge-studio-okf-2026-07-26.zip',
+      expect.any(Blob),
+    )
+    expect(toast.success).toHaveBeenCalledWith('OKF v0.2 bundle exported', expect.anything())
+  })
+
   it('handleExport html calls buildHtmlExport + downloadFile', async () => {
     const { result } = renderUseExportHandlers()
     await act(async () => { await result.current.handleExport('html') })
