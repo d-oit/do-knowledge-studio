@@ -1,0 +1,71 @@
+import { z } from 'zod'
+
+/** OKF actor convention (§7): human:<id> | process:<id> | <producer>/<version> */
+export const OkfActorSchema = z
+  .string()
+  .regex(/^(human:|process:|[\w.-]+\/).+$/, 'invalid OKF actor')
+
+export const OkfIsoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+
+export const OkfSourceSchema = z.object({
+  id: z.string().optional(), // stable join key for footnote attribution (§5.1)
+  resource: z.string().min(1), // REQUIRED within an entry (§5.1)
+  title: z.string().optional(),
+  author: OkfActorSchema.optional(),
+  usage_count: z.number().int().nonnegative().optional(),
+  last_modified: OkfIsoDateSchema.optional(),
+  usage_window: z.object({ from: OkfIsoDateSchema, to: OkfIsoDateSchema }).optional(),
+})
+
+export const OkfActorEventSchema = z.object({
+  by: OkfActorSchema, // REQUIRED within generated/verified (§5.2)
+  at: z.string().datetime({ offset: true }).optional(),
+})
+
+export const OkfStatusSchema = z.enum(['draft', 'stable', 'deprecated'])
+
+/** Frontmatter shared by every OKF concept (§4.1 + §5). */
+export const OkfConceptFrontmatterSchema = z
+  .object({
+    type: z.string().min(1), // the ONLY always-required key (§4.1)
+    title: z.string().optional(),
+    description: z.string().optional(),
+    resource: z.string().optional(),
+    tags: z.array(z.string()).optional(),
+    sources: z.array(OkfSourceSchema).optional(),
+    usage_window: z.object({ from: OkfIsoDateSchema, to: OkfIsoDateSchema }).optional(),
+    generated: OkfActorEventSchema.optional(),
+    // §5.2: a bare mapping MUST be accepted as a one-element list
+    verified: z.union([OkfActorEventSchema, z.array(OkfActorEventSchema)]).optional(),
+    status: OkfStatusSchema.optional(),
+    stale_after: OkfIsoDateSchema.optional(),
+  })
+  .passthrough() // §4.1 extensions: consumers MUST preserve unknown keys
+
+/** Attested Computation contract (§10.2). */
+export const OkfAttestedComputationSchema = OkfConceptFrontmatterSchema.extend({
+  type: z.literal('Attested Computation'),
+  runtime: z.string().min(1), // REQUIRED for this type (§10.2)
+  parameters: z
+    .array(
+      z.object({
+        name: z.string(),
+        type: z.string(),
+        required: z.boolean().default(false),
+      }),
+    )
+    .optional(),
+  computation: z.string().optional(), // path (§6.2); absent ⇒ body "# Computation" fence
+  executor: z.object({ resource: z.string(), receipt: z.array(z.string()) }).optional(),
+  attester: z.object({ resource: z.string() }).optional(),
+})
+
+export interface OkfBundleFile {
+  path: string // bundle-relative, e.g. "concepts/foo.md"
+  content: string
+}
+
+export interface OkfBundle {
+  files: OkfBundleFile[]
+  okfVersion: '0.2'
+}
