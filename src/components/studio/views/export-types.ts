@@ -16,8 +16,8 @@ export type ImportResult =
   | { success: true; entities: Entity[]; claims: Claim[]; graph?: ValidatedGraph; mindMap?: ValidatedMindMap; links?: ValidatedLink[]; tags?: ValidatedTag[] }
   | { success: false; errors: ValidationError[] }
 
-/** Preview of an import shown to the user before confirmation. */
-export interface ImportPreview {
+/** A library snapshot carried between the store, previews, and handlers. */
+export interface LibraryPayload {
   /** Entities to serialize. */
   entities: Entity[]
   /** The library claims being processed. */
@@ -30,6 +30,10 @@ export interface ImportPreview {
   links?: ValidatedLink[]
   /** Optional tags payload carried through the operation. */
   tags?: ValidatedTag[]
+}
+
+/** Preview of an import shown to the user before confirmation. */
+export interface ImportPreview extends LibraryPayload {
   /** Number of entities in the payload. */
   entityCount: number
   /** Number of claims in the payload. */
