@@ -1172,8 +1172,12 @@ def resolve_query_with_order(
     return resolve_with_order(query, order, max_chars)
 
 
-def main():
-    """CLI entry point: resolve a URL or query with optional tracing."""
+def _build_cli_parser() -> argparse.ArgumentParser:
+    """Build the CLI argument parser.
+
+    Returns:
+        A configured ArgumentParser for the resolver CLI.
+    """
     parser = argparse.ArgumentParser(description="Web Doc Resolver")
     parser.add_argument("input", nargs="?", help="URL or query")
     parser.add_argument("--max-chars", type=int, default=MAX_CHARS)
@@ -1186,6 +1190,72 @@ def main():
     parser.add_argument("--providers-order", type=str)
     parser.add_argument("--log-level", default="INFO")
     parser.add_argument("--trace", action="store_true")
+    return parser
+
+
+def _run_cli_resolution(
+    args: argparse.Namespace,
+    profile: Profile,
+    skip: set[str] | None,
+    trace: ResolutionTrace | None,
+) -> list[dict[str, Any]]:
+    """Dispatch the CLI input to the matching resolution pipeline.
+
+    Args:
+        args: Parsed CLI arguments.
+        profile: Resolution profile.
+        skip: Optional set of provider names to skip.
+        trace: Optional trace to populate.
+
+    Returns:
+        The list of result dicts to print.
+    """
+    if args.provider:
+        return [resolve_direct(args.input, ProviderType(args.provider), args.max_chars)]
+    if args.providers_order:
+        order = [ProviderType(p.strip()) for p in args.providers_order.split(",")]
+        return [resolve_with_order(args.input, order, args.max_chars)]
+    if is_url(args.input):
+        return list(resolve_url_stream(args.input, args.max_chars, profile, trace=trace))
+    return list(resolve_query_stream(args.input, args.max_chars, skip, profile, trace=trace))
+
+
+def _print_cli_results(
+    results: list[dict[str, Any]], as_json: bool, show_trace: bool
+) -> None:
+    """Print resolution results as JSON or human-readable text.
+
+    Args:
+        results: Result dicts produced by the resolution pipeline.
+        as_json: Print compact JSON when True.
+        show_trace: Include the trace section when True.
+    """
+    final_result = None
+    for res in results:
+        if not as_json and res.get("source") != "partial":
+            print(f"--- Source: {res.get('source')} ---")
+            print(res.get("content", "")[:500] + "...")
+        final_result = res
+    if as_json:
+        print(
+            json.dumps(
+                final_result,
+                indent=2,
+                default=lambda o: o.__dict__ if hasattr(o, "__dict__") else str(o),
+            )
+        )
+        return
+    print("\n=== FINAL RESULT ===")
+    if final_result:
+        print(final_result.get("content", ""))
+    if show_trace and final_result and "trace" in final_result:
+        print("\n=== TRACE ===")
+        print(json.dumps(final_result["trace"], indent=2))
+
+
+def main():
+    """CLI entry point: resolve a URL or query with optional tracing."""
+    parser = _build_cli_parser()
     args = parser.parse_args()
     logging.basicConfig(level=getattr(logging, args.log_level))
     if not args.input:
@@ -1201,37 +1271,8 @@ def main():
             is_url=is_url_input,
             profile=args.profile,
         )
-    if args.provider:
-        results = [resolve_direct(args.input, ProviderType(args.provider), args.max_chars)]
-    elif args.providers_order:
-        order = [ProviderType(p.strip()) for p in args.providers_order.split(",")]
-        results = [resolve_with_order(args.input, order, args.max_chars)]
-    else:
-        if is_url_input:
-            results = resolve_url_stream(args.input, args.max_chars, profile, trace=trace)
-        else:
-            results = resolve_query_stream(args.input, args.max_chars, skip, profile, trace=trace)
-    final_result = None
-    for res in results:
-        if not args.json and res.get("source") != "partial":
-            print(f"--- Source: {res.get('source')} ---")
-            print(res.get("content", "")[:500] + "...")
-        final_result = res
-    if args.json:
-        print(
-            json.dumps(
-                final_result,
-                indent=2,
-                default=lambda o: o.__dict__ if hasattr(o, "__dict__") else str(o),
-            )
-        )
-    else:
-        print("\n=== FINAL RESULT ===")
-        if final_result:
-            print(final_result.get("content", ""))
-        if args.trace and final_result and "trace" in final_result:
-            print("\n=== TRACE ===")
-            print(json.dumps(final_result["trace"], indent=2))
+    results = _run_cli_resolution(args, profile, skip, trace)
+    _print_cli_results(results, args.json, args.trace)
 
 
 if __name__ == "__main__":

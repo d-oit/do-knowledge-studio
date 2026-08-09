@@ -157,6 +157,42 @@ def resolve_with_exa_mcp(query: str, max_chars: int = MAX_CHARS) -> ProviderResu
         return ProviderResult(ok=False, error=str(e), meta=meta, query=query, source="exa_mcp")
 
 
+def _exa_search(query: str, api_key: str):
+    """Run an Exa SDK search and return the raw response object.
+
+    Args:
+        query: The search query.
+        api_key: EXA_API_KEY value.
+
+    Returns:
+        The Exa ``search_and_contents`` response.
+    """
+    from exa_py import Exa
+
+    client = Exa(api_key)
+    return client.search_and_contents(
+        query, use_autoprompt=True, highlights=True, num_results=EXA_RESULTS
+    )
+
+
+def _exa_content(res) -> str:
+    """Join Exa result highlights/texts into a single markdown block.
+
+    Args:
+        res: The Exa search response with a ``results`` sequence.
+
+    Returns:
+        The concatenated highlight/text content.
+    """
+    return "\n\n---\n\n".join(
+        [
+            (r.highlight if hasattr(r, "highlight") and r.highlight else r.text)
+            for r in res.results
+            if (hasattr(r, "highlight") and r.highlight) or (hasattr(r, "text") and r.text)
+        ]
+    )
+
+
 def resolve_with_exa(query: str, max_chars: int = MAX_CHARS) -> ProviderResult:
     """Resolve a query via the Exa SDK, requiring EXA_API_KEY.
 
@@ -180,23 +216,12 @@ def resolve_with_exa(query: str, max_chars: int = MAX_CHARS) -> ProviderResult:
         meta = ProviderMeta(tool="exa", duration_ms=duration, error_type=error_type)
         return ProviderResult(ok=False, error="missing_api_key_or_rate_limited", meta=meta, query=query, source="exa")
     try:
-        from exa_py import Exa
-
-        client = Exa(api_key)
-        res = client.search_and_contents(
-            query, use_autoprompt=True, highlights=True, num_results=EXA_RESULTS
-        )
+        res = _exa_search(query, api_key)
         duration = int((time.time() - start) * 1000)
         if not res or not res.results:
             meta = ProviderMeta(tool="exa", duration_ms=duration, error_type="not_found")
             return ProviderResult(ok=False, error="no_results", meta=meta, query=query, source="exa")
-        content = "\n\n---\n\n".join(
-            [
-                (r.highlight if hasattr(r, "highlight") and r.highlight else r.text)
-                for r in res.results
-                if (hasattr(r, "highlight") and r.highlight) or (hasattr(r, "text") and r.text)
-            ]
-        )
+        content = _exa_content(res)
         meta = ProviderMeta(tool="exa", duration_ms=duration)
         result = ProviderResult(ok=True, content=content[:max_chars], meta=meta, query=query, source="exa")
         _save_to_cache(query, "exa", {"source": "exa", "content": content[:max_chars], "query": query})
