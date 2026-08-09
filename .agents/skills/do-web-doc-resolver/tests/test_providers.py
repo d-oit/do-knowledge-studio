@@ -126,14 +126,22 @@ class TestResolveWithJina:
 
     @patch("scripts.providers_impl._is_rate_limited")
     def test_rate_limited_returns_none(self, mock_rate_limited):
-        """Rate limited jina should return None."""
+        """
+        Rate limited jina should return None.
+        Args:
+            mock_rate_limited: Injected pytest fixture.
+        """
         mock_rate_limited.return_value = True
         # This test demonstrates the rate limit check behavior
         assert is_rate_limited("jina") is False  # Not rate limited by default
 
     @patch("scripts.providers_impl._get_from_cache")
     def test_cache_hit_returns_cached(self, mock_cache):
-        """Cached result should be returned immediately."""
+        """
+        Cached result should be returned immediately.
+        Args:
+            mock_cache: Injected pytest fixture.
+        """
 
         mock_cache.return_value = {
             "source": "jina",
@@ -258,7 +266,11 @@ class TestSubprocessProviderSafety:
 
     @patch("scripts.providers_impl.subprocess.run")
     def test_docling_rejects_unsafe_scheme(self, mock_run):
-        """resolve_with_docling should reject non-http(s) URLs without invoking subprocess."""
+        """
+        resolve_with_docling should reject non-http(s) URLs without invoking subprocess.
+        Args:
+            mock_run: Injected pytest fixture.
+        """
         from scripts.providers_impl import resolve_with_docling
 
         result = resolve_with_docling("file:///etc/passwd", 1000)
@@ -269,7 +281,11 @@ class TestSubprocessProviderSafety:
 
     @patch("scripts.providers_impl.subprocess.run")
     def test_docling_rejects_private_ip(self, mock_run):
-        """resolve_with_docling should reject SSRF-prone private IP URLs."""
+        """
+        resolve_with_docling should reject SSRF-prone private IP URLs.
+        Args:
+            mock_run: Injected pytest fixture.
+        """
         from scripts.providers_impl import resolve_with_docling
 
         result = resolve_with_docling("http://127.0.0.1:8080/report.pdf", 1000)
@@ -279,7 +295,11 @@ class TestSubprocessProviderSafety:
 
     @patch("scripts.providers_impl.subprocess.run")
     def test_ocr_rejects_unsafe_scheme(self, mock_run):
-        """resolve_with_ocr should reject non-http(s) URLs without invoking subprocess."""
+        """
+        resolve_with_ocr should reject non-http(s) URLs without invoking subprocess.
+        Args:
+            mock_run: Injected pytest fixture.
+        """
         from scripts.providers_impl import resolve_with_ocr
 
         result = resolve_with_ocr("data:image/png;base64,AAAA", 1000)
@@ -289,7 +309,11 @@ class TestSubprocessProviderSafety:
 
     @patch("scripts.providers_impl.subprocess.run")
     def test_docling_passes_safe_url(self, mock_run):
-        """resolve_with_docling should invoke subprocess for safe http(s) URLs."""
+        """
+        resolve_with_docling should invoke subprocess for safe http(s) URLs.
+        Args:
+            mock_run: Injected pytest fixture.
+        """
         from unittest.mock import MagicMock
 
         from scripts.providers_impl import resolve_with_docling
@@ -310,7 +334,11 @@ class TestSubprocessProviderSafety:
 
     @patch("scripts.providers_impl.subprocess.run")
     def test_ocr_passes_safe_url(self, mock_run):
-        """resolve_with_ocr should invoke subprocess for safe http(s) URLs."""
+        """
+        resolve_with_ocr should invoke subprocess for safe http(s) URLs.
+        Args:
+            mock_run: Injected pytest fixture.
+        """
         from unittest.mock import MagicMock
 
         from scripts.providers_impl import resolve_with_ocr

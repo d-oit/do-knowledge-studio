@@ -527,7 +527,7 @@ def _drain_completed_probes(
     while active_futures:
         elapsed = time.time() - start_time_probe
         if i < len(eligible) - 1 and elapsed >= threshold:
-            logger.info(f"Hedging threshold reached for {p_name} ({threshold}s)")
+            logger.info("Hedging threshold reached for %s (%ss)", p_name, threshold)
             break
         done, _ = concurrent.futures.wait(
             active_futures.keys(),
@@ -576,7 +576,7 @@ def resolve_url_stream(
     Yields:
         Result dicts; the final dict reports "none" when nothing succeeded.
     """
-    logger.info(f"Resolving URL: {url}")
+    logger.info("Resolving URL: %s", url)
     metrics = ResolveMetrics()
     budget_data = routing.PROFILE_BUDGETS.get(profile.value, routing.PROFILE_BUDGETS["balanced"])
     budget = routing.ResolutionBudget(
@@ -625,7 +625,7 @@ def resolve_url_stream(
             if future is None:
                 continue
 
-            logger.info(f"Starting probe: {p_name}")
+            logger.info("Starting probe: %s", p_name)
             start_time_probe = time.time()
             active_futures[future] = (p_name, pt, start_time_probe)
             threshold = _routing_memory.get_p75_latency(domain or "any", p_name) / 1000.0
@@ -741,7 +741,7 @@ def resolve_query_stream(
                 continue
             if _circuit_breakers.is_open(p_name):
                 continue
-            logger.info(f"Starting probe: {p_name}")
+            logger.info("Starting probe: %s", p_name)
             start_time_probe = time.time()
             future = executor.submit(func, query, max_chars)
             active_futures[future] = (p_name, pt, start_time_probe)
