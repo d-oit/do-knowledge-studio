@@ -31,17 +31,28 @@ export const OkfStatusSchema = z.enum(['draft', 'stable', 'deprecated'])
 /** Frontmatter shared by every OKF concept (§4.1 + §5). */
 export const OkfConceptFrontmatterSchema = z
   .object({
+    /** Entity type. */
     type: z.string().min(1), // the ONLY always-required key (§4.1)
+    /** Human-readable title or evidence label. */
     title: z.string().optional(),
+    /** One-line summary of the item. */
     description: z.string().optional(),
+    /** The resource. */
     resource: z.string().optional(),
+    /** Optional tags payload carried through the operation. */
     tags: z.array(z.string()).optional(),
+    /** Provenance source entries for the concept. */
     sources: z.array(OkfSourceSchema).optional(),
+    /** The usage_window. */
     usage_window: z.object({ from: OkfIsoDateSchema, to: OkfIsoDateSchema }).optional(),
+    /** The generated. */
     generated: OkfActorEventSchema.optional(),
     // §5.2: a bare mapping MUST be accepted as a one-element list
+    /** The verified. */
     verified: z.union([OkfActorEventSchema, z.array(OkfActorEventSchema)]).optional(),
+    /** The status. */
     status: OkfStatusSchema.optional(),
+    /** The stale_after. */
     stale_after: OkfIsoDateSchema.optional(),
   })
   .passthrough() // §4.1 extensions: consumers MUST preserve unknown keys
@@ -66,12 +77,16 @@ export const OkfAttestedComputationSchema = OkfConceptFrontmatterSchema.extend({
 
 /** One file inside an OKF bundle: a bundle-relative path plus its Markdown content. */
 export interface OkfBundleFile {
+  /** Bundle-relative file path. */
   path: string // bundle-relative, e.g. "concepts/foo.md"
+  /** Markdown or text content. */
   content: string
 }
 
 /** An OKF v0.2 bundle: a flat collection of files plus the format version. */
 export interface OkfBundle {
+  /** Bundle files (path → content). */
   files: OkfBundleFile[]
+  /** OKF bundle format version. */
   okfVersion: '0.2'
 }

@@ -39,33 +39,47 @@ import {
 } from './export-helpers'
 import { encryptData, buildEncryptedReaderHtml } from '@/lib/export/encrypt'
 
+/** The mock entities. */
 const mockEntities = [
   {
+    /** Unique identifier. */
     id: 'ent-1', name: 'Test', type: 'note' as const,
+    /** One-line summary of the item. */
     description: '', content: '', tags: [],
+    /** ISO timestamp of claim creation. */
     createdAt: '', updatedAt: '', links: [],
   },
 ]
 
+/** The mock claims. */
 const mockClaims = [
   { id: 'claim-1', entityId: 'ent-1', statement: 's', confidence: 0.5, verification: 'unverified' as const },
 ]
 
+/** The create file input ref. */
 const createFileInputRef = (): RefObject<HTMLInputElement | null> => {
   return { current: document.createElement('input') }
 }
 
+/** The render use export handlers. */
 const renderUseExportHandlers = (overrides: Partial<Parameters<typeof useExportHandlers>[0]> = {}) => {
+  /** The params. */
   const params = {
+    /** Entities to serialize. */
     entities: mockEntities,
+    /** The library claims being processed. */
     claims: mockClaims,
     importWithRollback: vi.fn(() => ({ success: true })),
+    /** Store action that restores the demo dataset. */
     resetStore: vi.fn(),
     importPreview: null,
+    /** Callback that stages the parsed import preview. */
     setImportPreview: vi.fn(),
+    /** Ref to the hidden file input element. */
     fileInputRef: createFileInputRef(),
     ...overrides,
   }
+  /** The result. */
   const result = renderHook(() => useExportHandlers(params))
   return { ...result, params }
 }
@@ -187,7 +201,9 @@ describe('useExportHandlers', () => {
   })
 
   it('handleImportClick triggers file input click', () => {
+    /** Ref to the hidden file input element. */
     const fileInputRef = createFileInputRef()
+    /** The click spy. */
     const clickSpy = vi.spyOn(fileInputRef.current!, 'click')
     const { result } = renderUseExportHandlers({ fileInputRef })
     act(() => { result.current.handleImportClick() })
@@ -195,10 +211,15 @@ describe('useExportHandlers', () => {
   })
 
   it('handleConfirmImport calls importWithRollback with preview data', () => {
+    /** Store action that commits an import with rollback on failure. */
     const importWithRollback = vi.fn(() => ({ success: true }))
+    /** Callback that stages the parsed import preview. */
     const setImportPreview = vi.fn()
+    /** The preview. */
     const preview = {
+      /** Entities to serialize. */
       entities: mockEntities, claims: mockClaims,
+      /** Number of entities in the payload. */
       entityCount: 1, claimCount: 1, version: 1, duplicateIds: [],
     }
     const { result } = renderUseExportHandlers({
@@ -211,10 +232,15 @@ describe('useExportHandlers', () => {
   })
 
   it('handleConfirmImport shows error when rollback fails', () => {
+    /** Store action that commits an import with rollback on failure. */
     const importWithRollback = vi.fn(() => ({ success: false, error: 'bad data' }))
+    /** Callback that stages the parsed import preview. */
     const setImportPreview = vi.fn()
+    /** The preview. */
     const preview = {
+      /** Entities to serialize. */
       entities: mockEntities, claims: mockClaims,
+      /** Number of entities in the payload. */
       entityCount: 1, claimCount: 1, version: 1, duplicateIds: [],
     }
     const { result } = renderUseExportHandlers({
@@ -226,6 +252,7 @@ describe('useExportHandlers', () => {
   })
 
   it('handleConfirmImport returns early when no importPreview', () => {
+    /** Store action that commits an import with rollback on failure. */
     const importWithRollback = vi.fn()
     const { result } = renderUseExportHandlers({ importPreview: null, importWithRollback })
     act(() => { result.current.handleConfirmImport() })
@@ -233,6 +260,7 @@ describe('useExportHandlers', () => {
   })
 
   it('handleReset calls resetStore', () => {
+    /** Store action that restores the demo dataset. */
     const resetStore = vi.fn()
     const { result } = renderUseExportHandlers({ resetStore })
     act(() => { result.current.handleReset() })
@@ -241,22 +269,30 @@ describe('useExportHandlers', () => {
   })
 
   it('handleFileChange sets import preview on successful parse', () => {
+    /** Callback that stages the parsed import preview. */
     const setImportPreview = vi.fn()
+    /** The imported entities. */
     const importedEntities = [
       { id: 'new-1', name: 'New', type: 'note' as const, description: '', content: '', tags: [], createdAt: '', updatedAt: '', links: [] },
     ]
+    /** The imported claims. */
     const importedClaims = [
       { id: 'new-claim', entityId: 'new-1', statement: 'New claim', confidence: 0.5, verification: 'unverified' as const },
     ]
     vi.mocked(parseImportFile).mockReturnValue({
+      /** Whether the operation succeeded. */
       success: true, entities: importedEntities, claims: importedClaims, errors: [],
     })
 
     // Stub FileReader to call onload synchronously with test data
+    /** The original file reader. */
     const OriginalFileReader = global.FileReader
     class StubFileReader {
+      /** The result. */
       result: string | null = null
+      /** The onload. */
       onload: (() => void) | null = null
+      /** The onerror. */
       onerror: (() => void) | null = null
       readAsText() {
         this.result = 'file-content'
@@ -267,7 +303,9 @@ describe('useExportHandlers', () => {
 
     const { result } = renderUseExportHandlers({ setImportPreview })
 
+    /** The file. */
     const file = new File(['content'], 'import.json', { type: 'application/json' })
+    /** The input. */
     const input = document.createElement('input')
     Object.defineProperty(input, 'files', { value: [file] })
 
@@ -277,10 +315,15 @@ describe('useExportHandlers', () => {
 
     expect(parseImportFile).toHaveBeenCalledWith('file-content')
     expect(setImportPreview).toHaveBeenCalledWith(expect.objectContaining({
+      /** Entities to serialize. */
       entities: importedEntities,
+      /** The library claims being processed. */
       claims: importedClaims,
+      /** Number of entities in the payload. */
       entityCount: 1,
+      /** Number of claims in the payload. */
       claimCount: 1,
+      /** Entity ids that already exist in the library. */
       duplicateIds: [],
     }))
 
@@ -289,14 +332,20 @@ describe('useExportHandlers', () => {
 
   it('handleFileChange shows error when parse fails', () => {
     vi.mocked(parseImportFile).mockReturnValue({
+      /** Whether the operation succeeded. */
       success: false, entities: [], claims: [],
+      /** The errors. */
       errors: [{ path: 'entities[0]', message: 'Invalid type' }],
     })
 
+    /** The original file reader. */
     const OriginalFileReader = global.FileReader
     class StubFileReader {
+      /** The result. */
       result: string | null = null
+      /** The onload. */
       onload: (() => void) | null = null
+      /** The onerror. */
       onerror: (() => void) | null = null
       readAsText() {
         this.result = 'bad-data'
@@ -307,7 +356,9 @@ describe('useExportHandlers', () => {
 
     const { result } = renderUseExportHandlers()
 
+    /** The file. */
     const file = new File(['bad'], 'bad.json', { type: 'application/json' })
+    /** The input. */
     const input = document.createElement('input')
     Object.defineProperty(input, 'files', { value: [file] })
 
@@ -317,6 +368,7 @@ describe('useExportHandlers', () => {
 
     expect(parseImportFile).toHaveBeenCalled()
     expect(toast.error).toHaveBeenCalledWith('Import failed', {
+      /** One-line summary of the item. */
       description: 'entities[0]: Invalid type',
     })
 
@@ -324,18 +376,25 @@ describe('useExportHandlers', () => {
   })
 
   it('handleFileChange detects duplicate entity IDs', () => {
+    /** Callback that stages the parsed import preview. */
     const setImportPreview = vi.fn()
+    /** The imported entities. */
     const importedEntities = [
       { id: 'ent-1', name: 'Existing', type: 'note' as const, description: '', content: '', tags: [], createdAt: '', updatedAt: '', links: [] },
     ]
     vi.mocked(parseImportFile).mockReturnValue({
+      /** Whether the operation succeeded. */
       success: true, entities: importedEntities, claims: [], errors: [],
     })
 
+    /** The original file reader. */
     const OriginalFileReader = global.FileReader
     class StubFileReader {
+      /** The result. */
       result: string | null = null
+      /** The onload. */
       onload: (() => void) | null = null
+      /** The onerror. */
       onerror: (() => void) | null = null
       readAsText() {
         this.result = 'file-content'
@@ -346,7 +405,9 @@ describe('useExportHandlers', () => {
 
     const { result } = renderUseExportHandlers({ setImportPreview })
 
+    /** The file. */
     const file = new File(['content'], 'import.json', { type: 'application/json' })
+    /** The input. */
     const input = document.createElement('input')
     Object.defineProperty(input, 'files', { value: [file] })
 
@@ -355,6 +416,7 @@ describe('useExportHandlers', () => {
     })
 
     expect(setImportPreview).toHaveBeenCalledWith(expect.objectContaining({
+      /** Entity ids that already exist in the library. */
       duplicateIds: ['ent-1'],
     }))
 
@@ -363,6 +425,7 @@ describe('useExportHandlers', () => {
 
   it('handleFileChange returns early when no file selected', () => {
     const { result } = renderUseExportHandlers()
+    /** The input. */
     const input = document.createElement('input')
     Object.defineProperty(input, 'files', { value: [] })
 
