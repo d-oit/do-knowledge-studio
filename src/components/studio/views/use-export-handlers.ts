@@ -127,24 +127,28 @@ export const useExportHandlers = ({
   const exportOptions: ExportOptions = { graph, mindMap, links, tags }
   const stamp = todayStamp()
 
+  /** Downloads the library as a JSON backup file. */
   const handleExportJson = () => {
     const content = buildJsonExport(entities, claims, exportOptions)
     downloadFile(`do-knowledge-studio-export-${stamp}.json`, content, 'application/json')
     toast.success('JSON export downloaded', { description: buildExportSummary(entities.length, claims.length, graph, mindMap, links, tags) })
   }
 
+  /** Downloads the library as a single Markdown file. */
   const handleExportMarkdown = () => {
     const content = buildMarkdownExport(entities, claims)
     downloadFile(`do-knowledge-studio-${stamp}.md`, content, 'text/markdown')
     toast.success('Markdown export downloaded', { description: `${entities.length} entities concatenated into one .md file` })
   }
 
+  /** Downloads the library as a self-contained static HTML page. */
   const handleExportHtml = () => {
     const content = buildHtmlExport(entities, claims)
     downloadFile(`do-knowledge-studio-${stamp}.html`, content, 'text/html')
     toast.success('HTML export downloaded', { description: 'Self-contained .html page — open in any browser.' })
   }
 
+  /** Downloads a print-ready PDF of all entities and claims. */
   const handleExportPdf = () => {
     try {
       const blob = buildPdfExport(entities, claims)
@@ -155,6 +159,7 @@ export const useExportHandlers = ({
     }
   }
 
+  /** Downloads the library as an OKF v0.2 zip bundle (index, log, concept files). */
   const handleExportOkf = () => {
     try {
       const edges = graph?.edges ?? []
@@ -176,6 +181,7 @@ export const useExportHandlers = ({
     }
   }
 
+  /** Downloads a Word (.docx) document of all entities and claims. */
   const handleExportDocx = async () => {
     try {
       const blob = await buildDocxExport(entities, claims)
@@ -186,6 +192,7 @@ export const useExportHandlers = ({
     }
   }
 
+  /** Downloads a password-encrypted self-contained HTML reader. */
   const handleExportEncrypted = async () => {
     if (!password || password !== confirm) {
       toast.error('Password fields must match and not be empty.')
@@ -208,24 +215,39 @@ export const useExportHandlers = ({
     }
   }
 
+  /** Routes an export-format id to its download handler. */
   const handleExport = async (format: ExportFormatId) => {
-    const handlers: Record<ExportFormatId, () => void | Promise<void>> = {
-      json: handleExportJson,
-      markdown: handleExportMarkdown,
-      html: handleExportHtml,
-      pdf: handleExportPdf,
-      docx: handleExportDocx,
-      encrypted: handleExportEncrypted,
-      okf: handleExportOkf,
-    }
-    const handler = handlers[format]
-    if (handler) {
-      await handler()
+    switch (format) {
+      case 'json':
+        handleExportJson()
+        break
+      case 'markdown':
+        handleExportMarkdown()
+        break
+      case 'html':
+        handleExportHtml()
+        break
+      case 'pdf':
+        handleExportPdf()
+        break
+      case 'docx':
+        await handleExportDocx()
+        break
+      case 'encrypted':
+        await handleExportEncrypted()
+        break
+      case 'okf':
+        handleExportOkf()
+        break
+      default:
+        break
     }
   }
 
+  /** Opens the hidden file picker for import. */
   const handleImportClick = () => { fileInputRef.current?.click() }
 
+  /** Stages a selected JSON or OKF zip file for the import preview. */
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     e.target.value = ''
@@ -256,6 +278,7 @@ export const useExportHandlers = ({
     }
   }
 
+  /** Commits the staged import preview into the store with rollback on failure. */
   const handleConfirmImport = () => {
     if (!importPreview) return
     const result = importWithRollback(
@@ -281,6 +304,7 @@ export const useExportHandlers = ({
     setImportPreview(null)
   }
 
+  /** Restores the store to the demo seed dataset. */
   const handleReset = () => {
     resetStore()
     toast.success('Restored to demo data', { description: 'All entities and claims have been reset to the seed dataset.' })
