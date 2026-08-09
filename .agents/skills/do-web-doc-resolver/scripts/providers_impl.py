@@ -29,6 +29,7 @@ _rate_limits: dict[str, float] = {}
 
 
 def _is_rate_limited(provider: str) -> bool:
+    """Return True if the provider is inside its cooldown window."""
     if provider in _rate_limits:
         if time.time() < _rate_limits[provider]:
             return True
@@ -37,6 +38,7 @@ def _is_rate_limited(provider: str) -> bool:
 
 
 def _set_rate_limit(provider: str, cooldown: int = 60):
+    """Record a rate-limit cooldown for the provider (seconds)."""
     _rate_limits[provider] = time.time() + cooldown
 
 
@@ -46,6 +48,7 @@ set_rate_limit = _set_rate_limit
 
 
 def resolve_with_jina(url: str, max_chars: int = MAX_CHARS) -> ProviderResult:
+    """Resolve a URL via the Jina Reader (r.jina.ai) and return a ProviderResult."""
     start = time.time()
     cached = _get_from_cache(url, "jina")
     if cached:
@@ -84,6 +87,7 @@ def resolve_with_jina(url: str, max_chars: int = MAX_CHARS) -> ProviderResult:
 
 
 def resolve_with_exa_mcp(query: str, max_chars: int = MAX_CHARS) -> ProviderResult:
+    """Resolve a query via the Exa MCP web-search endpoint."""
     start = time.time()
     cached = _get_from_cache(query, "exa_mcp")
     if cached:
@@ -126,6 +130,7 @@ def resolve_with_exa_mcp(query: str, max_chars: int = MAX_CHARS) -> ProviderResu
 
 
 def resolve_with_exa(query: str, max_chars: int = MAX_CHARS) -> ProviderResult:
+    """Resolve a query via the Exa SDK, requiring EXA_API_KEY."""
     start = time.time()
     cached = _get_from_cache(query, "exa")
     if cached:
@@ -167,6 +172,7 @@ def resolve_with_exa(query: str, max_chars: int = MAX_CHARS) -> ProviderResult:
 
 
 def resolve_with_tavily(query: str, max_chars: int = MAX_CHARS) -> ProviderResult:
+    """Resolve a query via the Tavily SDK, requiring TAVILY_API_KEY."""
     start = time.time()
     cached = _get_from_cache(query, "tavily")
     if cached:
@@ -200,6 +206,7 @@ def resolve_with_tavily(query: str, max_chars: int = MAX_CHARS) -> ProviderResul
 
 
 def resolve_with_duckduckgo(query: str, max_chars: int = MAX_CHARS) -> ProviderResult:
+    """Resolve a query via the free DuckDuckGo text search (ddgs)."""
     start = time.time()
     cached = _get_from_cache(query, "duckduckgo")
     if cached:
@@ -233,6 +240,7 @@ def resolve_with_duckduckgo(query: str, max_chars: int = MAX_CHARS) -> ProviderR
 
 
 def resolve_with_firecrawl(url: str, max_chars: int = MAX_CHARS) -> ProviderResult:
+    """Scrape a URL to markdown via Firecrawl, requiring FIRECRAWL_API_KEY."""
     start = time.time()
     cached = _get_from_cache(url, "firecrawl")
     if cached:
@@ -263,6 +271,7 @@ def resolve_with_firecrawl(url: str, max_chars: int = MAX_CHARS) -> ProviderResu
 
 
 def resolve_with_mistral_browser(url: str, max_chars: int = MAX_CHARS) -> ProviderResult:
+    """Extract a URL's content via the Mistral browser tool."""
     start = time.time()
     cached = _get_from_cache(url, "mistral_browser")
     if cached:
@@ -296,6 +305,7 @@ def resolve_with_mistral_browser(url: str, max_chars: int = MAX_CHARS) -> Provid
 
 
 def resolve_with_mistral_websearch(query: str, max_chars: int = MAX_CHARS) -> ProviderResult:
+    """Answer a query via Mistral web search, requiring MISTRAL_API_KEY."""
     start = time.time()
     cached = _get_from_cache(query, "mistral_websearch")
     if cached:
@@ -329,6 +339,11 @@ def resolve_with_mistral_websearch(query: str, max_chars: int = MAX_CHARS) -> Pr
 
 
 def resolve_with_docling(url: str, max_chars: int) -> ProviderResult:
+    """Convert a document URL (pdf/docx/pptx) to markdown via the docling CLI.
+
+    The URL is validated with ``is_safe_url`` before being passed to
+    subprocess to prevent SSRF / command injection via untrusted input.
+    """
     start = time.time()
     if not is_safe_url(url):
         duration = int((time.time() - start) * 1000)
@@ -352,6 +367,11 @@ def resolve_with_docling(url: str, max_chars: int) -> ProviderResult:
 
 
 def resolve_with_ocr(url: str, max_chars: int) -> ProviderResult:
+    """Extract text from an image URL (png/jpg/jpeg) via the tesseract CLI.
+
+    The URL is validated with ``is_safe_url`` before being passed to
+    subprocess to prevent SSRF / command injection via untrusted input.
+    """
     start = time.time()
     if not is_safe_url(url):
         duration = int((time.time() - start) * 1000)

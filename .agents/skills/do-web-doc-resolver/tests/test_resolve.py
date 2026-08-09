@@ -185,9 +185,16 @@ class TestResolveUrlStreamCascade:
     """Mock-based tests for the resolve_url_stream provider cascade."""
 
     @pytest.fixture(autouse=True)
-    def _isolate_cache(self):
-        """Disable the persistent diskcache so tests stay hermetic."""
-        with patch("scripts.resolve._get_cache", return_value=None):
+    def _isolate_state(self):
+        """Isolate persistent cache, circuit breakers, and routing memory."""
+        from scripts.circuit_breaker import CircuitBreakerRegistry
+        from scripts.routing_memory import RoutingMemory
+
+        with (
+            patch("scripts.resolve._get_cache", return_value=None),
+            patch("scripts.resolve._circuit_breakers", CircuitBreakerRegistry()),
+            patch("scripts.resolve._routing_memory", RoutingMemory()),
+        ):
             yield
 
     @staticmethod

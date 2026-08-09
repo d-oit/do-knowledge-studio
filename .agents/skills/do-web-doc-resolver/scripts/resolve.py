@@ -115,6 +115,11 @@ __all__ = [
 
 
 def synthesize_results(query: str, results: list[ResolvedResult], api_key: str, model: str) -> str:
+    """Synthesize resolved results into a single cited markdown answer.
+
+    Uses LLM synthesis when the results are rich enough; otherwise falls
+    back to a deterministic merge.
+    """
     if not results:
         return "No results to synthesize."
     if not synthesis.should_call_llm_synthesis(results):
@@ -154,6 +159,7 @@ def synthesize_results(query: str, results: list[ResolvedResult], api_key: str, 
 def resolve_url(
     url: str, max_chars: int = MAX_CHARS, profile: Profile = Profile.BALANCED
 ) -> dict[str, Any]:
+    """Resolve a URL to a single result dict (first non-partial output)."""
     for result in resolve_url_stream(url, max_chars, profile):
         if result.get("source") != "partial":
             return result
@@ -218,6 +224,44 @@ def _resolve_special_document(
     return None
 
 
+def _record_probe_rejection(
+    p_name_done: str,
+    pt_done: ProviderType,
+    latency: int,
+    metrics: ResolveMetrics,
+    trace: ResolutionTrace | None,
+    error: str | None = None,
+) -> None:
+    """Record a failed probe across the circuit breaker, metrics, and trace."""
+    _circuit_breakers.record_failure(p_name_done)
+    metrics.record_provider(pt_done, latency, False)
+    if error and trace:
+        step = TraceStep(tool=p_name_done, duration_ms=latency, success=False, error=error)
+        trace.steps.append(step)
+
+
+def _record_probe_success(
+    p_name_done: str,
+    pt_done: ProviderType,
+    latency: int,
+    metrics: ResolveMetrics,
+    trace: ResolutionTrace | None,
+    start_time: float,
+    domain: str,
+    q_score: Any,
+) -> None:
+    """Record a successful probe across the circuit breaker, metrics, memory, and trace."""
+    _circuit_breakers.record_success(p_name_done)
+    metrics.record_provider(pt_done, latency, True)
+    if domain:
+        _routing_memory.record(domain, p_name_done, True, latency, q_score.score)
+    if trace:
+        trace.total_latency_ms = int((time.time() - start_time) * 1000)
+        trace.final_source = p_name_done
+        trace.final_score = q_score.score
+        trace.success = True
+
+
 def _build_probe_output(
     res_or_content: Any,
     p_name_done: str,
@@ -236,21 +280,13 @@ def _build_probe_output(
     processing further futures in the current completion batch.
     """
     if not res_or_content:
-        _circuit_breakers.record_failure(p_name_done)
-        metrics.record_provider(pt_done, latency, False)
+        _record_probe_rejection(p_name_done, pt_done, latency, metrics, trace)
         return None, False
     if isinstance(res_or_content, ProviderResult):
         if not res_or_content.ok:
-            _circuit_breakers.record_failure(p_name_done)
-            metrics.record_provider(pt_done, latency, False)
-            if trace:
-                step = TraceStep(
-                    tool=p_name_done,
-                    duration_ms=latency,
-                    success=False,
-                    error=res_or_content.error,
-                )
-                trace.steps.append(step)
+            _record_probe_rejection(
+                p_name_done, pt_done, latency, metrics, trace, res_or_content.error
+            )
             return None, False
         content = res_or_content.content or ""
     elif isinstance(res_or_content, ResolvedResult):
@@ -265,15 +301,9 @@ def _build_probe_output(
             _routing_memory.record(domain, p_name_done, False, latency, q_score.score)
         return None, False
 
-    _circuit_breakers.record_success(p_name_done)
-    metrics.record_provider(pt_done, latency, True)
-    if domain:
-        _routing_memory.record(domain, p_name_done, True, latency, q_score.score)
-    if trace:
-        trace.total_latency_ms = int((time.time() - start_time) * 1000)
-        trace.final_source = p_name_done
-        trace.final_score = q_score.score
-        trace.success = True
+    _record_probe_success(
+        p_name_done, pt_done, latency, metrics, trace, start_time, domain, q_score
+    )
     if pt_done == ProviderType.LLMS_TXT:
         out: dict[str, Any] = {
             "source": "llms.txt",
@@ -333,10 +363,94 @@ def _process_probe_result(
     )
 
 
+def _launch_url_probe(
+    p_name: str,
+    pt: ProviderType,
+    func: Callable[[], Any],
+    budget: routing.ResolutionBudget,
+    cache: Any,
+    url: str,
+    executor: concurrent.futures.ThreadPoolExecutor,
+) -> tuple[concurrent.futures.Future[Any] | None, bool]:
+    """Submit a provider probe when budget/cache/circuit state allow.
+
+    Returns ``(future, stop)``: ``future`` is None when the probe was skipped
+    and the cascade should continue with the next provider; ``stop`` signals
+    that the whole cascade should halt.
+    """
+    if not budget.can_try(is_paid=pt.is_paid()):
+        return None, budget.stop_reason not in ("paid_disabled", "max_paid_attempts")
+    if cache_negative.should_skip_from_negative_cache(cache, url, p_name):
+        return None, False
+    if _circuit_breakers.is_open(p_name):
+        return None, False
+    return executor.submit(func), False
+
+
+def _drain_completed_probes(
+    active_futures: dict[concurrent.futures.Future[Any], tuple[str, ProviderType, float]],
+    i: int,
+    eligible: list[str],
+    p_name: str,
+    threshold: float,
+    start_time_probe: float,
+    budget: routing.ResolutionBudget,
+    url: str,
+    max_chars: int,
+    metrics: ResolveMetrics,
+    trace: ResolutionTrace | None,
+    start_time: float,
+    domain: str,
+) -> dict[str, Any] | None:
+    """Process completed probe futures until the batch yields an acceptable result.
+
+    Returns the output dict to yield, or None when the batch is exhausted
+    (the caller then proceeds to the next eligible provider). Hedging breaks
+    out of the wait loop so the next provider can be launched early.
+    """
+    while active_futures:
+        elapsed = time.time() - start_time_probe
+        if i < len(eligible) - 1 and elapsed >= threshold:
+            logger.info(f"Hedging threshold reached for {p_name} ({threshold}s)")
+            break
+        done, _ = concurrent.futures.wait(
+            active_futures.keys(),
+            timeout=0.01,
+            return_when=concurrent.futures.FIRST_COMPLETED,
+        )
+        for f in list(done):
+            if f not in active_futures:
+                continue
+            out, accepted = _process_probe_result(
+                f,
+                active_futures,
+                budget,
+                url,
+                max_chars,
+                metrics,
+                trace,
+                start_time,
+                domain,
+            )
+            if accepted:
+                return out
+        if done:
+            break
+        if not active_futures:
+            break
+    return None
+
+
 def resolve_url_stream(
     url: str, max_chars: int = MAX_CHARS, profile: Profile = Profile.BALANCED,
     trace: ResolutionTrace | None = None,
 ) -> Generator[dict[str, Any], None, None]:
+    """Resolve a URL through the provider cascade, yielding results as found.
+
+    Special document/image URLs are handled first (docling/OCR), then the
+    eligible web providers are probed with hedging until an acceptable result
+    is produced or the budget is exhausted.
+    """
     logger.info(f"Resolving URL: {url}")
     metrics = ResolveMetrics()
     budget_data = routing.PROFILE_BUDGETS.get(profile.value, routing.PROFILE_BUDGETS["balanced"])
@@ -380,59 +494,34 @@ def resolve_url_stream(
     try:
         for i, p_name in enumerate(eligible):
             pt, func = cascade_map[p_name]
-            if not budget.can_try(is_paid=pt.is_paid()):
-                if budget.stop_reason in ("paid_disabled", "max_paid_attempts"):
-                    continue
+            future, stop = _launch_url_probe(p_name, pt, func, budget, cache, url, executor)
+            if stop:
                 break
-            if cache_negative.should_skip_from_negative_cache(cache, url, p_name):
-                continue
-            if _circuit_breakers.is_open(p_name):
+            if future is None:
                 continue
 
             logger.info(f"Starting probe: {p_name}")
             start_time_probe = time.time()
-            future = executor.submit(func)
             active_futures[future] = (p_name, pt, start_time_probe)
             threshold = _routing_memory.get_p75_latency(domain or "any", p_name) / 1000.0
 
-            while active_futures:
-                elapsed = time.time() - start_time_probe
-
-                # If we've hit the threshold, start the next provider (hedging)
-                if i < len(eligible) - 1 and elapsed >= threshold:
-                    logger.info(f"Hedging threshold reached for {p_name} ({threshold}s)")
-                    break
-
-                # Wait for any task to complete
-                done, _ = concurrent.futures.wait(
-                    active_futures.keys(),
-                    timeout=0.01,
-                    return_when=concurrent.futures.FIRST_COMPLETED,
-                )
-
-                for f in list(done):
-                    if f not in active_futures:
-                        continue
-                    out, accepted = _process_probe_result(
-                        f,
-                        active_futures,
-                        budget,
-                        url,
-                        max_chars,
-                        metrics,
-                        trace,
-                        start_time,
-                        domain,
-                    )
-                    if accepted:
-                        if out is not None:
-                            yield out
-                        break
-
-                if done:
-                    break
-                if not active_futures:
-                    break
+            out = _drain_completed_probes(
+                active_futures,
+                i,
+                eligible,
+                p_name,
+                threshold,
+                start_time_probe,
+                budget,
+                url,
+                max_chars,
+                metrics,
+                trace,
+                start_time,
+                domain,
+            )
+            if out is not None:
+                yield out
     finally:
         executor.shutdown(wait=False, cancel_futures=True)
 
@@ -456,6 +545,7 @@ def resolve_query(
     skip_providers: set[str] | None = None,
     profile: Profile = Profile.BALANCED,
 ) -> dict[str, Any]:
+    """Resolve a search query to a single result dict (first non-partial output)."""
     for result in resolve_query_stream(query, max_chars, skip_providers, profile):
         if result.get("source") != "partial":
             return result
@@ -469,6 +559,7 @@ def resolve_query_stream(
     profile: Profile = Profile.BALANCED,
     trace: ResolutionTrace | None = None,
 ) -> Generator[dict[str, Any], None, None]:
+    """Resolve a search query through the provider cascade, yielding results as found."""
     skip = skip_providers or set()
     metrics = ResolveMetrics()
     budget_data = routing.PROFILE_BUDGETS.get(profile.value, routing.PROFILE_BUDGETS["balanced"])
@@ -629,6 +720,7 @@ def resolve(
     skip_providers: set[str] | None = None,
     profile: Profile = Profile.BALANCED,
 ) -> dict[str, Any]:
+    """Resolve either a URL or a query based on the input shape."""
     if is_url(input_str):
         return resolve_url(input_str, max_chars, profile=profile)
     return resolve_query(input_str, max_chars, skip_providers, profile=profile)
@@ -637,6 +729,7 @@ def resolve(
 def resolve_direct(
     input_str: str, provider: ProviderType, max_chars: int = MAX_CHARS
 ) -> dict[str, Any]:
+    """Resolve input with a single named provider, bypassing the cascade."""
     funcs = {
         ProviderType.JINA: resolve_with_jina,
         ProviderType.EXA_MCP: resolve_with_exa_mcp,
@@ -667,6 +760,7 @@ def resolve_direct(
 def resolve_with_order(
     input_str: str, providers_order: list[ProviderType], max_chars: int = MAX_CHARS
 ) -> dict[str, Any]:
+    """Resolve input trying providers sequentially until one succeeds."""
     for pt in providers_order:
         res = resolve_direct(input_str, pt, max_chars)
         if res.get("source") != "none":
@@ -677,16 +771,19 @@ def resolve_with_order(
 def resolve_url_with_order(
     url: str, order: list[ProviderType], max_chars: int = MAX_CHARS
 ) -> dict[str, Any]:
+    """Resolve a URL with an explicit provider order."""
     return resolve_with_order(url, order, max_chars)
 
 
 def resolve_query_with_order(
     query: str, order: list[ProviderType], max_chars: int = MAX_CHARS
 ) -> dict[str, Any]:
+    """Resolve a query with an explicit provider order."""
     return resolve_with_order(query, order, max_chars)
 
 
 def main():
+    """CLI entry point: resolve a URL or query with optional tracing."""
     parser = argparse.ArgumentParser(description="Web Doc Resolver")
     parser.add_argument("input", nargs="?", help="URL or query")
     parser.add_argument("--max-chars", type=int, default=MAX_CHARS)
