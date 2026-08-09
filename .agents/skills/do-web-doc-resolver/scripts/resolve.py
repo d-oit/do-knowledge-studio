@@ -119,6 +119,15 @@ def synthesize_results(query: str, results: list[ResolvedResult], api_key: str, 
 
     Uses LLM synthesis when the results are rich enough; otherwise falls
     back to a deterministic merge.
+
+    Args:
+        query: The original search query.
+        results: Resolved results to synthesize.
+        api_key: Mistral API key for LLM synthesis.
+        model: Model name to use for synthesis.
+
+    Returns:
+        The synthesized markdown answer.
     """
     if not results:
         return "No results to synthesize."
@@ -159,7 +168,16 @@ def synthesize_results(query: str, results: list[ResolvedResult], api_key: str, 
 def resolve_url(
     url: str, max_chars: int = MAX_CHARS, profile: Profile = Profile.BALANCED
 ) -> dict[str, Any]:
-    """Resolve a URL to a single result dict (first non-partial output)."""
+    """Resolve a URL to a single result dict (first non-partial output).
+
+    Args:
+        url: The URL to resolve.
+        max_chars: Maximum content length to retain.
+        profile: Resolution profile controlling the budget.
+
+    Returns:
+        The first non-partial result dict, or a "none" failure dict.
+    """
     for result in resolve_url_stream(url, max_chars, profile):
         if result.get("source") != "partial":
             return result
@@ -177,6 +195,12 @@ def _special_document_provider(name: str) -> Callable[[str, int], ProviderResult
 
     The lookup happens at call time so module-attribute patching in tests
     (e.g. ``@patch("scripts.resolve.resolve_with_docling")``) keeps working.
+
+    Args:
+        name: Tool name (``docling`` or ``ocr``).
+
+    Returns:
+        The provider function for the tool name (ocr as fallback).
     """
     if name == "docling":
         return resolve_with_docling
@@ -194,6 +218,16 @@ def _resolve_special_document(
 
     Falls through to the regular provider cascade when no special provider
     matches the URL extension or the provider reports a failure.
+
+    Args:
+        url: The URL being resolved.
+        max_chars: Maximum content length to retain.
+        start_time: Epoch seconds when the resolution started (for traces).
+        metrics: Metrics accumulator for the resolution.
+        trace: Optional trace to populate on success.
+
+    Returns:
+        A result dict to yield, or None to continue with the cascade.
     """
     lower_url = url.lower()
     for extensions, tool in _SPECIAL_DOCUMENT_PROVIDERS:
@@ -232,7 +266,16 @@ def _record_probe_rejection(
     trace: ResolutionTrace | None,
     error: str | None = None,
 ) -> None:
-    """Record a failed probe across the circuit breaker, metrics, and trace."""
+    """Record a failed probe across the circuit breaker, metrics, and trace.
+
+    Args:
+        p_name_done: Provider name that failed.
+        pt_done: Provider type that failed.
+        latency: Probe latency in milliseconds.
+        metrics: Metrics accumulator.
+        trace: Optional trace to append a failure step to.
+        error: Optional error message recorded in the trace.
+    """
     _circuit_breakers.record_failure(p_name_done)
     metrics.record_provider(pt_done, latency, False)
     if error and trace:
@@ -250,7 +293,18 @@ def _record_probe_success(
     domain: str,
     q_score: Any,
 ) -> None:
-    """Record a successful probe across the circuit breaker, metrics, memory, and trace."""
+    """Record a successful probe across the circuit breaker, metrics, memory, and trace.
+
+    Args:
+        p_name_done: Provider name that succeeded.
+        pt_done: Provider type that succeeded.
+        latency: Probe latency in milliseconds.
+        metrics: Metrics accumulator.
+        trace: Optional trace to mark successful.
+        start_time: Epoch seconds when the resolution started.
+        domain: Extracted domain used for routing-memory keys.
+        q_score: Quality score of the accepted content.
+    """
     _circuit_breakers.record_success(p_name_done)
     metrics.record_provider(pt_done, latency, True)
     if domain:
@@ -278,6 +332,22 @@ def _build_probe_output(
 
     Returns ``(output_dict, accepted)``; ``accepted`` tells the caller to stop
     processing further futures in the current completion batch.
+
+    Args:
+        res_or_content: The provider's result object or raw content.
+        p_name_done: Provider name that completed.
+        pt_done: Provider type that completed.
+        latency: Probe latency in milliseconds.
+        url: The URL being resolved.
+        max_chars: Maximum content length to retain.
+        metrics: Metrics accumulator.
+        trace: Optional trace to update on success.
+        start_time: Epoch seconds when the resolution started.
+        domain: Extracted domain used for routing-memory keys.
+
+    Returns:
+        (output dict to yield, accepted flag); accepted means the caller
+        should stop processing the current completion batch.
     """
     if not res_or_content:
         _record_probe_rejection(p_name_done, pt_done, latency, metrics, trace)
@@ -334,7 +404,23 @@ def _process_probe_result(
     start_time: float,
     domain: str,
 ) -> tuple[dict[str, Any] | None, bool]:
-    """Process a single completed provider probe, recording budget and metrics."""
+    """Process a single completed provider probe, recording budget and metrics.
+
+    Args:
+        future: The completed provider future.
+        active_futures: Map of in-flight futures to probe metadata.
+        budget: Resolution budget tracker.
+        url: The URL being resolved.
+        max_chars: Maximum content length to retain.
+        metrics: Metrics accumulator.
+        trace: Optional trace to update.
+        start_time: Epoch seconds when the resolution started.
+        domain: Extracted domain used for routing-memory keys.
+
+    Returns:
+        (output dict to yield, accepted flag); accepted means the caller
+        should stop processing the current completion batch.
+    """
     p_name_done, pt_done, s_time = active_futures.pop(future)
     latency = int((time.time() - s_time) * 1000)
     budget.record_attempt(is_paid=pt_done.is_paid(), latency_ms=latency)
@@ -377,6 +463,18 @@ def _launch_url_probe(
     Returns ``(future, stop)``: ``future`` is None when the probe was skipped
     and the cascade should continue with the next provider; ``stop`` signals
     that the whole cascade should halt.
+
+    Args:
+        p_name: Provider name to probe.
+        pt: Provider type to probe.
+        func: Zero-argument callable that performs the probe.
+        budget: Resolution budget tracker.
+        cache: Cache handle for negative-cache lookups.
+        url: The URL being resolved.
+        executor: Thread pool used to launch the probe.
+
+    Returns:
+        (future or None, stop flag) as described above.
     """
     if not budget.can_try(is_paid=pt.is_paid()):
         return None, budget.stop_reason not in ("paid_disabled", "max_paid_attempts")
@@ -407,6 +505,24 @@ def _drain_completed_probes(
     Returns the output dict to yield, or None when the batch is exhausted
     (the caller then proceeds to the next eligible provider). Hedging breaks
     out of the wait loop so the next provider can be launched early.
+
+    Args:
+        active_futures: Map of in-flight futures to probe metadata.
+        i: Index of the current provider in the eligible list.
+        eligible: List of eligible provider names.
+        p_name: Current provider name (for hedge logging).
+        threshold: Hedging latency threshold in seconds.
+        start_time_probe: Epoch seconds when this probe was launched.
+        budget: Resolution budget tracker.
+        url: The URL being resolved.
+        max_chars: Maximum content length to retain.
+        metrics: Metrics accumulator.
+        trace: Optional trace to update.
+        start_time: Epoch seconds when the resolution started.
+        domain: Extracted domain used for routing-memory keys.
+
+    Returns:
+        The output dict to yield, or None when the batch is exhausted.
     """
     while active_futures:
         elapsed = time.time() - start_time_probe
@@ -450,6 +566,15 @@ def resolve_url_stream(
     Special document/image URLs are handled first (docling/OCR), then the
     eligible web providers are probed with hedging until an acceptable result
     is produced or the budget is exhausted.
+
+    Args:
+        url: The URL to resolve.
+        max_chars: Maximum content length to retain.
+        profile: Resolution profile controlling the budget.
+        trace: Optional trace to populate during resolution.
+
+    Yields:
+        Result dicts; the final dict reports "none" when nothing succeeded.
     """
     logger.info(f"Resolving URL: {url}")
     metrics = ResolveMetrics()
@@ -545,7 +670,17 @@ def resolve_query(
     skip_providers: set[str] | None = None,
     profile: Profile = Profile.BALANCED,
 ) -> dict[str, Any]:
-    """Resolve a search query to a single result dict (first non-partial output)."""
+    """Resolve a search query to a single result dict (first non-partial output).
+
+    Args:
+        query: The search query.
+        max_chars: Maximum content length to retain.
+        skip_providers: Optional set of provider names to skip.
+        profile: Resolution profile controlling the budget.
+
+    Returns:
+        The first non-partial result dict, or a "none" failure dict.
+    """
     for result in resolve_query_stream(query, max_chars, skip_providers, profile):
         if result.get("source") != "partial":
             return result
@@ -559,7 +694,18 @@ def resolve_query_stream(
     profile: Profile = Profile.BALANCED,
     trace: ResolutionTrace | None = None,
 ) -> Generator[dict[str, Any], None, None]:
-    """Resolve a search query through the provider cascade, yielding results as found."""
+    """Resolve a search query through the provider cascade, yielding results as found.
+
+    Args:
+        query: The search query.
+        max_chars: Maximum content length to retain.
+        skip_providers: Optional set of provider names to skip.
+        profile: Resolution profile controlling the budget.
+        trace: Optional trace to populate during resolution.
+
+    Yields:
+        Result dicts; the final dict reports "none" when nothing succeeded.
+    """
     skip = skip_providers or set()
     metrics = ResolveMetrics()
     budget_data = routing.PROFILE_BUDGETS.get(profile.value, routing.PROFILE_BUDGETS["balanced"])
@@ -720,7 +866,17 @@ def resolve(
     skip_providers: set[str] | None = None,
     profile: Profile = Profile.BALANCED,
 ) -> dict[str, Any]:
-    """Resolve either a URL or a query based on the input shape."""
+    """Resolve either a URL or a query based on the input shape.
+
+    Args:
+        input_str: A URL or a search query.
+        max_chars: Maximum content length to retain.
+        skip_providers: Optional set of provider names to skip.
+        profile: Resolution profile controlling the budget.
+
+    Returns:
+        The resolution result dict.
+    """
     if is_url(input_str):
         return resolve_url(input_str, max_chars, profile=profile)
     return resolve_query(input_str, max_chars, skip_providers, profile=profile)
@@ -729,7 +885,16 @@ def resolve(
 def resolve_direct(
     input_str: str, provider: ProviderType, max_chars: int = MAX_CHARS
 ) -> dict[str, Any]:
-    """Resolve input with a single named provider, bypassing the cascade."""
+    """Resolve input with a single named provider, bypassing the cascade.
+
+    Args:
+        input_str: A URL or a search query.
+        provider: The provider to use.
+        max_chars: Maximum content length to retain.
+
+    Returns:
+        The resolution result dict.
+    """
     funcs = {
         ProviderType.JINA: resolve_with_jina,
         ProviderType.EXA_MCP: resolve_with_exa_mcp,
@@ -760,7 +925,16 @@ def resolve_direct(
 def resolve_with_order(
     input_str: str, providers_order: list[ProviderType], max_chars: int = MAX_CHARS
 ) -> dict[str, Any]:
-    """Resolve input trying providers sequentially until one succeeds."""
+    """Resolve input trying providers sequentially until one succeeds.
+
+    Args:
+        input_str: A URL or a search query.
+        providers_order: Providers to try in order.
+        max_chars: Maximum content length to retain.
+
+    Returns:
+        The first successful result dict, or a "none" failure dict.
+    """
     for pt in providers_order:
         res = resolve_direct(input_str, pt, max_chars)
         if res.get("source") != "none":
@@ -771,14 +945,32 @@ def resolve_with_order(
 def resolve_url_with_order(
     url: str, order: list[ProviderType], max_chars: int = MAX_CHARS
 ) -> dict[str, Any]:
-    """Resolve a URL with an explicit provider order."""
+    """Resolve a URL with an explicit provider order.
+
+    Args:
+        url: The URL to resolve.
+        order: Providers to try in order.
+        max_chars: Maximum content length to retain.
+
+    Returns:
+        The first successful result dict, or a "none" failure dict.
+    """
     return resolve_with_order(url, order, max_chars)
 
 
 def resolve_query_with_order(
     query: str, order: list[ProviderType], max_chars: int = MAX_CHARS
 ) -> dict[str, Any]:
-    """Resolve a query with an explicit provider order."""
+    """Resolve a query with an explicit provider order.
+
+    Args:
+        query: The search query.
+        order: Providers to try in order.
+        max_chars: Maximum content length to retain.
+
+    Returns:
+        The first successful result dict, or a "none" failure dict.
+    """
     return resolve_with_order(query, order, max_chars)
 
 
