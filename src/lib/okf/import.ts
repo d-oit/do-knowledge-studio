@@ -4,6 +4,24 @@ import { OkfConceptFrontmatterSchema } from './types'
 import type { Entity, Claim } from '@/lib/studio/types'
 import { trustTier } from './trust'
 
+/**
+ * Generates a UUID v4. Uses the Web Crypto API when available (browsers and
+ * modern Node), falling back to a Math.random-based v4 for non-secure runtimes
+ * so the importer never throws when `crypto` is not a global.
+ * @returns A UUID v4 string.
+ */
+const uuid = (): string => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  // RFC 4122 v4 fallback for runtimes without Web Crypto (e.g. older workers).
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0
+    const v = c === 'x' ? r : (r & 0x3) | 0x8
+    return v.toString(16)
+  })
+}
+
 /** Result of parsing an OKF bundle: entities, claims, and non-fatal errors. */
 export interface OkfImportResult {
   /** Entities to serialize. */
@@ -37,6 +55,7 @@ const buildEntity = (
   bodyContent: string,
   nowIso: string,
 ): Entity => {
+  /** Unique identifier. */
   /** Unique identifier. */
   const id = path.replace(/\.md$/, '') // Concept ID = path minus .md (§2)
   /** The file name. */
@@ -104,7 +123,7 @@ const parseClaims = (
     const sourceObj = m[2] ? sourceById.get(m[2]) : undefined
     claims.push({
       /** Unique identifier. */
-      id: crypto.randomUUID(),
+      id: uuid(),
       /** Owning entity id. */
       entityId: entity.id,
       /** The claim statement text. */
@@ -130,6 +149,49 @@ const parseClaims = (
 }
 
 /**
+ * Parses a single non-reserved OKF file, appending any entities, claims, or
+ * errors to the shared result. §11: unknown types, unknown keys, broken links,
+ * and missing optional fields must not reject the bundle — collect and continue.
+ * @param path - Bundle-relative file path (index.md and log.md are reserved).
+ * @param content - Raw file content.
+ * @param result - Accumulator that receives entities, claims, and non-fatal errors.
+ * @returns True when the file contributed a new entity.
+ */
+const parseOkfFile = (path: string, content: string, result: OkfImportResult): boolean => {
+  /** The match. */
+  const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/)
+  if (!match) {
+    result.errors.push(`${path}: missing or unparseable frontmatter`) // §11 conformance rule 1
+    return false
+  }
+
+  let fmParsed: unknown
+  try {
+    fmParsed = yaml.parse(match[1])
+  } catch (e) {
+    result.errors.push(`${path}: invalid YAML frontmatter: ${e instanceof Error ? e.message : 'unknown error'}`)
+    return false
+  }
+
+  /** The parsed. */
+  const parsed = OkfConceptFrontmatterSchema.safeParse(fmParsed)
+  if (!parsed.success) {
+    result.errors.push(`${path}: ${parsed.error.issues[0]?.message ?? 'invalid frontmatter'}`)
+    return false
+  }
+
+  /** The fm. */
+  const fm = parsed.data // passthrough preserves unknown keys for round-trip (§4.1)
+  /** The now iso. */
+  const nowIso = new Date().toISOString()
+  /** The entity. */
+  const entity = buildEntity(fm, path, match[2], nowIso)
+  result.entities.push(entity)
+  result.claims.push(...parseClaims(match[2], entity, fm, nowIso))
+  return true
+}
+
+/**
  * Parse an OKF bundle (path → content) back into studio state.
  * §11: MUST NOT reject unknown types, unknown keys, broken links, or missing
  * optional fields — collect errors/warnings and continue.
@@ -144,37 +206,7 @@ export const parseOkfBundle = (files: Map<string, string>): OkfImportResult => {
     if (/(^|\/)index\.md$/.test(path) || /(^|\/)log\.md$/.test(path)) {
       continue // reserved (§3.1)
     }
-
-    /** The match. */
-    const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/)
-    if (!match) {
-      result.errors.push(`${path}: missing or unparseable frontmatter`) // §11 conformance rule 1
-      continue
-    }
-
-    let fmParsed: unknown
-    try {
-      fmParsed = yaml.parse(match[1])
-    } catch (e) {
-      result.errors.push(`${path}: invalid YAML frontmatter: ${e instanceof Error ? e.message : 'unknown error'}`)
-      continue
-    }
-
-    /** The parsed. */
-    const parsed = OkfConceptFrontmatterSchema.safeParse(fmParsed)
-    if (!parsed.success) {
-      result.errors.push(`${path}: ${parsed.error.issues[0]?.message ?? 'invalid frontmatter'}`)
-      continue
-    }
-
-    /** The fm. */
-    const fm = parsed.data // passthrough preserves unknown keys for round-trip (§4.1)
-    /** The now iso. */
-    const nowIso = new Date().toISOString()
-    /** The entity. */
-    const entity = buildEntity(fm, path, match[2], nowIso)
-    result.entities.push(entity)
-    result.claims.push(...parseClaims(match[2], entity, fm, nowIso))
+    parseOkfFile(path, content, result)
   }
   return result
 }
