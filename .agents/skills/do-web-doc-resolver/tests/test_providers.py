@@ -54,8 +54,11 @@ class TestRateLimiting:
         set_rate_limit("test_provider", cooldown=1)
         assert "test_provider" in _rate_limits
 
-        time.sleep(1.1)
-        is_rate_limited("test_provider")  # This should clear expired entry
+        # Poll until expiry instead of a fixed sleep to avoid timing flakes.
+        deadline = time.time() + 3
+        while "test_provider" in _rate_limits and time.time() < deadline:
+            is_rate_limited("test_provider")  # Clears the expired entry
+            time.sleep(0.05)
         assert "test_provider" not in _rate_limits
 
 
@@ -248,6 +251,83 @@ class TestContentTruncation:
             content=short_content,
         )
         assert result.content == short_content
+
+
+class TestSubprocessProviderSafety:
+    """Tests for subprocess provider URL validation (issue #622)."""
+
+    @patch("scripts.providers_impl.subprocess.run")
+    def test_docling_rejects_unsafe_scheme(self, mock_run):
+        """resolve_with_docling should reject non-http(s) URLs without invoking subprocess."""
+        from scripts.providers_impl import resolve_with_docling
+
+        result = resolve_with_docling("file:///etc/passwd", 1000)
+        assert result.ok is False
+        assert result.error == "unsafe_url"
+        assert result.meta.error_type == "ssrf_blocked"
+        mock_run.assert_not_called()
+
+    @patch("scripts.providers_impl.subprocess.run")
+    def test_docling_rejects_private_ip(self, mock_run):
+        """resolve_with_docling should reject SSRF-prone private IP URLs."""
+        from scripts.providers_impl import resolve_with_docling
+
+        result = resolve_with_docling("http://127.0.0.1:8080/report.pdf", 1000)
+        assert result.ok is False
+        assert result.error == "unsafe_url"
+        mock_run.assert_not_called()
+
+    @patch("scripts.providers_impl.subprocess.run")
+    def test_ocr_rejects_unsafe_scheme(self, mock_run):
+        """resolve_with_ocr should reject non-http(s) URLs without invoking subprocess."""
+        from scripts.providers_impl import resolve_with_ocr
+
+        result = resolve_with_ocr("data:image/png;base64,AAAA", 1000)
+        assert result.ok is False
+        assert result.error == "unsafe_url"
+        mock_run.assert_not_called()
+
+    @patch("scripts.providers_impl.subprocess.run")
+    def test_docling_passes_safe_url(self, mock_run):
+        """resolve_with_docling should invoke subprocess for safe http(s) URLs."""
+        from unittest.mock import MagicMock
+
+        from scripts.providers_impl import resolve_with_docling
+
+        completed = MagicMock()
+        completed.returncode = 0
+        completed.stdout = "extracted markdown"
+        mock_run.return_value = completed
+
+        result = resolve_with_docling("https://8.8.8.8/doc.pdf", 1000)
+        assert result.ok is True
+        mock_run.assert_called_once_with(
+            ["docling", "--format", "markdown", "https://8.8.8.8/doc.pdf"],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+
+    @patch("scripts.providers_impl.subprocess.run")
+    def test_ocr_passes_safe_url(self, mock_run):
+        """resolve_with_ocr should invoke subprocess for safe http(s) URLs."""
+        from unittest.mock import MagicMock
+
+        from scripts.providers_impl import resolve_with_ocr
+
+        completed = MagicMock()
+        completed.returncode = 0
+        completed.stdout = "recognized text"
+        mock_run.return_value = completed
+
+        result = resolve_with_ocr("https://8.8.8.8/photo.png", 1000)
+        assert result.ok is True
+        mock_run.assert_called_once_with(
+            ["tesseract", "https://8.8.8.8/photo.png", "stdout"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
 
 
 class TestMinContentThreshold:

@@ -2,6 +2,8 @@
 Tests for main resolve module.
 """
 
+from unittest.mock import patch
+
 import pytest
 
 from scripts.resolve import MAX_CHARS, MIN_CHARS, is_url, resolve
@@ -177,6 +179,121 @@ class TestResolveEdgeCases:
         result = resolve(None, max_chars=max_chars)
         assert isinstance(result, dict)
         assert result.get("source") == "none"
+
+
+class TestResolveUrlStreamCascade:
+    """Mock-based tests for the resolve_url_stream provider cascade."""
+
+    @pytest.fixture(autouse=True)
+    def _isolate_cache(self):
+        """Disable the persistent diskcache so tests stay hermetic."""
+        with patch("scripts.resolve._get_cache", return_value=None):
+            yield
+
+    @staticmethod
+    def _make_quality(acceptable: bool = True):
+        """Build a QualityScore for the given acceptance flag."""
+        from scripts.quality import QualityScore
+
+        return QualityScore(
+            score=0.9 if acceptable else 0.3,
+            too_short=not acceptable,
+            missing_links=False,
+            duplicate_heavy=False,
+            noisy=False,
+            acceptable=acceptable,
+        )
+
+    @patch("scripts.resolve.routing.plan_provider_order", return_value=["direct_fetch"])
+    @patch("scripts.resolve.fetch_url_content")
+    @patch("scripts.resolve.quality.score_content")
+    def test_acceptable_resolved_result_yields_content(self, mock_score, mock_fetch, mock_plan):
+        """An acceptable ResolvedResult should be yielded as the first output."""
+        from scripts.models import Profile, ResolvedResult
+        from scripts.resolve import resolve_url_stream
+
+        mock_score.return_value = self._make_quality(acceptable=True)
+        mock_fetch.return_value = ResolvedResult(
+            source="direct_fetch", content="B" * 600, url="https://example.com"
+        )
+        results = list(resolve_url_stream("https://example.com", profile=Profile.FAST))
+        assert results
+        first = results[0]
+        assert first["source"] == "direct_fetch"
+        assert first["url"] == "https://example.com"
+        assert len(first["content"]) >= 600
+
+    @patch("scripts.resolve.routing.plan_provider_order", return_value=["llms_txt"])
+    @patch("scripts.resolve.fetch_llms_txt")
+    def test_llms_txt_yields_compacted_output(self, mock_llms, mock_plan):
+        """An llms.txt hit should yield compacted content regardless of quality."""
+        from scripts.models import Profile
+        from scripts.resolve import resolve_url_stream
+
+        mock_llms.return_value = ("line1\n" + "line2\n") * 300
+        results = list(resolve_url_stream("https://example.com", profile=Profile.FAST))
+        assert results
+        first = results[0]
+        assert first["source"] == "llms.txt"
+        assert "line1" in first["content"]
+
+    @patch("scripts.resolve.routing.plan_provider_order", return_value=["jina"])
+    @patch("scripts.resolve.resolve_with_jina")
+    @patch("scripts.resolve.quality.score_content")
+    def test_thin_content_falls_through_to_failure(self, mock_score, mock_jina, mock_plan):
+        """Thin provider content should not be yielded; final result is 'none'."""
+        from scripts.models import Profile, ProviderMeta, ProviderResult
+        from scripts.resolve import resolve_url_stream
+
+        mock_score.return_value = self._make_quality(acceptable=False)
+        mock_jina.return_value = ProviderResult(
+            ok=True,
+            content="short",
+            meta=ProviderMeta(tool="jina", duration_ms=5),
+            url="https://example.com",
+            source="jina",
+        )
+        results = list(resolve_url_stream("https://example.com", profile=Profile.FAST))
+        assert results
+        # ProviderResult with acceptable=False is rejected; only the failure dict is emitted.
+        assert all(r["source"] != "jina" for r in results)
+        assert results[-1]["source"] == "none"
+
+    @patch("scripts.resolve.resolve_with_docling")
+    def test_special_document_uses_docling(self, mock_docling):
+        """A PDF URL should be resolved via docling without a provider cascade."""
+        from scripts.models import Profile, ProviderMeta, ProviderResult
+        from scripts.resolve import resolve_url_stream
+
+        mock_docling.return_value = ProviderResult(
+            ok=True,
+            content="extracted pdf text",
+            meta=ProviderMeta(tool="docling", duration_ms=10),
+            url="https://8.8.8.8/report.pdf",
+            source="docling",
+        )
+        results = list(resolve_url_stream("https://8.8.8.8/report.pdf", profile=Profile.FAST))
+        assert results
+        assert results[0]["source"] == "docling"
+        assert results[0]["content"] == "extracted pdf text"
+
+    @patch("scripts.resolve.resolve_with_docling")
+    @patch("scripts.resolve.routing.plan_provider_order", return_value=[])
+    def test_special_document_failure_falls_through(self, mock_plan, mock_docling):
+        """A failed docling attempt should fall through to the regular failure result."""
+        from scripts.models import Profile, ProviderMeta, ProviderResult
+        from scripts.resolve import resolve_url_stream
+
+        mock_docling.return_value = ProviderResult(
+            ok=False,
+            error="exit_code_1",
+            meta=ProviderMeta(tool="docling", duration_ms=10, error_type="unknown"),
+            url="https://8.8.8.8/report.pdf",
+            source="docling",
+        )
+        results = list(resolve_url_stream("https://8.8.8.8/report.pdf", profile=Profile.FAST))
+        assert results
+        assert results[-1]["source"] == "none"
 
 
 class TestResolveQuality:

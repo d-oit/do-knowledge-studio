@@ -13,6 +13,7 @@ from .utils import (
     _get_from_cache,
     _save_to_cache,
     get_session,
+    is_safe_url,
 )
 
 logger = logging.getLogger(__name__)
@@ -329,6 +330,10 @@ def resolve_with_mistral_websearch(query: str, max_chars: int = MAX_CHARS) -> Pr
 
 def resolve_with_docling(url: str, max_chars: int) -> ProviderResult:
     start = time.time()
+    if not is_safe_url(url):
+        duration = int((time.time() - start) * 1000)
+        meta = ProviderMeta(tool="docling", duration_ms=duration, error_type="ssrf_blocked")
+        return ProviderResult(ok=False, error="unsafe_url", meta=meta, url=url, source="docling")
     try:
         res = subprocess.run(
             ["docling", "--format", "markdown", url], capture_output=True, text=True, timeout=60
@@ -348,6 +353,12 @@ def resolve_with_docling(url: str, max_chars: int) -> ProviderResult:
 
 def resolve_with_ocr(url: str, max_chars: int) -> ProviderResult:
     start = time.time()
+    if not is_safe_url(url):
+        duration = int((time.time() - start) * 1000)
+        meta = ProviderMeta(tool="ocr", duration_ms=duration, error_type="ssrf_blocked")
+        return ProviderResult(
+            ok=False, error="unsafe_url", meta=meta, url=url, source="ocr-tesseract"
+        )
     try:
         res = subprocess.run(
             ["tesseract", url, "stdout"], capture_output=True, text=True, timeout=30

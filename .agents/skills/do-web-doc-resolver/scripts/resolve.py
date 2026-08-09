@@ -11,7 +11,7 @@ import logging
 import os
 import time
 import uuid
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from typing import Any
 
 from . import (
@@ -160,6 +160,179 @@ def resolve_url(
     return {"source": "none", "url": url, "content": "Failed"}
 
 
+_SPECIAL_DOCUMENT_PROVIDERS: tuple[tuple[tuple[str, ...], str], ...] = (
+    ((".pdf", ".docx", ".pptx"), "docling"),
+    ((".png", ".jpg", ".jpeg"), "ocr"),
+)
+
+
+def _special_document_provider(name: str) -> Callable[[str, int], ProviderResult]:
+    """Resolve a special-document provider function by tool name.
+
+    The lookup happens at call time so module-attribute patching in tests
+    (e.g. ``@patch("scripts.resolve.resolve_with_docling")``) keeps working.
+    """
+    if name == "docling":
+        return resolve_with_docling
+    return resolve_with_ocr
+
+
+def _resolve_special_document(
+    url: str,
+    max_chars: int,
+    start_time: float,
+    metrics: ResolveMetrics,
+    trace: ResolutionTrace | None,
+) -> dict[str, Any] | None:
+    """Resolve document/image URLs via docling or OCR, returning a result dict or None.
+
+    Falls through to the regular provider cascade when no special provider
+    matches the URL extension or the provider reports a failure.
+    """
+    lower_url = url.lower()
+    for extensions, tool in _SPECIAL_DOCUMENT_PROVIDERS:
+        if not any(lower_url.endswith(ext) for ext in extensions):
+            continue
+        res = _special_document_provider(tool)(url, max_chars)
+        if not res.ok:
+            return None
+        result = ResolvedResult(source=res.source, content=res.content or "", url=res.url)
+        result.meta = res.meta
+        result.metrics = metrics
+        result_dict = result.to_dict()
+        if trace:
+            step = TraceStep(
+                tool=tool,
+                duration_ms=int((time.time() - start_time) * 1000),
+                success=True,
+                quality_score=res.meta.quality_score if res.meta else 0.0,
+                content_length=len(res.content or ""),
+            )
+            trace.steps.append(step)
+            trace.total_latency_ms = int((time.time() - start_time) * 1000)
+            trace.final_source = tool
+            trace.final_score = res.meta.quality_score if res.meta else 0.0
+            trace.success = True
+            result_dict["trace"] = trace.to_dict()
+        return result_dict
+    return None
+
+
+def _build_probe_output(
+    res_or_content: Any,
+    p_name_done: str,
+    pt_done: ProviderType,
+    latency: int,
+    url: str,
+    max_chars: int,
+    metrics: ResolveMetrics,
+    trace: ResolutionTrace | None,
+    start_time: float,
+    domain: str,
+) -> tuple[dict[str, Any] | None, bool]:
+    """Build the output dict for a completed provider result, or None if unusable.
+
+    Returns ``(output_dict, accepted)``; ``accepted`` tells the caller to stop
+    processing further futures in the current completion batch.
+    """
+    if not res_or_content:
+        _circuit_breakers.record_failure(p_name_done)
+        metrics.record_provider(pt_done, latency, False)
+        return None, False
+    if isinstance(res_or_content, ProviderResult):
+        if not res_or_content.ok:
+            _circuit_breakers.record_failure(p_name_done)
+            metrics.record_provider(pt_done, latency, False)
+            if trace:
+                step = TraceStep(
+                    tool=p_name_done,
+                    duration_ms=latency,
+                    success=False,
+                    error=res_or_content.error,
+                )
+                trace.steps.append(step)
+            return None, False
+        content = res_or_content.content or ""
+    elif isinstance(res_or_content, ResolvedResult):
+        content = res_or_content.content
+    else:
+        content = str(res_or_content)
+
+    q_score = quality.score_content(content)
+    if not (q_score.acceptable or pt_done == ProviderType.LLMS_TXT):
+        cache_negative.write_negative_cache(_get_cache(), url, p_name_done, "thin_content", 1800)
+        if domain:
+            _routing_memory.record(domain, p_name_done, False, latency, q_score.score)
+        return None, False
+
+    _circuit_breakers.record_success(p_name_done)
+    metrics.record_provider(pt_done, latency, True)
+    if domain:
+        _routing_memory.record(domain, p_name_done, True, latency, q_score.score)
+    if trace:
+        trace.total_latency_ms = int((time.time() - start_time) * 1000)
+        trace.final_source = p_name_done
+        trace.final_score = q_score.score
+        trace.success = True
+    if pt_done == ProviderType.LLMS_TXT:
+        out: dict[str, Any] = {
+            "source": "llms.txt",
+            "url": url,
+            "content": compact_content(content, max_chars),
+            "metrics": metrics,
+        }
+        if trace:
+            out["trace"] = trace.to_dict()
+        return out, True
+    if isinstance(res_or_content, ResolvedResult):
+        res_or_content.metrics, res_or_content.score = metrics, q_score.score
+        out = res_or_content.to_dict()
+        if trace:
+            out["trace"] = trace.to_dict()
+        return out, True
+    return None, True
+
+
+def _process_probe_result(
+    future: concurrent.futures.Future[Any],
+    active_futures: dict[concurrent.futures.Future[Any], tuple[str, ProviderType, float]],
+    budget: routing.ResolutionBudget,
+    url: str,
+    max_chars: int,
+    metrics: ResolveMetrics,
+    trace: ResolutionTrace | None,
+    start_time: float,
+    domain: str,
+) -> tuple[dict[str, Any] | None, bool]:
+    """Process a single completed provider probe, recording budget and metrics."""
+    p_name_done, pt_done, s_time = active_futures.pop(future)
+    latency = int((time.time() - s_time) * 1000)
+    budget.record_attempt(is_paid=pt_done.is_paid(), latency_ms=latency)
+    try:
+        res_or_content = future.result()
+    except Exception as e:
+        err_type = _detect_error_type(e)
+        if err_type not in (ErrorType.AUTH_ERROR, ErrorType.SSRF_BLOCKED):
+            _circuit_breakers.record_failure(p_name_done)
+        if trace:
+            step = TraceStep(tool=p_name_done, duration_ms=latency, success=False, error=str(e))
+            trace.steps.append(step)
+        metrics.record_provider(pt_done, latency, False)
+        return None, False
+    return _build_probe_output(
+        res_or_content,
+        p_name_done,
+        pt_done,
+        latency,
+        url,
+        max_chars,
+        metrics,
+        trace,
+        start_time,
+        domain,
+    )
+
+
 def resolve_url_stream(
     url: str, max_chars: int = MAX_CHARS, profile: Profile = Profile.BALANCED,
     trace: ResolutionTrace | None = None,
@@ -175,52 +348,10 @@ def resolve_url_stream(
     )
     start_time = time.time()
 
-    if any(url.lower().endswith(ext) for ext in [".pdf", ".docx", ".pptx"]):
-        res = resolve_with_docling(url, max_chars)
-        if res.ok:
-            result = ResolvedResult(source=res.source, content=res.content or "", url=res.url)
-            result.meta = res.meta
-            result.metrics = metrics
-            result_dict = result.to_dict()
-            if trace:
-                step = TraceStep(
-                    tool="docling",
-                    duration_ms=int((time.time() - start_time) * 1000),
-                    success=True,
-                    quality_score=res.meta.quality_score if res.meta else 0.0,
-                    content_length=len(res.content or ""),
-                )
-                trace.steps.append(step)
-                trace.total_latency_ms = int((time.time() - start_time) * 1000)
-                trace.final_source = "docling"
-                trace.final_score = res.meta.quality_score if res.meta else 0.0
-                trace.success = True
-                result_dict["trace"] = trace.to_dict()
-            yield result_dict
-            return
-    if any(url.lower().endswith(ext) for ext in [".png", ".jpg", ".jpeg"]):
-        res = resolve_with_ocr(url, max_chars)
-        if res.ok:
-            result = ResolvedResult(source=res.source, content=res.content or "", url=res.url)
-            result.meta = res.meta
-            result.metrics = metrics
-            result_dict = result.to_dict()
-            if trace:
-                step = TraceStep(
-                    tool="ocr",
-                    duration_ms=int((time.time() - start_time) * 1000),
-                    success=True,
-                    quality_score=res.meta.quality_score if res.meta else 0.0,
-                    content_length=len(res.content or ""),
-                )
-                trace.steps.append(step)
-                trace.total_latency_ms = int((time.time() - start_time) * 1000)
-                trace.final_source = "ocr"
-                trace.final_score = res.meta.quality_score if res.meta else 0.0
-                trace.success = True
-                result_dict["trace"] = trace.to_dict()
-            yield result_dict
-            return
+    special = _resolve_special_document(url, max_chars, start_time, metrics, trace)
+    if special is not None:
+        yield special
+        return
 
     provider_names = routing.plan_provider_order(
         target=url, is_url=True, routing_memory=_routing_memory
@@ -279,98 +410,25 @@ def resolve_url_stream(
                     return_when=concurrent.futures.FIRST_COMPLETED,
                 )
 
-                found_acceptable = False
                 for f in list(done):
                     if f not in active_futures:
                         continue
-                    p_name_done, pt_done, s_time = active_futures.pop(f)
-                    latency = int((time.time() - s_time) * 1000)
-                    budget.record_attempt(is_paid=pt_done.is_paid(), latency_ms=latency)
-                    try:
-                        res_or_content = f.result()
-                    except Exception as e:
-                        err_type = _detect_error_type(e)
-                        if err_type not in (ErrorType.AUTH_ERROR, ErrorType.SSRF_BLOCKED):
-                            _circuit_breakers.record_failure(p_name_done)
-                        if trace:
-                            step = TraceStep(
-                                tool=p_name_done,
-                                duration_ms=latency,
-                                success=False,
-                                error=str(e),
-                            )
-                            trace.steps.append(step)
-                        metrics.record_provider(pt_done, latency, False)
-                        continue
-                    if res_or_content:
-                        if isinstance(res_or_content, ProviderResult):
-                            if res_or_content.ok:
-                                content = res_or_content.content or ""
-                            else:
-                                _circuit_breakers.record_failure(p_name_done)
-                                metrics.record_provider(pt_done, latency, False)
-                                if trace:
-                                    step = TraceStep(
-                                        tool=p_name_done,
-                                        duration_ms=latency,
-                                        success=False,
-                                        error=res_or_content.error,
-                                    )
-                                    trace.steps.append(step)
-                                continue
-                        elif isinstance(res_or_content, ResolvedResult):
-                            content = res_or_content.content
-                        else:
-                            content = str(res_or_content)
+                    out, accepted = _process_probe_result(
+                        f,
+                        active_futures,
+                        budget,
+                        url,
+                        max_chars,
+                        metrics,
+                        trace,
+                        start_time,
+                        domain,
+                    )
+                    if accepted:
+                        if out is not None:
+                            yield out
+                        break
 
-                        q_score = quality.score_content(content)
-                        if q_score.acceptable or pt_done == ProviderType.LLMS_TXT:
-                            _circuit_breakers.record_success(p_name_done)
-                            metrics.record_provider(pt_done, latency, True)
-                            if domain:
-                                _routing_memory.record(
-                                    domain, p_name_done, True, latency, q_score.score
-                                )
-
-                            if trace:
-                                trace.total_latency_ms = int((time.time() - start_time) * 1000)
-                                trace.final_source = p_name_done
-                                trace.final_score = q_score.score
-                                trace.success = True
-                            if pt_done == ProviderType.LLMS_TXT:
-                                out = {
-                                    "source": "llms.txt",
-                                    "url": url,
-                                    "content": compact_content(content, max_chars),
-                                    "metrics": metrics,
-                                }
-                                if trace:
-                                    out["trace"] = trace.to_dict()
-                                yield out
-                            elif isinstance(res_or_content, ResolvedResult):
-                                res_or_content.metrics, res_or_content.score = (
-                                    metrics,
-                                    q_score.score,
-                                )
-                                out = res_or_content.to_dict()
-                                if trace:
-                                    out["trace"] = trace.to_dict()
-                                yield out
-                            break
-                        else:
-                            cache_negative.write_negative_cache(
-                                cache, url, p_name_done, "thin_content", 1800
-                            )
-                            if domain:
-                                _routing_memory.record(
-                                    domain, p_name_done, False, latency, q_score.score
-                                )
-                    else:
-                        _circuit_breakers.record_failure(p_name_done)
-                        metrics.record_provider(pt_done, latency, False)
-
-                if found_acceptable:
-                    return
                 if done:
                     break
                 if not active_futures:
