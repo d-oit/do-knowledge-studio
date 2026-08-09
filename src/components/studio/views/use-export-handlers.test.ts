@@ -3,7 +3,7 @@ import { renderHook, act } from '@testing-library/react'
 import type { RefObject } from 'react'
 
 vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
+  toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
 }))
 
 vi.mock('./export-types', () => ({
@@ -29,6 +29,17 @@ vi.mock('@/lib/export/encrypt', () => ({
   buildEncryptedReaderHtml: vi.fn((enc: string) => `<html>${enc}</html>`),
 }))
 
+vi.mock('@/lib/okf/import', () => ({
+  parseOkfBundle: vi.fn(),
+}))
+
+vi.mock('fflate', () => ({
+  unzipSync: vi.fn(),
+  zipSync: vi.fn(() => new Uint8Array([1, 2, 3])),
+  strToU8: vi.fn((s: string) => new TextEncoder().encode(s)),
+  strFromU8: vi.fn((d: Uint8Array) => new TextDecoder().decode(d)),
+}))
+
 import { useExportHandlers } from './use-export-handlers'
 import { toast } from 'sonner'
 import { downloadFile, downloadBlob } from './export-types'
@@ -38,6 +49,8 @@ import {
   parseImportFile,
 } from './export-helpers'
 import { encryptData, buildEncryptedReaderHtml } from '@/lib/export/encrypt'
+import { parseOkfBundle } from '@/lib/okf/import'
+import { unzipSync } from 'fflate'
 
 /** The mock entities. */
 const mockEntities = [
@@ -63,22 +76,27 @@ const createFileInputRef = (): RefObject<HTMLInputElement | null> => {
 
 /**
  * Runs `fn` with a synchronous StubFileReader installed that resolves
- * `readAsText` with `content`, then always restores the original FileReader.
- * @param content - Text the stub returns from readAsText.
+ * `readAsText`/`readAsArrayBuffer` with the given content, then always
+ * restores the original FileReader.
+ * @param content - Payload the stub returns from the read methods.
  * @param fn - Test body executed while the stub is installed.
  */
-const withStubFileReader = (content: string, fn: () => void): void => {
+const withStubFileReader = (content: string | ArrayBuffer, fn: () => void): void => {
   /** The original file reader. */
   const originalFileReader = global.FileReader
   class StubFileReader {
     /** The result. */
-    result: string | null = null
+    result: string | ArrayBuffer | null = null
     /** The onload. */
     onload: (() => void) | null = null
     /** The onerror. */
     onerror: (() => void) | null = null
     readAsText() {
-      this.result = content
+      this.result = typeof content === 'string' ? content : new TextDecoder().decode(content)
+      this.onload?.()
+    }
+    readAsArrayBuffer() {
+      this.result = typeof content === 'string' ? new TextEncoder().encode(content).buffer as ArrayBuffer : content
       this.onload?.()
     }
   }
@@ -99,6 +117,22 @@ const makeFileChangeEvent = (fileName: string, content: string): React.ChangeEve
   Object.defineProperty(input, 'files', { value: [file] })
   return { target: input } as React.ChangeEvent<HTMLInputElement>
 }
+
+/** Builds a staged import preview fixture for confirm-import tests. */
+const makeImportPreview = () => ({
+  /** Entities to serialize. */
+  entities: mockEntities,
+  /** The library claims being processed. */
+  claims: mockClaims,
+  /** Number of entities in the payload. */
+  entityCount: 1,
+  /** Number of claims in the payload. */
+  claimCount: 1,
+  /** Claim schema version. */
+  version: 1,
+  /** Entity ids that already exist in the library. */
+  duplicateIds: [] as string[],
+})
 
 /** The render use export handlers. */
 const renderUseExportHandlers = (overrides: Partial<Parameters<typeof useExportHandlers>[0]> = {}) => {
@@ -255,12 +289,7 @@ describe('useExportHandlers', () => {
     /** Callback that stages the parsed import preview. */
     const setImportPreview = vi.fn()
     /** The preview. */
-    const preview = {
-      /** Entities to serialize. */
-      entities: mockEntities, claims: mockClaims,
-      /** Number of entities in the payload. */
-      entityCount: 1, claimCount: 1, version: 1, duplicateIds: [],
-    }
+    const preview = makeImportPreview()
     const { result } = renderUseExportHandlers({
       importPreview: preview, setImportPreview, importWithRollback,
     })
@@ -276,12 +305,7 @@ describe('useExportHandlers', () => {
     /** Callback that stages the parsed import preview. */
     const setImportPreview = vi.fn()
     /** The preview. */
-    const preview = {
-      /** Entities to serialize. */
-      entities: mockEntities, claims: mockClaims,
-      /** Number of entities in the payload. */
-      entityCount: 1, claimCount: 1, version: 1, duplicateIds: [],
-    }
+    const preview = makeImportPreview()
     const { result } = renderUseExportHandlers({
       importPreview: preview, setImportPreview, importWithRollback,
     })
@@ -388,6 +412,40 @@ describe('useExportHandlers', () => {
       expect(setImportPreview).toHaveBeenCalledWith(expect.objectContaining({
         /** Entity ids that already exist in the library. */
         duplicateIds: ['ent-1'],
+      }))
+    })
+  })
+
+  it('handleFileChange warns on partial OKF import errors', () => {
+    /** Callback that stages the parsed import preview. */
+    const setImportPreview = vi.fn()
+    /** The imported entities. */
+    const importedEntities = [
+      { id: 'new-1', name: 'New', type: 'note' as const, description: '', content: '', tags: [], createdAt: '', updatedAt: '', links: [] },
+    ]
+    vi.mocked(unzipSync).mockReturnValue({
+      'okf-bundle/index.md': new TextEncoder().encode('okf_version: "0.2"\n'),
+      'okf-bundle/concepts/ok.md': new TextEncoder().encode('# OK'),
+    } as unknown as ReturnType<typeof unzipSync>)
+    vi.mocked(parseOkfBundle).mockReturnValue({
+      /** Entities to serialize. */
+      entities: importedEntities,
+      /** The library claims being processed. */
+      claims: [],
+      /** The errors. */
+      errors: ['broken.md: invalid YAML frontmatter'],
+    })
+
+    withStubFileReader(new Uint8Array([1, 2, 3]).buffer as ArrayBuffer, () => {
+      const { result } = renderUseExportHandlers({ setImportPreview })
+      act(() => {
+        result.current.handleFileChange(makeFileChangeEvent('import.zip', 'content'))
+      })
+
+      expect(toast.warning).toHaveBeenCalledWith('Partial import', expect.anything())
+      expect(setImportPreview).toHaveBeenCalledWith(expect.objectContaining({
+        /** Entities to serialize. */
+        entities: importedEntities,
       }))
     })
   })
