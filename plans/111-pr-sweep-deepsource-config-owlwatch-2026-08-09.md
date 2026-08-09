@@ -1,66 +1,69 @@
 # Plan 111 — PR Sweep: DeepSource Config Root Cause + PR #624 Thread Remediation (2026-08-09)
 
-**Status**: IN PROGRESS
-**Scope**: Address all open PRs (#624, #625, #626), the failing DeepSource JS check on #624, and stale bot threads.
+**Status**: DONE — all gates green; PRs awaiting GitHub merge-state refresh (Plan 098 staleness)
+**Scope**: Address all open PRs (#624, #625, #626), the failing DeepSource JS check on #624, stale bot threads, and a concurrent-agent conflict on the OKF branch.
 
-## Summary of Outcomes
+## Final PR State
 
-| Item | State |
-|------|-------|
-| PR #625 (owlwatch dep bump) | Fully green, 0 threads, auto-merge armed — awaiting GitHub merge-state refresh (Plan 098 staleness) |
-| PR #626 (owlwatch fixes) | Fully green, 0 threads (13 total, all resolved), auto-merge armed — awaiting refresh |
-| PR #624 (OKF bundle) | Code findings fixed; 8 OwlWatch threads replied+resolved; DeepSource threads covered by config suppression |
-| PR #627 (config-fix, NEW) | `fix(ci): rename JS analyzer to valid 'javascript' name` — all checks green, auto-merge armed — awaiting refresh |
+| PR | Threads | Required check (Codacy) | Notes |
+|----|---------|--------------------------|-------|
+| #625 (dependabot dompurify) | 0/1 unresolved | ✅ pass | Auto-merge armed; recreated after Dependabot auto-closed it on a close/reopen nudge |
+| #626 (owlwatch remediation) | 0/13 unresolved | ✅ pass | Auto-merge armed |
+| #624 (OKF bundle) | 0/62 resolved | ✅ pass | All threads replied+resolved; DeepSource JS fail is metric-only (informational) |
+| #627 (config-fix, NEW) | 0 | ✅ pass | Auto-merge armed |
+
+All four report `mergeStateStatus: BLOCKED` — **GitHub merge-state staleness** per Plan 098: every ruleset gate verified green via rule endpoints / check runs / thread counts / approvals. Auto-merge is armed on all; merges complete on GitHub's cache refresh.
 
 ## Root Cause: DeepSource ignores `.deepsource.toml` on PR #624
 
-**Definitive evidence** (from DeepSource run page NUXT payload for run `6142cfeb`, which analyzed the post-rename commit `0c4a81f`):
-
-The effective repo config used by the run did **not** match `.deepsource.toml`:
+**Definitive evidence** (DeepSource run page NUXT payload, run `6142cfeb` analyzing post-rename commit `0c4a81f`):
 
 | Setting | `.deepsource.toml` | Effective (dashboard) |
 |---------|--------------------|-----------------------|
-| analyzer name | `javascript` (renamed) | `javascript` (name fix verified in docs: shortcode is `javascript`) |
+| analyzer name | `javascript` (renamed) | `javascript` (shortcode confirmed in docs) |
 | `module_system` | `es-modules` | **`commonjs`** |
 | `cyclomatic_complexity_threshold` | `critical` | **`low`** |
 | `skip_doc_coverage` | 6 artifact types | **absent** |
 | `issue_patterns` (JS-R1005, JS-0067, …) | 11 suppressions | **absent** |
 
-Key doc finding (docs.deepsource.com configure-analyzers): *"If you use a `.deepsource.toml` configuration file, it must be committed to the repository's default branch for analysis to activate."*
+Key doc finding: *"If you use a `.deepsource.toml` configuration file, it must be committed to the repository's default branch for analysis to activate."*
 
-**Conclusion**: `main` still had the legacy invalid analyzer name `javascript-typescript` (docs list valid JS shortcode as `javascript`), so DeepSource silently ignored the JS analyzer section and fell back to dashboard defaults. Consequence: 7 JS-R1005 issues raised with **0 suppressed**, and the doc-coverage metric counted all artifacts.
-
-**Fix**: PR #627 renames the JS analyzer to the valid `javascript` name on `main`. Once merged, DeepSource reads the repo's own `issue_patterns`/`skip_doc_coverage` and re-analysis of #624 should suppress the noise threads.
+`main` still had the legacy invalid analyzer name `javascript-typescript`, so DeepSource ignored the JS analyzer section and used dashboard defaults → 7 JS-R1005 raised with 0 suppressed, doc-coverage metric counted all artifacts. **Fix**: PR #627 renames to `javascript` on `main` (user-approved; AGENTS.md lint-suppression hard rule).
 
 ## DDP (External Dependencies) metric — investigated, informational
 
-- DDP = "total number of 3rd-party dependencies used in this repository"; `trendPositive: false` → increasing deps is the negative direction.
-- PR #624 adds 2 genuinely required deps: `fflate` (zipSync/unzipSync for OKF bundle compression) and `yaml` (frontmatter parse/stringify).
-- **DeepSource is NOT a required merge check** — the `main` ruleset requires only `Codacy Static Code Analysis`. The DDP gate failure is informational for merging.
-- Threshold changes are dashboard-only (no API token available; documented in Plan 104).
+- DDP = total 3rd-party deps used; `trendPositive: false` → increasing deps is the negative direction.
+- #624 adds 2 genuinely required deps: `fflate` (zipSync/unzipSync for OKF bundles) and `yaml` (frontmatter).
+- **DeepSource is NOT a required merge check** — ruleset requires only `Codacy Static Code Analysis`.
+- Threshold changes are dashboard-only (no API token; Plan 104).
 
-## PR #624 Thread Remediation
+## PR #624 Code Fixes (all validated — 35 OKF/handler tests + typecheck green)
 
-### OwlWatch (8 threads) — all replied + resolved with evidence
-1. `parseOkfBundle` 25 CCN → fixed in `267ef00` (now 12-line orchestrator; `parseOkfFile`/`parseClaims`/`buildEntity` extracted)
-2. File path non-null assertion → fixed in `267ef00` (`path.split('/').pop() ?? ''`)
-3. Hardcoded verification status → fixed (derived from `trustTier(fm.verified)`, documented in `dfff869`)
-4. `useExportHandlers` 176 lines → addressed (thin dispatcher; per-format handlers extracted)
-5. Missing crypto global guard → fixed in `267ef00` (`uuid()` helper with typeof guard + RFC-4122 fallback)
-6. Duplicate test setup → fixed in `8fdeece` (extracted `withStubFileReader()` + `makeFileChangeEvent()`)
-7. `handleExport` 107 lines → resolved (was a ~20-line switch since `dfff869`; thread measured pre-split code)
-8. Insecure Math.random UUID → fixed in `267ef00` (crypto.randomUUID primary; Math.random only fallback)
+| Commit | Change |
+|--------|--------|
+| `dfff869` | Split `handleExport` into per-format handlers; derive verification from trust tier |
+| `0c4a81f` | Rename JS analyzer to valid `javascript` name |
+| `267ef00` | Extract `parseOkfFile`/`parseClaims`/`buildEntity`; add `uuid()` crypto guard + path guard |
+| `8fdeece` | Extract `withStubFileReader()`/`makeFileChangeEvent()` test helpers; dedupe StubFileReader blocks |
+| `fa271d9` | Replace `Math.random` fallback with `crypto.getRandomValues` (Codacy weak-RNG) |
+| `3c940be` | Extract shared `LibraryPayload` interface (OwlWatch duplication) |
+| `1af799d` | **Restore reviewed fixes** reverted by stale concurrent push (jules bot `223beca`) |
+| `a72f617` | Guard `crypto.getRandomValues` in `uuid()` fallback; throw on absent Web Crypto (OwlWatch HIGH) |
+| `68a9690` | Surface partial OKF import errors via warning toast; dedupe test preview fixture |
+| `47a92c1` (bot) | Refine trust helpers (compatible: `trustTier` returns `'human-reviewed'`/`'machine-confirmed'`/`'unverified'`) |
 
-### DeepSource (25 threads) — classified, all covered
-- 23 threads marked `outdated=True` (anchored to pre-refactor code)
-- Remaining threads: JS-R1005 (complexity), JS-0067 (global scope), JS-C1002 (short vars), JS-0116 (async no-await), redundant `undefined` in `trust.test.ts` — **all covered by `issue_patterns` suppressions in `.deepsource.toml`** (JS-R1005, JS-0067, JS-C1002, JS-0116) or already fixed in current code (redundant `undefined` gone from `trust.test.ts`)
-- Expected to auto-resolve after PR #627 lands and DeepSource re-analyzes with the repo config active.
+## Threads Resolved (with evidence replies)
 
-## Commits on the OKF branch (PR #624)
-- `0c4a81f` fix(ci): rename JS analyzer to valid 'javascript' name
-- `267ef00` fix(okf): extract per-file parse loop, add crypto fallback, guard path parsing
-- `8fdeece` test(okf): extract shared StubFileReader helper, dedupe import tests; fix dup JSDoc
+- **OwlWatch (14)**: parseOkfBundle CCN, path non-null assertion, hardcoded verification, useExportHandlers length, crypto guard (×2), duplicate test setup (×2), handleExport length (×2, stale measurements), Math.random→getRandomValues, OKF version false-positive, LibraryPayload duplication, partial-import errors ignored, cross-reference validation (by design, §11).
+- **DeepSource (40+)**: stale anchors or covered by `issue_patterns` suppressions (JS-R1005, JS-0067, JS-C1002, JS-0116) activating via #627, or already fixed (redundant `undefined`).
+
+## Concurrent-Agent Conflict (important learning)
+
+google-labs-jules[bot] pushed `223beca` ("test(e2e): improve command palette test robustness") whose diff also **reverted all reviewed OKF fixes** — a stale local working-tree state (commit message only concerns the 2-line e2e change, yet it rewrote 11 OKF files). Resolved in `1af799d` by restoring reviewed files while keeping the bot's legit e2e change. Verified tests; re-resolved 15 threads the bot's push reopened.
+
+**Learning**: with multiple agents on one branch, a force-push from a stale snapshot can silently revert reviewed work — always re-verify branch head before pushing and re-check threads/checks after any external push.
 
 ## Follow-up
-- Confirm #627 merges (auto-merge armed; Plan 098 staleness). Re-verify #624 DeepSource re-analysis shows suppressed issues; resolve any remaining bot threads; merge #624.
-- Confirm #625/#626 auto-merges complete.
+- Confirm #627 merges → main gets valid config → DeepSource re-analysis of #624 suppresses remaining metric/issue noise.
+- Confirm #625/#626/#624 auto-merges complete once GitHub cache refreshes.
+- Dashboard-only DDP/DCV metric thresholds remain admin territory (Plan 104).
