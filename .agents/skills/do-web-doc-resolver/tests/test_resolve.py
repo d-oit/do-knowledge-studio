@@ -281,6 +281,29 @@ class TestResolveUrlStreamCascade:
         assert first["url"] == "https://example.com"
         assert len(first["content"]) >= 600
 
+    @patch("scripts.resolve.routing.plan_provider_order", return_value=["direct_fetch"])
+    @patch("scripts.resolve.fetch_url_content")
+    @patch("scripts.resolve.quality.score_content")
+    def test_string_result_yields_content(self, mock_score, mock_fetch, mock_plan):
+        """
+        A plain-string probe result should be yielded, not silently dropped.
+        Args:
+            mock_score: Injected pytest fixture.
+            mock_fetch: Injected pytest fixture.
+            mock_plan: Injected pytest fixture.
+        """
+        from scripts.models import Profile
+        from scripts.resolve import resolve_url_stream
+
+        mock_score.return_value = self._make_quality(acceptable=True)
+        mock_fetch.return_value = "B" * 600  # fetch_url_content returns a plain str
+        results = list(resolve_url_stream("https://example.com", profile=Profile.FAST))
+        assert results
+        first = results[0]
+        assert first["source"] == "direct_fetch"
+        assert first["url"] == "https://example.com"
+        assert len(first["content"]) >= 600
+
     @patch("scripts.resolve.routing.plan_provider_order", return_value=["llms_txt"])
     @patch("scripts.resolve.fetch_llms_txt")
     def test_llms_txt_yields_compacted_output(self, mock_llms, mock_plan):

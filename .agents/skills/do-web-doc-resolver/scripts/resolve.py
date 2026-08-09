@@ -374,6 +374,45 @@ def _build_probe_output(
     _record_probe_success(
         p_name_done, pt_done, latency, metrics, trace, start_time, domain, q_score
     )
+    out = _build_success_output(
+        res_or_content, p_name_done, pt_done, url, content, max_chars, metrics, trace, q_score
+    )
+    return out, True
+
+
+def _build_success_output(
+    res_or_content: Any,
+    p_name_done: str,
+    pt_done: ProviderType,
+    url: str,
+    content: str,
+    max_chars: int,
+    metrics: ResolveMetrics,
+    trace: ResolutionTrace | None,
+    q_score: Any,
+) -> dict[str, Any]:
+    """Build the yielded result dict for an accepted probe result.
+
+    llms.txt probes yield a compacted text dict; ResolvedResult objects yield
+    their serialized form; anything else (plain strings, ProviderResult)
+    yields a generic result dict keyed by the provider name. Previously the
+    generic case returned ``(None, True)`` — the probe was recorded as a
+    success but the result was dropped, failing the resolution.
+
+    Args:
+        res_or_content: The provider result object or raw content.
+        p_name_done: Provider name that completed.
+        pt_done: Provider type that completed.
+        url: The URL being resolved.
+        content: Normalized probe content.
+        max_chars: Maximum content length to retain.
+        metrics: Metrics accumulator.
+        trace: Optional trace to attach.
+        q_score: Quality score of the content.
+
+    Returns:
+        The result dict to yield.
+    """
     if pt_done == ProviderType.LLMS_TXT:
         out: dict[str, Any] = {
             "source": "llms.txt",
@@ -381,16 +420,19 @@ def _build_probe_output(
             "content": compact_content(content, max_chars),
             "metrics": metrics,
         }
-        if trace:
-            out["trace"] = trace.to_dict()
-        return out, True
-    if isinstance(res_or_content, ResolvedResult):
+    elif isinstance(res_or_content, ResolvedResult):
         res_or_content.metrics, res_or_content.score = metrics, q_score.score
         out = res_or_content.to_dict()
-        if trace:
-            out["trace"] = trace.to_dict()
-        return out, True
-    return None, True
+    else:
+        out = {
+            "source": p_name_done,
+            "url": url,
+            "content": compact_content(content, max_chars),
+            "metrics": metrics,
+        }
+    if trace:
+        out["trace"] = trace.to_dict()
+    return out
 
 
 def _process_probe_result(
@@ -557,6 +599,101 @@ def _drain_completed_probes(
     return None
 
 
+def _url_cascade(url: str, max_chars: int) -> dict[str, tuple[ProviderType, Callable[[], Any]]]:
+    """Build the URL provider cascade: provider name → (type, zero-arg launcher).
+
+    Args:
+        url: The URL being resolved.
+        max_chars: Maximum content length to retain.
+
+    Returns:
+        Mapping of provider name to (ProviderType, probe callable).
+    """
+    return {
+        "llms_txt": (ProviderType.LLMS_TXT, lambda: fetch_llms_txt(url)),
+        "jina": (ProviderType.JINA, lambda: resolve_with_jina(url, max_chars)),
+        "firecrawl": (ProviderType.FIRECRAWL, lambda: resolve_with_firecrawl(url, max_chars)),
+        "direct_fetch": (
+            ProviderType.DIRECT_FETCH,
+            lambda: fetch_url_content(url, max_chars=max_chars),
+        ),
+        "mistral_browser": (
+            ProviderType.MISTRAL_BROWSER,
+            lambda: resolve_with_mistral_browser(url, max_chars),
+        ),
+        "duckduckgo": (ProviderType.DUCKDUCKGO, lambda: resolve_with_duckduckgo(url, max_chars)),
+    }
+
+
+def _probe_round(
+    i: int,
+    p_name: str,
+    pt: ProviderType,
+    func: Callable[[], Any],
+    eligible: list[str],
+    budget: routing.ResolutionBudget,
+    cache: Any,
+    url: str,
+    executor: concurrent.futures.ThreadPoolExecutor,
+    active_futures: dict[concurrent.futures.Future[Any], tuple[str, ProviderType, float]],
+    domain: str,
+    max_chars: int,
+    metrics: ResolveMetrics,
+    trace: ResolutionTrace | None,
+    start_time: float,
+) -> tuple[bool, dict[str, Any] | None]:
+    """Launch one URL probe and drain completed futures.
+
+    Returns ``(stop, output)``: ``stop`` halts the cascade, ``output`` is the
+    result to yield (or None when nothing completed acceptably yet).
+
+    Args:
+        i: Index of the current provider in the eligible list.
+        p_name: Provider name to probe.
+        pt: Provider type to probe.
+        func: Zero-argument probe callable.
+        eligible: Ordered provider list for the cascade.
+        budget: Resolution budget tracker.
+        cache: Cache handle for negative-cache lookups.
+        url: The URL being resolved.
+        executor: Thread pool used to launch probes.
+        active_futures: Map of in-flight futures to probe metadata.
+        domain: Extracted domain used for routing-memory keys.
+        max_chars: Maximum content length to retain.
+        metrics: Metrics accumulator.
+        trace: Optional trace to populate.
+        start_time: Epoch seconds when the resolution started.
+
+    Returns:
+        (stop flag, output dict or None).
+    """
+    future, stop = _launch_url_probe(p_name, pt, func, budget, cache, url, executor)
+    if stop:
+        return True, None
+    if future is None:
+        return False, None
+    logger.info("Starting probe: %s", p_name)
+    start_time_probe = time.time()
+    active_futures[future] = (p_name, pt, start_time_probe)
+    threshold = _routing_memory.get_p75_latency(domain or "any", p_name) / 1000.0
+    out = _drain_completed_probes(
+        active_futures,
+        i,
+        eligible,
+        p_name,
+        threshold,
+        start_time_probe,
+        budget,
+        url,
+        max_chars,
+        metrics,
+        trace,
+        start_time,
+        domain,
+    )
+    return False, out
+
+
 def resolve_url_stream(
     url: str, max_chars: int = MAX_CHARS, profile: Profile = Profile.BALANCED,
     trace: ResolutionTrace | None = None,
@@ -595,20 +732,7 @@ def resolve_url_stream(
     provider_names = routing.plan_provider_order(
         target=url, is_url=True, routing_memory=_routing_memory
     )
-    cascade_map: dict[str, tuple[ProviderType, Any]] = {
-        "llms_txt": (ProviderType.LLMS_TXT, lambda: fetch_llms_txt(url)),
-        "jina": (ProviderType.JINA, lambda: resolve_with_jina(url, max_chars)),
-        "firecrawl": (ProviderType.FIRECRAWL, lambda: resolve_with_firecrawl(url, max_chars)),
-        "direct_fetch": (
-            ProviderType.DIRECT_FETCH,
-            lambda: fetch_url_content(url, max_chars=max_chars),
-        ),
-        "mistral_browser": (
-            ProviderType.MISTRAL_BROWSER,
-            lambda: resolve_with_mistral_browser(url, max_chars),
-        ),
-        "duckduckgo": (ProviderType.DUCKDUCKGO, lambda: resolve_with_duckduckgo(url, max_chars)),
-    }
+    cascade_map = _url_cascade(url, max_chars)
 
     cache = _get_cache()
     domain = routing.extract_domain(url)
@@ -619,32 +743,12 @@ def resolve_url_stream(
     try:
         for i, p_name in enumerate(eligible):
             pt, func = cascade_map[p_name]
-            future, stop = _launch_url_probe(p_name, pt, func, budget, cache, url, executor)
+            stop, out = _probe_round(
+                i, p_name, pt, func, eligible, budget, cache, url, executor,
+                active_futures, domain, max_chars, metrics, trace, start_time,
+            )
             if stop:
                 break
-            if future is None:
-                continue
-
-            logger.info("Starting probe: %s", p_name)
-            start_time_probe = time.time()
-            active_futures[future] = (p_name, pt, start_time_probe)
-            threshold = _routing_memory.get_p75_latency(domain or "any", p_name) / 1000.0
-
-            out = _drain_completed_probes(
-                active_futures,
-                i,
-                eligible,
-                p_name,
-                threshold,
-                start_time_probe,
-                budget,
-                url,
-                max_chars,
-                metrics,
-                trace,
-                start_time,
-                domain,
-            )
             if out is not None:
                 yield out
     finally:
@@ -687,6 +791,192 @@ def resolve_query(
     return {"source": "none", "query": query, "content": "Failed"}
 
 
+# Provider cascade for search queries: name → (type, (query, max_chars) callable).
+_QUERY_CASCADE: dict[str, tuple[ProviderType, Callable[[str, int], Any]]] = {
+    "exa_mcp": (ProviderType.EXA_MCP, resolve_with_exa_mcp),
+    "exa": (ProviderType.EXA, resolve_with_exa),
+    "tavily": (ProviderType.TAVILY, resolve_with_tavily),
+    "duckduckgo": (ProviderType.DUCKDUCKGO, resolve_with_duckduckgo),
+    "mistral_websearch": (ProviderType.MISTRAL_WEBSEARCH, resolve_with_mistral_websearch),
+}
+
+
+def _build_query_output(
+    res: Any,
+    p_name_done: str,
+    metrics: ResolveMetrics,
+    q_score: Any,
+    trace: ResolutionTrace | None,
+    start_time: float,
+) -> dict[str, Any]:
+    """Build the yielded dict for an accepted query result.
+
+    ProviderResult objects are normalized into ResolvedResult so consumers get
+    a uniform ``source``/``url``/``query`` shape; ResolvedResult passes through.
+
+    Args:
+        res: The provider result (ProviderResult or ResolvedResult).
+        p_name_done: Provider name that completed.
+        metrics: Metrics accumulator.
+        q_score: Quality score of the content.
+        trace: Optional trace to attach.
+        start_time: Epoch seconds when the resolution started.
+
+    Returns:
+        The serialized result dict.
+    """
+    if isinstance(res, ProviderResult):
+        result = ResolvedResult(
+            source=res.source,
+            content=res.content or "",
+            url=res.url,
+            query=res.query,
+        )
+        result.meta = res.meta
+        result.metrics, result.score = metrics, q_score.score
+        out = result.to_dict()
+    else:
+        res.metrics, res.score = metrics, q_score.score
+        out = res.to_dict()
+    if trace:
+        trace.total_latency_ms = int((time.time() - start_time) * 1000)
+        trace.final_source = p_name_done
+        trace.final_score = q_score.score
+        trace.success = True
+        out["trace"] = trace.to_dict()
+    return out
+
+
+def _process_query_result(
+    future: concurrent.futures.Future[Any],
+    active_futures: dict[concurrent.futures.Future[Any], tuple[str, ProviderType, float]],
+    budget: routing.ResolutionBudget,
+    query: str,
+    metrics: ResolveMetrics,
+    trace: ResolutionTrace | None,
+    start_time: float,
+) -> tuple[dict[str, Any] | None, bool]:
+    """Process one completed query probe.
+
+    Records budget/circuit/metrics outcomes, gates on content quality, and
+    returns ``(output, acceptable)``; ``acceptable`` tells the caller to stop.
+
+    Args:
+        future: The completed provider future.
+        active_futures: Map of in-flight futures to probe metadata.
+        budget: Resolution budget tracker.
+        query: The search query being resolved.
+        metrics: Metrics accumulator.
+        trace: Optional trace to populate.
+        start_time: Epoch seconds when the resolution started.
+
+    Returns:
+        (output dict to yield, acceptable flag).
+    """
+    p_name_done, pt_done, s_time = active_futures.pop(future)
+    latency = int((time.time() - s_time) * 1000)
+    budget.record_attempt(is_paid=pt_done.is_paid(), latency_ms=latency)
+    try:
+        res = future.result()
+    except Exception as e:
+        err_type = _detect_error_type(e)
+        if err_type not in (ErrorType.AUTH_ERROR, ErrorType.SSRF_BLOCKED):
+            _circuit_breakers.record_failure(p_name_done)
+        if trace:
+            step = TraceStep(
+                tool=p_name_done, duration_ms=latency, success=False, error=str(e)
+            )
+            trace.steps.append(step)
+        metrics.record_provider(pt_done, latency, False)
+        return None, False
+    if not res:
+        _circuit_breakers.record_failure(p_name_done)
+        metrics.record_provider(pt_done, latency, False)
+        return None, False
+    if isinstance(res, ProviderResult):
+        if not res.ok:
+            _circuit_breakers.record_failure(p_name_done)
+            if trace:
+                step = TraceStep(
+                    tool=p_name_done, duration_ms=latency, success=False, error=res.error
+                )
+                trace.steps.append(step)
+            metrics.record_provider(pt_done, latency, False)
+            return None, False
+        content = res.content or ""
+    else:
+        content = res.content
+    q_score = quality.score_content(content)
+    if not q_score.acceptable:
+        cache_negative.write_negative_cache(_get_cache(), query, p_name_done, "thin_content", 1800)
+        _routing_memory.record("query", p_name_done, False, latency, q_score.score)
+        return None, False
+    _circuit_breakers.record_success(p_name_done)
+    metrics.record_provider(pt_done, latency, True)
+    _routing_memory.record("query", p_name_done, True, latency, q_score.score)
+    out = _build_query_output(res, p_name_done, metrics, q_score, trace, start_time)
+    return out, True
+
+
+def _drain_query_probes(
+    active_futures: dict[concurrent.futures.Future[Any], tuple[str, ProviderType, float]],
+    i: int,
+    eligible: list[str],
+    p_name: str,
+    threshold: float,
+    start_time_probe: float,
+    budget: routing.ResolutionBudget,
+    query: str,
+    metrics: ResolveMetrics,
+    trace: ResolutionTrace | None,
+    start_time: float,
+) -> dict[str, Any] | None:
+    """Wait for query probe completions until an acceptable result appears.
+
+    Returns the output dict to yield, or None when the batch is exhausted
+    without an acceptable result.
+
+    Args:
+        active_futures: Map of in-flight futures to probe metadata.
+        i: Index of the current provider in the eligible list.
+        eligible: Ordered provider list for the cascade.
+        p_name: Provider name that is currently probing.
+        threshold: Hedging threshold in seconds.
+        start_time_probe: Epoch seconds when the current probe launched.
+        budget: Resolution budget tracker.
+        query: The search query being resolved.
+        metrics: Metrics accumulator.
+        trace: Optional trace to populate.
+        start_time: Epoch seconds when the resolution started.
+
+    Returns:
+        The result dict to yield, or None.
+    """
+    while active_futures:
+        elapsed = time.time() - start_time_probe
+        if i < len(eligible) - 1 and elapsed >= threshold:
+            break
+
+        done, _ = concurrent.futures.wait(
+            active_futures.keys(),
+            timeout=0.01,
+            return_when=concurrent.futures.FIRST_COMPLETED,
+        )
+        for f in list(done):
+            if f not in active_futures:
+                continue
+            out, acceptable = _process_query_result(
+                f, active_futures, budget, query, metrics, trace, start_time
+            )
+            if acceptable:
+                return out
+        if done:
+            break
+        if not active_futures:
+            break
+    return None
+
+
 def resolve_query_stream(
     query: str,
     max_chars: int = MAX_CHARS,
@@ -719,20 +1009,13 @@ def resolve_query_stream(
     provider_names = routing.plan_provider_order(
         target=query, is_url=False, skip_providers=skip, routing_memory=_routing_memory
     )
-    cascade_map = {
-        "exa_mcp": (ProviderType.EXA_MCP, resolve_with_exa_mcp),
-        "exa": (ProviderType.EXA, resolve_with_exa),
-        "tavily": (ProviderType.TAVILY, resolve_with_tavily),
-        "duckduckgo": (ProviderType.DUCKDUCKGO, resolve_with_duckduckgo),
-        "mistral_websearch": (ProviderType.MISTRAL_WEBSEARCH, resolve_with_mistral_websearch),
-    }
     cache = _get_cache()
-    eligible = [p for p in provider_names if p in cascade_map]
+    eligible = [p for p in provider_names if p in _QUERY_CASCADE]
     active_futures = {}
     executor = concurrent.futures.ThreadPoolExecutor(max_workers=max(1, len(eligible)))
     try:
         for i, p_name in enumerate(eligible):
-            pt, func = cascade_map[p_name]
+            pt, func = _QUERY_CASCADE[p_name]
             if not budget.can_try(is_paid=pt.is_paid()):
                 if budget.stop_reason in ("paid_disabled", "max_paid_attempts"):
                     continue
@@ -746,103 +1029,22 @@ def resolve_query_stream(
             future = executor.submit(func, query, max_chars)
             active_futures[future] = (p_name, pt, start_time_probe)
             threshold = _routing_memory.get_p75_latency("query", p_name) / 1000.0
-            while active_futures:
-                elapsed = time.time() - start_time_probe
-                if i < len(eligible) - 1 and elapsed >= threshold:
-                    break
-
-                done, _ = concurrent.futures.wait(
-                    active_futures.keys(),
-                    timeout=0.01,
-                    return_when=concurrent.futures.FIRST_COMPLETED,
-                )
-                found_acceptable = False
-                for f in list(done):
-                    if f not in active_futures:
-                        continue
-                    p_name_done, pt_done, s_time = active_futures.pop(f)
-                    latency = int((time.time() - s_time) * 1000)
-                    budget.record_attempt(is_paid=pt_done.is_paid(), latency_ms=latency)
-                    try:
-                        res = f.result()
-                    except Exception as e:
-                        err_type = _detect_error_type(e)
-                        if err_type not in (ErrorType.AUTH_ERROR, ErrorType.SSRF_BLOCKED):
-                            _circuit_breakers.record_failure(p_name_done)
-                        if trace:
-                            step = TraceStep(
-                                tool=p_name_done,
-                                duration_ms=latency,
-                                success=False,
-                                error=str(e),
-                            )
-                            trace.steps.append(step)
-                        metrics.record_provider(pt_done, latency, False)
-                        continue
-                    if res:
-                        if isinstance(res, ProviderResult):
-                            if not res.ok:
-                                _circuit_breakers.record_failure(p_name_done)
-                                if trace:
-                                    step = TraceStep(
-                                        tool=p_name_done,
-                                        duration_ms=latency,
-                                        success=False,
-                                        error=res.error,
-                                    )
-                                    trace.steps.append(step)
-                                metrics.record_provider(pt_done, latency, False)
-                                continue
-                            content = res.content or ""
-                        else:
-                            content = res.content
-                        q_score = quality.score_content(content)
-                        if q_score.acceptable:
-                            _circuit_breakers.record_success(p_name_done)
-                            metrics.record_provider(pt_done, latency, True)
-                            _routing_memory.record(
-                                "query", p_name_done, True, latency, q_score.score
-                            )
-
-                            found_acceptable = True
-                            if isinstance(res, ProviderResult):
-                                result = ResolvedResult(
-                                    source=res.source,
-                                    content=res.content or "",
-                                    url=res.url,
-                                    query=res.query,
-                                )
-                                result.meta = res.meta
-                                result.metrics, result.score = metrics, q_score.score
-                                out = result.to_dict()
-                            else:
-                                res.metrics, res.score = metrics, q_score.score
-                                out = res.to_dict()
-                            if trace:
-                                trace.total_latency_ms = int((time.time() - start_time) * 1000)
-                                trace.final_source = p_name_done
-                                trace.final_score = q_score.score
-                                trace.success = True
-                                out["trace"] = trace.to_dict()
-                            yield out
-                            break
-                        else:
-                            cache_negative.write_negative_cache(
-                                cache, query, p_name_done, "thin_content", 1800
-                            )
-                            _routing_memory.record(
-                                "query", p_name_done, False, latency, q_score.score
-                            )
-                    else:
-                        _circuit_breakers.record_failure(p_name_done)
-                        metrics.record_provider(pt_done, latency, False)
-
-                if found_acceptable:
-                    return
-                if done:
-                    break
-                if not active_futures:
-                    break
+            out = _drain_query_probes(
+                active_futures,
+                i,
+                eligible,
+                p_name,
+                threshold,
+                start_time_probe,
+                budget,
+                query,
+                metrics,
+                trace,
+                start_time,
+            )
+            if out is not None:
+                yield out
+                return
     finally:
         executor.shutdown(wait=False, cancel_futures=True)
 
