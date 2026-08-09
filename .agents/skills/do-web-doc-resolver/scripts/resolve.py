@@ -974,6 +974,44 @@ def _drain_query_probes(
     return None
 
 
+def _launch_query_probe(
+    p_name: str,
+    pt: ProviderType,
+    func: Callable[[str, int], Any],
+    budget: routing.ResolutionBudget,
+    cache: Any,
+    query: str,
+    max_chars: int,
+    executor: concurrent.futures.ThreadPoolExecutor,
+) -> tuple[concurrent.futures.Future[Any] | None, bool]:
+    """Submit a query probe when budget/cache/circuit state allow.
+
+    Returns ``(future, stop)``: ``future`` is None when the probe was skipped
+    and the cascade should continue with the next provider; ``stop`` signals
+    that the whole cascade should halt.
+
+    Args:
+        p_name: Provider name to probe.
+        pt: Provider type to probe.
+        func: (query, max_chars) callable that performs the probe.
+        budget: Resolution budget tracker.
+        cache: Cache handle for negative-cache lookups.
+        query: The search query being resolved.
+        max_chars: Maximum content length to retain.
+        executor: Thread pool used to launch the probe.
+
+    Returns:
+        (future or None, stop flag) as described above.
+    """
+    if not budget.can_try(is_paid=pt.is_paid()):
+        return None, budget.stop_reason not in ("paid_disabled", "max_paid_attempts")
+    if cache_negative.should_skip_from_negative_cache(cache, query, p_name):
+        return None, False
+    if _circuit_breakers.is_open(p_name):
+        return None, False
+    return executor.submit(func, query, max_chars), False
+
+
 def resolve_query_stream(
     query: str,
     max_chars: int = MAX_CHARS,
@@ -1013,17 +1051,15 @@ def resolve_query_stream(
     try:
         for i, p_name in enumerate(eligible):
             pt, func = _QUERY_CASCADE[p_name]
-            if not budget.can_try(is_paid=pt.is_paid()):
-                if budget.stop_reason in ("paid_disabled", "max_paid_attempts"):
-                    continue
+            future, stop = _launch_query_probe(
+                p_name, pt, func, budget, cache, query, max_chars, executor
+            )
+            if stop:
                 break
-            if cache_negative.should_skip_from_negative_cache(cache, query, p_name):
-                continue
-            if _circuit_breakers.is_open(p_name):
+            if future is None:
                 continue
             logger.info("Starting probe: %s", p_name)
             start_time_probe = time.time()
-            future = executor.submit(func, query, max_chars)
             active_futures[future] = (p_name, pt, start_time_probe)
             threshold = _routing_memory.get_p75_latency("query", p_name) / 1000.0
             out = _drain_query_probes(
