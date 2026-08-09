@@ -22,6 +22,11 @@ const OKF_TYPE_REVERSE: Record<string, Entity['type']> = {
 /**
  * Builds a studio Entity from parsed OKF frontmatter + body.
  * Unknown types fall back to 'concept' and unknown keys are preserved (§4.1/§11).
+ * @param fm - Parsed OKF frontmatter.
+ * @param path - Bundle-relative file path; the id is the path minus `.md` (§2).
+ * @param bodyContent - Markdown body stored as entity content.
+ * @param nowIso - ISO timestamp used for createdAt/updatedAt.
+ * @returns The studio Entity.
  */
 const buildEntity = (
   fm: z.infer<typeof OkfConceptFrontmatterSchema>,
@@ -51,6 +56,11 @@ const buildEntity = (
  * Claim verification is derived from the concept's trust tier (§5.3) rather than
  * hardcoded: only concepts carrying a human verifier map to 'verified'; anything
  * else is imported as 'unverified' to avoid misrepresenting the claim state.
+ * @param bodyContent - The concept's markdown body.
+ * @param entity - The owning entity for the extracted claims.
+ * @param fm - Parsed OKF frontmatter (sources + verified).
+ * @param nowIso - ISO timestamp used for createdAt/updatedAt.
+ * @returns The extracted claims.
  */
 const parseClaims = (
   bodyContent: string,
@@ -94,6 +104,8 @@ const parseClaims = (
  * Parse an OKF bundle (path → content) back into studio state.
  * §11: MUST NOT reject unknown types, unknown keys, broken links, or missing
  * optional fields — collect errors/warnings and continue.
+ * @param files - Map of bundle-relative path → file content.
+ * @returns Entities, claims, and any non-fatal parse errors.
  */
 export const parseOkfBundle = (files: Map<string, string>): OkfImportResult => {
   const result: OkfImportResult = { entities: [], claims: [], errors: [] }
