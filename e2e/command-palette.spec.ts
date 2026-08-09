@@ -3,6 +3,8 @@ import { test, expect } from '@playwright/test';
 test.describe('Command palette', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
+    // Ensure the main navigation is hydrated and visible before tests
+    await expect(page.getByRole('navigation', { name: /main navigation/i })).toBeVisible();
   });
 
   test('opens with Ctrl+K', async ({ page }) => {

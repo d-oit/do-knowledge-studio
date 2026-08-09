@@ -4,7 +4,7 @@ import { trustTier, isStale } from './trust'
 describe('OKF Trust Tiers & Staleness Helper', () => {
   describe('trustTier', () => {
     it('returns unverified for missing or empty verifications', () => {
-      expect(trustTier()).toBe('unverified')
+      expect(trustTier(undefined)).toBe('unverified')
       expect(trustTier([])).toBe('unverified')
     })
 
@@ -25,7 +25,7 @@ describe('OKF Trust Tiers & Staleness Helper', () => {
 
   describe('isStale', () => {
     it('returns false if stale_after is not provided', () => {
-      expect(isStale()).toBe(false)
+      expect(isStale(undefined)).toBe(false)
     })
 
     it('returns true if today is equal to or after stale_after', () => {
