@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import type { Entity, Claim } from '@/lib/studio/types'
-import type { ImportPreview, ExportFormatId, ExportOptions } from './export-types'
+import type { LibraryPayload, ImportPreview, ExportFormatId, ExportOptions } from './export-types'
 import { todayStamp, downloadFile, downloadBlob } from './export-types'
 import {
   buildJsonExport, buildMarkdownExport, buildHtmlExport,
@@ -50,19 +50,7 @@ interface ImportRollbackResult {
 }
 
 /** Inputs consumed by the export/import handlers hook. */
-interface UseExportHandlersParams {
-  /** Entities to serialize. */
-  entities: Entity[]
-  /** The library claims being processed. */
-  claims: Claim[]
-  /** Optional graph payload carried through the operation. */
-  graph?: ValidatedGraph
-  /** Optional mind map payload carried through the operation. */
-  mindMap?: ValidatedMindMap
-  /** Related entity links. */
-  links?: ValidatedLink[]
-  /** Optional tags payload carried through the operation. */
-  tags?: ValidatedTag[]
+interface UseExportHandlersParams extends LibraryPayload {
   /** Store action that commits an import with rollback on failure. */
   importWithRollback: (entities: Entity[], claims: Claim[], options?: ExportOptions) => ImportRollbackResult
   /** Store action that restores the demo dataset. */
