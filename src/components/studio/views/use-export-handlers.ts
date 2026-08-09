@@ -131,6 +131,10 @@ const handleOkfZipImport = (
         toast.error('Import failed', { description: errors.join('; ') })
         return
       }
+      if (errors.length > 0) {
+        // Partial success: stage the valid files but surface the skipped ones.
+        toast.warning('Partial import', { description: `${errors.length} file(s) skipped — ${errors.join('; ')}` })
+      }
       /** The existing ids. */
       const existingIds = new Set(entities.map((ent) => ent.id))
       setImportPreview({
