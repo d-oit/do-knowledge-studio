@@ -77,6 +77,37 @@ Body
     expect(entity.name).toBe('Unknown Type Title')
   })
 
+  it('derives claim verification from the concept trust tier, never hardcodes it', () => {
+    const makeBundle = (verifiedYaml: string) =>
+      new Map<string, string>([[
+        'concepts/verified-concept.md',
+        `---
+type: Concept
+title: Verified Concept
+${verifiedYaml}---
+
+Body text.
+
+# Claims
+
+- This claim is backed by a human review.
+`,
+      ]])
+
+    const humanVerified = parseOkfBundle(
+      makeBundle('verified:\n  - by: human:jules\n    at: 2026-07-24T00:00:00Z\n'),
+    )
+    expect(humanVerified.claims[0].verification).toBe('verified')
+
+    const machineOnly = parseOkfBundle(
+      makeBundle('verified:\n  - by: process:automated-scanner\n    at: 2026-07-24T00:00:00Z\n'),
+    )
+    expect(machineOnly.claims[0].verification).toBe('unverified')
+
+    const noVerification = parseOkfBundle(makeBundle(''))
+    expect(noVerification.claims[0].verification).toBe('unverified')
+  })
+
   it('fails gracefully on invalid yaml or missing frontmatter', () => {
     const filesMap = new Map<string, string>()
     filesMap.set('concepts/invalid.md', 'Just some random markdown content without frontmatter block.')

@@ -1,12 +1,14 @@
 import { z } from 'zod'
 
-/** OKF actor convention (§7): human:<id> | process:<id> | <producer>/<version> */
+/** OKF actor convention (§7): `human:<id>` | `process:<id>` | `<producer>/<version>`. */
 export const OkfActorSchema = z
   .string()
   .regex(/^(human:|process:|[\w.-]+\/).+$/, 'invalid OKF actor')
 
+/** ISO `YYYY-MM-DD` date used by OKF lifecycle fields. */
 export const OkfIsoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
 
+/** §5.1 source entry: the provenance record a concept cites via footnote labels. */
 export const OkfSourceSchema = z.object({
   id: z.string().optional(), // stable join key for footnote attribution (§5.1)
   resource: z.string().min(1), // REQUIRED within an entry (§5.1)
@@ -17,11 +19,13 @@ export const OkfSourceSchema = z.object({
   usage_window: z.object({ from: OkfIsoDateSchema, to: OkfIsoDateSchema }).optional(),
 })
 
+/** §5.2 actor event: who did something and when (used by generated/verified). */
 export const OkfActorEventSchema = z.object({
   by: OkfActorSchema, // REQUIRED within generated/verified (§5.2)
   at: z.string().datetime({ offset: true }).optional(),
 })
 
+/** §5.4 lifecycle status values for a concept. */
 export const OkfStatusSchema = z.enum(['draft', 'stable', 'deprecated'])
 
 /** Frontmatter shared by every OKF concept (§4.1 + §5). */
@@ -60,11 +64,13 @@ export const OkfAttestedComputationSchema = OkfConceptFrontmatterSchema.extend({
   attester: z.object({ resource: z.string() }).optional(),
 })
 
+/** One file inside an OKF bundle: a bundle-relative path plus its Markdown content. */
 export interface OkfBundleFile {
   path: string // bundle-relative, e.g. "concepts/foo.md"
   content: string
 }
 
+/** An OKF v0.2 bundle: a flat collection of files plus the format version. */
 export interface OkfBundle {
   files: OkfBundleFile[]
   okfVersion: '0.2'

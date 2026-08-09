@@ -69,6 +69,51 @@ export interface UseExportHandlersReturn {
   setShowPass: React.Dispatch<React.SetStateAction<boolean>>
 }
 
+/**
+ * Reads an OKF v0.2 .zip bundle and stages it for import preview.
+ * Non-OKF zips and unreadable files surface a toast instead of throwing.
+ */
+const handleOkfZipImport = (
+  file: File,
+  entities: Entity[],
+  setImportPreview: (preview: ImportPreview | null) => void,
+) => {
+  const reader = new FileReader()
+  reader.onload = () => {
+    try {
+      const buffer = reader.result as ArrayBuffer
+      const entries = unzipSync(new Uint8Array(buffer))
+      const filesMap = new Map<string, string>()
+      for (const [p, data] of Object.entries(entries)) {
+        if (p.endsWith('.md')) {
+          filesMap.set(p.replace(/^okf-bundle\//, ''), strFromU8(data))
+        }
+      }
+      const rootIndex = filesMap.get('index.md') ?? ''
+      if (!rootIndex.includes('okf_version')) {
+        toast.error('Import failed', { description: 'zip does not contain an OKF bundle (no okf_version in index.md)' })
+        return
+      }
+      const { entities: ents, claims: cls, errors } = parseOkfBundle(filesMap)
+      if (errors.length > 0 && ents.length === 0) {
+        toast.error('Import failed', { description: errors.join('; ') })
+        return
+      }
+      const existingIds = new Set(entities.map((ent) => ent.id))
+      setImportPreview({
+        entities: ents, claims: cls,
+        entityCount: ents.length,
+        claimCount: cls.length, version: 1,
+        duplicateIds: ents.filter((ent) => existingIds.has(ent.id)).map((ent) => ent.id),
+      })
+    } catch (err) {
+      toast.error('Import failed', { description: err instanceof Error ? err.message : 'Could not unzip OKF bundle.' })
+    }
+  }
+  reader.onerror = () => { toast.error('Import failed', { description: 'Could not read the file.' }) }
+  reader.readAsArrayBuffer(file)
+}
+
 /** Hook providing all export, import, and reset handlers for the export view. */
 export const useExportHandlers = ({
   entities, claims, graph, mindMap, links, tags, importWithRollback, resetStore,
@@ -164,30 +209,18 @@ export const useExportHandlers = ({
   }
 
   const handleExport = async (format: ExportFormatId) => {
-    switch (format) {
-      case 'json':
-        handleExportJson()
-        break
-      case 'markdown':
-        handleExportMarkdown()
-        break
-      case 'html':
-        handleExportHtml()
-        break
-      case 'pdf':
-        handleExportPdf()
-        break
-      case 'docx':
-        await handleExportDocx()
-        break
-      case 'encrypted':
-        await handleExportEncrypted()
-        break
-      case 'okf':
-        handleExportOkf()
-        break
-      default:
-        break
+    const handlers: Record<ExportFormatId, () => void | Promise<void>> = {
+      json: handleExportJson,
+      markdown: handleExportMarkdown,
+      html: handleExportHtml,
+      pdf: handleExportPdf,
+      docx: handleExportDocx,
+      encrypted: handleExportEncrypted,
+      okf: handleExportOkf,
+    }
+    const handler = handlers[format]
+    if (handler) {
+      await handler()
     }
   }
 
@@ -199,40 +232,7 @@ export const useExportHandlers = ({
     if (!file) return
 
     if (file.name.endsWith('.zip')) {
-      const reader = new FileReader()
-      reader.onload = async () => {
-        try {
-          const buffer = reader.result as ArrayBuffer
-          const entries = unzipSync(new Uint8Array(buffer))
-          const filesMap = new Map<string, string>()
-          for (const [p, data] of Object.entries(entries)) {
-            if (p.endsWith('.md')) {
-              filesMap.set(p.replace(/^okf-bundle\//, ''), strFromU8(data))
-            }
-          }
-          const rootIndex = filesMap.get('index.md') ?? ''
-          if (!rootIndex.includes('okf_version')) {
-            toast.error('Import failed', { description: 'zip does not contain an OKF bundle (no okf_version in index.md)' })
-            return
-          }
-          const { entities: ents, claims: cls, errors } = parseOkfBundle(filesMap)
-          if (errors.length > 0 && ents.length === 0) {
-            toast.error('Import failed', { description: errors.join('; ') })
-            return
-          }
-          const existingIds = new Set(entities.map((ent) => ent.id))
-          setImportPreview({
-            entities: ents, claims: cls,
-            entityCount: ents.length,
-            claimCount: cls.length, version: 1,
-            duplicateIds: ents.filter((ent) => existingIds.has(ent.id)).map((ent) => ent.id),
-          })
-        } catch (err) {
-          toast.error('Import failed', { description: err instanceof Error ? err.message : 'Could not unzip OKF bundle.' })
-        }
-      }
-      reader.onerror = () => { toast.error('Import failed', { description: 'Could not read the file.' }) }
-      reader.readAsArrayBuffer(file)
+      handleOkfZipImport(file, entities, setImportPreview)
     } else {
       const reader = new FileReader()
       reader.onload = () => {
