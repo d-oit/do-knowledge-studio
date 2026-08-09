@@ -16,14 +16,19 @@ const uuid = (): string => {
   }
   // RFC 4122 v4 fallback using the cryptographically secure getRandomValues
   // (available in all modern browsers and Node ≥ 15 via globalThis.crypto).
-  /** The random bytes. */
-  const bytes = new Uint8Array(16)
-  crypto.getRandomValues(bytes)
-  bytes[6] = (bytes[6] & 0x0f) | 0x40 // version 4
-  bytes[8] = (bytes[8] & 0x3f) | 0x80 // variant 10
-  /** The hex string. */
-  const hex = [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('')
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+    /** The random bytes. */
+    const bytes = new Uint8Array(16)
+    crypto.getRandomValues(bytes)
+    bytes[6] = (bytes[6] & 0x0f) | 0x40 // version 4
+    bytes[8] = (bytes[8] & 0x3f) | 0x80 // variant 10
+    /** The hex string. */
+    const hex = [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('')
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+  }
+  // No Web Crypto at all (exotic runtime): fail loudly rather than emit weak
+  // random IDs — claim IDs must be unique and unpredictable.
+  throw new Error('Web Crypto API unavailable; cannot generate claim IDs')
 }
 
 /** Result of parsing an OKF bundle: entities, claims, and non-fatal errors. */
