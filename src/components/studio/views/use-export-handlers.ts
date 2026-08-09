@@ -14,7 +14,16 @@ import { parseOkfBundle } from '@/lib/okf/import'
 import { encryptData, buildEncryptedReaderHtml } from '@/lib/export/encrypt'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from '@/lib/studio/schema'
 
-/** Builds a human-readable summary string of export contents. */
+/**
+ * Builds a human-readable summary string of export contents.
+ * @param entityCount - Number of entities.
+ * @param claimCount - Number of claims.
+ * @param graph - Optional graph payload (adds node count).
+ * @param mindMap - Optional mind map payload (adds node count).
+ * @param links - Optional links (adds link count).
+ * @param tags - Optional tags (adds tag count).
+ * @returns A `·`-joined summary string.
+ */
 const buildExportSummary = (
   entityCount: number,
   claimCount: number,
@@ -72,6 +81,9 @@ export interface UseExportHandlersReturn {
 /**
  * Reads an OKF v0.2 .zip bundle and stages it for import preview.
  * Non-OKF zips and unreadable files surface a toast instead of throwing.
+ * @param file - The selected .zip file.
+ * @param entities - Current library entities (for duplicate detection).
+ * @param setImportPreview - Callback that stages the parsed preview.
  */
 const handleOkfZipImport = (
   file: File,
@@ -114,7 +126,21 @@ const handleOkfZipImport = (
   reader.readAsArrayBuffer(file)
 }
 
-/** Hook providing all export, import, and reset handlers for the export view. */
+/**
+ * Hook providing all export, import, and reset handlers for the export view.
+ * @param entities - Library entities.
+ * @param claims - Library claims.
+ * @param graph - Optional graph payload for export/import round-trips.
+ * @param mindMap - Optional mind map payload.
+ * @param links - Optional links payload.
+ * @param tags - Optional tags payload.
+ * @param importWithRollback - Store action committing staged imports with rollback.
+ * @param resetStore - Store action restoring demo data.
+ * @param importPreview - Currently staged import preview (or null).
+ * @param setImportPreview - Sets the staged import preview.
+ * @param fileInputRef - Ref to the hidden file input.
+ * @returns The export/import handlers and password modal state.
+ */
 export const useExportHandlers = ({
   entities, claims, graph, mindMap, links, tags, importWithRollback, resetStore,
   importPreview, setImportPreview, fileInputRef,
