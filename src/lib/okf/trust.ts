@@ -4,9 +4,9 @@ import type { OkfConceptFrontmatterSchema } from './types'
 type Frontmatter = z.infer<typeof OkfConceptFrontmatterSchema>
 
 /** §5.3 trust tiers — derived, never stored. */
-export function trustTier(
-  verified: Frontmatter['verified'],
-): 'unverified' | 'machine-confirmed' | 'human-reviewed' {
+export const trustTier = (
+  verified?: Frontmatter['verified'],
+): 'unverified' | 'machine-confirmed' | 'human-reviewed' => {
   if (!verified) {
     return 'unverified'
   }
