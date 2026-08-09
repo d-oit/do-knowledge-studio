@@ -11,6 +11,7 @@ export interface OkfImportResult {
   errors: string[]
 }
 
+/** Maps OKF type strings back to studio entity types (unknown types → 'concept'). */
 const OKF_TYPE_REVERSE: Record<string, Entity['type']> = {
   Note: 'note',
   Concept: 'concept',

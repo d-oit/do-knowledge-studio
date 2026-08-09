@@ -30,9 +30,13 @@ const conceptPath = (e: Entity): string => {
 
 /** §5.1 provenance: a claim source entry with a STABLE id used for footnote attribution. */
 interface SourceEntry {
+  /** Stable join key referenced by `[^id]` footnote labels in concept bodies. */
   id: string
+  /** The original resource URL or identifier. */
   resource: string
+  /** Human-readable title or evidence label for the source. */
   title?: string
+  /** ISO date the source was last modified, when known. */
   last_modified?: string
 }
 
