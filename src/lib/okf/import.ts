@@ -6,20 +6,24 @@ import { trustTier } from './trust'
 
 /**
  * Generates a UUID v4. Uses the Web Crypto API when available (browsers and
- * modern Node), falling back to a Math.random-based v4 for non-secure runtimes
- * so the importer never throws when `crypto` is not a global.
+ * modern Node), falling back to a crypto.getRandomValues-based v4 for runtimes
+ * without `crypto.randomUUID` so the importer never throws.
  * @returns A UUID v4 string.
  */
 const uuid = (): string => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID()
   }
-  // RFC 4122 v4 fallback for runtimes without Web Crypto (e.g. older workers).
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0
-    const v = c === 'x' ? r : (r & 0x3) | 0x8
-    return v.toString(16)
-  })
+  // RFC 4122 v4 fallback using the cryptographically secure getRandomValues
+  // (available in all modern browsers and Node ≥ 15 via globalThis.crypto).
+  /** The random bytes. */
+  const bytes = new Uint8Array(16)
+  crypto.getRandomValues(bytes)
+  bytes[6] = (bytes[6] & 0x0f) | 0x40 // version 4
+  bytes[8] = (bytes[8] & 0x3f) | 0x80 // variant 10
+  /** The hex string. */
+  const hex = [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('')
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
 }
 
 /** Result of parsing an OKF bundle: entities, claims, and non-fatal errors. */
