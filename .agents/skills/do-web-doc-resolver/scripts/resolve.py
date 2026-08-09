@@ -922,7 +922,6 @@ def _drain_query_probes(
     active_futures: dict[concurrent.futures.Future[Any], tuple[str, ProviderType, float]],
     i: int,
     eligible: list[str],
-    p_name: str,
     threshold: float,
     start_time_probe: float,
     budget: routing.ResolutionBudget,
@@ -940,7 +939,6 @@ def _drain_query_probes(
         active_futures: Map of in-flight futures to probe metadata.
         i: Index of the current provider in the eligible list.
         eligible: Ordered provider list for the cascade.
-        p_name: Provider name that is currently probing.
         threshold: Hedging threshold in seconds.
         start_time_probe: Epoch seconds when the current probe launched.
         budget: Resolution budget tracker.
@@ -1033,7 +1031,6 @@ def resolve_query_stream(
                 active_futures,
                 i,
                 eligible,
-                p_name,
                 threshold,
                 start_time_probe,
                 budget,
