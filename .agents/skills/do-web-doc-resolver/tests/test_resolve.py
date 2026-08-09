@@ -304,6 +304,31 @@ class TestResolveUrlStreamCascade:
         assert first["url"] == "https://example.com"
         assert len(first["content"]) >= 600
 
+    @patch("scripts.resolve.routing.plan_provider_order", return_value=["jina"])
+    @patch("scripts.resolve.resolve_with_jina")
+    @patch("scripts.resolve.quality.score_content")
+    def test_provider_result_success_yields_content(self, mock_score, mock_jina, mock_plan):
+        """
+        An acceptable ProviderResult should be yielded, not silently dropped.
+        Args:
+            mock_score: Injected pytest fixture.
+            mock_jina: Injected pytest fixture.
+            mock_plan: Injected pytest fixture.
+        """
+        from scripts.models import Profile, ProviderResult
+        from scripts.resolve import resolve_url_stream
+
+        mock_score.return_value = self._make_quality(acceptable=True)
+        mock_jina.return_value = ProviderResult(
+            ok=True, source="jina", content="B" * 600, url="https://example.com"
+        )
+        results = list(resolve_url_stream("https://example.com", profile=Profile.FAST))
+        assert results
+        first = results[0]
+        assert first["source"] == "jina"
+        assert first["url"] == "https://example.com"
+        assert len(first["content"]) >= 600
+
     @patch("scripts.resolve.routing.plan_provider_order", return_value=["llms_txt"])
     @patch("scripts.resolve.fetch_llms_txt")
     def test_llms_txt_yields_compacted_output(self, mock_llms, mock_plan):

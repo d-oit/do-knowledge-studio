@@ -80,6 +80,15 @@ _cache = None
 is_rate_limited = _is_rate_limited
 set_rate_limit = _set_rate_limit
 
+# Provider cascade for search queries: name → (type, (query, max_chars) callable).
+_QUERY_CASCADE: dict[str, tuple[ProviderType, Callable[[str, int], Any]]] = {
+    "exa_mcp": (ProviderType.EXA_MCP, resolve_with_exa_mcp),
+    "exa": (ProviderType.EXA, resolve_with_exa),
+    "tavily": (ProviderType.TAVILY, resolve_with_tavily),
+    "duckduckgo": (ProviderType.DUCKDUCKGO, resolve_with_duckduckgo),
+    "mistral_websearch": (ProviderType.MISTRAL_WEBSEARCH, resolve_with_mistral_websearch),
+}
+
 __all__ = [
     "resolve",
     "resolve_url",
@@ -389,7 +398,7 @@ def _build_success_output(
     max_chars: int,
     metrics: ResolveMetrics,
     trace: ResolutionTrace | None,
-    q_score: Any,
+    q_score: quality.QualityScore,
 ) -> dict[str, Any]:
     """Build the yielded result dict for an accepted probe result.
 
@@ -791,21 +800,11 @@ def resolve_query(
     return {"source": "none", "query": query, "content": "Failed"}
 
 
-# Provider cascade for search queries: name → (type, (query, max_chars) callable).
-_QUERY_CASCADE: dict[str, tuple[ProviderType, Callable[[str, int], Any]]] = {
-    "exa_mcp": (ProviderType.EXA_MCP, resolve_with_exa_mcp),
-    "exa": (ProviderType.EXA, resolve_with_exa),
-    "tavily": (ProviderType.TAVILY, resolve_with_tavily),
-    "duckduckgo": (ProviderType.DUCKDUCKGO, resolve_with_duckduckgo),
-    "mistral_websearch": (ProviderType.MISTRAL_WEBSEARCH, resolve_with_mistral_websearch),
-}
-
-
 def _build_query_output(
     res: Any,
     p_name_done: str,
     metrics: ResolveMetrics,
-    q_score: Any,
+    q_score: quality.QualityScore,
     trace: ResolutionTrace | None,
     start_time: float,
 ) -> dict[str, Any]:
