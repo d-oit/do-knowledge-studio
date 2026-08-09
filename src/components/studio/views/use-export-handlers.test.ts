@@ -61,6 +61,45 @@ const createFileInputRef = (): RefObject<HTMLInputElement | null> => {
   return { current: document.createElement('input') }
 }
 
+/**
+ * Runs `fn` with a synchronous StubFileReader installed that resolves
+ * `readAsText` with `content`, then always restores the original FileReader.
+ * @param content - Text the stub returns from readAsText.
+ * @param fn - Test body executed while the stub is installed.
+ */
+const withStubFileReader = (content: string, fn: () => void): void => {
+  /** The original file reader. */
+  const originalFileReader = global.FileReader
+  class StubFileReader {
+    /** The result. */
+    result: string | null = null
+    /** The onload. */
+    onload: (() => void) | null = null
+    /** The onerror. */
+    onerror: (() => void) | null = null
+    readAsText() {
+      this.result = content
+      this.onload?.()
+    }
+  }
+  global.FileReader = StubFileReader as unknown as typeof FileReader
+  try {
+    fn()
+  } finally {
+    global.FileReader = originalFileReader
+  }
+}
+
+/** Builds a fake change event carrying the given file. */
+const makeFileChangeEvent = (fileName: string, content: string): React.ChangeEvent<HTMLInputElement> => {
+  /** The file. */
+  const file = new File([content], fileName, { type: 'application/json' })
+  /** The input. */
+  const input = document.createElement('input')
+  Object.defineProperty(input, 'files', { value: [file] })
+  return { target: input } as React.ChangeEvent<HTMLInputElement>
+}
+
 /** The render use export handlers. */
 const renderUseExportHandlers = (overrides: Partial<Parameters<typeof useExportHandlers>[0]> = {}) => {
   /** The params. */
@@ -284,50 +323,26 @@ describe('useExportHandlers', () => {
       success: true, entities: importedEntities, claims: importedClaims, errors: [],
     })
 
-    // Stub FileReader to call onload synchronously with test data
-    /** The original file reader. */
-    const OriginalFileReader = global.FileReader
-    class StubFileReader {
-      /** The result. */
-      result: string | null = null
-      /** The onload. */
-      onload: (() => void) | null = null
-      /** The onerror. */
-      onerror: (() => void) | null = null
-      readAsText() {
-        this.result = 'file-content'
-        this.onload?.()
-      }
-    }
-    global.FileReader = StubFileReader as unknown as typeof FileReader
+    withStubFileReader('file-content', () => {
+      const { result } = renderUseExportHandlers({ setImportPreview })
+      act(() => {
+        result.current.handleFileChange(makeFileChangeEvent('import.json', 'content'))
+      })
 
-    const { result } = renderUseExportHandlers({ setImportPreview })
-
-    /** The file. */
-    const file = new File(['content'], 'import.json', { type: 'application/json' })
-    /** The input. */
-    const input = document.createElement('input')
-    Object.defineProperty(input, 'files', { value: [file] })
-
-    act(() => {
-      result.current.handleFileChange({ target: input } as React.ChangeEvent<HTMLInputElement>)
+      expect(parseImportFile).toHaveBeenCalledWith('file-content')
+      expect(setImportPreview).toHaveBeenCalledWith(expect.objectContaining({
+        /** Entities to serialize. */
+        entities: importedEntities,
+        /** The library claims being processed. */
+        claims: importedClaims,
+        /** Number of entities in the payload. */
+        entityCount: 1,
+        /** Number of claims in the payload. */
+        claimCount: 1,
+        /** Entity ids that already exist in the library. */
+        duplicateIds: [],
+      }))
     })
-
-    expect(parseImportFile).toHaveBeenCalledWith('file-content')
-    expect(setImportPreview).toHaveBeenCalledWith(expect.objectContaining({
-      /** Entities to serialize. */
-      entities: importedEntities,
-      /** The library claims being processed. */
-      claims: importedClaims,
-      /** Number of entities in the payload. */
-      entityCount: 1,
-      /** Number of claims in the payload. */
-      claimCount: 1,
-      /** Entity ids that already exist in the library. */
-      duplicateIds: [],
-    }))
-
-    global.FileReader = OriginalFileReader
   })
 
   it('handleFileChange shows error when parse fails', () => {
@@ -338,41 +353,18 @@ describe('useExportHandlers', () => {
       errors: [{ path: 'entities[0]', message: 'Invalid type' }],
     })
 
-    /** The original file reader. */
-    const OriginalFileReader = global.FileReader
-    class StubFileReader {
-      /** The result. */
-      result: string | null = null
-      /** The onload. */
-      onload: (() => void) | null = null
-      /** The onerror. */
-      onerror: (() => void) | null = null
-      readAsText() {
-        this.result = 'bad-data'
-        this.onload?.()
-      }
-    }
-    global.FileReader = StubFileReader as unknown as typeof FileReader
+    withStubFileReader('bad-data', () => {
+      const { result } = renderUseExportHandlers()
+      act(() => {
+        result.current.handleFileChange(makeFileChangeEvent('bad.json', 'bad'))
+      })
 
-    const { result } = renderUseExportHandlers()
-
-    /** The file. */
-    const file = new File(['bad'], 'bad.json', { type: 'application/json' })
-    /** The input. */
-    const input = document.createElement('input')
-    Object.defineProperty(input, 'files', { value: [file] })
-
-    act(() => {
-      result.current.handleFileChange({ target: input } as React.ChangeEvent<HTMLInputElement>)
+      expect(parseImportFile).toHaveBeenCalled()
+      expect(toast.error).toHaveBeenCalledWith('Import failed', {
+        /** One-line summary of the item. */
+        description: 'entities[0]: Invalid type',
+      })
     })
-
-    expect(parseImportFile).toHaveBeenCalled()
-    expect(toast.error).toHaveBeenCalledWith('Import failed', {
-      /** One-line summary of the item. */
-      description: 'entities[0]: Invalid type',
-    })
-
-    global.FileReader = OriginalFileReader
   })
 
   it('handleFileChange detects duplicate entity IDs', () => {
@@ -387,40 +379,17 @@ describe('useExportHandlers', () => {
       success: true, entities: importedEntities, claims: [], errors: [],
     })
 
-    /** The original file reader. */
-    const OriginalFileReader = global.FileReader
-    class StubFileReader {
-      /** The result. */
-      result: string | null = null
-      /** The onload. */
-      onload: (() => void) | null = null
-      /** The onerror. */
-      onerror: (() => void) | null = null
-      readAsText() {
-        this.result = 'file-content'
-        this.onload?.()
-      }
-    }
-    global.FileReader = StubFileReader as unknown as typeof FileReader
+    withStubFileReader('file-content', () => {
+      const { result } = renderUseExportHandlers({ setImportPreview })
+      act(() => {
+        result.current.handleFileChange(makeFileChangeEvent('import.json', 'content'))
+      })
 
-    const { result } = renderUseExportHandlers({ setImportPreview })
-
-    /** The file. */
-    const file = new File(['content'], 'import.json', { type: 'application/json' })
-    /** The input. */
-    const input = document.createElement('input')
-    Object.defineProperty(input, 'files', { value: [file] })
-
-    act(() => {
-      result.current.handleFileChange({ target: input } as React.ChangeEvent<HTMLInputElement>)
+      expect(setImportPreview).toHaveBeenCalledWith(expect.objectContaining({
+        /** Entity ids that already exist in the library. */
+        duplicateIds: ['ent-1'],
+      }))
     })
-
-    expect(setImportPreview).toHaveBeenCalledWith(expect.objectContaining({
-      /** Entity ids that already exist in the library. */
-      duplicateIds: ['ent-1'],
-    }))
-
-    global.FileReader = OriginalFileReader
   })
 
   it('handleFileChange returns early when no file selected', () => {

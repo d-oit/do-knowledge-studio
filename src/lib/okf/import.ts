@@ -56,7 +56,6 @@ const buildEntity = (
   nowIso: string,
 ): Entity => {
   /** Unique identifier. */
-  /** Unique identifier. */
   const id = path.replace(/\.md$/, '') // Concept ID = path minus .md (§2)
   /** The file name. */
   const fileName = path.split('/').pop() ?? ''
