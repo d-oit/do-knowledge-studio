@@ -1,6 +1,7 @@
 import type { z } from 'zod'
 import type { OkfConceptFrontmatterSchema } from './types'
 
+/** Parsed OKF concept frontmatter shape consumed by the trust helpers. */
 type Frontmatter = z.infer<typeof OkfConceptFrontmatterSchema>
 
 /**
@@ -15,6 +16,7 @@ export const trustTier = (
   if (!verified) {
     return 'unverified'
   }
+  /** The list. */
   const list = Array.isArray(verified) ? verified : [verified]
   if (list.length === 0) {
     return 'unverified'

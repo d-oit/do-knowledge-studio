@@ -3,6 +3,7 @@ import { parseOkfBundle } from './import'
 
 describe('OKF Bundle Import', () => {
   it('correctly parses an OKF bundle round-trip', () => {
+    /** The files map. */
     const filesMap = new Map<string, string>()
     filesMap.set('index.md', '---\nokf_version: "0.2"\n---\n# Knowledge Bundle')
     filesMap.set('log.md', '# Directory Update Log\n\n## 2026-07-24\n* Updated')
@@ -35,11 +36,13 @@ Google Cloud Platform provides infrastructure as a service.
 `,
     )
 
+    /** The result. */
     const result = parseOkfBundle(filesMap)
     expect(result.errors.length).toBe(0)
     expect(result.entities.length).toBe(1)
     expect(result.claims.length).toBe(1)
 
+    /** The entity. */
     const entity = result.entities[0]
     expect(entity.id).toBe('concepts/google-cloud-platform')
     expect(entity.name).toBe('Google Cloud Platform')
@@ -47,6 +50,7 @@ Google Cloud Platform provides infrastructure as a service.
     expect(entity.description).toBe('A suite of cloud computing services.')
     expect(entity.tags).toEqual(['cloud', 'google'])
 
+    /** The claim. */
     const claim = result.claims[0]
     expect(claim.entityId).toBe('concepts/google-cloud-platform')
     expect(claim.statement).toBe('OKF v0.2 was released in July 2026.')
@@ -55,6 +59,7 @@ Google Cloud Platform provides infrastructure as a service.
   })
 
   it('tolerates unknown types, unknown frontmatter keys, and missing optional fields', () => {
+    /** The files map. */
     const filesMap = new Map<string, string>()
     filesMap.set(
       'concepts/unknown-type.md',
@@ -68,16 +73,19 @@ Body
 `,
     )
 
+    /** The result. */
     const result = parseOkfBundle(filesMap)
     expect(result.errors.length).toBe(0)
     expect(result.entities.length).toBe(1)
 
+    /** The entity. */
     const entity = result.entities[0]
     expect(entity.type).toBe('concept') // fallbacks to concept
     expect(entity.name).toBe('Unknown Type Title')
   })
 
   it('derives claim verification from the concept trust tier, never hardcodes it', () => {
+    /** The make bundle. */
     const makeBundle = (verifiedYaml: string) =>
       new Map<string, string>([[
         'concepts/verified-concept.md',
@@ -94,24 +102,29 @@ Body text.
 `,
       ]])
 
+    /** The human verified. */
     const humanVerified = parseOkfBundle(
       makeBundle('verified:\n  - by: human:jules\n    at: 2026-07-24T00:00:00Z\n'),
     )
     expect(humanVerified.claims[0].verification).toBe('verified')
 
+    /** The machine only. */
     const machineOnly = parseOkfBundle(
       makeBundle('verified:\n  - by: process:automated-scanner\n    at: 2026-07-24T00:00:00Z\n'),
     )
     expect(machineOnly.claims[0].verification).toBe('unverified')
 
+    /** The no verification. */
     const noVerification = parseOkfBundle(makeBundle(''))
     expect(noVerification.claims[0].verification).toBe('unverified')
   })
 
   it('fails gracefully on invalid yaml or missing frontmatter', () => {
+    /** The files map. */
     const filesMap = new Map<string, string>()
     filesMap.set('concepts/invalid.md', 'Just some random markdown content without frontmatter block.')
 
+    /** The result. */
     const result = parseOkfBundle(filesMap)
     expect(result.entities.length).toBe(0)
     expect(result.errors.length).toBe(1)

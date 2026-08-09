@@ -32,6 +32,7 @@ const buildExportSummary = (
   links?: ValidatedLink[],
   tags?: ValidatedTag[],
 ): string => {
+  /** The parts. */
   const parts = [`${entityCount} entities`, `${claimCount} claims`]
   if (graph?.nodes?.length) parts.push(`${graph.nodes.length} graph nodes`)
   if (mindMap?.nodes?.length) parts.push(`${mindMap.nodes.length} mind map nodes`)
@@ -42,39 +43,65 @@ const buildExportSummary = (
 
 /** Outcome of an import-with-rollback store operation. */
 interface ImportRollbackResult {
+  /** Whether the operation succeeded. */
   success: boolean
+  /** Optional error message when the operation failed. */
   error?: string
 }
 
 /** Inputs consumed by the export/import handlers hook. */
 interface UseExportHandlersParams {
+  /** Entities to serialize. */
   entities: Entity[]
+  /** The library claims being processed. */
   claims: Claim[]
+  /** Optional graph payload carried through the operation. */
   graph?: ValidatedGraph
+  /** Optional mind map payload carried through the operation. */
   mindMap?: ValidatedMindMap
+  /** Related entity links. */
   links?: ValidatedLink[]
+  /** Optional tags payload carried through the operation. */
   tags?: ValidatedTag[]
+  /** Store action that commits an import with rollback on failure. */
   importWithRollback: (entities: Entity[], claims: Claim[], options?: ExportOptions) => ImportRollbackResult
+  /** Store action that restores the demo dataset. */
   resetStore: () => void
+  /** Currently staged import preview (or null). */
   importPreview: ImportPreview | null
+  /** Callback that stages the parsed import preview. */
   setImportPreview: (preview: ImportPreview | null) => void
+  /** Ref to the hidden file input element. */
   fileInputRef: React.RefObject<HTMLInputElement | null>
 }
 
 /** Handlers and password state exposed to the export view. */
 export interface UseExportHandlersReturn {
+  /** The handle export. */
   handleExport: (format: ExportFormatId) => Promise<void>
+  /** The handle import click. */
   handleImportClick: () => void
+  /** The handle file change. */
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  /** The handle confirm import. */
   handleConfirmImport: () => void
+  /** The handle reset. */
   handleReset: () => void
+  /** Whether the password modal is open. */
   showPassword: boolean
+  /** State setter for password modal visibility. */
   setShowPassword: React.Dispatch<React.SetStateAction<boolean>>
+  /** Password used for the encrypted export. */
   password: string
+  /** State setter for the password field. */
   setPassword: React.Dispatch<React.SetStateAction<string>>
+  /** Password confirmation value. */
   confirm: string
+  /** State setter for the confirmation field. */
   setConfirm: React.Dispatch<React.SetStateAction<string>>
+  /** Whether the password fields are visible. */
   showPass: boolean
+  /** State setter for password visibility. */
   setShowPass: React.Dispatch<React.SetStateAction<boolean>>
 }
 
@@ -90,17 +117,22 @@ const handleOkfZipImport = (
   entities: Entity[],
   setImportPreview: (preview: ImportPreview | null) => void,
 ) => {
+  /** The reader. */
   const reader = new FileReader()
   reader.onload = () => {
     try {
+      /** The buffer. */
       const buffer = reader.result as ArrayBuffer
+      /** The entries. */
       const entries = unzipSync(new Uint8Array(buffer))
+      /** The files map. */
       const filesMap = new Map<string, string>()
       for (const [p, data] of Object.entries(entries)) {
         if (p.endsWith('.md')) {
           filesMap.set(p.replace(/^okf-bundle\//, ''), strFromU8(data))
         }
       }
+      /** The root index. */
       const rootIndex = filesMap.get('index.md') ?? ''
       if (!rootIndex.includes('okf_version')) {
         toast.error('Import failed', { description: 'zip does not contain an OKF bundle (no okf_version in index.md)' })
@@ -111,6 +143,7 @@ const handleOkfZipImport = (
         toast.error('Import failed', { description: errors.join('; ') })
         return
       }
+      /** The existing ids. */
       const existingIds = new Set(entities.map((ent) => ent.id))
       setImportPreview({
         entities: ents, claims: cls,
@@ -150,11 +183,14 @@ export const useExportHandlers = ({
   const [confirm, setConfirm] = useState('')
   const [showPass, setShowPass] = useState(false)
 
+  /** The export options. */
   const exportOptions: ExportOptions = { graph, mindMap, links, tags }
+  /** The stamp. */
   const stamp = todayStamp()
 
   /** Downloads the library as a JSON backup file. */
   const handleExportJson = () => {
+    /** Markdown or text content. */
     const content = buildJsonExport(entities, claims, exportOptions)
     downloadFile(`do-knowledge-studio-export-${stamp}.json`, content, 'application/json')
     toast.success('JSON export downloaded', { description: buildExportSummary(entities.length, claims.length, graph, mindMap, links, tags) })
@@ -162,6 +198,7 @@ export const useExportHandlers = ({
 
   /** Downloads the library as a single Markdown file. */
   const handleExportMarkdown = () => {
+    /** Markdown or text content. */
     const content = buildMarkdownExport(entities, claims)
     downloadFile(`do-knowledge-studio-${stamp}.md`, content, 'text/markdown')
     toast.success('Markdown export downloaded', { description: `${entities.length} entities concatenated into one .md file` })
@@ -169,6 +206,7 @@ export const useExportHandlers = ({
 
   /** Downloads the library as a self-contained static HTML page. */
   const handleExportHtml = () => {
+    /** Markdown or text content. */
     const content = buildHtmlExport(entities, claims)
     downloadFile(`do-knowledge-studio-${stamp}.html`, content, 'text/html')
     toast.success('HTML export downloaded', { description: 'Self-contained .html page — open in any browser.' })
@@ -177,6 +215,7 @@ export const useExportHandlers = ({
   /** Downloads a print-ready PDF of all entities and claims. */
   const handleExportPdf = () => {
     try {
+      /** The blob. */
       const blob = buildPdfExport(entities, claims)
       downloadBlob(`do-knowledge-studio-${stamp}.pdf`, blob)
       toast.success('PDF export downloaded', { description: `${entities.length} entities formatted in a print-ready PDF.` })
@@ -188,12 +227,16 @@ export const useExportHandlers = ({
   /** Downloads the library as an OKF v0.2 zip bundle (index, log, concept files). */
   const handleExportOkf = () => {
     try {
+      /** The edges. */
       const edges = graph?.edges ?? []
+      /** The bundle. */
       const bundle = buildOkfBundle(entities, claims, edges, '0.1.0')
+      /** The files record. */
       const filesRecord: Record<string, Uint8Array> = {}
       for (const f of bundle.files) {
         filesRecord[`okf-bundle/${f.path}`] = strToU8(f.content)
       }
+      /** The zipped. */
       const zipped = zipSync(filesRecord)
       downloadBlob(
         `do-knowledge-studio-okf-${stamp}.zip`,
@@ -210,6 +253,7 @@ export const useExportHandlers = ({
   /** Downloads a Word (.docx) document of all entities and claims. */
   const handleExportDocx = async () => {
     try {
+      /** The blob. */
       const blob = await buildDocxExport(entities, claims)
       downloadBlob(`do-knowledge-studio-${stamp}.docx`, blob)
       toast.success('DOCX export downloaded', { description: `${entities.length} entities in a Word document.` })
@@ -225,8 +269,11 @@ export const useExportHandlers = ({
       return
     }
     try {
+      /** The json. */
       const json = buildJsonExport(entities, claims, exportOptions)
+      /** The encrypted. */
       const encrypted = await encryptData(json, password)
+      /** The html. */
       const html = buildEncryptedReaderHtml(encrypted)
       // Safe: HTML is downloaded as a file (Blob → anchor.click), not executed in DOM.
       // buildEncryptedReaderHtml generates a self-contained reader with CSP headers.
@@ -265,6 +312,7 @@ export const useExportHandlers = ({
       case 'okf':
         handleExportOkf()
         break
+      /** The default. */
       default:
         break
     }
@@ -275,6 +323,7 @@ export const useExportHandlers = ({
 
   /** Stages a selected JSON or OKF zip file for the import preview. */
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    /** The file. */
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
@@ -282,15 +331,19 @@ export const useExportHandlers = ({
     if (file.name.endsWith('.zip')) {
       handleOkfZipImport(file, entities, setImportPreview)
     } else {
+      /** The reader. */
       const reader = new FileReader()
       reader.onload = () => {
+        /** The text. */
         const text = String(reader.result || '')
+        /** The result. */
         const result = parseImportFile(text)
         if (!result.success) {
           toast.error('Import failed', { description: result.errors.map((err) => `${err.path}: ${err.message}`).join('; ') })
           return
         }
         const { entities: ents, claims: cls, graph: g, mindMap: m, links: l, tags: t } = result
+        /** The existing ids. */
         const existingIds = new Set(entities.map((ent) => ent.id))
         setImportPreview({
           entities: ents, claims: cls, graph: g, mindMap: m, links: l, tags: t,
@@ -307,12 +360,14 @@ export const useExportHandlers = ({
   /** Commits the staged import preview into the store with rollback on failure. */
   const handleConfirmImport = () => {
     if (!importPreview) return
+    /** The result. */
     const result = importWithRollback(
       importPreview.entities,
       importPreview.claims,
       { graph: importPreview.graph, mindMap: importPreview.mindMap, links: importPreview.links, tags: importPreview.tags },
     )
     if (result.success) {
+      /** The summary. */
       const summary = buildExportSummary(
         importPreview.entityCount,
         importPreview.claimCount,

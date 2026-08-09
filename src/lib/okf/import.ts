@@ -6,8 +6,11 @@ import { trustTier } from './trust'
 
 /** Result of parsing an OKF bundle: entities, claims, and non-fatal errors. */
 export interface OkfImportResult {
+  /** Entities to serialize. */
   entities: Entity[]
+  /** The library claims being processed. */
   claims: Claim[]
+  /** The errors. */
   errors: string[]
 }
 
@@ -34,17 +37,27 @@ const buildEntity = (
   bodyContent: string,
   nowIso: string,
 ): Entity => {
+  /** Unique identifier. */
   const id = path.replace(/\.md$/, '') // Concept ID = path minus .md (§2)
+  /** The file name. */
   const fileName = path.split('/').pop() ?? ''
   return {
     id,
+    /** Human-readable name. */
     name: fm.title ?? fileName.replace(/\.md$/, ''),
+    /** Entity type. */
     type: OKF_TYPE_REVERSE[fm.type] ?? 'concept', // unknown types tolerated (§11)
+    /** One-line summary of the item. */
     description: fm.description ?? '',
+    /** Markdown or text content. */
     content: bodyContent.trim(),
+    /** Optional tags payload carried through the operation. */
     tags: fm.tags ?? [],
+    /** ISO timestamp of claim creation. */
     createdAt: nowIso,
+    /** ISO timestamp of the last claim update. */
     updatedAt: nowIso,
+    /** Related entity links. */
     links: [],
   }
 }
@@ -68,32 +81,48 @@ const parseClaims = (
   fm: z.infer<typeof OkfConceptFrontmatterSchema>,
   nowIso: string,
 ): Claim[] => {
+  /** The source by id. */
   const sourceById = new Map<string, { resource: string; title?: string }>()
   for (const s of fm.sources ?? []) {
     if (s.id) sourceById.set(s.id, s)
   }
+  /** Claim verification status. */
   const verification = trustTier(fm.verified) === 'human-reviewed' ? 'verified' : 'unverified'
 
+  /** The claim regex. */
   const claimRegex = /^- ([^\n]+?)(?:\[\^([\w-]+)\])?$/gm
+  /** The library claims being processed. */
   const claims: Claim[] = []
   for (const m of bodyContent.matchAll(claimRegex)) {
+    /** The claim text. */
     const claimText = m[1].trim()
     // Skip footnote definitions and structural headings themselves
     if (claimText.startsWith('[^') || claimText.includes('Related') || claimText.includes('# Claims')) {
       continue
     }
+    /** The source obj. */
     const sourceObj = m[2] ? sourceById.get(m[2]) : undefined
     claims.push({
+      /** Unique identifier. */
       id: crypto.randomUUID(),
+      /** Owning entity id. */
       entityId: entity.id,
+      /** The claim statement text. */
       statement: claimText,
+      /** Claim confidence score. */
       confidence: 1.0,
       verification,
+      /** Source resource for the claim. */
       source: sourceObj?.resource,
+      /** Supporting evidence for the claim. */
       evidence: sourceObj?.title,
+      /** ISO timestamp of claim creation. */
       createdAt: nowIso,
+      /** ISO timestamp of the last claim update. */
       updatedAt: nowIso,
+      /** Claim schema version. */
       version: 1,
+      /** History of claim edits. */
       editHistory: [],
     })
   }
@@ -108,6 +137,7 @@ const parseClaims = (
  * @returns Entities, claims, and any non-fatal parse errors.
  */
 export const parseOkfBundle = (files: Map<string, string>): OkfImportResult => {
+  /** The result. */
   const result: OkfImportResult = { entities: [], claims: [], errors: [] }
 
   for (const [path, content] of files) {
@@ -115,6 +145,7 @@ export const parseOkfBundle = (files: Map<string, string>): OkfImportResult => {
       continue // reserved (§3.1)
     }
 
+    /** The match. */
     const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/)
     if (!match) {
       result.errors.push(`${path}: missing or unparseable frontmatter`) // §11 conformance rule 1
@@ -129,14 +160,18 @@ export const parseOkfBundle = (files: Map<string, string>): OkfImportResult => {
       continue
     }
 
+    /** The parsed. */
     const parsed = OkfConceptFrontmatterSchema.safeParse(fmParsed)
     if (!parsed.success) {
       result.errors.push(`${path}: ${parsed.error.issues[0]?.message ?? 'invalid frontmatter'}`)
       continue
     }
 
+    /** The fm. */
     const fm = parsed.data // passthrough preserves unknown keys for round-trip (§4.1)
+    /** The now iso. */
     const nowIso = new Date().toISOString()
+    /** The entity. */
     const entity = buildEntity(fm, path, match[2], nowIso)
     result.entities.push(entity)
     result.claims.push(...parseClaims(match[2], entity, fm, nowIso))
