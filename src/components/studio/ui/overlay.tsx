@@ -47,6 +47,8 @@ const getVariantClasses = (variant: OverlayVariant): string => {
       return VARIANT_CONTAINER['sheet-left']
     case 'fullscreen':
       return VARIANT_CONTAINER.fullscreen
+    default:
+      return VARIANT_CONTAINER.center
   }
 }
 
@@ -81,13 +83,37 @@ const useBodyScrollLock = (open: boolean) => {
 const trapFocusWithinOverlay = (event: React.KeyboardEvent, focusable: HTMLElement[]) => {
   const first = focusable.at(0)
   const last = focusable.at(-1)
-  if (event.shiftKey && document.activeElement === first) {
-    event.preventDefault()
-    last?.focus()
-  } else if (!event.shiftKey && document.activeElement === last) {
-    event.preventDefault()
-    first?.focus()
-  }
+  const target = event.shiftKey ? first : last
+  const destination = event.shiftKey ? last : first
+  if (document.activeElement !== target) return
+  event.preventDefault()
+  destination?.focus()
+}
+
+const cacheFocusableElements = (container: HTMLDivElement) =>
+  Array.from(
+    container.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    ),
+  )
+
+const focusOverlay = (
+  container: HTMLDivElement,
+  initialFocusRef: React.RefObject<HTMLElement | null> | undefined,
+  focusableCacheRef: React.MutableRefObject<HTMLElement[]>,
+) => {
+  focusableCacheRef.current = cacheFocusableElements(container)
+  const target = initialFocusRef?.current ?? focusableCacheRef.current.at(0)
+  ;(target ?? container).focus()
+}
+
+const restoreOverlayFocus = (
+  previousFocusRef: React.MutableRefObject<HTMLElement | null>,
+  focusableCacheRef: React.MutableRefObject<HTMLElement[]>,
+) => {
+  focusableCacheRef.current = []
+  previousFocusRef.current?.focus()
+  previousFocusRef.current = null
 }
 
 const useOverlayFocus = (
@@ -103,22 +129,10 @@ const useOverlayFocus = (
       const activeElement = document.activeElement
       previousFocusRef.current = activeElement instanceof HTMLElement ? activeElement : null
       const container = containerRef.current
-      if (container) {
-        focusableCacheRef.current = Array.from(
-          container.querySelectorAll<HTMLElement>(
-            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-          ),
-        )
-        const target = initialFocusRef?.current ?? focusableCacheRef.current.at(0)
-        ;(target ?? container).focus()
-      }
+      if (container) focusOverlay(container, initialFocusRef, focusableCacheRef)
       return undefined
     }
-    focusableCacheRef.current = []
-    if (previousFocusRef.current) {
-      previousFocusRef.current.focus()
-      previousFocusRef.current = null
-    }
+    restoreOverlayFocus(previousFocusRef, focusableCacheRef)
     return undefined
   }, [open, initialFocusRef, containerRef])
 
@@ -150,10 +164,9 @@ export const Overlay = ({
         onClose()
         return
       }
-      if (!trapFocus || event.key !== 'Tab') return
-      const focusable = focusableCacheRef.current
-      if (focusable.length === 0) return
-      trapFocusWithinOverlay(event, focusable)
+      if (trapFocus && event.key === 'Tab') {
+        trapFocusWithinOverlay(event, focusableCacheRef.current)
+      }
     },
     [closeOnEscape, onClose, trapFocus],
   )

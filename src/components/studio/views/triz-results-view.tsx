@@ -71,6 +71,22 @@ interface ResultsSummaryProps {
   hasSuggestions: boolean
 }
 
+const ResultsSummaryDescription = ({
+  improving,
+  worsening,
+  hasSuggestions,
+}: ResultsSummaryProps) => (
+  <p className="mt-3 text-[13px] leading-relaxed text-ink-mute">
+    You want to improve <strong className="text-ink-soft">{TRIZ_PARAMETERS.at(improving)?.toLowerCase() ?? ''}</strong>,
+    but doing so worsens <strong className="text-ink-soft">{TRIZ_PARAMETERS.at(worsening)?.toLowerCase() ?? ''}</strong>.
+    {hasSuggestions ? (
+      ' TRIZ suggests these inventive principles:'
+    ) : (
+      ' No principles found for this pair in the matrix. Try a different combination.'
+    )}
+  </p>
+)
+
 const ResultsSummary = ({ improving, worsening, hasSuggestions }: ResultsSummaryProps) => (
   <div className="mb-6 rounded-lg border border-border bg-card p-4">
     <div className="mb-3 text-label font-semibold uppercase tracking-[0.14em] text-ink-faint">
@@ -81,13 +97,11 @@ const ResultsSummary = ({ improving, worsening, hasSuggestions }: ResultsSummary
       <ArrowRight className="h-4 w-4 shrink-0 text-ink-faint" />
       <ContradictionChip n={worsening + 1} label={TRIZ_PARAMETERS.at(worsening) ?? ''} accent="clay" />
     </div>
-    <p className="mt-3 text-[13px] leading-relaxed text-ink-mute">
-      You want to improve <strong className="text-ink-soft">{TRIZ_PARAMETERS.at(improving)?.toLowerCase() ?? ''}</strong>,
-      but doing so worsens <strong className="text-ink-soft">{TRIZ_PARAMETERS.at(worsening)?.toLowerCase() ?? ''}</strong>.
-      {hasSuggestions
-        ? ' TRIZ suggests these inventive principles:'
-        : ' No principles found for this pair in the matrix. Try a different combination.'}
-    </p>
+    <ResultsSummaryDescription
+      improving={improving}
+      worsening={worsening}
+      hasSuggestions={hasSuggestions}
+    />
   </div>
 )
 
