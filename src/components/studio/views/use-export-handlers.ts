@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
+import packageJson from '../../../../package.json'
 import type { Entity, Claim } from '@/lib/studio/types'
 import type { LibraryPayload, ImportPreview, ExportFormatId, ExportOptions } from './export-types'
 import { todayStamp, downloadFile, downloadBlob } from './export-types'
@@ -222,7 +223,7 @@ export const useExportHandlers = ({
       /** The edges. */
       const edges = graph?.edges ?? []
       /** The bundle. */
-      const bundle = buildOkfBundle(entities, claims, edges, '0.1.0')
+      const bundle = buildOkfBundle(entities, claims, edges, packageJson.version)
       /** The files record. */
       const filesRecord: Record<string, Uint8Array> = {}
       for (const f of bundle.files) {
