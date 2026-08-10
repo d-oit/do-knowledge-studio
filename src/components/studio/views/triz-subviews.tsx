@@ -182,14 +182,14 @@ export const TrizMatrixView = ({
                 <th className="sticky left-0 z-10 bg-card px-2 py-1.5 text-left font-semibold text-ink-faint">
                   ↓ Improving → Worsening
                 </th>
-                {filtered.map(({ index }) => (
+                {filtered.map(({ label, index }) => (
                   <th
                     key={index}
                     className={cn(
                       'px-1.5 py-1.5 text-center font-medium',
                       improving === index ? 'bg-saffron-soft text-saffron-deep' : 'text-ink-faint',
                     )}
-                    title={TRIZ_PARAMETERS[index]}
+                    title={label}
                   >
                     {index + 1}
                   </th>
@@ -323,13 +323,13 @@ export const TrizResultsView = ({
           Your contradiction
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <ContradictionChip n={improving + 1} label={TRIZ_PARAMETERS[improving] ?? ''} accent="saffron" />
+          <ContradictionChip n={improving + 1} label={TRIZ_PARAMETERS.at(improving) ?? ''} accent="saffron" />
           <ArrowRight className="h-4 w-4 shrink-0 text-ink-faint" />
-          <ContradictionChip n={worsening + 1} label={TRIZ_PARAMETERS[worsening] ?? ''} accent="clay" />
+          <ContradictionChip n={worsening + 1} label={TRIZ_PARAMETERS.at(worsening) ?? ''} accent="clay" />
         </div>
         <p className="mt-3 text-[13px] leading-relaxed text-ink-mute">
-          You want to improve <strong className="text-ink-soft">{TRIZ_PARAMETERS[improving]?.toLowerCase() ?? ''}</strong>,
-          but doing so worsens <strong className="text-ink-soft">{TRIZ_PARAMETERS[worsening]?.toLowerCase() ?? ''}</strong>.
+          You want to improve <strong className="text-ink-soft">{TRIZ_PARAMETERS.at(improving)?.toLowerCase() ?? ''}</strong>,
+          but doing so worsens <strong className="text-ink-soft">{TRIZ_PARAMETERS.at(worsening)?.toLowerCase() ?? ''}</strong>.
           {suggestedPrinciples.length > 0
             ? ' TRIZ suggests these inventive principles:'
             : ' No principles found for this pair in the matrix. Try a different combination.'}
