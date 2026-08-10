@@ -31,7 +31,7 @@ const MatrixCell = ({
   isHighlighted,
   onSelectCell,
 }: MatrixCellProps) => {
-  const cellLabel = `Principles for improving ${colLabel} while worsening ${rowLabel}`
+  const cellLabel = `Principles for improving ${rowLabel} while worsening ${colLabel}`
   const cellClasses = cn(
     'min-h-[44px] min-w-[44px] px-1 py-1 text-center',
     isHighlighted
@@ -45,7 +45,7 @@ const MatrixCell = ({
           type="button"
           aria-label={cellLabel}
           className={cn(cellClasses, 'focus-ring')}
-          onClick={() => { onSelectCell(colIndex, rowIndex) }}
+          onClick={() => { onSelectCell(rowIndex, colIndex) }}
         >
           ●
         </button>
@@ -62,17 +62,17 @@ interface MatrixRowProps {
   rowIndex: number
   rowLabel: string
   filtered: FilteredParameter[]
-  worsening: number | null
+  improving: number | null
   matrixHighlight: string | null
   onSelectCell: (improving: number, worsening: number) => void
 }
 
-/** Matrix row with a sticky worsening-parameter label and selectable cells. */
+/** Matrix row with a sticky improving-parameter label and selectable cells. */
 const MatrixRow = ({
   rowIndex,
   rowLabel,
   filtered,
-  worsening,
+  improving,
   matrixHighlight,
   onSelectCell,
 }: MatrixRowProps) => (
@@ -80,8 +80,8 @@ const MatrixRow = ({
     <td
       className={cn(
         'sticky left-0 z-10 whitespace-nowrap px-2 py-1 font-medium',
-        worsening === rowIndex
-          ? 'bg-rose-50 text-clay dark:bg-rose-950/40 dark:text-rose-300'
+        improving === rowIndex
+          ? 'bg-saffron-soft text-saffron-deep'
           : 'bg-card text-ink-faint',
       )}
       title={rowLabel}
@@ -135,7 +135,7 @@ const MatrixTable = ({
             key={index}
             className={cn(
               'px-1.5 py-1.5 text-center font-medium',
-              improving === index ? 'bg-saffron-soft text-saffron-deep' : 'text-ink-faint',
+              worsening === index ? 'bg-rose-50 text-clay dark:bg-rose-950/40 dark:text-rose-300' : 'text-ink-faint',
             )}
             title={label}
           >
@@ -151,7 +151,7 @@ const MatrixTable = ({
           rowIndex={rowIndex}
           rowLabel={rowLabel}
           filtered={filtered}
-          worsening={worsening}
+          improving={improving}
           matrixHighlight={matrixHighlight}
           onSelectCell={onSelectCell}
         />
