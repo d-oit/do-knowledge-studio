@@ -30,7 +30,7 @@ function renderTypeIcon(t: EntityType, className?: string) {
 }
 
 /** Dropdown selector for choosing an entity type with keyboard navigation. */
-export function TypeSelector({
+export const TypeSelector = ({
   type,
   showMenu,
   onToggleMenu,
@@ -40,7 +40,7 @@ export function TypeSelector({
   showMenu: boolean
   onToggleMenu: () => void
   onSelect: (t: EntityType) => void
-}) {
+}) => {
   const menuRef = useRef<HTMLDivElement>(null)
   const meta = getTypeMeta(type)
 

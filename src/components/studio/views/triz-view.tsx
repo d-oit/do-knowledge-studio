@@ -20,7 +20,7 @@ import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { ParamPicker, ContradictionChip } from './triz-helpers'
 
 /** TRIZ contradiction matrix view for picking parameters and viewing suggested inventive principles. */
-export function TrizView() {
+export const TrizView = () => {
   const [improving, setImproving] = useState<number | null>(null)
   const [worsening, setWorsening] = useState<number | null>(null)
   const [search, setSearch] = useState('')
@@ -64,7 +64,7 @@ export function TrizView() {
   const handleCopy = (text: string, id: number) => {
     try {
       // Clipboard can be unavailable in insecure contexts; rejection is non-fatal.
-      void navigator.clipboard.writeText(text).catch(() => undefined)
+      navigator.clipboard.writeText(text).catch(() => undefined)
     } catch (error) {
       // Clipboard API missing entirely (e.g. non-secure context) — non-fatal.
       console.error('Clipboard API unavailable:', error)

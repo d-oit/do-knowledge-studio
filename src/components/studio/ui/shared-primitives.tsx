@@ -373,7 +373,7 @@ let scrollLockCount = 0
 let savedScrollbarWidth = 0
 
 /** Accessible modal overlay with focus trap, scroll lock, and configurable layout variant. */
-export function Overlay({
+export const Overlay = ({
   open,
   onClose,
   'aria-label': ariaLabel,
@@ -385,7 +385,7 @@ export function Overlay({
   initialFocusRef,
   className,
   children,
-}: OverlayProps) {
+}: OverlayProps) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
   const focusableCacheRef = useRef<HTMLElement[]>([])
