@@ -65,8 +65,9 @@ export function TrizView() {
     try {
       // Clipboard can be unavailable in insecure contexts; rejection is non-fatal.
       void navigator.clipboard.writeText(text).catch(() => undefined)
-    } catch {
-      // Clipboard API missing entirely (e.g. non-secure context) — ignore.
+    } catch (error) {
+      // Clipboard API missing entirely (e.g. non-secure context) — non-fatal.
+      console.error('Clipboard API unavailable:', error)
     }
     setCopied(id)
     toast.success('Principle copied to clipboard')

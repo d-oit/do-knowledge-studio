@@ -473,11 +473,11 @@ for c in json.load(sys.stdin):
             fix_applied=true
         elif echo "$logs" | grep -qiE "(link|broken.*reference|404)"; then
             info "Link/reference error detected — running validate-links..."
-            [ -f ./scripts/validate-links.sh ] && { ./scripts/validate-links.sh 2>/dev/null || true; }
+            if [ -f ./scripts/validate-links.sh ]; then ./scripts/validate-links.sh 2>/dev/null || true; fi
             fix_applied=true
         elif echo "$logs" | grep -qiE "(skill|symlink)"; then
             info "Skill format issue detected — running validate-skills..."
-            [ -f ./scripts/validate-skills.sh ] && { ./scripts/validate-skills.sh 2>/dev/null || true; }
+            if [ -f ./scripts/validate-skills.sh ]; then ./scripts/validate-skills.sh 2>/dev/null || true; fi
             fix_applied=true
         else
             warn "Unrecognized failure type in: ${failed_name}"
