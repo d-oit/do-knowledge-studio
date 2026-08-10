@@ -89,7 +89,9 @@ def is_safe_url(url: str) -> bool:
             return False
         if parsed.scheme not in ("http", "https"):
             return False
-        hostname = parsed.netloc.split(":")[0]
+        # urlparse.hostname strips IPv6 brackets and userinfo, so both
+        # "http://[::1]/" and "http://user@192.168.0.1/" yield the raw host.
+        hostname = parsed.hostname or ""
         if hostname.lower() in (
             "localhost",
             "localhost.localdomain",
@@ -103,6 +105,7 @@ def is_safe_url(url: str) -> bool:
             if any(ip in network for network in BLOCKED_NETWORKS):
                 return False
         except ValueError:
+            previous_timeout = socket.getdefaulttimeout()
             try:
                 socket.setdefaulttimeout(5)
                 infos = socket.getaddrinfo(hostname, None)
@@ -113,7 +116,9 @@ def is_safe_url(url: str) -> bool:
             except Exception:
                 pass
             finally:
-                socket.setdefaulttimeout(None)
+                # Restore the caller's default, not None, to avoid clobbering
+                # a timeout configured elsewhere in the process.
+                socket.setdefaulttimeout(previous_timeout)
         return True
     except Exception:
         return False
