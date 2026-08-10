@@ -1,17 +1,17 @@
 'use client'
 
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { lookupPrinciples } from '@/lib/studio/triz-data'
-import { ParamPicker } from './triz-helpers'
-import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import {
   filterParams,
   TrizHeader,
-  TrizMatrixView,
-  TrizResultsView,
+  TrizPickView,
 } from './triz-subviews'
+import { TrizMatrixView } from './triz-matrix-view'
+import { TrizResultsView } from './triz-results-view'
+
+type TrizViewId = 'pick' | 'results' | 'matrix'
 
 /** TRIZ contradiction matrix view for picking parameters and viewing suggested inventive principles. */
 export const TrizView = () => {
@@ -19,14 +19,13 @@ export const TrizView = () => {
   const [worsening, setWorsening] = useState<number | null>(null)
   const [search, setSearch] = useState('')
   const [copied, setCopied] = useState<number | null>(null)
-  const reducedMotion = useReducedMotion()
   const [view, setView] = useState<'pick' | 'results' | 'matrix'>('pick')
   const [matrixSearch, setMatrixSearch] = useState('')
 
-  const suggestedPrinciples = useMemo(() => {
-    if (improving === null || worsening === null) return []
-    return lookupPrinciples(improving, worsening)
-  }, [improving, worsening])
+  const suggestedPrinciples = useMemo(
+    () => improving === null || worsening === null ? [] : lookupPrinciples(improving, worsening),
+    [improving, worsening],
+  )
 
   const filteredParams = useMemo(() => filterParams(search), [search])
 
@@ -56,10 +55,54 @@ export const TrizView = () => {
     return () => { if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current) }
   }, [])
 
-  const handleSelectCell = (imp: number, wor: number) => {
-    setImproving(imp)
-    setWorsening(wor)
+  const handleSelectCell = (improvingIndex: number, worseningIndex: number) => {
+    setImproving(improvingIndex)
+    setWorsening(worseningIndex)
     setView('results')
+  }
+
+  const handleImprovingChange = (index: number) => {
+    setImproving(index)
+    if (worsening !== null) setView('results')
+  }
+
+  const handleWorseningChange = (index: number) => {
+    setWorsening(index)
+    if (improving !== null) setView('results')
+  }
+
+  const viewContent: Record<TrizViewId, React.ReactNode> = {
+    pick: (
+      <TrizPickView
+        improving={improving}
+        worsening={worsening}
+        search={search}
+        filteredParams={filteredParams}
+        onImprovingChange={handleImprovingChange}
+        onWorseningChange={handleWorseningChange}
+        onSearchChange={setSearch}
+      />
+    ),
+    matrix: (
+      <TrizMatrixView
+        matrixSearch={matrixSearch}
+        onMatrixSearchChange={setMatrixSearch}
+        improving={improving}
+        worsening={worsening}
+        onSelectCell={handleSelectCell}
+      />
+    ),
+    results: (
+      <TrizResultsView
+        improving={improving}
+        worsening={worsening}
+        suggestedPrinciples={suggestedPrinciples}
+        copied={copied}
+        onCopy={handleCopy}
+        onReset={handleReset}
+        onChangeParams={() => { setView('pick') }}
+      />
+    ),
   }
 
   return (
@@ -71,70 +114,7 @@ export const TrizView = () => {
         hasSelection={improving !== null || worsening !== null}
         onReset={handleReset}
       />
-
-      {/* Step 1: Pick contradiction */}
-      {view === 'pick' && (
-        <motion.div
-          initial={reducedMotion ? false : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={reducedMotion ? { duration: 0 } : undefined}
-          className="grid grid-cols-1 gap-6 lg:grid-cols-2"
-        >
-          <ParamPicker
-            title="Improving parameter"
-            subtitle="What you want to make better"
-            accent="saffron"
-            selected={improving}
-            onSelect={(i) => {
-              setImproving(i)
-              if (worsening !== null) setView('results')
-            }}
-            search={search}
-            setSearch={setSearch}
-            filtered={filteredParams}
-            disabled={[]}
-          />
-
-          <ParamPicker
-            title="Worsening parameter"
-            subtitle="What gets worse as a result"
-            accent="clay"
-            selected={worsening}
-            onSelect={(i) => {
-              setWorsening(i)
-              if (improving !== null) setView('results')
-            }}
-            search={search}
-            setSearch={setSearch}
-            filtered={filteredParams}
-            disabled={improving !== null ? [improving] : []}
-          />
-        </motion.div>
-      )}
-
-      {/* Matrix view */}
-      {view === 'matrix' && (
-        <TrizMatrixView
-          matrixSearch={matrixSearch}
-          onMatrixSearchChange={setMatrixSearch}
-          improving={improving}
-          worsening={worsening}
-          onSelectCell={handleSelectCell}
-        />
-      )}
-
-      {/* Step 2: Results */}
-      {view === 'results' && (
-        <TrizResultsView
-          improving={improving}
-          worsening={worsening}
-          suggestedPrinciples={suggestedPrinciples}
-          copied={copied}
-          onCopy={handleCopy}
-          onReset={handleReset}
-          onChangeParams={() => { setView('pick') }}
-        />
-      )}
+      {viewContent[view]}
     </div>
   )
 }
