@@ -86,9 +86,9 @@ export function TypeSelector({
               const nextIdx = e.key === 'ArrowDown'
                 ? (currentIdx + 1) % options.length
                 : (currentIdx - 1 + options.length) % options.length
-              // nextIdx is always within [0, options.length) via the modulo above;
-              // .item() is typed nullable, so the optional chain is legitimate.
-              options.item(nextIdx)?.focus()
+              // nextIdx is always within [0, options.length) via the modulo above,
+              // and the non-empty guard runs earlier — .item() is safe to call directly.
+              options.item(nextIdx).focus()
             }
           }}
         >
