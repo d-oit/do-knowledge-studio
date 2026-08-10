@@ -420,7 +420,9 @@ export function Overlay({
             'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
           ),
         )
-        const target = initialFocusRef?.current ?? focusableCacheRef.current[0]
+        // at(0) is typed as possibly undefined (unlike index access), so the
+        // fallback to container below is both type- and runtime-correct.
+        const target = initialFocusRef?.current ?? focusableCacheRef.current.at(0)
         ;(target ?? container).focus()
       }
     } else {

@@ -111,10 +111,12 @@ export function CommandPalette({ onEntitySelect }: CommandPaletteProps) {
   const allItems = [...navItems, ...libItems]
   const grouped = allItems.reduce(
     (acc, item) => {
-      ;(acc[item.group] ||= []).push(item)
+      const list = acc.get(item.group) ?? []
+      list.push(item)
+      acc.set(item.group, list)
       return acc
     },
-    {} as Record<string, CmdItem[]>,
+    new Map<string, CmdItem[]>(),
   )
 
   if (!commandOpen) return null
@@ -143,7 +145,7 @@ export function CommandPalette({ onEntitySelect }: CommandPaletteProps) {
           <CommandPrimitive.Empty className="px-3 py-6 text-center text-[13px] text-ink-mute">
             No matches.
           </CommandPrimitive.Empty>
-          {Object.entries(grouped).map(([group, items]) =>
+          {[...grouped].map(([group, items]) =>
             items.length ? (
               <CommandPrimitive.Group
                 key={group}

@@ -37,5 +37,17 @@ engines:
       - "SecurityJs_prod.variable_assigned_to_object_injection_sink"
       - "ESLint9_xss_no-mixed-html"  # False positive: encrypted export HTML is downloaded as a file, not executed in DOM
       - "ESLint9_@typescript-eslint_no-floating-promises"
+  # Legacy ESLint (v8) is the engine the cloud analysis actually runs — issues are
+  # reported with ESLint8_ pattern IDs, so suppressions must use the ESLint8_ prefix.
+  eslint-8:
+    enabled: true
+    exclude_paths:
+      - "**/__tests__/**"
+      - "**/*.test.*"
+      - "**/*.spec.*"
+    disable_rules:
+      - "ESLint8_security_detect-object-injection"  # FP: indexing constant lookup tables (TRIZ_PARAMETERS, BUTTON_VARIANTS) with typed keys
+      - "ESLint8_xss_no-mixed-html"  # FP: React JSX components and DOM-node refs, not raw HTML strings; encrypted export is downloaded as a file
+      - "ESLint8_@typescript-eslint_no-floating-promises"  # handled in code via void + .catch; suppress engine noise
   opengrep:
     enabled: true

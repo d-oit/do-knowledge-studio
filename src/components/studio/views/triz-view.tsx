@@ -62,7 +62,12 @@ export function TrizView() {
   }
 
   const handleCopy = (text: string, id: number) => {
-    navigator.clipboard?.writeText(text)
+    try {
+      // Clipboard can be unavailable in insecure contexts; rejection is non-fatal.
+      void navigator.clipboard.writeText(text).catch(() => undefined)
+    } catch {
+      // Clipboard API missing entirely (e.g. non-secure context) — ignore.
+    }
     setCopied(id)
     toast.success('Principle copied to clipboard')
     clearTimeout(copiedTimerRef.current)

@@ -211,6 +211,7 @@ export const fetchUrlContent = async (
     }
 
     const encodedUrl = encodeURIComponent(url)
+    // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf — scheme + isPrivateIP guarded above
     const res = await fetch(`${JINA_READER_ENDPOINT}${encodedUrl}`, {
       headers: {
         Accept: 'text/markdown',

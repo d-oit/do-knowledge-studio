@@ -86,7 +86,8 @@ export function TypeSelector({
               const nextIdx = e.key === 'ArrowDown'
                 ? (currentIdx + 1) % options.length
                 : (currentIdx - 1 + options.length) % options.length
-              options[nextIdx]?.focus()
+              // nextIdx is always within [0, options.length) via the modulo above.
+              options[nextIdx].focus()
             }
           }}
         >
