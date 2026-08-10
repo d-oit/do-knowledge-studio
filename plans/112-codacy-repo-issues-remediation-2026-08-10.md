@@ -60,6 +60,21 @@ issues reported: ESLint8_* (never matched by ESLint9_* disable_rules)
 - `shellcheck scripts/self-fix-loop.sh` ✅
 - Codacy PR gate on #628: `isUpToStandards=True`, **0 new issues** ✅
 
+## Post-merge addendum (2026-08-10)
+
+During the merge of PR #628, OwlWatch review threads on `triz-matrix-view.tsx`
+(HIGH · tracker ×3) flagged a real index-order bug that was verified against the
+data and fixed in the same PR (`98aaea4`):
+
+- Cell click passed `(colIndex, rowIndex)` but `TRIZ_MATRIX` keys are
+  `"improving-worsening"` and the header declares `↓ Improving → Worsening` —
+  clicks were looking up the **transposed** contradiction pair.
+- Fixed: click now passes `(rowIndex, colIndex)`; aria-label and row/column
+  highlights aligned to the improving/worsening axis; 2 regression tests added
+  (`triz-view.test.tsx`) asserting lookup order.
+- All 28 review threads (19 DeepSource stale + 9 OwlWatch) replied to and
+  resolved; gates stayed green throughout.
+
 ## Dependencies / Follow-ups
 
 1. **DeepSource on #628** remains red until **PR #627 merges** — DeepSource
