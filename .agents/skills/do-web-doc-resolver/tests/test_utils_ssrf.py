@@ -14,37 +14,43 @@ from scripts.utils import is_safe_url
 class TestIsSafeUrl:
     """SSRF safety checks."""
 
-    def test_blocks_non_http_schemes(self):
+    @staticmethod
+    def test_blocks_non_http_schemes():
         """file://, data:, javascript: URLs are rejected."""
         assert is_safe_url("file:///etc/passwd") is False
         assert is_safe_url("javascript:alert(1)") is False
         assert is_safe_url("data:text/plain;base64,AA==") is False
 
-    def test_blocks_localhost_aliases(self):
+    @staticmethod
+    def test_blocks_localhost_aliases():
         """localhost and loopback hostnames are rejected."""
         assert is_safe_url("http://localhost/foo") is False
         assert is_safe_url("http://127.0.0.1/foo") is False
         assert is_safe_url("http://0.0.0.0/foo") is False
 
-    def test_blocks_private_ipv4(self):
+    @staticmethod
+    def test_blocks_private_ipv4():
         """RFC1918 and link-local ranges are rejected."""
         assert is_safe_url("http://10.0.0.1/foo") is False
         assert is_safe_url("http://172.16.0.1/foo") is False
         assert is_safe_url("http://192.168.1.1/foo") is False
         assert is_safe_url("http://169.254.169.254/latest/meta-data/") is False
 
-    def test_blocks_private_ipv6(self):
+    @staticmethod
+    def test_blocks_private_ipv6():
         """Loopback and ULA IPv6 addresses are rejected."""
         assert is_safe_url("http://[::1]/foo") is False
         assert is_safe_url("http://[fc00::1]/foo") is False
 
-    def test_blocks_public_hostname_resolving_to_private_ip(self):
+    @staticmethod
+    def test_blocks_public_hostname_resolving_to_private_ip():
         """A hostname that resolves to a private IP is rejected."""
         addr = (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("10.1.2.3", 80))
         with patch("socket.getaddrinfo", return_value=[addr]):
             assert is_safe_url("http://example.internal/foo") is False
 
-    def test_accepts_public_https_url(self):
+    @staticmethod
+    def test_accepts_public_https_url():
         """A well-formed public https URL is accepted."""
         assert is_safe_url("https://example.com/docs") is True
 
@@ -52,7 +58,8 @@ class TestIsSafeUrl:
 class TestSocketTimeoutRestore:
     """The DNS-resolution path must restore the previous default timeout."""
 
-    def test_restores_previous_timeout_after_resolution(self):
+    @staticmethod
+    def test_restores_previous_timeout_after_resolution():
         """A pre-existing default timeout survives the lookup."""
         original = socket.getdefaulttimeout()
         try:
@@ -66,7 +73,8 @@ class TestSocketTimeoutRestore:
         finally:
             socket.setdefaulttimeout(original)
 
-    def test_restores_previous_timeout_when_blocked(self):
+    @staticmethod
+    def test_restores_previous_timeout_when_blocked():
         """A blocked hostname still restores the prior timeout."""
         original = socket.getdefaulttimeout()
         try:
@@ -80,7 +88,8 @@ class TestSocketTimeoutRestore:
         finally:
             socket.setdefaulttimeout(original)
 
-    def test_restores_when_resolution_raises(self):
+    @staticmethod
+    def test_restores_when_resolution_raises():
         """A failing getaddrinfo still restores the prior timeout."""
         original = socket.getdefaulttimeout()
         try:

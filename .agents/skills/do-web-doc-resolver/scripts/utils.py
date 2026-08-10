@@ -47,6 +47,7 @@ _cache = None
 
 
 def create_session_with_retry() -> requests.Session:
+    """Build a requests session with retry and header configuration."""
     session = requests.Session()
     retry_strategy = Retry(
         total=3,
@@ -69,6 +70,7 @@ def create_session_with_retry() -> requests.Session:
 
 
 def get_session() -> requests.Session:
+    """Return the process-wide shared session, creating it on first use."""
     global _global_session
     if _global_session is None:
         _global_session = create_session_with_retry()
@@ -76,6 +78,7 @@ def get_session() -> requests.Session:
 
 
 def close_session() -> None:
+    """Close and release the shared session, if one exists."""
     global _global_session
     if _global_session is not None:
         _global_session.close()
@@ -83,6 +86,7 @@ def close_session() -> None:
 
 
 def is_safe_url(url: str) -> bool:
+    """Return False when a URL is non-HTTP or resolves to a blocked/private network."""
     try:
         parsed = urlparse(url)
         if parsed.scheme.lower() in BLOCKED_SCHEMES:
@@ -125,6 +129,7 @@ def is_safe_url(url: str) -> bool:
 
 
 def is_url(input_str: str) -> bool:
+    """Return True when the input parses as an http(s)/ftp URL with a host."""
     if not input_str or not input_str.strip():
         return False
     try:
@@ -135,6 +140,7 @@ def is_url(input_str: str) -> bool:
 
 
 def validate_url(url: str, timeout: int = 10, check_ssrf: bool = True) -> ValidationResult:
+    """Validate a URL by format, SSRF policy, and an HTTP HEAD probe."""
     if not url or not url.strip():
         return ValidationResult(is_valid=False, error="Empty URL")
     if not is_url(url):
@@ -166,6 +172,7 @@ def validate_url(url: str, timeout: int = 10, check_ssrf: bool = True) -> Valida
 
 
 def validate_links(links: list[str], timeout: int = 5) -> list[str]:
+    """Return the subset of links that pass SSRF checks and return < 400."""
     valid_links = []
     session = get_session()
     for link in links:
@@ -181,6 +188,7 @@ def validate_links(links: list[str], timeout: int = 5) -> list[str]:
 
 
 def score_result(url: str | None, content: str) -> float:
+    """Score a resolved result in [0,1] by domain authority and content length."""
     score = 0.5
     if url:
         try:
@@ -203,6 +211,7 @@ def score_result(url: str | None, content: str) -> float:
 
 
 def compact_content(content: str, max_chars: int) -> str:
+    """Dedupe repeated lines and truncate content to max_chars."""
     lines = content.splitlines()
     unique_lines = set()
     compacted = []
@@ -218,21 +227,27 @@ def compact_content(content: str, max_chars: int) -> str:
 
 
 def extract_text_from_html(html: str, base_url: str = "") -> str:
+    """Strip script/style blocks and tags from HTML, returning plain text."""
     class ScriptStyleStripper(HTMLParser):
+        """HTMLParser subclass that discards script/style content."""
         def __init__(self) -> None:
+            """Initialize the result buffer and script/style nesting depth."""
             super().__init__(convert_charrefs=False)
             self.result: list[str] = []
             self._skip_depth = 0
 
         def handle_starttag(self, tag, attrs):
+            """Track nesting depth for script/style start tags."""
             if tag.lower() in ("script", "style"):
                 self._skip_depth += 1
 
         def handle_endtag(self, tag):
+            """Decrement nesting depth for script/style end tags."""
             if tag.lower() in ("script", "style") and self._skip_depth > 0:
                 self._skip_depth -= 1
 
         def handle_data(self, data):
+            """Append text data that is not inside a script/style block."""
             if self._skip_depth == 0:
                 self.result.append(data)
 
@@ -247,6 +262,7 @@ def extract_text_from_html(html: str, base_url: str = "") -> str:
 def fetch_url_content(
     url: str, timeout: int = DEFAULT_TIMEOUT, max_chars: int = MAX_CHARS
 ) -> ResolvedResult | None:
+    """Fetch a validated URL and return its extracted text as a ResolvedResult."""
     validation = validate_url(url, timeout=timeout // 2)
     if not validation.is_valid:
         return None
@@ -271,6 +287,7 @@ def fetch_url_content(
 
 
 def fetch_llms_txt(url: str) -> str | None:
+    """Return the site's llms.txt content, using the cache when fresh."""
     try:
         parsed = urlparse(url)
         base_url = f"{parsed.scheme}://{parsed.netloc}"
@@ -388,6 +405,7 @@ def normalize_query(query: str) -> str:
 
 
 def _cache_key(input_str: str, source: str) -> str:
+    """Hash the normalized input plus source into a stable cache key."""
     # Use normalized input for cache key
     if is_url(input_str):
         normalized = normalize_url(input_str)
@@ -399,7 +417,10 @@ def _cache_key(input_str: str, source: str) -> str:
 
 
 def _get_cache_proxy():
-    from . import resolve
+    """Return resolve's shared cache if set, else this module's own cache."""
+    # Lazy import keeps the resolve->utils dependency one-directional at
+    # import time; the static cycle is intentional and harmless here.
+    from . import resolve  # pylint: disable=cyclic-import,import-outside-toplevel
 
     if hasattr(resolve, "_cache") and resolve._cache is not None:
         return resolve._cache
@@ -407,6 +428,7 @@ def _get_cache_proxy():
 
 
 def get_cache():
+    """Create a diskcache instance in CACHE_DIR, or None when unavailable."""
     try:
         import diskcache
 
@@ -417,6 +439,7 @@ def get_cache():
 
 
 def _get_cache():
+    """Return the shared cache, resolving it lazily on first use."""
     global _cache
     _cache = _get_cache_proxy()
     if _cache is None:
@@ -425,6 +448,7 @@ def _get_cache():
 
 
 def _get_from_cache(input_str: str, source: str) -> dict[str, Any] | None:
+    """Read a cached result for the input, or None on miss/unavailable cache."""
     cache = _get_cache()
     if not cache:
         return None
@@ -435,6 +459,7 @@ def _get_from_cache(input_str: str, source: str) -> dict[str, Any] | None:
 
 
 def _save_to_cache(input_str: str, source: str, result: dict[str, Any], ttl: int | None = None):
+    """Store a result under the input's cache key with the given TTL."""
     cache = _get_cache()
     if not cache:
         return
@@ -442,6 +467,7 @@ def _save_to_cache(input_str: str, source: str, result: dict[str, Any], ttl: int
 
 
 def _detect_error_type(error: Exception) -> ErrorType:
+    """Classify an exception message into the matching ErrorType category."""
     error_msg = str(error).lower()
     if any(code in error_msg for code in ["429", "rate limit", "too many requests", "rate_limit"]):
         return ErrorType.RATE_LIMIT
