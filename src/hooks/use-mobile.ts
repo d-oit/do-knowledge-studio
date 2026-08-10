@@ -3,7 +3,7 @@ import * as React from "react"
 const MOBILE_BREAKPOINT = 768
 
 /** Hook that returns true when the viewport width is below the mobile breakpoint. */
-export function useIsMobile() {
+export const useIsMobile = () => {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined)
 
   React.useEffect(() => {
@@ -13,7 +13,9 @@ export function useIsMobile() {
     }
     mql.addEventListener("change", onChange)
     setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
-    return () => mql.removeEventListener("change", onChange)
+    return () => {
+      mql.removeEventListener("change", onChange)
+    }
   }, [])
 
   return !!isMobile

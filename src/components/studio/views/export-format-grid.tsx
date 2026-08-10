@@ -44,7 +44,7 @@ export const ExportFormatGrid = memo(({
           <Download aria-hidden="true" className="mx-auto mb-3 h-8 w-8 text-ink-faint/40" />
           <p className="text-[13px] text-ink-mute">No entities to export yet. Create some content first.</p>
           <button
-            onClick={() => setView('editor')}
+            onClick={() => { setView('editor') }}
             className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
           >
             <FileText className="h-3.5 w-3.5" />

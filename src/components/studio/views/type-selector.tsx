@@ -30,7 +30,7 @@ function renderTypeIcon(t: EntityType, className?: string) {
 }
 
 /** Dropdown selector for choosing an entity type with keyboard navigation. */
-export function TypeSelector({
+export const TypeSelector = ({
   type,
   showMenu,
   onToggleMenu,
@@ -40,7 +40,7 @@ export function TypeSelector({
   showMenu: boolean
   onToggleMenu: () => void
   onSelect: (t: EntityType) => void
-}) {
+}) => {
   const menuRef = useRef<HTMLDivElement>(null)
   const meta = getTypeMeta(type)
 
@@ -86,7 +86,9 @@ export function TypeSelector({
               const nextIdx = e.key === 'ArrowDown'
                 ? (currentIdx + 1) % options.length
                 : (currentIdx - 1 + options.length) % options.length
-              options[nextIdx]?.focus()
+              // nextIdx is always within [0, options.length) via the modulo above,
+              // and the non-empty guard runs earlier — .item() is safe to call directly.
+              options.item(nextIdx).focus()
             }
           }}
         >

@@ -204,6 +204,31 @@ describe('TrizView', () => {
     expect(screen.getByPlaceholderText('Filter parameters\u2026')).toBeDefined()
   })
 
+  it('matrix cell click looks up the improving-worsening pair in the correct order', () => {
+    render(<TrizView />)
+    fireEvent.click(screen.getByText('Matrix'))
+    // Row 0 (Weight of moving object) = improving, col 1 (Length of moving object) = worsening.
+    // The mock matrix has '0-1': [1, 2] — Segmentation + Extraction.
+    fireEvent.click(
+      screen.getByLabelText('Principles for improving Weight of moving object while worsening Length of moving object'),
+    )
+    expect(mockLookupPrinciples).toHaveBeenCalledWith(0, 1)
+    expect(screen.getByText('Your contradiction')).toBeDefined()
+    expect(screen.getByText('Segmentation')).toBeDefined()
+    expect(screen.getByText('Extraction')).toBeDefined()
+  })
+
+  it('matrix cell click does not transpose the worsening parameter', () => {
+    render(<TrizView />)
+    fireEvent.click(screen.getByText('Matrix'))
+    // Transposed lookup (1, 0) would return only principle 3 (Extraction) from the mock.
+    fireEvent.click(
+      screen.getByLabelText('Principles for improving Weight of moving object while worsening Length of moving object'),
+    )
+    expect(screen.queryByText('Local quality')).toBeNull()
+    expect(mockLookupPrinciples).not.toHaveBeenCalledWith(1, 0)
+  })
+
   it('results show contradiction summary with selected parameters', () => {
     render(<TrizView />)
     fireEvent.click(screen.getAllByText('Weight of moving object')[0])

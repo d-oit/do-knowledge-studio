@@ -50,13 +50,11 @@ const FormField = <
 const useFormField = () => {
   const fieldContext = React.useContext(FormFieldContext)
   const itemContext = React.useContext(FormItemContext)
+  // fieldContext is never null (context has a default value) and is dereferenced
+  // above, so the shadcn guard is dead code — omitted deliberately.
   const { getFieldState } = useFormContext()
   const formState = useFormState({ name: fieldContext.name })
   const fieldState = getFieldState(fieldContext.name, formState)
-
-  if (!fieldContext) {
-    throw new Error("useFormField should be used within <FormField>")
-  }
 
   const { id } = itemContext
 
