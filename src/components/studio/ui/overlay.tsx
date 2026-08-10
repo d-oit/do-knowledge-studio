@@ -26,29 +26,51 @@ interface OverlayProps {
   children: React.ReactNode
 }
 
-const VARIANT_CONTAINER: Record<OverlayVariant, string> = {
-  center:
-    'm-auto max-h-[calc(100dvh-2rem)] w-[min(100%-2rem,32rem)] overflow-y-auto rounded-xl',
-  'sheet-bottom':
-    'mx-auto mt-auto max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-t-xl',
-  'sheet-left':
-    'h-dvh w-[min(86vw,340px)] overflow-y-auto',
-  fullscreen:
-    'h-full w-full overflow-y-auto',
+const CENTER_CONTAINER =
+  'm-auto max-h-[calc(100dvh-2rem)] w-[min(100%-2rem,32rem)] overflow-y-auto rounded-xl'
+const SHEET_BOTTOM_CONTAINER =
+  'mx-auto mt-auto max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-t-xl'
+const SHEET_LEFT_CONTAINER = 'h-dvh w-[min(86vw,340px)] overflow-y-auto'
+const FULLSCREEN_CONTAINER = 'h-full w-full overflow-y-auto'
+
+const getBackdropClasses = (variant: OverlayVariant): string => {
+  switch (variant) {
+    case 'sheet-left':
+    case 'fullscreen':
+      return 'flex'
+    case 'center':
+    case 'sheet-bottom':
+    default:
+      return ''
+  }
+}
+
+const getAnimationClasses = (variant: OverlayVariant): string => {
+  switch (variant) {
+    case 'center':
+      return 'slide-in-from-bottom-4'
+    case 'sheet-bottom':
+      return 'slide-in-from-bottom-full'
+    case 'sheet-left':
+      return 'slide-in-from-left-full'
+    case 'fullscreen':
+    default:
+      return ''
+  }
 }
 
 const getVariantClasses = (variant: OverlayVariant): string => {
   switch (variant) {
     case 'center':
-      return VARIANT_CONTAINER.center
+      return CENTER_CONTAINER
     case 'sheet-bottom':
-      return VARIANT_CONTAINER['sheet-bottom']
+      return SHEET_BOTTOM_CONTAINER
     case 'sheet-left':
-      return VARIANT_CONTAINER['sheet-left']
+      return SHEET_LEFT_CONTAINER
     case 'fullscreen':
-      return VARIANT_CONTAINER.fullscreen
+      return FULLSCREEN_CONTAINER
     default:
-      return VARIANT_CONTAINER.center
+      return CENTER_CONTAINER
   }
 }
 
@@ -185,8 +207,7 @@ export const Overlay = ({
       onClick={handleBackdropClick}
       className={cn(
         'fixed inset-0 z-[800] bg-ink/30 backdrop-blur-sm animate-in fade-in duration-150',
-        variant === 'sheet-left' && 'flex',
-        variant === 'fullscreen' && 'flex',
+        getBackdropClasses(variant),
       )}
     >
       <div
@@ -200,9 +221,7 @@ export const Overlay = ({
         className={cn(
           'animate-in fade-in duration-150',
           getVariantClasses(variant),
-          variant === 'center' && 'slide-in-from-bottom-4',
-          variant === 'sheet-bottom' && 'slide-in-from-bottom-full',
-          variant === 'sheet-left' && 'slide-in-from-left-full',
+          getAnimationClasses(variant),
           className,
         )}
       >
