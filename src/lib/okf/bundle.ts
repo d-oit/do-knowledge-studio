@@ -37,6 +37,32 @@ const conceptPath = (e: Entity): string => {
   return `${typeName.toLowerCase()}s/${name}.md`
 }
 
+/**
+ * Ensures a bundle-relative concept path is unique, appending a numeric
+ * suffix when a previous entity slugged to the same path (§2 collision rule).
+ * @param base - The path computed by conceptPath (may collide).
+ * @param used - Set of paths already claimed by earlier entities.
+ * @returns A unique path not present in used; the claimed path is added to used.
+ */
+const uniquePath = (base: string, used: Set<string>): string => {
+  if (!used.has(base)) {
+    used.add(base)
+    return base
+  }
+  /** The path without .md extension. */
+  const stem = base.replace(/\.md$/, '')
+  /** The collision counter. */
+  let n = 2
+  /** The candidate path. */
+  let candidate = `${stem}-${n}.md`
+  while (used.has(candidate)) {
+    n += 1
+    candidate = `${stem}-${n}.md`
+  }
+  used.add(candidate)
+  return candidate
+}
+
 /** §5.1 provenance: a claim source entry with a STABLE id used for footnote attribution. */
 interface SourceEntry {
   /** Stable join key referenced by `[^id]` footnote labels in concept bodies. */
@@ -163,10 +189,10 @@ const buildIndexSection = (
  * Builds the root index.md: §8 allows okf_version frontmatter on the index only.
  * Concept files are grouped by directory with bundle-relative links (§6.1).
  * @param files - The bundle's concept files (index.md/log.md excluded).
- * @param entities - Entities used to resolve titles and descriptions.
+ * @param entityByPath - Path→entity index used to resolve titles and descriptions.
  * @returns The rendered index.md content.
  */
-const buildIndex = (files: OkfBundleFile[], entities: Entity[]): string => {
+const buildIndex = (files: OkfBundleFile[], entityByPath: Map<string, Entity>): string => {
   /** The by dir. */
   const byDir = new Map<string, { title: string; href: string; desc: string }[]>()
   for (const f of files) {
@@ -176,7 +202,7 @@ const buildIndex = (files: OkfBundleFile[], entities: Entity[]): string => {
     /** The dir. */
     const dir = parts[0]
     /** The entity. */
-    const entity = entities.find((e) => f.path.endsWith(`${slug(e.name)}.md`))
+    const entity = entityByPath.get(f.path)
     /** The entries. */
     const entries = byDir.get(dir) ?? []
     entries.push({
@@ -258,20 +284,26 @@ export const buildOkfBundle = (
     claimsByEntity.set(c.entityId, [...(claimsByEntity.get(c.entityId) ?? []), c])
   }
 
+  /** The paths claimed so far, to disambiguate slug collisions. */
+  const usedPaths = new Set<string>()
   /** The concept files. */
   const conceptFiles: OkfBundleFile[] = entities.map((e) => ({
     /** Bundle-relative file path. */
-    path: conceptPath(e),
+    path: uniquePath(conceptPath(e), usedPaths),
     /** Markdown or text content. */
     content: buildConceptDoc(e, claimsByEntity.get(e.id) ?? [], studioVersion, now),
   }))
 
   /** The path by entity id. */
-  const pathByEntityId = new Map(entities.map((e) => [e.id, `/${conceptPath(e)}`]))
+  const pathByEntityId = new Map(
+    entities.map((e, i) => [e.id, `/${conceptFiles[i].path}`]),
+  )
+  /** The entity by path (reverse of the path index above). */
+  const entityByPath = new Map(entities.map((e, i) => [conceptFiles[i].path, e]))
   appendRelatedLinks(conceptFiles, edges, entities, pathByEntityId)
 
   /** Bundle files (path → content). */
   const files: OkfBundleFile[] = [{ path: 'log.md', content: buildLog(now) }, ...conceptFiles]
-  files.unshift({ path: 'index.md', content: buildIndex(conceptFiles, entities) })
+  files.unshift({ path: 'index.md', content: buildIndex(conceptFiles, entityByPath) })
   return { files, okfVersion: '0.2' }
 }

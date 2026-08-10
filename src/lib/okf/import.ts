@@ -7,7 +7,8 @@ import { trustTier } from './trust'
 /**
  * Generates a UUID v4. Uses the Web Crypto API when available (browsers and
  * modern Node), falling back to a crypto.getRandomValues-based v4 for runtimes
- * without `crypto.randomUUID` so the importer never throws.
+ * without `crypto.randomUUID`. Throws only when no Web Crypto exists at all
+ * (exotic runtime) rather than emitting weak random IDs.
  * @returns A UUID v4 string.
  */
 const uuid = (): string => {

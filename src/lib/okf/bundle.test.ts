@@ -141,4 +141,41 @@ describe('OKF Bundle Export', () => {
     expect(slug('---hello---world---')).toBe('hello-world')
     expect(slug('')).toBe('untitled')
   })
+
+  it('disambiguates slug collisions instead of overwriting concept files', () => {
+    /** The colliding entities. */
+    const collidingEntities: Entity[] = [
+      { ...dummyEntities[0], id: 'entity-1', name: 'Foo Bar' },
+      { ...dummyEntities[0], id: 'entity-2', name: 'Foo-Bar' },
+    ]
+
+    /** The bundle. */
+    const bundle = buildOkfBundle(collidingEntities, [], [], '0.1.0', new Date('2026-07-24'))
+
+    /** The concept paths. */
+    const conceptPaths = bundle.files
+      .map((f) => f.path)
+      .filter((p) => p.startsWith('concepts/'))
+      .sort()
+    expect(conceptPaths).toEqual(['concepts/foo-bar-2.md', 'concepts/foo-bar.md'])
+    expect(new Set(bundle.files.map((f) => f.path)).size).toBe(bundle.files.length)
+  })
+
+  it('index.md resolves titles via the path map, not slug suffix matching', () => {
+    /** The colliding entities. */
+    const collidingEntities: Entity[] = [
+      { ...dummyEntities[0], id: 'entity-1', name: 'Foo Bar' },
+      { ...dummyEntities[0], id: 'entity-2', name: 'Bar' },
+    ]
+
+    /** The bundle. */
+    const bundle = buildOkfBundle(collidingEntities, [], [], '0.1.0', new Date('2026-07-24'))
+    /** The index file. */
+    const indexFile = bundle.files.find((f) => f.path === 'index.md')
+
+    // The slug of "Foo Bar" ends with "bar", but the path map must still
+    // attribute the concept file to "Foo Bar", not to the entity named "Bar".
+    expect(indexFile?.content).toContain('* [Foo Bar](/concepts/foo-bar.md)')
+    expect(indexFile?.content).toContain('* [Bar](/concepts/bar.md)')
+  })
 })
