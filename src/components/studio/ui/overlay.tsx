@@ -100,7 +100,8 @@ const useOverlayFocus = (
 
   useEffect(() => {
     if (open) {
-      previousFocusRef.current = document.activeElement as HTMLElement
+      const activeElement = document.activeElement
+      previousFocusRef.current = activeElement instanceof HTMLElement ? activeElement : null
       const container = containerRef.current
       if (container) {
         focusableCacheRef.current = Array.from(

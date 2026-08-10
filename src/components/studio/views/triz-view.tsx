@@ -11,8 +11,6 @@ import {
 import { TrizMatrixView } from './triz-matrix-view'
 import { TrizResultsView } from './triz-results-view'
 
-type TrizViewId = 'pick' | 'results' | 'matrix'
-
 /** TRIZ contradiction matrix view for picking parameters and viewing suggested inventive principles. */
 export const TrizView = () => {
   const [improving, setImproving] = useState<number | null>(null)
@@ -71,39 +69,35 @@ export const TrizView = () => {
     if (improving !== null) setView('results')
   }
 
-  const viewContent: Record<TrizViewId, React.ReactNode> = {
-    pick: (
-      <TrizPickView
-        improving={improving}
-        worsening={worsening}
-        search={search}
-        filteredParams={filteredParams}
-        onImprovingChange={handleImprovingChange}
-        onWorseningChange={handleWorseningChange}
-        onSearchChange={setSearch}
-      />
-    ),
-    matrix: (
-      <TrizMatrixView
-        matrixSearch={matrixSearch}
-        onMatrixSearchChange={setMatrixSearch}
-        improving={improving}
-        worsening={worsening}
-        onSelectCell={handleSelectCell}
-      />
-    ),
-    results: (
-      <TrizResultsView
-        improving={improving}
-        worsening={worsening}
-        suggestedPrinciples={suggestedPrinciples}
-        copied={copied}
-        onCopy={handleCopy}
-        onReset={handleReset}
-        onChangeParams={() => { setView('pick') }}
-      />
-    ),
-  }
+  const viewContent = view === 'pick' ? (
+    <TrizPickView
+      improving={improving}
+      worsening={worsening}
+      search={search}
+      filteredParams={filteredParams}
+      onImprovingChange={handleImprovingChange}
+      onWorseningChange={handleWorseningChange}
+      onSearchChange={setSearch}
+    />
+  ) : view === 'matrix' ? (
+    <TrizMatrixView
+      matrixSearch={matrixSearch}
+      onMatrixSearchChange={setMatrixSearch}
+      improving={improving}
+      worsening={worsening}
+      onSelectCell={handleSelectCell}
+    />
+  ) : (
+    <TrizResultsView
+      improving={improving}
+      worsening={worsening}
+      suggestedPrinciples={suggestedPrinciples}
+      copied={copied}
+      onCopy={handleCopy}
+      onReset={handleReset}
+      onChangeParams={() => { setView('pick') }}
+    />
+  )
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-6 lg:px-10 lg:py-8">
@@ -114,7 +108,7 @@ export const TrizView = () => {
         hasSelection={improving !== null || worsening !== null}
         onReset={handleReset}
       />
-      {viewContent[view]}
+      {viewContent}
     </div>
   )
 }
