@@ -2,6 +2,8 @@
 Tests for main resolve module.
 """
 
+from unittest.mock import patch
+
 import pytest
 
 from scripts.resolve import MAX_CHARS, MIN_CHARS, is_url, resolve
@@ -113,7 +115,12 @@ class TestResolve:
 
     @pytest.mark.live
     def test_resolve_url_returns_dict(self, sample_url, max_chars):
-        """Resolving a URL should return a dict."""
+        """
+        Resolving a URL should return a dict.
+        Args:
+            sample_url: Injected pytest fixture.
+            max_chars: Injected pytest fixture.
+        """
         result = resolve(sample_url, max_chars=max_chars)
         assert isinstance(result, dict)
         assert "source" in result
@@ -121,7 +128,12 @@ class TestResolve:
 
     @pytest.mark.live
     def test_resolve_query_returns_dict(self, sample_query, max_chars):
-        """Resolving a query should return a dict."""
+        """
+        Resolving a query should return a dict.
+        Args:
+            sample_query: Injected pytest fixture.
+            max_chars: Injected pytest fixture.
+        """
         result = resolve(sample_query, max_chars=max_chars)
         assert isinstance(result, dict)
         assert "source" in result
@@ -129,21 +141,35 @@ class TestResolve:
 
     @pytest.mark.live
     def test_resolve_url_content_not_empty(self, sample_url, max_chars):
-        """Resolved content should not be empty."""
+        """
+        Resolved content should not be empty.
+        Args:
+            sample_url: Injected pytest fixture.
+            max_chars: Injected pytest fixture.
+        """
         result = resolve(sample_url, max_chars=max_chars)
         assert result.get("content")
         assert len(result["content"]) > 0
 
     @pytest.mark.live
     def test_resolve_query_content_not_empty(self, sample_query, max_chars):
-        """Resolved query content should not be empty."""
+        """
+        Resolved query content should not be empty.
+        Args:
+            sample_query: Injected pytest fixture.
+            max_chars: Injected pytest fixture.
+        """
         result = resolve(sample_query, max_chars=max_chars)
         assert result.get("content")
         assert len(result["content"]) > 0
 
     @pytest.mark.live
     def test_resolve_respects_max_chars(self, sample_url):
-        """Resolved content should respect max_chars limit."""
+        """
+        Resolved content should respect max_chars limit.
+        Args:
+            sample_url: Injected pytest fixture.
+        """
         small_max = 500
         result = resolve(sample_url, max_chars=small_max)
         if result and "content" in result:
@@ -151,7 +177,12 @@ class TestResolve:
 
     @pytest.mark.live
     def test_resolve_includes_source(self, sample_url, max_chars):
-        """Resolved result should include source provider."""
+        """
+        Resolved result should include source provider.
+        Args:
+            sample_url: Injected pytest fixture.
+            max_chars: Injected pytest fixture.
+        """
         result = resolve(sample_url, max_chars=max_chars)
         assert result.get("source")
         assert isinstance(result["source"], str)
@@ -161,22 +192,234 @@ class TestResolveEdgeCases:
     """Tests for edge cases in resolve function."""
 
     def test_resolve_empty_input(self, max_chars):
-        """Empty input should return a failure dict."""
+        """
+        Empty input should return a failure dict.
+        Args:
+            max_chars: Injected pytest fixture.
+        """
         result = resolve("", max_chars=max_chars)
         assert isinstance(result, dict)
         assert result.get("source") == "none"
 
     def test_resolve_whitespace_input(self, max_chars):
-        """Whitespace-only input should return a failure dict."""
+        """
+        Whitespace-only input should return a failure dict.
+        Args:
+            max_chars: Injected pytest fixture.
+        """
         result = resolve("   ", max_chars=max_chars)
         assert isinstance(result, dict)
         assert result.get("source") == "none"
 
     def test_resolve_none_input(self, max_chars):
-        """None input should return a failure dict."""
+        """
+        None input should return a failure dict.
+        Args:
+            max_chars: Injected pytest fixture.
+        """
         result = resolve(None, max_chars=max_chars)
         assert isinstance(result, dict)
         assert result.get("source") == "none"
+
+
+class TestResolveUrlStreamCascade:
+    """Mock-based tests for the resolve_url_stream provider cascade."""
+
+    @pytest.fixture(autouse=True)
+    def _isolate_state(self):
+        """Isolate persistent cache, circuit breakers, and routing memory."""
+        from scripts.circuit_breaker import CircuitBreakerRegistry
+        from scripts.routing_memory import RoutingMemory
+
+        with (
+            patch("scripts.resolve._get_cache", return_value=None),
+            patch("scripts.resolve._circuit_breakers", CircuitBreakerRegistry()),
+            patch("scripts.resolve._routing_memory", RoutingMemory()),
+        ):
+            yield
+
+    @staticmethod
+    def _make_quality(acceptable: bool = True):
+        """
+        Build a QualityScore for the given acceptance flag.
+        Args:
+            acceptable: Injected pytest fixture.
+        """
+        from scripts.quality import QualityScore
+
+        return QualityScore(
+            score=0.9 if acceptable else 0.3,
+            too_short=not acceptable,
+            missing_links=False,
+            duplicate_heavy=False,
+            noisy=False,
+            acceptable=acceptable,
+        )
+
+    @patch("scripts.resolve.routing.plan_provider_order", return_value=["direct_fetch"])
+    @patch("scripts.resolve.fetch_url_content")
+    @patch("scripts.resolve.quality.score_content")
+    def test_acceptable_resolved_result_yields_content(self, mock_score, mock_fetch, mock_plan):
+        """
+        An acceptable ResolvedResult should be yielded as the first output.
+        Args:
+            mock_score: Injected pytest fixture.
+            mock_fetch: Injected pytest fixture.
+            mock_plan: Injected pytest fixture.
+        """
+        from scripts.models import Profile, ResolvedResult
+        from scripts.resolve import resolve_url_stream
+
+        mock_score.return_value = self._make_quality(acceptable=True)
+        mock_fetch.return_value = ResolvedResult(
+            source="direct_fetch", content="B" * 600, url="https://example.com"
+        )
+        results = list(resolve_url_stream("https://example.com", profile=Profile.FAST))
+        assert results
+        first = results[0]
+        assert first["source"] == "direct_fetch"
+        assert first["url"] == "https://example.com"
+        assert len(first["content"]) >= 600
+
+    @patch("scripts.resolve.routing.plan_provider_order", return_value=["direct_fetch"])
+    @patch("scripts.resolve.fetch_url_content")
+    @patch("scripts.resolve.quality.score_content")
+    def test_string_result_yields_content(self, mock_score, mock_fetch, mock_plan):
+        """
+        A plain-string probe result should be yielded, not silently dropped.
+        Args:
+            mock_score: Injected pytest fixture.
+            mock_fetch: Injected pytest fixture.
+            mock_plan: Injected pytest fixture.
+        """
+        from scripts.models import Profile
+        from scripts.resolve import resolve_url_stream
+
+        mock_score.return_value = self._make_quality(acceptable=True)
+        mock_fetch.return_value = "B" * 600  # fetch_url_content returns a plain str
+        results = list(resolve_url_stream("https://example.com", profile=Profile.FAST))
+        assert results
+        first = results[0]
+        assert first["source"] == "direct_fetch"
+        assert first["url"] == "https://example.com"
+        assert len(first["content"]) >= 600
+
+    @patch("scripts.resolve.routing.plan_provider_order", return_value=["jina"])
+    @patch("scripts.resolve.resolve_with_jina")
+    @patch("scripts.resolve.quality.score_content")
+    def test_provider_result_success_yields_content(self, mock_score, mock_jina, mock_plan):
+        """
+        An acceptable ProviderResult should be yielded, not silently dropped.
+        Args:
+            mock_score: Injected pytest fixture.
+            mock_jina: Injected pytest fixture.
+            mock_plan: Injected pytest fixture.
+        """
+        from scripts.models import Profile, ProviderResult
+        from scripts.resolve import resolve_url_stream
+
+        mock_score.return_value = self._make_quality(acceptable=True)
+        mock_jina.return_value = ProviderResult(
+            ok=True, source="jina", content="B" * 600, url="https://example.com"
+        )
+        results = list(resolve_url_stream("https://example.com", profile=Profile.FAST))
+        assert results
+        first = results[0]
+        assert first["source"] == "jina"
+        assert first["url"] == "https://example.com"
+        assert len(first["content"]) >= 600
+
+    @patch("scripts.resolve.routing.plan_provider_order", return_value=["llms_txt"])
+    @patch("scripts.resolve.fetch_llms_txt")
+    def test_llms_txt_yields_compacted_output(self, mock_llms, mock_plan):
+        """
+        An llms.txt hit should yield compacted content regardless of quality.
+        Args:
+            mock_llms: Injected pytest fixture.
+            mock_plan: Injected pytest fixture.
+        """
+        from scripts.models import Profile
+        from scripts.resolve import resolve_url_stream
+
+        mock_llms.return_value = ("line1\n" + "line2\n") * 300
+        results = list(resolve_url_stream("https://example.com", profile=Profile.FAST))
+        assert results
+        first = results[0]
+        assert first["source"] == "llms.txt"
+        assert "line1" in first["content"]
+
+    @patch("scripts.resolve.routing.plan_provider_order", return_value=["jina"])
+    @patch("scripts.resolve.resolve_with_jina")
+    @patch("scripts.resolve.quality.score_content")
+    def test_thin_content_falls_through_to_failure(self, mock_score, mock_jina, mock_plan):
+        """
+        Thin provider content should not be yielded; final result is 'none'.
+        Args:
+            mock_score: Injected pytest fixture.
+            mock_jina: Injected pytest fixture.
+            mock_plan: Injected pytest fixture.
+        """
+        from scripts.models import Profile, ProviderMeta, ProviderResult
+        from scripts.resolve import resolve_url_stream
+
+        mock_score.return_value = self._make_quality(acceptable=False)
+        mock_jina.return_value = ProviderResult(
+            ok=True,
+            content="short",
+            meta=ProviderMeta(tool="jina", duration_ms=5),
+            url="https://example.com",
+            source="jina",
+        )
+        results = list(resolve_url_stream("https://example.com", profile=Profile.FAST))
+        assert results
+        # ProviderResult with acceptable=False is rejected; only the failure dict is emitted.
+        assert all(r["source"] != "jina" for r in results)
+        assert results[-1]["source"] == "none"
+
+    @patch("scripts.resolve.resolve_with_docling")
+    def test_special_document_uses_docling(self, mock_docling):
+        """
+        A PDF URL should be resolved via docling without a provider cascade.
+        Args:
+            mock_docling: Injected pytest fixture.
+        """
+        from scripts.models import Profile, ProviderMeta, ProviderResult
+        from scripts.resolve import resolve_url_stream
+
+        mock_docling.return_value = ProviderResult(
+            ok=True,
+            content="extracted pdf text",
+            meta=ProviderMeta(tool="docling", duration_ms=10),
+            url="https://8.8.8.8/report.pdf",
+            source="docling",
+        )
+        results = list(resolve_url_stream("https://8.8.8.8/report.pdf", profile=Profile.FAST))
+        assert results
+        assert results[0]["source"] == "docling"
+        assert results[0]["content"] == "extracted pdf text"
+
+    @patch("scripts.resolve.resolve_with_docling")
+    @patch("scripts.resolve.routing.plan_provider_order", return_value=[])
+    def test_special_document_failure_falls_through(self, mock_plan, mock_docling):
+        """
+        A failed docling attempt should fall through to the regular failure result.
+        Args:
+            mock_plan: Injected pytest fixture.
+            mock_docling: Injected pytest fixture.
+        """
+        from scripts.models import Profile, ProviderMeta, ProviderResult
+        from scripts.resolve import resolve_url_stream
+
+        mock_docling.return_value = ProviderResult(
+            ok=False,
+            error="exit_code_1",
+            meta=ProviderMeta(tool="docling", duration_ms=10, error_type="unknown"),
+            url="https://8.8.8.8/report.pdf",
+            source="docling",
+        )
+        results = list(resolve_url_stream("https://8.8.8.8/report.pdf", profile=Profile.FAST))
+        assert results
+        assert results[-1]["source"] == "none"
 
 
 class TestResolveQuality:
@@ -184,7 +427,12 @@ class TestResolveQuality:
 
     @pytest.mark.live
     def test_resolved_content_above_min_chars(self, sample_url, max_chars):
-        """Resolved content should typically be above MIN_CHARS."""
+        """
+        Resolved content should typically be above MIN_CHARS.
+        Args:
+            sample_url: Injected pytest fixture.
+            max_chars: Injected pytest fixture.
+        """
         result = resolve(sample_url, max_chars=max_chars)
         if result and "content" in result:
             # Most successful resolutions should exceed MIN_CHARS
@@ -192,7 +440,12 @@ class TestResolveQuality:
 
     @pytest.mark.live
     def test_resolved_content_has_structure(self, sample_query, max_chars):
-        """Resolved content should have some markdown structure."""
+        """
+        Resolved content should have some markdown structure.
+        Args:
+            sample_query: Injected pytest fixture.
+            max_chars: Injected pytest fixture.
+        """
         result = resolve(sample_query, max_chars=max_chars)
         if result and "content" in result and len(result["content"]) > 100:
             content = result["content"]
