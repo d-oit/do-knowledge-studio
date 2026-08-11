@@ -869,3 +869,76 @@ Synchronize the upgrade across the entire Vite ecosystem:
 - Use `--install-dependencies` flag but expect failures for non-JS tools
 
 **Tags**: #codacy #analysis-cli #static-analysis #tooling-gaps
+
+---
+
+## LESSON-024: gitleaks-action v3 requires a paid license
+
+**Issue**: `Security Scan` workflow failed on every PR with
+`🛑 missing gitleaks license` (Plan 115). gitleaks-action v3.0.0 enforced
+license validation when its owner-lookup API call failed (self-signed
+certificate error reaching api.github.com), and no `GITLEAKS_LICENSE`
+secret was configured.
+
+**Root Cause**: gitleaks-action v3+ requires a paid `GITLEAKS_LICENSE`
+secret; v2.x runs license-free for individual users. The failing license
+gate also **masked real scan results** — the old allowlist was never
+exercised because the scan never ran.
+
+**Solution**:
+
+- Pinned `gitleaks/gitleaks-action` to v2.3.9
+  (`ff98106e4c7b2bc287b24eaf42907196329070c7`) — log confirms
+  `No license key is required.`
+- After unblocking, re-ran the scan → surfaced **8 false positives**
+  (test fixtures, historical test files, doc examples) → extended
+  `.gitleaks.toml` allowlist (`test[_-]?api[_-]?key`, `sk-abc123xyz`,
+  `BEGIN RSA PRIVATE KEY`, path patterns)
+- `workflow_dispatch` scans full git history (`fetch-depth: 0`), so
+  deleted files still surface — allowlist by path pattern
+
+**Tags**: #gitleaks #secret-detection #ci-cd #license #allowlist
+
+---
+
+## LESSON-025: yamllint lints block scalars and templates
+
+**Issue**: `YAML Syntax Validation` CI failed on workflow changes that
+parsed as valid YAML (PR #640/#641).
+
+**Root Cause**: yamllint applies `line-length` (120 max) and
+`new-line-at-end-of-file` rules **inside `run: |` block scalars** and
+across `.github/workflow-templates/` files, not just top-level structure.
+
+**Solution**:
+
+- Break long `run:` script lines with backslash continuation; verify
+  with `bash -n` on the extracted block
+- Ensure trailing newline on every `.yml`/`.yaml`/`.properties.json`
+  file: `[ -z "$(tail -c 1 file)" ]`
+- Pre-push check: `awk 'length > 120 {print NR": "length}'` on all
+  workflow files
+
+**Tags**: #yamllint #github-actions #ci-cd #workflow #linting
+
+---
+
+## LESSON-026: Bot review threads block merges even when checks pass
+
+**Issue**: PRs showed `BLOCKED` with all checks green; the branch rule
+`required_review_thread_resolution: true` gates merges on unresolved
+review threads, and OwlWatch posts LOW-severity threads on every PR.
+
+**Root Cause**: `mergeStateStatus` reflects review-thread resolution,
+not just CI. Unresolved bot threads (owl-watch, DeepSource) block
+merges regardless of severity.
+
+**Solution**:
+
+- Before merging, query unresolved threads: GraphQL
+  `pullRequest.reviewThreads(isResolved == false)`
+- Resolve or address each: `resolveReviewThread(input: {threadId})`
+  mutation
+- Treat bot threads as merge gates, not noise
+
+**Tags**: #review-threads #github #branch-protection #merge #owl-watch

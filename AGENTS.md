@@ -276,6 +276,24 @@ When merging dependabot PRs or manually bumping dependencies:
 4. **UI library major bumps** (shadcn primitives, react-resizable-panels, radix) may rename exports — check `pnpm run build` for type errors.
 5. **After merging any dependabot PR**, immediately run the full quality workflow including `pnpm run build` and push a fix if needed.
 
+## Learnings (session-distilled)
+
+- **gitleaks-action v3+ requires a paid `GITLEAKS_LICENSE` secret** — pin
+  v2.x (e.g. v2.3.9) for license-free scanning. A failing license gate
+  masks real scan results; re-run the scan after unblocking and extend
+  `.gitleaks.toml` allowlists (full-history scans surface deleted test
+  files — allowlist by path pattern).
+- **yamllint applies `line-length` (120) and `new-line-at-end-of-file`
+  inside `run: |` block scalars and `.github/workflow-templates/`
+  files** — pre-push check: `awk 'length > 120'` on all
+  `.yml`/`.yaml`, verify trailing newline via `tail -c 1`.
+- **Branch rule `required_review_thread_resolution` blocks merges even
+  with all checks green** — resolve OwlWatch/DeepSource threads via
+  GraphQL `resolveReviewThread` before merging; they are merge gates,
+  not noise.
+- See `agents-docs/LESSONS.md` (LESSON-024..026) and
+  `plans/116-ci-workflow-learnings-2026-08-11.md` for full detail.
+
 ## Skills
 
 - Canonical skills live in `.agents/skills/`.

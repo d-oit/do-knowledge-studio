@@ -13,3 +13,6 @@
 {"id": "LESSON-013", "date": "2026-04-04", "component": "CI/CD", "title": "CI Hangs Indefinitely Due to BATS Recursion", "severity": "Critical", "tags": ["bats", "recursion", "ci-hang", "timeout", "testing"]}
 {"id": "LESSON-014", "date": "2026-04-04", "component": "CI/CD", "title": "Shellcheck Warnings vs Errors in CI", "severity": "Medium", "tags": ["shellcheck", "ci", "static-analysis", "warnings", "quality-gate"]}
 {"id": "LESSON-015", "date": "2026-04-04", "component": "CI/CD", "title": "GitHub API 403 Errors in Generic Templates", "severity": "High", "tags": ["github-api", "permissions", "token", "generic-template", "ci"]}
+{"id": "LESSON-024", "date": "2026-08-11", "component": "CI/CD", "title": "gitleaks-action v3 requires a paid license; pin v2.x", "severity": "High", "tags": ["gitleaks", "secret-detection", "license", "allowlist", "github-actions"]}
+{"id": "LESSON-025", "date": "2026-08-11", "component": "CI/CD", "title": "yamllint lints block scalars and template files", "severity": "Medium", "tags": ["yamllint", "github-actions", "workflow", "linting"]}
+{"id": "LESSON-026", "date": "2026-08-11", "component": "CI/CD", "title": "Bot review threads block merges even when checks pass", "severity": "Medium", "tags": ["review-threads", "branch-protection", "merge", "owl-watch"]}
