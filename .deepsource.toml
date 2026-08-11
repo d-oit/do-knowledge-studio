@@ -103,6 +103,18 @@ enabled = true
   pattern = "JS-C1003"
   skip = true
 
+[[analyzers]]
+name = "python"
+enabled = true
+
+  [analyzers.meta]
+  # Agent skills (.agents/) and repo scripts (scripts/) are already excluded
+  # from analysis via exclude_patterns. Keep the doc-coverage gate scoped to
+  # public API documentation: skip module/magic/init/class/nonpublic artifacts
+  # so undocumented private helpers don't drag the DCV down (mirrors the JS
+  # analyzer's skip_doc_coverage policy).
+  skip_doc_coverage = ["module", "magic", "init", "class", "nonpublic"]
+
 [[transformers]]
 name = "eslint"
 enabled = true

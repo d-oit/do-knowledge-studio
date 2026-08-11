@@ -1,6 +1,21 @@
 # Worklog — DO Knowledge Studio Redesign
 
 ---
+Task ID: owlwatch-111
+Agent: Buffy (GOAP swarm)
+Task: Address open PR comments/bot comments, failing CI, open issues, and open plans/ tasks (Plan 111).
+
+Work Log (2026-08-09):
+- PR #624 (OKF bundle): fixed the DeepSource blocker (Documentation Coverage 0.3% vs 71.8% baseline) by adding TSDoc to all exported symbols in `src/lib/okf/*`, plus all inline findings (const arrows, complexity splits in `bundle.ts`/`import.ts`/`use-export-handlers.ts`, async-without-await, non-null assertion). lint/typecheck/build + 34 OKF tests green; pushed `dfff869`.
+- PR #625 (dompurify 3.4.13): added pnpm override pinning the jspdf optional transitive dep to 3.4.13; pushed `2c9a400`; replied to the OwlWatch thread; re-armed auto-merge to unblock.
+- Issue #622: SSRF validation (`is_safe_url`) before `subprocess.run` in docling/OCR providers + 5 tests.
+- Issue #621: `resolve_url_stream` refactored 230→115 LOC / ccn 54→22 via 4 helpers; 5 mock-based cascade tests; hardened a flaky rate-limit test; 187 Python tests pass ×2; ruff clean.
+- Issue #620 (eslint 10): blocked upstream — `eslint-plugin-react@7.37.5` and `eslint-plugin-jsx-a11y@6.10.2` peers cap at eslint 9 and crash on 10; reverted to ^9, documented in Plan 111.
+- Plan 111 created; see `plans/111-owlwatch-issues-pr624-625-2026-08-09.md`.
+- Follow-up (DeepSource doc-coverage gates): investigated the Documentation Coverage metric empirically (per-file embedded metrics + artifact-model calibration) — it counts granular artifacts (params/properties/object keys) with opaque semantics; JS skip list is at its documented max; Python analyzer was auto-detected and analyzed `.agents/` despite `exclude_patterns`. Fix on PR #626: added `[[analyzers]] name="python"` with `skip_doc_coverage = ["module","magic","init","class","nonpublic"]` (user-approved), converted 4 f-string loggers to lazy `%s` (PYL-W1203), added `Args:` to 24 test methods. With the Python analyzer explicitly listed, the doc-coverage metric became informational — blocking issues (PYL-W0613 Major) are what fail the gate. PR #624's JS gate still needs a dashboard decision (documented in Plan 111 Phase 7). PR #625: close/reopen + re-armed auto-merge per Plan 098 staleness workflow.
+- PR #626 review threads: resolved all 8 (3 DeepSource minors + 5 OwlWatch). Fixed the OwlWatch HIGH bug — string-based probe results were dropped (`(None, True)`), now yielded via `_build_success_output`; regression test added. Reduced complexity: `_build_probe_output` 16→9 ccn, `resolve_url_stream` 115→72 lines/ccn 10, `resolve_query_stream` 160→83 lines/ccn 32→13. Removed unused `p_name` (PYL-W0613). 188 Python tests pass; commits 9904931 + 72c7efb.
+
+---
 Task ID: redesign-1
 Agent: main (Super Z)
 Task: Complete redesign of the DO Knowledge Studio UI/UX based on research of the GitHub repo and live site.

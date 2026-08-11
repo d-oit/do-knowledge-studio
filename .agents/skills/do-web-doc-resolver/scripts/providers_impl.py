@@ -13,6 +13,7 @@ from .utils import (
     _get_from_cache,
     _save_to_cache,
     get_session,
+    is_safe_url,
 )
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,14 @@ _rate_limits: dict[str, float] = {}
 
 
 def _is_rate_limited(provider: str) -> bool:
+    """Return True if the provider is inside its cooldown window.
+
+    Args:
+        provider: Provider name key in the cooldown registry.
+
+    Returns:
+        True when a cooldown is active; the expired entry is removed otherwise.
+    """
     if provider in _rate_limits:
         if time.time() < _rate_limits[provider]:
             return True
@@ -36,6 +45,12 @@ def _is_rate_limited(provider: str) -> bool:
 
 
 def _set_rate_limit(provider: str, cooldown: int = 60):
+    """Record a rate-limit cooldown for the provider (seconds).
+
+    Args:
+        provider: Provider name to throttle.
+        cooldown: Cooldown duration in seconds.
+    """
     _rate_limits[provider] = time.time() + cooldown
 
 
@@ -45,6 +60,15 @@ set_rate_limit = _set_rate_limit
 
 
 def resolve_with_jina(url: str, max_chars: int = MAX_CHARS) -> ProviderResult:
+    """Resolve a URL via the Jina Reader (r.jina.ai) and return a ProviderResult.
+
+    Args:
+        url: The target URL to read.
+        max_chars: Maximum content length to retain.
+
+    Returns:
+        A ProviderResult with the markdown content or an error meta.
+    """
     start = time.time()
     cached = _get_from_cache(url, "jina")
     if cached:
@@ -83,6 +107,15 @@ def resolve_with_jina(url: str, max_chars: int = MAX_CHARS) -> ProviderResult:
 
 
 def resolve_with_exa_mcp(query: str, max_chars: int = MAX_CHARS) -> ProviderResult:
+    """Resolve a query via the Exa MCP web-search endpoint.
+
+    Args:
+        query: The search query.
+        max_chars: Maximum content length to retain.
+
+    Returns:
+        A ProviderResult with the search results or an error meta.
+    """
     start = time.time()
     cached = _get_from_cache(query, "exa_mcp")
     if cached:
@@ -124,7 +157,52 @@ def resolve_with_exa_mcp(query: str, max_chars: int = MAX_CHARS) -> ProviderResu
         return ProviderResult(ok=False, error=str(e), meta=meta, query=query, source="exa_mcp")
 
 
+def _exa_search(query: str, api_key: str):
+    """Run an Exa SDK search and return the raw response object.
+
+    Args:
+        query: The search query.
+        api_key: EXA_API_KEY value.
+
+    Returns:
+        The Exa ``search_and_contents`` response.
+    """
+    from exa_py import Exa
+
+    client = Exa(api_key)
+    return client.search_and_contents(
+        query, use_autoprompt=True, highlights=True, num_results=EXA_RESULTS
+    )
+
+
+def _exa_content(res) -> str:
+    """Join Exa result highlights/texts into a single markdown block.
+
+    Args:
+        res: The Exa search response with a ``results`` sequence.
+
+    Returns:
+        The concatenated highlight/text content.
+    """
+    return "\n\n---\n\n".join(
+        [
+            (r.highlight if hasattr(r, "highlight") and r.highlight else r.text)
+            for r in res.results
+            if (hasattr(r, "highlight") and r.highlight) or (hasattr(r, "text") and r.text)
+        ]
+    )
+
+
 def resolve_with_exa(query: str, max_chars: int = MAX_CHARS) -> ProviderResult:
+    """Resolve a query via the Exa SDK, requiring EXA_API_KEY.
+
+    Args:
+        query: The search query.
+        max_chars: Maximum content length to retain.
+
+    Returns:
+        A ProviderResult with the search results or an error meta.
+    """
     start = time.time()
     cached = _get_from_cache(query, "exa")
     if cached:
@@ -138,23 +216,12 @@ def resolve_with_exa(query: str, max_chars: int = MAX_CHARS) -> ProviderResult:
         meta = ProviderMeta(tool="exa", duration_ms=duration, error_type=error_type)
         return ProviderResult(ok=False, error="missing_api_key_or_rate_limited", meta=meta, query=query, source="exa")
     try:
-        from exa_py import Exa
-
-        client = Exa(api_key)
-        res = client.search_and_contents(
-            query, use_autoprompt=True, highlights=True, num_results=EXA_RESULTS
-        )
+        res = _exa_search(query, api_key)
         duration = int((time.time() - start) * 1000)
         if not res or not res.results:
             meta = ProviderMeta(tool="exa", duration_ms=duration, error_type="not_found")
             return ProviderResult(ok=False, error="no_results", meta=meta, query=query, source="exa")
-        content = "\n\n---\n\n".join(
-            [
-                (r.highlight if hasattr(r, "highlight") and r.highlight else r.text)
-                for r in res.results
-                if (hasattr(r, "highlight") and r.highlight) or (hasattr(r, "text") and r.text)
-            ]
-        )
+        content = _exa_content(res)
         meta = ProviderMeta(tool="exa", duration_ms=duration)
         result = ProviderResult(ok=True, content=content[:max_chars], meta=meta, query=query, source="exa")
         _save_to_cache(query, "exa", {"source": "exa", "content": content[:max_chars], "query": query})
@@ -166,6 +233,15 @@ def resolve_with_exa(query: str, max_chars: int = MAX_CHARS) -> ProviderResult:
 
 
 def resolve_with_tavily(query: str, max_chars: int = MAX_CHARS) -> ProviderResult:
+    """Resolve a query via the Tavily SDK, requiring TAVILY_API_KEY.
+
+    Args:
+        query: The search query.
+        max_chars: Maximum content length to retain.
+
+    Returns:
+        A ProviderResult with the search results or an error meta.
+    """
     start = time.time()
     cached = _get_from_cache(query, "tavily")
     if cached:
@@ -199,6 +275,15 @@ def resolve_with_tavily(query: str, max_chars: int = MAX_CHARS) -> ProviderResul
 
 
 def resolve_with_duckduckgo(query: str, max_chars: int = MAX_CHARS) -> ProviderResult:
+    """Resolve a query via the free DuckDuckGo text search (ddgs).
+
+    Args:
+        query: The search query.
+        max_chars: Maximum content length to retain.
+
+    Returns:
+        A ProviderResult with the search results or an error meta.
+    """
     start = time.time()
     cached = _get_from_cache(query, "duckduckgo")
     if cached:
@@ -232,6 +317,15 @@ def resolve_with_duckduckgo(query: str, max_chars: int = MAX_CHARS) -> ProviderR
 
 
 def resolve_with_firecrawl(url: str, max_chars: int = MAX_CHARS) -> ProviderResult:
+    """Scrape a URL to markdown via Firecrawl, requiring FIRECRAWL_API_KEY.
+
+    Args:
+        url: The target URL to scrape.
+        max_chars: Maximum content length to retain.
+
+    Returns:
+        A ProviderResult with the markdown content or an error meta.
+    """
     start = time.time()
     cached = _get_from_cache(url, "firecrawl")
     if cached:
@@ -262,6 +356,15 @@ def resolve_with_firecrawl(url: str, max_chars: int = MAX_CHARS) -> ProviderResu
 
 
 def resolve_with_mistral_browser(url: str, max_chars: int = MAX_CHARS) -> ProviderResult:
+    """Extract a URL's content via the Mistral browser tool.
+
+    Args:
+        url: The target URL to extract.
+        max_chars: Maximum content length to retain.
+
+    Returns:
+        A ProviderResult with the extracted content or an error meta.
+    """
     start = time.time()
     cached = _get_from_cache(url, "mistral_browser")
     if cached:
@@ -295,6 +398,15 @@ def resolve_with_mistral_browser(url: str, max_chars: int = MAX_CHARS) -> Provid
 
 
 def resolve_with_mistral_websearch(query: str, max_chars: int = MAX_CHARS) -> ProviderResult:
+    """Answer a query via Mistral web search, requiring MISTRAL_API_KEY.
+
+    Args:
+        query: The search query.
+        max_chars: Maximum content length to retain.
+
+    Returns:
+        A ProviderResult with the answer content or an error meta.
+    """
     start = time.time()
     cached = _get_from_cache(query, "mistral_websearch")
     if cached:
@@ -328,7 +440,23 @@ def resolve_with_mistral_websearch(query: str, max_chars: int = MAX_CHARS) -> Pr
 
 
 def resolve_with_docling(url: str, max_chars: int) -> ProviderResult:
+    """Convert a document URL (pdf/docx/pptx) to markdown via the docling CLI.
+
+    The URL is validated with ``is_safe_url`` before being passed to
+    subprocess to prevent SSRF / command injection via untrusted input.
+
+    Args:
+        url: The document URL to convert.
+        max_chars: Maximum content length to retain.
+
+    Returns:
+        A ProviderResult with the extracted markdown or an error meta.
+    """
     start = time.time()
+    if not is_safe_url(url):
+        duration = int((time.time() - start) * 1000)
+        meta = ProviderMeta(tool="docling", duration_ms=duration, error_type="ssrf_blocked")
+        return ProviderResult(ok=False, error="unsafe_url", meta=meta, url=url, source="docling")
     try:
         res = subprocess.run(
             ["docling", "--format", "markdown", url], capture_output=True, text=True, timeout=60
@@ -347,7 +475,25 @@ def resolve_with_docling(url: str, max_chars: int) -> ProviderResult:
 
 
 def resolve_with_ocr(url: str, max_chars: int) -> ProviderResult:
+    """Extract text from an image URL (png/jpg/jpeg) via the tesseract CLI.
+
+    The URL is validated with ``is_safe_url`` before being passed to
+    subprocess to prevent SSRF / command injection via untrusted input.
+
+    Args:
+        url: The image URL to OCR.
+        max_chars: Maximum content length to retain.
+
+    Returns:
+        A ProviderResult with the recognized text or an error meta.
+    """
     start = time.time()
+    if not is_safe_url(url):
+        duration = int((time.time() - start) * 1000)
+        meta = ProviderMeta(tool="ocr", duration_ms=duration, error_type="ssrf_blocked")
+        return ProviderResult(
+            ok=False, error="unsafe_url", meta=meta, url=url, source="ocr-tesseract"
+        )
     try:
         res = subprocess.run(
             ["tesseract", url, "stdout"], capture_output=True, text=True, timeout=30
