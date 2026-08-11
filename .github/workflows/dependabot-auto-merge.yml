@@ -1,6 +1,10 @@
 ---
 name: Dependabot Auto-Merge
 
+# This workflow automatically approves and enables auto-merge for dependabot/jules PRs
+# that have the 'automerge' label. This prevents unexpected auto-merges while allowing
+# explicit opt-in for dependency updates.
+
 # yamllint disable-line rule:truthy
 on: pull_request
 
@@ -9,6 +13,7 @@ permissions:
 
 jobs:
   auto-merge:
+    # Only run for dependabot or jules bots with the automerge label
     if: >-
       (github.actor == 'dependabot[bot]' || github.actor == 'google-labs-jules[bot]')
       && contains(github.event.pull_request.labels.*.name, 'automerge')
@@ -20,7 +25,16 @@ jobs:
     steps:
       - name: Approve and enable auto-merge
         run: |
-          gh pr review --approve "$PR_URL"
+          # Check if PR is already approved to avoid duplicate approvals
+          if gh pr view "$PR_URL" --json reviews --jq '.reviews[] | select(.author.login == "github-actions[bot]" and .state == "APPROVED")' | grep -q .; then
+            echo "PR already approved, skipping approval step"
+          else
+            echo "Approving PR..."
+            gh pr review --approve "$PR_URL"
+          fi
+
+          # Enable auto-merge with squash strategy
+          echo "Enabling auto-merge..."
           gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
