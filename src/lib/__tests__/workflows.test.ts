@@ -1,16 +1,26 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
 import { readFileSync } from 'fs'
 import { join } from 'path'
 import { parse } from 'yaml'
 
+type Workflow = ReturnType<typeof parse>
+
+/**
+ * Load and parse a workflow YAML file from the .github/workflows directory.
+ * Shared by all workflow test suites to avoid duplicated loading logic.
+ */
+const loadWorkflow = (fileName: string): Workflow => {
+  const workflowPath = join(process.cwd(), '.github/workflows', fileName)
+  const workflowContent = readFileSync(workflowPath, 'utf-8')
+  return parse(workflowContent)
+}
+
 describe('GitHub Actions Workflows', () => {
   describe('Dependabot Auto-Merge Workflow', () => {
-    const workflowPath = join(process.cwd(), '.github/workflows/dependabot-auto-merge.yml')
-    let workflow: ReturnType<typeof parse>
+    let workflow: Workflow
 
     beforeAll(() => {
-      const workflowContent = readFileSync(workflowPath, 'utf-8')
-      workflow = parse(workflowContent)
+      workflow = loadWorkflow('dependabot-auto-merge.yml')
     })
 
     it('should be valid YAML', () => {
@@ -63,12 +73,10 @@ describe('GitHub Actions Workflows', () => {
   })
 
   describe('CI Workflow', () => {
-    const workflowPath = join(process.cwd(), '.github/workflows/ci-and-labels.yml')
-    let workflow: ReturnType<typeof parse>
+    let workflow: Workflow
 
     beforeAll(() => {
-      const workflowContent = readFileSync(workflowPath, 'utf-8')
-      workflow = parse(workflowContent)
+      workflow = loadWorkflow('ci-and-labels.yml')
     })
 
     it('should be valid YAML', () => {
@@ -103,10 +111,10 @@ describe('GitHub Actions Workflows', () => {
     it('should have proper job dependencies', () => {
       const qualityGate = workflow.jobs['quality-gate']
       expect(qualityGate.needs).toContain('changes')
-      
+
       const unitTests = workflow.jobs['unit-tests']
       expect(unitTests.needs).toContain('changes')
-      
+
       const e2eTests = workflow.jobs['e2e-tests']
       expect(e2eTests.needs).toContain('changes')
       expect(e2eTests.needs).toContain('unit-tests')
@@ -124,12 +132,10 @@ describe('GitHub Actions Workflows', () => {
   })
 
   describe('Security Scan Workflow', () => {
-    const workflowPath = join(process.cwd(), '.github/workflows/security-scan.yml')
-    let workflow: ReturnType<typeof parse>
+    let workflow: Workflow
 
     beforeAll(() => {
-      const workflowContent = readFileSync(workflowPath, 'utf-8')
-      workflow = parse(workflowContent)
+      workflow = loadWorkflow('security-scan.yml')
     })
 
     it('should be valid YAML', () => {
@@ -159,7 +165,7 @@ describe('GitHub Actions Workflows', () => {
     it('should have proper job names', () => {
       const shellcheck = workflow.jobs['shellcheck-security']
       expect(shellcheck.name).toBe('Shell Script Security Analysis')
-      
+
       const trivy = workflow.jobs['trivy-fs']
       expect(trivy.name).toBe('Trivy Filesystem Security Scan')
     })
