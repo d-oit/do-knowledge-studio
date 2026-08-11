@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { readFileSync } from 'fs'
+import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
 import { parse } from 'yaml'
 
@@ -13,6 +13,14 @@ const loadWorkflow = (fileName: string): Workflow => {
   const workflowPath = join(process.cwd(), '.github/workflows', fileName)
   const workflowContent = readFileSync(workflowPath, 'utf-8')
   return parse(workflowContent)
+}
+
+/**
+ * Assert that a workflow declares exactly the expected top-level permissions.
+ * Shared by all workflow suites to avoid duplicated permission assertions.
+ */
+const expectWorkflowPermissions = (workflow: Workflow, expected: object): void => {
+  expect(workflow.permissions).toEqual(expected)
 }
 
 describe('GitHub Actions Workflows', () => {
@@ -33,7 +41,7 @@ describe('GitHub Actions Workflows', () => {
     })
 
     it('should have proper permissions', () => {
-      expect(workflow.permissions).toEqual({ contents: 'read' })
+      expectWorkflowPermissions(workflow, { contents: 'read' })
     })
 
     it('should have auto-merge job with label requirement', () => {
@@ -96,7 +104,7 @@ describe('GitHub Actions Workflows', () => {
     })
 
     it('should have proper permissions', () => {
-      expect(workflow.permissions).toEqual({ contents: 'read' })
+      expectWorkflowPermissions(workflow, { contents: 'read' })
     })
 
     it('should have required jobs', () => {
@@ -151,7 +159,7 @@ describe('GitHub Actions Workflows', () => {
     })
 
     it('should have proper permissions', () => {
-      expect(workflow.permissions).toEqual({
+      expectWorkflowPermissions(workflow, {
         contents: 'read',
         'security-events': 'write'
       })
@@ -189,7 +197,7 @@ describe('GitHub Actions Workflows', () => {
     })
 
     it('should have proper permissions', () => {
-      expect(workflow.permissions).toEqual({
+      expectWorkflowPermissions(workflow, {
         contents: 'read',
         'pull-requests': 'write'
       })
@@ -227,7 +235,7 @@ describe('GitHub Actions Workflows', () => {
     })
 
     it('should have proper permissions', () => {
-      expect(workflow.permissions).toEqual({
+      expectWorkflowPermissions(workflow, {
         contents: 'write',
         issues: 'write',
         'pull-requests': 'write'
@@ -263,7 +271,7 @@ describe('GitHub Actions Workflows', () => {
     })
 
     it('should have proper permissions', () => {
-      expect(workflow.permissions).toEqual({
+      expectWorkflowPermissions(workflow, {
         contents: 'read',
         'pull-requests': 'write'
       })
@@ -285,6 +293,7 @@ describe('GitHub Actions Workflows', () => {
         process.cwd(),
         '.github/workflow-templates/ci.yml'
       )
+      expect(existsSync(templatePath)).toBe(true)
       const template = parse(readFileSync(templatePath, 'utf-8'))
       expect(template).toBeDefined()
       expect(template.name).toBe('CI')
