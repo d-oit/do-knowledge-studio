@@ -42,6 +42,27 @@ const buildExportSummary = (
   return parts.join(' · ')
 }
 
+/** Maximum characters shown for joined import errors in toasts. */
+const MAX_ERROR_CHARS = 240
+
+/**
+ * Joins non-fatal import errors into a toast-safe string, truncating long
+ * lists at the last complete error that fits the budget so messages are not
+ * silently cut mid-word.
+ * @param errors - The collected import errors.
+ * @returns A `; `-joined message capped at MAX_ERROR_CHARS characters.
+ */
+const joinErrorMessages = (errors: string[]): string => {
+  /** The fully joined message. */
+  const joined = errors.join('; ')
+  if (joined.length <= MAX_ERROR_CHARS) return joined
+  /** The budgeted prefix. */
+  const prefix = joined.slice(0, MAX_ERROR_CHARS)
+  /** The cut position at the last complete error boundary. */
+  const cut = prefix.lastIndexOf('; ')
+  return `${cut > 0 ? prefix.slice(0, cut) : prefix}…`
+}
+
 /** Outcome of an import-with-rollback store operation. */
 interface ImportRollbackResult {
   /** Whether the operation succeeded. */
@@ -129,12 +150,12 @@ const handleOkfZipImport = (
       }
       const { entities: ents, claims: cls, errors } = parseOkfBundle(filesMap)
       if (errors.length > 0 && ents.length === 0) {
-        toast.error('Import failed', { description: errors.join('; ') })
+        toast.error('Import failed', { description: joinErrorMessages(errors) })
         return
       }
       if (errors.length > 0) {
         // Partial success: stage the valid files but surface the skipped ones.
-        toast.warning('Partial import', { description: `${errors.length} file(s) skipped — ${errors.join('; ')}` })
+        toast.warning('Partial import', { description: `${errors.length} file(s) skipped — ${joinErrorMessages(errors)}` })
       }
       /** The existing ids. */
       const existingIds = new Set(entities.map((ent) => ent.id))

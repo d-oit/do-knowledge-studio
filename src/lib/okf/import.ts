@@ -42,6 +42,9 @@ export interface OkfImportResult {
   errors: string[]
 }
 
+/** The OKF bundle format version supported by this importer (§3.1/§8). */
+const SUPPORTED_OKF_VERSION = '0.2'
+
 /** Maps OKF type strings back to studio entity types (unknown types → 'concept'). */
 const OKF_TYPE_REVERSE: Record<string, Entity['type']> = {
   Note: 'note',
@@ -201,9 +204,30 @@ const parseOkfFile = (path: string, content: string, result: OkfImportResult): b
 }
 
 /**
+ * Extracts the declared `okf_version` from an index.md frontmatter block.
+ * @param content - Raw index.md content.
+ * @returns The declared version string, or null when absent/unparseable.
+ */
+const parseIndexVersion = (content: string): string | null => {
+  /** The frontmatter match. */
+  const match = content.match(/^---\n([\s\S]*?)\n---\n?/)
+  if (!match) return null
+  try {
+    /** The parsed frontmatter. */
+    const fm = yaml.parse(match[1]) as Record<string, unknown> | null
+    const version = fm?.okf_version
+    return typeof version === 'string' ? version : null
+  } catch {
+    return null // unparseable index frontmatter → treated as version unknown
+  }
+}
+
+/**
  * Parse an OKF bundle (path → content) back into studio state.
  * §11: MUST NOT reject unknown types, unknown keys, broken links, or missing
- * optional fields — collect errors/warnings and continue.
+ * optional fields — collect errors/warnings and continue. §8: okf_version is
+ * carried on index.md only; an unsupported version is a non-fatal error so
+ * consumers can surface it without discarding valid concept files.
  * @param files - Map of bundle-relative path → file content.
  * @returns Entities, claims, and any non-fatal parse errors.
  */
@@ -212,7 +236,17 @@ export const parseOkfBundle = (files: Map<string, string>): OkfImportResult => {
   const result: OkfImportResult = { entities: [], claims: [], errors: [] }
 
   for (const [path, content] of files) {
-    if (/(^|\/)index\.md$/.test(path) || /(^|\/)log\.md$/.test(path)) {
+    if (/(^|\/)index\.md$/.test(path)) {
+      /** The declared bundle version. */
+      const declared = parseIndexVersion(content)
+      if (!declared) {
+        result.errors.push('index.md: missing okf_version — not a valid OKF bundle') // §8 requires it on the index only
+      } else if (declared !== SUPPORTED_OKF_VERSION && !declared.startsWith(`${SUPPORTED_OKF_VERSION}.`)) {
+        result.errors.push(`index.md: unsupported okf_version "${declared}" (expected ${SUPPORTED_OKF_VERSION}.x)`)
+      }
+      continue // reserved (§3.1)
+    }
+    if (/(^|\/)log\.md$/.test(path)) {
       continue // reserved (§3.1)
     }
     parseOkfFile(path, content, result)
