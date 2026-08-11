@@ -1,0 +1,6 @@
+{
+  "name": "Dependabot Auto-Merge",
+  "description": "Automatically approves and squash-merges dependency update PRs that carry the 'automerge' label.",
+  "iconName": "example-icon",
+  "categories": ["Dependency management", "Continuous integration"]
+}

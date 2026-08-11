@@ -311,5 +311,30 @@ describe('GitHub Actions Workflows', () => {
       expect(properties.name).toBe('CI Pipeline')
       expect(properties.description.length).toBeGreaterThan(0)
     })
+
+    it('should have a valid dependabot-auto-merge template with properties file', () => {
+      const templatePath = join(
+        process.cwd(),
+        '.github/workflow-templates/dependabot-auto-merge.yml'
+      )
+      expect(existsSync(templatePath)).toBe(true)
+      const template = parse(readFileSync(templatePath, 'utf-8'))
+      expect(template).toBeDefined()
+      expect(template.name).toBe('Dependabot Auto-Merge')
+
+      const job = template.jobs['auto-merge']
+      expect(job).toBeDefined()
+      expect(job.if).toContain('automerge')
+
+      const propertiesPath = join(
+        process.cwd(),
+        '.github/workflow-templates/dependabot-auto-merge.properties.json'
+      )
+      const properties = JSON.parse(
+        readFileSync(propertiesPath, 'utf-8')
+      ) as { name: string; description: string }
+      expect(properties.name).toBe('Dependabot Auto-Merge')
+      expect(properties.description.length).toBeGreaterThan(0)
+    })
   })
 })
