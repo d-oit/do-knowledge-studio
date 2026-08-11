@@ -1,0 +1,6 @@
+{
+  "name": "CI Pipeline",
+  "description": "Runs lint, typecheck, tests, and build on every push and pull request. Replace the pnpm setup block with your package manager.",
+  "iconName": "example-icon",
+  "categories": ["Continuous integration", "JavaScript", "TypeScript"]
+}
