@@ -294,6 +294,7 @@ class OllamaAdapter implements ProviderAdapter {
     }
 
     // URL is validated to localhost-only by validateOllamaUrl above
+    // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
     const res = await fetch(`${validatedUrl}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -343,6 +344,7 @@ export const fetchOllamaModels = async (
   signal?: AbortSignal,
 ): Promise<string[]> => {
   const validatedUrl = validateOllamaUrl(baseUrl)
+  // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
   const res = await fetch(`${validatedUrl}/api/tags`, { signal })
   if (!res.ok) throw new Error(`Ollama tags error ${res.status}`)
   const data = OllamaTagsSchema.parse(await res.json())

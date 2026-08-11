@@ -18,7 +18,7 @@ exclude_patterns = [
 ]
 
 [[analyzers]]
-name = "javascript-typescript"
+name = "javascript"
 enabled = true
 
   [analyzers.meta]

@@ -113,7 +113,7 @@ export const EncryptExportDialog = memo(function EncryptExportDialog({
             Cancel
           </button>
           <button
-            onClick={() => handleExport('encrypted')}
+            onClick={() => { handleExport('encrypted').catch(() => undefined) }}
             disabled={!password || password !== confirm}
             className="rounded-md bg-primary px-4 py-1.5 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:opacity-40 press-scale focus-ring"
           >
