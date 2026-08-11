@@ -170,4 +170,137 @@ describe('GitHub Actions Workflows', () => {
       expect(trivy.name).toBe('Trivy Filesystem Security Scan')
     })
   })
+
+  describe('Cleanup Workflow', () => {
+    let workflow: Workflow
+
+    beforeAll(() => {
+      workflow = loadWorkflow('cleanup.yml')
+    })
+
+    it('should be valid YAML', () => {
+      expect(workflow).toBeDefined()
+      expect(workflow.name).toBe('Automated Cleanup')
+    })
+
+    it('should run on schedule and be manually dispatchable', () => {
+      expect(workflow.on).toHaveProperty('schedule')
+      expect(workflow.on).toHaveProperty('workflow_dispatch')
+    })
+
+    it('should have proper permissions', () => {
+      expect(workflow.permissions).toEqual({
+        contents: 'read',
+        'pull-requests': 'write'
+      })
+    })
+
+    it('should have a detect-unused job with timeout', () => {
+      const job = workflow.jobs['detect-unused']
+      expect(job).toBeDefined()
+      expect(job['timeout-minutes']).toBe(15)
+    })
+
+    it('should have all jobs with explicit timeouts', () => {
+      const jobs = workflow.jobs
+      for (const [name, job] of Object.entries(jobs)) {
+        expect(job['timeout-minutes'], `job ${name}`).toBeDefined()
+      }
+    })
+  })
+
+  describe('Stale Issues Workflow', () => {
+    let workflow: Workflow
+
+    beforeAll(() => {
+      workflow = loadWorkflow('stale.yml')
+    })
+
+    it('should be valid YAML', () => {
+      expect(workflow).toBeDefined()
+      expect(workflow.name).toBe('Stale Issues and PRs')
+    })
+
+    it('should run on a daily schedule', () => {
+      expect(workflow.on).toHaveProperty('schedule')
+      expect(workflow.on.schedule[0].cron).toBe('0 0 * * *')
+    })
+
+    it('should have proper permissions', () => {
+      expect(workflow.permissions).toEqual({
+        contents: 'write',
+        issues: 'write',
+        'pull-requests': 'write'
+      })
+    })
+
+    it('should use actions/stale with a timeout', () => {
+      const job = workflow.jobs.stale
+      expect(job).toBeDefined()
+      expect(job['timeout-minutes']).toBe(15)
+      const step = job.steps[0]
+      expect(step.uses).toContain('actions/stale')
+    })
+  })
+
+  describe('Labeler Workflow', () => {
+    let workflow: Workflow
+
+    beforeAll(() => {
+      workflow = loadWorkflow('labeler.yml')
+    })
+
+    it('should be valid YAML', () => {
+      expect(workflow).toBeDefined()
+      expect(workflow.name).toBe('Pull Request Labeler')
+    })
+
+    it('should trigger on pull_request_target events', () => {
+      expect(workflow.on).toHaveProperty('pull_request_target')
+      const types = workflow.on.pull_request_target.types
+      expect(types).toContain('opened')
+      expect(types).toContain('synchronize')
+    })
+
+    it('should have proper permissions', () => {
+      expect(workflow.permissions).toEqual({
+        contents: 'read',
+        'pull-requests': 'write'
+      })
+    })
+
+    it('should use actions/labeler', () => {
+      const job = workflow.jobs.labeler
+      expect(job).toBeDefined()
+      const labelerStep = job.steps.find((step: { uses?: string }) =>
+        step.uses?.includes('actions/labeler')
+      )
+      expect(labelerStep).toBeDefined()
+    })
+  })
+
+  describe('Workflow Template', () => {
+    it('should have a valid CI template with matching properties file', () => {
+      const templatePath = join(
+        process.cwd(),
+        '.github/workflow-templates/ci.yml'
+      )
+      const template = parse(readFileSync(templatePath, 'utf-8'))
+      expect(template).toBeDefined()
+      expect(template.name).toBe('CI')
+      expect(template.jobs).toHaveProperty('quality-gate')
+      expect(template.jobs).toHaveProperty('unit-tests')
+      expect(template.jobs).toHaveProperty('build')
+
+      const propertiesPath = join(
+        process.cwd(),
+        '.github/workflow-templates/ci.properties.json'
+      )
+      const properties = JSON.parse(
+        readFileSync(propertiesPath, 'utf-8')
+      ) as { name: string; description: string }
+      expect(properties.name).toBe('CI Pipeline')
+      expect(properties.description.length).toBeGreaterThan(0)
+    })
+  })
 })
