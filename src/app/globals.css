@@ -121,7 +121,7 @@
   --saffron-active: #6a4a1c;       /* deeper still for active/pressed */
 
   /* Supporting palette */
-  --sage: #5c7b6e;
+  --sage: #587465;          /* WCAG AA: 4.83:1 on background — was #5c7b6e (4.38:1, failed 11px text) */
   --clay: #b8593a;
   --sky: #6b8aa8;
 
@@ -256,6 +256,11 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+  /* Interaction transforms are motion too — disable press scaling so
+     touch-target geometry is stable for reduced-motion users (WCAG 2.3.3). */
+  .press-scale:active {
+    transform: none;
   }
 }
 
