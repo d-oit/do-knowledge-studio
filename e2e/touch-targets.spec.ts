@@ -73,7 +73,12 @@ const assertTouchTargets = async (page: import('@playwright/test').Page, viewNam
 test.describe('Touch targets — WCAG 2.5.5 (44x44px minimum)', () => {
   // Desktop viewport (≥lg breakpoint = 1024px) so sidebar navigation buttons are visible.
   // Mobile nav uses a drawer pattern with different interactive elements.
-  test.use({ viewport: { width: 1280, height: 900 } });
+  // Reduced motion makes the press-scale micro-interaction inert (transform: none),
+  // so geometry is measured in the static layout rather than mid-transition.
+  test.use({
+    viewport: { width: 1280, height: 900 },
+    contextOptions: { reducedMotion: 'reduce' },
+  });
 
   test.beforeEach(async ({ page }) => {
     await page.goto('/');

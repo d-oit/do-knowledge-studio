@@ -3,6 +3,13 @@ import { test, expect } from '@playwright/test';
 test.describe('Command palette', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
+    // Wait for the initial JS bundle to settle so React has hydrated and the
+    // Ctrl+K listener is bound (networkidle fires after fetches complete).
+    await page.waitForLoadState('networkidle');
+    // Hydration signal that exists on every viewport: the <main> landmark is
+    // rendered after React mounts, whereas the sidebar nav (same label as the
+    // mobile drawer nav) is hidden below the lg breakpoint.
+    await expect(page.getByRole('main')).toBeVisible();
   });
 
   test('opens with Ctrl+K', async ({ page }) => {
