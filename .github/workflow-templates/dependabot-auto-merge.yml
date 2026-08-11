@@ -1,0 +1,33 @@
+---
+name: Dependabot Auto-Merge
+
+# Automatically approves and enables auto-merge for dependabot/jules PRs
+# that have the 'automerge' label. No unexpected auto-merges.
+
+# yamllint disable-line rule:truthy
+on: pull_request
+
+permissions:
+  contents: read
+
+jobs:
+  auto-merge:
+    # Only run for dependabot or jules bots with the automerge label
+    if: >-
+      (github.actor == 'dependabot[bot]'
+       || github.actor == 'google-labs-jules[bot]')
+      && contains(
+         github.event.pull_request.labels.*.name, 'automerge')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - name: Approve and enable auto-merge
+        run: |
+          gh pr review --approve "$PR_URL"
+          gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
