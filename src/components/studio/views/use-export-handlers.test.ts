@@ -483,7 +483,7 @@ describe('useExportHandlers', () => {
 
       expect(toast.warning).toHaveBeenCalledWith(
         'Partial import',
-        expect.objectContaining({ description: expect.stringMatching(/…$/) }),
+        expect.objectContaining({ description: expect.stringMatching(/…$/u) }),
       )
       // The truncated message must stay within the character budget.
       /** The called description. */
