@@ -15,8 +15,10 @@ jobs:
   auto-merge:
     # Only run for dependabot or jules bots with the automerge label
     if: >-
-      (github.actor == 'dependabot[bot]' || github.actor == 'google-labs-jules[bot]')
-      && contains(github.event.pull_request.labels.*.name, 'automerge')
+      (github.actor == 'dependabot[bot]'
+       || github.actor == 'google-labs-jules[bot]')
+      && contains(
+         github.event.pull_request.labels.*.name, 'automerge')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
