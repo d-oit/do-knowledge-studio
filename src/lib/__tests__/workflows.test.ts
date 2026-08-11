@@ -336,5 +336,29 @@ describe('GitHub Actions Workflows', () => {
       expect(properties.name).toBe('Dependabot Auto-Merge')
       expect(properties.description.length).toBeGreaterThan(0)
     })
+
+    it('should have a valid security-scan template with properties file', () => {
+      const templatePath = join(
+        process.cwd(),
+        '.github/workflow-templates/security-scan.yml'
+      )
+      expect(existsSync(templatePath)).toBe(true)
+      const template = parse(readFileSync(templatePath, 'utf-8'))
+      expect(template).toBeDefined()
+      expect(template.name).toBe('Security Scan')
+      expect(template.jobs).toHaveProperty('shellcheck')
+      expect(template.jobs).toHaveProperty('secret-detection')
+      expect(template.jobs).toHaveProperty('trivy-fs')
+
+      const propertiesPath = join(
+        process.cwd(),
+        '.github/workflow-templates/security-scan.properties.json'
+      )
+      const properties = JSON.parse(
+        readFileSync(propertiesPath, 'utf-8')
+      ) as { name: string; description: string }
+      expect(properties.name).toBe('Security Scan')
+      expect(properties.description.length).toBeGreaterThan(0)
+    })
   })
 })
