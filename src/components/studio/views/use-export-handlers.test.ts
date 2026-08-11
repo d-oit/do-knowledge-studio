@@ -450,6 +450,48 @@ describe('useExportHandlers', () => {
     })
   })
 
+  it('handleFileChange truncates long partial OKF error lists in the warning toast', () => {
+    /** Callback that stages the parsed import preview. */
+    const setImportPreview = vi.fn()
+    /** The imported entities. */
+    const importedEntities = [
+      { id: 'new-1', name: 'New', type: 'note' as const, description: '', content: '', tags: [], createdAt: '', updatedAt: '', links: [] },
+    ]
+    vi.mocked(unzipSync).mockReturnValue({
+      'okf-bundle/index.md': new TextEncoder().encode('okf_version: "0.2"\n'),
+      'okf-bundle/concepts/ok.md': new TextEncoder().encode('# OK'),
+    } as unknown as ReturnType<typeof unzipSync>)
+    /** The long error list. */
+    const longErrors = Array.from(
+      { length: 40 },
+      (_, i) => `file-${i}.md: invalid YAML frontmatter with a verbose diagnostic message that keeps going on`, // prettier-ignore
+    )
+    vi.mocked(parseOkfBundle).mockReturnValue({
+      /** Entities to serialize. */
+      entities: importedEntities,
+      /** The library claims being processed. */
+      claims: [],
+      /** The errors. */
+      errors: longErrors,
+    })
+
+    withStubFileReader(new Uint8Array([1, 2, 3]).buffer as ArrayBuffer, () => {
+      const { result } = renderUseExportHandlers({ setImportPreview })
+      act(() => {
+        result.current.handleFileChange(makeFileChangeEvent('import.zip', 'content'))
+      })
+
+      expect(toast.warning).toHaveBeenCalledWith(
+        'Partial import',
+        expect.objectContaining({ description: expect.stringMatching(/…$/) }),
+      )
+      // The truncated message must stay within the character budget.
+      /** The called description. */
+      const description = vi.mocked(toast.warning).mock.calls[0][1]?.description ?? ''
+      expect(description.length).toBeLessThanOrEqual(320)
+    })
+  })
+
   it('handleFileChange returns early when no file selected', () => {
     const { result } = renderUseExportHandlers()
     /** The input. */

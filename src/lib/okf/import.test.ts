@@ -130,4 +130,39 @@ Body text.
     expect(result.errors.length).toBe(1)
     expect(result.errors[0]).toContain('missing or unparseable frontmatter')
   })
+
+  it('reports an unsupported okf_version on index.md as a non-fatal error', () => {
+    /** The files map. */
+    const filesMap = new Map<string, string>()
+    filesMap.set('index.md', '---\nokf_version: "1.0"\n---\n# Knowledge Bundle')
+    filesMap.set('concepts/ok.md', '---\ntype: Concept\ntitle: OK\n---\n\nBody')
+
+    /** The result. */
+    const result = parseOkfBundle(filesMap)
+    // §11 conformance: keep parsing valid concept files even when the version differs.
+    expect(result.entities.length).toBe(1)
+    expect(result.errors).toHaveLength(1)
+    expect(result.errors[0]).toContain('unsupported okf_version "1.0"')
+  })
+
+  it('reports a missing okf_version on index.md', () => {
+    /** The files map. */
+    const filesMap = new Map<string, string>()
+    filesMap.set('index.md', '# Knowledge Bundle')
+
+    /** The result. */
+    const result = parseOkfBundle(filesMap)
+    expect(result.errors).toHaveLength(1)
+    expect(result.errors[0]).toContain('missing okf_version')
+  })
+
+  it('accepts a compatible okf_version on index.md', () => {
+    /** The files map. */
+    const filesMap = new Map<string, string>()
+    filesMap.set('index.md', '---\nokf_version: "0.2.1"\n---\n# Knowledge Bundle')
+
+    /** The result. */
+    const result = parseOkfBundle(filesMap)
+    expect(result.errors).toHaveLength(0)
+  })
 })
