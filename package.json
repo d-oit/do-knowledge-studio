@@ -51,7 +51,7 @@
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
     "docx": "^9.7.1",
-    "dompurify": "^3.4.12",
+    "dompurify": "^3.4.13",
     "fflate": "^0.8.3",
     "framer-motion": "^12.43.0",
     "jspdf": "^4.2.1",
@@ -118,7 +118,8 @@
       "js-cookie": "^3.0.7",
       "effect": "^3.20.0",
       "prismjs": "^1.30.0",
-      "diff": "^5.2.2"
+      "diff": "^5.2.2",
+      "dompurify": "^3.4.13"
     }
   }
 }
