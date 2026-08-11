@@ -466,14 +466,13 @@ def _save_to_cache(input_str: str, source: str, result: dict[str, Any], ttl: int
     cache.set(_cache_key(input_str, source), result, expire=ttl or CACHE_TTL)
 
 
-def _detect_error_type(error: Exception) -> ErrorType:
-    """Classify an exception message into the matching ErrorType category."""
-    error_msg = str(error).lower()
-    if any(code in error_msg for code in ["429", "rate limit", "too many requests", "rate_limit"]):
-        return ErrorType.RATE_LIMIT
-    if any(
-        code in error_msg
-        for code in [
+# Ordered pattern table for _detect_error_type. First match wins, so keep
+# specific codes ahead of broad ones.
+ERROR_TYPE_PATTERNS: tuple[tuple[ErrorType, tuple[str, ...]], ...] = (
+    (ErrorType.RATE_LIMIT, ("429", "rate limit", "too many requests", "rate_limit")),
+    (
+        ErrorType.AUTH_ERROR,
+        (
             "401",
             "403",
             "unauthorized",
@@ -481,12 +480,11 @@ def _detect_error_type(error: Exception) -> ErrorType:
             "invalid api key",
             "invalid_key",
             "authentication",
-        ]
-    ):
-        return ErrorType.AUTH_ERROR
-    if any(
-        code in error_msg
-        for code in [
+        ),
+    ),
+    (
+        ErrorType.QUOTA_EXHAUSTED,
+        (
             "402",
             "payment",
             "credit",
@@ -494,17 +492,20 @@ def _detect_error_type(error: Exception) -> ErrorType:
             "insufficient",
             "exhausted",
             "limit exceeded",
-        ]
-    ):
-        return ErrorType.QUOTA_EXHAUSTED
-    if any(code in error_msg for code in ["timeout", "timed out"]):
-        return ErrorType.TIMEOUT
-    if any(code in error_msg for code in ["connection", "network"]):
-        return ErrorType.NETWORK_ERROR
-    if any(code in error_msg for code in ["not found", "404"]):
-        return ErrorType.NOT_FOUND
-    if any(code in error_msg for code in ["ssrf", "blocked", "private ip", "localhost"]):
-        return ErrorType.SSRF_BLOCKED
-    if any(code in error_msg for code in ["too large", "content size", "exceeds"]):
-        return ErrorType.CONTENT_TOO_LARGE
+        ),
+    ),
+    (ErrorType.TIMEOUT, ("timeout", "timed out")),
+    (ErrorType.NETWORK_ERROR, ("connection", "network")),
+    (ErrorType.NOT_FOUND, ("not found", "404")),
+    (ErrorType.SSRF_BLOCKED, ("ssrf", "blocked", "private ip", "localhost")),
+    (ErrorType.CONTENT_TOO_LARGE, ("too large", "content size", "exceeds")),
+)
+
+
+def _detect_error_type(error: Exception) -> ErrorType:
+    """Classify an exception message into the matching ErrorType category."""
+    error_msg = str(error).lower()
+    for error_type, codes in ERROR_TYPE_PATTERNS:
+        if any(code in error_msg for code in codes):
+            return error_type
     return ErrorType.UNKNOWN
