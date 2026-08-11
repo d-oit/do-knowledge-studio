@@ -81,7 +81,7 @@ same family.
 | `--sky`   | `#6b8aa8`   | `#8eaac7`  | note        | `bg-sky-100 dark:bg-sky-950/40`, `text-sky-700 dark:text-sky-300`   |
 | `--saffron` | `#c77d3a` | `#e5944a`  | concept     | `bg-amber-100 dark:bg-amber-950/40`, `text-amber-700 dark:text-amber-300` |
 | `--clay`  | `#b8593a`   | `#d4795a`  | person      | `bg-rose-100 dark:bg-rose-950/40`, `text-rose-700 dark:text-rose-300` |
-| `--sage`  | `#5c7b6e`   | `#84a597`  | project     | `bg-emerald-100 dark:bg-emerald-950/40`, `text-emerald-700 dark:text-emerald-300` |
+| `--sage`  | `#587465`   | `#84a597`  | project     | `bg-emerald-100 dark:bg-emerald-950/40`, `text-emerald-700 dark:text-emerald-300` |
 
 > Note: the dot/badge utilities use Tailwind's stock sky/amber/rose/emerald
 > palettes for legibility, while the underlying `--sky` / `--saffron` / `--clay`

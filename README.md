@@ -104,7 +104,7 @@ components or touching tokens in `globals.css`.
   app.
 - The "Offline ready" badge in the topbar is a constant reminder of this
   promise.
-- Export is the user's escape hatch — Markdown, JSON, or an encrypted archive.
+- Export is the user's escape hatch — OKF v0.2 Bundle (agent-readable Markdown ZIP), Markdown, JSON, or an encrypted archive.
 - The AI Harness view supports local Ollama models so the entire workflow can
   stay on-device.
 

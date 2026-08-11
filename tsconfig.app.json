@@ -7,6 +7,6 @@
     "outDir": "./dist/types/app",
     "types": ["vite/client"]
   },
-  "include": ["src"],
+  "include": ["src", "package.json"],
   "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts", "src/**/__tests__/**", "src/test/setup.ts"]
 }
