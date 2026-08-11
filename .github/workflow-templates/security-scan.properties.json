@@ -1,0 +1,6 @@
+{
+  "name": "Security Scan",
+  "description": "Runs shellcheck, gitleaks secret detection (with TruffleHog fallback), and Trivy filesystem scans. Results appear in the GitHub Security tab.",
+  "iconName": "example-icon",
+  "categories": ["Security", "Continuous integration"]
+}
