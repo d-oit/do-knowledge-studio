@@ -28,7 +28,9 @@ jobs:
       - name: Approve and enable auto-merge
         run: |
           # Check if PR is already approved to avoid duplicate approvals
-          if gh pr view "$PR_URL" --json reviews --jq '.reviews[] | select(.author.login == "github-actions[bot]" and .state == "APPROVED")' | grep -q .; then
+          if gh pr view "$PR_URL" --json reviews \
+            --jq '.reviews[] | select(.author.login == "github-actions[bot]"
+            and .state == "APPROVED")' | grep -q .; then
             echo "PR already approved, skipping approval step"
           else
             echo "Approving PR..."
