@@ -249,6 +249,56 @@ describe('Studio Store branch coverage', () => {
     })
   })
 
+  describe('sendMessage with BM25 reference cache (PR #647)', () => {
+    it('returns consistent citations on repeated messages with unchanged state', () => {
+      useStudioStore.getState().saveEntity(
+        makeEntity({ id: 'e-cache', name: 'Cache Probe', description: 'reference caching works' }),
+      )
+      useStudioStore.getState().sendMessage('reference caching')
+      const first = useStudioStore.getState().chat[1]
+      // No store mutations between calls — search must hit the cached index.
+      useStudioStore.getState().sendMessage('reference caching')
+      const second = useStudioStore.getState().chat[3]
+      expect(second.citations).toEqual(first.citations)
+      expect(second.content).toBe(first.content)
+      expect(first.citations?.[0].entityId).toBe('e-cache')
+    })
+
+    it('invalidates the cached index when entities change via saveEntity', () => {
+      useStudioStore.getState().saveEntity(
+        makeEntity({ id: 'e-before', name: 'Old Topic', description: 'outdated search text' }),
+      )
+      useStudioStore.getState().sendMessage('outdated search')
+      expect(useStudioStore.getState().chat[1].citations?.[0].entityId).toBe('e-before')
+
+      // saveEntity replaces the entities array — next search must rebuild the index.
+      useStudioStore.getState().saveEntity(
+        makeEntity({ id: 'e-after', name: 'New Topic', description: 'fresh search text' }),
+      )
+      useStudioStore.getState().sendMessage('fresh search')
+      const citations = useStudioStore.getState().chat[3].citations ?? []
+      expect(citations.some((c) => c.entityId === 'e-after')).toBe(true)
+    })
+
+    it('invalidates the cached index when claims change via addClaim', () => {
+      useStudioStore.getState().saveEntity(
+        makeEntity({ id: 'e-claims', name: 'Claims Cache', description: 'claims invalidation' }),
+      )
+      useStudioStore.getState().addClaim(
+        makeClaim({ id: 'c-cache-1', entityId: 'e-claims', statement: 'first claim about claims' }),
+      )
+      useStudioStore.getState().sendMessage('first claim about')
+      expect(useStudioStore.getState().chat[1].citations?.length).toBeGreaterThan(0)
+
+      useStudioStore.getState().addClaim(
+        makeClaim({ id: 'c-cache-2', entityId: 'e-claims', statement: 'second claim content' }),
+      )
+      useStudioStore.getState().sendMessage('second claim')
+      const citations = useStudioStore.getState().chat[3].citations ?? []
+      expect(citations.some((c) => c.entityId === 'e-claims')).toBe(true)
+    })
+  })
+
   describe('importWithRollback', () => {
     it('succeeds and persists a recovery snapshot', () => {
       const entities = [makeEntity({ id: 'imp-1' })]
