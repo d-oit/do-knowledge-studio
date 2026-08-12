@@ -568,62 +568,52 @@ describe('GitHub Actions Workflows', () => {
   })
 
   describe('Shell test coverage', () => {
-    it('should have BATS tests for setup-skills.sh', () => {
-      const batsPath = join(process.cwd(), 'tests/setup-skills.bats')
-      expect(existsSync(batsPath)).toBe(true)
-      const content = readFileSync(batsPath, 'utf-8')
-      expect(content).toContain('setup-skills.sh')
-      expect(content).toContain('symlink_strategy')
-    })
+    const scriptsWithBats: Array<{
+      script: string
+      batsFile: string
+      batsContent: string[]
+    }> = [
+      {
+        script: 'setup-skills.sh',
+        batsFile: 'setup-skills.bats',
+        batsContent: ['setup-skills.sh', 'symlink_strategy']
+      },
+      {
+        script: 'install-hooks.sh',
+        batsFile: 'install-hooks.bats',
+        batsContent: ['install-hooks.sh', 'pre-commit', 'commit-msg']
+      },
+      {
+        script: 'validate-skills.sh',
+        batsFile: 'validate-skills.bats',
+        batsContent: ['validate-skills.sh', 'agent-surface.py']
+      },
+      {
+        script: 'self-fix-loop.sh',
+        batsFile: 'self-fix-loop.bats',
+        batsContent: ['self-fix-loop.sh', '--help', 'json_get_failed_checks']
+      }
+    ]
 
-    it('should have BATS tests for install-hooks.sh', () => {
-      const batsPath = join(process.cwd(), 'tests/install-hooks.bats')
-      expect(existsSync(batsPath)).toBe(true)
-      const content = readFileSync(batsPath, 'utf-8')
-      expect(content).toContain('install-hooks.sh')
-      expect(content).toContain('pre-commit')
-      expect(content).toContain('commit-msg')
-    })
+    it.each(scriptsWithBats)(
+      'should have BATS tests for $script',
+      ({ batsFile, batsContent }) => {
+        const batsPath = join(process.cwd(), 'tests', batsFile)
+        expect(existsSync(batsPath)).toBe(true)
+        const content = readFileSync(batsPath, 'utf-8')
+        for (const expected of batsContent) {
+          expect(content).toContain(expected)
+        }
+      }
+    )
 
-    it('should have REPO_ROOT override in setup-skills.sh', () => {
-      const scriptPath = join(process.cwd(), 'scripts/setup-skills.sh')
-      const content = readFileSync(scriptPath, 'utf-8')
-      expect(content).toContain('${REPO_ROOT:-')
-    })
-
-    it('should have REPO_ROOT override in install-hooks.sh', () => {
-      const scriptPath = join(process.cwd(), 'scripts/install-hooks.sh')
-      const content = readFileSync(scriptPath, 'utf-8')
-      expect(content).toContain('${REPO_ROOT:-')
-    })
-
-    it('should have BATS tests for validate-skills.sh', () => {
-      const batsPath = join(process.cwd(), 'tests/validate-skills.bats')
-      expect(existsSync(batsPath)).toBe(true)
-      const content = readFileSync(batsPath, 'utf-8')
-      expect(content).toContain('validate-skills.sh')
-      expect(content).toContain('agent-surface.py')
-    })
-
-    it('should have BATS tests for self-fix-loop.sh', () => {
-      const batsPath = join(process.cwd(), 'tests/self-fix-loop.bats')
-      expect(existsSync(batsPath)).toBe(true)
-      const content = readFileSync(batsPath, 'utf-8')
-      expect(content).toContain('self-fix-loop.sh')
-      expect(content).toContain('--help')
-      expect(content).toContain('json_get_failed_checks')
-    })
-
-    it('should have REPO_ROOT override in validate-skills.sh', () => {
-      const scriptPath = join(process.cwd(), 'scripts/validate-skills.sh')
-      const content = readFileSync(scriptPath, 'utf-8')
-      expect(content).toContain('${REPO_ROOT:-')
-    })
-
-    it('should have REPO_ROOT override in self-fix-loop.sh', () => {
-      const scriptPath = join(process.cwd(), 'scripts/self-fix-loop.sh')
-      const content = readFileSync(scriptPath, 'utf-8')
-      expect(content).toContain('${REPO_ROOT:-')
-    })
+    it.each(scriptsWithBats)(
+      'should have REPO_ROOT override in $script',
+      ({ script }) => {
+        const scriptPath = join(process.cwd(), 'scripts', script)
+        const content = readFileSync(scriptPath, 'utf-8')
+        expect(content).toContain('${REPO_ROOT:-')
+      }
+    )
   })
 })
