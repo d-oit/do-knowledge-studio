@@ -291,7 +291,12 @@ When merging dependabot PRs or manually bumping dependencies:
   with all checks green** — resolve OwlWatch/DeepSource threads via
   GraphQL `resolveReviewThread` before merging; they are merge gates,
   not noise.
-- See `agents-docs/LESSONS.md` (LESSON-024..026) and
+- **DeepSource `.deepsource.toml` suppressions do not reliably prevent
+  check failures** — new module-scope helpers trip JS-0067 (use
+  `const fn = () => {}`, never `function`) and inline branches can push
+  exported functions over the JS-R1005 complexity threshold; fix at
+  code level (extract helpers, keep complexity < 6) before pushing.
+- See `agents-docs/LESSONS.md` (LESSON-024..027) and
   `plans/116-ci-workflow-learnings-2026-08-11.md` for full detail.
 
 ## Skills
