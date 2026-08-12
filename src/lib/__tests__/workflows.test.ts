@@ -596,5 +596,34 @@ describe('GitHub Actions Workflows', () => {
       const content = readFileSync(scriptPath, 'utf-8')
       expect(content).toContain('${REPO_ROOT:-')
     })
+
+    it('should have BATS tests for validate-skills.sh', () => {
+      const batsPath = join(process.cwd(), 'tests/validate-skills.bats')
+      expect(existsSync(batsPath)).toBe(true)
+      const content = readFileSync(batsPath, 'utf-8')
+      expect(content).toContain('validate-skills.sh')
+      expect(content).toContain('agent-surface.py')
+    })
+
+    it('should have BATS tests for self-fix-loop.sh', () => {
+      const batsPath = join(process.cwd(), 'tests/self-fix-loop.bats')
+      expect(existsSync(batsPath)).toBe(true)
+      const content = readFileSync(batsPath, 'utf-8')
+      expect(content).toContain('self-fix-loop.sh')
+      expect(content).toContain('--help')
+      expect(content).toContain('json_get_failed_checks')
+    })
+
+    it('should have REPO_ROOT override in validate-skills.sh', () => {
+      const scriptPath = join(process.cwd(), 'scripts/validate-skills.sh')
+      const content = readFileSync(scriptPath, 'utf-8')
+      expect(content).toContain('${REPO_ROOT:-')
+    })
+
+    it('should have REPO_ROOT override in self-fix-loop.sh', () => {
+      const scriptPath = join(process.cwd(), 'scripts/self-fix-loop.sh')
+      const content = readFileSync(scriptPath, 'utf-8')
+      expect(content).toContain('${REPO_ROOT:-')
+    })
   })
 })
