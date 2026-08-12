@@ -28,72 +28,16 @@ jobs:
           fetch-depth: 1
 
       # Posts one idempotent comment (marker-delimited) naming the real
-      # blocker on BLOCKED pull requests: in-flight runs, failing checks,
-      # or a stale all-green merge state with the remediation ladder.
-      # Informational only — fork PRs and transient API errors must not
-      # turn the check red.
+      # blocker on BLOCKED pull requests. The logic lives in
+      # scripts/diagnose-merge-state.sh. Informational only — never a merge
+      # gate — so fork PRs and transient API errors must not turn the
+      # check red.
       - name: Diagnose and comment
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          repo="${{ github.repository }}"
-          pr_number="${{ github.event.pull_request.number }}"
-          base_ref="${{ github.event.pull_request.base.ref }}"
-          marker="<!-- blocked-pr-diagnoser -->"
-
-          # Fork PRs cannot be commented with the read-only token — skip.
-          if [[ "${{ github.event.pull_request.head.repo.full_name }}" != \
-                "$repo" ]]; then
-            exit 0
-          fi
-
-          mergeable_state="$(gh api "repos/$repo/pulls/$pr_number" \
-            --jq .mergeable_state)"
-          if [[ "$mergeable_state" != "blocked" ]] &&
-             [[ "$mergeable_state" != "unknown" ]]; then
-            existing_id="$(gh api "repos/$repo/issues/$pr_number/comments" \
-              --jq "[.[] | select(.body | contains(\"$marker\"))][0].id")"
-            if [[ -n "$existing_id" ]] && [[ "$existing_id" != "null" ]]; then
-              gh api -X DELETE "repos/$repo/issues/comments/$existing_id" \
-                >/dev/null
-            fi
-            exit 0
-          fi
-
-          head_sha="$(gh api "repos/$repo/pulls/$pr_number" --jq .head.sha)"
-          in_progress="$(gh api "repos/$repo/commits/$head_sha/check-runs" \
-            --jq '[.check_runs[] | select(.status != "completed")] | map(.name)')"
-          failed="$(gh api "repos/$repo/commits/$head_sha/check-runs" \
-            --jq '[.check_runs[] | select(.conclusion |
-              IN("failure", "timed_out", "action_required"))]
-              | map(.name)')"
-
-          header="**Blocked merge diagnosis** — $mergeable_state"
-          if [[ "$in_progress" != "[]" ]]; then
-            body="$header
-            ⏳ Check run(s) still in progress: $in_progress"
-          elif [[ "$failed" != "[]" ]]; then
-            body="$header
-            ❌ Failing check(s) blocking merge: $failed"
-          else
-            body="$header
-            🟡 All checks are green but GitHub reports BLOCKED — likely
-            merge-state staleness. Verify the ruleset endpoints, resolve
-            review threads, wait for in-flight runs, nudge, close and
-            reopen, then admin merge only with explicit approval."
-          fi
-
-          body="${body}
-
-          $marker"
-          existing_id="$(gh api "repos/$repo/issues/$pr_number/comments" \
-            --jq "[.[] | select(.body | contains(\"$marker\"))][0].id")"
-          if [[ -n "$existing_id" ]] && [[ "$existing_id" != "null" ]]; then
-            gh api -X PATCH "repos/$repo/issues/comments/$existing_id" \
-              -f body="$body" >/dev/null
-          else
-            gh api "repos/$repo/issues/$pr_number/comments" \
-              -f body="$body" >/dev/null
-          fi
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        run: ./scripts/diagnose-merge-state.sh

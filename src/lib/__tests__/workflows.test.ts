@@ -328,16 +328,36 @@ describe('GitHub Actions Workflows', () => {
       expect(checkout.uses).toMatch(/^actions\/checkout@[0-9a-f]{40}$/)
     })
 
-    it('should diagnose blocked states and post an idempotent comment', () => {
+    it('should invoke the shared diagnosis script with env inputs', () => {
       const job = workflow.jobs.diagnose
       const run = job.steps.find(
         (step: { name?: string }) =>
           step.name === 'Diagnose and comment'
       )
       expect(run).toBeDefined()
-      expect(run.run).toContain('mergeable_state')
-      expect(run.run).toContain('check-runs')
-      expect(run.run).toContain('blocked-pr-diagnoser')
+      expect(run.run).toBe('./scripts/diagnose-merge-state.sh')
+      expect(run.env).toMatchObject({
+        GH_REPO: '${{ github.repository }}',
+        PR_NUMBER: '${{ github.event.pull_request.number }}',
+        BASE_REF: '${{ github.event.pull_request.base.ref }}'
+      })
+    })
+
+    it('should mark the diagnose step as informational (continue-on-error)', () => {
+      const job = workflow.jobs.diagnose
+      const run = job.steps.find(
+        (step: { name?: string }) =>
+          step.name === 'Diagnose and comment'
+      )
+      expect(run['continue-on-error']).toBe(true)
+    })
+
+    it('should ship a shellcheck-clean shared script', () => {
+      const scriptPath = join(process.cwd(), 'scripts/diagnose-merge-state.sh')
+      expect(existsSync(scriptPath)).toBe(true)
+      const content = readFileSync(scriptPath, 'utf-8')
+      expect(content).toContain('blocked-pr-diagnoser')
+      expect(content).toContain('GH_REPO:?')
     })
   })
 

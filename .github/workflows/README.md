@@ -71,7 +71,9 @@ Posts one idempotent comment (marker-delimited) on BLOCKED pull requests:
   prints the remediation ladder
 
 The comment is updated in place (never duplicated) and deleted once the PR
-is no longer blocked.
+is no longer blocked. The diagnosis logic lives in
+`scripts/diagnose-merge-state.sh` (shared with the template) and passes the
+CI shellcheck gate.
 
 ## Best Practices
 
