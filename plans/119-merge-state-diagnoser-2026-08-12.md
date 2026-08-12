@@ -99,3 +99,8 @@ part of CI.
   the exact security-scan shellcheck invocation (`--enable=` flags),
   end-to-end pass/fail gate tests with a stubbed PATH, and
   `tests/README.md` documenting the bats conventions.
+- **PR #660**: yamllint CI-parity guard test; BATS suite for
+  `validate-github-actions-shas.sh` (found and fixed a real bug — the
+  placeholder regex's block pattern used `\1` for a group-2 backref,
+  making grep error out and the check silently never fire);
+  `scripts/lib/README.md` documenting the shared shell libraries.

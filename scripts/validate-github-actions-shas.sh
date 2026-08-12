@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Validate that GitHub Actions in workflows are pinned to full commit SHAs
 # Exits 0 if all actions are pinned to valid SHAs, 1 otherwise
+#
+# WORKFLOWS_DIR (optional): directory to scan instead of .github/workflows
+# (used by the BATS suite in tests/validate-gha-shas.bats).
 
 set -euo pipefail
 
@@ -21,7 +24,8 @@ fi
 FAILED=0
 
 # Find all workflow files
-mapfile -t WORKFLOW_FILES < <(find .github/workflows -name "*.yml" -o -name "*.yaml" 2>/dev/null || true)
+WORKFLOWS_DIR="${WORKFLOWS_DIR:-.github/workflows}"
+mapfile -t WORKFLOW_FILES < <(find "$WORKFLOWS_DIR" -name "*.yml" -o -name "*.yaml" 2>/dev/null || true)
 
 if [ ${#WORKFLOW_FILES[@]} -eq 0 ]; then
     echo -e "${GREEN}No workflow files found${NC}"
@@ -46,8 +50,12 @@ for file in "${WORKFLOW_FILES[@]}"; do
             # Extract just the SHA for placeholder check
             action_sha=$(echo "$action_ref" | sed -n "s/.*@\([a-f0-9]\{40\}\).*/\1/p")
 
-            # Check for placeholder patterns: all same char, or repeating digit patterns
-            if echo "$action_sha" | grep -qE "^(.)\1{39}$|^[0-9a-f]{8}([0-9a-f]{8}){4}[0-9a-f]{8}$"; then
+            # Check for placeholder patterns: all same char, or a repeating
+            # 8-char block (e.g. 01234567 x5). Note the block group is the
+            # SECOND group in the alternation, so it needs \2 — the old \1
+            # made grep fail with "Invalid back reference" and the check
+            # silently never fired.
+            if echo "$action_sha" | grep -qE "^(.)\1{39}$|^([0-9a-f]{8})\2{4}$"; then
                 echo -e "${RED}Invalid/placeholder SHA found in $file line $line_num: $action_sha${NC}"
                 FAILED=1
             fi

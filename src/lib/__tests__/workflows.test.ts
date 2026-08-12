@@ -139,6 +139,31 @@ describe('GitHub Actions Workflows', () => {
     })
   })
 
+  describe('YAML Lint Workflow', () => {
+    it('should match the verify.sh CI-parity yamllint invocation', () => {
+      const workflow = loadWorkflow('yaml-lint.yml')
+      const runStep = workflow.jobs.yamllint.steps.find(
+        (step: { name?: string; run?: string }) =>
+          step.name === 'Run yamllint'
+      ) as { run: string }
+      expect(runStep).toBeDefined()
+
+      // Extract the -d config argument (single- or double-quoted),
+      // tolerating the \ line-continuation in the run block.
+      const configMatch = runStep.run.match(/-d[\\\s]*["']([^"']+)["']/)
+      expect(configMatch).not.toBeNull()
+      const ciConfig = configMatch?.[1] ?? ''
+      expect(ciConfig).toContain('line-length: {max: 120}')
+
+      // verify.sh must run the exact same config and target.
+      const verifyPath = join(process.cwd(), 'scripts/verify.sh')
+      const verifyContent = readFileSync(verifyPath, 'utf-8')
+      expect(verifyContent).toContain('YAML Lint (CI parity)')
+      expect(verifyContent).toContain(ciConfig)
+      expect(verifyContent).toContain('.github/')
+    })
+  })
+
   describe('Security Scan Workflow', () => {
     let workflow: Workflow
 
@@ -409,6 +434,33 @@ describe('GitHub Actions Workflows', () => {
       expect(content).toContain('bats_require_minimum_version')
       expect(content).toContain('run !')
       expect(content).toContain('mock-gh')
+    })
+
+    it('should ship a BATS suite for the SHA-pinning validator', () => {
+      const scriptPath = join(
+        process.cwd(),
+        'scripts/validate-github-actions-shas.sh'
+      )
+      const script = readFileSync(scriptPath, 'utf-8')
+      // Testable via a WORKFLOWS_DIR override and fixed placeholder
+      // back-reference (group 2 in the alternation).
+      expect(script).toContain('WORKFLOWS_DIR')
+      expect(script).toContain('\\2{4}')
+
+      const batsPath = join(process.cwd(), 'tests/validate-gha-shas.bats')
+      expect(existsSync(batsPath)).toBe(true)
+      const batsContent = readFileSync(batsPath, 'utf-8')
+      expect(batsContent).toContain('rejects repeating 8-char block')
+      expect(batsContent).toContain('WORKFLOWS_DIR')
+    })
+
+    it('should document the shared shell libraries in scripts/lib/README.md', () => {
+      const readmePath = join(process.cwd(), 'scripts/lib/README.md')
+      expect(existsSync(readmePath)).toBe(true)
+      const content = readFileSync(readmePath, 'utf-8')
+      expect(content).toContain('run-check.sh')
+      expect(content).toContain('lint_cache.sh')
+      expect(content).toContain('source-path=scripts')
     })
 
     it('should hard-gate the BATS suite in quality_gate.sh', () => {
