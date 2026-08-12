@@ -4,7 +4,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+REPO_ROOT="${REPO_ROOT:-$(dirname "$SCRIPT_DIR")}"
 
 MANIFEST="$REPO_ROOT/.agents/manifest.json"
 AGENTS_DIR="$REPO_ROOT/.agents/skills"

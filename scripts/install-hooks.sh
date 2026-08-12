@@ -3,7 +3,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+REPO_ROOT="${REPO_ROOT:-$(dirname "$SCRIPT_DIR")}"
 cd "$REPO_ROOT"
 
 HOOKS_DIR="$REPO_ROOT/.git/hooks"

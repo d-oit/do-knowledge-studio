@@ -108,3 +108,6 @@ part of CI.
   ensures every *new* scripts/*.sh ships with a matching .bats file);
   inline-comment edge tests for the SHA validator; full re-verification
   sweep on main: 473 e2e pass, verify.sh + quality_gate.sh clean.
+- **PR #662**: BATS tests for `setup-skills.sh` (8 tests) and
+  `install-hooks.sh` (9 tests); REPO_ROOT env override for hermetic
+  testing; script coverage matrix (8/15 covered).
