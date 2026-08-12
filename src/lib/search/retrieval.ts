@@ -159,6 +159,14 @@ interface SearchIndex {
   avgDl: number
 }
 
+const buildEntityMap = (entities: Entity[]): Map<string, Entity> => {
+  const entityMap = new Map<string, Entity>()
+  for (const e of entities) {
+    entityMap.set(e.id, e)
+  }
+  return entityMap
+}
+
 /** Returns the cached index when inputs are referentially unchanged, otherwise rebuilds it. */
 const getIndex = (entities: Entity[], claims: Claim[]): SearchIndex => {
   if (entities === lastEntities && claims === lastClaims) {
@@ -169,11 +177,7 @@ const getIndex = (entities: Entity[], claims: Claim[]): SearchIndex => {
     }
   }
 
-  const entityMap = new Map<string, Entity>()
-  for (const e of entities) {
-    entityMap.set(e.id, e)
-  }
-
+  const entityMap = buildEntityMap(entities)
   const entries = buildIndex(entities, claims, entityMap)
   const totalLength = entries.reduce((sum, e) => sum + e.tokenCount, 0)
   const avgDl = entries.length > 0 ? totalLength / entries.length : 0
