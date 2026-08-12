@@ -141,6 +141,18 @@ let cachedEntityMap = new Map<string, Entity>()
 let cachedEntries: IndexEntry[] = []
 let cachedAvgDl = 0
 
+/** Combined entity + claim entries above which the reference cache is bypassed. */
+export const MAX_CACHE_ENTRIES = 20_000
+
+/** Clears the module-level reference cache so the next search rebuilds the index. */
+export const resetSearchCache = (): void => {
+  lastEntities = null
+  lastClaims = null
+  cachedEntityMap = new Map<string, Entity>()
+  cachedEntries = []
+  cachedAvgDl = 0
+}
+
 interface SearchIndex {
   entityMap: Map<string, Entity>
   entries: IndexEntry[]
@@ -166,11 +178,16 @@ const getIndex = (entities: Entity[], claims: Claim[]): SearchIndex => {
   const totalLength = entries.reduce((sum, e) => sum + e.tokenCount, 0)
   const avgDl = entries.length > 0 ? totalLength / entries.length : 0
 
-  lastEntities = entities
-  lastClaims = claims
-  cachedEntityMap = entityMap
-  cachedEntries = entries
-  cachedAvgDl = avgDl
+  if (entries.length <= MAX_CACHE_ENTRIES) {
+    lastEntities = entities
+    lastClaims = claims
+    cachedEntityMap = entityMap
+    cachedEntries = entries
+    cachedAvgDl = avgDl
+  } else {
+    // Oversized corpora bypass the cache to bound memory; each search rebuilds.
+    resetSearchCache()
+  }
 
   return { entityMap, entries, avgDl }
 }
