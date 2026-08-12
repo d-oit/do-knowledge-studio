@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { search } from './retrieval'
+import { search, resetSearchCache, MAX_CACHE_ENTRIES } from './retrieval'
 import type { Entity, Claim } from '@/lib/studio/types'
 
 const makeEntity = (overrides: Partial<Entity> = {}): Entity => {
@@ -156,6 +156,33 @@ describe('BM25 Retrieval Engine', () => {
     expect(results.some((r) => r.id === 'c3')).toBe(true)
   })
 
+  it('resetSearchCache clears state and keeps results correct', () => {
+    const first = search(entities, claims, 'react hooks')
+    expect(first[0].id).toBe('e1')
+    resetSearchCache()
+    // The same references must be re-indexed cleanly after a reset.
+    const second = search(entities, claims, 'react hooks')
+    expect(second).toEqual(first)
+    expect(second[0].id).toBe('e1')
+  })
+
+  it('searches corpora over the cache cap without errors', () => {
+    const overCapEntities: Entity[] = Array.from(
+      { length: MAX_CACHE_ENTRIES + 10 },
+      (_, i) =>
+        makeEntity({
+          id: `e-${i}`,
+          name: `Bulk Entity ${i}`,
+          description: `bulk corpus entry number ${i} with phrase bulk-${i}`,
+          content: 'x',
+          tags: [],
+        }),
+    )
+    const results = search(overCapEntities, [], 'bulk-20005')
+    expect(results.length).toBeGreaterThan(0)
+    expect(results[0].id).toBe('e-20005')
+  })
+
   it('performance: cached queries beat cold rebuilds and stay fast as data grows', () => {
     const datasetSize = 1000
     const claimsPerEntity = 3
@@ -188,7 +215,8 @@ describe('BM25 Retrieval Engine', () => {
     const warm = makeLargeDataset()
     search(warm.largeEntities, warm.largeClaims, 'React hooks warmup')
 
-    // Fresh references: the first search must rebuild the index (cold path).
+    // Guarantee a true cold start regardless of state left by earlier tests.
+    resetSearchCache()
     const { largeEntities, largeClaims } = makeLargeDataset()
     const coldStart = performance.now()
     search(largeEntities, largeClaims, 'React hooks keyword-3')

@@ -6,6 +6,7 @@ import {
   useFilteredEntities,
   useStats,
 } from './store'
+import { resetSearchCache } from '@/lib/search/retrieval'
 import type { Entity, Claim } from './types'
 
 const RECOVERY_KEY = 'do-knowledge-studio-recovery'
@@ -86,6 +87,8 @@ function makeClaim(overrides: Partial<Claim> = {}): Claim {
 describe('Studio Store branch coverage', () => {
   beforeEach(() => {
     resetStore()
+    // Drop any search index state from previous tests so each suite starts cold.
+    resetSearchCache()
     localStorage.removeItem(RECOVERY_KEY)
     vi.useFakeTimers()
   })
