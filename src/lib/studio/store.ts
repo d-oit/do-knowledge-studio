@@ -5,7 +5,7 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { Entity, Claim, ViewId, ChatMessage, EntityType } from './types'
 import { seedEntities, seedClaims, seedChat } from './seed-data'
-import { search } from '@/lib/search/retrieval'
+import { search, resetSearchCache } from '@/lib/search/retrieval'
 import { validatePersistedState } from './schema'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from './schema'
 import { runMigrations, CURRENT_SCHEMA_VERSION } from './migrations'
@@ -312,7 +312,10 @@ export const useStudioStore = create<StudioState>()(
       mobilePanelView: 'nav',
       setMobilePanelView: (v) => set({ mobilePanelView: v }),
 
-      importData: (entities, claims, options) =>
+      importData: (entities, claims, options) => {
+        // A new corpus means the cached search index is stale — drop it so
+        // the previous dataset's memory is released immediately.
+        resetSearchCache()
         set({
           entities,
           claims,
@@ -325,9 +328,13 @@ export const useStudioStore = create<StudioState>()(
           mindMap: options?.mindMap,
           links: options?.links,
           tags: options?.tags,
-        }),
+        })
+      },
 
       importWithRollback: (entities, claims, options) => {
+        // Drop the cached index before swapping corpora; on rollback the
+        // restored snapshot references force a clean rebuild on next search.
+        resetSearchCache()
         const state = get()
         const snapshot = buildRecoverySnapshot(state)
         persistRecoverySnapshot(snapshot)
@@ -374,14 +381,17 @@ export const useStudioStore = create<StudioState>()(
         }
       },
 
-      resetStore: () =>
+      resetStore: () => {
+        // Returning to the seed workspace — release any large cached index.
+        resetSearchCache()
         set({
           ...SEED_STATE,
           selectedEntityId: null,
           editingEntityId: null,
           entityHistory: [seedEntities],
           historyIndex: 0,
-        }),
+        })
+      },
     }),
     {
       name: 'do-knowledge-studio-store',
