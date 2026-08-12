@@ -1,7 +1,36 @@
 # Plans Index
 
-**Updated**: 2026-08-07
+**Updated**: 2026-08-12
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
+
+### Plan 120 — Open Items Resolution Session (2026-08-12)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Close Issue #622 (SSRF false positive) | Done | Closed with explanation — `is_safe_url()` already validates URLs before subprocess calls |
+| W2 | Fix PR #663 OwlWatch finding | Done | Refactored repetitive test code to use `it.each` parameterized tests |
+| W3 | Resolve PR #663 merge state | Done | Resolved OwlWatch review thread, merged via squash |
+| W4 | Scan plans/ for open tasks | Done | All recent plans (100-119) marked DONE; historical checkboxes documented |
+| W5 | Quality gates | Done | Lint, typecheck, build clean; 2,210 tests pass |
+| W6 | Documentation | Done | Draft release notes created, INDEX.md updated |
+
+### Plan 119 — PR Merge-State Diagnosis: Incident + Automated Diagnoser (2026-08-12)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Diagnose PR #652 BLOCKED state | Done | Identified in-flight check runs + genuine staleness |
+| W2 | Create diagnoser workflow | Done | `pr-merge-state-diagnoser.yml` + `scripts/diagnose-merge-state.sh` |
+| W3 | Add BATS regression suite | Done | 19 tests covering in-progress, failures, staleness, PATCH idempotency |
+| W4 | Extract shared libraries | Done | `scripts/lib/run-check.sh`, `tests/helpers/mock-gh.bash` |
+| W5 | Quality gates | Done | Full suite passes, workflow tests added |
+
+### Plan 118 — PR Sweep Session Summary (2026-08-12)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Sweep PRs #624–#649 | Done | 8 merged manually, 3 auto-merged, 2 by maintainer |
+| W2 | Search cache | Done | ~84% query-time reduction with invalidation coverage |
+| W3 | Security hardening | Done | gitleaks pinned to v2.3.9, 4 new lessons recorded |
 
 ### Plan 110 — GOAP: Missing Implementation Remediation (2026-08-07)
 
