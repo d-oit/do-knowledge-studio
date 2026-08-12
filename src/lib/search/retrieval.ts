@@ -141,6 +141,40 @@ let cachedEntityMap = new Map<string, Entity>()
 let cachedEntries: IndexEntry[] = []
 let cachedAvgDl = 0
 
+interface SearchIndex {
+  entityMap: Map<string, Entity>
+  entries: IndexEntry[]
+  avgDl: number
+}
+
+/** Returns the cached index when inputs are referentially unchanged, otherwise rebuilds it. */
+function getIndex(entities: Entity[], claims: Claim[]): SearchIndex {
+  if (entities === lastEntities && claims === lastClaims) {
+    return {
+      entityMap: cachedEntityMap,
+      entries: cachedEntries,
+      avgDl: cachedAvgDl,
+    }
+  }
+
+  const entityMap = new Map<string, Entity>()
+  for (const e of entities) {
+    entityMap.set(e.id, e)
+  }
+
+  const entries = buildIndex(entities, claims, entityMap)
+  const totalLength = entries.reduce((sum, e) => sum + e.tokenCount, 0)
+  const avgDl = entries.length > 0 ? totalLength / entries.length : 0
+
+  lastEntities = entities
+  lastClaims = claims
+  cachedEntityMap = entityMap
+  cachedEntries = entries
+  cachedAvgDl = avgDl
+
+  return { entityMap, entries, avgDl }
+}
+
 /** Run a BM25 full-text search over entities and claims. */
 export const search = (
   entities: Entity[],
@@ -148,31 +182,7 @@ export const search = (
   query: string,
   limit = 5,
 ): SearchResult[] => {
-  let entityMap: Map<string, Entity>
-  let entries: IndexEntry[]
-  let avgDl: number
-
-  if (entities === lastEntities && claims === lastClaims) {
-    entityMap = cachedEntityMap
-    entries = cachedEntries
-    avgDl = cachedAvgDl
-  } else {
-    entityMap = new Map<string, Entity>()
-    for (const e of entities) {
-      entityMap.set(e.id, e)
-    }
-
-    entries = buildIndex(entities, claims, entityMap)
-    const totalLength = entries.reduce((sum, e) => sum + e.tokenCount, 0)
-    avgDl = entries.length > 0 ? totalLength / entries.length : 0
-
-    // Update references and cached indexes
-    lastEntities = entities
-    lastClaims = claims
-    cachedEntityMap = entityMap
-    cachedEntries = entries
-    cachedAvgDl = avgDl
-  }
+  const { entityMap, entries, avgDl } = getIndex(entities, claims)
 
   if (entries.length === 0) return []
 

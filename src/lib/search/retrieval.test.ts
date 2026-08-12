@@ -117,6 +117,45 @@ describe('BM25 Retrieval Engine', () => {
     expect(results).toHaveLength(0)
   })
 
+  it('serves consistent results from the reference cache on repeated searches', () => {
+    const first = search(entities, claims, 'react hooks')
+    const second = search(entities, claims, 'react hooks')
+    expect(second).toEqual(first)
+    expect(second[0].id).toBe('e1')
+  })
+
+  it('rebuilds the index when entities change referentially', () => {
+    const updatedEntities = [
+      ...entities,
+      makeEntity({
+        id: 'e4',
+        name: 'React Native',
+        description: 'Mobile framework built on React',
+        tags: ['react', 'mobile'],
+        content: '# Native\nJavaScript for iOS and Android',
+      }),
+    ]
+    const results = search(updatedEntities, claims, 'react native mobile')
+    expect(results.length).toBeGreaterThan(0)
+    expect(results.some((r) => r.id === 'e4')).toBe(true)
+    // Subsequent searches on the same reference still see the new entity.
+    expect(search(updatedEntities, claims, 'native mobile').some((r) => r.id === 'e4')).toBe(true)
+  })
+
+  it('rebuilds the index when claims change referentially', () => {
+    const updatedClaims = [
+      ...claims,
+      makeClaim({
+        id: 'c3',
+        entityId: 'e1',
+        statement: 'Hooks compose cleanly for custom logic',
+      }),
+    ]
+    const results = search(entities, updatedClaims, 'custom hooks compose')
+    expect(results.length).toBeGreaterThan(0)
+    expect(results.some((r) => r.id === 'c3')).toBe(true)
+  })
+
   it('performance benchmark with large dataset', () => {
     const largeEntities: Entity[] = Array.from({ length: 500 }, (_, i) =>
       makeEntity({
