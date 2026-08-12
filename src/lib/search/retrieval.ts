@@ -148,7 +148,7 @@ interface SearchIndex {
 }
 
 /** Returns the cached index when inputs are referentially unchanged, otherwise rebuilds it. */
-function getIndex(entities: Entity[], claims: Claim[]): SearchIndex {
+const getIndex = (entities: Entity[], claims: Claim[]): SearchIndex => {
   if (entities === lastEntities && claims === lastClaims) {
     return {
       entityMap: cachedEntityMap,
