@@ -95,3 +95,7 @@ part of CI.
   `quality_gate.sh` FAILS when `tests/` is missing and treats `^tests/`
   as tooling scope; `verify.sh` gained a `shellcheck --shell=bats` lint
   pass (caught SC2314 vacuous negative assertions in the suite).
+- **PR #659**: `verify.sh` gained a "Shell Lint (CI parity)" check running
+  the exact security-scan shellcheck invocation (`--enable=` flags),
+  end-to-end pass/fail gate tests with a stubbed PATH, and
+  `tests/README.md` documenting the bats conventions.

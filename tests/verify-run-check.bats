@@ -61,3 +61,48 @@ setup() {
   # The guard must not reinitialize FAILED on a second load.
   [ "$FAILED" -eq 7 ]
 }
+
+# --- End-to-end verify.sh gate tests -------------------------------
+#
+# These stub every heavy tool (shellcheck, pnpm, yamllint, bats) with fast
+# no-ops so the full gate runs in well under a second. The shellcheck stub's
+# exit code is controlled per test to exercise both gate outcomes.
+
+VERIFY_SH="$BATS_TEST_DIRNAME/../scripts/verify.sh"
+
+setup_verify_stubs() {
+  STUB_DIR="$BATS_TEST_TMPDIR/bin"
+  mkdir -p "$STUB_DIR"
+  for cmd in pnpm yamllint bats; do
+    printf '#!/usr/bin/env bash\nexit 0\n' >"$STUB_DIR/$cmd"
+    chmod +x "$STUB_DIR/$cmd"
+  done
+  printf '#!/usr/bin/env bash\nexit %s\n' "${STUB_SHELLCHECK_EXIT:-0}" \
+    >"$STUB_DIR/shellcheck"
+  chmod +x "$STUB_DIR/shellcheck"
+}
+
+@test "verify.sh exits 1 and reports when a check fails" {
+  STUB_SHELLCHECK_EXIT=1
+  setup_verify_stubs
+
+  run env PATH="$STUB_DIR:$PATH" bash "$VERIFY_SH"
+
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"✗ Shell Lint (BATS) failed"* ]]
+  [[ "$output" == *"Verification failed."* ]]
+  # The gate must keep running the remaining checks after a failure.
+  [[ "$output" == *"✓ Shell Tests (BATS) passed"* ]]
+}
+
+@test "verify.sh exits 0 when every check passes" {
+  STUB_SHELLCHECK_EXIT=0
+  setup_verify_stubs
+
+  run env PATH="$STUB_DIR:$PATH" bash "$VERIFY_SH"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"✓ Shell Lint (BATS) passed"* ]]
+  [[ "$output" == *"✓ Shell Lint (CI parity) passed"* ]]
+  [[ "$output" == *"All checks passed."* ]]
+}
