@@ -27,6 +27,11 @@ run_check() {
 }
 
 run_check "Lint" pnpm run lint
+# Match the CI yaml-lint workflow exactly: inline -d config with a 120-char
+# line limit (the repo's .yamllint.yml is more lenient at 254).
+run_check "YAML Lint (CI parity)" yamllint -d \
+  '{extends: default, rules: {line-length: {max: 120}, indentation: {spaces: 2}}}' \
+  .github/
 run_check "Typecheck" pnpm run typecheck
 run_check "Tests" pnpm run test
 run_check "Build" pnpm run build
