@@ -156,47 +156,67 @@ describe('BM25 Retrieval Engine', () => {
     expect(results.some((r) => r.id === 'c3')).toBe(true)
   })
 
-  it('performance benchmark with large dataset', () => {
-    const largeEntities: Entity[] = Array.from({ length: 500 }, (_, i) =>
-      makeEntity({
-        id: `e-${i}`,
-        name: `Entity Name ${i}`,
-        description: `This is the description for entity number ${i} which discusses React, Hooks, TypeScript and CSS layouts.`,
-        content: `# Content ${i}\nHere is some body content with key terms like keyword-${i % 10}.`,
-        tags: [`tag-${i % 5}`, 'react', 'typescript'],
-      })
-    )
+  it('performance: cached queries beat cold rebuilds and stay fast as data grows', () => {
+    const datasetSize = 1000
+    const claimsPerEntity = 3
+    const cachedIterations = 30
+    const coldBuildMsCeiling = 500
+    const cachedMsCeiling = 100
 
-    const largeClaims: Claim[] = Array.from({ length: 1500 }, (_, i) =>
-      makeClaim({
-        id: `c-${i}`,
-        entityId: `e-${i % 500}`,
-        statement: `Statement about entity number ${i % 500} regarding React hooks or CSS systems.`,
-        confidence: 0.9,
-      })
-    )
+    const makeLargeDataset = () => {
+      const largeEntities: Entity[] = Array.from({ length: datasetSize }, (_, i) =>
+        makeEntity({
+          id: `e-${i}`,
+          name: `Entity Name ${i}`,
+          description: `This is the description for entity number ${i} which discusses React, Hooks, TypeScript and CSS layouts.`,
+          content: `# Content ${i}\nHere is some body content with key terms like keyword-${i % 10}.`,
+          tags: [`tag-${i % 5}`, 'react', 'typescript'],
+        })
+      )
+      const largeClaims: Claim[] = Array.from({ length: datasetSize * claimsPerEntity }, (_, i) =>
+        makeClaim({
+          id: `c-${i}`,
+          entityId: `e-${i % datasetSize}`,
+          statement: `Statement about entity number ${i % datasetSize} regarding React hooks or CSS systems.`,
+          confidence: 0.9,
+        })
+      )
+      return { largeEntities, largeClaims }
+    }
 
+    // Warm up JIT on one dataset so the measured cold build below is not skewed.
+    const warm = makeLargeDataset()
+    search(warm.largeEntities, warm.largeClaims, 'React hooks warmup')
+
+    // Fresh references: the first search must rebuild the index (cold path).
+    const { largeEntities, largeClaims } = makeLargeDataset()
+    const coldStart = performance.now()
+    search(largeEntities, largeClaims, 'React hooks keyword-3')
+    const coldBuildTime = performance.now() - coldStart
+
+    // Same references: subsequent searches must be served from the cache (hot path).
     const times: number[] = []
-    const iterations = 50
-    for (let k = 0; k < iterations; k++) {
+    for (let k = 0; k < cachedIterations; k++) {
       const start = performance.now()
       search(largeEntities, largeClaims, `React hooks keyword-${k % 10}`)
-      const end = performance.now()
-      times.push(end - start)
+      times.push(performance.now() - start)
     }
 
     const minTime = Math.min(...times)
     const maxTime = Math.max(...times)
-    const avgTime = times.reduce((sum, t) => sum + t, 0) / iterations
+    const avgCached = times.reduce((sum, t) => sum + t, 0) / cachedIterations
 
-    console.warn("--- BENCHMARK STATISTICS ---")
-    console.warn("Dataset size: 500 entities, 1500 claims")
-    console.warn(`Iterations: ${iterations}`)
-    console.warn(`Min execution time: ${minTime.toFixed(2)}ms`)
-    console.warn(`Max execution time: ${maxTime.toFixed(2)}ms`)
-    console.warn(`Average execution time: ${avgTime.toFixed(2)}ms`)
-    console.warn("-----------------------------")
+    console.warn('--- BENCHMARK STATISTICS ---')
+    console.warn(`Dataset size: ${datasetSize} entities, ${datasetSize * claimsPerEntity} claims`)
+    console.warn(`Cold index build: ${coldBuildTime.toFixed(2)}ms`)
+    console.warn(`Cached iterations: ${cachedIterations}`)
+    console.warn(`Cached min: ${minTime.toFixed(2)}ms | max: ${maxTime.toFixed(2)}ms | avg: ${avgCached.toFixed(2)}ms`)
+    console.warn('-----------------------------')
 
-    expect(avgTime).toBeLessThan(1000) // loose upper bound for sanity
+    // The cache is the point: repeated queries must never re-tokenize the corpus,
+    // so a hot query must be cheaper than the one cold rebuild it avoids.
+    expect(coldBuildTime).toBeLessThan(coldBuildMsCeiling)
+    expect(avgCached).toBeLessThan(coldBuildTime)
+    expect(avgCached).toBeLessThan(cachedMsCeiling)
   })
 })
