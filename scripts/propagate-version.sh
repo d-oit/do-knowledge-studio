@@ -29,24 +29,51 @@ if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   exit 1
 fi
 
+# Portable in-place sed: BSD sed (macOS) requires -i with a backup suffix.
+# GNU sed (Linux) accepts both forms.
+sed_inplace() {
+  local file="$1" expression="$2"
+  if sed --version >/dev/null 2>&1; then
+    sed -i -E "$expression" "$file"
+  else
+    sed -i '' -E "$expression" "$file"
+  fi
+}
+
+# Pattern -> replacement pairs applied to each target file. The version
+# regex matches the existing X.Y.Z string wherever it appears.
+version_pattern='[0-9]+\.[0-9]+\.[0-9]+'
+apply_version() {
+  local file="$1"; shift
+  local expression replacement
+  while (($# >= 2)); do
+    expression="$1"
+    replacement="$2"
+    sed_inplace "$file" "s/$expression/$replacement/"
+    shift 2
+  done
+}
+
 # agents-docs/VERSION.md — "current version" sentence + versioned-files table.
 version_md="$REPO_ROOT/agents-docs/VERSION.md"
 if [[ -f "$version_md" ]]; then
-  sed -i -E "s/the current version is \`[0-9]+\.[0-9]+\.[0-9]+\`/the current version is \`$version\`/" "$version_md"
-  sed -i -E "s/^\| \`VERSION\` \| \`[0-9]+\.[0-9]+\.[0-9]+\` \|/| \`VERSION\` | \`$version\` |/" "$version_md"
+  apply_version "$version_md" \
+    "the current version is \`$version_pattern\`" "the current version is \`$version\`" \
+    "^\| \`VERSION\` \| \`$version_pattern\` \|" "| \`VERSION\` | \`$version\` |"
 fi
 
 # agents-docs/MIGRATION.md — badge + "Template version:" text.
 migration_md="$REPO_ROOT/agents-docs/MIGRATION.md"
 if [[ -f "$migration_md" ]]; then
-  sed -i -E "s/version-[0-9]+\.[0-9]+\.[0-9]+-blue/version-$version-blue/" "$migration_md"
-  sed -i -E "s/Template version: [0-9]+\.[0-9]+\.[0-9]+/Template version: $version/" "$migration_md"
+  apply_version "$migration_md" \
+    "version-$version_pattern-blue" "version-$version-blue" \
+    "Template version: $version_pattern" "Template version: $version"
 fi
 
 # README.md — badge (only when a version badge exists).
 readme="$REPO_ROOT/README.md"
 if [[ -f "$readme" ]]; then
-  sed -i -E "s/version-[0-9]+\.[0-9]+\.[0-9]+-blue/version-$version-blue/" "$readme"
+  apply_version "$readme" "version-$version_pattern-blue" "version-$version-blue"
 fi
 
 echo "propagated version $version"
