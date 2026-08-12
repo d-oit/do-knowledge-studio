@@ -287,6 +287,60 @@ describe('GitHub Actions Workflows', () => {
     })
   })
 
+  describe('PR Merge-State Diagnoser Workflow', () => {
+    let workflow: Workflow
+
+    beforeAll(() => {
+      workflow = loadWorkflow('pr-merge-state-diagnoser.yml')
+    })
+
+    it('should be valid YAML', () => {
+      expect(workflow).toBeDefined()
+      expect(workflow.name).toBe('PR Merge-State Diagnoser')
+    })
+
+    it('should trigger on pull_request events with lifecycle types', () => {
+      expect(workflow.on).toHaveProperty('pull_request')
+      const types = workflow.on.pull_request.types
+      expect(types).toContain('opened')
+      expect(types).toContain('reopened')
+      expect(types).toContain('synchronize')
+      expect(types).toContain('ready_for_review')
+    })
+
+    it('should have proper permissions', () => {
+      expectWorkflowPermissions(workflow, {
+        contents: 'read',
+        'pull-requests': 'write'
+      })
+    })
+
+    it('should have a diagnose job with explicit timeout', () => {
+      const job = workflow.jobs.diagnose
+      expect(job).toBeDefined()
+      expect(job['timeout-minutes']).toBe(5)
+      expect(job['runs-on']).toBe('ubuntu-latest')
+    })
+
+    it('should pin the checkout action to a commit SHA', () => {
+      const job = workflow.jobs.diagnose
+      const checkout = job.steps[0]
+      expect(checkout.uses).toMatch(/^actions\/checkout@[0-9a-f]{40}$/)
+    })
+
+    it('should diagnose blocked states and post an idempotent comment', () => {
+      const job = workflow.jobs.diagnose
+      const run = job.steps.find(
+        (step: { name?: string }) =>
+          step.name === 'Diagnose and comment'
+      )
+      expect(run).toBeDefined()
+      expect(run.run).toContain('mergeable_state')
+      expect(run.run).toContain('check-runs')
+      expect(run.run).toContain('blocked-pr-diagnoser')
+    })
+  })
+
   describe('Workflow Template', () => {
     it('should have a valid CI template with matching properties file', () => {
       const templatePath = join(

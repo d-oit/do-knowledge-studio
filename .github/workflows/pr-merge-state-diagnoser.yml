@@ -1,0 +1,107 @@
+---
+name: PR Merge-State Diagnoser
+
+# yamllint disable-line rule:truthy
+on:
+  pull_request:
+    branches: [main, develop]
+    types: [opened, reopened, synchronize, ready_for_review]
+
+concurrency:
+  group: diagnose-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  diagnose:
+    name: Diagnose Blocked Merge State
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      # GitHub's merge-state can report BLOCKED even when every gate is
+      # green (see plans/098-audit-github-merge-state-staleness.md). This
+      # step posts one idempotent comment (marker-delimited) naming the real
+      # blocker: in-flight runs, failed runs, or a note that everything is
+      # green and the state is stale.
+      #
+      # Informational only — never a merge gate — so fork PRs (read-only
+      # token) and transient API errors must not turn the check red.
+      - name: Diagnose and comment
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          repo="${{ github.repository }}"
+          pr_number="${{ github.event.pull_request.number }}"
+          base_ref="${{ github.event.pull_request.base.ref }}"
+          marker="<!-- blocked-pr-diagnoser -->"
+
+          # Fork PRs cannot be commented with the read-only token — skip.
+          if [[ "${{ github.event.pull_request.head.repo.full_name }}" != \
+                "$repo" ]]; then
+            exit 0
+          fi
+
+          mergeable_state="$(gh api "repos/$repo/pulls/$pr_number" \
+            --jq .mergeable_state)"
+          # Nothing to report when the PR is clean or merely unstable.
+          if [[ "$mergeable_state" != "blocked" ]] &&
+             [[ "$mergeable_state" != "unknown" ]]; then
+            existing_id="$(gh api "repos/$repo/issues/$pr_number/comments" \
+              --jq "[.[] | select(.body | contains(\"$marker\"))][0].id")"
+            if [[ -n "$existing_id" ]] && [[ "$existing_id" != "null" ]]; then
+              gh api -X DELETE "repos/$repo/issues/comments/$existing_id" \
+                >/dev/null
+            fi
+            exit 0
+          fi
+
+          head_sha="$(gh api "repos/$repo/pulls/$pr_number" --jq .head.sha)"
+          in_progress="$(gh api "repos/$repo/commits/$head_sha/check-runs" \
+            --jq '[.check_runs[] | select(.status != "completed")] | map(.name)')"
+          failed="$(gh api "repos/$repo/commits/$head_sha/check-runs" \
+            --jq '[.check_runs[] | select(.conclusion |
+              IN("failure", "timed_out", "action_required"))]
+              | map(.name)')"
+          required="$(gh api "repos/$repo/rules/branches/$base_ref" \
+            --jq '[.rules[].parameters.required_status_checks[]?.context] | map(select(. != null))' \
+            2>/dev/null || echo '[]')"
+
+          header="**Blocked merge diagnosis** — $mergeable_state"
+          if [[ "$in_progress" != "[]" ]]; then
+            body="$header
+            ⏳ Check run(s) still in progress: $in_progress"
+          elif [[ "$failed" != "[]" ]]; then
+            body="$header
+            ❌ Failing check(s) blocking merge: $failed"
+          else
+            body="$header
+            🟡 All checks are green (required: $required) but GitHub reports
+            BLOCKED — likely merge-state staleness (plans/098).
+            Suggested ladder: verify the ruleset endpoints, resolve review
+            threads, wait for in-flight runs, empty-commit nudge, close and
+            reopen, then admin merge only with explicit approval."
+          fi
+
+          body="${body}
+
+          $marker"
+          existing_id="$(gh api "repos/$repo/issues/$pr_number/comments" \
+            --jq "[.[] | select(.body | contains(\"$marker\"))][0].id")"
+          if [[ -n "$existing_id" ]] && [[ "$existing_id" != "null" ]]; then
+            gh api -X PATCH "repos/$repo/issues/comments/$existing_id" \
+              -f body="$body" >/dev/null
+          else
+            gh api "repos/$repo/issues/$pr_number/comments" \
+              -f body="$body" >/dev/null
+          fi

@@ -1,0 +1,6 @@
+{
+  "name": "PR Merge-State Diagnoser",
+  "description": "Posts one idempotent comment on BLOCKED pull requests naming the real blocker: in-flight check runs, failing checks, or a stale all-green merge state with the remediation ladder.",
+  "iconName": "example-icon",
+  "categories": ["Pull requests"]
+}

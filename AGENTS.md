@@ -296,7 +296,13 @@ When merging dependabot PRs or manually bumping dependencies:
   `const fn = () => {}`, never `function`) and inline branches can push
   exported functions over the JS-R1005 complexity threshold; fix at
   code level (extract helpers, keep complexity < 6) before pushing.
-- See `agents-docs/LESSONS.md` (LESSON-024..027) and
+- **A BLOCKED merge state with all-green `gh pr checks` may hide an
+  in-flight check run on the head commit** — before declaring staleness,
+  diff `commits/{sha}/check-runs` (the real source of truth), then the
+  staleness ladder (ruleset verify, threads, nudge, close/reopen) and
+  `--admin` only with explicit approval. The
+  `pr-merge-state-diagnoser.yml` workflow automates this diagnosis.
+- See `agents-docs/LESSONS.md` (LESSON-024..028) and
   `plans/116-ci-workflow-learnings-2026-08-11.md` for full detail.
 
 ## Skills
