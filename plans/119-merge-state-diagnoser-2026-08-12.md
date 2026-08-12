@@ -111,3 +111,6 @@ part of CI.
 - **PR #662**: BATS tests for `setup-skills.sh` (8 tests) and
   `install-hooks.sh` (9 tests); REPO_ROOT env override for hermetic
   testing; script coverage matrix (8/15 covered).
+- **PR #663**: BATS tests for `validate-skills.sh` (4 tests) and
+  `self-fix-loop.sh` (8 tests — arg parsing, JSON helpers, dry-run);
+  expanded coverage matrix including `scripts/lib/` (10/17 covered).

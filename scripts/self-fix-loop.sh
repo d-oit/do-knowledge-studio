@@ -4,7 +4,7 @@
 # See .agents/skills/self-fix-loop/SKILL.md for full documentation.
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 cd "$REPO_ROOT"
 
 # ---------------------------------------------------------------------------
