@@ -84,3 +84,14 @@ covering in-progress, failures, staleness, PATCH idempotency, DELETE
 cleanup, fork skip, and missing-env failure). BATS runs in quality_gate.sh
 and scripts/verify.sh whenever tests/ exists, so the regression suite is
 part of CI.
+
+## Follow-up hardening (PR #657–#658)
+
+- Mocked-`gh` harness extracted to `tests/helpers/mock-gh.bash`;
+  `run_check` extracted to `scripts/lib/run-check.sh` with its own BATS
+  coverage. Suite now 19 tests (12 diagnoser + 7 run-check).
+- **LESSON-029**: ubuntu-latest runners do not ship bats-core — the suite
+  had never run in CI. CI quality-gate and cleanup jobs now install bats;
+  `quality_gate.sh` FAILS when `tests/` is missing and treats `^tests/`
+  as tooling scope; `verify.sh` gained a `shellcheck --shell=bats` lint
+  pass (caught SC2314 vacuous negative assertions in the suite).

@@ -6,26 +6,17 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 cd "$REPO_ROOT"
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[0;33m'
-NC='\033[0m'
+# shellcheck source-path=scripts
+# shellcheck source=lib/run-check.sh
+source "$SCRIPT_DIR/lib/run-check.sh"
 
-FAILED=0
-
-run_check() {
-  local name="$1"
-  shift
-  echo -e "${BLUE}Running ${name}...${NC}"
-  if "$@"; then
-    echo -e "${GREEN}✓ ${name} passed${NC}"
-  else
-    echo -e "${RED}✗ ${name} failed${NC}"
-    FAILED=1
-  fi
-  echo ""
-}
+# Lint the BATS suite (and helpers) with the bats dialect — catches bats
+# gotchas such as SC2314 (`!` does not fail a bats test) before CI does.
+mapfile -t BATS_FILES < <(find tests -name '*.bats' -o -name '*.bash' \
+  2>/dev/null || true)
+if [ "${#BATS_FILES[@]}" -gt 0 ]; then
+  run_check "Shell Lint (BATS)" shellcheck --shell=bats -S warning "${BATS_FILES[@]}"
+fi
 
 run_check "Lint" pnpm run lint
 # Match the CI yaml-lint workflow exactly: inline -d config with a 120-char
@@ -33,8 +24,8 @@ run_check "Lint" pnpm run lint
 run_check "YAML Lint (CI parity)" yamllint -d \
   '{extends: default, rules: {line-length: {max: 120}, indentation: {spaces: 2}}}' \
   .github/
-# BATS regression tests for shell scripts (tests/*.bats). quality_gate.sh
-# runs the same suite automatically when tests/ exists.
+# BATS regression tests for shell scripts (tests/*.bats). CI installs bats
+# (see ci-and-labels.yml / cleanup.yml); locally we warn when it is absent.
 if command -v bats &> /dev/null; then
   run_check "Shell Tests (BATS)" bats tests/
 else

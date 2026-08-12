@@ -80,6 +80,10 @@ jobs:
           cache: 'pnpm'
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Install bats
+        # ubuntu-latest images do not ship bats-core; the BATS suite is a
+        # mandatory part of the quality gate.
+        run: sudo apt-get update && sudo apt-get install -y bats
       - name: Run quality gate
         run: ./scripts/quality_gate.sh --changed
         env:

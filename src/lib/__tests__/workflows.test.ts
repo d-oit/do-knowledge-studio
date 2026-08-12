@@ -376,12 +376,48 @@ describe('GitHub Actions Workflows', () => {
       expect(helper).toContain('mock_gh_setup')
     })
 
-    it('should run the BATS suite from verify.sh', () => {
+    it('should run the BATS suite and lint from verify.sh', () => {
       const verifyPath = join(process.cwd(), 'scripts/verify.sh')
       expect(existsSync(verifyPath)).toBe(true)
       const content = readFileSync(verifyPath, 'utf-8')
       expect(content).toContain('Shell Tests (BATS)')
       expect(content).toContain('bats tests/')
+      expect(content).toContain('Shell Lint (BATS)')
+      expect(content).toContain('lib/run-check.sh')
+    })
+
+    it('should ship the shared run_check library with BATS coverage', () => {
+      const libPath = join(process.cwd(), 'scripts/lib/run-check.sh')
+      expect(existsSync(libPath)).toBe(true)
+      expect(readFileSync(libPath, 'utf-8')).toContain('run_check()')
+
+      const batsPath = join(process.cwd(), 'tests/verify-run-check.bats')
+      expect(existsSync(batsPath)).toBe(true)
+      expect(readFileSync(batsPath, 'utf-8')).toContain('run_check')
+    })
+
+    it('should hard-gate the BATS suite in quality_gate.sh', () => {
+      const gatePath = join(process.cwd(), 'scripts/quality_gate.sh')
+      expect(existsSync(gatePath)).toBe(true)
+      const content = readFileSync(gatePath, 'utf-8')
+      // A missing tests/ directory must fail the gate, never silently skip.
+      expect(content).toContain('tests/ directory missing')
+      expect(content).toContain('bats tests/')
+      // tests/ changes must trigger the tooling scope in --changed mode.
+      expect(content).toMatch(/\^tests\//)
+    })
+
+    it('should install bats on CI quality-gate runners', () => {
+      const workflow = loadWorkflow('ci-and-labels.yml')
+      const gateSteps = workflow.jobs['quality-gate'].steps as Array<{
+        name?: string
+        run?: string
+      }>
+      const installStep = gateSteps.find((step) =>
+        (step.name ?? '').toLowerCase().includes('bats')
+      )
+      expect(installStep).toBeDefined()
+      expect(installStep.run).toContain('apt-get install -y bats')
     })
   })
 
