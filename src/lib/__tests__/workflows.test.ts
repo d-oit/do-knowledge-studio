@@ -365,8 +365,15 @@ describe('GitHub Actions Workflows', () => {
       expect(existsSync(batsPath)).toBe(true)
       const content = readFileSync(batsPath, 'utf-8')
       expect(content).toContain('diagnose-merge-state.sh')
-      expect(content).toContain('export -f gh')
+      expect(content).toContain('load helpers/mock-gh')
       expect(content).toContain('@test')
+
+      // The mocked-gh harness lives in the shared helper.
+      const helperPath = join(process.cwd(), 'tests/helpers/mock-gh.bash')
+      expect(existsSync(helperPath)).toBe(true)
+      const helper = readFileSync(helperPath, 'utf-8')
+      expect(helper).toContain('export -f gh')
+      expect(helper).toContain('mock_gh_setup')
     })
 
     it('should run the BATS suite from verify.sh', () => {
