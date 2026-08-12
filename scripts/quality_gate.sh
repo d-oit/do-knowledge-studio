@@ -125,7 +125,7 @@ if [ "$CHANGED_ONLY" = true ]; then
             [[ "$file" =~ ^src/ ]] || [[ "$file" =~ ^public/ ]] || [[ "$file" =~ ^index\.html$ ]] || [[ "$file" =~ ^vite\.config\.ts$ ]] && HAS_FRONTEND=true
             [[ "$file" =~ ^cli/ ]] && HAS_CLI=true
             [[ "$file" =~ ^export/ ]] && HAS_EXPORT=true
-            [[ "$file" =~ ^scripts/ ]] || [[ "$file" =~ ^\.github/ ]] || [[ "$file" =~ ^package\.json$ ]] && HAS_TOOLING=true
+            [[ "$file" =~ ^scripts/ ]] || [[ "$file" =~ ^tests/ ]] || [[ "$file" =~ ^\.github/ ]] || [[ "$file" =~ ^package\.json$ ]] && HAS_TOOLING=true
         done <<< "$CHANGED_FILES"
 
         # If multiple scopes changed, we might want to run all or a subset
@@ -518,11 +518,15 @@ if [[ " ${DETECTED_LANGUAGES[*]} " =~ " shell " ]] && [[ "$SCOPE" == "all" || "$
         echo -e "${YELLOW}  ⚠ shellcheck not installed - skipping shell checks${NC}"
     fi
 
-    # BATS tests: Run if tests/ directory exists and tests not skipped
-    # BATS provides a TAP-compliant testing framework for bash scripts
+    # BATS tests: shell-script regression suite in tests/*.bats (TAP-compliant).
+    # The suite is mandatory — a missing tests/ directory is a hard failure so
+    # CI can never silently skip it.
     # NOTE: Skip if we're already inside a BATS test (prevent recursion)
-    if [ -d "tests" ] && [ "${SKIP_TESTS:-false}" != "true" ] && [ -z "${BATS_TEST_FILENAME:-}" ]; then
-        if command -v bats &> /dev/null; then
+    if [ "${SKIP_TESTS:-false}" != "true" ] && [ -z "${BATS_TEST_FILENAME:-}" ]; then
+        if [ ! -d "tests" ]; then
+            echo -e "${RED}  ✗ tests/ directory missing — BATS suite required for shell scripts${NC}"
+            FAILED=1
+        elif command -v bats &> /dev/null; then
             if ! OUTPUT=$(bats tests/ 2>&1); then
                 echo -e "${RED}  ✗ bats tests failed${NC}"
                 echo "$OUTPUT" >&2

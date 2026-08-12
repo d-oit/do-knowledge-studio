@@ -10,6 +10,8 @@
 # Run with: bats tests/diagnose-merge-state.bats
 # (quality_gate.sh and scripts/verify.sh run the whole tests/ directory.)
 
+bats_require_minimum_version 1.5.0  # run ! needs >= 1.5
+
 SCRIPT="$BATS_TEST_DIRNAME/../scripts/diagnose-merge-state.sh"
 
 load helpers/mock-gh
@@ -31,7 +33,8 @@ setup() {
 
   [ "$status" -eq 0 ]
   grep -q '^POST$' "$MOCK_LOG"
-  ! grep -q '^PATCH$' "$MOCK_LOG"
+  # run ! fails the test if grep matches (status 0), i.e. PATCH present.
+  run ! grep -q '^PATCH$' "$MOCK_LOG"
   grep -q "Check run(s) still in progress" "$MOCK_BODY_FILE"
   grep -q 'Analyze (actions)' "$MOCK_BODY_FILE"
   grep -q 'blocked-pr-diagnoser' "$MOCK_BODY_FILE"
@@ -68,7 +71,8 @@ setup() {
 
   [ "$status" -eq 0 ]
   grep -q '^PATCH$' "$MOCK_LOG"
-  ! grep -q '^POST$' "$MOCK_LOG"
+  # run ! fails the test if grep matches (status 0), i.e. POST present.
+  run ! grep -q '^POST$' "$MOCK_LOG"
   grep -q 'blocked-pr-diagnoser' "$MOCK_BODY_FILE"
 }
 
@@ -95,8 +99,10 @@ setup() {
 
   [ "$status" -eq 0 ]
   grep -q '^DELETE$' "$MOCK_LOG"
-  ! grep -q '^POST$' "$MOCK_LOG"
-  ! grep -q '^PATCH$' "$MOCK_LOG"
+  # run ! fails the test if grep matches (status 0), i.e. POST present.
+  run ! grep -q '^POST$' "$MOCK_LOG"
+  # run ! fails the test if grep matches (status 0), i.e. PATCH present.
+  run ! grep -q '^PATCH$' "$MOCK_LOG"
 }
 
 @test "clean state with no comment makes no write calls" {
@@ -105,7 +111,8 @@ setup() {
   run "$SCRIPT"
 
   [ "$status" -eq 0 ]
-  ! grep -qE '^(POST|PATCH|DELETE)$' "$MOCK_LOG"
+  # run ! fails the test if any write marker is present.
+  run ! grep -qE '^(POST|PATCH|DELETE)$' "$MOCK_LOG"
 }
 
 @test "unstable state deletes the stale comment" {
@@ -116,8 +123,10 @@ setup() {
 
   [ "$status" -eq 0 ]
   grep -q '^DELETE$' "$MOCK_LOG"
-  ! grep -q '^POST$' "$MOCK_LOG"
-  ! grep -q '^PATCH$' "$MOCK_LOG"
+  # run ! fails the test if grep matches (status 0), i.e. POST present.
+  run ! grep -q '^POST$' "$MOCK_LOG"
+  # run ! fails the test if grep matches (status 0), i.e. PATCH present.
+  run ! grep -q '^PATCH$' "$MOCK_LOG"
 }
 
 @test "unstable state with no comment makes no write calls" {
@@ -126,7 +135,8 @@ setup() {
   run "$SCRIPT"
 
   [ "$status" -eq 0 ]
-  ! grep -qE '^(POST|PATCH|DELETE)$' "$MOCK_LOG"
+  # run ! fails the test if any write marker is present.
+  run ! grep -qE '^(POST|PATCH|DELETE)$' "$MOCK_LOG"
 }
 
 @test "unknown state is diagnosed (treated like blocked)" {
