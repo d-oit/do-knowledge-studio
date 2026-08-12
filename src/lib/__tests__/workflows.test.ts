@@ -566,4 +566,35 @@ describe('GitHub Actions Workflows', () => {
       expect(properties.description.length).toBeGreaterThan(0)
     })
   })
+
+  describe('Shell test coverage', () => {
+    it('should have BATS tests for setup-skills.sh', () => {
+      const batsPath = join(process.cwd(), 'tests/setup-skills.bats')
+      expect(existsSync(batsPath)).toBe(true)
+      const content = readFileSync(batsPath, 'utf-8')
+      expect(content).toContain('setup-skills.sh')
+      expect(content).toContain('symlink_strategy')
+    })
+
+    it('should have BATS tests for install-hooks.sh', () => {
+      const batsPath = join(process.cwd(), 'tests/install-hooks.bats')
+      expect(existsSync(batsPath)).toBe(true)
+      const content = readFileSync(batsPath, 'utf-8')
+      expect(content).toContain('install-hooks.sh')
+      expect(content).toContain('pre-commit')
+      expect(content).toContain('commit-msg')
+    })
+
+    it('should have REPO_ROOT override in setup-skills.sh', () => {
+      const scriptPath = join(process.cwd(), 'scripts/setup-skills.sh')
+      const content = readFileSync(scriptPath, 'utf-8')
+      expect(content).toContain('${REPO_ROOT:-')
+    })
+
+    it('should have REPO_ROOT override in install-hooks.sh', () => {
+      const scriptPath = join(process.cwd(), 'scripts/install-hooks.sh')
+      const content = readFileSync(scriptPath, 'utf-8')
+      expect(content).toContain('${REPO_ROOT:-')
+    })
+  })
 })
