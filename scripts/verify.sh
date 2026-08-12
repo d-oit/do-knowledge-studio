@@ -18,6 +18,17 @@ if [ "${#BATS_FILES[@]}" -gt 0 ]; then
   run_check "Shell Lint (BATS)" shellcheck --shell=bats -S warning "${BATS_FILES[@]}"
 fi
 
+# Match the security-scan workflow's failing ShellCheck gate exactly (the
+# ludeeus action: severity warning, scandir ./scripts, these --enable
+# flags) so local and CI lint configs cannot drift. -x follows the
+# source= directives (e.g. scripts/lib/run-check.sh).
+mapfile -t SH_FILES < <(find scripts -name '*.sh' -type f 2>/dev/null || true)
+if [ "${#SH_FILES[@]}" -gt 0 ]; then
+  run_check "Shell Lint (CI parity)" shellcheck -S warning --shell=bash -x \
+    --enable=add-default-case,avoid-nullary-conditions,deprecate-which \
+    --enable=check-unassigned-uppercase,quote-safe-variables "${SH_FILES[@]}"
+fi
+
 run_check "Lint" pnpm run lint
 # Match the CI yaml-lint workflow exactly: inline -d config with a 120-char
 # line limit (the repo's .yamllint.yml is more lenient at 254).

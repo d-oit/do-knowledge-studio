@@ -383,6 +383,8 @@ describe('GitHub Actions Workflows', () => {
       expect(content).toContain('Shell Tests (BATS)')
       expect(content).toContain('bats tests/')
       expect(content).toContain('Shell Lint (BATS)')
+      expect(content).toContain('Shell Lint (CI parity)')
+      expect(content).toContain('check-unassigned-uppercase')
       expect(content).toContain('lib/run-check.sh')
     })
 
@@ -393,7 +395,20 @@ describe('GitHub Actions Workflows', () => {
 
       const batsPath = join(process.cwd(), 'tests/verify-run-check.bats')
       expect(existsSync(batsPath)).toBe(true)
-      expect(readFileSync(batsPath, 'utf-8')).toContain('run_check')
+      const batsContent = readFileSync(batsPath, 'utf-8')
+      expect(batsContent).toContain('run_check')
+      // End-to-end gate tests cover both the pass and fail exit paths.
+      expect(batsContent).toContain('verify.sh exits 1')
+      expect(batsContent).toContain('verify.sh exits 0')
+    })
+
+    it('should document the BATS conventions in tests/README.md', () => {
+      const readmePath = join(process.cwd(), 'tests/README.md')
+      expect(existsSync(readmePath)).toBe(true)
+      const content = readFileSync(readmePath, 'utf-8')
+      expect(content).toContain('bats_require_minimum_version')
+      expect(content).toContain('run !')
+      expect(content).toContain('mock-gh')
     })
 
     it('should hard-gate the BATS suite in quality_gate.sh', () => {
