@@ -134,6 +134,13 @@ function getSnippet(entry: IndexEntry, maxLength: number = 140): string {
   return `${text.slice(0, maxLength)}…`
 }
 
+// Reference-based cache to avoid rebuilding index and token maps on every search query change
+let lastEntities: Entity[] | null = null
+let lastClaims: Claim[] | null = null
+let cachedEntityMap = new Map<string, Entity>()
+let cachedEntries: IndexEntry[] = []
+let cachedAvgDl = 0
+
 /** Run a BM25 full-text search over entities and claims. */
 export const search = (
   entities: Entity[],
@@ -141,20 +148,38 @@ export const search = (
   query: string,
   limit = 5,
 ): SearchResult[] => {
-  const entityMap = new Map<string, Entity>()
-  for (const e of entities) {
-    entityMap.set(e.id, e)
+  let entityMap: Map<string, Entity>
+  let entries: IndexEntry[]
+  let avgDl: number
+
+  if (entities === lastEntities && claims === lastClaims) {
+    entityMap = cachedEntityMap
+    entries = cachedEntries
+    avgDl = cachedAvgDl
+  } else {
+    entityMap = new Map<string, Entity>()
+    for (const e of entities) {
+      entityMap.set(e.id, e)
+    }
+
+    entries = buildIndex(entities, claims, entityMap)
+    const totalLength = entries.reduce((sum, e) => sum + e.tokenCount, 0)
+    avgDl = entries.length > 0 ? totalLength / entries.length : 0
+
+    // Update references and cached indexes
+    lastEntities = entities
+    lastClaims = claims
+    cachedEntityMap = entityMap
+    cachedEntries = entries
+    cachedAvgDl = avgDl
   }
 
-  const entries = buildIndex(entities, claims, entityMap)
   if (entries.length === 0) return []
 
   const queryTokens = tokenize(query)
   if (queryTokens.length === 0) return []
 
   const idf = computeIDF(entries, queryTokens)
-  const totalLength = entries.reduce((sum, e) => sum + e.tokenCount, 0)
-  const avgDl = totalLength / entries.length
 
   const scored = entries
     .map((entry) => ({
