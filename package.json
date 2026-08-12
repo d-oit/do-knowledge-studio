@@ -109,17 +109,19 @@
     "overrides": {
       "lodash": "^4.18.0",
       "lodash-es": "^4.18.0",
-      "postcss": "^8.5.18",
+      "postcss": "^8.5.23",
       "sharp": "^0.35.3",
       "brace-expansion@<1.1.16": "1.1.16",
       "defu": "^6.1.5",
       "picomatch": "^4.0.4",
-      "js-yaml": "^4.2.0",
+      "js-yaml": "^4.3.1",
       "js-cookie": "^3.0.7",
       "effect": "^3.20.0",
       "prismjs": "^1.30.0",
       "diff": "^5.2.2",
-      "dompurify": "^3.4.13"
+      "dompurify": "^3.4.13",
+      "undici": "^7.29.0",
+      "nanoid@3": "3.3.17"
     }
   }
 }
