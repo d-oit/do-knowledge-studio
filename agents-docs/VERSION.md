@@ -26,7 +26,8 @@ Version propagation is **manual** as of Plan 073 (2026-07-24). The `version-prop
 | File | Pattern | Updated By |
 |------|---------|------------|
 | `VERSION` | `0.1.1` | Manual edit (maintainer) |
-| `README.md` | `version-X.Y.Z` badge | propagate-version.sh |
+| `agents-docs/VERSION.md` | current version + table row | propagate-version.sh |
+| `README.md` | `version-X.Y.Z` badge (if present) | propagate-version.sh |
 | `agents-docs/MIGRATION.md` | badge + `Template version:` text | propagate-version.sh |
 
 ## Release Workflow
