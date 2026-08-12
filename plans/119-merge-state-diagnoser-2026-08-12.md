@@ -104,3 +104,7 @@ part of CI.
   placeholder regex's block pattern used `\1` for a group-2 backref,
   making grep error out and the check silently never fire);
   `scripts/lib/README.md` documenting the shared shell libraries.
+- **PR #661**: quality_gate.sh BATS-coverage pairing guard (`diff-filter=A`
+  ensures every *new* scripts/*.sh ships with a matching .bats file);
+  inline-comment edge tests for the SHA validator; full re-verification
+  sweep on main: 473 e2e pass, verify.sh + quality_gate.sh clean.

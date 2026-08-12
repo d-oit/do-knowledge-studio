@@ -452,6 +452,7 @@ describe('GitHub Actions Workflows', () => {
       const batsContent = readFileSync(batsPath, 'utf-8')
       expect(batsContent).toContain('rejects repeating 8-char block')
       expect(batsContent).toContain('WORKFLOWS_DIR')
+      expect(batsContent).toContain('inline comment')
     })
 
     it('should document the shared shell libraries in scripts/lib/README.md', () => {
@@ -472,6 +473,9 @@ describe('GitHub Actions Workflows', () => {
       expect(content).toContain('bats tests/')
       // tests/ changes must trigger the tooling scope in --changed mode.
       expect(content).toMatch(/\^tests\//)
+      // New shell scripts must have BATS coverage in changed-only mode.
+      expect(content).toContain('new shell scripts missing BATS coverage')
+      expect(content).toContain('diff-filter=A')
     })
 
     it('should install bats on CI quality-gate runners', () => {

@@ -538,6 +538,32 @@ if [[ " ${DETECTED_LANGUAGES[*]} " =~ " shell " ]] && [[ "$SCOPE" == "all" || "$
             echo -e "${YELLOW}  ⚠ bats not installed - skipping shell tests${NC}"
         fi
     fi
+
+    # BATS coverage pairing: every new top-level scripts/*.sh added in
+    # this PR must have matching tests/<name>.bats or be referenced from
+    # an existing test, so new scripts always ship with regression tests.
+    if [ "${CHANGED_ONLY:-false}" = true ] && [ -n "${BASE_BRANCH:-}" ]; then
+        NEW_UNCOVERED=()
+        while IFS= read -r file; do
+            [ -n "$file" ] || continue
+            [[ "$file" == scripts/*.sh ]] || continue
+            [[ "$file" == scripts/lib/* ]] && continue
+            script_base=$(basename "$file" .sh)
+            if [ -f "tests/$script_base.bats" ]; then continue; fi
+            if grep -rlq "$file" tests/*.bats 2>/dev/null; then continue; fi
+            NEW_UNCOVERED+=("$file")
+        done < <(git diff --diff-filter=A --name-only "$BASE_BRANCH" -- 'scripts/*.sh' 2>/dev/null || true)
+        if [ "${#NEW_UNCOVERED[@]}" -gt 0 ]; then
+            echo -e "${RED}  ✗ new shell scripts missing BATS coverage:${NC}"
+            for s in "${NEW_UNCOVERED[@]}"; do
+                echo -e "${RED}    $s (add tests/$(basename "$s" .sh).bats)${NC}"
+            done
+            FAILED=1
+        elif git diff --diff-filter=A --name-only "$BASE_BRANCH" -- 'scripts/*.sh' 2>/dev/null | grep -q .; then
+            echo -e "${GREEN}  ✓ new shell scripts have BATS coverage${NC}"
+        fi
+    fi
+
     echo ""
 fi
 

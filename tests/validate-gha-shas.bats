@@ -66,6 +66,26 @@ make_workflow() {
   [[ "$output" == *"properly pinned"* ]]
 }
 
+@test "rejects placeholder SHAs even with inline comments" {
+  make_workflow "$BATS_TEST_TMPDIR/wf" \
+    "- uses: actions/checkout@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa  # placeholder"
+
+  run env WORKFLOWS_DIR="$BATS_TEST_TMPDIR/wf" "$SCRIPT"
+
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"placeholder"* ]]
+}
+
+@test "accepts pinned SHA with inline comment attached directly" {
+  make_workflow "$BATS_TEST_TMPDIR/wf" \
+    "- uses: actions/checkout@$VALID_SHA#v7.0.1"
+
+  run env WORKFLOWS_DIR="$BATS_TEST_TMPDIR/wf" "$SCRIPT"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"properly pinned"* ]]
+}
+
 @test "validates the real repo workflows are all pinned" {
   run "$SCRIPT"
 
