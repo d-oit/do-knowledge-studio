@@ -52,3 +52,35 @@ merge" for over an hour.
 - Full quality gate on main: typecheck, ESLint, production build clean;
   480/480 Playwright matrix (all four projects); full unit suite passed.
 - Workflow validated with yamllint and actionlint; workflow tests pass.
+
+## Follow-up hardening (PR #654, merged)
+
+- All diagnosis logic extracted from the workflow YAML into
+  `scripts/diagnose-merge-state.sh` (executable, shellcheck-clean). The
+  workflow and template are thin wrappers that invoke it with env inputs,
+  so the duplicated bash can never drift.
+- `scripts/verify.sh` gained a "YAML Lint (CI parity)" check running the
+  exact CI yamllint invocation (inline `-d` config, 120-char limit) — the
+  local-vs-CI config drift that failed the first #653 CI run.
+
+## Smoke test (throwaway PR #655, closed unmerged)
+
+End-to-end verification of the diagnoser on a live PR:
+
+- **Create** (`opened` + blocked): ✅ comment posted naming in-flight
+  checks, via the real script and live API.
+- **Update in place** (`synchronize`): ✅ PATCH — count stayed 1 and the
+  body refreshed with the new run list.
+- **Delete** (clean state): ✅ verified locally via the mocked-gh BATS
+  suite (`tests/diagnose-merge-state.bats`); the smoke PR's state went
+  permanently stale (the exact plans/098 scenario), so no clean-state
+  event could fire end-to-end.
+- **Script-based run**: ✅ the diagnoser posted on #655 via
+  `scripts/diagnose-merge-state.sh`.
+
+Findings: create/update are verified end-to-end; the deletion path is
+covered by the committed BATS suite (`bats tests/`, 9 tests, mocked `gh`
+covering in-progress, failures, staleness, PATCH idempotency, DELETE
+cleanup, fork skip, and missing-env failure). BATS runs in quality_gate.sh
+and scripts/verify.sh whenever tests/ exists, so the regression suite is
+part of CI.
