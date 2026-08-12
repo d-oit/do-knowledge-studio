@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import { Overlay } from '@/components/studio/ui/shared-primitives'
 import { X, Search, Sun, Moon, FileText } from 'lucide-react'
+import packageJson from '../../../package.json'
 import { useTheme } from 'next-themes'
 import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
 import { ENTITY_TYPE_META, type Entity } from '@/lib/studio/types'
@@ -89,7 +90,7 @@ function DrawerHeader({
           Knowledge Studio
         </span>
         <span className="text-caption uppercase tracking-[0.14em] text-ink-faint">
-          Local-first · v0.2
+          Local-first · v{packageJson.version}
         </span>
       </div>
       <button

@@ -10,7 +10,7 @@ Version propagation is **manual** as of Plan 073 (2026-07-24). The `version-prop
 
 ## Current Workflow
 
-1. **Maintainer only**: Edit `VERSION` file directly (the current version is `0.1.0`)
+1. **Maintainer only**: Edit `VERSION` file directly (the current version is `0.1.1`)
 2. Run `./scripts/propagate-version.sh` locally to sync badge/version strings across files
 3. Commit and push
 4. **Maintainer only**: After CI passes on `main` and with explicit instruction, use `gh release create` to publish the release
@@ -25,7 +25,7 @@ Version propagation is **manual** as of Plan 073 (2026-07-24). The `version-prop
 
 | File | Pattern | Updated By |
 |------|---------|------------|
-| `VERSION` | `0.1.0` | Manual edit (maintainer) |
+| `VERSION` | `0.1.1` | Manual edit (maintainer) |
 | `README.md` | `version-X.Y.Z` badge | propagate-version.sh |
 | `agents-docs/MIGRATION.md` | badge + `Template version:` text | propagate-version.sh |
 
