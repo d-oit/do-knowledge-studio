@@ -20,6 +20,7 @@ import {
 import { useTheme } from 'next-themes'
 import { useStudioStore } from '@/lib/studio/store'
 import type { ViewId } from '@/lib/studio/types'
+import packageJson from '../../../package.json'
 import { cn } from '@/lib/utils'
 import { ShortcutsTrigger } from './shortcuts-dialog'
 
@@ -85,7 +86,7 @@ export function Sidebar() {
             Knowledge Studio
           </span>
           <span className="text-caption uppercase tracking-[0.14em] text-ink-faint">
-            Local-first · v0.2
+            Local-first · v{packageJson.version}
           </span>
         </div>
       </div>
