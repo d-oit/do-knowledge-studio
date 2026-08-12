@@ -1,7 +1,7 @@
-# Draft Release Notes — v0.2.0
+# Draft Release Notes — v0.1.1
 
 **Date**: 2026-08-12
-**Status**: DRAFT — Awaiting maintainer approval
+**Status**: RELEASED — v0.1.1
 
 ## Highlights
 
@@ -47,6 +47,12 @@
 - fix(ci): allowlist test fixtures and doc examples in gitleaks config (#645)
 - feat(ci): add security-scan workflow template (#644)
 - fix(ci): pin gitleaks-action to v2.3.9 to remove license requirement (#643)
+
+## Version Note
+
+Old Vite-era tags v0.2.4/v0.2.5 (June 2026) predate the Next.js rewrite and had no
+GitHub releases. Per maintainer decision, this release keeps the current 0.1.x line
+and is tagged v0.1.1.
 
 ## Breaking Changes
 
