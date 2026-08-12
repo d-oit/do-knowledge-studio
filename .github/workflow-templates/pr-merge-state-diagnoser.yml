@@ -66,7 +66,9 @@ jobs:
           in_progress="$(gh api "repos/$repo/commits/$head_sha/check-runs" \
             --jq '[.check_runs[] | select(.status != "completed")] | map(.name)')"
           failed="$(gh api "repos/$repo/commits/$head_sha/check-runs" \
-            --jq '[.check_runs[] | select(.conclusion == "failure" or .conclusion == "timed_out" or .conclusion == "action_required")] | map(.name)')"
+            --jq '[.check_runs[] | select(.conclusion |
+              IN("failure", "timed_out", "action_required"))]
+              | map(.name)')"
 
           header="**Blocked merge diagnosis** — $mergeable_state"
           if [[ "$in_progress" != "[]" ]]; then
