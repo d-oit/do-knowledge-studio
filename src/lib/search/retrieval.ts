@@ -134,6 +134,47 @@ function getSnippet(entry: IndexEntry, maxLength: number = 140): string {
   return `${text.slice(0, maxLength)}…`
 }
 
+// Reference-based cache to avoid rebuilding index and token maps on every search query change
+let lastEntities: Entity[] | null = null
+let lastClaims: Claim[] | null = null
+let cachedEntityMap = new Map<string, Entity>()
+let cachedEntries: IndexEntry[] = []
+let cachedAvgDl = 0
+
+interface SearchIndex {
+  entityMap: Map<string, Entity>
+  entries: IndexEntry[]
+  avgDl: number
+}
+
+/** Returns the cached index when inputs are referentially unchanged, otherwise rebuilds it. */
+const getIndex = (entities: Entity[], claims: Claim[]): SearchIndex => {
+  if (entities === lastEntities && claims === lastClaims) {
+    return {
+      entityMap: cachedEntityMap,
+      entries: cachedEntries,
+      avgDl: cachedAvgDl,
+    }
+  }
+
+  const entityMap = new Map<string, Entity>()
+  for (const e of entities) {
+    entityMap.set(e.id, e)
+  }
+
+  const entries = buildIndex(entities, claims, entityMap)
+  const totalLength = entries.reduce((sum, e) => sum + e.tokenCount, 0)
+  const avgDl = entries.length > 0 ? totalLength / entries.length : 0
+
+  lastEntities = entities
+  lastClaims = claims
+  cachedEntityMap = entityMap
+  cachedEntries = entries
+  cachedAvgDl = avgDl
+
+  return { entityMap, entries, avgDl }
+}
+
 /** Run a BM25 full-text search over entities and claims. */
 export const search = (
   entities: Entity[],
@@ -141,20 +182,14 @@ export const search = (
   query: string,
   limit = 5,
 ): SearchResult[] => {
-  const entityMap = new Map<string, Entity>()
-  for (const e of entities) {
-    entityMap.set(e.id, e)
-  }
+  const { entityMap, entries, avgDl } = getIndex(entities, claims)
 
-  const entries = buildIndex(entities, claims, entityMap)
   if (entries.length === 0) return []
 
   const queryTokens = tokenize(query)
   if (queryTokens.length === 0) return []
 
   const idf = computeIDF(entries, queryTokens)
-  const totalLength = entries.reduce((sum, e) => sum + e.tokenCount, 0)
-  const avgDl = totalLength / entries.length
 
   const scored = entries
     .map((entry) => ({
