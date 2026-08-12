@@ -359,6 +359,23 @@ describe('GitHub Actions Workflows', () => {
       expect(content).toContain('blocked-pr-diagnoser')
       expect(content).toContain('GH_REPO:?')
     })
+
+    it('should ship a BATS regression suite for the shared script', () => {
+      const batsPath = join(process.cwd(), 'tests/diagnose-merge-state.bats')
+      expect(existsSync(batsPath)).toBe(true)
+      const content = readFileSync(batsPath, 'utf-8')
+      expect(content).toContain('diagnose-merge-state.sh')
+      expect(content).toContain('export -f gh')
+      expect(content).toContain('@test')
+    })
+
+    it('should run the BATS suite from verify.sh', () => {
+      const verifyPath = join(process.cwd(), 'scripts/verify.sh')
+      expect(existsSync(verifyPath)).toBe(true)
+      const content = readFileSync(verifyPath, 'utf-8')
+      expect(content).toContain('Shell Tests (BATS)')
+      expect(content).toContain('bats tests/')
+    })
   })
 
   describe('Workflow Template', () => {

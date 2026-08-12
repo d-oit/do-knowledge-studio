@@ -9,6 +9,7 @@ cd "$REPO_ROOT"
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
+YELLOW='\033[0;33m'
 NC='\033[0m'
 
 FAILED=0
@@ -32,6 +33,13 @@ run_check "Lint" pnpm run lint
 run_check "YAML Lint (CI parity)" yamllint -d \
   '{extends: default, rules: {line-length: {max: 120}, indentation: {spaces: 2}}}' \
   .github/
+# BATS regression tests for shell scripts (tests/*.bats). quality_gate.sh
+# runs the same suite automatically when tests/ exists.
+if command -v bats &> /dev/null; then
+  run_check "Shell Tests (BATS)" bats tests/
+else
+  echo -e "${YELLOW}⚠ bats not installed - skipping shell tests${NC}"
+fi
 run_check "Typecheck" pnpm run typecheck
 run_check "Tests" pnpm run test
 run_check "Build" pnpm run build
