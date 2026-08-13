@@ -70,3 +70,15 @@ EOF
   [ "$status" -eq 1 ]
   [[ "$output" == *"invalid version"* ]]
 }
+
+@test "rejects versions containing sed metacharacters" {
+  # VERSION is embedded in sed expressions, so the format validation must
+  # reject any value that could break out of the s/// expression or inject
+  # replacement metacharacters (&, \\, /).
+  for bad in '1.2.3&x' '1.2/3' '1.2.3;true' '2.0.0\\evil'; do
+    printf '%s\n' "$bad" > "$WORK/VERSION"
+    run env REPO_ROOT="$WORK" bash "$SCRIPT"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"invalid version"* ]]
+  done
+}

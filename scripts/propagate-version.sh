@@ -40,9 +40,22 @@ sed_inplace() {
   fi
 }
 
+# Escape a value for safe use inside a sed s/// replacement expression:
+# backslash, ampersand, and the delimiter (/) are the only metacharacters
+# there. Defense in depth — the version regex below already restricts
+# VERSION to digits and dots, so this guards against future loosening.
+sed_escape_replacement() {
+  local value="$1" escaped
+  escaped="${value//\\/\\\\}"
+  escaped="${escaped//&/\\&}"
+  escaped="${escaped//\//\\/}"
+  printf '%s' "$escaped"
+}
+
 # Pattern -> replacement pairs applied to each target file. The version
 # regex matches the existing X.Y.Z string wherever it appears.
 version_pattern='[0-9]+\.[0-9]+\.[0-9]+'
+escaped_version="$(sed_escape_replacement "$version")"
 apply_version() {
   local file="$1"; shift
   local expression replacement
@@ -58,22 +71,22 @@ apply_version() {
 version_md="$REPO_ROOT/agents-docs/VERSION.md"
 if [[ -f "$version_md" ]]; then
   apply_version "$version_md" \
-    "the current version is \`$version_pattern\`" "the current version is \`$version\`" \
-    "^\| \`VERSION\` \| \`$version_pattern\` \|" "| \`VERSION\` | \`$version\` |"
+    "the current version is \`$version_pattern\`" "the current version is \`$escaped_version\`" \
+    "^\| \`VERSION\` \| \`$version_pattern\` \|" "| \`VERSION\` | \`$escaped_version\` |"
 fi
 
 # agents-docs/MIGRATION.md — badge + "Template version:" text.
 migration_md="$REPO_ROOT/agents-docs/MIGRATION.md"
 if [[ -f "$migration_md" ]]; then
   apply_version "$migration_md" \
-    "version-$version_pattern-blue" "version-$version-blue" \
-    "Template version: $version_pattern" "Template version: $version"
+    "version-$version_pattern-blue" "version-$escaped_version-blue" \
+    "Template version: $version_pattern" "Template version: $escaped_version"
 fi
 
 # README.md — badge (only when a version badge exists).
 readme="$REPO_ROOT/README.md"
 if [[ -f "$readme" ]]; then
-  apply_version "$readme" "version-$version_pattern-blue" "version-$version-blue"
+  apply_version "$readme" "version-$version_pattern-blue" "version-$escaped_version-blue"
 fi
 
 echo "propagated version $version"
