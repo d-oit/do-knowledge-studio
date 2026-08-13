@@ -55,6 +55,24 @@ required="$(gh api "repos/$repo/rules/branches/$base_ref" \
   --jq '[.rules[].parameters.required_status_checks[]?.context] |
     map(select(. != null))' 2>/dev/null || echo '[]')"
 
+# Unresolved review threads are merge gates when the ruleset requires
+# required_review_thread_resolution (LESSON-026/030): with all checks
+# green, an open thread is the real blocker, not staleness. PR #670 sat
+# BLOCKED for 1.5+ hours on an OwlWatch thread invisible to check-runs.
+owner="${repo%%/*}"
+name="${repo##*/}"
+unresolved_threads="$(gh api graphql \
+  -F owner="$owner" -F name="$name" -F pr="$pr_number" \
+  -f query='query($owner: String!, $name: String!, $pr: Int!) {
+    repository(owner: $owner, name: $name) {
+      pullRequest(number: $pr) {
+        reviewThreads(first: 10) { nodes { isResolved } }
+      }
+    }
+  }' \
+  --jq '[.data.repository.pullRequest.reviewThreads.nodes[] |
+    select(.isResolved == false)] | length' 2>/dev/null || echo "0")"
+
 header="**Blocked merge diagnosis** — $mergeable_state"
 if [[ "$in_progress" != "[]" ]]; then
   body="$header
@@ -62,6 +80,11 @@ if [[ "$in_progress" != "[]" ]]; then
 elif [[ "$failed" != "[]" ]]; then
   body="$header
 ❌ Failing check(s) blocking merge: $failed"
+elif [[ "$unresolved_threads" != "0" ]]; then
+  body="$header
+🧵 $unresolved_threads unresolved review thread(s) blocking merge —
+the ruleset requires required_review_thread_resolution (LESSON-026/030).
+Resolve each via GraphQL resolveReviewThread; required checks: $required"
 else
   body="$header
 🟡 All checks are green (required: $required) but GitHub reports
