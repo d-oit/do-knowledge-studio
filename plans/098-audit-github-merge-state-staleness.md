@@ -45,3 +45,22 @@ Conclusion: the `BLOCKED` state was a **stale GitHub mergeability cache**. Evide
 ## Follow-up
 
 - PR #584 auto-merge completion to be confirmed in a later session; then mark Plan 097 and Plan 15 `DONE` on `main`.
+
+## Addendum (2026-08-13): PR #670 — the "staleness" that wasn't
+
+PR #670 exhibited every LESSON-028 staleness symptom (all checks green for
+1.5+ hours; `BLOCKED` survived re-arm, empty-commit nudge, close/reopen,
+and label toggle) but was **not** staleness: an unresolved OwlWatch review
+thread on `warm_cache.py:36` was holding the ruleset's
+`required_review_thread_resolution` gate. It was found only by querying
+GraphQL `pullRequest.reviewThreads` — issue comments and `reviewDecision`
+were both empty, and the diagnoser workflow reports check-run state only.
+Resolving the thread flipped `BLOCKED` → `CLEAN` instantly and the armed
+auto-merge merged `c806ae2` — no `--admin` required.
+
+Corrected diagnosis order before escalating: (1) ruleset required checks
+on the head commit, (2) GraphQL `reviewThreads` — bot threads are merge
+gates (LESSON-026/030), (3) in-flight check-runs on the head SHA, and only
+then (4) declare staleness.
+
+See `agents-docs/LESSONS.md#LESSON-030` for the full write-up.
