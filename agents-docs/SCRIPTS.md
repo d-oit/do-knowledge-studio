@@ -8,48 +8,39 @@
 | Script | Purpose | Usage |
 |--------|---------|-------|
 | `quality_gate.sh` | Multi-language quality gate (lint, test, format) | `./scripts/quality_gate.sh` |
+| `minimal_quality_gate.sh` | Minimal quality gate — lint, typecheck, tests (no build) | `./scripts/minimal_quality_gate.sh` |
+| `verify.sh` | Full verification — lint, typecheck, test, build | `./scripts/verify.sh` |
+| `verify-deps.sh` | Verify dependency changes don't break the build | `./scripts/verify-deps.sh` |
 | `setup-skills.sh` | Create symlinks from `.agents/skills/` to CLI dirs | `./scripts/setup-skills.sh` |
-| `pre-commit-hook.sh` | Pre-commit hook template (copied by install-hooks.sh) | Installed via `install-hooks.sh` |
-| `install-hooks.sh` | Install git hooks (pre-commit + post-commit) | `./scripts/install-hooks.sh` |
+| `install-hooks.sh` | Install git hooks (pre-commit + commit-msg) | `./scripts/install-hooks.sh` |
+| `propagate-version.sh` | Sync `VERSION` to derived version strings in docs | `./scripts/propagate-version.sh` |
 
 ## Validation Scripts
 
 | Script | Purpose | Usage |
 |--------|---------|-------|
 | `validate-skills.sh` | Validate skill symlinks and SKILL.md files | `./scripts/validate-skills.sh` |
-| `validate-skill-format.sh` | Validate SKILL.md frontmatter format | `./scripts/validate-skill-format.sh` |
 | `validate-git-hooks.sh` | Check git hooks configuration | `./scripts/validate-git-hooks.sh` |
 | `validate-links.sh` | Validate markdown links are not broken | `./scripts/validate-links.sh` |
+| `validate-package-manager.sh` | Validate the correct package manager (pnpm) is used | `./scripts/validate-package-manager.sh` |
+| `validate-github-actions-shas.sh` | Validate GitHub Actions are pinned to full commit SHAs | `./scripts/validate-github-actions-shas.sh` |
 
-## Update Scripts
-
-| Script | Purpose | Usage |
-|--------|---------|-------|
-| `update-agents-md.sh` | Regenerate skill table in AGENTS.md | `./scripts/update-agents-md.sh` |
-| `update-agents-registry.sh` | Update AGENTS.md | `./scripts/update-agents-registry.sh` |
-| `generate-available-skills.py` | Auto-generate AVAILABLE_SKILLS.md | `./scripts/generate-available-skills.py` |
-| `generate-skills-readme.py` | Auto-generate .agents/skills/README.md | `./scripts/generate-skills-readme.py` |
-| `docs-sync.sh` | List changed markdown files (not actual sync) | `./scripts/docs-sync.sh` |
-
-## Advanced Scripts
+## Automation Scripts
 
 | Script | Purpose | Usage |
 |--------|---------|-------|
-| `swarm-worktree-web-research.sh` | Swarm analysis with web research | `./scripts/swarm-worktree-web-research.sh "topic"` |
 | `self-fix-loop.sh` | Auto-fix CI failures in a loop | `./scripts/self-fix-loop.sh` |
-| `run-evals.py` | Skill evaluation framework | `python3 scripts/run-evals.py` |
-| `gh-labels-creator.sh` | Create GitHub labels | `./scripts/gh-labels-creator.sh --ci` |
-| `health-check.sh` | Verify environment dependencies | `./scripts/health-check.sh` |
-| `minimal_quality_gate.sh` | Fast-path quality gate (CI debug) | `./scripts/minimal_quality_gate.sh` |
+| `diagnose-merge-state.sh` | Diagnose a BLOCKED pull request merge state | `./scripts/diagnose-merge-state.sh` |
+| `docs-sync.sh` | Check documentation consistency (AGENTS.md, agents-docs/, skills) | `./scripts/docs-sync.sh` |
+| `audit-vite-env.sh` | Audit environment-variable secret exposure in client bundles | `./scripts/audit-vite-env.sh` |
+| `agent-surface.py` | Validate ADR 029 agent surfaces (symlinks, canonical skills) | `python3 scripts/agent-surface.py` |
 
 ## Shared Library
 
 | File | Purpose |
 |------|---------|
-| `lib/worktree-manager.sh` | Git worktree management functions |
-| `lib/eval_types.py` | Python eval type definitions |
-| `lib/eval_validators.py` | Python eval validation logic |
-| `lib/eval_executors.py` | Python eval execution logic |
+| `lib/lint_cache.sh` | Lint-result caching for the quality gate |
+| `lib/run-check.sh` | Shared check runner used by verify.sh |
 
 ## Environment Variables
 
@@ -74,16 +65,14 @@
 ```mermaid
 graph TD
     A[quality_gate.sh] --> B[validate-skills.sh]
-    A --> C[validate-skill-format.sh]
     A --> D[validate-links.sh]
     A --> E[BATS tests]
-    G[install-hooks.sh] --> H[pre-commit-hook.sh]
-    G --> I[validate-git-hooks.sh]
-    H --> A
+    G[install-hooks.sh] --> H[.git/hooks/pre-commit]
+    H --> M[minimal_quality_gate.sh]
     J[setup-skills.sh] --> K[.claude/skills symlinks]
     J --> L[.gemini/skills symlinks]
-    J --> M[.qwen/skills symlinks]
+    J --> P[.qwen/skills symlinks]
     B --> K
     B --> L
-    B --> M
+    B --> P
 ```

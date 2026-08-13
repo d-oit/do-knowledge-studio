@@ -1,7 +1,6 @@
 # Available Skills Reference
 
-> Auto-generated from skill definitions in `.agents/skills/`
-> Do not edit manually. Run `./scripts/generate-available-skills.sh` to regenerate.
+> Maintained manually — keep in sync with the skill definitions in `.agents/skills/`.
 
 ## Analysis
 
@@ -31,8 +30,10 @@
 | `github-readme` | Create human-focused GitHub README.md files with 2026 best practices. Use when creating new projects, improving documentation, adding quick start guides, writing contribution guidelines, or making repositories more discoverable and user-friendly. |
 | `github-workflow` | Complete GitHub workflow automation - push, create branch/PR, monitor Actions with pre-existing issue detection, auto-merge/rebase when checks pass. Handles the full git→GitHub→merge lifecycle. |
 | `goap-agent` | Invoke for complex multi-step tasks requiring intelligent planning and multi-agent coordination. Use when tasks need decomposition, dependency mapping, parallel/sequential/swarm/iterative execution strategies, or coordination of multiple specialized agents with quality gates. |
+| `impeccable` | Use when the user wants to design, redesign, shape, critique, audit, polish, clarify, distill, harden, optimize, adapt, animate, colorize, extract, or otherwise improve a frontend interface. Covers websites, landing pages, dashboards, product UI, app shells, components, forms, settings, onboarding, and empty states. Handles UX review, visual hierarchy, information architecture, cognitive load, accessibility, performance, responsive behavior, theming, anti-patterns, typography, fonts, spacing, layout, alignment, color, motion, micro-interactions, UX copy, error states, edge cases, i18n, and reusable design systems or tokens. Also use for bland designs that need to become bolder or more delightful, loud designs that should become quieter, live browser iteration on UI elements, or ambitious visual effects that should feel technically extraordinary. Not for backend-only or non-UI tasks. |
 | `intent-classifier` | Classify user intents and route to appropriate skills, commands, or workflows. Use when determining which skill to invoke, routing requests to specialized agents, or building skill selection logic. Trigger on 'which skill should I use', 'route this to', 'classify this request', 'skill selection', or when multiple skills could handle a task. |
 | `iterative-refinement` | Execute iterative refinement workflows with validation loops until quality criteria are met. Use for test-fix cycles, code quality improvement, performance optimization, or any task requiring repeated action-validate-improve cycles. |
+| `jules` | Autonomous Jules Delegator skill for delegating complex, multi-file tasks to a persistent repository-aware session. |
 | `jules-implement` | Repository-aware implementation agent that handles delta-based targeted research, code generation, and validation of Stitch-rendered designs. |
 | `local-chat-policy` | Guidelines for ensuring chat functionality prioritizes local data and respects privacy. |
 | `memory-context` | Retrieve semantically relevant past learnings and analysis outputs using the csm CLI (HDC encoder with hybrid BM25 retrieval) |
@@ -69,7 +70,9 @@
 
 | Skill | Description |
 |-------|-------------|
+| `codacy` | Use Codacy static analysis CLIs to query PR analysis, triage issues, suppress false positives, and run local analysis. Trigger when Codacy blocks a PR, CI quality gate fails, asked to fix/suppress Codacy issues, query PR quality data, or integrate Codacy into agent workflows. Also trigger on "Codacy is failing", "static analysis check", "code quality gate", "Codacy check blocked", "Codacy findings", "Codacy issues", "suppress Codacy", "Codacy reanalysis", "fix Codacy", "Codacy PR", "code review quality gate". |
 | `dogfood` | Systematically explore and test a web application to find bugs, UX issues, and other problems. Use when asked to "dogfood", "QA", "exploratory test", "find issues", "bug hunt", "test this app/site/platform", or review the quality of a web application. Produces a structured report with full reproduction evidence. |
+| `static-analysis-suppression` | Suppress false positive or pre-existing issues from static analysis tools on PRs. Use when Codacy, DeepSource, or ESLint blocks a PR with inline review comments that are false positives, pre-existing (not introduced by the diff), or config-level noise (e.g., Qwik-specific Biome rules in a React project). Covers all suppression methods: code-level fixes, eslint-disable comments, config changes (.codacy.yml, .deepsource.toml), and admin merge override. |
 | `testdata-builders` | Maintain deterministic builders/factories for test entities. Activate when authoring tests, extending test utilities, or adding schema fields that affect fixtures. |
 
 ## Workflow

@@ -17,8 +17,8 @@ cd do-knowledge-studio
 # Setup skills symlinks
 ./scripts/setup-skills.sh
 
-# Install pre-commit hook
-cp scripts/pre-commit-hook.sh .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+# Install git hooks (pre-commit + commit-msg)
+./scripts/install-hooks.sh
 ```
 
 ## How to Contribute
@@ -120,10 +120,10 @@ To debug CI workflows locally before pushing, you can use `act`:
 
 ```bash
 # List all available jobs
-./scripts/rehearse.sh --list
+act -l
 
 # Run a specific job (e.g., quality-gate)
-./scripts/rehearse.sh quality-gate
+act -j quality-gate
 ```
 
 **Quality gate checks:**

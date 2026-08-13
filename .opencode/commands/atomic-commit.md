@@ -5,7 +5,7 @@ subtask: false
 
 Execute the atomic commit workflow script.
 
-Run: `./scripts/atomic-commit/run.sh $ARGUMENTS`
+Run: `.agents/skills/atomic-commit/run.sh $ARGUMENTS`
 
 This script will:
 1. Run quality gate validation
