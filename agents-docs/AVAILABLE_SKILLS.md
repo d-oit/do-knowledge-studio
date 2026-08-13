@@ -1,6 +1,7 @@
 # Available Skills Reference
 
-> Maintained manually — keep in sync with the skill definitions in `.agents/skills/`.
+> Auto-generated from skill definitions in `.agents/skills/`.
+> Run `./scripts/generate-skills-docs.py` to regenerate.
 
 ## Analysis
 

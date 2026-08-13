@@ -254,9 +254,12 @@ export ROUTING_MEMORY_TTL_DAYS=90   # Quarterly for stable docs
 
 ### Cache Warming
 
-There is no dedicated warm-cache script — resolve common queries once to
-populate the on-disk cache (see the resolver's `references/` for cache
-behavior).
+Pre-populate the cache for common queries (requires the resolver's Python
+dependencies and network access):
+
+```bash
+(cd .agents/skills/do-web-doc-resolver && python -m scripts.warm_cache --file queries.txt)
+```
 
 ---
 
@@ -492,7 +495,8 @@ def optimize_tokens(research_dir: str) -> OptimizationReport:
 echo $WEB_RESOLVER_CACHE_TTL_DAYS
 echo $ROUTING_MEMORY_TTL_DAYS
 
-# (No dedicated warm-cache script; resolve common queries once to seed the cache)
+# Warm cache for common queries
+(cd .agents/skills/do-web-doc-resolver && python -m scripts.warm_cache --file queries.txt)
 ```
 
 ### Poor Quality Scores
@@ -526,4 +530,5 @@ export BATCH_DELAY_MS=5000
 - `.agents/skills/do-web-doc-resolver/scripts/routing.py` - Budget-aware routing
 - `.agents/skills/do-web-doc-resolver/scripts/quality.py` - Quality scoring algorithms
 - `.agents/skills/do-web-doc-resolver/scripts/routing_memory.py` - TTL-based memory
+- `.agents/skills/do-web-doc-resolver/scripts/warm_cache.py` - Cache pre-warming CLI
 - `.opencode/commands/web-research.md` - Command reference
