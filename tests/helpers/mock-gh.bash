@@ -85,6 +85,17 @@ gh() {
     return 0
   fi
 
+  # GraphQL review-thread query — the diagnoser checks unresolved threads
+  # before declaring staleness (LESSON-026/030). Returns the post-jq count.
+  # MOCK_THREADS_FAIL=1 exercises the script's `|| echo "0"` fallback.
+  if [[ "$joined" == *"graphql"* ]] && [[ "$joined" == *"reviewThreads"* ]]; then
+    if [[ "${MOCK_THREADS_FAIL:-0}" == "1" ]]; then
+      return 1
+    fi
+    printf '%s\n' "${MOCK_THREADS:-0}"
+    return 0
+  fi
+
   # Existing-comment lookup: gh api <url>/comments --jq '...[0].id'
   if [[ "$joined" == *"/comments"* ]]; then
     printf '%s\n' "${MOCK_COMMENT_ID:-null}"
@@ -109,5 +120,7 @@ mock_gh_setup() {
   export MOCK_FAILED="[]"
   export MOCK_REQUIRED="[]"
   export MOCK_RULES_FAIL="0"
+  export MOCK_THREADS="0"
+  export MOCK_THREADS_FAIL="0"
   export MOCK_COMMENT_ID="null"
 }
