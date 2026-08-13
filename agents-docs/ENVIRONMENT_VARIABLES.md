@@ -8,7 +8,6 @@ Complete reference for all environment variables used across the AI agent templa
 
 - [Quality Gate Variables](#quality-gate-variables)
 - [Atomic Commit Variables](#atomic-commit-variables)
-- [Validation Variables](#validation-variables)
 - [CI/CD Detection Variables](#cicd-detection-variables)
 - [Output Control Variables](#output-control-variables)
 
@@ -71,6 +70,23 @@ SKIP_GLOBAL_HOOKS_CHECK=true git commit -m "feat: add feature"
 
 ---
 
+### `SKIP_LINT`
+
+**Description**: Skip lint checks in the quality gate.
+
+**Default**: `false`
+
+**Example Usage**:
+```bash
+SKIP_LINT=true ./scripts/quality_gate.sh
+```
+
+**When to Use**:
+- Quick checks where linting runs separately
+- Troubleshooting quality gate failures (isolate lint issues)
+
+---
+
 ## Atomic Commit Variables
 
 ### `ATOMIC_COMMIT_TIMEOUT`
@@ -125,26 +141,6 @@ ATOMIC_COMMIT_BASE_BRANCH=develop .agents/skills/atomic-commit/run.sh
 
 ---
 
-## Validation Variables
-
-### `MAX_SKILL_LINES`
-
-**Description**: Override the maximum allowed lines per `SKILL.md` file.
-
-**Default**: `250`
-
-**Example Usage**:
-```bash
-MAX_SKILL_LINES=300 ./scripts/quality_gate.sh
-```
-
-**When to Use**:
-- Large skills requiring more documentation space
-- Temporary override during skill refactoring
-- Legacy skills migration period
-
----
-
 ## CI/CD Detection Variables
 
 ### `CI`
@@ -164,7 +160,7 @@ fi
 ```
 
 **When to Use**:
-- Scripts automatically detect this - rarely set manually
+- Set automatically by CI providers; used by workflows and the `gh` CLI
 - Force CI behavior in local testing
 - Override CI detection for debugging
 
@@ -231,12 +227,12 @@ FORCE_COLOR=0 ./scripts/quality_gate.sh        # Disable colors in terminal
 | Variable | Type | Default | Scope |
 |----------|------|---------|-------|
 | `SKIP_TESTS` | boolean | `false` | Quality gate |
-| `SKIP_CLIPPY` | boolean | `false` | Quality gate (Rust) |
+| `SKIP_LINT` | boolean | `false` | Quality gate |
+| `SKIP_CLIPPY` | boolean | `false` | Quality gate |
 | `SKIP_GLOBAL_HOOKS_CHECK` | boolean | `false` | Git hooks |
 | `ATOMIC_COMMIT_TIMEOUT` | integer | `1800` | Atomic commit |
 | `ATOMIC_COMMIT_NO_ROLLBACK` | boolean | `0` | Atomic commit |
-| `ATOMIC_COMMIT_CI_MODE` | boolean | not set | Atomic commit |
-| `MAX_SKILL_LINES` | integer | `250` | Skill validation |
+| `ATOMIC_COMMIT_BASE_BRANCH` | string | `main` | Atomic commit |
 | `CI` | string | not set | CI detection |
 | `GITHUB_ACTIONS` | string | not set | CI detection |
 | `FORCE_COLOR` | string | not set | Output control |
