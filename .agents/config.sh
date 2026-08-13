@@ -18,6 +18,9 @@ readonly MAX_LINES_PER_SKILL_MD=250
 # Maximum lines per configuration file
 readonly MAX_LINES_PER_CONFIG_FILE=250
 
+# Maximum lines for AGENTS.md (progressive disclosure)
+readonly MAX_LINES_AGENTS_MD=150
+
 # Maximum context tokens for semantic memory retrieval
 readonly MAX_CONTEXT_TOKENS=4000
 
@@ -73,7 +76,7 @@ readonly MAX_ALLOWED_LINT_ERRORS=0
 # Environment variable names for atomic commit
 readonly ATOMIC_COMMIT_TIMEOUT_VAR="ATOMIC_COMMIT_TIMEOUT"
 readonly ATOMIC_COMMIT_NO_ROLLBACK_VAR="ATOMIC_COMMIT_NO_ROLLBACK"
-readonly ATOMIC_COMMIT_CI_MODE_VAR="ATOMIC_COMMIT_CI_MODE"
+readonly ATOMIC_COMMIT_BASE_BRANCH_VAR="ATOMIC_COMMIT_BASE_BRANCH"
 
 # Default atomic commit timeout (seconds)
 readonly ATOMIC_COMMIT_DEFAULT_TIMEOUT=1800
@@ -88,8 +91,8 @@ readonly SKILL_REQUIRED_FIELDS=("name" "description")
 # Recommended frontmatter fields
 readonly SKILL_RECOMMENDED_FIELDS=("license")
 
-# Valid skill categories
-readonly SKILL_CATEGORIES=("Security" "Coordination" "UI/UX" "APIDevelopment" "Documentation" "DevOps" "General" "CodeQuality" "Database" "Research" "Migration" "Planning" "Quality" "Innovation" "Meta" "KnowledgeManagement")
+# Valid skill categories (matches scripts/generate-skills-docs.py)
+readonly SKILL_CATEGORIES=("Analysis" "General" "Innovation Problem Solving" "Knowledge Management" "Quality" "Workflow")
 
 # ============================================================================
 # DIRECTORY STRUCTURE

@@ -27,12 +27,13 @@ def load_items(path: str) -> list[str]:
     return [line.strip() for line in text.splitlines() if line.strip() and not line.strip().startswith("#")]
 
 
-def _resolve_item(item: str, max_chars: int, profile_name: str) -> None:
-    # Lazy imports keep --help/--dry-run usable without resolver deps.
+def _resolve_item(item: str, max_chars: int, profile_name: str) -> dict:
+    """Resolve one item and return the result dict (lazy imports keep
+    --help/--dry-run usable without resolver deps)."""
     from .models import Profile  # type: ignore[import-not-found]
     from .resolve import resolve  # type: ignore[import-not-found]
 
-    resolve(item, max_chars=max_chars, profile=Profile(profile_name))
+    return resolve(item, max_chars=max_chars, profile=Profile(profile_name))
 
 
 def main() -> int:
@@ -69,7 +70,7 @@ def main() -> int:
     failed = 0
     for item in items:
         try:
-            _resolve_item(item, args.max_chars, args.profile)
+            result = _resolve_item(item, args.max_chars, args.profile)
         except ImportError as exc:
             print(f"error: resolver dependencies missing ({exc})", file=sys.stderr)
             print(
@@ -79,6 +80,14 @@ def main() -> int:
             return 1
         except Exception as exc:  # noqa: BLE001 - keep warming on per-item failures
             print(f"error: failed to resolve {item!r}: {exc}", file=sys.stderr)
+            failed += 1
+            continue
+        # resolve() returns a semantic failure (no exception) as
+        # {"source": "none", "content": "Failed"} — report it honestly
+        # instead of claiming the item was warmed.
+        if result.get("source") == "none" or result.get("content") == "Failed":
+            reason = result.get("error") or "unknown reason"
+            print(f"error: could not warm {item!r}: {reason}", file=sys.stderr)
             failed += 1
             continue
         print(f"warmed: {item}")

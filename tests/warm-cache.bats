@@ -68,3 +68,93 @@ setup() {
   [ "$status" -ne 0 ]
   [[ "$output" == *"no items given"* ]]
 }
+
+# ---------------------------------------------------------------------------
+# Failure reporting (commit beb796e): resolve() returns semantic failures as
+# {"source": "none", "content": "Failed"} — the CLI must report them honestly
+# instead of claiming the item was warmed. _resolve_item is monkeypatched so
+# these tests need no network access or resolver dependencies.
+# ---------------------------------------------------------------------------
+
+@test "reports semantic failures instead of claiming items were warmed" {
+  run bash -c "cd '$RESOLVER_DIR' && python3 - <<'PY'
+import sys
+import scripts.warm_cache as wc
+
+def fake_resolve(item, max_chars, profile):
+    if item == 'ok':
+        return {'source': 'http', 'content': 'fine'}
+    return {'source': 'none', 'content': 'Failed', 'error': 'timeout'}
+
+wc._resolve_item = fake_resolve
+sys.argv = ['warm_cache', 'ok', 'bad']
+sys.exit(wc.main())
+PY"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"warmed: ok"* ]]
+  [[ "$output" == *"error: could not warm 'bad': timeout"* ]]
+  [[ "$output" == *"warmed 1/2 item(s) (1 failed)"* ]]
+}
+
+@test "uses 'unknown reason' when a semantic failure has no error detail" {
+  run bash -c "cd '$RESOLVER_DIR' && python3 - <<'PY'
+import sys
+import scripts.warm_cache as wc
+
+wc._resolve_item = lambda item, max_chars, profile: {'source': 'none', 'content': 'Failed'}
+sys.argv = ['warm_cache', 'bad']
+sys.exit(wc.main())
+PY"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"error: could not warm 'bad': unknown reason"* ]]
+  [[ "$output" == *"warmed 0/1 item(s) (1 failed)"* ]]
+}
+
+@test "reports per-item exceptions and keeps warming remaining items" {
+  run bash -c "cd '$RESOLVER_DIR' && python3 - <<'PY'
+import sys
+import scripts.warm_cache as wc
+
+def fake_resolve(item, max_chars, profile):
+    if item == 'bad':
+        raise RuntimeError('boom')
+    return {'source': 'http', 'content': 'fine'}
+
+wc._resolve_item = fake_resolve
+sys.argv = ['warm_cache', 'ok', 'bad']
+sys.exit(wc.main())
+PY"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"error: failed to resolve 'bad': boom"* ]]
+  [[ "$output" == *"warmed: ok"* ]]
+  [[ "$output" == *"warmed 1/2 item(s) (1 failed)"* ]]
+}
+
+@test "exits with status 0 when every item warms successfully" {
+  run bash -c "cd '$RESOLVER_DIR' && python3 - <<'PY'
+import sys
+import scripts.warm_cache as wc
+
+wc._resolve_item = lambda item, max_chars, profile: {'source': 'http', 'content': 'fine'}
+sys.argv = ['warm_cache', 'a', 'b']
+sys.exit(wc.main())
+PY"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"warmed: a"* ]]
+  [[ "$output" == *"warmed: b"* ]]
+  [[ "$output" == *"warmed 2 item(s)"* ]]
+}
+
+@test "exits when resolver dependencies are missing" {
+  run bash -c "cd '$RESOLVER_DIR' && python3 - <<'PY'
+import sys
+import scripts.warm_cache as wc
+
+wc._resolve_item = lambda item, max_chars, profile: (_ for _ in ()).throw(ImportError('no module named requests'))
+sys.argv = ['warm_cache', 'a']
+sys.exit(wc.main())
+PY"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"error: resolver dependencies missing"* ]]
+  [[ "$output" == *"pip install -r"* ]]
+}

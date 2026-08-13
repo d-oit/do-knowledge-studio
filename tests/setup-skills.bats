@@ -78,6 +78,44 @@ run_setup() {
   [ -d "$WORK/.windsurf" ]
 }
 
+@test "regenerates skill reference tables after setup" {
+  write_manifest "$WORK"
+  run_setup "$WORK"
+  [ "$status" -eq 0 ]
+
+  # The generator should have refreshed both reference tables
+  [ -f "$WORK/agents-docs/AVAILABLE_SKILLS.md" ]
+  [ -f "$WORK/.agents/skills/README.md" ]
+}
+
+@test "skips generator gracefully when python3 is missing" {
+  write_manifest "$WORK"
+  # `command -v` requires executability when searching PATH, so a shadow file
+  # is insufficient. Build a restricted PATH with the external tools the
+  # script needs (node + coreutils) but no python3.
+  local restricted="$BATS_TEST_TMPDIR/restricted"
+  mkdir -p "$restricted"
+  for bin in node mkdir ln dirname; do
+    ln -s "$(command -v "$bin")" "$restricted/$bin"
+  done
+  run env REPO_ROOT="$WORK" PATH="$restricted" "$(command -v bash)" "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"python3 not found"* ]]
+}
+
+@test "continues when the generator fails" {
+  write_manifest "$WORK"
+  # A failing python3 stub exercises the generator-failure warning path.
+  mkdir -p "$BATS_TEST_TMPDIR/bin"
+  printf '#!/usr/bin/env bash\nexit 1\n' > "$BATS_TEST_TMPDIR/bin/python3"
+  chmod +x "$BATS_TEST_TMPDIR/bin/python3"
+  run env REPO_ROOT="$WORK" PATH="$BATS_TEST_TMPDIR/bin:$PATH" bash "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"failed to regenerate skill docs"* ]]
+  # The warning must surface the generator's exit code for debuggability.
+  [[ "$output" == *"generator exit code 1"* ]]
+}
+
 @test "is idempotent — re-running does not fail or change symlinks" {
   write_manifest "$WORK"
   run_setup "$WORK"
