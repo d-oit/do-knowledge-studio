@@ -37,7 +37,8 @@ Query Resolution:
 export WEB_RESOLVER_CACHE_TTL_DAYS=30  # 30-day cache
 export WEB_RESOLVER_MAX_CHARS=8000     # Limit content size
 
-# Use free profile for initial research (run from the resolver skill directory)
+# Use free profile for initial research (run from the resolver skill directory;
+# install its Python dependencies first — see .agents/skills/do-web-doc-resolver/SKILL.md)
 (cd .agents/skills/do-web-doc-resolver && WEB_RESOLVER_PROFILE=free python -m scripts.resolve "topic")
 
 # Upgrade to quality only for critical gaps

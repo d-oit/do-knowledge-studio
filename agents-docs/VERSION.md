@@ -21,7 +21,7 @@ Version propagation is **manual** as of Plan 073 (2026-07-24). The `version-prop
 # Direct invocation
 ./scripts/propagate-version.sh
 
-# Or via the npm script alias
+# Or via the package script alias
 pnpm run propagate:version
 ```
 

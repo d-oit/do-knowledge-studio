@@ -100,12 +100,10 @@ Updated to checkout@v4 and setup-python@v5 for reliability.
 
 ```bash
 # Use the verification entry point (recommended)
-./scripts/verify.sh --fast    # For quick local checks
-./scripts/verify.sh --full    # Before pushing to remote
+./scripts/verify.sh
 
-# Run specific scopes
-./scripts/verify.sh --scope docs
-./scripts/verify.sh --scope frontend
+# Or the minimal quality gate for quick local checks
+./scripts/minimal_quality_gate.sh
 
 # Run full quality gate directly
 ./scripts/quality_gate.sh
