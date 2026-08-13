@@ -44,7 +44,7 @@ def main() -> int:
     parser.add_argument("--file", help="Read items from a file (one per line, # comments ignored)")
     parser.add_argument("--dry-run", action="store_true", help="List items without resolving")
     parser.add_argument("--max-chars", type=int, default=8000, help="Max content length to retain (default: 8000)")
-    parser.add_argument("--profile", default="balanced", help="Resolution profile: free, balanced, or quality (default: balanced)")
+    parser.add_argument("--profile", default="balanced", choices=["free", "balanced", "quality"], help="Resolution profile (default: balanced)")
     args = parser.parse_args()
 
     items = list(args.items)
@@ -53,6 +53,9 @@ def main() -> int:
             items += load_items(args.file)
         except FileNotFoundError:
             parser.error(f"file not found: {args.file}")
+
+    # Deduplicate while preserving order to avoid wasted network calls.
+    items = list(dict.fromkeys(items))
 
     if not items:
         parser.error("no items given (pass arguments or use --file)")
@@ -63,6 +66,7 @@ def main() -> int:
         print(f"{len(items)} item(s) would be warmed")
         return 0
 
+    failed = 0
     for item in items:
         try:
             _resolve_item(item, args.max_chars, args.profile)
@@ -73,7 +77,14 @@ def main() -> int:
                 file=sys.stderr,
             )
             return 1
+        except Exception as exc:  # noqa: BLE001 - keep warming on per-item failures
+            print(f"error: failed to resolve {item!r}: {exc}", file=sys.stderr)
+            failed += 1
+            continue
         print(f"warmed: {item}")
+    if failed:
+        print(f"warmed {len(items) - failed}/{len(items)} item(s) ({failed} failed)", file=sys.stderr)
+        return 1
     print(f"warmed {len(items)} item(s)")
     return 0
 

@@ -51,6 +51,18 @@ setup() {
   [[ "$output" == *"file not found"* ]]
 }
 
+@test "dedupes repeated items" {
+  run bash -c "cd '$RESOLVER_DIR' && python3 -m scripts.warm_cache --dry-run 'topic' 'topic' 'topic'"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"1 item(s) would be warmed"* ]]
+}
+
+@test "rejects unknown profile values" {
+  run bash -c "cd '$RESOLVER_DIR' && python3 -m scripts.warm_cache --dry-run --profile bogus 'topic'"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"invalid choice"* ]]
+}
+
 @test "errors when no items given" {
   run bash -c "cd '$RESOLVER_DIR' && python3 -m scripts.warm_cache"
   [ "$status" -ne 0 ]

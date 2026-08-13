@@ -82,6 +82,40 @@ EOF
     "$WORK/.agents/skills/README.md"
 }
 
+@test "maps kebab-case categories to section titles" {
+  mkdir -p "$WORK/.agents/skills/triz-solver"
+  cat > "$WORK/.agents/skills/triz-solver/SKILL.md" <<'EOF'
+---
+name: triz-solver
+description: Systematic problem-solving using TRIZ principles.
+category: innovation-problem-solving
+---
+EOF
+  run python3 "$SCRIPT" --root "$WORK"
+  [ "$status" -eq 0 ]
+  grep -q '^## Innovation Problem Solving$' "$WORK/agents-docs/AVAILABLE_SKILLS.md"
+  grep -q '`triz-solver`' "$WORK/agents-docs/AVAILABLE_SKILLS.md"
+}
+
+@test "is idempotent — running twice yields identical output" {
+  run python3 "$SCRIPT" --root "$WORK"
+  [ "$status" -eq 0 ]
+  cp "$WORK/agents-docs/AVAILABLE_SKILLS.md" "$BATS_TEST_TMPDIR/avail1.md"
+  cp "$WORK/.agents/skills/README.md" "$BATS_TEST_TMPDIR/readme1.md"
+
+  run python3 "$SCRIPT" --root "$WORK"
+  [ "$status" -eq 0 ]
+  diff "$BATS_TEST_TMPDIR/avail1.md" "$WORK/agents-docs/AVAILABLE_SKILLS.md"
+  diff "$BATS_TEST_TMPDIR/readme1.md" "$WORK/.agents/skills/README.md"
+}
+
+@test "honors REPO_ROOT environment variable" {
+  run env REPO_ROOT="$WORK" python3 "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [ -f "$WORK/agents-docs/AVAILABLE_SKILLS.md" ]
+  [ -f "$WORK/.agents/skills/README.md" ]
+}
+
 @test "fails when skills directory is missing" {
   run python3 "$SCRIPT" --root "$BATS_TEST_TMPDIR/empty"
   [ "$status" -eq 1 ]

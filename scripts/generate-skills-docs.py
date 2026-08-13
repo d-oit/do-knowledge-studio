@@ -125,7 +125,9 @@ def extract_frontmatter(skill_file: Path) -> dict[str, str]:
                 while i < len(lines) and lines[i].startswith(" "):
                     parts.append(lines[i].strip())
                     i += 1
-                value = " ".join(parts)
+                # YAML folding: single newlines become spaces; blank-line
+                # paragraph breaks collapse to a single space for table cells.
+                value = " ".join(part for part in parts if part)
                 result[key] = value
                 # i already points at the next key line — do not advance again.
                 continue

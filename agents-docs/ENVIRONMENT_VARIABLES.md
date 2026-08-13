@@ -258,6 +258,6 @@ CI=true ATOMIC_COMMIT_TIMEOUT=3600 .agents/skills/atomic-commit/run.sh
 
 ## See Also
 
-- `references/quality-gate.md` - Quality gate documentation
-- `references/atomic-commit.md` - Atomic commit workflow
+- `WORKFLOW.md` - Quality gate usage and workflows
+- `.agents/skills/atomic-commit/SKILL.md` - Atomic commit workflow
 - `TROUBLESHOOTING.md` - Common issues and solutions
