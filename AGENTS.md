@@ -290,7 +290,10 @@ When merging dependabot PRs or manually bumping dependencies:
 - **Branch rule `required_review_thread_resolution` blocks merges even
   with all checks green** — resolve OwlWatch/DeepSource threads via
   GraphQL `resolveReviewThread` before merging; they are merge gates,
-  not noise.
+  not noise. Check threads via GraphQL `pullRequest.reviewThreads` or
+  `pulls/<n>/comments` — issue comments and `reviewDecision` do NOT
+  reveal them, and resolving flips `BLOCKED` → `CLEAN` instantly
+  (LESSON-026/030).
 - **DeepSource `.deepsource.toml` suppressions do not reliably prevent
   check failures** — new module-scope helpers trip JS-0067 (use
   `const fn = () => {}`, never `function`) and inline branches can push
@@ -302,7 +305,7 @@ When merging dependabot PRs or manually bumping dependencies:
   staleness ladder (ruleset verify, threads, nudge, close/reopen) and
   `--admin` only with explicit approval. The
   `pr-merge-state-diagnoser.yml` workflow automates this diagnosis.
-- See `agents-docs/LESSONS.md` (LESSON-024..028) and
+- See `agents-docs/LESSONS.md` (LESSON-024..030) and
   `plans/116-ci-workflow-learnings-2026-08-11.md` for full detail.
 
 ## Skills
