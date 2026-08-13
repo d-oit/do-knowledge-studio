@@ -57,7 +57,7 @@ done <<< "$TOOLS"
 # .agents/skills/README.md) so they never drift from SKILL.md frontmatter.
 if command -v python3 >/dev/null 2>&1; then
   python3 "$SCRIPT_DIR/generate-skills-docs.py" --root "$REPO_ROOT" \
-    || echo "Warning: failed to regenerate skill docs (see errors above)" >&2
+    || echo "Warning: failed to regenerate skill docs (generator exit code $?)" >&2
 else
   echo "Warning: python3 not found — skipping skill docs regeneration" >&2
 fi

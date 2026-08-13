@@ -112,6 +112,8 @@ run_setup() {
   run env REPO_ROOT="$WORK" PATH="$BATS_TEST_TMPDIR/bin:$PATH" bash "$SCRIPT"
   [ "$status" -eq 0 ]
   [[ "$output" == *"failed to regenerate skill docs"* ]]
+  # The warning must surface the generator's exit code for debuggability.
+  [[ "$output" == *"generator exit code 1"* ]]
 }
 
 @test "is idempotent — re-running does not fail or change symlinks" {
