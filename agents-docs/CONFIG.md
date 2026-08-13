@@ -17,7 +17,7 @@
 **Benefits:**
 - Scripts can `source` constants directly (no copy-paste errors)
 - Single source of truth - change in one place, applies everywhere
-- `AGENTS.md` uses shell variable references (e.g., `` `${MAX_LINES_PER_SOURCE_FILE}` ``) that stay in sync
+- `AGENTS.md` and `agents-docs/` reference the same thresholds (e.g., the 500-line source limit) so docs stay in sync
 - Linting and validation tools can source the same values
 
 ## Usage in Scripts
@@ -82,7 +82,7 @@ readonly MAX_ALLOWED_LINT_ERRORS=0           # Lint errors allowed
 ```bash
 readonly ATOMIC_COMMIT_TIMEOUT_VAR="ATOMIC_COMMIT_TIMEOUT"
 readonly ATOMIC_COMMIT_NO_ROLLBACK_VAR="ATOMIC_COMMIT_NO_ROLLBACK"
-readonly ATOMIC_COMMIT_CI_MODE_VAR="ATOMIC_COMMIT_CI_MODE"
+readonly ATOMIC_COMMIT_BASE_BRANCH_VAR="ATOMIC_COMMIT_BASE_BRANCH"
 readonly ATOMIC_COMMIT_DEFAULT_TIMEOUT=1800
 ```
 
@@ -91,7 +91,7 @@ readonly ATOMIC_COMMIT_DEFAULT_TIMEOUT=1800
 ```bash
 readonly SKILL_REQUIRED_FIELDS=("name" "description")
 readonly SKILL_RECOMMENDED_FIELDS=("license")
-readonly SKILL_CATEGORIES=("Security" "Coordination" "UI/UX" "APIDevelopment" ...)
+readonly SKILL_CATEGORIES=("Analysis" "General" "Innovation Problem Solving" "Knowledge Management" "Quality" "Workflow")
 ```
 
 ### Directory Structure
