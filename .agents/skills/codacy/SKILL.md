@@ -1,6 +1,7 @@
 ---
 name: codacy
 description: Use Codacy static analysis CLIs to query PR analysis, triage issues, suppress false positives, and run local analysis. Trigger when Codacy blocks a PR, CI quality gate fails, asked to fix/suppress Codacy issues, query PR quality data, or integrate Codacy into agent workflows. Also trigger on "Codacy is failing", "static analysis check", "code quality gate", "Codacy check blocked", "Codacy findings", "Codacy issues", "suppress Codacy", "Codacy reanalysis", "fix Codacy", "Codacy PR", "code review quality gate".
+category: quality
 version: 1.0.0
 template_version: 0.1.0
 license: MIT

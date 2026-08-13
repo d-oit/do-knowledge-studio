@@ -7,6 +7,7 @@ description: >-
   config-level noise (e.g., Qwik-specific Biome rules in a React project).
   Covers all suppression methods: code-level fixes, eslint-disable comments,
   config changes (.codacy.yml, .deepsource.toml), and admin merge override.
+category: quality
 version: "1.0"
 template_version: "1.0"
 metadata:

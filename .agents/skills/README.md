@@ -33,7 +33,7 @@ Validate symlinks are intact:
 
 ## Skills in This Repository
 
-> Maintained manually — keep in sync with the skill definitions in `.agents/skills/`.
+> Auto-generated from skill definitions. Run `./scripts/generate-skills-docs.py` to regenerate.
 
 | Skill | Description |
 |---|---|
@@ -46,8 +46,8 @@ Validate symlinks are intact:
 | [`architecture-diagram/`](architecture-diagram/) | Generate or update a project architecture SVG diagram by scanning the live project structure. Use this skill whenever the user asks to regenerate, refresh, or update the architecture diagram, or when skills, agents, or commands have been added/removed and the diagram is stale. Triggers on phrases like "update the diagram", "regenerate the architecture SVG", "sync the diagram", or "diagram is out of date". |
 | [`atomic-commit/`](atomic-commit/) | Atomic git workflow - validates, commits, pushes, creates PR, and verifies CI with zero-warnings policy. Orchestrates complete code submission as state machine with rollback on failure. |
 | [`cicd-pipeline/`](cicd-pipeline/) | Design and implement CI/CD pipelines with GitHub Actions, GitLab CI, and Forgejo Actions. Use for automated testing, deployment strategies (blue-green, canary), security scanning, and multi-environment workflows. Includes pipeline optimization, secrets management, and failure handling patterns. |
-| [`codacy/`](codacy/) | Use Codacy static analysis CLIs to query PR analysis, triage issues, suppress false positives, and run local analysis. Use when Codacy blocks a PR, when asked to fix Codacy issues, suppress false positives, query PR quality data, or integrate Codacy into CI/CD workflows. Also use when the user mentions "Codacy", "static analysis check", "code quality gate", or "Codacy is failing". |
 | [`cloudflare-worker-api/`](cloudflare-worker-api/) | Structure Worker API routes and handlers. Activate for route definition, response helpers, and typed handler patterns. Auth belongs to secure-invite-and-access. |
+| [`codacy/`](codacy/) | Use Codacy static analysis CLIs to query PR analysis, triage issues, suppress false positives, and run local analysis. Trigger when Codacy blocks a PR, CI quality gate fails, asked to fix/suppress Codacy issues, query PR quality data, or integrate Codacy into agent workflows. Also trigger on "Codacy is failing", "static analysis check", "code quality gate", "Codacy check blocked", "Codacy findings", "Codacy issues", "suppress Codacy", "Codacy reanalysis", "fix Codacy", "Codacy PR", "code review quality gate". |
 | [`code-quality/`](code-quality/) | Review and improve code quality across any programming language. Use when conducting code reviews, refactoring for best practices, identifying code smells, or improving maintainability. |
 | [`code-review-assistant/`](code-review-assistant/) | Automated code review with PR analysis, change summaries, and quality checks. Use for reviewing pull requests, generating review comments, checking against best practices, and identifying potential issues. Includes style guide compliance, security issue detection, and review automation. |
 | [`codeberg-api/`](codeberg-api/) | Interact with Forgejo/Codeberg repositories via the REST API — read or write files, manage issues, create pull requests, list branches/tags, search repos, and automate CI/CD workflows. Use this skill when the user wants to: read file contents from a Forgejo repo, create or update files, manage issues (create, list, close), list repositories for a user, search, set up Forgejo Actions workflows, or automate any git-forge operation. Works without authentication for public repos; requires FORGEJO_TOKEN for private repos and write operations. |
