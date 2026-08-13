@@ -188,6 +188,17 @@ setup() {
   grep -q 'All checks are green' "$MOCK_BODY_FILE"
 }
 
+@test "failing checks take precedence over review threads" {
+  export MOCK_FAILED='["Unit Tests"]'
+  export MOCK_THREADS="1"
+
+  run "$SCRIPT"
+
+  [ "$status" -eq 0 ]
+  grep -q 'Failing check(s) blocking merge' "$MOCK_BODY_FILE"
+  run ! grep -q 'unresolved review thread' "$MOCK_BODY_FILE"
+}
+
 @test "in-progress checks take precedence over review threads" {
   export MOCK_IN_PROGRESS='["Unit Tests"]'
   export MOCK_THREADS="1"

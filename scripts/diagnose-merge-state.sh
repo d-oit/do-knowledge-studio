@@ -66,7 +66,7 @@ unresolved_threads="$(gh api graphql \
   -f query='query($owner: String!, $name: String!, $pr: Int!) {
     repository(owner: $owner, name: $name) {
       pullRequest(number: $pr) {
-        reviewThreads(first: 10) { nodes { isResolved } }
+        reviewThreads(first: 100) { nodes { isResolved } }
       }
     }
   }' \
