@@ -81,7 +81,7 @@ SKIP_GLOBAL_HOOKS_CHECK=true git commit -m "feat: add feature"
 
 **Example Usage**:
 ```bash
-ATOMIC_COMMIT_TIMEOUT=3600 ./scripts/atomic-commit/run.sh
+ATOMIC_COMMIT_TIMEOUT=3600 .agents/skills/atomic-commit/run.sh
 ```
 
 **When to Use**:
@@ -99,7 +99,7 @@ ATOMIC_COMMIT_TIMEOUT=3600 ./scripts/atomic-commit/run.sh
 
 **Example Usage**:
 ```bash
-ATOMIC_COMMIT_NO_ROLLBACK=1 ./scripts/atomic-commit/run.sh
+ATOMIC_COMMIT_NO_ROLLBACK=1 .agents/skills/atomic-commit/run.sh
 ```
 
 **When to Use**:
@@ -109,21 +109,19 @@ ATOMIC_COMMIT_NO_ROLLBACK=1 ./scripts/atomic-commit/run.sh
 
 ---
 
-### `ATOMIC_COMMIT_CI_MODE`
+### `ATOMIC_COMMIT_BASE_BRANCH`
 
-**Description**: Enable CI-specific atomic commit behavior.
+**Description**: Target branch for the pull request created by the atomic commit workflow.
 
-**Default**: Not set (interactive mode)
+**Default**: `main`
 
 **Example Usage**:
 ```bash
-ATOMIC_COMMIT_CI_MODE=true ./scripts/atomic-commit/run.sh
+ATOMIC_COMMIT_BASE_BRANCH=develop .agents/skills/atomic-commit/run.sh
 ```
 
 **When to Use**:
-- Non-interactive environments (GitHub Actions, GitLab CI)
-- Headless automation scripts
-- Disables prompts and assumes default answers
+- PRs targeting a branch other than `main` (e.g. release branches)
 
 ---
 
@@ -250,14 +248,14 @@ FORCE_COLOR=0 ./scripts/quality_gate.sh        # Disable colors in terminal
 Multiple variables can be combined:
 
 ```bash
-# CI mode with no rollback for debugging
-ATOMIC_COMMIT_CI_MODE=true ATOMIC_COMMIT_NO_ROLLBACK=1 ./scripts/atomic-commit/run.sh
+# Debugging without rollback
+ATOMIC_COMMIT_NO_ROLLBACK=1 .agents/skills/atomic-commit/run.sh
 
 # Quick quality check (no tests, no clippy)
 SKIP_TESTS=true SKIP_CLIPPY=true ./scripts/quality_gate.sh
 
 # Full CI run with extended timeout
-CI=true ATOMIC_COMMIT_TIMEOUT=3600 ./scripts/atomic-commit/run.sh
+CI=true ATOMIC_COMMIT_TIMEOUT=3600 .agents/skills/atomic-commit/run.sh
 ```
 
 ---

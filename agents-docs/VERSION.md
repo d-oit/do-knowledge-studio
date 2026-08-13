@@ -18,7 +18,11 @@ Version propagation is **manual** as of Plan 073 (2026-07-24). The `version-prop
 ## Manual Propagation
 
 ```bash
+# Direct invocation
 ./scripts/propagate-version.sh
+
+# Or via the package script alias
+pnpm run propagate:version
 ```
 
 ## Versioned Files

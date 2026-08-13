@@ -109,8 +109,7 @@ mkdir -p your-project/scripts
 cp /tmp/ai-agent-template/scripts/setup-skills.sh your-project/scripts/
 cp /tmp/ai-agent-template/scripts/validate-skills.sh your-project/scripts/
 cp /tmp/ai-agent-template/scripts/quality_gate.sh your-project/scripts/
-cp /tmp/ai-agent-template/scripts/pre-commit-hook.sh your-project/scripts/
-cp /tmp/ai-agent-template/scripts/validate-skill-format.sh your-project/scripts/
+cp /tmp/ai-agent-template/scripts/install-hooks.sh your-project/scripts/
 
 # Make scripts executable
 chmod +x your-project/scripts/*.sh
@@ -239,8 +238,8 @@ EOF
 #### 5.2 Install Pre-Commit Hook
 
 ```bash
-cp your-project/scripts/pre-commit-hook.sh your-project/.git/hooks/pre-commit
-chmod +x your-project/.git/hooks/pre-commit
+cd your-project
+./scripts/install-hooks.sh
 ```
 
 #### 5.3 Customize Quality Gate
@@ -752,7 +751,7 @@ my-project/
 │   ├── setup-skills.sh
 │   ├── validate-skills.sh
 │   ├── quality_gate.sh
-│   └── pre-commit-hook.sh
+│   └── install-hooks.sh
 ├── .agents/               # New
 │   └── skills/
 │       ├── task-decomposition/

@@ -21,7 +21,7 @@ Common issues and solutions for the AI agent template.
 **Solution**:
 ```bash
 chmod +x scripts/*.sh
-chmod +x scripts/atomic-commit/*.sh
+chmod +x .agents/skills/atomic-commit/*.sh
 ```
 
 ### Git Hooks Not Executing
@@ -34,10 +34,9 @@ chmod +x scripts/atomic-commit/*.sh
    ls -la .git/hooks/pre-commit
    ```
 
-2. If not present, install it:
+2. If not present, install the hooks:
    ```bash
-   cp scripts/pre-commit-hook.sh .git/hooks/pre-commit
-   chmod +x .git/hooks/pre-commit
+   ./scripts/install-hooks.sh
    ```
 
 3. Check for conflicting global hooks:
@@ -134,12 +133,12 @@ cat .agents/skills/<skill>/evals/evals.json | jq empty
 
 ### Atomic Commit Fails
 
-**Symptom**: `./scripts/atomic-commit/run.sh` fails mid-way
+**Symptom**: `.agents/skills/atomic-commit/run.sh` fails mid-way
 
 **Common Causes**:
 1. **No changes to commit**: Stage some changes first
 2. **Merge conflicts**: Resolve before running atomic-commit
-3. **Network timeout**: Check `MAX_OPERATION_SECONDS` in sync-and-push.sh
+3. **Network timeout**: Check connectivity and retry
 4. **Permission denied**: Ensure scripts are executable
 
 ### Push Rejected
@@ -152,7 +151,7 @@ cat .agents/skills/<skill>/evals/evals.json | jq empty
   ```bash
   git fetch origin
   git rebase origin/main
-  ./scripts/atomic-commit/run.sh
+  .agents/skills/atomic-commit/run.sh
   ```
 
 ### Pre-commit Hook Blocks Commit
@@ -208,7 +207,7 @@ npm install -g bats
 ## Getting Help
 
 1. **Check LESSONS.md**: `cat agents-docs/LESSONS.md`
-2. **Run health check**: `./scripts/health-check.sh`
+2. **Run full verification**: `./scripts/verify.sh`
 3. **Review CI logs**: Check the latest GitHub Actions run
 4. **Open an issue**: Include error message and reproduction steps
 
@@ -217,8 +216,8 @@ npm install -g bats
 ## Quick Diagnostics
 
 ```bash
-# Verify environment
-./scripts/health-check.sh
+# Full verification (lint, typecheck, test, build)
+./scripts/verify.sh
 
 # Check all skills valid
 ./scripts/validate-skills.sh

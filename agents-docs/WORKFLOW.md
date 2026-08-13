@@ -32,7 +32,7 @@ git checkout -b feat/your-feature-name
 # Make changes
 
 # Run atomic commit (validates, commits, pushes, creates PR, verifies, reviews)
-./scripts/atomic-commit/run.sh
+.agents/skills/atomic-commit/run.sh
 
 # If checks fail, fix and retry
 ```
@@ -51,7 +51,7 @@ After non-trivial work, capture non-obvious discoveries:
 1. **Run the `learn` skill** if available, or manually append to the nearest relevant `AGENTS.md`
 2. **Capture only**: hidden file relationships, surprising execution behavior, undocumented commands, fragile config, files that must change together
 3. **Never write**: obvious facts, duplicates, verbose explanations, session-specific notes
-4. **Scoping**: project-wide → root `AGENTS.md`; script-specific → `scripts/AGENTS.md`; skill-specific → `.agents/skills/<name>/AGENTS.md`
+4. **Scoping**: project-wide → root `AGENTS.md`; script-specific → `agents-docs/LESSONS.md`; skill-specific → `.agents/skills/<name>/references/`
 
 This ensures the template self-improves over time as projects evolve. See `agents-docs/LESSONS.md` for the verbose historical record.
 
@@ -74,21 +74,10 @@ SKIP_LINKS=true ./scripts/quality_gate.sh
 
 Dependabot PRs are auto-merged via CI when all checks pass. Do not manually merge or close Dependabot PRs.
 
-## Swarm Worktree Workflow
+## Swarm Web Research Workflow
 
-Use the swarm worktree workflow for complex analysis tasks requiring parallel web research.
-
-```bash
-# Execute full workflow with quality profile
-./scripts/swarm-worktree-web-research.sh "Analysis Topic"
-
-# Run with custom profile and clean up after
-./scripts/swarm-worktree-web-research.sh --profile balanced --cleanup "Topic"
-```
-
-The workflow performs:
-1. Environment validation
-2. Git worktree creation for context isolation
-3. Parallel web research with automated JSON/SHA256 hardening
-4. Multi-agent synthesis
-5. (Optional) GitHub Pull Request creation with Actions monitoring
+For complex analysis tasks requiring parallel web research, use the
+`web-search-researcher` skill for search strategy and synthesis, the
+`do-web-doc-resolver` skill for URL/document resolution, and the
+`agent-coordination` skill to run multiple agents in parallel. See
+`.opencode/commands/swarm-web-research.md` for the command reference.

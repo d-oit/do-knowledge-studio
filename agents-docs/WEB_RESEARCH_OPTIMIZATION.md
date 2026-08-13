@@ -37,8 +37,9 @@ Query Resolution:
 export WEB_RESOLVER_CACHE_TTL_DAYS=30  # 30-day cache
 export WEB_RESOLVER_MAX_CHARS=8000     # Limit content size
 
-# Use free profile for initial research
-WEB_RESOLVER_PROFILE=free ./scripts/swarm-worktree-web-research.sh "topic"
+# Use free profile for initial research (run from the resolver skill directory;
+# install its Python dependencies first — see .agents/skills/do-web-doc-resolver/SKILL.md)
+(cd .agents/skills/do-web-doc-resolver && WEB_RESOLVER_PROFILE=free python -m scripts.resolve "topic")
 
 # Upgrade to quality only for critical gaps
 ```
@@ -253,10 +254,9 @@ export ROUTING_MEMORY_TTL_DAYS=90   # Quarterly for stable docs
 
 ### Cache Warming
 
-```bash
-# Pre-populate cache for common queries
-./scripts/warm_cache.sh queries.txt
-```
+There is no dedicated warm-cache script — resolve common queries once to
+populate the on-disk cache (see the resolver's `references/` for cache
+behavior).
 
 ---
 
@@ -492,8 +492,7 @@ def optimize_tokens(research_dir: str) -> OptimizationReport:
 echo $WEB_RESOLVER_CACHE_TTL_DAYS
 echo $ROUTING_MEMORY_TTL_DAYS
 
-# Warm cache for common queries
-./scripts/warm_cache.sh
+# (No dedicated warm-cache script; resolve common queries once to seed the cache)
 ```
 
 ### Poor Quality Scores
@@ -524,7 +523,7 @@ export BATCH_DELAY_MS=5000
 ## References
 
 - `SKILL.md` - Main resolver documentation
-- `scripts/routing.py` - Budget-aware routing
-- `scripts/quality.py` - Quality scoring algorithms
-- `scripts/routing_memory.py` - TTL-based memory
+- `.agents/skills/do-web-doc-resolver/scripts/routing.py` - Budget-aware routing
+- `.agents/skills/do-web-doc-resolver/scripts/quality.py` - Quality scoring algorithms
+- `.agents/skills/do-web-doc-resolver/scripts/routing_memory.py` - TTL-based memory
 - `.opencode/commands/web-research.md` - Command reference

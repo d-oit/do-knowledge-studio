@@ -33,10 +33,10 @@ Activate after completing a non-trivial task to capture insights that would othe
 
 ### Scoping Rules
 
-Place learnings in the most specific `AGENTS.md` file:
+Place learnings in the most specific location:
 - **Project-wide**: Root `AGENTS.md`.
-- **Script-specific**: `scripts/AGENTS.md`.
-- **Skill-specific**: `.agents/skills/<name>/AGENTS.md`.
+- **Script-specific**: `agents-docs/LESSONS.md` (there is no `scripts/AGENTS.md`).
+- **Skill-specific**: `.agents/skills/<name>/references/`.
 
 ### Dual-Write Requirement
 

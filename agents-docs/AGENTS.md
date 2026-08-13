@@ -88,7 +88,7 @@ See [`AVAILABLE_SKILLS.md`](AVAILABLE_SKILLS.md) for authoring guide.
 
 1. Create agent file in `.claude/agents/<agent-name>.md` (Claude Code) or `.opencode/agents/<agent-name>.md` (OpenCode)
 2. Include YAML frontmatter with `name`, `description`, and `tools`
-3. Run `./scripts/update-agents-registry.sh` to update this registry
+3. Add the agent to the registry table below (maintained manually)
 
 ### Agent File Template
 
@@ -109,7 +109,7 @@ System prompt for the agent...
 1. Create skill folder in `.agents/skills/<skill-name>/`
 2. Add `SKILL.md` with frontmatter (≤250 lines)
 3. Run `./scripts/setup-skills.sh` to create symlinks
-4. Run `./scripts/update-agents-registry.sh` to update this registry
+4. Add the skill to the registry table below (maintained manually)
 
 ### Skill File Template
 
@@ -152,9 +152,9 @@ Then use a task to run the update script on file changes.
 ```bash
 npm install -g chokidar-cli
 
-# Watch for changes and update registry
-chokidar ".claude/agents/*.md" ".opencode/agents/*.md" ".agents/skills/*/SKILL.md" \
-  -c "./scripts/update-agents-registry.sh && git add AGENTS.md"
+# Watch for skill changes and refresh symlinks
+chokidar ".agents/skills/*/SKILL.md" \
+  -c "./scripts/setup-skills.sh && ./scripts/validate-skills.sh"
 ```
 
 ### Git Hook (Post-Merge)
@@ -163,11 +163,11 @@ Add to `.git/hooks/post-merge`:
 
 ```bash
 #!/bin/bash
-./scripts/update-agents-registry.sh
-git add AGENTS.md
+./scripts/setup-skills.sh
+./scripts/validate-skills.sh
 ```
 
 ---
 
-*This file is auto-generated. Do not edit manually.*
-*Run `./scripts/update-agents-registry.sh` to regenerate.*
+*This registry is maintained manually — keep it in sync with `.agents/skills/`
+and the agent directories when adding or removing entries.*

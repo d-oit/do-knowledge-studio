@@ -17,8 +17,8 @@ cd do-knowledge-studio
 # Setup skills symlinks
 ./scripts/setup-skills.sh
 
-# Install pre-commit hook
-cp scripts/pre-commit-hook.sh .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+# Install git hooks (pre-commit + commit-msg)
+./scripts/install-hooks.sh
 ```
 
 ## How to Contribute
@@ -100,12 +100,10 @@ Updated to checkout@v4 and setup-python@v5 for reliability.
 
 ```bash
 # Use the verification entry point (recommended)
-./scripts/verify.sh --fast    # For quick local checks
-./scripts/verify.sh --full    # Before pushing to remote
+./scripts/verify.sh
 
-# Run specific scopes
-./scripts/verify.sh --scope docs
-./scripts/verify.sh --scope frontend
+# Or the minimal quality gate for quick local checks
+./scripts/minimal_quality_gate.sh
 
 # Run full quality gate directly
 ./scripts/quality_gate.sh
@@ -120,10 +118,10 @@ To debug CI workflows locally before pushing, you can use `act`:
 
 ```bash
 # List all available jobs
-./scripts/rehearse.sh --list
+act -l
 
 # Run a specific job (e.g., quality-gate)
-./scripts/rehearse.sh quality-gate
+act -j quality-gate
 ```
 
 **Quality gate checks:**
