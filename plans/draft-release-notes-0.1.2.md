@@ -1,7 +1,7 @@
 # Draft Release Notes — v0.1.2
 
 **Date**: 2026-08-13
-**Status**: DRAFT — not yet released (v0.1.1 is the current release)
+**Status**: RELEASED — v0.1.2 (published 2026-08-14)
 
 ## Highlights
 
