@@ -147,9 +147,10 @@ export function EntityGrid({
     <div ref={containerRef} className={SCROLL_CONTAINER_CLASS}>
       <div className="relative" style={{ height: virtualizer.getTotalSize() }}>
         {virtualizer.getVirtualItems().map((vi) => {
+          // Defensive: skip if the chunked rows state lags the virtual range
+          // (vi.index can reference a row the re-chunked array no longer has).
+          if (vi.index >= rows.length) return null
           const rowEntities = rows[vi.index]
-          // Defensive: skip if the chunked rows state lags the virtual range.
-          if (!rowEntities) return null
           return (
             <div
               key={vi.key}
@@ -276,9 +277,10 @@ export function EntityTable({
         >
           {virtualize
             ? virtualizer.getVirtualItems().map((vi) => {
+                // Defensive: skip if the list shrinks between renders (the
+                // virtual range can briefly reference old indices).
+                if (vi.index >= entities.length) return null
                 const entity = entities[vi.index]
-                // Defensive: skip if the list shrinks between renders.
-                if (!entity) return null
                 return (
                   <TableRow
                     key={entity.id}
