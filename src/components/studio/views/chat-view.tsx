@@ -241,6 +241,15 @@ export const MessageList = ({
     {chat.map((m) => (
       <motion.div
         key={m.id}
+        onKeyDown={(e) => {
+          // Escape closes this message's expanded citation panel (popover-like
+          // behavior) and returns focus to the toggle button.
+          if (e.key === 'Escape' && showCitations === m.id) {
+            e.preventDefault()
+            onToggleCitations(m.id)
+            e.currentTarget.querySelector<HTMLButtonElement>('button[aria-expanded]')?.focus()
+          }
+        }}
         initial={reducedMotion ? false : { opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={reducedMotion ? { duration: 0 } : { duration: 0.25 }}

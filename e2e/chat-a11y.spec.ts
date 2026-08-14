@@ -57,12 +57,16 @@ test.describe('Chat accessibility', () => {
     await expect(page.getByRole('button', { name: /^1 / })).toBeVisible();
   });
 
-  test('voice input button exposes an accessible label when supported', async ({ page }) => {
+  test('voice input button exposes an accessible label and toggle state when supported', async ({ page }) => {
     const supported = await page.evaluate(
       () => 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window,
     );
     test.skip(!supported, 'Speech recognition is not supported in this browser');
 
-    await expect(page.getByRole('button', { name: 'Start voice input' })).toBeVisible();
+    const voiceBtn = page.getByRole('button', { name: 'Start voice input' });
+    await expect(voiceBtn).toBeVisible();
+    // The button is a toggle: idle means not pressed. We only assert the idle
+    // state here — clicking would trigger the mic permission prompt in CI.
+    await expect(voiceBtn).toHaveAttribute('aria-pressed', 'false');
   });
 });
