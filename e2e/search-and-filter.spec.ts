@@ -63,6 +63,22 @@ test.describe('Search and filter', () => {
     await expect(gridBtn).toHaveAttribute('aria-pressed', 'false');
   });
 
+  test('control buttons expose matching tooltips', async ({ page }) => {
+    const searchInput = page.getByRole('searchbox', { name: /search library/i });
+    await searchInput.fill('something');
+
+    await expect(page.getByRole('button', { name: /clear search/i })).toHaveAttribute('title', 'Clear search');
+    await expect(page.getByRole('button', { name: /grid view/i })).toHaveAttribute('title', 'Grid view');
+    await expect(page.getByRole('button', { name: /list view/i })).toHaveAttribute('title', 'List view');
+
+    // The sort toggle's tooltip tracks its state, matching the aria-label.
+    // The store defaults to descending order on first load.
+    const sortBtn = page.getByRole('button', { name: /sort (ascending|descending)/i });
+    await expect(sortBtn).toHaveAttribute('title', 'Sort descending');
+    await sortBtn.click();
+    await expect(sortBtn).toHaveAttribute('title', 'Sort ascending');
+  });
+
   test('search and filter work together', async ({ page }) => {
     const searchInput = page.getByRole('searchbox', { name: /search library/i });
     await searchInput.fill('test');
