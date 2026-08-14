@@ -339,4 +339,24 @@ describe('LibraryView', () => {
     fireEvent.click(screen.getByRole('button', { name: /Create your first entity/ }))
     expect(mockStartNew).toHaveBeenCalledTimes(2)
   })
+
+  it('caps large lists at the initial limit and expands with Show all', () => {
+    const many = Array.from({ length: 30 }, (_, i) => ({
+      ...mockEntities[0],
+      id: `ent-${i}`,
+      name: `Entity ${i}`,
+    }))
+    currentEntities = many
+    filteredEntities = many
+    render(<LibraryView />)
+
+    // Grid view renders only the first LIBRARY_INITIAL_LIMIT (24) cards by default.
+    expect(screen.getByText('Entity 0')).toBeDefined()
+    expect(screen.queryByText('Entity 29')).toBeNull()
+    expect(screen.getAllByText(/Showing 24 of 30 entities/).length).toBeGreaterThanOrEqual(1)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show all 30 entities' }))
+    expect(screen.getByText('Entity 29')).toBeDefined()
+    expect(screen.getAllByText(/Showing 30 of 30 entities/).length).toBeGreaterThanOrEqual(1)
+  })
 })

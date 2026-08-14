@@ -56,6 +56,12 @@ const TAG_FILTER_PLACEHOLDER = 'e.g. research'
 const HAS_DESCRIPTION_LABEL = 'Only show entities with a description'
 /** Button label to clear only the advanced filter values. */
 const CLEAR_ADVANCED_LABEL = 'Clear advanced filters'
+/** Initial number of entities rendered before the "Show all" expansion (large-list cap). */
+const LIBRARY_INITIAL_LIMIT = 24
+/** Label for the button that expands the entity list beyond the initial cap. */
+const showAllLabel = (total: number): string => `Show all ${total} entities`
+/** Label for the button that collapses the expanded entity list. */
+const SHOW_FEWER_LABEL = 'Show fewer'
 
 /** Entity library view with grid/list layout, search, type filters, and sort controls. */
 export const LibraryView = () => {
@@ -75,6 +81,7 @@ export const LibraryView = () => {
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [tagQuery, setTagQuery] = useState('')
   const [hasDescriptionOnly, setHasDescriptionOnly] = useState(false)
+  const [showAll, setShowAll] = useState(false)
   const filteredEntities = useFilteredEntities()
   const reducedMotion = useReducedMotion()
 
@@ -89,6 +96,14 @@ export const LibraryView = () => {
   }, [filteredEntities, tagQuery, hasDescriptionOnly])
 
   const hasAdvancedFilters = tagQuery.trim().length > 0 || hasDescriptionOnly
+
+  // Large-list guard: render only the first LIBRARY_INITIAL_LIMIT entities by
+  // default and let the user expand with "Show all" (plans/122).
+  const isCapped = advancedFilteredEntities.length > LIBRARY_INITIAL_LIMIT
+  const visibleEntities =
+    showAll || !isCapped
+      ? advancedFilteredEntities
+      : advancedFilteredEntities.slice(0, LIBRARY_INITIAL_LIMIT)
 
   /** Resets all filter and search state to defaults. */
   const clearFilters = useCallback(() => {
@@ -316,9 +331,9 @@ export const LibraryView = () => {
       ) : null}
 
       {/* Grid view */}
-      {advancedFilteredEntities.length > 0 && viewMode === 'grid' && (
+      {visibleEntities.length > 0 && viewMode === 'grid' && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {advancedFilteredEntities.map((e, i) => {
+          {visibleEntities.map((e, i) => {
             const meta = ENTITY_TYPE_META[e.type]
             const Icon = TYPE_ICONS[e.type]
             return (
@@ -370,7 +385,7 @@ export const LibraryView = () => {
       )}
 
       {/* List view */}
-      {advancedFilteredEntities.length > 0 && viewMode === 'list' && (
+      {visibleEntities.length > 0 && viewMode === 'list' && (
         <div className="overflow-hidden rounded-lg border border-border bg-card">
           <table className="w-full">
             <caption className="sr-only">Library entities</caption>
@@ -383,7 +398,7 @@ export const LibraryView = () => {
               </tr>
             </thead>
             <tbody>
-              {advancedFilteredEntities.map((e) => {
+              {visibleEntities.map((e) => {
                 const meta = ENTITY_TYPE_META[e.type]
                 const Icon = TYPE_ICONS[e.type]
                 return (
@@ -442,14 +457,27 @@ export const LibraryView = () => {
         </div>
       )}
 
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-label text-ink-faint">
           <ArrowUpDown className="h-3 w-3" />
-          Showing {advancedFilteredEntities.length} {advancedFilteredEntities.length === 1 ? 'entity' : 'entities'}
+          {isCapped
+            ? `Showing ${visibleEntities.length} of ${advancedFilteredEntities.length} entities`
+            : `Showing ${visibleEntities.length} ${visibleEntities.length === 1 ? 'entity' : 'entities'}`}
         </div>
         <div className="sr-only" role="status" aria-live="polite">
-          Showing {advancedFilteredEntities.length} {advancedFilteredEntities.length === 1 ? 'entity' : 'entities'}
+          {isCapped
+            ? `Showing ${visibleEntities.length} of ${advancedFilteredEntities.length} entities`
+            : `Showing ${visibleEntities.length} ${visibleEntities.length === 1 ? 'entity' : 'entities'}`}
         </div>
+        {isCapped && (
+          <button
+            onClick={() => setShowAll(!showAll)}
+            className="flex min-h-[44px] items-center gap-1 rounded-md border border-border bg-background px-3 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 hover:text-ink focus-ring"
+            aria-expanded={showAll}
+          >
+            {showAll ? SHOW_FEWER_LABEL : showAllLabel(advancedFilteredEntities.length)}
+          </button>
+        )}
       </div>
     </div>
   )
