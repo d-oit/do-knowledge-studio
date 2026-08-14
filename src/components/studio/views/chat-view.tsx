@@ -194,6 +194,9 @@ export const ChatView = () => {
                         : 'bg-card border border-border text-ink rounded-tl-sm',
                     )}
                   >
+                    <span className="sr-only">
+                      {m.role === 'user' ? 'You: ' : 'Assistant: '}
+                    </span>
                     {m.role === 'assistant' ? (
                       <div className="prose prose-sm dark:prose-invert max-w-none">
                         <Markdown>{m.content}</Markdown>
@@ -317,6 +320,7 @@ export const ChatView = () => {
               disabled={!input.trim() || chatLoading}
               className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 press-scale focus-ring"
               aria-label="Send message"
+              title="Send message"
             >
               <Send className="h-4 w-4" />
             </button>
@@ -338,7 +342,9 @@ export const ChatView = () => {
             <button
               onClick={handleClear}
               disabled={chat.length === 0}
-              className="flex min-h-[44px] min-w-[44px] items-center gap-1 transition-colors hover:text-red-500 disabled:opacity-30 disabled:hover:text-red-500 focus-ring"
+              aria-label="Clear chat history"
+              title="Clear chat history"
+              className="chat-clear-btn flex min-h-[44px] min-w-[44px] items-center gap-1 transition-colors hover:text-red-500 disabled:opacity-30 disabled:hover:text-red-500 focus-ring"
             >
               <Trash2 className="h-3 w-3" />
               {CLEAR_CHAT_LABEL}
