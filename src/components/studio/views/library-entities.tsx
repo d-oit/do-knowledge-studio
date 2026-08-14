@@ -59,11 +59,13 @@ const useMeasurableHeight = (ref: RefObject<HTMLElement | null>): boolean => {
 const readBreakpointPx = (name: string): number | null => {
   if (
     typeof window === 'undefined' ||
-    typeof getComputedStyle !== 'function' ||
-    !document.documentElement
+    typeof document === 'undefined' ||
+    typeof getComputedStyle !== 'function'
   ) {
     return null
   }
+  // document.documentElement is non-nullable per DOM types; the presence
+  // checks above (window/document) are the environment guard the caller needs.
   const root = document.documentElement
   const raw = getComputedStyle(root).getPropertyValue(name).trim()
   if (!raw) return null
