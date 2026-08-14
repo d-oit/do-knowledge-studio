@@ -213,6 +213,15 @@ describe('LibraryView', () => {
     expect(screen.getByLabelText('Search library')).toBeDefined()
   })
 
+  it('control buttons expose matching tooltips', () => {
+    currentSearchQuery = 'alpha'
+    render(<LibraryView />)
+    expect(screen.getByRole('button', { name: 'Clear search' })).toHaveAttribute('title', 'Clear search')
+    expect(screen.getByRole('button', { name: 'Grid view' })).toHaveAttribute('title', 'Grid view')
+    expect(screen.getByRole('button', { name: 'List view' })).toHaveAttribute('title', 'List view')
+    expect(screen.getByRole('button', { name: 'Sort ascending' })).toHaveAttribute('title', 'Sort ascending')
+  })
+
   it('updates the search query and clears an active search', () => {
     currentSearchQuery = 'alpha'
     render(<LibraryView />)

@@ -1,13 +1,15 @@
 'use client'
 
+import { useState, useRef, useEffect, useCallback } from 'react'
+import type { Dispatch, RefObject, SetStateAction } from 'react'
 import { useStudioStore } from '@/lib/studio/store'
 import { Send, Sparkles, Trash2, Bot, User, Quote, ChevronDown, MessageSquare } from 'lucide-react'
 import { VoiceInput } from '../voice-input'
-import { useState, useRef, useEffect, useCallback } from 'react'
 import Markdown from 'react-markdown'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
+import type { ChatMessage } from '@/lib/studio/types'
 
 /** Predefined prompt suggestions shown in the chat welcome screen. */
 const SUGGESTIONS = [
@@ -38,6 +40,16 @@ const LOCAL_SEARCH_STATUS = 'Local search active'
 const CHAT_SHORTCUT_HINT = 'Enter to send · Shift+Enter for newline'
 /** Button label to clear the chat history. */
 const CLEAR_CHAT_LABEL = 'Clear'
+/** Screen-reader prefix for user-authored messages. */
+const USER_ROLE_LABEL = 'You: '
+/** Screen-reader prefix for assistant-authored messages. */
+const ASSISTANT_ROLE_LABEL = 'Assistant: '
+/** Maximum input length enforced on the chat textarea. */
+const MAX_INPUT_LENGTH = 2000
+/** Input length at which the character counter becomes visible. */
+const COUNTER_THRESHOLD = 1800
+/** Debounce delay (ms) before a message is dispatched to the engine. */
+const SEND_DEBOUNCE_MS = 300
 
 /** Animated bouncing-dot typing indicator for the chat assistant. */
 const TypingIndicator = ({ reducedMotion }: { reducedMotion?: boolean }) => (
@@ -92,7 +104,7 @@ export const ChatView = () => {
         setInput('')
         inputRef.current?.focus()
         debounceTimerRef.current = null
-      }, 300)
+      }, SEND_DEBOUNCE_MS)
     },
     [sendMessage],
   )
@@ -120,143 +132,15 @@ export const ChatView = () => {
       <div className="flex-1 overflow-y-auto px-5 py-6 lg:px-10">
         <div className="mx-auto max-w-3xl space-y-5">
           {chat.length === 0 && !chatLoading ? (
-            <motion.div
-              initial={reducedMotion ? false : { opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={reducedMotion ? { duration: 0 } : undefined}
-              className="flex flex-col items-center justify-center py-20 text-center"
-            >
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-saffron-soft text-saffron-deep">
-                <MessageSquare className="h-8 w-8" />
-              </div>
-              <h2 className="mb-2 font-serif text-lg font-semibold text-ink">
-                Ask your library
-              </h2>
-              <p className="mb-4 max-w-sm text-[14px] text-ink-mute">
-                {CHAT_WELCOME_DESCRIPTION}
-              </p>
-              <div className="mb-6 max-w-md text-left">
-                <p className="mb-2 text-label font-semibold uppercase tracking-wide text-ink-faint">
-                  {CHAT_CAPABILITIES_LABEL}
-                </p>
-                <ul className="space-y-1.5 text-[13px] text-ink-mute">
-                  {CHAT_CAPABILITIES.map((capability) => (
-                    <li key={capability} className="flex gap-2">
-                      <span aria-hidden="true" className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-saffron" />
-                      <span>{capability}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <p className="mb-2 text-label font-semibold uppercase tracking-wide text-ink-faint">
-                {CHAT_SUGGESTION_LABEL}
-              </p>
-              <div className="flex flex-wrap justify-center gap-2">
-                {SUGGESTIONS.map((s) => (
-                  <button
-                    key={s.label}
-                    onClick={() => { handleSend(s.query) }}
-                    className="rounded-full border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-all hover:border-saffron/40 hover:text-ink press-scale focus-ring min-h-[44px]"
-                  >
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-            </motion.div>
+            <WelcomePanel reducedMotion={reducedMotion} onSend={handleSend} />
           ) : (
-            chat.map((m) => (
-              <motion.div
-                key={m.id}
-                initial={reducedMotion ? false : { opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={reducedMotion ? { duration: 0 } : { duration: 0.25 }}
-                className={cn('flex gap-3', m.role === 'user' ? 'flex-row-reverse' : 'flex-row')}
-              >
-                {/* Avatar */}
-                <div
-                  className={cn(
-                    'flex h-8 w-8 shrink-0 items-center justify-center rounded-full',
-                    m.role === 'user'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-saffron-soft text-saffron-deep',
-                  )}
-                >
-                  {m.role === 'user' ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
-                </div>
-
-                {/* Bubble */}
-                <div className={cn('max-w-[80%] space-y-1.5', m.role === 'user' && 'items-end')}>
-                  <div
-                    className={cn(
-                      'rounded-2xl px-4 py-3 text-[14px] leading-relaxed',
-                      m.role === 'user'
-                        ? 'bg-primary text-primary-foreground rounded-tr-sm'
-                        : 'bg-card border border-border text-ink rounded-tl-sm',
-                    )}
-                  >
-                    {m.role === 'assistant' ? (
-                      <div className="prose prose-sm dark:prose-invert max-w-none">
-                        <Markdown>{m.content}</Markdown>
-                      </div>
-                    ) : (
-                      m.content
-                    )}
-                  </div>
-
-                  {/* Timestamp */}
-                  <p className={cn(
-                    'text-caption text-ink-faint',
-                    m.role === 'user' ? 'text-right' : 'text-left',
-                  )}>
-                    {formatTime(m.timestamp)}
-                  </p>
-
-                  {/* Citations */}
-                  {m.citations && m.citations.length > 0 && (
-                    <div className="rounded-lg border border-dashed border-saffron/40 bg-saffron-soft/30 p-2.5">
-                      <button
-                        onClick={() => { setShowCitations(showCitations === m.id ? null : m.id) }}
-                        aria-expanded={showCitations === m.id}
-                        className="flex w-full items-center gap-1.5 text-label font-semibold text-saffron-deep min-h-[44px]"
-                      >
-                        <Quote className="h-3 w-3" />
-                        Used {m.citations.length} local {m.citations.length === 1 ? 'item' : 'items'}
-                        <ChevronDown
-                          className={cn('h-3 w-3 transition-transform', showCitations === m.id && 'rotate-180')}
-                        />
-                      </button>
-                      <AnimatePresence>
-                        {showCitations === m.id && (
-                          <motion.div
-                            initial={reducedMotion ? false : { height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={reducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
-                            transition={reducedMotion ? { duration: 0 } : undefined}
-                            className="mt-2 space-y-1.5 overflow-hidden"
-                          >
-                            {m.citations.map((c, i) => (
-                              <button
-                                key={i}
-                                onClick={() => { handleCitationClick(c.entityId) }}
-                                className="flex w-full gap-2 rounded-md bg-background/60 p-2 text-left text-label transition-colors hover:bg-muted focus-ring min-h-[44px]"
-                              >
-                                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-saffron text-badge font-bold text-white">
-                                  {i + 1}
-                                </span>
-                                <div className="min-w-0 flex-1">
-                                  <div className="font-semibold text-ink group-hover:text-saffron-deep">{c.entityName}</div>
-                                  <div className="truncate text-ink-mute">{c.snippet}</div>
-                                </div>
-                              </button>
-                            ))}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            ))
+            <MessageList
+              chat={chat}
+              reducedMotion={reducedMotion}
+              showCitations={showCitations}
+              onToggleCitations={(id) => { setShowCitations(showCitations === id ? null : id) }}
+              onCitationClick={handleCitationClick}
+            />
           )}
 
           {/* Typing indicator */}
@@ -267,83 +151,300 @@ export const ChatView = () => {
       </div>
 
       {/* Suggestions (below messages, above input) */}
-      {chat.length <= 1 && !chatLoading && (
-        <div className="border-t border-border bg-muted/20 px-5 py-3 lg:px-10">
-          <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-2">
-            <span className="flex items-center gap-1 text-label font-medium text-ink-faint">
-              <Sparkles className="h-3 w-3" />
-              {SUGGESTIONS_LABEL}
-            </span>
-            {SUGGESTIONS.map((s) => (
-              <button
-                key={s.label}
-                onClick={() => { handleSend(s.query) }}
-                className="rounded-full border border-border bg-background px-3 py-1 text-[12px] font-medium text-ink-soft transition-all hover:border-saffron/40 hover:text-ink press-scale focus-ring min-h-[44px]"
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      {chat.length <= 1 && !chatLoading && <SuggestionsBar onSend={handleSend} />}
 
       {/* Input */}
-      <div className="border-t border-border bg-background px-5 py-4 lg:px-10">
-        <div className="mx-auto max-w-3xl">
-          <div className="flex items-end gap-2 rounded-xl border border-border bg-card p-2 shadow-sm transition-colors focus-within:border-saffron/50">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => { setInput(e.target.value.slice(0, 2000)) }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault()
-                  handleSend()
-                }
-              }}
-              placeholder="Ask about your library, or request a synthesis…"
-              rows={1}
-              maxLength={2000}
-              disabled={chatLoading}
-              aria-label="Chat message"
-              className="max-h-32 flex-1 resize-none bg-transparent px-2 py-1.5 text-[14px] text-ink placeholder:text-ink-faint focus:outline-none disabled:opacity-50"
-            />
-            <VoiceInput
-              onTranscript={(text) => { setInput((prev) => prev + ' ' + text) }}
-              disabled={chatLoading}
-            />
-            <button
-              onClick={() => { handleSend() }}
-              disabled={!input.trim() || chatLoading}
-              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 press-scale focus-ring"
-              aria-label="Send message"
-            >
-              <Send className="h-4 w-4" />
-            </button>
+      <InputBar
+        input={input}
+        setInput={setInput}
+        chatLoading={chatLoading}
+        onSend={() => { handleSend() }}
+        onClear={handleClear}
+        canClear={chat.length > 0}
+        inputRef={inputRef}
+      />
+    </div>
+  )
+}
+
+/** Properties for the WelcomePanel component. */
+interface WelcomePanelProps {
+  reducedMotion: boolean
+  onSend: (query: string) => void
+}
+
+/** Empty-state welcome screen with capabilities list and suggestion chips. */
+const WelcomePanel = ({ reducedMotion, onSend }: WelcomePanelProps) => (
+  <motion.div
+    initial={reducedMotion ? false : { opacity: 0, y: 8 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={reducedMotion ? { duration: 0 } : undefined}
+    className="flex flex-col items-center justify-center py-20 text-center"
+  >
+    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-saffron-soft text-saffron-deep">
+      <MessageSquare className="h-8 w-8" />
+    </div>
+    <h2 className="mb-2 font-serif text-lg font-semibold text-ink">
+      Ask your library
+    </h2>
+    <p className="mb-4 max-w-sm text-[14px] text-ink-mute">
+      {CHAT_WELCOME_DESCRIPTION}
+    </p>
+    <div className="mb-6 max-w-md text-left">
+      <p className="mb-2 text-label font-semibold uppercase tracking-wide text-ink-faint">
+        {CHAT_CAPABILITIES_LABEL}
+      </p>
+      <ul className="space-y-1.5 text-[13px] text-ink-mute">
+        {CHAT_CAPABILITIES.map((capability) => (
+          <li key={capability} className="flex gap-2">
+            <span aria-hidden="true" className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-saffron" />
+            <span>{capability}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+    <p className="mb-2 text-label font-semibold uppercase tracking-wide text-ink-faint">
+      {CHAT_SUGGESTION_LABEL}
+    </p>
+    <div className="flex flex-wrap justify-center gap-2">
+      {SUGGESTIONS.map((s) => (
+        <button
+          key={s.label}
+          onClick={() => { onSend(s.query) }}
+          className="rounded-full border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-all hover:border-saffron/40 hover:text-ink press-scale focus-ring min-h-[44px]"
+        >
+          {s.label}
+        </button>
+      ))}
+    </div>
+  </motion.div>
+)
+
+/** Properties for the MessageList component. */
+interface MessageListProps {
+  chat: ChatMessage[]
+  reducedMotion: boolean
+  showCitations: string | null
+  onToggleCitations: (id: string) => void
+  onCitationClick: (entityId: string) => void
+}
+
+/** Scrollable conversation history with per-message role labels and citations. */
+const MessageList = ({
+  chat,
+  reducedMotion,
+  showCitations,
+  onToggleCitations,
+  onCitationClick,
+}: MessageListProps) => (
+  <>
+    {chat.map((m) => (
+      <motion.div
+        key={m.id}
+        initial={reducedMotion ? false : { opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={reducedMotion ? { duration: 0 } : { duration: 0.25 }}
+        className={cn('flex gap-3', m.role === 'user' ? 'flex-row-reverse' : 'flex-row')}
+      >
+        {/* Avatar */}
+        <div
+          className={cn(
+            'flex h-8 w-8 shrink-0 items-center justify-center rounded-full',
+            m.role === 'user'
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-saffron-soft text-saffron-deep',
+          )}
+        >
+          {m.role === 'user' ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+        </div>
+
+        {/* Bubble */}
+        <div className={cn('max-w-[80%] space-y-1.5', m.role === 'user' && 'items-end')}>
+          <div
+            className={cn(
+              'rounded-2xl px-4 py-3 text-[14px] leading-relaxed',
+              m.role === 'user'
+                ? 'bg-primary text-primary-foreground rounded-tr-sm'
+                : 'bg-card border border-border text-ink rounded-tl-sm',
+            )}
+          >
+            <span className="sr-only">
+              {m.role === 'user' ? USER_ROLE_LABEL : ASSISTANT_ROLE_LABEL}
+            </span>
+            {m.role === 'assistant' ? (
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <Markdown>{m.content}</Markdown>
+              </div>
+            ) : (
+              m.content
+            )}
           </div>
-          <div className="mt-2 flex items-center justify-between text-caption text-ink-faint">
-            <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-saffron" />
-                {LOCAL_SEARCH_STATUS}
-              </span>
-              <span>·</span>
-              <span>{CHAT_SHORTCUT_HINT}</span>
-              {input.length > 1800 && (
-                <span className={cn('font-mono', input.length >= 2000 ? 'text-clay' : 'text-ink-faint')}>
-                  {input.length}/2000
-                </span>
-              )}
+
+          {/* Timestamp */}
+          <p className={cn(
+            'text-caption text-ink-faint',
+            m.role === 'user' ? 'text-right' : 'text-left',
+          )}>
+            {formatTime(m.timestamp)}
+          </p>
+
+          {/* Citations */}
+          {m.citations && m.citations.length > 0 && (
+            <div className="rounded-lg border border-dashed border-saffron/40 bg-saffron-soft/30 p-2.5">
+              <button
+                onClick={() => { onToggleCitations(m.id) }}
+                aria-expanded={showCitations === m.id}
+                className="flex w-full items-center gap-1.5 text-label font-semibold text-saffron-deep min-h-[44px]"
+              >
+                <Quote className="h-3 w-3" />
+                Used {m.citations.length} local {m.citations.length === 1 ? 'item' : 'items'}
+                <ChevronDown
+                  className={cn('h-3 w-3 transition-transform', showCitations === m.id && 'rotate-180')}
+                />
+              </button>
+              <AnimatePresence>
+                {showCitations === m.id && (
+                  <motion.div
+                    initial={reducedMotion ? false : { height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={reducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
+                    transition={reducedMotion ? { duration: 0 } : undefined}
+                    className="mt-2 space-y-1.5 overflow-hidden"
+                  >
+                    {m.citations.map((c, i) => (
+                      <button
+                        key={i}
+                        onClick={() => { onCitationClick(c.entityId) }}
+                        className="flex w-full gap-2 rounded-md bg-background/60 p-2 text-left text-label transition-colors hover:bg-muted focus-ring min-h-[44px]"
+                      >
+                        <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-saffron text-badge font-bold text-white">
+                          {i + 1}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-semibold text-ink group-hover:text-saffron-deep">{c.entityName}</div>
+                          <div className="truncate text-ink-mute">{c.snippet}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-            <button
-              onClick={handleClear}
-              disabled={chat.length === 0}
-              className="flex min-h-[44px] min-w-[44px] items-center gap-1 transition-colors hover:text-red-500 disabled:opacity-30 disabled:hover:text-red-500 focus-ring"
-            >
-              <Trash2 className="h-3 w-3" />
-              {CLEAR_CHAT_LABEL}
-            </button>
+          )}
+        </div>
+      </motion.div>
+    ))}
+  </>
+)
+
+/** Properties for the SuggestionsBar component. */
+interface SuggestionsBarProps {
+  onSend: (query: string) => void
+}
+
+/** Quick prompt chips shown between the message list and the input. */
+const SuggestionsBar = ({ onSend }: SuggestionsBarProps) => (
+  <div className="border-t border-border bg-muted/20 px-5 py-3 lg:px-10">
+    <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-2">
+      <span className="flex items-center gap-1 text-label font-medium text-ink-faint">
+        <Sparkles className="h-3 w-3" />
+        {SUGGESTIONS_LABEL}
+      </span>
+      {SUGGESTIONS.map((s) => (
+        <button
+          key={s.label}
+          onClick={() => { onSend(s.query) }}
+          className="rounded-full border border-border bg-background px-3 py-1 text-[12px] font-medium text-ink-soft transition-all hover:border-saffron/40 hover:text-ink press-scale focus-ring min-h-[44px]"
+        >
+          {s.label}
+        </button>
+      ))}
+    </div>
+  </div>
+)
+
+/** Properties for the InputBar component. */
+interface InputBarProps {
+  input: string
+  setInput: Dispatch<SetStateAction<string>>
+  chatLoading: boolean
+  onSend: () => void
+  onClear: () => void
+  canClear: boolean
+  inputRef: RefObject<HTMLTextAreaElement | null>
+}
+
+/** Chat composer with voice input, send action, and history controls. */
+const InputBar = ({
+  input,
+  setInput,
+  chatLoading,
+  onSend,
+  onClear,
+  canClear,
+  inputRef,
+}: InputBarProps) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      onSend()
+    }
+  }
+
+  return (
+    <div className="border-t border-border bg-background px-5 py-4 lg:px-10">
+      <div className="mx-auto max-w-3xl">
+        <div className="flex items-end gap-2 rounded-xl border border-border bg-card p-2 shadow-sm transition-colors focus-within:border-saffron/50">
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={(e) => { setInput(e.target.value.slice(0, MAX_INPUT_LENGTH)) }}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask about your library, or request a synthesis…"
+            rows={1}
+            maxLength={MAX_INPUT_LENGTH}
+            disabled={chatLoading}
+            aria-label="Chat message"
+            className="max-h-32 flex-1 resize-none bg-transparent px-2 py-1.5 text-[14px] text-ink placeholder:text-ink-faint focus:outline-none disabled:opacity-50"
+          />
+          <VoiceInput
+            onTranscript={(text) => { setInput((prev) => prev + ' ' + text) }}
+            disabled={chatLoading}
+          />
+          <button
+            onClick={onSend}
+            disabled={!input.trim() || chatLoading}
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 press-scale focus-ring"
+            aria-label="Send message"
+            title="Send message"
+          >
+            <Send className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="mt-2 flex items-center justify-between text-caption text-ink-faint">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-saffron" />
+              {LOCAL_SEARCH_STATUS}
+            </span>
+            <span>·</span>
+            <span>{CHAT_SHORTCUT_HINT}</span>
+            {input.length > COUNTER_THRESHOLD && (
+              <span className={cn('font-mono', input.length >= MAX_INPUT_LENGTH ? 'text-clay' : 'text-ink-faint')}>
+                {input.length}/{MAX_INPUT_LENGTH}
+              </span>
+            )}
           </div>
+          <button
+            onClick={onClear}
+            disabled={!canClear}
+            aria-label="Clear chat history"
+            title="Clear chat history"
+            className="flex min-h-[44px] min-w-[44px] items-center gap-1 transition-colors hover:text-red-500 disabled:opacity-30 disabled:hover:text-red-500 focus-ring"
+          >
+            <Trash2 className="h-3 w-3" />
+            {CLEAR_CHAT_LABEL}
+          </button>
         </div>
       </div>
     </div>
