@@ -5,9 +5,6 @@ import { useStudioStore, useStats } from '@/lib/studio/store'
 import { ENTITY_TYPE_META } from '@/lib/studio/types'
 import {
   FileText,
-  Lightbulb,
-  User,
-  FolderKanban,
   ArrowUpRight,
   TrendingUp,
   CheckCircle2,
@@ -18,14 +15,7 @@ import {
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
-
-/** Icon lookup for entity types */
-const ENTITY_ICONS: Record<string, typeof FileText> = {
-  FileText,
-  Lightbulb,
-  User,
-  FolderKanban,
-}
+import { EntityIcon } from '../entity-type-icon'
 
 /** Locale for date/time formatting — extract to config when i18n lands. */
 const LOCALE = 'en-US'
@@ -164,7 +154,6 @@ export function HomeView() {
           <ul className="divide-y divide-border rounded-lg border border-border bg-card">
             {recentEntities.map((entity) => {
               const meta = ENTITY_TYPE_META[entity.type]
-              const Icon = ENTITY_ICONS[meta.icon] || FileText
               return (
                 <li key={entity.id}>
                   <button
@@ -178,7 +167,7 @@ export function HomeView() {
                         meta.text,
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <EntityIcon type={entity.type} className="h-4 w-4" />
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">

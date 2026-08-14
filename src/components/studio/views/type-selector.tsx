@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { ChevronDown, FileText, Lightbulb, User, FolderKanban } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ENTITY_TYPE_META, type EntityType } from '@/lib/studio/types'
+import { EntityIcon } from '../entity-type-icon'
 
 const ENTITY_TYPES: EntityType[] = ['note', 'concept', 'person', 'project']
 
@@ -15,17 +16,6 @@ function getTypeMeta(t: EntityType) {
     case 'person': return ENTITY_TYPE_META.person
     case 'project': return ENTITY_TYPE_META.project
     default: return ENTITY_TYPE_META.note
-  }
-}
-
-/** Renders the appropriate Lucide icon for an entity type. */
-function renderTypeIcon(t: EntityType, className?: string) {
-  switch (t) {
-    case 'note': return <FileText className={className} />
-    case 'concept': return <Lightbulb className={className} />
-    case 'person': return <User className={className} />
-    case 'project': return <FolderKanban className={className} />
-    default: return <FileText className={className} />
   }
 }
 
@@ -65,7 +55,7 @@ export const TypeSelector = ({
         aria-label={`Entity type: ${meta.label}. Change type`}
         className="flex min-h-[44px] items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
       >
-        {renderTypeIcon(type, cn('h-3.5 w-3.5', meta.text))}
+        <EntityIcon type={type} className={cn('h-3.5 w-3.5', meta.text)} />
         Type: {meta.label}
         <ChevronDown className="h-3 w-3" />
       </button>
@@ -107,7 +97,7 @@ export const TypeSelector = ({
                   t === type ? 'font-semibold text-ink' : 'text-ink-soft',
                 )}
               >
-                {renderTypeIcon(t, cn('h-3.5 w-3.5', m.text))}
+                <EntityIcon type={t} className={cn('h-3.5 w-3.5', m.text)} />
                 {m.label}
               </button>
             )
