@@ -18,8 +18,8 @@ import {
   Wifi,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
-import { useStudioStore } from '@/lib/studio/store'
 import { RELEASES_BASE_URL } from '@/lib/studio/constants'
+import { useStudioStore } from '@/lib/studio/store'
 import type { ViewId } from '@/lib/studio/types'
 import packageJson from '../../../package.json'
 import { cn } from '@/lib/utils'
@@ -72,9 +72,64 @@ export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
 ]
 
 /** Sidebar navigation with grouped nav items, search trigger, and theme toggle. */
+/** Sidebar navigation groups with active-state highlighting. */
+function SidebarNav() {
+  const { currentView, setView } = useStudioStore()
+
+  return (
+    <nav className="flex-1 overflow-y-auto px-3 pb-2" aria-label="Main navigation">
+      {NAV_GROUPS.map((group) => (
+        <div key={group.label} className="mb-4">
+          <div className="mb-1.5 px-2 text-caption font-semibold uppercase tracking-[0.14em] text-ink-faint">
+            {group.label}
+          </div>
+          <ul className="space-y-0.5">
+            {group.items.map((item) => {
+              const Icon = item.icon
+              const active = currentView === item.id
+              return (
+                <li key={item.id}>
+                  <button
+                    onClick={() => { setView(item.id) }}
+                    aria-current={active ? 'page' : undefined}
+                    className={cn(
+                      'group flex w-full items-center gap-2.5 rounded-md px-2.5 min-h-[44px] text-[13px] font-medium transition-all press-scale focus-ring',
+                      active
+                        ? 'bg-saffron-soft text-saffron-deep'
+                        : 'text-ink-soft hover:bg-sidebar-accent hover:text-ink',
+                    )}
+                  >
+                    <Icon
+                      className={cn(
+                        'h-4 w-4 shrink-0 transition-colors',
+                        active ? 'text-saffron' : 'text-ink-faint group-hover:text-ink-soft',
+                      )}
+                    />
+                    <span className="flex-1 text-left">{item.label}</span>
+                    {item.experimental && (
+                      <span className="rounded-full border border-dashed border-saffron/40 px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-saffron-deep">
+                        Lab
+                      </span>
+                    )}
+                    {item.shortcut && !item.experimental && (
+                      <kbd className="hidden font-mono text-badge text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 lg:inline">
+                        {item.shortcut}
+                      </kbd>
+                    )}
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      ))}
+    </nav>
+  )
+}
+
+/** Sidebar with brand, search trigger, navigation, and footer controls. */
 export function Sidebar() {
-  const { currentView, setView, setCommandOpen, rightPanelOpen, setRightPanelOpen } =
-    useStudioStore()
+  const { setCommandOpen, rightPanelOpen, setRightPanelOpen } = useStudioStore()
   const { theme, setTheme } = useTheme()
 
   return (
@@ -91,7 +146,7 @@ export function Sidebar() {
             target="_blank"
             rel="noreferrer"
             aria-label={`Knowledge Studio v${packageJson.version} release page`}
-            className="text-caption uppercase tracking-[0.14em] text-ink-faint transition-colors hover:text-saffron focus-ring"
+            className="inline-flex min-h-[44px] items-center text-caption uppercase tracking-[0.14em] text-ink-faint transition-colors hover:text-saffron focus-ring"
           >
             Local-first · v{packageJson.version}
           </a>
@@ -111,56 +166,8 @@ export function Sidebar() {
             ⌘K
           </kbd>
         </button>
-      </div>
-
-      {/* Nav groups */}
-      <nav className="flex-1 overflow-y-auto px-3 pb-2" aria-label="Main navigation">
-        {NAV_GROUPS.map((group) => (
-          <div key={group.label} className="mb-4">
-            <div className="mb-1.5 px-2 text-caption font-semibold uppercase tracking-[0.14em] text-ink-faint">
-              {group.label}
-            </div>
-            <ul className="space-y-0.5">
-              {group.items.map((item) => {
-                const Icon = item.icon
-                const active = currentView === item.id
-                return (
-                  <li key={item.id}>
-                    <button
-                      onClick={() => { setView(item.id) }}
-                      aria-current={active ? 'page' : undefined}
-                      className={cn(
-                        'group flex w-full items-center gap-2.5 rounded-md px-2.5 min-h-[44px] text-[13px] font-medium transition-all press-scale focus-ring',
-                        active
-                          ? 'bg-saffron-soft text-saffron-deep'
-                          : 'text-ink-soft hover:bg-sidebar-accent hover:text-ink',
-                      )}
-                    >
-                      <Icon
-                        className={cn(
-                          'h-4 w-4 shrink-0 transition-colors',
-                          active ? 'text-saffron' : 'text-ink-faint group-hover:text-ink-soft',
-                        )}
-                      />
-                      <span className="flex-1 text-left">{item.label}</span>
-                      {item.experimental && (
-                        <span className="rounded-full border border-dashed border-saffron/40 px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-saffron-deep">
-                          Lab
-                        </span>
-                      )}
-                      {item.shortcut && !item.experimental && (
-                        <kbd className="hidden font-mono text-badge text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 lg:inline">
-                          {item.shortcut}
-                        </kbd>
-                      )}
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
-        ))}
-      </nav>
+      </div>      {/* Nav groups */}
+      <SidebarNav />
 
       {/* Footer */}
       <div className="flex items-center gap-1 border-t border-border px-3 py-2.5">

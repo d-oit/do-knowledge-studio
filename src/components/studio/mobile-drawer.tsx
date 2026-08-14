@@ -5,8 +5,8 @@ import { Overlay } from '@/components/studio/ui/shared-primitives'
 import { X, Search, Sun, Moon, FileText } from 'lucide-react'
 import packageJson from '../../../package.json'
 import { useTheme } from 'next-themes'
-import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
 import { RELEASES_BASE_URL } from '@/lib/studio/constants'
+import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
 import { ENTITY_TYPE_META, type Entity } from '@/lib/studio/types'
 import { NAV_GROUPS } from './sidebar'
 import { cn } from '@/lib/utils'
@@ -95,7 +95,7 @@ function DrawerHeader({
           target="_blank"
           rel="noreferrer"
           aria-label={`Knowledge Studio v${packageJson.version} release page`}
-          className="text-caption uppercase tracking-[0.14em] text-ink-faint transition-colors hover:text-saffron focus-ring"
+          className="inline-flex min-h-[44px] items-center text-caption uppercase tracking-[0.14em] text-ink-faint transition-colors hover:text-saffron focus-ring"
         >
           Local-first · v{packageJson.version}
         </a>
