@@ -4,14 +4,6 @@ import { ENTITY_TYPE_META, type Entity, type EntityType } from '@/lib/studio/typ
 import { cn } from '@/lib/utils'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 
-/** Lucide icon mapping for each entity type. */
-const TYPE_ICONS: Record<EntityType, typeof FileText> = {
-  note: FileText,
-  concept: Lightbulb,
-  person: User,
-  project: FolderKanban,
-}
-
 /** Module-scope date formatter for library timestamps (shared by grid and list). */
 const dateFormatter = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' })
 
@@ -20,8 +12,16 @@ const formatDate = (iso: string): string => dateFormatter.format(new Date(iso))
 
 /** Entity-type icon rendered with the given classes (shared by grid and list). */
 function EntityIcon({ type, className }: { type: EntityType; className?: string }) {
-  const Icon = TYPE_ICONS[type]
-  return <Icon className={className} />
+  switch (type) {
+    case 'note':
+      return <FileText className={className} />
+    case 'concept':
+      return <Lightbulb className={className} />
+    case 'person':
+      return <User className={className} />
+    case 'project':
+      return <FolderKanban className={className} />
+  }
 }
 
 /** Grid of entity cards with staggered entrance animation. */
