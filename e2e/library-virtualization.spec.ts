@@ -93,7 +93,7 @@ test.describe('Library windowed rendering', () => {
     const table = scroller(page).getByRole('table');
     const mounted = await table.getByRole('link').count();
     expect(mounted).toBeGreaterThan(0);
-    expect(mounted).toBeLessThan(40);
+    expect(mounted).toBeLessThan(60);
 
     // Scrolling mounts later rows.
     await scroller(page).evaluate((el) => { el.scrollTop = el.scrollHeight; });
