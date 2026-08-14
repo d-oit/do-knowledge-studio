@@ -124,6 +124,7 @@ export const LibraryView = () => {
               onClick={() => setSearchQuery('')}
               className="absolute right-3 top-1/2 min-h-[44px] min-w-[44px] -translate-y-1/2 flex items-center justify-center text-ink-faint hover:text-ink focus-ring rounded"
               aria-label="Clear search"
+              title="Clear search"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -156,6 +157,7 @@ export const LibraryView = () => {
               viewMode === 'grid' ? 'bg-muted text-ink' : 'text-ink-faint hover:text-ink',
             )}
             aria-label="Grid view"
+            title="Grid view"
             aria-pressed={viewMode === 'grid'}
           >
             <LayoutGrid className="h-4 w-4" />
@@ -167,6 +169,7 @@ export const LibraryView = () => {
               viewMode === 'list' ? 'bg-muted text-ink' : 'text-ink-faint hover:text-ink',
             )}
             aria-label="List view"
+            title="List view"
             aria-pressed={viewMode === 'list'}
           >
             <ListIcon className="h-4 w-4" />
@@ -177,6 +180,7 @@ export const LibraryView = () => {
           onClick={() => setSortDir(sortDir === 'asc' ? 'desc' : 'asc')}
           className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded-md border border-border bg-background px-2.5 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
           aria-label={sortDir === 'asc' ? 'Sort ascending' : 'Sort descending'}
+          title={sortDir === 'asc' ? 'Sort ascending' : 'Sort descending'}
         >
           {sortDir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
         </button>

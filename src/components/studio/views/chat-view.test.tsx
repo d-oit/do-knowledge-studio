@@ -194,6 +194,38 @@ describe('ChatView', () => {
     expect(screen.getByText('Hi! How can I help?')).toBeDefined()
   })
 
+  it('announces message sender roles to screen readers', () => {
+    currentChat = [
+      {
+        id: 'msg-1',
+        role: 'user',
+        content: 'Hello there',
+        timestamp: new Date().toISOString(),
+      },
+      {
+        id: 'msg-2',
+        role: 'assistant',
+        content: 'Hi! How can I help?',
+        timestamp: new Date().toISOString(),
+      },
+    ]
+    render(<ChatView />)
+    expect(screen.getByText(/^You:$/)).toBeDefined()
+    expect(screen.getByText(/^Assistant:$/)).toBeDefined()
+  })
+
+  it('send button exposes a matching tooltip', () => {
+    render(<ChatView />)
+    const sendBtn = screen.getByRole('button', { name: 'Send message' })
+    expect(sendBtn).toHaveAttribute('title', 'Send message')
+  })
+
+  it('clear chat button exposes a matching tooltip and label', () => {
+    render(<ChatView />)
+    const clearBtn = screen.getByRole('button', { name: 'Clear chat history' })
+    expect(clearBtn).toHaveAttribute('title', 'Clear chat history')
+  })
+
   it('assistant messages render via Markdown', () => {
     currentChat = [
       {
