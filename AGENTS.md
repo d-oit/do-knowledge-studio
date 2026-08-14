@@ -214,6 +214,20 @@ After changing branch protection or rulesets, GitHub may report a PR as `BLOCKED
 4. Never use `--admin` to bypass protections without explicit user approval.
 5. `required_linear_history` makes plain merge commits invalid — always squash or rebase on this repo.
 
+### Codacy merge gate
+
+`Codacy Static Code Analysis` is the only ruleset-required status check on `main` (plans/098) and the zero-tolerance rule above applies to every PR. Two non-obvious behaviors (full playbook: `plans/123-codacy-merge-gate-playbook-2026-08-14.md`, LESSON-031, `codacy` skill):
+
+- **A missing check is a transient delay, not a defect.** Codacy can fail to post on a PR head for a while, leaving the PR `BLOCKED` with every other check green (verified 2026-08-14 on PR #678). Diagnose via the source of truth — `gh api repos/<owner>/<repo>/commits/<sha>/check-runs` (Codacy absent) — then nudge with an empty-commit push; Codacy appears and analyzes every subsequent push normally. Do not reconfigure the integration for this.
+- **Known false-positive patterns get code-level fixes** (`.codacy.yml` suppressions do NOT cover new PR code — see plans/112):
+  | Pattern | Fix |
+  |---|---|
+  | `Variable Assigned to Object Injection Sink` on constant `Record` lookups | Exhaustive typed `switch` (no dynamic indexing) |
+  | `Unnecessary conditional, value is always falsy` on falsy checks of TS non-nullable values (`!arr[i]`, `!document.documentElement`) | Index-bounds check (`i >= arr.length`) or presence check (`typeof x === 'undefined'`) — never falsy-check non-nullables |
+  | Void-expression arrow shorthand (`onClick={() => setX(!x)}`) | Braces around the statement body |
+
+Read findings: `gh api repos/<owner>/<repo>/commits/<sha>/check-runs` → Codacy run id → `/check-runs/<id>/annotations`.
+
 ## Deployment (Vercel)
 
 **Critical**: This project uses Vercel for production deployment. Breaking the build breaks the live site.
@@ -305,7 +319,17 @@ When merging dependabot PRs or manually bumping dependencies:
   staleness ladder (ruleset verify, threads, nudge, close/reopen) and
   `--admin` only with explicit approval. The
   `pr-merge-state-diagnoser.yml` workflow automates this diagnosis.
-- See `agents-docs/LESSONS.md` (LESSON-024..030) and
+- **Codacy (the sole required status check) can be entirely MISSING
+  from a head — a transient delay, not a broken integration** —
+  diagnose BLOCKED-with-all-green via `commits/{sha}/check-runs`;
+  nudge with an empty-commit push and it analyzes every later push.
+  Its known false-positive patterns (`detect-object-injection` on
+  constant lookups, "always falsy" on TS non-nullables,
+  void-expression arrows) are fixed at code level (exhaustive
+  switches, bounds/presence checks, braces) — `.codacy.yml`
+  suppressions do not cover new PR code (LESSON-031, plans/123,
+  plans/112).
+- See `agents-docs/LESSONS.md` (LESSON-024..031) and
   `plans/116-ci-workflow-learnings-2026-08-11.md` for full detail.
 
 ## Skills
