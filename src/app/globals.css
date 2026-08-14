@@ -3,10 +3,15 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Custom "wide" breakpoint at 1100px (68.75rem at default root). Declared in
-   its own @theme block (not @theme inline) so Tailwind v4 sorts it between
-   lg (64rem) and xl (80rem) — used by the topbar for full text labels. */
+/* Breakpoints. sm (40rem = 640px) and lg (64rem = 1024px) drive the Library
+   grid columns (grid-cols-1 sm:grid-cols-2 lg:grid-cols-3) and are read at
+   runtime by useColumnCount (library-entities.tsx) to chunk virtual rows, so
+   the JS can never drift from the CSS. "wide" (1100px) is used by the topbar
+   for full text labels. Declared in a plain @theme block (not @theme inline)
+   so Tailwind v4 sorts them and emits the variables on :root. */
 @theme {
+  --breakpoint-sm: 40rem;
+  --breakpoint-lg: 64rem;
   --breakpoint-wide: 68.75rem;
 }
 
