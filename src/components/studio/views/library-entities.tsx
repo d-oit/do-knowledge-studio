@@ -21,6 +21,9 @@ function EntityIcon({ type, className }: { type: EntityType; className?: string 
       return <User className={className} />
     case 'project':
       return <FolderKanban className={className} />
+    default:
+      // Safe fallback if the EntityType union is extended (tracker feedback).
+      return <FileText className={className} />
   }
 }
 
