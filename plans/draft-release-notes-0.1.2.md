@@ -33,10 +33,12 @@
 ## Version Note
 
 Keeps the current 0.1.x line. Old Vite-era tags v0.2.4/v0.2.5 (June 2026) predate the
-Next.js rewrite and had no GitHub releases (see the v0.1.1 draft note). At release
-time: bump `VERSION` (single source of truth, currently `0.1.1`) to `0.1.2`, run
-`./scripts/propagate-version.sh` to sync `agents-docs/VERSION.md`,
-`agents-docs/MIGRATION.md`, and `README.md`, then tag `v0.1.2`.
+Next.js rewrite and had no GitHub releases (see the v0.1.1 draft note). The bump and
+propagation are done in the release-prep PR (PR #674): `VERSION` and `package.json`
+bumped to `0.1.2` (matching the v0.1.1 chore convention, #665), with
+`./scripts/propagate-version.sh` syncing `agents-docs/VERSION.md` and
+`agents-docs/MIGRATION.md` (README has no badge row, per plan-121). Remaining release
+steps: tag `v0.1.2` and publish the GitHub release.
 
 ## Breaking Changes
 
