@@ -59,10 +59,18 @@ vi.mock('@tanstack/react-virtual', () => ({
 let mockClientHeight = 0
 
 beforeAll(() => {
+  const original = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientHeight')
   Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
     configurable: true,
     get: () => mockClientHeight,
   })
+  return () => {
+    if (original) {
+      Object.defineProperty(HTMLElement.prototype, 'clientHeight', original)
+    } else {
+      delete (HTMLElement.prototype as { clientHeight?: number }).clientHeight
+    }
+  }
 })
 
 const makeEntity = (i: number): Entity => ({

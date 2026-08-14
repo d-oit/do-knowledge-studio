@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import type { VirtualItem } from '@tanstack/react-virtual'
@@ -122,6 +122,14 @@ export function EntityGrid({
   )
 
   const animate = !virtualize && !reducedMotion
+  // Stable ref callback so React does not detach/reattach (and re-measure)
+  // the row on every render.
+  const measureRow = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (node) virtualizer.measureElement(node)
+    },
+    [virtualizer],
+  )
 
   if (!virtualize) {
     return (
@@ -142,7 +150,7 @@ export function EntityGrid({
           <div
             key={vi.key}
             data-index={vi.index}
-            ref={(node) => { if (node) virtualizer.measureElement(node) }}
+            ref={measureRow}
             style={{
               position: 'absolute',
               top: 0,
@@ -236,6 +244,13 @@ export function EntityTable({
     () => containerRef.current,
     () => TABLE_ROW_ESTIMATE_PX,
   )
+  // Stable ref callback so rows are not re-measured on every render.
+  const measureRow = useCallback(
+    (node: HTMLTableRowElement | null) => {
+      if (node) virtualizer.measureElement(node)
+    },
+    [virtualizer],
+  )
 
   return (
     <div ref={containerRef} className={cn(SCROLL_CONTAINER_CLASS, 'rounded-lg border border-border bg-card')}>
@@ -261,7 +276,7 @@ export function EntityTable({
                   entity={entities[vi.index]}
                   startEdit={startEdit}
                   vi={vi}
-                  measure={(node) => { if (node) virtualizer.measureElement(node) }}
+                  measure={measureRow}
                 />
               ))
             : entities.map((e) => (
