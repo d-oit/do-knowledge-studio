@@ -50,13 +50,45 @@ const useMeasurableHeight = (ref: RefObject<HTMLElement | null>): boolean => {
   return hasHeight
 }
 
+/**
+ * Reads a `--breakpoint-*` theme variable as pixels. The variables are emitted
+ * by Tailwind v4 from the @theme block in globals.css (rem is resolved against
+ * the root font size), so the virtual grid rows chunk on the same values the
+ * `sm:`/`lg:` CSS classes use — one source of truth.
+ */
+const readBreakpointPx = (name: string): number | null => {
+  if (
+    typeof window === 'undefined' ||
+    typeof document === 'undefined' ||
+    typeof getComputedStyle !== 'function'
+  ) {
+    return null
+  }
+  // document.documentElement is non-nullable per DOM types; the presence
+  // checks above (window/document) are the environment guard the caller needs.
+  const root = document.documentElement
+  const raw = getComputedStyle(root).getPropertyValue(name).trim()
+  if (!raw) return null
+  const value = Number.parseFloat(raw)
+  if (Number.isNaN(value)) return null
+  if (raw.endsWith('rem')) {
+    const rootFontPx = Number.parseFloat(getComputedStyle(root).fontSize) || 16
+    return value * rootFontPx
+  }
+  if (raw.endsWith('px')) return value
+  return null
+}
+
 /** Tracks the responsive grid column count (1 / 2 / 3) matching the CSS breakpoints. */
 const useColumnCount = (): number => {
   const [columns, setColumns] = useState(1)
   useLayoutEffect(() => {
+    // jsdom has no matchMedia — tests stay on the single-column eager path.
     if (typeof window.matchMedia !== 'function') return
-    const mqTwo = window.matchMedia('(min-width: 640px)')
-    const mqThree = window.matchMedia('(min-width: 1024px)')
+    const smPx = readBreakpointPx('--breakpoint-sm') ?? 640
+    const lgPx = readBreakpointPx('--breakpoint-lg') ?? 1024
+    const mqTwo = window.matchMedia(`(min-width: ${smPx}px)`)
+    const mqThree = window.matchMedia(`(min-width: ${lgPx}px)`)
     const update = () => { setColumns(mqThree.matches ? 3 : mqTwo.matches ? 2 : 1) }
     update()
     mqTwo.addEventListener('change', update)

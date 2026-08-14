@@ -101,5 +101,10 @@ Task 138's original premise was written against the retired Vite-era codebase:
 - No ADR required: pure front-end rendering bound, no data-model/export/search change.
   Dependency addition (`@tanstack/react-virtual`) verified via `verify-deps.sh`.
 - Reuses existing patterns (`ToggleButtonGroup`, `focus-ring`, min-h-44 touch targets).
-- Follow-up: the `useColumnCount` breakpoints duplicate the Tailwind `sm:`/`lg:` classes
-  — if they drift, extract a shared breakpoint token (single source of truth).
+- DONE: `useColumnCount` breakpoints now read `--breakpoint-sm`/`--breakpoint-lg`
+  from the Tailwind v4 `@theme` block (globals.css) at runtime — the CSS is the
+  single source of truth, so the virtual grid can never drift from the `sm:`/`lg:`
+  classes (PR #679).
+- DONE: `e2e/library-virtualization.spec.ts` seeds 120 entities through the Zustand
+  persist envelope and exercises the windowed path in a real browser (cap → Show all
+  → windowed mount → scroll → later windows mount) on all viewport projects (PR #679).
