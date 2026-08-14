@@ -12,6 +12,18 @@ const TYPE_ICONS: Record<EntityType, typeof FileText> = {
   project: FolderKanban,
 }
 
+/** Module-scope date formatter for library timestamps (shared by grid and list). */
+const dateFormatter = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' })
+
+/** Formats an ISO timestamp as a short date (e.g. "Jun 15"). */
+const formatDate = (iso: string): string => dateFormatter.format(new Date(iso))
+
+/** Entity-type icon rendered with the given classes (shared by grid and list). */
+function EntityIcon({ type, className }: { type: EntityType; className?: string }) {
+  const Icon = TYPE_ICONS[type]
+  return <Icon className={className} />
+}
+
 /** Grid of entity cards with staggered entrance animation. */
 export function EntityGrid({
   entities,
@@ -26,7 +38,6 @@ export function EntityGrid({
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {entities.map((e, i) => {
         const meta = ENTITY_TYPE_META[e.type]
-        const Icon = TYPE_ICONS[e.type]
         return (
           <motion.button
             key={e.id}
@@ -38,7 +49,7 @@ export function EntityGrid({
           >
             <div className="mb-3 flex items-center justify-between">
               <div className={cn('flex h-9 w-9 items-center justify-center rounded-md', meta.bg, meta.text)}>
-                <Icon className="h-4 w-4" />
+                <EntityIcon type={e.type} className="h-4 w-4" />
               </div>
               <span className="text-caption font-semibold uppercase tracking-wide text-ink-faint">
                 {meta.label}
@@ -66,7 +77,7 @@ export function EntityGrid({
               </div>
               <div className="flex items-center gap-1 text-caption text-ink-faint">
                 <Clock className="h-2.5 w-2.5" />
-                {new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(new Date(e.updatedAt))}
+                {formatDate(e.updatedAt)}
               </div>
             </div>
           </motion.button>
@@ -99,7 +110,6 @@ export function EntityTable({
         <tbody>
           {entities.map((e) => {
             const meta = ENTITY_TYPE_META[e.type]
-            const Icon = TYPE_ICONS[e.type]
             return (
               <tr
                 key={e.id}
@@ -118,7 +128,7 @@ export function EntityTable({
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2.5">
                     <div className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded', meta.bg, meta.text)}>
-                      <Icon className="h-3.5 w-3.5" />
+                      <EntityIcon type={e.type} className="h-3.5 w-3.5" />
                     </div>
                     <div className="min-w-0">
                       <div className="truncate text-[13px] font-semibold text-ink group-hover:text-saffron-deep">
@@ -146,7 +156,7 @@ export function EntityTable({
                   </div>
                 </td>
                 <td className="px-4 py-3 text-right text-label text-ink-faint">
-                  {new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(new Date(e.updatedAt))}
+                  {formatDate(e.updatedAt)}
                 </td>
               </tr>
             )
