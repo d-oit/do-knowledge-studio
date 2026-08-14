@@ -6,6 +6,7 @@ import { X, Search, Sun, Moon, FileText } from 'lucide-react'
 import packageJson from '../../../package.json'
 import { useTheme } from 'next-themes'
 import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
+import { RELEASES_BASE_URL } from '@/lib/studio/constants'
 import { ENTITY_TYPE_META, type Entity } from '@/lib/studio/types'
 import { NAV_GROUPS } from './sidebar'
 import { cn } from '@/lib/utils'
@@ -89,9 +90,15 @@ function DrawerHeader({
         <span className="truncate font-serif text-[15px] font-semibold leading-tight tracking-tight">
           Knowledge Studio
         </span>
-        <span className="text-caption uppercase tracking-[0.14em] text-ink-faint">
+        <a
+          href={`${RELEASES_BASE_URL}/tag/v${packageJson.version}`}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={`Knowledge Studio v${packageJson.version} release page`}
+          className="text-caption uppercase tracking-[0.14em] text-ink-faint transition-colors hover:text-saffron focus-ring"
+        >
           Local-first · v{packageJson.version}
-        </span>
+        </a>
       </div>
       <button
         ref={closeBtnRef}

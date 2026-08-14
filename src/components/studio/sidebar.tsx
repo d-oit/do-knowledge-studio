@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useStudioStore } from '@/lib/studio/store'
+import { RELEASES_BASE_URL } from '@/lib/studio/constants'
 import type { ViewId } from '@/lib/studio/types'
 import packageJson from '../../../package.json'
 import { cn } from '@/lib/utils'
@@ -85,9 +86,15 @@ export function Sidebar() {
           <span className="font-serif text-[15px] font-semibold leading-tight tracking-tight">
             Knowledge Studio
           </span>
-          <span className="text-caption uppercase tracking-[0.14em] text-ink-faint">
+          <a
+            href={`${RELEASES_BASE_URL}/tag/v${packageJson.version}`}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={`Knowledge Studio v${packageJson.version} release page`}
+            className="text-caption uppercase tracking-[0.14em] text-ink-faint transition-colors hover:text-saffron focus-ring"
+          >
             Local-first · v{packageJson.version}
-          </span>
+          </a>
         </div>
       </div>
 
