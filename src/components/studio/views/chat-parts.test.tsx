@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
 import { createRef } from 'react'
-import type { ReactNode } from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import {
   WelcomePanel,
@@ -10,44 +9,11 @@ import {
 } from './chat-view'
 import type { ChatMessage } from '@/lib/studio/types'
 
-vi.mock('framer-motion', () => ({
-  motion: {
-    div: ({ children, initial: _i, animate: _a, transition: _t, ...props }: { children?: ReactNode; [key: string]: unknown }) => (
-      <div {...(props as React.HTMLAttributes<HTMLDivElement>)}>{children}</div>
-    ),
-  },
-  AnimatePresence: ({ children }: { children?: ReactNode }) => children,
-}))
-
-vi.mock('lucide-react', () => {
-  const Icon = ({ className }: { className?: string }) => (
-    <span data-testid="icon" className={className} />
-  )
-  return {
-    Send: Icon,
-    Sparkles: Icon,
-    Trash2: Icon,
-    Bot: Icon,
-    User: Icon,
-    Quote: Icon,
-    ChevronDown: Icon,
-    MessageSquare: Icon,
-  }
-})
-
-vi.mock('react-markdown', () => ({
-  default: ({ children }: { children: string }) => <div data-testid="markdown">{children}</div>,
-}))
-
-vi.mock('@/lib/utils', () => ({
-  cn: (...args: (string | undefined | false | null)[]) => args.filter(Boolean).join(' '),
-}))
-
-vi.mock('../voice-input', () => ({
-  VoiceInput: ({ onTranscript: _t, disabled }: { onTranscript?: (t: string) => void; disabled?: boolean }) => (
-    <div data-testid="voice-input" data-disabled={String(Boolean(disabled))} />
-  ),
-}))
+vi.mock('framer-motion', async () => (await import('@/test/chat-mocks')).framerMotionMock)
+vi.mock('lucide-react', async () => (await import('@/test/chat-mocks')).lucideIconsMock)
+vi.mock('react-markdown', async () => (await import('@/test/chat-mocks')).markdownMock)
+vi.mock('@/lib/utils', async () => (await import('@/test/chat-mocks')).cnMock)
+vi.mock('../voice-input', async () => (await import('@/test/chat-mocks')).voiceInputMock)
 
 const userMsg = (overrides: Partial<ChatMessage> = {}): ChatMessage => ({
   id: 'u1',

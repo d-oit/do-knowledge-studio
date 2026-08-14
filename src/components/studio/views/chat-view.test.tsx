@@ -1,52 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act } from 'react'
-import type { ReactNode } from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 
-vi.mock('framer-motion', () => ({
-  motion: {
-    div: ({ children, initial: _i, animate: _a, transition: _t, ...props }: { children?: ReactNode; [key: string]: unknown }) => (
-      <div {...(props as React.HTMLAttributes<HTMLDivElement>)}>{children}</div>
-    ),
-  },
-  AnimatePresence: ({ children }: { children?: ReactNode }) => children,
-}))
-
-vi.mock('lucide-react', () => {
-  const Icon = ({ className }: { className?: string }) => (
-    <span data-testid="icon" className={className} />
-  )
-  return {
-    Send: Icon,
-    Sparkles: Icon,
-    Trash2: Icon,
-    Bot: Icon,
-    User: Icon,
-    Quote: Icon,
-    ChevronDown: Icon,
-    MessageSquare: Icon,
-  }
-})
-
-vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
-}))
-
-vi.mock('react-markdown', () => ({
-  default: ({ children }: { children: string }) => <div data-testid="markdown">{children}</div>,
-}))
-
-vi.mock('@/lib/utils', () => ({
-  cn: (...args: (string | undefined | false | null)[]) => args.filter(Boolean).join(' '),
-}))
-
-vi.mock('@/lib/studio/use-reduced-motion', () => ({
-  useReducedMotion: () => false,
-}))
-
-vi.mock('../voice-input', () => ({
-  VoiceInput: () => <div data-testid="voice-input" />,
-}))
+vi.mock('framer-motion', async () => (await import('@/test/chat-mocks')).framerMotionMock)
+vi.mock('lucide-react', async () => (await import('@/test/chat-mocks')).lucideIconsMock)
+vi.mock('sonner', async () => (await import('@/test/chat-mocks')).sonnerMock)
+vi.mock('react-markdown', async () => (await import('@/test/chat-mocks')).markdownMock)
+vi.mock('@/lib/utils', async () => (await import('@/test/chat-mocks')).cnMock)
+vi.mock('@/lib/studio/use-reduced-motion', async () => (await import('@/test/chat-mocks')).reducedMotionMock)
+vi.mock('../voice-input', async () => (await import('@/test/chat-mocks')).voiceInputMock)
 
 const mockSendMessage = vi.fn()
 const mockClearChat = vi.fn()
