@@ -18,6 +18,8 @@ on:
     # Nightly E2E backfill on main so the suite never goes stale between
     # frontend PRs (see plans/122). Only the e2e-tests job runs on schedule.
     - cron: '0 3 * * *'
+  workflow_dispatch:
+    # Manual lever to exercise the E2E-on-main path on demand (plans/122 W2).
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -121,7 +123,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [changes, unit-tests]
-    if: (github.event_name == 'schedule' && github.ref == 'refs/heads/main') || needs.changes.outputs.frontend == 'true'
+    if: >-
+      (github.event_name == 'schedule' && github.ref == 'refs/heads/main') ||
+      github.event_name == 'workflow_dispatch' ||
+      needs.changes.outputs.frontend == 'true'
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1

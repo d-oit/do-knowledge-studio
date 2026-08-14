@@ -72,10 +72,10 @@ export interface GraphEdge {
   relation: string
 }
 
-/** UI metadata (colors, labels, icons) keyed by entity type. */
+/** UI metadata (colors, labels) keyed by entity type. */
 export const ENTITY_TYPE_META: Record<
   EntityType,
-  { label: string; color: string; bg: string; text: string; dot: string; icon: string }
+  { label: string; color: string; bg: string; text: string; dot: string }
 > = {
   note: {
     label: 'Note',
@@ -83,7 +83,6 @@ export const ENTITY_TYPE_META: Record<
     bg: 'bg-sky-100 dark:bg-sky-950/40',
     text: 'text-sky-700 dark:text-sky-300',
     dot: 'bg-sky-500',
-    icon: 'FileText',
   },
   concept: {
     label: 'Concept',
@@ -91,7 +90,6 @@ export const ENTITY_TYPE_META: Record<
     bg: 'bg-amber-100 dark:bg-amber-950/40',
     text: 'text-amber-700 dark:text-amber-300',
     dot: 'bg-amber-600',
-    icon: 'Lightbulb',
   },
   person: {
     label: 'Person',
@@ -99,7 +97,6 @@ export const ENTITY_TYPE_META: Record<
     bg: 'bg-rose-100 dark:bg-rose-950/40',
     text: 'text-rose-700 dark:text-rose-300',
     dot: 'bg-rose-500',
-    icon: 'User',
   },
   project: {
     label: 'Project',
@@ -107,6 +104,5 @@ export const ENTITY_TYPE_META: Record<
     bg: 'bg-emerald-100 dark:bg-emerald-950/40',
     text: 'text-emerald-700 dark:text-emerald-300',
     dot: 'bg-emerald-600',
-    icon: 'FolderKanban',
   },
 }
