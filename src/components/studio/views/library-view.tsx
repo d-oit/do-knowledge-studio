@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo } from 'react'
 import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
-import { ENTITY_TYPE_META, type EntityType } from '@/lib/studio/types'
+import { ENTITY_TYPE_META, type EntityType, type Entity } from '@/lib/studio/types'
 import { ToggleButtonGroup } from '../ui/shared-primitives'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -282,168 +282,28 @@ export const LibraryView = () => {
       </div>
 
       {/* Empty states */}
-      {allEntities.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 py-20 text-center">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-saffron-soft">
-            <FileText className="h-6 w-6 text-saffron" />
-          </div>
-          <h3 className="font-serif text-lg font-semibold text-ink">No entities yet</h3>
-          <p className="mt-1 max-w-sm text-[13px] text-ink-mute">
-            Capture your first thought, concept, person, or project. Everything you save stays local
-            and offline-ready.
-          </p>
-          <button
-            onClick={startNew}
-            className="mt-4 flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 text-[13px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
-          >
-            <Plus className="h-4 w-4" />
-            Create your first entity
-          </button>
-        </div>
-      ) : advancedFilteredEntities.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 py-20 text-center">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
-            <Search className="h-6 w-6 text-ink-faint" />
-          </div>
-          <h3 className="font-serif text-lg font-semibold text-ink">No matches found</h3>
-          <p className="mt-1 max-w-sm text-[13px] text-ink-mute">
-            Try adjusting your search terms or filters to find what you&apos;re looking for.
-          </p>
-          <button
-            onClick={clearFilters}
-            className="mt-4 flex min-h-[44px] items-center gap-1.5 rounded-md bg-secondary px-4 text-[13px] font-semibold text-ink transition-all hover:opacity-90 press-scale focus-ring"
-          >
-            <X className="h-4 w-4" />
-            Clear all filters
-          </button>
-        </div>
-      ) : null}
+      <LibraryEmptyState
+        allEntitiesLength={allEntities.length}
+        filteredEntitiesLength={advancedFilteredEntities.length}
+        startNew={startNew}
+        clearFilters={clearFilters}
+      />
 
       {/* Grid view */}
       {advancedFilteredEntities.length > 0 && viewMode === 'grid' && (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {advancedFilteredEntities.map((e, i) => {
-            const meta = ENTITY_TYPE_META[e.type]
-            const Icon = TYPE_ICONS[e.type]
-            return (
-              <motion.button
-                key={e.id}
-                initial={reducedMotion ? false : { opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={reducedMotion ? { duration: 0 } : { duration: 0.25, delay: Math.min(i * 0.03, 0.3) }}
-                onClick={() => startEdit(e.id)}
-                className="group flex flex-col rounded-lg border border-border bg-card p-4 text-left transition-all hover:border-saffron/30 hover:shadow-md hover-lift focus-ring"
-              >
-                <div className="mb-3 flex items-center justify-between">
-                  <div className={cn('flex h-9 w-9 items-center justify-center rounded-md', meta.bg, meta.text)}>
-                    <Icon className="h-4 w-4" />
-                  </div>
-                  <span className="text-caption font-semibold uppercase tracking-wide text-ink-faint">
-                    {meta.label}
-                  </span>
-                </div>
-                <h3 className="mb-1.5 font-serif text-[15px] font-semibold leading-snug text-ink group-hover:text-saffron-deep">
-                  {e.name}
-                </h3>
-                <p className="line-clamp-3 flex-1 text-[12px] leading-relaxed text-ink-mute">
-                  {e.description}
-                </p>
-                <div className="mt-3 flex items-center justify-between border-t border-border pt-2.5">
-                  <div className="flex flex-wrap gap-1">
-                    {e.tags.slice(0, 2).map((t) => (
-                      <span
-                        key={t}
-                        className="rounded-full bg-muted px-1.5 py-0 text-badge font-medium text-ink-faint"
-                      >
-                        #{t}
-                      </span>
-                    ))}
-                    {e.tags.length > 2 && (
-                      <span className="text-badge text-ink-faint">+{e.tags.length - 2}</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 text-caption text-ink-faint">
-                    <Clock className="h-2.5 w-2.5" />
-                    {new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(new Date(e.updatedAt))}
-                  </div>
-                </div>
-              </motion.button>
-            )
-          })}
-        </div>
+        <LibraryGridView
+          entities={advancedFilteredEntities}
+          reducedMotion={reducedMotion}
+          startEdit={startEdit}
+        />
       )}
 
       {/* List view */}
       {advancedFilteredEntities.length > 0 && viewMode === 'list' && (
-        <div className="overflow-hidden rounded-lg border border-border bg-card">
-          <table className="w-full">
-            <caption className="sr-only">Library entities</caption>
-            <thead>
-              <tr className="border-b border-border bg-muted/30 text-left text-label font-semibold uppercase tracking-wide text-ink-faint">
-                <th className="px-4 py-2.5">Name</th>
-                <th className="hidden px-4 py-2.5 sm:table-cell">Type</th>
-                <th className="hidden px-4 py-2.5 lg:table-cell">Tags</th>
-                <th className="px-4 py-2.5 text-right">Updated</th>
-              </tr>
-            </thead>
-            <tbody>
-              {advancedFilteredEntities.map((e) => {
-                const meta = ENTITY_TYPE_META[e.type]
-                const Icon = TYPE_ICONS[e.type]
-                return (
-                  <tr
-                    key={e.id}
-                    onClick={() => startEdit(e.id)}
-                    onKeyDown={(ev) => {
-                      if (ev.key === 'Enter' || ev.key === ' ') {
-                        ev.preventDefault()
-                        startEdit(e.id)
-                      }
-                    }}
-                    tabIndex={0}
-                    role="link"
-                    aria-label={`Open ${e.name}`}
-                    className="group cursor-pointer border-b border-border last:border-0 transition-colors hover:bg-muted/30 focus-ring"
-                  >
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded', meta.bg, meta.text)}>
-                          <Icon className="h-3.5 w-3.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="truncate text-[13px] font-semibold text-ink group-hover:text-saffron-deep">
-                            {e.name}
-                          </div>
-                          <div className="truncate text-label text-ink-mute">{e.description}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="hidden px-4 py-3 sm:table-cell">
-                      <span className={cn('rounded-full px-2 py-0.5 text-caption font-medium', meta.bg, meta.text)}>
-                        {meta.label}
-                      </span>
-                    </td>
-                    <td className="hidden px-4 py-3 lg:table-cell">
-                      <div className="flex flex-wrap gap-1">
-                        {e.tags.slice(0, 3).map((t) => (
-                          <span
-                            key={t}
-                            className="rounded-full bg-muted px-1.5 py-0 text-caption text-ink-faint"
-                          >
-                            #{t}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-right text-label text-ink-faint">
-                      {new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(new Date(e.updatedAt))}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+        <LibraryListView
+          entities={advancedFilteredEntities}
+          startEdit={startEdit}
+        />
       )}
 
       <div className="mt-4 flex items-center justify-between">
@@ -455,6 +315,211 @@ export const LibraryView = () => {
           Showing {advancedFilteredEntities.length} {advancedFilteredEntities.length === 1 ? 'entity' : 'entities'}
         </div>
       </div>
+    </div>
+  )
+}
+
+/** Properties for the LibraryEmptyState component. */
+interface LibraryEmptyStateProps {
+  allEntitiesLength: number
+  filteredEntitiesLength: number
+  startNew: () => void
+  clearFilters: () => void
+}
+
+/** Render empty states for library view. */
+const LibraryEmptyState = ({
+  allEntitiesLength,
+  filteredEntitiesLength,
+  startNew,
+  clearFilters,
+}: LibraryEmptyStateProps) => {
+  if (allEntitiesLength === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 py-20 text-center">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-saffron-soft">
+          <FileText className="h-6 w-6 text-saffron" />
+        </div>
+        <h3 className="font-serif text-lg font-semibold text-ink">No entities yet</h3>
+        <p className="mt-1 max-w-sm text-[13px] text-ink-mute">
+          Capture your first thought, concept, person, or project. Everything you save stays local
+          and offline-ready.
+        </p>
+        <button
+          onClick={startNew}
+          className="mt-4 flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 text-[13px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+        >
+          <Plus className="h-4 w-4" />
+          Create your first entity
+        </button>
+      </div>
+    )
+  }
+
+  if (filteredEntitiesLength === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 py-20 text-center">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+          <Search className="h-6 w-6 text-ink-faint" />
+        </div>
+        <h3 className="font-serif text-lg font-semibold text-ink">No matches found</h3>
+        <p className="mt-1 max-w-sm text-[13px] text-ink-mute">
+          Try adjusting your search terms or filters to find what you&apos;re looking for.
+        </p>
+        <button
+          onClick={clearFilters}
+          className="mt-4 flex min-h-[44px] items-center gap-1.5 rounded-md bg-secondary px-4 text-[13px] font-semibold text-ink transition-all hover:opacity-90 press-scale focus-ring"
+        >
+          <X className="h-4 w-4" />
+          Clear all filters
+        </button>
+      </div>
+    )
+  }
+
+  return null
+}
+
+/** Properties for the LibraryGridView component. */
+interface LibraryGridViewProps {
+  entities: Entity[]
+  reducedMotion: boolean
+  startEdit: (id: string) => void
+}
+
+/** Render library entities in a responsive grid card layout. */
+const LibraryGridView = ({ entities, reducedMotion, startEdit }: LibraryGridViewProps) => {
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {entities.map((e, i) => {
+        const meta = ENTITY_TYPE_META[e.type]
+        const Icon = TYPE_ICONS[e.type]
+        return (
+          <motion.button
+            key={e.id}
+            initial={reducedMotion ? false : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={reducedMotion ? { duration: 0 } : { duration: 0.25, delay: Math.min(i * 0.03, 0.3) }}
+            onClick={() => startEdit(e.id)}
+            className="group flex flex-col rounded-lg border border-border bg-card p-4 text-left transition-all hover:border-saffron/30 hover:shadow-md hover-lift focus-ring"
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <div className={cn('flex h-9 w-9 items-center justify-center rounded-md', meta.bg, meta.text)}>
+                <Icon className="h-4 w-4" />
+              </div>
+              <span className="text-caption font-semibold uppercase tracking-wide text-ink-faint">
+                {meta.label}
+              </span>
+            </div>
+            <h3 className="mb-1.5 font-serif text-[15px] font-semibold leading-snug text-ink group-hover:text-saffron-deep">
+              {e.name}
+            </h3>
+            <p className="line-clamp-3 flex-1 text-[12px] leading-relaxed text-ink-mute">
+              {e.description}
+            </p>
+            <div className="mt-3 flex items-center justify-between border-t border-border pt-2.5">
+              <div className="flex flex-wrap gap-1">
+                {e.tags.slice(0, 2).map((t) => (
+                  <span
+                    key={t}
+                    className="rounded-full bg-muted px-1.5 py-0 text-badge font-medium text-ink-faint"
+                  >
+                    #{t}
+                  </span>
+                ))}
+                {e.tags.length > 2 && (
+                  <span className="text-badge text-ink-faint">+{e.tags.length - 2}</span>
+                )}
+              </div>
+              <div className="flex items-center gap-1 text-caption text-ink-faint">
+                <Clock className="h-2.5 w-2.5" />
+                {new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(new Date(e.updatedAt))}
+              </div>
+            </div>
+          </motion.button>
+        )
+      })}
+    </div>
+  )
+}
+
+/** Properties for the LibraryListView component. */
+interface LibraryListViewProps {
+  entities: Entity[]
+  startEdit: (id: string) => void
+}
+
+/** Render library entities in a structured list table layout. */
+const LibraryListView = ({ entities, startEdit }: LibraryListViewProps) => {
+  return (
+    <div className="overflow-hidden rounded-lg border border-border bg-card">
+      <table className="w-full">
+        <caption className="sr-only">Library entities</caption>
+        <thead>
+          <tr className="border-b border-border bg-muted/30 text-left text-label font-semibold uppercase tracking-wide text-ink-faint">
+            <th className="px-4 py-2.5">Name</th>
+            <th className="hidden px-4 py-2.5 sm:table-cell">Type</th>
+            <th className="hidden px-4 py-2.5 lg:table-cell">Tags</th>
+            <th className="px-4 py-2.5 text-right">Updated</th>
+          </tr>
+        </thead>
+        <tbody>
+          {entities.map((e) => {
+            const meta = ENTITY_TYPE_META[e.type]
+            const Icon = TYPE_ICONS[e.type]
+            return (
+              <tr
+                key={e.id}
+                onClick={() => startEdit(e.id)}
+                onKeyDown={(ev) => {
+                  if (ev.key === 'Enter' || ev.key === ' ') {
+                    ev.preventDefault()
+                    startEdit(e.id)
+                  }
+                }}
+                tabIndex={0}
+                role="link"
+                aria-label={`Open ${e.name}`}
+                className="group cursor-pointer border-b border-border last:border-0 transition-colors hover:bg-muted/30 focus-ring"
+              >
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded', meta.bg, meta.text)}>
+                      <Icon className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="truncate text-[13px] font-semibold text-ink group-hover:text-saffron-deep">
+                        {e.name}
+                      </div>
+                      <div className="truncate text-label text-ink-mute">{e.description}</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="hidden px-4 py-3 sm:table-cell">
+                  <span className={cn('rounded-full px-2 py-0.5 text-caption font-medium', meta.bg, meta.text)}>
+                    {meta.label}
+                  </span>
+                </td>
+                <td className="hidden px-4 py-3 lg:table-cell">
+                  <div className="flex flex-wrap gap-1">
+                    {e.tags.slice(0, 3).map((t) => (
+                      <span
+                        key={t}
+                        className="rounded-full bg-muted px-1.5 py-0 text-caption text-ink-faint"
+                      >
+                        #{t}
+                      </span>
+                    ))}
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-right text-label text-ink-faint">
+                  {new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(new Date(e.updatedAt))}
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
     </div>
   )
 }
