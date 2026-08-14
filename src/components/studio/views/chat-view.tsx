@@ -174,7 +174,7 @@ interface WelcomePanelProps {
 }
 
 /** Empty-state welcome screen with capabilities list and suggestion chips. */
-const WelcomePanel = ({ reducedMotion, onSend }: WelcomePanelProps) => (
+export const WelcomePanel = ({ reducedMotion, onSend }: WelcomePanelProps) => (
   <motion.div
     initial={reducedMotion ? false : { opacity: 0, y: 8 }}
     animate={{ opacity: 1, y: 0 }}
@@ -230,7 +230,7 @@ interface MessageListProps {
 }
 
 /** Scrollable conversation history with per-message role labels and citations. */
-const MessageList = ({
+export const MessageList = ({
   chat,
   reducedMotion,
   showCitations,
@@ -343,7 +343,7 @@ interface SuggestionsBarProps {
 }
 
 /** Quick prompt chips shown between the message list and the input. */
-const SuggestionsBar = ({ onSend }: SuggestionsBarProps) => (
+export const SuggestionsBar = ({ onSend }: SuggestionsBarProps) => (
   <div className="border-t border-border bg-muted/20 px-5 py-3 lg:px-10">
     <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-2">
       <span className="flex items-center gap-1 text-label font-medium text-ink-faint">
@@ -375,7 +375,7 @@ interface InputBarProps {
 }
 
 /** Chat composer with voice input, send action, and history controls. */
-const InputBar = ({
+export const InputBar = ({
   input,
   setInput,
   chatLoading,
