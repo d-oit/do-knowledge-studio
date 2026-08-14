@@ -57,7 +57,13 @@ const useMeasurableHeight = (ref: RefObject<HTMLElement | null>): boolean => {
  * `sm:`/`lg:` CSS classes use — one source of truth.
  */
 const readBreakpointPx = (name: string): number | null => {
-  if (typeof window === 'undefined' || typeof getComputedStyle !== 'function') return null
+  if (
+    typeof window === 'undefined' ||
+    typeof getComputedStyle !== 'function' ||
+    !document.documentElement
+  ) {
+    return null
+  }
   const root = document.documentElement
   const raw = getComputedStyle(root).getPropertyValue(name).trim()
   if (!raw) return null
