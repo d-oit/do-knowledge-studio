@@ -1,7 +1,7 @@
 # Plan 122 — Large-List Render Cost: Library Cap + Show All, E2E Backfill, Windowing (2026-08-14)
 
 Date: 2026-08-14
-Status: IMPLEMENTED — W1/W2 merged via PR #677; W3/W4 merged via PR #678
+Status: IMPLEMENTED — W1/W2 merged via PR #677; W3/W4 via PR #678; follow-ups #679–#683
 
 ## Purpose
 
@@ -108,3 +108,19 @@ Task 138's original premise was written against the retired Vite-era codebase:
 - DONE: `e2e/library-virtualization.spec.ts` seeds 120 entities through the Zustand
   persist envelope and exercises the windowed path in a real browser (cap → Show all
   → windowed mount → scroll → later windows mount) on all viewport projects (PR #679).
+
+## Follow-up Delivery (PRs #680–#683)
+
+- **Chat/library a11y tooltips + SR labels (PR #680)** — rescued the closed PR #673:
+  sr-only `You:`/`Assistant:` prefixes inside chat bubbles, matching `title`+`aria-label`
+  pairs on icon-only controls (Send, Clear chat, Clear search, Grid/List toggles, Sort),
+  ChatView decomposed into presentational subcomponents, dead `chat-clear-btn` class
+  removed, Codacy void-arrow finding eliminated.
+- **Codacy merge-gate docs (PR #681)** — plans/123 + AGENTS.md subsection +
+  LESSON-031 capture the transient missing-check and always-falsy-guard learnings.
+- **Chat a11y E2E + CI trigger fix (PR #682)** — `e2e/chat-a11y.spec.ts` asserts the
+  sr-only sender labels and chat tooltips; `ci-and-labels.yml` frontend filter gained
+  `e2e/**` so e2e-spec-only PRs no longer skip the E2E job (verified on the #682 run).
+- **Library control tooltip E2E (PR #683)** — `e2e/search-and-filter.spec.ts` asserts
+  the Clear search / Grid / List / Sort tooltips, including the sort toggle's
+  state-tracking title.
