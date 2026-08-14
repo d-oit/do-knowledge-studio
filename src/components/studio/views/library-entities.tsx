@@ -146,12 +146,16 @@ export function EntityGrid({
   return (
     <div ref={containerRef} className={SCROLL_CONTAINER_CLASS}>
       <div className="relative" style={{ height: virtualizer.getTotalSize() }}>
-        {virtualizer.getVirtualItems().map((vi) => (
-          <div
-            key={vi.key}
-            data-index={vi.index}
-            ref={measureRow}
-            style={{
+        {virtualizer.getVirtualItems().map((vi) => {
+          const rowEntities = rows[vi.index]
+          // Defensive: skip if the chunked rows state lags the virtual range.
+          if (!rowEntities) return null
+          return (
+            <div
+              key={vi.key}
+              data-index={vi.index}
+              ref={measureRow}
+              style={{
               position: 'absolute',
               top: 0,
               left: 0,
@@ -159,12 +163,13 @@ export function EntityGrid({
               transform: `translateY(${vi.start}px)`,
             }}
             className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
-          >
-            {rows[vi.index].map((e) => (
-              <GridCard key={e.id} entity={e} startEdit={startEdit} index={0} animate={false} />
-            ))}
-          </div>
-        ))}
+            >
+              {rowEntities.map((e) => (
+                <GridCard key={e.id} entity={e} startEdit={startEdit} index={0} animate={false} />
+              ))}
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -270,15 +275,20 @@ export function EntityTable({
           }
         >
           {virtualize
-            ? virtualizer.getVirtualItems().map((vi) => (
-                <TableRow
-                  key={entities[vi.index].id}
-                  entity={entities[vi.index]}
-                  startEdit={startEdit}
-                  vi={vi}
-                  measure={measureRow}
-                />
-              ))
+            ? virtualizer.getVirtualItems().map((vi) => {
+                const entity = entities[vi.index]
+                // Defensive: skip if the list shrinks between renders.
+                if (!entity) return null
+                return (
+                  <TableRow
+                    key={entity.id}
+                    entity={entity}
+                    startEdit={startEdit}
+                    vi={vi}
+                    measure={measureRow}
+                  />
+                )
+              })
             : entities.map((e) => (
                 <TableRow key={e.id} entity={e} startEdit={startEdit} vi={null} />
               ))}
