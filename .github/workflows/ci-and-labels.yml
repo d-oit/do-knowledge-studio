@@ -49,6 +49,7 @@ jobs:
             frontend:
               - 'src/**'
               - 'public/**'
+              - 'e2e/**'
               - 'package.json'
             tooling:
               - 'scripts/**'
