@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { escapeHtml, sanitizeHtml, sanitizeText } from './security'
+import { escapeHtml, sanitizeHtml, sanitizeText, sanitizeUrl } from './security'
 
 describe('escapeHtml', () => {
   it('escapes ampersands', () => {
@@ -75,5 +75,51 @@ describe('sanitizeText', () => {
 
   it('strips script injection', () => {
     expect(sanitizeText('<script>alert("xss")</script>')).toBe('')
+  })
+})
+
+describe('sanitizeUrl', () => {
+  it('allows http and https URLs', () => {
+    expect(sanitizeUrl('http://example.com')).toBe('http://example.com')
+    expect(sanitizeUrl('https://example.com/path?query=1#hash')).toBe(
+      'https://example.com/path?query=1#hash',
+    )
+  })
+
+  it('allows mailto and tel URLs by default', () => {
+    expect(sanitizeUrl('mailto:user@example.com')).toBe('mailto:user@example.com')
+    expect(sanitizeUrl('tel:+1234567890')).toBe('tel:+1234567890')
+  })
+
+  it('allows safe relative path URLs', () => {
+    expect(sanitizeUrl('/dashboard')).toBe('/dashboard')
+    expect(sanitizeUrl('/docs/setup?v=1')).toBe('/docs/setup?v=1')
+  })
+
+  it('blocks protocol-relative URLs and backslash bypasses', () => {
+    expect(sanitizeUrl('//evil.com')).toBe('')
+    expect(sanitizeUrl('//evil.com/phishing')).toBe('')
+    expect(sanitizeUrl('/\\evil.com')).toBe('')
+    expect(sanitizeUrl('/\\evil.com/phishing')).toBe('')
+  })
+
+  it('blocks dangerous schemes (javascript, data, vbscript)', () => {
+    expect(sanitizeUrl('javascript:alert(1)')).toBe('')
+    expect(sanitizeUrl('JAVASCRIPT:alert(1)')).toBe('')
+    expect(sanitizeUrl('data:text/html,<script>alert(1)</script>')).toBe('')
+    expect(sanitizeUrl('vbscript:msgbox(1)')).toBe('')
+  })
+
+  it('blocks malformed and non-string inputs', () => {
+    expect(sanitizeUrl('')).toBe('')
+    expect(sanitizeUrl('   ')).toBe('')
+    expect(sanitizeUrl('not a url')).toBe('')
+    expect(sanitizeUrl(null as unknown as string)).toBe('')
+    expect(sanitizeUrl(undefined as unknown as string)).toBe('')
+  })
+
+  it('supports custom allowed protocols', () => {
+    expect(sanitizeUrl('ftp://files.example.com', ['ftp'])).toBe('ftp://files.example.com')
+    expect(sanitizeUrl('https://example.com', ['ftp'])).toBe('')
   })
 })

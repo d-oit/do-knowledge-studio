@@ -35,3 +35,45 @@ export function sanitizeHtml(dirty: string): string {
 export function sanitizeText(dirty: string): string {
   return DOMPurify.sanitize(dirty, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] })
 }
+
+/**
+ * Sanitize a URL to prevent XSS attacks via dangerous protocols or schemes
+ * (e.g. javascript:, data:, vbscript:).
+ *
+ * Allows relative path URLs (starting with / but not //) and absolute URLs
+ * matching allowed protocols (defaulting to http:, https:, mailto:, tel:).
+ */
+export function sanitizeUrl(
+  url: string,
+  allowedProtocols: string[] = ['http:', 'https:', 'mailto:', 'tel:'],
+): string {
+  if (!url || typeof url !== 'string') {
+    return ''
+  }
+
+  const trimmed = url.trim()
+  if (!trimmed) {
+    return ''
+  }
+
+  // Allow safe site-relative paths (e.g. /path/to/page), blocking protocol-relative URLs (//evil.com) and backslash bypasses (/\evil.com)
+  if (trimmed.startsWith('/') && !/^\/[/\\]/.test(trimmed)) {
+    return trimmed
+  }
+
+  try {
+    const parsed = new URL(trimmed)
+    const normalizedProtocol = parsed.protocol.toLowerCase()
+    const normalizedAllowed = allowedProtocols.map((p) =>
+      p.endsWith(':') ? p.toLowerCase() : `${p.toLowerCase()}:`,
+    )
+
+    if (normalizedAllowed.includes(normalizedProtocol)) {
+      return trimmed
+    }
+  } catch {
+    // Malformed URL
+  }
+
+  return ''
+}
