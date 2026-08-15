@@ -1,6 +1,6 @@
 # Plan 124: Skill script complexity follow-up (OwlWatch MEDIUM threads on PR #688)
 
-> Status: IMPLEMENTED — replacement follow-up branch includes PR #691 work and review fixes
+> Status: COMPLETE — replacement PR #692 is CI-green and PR #691 is superseded
 > Date: 2026-08-15
 
 ## Context
@@ -50,4 +50,4 @@ fixes in a replacement PR.
 - [x] The duplicated check parser is shared.
 - [x] Workflow-run failures reach the final monitor verdict.
 - [x] Regression tests cover the parser's state flags.
-- [ ] Replacement PR CI is green and all review threads are resolved.
+- [x] Replacement PR #692 CI is green and all review threads are resolved.

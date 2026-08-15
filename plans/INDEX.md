@@ -20,7 +20,7 @@
 | Wave | Goal | Status | Changes |
 |------|------|--------|---------|
 | W1 | Decompose monitor loops | Done | `phase_monitor()` and `agent_monitor_actions()` extracted via #691 |
-| W2 | Address review findings | Implemented; CI pending | Shared `scripts/lib/workflow-monitor.sh`, workflow-failure propagation, and BATS regression coverage |
+| W2 | Address review findings | Done | Replacement PR #692: shared `scripts/lib/workflow-monitor.sh`, workflow-failure propagation, BATS coverage; all CI green |
 
 ### Plan 123 — Codacy Merge Gate Playbook (2026-08-14)
 
