@@ -7,7 +7,17 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
-HOOK_DIR=".git/hooks"
+# Resolve the hooks dir via git so linked worktrees (where .git is a file,
+# not a directory) validate against the common hooks directory.
+if command -v git &>/dev/null && git -C "$REPO_ROOT" rev-parse --git-dir &>/dev/null 2>&1; then
+  GIT_HOOKS=$(git -C "$REPO_ROOT" rev-parse --git-path hooks 2>/dev/null)
+  if [[ "$GIT_HOOKS" != /* ]]; then
+    GIT_HOOKS="$REPO_ROOT/$GIT_HOOKS"
+  fi
+  HOOK_DIR="$GIT_HOOKS"
+else
+  HOOK_DIR=".git/hooks"
+fi
 EXPECTED_HOOKS=("pre-commit" "commit-msg")
 
 MISSING=0

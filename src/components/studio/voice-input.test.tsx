@@ -68,6 +68,17 @@ describe('VoiceInput', () => {
     expect(screen.getByLabelText('Start voice input')).toBeDefined()
   })
 
+  it('exposes aria-pressed=false when idle', () => {
+    render(<VoiceInput {...defaultProps} />)
+    expect(screen.getByLabelText('Start voice input')).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('exposes aria-pressed=true while listening', () => {
+    isListening = true
+    render(<VoiceInput {...defaultProps} />)
+    expect(screen.getByLabelText('Stop recording')).toHaveAttribute('aria-pressed', 'true')
+  })
+
   it('shows Mic icon when not listening', () => {
     render(<VoiceInput {...defaultProps} />)
     const icons = screen.getAllByTestId('icon')

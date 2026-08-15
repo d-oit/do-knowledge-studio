@@ -101,6 +101,11 @@ describe('sanitizeUrl', () => {
     expect(sanitizeUrl('//evil.com/phishing')).toBe('')
     expect(sanitizeUrl('/\\evil.com')).toBe('')
     expect(sanitizeUrl('/\\evil.com/phishing')).toBe('')
+    // Backslashes in absolute URLs are normalized to slashes by browsers, so
+    // they must never pass through (https:/\\evil.com resolves to https://evil.com).
+    expect(sanitizeUrl('https:/\\evil.com')).toBe('')
+    expect(sanitizeUrl('https:\\evil.com')).toBe('')
+    expect(sanitizeUrl('http:\\example.com\\@evil.com')).toBe('')
   })
 
   it('blocks dangerous schemes (javascript, data, vbscript)', () => {

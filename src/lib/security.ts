@@ -56,8 +56,15 @@ export function sanitizeUrl(
     return ''
   }
 
-  // Allow safe site-relative paths (e.g. /path/to/page), blocking protocol-relative URLs (//evil.com) and backslash bypasses (/\evil.com)
-  if (trimmed.startsWith('/') && !/^\/[/\\]/.test(trimmed)) {
+  // Browsers normalize backslashes to slashes when resolving hrefs, so a URL
+  // like `https:/\\evil.com` would render as `https://evil.com`. Reject any
+  // backslash outright to close that bypass (defense in depth).
+  if (trimmed.includes('\\')) {
+    return ''
+  }
+
+  // Allow safe site-relative paths (e.g. /path/to/page), blocking protocol-relative URLs (//evil.com)
+  if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
     return trimmed
   }
 
@@ -71,9 +78,9 @@ export function sanitizeUrl(
     if (normalizedAllowed.includes(normalizedProtocol)) {
       return trimmed
     }
+    return ''
   } catch {
-    // Malformed URL
+    // Malformed or unsupported URL — treat as unsafe.
+    return ''
   }
-
-  return ''
 }
