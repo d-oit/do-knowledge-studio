@@ -12,9 +12,9 @@ shellcheck-clean — they are linted by both `scripts/verify.sh` and CI.
   0 so `set -e` callers keep running the remaining checks.
 - `lint_cache.sh` — file-hash cache (`lint_if_changed`) so quality gates
   skip unchanged files. Used by `scripts/quality_gate.sh`.
-- `workflow-monitor.sh` — shared `monitor_parse_checks` helper used by the
-  GitHub workflow skill scripts to classify pending, failed, and warning
-  check output consistently.
+- `workflow-monitor.sh` — shared `monitor_parse_checks` and
+  `monitor_poll_until_terminal` helpers used by the GitHub workflow skill
+  scripts to classify and monitor check output consistently.
 
 ## Sourcing
 

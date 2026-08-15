@@ -18,23 +18,23 @@ fixes in a replacement PR.
    `agent_monitor_actions()` now delegate to focused polling and workflow-state
    helpers. The dead `new_issues` array was removed while preserving the
    consumed `CHECKS_FAILED` state.
-2. **Shared check parser** — both skill scripts source
+2. **Shared monitor library** — both skill scripts source
    `scripts/lib/workflow-monitor.sh`, eliminating duplicate
-   `monitor_parse_checks()` implementations while retaining each workflow's
-   warning policy.
+   `monitor_parse_checks()` and `monitor_poll_until_terminal()` implementations
+   while retaining each workflow's warning and strict-validation policy.
 3. **Workflow failure propagation** — `github-workflow` now passes the parsed
    failure flag through `monitor_fold_workflow_runs()` and retains it through
    the final verdict. A failed workflow run can no longer be discarded when the
    PR check output itself is otherwise quiet.
-4. **Regression coverage** — `tests/workflow-monitor.bats` covers pending,
-   failure, warning, warning-disabled, and successful check output.
+4. **Regression coverage** — `tests/workflow-monitor.bats` covers check flags
+   and verifies a folded workflow failure reaches the shared terminal verdict.
 
 ## Review findings resolved
 
 | Finding | Resolution |
 |---------|------------|
 | Workflow failure status was ignored because the second return token from `monitor_fold_workflow_runs()` was discarded | Parse and retain the failure token; fail the final verdict when a workflow run reports failure |
-| `monitor_parse_checks()` was duplicated across both skill scripts | Move the parser to the shared `scripts/lib/workflow-monitor.sh` library and source it from both callers |
+| `monitor_parse_checks()` and `monitor_poll_until_terminal()` were duplicated across both skill scripts | Move parsing and polling to the shared `scripts/lib/workflow-monitor.sh` library and pass each workflow's policy as explicit arguments |
 
 ## Verification
 
@@ -47,7 +47,7 @@ fixes in a replacement PR.
 ## Acceptance criteria
 
 - [x] Both monitor functions are decomposed into focused helpers.
-- [x] The duplicated check parser is shared.
+- [x] The duplicated check parser and polling loop are shared.
 - [x] Workflow-run failures reach the final monitor verdict.
-- [x] Regression tests cover the parser's state flags.
+- [x] Regression tests cover parser flags and folded workflow failures.
 - [x] Replacement PR #692 CI is green and all review threads are resolved.

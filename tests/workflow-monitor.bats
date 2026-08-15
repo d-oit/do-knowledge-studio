@@ -24,3 +24,27 @@ setup() {
   [ "$status" -eq 0 ]
   [ "$output" = "false false false" ]
 }
+
+@test "fails when workflow-run folding reports failure" {
+  run bash -c '
+    source "$1"
+    log() { :; }
+    error() { :; }
+    success() { :; }
+    warn() { :; }
+    gh() {
+      if [[ "$1" == "pr" && "$2" == "view" ]]; then
+        printf "OPEN"
+      else
+        printf "success"
+      fi
+    }
+    monitor_fold_workflow_runs() {
+      printf "false true"
+    }
+    expected_failure_code=4
+    timeout_code=7
+    monitor_poll_until_terminal 1 "$timeout_code" "$expected_failure_code" 1 true 0 10 checks false false main
+  ' _ "$SCRIPT"
+  [ "$status" -eq 4 ]
+}

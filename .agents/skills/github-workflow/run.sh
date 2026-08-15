@@ -549,87 +549,6 @@ monitor_fold_workflow_runs() {
   printf '%s %s' "$has_pending" "$has_failure"
 }
 
-# Poll PR checks until they settle, then determine the verdict.
-# Returns 0 on pass/merged, $E_TIMEOUT on timeout, $E_CHECKS_FAILED otherwise.
-monitor_poll_until_terminal() {
-  local pr_number="$1"
-  local start_time
-  start_time=$(date +%s)
-  local workflow_failure_detected=false
-  local warning_detected=false
-
-  while true; do
-    local current_time
-    current_time=$(date +%s)
-    local elapsed=$((current_time - start_time))
-
-    if [[ $elapsed -gt $TIMEOUT ]]; then
-      error "Timeout after ${TIMEOUT}s"
-      return $E_TIMEOUT
-    fi
-
-    local checks_output
-    checks_output=$(gh pr checks "$pr_number" 2>&1 || true)
-    local pr_state
-    pr_state=$(gh pr view "$pr_number" --json state --jq '.state' 2>/dev/null || echo "OPEN")
-
-    if [[ "$pr_state" == "MERGED" ]]; then
-      success "PR was already merged!"
-      return 0
-    fi
-    if [[ "$pr_state" == "CLOSED" ]]; then
-      error "PR was closed"
-      return $E_CHECKS_FAILED
-    fi
-
-    local has_pending has_failure has_warning
-    read -r has_pending has_failure has_warning < <(monitor_parse_checks "$checks_output" "$FAIL_ON_WARNING")
-    if [[ "$has_warning" == true ]]; then
-      warning_detected=true
-    fi
-
-    local folded_pending folded_failure
-    read -r folded_pending folded_failure < <(monitor_fold_workflow_runs "$has_pending" "$has_failure")
-    has_pending="$folded_pending"
-    has_failure="$folded_failure"
-    if [[ "$has_failure" == true ]]; then
-      workflow_failure_detected=true
-    fi
-
-    if [[ "$has_pending" == true ]]; then
-      log "Checks still running... (${elapsed}s elapsed)"
-    else
-      break
-    fi
-
-    sleep $POLL_INTERVAL
-  done
-
-  # Final check analysis
-  log ""
-  log "Analyzing check results..."
-
-  local final_checks
-  final_checks=$(gh pr checks "$pr_number" 2>&1 || true)
-  log "Checking base branch $BASE_BRANCH for pre-existing issues..."
-
-  if [[ "$workflow_failure_detected" == true ]] || echo "$final_checks" | grep -qiE "(fail|error|✗|×)"; then
-    warn "Issues detected in checks"
-    warn "Review PR #$pr_number manually"
-    return $E_CHECKS_FAILED
-  fi
-  if [[ "$FAIL_ON_WARNING" == 1 ]]; then
-    if [[ "$warning_detected" == true ]] || echo "$final_checks" | grep -qiE "(warning|warn:|deprecated)"; then
-      warn "Issues detected in checks"
-      warn "Review PR #$pr_number manually"
-      return $E_CHECKS_FAILED
-    fi
-  fi
-
-  success "All checks passed!"
-  return 0
-}
-
 phase_monitor() {
     log ""
     log "═══════════════════════════════════════════════════════════════════"
@@ -665,7 +584,9 @@ phase_monitor() {
     log "Poll interval: ${POLL_INTERVAL}s"
     log ""
     
-    monitor_poll_until_terminal "$PR_NUMBER"
+    monitor_poll_until_terminal \
+        "$PR_NUMBER" "$E_TIMEOUT" "$E_CHECKS_FAILED" "$FAIL_ON_WARNING" \
+        true "$POLL_INTERVAL" "$TIMEOUT" checks true false "$BASE_BRANCH"
 }
 
 # Phase 6: MERGE
