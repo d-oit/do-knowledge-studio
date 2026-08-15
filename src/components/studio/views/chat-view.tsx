@@ -233,7 +233,7 @@ interface CitationDisclosureProps {
 }
 
 /** Citation toggle with expandable panel for one assistant message (ARIA disclosure). */
-const CitationDisclosure = ({
+export const CitationDisclosure = ({
   citations,
   reducedMotion,
   expanded,

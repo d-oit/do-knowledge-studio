@@ -6,6 +6,7 @@ import {
   MessageList,
   SuggestionsBar,
   InputBar,
+  CitationDisclosure,
 } from './chat-view'
 import type { ChatMessage } from '@/lib/studio/types'
 
@@ -218,6 +219,68 @@ describe('MessageList', () => {
     // the first message's expanded panel.
     fireEvent.keyDown(screen.getAllByRole('button', { name: /Used 1 local item/ })[1], { key: 'Escape' })
     expect(onToggleCitations).not.toHaveBeenCalled()
+  })
+})
+
+describe('CitationDisclosure', () => {
+  const baseProps = {
+    citations: [
+      { entityId: 'e1', entityName: 'Entity One', snippet: 'Snippet one' },
+      { entityId: 'e2', entityName: 'Entity Two', snippet: 'Snippet two' },
+    ],
+    reducedMotion: false,
+    expanded: false,
+    onToggle: vi.fn(),
+    onCitationClick: vi.fn(),
+  }
+
+  it('renders the toggle with a pluralized count and collapsed state', () => {
+    render(<CitationDisclosure {...baseProps} />)
+    const toggle = screen.getByRole('button', { name: /Used 2 local items/ })
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByText('Entity One')).toBeNull()
+  })
+
+  it('uses singular wording for a single citation', () => {
+    render(<CitationDisclosure {...baseProps} citations={[baseProps.citations[0]]} />)
+    expect(screen.getByRole('button', { name: /Used 1 local item/ })).toBeDefined()
+  })
+
+  it('calls onToggle on click and reflects aria-expanded across states', () => {
+    const onToggle = vi.fn()
+    const { rerender } = render(<CitationDisclosure {...baseProps} expanded={true} onToggle={onToggle} />)
+    const toggle = screen.getByRole('button', { name: /Used 2 local items/ })
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    fireEvent.click(toggle)
+    expect(onToggle).toHaveBeenCalledTimes(1)
+    rerender(<CitationDisclosure {...baseProps} expanded={false} onToggle={onToggle} />)
+    expect(screen.getByRole('button', { name: /Used 2 local items/ })).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('closes the panel on Escape while the toggle has focus and preserves focus', () => {
+    const onToggle = vi.fn()
+    render(<CitationDisclosure {...baseProps} expanded={true} onToggle={onToggle} />)
+    const toggle = screen.getByRole('button', { name: /Used 2 local items/ })
+    toggle.focus()
+    fireEvent.keyDown(toggle, { key: 'Escape' })
+    expect(onToggle).toHaveBeenCalledTimes(1)
+    expect(toggle).toHaveFocus()
+  })
+
+  it('ignores Escape while the panel is collapsed', () => {
+    const onToggle = vi.fn()
+    render(<CitationDisclosure {...baseProps} onToggle={onToggle} />)
+    fireEvent.keyDown(screen.getByRole('button', { name: /Used 2 local items/ }), { key: 'Escape' })
+    expect(onToggle).not.toHaveBeenCalled()
+  })
+
+  it('renders the citation list when expanded and opens entities on click', () => {
+    const onCitationClick = vi.fn()
+    render(<CitationDisclosure {...baseProps} expanded={true} onCitationClick={onCitationClick} />)
+    expect(screen.getByText('Entity One')).toBeDefined()
+    expect(screen.getByText('Snippet two')).toBeDefined()
+    fireEvent.click(screen.getByRole('button', { name: /2 Entity Two/ }))
+    expect(onCitationClick).toHaveBeenCalledWith('e2')
   })
 })
 
