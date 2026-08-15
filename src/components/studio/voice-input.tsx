@@ -77,6 +77,7 @@ export function VoiceInput({
           disabled && 'opacity-40',
         )}
         aria-label={isListening ? 'Stop recording' : 'Start voice input'}
+        aria-pressed={isListening}
       >
         {isListening ? (
           <Loader2 className="h-4 w-4 animate-spin" />

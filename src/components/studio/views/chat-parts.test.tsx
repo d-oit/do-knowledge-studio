@@ -31,6 +31,41 @@ const assistantMsg = (overrides: Partial<ChatMessage> = {}): ChatMessage => ({
   ...overrides,
 })
 
+/** The prompt chips both WelcomePanel and SuggestionsBar render. Keeping the
+ * expected (label, query) pairs here locks the keyboard-visible contract: every
+ * chip must expose its label as the accessible name and dispatch the full query. */
+const EXPECTED_SUGGESTIONS = [
+  { label: 'Summarize recent projects', query: 'Give me a summary of the projects in my library.' },
+  { label: 'Key people', query: 'Who are the key people in my knowledge base?' },
+  { label: 'What is TRIZ useful for?', query: 'What is the TRIZ contradiction matrix useful for?' },
+]
+
+/**
+ * Shared suggestion-chip contract exercised for both WelcomePanel and
+ * SuggestionsBar: every chip exposes its label as the accessible name, sends
+ * the full query on click, and is a native focusable button.
+ */
+const expectSuggestionChipContract = (renderChips: (onSend: (query: string) => void) => void) => {
+  it.each(EXPECTED_SUGGESTIONS)('chip "$label" exposes its label as the accessible name and sends the full query', ({ label, query }) => {
+    const onSend = vi.fn()
+    renderChips(onSend)
+    fireEvent.click(screen.getByRole('button', { name: label }))
+    expect(onSend).toHaveBeenCalledWith(query)
+  })
+
+  it('renders suggestion chips as native focusable buttons (keyboard activatable via Enter/Space)', () => {
+    renderChips(vi.fn())
+    const chips = screen.getAllByRole('button')
+    expect(chips.length).toBe(EXPECTED_SUGGESTIONS.length)
+    chips.forEach((chip) => {
+      expect(chip.tagName).toBe('BUTTON')
+      expect(chip).not.toBeDisabled()
+      expect(chip.tabIndex).toBe(0)
+      expect(chip.className).toContain('min-h-[44px]')
+    })
+  })
+}
+
 describe('WelcomePanel', () => {
   it('renders capability and suggestion copy', () => {
     render(<WelcomePanel reducedMotion={false} onSend={vi.fn()} />)
@@ -45,6 +80,10 @@ describe('WelcomePanel', () => {
     fireEvent.click(screen.getAllByText('Key people')[0])
     expect(onSend).toHaveBeenCalledWith('Who are the key people in my knowledge base?')
   })
+
+  expectSuggestionChipContract((onSend) =>
+    render(<WelcomePanel reducedMotion={false} onSend={onSend} />),
+  )
 })
 
 describe('MessageList', () => {
@@ -117,6 +156,69 @@ describe('MessageList', () => {
     fireEvent.click(screen.getByText('Entity One'))
     expect(onCitationClick).toHaveBeenCalledWith('e1')
   })
+
+  it('closes the expanded citation panel on Escape while the toggle has focus', () => {
+    const onToggleCitations = vi.fn()
+    const msg = assistantMsg({
+      citations: [{ entityId: 'e1', entityName: 'Entity One', snippet: 'Snippet' }],
+    })
+    render(
+      <MessageList
+        chat={[msg]}
+        {...baseProps}
+        showCitations="a1"
+        onToggleCitations={onToggleCitations}
+      />,
+    )
+    const toggle = screen.getByRole('button', { name: /Used 1 local item/ })
+    toggle.focus()
+    // ARIA disclosure pattern: Escape on the focused toggle closes the panel.
+    // The toggle stays mounted, so focus is preserved without manual handling.
+    fireEvent.keyDown(toggle, { key: 'Escape' })
+    expect(onToggleCitations).toHaveBeenCalledWith('a1')
+    expect(toggle).toHaveFocus()
+  })
+
+  it('ignores Escape while the citation panel is closed', () => {
+    const onToggleCitations = vi.fn()
+    const msg = assistantMsg({
+      citations: [{ entityId: 'e1', entityName: 'Entity One', snippet: 'Snippet' }],
+    })
+    render(
+      <MessageList
+        chat={[msg]}
+        {...baseProps}
+        onToggleCitations={onToggleCitations}
+      />,
+    )
+    fireEvent.keyDown(screen.getByRole('button', { name: /Used 1 local item/ }), { key: 'Escape' })
+    expect(onToggleCitations).not.toHaveBeenCalled()
+  })
+
+  it('only closes the citation panel of the message receiving the Escape key', () => {
+    const onToggleCitations = vi.fn()
+    const msgWithCitations = assistantMsg({
+      id: 'a1',
+      citations: [{ entityId: 'e1', entityName: 'Entity One', snippet: 'Snippet' }],
+    })
+    const otherMsg = assistantMsg({
+      id: 'a2',
+      content: 'Second answer',
+      citations: [{ entityId: 'e2', entityName: 'Entity Two', snippet: 'Other snippet' }],
+    })
+    render(
+      <MessageList
+        chat={[msgWithCitations, otherMsg]}
+        {...baseProps}
+        showCitations="a1"
+        onToggleCitations={onToggleCitations}
+      />,
+    )
+    // Escape while focused inside the second (collapsed) message must not close
+    // the first message's expanded panel.
+    fireEvent.keyDown(screen.getAllByRole('button', { name: /Used 1 local item/ })[1], { key: 'Escape' })
+    expect(onToggleCitations).not.toHaveBeenCalled()
+  })
 })
 
 describe('SuggestionsBar', () => {
@@ -127,6 +229,8 @@ describe('SuggestionsBar', () => {
     fireEvent.click(screen.getAllByText('What is TRIZ useful for?')[0])
     expect(onSend).toHaveBeenCalledWith('What is the TRIZ contradiction matrix useful for?')
   })
+
+  expectSuggestionChipContract((onSend) => render(<SuggestionsBar onSend={onSend} />))
 })
 
 describe('InputBar', () => {
