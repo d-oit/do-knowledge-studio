@@ -40,6 +40,32 @@ const EXPECTED_SUGGESTIONS = [
   { label: 'What is TRIZ useful for?', query: 'What is the TRIZ contradiction matrix useful for?' },
 ]
 
+/**
+ * Shared suggestion-chip contract exercised for both WelcomePanel and
+ * SuggestionsBar: every chip exposes its label as the accessible name, sends
+ * the full query on click, and is a native focusable button.
+ */
+const expectSuggestionChipContract = (renderChips: (onSend: (query: string) => void) => void) => {
+  it.each(EXPECTED_SUGGESTIONS)('chip "$label" exposes its label as the accessible name and sends the full query', ({ label, query }) => {
+    const onSend = vi.fn()
+    renderChips(onSend)
+    fireEvent.click(screen.getByRole('button', { name: label }))
+    expect(onSend).toHaveBeenCalledWith(query)
+  })
+
+  it('renders suggestion chips as native focusable buttons (keyboard activatable via Enter/Space)', () => {
+    renderChips(vi.fn())
+    const chips = screen.getAllByRole('button')
+    expect(chips.length).toBe(EXPECTED_SUGGESTIONS.length)
+    chips.forEach((chip) => {
+      expect(chip.tagName).toBe('BUTTON')
+      expect(chip).not.toBeDisabled()
+      expect(chip.tabIndex).toBe(0)
+      expect(chip.className).toContain('min-h-[44px]')
+    })
+  })
+}
+
 describe('WelcomePanel', () => {
   it('renders capability and suggestion copy', () => {
     render(<WelcomePanel reducedMotion={false} onSend={vi.fn()} />)
@@ -55,24 +81,9 @@ describe('WelcomePanel', () => {
     expect(onSend).toHaveBeenCalledWith('Who are the key people in my knowledge base?')
   })
 
-  it.each(EXPECTED_SUGGESTIONS)('chip "$label" exposes its label as the accessible name and sends the full query', ({ label, query }) => {
-    const onSend = vi.fn()
-    render(<WelcomePanel reducedMotion={false} onSend={onSend} />)
-    fireEvent.click(screen.getByRole('button', { name: label }))
-    expect(onSend).toHaveBeenCalledWith(query)
-  })
-
-  it('renders suggestion chips as native focusable buttons (keyboard activatable via Enter/Space)', () => {
-    render(<WelcomePanel reducedMotion={false} onSend={vi.fn()} />)
-    const chips = screen.getAllByRole('button')
-    expect(chips.length).toBe(EXPECTED_SUGGESTIONS.length)
-    chips.forEach((chip) => {
-      expect(chip.tagName).toBe('BUTTON')
-      expect(chip).not.toBeDisabled()
-      expect(chip.tabIndex).toBe(0)
-      expect(chip.className).toContain('min-h-[44px]')
-    })
-  })
+  expectSuggestionChipContract((onSend) =>
+    render(<WelcomePanel reducedMotion={false} onSend={onSend} />),
+  )
 })
 
 describe('MessageList', () => {
@@ -146,7 +157,7 @@ describe('MessageList', () => {
     expect(onCitationClick).toHaveBeenCalledWith('e1')
   })
 
-  it('closes the expanded citation panel on Escape and returns focus to the toggle', () => {
+  it('closes the expanded citation panel on Escape while the toggle has focus', () => {
     const onToggleCitations = vi.fn()
     const msg = assistantMsg({
       citations: [{ entityId: 'e1', entityName: 'Entity One', snippet: 'Snippet' }],
@@ -160,9 +171,10 @@ describe('MessageList', () => {
       />,
     )
     const toggle = screen.getByRole('button', { name: /Used 1 local item/ })
-    // Keyboard users can land focus on a citation button inside the panel;
-    // Escape must close the panel no matter which element in the message has focus.
-    fireEvent.keyDown(screen.getByRole('button', { name: /^1 Entity One/ }), { key: 'Escape' })
+    toggle.focus()
+    // ARIA disclosure pattern: Escape on the focused toggle closes the panel.
+    // The toggle stays mounted, so focus is preserved without manual handling.
+    fireEvent.keyDown(toggle, { key: 'Escape' })
     expect(onToggleCitations).toHaveBeenCalledWith('a1')
     expect(toggle).toHaveFocus()
   })
@@ -218,24 +230,7 @@ describe('SuggestionsBar', () => {
     expect(onSend).toHaveBeenCalledWith('What is the TRIZ contradiction matrix useful for?')
   })
 
-  it.each(EXPECTED_SUGGESTIONS)('chip "$label" exposes its label as the accessible name and sends the full query', ({ label, query }) => {
-    const onSend = vi.fn()
-    render(<SuggestionsBar onSend={onSend} />)
-    fireEvent.click(screen.getByRole('button', { name: label }))
-    expect(onSend).toHaveBeenCalledWith(query)
-  })
-
-  it('renders suggestion chips as native focusable buttons (keyboard activatable via Enter/Space)', () => {
-    render(<SuggestionsBar onSend={vi.fn()} />)
-    const chips = screen.getAllByRole('button')
-    expect(chips.length).toBe(EXPECTED_SUGGESTIONS.length)
-    chips.forEach((chip) => {
-      expect(chip.tagName).toBe('BUTTON')
-      expect(chip).not.toBeDisabled()
-      expect(chip.tabIndex).toBe(0)
-      expect(chip.className).toContain('min-h-[44px]')
-    })
-  })
+  expectSuggestionChipContract((onSend) => render(<SuggestionsBar onSend={onSend} />))
 })
 
 describe('InputBar', () => {

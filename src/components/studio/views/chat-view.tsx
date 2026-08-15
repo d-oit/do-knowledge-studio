@@ -241,15 +241,6 @@ export const MessageList = ({
     {chat.map((m) => (
       <motion.div
         key={m.id}
-        onKeyDown={(e) => {
-          // Escape closes this message's expanded citation panel (popover-like
-          // behavior) and returns focus to the toggle button.
-          if (e.key === 'Escape' && showCitations === m.id) {
-            e.preventDefault()
-            onToggleCitations(m.id)
-            e.currentTarget.querySelector<HTMLButtonElement>('button[aria-expanded]')?.focus()
-          }
-        }}
         initial={reducedMotion ? false : { opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={reducedMotion ? { duration: 0 } : { duration: 0.25 }}
@@ -302,6 +293,15 @@ export const MessageList = ({
             <div className="rounded-lg border border-dashed border-saffron/40 bg-saffron-soft/30 p-2.5">
               <button
                 onClick={() => { onToggleCitations(m.id) }}
+                onKeyDown={(e) => {
+                  // Escape closes this message's expanded citation panel while the
+                  // disclosure toggle has focus (ARIA disclosure pattern). The toggle
+                  // stays mounted, so focus is preserved without extra handling.
+                  if (e.key === 'Escape' && showCitations === m.id) {
+                    e.preventDefault()
+                    onToggleCitations(m.id)
+                  }
+                }}
                 aria-expanded={showCitations === m.id}
                 className="flex w-full items-center gap-1.5 text-label font-semibold text-saffron-deep min-h-[44px]"
               >
