@@ -220,6 +220,77 @@ export const WelcomePanel = ({ reducedMotion, onSend }: WelcomePanelProps) => (
   </motion.div>
 )
 
+/** A single local source cited by an assistant answer. */
+type ChatCitation = { entityId: string; entityName: string; snippet: string }
+
+/** Properties for the CitationDisclosure sub-component. */
+interface CitationDisclosureProps {
+  citations: ChatCitation[]
+  reducedMotion: boolean
+  expanded: boolean
+  onToggle: () => void
+  onCitationClick: (entityId: string) => void
+}
+
+/** Citation toggle with expandable panel for one assistant message (ARIA disclosure). */
+const CitationDisclosure = ({
+  citations,
+  reducedMotion,
+  expanded,
+  onToggle,
+  onCitationClick,
+}: CitationDisclosureProps) => (
+  <div className="rounded-lg border border-dashed border-saffron/40 bg-saffron-soft/30 p-2.5">
+    <button
+      onClick={onToggle}
+      onKeyDown={(e) => {
+        // Escape closes the expanded panel while the disclosure toggle has focus
+        // (ARIA disclosure pattern). The toggle stays mounted, so focus is
+        // preserved without extra handling.
+        if (e.key === 'Escape' && expanded) {
+          e.preventDefault()
+          onToggle()
+        }
+      }}
+      aria-expanded={expanded}
+      className="flex w-full items-center gap-1.5 text-label font-semibold text-saffron-deep min-h-[44px]"
+    >
+      <Quote className="h-3 w-3" />
+      Used {citations.length} local {citations.length === 1 ? 'item' : 'items'}
+      <ChevronDown
+        className={cn('h-3 w-3 transition-transform', expanded && 'rotate-180')}
+      />
+    </button>
+    <AnimatePresence>
+      {expanded && (
+        <motion.div
+          initial={reducedMotion ? false : { height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          exit={reducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
+          transition={reducedMotion ? { duration: 0 } : undefined}
+          className="mt-2 space-y-1.5 overflow-hidden"
+        >
+          {citations.map((c, i) => (
+            <button
+              key={i}
+              onClick={() => { onCitationClick(c.entityId) }}
+              className="flex w-full gap-2 rounded-md bg-background/60 p-2 text-left text-label transition-colors hover:bg-muted focus-ring min-h-[44px]"
+            >
+              <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-saffron text-badge font-bold text-white">
+                {i + 1}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="font-semibold text-ink group-hover:text-saffron-deep">{c.entityName}</div>
+                <div className="truncate text-ink-mute">{c.snippet}</div>
+              </div>
+            </button>
+          ))}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  </div>
+)
+
 /** Properties for the MessageList component. */
 interface MessageListProps {
   chat: ChatMessage[]
@@ -290,55 +361,13 @@ export const MessageList = ({
 
           {/* Citations */}
           {m.citations && m.citations.length > 0 && (
-            <div className="rounded-lg border border-dashed border-saffron/40 bg-saffron-soft/30 p-2.5">
-              <button
-                onClick={() => { onToggleCitations(m.id) }}
-                onKeyDown={(e) => {
-                  // Escape closes this message's expanded citation panel while the
-                  // disclosure toggle has focus (ARIA disclosure pattern). The toggle
-                  // stays mounted, so focus is preserved without extra handling.
-                  if (e.key === 'Escape' && showCitations === m.id) {
-                    e.preventDefault()
-                    onToggleCitations(m.id)
-                  }
-                }}
-                aria-expanded={showCitations === m.id}
-                className="flex w-full items-center gap-1.5 text-label font-semibold text-saffron-deep min-h-[44px]"
-              >
-                <Quote className="h-3 w-3" />
-                Used {m.citations.length} local {m.citations.length === 1 ? 'item' : 'items'}
-                <ChevronDown
-                  className={cn('h-3 w-3 transition-transform', showCitations === m.id && 'rotate-180')}
-                />
-              </button>
-              <AnimatePresence>
-                {showCitations === m.id && (
-                  <motion.div
-                    initial={reducedMotion ? false : { height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={reducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
-                    transition={reducedMotion ? { duration: 0 } : undefined}
-                    className="mt-2 space-y-1.5 overflow-hidden"
-                  >
-                    {m.citations.map((c, i) => (
-                      <button
-                        key={i}
-                        onClick={() => { onCitationClick(c.entityId) }}
-                        className="flex w-full gap-2 rounded-md bg-background/60 p-2 text-left text-label transition-colors hover:bg-muted focus-ring min-h-[44px]"
-                      >
-                        <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-saffron text-badge font-bold text-white">
-                          {i + 1}
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <div className="font-semibold text-ink group-hover:text-saffron-deep">{c.entityName}</div>
-                          <div className="truncate text-ink-mute">{c.snippet}</div>
-                        </div>
-                      </button>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+            <CitationDisclosure
+              citations={m.citations}
+              reducedMotion={reducedMotion}
+              expanded={showCitations === m.id}
+              onToggle={() => { onToggleCitations(m.id) }}
+              onCitationClick={onCitationClick}
+            />
           )}
         </div>
       </motion.div>
