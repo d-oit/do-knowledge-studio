@@ -3,6 +3,12 @@
 **Updated**: 2026-08-15
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
+### Plan 126 — Transitive nanoid Security Remediation (2026-08-15)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Patch Dependabot alert #61 without changing application behavior | Done | Existing `nanoid@3` override bumped from 3.3.17 to 3.3.18; lockfile regenerated |
+
 ### Plan 125 — Markdown Preview E2E Verification (2026-08-15)
 
 | Wave | Goal | Status | Changes |
