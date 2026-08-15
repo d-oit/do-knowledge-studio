@@ -13,10 +13,10 @@ checkout (verified: `./scripts/quality_gate.sh` exit 0).
 
 While reviewing PR #688, OwlWatch flagged two MEDIUM complexity threads:
 
-| Thread | Function | Pre-PR length | Post-PR length |
-|--------|----------|---------------|----------------|
-| github-workflow/run.sh | `phase_monitor()` | 158 lines | 160 lines |
-| git-github-workflow/run.sh | `agent_monitor_actions()` | 119 lines | 124 lines |
+| Thread                      | Function                 | Pre-PR length | Post-PR length |
+|-----------------------------|--------------------------|---------------|----------------|
+| github-workflow/run.sh      | `phase_monitor()`        | 158 lines     | 160 lines      |
+| git-github-workflow/run.sh  | `agent_monitor_actions()`| 119 lines     | 124 lines      |
 
 Both functions were already far over a reasonable 100-line budget **before** this
 PR; the +2/+5 lines are an artifact of the SC2155 line splits (no logic change).
@@ -36,6 +36,7 @@ Refactor the two monitor functions into focused helpers, preserving behavior:
    - Extract status reporting into `report_action_status()`.
 
 After refactoring:
+
 - Re-run `shellcheck --severity=warning` on both files (must stay clean).
 - Re-run `bats tests/` (install-hooks + validate-skills suites must stay green).
 - Confirm `./scripts/quality_gate.sh` still exits 0.
