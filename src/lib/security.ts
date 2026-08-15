@@ -63,7 +63,11 @@ export function sanitizeUrl(
     return ''
   }
 
-  // Allow safe site-relative paths (e.g. /path/to/page), blocking protocol-relative URLs (//evil.com)
+  // Allow safe site-relative paths (e.g. /path/to/page). A leading slash
+  // binds the URL to the current origin, so it can never become a scheme in
+  // an href context — `javascript:` requires a scheme before the first slash.
+  // Protocol-relative (//evil.com) is rejected; backslash variants were
+  // already rejected above (browsers normalize \ to /).
   if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
     return trimmed
   }
