@@ -67,6 +67,7 @@
     "react-hook-form": "^7.60.0",
     "react-markdown": "^10.1.0",
     "react-resizable-panels": "^4.12.2",
+    "remark-gfm": "^4.0.1",
     "sharp": "^0.35.3",
     "sonner": "^2.0.6",
     "tailwind-merge": "^3.3.1",

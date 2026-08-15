@@ -6,6 +6,7 @@ import { useStudioStore } from '@/lib/studio/store'
 import { Send, Sparkles, Trash2, Bot, User, Quote, ChevronDown, MessageSquare } from 'lucide-react'
 import { VoiceInput } from '../voice-input'
 import Markdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
@@ -344,7 +345,7 @@ export const MessageList = ({
             </span>
             {m.role === 'assistant' ? (
               <div className="prose prose-sm dark:prose-invert max-w-none">
-                <Markdown>{m.content}</Markdown>
+                <Markdown remarkPlugins={[remarkGfm]}>{m.content}</Markdown>
               </div>
             ) : (
               m.content
