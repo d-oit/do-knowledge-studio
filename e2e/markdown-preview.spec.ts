@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { navClick } from './helpers/navigation';
+import { createNewEntity, switchEditorMode } from './helpers/editor';
 
 /**
  * Representative CommonMark sample exercising every syntax element the
@@ -32,13 +32,10 @@ const MARKDOWN_SAMPLE = [
 
 test.describe('Markdown preview', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await navClick(page, /editor/i);
-    await page.getByRole('button', { name: /new|create|add/i }).first().click();
-    await page.locator('#entity-name').fill('Markdown Preview Test');
+    await createNewEntity(page, 'Markdown Preview Test');
     await page.getByLabel('Editor content').fill(MARKDOWN_SAMPLE);
     // Preview mode is the second radio in the editor-mode group.
-    await page.getByRole('radiogroup', { name: /editor mode/i }).getByRole('radio').nth(1).click();
+    await switchEditorMode(page, 1);
   });
 
   const preview = (page: import('@playwright/test').Page) => page.locator('div.prose').first();
@@ -82,8 +79,7 @@ test.describe('Markdown preview', () => {
 
   test('renders GFM syntax as literal text (CommonMark-only baseline)', async ({ page }) => {
     // Switch back to edit mode to refill with GFM-only content.
-    const radios = page.getByRole('radiogroup', { name: /editor mode/i }).getByRole('radio');
-    await radios.nth(0).click();
+    await switchEditorMode(page, 0);
     await page.getByLabel('Editor content').fill([
       '| A | B |',
       '| 1 | 2 |',
@@ -92,7 +88,7 @@ test.describe('Markdown preview', () => {
       '',
       '~~strikethrough~~',
     ].join('\n'));
-    await radios.nth(1).click();
+    await switchEditorMode(page, 1);
 
     const pane = preview(page);
     // Without remark-gfm the syntax is literal text, not rendered elements.
@@ -105,7 +101,7 @@ test.describe('Markdown preview', () => {
   });
 
   test('split mode shows the textarea and the preview side by side', async ({ page }) => {
-    await page.getByRole('radiogroup', { name: /editor mode/i }).getByRole('radio').nth(2).click();
+    await switchEditorMode(page, 2);
     await expect(page.getByLabel('Editor content')).toBeVisible();
     await expect(preview(page).getByRole('heading', { name: 'Heading One', level: 1 })).toBeVisible();
   });
@@ -114,10 +110,8 @@ test.describe('Markdown preview', () => {
     // A fresh page load gives a blank editing session (the editor's content
     // state initializes from the entity on mount, so re-clicking "new" would
     // keep the previous draft).
-    await page.goto('/');
-    await navClick(page, /editor/i);
-    await page.getByRole('button', { name: /new|create|add/i }).first().click();
-    await page.getByRole('radiogroup', { name: /editor mode/i }).getByRole('radio').nth(1).click();
+    await createNewEntity(page);
+    await switchEditorMode(page, 1);
     // The placeholder itself is markdown: `_Nothing to preview._` parses as
     // emphasis, so the visible text is "Nothing to preview." inside an <em>.
     await expect(preview(page).locator('em', { hasText: 'Nothing to preview.' })).toBeVisible();
