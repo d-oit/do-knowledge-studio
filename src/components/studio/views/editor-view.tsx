@@ -8,6 +8,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import Markdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import {
   ExternalLink,
 } from 'lucide-react'
@@ -257,7 +258,7 @@ export const EditorView = () => {
         )}
         {(editMode === 'preview' || editMode === 'split') && (
           <div className="prose prose-sm dark:prose-invert max-w-none min-h-[420px] rounded-lg border border-border bg-background p-4">
-            <Markdown>{content || '_Nothing to preview._'}</Markdown>
+            <Markdown remarkPlugins={[remarkGfm]}>{content || '_Nothing to preview._'}</Markdown>
           </div>
         )}
         </div>

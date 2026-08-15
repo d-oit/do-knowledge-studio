@@ -2,8 +2,9 @@
 
 ## Status
 
-Proposed — to be implemented with Plan 125
-(`plans/125-markdown-preview-e2e-2026-08-15.md`).
+Approved — implemented with Plan 125
+(`plans/125-markdown-preview-e2e-2026-08-15.md`); GFM extensions enabled
+via `remark-gfm` (PR #690).
 
 ## Context
 
@@ -41,17 +42,18 @@ Verify markdown preview correctness with a dedicated E2E spec
    markdown sample into the editor textarea, switches to preview mode,
    and asserts the rendered DOM.
 2. **Covers the canonical syntax subset actually supported.** The app
-   renders with plain `react-markdown` v10 — **no `remark-gfm`** — so
-   the preview is **CommonMark-only**:
+   renders with `react-markdown` v10 plus **`remark-gfm`** (enabled per
+   ADR 020's opt-in rule: editor, preview, and tests agree on the
+   dialect; GFM is a superset of the CommonMark used by export):
    - Headings `#`/`##`/`###` rendered as semantic `h1`/`h2`/`h3`
    - Emphasis: `**bold**`, `*italic*`, `` `inline code` ``
    - Lists: unordered and ordered
    - Blockquote and thematic break (`hr`)
    - Links: rendered as anchors (scheme safety already enforced by
      react-markdown's default `urlTransform`)
-   - GFM syntax (tables, task lists, strikethrough) is NOT enabled and
-     renders as literal text — covered by a dedicated test that locks
-     the current behavior and documents the gap.
+   - GFM: tables (header + body cells), task lists (disabled checkboxes
+     with correct checked state), and strikethrough (`del`) — covered
+     by a dedicated render test.
 3. **Asserts semantically** via Playwright role/locator queries scoped to
    the preview pane (`.prose`), not raw HTML string matching — the tests
    verify the format a user/AT actually perceives.
@@ -71,7 +73,6 @@ upstream-tested; E2E covers the integration contract.
   update it deliberately.
 - The sample input is a shared fixture, so adding a syntax element
   later is one edit + one assertion block.
-- **Follow-up**: enabling GFM (tables/task lists/strikethrough) is an
-  opt-in per ADR 020 and requires editor, preview, import/export, and
-  tests to agree on the dialect. When that happens, extend the sample
-  and drop the literal-text lock test.
+- GFM is enabled in both markdown render sites (editor preview and
+  chat assistant messages) via `remark-gfm`; import/export remains
+  CommonMark-compatible (GFM is a superset).

@@ -1,7 +1,7 @@
 # Plan 125 — Markdown Preview E2E Verification (GOAP) (2026-08-15)
 
 Date: 2026-08-15
-Status: IN PROGRESS
+Status: IMPLEMENTED — spec merged via PR #689; GFM enabled via PR #690
 ADR: `plans/ADRs/033-markdown-preview-e2e-verification.md`
 
 ## Task Analysis (GOAP Phase 1)
@@ -41,6 +41,9 @@ syntax subset — in a real browser.
   save.
 - `react-markdown` v10 default `urlTransform` blocks dangerous link
   schemes — link tests assert the anchor + href only.
+- **GFM (follow-up, PR #690)**: `remark-gfm` is now enabled in the
+  editor preview and chat markdown render sites; tables, task lists,
+  and strikethrough render as real elements and the E2E covers them.
 
 ## Execution Strategy (GOAP Phase 3-4)
 
@@ -50,9 +53,9 @@ syntax subset — in a real browser.
 
 ### G4 — Spec design (`e2e/markdown-preview.spec.ts`)
 
-**Reality check**: the app renders with plain `react-markdown` v10 —
-**no `remark-gfm`** — so the preview is CommonMark-only. Tables, task
-lists, and strikethrough render as literal text (locked by a test).
+**Reality check (updated for PR #690)**: `remark-gfm` is enabled, so
+tables, task lists, and strikethrough render as real elements; the
+GFM test asserts rendered output instead of literal text.
 
 Shared fixture: a `MARKDOWN_SAMPLE` constant exercising every
 supported element. beforeEach: goto `/`, navClick editor, create
@@ -65,8 +68,8 @@ Tests:
 3. Unordered and ordered lists render (`ul`/`ol` with items).
 4. Blockquote and horizontal rule render.
 5. Links render as anchors with the expected href.
-6. GFM syntax (table, task list, strikethrough) renders as literal
-   text — locks current CommonMark-only behavior.
+6. GFM renders: table (columnheader/cell), task list (2 checkboxes,
+   unchecked + checked), strikethrough (`del`).
 7. Split mode renders textarea + preview together.
 8. Empty content shows the `_Nothing to preview._` placeholder.
 

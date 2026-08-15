@@ -2,11 +2,10 @@ import { test, expect } from '@playwright/test';
 import { createNewEntity, switchEditorMode } from './helpers/editor';
 
 /**
- * Representative CommonMark sample exercising every syntax element the
- * editor preview supports. The app renders with plain react-markdown v10
- * (no remark-gfm), so this is the CommonMark baseline only — GFM syntax
- * (tables, task lists, strikethrough) renders as literal text and is
- * locked by a dedicated test below.
+ * Representative CommonMark sample exercising the baseline syntax the
+ * editor preview supports. GFM extensions (tables, task lists,
+ * strikethrough) are enabled via remark-gfm and covered by a dedicated
+ * test below.
  */
 const MARKDOWN_SAMPLE = [
   '# Heading One',
@@ -77,27 +76,33 @@ test.describe('Markdown preview', () => {
     await expect(link).toHaveAttribute('href', 'https://example.com');
   });
 
-  test('renders GFM syntax as literal text (CommonMark-only baseline)', async ({ page }) => {
+  test('renders GFM tables, task lists, and strikethrough', async ({ page }) => {
     // Switch back to edit mode to refill with GFM-only content.
     await switchEditorMode(page, 0);
     await page.getByLabel('Editor content').fill([
       '| A | B |',
+      '|---|---|',
       '| 1 | 2 |',
       '',
       '- [ ] open task',
+      '- [x] done task',
       '',
       '~~strikethrough~~',
     ].join('\n'));
     await switchEditorMode(page, 1);
 
     const pane = preview(page);
-    // Without remark-gfm the syntax is literal text, not rendered elements.
-    await expect(pane.getByText('| A | B |')).toBeVisible();
-    await expect(pane.getByText('| 1 | 2 |')).toBeVisible();
-    await expect(pane.getByText('[ ] open task')).toBeVisible();
-    await expect(pane.getByText('~~strikethrough~~')).toBeVisible();
-    await expect(pane.locator('table')).toHaveCount(0);
-    await expect(pane.locator('del')).toHaveCount(0);
+    // GFM table renders with header and body cells.
+    await expect(pane.locator('table')).toBeVisible();
+    await expect(pane.getByRole('columnheader', { name: 'A' })).toBeVisible();
+    await expect(pane.getByRole('cell', { name: '1' })).toBeVisible();
+    // GFM task list renders disabled checkboxes with the correct state.
+    const checkboxes = pane.getByRole('checkbox');
+    await expect(checkboxes).toHaveCount(2);
+    await expect(checkboxes.nth(0)).not.toBeChecked();
+    await expect(checkboxes.nth(1)).toBeChecked();
+    // GFM strikethrough renders as <del>.
+    await expect(pane.locator('del', { hasText: 'strikethrough' })).toBeVisible();
   });
 
   test('split mode shows the textarea and the preview side by side', async ({ page }) => {
