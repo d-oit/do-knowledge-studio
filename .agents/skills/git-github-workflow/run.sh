@@ -401,6 +401,121 @@ $(git log --oneline origin/main..HEAD 2>/dev/null | sed 's/^/- /' | head -20)
 }
 
 # Agent 4: MONITOR ACTIONS
+# Parse `gh pr checks` output for pending/failure/warning markers.
+# Prints three tokens: has_pending has_failure has_warning.
+monitor_parse_checks() {
+  local checks_output="$1"
+  local has_pending=false
+  local has_failure=false
+  local has_warning=false
+
+  if echo "$checks_output" | grep -qiE "(pending|queued|in progress|running)"; then
+    has_pending=true
+  fi
+  if echo "$checks_output" | grep -qiE "(fail|error|✗|×)"; then
+    has_failure=true
+  fi
+  if echo "$checks_output" | grep -qiE "(warning|warn:|deprecated)"; then
+    has_warning=true
+  fi
+  printf '%s %s %s' "$has_pending" "$has_failure" "$has_warning"
+}
+
+# Fold repository workflow-run state into the pending/failure flags.
+# Prints two tokens: has_pending has_failure.
+monitor_fold_workflow_runs() {
+  local has_pending="$1"
+  local has_failure="$2"
+  local workflow_runs
+  workflow_runs=$(gh run list --branch "$BRANCH_NAME" --limit 10 --json status,conclusion 2>/dev/null || echo "[]")
+  if echo "$workflow_runs" | grep -q '"status":"in_progress"'; then
+    has_pending=true
+  fi
+  if echo "$workflow_runs" | grep -q '"conclusion":"failure"'; then
+    has_failure=true
+  fi
+  printf '%s %s' "$has_pending" "$has_failure"
+}
+
+# Poll PR checks until they settle, honoring STRICT_VALIDATION mode.
+# Returns 0 on success/merged, $E_CHECKS_FAILED on failure/timeout/closed.
+monitor_poll_until_terminal() {
+  local pr_number="$1"
+  local start_time
+  start_time=$(date +%s)
+  local attempts=0
+
+  while true; do
+    local current_time
+    current_time=$(date +%s)
+    local elapsed=$((current_time - start_time))
+
+    if [[ $elapsed -gt $TIMEOUT ]]; then
+      error "Timeout after ${TIMEOUT}s"
+      return $E_CHECKS_FAILED
+    fi
+
+    ((attempts++))
+
+    local checks_output
+    checks_output=$(gh pr checks "$pr_number" 2>&1 || true)
+    local pr_state
+    pr_state=$(gh pr view "$pr_number" --json state --jq '.state' 2>/dev/null || echo "OPEN")
+
+    if [[ "$pr_state" == "MERGED" ]]; then
+      success "PR already merged!"
+      return 0
+    fi
+    if [[ "$pr_state" == "CLOSED" ]]; then
+      error "PR was closed"
+      return $E_CHECKS_FAILED
+    fi
+
+    local has_pending has_failure has_warning
+    read -r has_pending has_failure has_warning < <(monitor_parse_checks "$checks_output")
+
+    local folded_pending folded_failure
+    read -r folded_pending folded_failure < <(monitor_fold_workflow_runs "$has_pending" "$has_failure")
+    has_pending="$folded_pending"
+    has_failure="$folded_failure"
+
+    if [[ $((attempts % 4)) -eq 1 ]]; then
+      log "Monitoring... (${elapsed}s elapsed)"
+    fi
+
+    if [[ "$has_pending" == true ]]; then
+      sleep $POLL_INTERVAL
+      continue
+    fi
+
+    if [[ "$has_failure" == false && "$has_warning" == false ]]; then
+      success "ALL CHECKS PASSED"
+      return 0
+    fi
+
+    if [[ "$STRICT_VALIDATION" == true ]]; then
+      if [[ "$has_failure" == true ]]; then
+        error "CHECKS FAILED - Failures detected"
+        CHECKS_FAILED+=("Check failures")
+      fi
+      if [[ "$has_warning" == true ]]; then
+        error "CHECKS FAILED - Warnings detected (strict mode)"
+        CHECKS_FAILED+=("Warnings")
+      fi
+      return $E_CHECKS_FAILED
+    fi
+
+    if [[ "$has_failure" == true ]]; then
+      warn "Checks have failures (non-strict mode)"
+    fi
+    if [[ "$has_warning" == true ]]; then
+      warn "Checks have warnings (non-strict mode)"
+    fi
+    success "ALL CHECKS PASSED"
+    return 0
+  done
+}
+
 agent_monitor_actions() {
     agent "AGENT 4: MONITOR ALL ACTIONS"
     log "═══════════════════════════════════════════════════════════════════"
@@ -414,116 +529,7 @@ agent_monitor_actions() {
         return 0
     fi
     
-    local start_time
-    start_time=$(date +%s)
-    local all_pass=false
-    local attempts=0
-    
-    while true; do
-        local current_time
-        current_time=$(date +%s)
-        local elapsed=$((current_time - start_time))
-        
-        if [[ $elapsed -gt $TIMEOUT ]]; then
-            error "Timeout after ${TIMEOUT}s"
-            return $E_CHECKS_FAILED
-        fi
-        
-        ((attempts++))
-        
-        # Get PR checks
-        local checks_output
-        checks_output=$(gh pr checks "$PR_NUMBER" 2>&1 || true)
-        local pr_state
-        pr_state=$(gh pr view "$PR_NUMBER" --json state --jq '.state' 2>/dev/null || echo "OPEN")
-        
-        # Check if already merged
-        if [[ "$pr_state" == "MERGED" ]]; then
-            success "PR already merged!"
-            return 0
-        fi
-        
-        if [[ "$pr_state" == "CLOSED" ]]; then
-            error "PR was closed"
-            return $E_CHECKS_FAILED
-        fi
-        
-        # Analyze checks
-        local has_pending=false
-        local has_failure=false
-        local has_warning=false
-        
-        # Check pending
-        if echo "$checks_output" | grep -qiE "(pending|queued|in progress|running)"; then
-            has_pending=true
-        fi
-        
-        # Check failures
-        if echo "$checks_output" | grep -qiE "(fail|error|✗|×)"; then
-            has_failure=true
-        fi
-        
-        # Check warnings (if strict)
-        if echo "$checks_output" | grep -qiE "(warning|warn:|deprecated)"; then
-            has_warning=true
-        fi
-        
-        # Check repo Actions
-        local workflow_runs
-        workflow_runs=$(gh run list --branch "$BRANCH_NAME" --limit 10 --json status,conclusion 2>/dev/null || echo "[]")
-        if echo "$workflow_runs" | grep -q '"status":"in_progress"'; then
-            has_pending=true
-        fi
-        if echo "$workflow_runs" | grep -q '"conclusion":"failure"'; then
-            has_failure=true
-        fi
-        
-        # Display status
-        if [[ $((attempts % 4)) -eq 1 ]]; then
-            log "Monitoring... (${elapsed}s elapsed)"
-        fi
-        
-        if [[ "$has_pending" == true ]]; then
-            sleep $POLL_INTERVAL
-            continue
-        fi
-        
-        # All checks complete
-        if [[ "$has_failure" == false && "$has_warning" == false ]]; then
-            all_pass=true
-            break
-        fi
-        
-        # STRICT MODE: Any failure/warning = fail
-        if [[ "$STRICT_VALIDATION" == true ]]; then
-            if [[ "$has_failure" == true ]]; then
-                error "CHECKS FAILED - Failures detected"
-                CHECKS_FAILED+=("Check failures")
-            fi
-            if [[ "$has_warning" == true ]]; then
-                error "CHECKS FAILED - Warnings detected (strict mode)"
-                CHECKS_FAILED+=("Warnings")
-            fi
-            return $E_CHECKS_FAILED
-        else
-            # Non-strict: just warn
-            if [[ "$has_failure" == true ]]; then
-                warn "Checks have failures (non-strict mode)"
-            fi
-            if [[ "$has_warning" == true ]]; then
-                warn "Checks have warnings (non-strict mode)"
-            fi
-            all_pass=true
-            break
-        fi
-    done
-    
-    if [[ "$all_pass" == true ]]; then
-        success "ALL CHECKS PASSED"
-        return 0
-    fi
-    
-    return $E_CHECKS_FAILED
+    monitor_poll_until_terminal "$PR_NUMBER"
 }
 
 # Agent 5: FIX ISSUES (using web research and skills)
