@@ -194,15 +194,19 @@ agent_commit() {
     fi
     
     # Generate branch name
-    local timestamp=$(date +%s)
+    local timestamp
+    timestamp=$(date +%s)
     if [[ -z "$MESSAGE" ]]; then
-        local changed_files=$(git status --porcelain | grep '^[AM]' | awk '{print $2}' | head -3 | tr '\n' ', ' | sed 's/,$//')
+        local changed_files
+        changed_files=$(git status --porcelain | grep '^[AM]' | awk '{print $2}' | head -3 | tr '\n' ', ' | sed 's/,$//')
         MESSAGE="workflow: update ${changed_files:-files}"
     fi
     
     # Detect type from message
-    local type=$(echo "$MESSAGE" | grep -oE '^(feat|fix|docs|refactor|test|ci|chore)' || echo "workflow")
-    local desc=$(echo "$MESSAGE" | sed 's/^[^(]*: //' | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]' | cut -c1-30 | sed 's/-*$//')
+    local type
+    type=$(echo "$MESSAGE" | grep -oE '^(feat|fix|docs|refactor|test|ci|chore)' || echo "workflow")
+    local desc
+    desc=$(echo "$MESSAGE" | sed 's/^[^(]*: //' | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]' | cut -c1-30 | sed 's/-*$//')
     BRANCH_NAME="${type}-${desc}-${timestamp}"
     
     log "Branch: $BRANCH_NAME"
@@ -214,7 +218,8 @@ agent_commit() {
     fi
     
     # Get current branch
-    local current_branch=$(git branch --show-current)
+    local current_branch
+    current_branch=$(git branch --show-current)
     
     # Create feature branch from main
     if [[ "$current_branch" == "main" || "$current_branch" == "master" ]]; then
@@ -276,7 +281,8 @@ agent_check_issues() {
     log "Checking open GitHub issues..."
     
     # Get open issues
-    local issues=$(gh issue list --state open --json number,title,labels --jq '.[] | "[#\(.number)] \(.title) [\(.labels | map(.name) | join(", "))]"' 2>/dev/null || echo "")
+    local issues
+    issues=$(gh issue list --state open --json number,title,labels --jq '.[] | "[#\(.number)] \(.title) [\(.labels | map(.name) | join(", "))]"' 2>/dev/null || echo "")
     
     if [[ -z "$issues" ]]; then
         success "No open issues found"
@@ -284,8 +290,10 @@ agent_check_issues() {
     fi
     
     # Check for blocking labels
-    local blocking_issues=$(gh issue list --state open --label "blocking" --json number,title 2>/dev/null || echo "[]")
-    local critical_issues=$(gh issue list --state open --label "critical" --json number,title 2>/dev/null || echo "[]")
+    local blocking_issues
+    blocking_issues=$(gh issue list --state open --label "blocking" --json number,title 2>/dev/null || echo "[]")
+    local critical_issues
+    critical_issues=$(gh issue list --state open --label "critical" --json number,title 2>/dev/null || echo "[]")
     
     if [[ "$blocking_issues" != "[]" && "$blocking_issues" != "" ]]; then
         error "BLOCKING issues found:"
@@ -338,14 +346,16 @@ agent_create_pr() {
     fi
     
     # Check for existing PR
-    local existing_pr=$(gh pr list --head "$BRANCH_NAME" --json number --jq '.[0].number' 2>/dev/null || echo "")
+    local existing_pr
+    existing_pr=$(gh pr list --head "$BRANCH_NAME" --json number --jq '.[0].number' 2>/dev/null || echo "")
     
     if [[ -n "$existing_pr" && "$existing_pr" != "null" ]]; then
         PR_NUMBER="$existing_pr"
         log "Using existing PR #$PR_NUMBER"
     else
         # Create PR body
-        local pr_body="## Summary
+        local pr_body
+        pr_body="## Summary
 
 $MESSAGE
 
@@ -404,12 +414,14 @@ agent_monitor_actions() {
         return 0
     fi
     
-    local start_time=$(date +%s)
+    local start_time
+    start_time=$(date +%s)
     local all_pass=false
     local attempts=0
     
     while true; do
-        local current_time=$(date +%s)
+        local current_time
+        current_time=$(date +%s)
         local elapsed=$((current_time - start_time))
         
         if [[ $elapsed -gt $TIMEOUT ]]; then
@@ -420,8 +432,10 @@ agent_monitor_actions() {
         ((attempts++))
         
         # Get PR checks
-        local checks_output=$(gh pr checks "$PR_NUMBER" 2>&1 || true)
-        local pr_state=$(gh pr view "$PR_NUMBER" --json state --jq '.state' 2>/dev/null || echo "OPEN")
+        local checks_output
+        checks_output=$(gh pr checks "$PR_NUMBER" 2>&1 || true)
+        local pr_state
+        pr_state=$(gh pr view "$PR_NUMBER" --json state --jq '.state' 2>/dev/null || echo "OPEN")
         
         # Check if already merged
         if [[ "$pr_state" == "MERGED" ]]; then
@@ -455,7 +469,8 @@ agent_monitor_actions() {
         fi
         
         # Check repo Actions
-        local workflow_runs=$(gh run list --branch "$BRANCH_NAME" --limit 10 --json status,conclusion 2>/dev/null || echo "[]")
+        local workflow_runs
+        workflow_runs=$(gh run list --branch "$BRANCH_NAME" --limit 10 --json status,conclusion 2>/dev/null || echo "[]")
         if echo "$workflow_runs" | grep -q '"status":"in_progress"'; then
             has_pending=true
         fi
@@ -593,7 +608,8 @@ agent_merge() {
     if [[ "$CLOSE_ISSUES" == true && ${#ISSUES_FOUND[@]} -gt 0 ]]; then
         log "Closing related issues..."
         for issue in "${ISSUES_FOUND[@]}"; do
-            local issue_num=$(echo "$issue" | grep -oE '[0-9]+' | head -1)
+            local issue_num
+            issue_num=$(echo "$issue" | grep -oE '[0-9]+' | head -1)
             if [[ -n "$issue_num" ]]; then
                 gh issue close "$issue_num" --comment "Fixed in PR #$PR_NUMBER" 2>/dev/null || true
             fi

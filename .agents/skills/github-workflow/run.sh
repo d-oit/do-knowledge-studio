@@ -190,7 +190,8 @@ EOF
 # Generate branch name from message
 generate_branch_name() {
     local msg="${1:-}"
-    local timestamp=$(date +%s)
+    local timestamp
+    timestamp=$(date +%s)
     
     if [[ -z "$msg" ]]; then
         echo "workflow-${timestamp}"
@@ -198,8 +199,10 @@ generate_branch_name() {
     fi
     
     # Extract type and description
-    local type=$(echo "$msg" | grep -oE '^(feat|fix|docs|refactor|test|ci|chore)' || echo "workflow")
-    local desc=$(echo "$msg" | sed 's/^[^(]*: //' | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]' | cut -c1-50 | sed 's/-*$//')
+    local type
+    type=$(echo "$msg" | grep -oE '^(feat|fix|docs|refactor|test|ci|chore)' || echo "workflow")
+    local desc
+    desc=$(echo "$msg" | sed 's/^[^(]*: //' | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]' | cut -c1-50 | sed 's/-*$//')
     
     echo "${type}-${desc}-${timestamp}"
 }
@@ -221,7 +224,8 @@ check_gh_cli() {
 
 # Get current repository info
 get_repo_info() {
-    local remote_url=$(git remote get-url origin 2>/dev/null || echo "")
+    local remote_url
+    remote_url=$(git remote get-url origin 2>/dev/null || echo "")
     if [[ -z "$remote_url" ]]; then
         error "No remote 'origin' configured"
         return 1
@@ -251,7 +255,8 @@ phase_prepare() {
     fi
     
     # Get current branch
-    local current_branch=$(git branch --show-current)
+    local current_branch
+    current_branch=$(git branch --show-current)
     log "Current branch: $current_branch"
     
     # Generate or use provided branch name
@@ -279,7 +284,8 @@ phase_prepare() {
     
     # Generate commit message if not provided
     if [[ -z "$MESSAGE" ]]; then
-        local changed_files=$(git diff --cached --name-only 2>/dev/null | head -3 | tr '\n' ', ' | sed 's/,$//')
+        local changed_files
+        changed_files=$(git diff --cached --name-only 2>/dev/null | head -3 | tr '\n' ', ' | sed 's/,$//')
         if [[ -z "$changed_files" ]]; then
             changed_files=$(git status --porcelain | grep '^[AM]' | awk '{print $2}' | head -3 | tr '\n' ', ' | sed 's/,$//')
         fi
@@ -311,8 +317,10 @@ phase_sync() {
     
     # Check if behind
     if git show-ref --verify --quiet "refs/remotes/origin/$BASE_BRANCH"; then
-        local merge_base=$(git merge-base "origin/$BASE_BRANCH" HEAD 2>/dev/null || echo "")
-        local origin_sha=$(git rev-parse "origin/$BASE_BRANCH" 2>/dev/null || echo "")
+        local merge_base
+        merge_base=$(git merge-base "origin/$BASE_BRANCH" HEAD 2>/dev/null || echo "")
+        local origin_sha
+        origin_sha=$(git rev-parse "origin/$BASE_BRANCH" 2>/dev/null || echo "")
         
         if [[ -n "$merge_base" && "$merge_base" != "$origin_sha" ]]; then
             warn "Branch is behind origin/$BASE_BRANCH"
@@ -372,8 +380,10 @@ phase_push() {
     if [[ "$has_changes" == false ]]; then
         # Check if already pushed
         if git show-ref --verify --quiet "refs/remotes/origin/$BRANCH_NAME" 2>/dev/null; then
-            local local_sha=$(git rev-parse HEAD)
-            local remote_sha=$(git rev-parse "origin/$BRANCH_NAME" 2>/dev/null || echo "")
+            local local_sha
+            local_sha=$(git rev-parse HEAD)
+            local remote_sha
+            remote_sha=$(git rev-parse "origin/$BRANCH_NAME" 2>/dev/null || echo "")
             
             if [[ "$local_sha" == "$remote_sha" ]]; then
                 success "Already up to date on origin/$BRANCH_NAME"
@@ -394,7 +404,8 @@ phase_push() {
                 return $E_PUSH_FAILED
             fi
             
-            local commit_sha=$(git rev-parse HEAD)
+            local commit_sha
+            commit_sha=$(git rev-parse HEAD)
             success "Created commit: ${commit_sha:0:8}"
         else
             log "[DRY-RUN] Would stage and commit: $MESSAGE"
@@ -410,8 +421,10 @@ phase_push() {
         fi
         
         # Verify push
-        local local_sha=$(git rev-parse HEAD)
-        local remote_sha=$(git rev-parse "origin/$BRANCH_NAME" 2>/dev/null || echo "")
+        local local_sha
+        local_sha=$(git rev-parse HEAD)
+        local remote_sha
+        remote_sha=$(git rev-parse "origin/$BRANCH_NAME" 2>/dev/null || echo "")
         
         if [[ "$local_sha" != "$remote_sha" ]]; then
             error "Push verification failed"
@@ -439,14 +452,16 @@ phase_pr() {
     fi
     
     # Check for existing PR
-    local existing_pr=$(gh pr list --head "$BRANCH_NAME" --json number --jq '.[0].number' 2>/dev/null || echo "")
+    local existing_pr
+    existing_pr=$(gh pr list --head "$BRANCH_NAME" --json number --jq '.[0].number' 2>/dev/null || echo "")
     
     if [[ -n "$existing_pr" && "$existing_pr" != "null" ]]; then
         log "Found existing PR #$existing_pr"
         PR_NUMBER="$existing_pr"
         
         # Update PR if needed
-        local current_title=$(gh pr view "$PR_NUMBER" --json title --jq '.title' 2>/dev/null || echo "")
+        local current_title
+        current_title=$(gh pr view "$PR_NUMBER" --json title --jq '.title' 2>/dev/null || echo "")
         if [[ "$current_title" != "$MESSAGE" && "$DRY_RUN" == false ]]; then
             log "Updating PR title..."
             gh pr edit "$PR_NUMBER" --title "$MESSAGE" 2>/dev/null || true
@@ -456,7 +471,8 @@ phase_pr() {
         if [[ "$DRY_RUN" == false ]]; then
             log "Creating pull request..."
             
-            local pr_body="## Summary
+            local pr_body
+            pr_body="## Summary
 
 $MESSAGE
 
@@ -539,13 +555,13 @@ phase_monitor() {
     log "Poll interval: ${POLL_INTERVAL}s"
     log ""
     
-    local start_time=$(date +%s)
-    local pre_existing_issues=()
+    local start_time
+    start_time=$(date +%s)
     local new_issues=()
-    local checks_complete=false
     
     while true; do
-        local current_time=$(date +%s)
+        local current_time
+        current_time=$(date +%s)
         local elapsed=$((current_time - start_time))
         
         if [[ $elapsed -gt $TIMEOUT ]]; then
@@ -554,8 +570,10 @@ phase_monitor() {
         fi
         
         # Get PR checks
-        local checks_output=$(gh pr checks "$PR_NUMBER" 2>&1 || true)
-        local pr_state=$(gh pr view "$PR_NUMBER" --json state --jq '.state' 2>/dev/null || echo "OPEN")
+        local checks_output
+        checks_output=$(gh pr checks "$PR_NUMBER" 2>&1 || true)
+        local pr_state
+        pr_state=$(gh pr view "$PR_NUMBER" --json state --jq '.state' 2>/dev/null || echo "OPEN")
         
         # Check if PR was merged externally
         if [[ "$pr_state" == "MERGED" ]]; then
@@ -592,10 +610,12 @@ phase_monitor() {
         
         # Check repository Actions if enabled
         if [[ "$CHECK_ALL_ACTIONS" == 1 ]]; then
-            local repo_info=$(get_repo_info)
+            local repo_info
+            repo_info=$(get_repo_info)
             if [[ -n "$repo_info" ]]; then
                 # Get workflow runs for this branch
-                local workflow_runs=$(gh run list --branch "$BRANCH_NAME" --limit 10 --json status,conclusion,name 2>/dev/null || echo "[]")
+                local workflow_runs
+                workflow_runs=$(gh run list --branch "$BRANCH_NAME" --limit 10 --json status,conclusion,name 2>/dev/null || echo "[]")
                 
                 # Check if any workflows are running
                 if echo "$workflow_runs" | grep -q '"status":"in_progress"'; then
@@ -613,10 +633,8 @@ phase_monitor() {
         if [[ "$has_pending" == true ]]; then
             log "Checks still running... (${elapsed}s elapsed)"
         elif [[ "$has_failure" == true || "$has_warning" == true ]]; then
-            checks_complete=true
             break
         else
-            checks_complete=true
             break
         fi
         
@@ -627,11 +645,11 @@ phase_monitor() {
     log ""
     log "Analyzing check results..."
     
-    local final_checks=$(gh pr checks "$PR_NUMBER" 2>&1 || true)
+    local final_checks
+    final_checks=$(gh pr checks "$PR_NUMBER" 2>&1 || true)
     
     # Check for pre-existing issues in base branch
     log "Checking base branch $BASE_BRANCH for pre-existing issues..."
-    local base_checks=$(gh pr checks "$PR_NUMBER" --json baseRefName --jq '.baseRefName' 2>/dev/null || echo "$BASE_BRANCH")
     
     # Determine if failures are new or pre-existing
     # This is a simplified check - in production you'd compare with base branch
@@ -694,8 +712,10 @@ phase_merge() {
     # Final check before merge
     log "Verifying PR #$PR_NUMBER is ready..."
     
-    local pr_state=$(gh pr view "$PR_NUMBER" --json state --jq '.state' 2>/dev/null || echo "")
-    local merge_state=$(gh pr view "$PR_NUMBER" --json mergeStateStatus --jq '.mergeStateStatus' 2>/dev/null || echo "")
+    local pr_state
+    pr_state=$(gh pr view "$PR_NUMBER" --json state --jq '.state' 2>/dev/null || echo "")
+    local merge_state
+    merge_state=$(gh pr view "$PR_NUMBER" --json mergeStateStatus --jq '.mergeStateStatus' 2>/dev/null || echo "")
     
     if [[ "$pr_state" == "MERGED" ]]; then
         success "PR was already merged!"
