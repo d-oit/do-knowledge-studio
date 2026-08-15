@@ -1,7 +1,38 @@
 # Plans Index
 
-**Updated**: 2026-08-12
+**Updated**: 2026-08-15
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
+
+### Plan 125 — Markdown Preview E2E Verification (2026-08-15)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| G1–G6 | Verify CommonMark/GFM preview output and merge the implementation | Done | E2E spec + ADR 033 merged via #689; GFM support merged via #690 |
+
+### Plan 124 — Skill Script Complexity Follow-up (2026-08-15)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Decompose monitor loops | Done | `phase_monitor()` and `agent_monitor_actions()` extracted via #691 |
+| W2 | Address review findings | Implemented; CI pending | Shared `scripts/lib/workflow-monitor.sh`, workflow-failure propagation, and BATS regression coverage |
+
+### Plan 123 — Codacy Merge Gate Playbook (2026-08-14)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| Reference | Document missing-check diagnosis and code-level false-positive fixes | Active reference | AGENTS.md and lessons updated; use for every PR sweep |
+
+### Plan 122 — Large-List Render Cost (2026-08-14)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1–W4 | Cap/window Library lists and backfill E2E/a11y coverage | Done | PRs #677–#683; CSS-sourced breakpoints, browser windowing, tooltips, SR labels, and E2E coverage |
+
+### Plan 121 — Version Consistency Audit (2026-08-12)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Reconcile app version and propagation documentation | Done | Version references aligned to 0.1.2; `scripts/propagate-version.sh` restored and documented |
 
 ### Plan 120 — Open Items Resolution Session (2026-08-12)
 

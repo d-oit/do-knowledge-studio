@@ -12,6 +12,9 @@ shellcheck-clean — they are linted by both `scripts/verify.sh` and CI.
   0 so `set -e` callers keep running the remaining checks.
 - `lint_cache.sh` — file-hash cache (`lint_if_changed`) so quality gates
   skip unchanged files. Used by `scripts/quality_gate.sh`.
+- `workflow-monitor.sh` — shared `monitor_parse_checks` helper used by the
+  GitHub workflow skill scripts to classify pending, failed, and warning
+  check output consistently.
 
 ## Sourcing
 
@@ -22,6 +25,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source-path=scripts
 # shellcheck source=lib/run-check.sh
 source "$SCRIPT_DIR/lib/run-check.sh"
+```
+
+Skill scripts source the same library through the repository root:
+
+```bash
+# shellcheck source=scripts/lib/workflow-monitor.sh
+source "$REPO_ROOT/scripts/lib/workflow-monitor.sh"
 ```
 
 The `# shellcheck source-path=scripts` / `source=` directive pair lets

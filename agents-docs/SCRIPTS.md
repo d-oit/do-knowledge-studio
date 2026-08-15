@@ -42,6 +42,7 @@
 |------|---------|
 | `lib/lint_cache.sh` | Lint-result caching for the quality gate |
 | `lib/run-check.sh` | Shared check runner used by verify.sh |
+| `lib/workflow-monitor.sh` | Shared check-state parser used by GitHub workflow skills |
 
 ## Environment Variables
 

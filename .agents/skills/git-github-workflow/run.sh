@@ -7,6 +7,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
+# shellcheck source=scripts/lib/workflow-monitor.sh
+source "$REPO_ROOT/scripts/lib/workflow-monitor.sh"
+
 # Configuration
 DRY_RUN=false
 MESSAGE=""
@@ -401,26 +404,6 @@ $(git log --oneline origin/main..HEAD 2>/dev/null | sed 's/^/- /' | head -20)
 }
 
 # Agent 4: MONITOR ACTIONS
-# Parse `gh pr checks` output for pending/failure/warning markers.
-# Prints three tokens: has_pending has_failure has_warning.
-monitor_parse_checks() {
-  local checks_output="$1"
-  local has_pending=false
-  local has_failure=false
-  local has_warning=false
-
-  if echo "$checks_output" | grep -qiE "(pending|queued|in progress|running)"; then
-    has_pending=true
-  fi
-  if echo "$checks_output" | grep -qiE "(fail|error|✗|×)"; then
-    has_failure=true
-  fi
-  if echo "$checks_output" | grep -qiE "(warning|warn:|deprecated)"; then
-    has_warning=true
-  fi
-  printf '%s %s %s' "$has_pending" "$has_failure" "$has_warning"
-}
-
 # Fold repository workflow-run state into the pending/failure flags.
 # Prints two tokens: has_pending has_failure.
 monitor_fold_workflow_runs() {
@@ -472,7 +455,7 @@ monitor_poll_until_terminal() {
     fi
 
     local has_pending has_failure has_warning
-    read -r has_pending has_failure has_warning < <(monitor_parse_checks "$checks_output")
+    read -r has_pending has_failure has_warning < <(monitor_parse_checks "$checks_output" 1)
 
     local folded_pending folded_failure
     read -r folded_pending folded_failure < <(monitor_fold_workflow_runs "$has_pending" "$has_failure")

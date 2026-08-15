@@ -7,6 +7,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
+# shellcheck source=scripts/lib/workflow-monitor.sh
+source "$REPO_ROOT/scripts/lib/workflow-monitor.sh"
+
 # Configuration
 DRY_RUN=false
 PUSH_ONLY=false
@@ -520,28 +523,6 @@ $(git log --oneline "origin/$BASE_BRANCH..HEAD" 2>/dev/null | sed 's/^/- /' | he
 }
 
 # Phase 5: MONITOR
-# Parse `gh pr checks` output for pending/failure/warning markers.
-# Prints three tokens: has_pending has_failure has_warning.
-monitor_parse_checks() {
-  local checks_output="$1"
-  local has_pending=false
-  local has_failure=false
-  local has_warning=false
-
-  if echo "$checks_output" | grep -qiE "(pending|queued|in progress|running)"; then
-    has_pending=true
-  fi
-  if echo "$checks_output" | grep -qiE "(fail|error|✗|×)"; then
-    has_failure=true
-  fi
-  if [[ "$FAIL_ON_WARNING" == 1 ]]; then
-    if echo "$checks_output" | grep -qiE "(warning|warn:|deprecated)"; then
-      has_warning=true
-    fi
-  fi
-  printf '%s %s %s' "$has_pending" "$has_failure" "$has_warning"
-}
-
 # If CHECK_ALL_ACTIONS is enabled, fold workflow-run state into the flags.
 # Prints two tokens: has_pending has_failure.
 monitor_fold_workflow_runs() {
@@ -574,6 +555,8 @@ monitor_poll_until_terminal() {
   local pr_number="$1"
   local start_time
   start_time=$(date +%s)
+  local workflow_failure_detected=false
+  local warning_detected=false
 
   while true; do
     local current_time
@@ -599,12 +582,19 @@ monitor_poll_until_terminal() {
       return $E_CHECKS_FAILED
     fi
 
-    local has_pending
-    read -r has_pending _ < <(monitor_parse_checks "$checks_output")
+    local has_pending has_failure has_warning
+    read -r has_pending has_failure has_warning < <(monitor_parse_checks "$checks_output" "$FAIL_ON_WARNING")
+    if [[ "$has_warning" == true ]]; then
+      warning_detected=true
+    fi
 
-    local folded_pending
-    read -r folded_pending _ < <(monitor_fold_workflow_runs "$has_pending" "false")
+    local folded_pending folded_failure
+    read -r folded_pending folded_failure < <(monitor_fold_workflow_runs "$has_pending" "$has_failure")
     has_pending="$folded_pending"
+    has_failure="$folded_failure"
+    if [[ "$has_failure" == true ]]; then
+      workflow_failure_detected=true
+    fi
 
     if [[ "$has_pending" == true ]]; then
       log "Checks still running... (${elapsed}s elapsed)"
@@ -623,13 +613,13 @@ monitor_poll_until_terminal() {
   final_checks=$(gh pr checks "$pr_number" 2>&1 || true)
   log "Checking base branch $BASE_BRANCH for pre-existing issues..."
 
-  if echo "$final_checks" | grep -qiE "(fail|error|✗|×)"; then
+  if [[ "$workflow_failure_detected" == true ]] || echo "$final_checks" | grep -qiE "(fail|error|✗|×)"; then
     warn "Issues detected in checks"
     warn "Review PR #$pr_number manually"
     return $E_CHECKS_FAILED
   fi
   if [[ "$FAIL_ON_WARNING" == 1 ]]; then
-    if echo "$final_checks" | grep -qiE "(warning|warn:|deprecated)"; then
+    if [[ "$warning_detected" == true ]] || echo "$final_checks" | grep -qiE "(warning|warn:|deprecated)"; then
       warn "Issues detected in checks"
       warn "Review PR #$pr_number manually"
       return $E_CHECKS_FAILED
