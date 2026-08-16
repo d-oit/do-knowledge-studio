@@ -59,19 +59,25 @@ required="$(gh api "repos/$repo/rules/branches/$base_ref" \
 # required_review_thread_resolution (LESSON-026/030): with all checks
 # green, an open thread is the real blocker, not staleness. PR #670 sat
 # BLOCKED for 1.5+ hours on an OwlWatch thread invisible to check-runs.
+# Outdated threads count too: `isOutdated` does NOT exempt a thread from
+# the gate (LESSON-032, PR #692) — report them explicitly.
 owner="${repo%%/*}"
 name="${repo##*/}"
-unresolved_threads="$(gh api graphql \
+thread_counts="$(gh api graphql \
   -F owner="$owner" -F name="$name" -F pr="$pr_number" \
   -f query='query($owner: String!, $name: String!, $pr: Int!) {
     repository(owner: $owner, name: $name) {
       pullRequest(number: $pr) {
-        reviewThreads(first: 100) { nodes { isResolved } }
+        reviewThreads(first: 100) { nodes { isResolved isOutdated } }
       }
     }
   }' \
   --jq '[.data.repository.pullRequest.reviewThreads.nodes[] |
-    select(.isResolved == false)] | length' 2>/dev/null || echo "0")"
+    select(.isResolved == false)] | {total: length,
+    outdated: map(select(.isOutdated == true)) | length} |
+    "\(.total) \(.outdated)"' 2>/dev/null || echo "0 0")"
+unresolved_threads="${thread_counts% *}"
+outdated_threads="${thread_counts##* }"
 
 header="**Blocked merge diagnosis** — $mergeable_state"
 if [[ "$in_progress" != "[]" ]]; then
@@ -83,7 +89,13 @@ elif [[ "$failed" != "[]" ]]; then
 elif [[ "$unresolved_threads" != "0" ]]; then
   body="$header
 🧵 $unresolved_threads unresolved review thread(s) blocking merge —
-the ruleset requires required_review_thread_resolution (LESSON-026/030).
+the ruleset requires required_review_thread_resolution (LESSON-026/030)."
+  if [[ "$outdated_threads" != "0" ]] && [[ "$outdated_threads" != "" ]]; then
+    body="$body
+⚠️ $outdated_threads of them outdated — outdated threads still count
+(LESSON-032, PR #692); resolve every thread, outdated or not."
+  fi
+  body="$body
 Resolve each via GraphQL resolveReviewThread; required checks: $required"
 else
   body="$header
