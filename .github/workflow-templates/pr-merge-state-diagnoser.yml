@@ -28,7 +28,9 @@ jobs:
           fetch-depth: 1
 
       # Posts one idempotent comment (marker-delimited) naming the real
-      # blocker on BLOCKED pull requests. The logic lives in
+      # blocker on BLOCKED pull requests: in-flight runs, failed runs,
+      # unresolved review threads (outdated ones count too, LESSON-032),
+      # or all-green staleness. The logic lives in
       # scripts/diagnose-merge-state.sh. Informational only — never a merge
       # gate — so fork PRs and transient API errors must not turn the
       # check red.

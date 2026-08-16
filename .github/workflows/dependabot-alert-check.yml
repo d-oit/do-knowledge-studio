@@ -1,0 +1,52 @@
+---
+name: Dependabot Alert Check
+
+# yamllint disable-line rule:truthy
+on:
+  schedule:
+    # Run nightly at 04:17 UTC — after the 03:00 CI nightly so the two
+    # scheduled workloads never contend for runners.
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: read
+
+jobs:
+  check:
+    name: Open Alert Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      # Fails when any open Dependabot alert exists so dependency
+      # regressions surface the next morning instead of during the next
+      # PR sweep (plans/127). Informational alerts (auto-dismissed) are
+      # not counted.
+      - name: List open Dependabot alerts
+        id: alerts
+        run: |
+          alerts="$(gh api \
+            "repos/${{ github.repository }}/dependabot/alerts?state=open&per_page=100" \
+            --jq '[.[] | "\(.number) \(.security_advisory.severity) \
+              \(.dependency.package.name): \(.security_advisory.summary)"]' 2>/dev/null || echo '[]')"
+          count="$(printf '%s' "$alerts" | jq 'length')"
+          echo "open_alerts=$count" >>"$GITHUB_OUTPUT"
+          echo "Open Dependabot alerts: $count"
+          if [[ "$count" -gt 0 ]]; then
+            printf '%s\n' "$alerts" | jq -r '.[]'
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fail on open alerts
+        if: steps.alerts.outputs.open_alerts != '0'
+        run: |
+          echo "::error::Open Dependabot alerts detected: ${{ steps.alerts.outputs.open_alerts }}"
+          exit 1

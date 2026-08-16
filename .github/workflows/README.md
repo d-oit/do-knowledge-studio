@@ -28,7 +28,11 @@ This directory contains GitHub Actions workflows for the do-knowledge-studio pro
   documentation.
 - **PR Merge-State Diagnoser** (`pr-merge-state-diagnoser.yml`) — PRs.
   Posts one comment naming the real blocker on BLOCKED PRs (in-flight
-  runs, failures, or staleness).
+  runs, failures, unresolved review threads incl. outdated ones, or
+  staleness).
+- **Dependabot Alert Check** (`dependabot-alert-check.yml`) — Nightly
+  schedule. Fails when any open Dependabot alert exists, so dependency
+  regressions surface before the next PR sweep.
 
 ## Key Workflows
 

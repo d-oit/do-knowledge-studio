@@ -1,7 +1,13 @@
 # Plans Index
 
-**Updated**: 2026-08-15
+**Updated**: 2026-08-16
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
+
+### Plan 127 — Nightly Dependabot Alert Check (2026-08-16)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Fail CI when any open Dependabot alert exists | Done | New `dependabot-alert-check.yml` nightly workflow; diagnoser reports outdated-but-unresolved review threads (LESSON-032) |
 
 ### Plan 126 — Transitive nanoid Security Remediation (2026-08-15)
 

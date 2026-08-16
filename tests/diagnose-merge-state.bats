@@ -152,7 +152,7 @@ setup() {
 }
 
 @test "blocked + all green + unresolved review threads names them as the blocker" {
-  export MOCK_THREADS="1"
+  export MOCK_THREADS="1 0"
   export MOCK_REQUIRED='["Codacy Static Code Analysis"]'
 
   run "$SCRIPT"
@@ -163,6 +163,21 @@ setup() {
   grep -q 'required_review_thread_resolution' "$MOCK_BODY_FILE"
   grep -q 'Codacy Static Code Analysis' "$MOCK_BODY_FILE"
   # The thread is the blocker — the staleness note must NOT be posted.
+  run ! grep -q 'All checks are green' "$MOCK_BODY_FILE"
+}
+
+@test "blocked + all green + outdated unresolved threads are called out" {
+  export MOCK_THREADS="3 2"
+
+  run "$SCRIPT"
+
+  [ "$status" -eq 0 ]
+  grep -q '^POST$' "$MOCK_LOG"
+  grep -q "unresolved review thread" "$MOCK_BODY_FILE"
+  grep -q '2 of them outdated' "$MOCK_BODY_FILE"
+  grep -q 'outdated threads still count' "$MOCK_BODY_FILE"
+  grep -q 'LESSON-032' "$MOCK_BODY_FILE"
+  # The staleness note must NOT be posted.
   run ! grep -q 'All checks are green' "$MOCK_BODY_FILE"
 }
 
@@ -190,7 +205,7 @@ setup() {
 
 @test "failing checks take precedence over review threads" {
   export MOCK_FAILED='["Unit Tests"]'
-  export MOCK_THREADS="1"
+  export MOCK_THREADS="1 0"
 
   run "$SCRIPT"
 
@@ -201,7 +216,7 @@ setup() {
 
 @test "in-progress checks take precedence over review threads" {
   export MOCK_IN_PROGRESS='["Unit Tests"]'
-  export MOCK_THREADS="1"
+  export MOCK_THREADS="1 0"
 
   run "$SCRIPT"
 

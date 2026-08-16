@@ -30,7 +30,8 @@ jobs:
       # GitHub's merge-state can report BLOCKED even when every gate is
       # green (see plans/098-audit-github-merge-state-staleness.md). This
       # step posts one idempotent comment (marker-delimited) naming the real
-      # blocker: in-flight runs, failed runs, or all-green staleness with
+      # blocker: in-flight runs, failed runs, unresolved review threads
+      # (outdated ones count too, LESSON-032), or all-green staleness with
       # the remediation ladder. The logic lives in scripts/diagnose-merge-state.sh
       # so the workflow and template stay in sync. Informational only —
       # never a merge gate — so fork PRs and transient API errors must not

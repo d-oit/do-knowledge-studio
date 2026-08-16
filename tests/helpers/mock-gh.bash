@@ -86,13 +86,14 @@ gh() {
   fi
 
   # GraphQL review-thread query — the diagnoser checks unresolved threads
-  # before declaring staleness (LESSON-026/030). Returns the post-jq count.
-  # MOCK_THREADS_FAIL=1 exercises the script's `|| echo "0"` fallback.
+  # before declaring staleness (LESSON-026/030). Returns the post-jq pair
+  # "total outdated" (outdated threads still count, LESSON-032).
+  # MOCK_THREADS_FAIL=1 exercises the script's `|| echo "0 0"` fallback.
   if [[ "$joined" == *"graphql"* ]] && [[ "$joined" == *"reviewThreads"* ]]; then
     if [[ "${MOCK_THREADS_FAIL:-0}" == "1" ]]; then
       return 1
     fi
-    printf '%s\n' "${MOCK_THREADS:-0}"
+    printf '%s\n' "${MOCK_THREADS:-0 0}"
     return 0
   fi
 
@@ -120,7 +121,7 @@ mock_gh_setup() {
   export MOCK_FAILED="[]"
   export MOCK_REQUIRED="[]"
   export MOCK_RULES_FAIL="0"
-  export MOCK_THREADS="0"
+  export MOCK_THREADS="0 0"
   export MOCK_THREADS_FAIL="0"
   export MOCK_COMMENT_ID="null"
 }
