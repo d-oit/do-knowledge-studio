@@ -1,53 +1,53 @@
 # Plan 124: Skill script complexity follow-up (OwlWatch MEDIUM threads on PR #688)
 
-> Status: FOLLOW-UP (tracked, not yet scheduled)
+> Status: COMPLETE — replacement PR #692 is CI-green and PR #691 is superseded
 > Date: 2026-08-15
 
 ## Context
 
 PR #688 fixed the repo-wide shellcheck debt in two skill scripts
-(`.agents/skills/github-workflow/run.sh`, `.agents/skills/git-github-workflow/run.sh`):
-mechanical SC2155 `local x=$(...)` splits and removal of dead SC2034 variables.
-The full quality gate's shellcheck step now passes for the first time on a clean
-checkout (verified: `./scripts/quality_gate.sh` exit 0).
+(`.agents/skills/github-workflow/run.sh`, `.agents/skills/git-github-workflow/run.sh`).
+OwlWatch then flagged complexity in the two operational monitor loops. PR #691
+extracted those loops, but its review found two correctness and maintainability
+issues before merge. This follow-up completes the implementation and carries the
+fixes in a replacement PR.
 
-While reviewing PR #688, OwlWatch flagged two MEDIUM complexity threads:
+## Implementation
 
-| Script              | Function                  | Pre | Post |
-|---------------------|---------------------------|-----|------|
-| github-workflow     | `phase_monitor()`         | 158 | 160  |
-| git-github-workflow | `agent_monitor_actions()` | 119 | 124  |
+1. **Monitor-loop extraction** — `phase_monitor()` and
+   `agent_monitor_actions()` now delegate to focused polling and workflow-state
+   helpers. The dead `new_issues` array was removed while preserving the
+   consumed `CHECKS_FAILED` state.
+2. **Shared monitor library** — both skill scripts source
+   `scripts/lib/workflow-monitor.sh`, eliminating duplicate
+   `monitor_parse_checks()` and `monitor_poll_until_terminal()` implementations
+   while retaining each workflow's warning and strict-validation policy.
+3. **Workflow failure propagation** — `github-workflow` now passes the parsed
+   failure flag through `monitor_fold_workflow_runs()` and retains it through
+   the final verdict. A failed workflow run can no longer be discarded when the
+   PR check output itself is otherwise quiet.
+4. **Regression coverage** — `tests/workflow-monitor.bats` covers check flags
+   and verifies a folded workflow failure reaches the shared terminal verdict.
 
-Both functions were already far over a reasonable 100-line budget **before** this
-PR; the +2/+5 lines are an artifact of the SC2155 line splits (no logic change).
-These are pre-existing complexity issues, not regressions introduced by PR #688.
+## Review findings resolved
 
-## Follow-up work (when scheduled)
+| Finding | Resolution |
+|---------|------------|
+| Workflow failure status was ignored because the second return token from `monitor_fold_workflow_runs()` was discarded | Parse and retain the failure token; fail the final verdict when a workflow run reports failure |
+| `monitor_parse_checks()` and `monitor_poll_until_terminal()` were duplicated across both skill scripts | Move parsing and polling to the shared `scripts/lib/workflow-monitor.sh` library and pass each workflow's policy as explicit arguments |
 
-Refactor the two monitor functions into focused helpers, preserving behavior:
+## Verification
 
-1. **`phase_monitor()`** (github-workflow/run.sh):
-   - Extract the check-state polling loop into `poll_check_state()`.
-   - Extract the pass/fail/warning aggregation into `summarize_check_results()`.
-   - Extract the final verification reporting into `report_final_verification()`.
-2. **`agent_monitor_actions()`** (git-github-workflow/run.sh):
-   - Extract check output parsing into `parse_check_results()`.
-   - Extract failure detection into `detect_failures()`.
-   - Extract status reporting into `report_action_status()`.
+- `bash -n` passes for both skill scripts and the shared library.
+- `shellcheck --severity=warning` remains required for the changed shell files.
+- BATS coverage exercises the shared parser.
+- Full repository quality gates remain required before the replacement PR is
+  considered ready.
 
-After refactoring:
+## Acceptance criteria
 
-- Re-run `shellcheck --severity=warning` on both files (must stay clean).
-- Re-run `bats tests/` (install-hooks + validate-skills suites must stay green).
-- Confirm `./scripts/quality_gate.sh` still exits 0.
-- The skill workflows themselves (`phase_monitor`, `agent_monitor_actions`) are
-  operational loops — refactor without changing observable behavior, and verify
-  via a manual dry-run of the skill if feasible.
-
-## Why not done in PR #688
-
-- The threads are on pre-existing code; PR #688's changes are mechanical and
-  behavior-preserving (verified: no logic diff beyond the split/removal).
-- Refactoring two operational monitor loops is a meaningful behavioral-risk
-  change, out of scope for a shellcheck-debt PR (AGENTS.md: keep changes scoped;
-  avoid unrelated refactors in the same commit).
+- [x] Both monitor functions are decomposed into focused helpers.
+- [x] The duplicated check parser and polling loop are shared.
+- [x] Workflow-run failures reach the final monitor verdict.
+- [x] Regression tests cover parser flags and folded workflow failures.
+- [x] Replacement PR #692 CI is green and all review threads are resolved.

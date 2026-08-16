@@ -7,6 +7,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
+# shellcheck source=scripts/lib/workflow-monitor.sh
+source "$REPO_ROOT/scripts/lib/workflow-monitor.sh"
+
 # Configuration
 DRY_RUN=false
 PUSH_ONLY=false
@@ -520,6 +523,32 @@ $(git log --oneline "origin/$BASE_BRANCH..HEAD" 2>/dev/null | sed 's/^/- /' | he
 }
 
 # Phase 5: MONITOR
+# If CHECK_ALL_ACTIONS is enabled, fold workflow-run state into the flags.
+# Prints two tokens: has_pending has_failure.
+monitor_fold_workflow_runs() {
+  local has_pending="$1"
+  local has_failure="$2"
+
+  if [[ "$CHECK_ALL_ACTIONS" != 1 ]]; then
+    printf '%s %s' "$has_pending" "$has_failure"
+    return 0
+  fi
+
+  local repo_info
+  repo_info=$(get_repo_info)
+  if [[ -n "$repo_info" ]]; then
+    local workflow_runs
+    workflow_runs=$(gh run list --branch "$BRANCH_NAME" --limit 10 --json status,conclusion,name 2>/dev/null || echo "[]")
+    if echo "$workflow_runs" | grep -q '"status":"in_progress"'; then
+      has_pending=true
+    fi
+    if echo "$workflow_runs" | grep -q '"conclusion":"failure"'; then
+      has_failure=true
+    fi
+  fi
+  printf '%s %s' "$has_pending" "$has_failure"
+}
+
 phase_monitor() {
     log ""
     log "═══════════════════════════════════════════════════════════════════"
@@ -555,130 +584,9 @@ phase_monitor() {
     log "Poll interval: ${POLL_INTERVAL}s"
     log ""
     
-    local start_time
-    start_time=$(date +%s)
-    local new_issues=()
-    
-    while true; do
-        local current_time
-        current_time=$(date +%s)
-        local elapsed=$((current_time - start_time))
-        
-        if [[ $elapsed -gt $TIMEOUT ]]; then
-            error "Timeout after ${TIMEOUT}s"
-            return $E_TIMEOUT
-        fi
-        
-        # Get PR checks
-        local checks_output
-        checks_output=$(gh pr checks "$PR_NUMBER" 2>&1 || true)
-        local pr_state
-        pr_state=$(gh pr view "$PR_NUMBER" --json state --jq '.state' 2>/dev/null || echo "OPEN")
-        
-        # Check if PR was merged externally
-        if [[ "$pr_state" == "MERGED" ]]; then
-            success "PR was already merged!"
-            return 0
-        fi
-        
-        if [[ "$pr_state" == "CLOSED" ]]; then
-            error "PR was closed"
-            return $E_CHECKS_FAILED
-        fi
-        
-        # Parse check status
-        local has_pending=false
-        local has_failure=false
-        local has_warning=false
-        
-        # Check for pending/running
-        if echo "$checks_output" | grep -qiE "(pending|queued|in progress|running)"; then
-            has_pending=true
-        fi
-        
-        # Check for failures
-        if echo "$checks_output" | grep -qiE "(fail|error|✗|×)"; then
-            has_failure=true
-        fi
-        
-        # Check for warnings
-        if [[ "$FAIL_ON_WARNING" == 1 ]]; then
-            if echo "$checks_output" | grep -qiE "(warning|warn:|deprecated)"; then
-                has_warning=true
-            fi
-        fi
-        
-        # Check repository Actions if enabled
-        if [[ "$CHECK_ALL_ACTIONS" == 1 ]]; then
-            local repo_info
-            repo_info=$(get_repo_info)
-            if [[ -n "$repo_info" ]]; then
-                # Get workflow runs for this branch
-                local workflow_runs
-                workflow_runs=$(gh run list --branch "$BRANCH_NAME" --limit 10 --json status,conclusion,name 2>/dev/null || echo "[]")
-                
-                # Check if any workflows are running
-                if echo "$workflow_runs" | grep -q '"status":"in_progress"'; then
-                    has_pending=true
-                fi
-                
-                # Check for failures
-                if echo "$workflow_runs" | grep -q '"conclusion":"failure"'; then
-                    has_failure=true
-                fi
-            fi
-        fi
-        
-        # Display status
-        if [[ "$has_pending" == true ]]; then
-            log "Checks still running... (${elapsed}s elapsed)"
-        elif [[ "$has_failure" == true || "$has_warning" == true ]]; then
-            break
-        else
-            break
-        fi
-        
-        sleep $POLL_INTERVAL
-    done
-    
-    # Final check analysis
-    log ""
-    log "Analyzing check results..."
-    
-    local final_checks
-    final_checks=$(gh pr checks "$PR_NUMBER" 2>&1 || true)
-    
-    # Check for pre-existing issues in base branch
-    log "Checking base branch $BASE_BRANCH for pre-existing issues..."
-    
-    # Determine if failures are new or pre-existing
-    # This is a simplified check - in production you'd compare with base branch
-    local all_pass=true
-    
-    if echo "$final_checks" | grep -qiE "(fail|error|✗|×)"; then
-        all_pass=false
-        new_issues+=("Check failures detected")
-    fi
-    
-    if [[ "$FAIL_ON_WARNING" == 1 ]]; then
-        if echo "$final_checks" | grep -qiE "(warning|warn:|deprecated)"; then
-            all_pass=false
-            new_issues+=("Warnings detected")
-        fi
-    fi
-    
-    if [[ "$all_pass" == true ]]; then
-        success "All checks passed!"
-        return 0
-    else
-        # Try to determine if issues are pre-existing
-        warn "Issues detected in checks"
-        warn "Review PR #$PR_NUMBER manually"
-        
-        # If only pre-existing issues, return special code
-        # For now, treat as failure
-        return $E_CHECKS_FAILED
-    fi
+    monitor_poll_until_terminal \
+        "$PR_NUMBER" "$E_TIMEOUT" "$E_CHECKS_FAILED" "$FAIL_ON_WARNING" \
+        true "$POLL_INTERVAL" "$TIMEOUT" checks true false "$BASE_BRANCH"
 }
 
 # Phase 6: MERGE
