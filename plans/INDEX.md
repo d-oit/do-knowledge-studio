@@ -3,6 +3,12 @@
 **Updated**: 2026-08-16
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
+### ADR 034 — Nightly Dependabot Alert Check + Resolve-Every-Thread Merge Gate (2026-08-16)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Record the alert-check architecture and the outdated-thread merge-gate policy | Done | ADR 034 accepted; documents the DEPENDABOT_TOKEN requirement and the LESSON-032 resolve-every-thread rule |
+
 ### Plan 127 — Nightly Dependabot Alert Check (2026-08-16)
 
 | Wave | Goal | Status | Changes |
