@@ -11,7 +11,6 @@ on:
 
 permissions:
   contents: read
-  security-events: read
 
 jobs:
   check:
@@ -30,38 +29,29 @@ jobs:
       # PR sweep (plans/127). Informational alerts (auto-dismissed) are
       # not counted.
       #
-      # The REST endpoint requires a token with the "Dependabot alerts"
-      # permission, which GITHUB_TOKEN does NOT have (403 "Resource not
-      # accessible by integration", verified 2026-08-16). GraphQL
-      # vulnerabilityAlerts is the fallback that works with the Actions
-      # token; a null result means no access and must fail loudly rather
-      # than look like zero alerts.
+      # GITHUB_TOKEN cannot read Dependabot alerts: the REST endpoint
+      # 403s ("Resource not accessible by integration") and GraphQL
+      # vulnerabilityAlerts silently returns an empty connection
+      # (verified 2026-08-16, plans/127). The check therefore uses the
+      # gh CLI with DEPENDABOT_TOKEN — a fine-grained PAT with the
+      # "Dependabot alerts: Read" repository permission. When the secret
+      # is absent the job fails loudly instead of reporting zero alerts.
       - name: List open Dependabot alerts
         id: alerts
+        env:
+          GH_TOKEN: ${{ secrets.DEPENDABOT_TOKEN }}
         run: |
-          repo_owner="${GITHUB_REPOSITORY%%/*}"
-          repo_name="${GITHUB_REPOSITORY##*/}"
-          query='query($owner: String!, $name: String!) {
-            repository(owner: $owner, name: $name) {
-              vulnerabilityAlerts(first: 100) {
-                totalCount
-                nodes { securityAdvisory { ghsaId summary severity } }
-              }
-            }
-          }'
-          result="$(gh api graphql -F owner="$repo_owner" -F name="$repo_name" -f query="$query" --jq '.data.repository.vulnerabilityAlerts')"
-          count="$(printf '%s' "$result" | jq -r '.totalCount // empty')"
-          if [[ -z "$count" ]]; then
-            echo "::error::Cannot read Dependabot alerts (GITHUB_TOKEN lacks Dependabot alerts permission)"
+          if [[ -z "$GH_TOKEN" ]]; then
+            echo "::error::DEPENDABOT_TOKEN secret is not configured (fine-grained PAT with Dependabot alerts: Read)"
             exit 1
           fi
+          alerts="$(gh api "repos/${{ github.repository }}/dependabot/alerts?state=open&per_page=100" --jq '[.[] | "\(.number) \(.security_advisory.severity) \(.dependency.package.name): \(.security_advisory.summary)"]')"
+          count="$(printf '%s' "$alerts" | jq 'length')"
           echo "open_alerts=$count" >>"$GITHUB_OUTPUT"
           echo "Open Dependabot alerts: $count"
           if [[ "$count" -gt 0 ]]; then
-            printf '%s\n' "$result" | jq -r '.nodes[] | "\(.securityAdvisory.ghsaId) \(.securityAdvisory.severity): \(.securityAdvisory.summary)"'
+            printf '%s\n' "$alerts" | jq -r '.[]'
           fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Fail on open alerts
         if: steps.alerts.outputs.open_alerts != '0'
