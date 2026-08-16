@@ -46,12 +46,15 @@ credential limit:
   with `[]` and jq reported a bogus count (`3\n0` → step failure
   "Invalid format '0'").
 
-## Required secret (user action)
+## Required secret (resolved 2026-08-16)
 
-`DEPENDABOT_TOKEN` — a fine-grained PAT with the **Dependabot alerts:
-Read** repository permission, stored as a repository secret. When the
-secret is absent the job fails loudly with instructions instead of
-reporting zero alerts.
+`DEPENDABOT_TOKEN` — set via `gh secret set DEPENDABOT_TOKEN -b "$(gh auth token)"`
+(the gh CLI token carries the `repo` scope, which can read the
+Dependabot alerts endpoint; no manual PAT creation needed). The
+classic-token scope is broader than the ideal fine-grained
+PAT (`Dependabot alerts: Read` only) — rotate to a fine-grained PAT
+if the token is ever exposed or scoped down. When the secret is absent
+the job fails loudly with instructions instead of reporting zero alerts.
 
 ## Related hardening in this batch
 
@@ -73,5 +76,9 @@ reporting zero alerts.
 - Dispatch smoke tests: first run failed (GITHUB_TOKEN 403); second run
   (GraphQL) passed but was a silent false negative (empty connection),
   which is why GraphQL was rejected. Final version requires
-  `DEPENDABOT_TOKEN` and fails loudly when it is absent — pending a
-  final dispatch once the secret exists.
+  `DEPENDABOT_TOKEN` and fails loudly when it is absent.
+- **Final verification (2026-08-16):** secret created from the gh CLI
+  token; dispatch run 31951676900 on `main` completed **success**
+  (job `Open Alert Check: success`, no `::error::` annotations, 0 open
+  alerts). Nightly schedule `17 4 * * *` confirmed active for the first
+  scheduled run at 04:17 UTC.
