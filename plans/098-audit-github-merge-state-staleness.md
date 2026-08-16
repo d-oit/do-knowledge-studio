@@ -64,3 +64,23 @@ gates (LESSON-026/030), (3) in-flight check-runs on the head SHA, and only
 then (4) declare staleness.
 
 See `agents-docs/LESSONS.md#LESSON-030` for the full write-up.
+
+## Addendum (2026-08-16): outdated threads still block — PR #692
+
+PR #692 repeated the #670 pattern with a new twist: even threads GitHub
+marks `isOutdated: true` are counted by the ruleset's
+`required_review_thread_resolution` while `isResolved: false`. All 26
+checks (incl. Codacy) were green on the head, the branch was up to date,
+approvals required was 0, and auto-merge was armed — yet `BLOCKED`
+survived a 10-minute wait **and** an empty-commit nudge push (plans/098
+step 4).
+
+Root cause: two OwlWatch threads on the pre-refactor code were marked
+`isOutdated` but never resolved. Resolving the three threads (including
+the two outdated ones) via GraphQL `resolveReviewThread` flipped
+`BLOCKED` → merged within seconds (`a1c0721`).
+
+Hardened rule for future sessions: **resolve every thread, outdated or
+not** — `isOutdated` does NOT exempt a thread from the merge gate. Do not
+skip resolution based on the outdated flag, and do not declare staleness
+until `reviewThreads` shows zero `isResolved: false` nodes.
