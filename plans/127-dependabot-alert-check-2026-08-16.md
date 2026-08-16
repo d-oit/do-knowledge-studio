@@ -20,13 +20,38 @@ Security tab rather than failing the pipeline.
 - New `.github/workflows/dependabot-alert-check.yml`: nightly at 04:17
   UTC (after the 03:00 CI nightly to avoid runner contention) plus
   `workflow_dispatch`.
-- Queries `GET /repos/{owner}/{repo}/dependabot/alerts?state=open` and
-  fails with `::error::` when any open alert exists, printing number,
-  severity, package, and advisory summary for each.
-- `permissions: security-events: read` — the minimum required to read
-  alerts with `GITHUB_TOKEN`.
+- Queries `GET /repos/{owner}/{repo}/dependabot/alerts?state=open` via
+  the gh CLI and fails with `::error::` when any open alert exists,
+  printing number, severity, package, and advisory summary for each.
 - Runs only on schedule/dispatch — never on PRs — so it is not a merge
   gate and cannot block development.
+
+## GITHUB_TOKEN limitation (verified by dispatch smoke test)
+
+The first smoke-test dispatch (run 31937317929) FAILED, exposing a hard
+credential limit:
+
+- **REST**: `GET /repos/{owner}/{repo}/dependabot/alerts` returns 403
+  "Resource not accessible by integration" with `GITHUB_TOKEN`, even
+  with `permissions: security-events: read`. The Actions GitHub App
+  does not carry the "Dependabot alerts" repository permission
+  (confirmed by GitHub community discussion #60612).
+- **GraphQL**: `repository.vulnerabilityAlerts` does NOT error but
+  silently returns an empty connection for `GITHUB_TOKEN` (totalCount 0
+  vs 57 with a scoped token) — a false negative that would pass every
+  night. Worse than failing, so it was rejected.
+- The first workflow draft also chained `2>/dev/null || echo '[]'` on
+  the failing REST call; gh api prints the 3-key error object to stdout
+  before exiting non-zero, so the fallback concatenated the error JSON
+  with `[]` and jq reported a bogus count (`3\n0` → step failure
+  "Invalid format '0'").
+
+## Required secret (user action)
+
+`DEPENDABOT_TOKEN` — a fine-grained PAT with the **Dependabot alerts:
+Read** repository permission, stored as a repository secret. When the
+secret is absent the job fails loudly with instructions instead of
+reporting zero alerts.
 
 ## Related hardening in this batch
 
@@ -45,3 +70,8 @@ Security tab rather than failing the pipeline.
   `./scripts/quality_gate.sh`.
 - Workflow uses only `actions/checkout` pinned to a full SHA (v7.0.1),
   satisfying `validate-gha-shas`.
+- Dispatch smoke tests: first run failed (GITHUB_TOKEN 403); second run
+  (GraphQL) passed but was a silent false negative (empty connection),
+  which is why GraphQL was rejected. Final version requires
+  `DEPENDABOT_TOKEN` and fails loudly when it is absent — pending a
+  final dispatch once the secret exists.
