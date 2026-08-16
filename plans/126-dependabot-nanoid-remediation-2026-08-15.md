@@ -34,3 +34,13 @@ pnpm override (`3.3.17`) used through PostCSS and the Next/Vite toolchains.
 
 All local checks passed after the remediation. GitHub Dependabot should close
 alert #61 after the patched lockfile is analyzed.
+
+## Verification (2026-08-16)
+
+- Dependabot alert #61 is now `fixed` after the merge of PR #692
+  (`a1c0721`) and subsequent lockfile analysis.
+- Repository-wide alert sweep: **0 open alerts** (53 `fixed`, 4
+  `auto_dismissed`) as of 2026-08-16.
+- No new alerts introduced by the remediation.
+
+Status: COMPLETE — vulnerability remediated, alert closed.

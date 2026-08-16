@@ -307,7 +307,11 @@ When merging dependabot PRs or manually bumping dependencies:
   not noise. Check threads via GraphQL `pullRequest.reviewThreads` or
   `pulls/<n>/comments` — issue comments and `reviewDecision` do NOT
   reveal them, and resolving flips `BLOCKED` → `CLEAN` instantly
-  (LESSON-026/030).
+  (LESSON-026/030). **Outdated threads block too**: `isOutdated: true`
+  threads still count toward the gate while `isResolved: false`, and
+  the staleness ladder (plans/098) can fail on PR #692 even after the
+  empty-commit nudge — resolve *every* thread regardless of the
+  outdated flag (verified 2026-08-16, PR #692).
 - **DeepSource `.deepsource.toml` suppressions do not reliably prevent
   check failures** — new module-scope helpers trip JS-0067 (use
   `const fn = () => {}`, never `function`) and inline branches can push
