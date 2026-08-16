@@ -42,15 +42,16 @@ jobs:
           GH_TOKEN: ${{ secrets.DEPENDABOT_TOKEN }}
         run: |
           if [[ -z "$GH_TOKEN" ]]; then
-            echo "::error::DEPENDABOT_TOKEN secret is not configured (fine-grained PAT with Dependabot alerts: Read)"
+            echo "::error::DEPENDABOT_TOKEN secret missing (PAT with Dependabot alerts: Read)"
             exit 1
           fi
-          alerts="$(gh api "repos/${{ github.repository }}/dependabot/alerts?state=open&per_page=100" --jq '[.[] | "\(.number) \(.security_advisory.severity) \(.dependency.package.name): \(.security_advisory.summary)"]')"
+          alerts="$(gh api "repos/${{ github.repository }}/dependabot/alerts?state=open&per_page=100")"
           count="$(printf '%s' "$alerts" | jq 'length')"
           echo "open_alerts=$count" >>"$GITHUB_OUTPUT"
           echo "Open Dependabot alerts: $count"
           if [[ "$count" -gt 0 ]]; then
-            printf '%s\n' "$alerts" | jq -r '.[]'
+            fmt='"\(.number) \(.security_advisory.severity) \(.dependency.package.name)"'
+            printf '%s\n' "$alerts" | jq -r ".[] | $fmt"
           fi
 
       - name: Fail on open alerts
