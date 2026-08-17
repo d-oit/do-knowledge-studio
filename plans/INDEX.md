@@ -3,6 +3,12 @@
 **Updated**: 2026-08-17
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
+### Plan 129 — React Compiler ESLint Rules (2026-08-17)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Surface components the React Compiler cannot optimize | Done | Enabled `react-hooks/purity`/`use-memo`/`immutability`/`refs`/`static-components` (all zero findings); fixed the sole `purity` violation in `sidebar.tsx` (Date.now hoisted out of render) |
+
 ### Plan 128 — Enable React Compiler (2026-08-17)
 
 | Wave | Goal | Status | Changes |

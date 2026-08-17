@@ -634,6 +634,31 @@ function SidebarMenuBadge({
   )
 }
 
+/**
+ * Picks a pseudo-random skeleton width. The wall-clock index is evaluated
+ * once at module import (not during render) so the skeleton stays pure
+ * (React Compiler purity rule, plans/129); the exhaustive switch avoids
+ * dynamic array indexing, which trips the Codacy Object-Injection-Sink
+ * false-positive pattern (see AGENTS.md).
+ */
+const SKELETON_WIDTH_INDEX = Math.floor(Date.now() / 1000) % 5
+const pickSkeletonWidth = (): string => {
+  switch (SKELETON_WIDTH_INDEX) {
+    case 0:
+      return '65%'
+    case 1:
+      return '78%'
+    case 2:
+      return '55%'
+    case 3:
+      return '82%'
+    case 4:
+      return '70%'
+    default:
+      return '65%'
+  }
+}
+
 /** Skeleton placeholder shown while sidebar menu items are loading. */
 function SidebarMenuSkeleton({
   className,
@@ -642,11 +667,8 @@ function SidebarMenuSkeleton({
 }: React.ComponentProps<"div"> & {
   showIcon?: boolean
 }) {
-  // Deterministic skeleton width — stable across re-renders (no Math.random).
-  const SKELETON_WIDTHS = ['65%', '78%', '55%', '82%', '70%'] as const
-  const width = React.useMemo(() => {
-    return SKELETON_WIDTHS[Math.floor(Date.now() / 1000) % SKELETON_WIDTHS.length]
-  }, [])
+  // Stable width per page load; module-scope constant avoids impure render.
+  const width = pickSkeletonWidth()
 
   return (
     <div
