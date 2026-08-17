@@ -634,6 +634,14 @@ function SidebarMenuBadge({
   )
 }
 
+/** Pseudo-random skeleton widths for loading placeholders. */
+const SKELETON_WIDTHS = ['65%', '78%', '55%', '82%', '70%'] as const
+/**
+ * Evaluated once at module import (not during render) so the skeleton stays
+ * pure — keeps the React Compiler purity rule satisfied (see plans/129).
+ */
+const SKELETON_WIDTH_INDEX = Math.floor(Date.now() / 1000) % SKELETON_WIDTHS.length
+
 /** Skeleton placeholder shown while sidebar menu items are loading. */
 function SidebarMenuSkeleton({
   className,
@@ -642,11 +650,8 @@ function SidebarMenuSkeleton({
 }: React.ComponentProps<"div"> & {
   showIcon?: boolean
 }) {
-  // Deterministic skeleton width — stable across re-renders (no Math.random).
-  const SKELETON_WIDTHS = ['65%', '78%', '55%', '82%', '70%'] as const
-  const width = React.useMemo(() => {
-    return SKELETON_WIDTHS[Math.floor(Date.now() / 1000) % SKELETON_WIDTHS.length]
-  }, [])
+  // Stable width per page load; module-scope constant avoids impure render.
+  const width = SKELETON_WIDTHS[SKELETON_WIDTH_INDEX]
 
   return (
     <div
