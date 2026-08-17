@@ -1,7 +1,13 @@
 # Plans Index
 
-**Updated**: 2026-08-16
+**Updated**: 2026-08-17
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
+
+### Plan 128 — Enable React Compiler (2026-08-17)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Complete deferred Task 141 by enabling the React Compiler | Done | `reactCompiler: true` (stable in Next.js 16) + `babel-plugin-react-compiler`; `'use no memo'` opt-outs on the @tanstack/react-virtual components the compiler breaks |
 
 ### ADR 034 — Nightly Dependabot Alert Check + Resolve-Every-Thread Merge Gate (2026-08-16)
 
