@@ -1,6 +1,9 @@
 # Task Plan — #141: Rerender Audit & React 19 Optimization
 
-> **Status**: DEFERRED — React 19 compiler handles most automatic optimizations. Revisit if profiling reveals specific hot paths.
+> **Status**: COMPLETE (Plan 128, 2026-08-17) — React Compiler enabled globally via `reactCompiler: true`
+> in next.config.ts (stable in Next.js 16), with `'use no memo'` opt-outs on the
+> @tanstack/react-virtual components that the compiler's auto-memoization breaks.
+> Full verification: 2264 unit tests, 538 E2E tests, build green. See plans/128.
 
 > **Issue**: perf: audit rerenders and enable modern React optimization paths
 > **Priority**: P1 | **Independent**

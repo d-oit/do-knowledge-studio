@@ -108,18 +108,20 @@ const useColumnCount = (): number => {
  * hook (the virtualizer returns un-memoizable functions by design) and the
  * calling components stay compiler-friendly.
  */
-const useEntityListVirtualizer = (count: number, getScrollElement: () => HTMLDivElement | null, estimateSize: () => number) =>
+const useEntityListVirtualizer = (count: number, getScrollElement: () => HTMLDivElement | null, estimateSize: () => number) => {
   // tanstack/react-virtual returns un-memoizable functions by design, so React
   // Compiler skips this hook; isolating the call here keeps the consuming
   // components compiler-friendly (see plans/123).
+  'use no memo'
   /* eslint-disable react-hooks/incompatible-library */
-  useVirtualizer({
+  return useVirtualizer({
     count,
     getScrollElement,
     estimateSize,
     overscan: VIRTUAL_OVERSCAN,
   })
-/* eslint-enable react-hooks/incompatible-library */
+  /* eslint-enable react-hooks/incompatible-library */
+}
 
 /** Splits items into fixed-size chunks (grid rows for virtualization). */
 const chunkBy = <T,>(items: T[], size: number): T[][] => {
@@ -141,6 +143,10 @@ export function EntityGrid({
   entities: Entity[]
   startEdit: (id: string) => void
 }) {
+  // The virtualizer drives re-renders from DOM measurements (scroll/resize),
+  // which the React Compiler's auto-memoization does not track — opt out so
+  // windowed rows keep mounting on scroll (see plans/128, issue #699).
+  'use no memo'
   const reducedMotion = useReducedMotion()
   const containerRef = useRef<HTMLDivElement>(null)
   const hasHeight = useMeasurableHeight(containerRef)
@@ -274,6 +280,9 @@ export function EntityTable({
   entities: Entity[]
   startEdit: (id: string) => void
 }) {
+  // See EntityGrid — windowed rows must re-render on scroll, so opt out of the
+  // React Compiler's memoization here too (plans/128, issue #699).
+  'use no memo'
   const containerRef = useRef<HTMLDivElement>(null)
   const hasHeight = useMeasurableHeight(containerRef)
   const virtualize = shouldVirtualize(hasHeight, entities.length)
