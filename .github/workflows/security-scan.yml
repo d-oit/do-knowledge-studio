@@ -77,7 +77,7 @@ jobs:
 
       - name: Upload ShellCheck SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@5595ccaf912efad79be6eef63a5619ff05969be3  # v4.37.6
+        uses: github/codeql-action/upload-sarif@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd  # v4.37.7
         continue-on-error: true
         with:
           sarif_file: shellcheck-results.sarif
@@ -117,7 +117,7 @@ jobs:
 
       - name: Upload Trivy SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@5595ccaf912efad79be6eef63a5619ff05969be3  # v4.37.6
+        uses: github/codeql-action/upload-sarif@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd  # v4.37.7
         with:
           sarif_file: trivy-results.sarif
           category: trivy-fs
@@ -149,7 +149,7 @@ jobs:
 
       - name: Fallback Secret Scan with TruffleHog
         if: steps.gitleaks.outcome == 'failure'
-        uses: trufflesecurity/trufflehog@6f3c981e7b77f235fd2702dd74af25fc4b72bf11  # v3.96.0
+        uses: trufflesecurity/trufflehog@bcfcf73aaf4759d4dadc2783177c245a02792318  # v3.97.0
         with:
           path: ./
           base: ""
@@ -185,7 +185,7 @@ jobs:
 
       - name: Upload IaC Scan SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@5595ccaf912efad79be6eef63a5619ff05969be3  # v4.37.6
+        uses: github/codeql-action/upload-sarif@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd  # v4.37.7
         with:
           sarif_file: trivy-config-results.sarif
           category: trivy-config
