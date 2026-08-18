@@ -9,3 +9,7 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    ignore:
+      # v3+ requires a paid GITLEAKS_LICENSE secret (see plans/115-gitleaks-license-pre-existing-2026-08-11.md).
+      - dependency-name: "gitleaks/gitleaks-action"
+        versions: ["3.x"]
