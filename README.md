@@ -41,8 +41,8 @@ paper backgrounds, deep ink type, and a single saffron accent. See
 ## How to run
 
 ```bash
-bun install
-bun run dev
+pnpm install
+pnpm run dev
 ```
 
 The app is served at `http://localhost:3000`. The dev log is tee'd to
@@ -51,10 +51,9 @@ The app is served at `http://localhost:3000`. The dev log is tee'd to
 Other scripts:
 
 ```bash
-bun run lint      # eslint
-bun run build     # production build
-bun run start     # serve the standalone production build
-bun run db:push   # prisma db push (if you use the prisma layer)
+pnpm run lint     # eslint
+pnpm run build    # production build
+pnpm run start    # serve the production build
 ```
 
 ## Project structure
@@ -82,7 +81,6 @@ src/
       types.ts           # Entity, Claim, ChatMessage, ENTITY_TYPE_META
       seed-data.ts       # mock entities / claims / chat
     utils.ts             # cn() class merge
-    db.ts                # prisma client (unused by the studio shell)
 public/
   logo.svg
 DESIGN-SYSTEM.md         # full design reference

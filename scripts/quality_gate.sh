@@ -138,9 +138,13 @@ echo ""
 # --- Validate git hooks configuration (prevent global hooks from overriding local) ---
 if [ "${SKIP_GLOBAL_HOOKS_CHECK:-false}" != "true" ]; then
     echo -e "${BLUE}Validating git hooks configuration...${NC}"
-    if ! ./scripts/validate-git-hooks.sh; then
-        # Don't fail the quality gate, just warn
-        FAILED=1
+    if [ -f "$REPO_ROOT/scripts/validate-git-hooks.sh" ]; then
+        if ! "$REPO_ROOT/scripts/validate-git-hooks.sh"; then
+            # Don't fail the quality gate, just warn
+            FAILED=1
+        fi
+    else
+        echo -e "  ${YELLOW}⚠ scripts/validate-git-hooks.sh not present — skipping${NC}"
     fi
     echo ""
 fi
@@ -173,9 +177,13 @@ if [[ "$SCOPE" == "all" || "$SCOPE" == "agent" || "${HAS_AGENT:-false}" == "true
 fi
 
 # --- Always: validate agent-facing surfaces ---
-echo -e "${BLUE}Validating agent-facing surfaces...${NC}"
-if ! ./scripts/agent-surface.py validate; then
-    FAILED=1
+if [ -f "$REPO_ROOT/scripts/agent-surface.py" ]; then
+    echo -e "${BLUE}Validating agent-facing surfaces...${NC}"
+    if ! "$REPO_ROOT/scripts/agent-surface.py" validate; then
+        FAILED=1
+    fi
+else
+    echo -e "${YELLOW}⚠ scripts/agent-surface.py not present — skipping agent-surface validation${NC}"
 fi
 echo ""
 
