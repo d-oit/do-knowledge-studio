@@ -28,6 +28,9 @@ const TRIZ_MATRIX: Record<string, number[]> = {
 /** Re-exported merged contradiction matrix. */
 export { TRIZ_MATRIX }
 
+/** Pre-indexed map for O(1) principle lookups by ID. */
+const PRINCIPLES_BY_ID = new Map(TRIZ_PRINCIPLES.map((p) => [p.id, p]))
+
 /** Look up inventive principles for an improving/worsening parameter pair. */
 export function lookupPrinciples(
   improving: number,
@@ -36,7 +39,7 @@ export function lookupPrinciples(
   const key = `${improving}-${worsening}`
   const ids = TRIZ_MATRIX[key] ?? []
   return ids
-    .map((id) => TRIZ_PRINCIPLES.find((p) => p.id === id))
+    .map((id) => PRINCIPLES_BY_ID.get(id))
     .filter((p): p is (typeof TRIZ_PRINCIPLES)[number] => p !== undefined)
 }
 
