@@ -160,6 +160,22 @@ describe('buildHtmlExport', () => {
     expect(html).toContain('&lt;script&gt;')
   })
 
+  it('escapes HTML and attribute breakout in entity type and claim verification', () => {
+    const maliciousEntity: Entity = {
+      ...SAMPLE_ENTITIES[0],
+      type: 'concept"><script>alert("xss-type")</script>' as Entity['type'],
+    }
+    const maliciousClaim: Claim = {
+      ...SAMPLE_CLAIMS[0],
+      verification: 'verified"><script>alert("xss-claim")</script>' as Claim['verification'],
+    }
+    const html = buildHtmlExport([maliciousEntity], [maliciousClaim])
+    expect(html).not.toContain('<script>alert("xss-type")</script>')
+    expect(html).not.toContain('<script>alert("xss-claim")</script>')
+    expect(html).toContain('&quot;&gt;&lt;script&gt;alert(&quot;xss-type&quot;)&lt;/script&gt;')
+    expect(html).toContain('&quot;&gt;&lt;script&gt;alert(&quot;xss-claim&quot;)&lt;/script&gt;')
+  })
+
   it('preserves Markdown angle brackets in entity content', () => {
     const md: Entity[] = [{
       ...SAMPLE_ENTITIES[0],

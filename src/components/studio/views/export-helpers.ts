@@ -76,7 +76,9 @@ export const buildHtmlExport = (entities: Entity[], claims: Claim[]): string => 
         ? `<ul class="claims">${entityClaims
             .map(
               (c) =>
-                `<li><span class="v ${c.verification}">${c.verification}</span> ${escapeHtml(
+                `<li><span class="v ${escapeHtml(c.verification)}">${escapeHtml(
+                  c.verification,
+                )}</span> ${escapeHtml(
                   c.statement,
                 )} <span class="meta">(${Math.round(c.confidence * 100)}%)</span></li>`,
             )
@@ -84,7 +86,7 @@ export const buildHtmlExport = (entities: Entity[], claims: Claim[]): string => 
         : '<p class="meta">No claims.</p>'
       return `<article>
   <header>
-    <span class="type ${e.type}">${e.type}</span>
+    <span class="type ${escapeHtml(e.type)}">${escapeHtml(e.type)}</span>
     <h2>${escapeHtml(e.name)}</h2>
     <p class="meta">${e.tags.map((t) => `#${escapeHtml(t)}`).join(' ')}</p>
   </header>
