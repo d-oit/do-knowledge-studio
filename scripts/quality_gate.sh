@@ -142,14 +142,13 @@ fi
 echo "Running quality gate (Scope: $SCOPE)..."
 echo ""
 
-# --- Validate git hooks configuration (prevent global hooks from overriding local) ---
-if [ "${SKIP_GLOBAL_HOOKS_CHECK:-false}" != "true" ]; then
-    echo -e "${BLUE}Validating git hooks configuration...${NC}"
-    if ! ./scripts/validate-git-hooks.sh; then
-        FAILED=1
-    fi
-    echo ""
+# --- Validate git hooks configuration (Plan 131 G7: no bypass; the
+# validator resolves the committed .githooks/ directory on fresh checkouts) ---
+echo -e "${BLUE}Validating git hooks configuration...${NC}"
+if ! ./scripts/validate-git-hooks.sh; then
+    FAILED=1
 fi
+echo ""
 
 # --- Validate GitHub Actions SHAs ---
 if [[ "$SCOPE" == "all" || "$SCOPE" == "tooling" || "${HAS_TOOLING:-false}" == "true" ]]; then

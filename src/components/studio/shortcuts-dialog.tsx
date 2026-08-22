@@ -223,6 +223,7 @@ export function ShortcutsDialog() {
     commandOpen,
     mobileDrawerOpen,
     currentView,
+    setOpen,
     setView,
     setCommandOpen,
     setMobileDrawerOpen,

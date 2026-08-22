@@ -117,15 +117,44 @@ export const ExportPayloadSchema = z.object({
   tags: z.array(TagSchema).optional(),
 })
 
+/** Zod schema validating a chat citation reference in a persisted message. */
+export const ChatCitationSchema = z.object({
+  entityId: z.string(),
+  entityName: z.string(),
+  snippet: z.string(),
+})
+
+/** Zod schema validating a chat message record in the persistence envelope. */
+export const ChatMessageSchema = z.object({
+  id: z.string().min(1),
+  role: z.enum(['user', 'assistant']),
+  content: z.string(),
+  citations: z.array(ChatCitationSchema).optional(),
+  timestamp: z.string(),
+})
+
 /** Zod schema validating the localStorage persistence envelope. */
 export const PersistedEnvelopeSchema = z.object({
-  version: z.number().int().positive(),
+  // Middleware metadata: zustand keeps this OUTSIDE the state object
+  // (({ state, version })), so it is absent from every normal hydration.
+  version: z.number().int().positive().optional(),
   entities: z.array(EntitySchema),
   claims: z.array(ClaimSchema),
   graph: GraphSchema.optional(),
   mindMap: MindMapSchema.optional(),
   links: z.array(LinkSchema).optional(),
   tags: z.array(TagSchema).optional(),
+  // Durable UI preferences. Optional: envelopes written before these keys
+  // existed must still load — user data below stays strictly required.
+  // Every partialize key must appear here — enforced by a guard test.
+  chat: z.array(ChatMessageSchema).optional(),
+  currentView: z
+    .enum(['home', 'editor', 'library', 'graph', 'mindmap', 'chat', 'ai', 'triz', 'export', 'sync'])
+    .optional(),
+  typeFilter: z.union([EntityTypeSchema, z.literal('all')]).optional(),
+  sortBy: z.enum(['name', 'created', 'updated']).optional(),
+  sortDir: z.enum(['asc', 'desc']).optional(),
+  rightPanelOpen: z.boolean().optional(),
 })
 
 /** Type of a validated entity record. */
@@ -150,6 +179,10 @@ export type ValidatedLink = z.infer<typeof LinkSchema>
 export type ValidatedTag = z.infer<typeof TagSchema>
 /** Type of a validated JSON export payload. */
 export type ValidatedExportPayload = z.infer<typeof ExportPayloadSchema>
+/** Type of a validated chat citation reference. */
+export type ValidatedChatCitation = z.infer<typeof ChatCitationSchema>
+/** Type of a validated chat message record. */
+export type ValidatedChatMessage = z.infer<typeof ChatMessageSchema>
 /** Type of a validated localStorage persistence envelope. */
 export type ValidatedPersistedEnvelope = z.infer<typeof PersistedEnvelopeSchema>
 

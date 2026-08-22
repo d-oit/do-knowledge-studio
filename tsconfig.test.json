@@ -1,20 +1,15 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "composite": true,
-    "noEmit": false,
-    "emitDeclarationOnly": true,
-    "outDir": "./dist/types/test",
-    "types": ["node", "vitest/globals", "vite/client"]
+    "noEmit": true,
+    "types": ["node", "vitest/globals"]
   },
   "include": [
     "src/**/*.test.ts",
+    "src/**/*.test-d.ts",
     "src/**/*.spec.ts",
     "src/**/__tests__/**/*",
     "src/test/setup.ts",
     "tests"
-  ],
-  "references": [
-    { "path": "./tsconfig.app.json" }
   ]
 }

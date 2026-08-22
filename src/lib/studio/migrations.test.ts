@@ -106,16 +106,42 @@ describe('runMigrations', () => {
     expect(result!.version).toBe(CURRENT_SCHEMA_VERSION)
   })
 
-  it('handles state with version higher than current (forward-compatible)', () => {
+  it('rejects state with version higher than current (ADR 028 §4)', () => {
     const futureState = {
-      version: 999,
+      version: CURRENT_SCHEMA_VERSION + 1,
       entities: [],
       claims: [],
     }
 
     const result = runMigrations(futureState)
+    expect(result).toBeNull()
+  })
+
+  it('rejects when the envelope version argument is higher than current', () => {
+    const result = runMigrations({ entities: [], claims: [] }, CURRENT_SCHEMA_VERSION + 1)
+    expect(result).toBeNull()
+  })
+
+  it('prefers the explicit envelope version over a stale inner stamp', () => {
+    // Legacy envelopes stamped `version` inside the state after a migration
+    // ran; zustand's authoritative version lives outside. A v1 inner stamp
+    // with an envelope version of CURRENT must skip the chain entirely.
+    const state = {
+      version: 1,
+      entities: [{ id: 'e1', name: 'Test', type: 'note', description: '', content: '' }],
+      claims: [{ id: 'c1', entityId: 'e1', statement: 'S', confidence: 0.5, verification: 'unverified' }],
+    }
+
+    const result = runMigrations(state, CURRENT_SCHEMA_VERSION)
     expect(result).not.toBeNull()
-    expect(result!.version).toBe(999)
+    // The v1→v2 claim backfill never ran, proving the chain was skipped.
+    expect(result!.claims[0].createdAt).toBeUndefined()
+  })
+
+  it('migrates from the envelope version when it is lower than current', () => {
+    const result = runMigrations({ entities: [], claims: [] }, 1)
+    expect(result).not.toBeNull()
+    expect(result!.version).toBe(CURRENT_SCHEMA_VERSION)
   })
 
   it('returns null if migration throws', () => {

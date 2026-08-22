@@ -155,7 +155,7 @@ export const useEditorDraft = ({
       }
     }, DRAFT_DEBOUNCE_MS)
     return () => { clearTimeout(timer) }
-  }, [name, content, description, type, sourceUrl, tags, editing?.id, editing?.createdAt])
+  }, [name, content, description, type, sourceUrl, tags, editing])
 
   // Flush draft on unmount
   const flushDraft = useCallback(() => {
@@ -166,7 +166,7 @@ export const useEditorDraft = ({
     } catch (error) {
       console.error('Failed to flush draft on unmount:', error instanceof Error ? error.message : error)
     }
-  }, [name, content, description, type, sourceUrl, tags, editing?.id, editing?.createdAt])
+  }, [name, content, description, type, sourceUrl, tags, editing])
 
   useEffect(() => {
     return () => { flushDraft() }

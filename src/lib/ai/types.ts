@@ -16,7 +16,7 @@ export interface OpenRouterTarget {
   slug: string
   display_name: string
   description?: string
-  default_params?: Record<string, any>
+  default_params?: Record<string, unknown>
 }
 
 /** Built-in OpenRouter smart router targets. */

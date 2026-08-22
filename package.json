@@ -8,6 +8,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "prepare": "./scripts/install-hooks.sh",
     "dev": "next dev -p 3000 2>&1 | tee dev.log",
     "build": "next build",
     "start": "next start",

@@ -107,7 +107,7 @@ export function MindMapView() {
         setFocusedNodeId(null)
       }
     },
-    [focusedNodeId, entityIndex, commitEntity, deleteEntity, startEdit],
+    [focusedNodeId, entityIndex, addChildToNode, deleteEntity, startEdit],
   )
 
   useEffect(() => {
@@ -193,7 +193,7 @@ export function MindMapView() {
       }
     }
     return build(root, depth, new Set())
-  }, [entityIndex, entities, rootId, depth, syncKey])
+  }, [entityIndex, entities, rootId, depth])
 
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())
 

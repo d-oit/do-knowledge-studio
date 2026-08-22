@@ -6,9 +6,14 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import type { Entity, Claim, ViewId, ChatMessage, EntityType } from './types'
 import { seedEntities, seedClaims, seedChat } from './seed-data'
 import { search, resetSearchCache } from '@/lib/search/retrieval'
-import { validatePersistedState } from './schema'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from './schema'
-import { runMigrations, CURRENT_SCHEMA_VERSION } from './migrations'
+import {
+  CURRENT_SCHEMA_VERSION,
+  STUDIO_STORAGE_KEY,
+  mergeHydratedState,
+  migratePersistedState,
+  partializePersistedState,
+} from './hydration'
 import { buildRecoverySnapshot, persistRecoverySnapshot } from './recovery-helpers'
 export { restoreFromRecovery } from './recovery-helpers'
 
@@ -394,47 +399,20 @@ export const useStudioStore = create<StudioState>()(
       },
     }),
     {
-      name: 'do-knowledge-studio-store',
+      name: STUDIO_STORAGE_KEY,
       version: CURRENT_SCHEMA_VERSION,
       storage: createJSONStorage(() => localStorage),
-      // Persist only the durable state — UI ephemerals (command palette,
-      // mobile drawer, selection) are deliberately excluded so a refresh
-      // lands the user on a clean view.
-      partialize: (state) => ({
-        entities: state.entities,
-        claims: state.claims,
-        chat: state.chat,
-        currentView: state.currentView,
-        searchQuery: state.searchQuery,
-        typeFilter: state.typeFilter,
-        sortBy: state.sortBy,
-        sortDir: state.sortDir,
-        rightPanelOpen: state.rightPanelOpen,
-        graph: state.graph,
-        mindMap: state.mindMap,
-        links: state.links,
-        tags: state.tags,
-      }),
-      // Validate and migrate persisted state. Invalid or corrupt data
-      // falls back to seed defaults rather than crashing the app.
-      // Runs versioned migrations to handle schema evolution.
-      migrate: (persistedState: unknown) => {
-        // Run versioned migrations first
-        const migrated = runMigrations(persistedState)
-        if (!migrated) {
-          console.warn('Migration failed, using seed defaults')
-          return persistedState
-        }
-
-        // Then validate with Zod schema — on failure, return raw input
-        // so Zustand applies seed defaults (not the unvalidated migration output).
-        const result = validatePersistedState(migrated)
-        if (result.success) {
-          return result.data
-        }
-        console.warn('Persisted state failed validation after migration:', result.errors)
-        return persistedState
-      },
+      // Hydration pipeline lives in ./hydration — validation runs on EVERY
+      // load (not just version mismatches), corrupt payloads are discarded
+      // in favor of current state, and undo history is rebased onto the
+      // hydrated corpus. Ephemeral fields (searchQuery, selection, palette)
+      // stay out of localStorage so keystrokes never serialize the corpus.
+      partialize: partializePersistedState,
+      migrate: migratePersistedState,
+      // Contextual wrapper pins zustand's store generic — the bare generic
+      // helper leaks its type parameter into persist's inference.
+      merge: (persistedState: unknown, currentState: StudioState) =>
+        mergeHydratedState(persistedState, currentState),
     },
   ),
 )

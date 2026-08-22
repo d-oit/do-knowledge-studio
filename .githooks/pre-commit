@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Pre-commit quality gate. Committed so the check travels with the repo
+# (Plan 131 G7): core.hooksPath points here via scripts/install-hooks.sh,
+# and CI validates these files instead of skipping the check.
+echo "Running pre-commit quality gate..."
+./scripts/minimal_quality_gate.sh

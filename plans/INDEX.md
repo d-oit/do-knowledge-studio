@@ -1,7 +1,17 @@
 # Plans Index
 
-**Updated**: 2026-08-17
+**Updated**: 2026-08-22
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
+
+### Plan 131 — GOAP Swarm Improvement Audit (2026-08-22)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | G7 gate honesty + G1 persistence contract | Proposed | Fix inert CI/hooks gates, honest coverage baselines, lint governance; migrate-version threading, validate-every-hydration, history rebase |
+| W2 | G2 undo integrity + G3 dead-code/dep pruning | Proposed | Claims-in-history; remove ~31 dead primitives and ~26 deps; README/.env.example truth |
+| W3 | G4 bundle/startup + G5 view consolidation | Proposed | Lazy sync/export chunks; shared-primitives toolkit adoption; three views under LOC ceiling |
+| W4 | G6 sync bridge completion | Proposed | Wire bidirectional bridge, persistent tombstones, provenance-preserving merge per ADR 027 |
+| W5 | G8 library hardening + G9 hygiene | Proposed | DOMPurify/AppError wiring, retry discipline, i18n tokenizer, backlog P2s |
 
 ### Plan 129 — React Compiler ESLint Rules (2026-08-17)
 

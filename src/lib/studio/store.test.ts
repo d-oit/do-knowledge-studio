@@ -375,6 +375,12 @@ describe('Zod Schemas', () => {
         version: 1,
         entities: [makeEntity()],
         claims: [makeClaim()],
+        chat: [],
+        currentView: 'home',
+        typeFilter: 'all',
+        sortBy: 'updated',
+        sortDir: 'desc',
+        rightPanelOpen: true,
       }
       const result = validatePersistedState(data)
       expect(result.success).toBe(true)
@@ -385,6 +391,12 @@ describe('Zod Schemas', () => {
         version: 1,
         entities: [{ ...makeEntity(), id: '' }],
         claims: [],
+        chat: [],
+        currentView: 'home',
+        typeFilter: 'all',
+        sortBy: 'updated',
+        sortDir: 'desc',
+        rightPanelOpen: true,
       }
       const result = validatePersistedState(data)
       expect(result.success).toBe(false)
@@ -395,6 +407,12 @@ describe('Zod Schemas', () => {
         version: 1,
         entities: [makeEntity()],
         claims: [makeClaim({ confidence: 2.0 })],
+        chat: [],
+        currentView: 'home',
+        typeFilter: 'all',
+        sortBy: 'updated',
+        sortDir: 'desc',
+        rightPanelOpen: true,
       }
       const result = validatePersistedState(data)
       expect(result.success).toBe(false)
