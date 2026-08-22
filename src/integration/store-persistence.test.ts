@@ -120,14 +120,15 @@ describe('Store persistence integration', () => {
     expect(parsed.state.currentView).toBe('graph')
   })
 
-  it('persists search and filter state', () => {
+  it('persists filter state but never the search query', () => {
     useStudioStore.getState().setSearchQuery('test query')
     useStudioStore.getState().setTypeFilter('concept')
 
     const stored = localStorage.getItem(STORE_KEY)
     const parsed = JSON.parse(stored!)
-    expect(parsed.state.searchQuery).toBe('test query')
     expect(parsed.state.typeFilter).toBe('concept')
+    // Ephemeral: persisting it serialized the whole corpus per keystroke.
+    expect(parsed.state.searchQuery).toBeUndefined()
   })
 
   it('history is excluded from persistence', () => {

@@ -101,9 +101,15 @@ export const CURRENT_SCHEMA_VERSION = MIGRATIONS.length + 1
  * Run all pending migrations on persisted state.
  *
  * @param persistedState - Raw state from localStorage
- * @returns Migrated state at current schema version, or null if migration failed
+ * @param fromVersion - Envelope version supplied by the persist middleware.
+ * When omitted, falls back to a version stamped inside the state (legacy
+ * envelopes), then to 1. Zustand stores the version *outside* the state
+ * object, so the explicit argument is the only trustworthy source.
+ * @returns Migrated state at current schema version, or null if migration
+ * failed or the payload is newer than this build supports (ADR 028 §4:
+ * future-version data must be rejected, never re-persisted).
  */
-export function runMigrations(persistedState: unknown): PersistedStateV1 | null {
+export function runMigrations(persistedState: unknown, fromVersion?: number): PersistedStateV1 | null {
   try {
     if (!persistedState || typeof persistedState !== 'object') {
       return null
@@ -116,16 +122,33 @@ export function runMigrations(persistedState: unknown): PersistedStateV1 | null 
       return null
     }
 
-    const startVersion = state.version ?? 1
+    const detectedVersion = fromVersion ?? state.version ?? 1
 
-    // Run each migration from startVersion to current
-    for (let v = startVersion; v < CURRENT_SCHEMA_VERSION; v++) {
-      const migrationIndex = v - 1
+    if (!Number.isInteger(detectedVersion) || detectedVersion < 1) {
+      console.warn(`Invalid persisted schema version: ${String(detectedVersion)}`)
+      return null
+    }
+
+    // A newer build wrote this store — migrating "down" would silently strip
+    // fields we cannot know about. Refuse and let hydration fall back safely.
+    if (detectedVersion > CURRENT_SCHEMA_VERSION) {
+      console.warn(
+        `Persisted store version ${detectedVersion} is newer than supported version ${CURRENT_SCHEMA_VERSION}; refusing to migrate.`,
+      )
+      return null
+    }
+
+    let currentVersion = Math.max(1, detectedVersion)
+
+    // Run each migration until reaching the current version
+    while (currentVersion < CURRENT_SCHEMA_VERSION) {
+      const migrationIndex = currentVersion - 1
       if (migrationIndex < 0 || migrationIndex >= MIGRATIONS.length) {
-        console.warn(`No migration found for version ${v} → ${v + 1}`)
+        console.warn(`No migration found for version ${currentVersion} → ${currentVersion + 1}`)
         return null
       }
       state = MIGRATIONS[migrationIndex](state)
+      currentVersion += 1
     }
 
     return state

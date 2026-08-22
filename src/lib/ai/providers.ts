@@ -157,7 +157,7 @@ class OpenRouterAdapter implements ProviderAdapter {
     const target = this.resolveTarget(model)
     const modelSlug = target.slug
 
-    const body: Record<string, any> = { model: modelSlug, messages }
+    const body: Record<string, unknown> = { model: modelSlug, messages }
     if (target.default_params) {
       Object.assign(body, target.default_params)
     }
@@ -195,7 +195,7 @@ class OpenRouterAdapter implements ProviderAdapter {
     const target = this.resolveTarget(model)
     const modelSlug = target.slug
 
-    const body: Record<string, any> = { model: modelSlug, messages, stream: true }
+    const body: Record<string, unknown> = { model: modelSlug, messages, stream: true }
     if (target.default_params) {
       Object.assign(body, target.default_params)
     }

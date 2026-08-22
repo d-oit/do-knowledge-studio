@@ -12,7 +12,9 @@ const eslintConfig = [...nextCoreWebVitals, ...nextTypescript, {
     "react-hooks": reactHooks,
   },
   rules: {
-    "@typescript-eslint/no-explicit-any": "off",
+    // Plan 131 G7 (governance decision 2026-08-22): re-enabled — the
+    // codebase contains zero `any` usages, matching AGENTS.md.
+    "@typescript-eslint/no-explicit-any": "error",
     "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
     "@typescript-eslint/no-non-null-assertion": "off",
     "@typescript-eslint/ban-ts-comment": "off",
@@ -20,7 +22,10 @@ const eslintConfig = [...nextCoreWebVitals, ...nextTypescript, {
     "@typescript-eslint/no-unused-disable-directive": "off",
     "@typescript-eslint/no-require-imports": "off",
 
-    "react-hooks/exhaustive-deps": "off",
+    // Plan 131 G7 (governance decision 2026-08-22): re-enabled to match
+    // the AGENTS.md hard rules. React Compiler handles memoization, but
+    // this rule still catches stale-closure bugs the compiler cannot.
+    "react-hooks/exhaustive-deps": "error",
     // React Compiler diagnostics (plans/129): surface components the compiler
     // cannot auto-optimize. Zero findings today — keep them green.
     "react-hooks/purity": "warn",

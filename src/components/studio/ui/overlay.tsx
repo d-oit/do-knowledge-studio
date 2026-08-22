@@ -190,7 +190,7 @@ export const Overlay = ({
         trapFocusWithinOverlay(event, focusableCacheRef.current)
       }
     },
-    [closeOnEscape, onClose, trapFocus],
+    [closeOnEscape, onClose, trapFocus, focusableCacheRef],
   )
 
   const handleBackdropClick = useCallback(

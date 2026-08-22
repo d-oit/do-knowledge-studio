@@ -427,6 +427,12 @@ describe('PersistedEnvelopeSchema', () => {
     version: 1,
     entities: [validEntity],
     claims: [validClaim],
+    chat: [],
+    currentView: 'home',
+    typeFilter: 'all',
+    sortBy: 'updated',
+    sortDir: 'desc',
+    rightPanelOpen: true,
   }
 
   it('accepts version 1', () => {
@@ -443,10 +449,12 @@ describe('PersistedEnvelopeSchema', () => {
     ).toBeDefined()
   })
 
-  it('rejects missing version', () => {
-    expect(() =>
-      PersistedEnvelopeSchema.parse({ entities: [], claims: [] }),
-    ).toThrow()
+  it('treats version as optional middleware metadata', () => {
+    // zustand stores the envelope version OUTSIDE the state object, so
+    // normal same-version hydrations arrive without it.
+    const { version: _omitted, ...withoutVersion } = envelope
+    void _omitted
+    expect(PersistedEnvelopeSchema.parse(withoutVersion).entities).toEqual([validEntity])
   })
 })
 
@@ -458,6 +466,12 @@ describe('validatePersistedState', () => {
       version: 1,
       entities: [validEntity],
       claims: [validClaim],
+      chat: [],
+      currentView: 'home',
+      typeFilter: 'all',
+      sortBy: 'updated',
+      sortDir: 'desc',
+      rightPanelOpen: true,
     })
     expect(result.success).toBe(true)
     if (result.success) {

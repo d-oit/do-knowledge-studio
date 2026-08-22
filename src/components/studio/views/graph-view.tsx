@@ -173,7 +173,7 @@ export const GraphView = () => {
     const ids = new Set(visibleNodes.map((n) => n.id))
     const filtered = edges.filter((e) => ids.has(e.source) && ids.has(e.target))
     return { visibleEdges: filtered }
-  }, [visibleNodes, edges, focusMode, selectedEntityId])
+  }, [visibleNodes, edges])
 
   const svgRef = useRef<SVGSVGElement>(null)
   const reducedMotion = useReducedMotion()

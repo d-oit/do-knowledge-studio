@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Commit-message validation. Committed so the check travels with the repo
+# (Plan 131 G7): core.hooksPath points here via scripts/install-hooks.sh,
+# and CI validates these files instead of skipping the check.
+COMMIT_MSG_FILE="$1"
+
+# Check header length
+HEADER=$(head -n 1 "$COMMIT_MSG_FILE")
+HEADER_LEN=${#HEADER}
+
+if [ "$HEADER_LEN" -gt 120 ]; then
+  echo "✖ Error: Commit message header is too long ($HEADER_LEN characters). Maximum is 120."
+  echo "Commit header: $HEADER"
+  exit 1
+fi
+
+# Check conventional commit prefix
+if ! echo "$HEADER" | grep -Eq '^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert|ux)(\(.+\))?: '; then
+  echo "✖ Error: Commit message does not match conventional commits format."
+  echo "Expected format: type(scope): description (or type: description)"
+  echo "Allowed types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert, ux"
+  echo "Commit header: $HEADER"
+  exit 1
+fi
