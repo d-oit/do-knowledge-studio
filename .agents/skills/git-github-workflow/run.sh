@@ -233,7 +233,11 @@ agent_commit() {
         BRANCH_NAME="$current_branch"
     fi
     
-    # Run quality gate first
+    # Stage ALL changes before running quality gate so all files are tracked
+    log "Staging ALL changes..."
+    git add -A
+
+    # Run quality gate
     log "Running quality gate..."
     if [[ -x "$REPO_ROOT/scripts/quality_gate.sh" ]]; then
         if ! "$REPO_ROOT/scripts/quality_gate.sh"; then
@@ -243,10 +247,6 @@ agent_commit() {
     else
         warn "quality_gate.sh not found, skipping"
     fi
-    
-    # Stage ALL changes
-    log "Staging ALL changes..."
-    git add -A
     
     # Create commit
     log "Creating commit..."
@@ -549,9 +549,9 @@ agent_post_merge_validate() {
     log "Checking out main branch..."
     cd "$REPO_ROOT"
     
-    # Stash any changes
+    # Stash any changes (including untracked files)
     if [[ -n $(git status --porcelain) ]]; then
-        git stash push -m "workflow-stash-$(date +%s)"
+        git stash push -u -m "workflow-stash-$(date +%s)"
     fi
     
     git checkout main
