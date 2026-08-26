@@ -1,6 +1,7 @@
 import type { Entity, Claim } from '@/lib/studio/types'
 import type { ChatMessage } from './types'
 import { search } from '@/lib/search/retrieval'
+import { buildEntityIndex } from '@/lib/studio/graph-index'
 import type { ResearchResult } from './research'
 import { buildResearchContext } from './research'
 
@@ -21,10 +22,11 @@ export function buildSystemPrompt(
   if (augmentWithLocal && entities.length > 0) {
     const results = search(entities, claims, query, 5)
     if (results.length > 0) {
+      const entityIndex = buildEntityIndex(entities)
       const contextParts = results.map((r) => {
-        const tags: string[] = []
-        const entity = entities.find((e) => e.id === r.entityId)
-        if (entity && entity.tags.length > 0) tags.push(...entity.tags)
+        const targetId = r.entityId ?? r.id
+        const entity = entityIndex.get(targetId)
+        const tags = entity?.tags ?? []
         const tagStr = tags.length > 0 ? ` [${tags.join(', ')}]` : ''
         const desc = r.snippet ? `: ${r.snippet.slice(0, 200)}` : ''
         return `- ${r.name}${tagStr}${desc}`
