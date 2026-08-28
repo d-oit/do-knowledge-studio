@@ -274,9 +274,26 @@ export function ShortcutsDialog() {
               value={filter}
               onChange={(e) => { setFilter(e.target.value); }}
               placeholder="Filter shortcuts..."
-              className="w-full rounded-md border border-border bg-background py-1.5 pl-8 pr-3 text-body-sm text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+              className={cn(
+                'w-full rounded-md border border-border bg-background py-1.5 pl-8 text-body-sm text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30',
+                filter ? 'pr-8' : 'pr-3',
+              )}
               aria-label="Filter shortcuts"
             />
+            {filter && (
+              <button
+                type="button"
+                onClick={() => {
+                  setFilter('')
+                  filterInputRef.current?.focus()
+                }}
+                aria-label="Clear filter search"
+                title="Clear filter search"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
         </div>
 
