@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { sanitizeUrl } from '../security'
 
 /** Zod enum schema for EntityType. */
 export const EntityTypeSchema = z.enum(['note', 'concept', 'person', 'project'])
@@ -13,7 +14,13 @@ export const EntitySchema = z.object({
   type: EntityTypeSchema,
   description: z.string(),
   content: z.string(),
-  sourceUrl: z.string().url().optional(),
+  sourceUrl: z
+    .string()
+    .url()
+    .refine((url) => sanitizeUrl(url) !== '', {
+      message: 'Invalid or unsafe source URL protocol',
+    })
+    .optional(),
   tags: z.array(z.string()),
   createdAt: z.string(),
   updatedAt: z.string(),
