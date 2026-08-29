@@ -73,6 +73,18 @@ describe('EntitySchema', () => {
     ).toThrow()
   })
 
+  it.each([
+    'javascript:alert(1)',
+    'data:text/html,<script>alert(1)</script>',
+    'vbscript:msgbox(1)',
+    '//evil.com/phishing',
+    'https:/\\evil.com',
+  ])('rejects unsafe sourceUrl scheme/bypass %s', (unsafeUrl) => {
+    expect(() =>
+      EntitySchema.parse({ ...validEntity, sourceUrl: unsafeUrl }),
+    ).toThrow()
+  })
+
   it('accepts missing sourceUrl', () => {
     const { sourceUrl: _, ...rest } = { ...validEntity, sourceUrl: undefined }
     expect(EntitySchema.parse(rest).sourceUrl).toBeUndefined()
