@@ -289,7 +289,7 @@ export function ShortcutsDialog() {
                 }}
                 aria-label="Clear filter search"
                 title="Clear filter search"
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
+                className="absolute right-1.5 top-1/2 size-9 -translate-y-1/2 inline-flex items-center justify-center rounded text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
               >
                 <X className="h-3.5 w-3.5" />
               </button>

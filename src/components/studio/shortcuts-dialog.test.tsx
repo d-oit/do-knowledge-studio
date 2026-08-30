@@ -97,6 +97,9 @@ describe('ShortcutsDialog', () => {
     fireEvent.click(clearBtn)
     expect(filterInput.value).toBe('')
     expect(screen.queryByLabelText('Clear filter search')).toBeNull()
+
+    // Clearing should restore focus to the filter input.
+    expect(document.activeElement).toBe(filterInput)
   })
 })
 
