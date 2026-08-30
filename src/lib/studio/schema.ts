@@ -4,13 +4,6 @@ import { sanitizeUrl } from '../security'
 /** Zod enum schema for EntityType. */
 export const EntityTypeSchema = z.enum(['note', 'concept', 'person', 'project'])
 
-/**
- * Allowed URL protocols for entity `sourceUrl` values. Declared locally at the
- * data-model boundary so the security contract is explicit and does not depend
- * on the default allowlist in `sanitizeUrl` (defense in depth).
- */
-const SOURCE_URL_ALLOWED_PROTOCOLS = ['http:', 'https:', 'mailto:', 'tel:'] as const
-
 /** Zod enum schema for VerificationStatus. */
 export const VerificationStatusSchema = z.enum(['unverified', 'verified', 'disputed'])
 
@@ -24,7 +17,7 @@ export const EntitySchema = z.object({
   sourceUrl: z
     .string()
     .url()
-    .refine((url) => sanitizeUrl(url, [...SOURCE_URL_ALLOWED_PROTOCOLS]) !== '', {
+    .refine((url) => sanitizeUrl(url) !== '', {
       message: 'Invalid or unsafe source URL protocol',
     })
     .optional(),
