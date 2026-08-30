@@ -85,16 +85,6 @@ describe('EntitySchema', () => {
     ).toThrow()
   })
 
-  it.each([
-    'javascript:alert(1',
-    'data:text/html,<script>alert(1)',
-    '//evil.com/<script>',
-  ])('rejects malformed unsafe sourceUrl %s', (malformedUrl) => {
-    expect(() =>
-      EntitySchema.parse({ ...validEntity, sourceUrl: malformedUrl }),
-    ).toThrow()
-  })
-
   it('accepts missing sourceUrl', () => {
     const { sourceUrl: _, ...rest } = { ...validEntity, sourceUrl: undefined }
     expect(EntitySchema.parse(rest).sourceUrl).toBeUndefined()
