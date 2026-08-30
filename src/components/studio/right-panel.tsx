@@ -3,6 +3,7 @@
 import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
 import { ENTITY_TYPE_META } from '@/lib/studio/types'
 import { search, type SearchResult } from '@/lib/search/retrieval'
+import { buildEntityIndex } from '@/lib/studio/graph-index'
 import { Search, X, Sparkles, FileText, Quote, ArrowRight } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -39,6 +40,7 @@ function SearchPanel({ onCreateEntity }: { onCreateEntity?: (name: string) => vo
   const startEdit = useStudioStore((s) => s.startEdit)
   const [mode, setMode] = useState<'keyword' | 'ranked'>('keyword')
   const filtered = useFilteredEntities()
+  const entityIndex = useMemo(() => buildEntityIndex(entities), [entities])
   const rankedResults = useMemo(
     () => (mode === 'ranked' ? search(entities, claims, searchQuery) : []),
     [mode, entities, claims, searchQuery],
@@ -112,7 +114,7 @@ function SearchPanel({ onCreateEntity }: { onCreateEntity?: (name: string) => vo
           <ul className="space-y-1.5" role="list" aria-label="Ranked search results">
             {rankedResults.map((r: SearchResult) => {
               const targetId = r.type === 'entity' ? r.id : r.entityId
-              const resolvedEntity = targetId ? entities.find((e) => e.id === targetId) : undefined
+              const resolvedEntity = targetId ? entityIndex.get(targetId) : undefined
               const meta = resolvedEntity ? ENTITY_TYPE_META[resolvedEntity.type] : undefined
               return (
                 <li key={r.id}>
@@ -187,7 +189,8 @@ function InspectorPanel() {
   const deleteEntity = useStudioStore((s) => s.deleteEntity)
   const selectEntity = useStudioStore((s) => s.selectEntity)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const entity = entities.find((e) => e.id === selectedEntityId) || entities[0]
+  const entityIndex = useMemo(() => buildEntityIndex(entities), [entities])
+  const entity = (selectedEntityId ? entityIndex.get(selectedEntityId) : undefined) || entities[0]
   const deleteCancelRef = useRef<HTMLButtonElement>(null)
 
   if (!entity) {
@@ -249,7 +252,7 @@ function InspectorPanel() {
             </h4>
             <ul className="space-y-1">
               {entity.links.map((l, i) => {
-                const target = entities.find((e) => e.id === l.targetId)
+                const target = entityIndex.get(l.targetId)
                 if (!target) return null
                 return (
                   <li key={i}>
