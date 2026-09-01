@@ -119,6 +119,24 @@ const handleGetGraphNeighborhood = (
     .map((e) => ({ id: e.id, name: e.name, type: e.type, tags: e.tags }))
 }
 
+const dispatchTool = (
+  name: string,
+  args: Record<string, unknown>,
+  entities: Entity[],
+  claims: Claim[],
+): { success: boolean; data?: unknown; error?: string } => {
+  switch (name) {
+    case 'search_library':
+      return { success: true, data: handleSearchLibrary(args, entities, claims) }
+    case 'get_entity_claims':
+      return { success: true, data: handleGetEntityClaims(args, claims) }
+    case 'get_graph_neighborhood':
+      return { success: true, data: handleGetGraphNeighborhood(args, entities) }
+    default:
+      return { success: false, error: `Unknown tool: ${name}` }
+  }
+}
+
 /** Execute a library tool call locally against the studio state. */
 export const executeStudioTool = (
   name: string,
@@ -127,16 +145,7 @@ export const executeStudioTool = (
   claims: Claim[],
 ): { success: boolean; data?: unknown; error?: string } => {
   try {
-    switch (name) {
-      case 'search_library':
-        return { success: true, data: handleSearchLibrary(args, entities, claims) }
-      case 'get_entity_claims':
-        return { success: true, data: handleGetEntityClaims(args, claims) }
-      case 'get_graph_neighborhood':
-        return { success: true, data: handleGetGraphNeighborhood(args, entities) }
-      default:
-        return { success: false, error: `Unknown tool: ${name}` }
-    }
+    return dispatchTool(name, args, entities, claims)
   } catch (err) {
     return {
       success: false,
