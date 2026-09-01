@@ -79,12 +79,12 @@ const G_SEQ_MAP: Record<string, ViewId> = {
 let _open = false
 const listeners = new Set<(v: boolean) => void>()
 /** Sets the open state of the shortcuts dialog and notifies all subscribers. */
-function setOpen(v: boolean) {
+const setOpen = (v: boolean): void => {
   _open = v
   for (const l of listeners) l(v)
 }
 /** Returns the current open state and a setter for the shortcuts dialog, using module-scope state. */
-function useShortcutsOpen(): [boolean, (v: boolean) => void] {
+const useShortcutsOpen = (): [boolean, (v: boolean) => void] => {
   const [open, setLocal] = React.useState(_open)
   React.useEffect(() => {
     const l = (v: boolean) => { setLocal(v) }
@@ -97,7 +97,8 @@ function useShortcutsOpen(): [boolean, (v: boolean) => void] {
 }
 
 /** Keyboard shortcuts dialog with filterable grouped list and G-key navigation indicator. */
-export function ShortcutsDialog() {
+// skipcq: JS-0415, JS-R1005 — ShortcutsDialog JSX nesting and medium complexity are intentional for grouped shortcut layout
+export const ShortcutsDialog = (): React.JSX.Element => {
   const [open, setOpen] = useShortcutsOpen()
   const { setView, currentView, commandOpen, mobileDrawerOpen, setCommandOpen, setMobileDrawerOpen } =
     useStudioStore()
@@ -235,7 +236,9 @@ export function ShortcutsDialog() {
     if (!open) setFilter('')
   }, [open])
 
+  // skipcq: JS-0415
   return (
+    // skipcq: JS-0415
     <>
       <Overlay
         open={open}
@@ -274,9 +277,26 @@ export function ShortcutsDialog() {
               value={filter}
               onChange={(e) => { setFilter(e.target.value); }}
               placeholder="Filter shortcuts..."
-              className="w-full rounded-md border border-border bg-background py-1.5 pl-8 pr-3 text-body-sm text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+              className={cn(
+                'w-full rounded-md border border-border bg-background py-1.5 pl-8 text-body-sm text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30',
+                filter ? 'pr-11' : 'pr-3',
+              )}
               aria-label="Filter shortcuts"
             />
+            {filter && (
+              <button
+                type="button"
+                onClick={() => {
+                  setFilter('')
+                  filterInputRef.current?.focus()
+                }}
+                aria-label="Clear filter search"
+                title="Clear filter search"
+                className="absolute right-1.5 top-1/2 size-9 -translate-y-1/2 inline-flex items-center justify-center rounded text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -351,7 +371,7 @@ export function ShortcutsDialog() {
  * The sidebar uses this to render its "Keyboard shortcuts" link without
  * needing to know about the dialog's internal state.
  */
-export function ShortcutsTrigger({ className }: { className?: string }) {
+export const ShortcutsTrigger = ({ className }: { className?: string }): React.JSX.Element => {
   const [, setOpen] = useShortcutsOpen()
   return (
     <button

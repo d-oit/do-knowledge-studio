@@ -27,7 +27,7 @@ vi.mock('@/lib/studio/use-reduced-motion', () => ({
 }))
 
 vi.mock('@/components/studio/ui/shared-primitives', () => ({
-  Overlay: ({ children, open, onClose, 'aria-label': ariaLabel }: {
+  Overlay: ({ children, open, 'aria-label': ariaLabel }: {
     children: ReactNode
     open: boolean
     onClose: () => void
@@ -38,7 +38,7 @@ vi.mock('@/components/studio/ui/shared-primitives', () => ({
     className?: string
   }) =>
     open ? (
-      <div data-testid="overlay" role="dialog" aria-label={ariaLabel} onClick={onClose}>
+      <div data-testid="overlay" role="dialog" aria-label={ariaLabel}>
         {children}
       </div>
     ) : null,
@@ -62,7 +62,74 @@ vi.mock('@/lib/studio/store', () => ({
   ),
 }))
 
-import { ShortcutsTrigger } from './shortcuts-dialog'
+import { ShortcutsDialog, ShortcutsTrigger } from './shortcuts-dialog'
+
+describe('ShortcutsDialog', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('renders filter search clear button when text is entered and clears input on click', () => {
+    render(
+      <>
+        <ShortcutsTrigger />
+        <ShortcutsDialog />
+      </>,
+    )
+
+    // Open the dialog
+    fireEvent.click(screen.getByLabelText('Show keyboard shortcuts'))
+
+    const filterInput = screen.getByLabelText('Filter shortcuts') as HTMLInputElement
+    expect(filterInput.value).toBe('')
+    expect(filterInput.className).toContain('pr-3')
+    expect(filterInput.className).not.toContain('pr-11')
+    expect(screen.queryByLabelText('Clear filter search')).toBeNull()
+
+    // Type filter text
+    fireEvent.change(filterInput, { target: { value: 'Bold' } })
+    expect(filterInput.value).toBe('Bold')
+    expect(filterInput.className).toContain('pr-11')
+
+    // Clear button should now be visible
+    const clearBtn = screen.getByLabelText('Clear filter search')
+    expect(clearBtn).toBeDefined()
+    expect(clearBtn.getAttribute('title')).toBe('Clear filter search')
+
+    // Click clear button (prevent default / click handlers on buttons contained inside mocked Overlay)
+    fireEvent.click(clearBtn)
+    expect(filterInput.value).toBe('')
+    expect(filterInput.className).toContain('pr-3')
+    expect(filterInput.className).not.toContain('pr-11')
+    expect(screen.queryByLabelText('Clear filter search')).toBeNull()
+
+    // Clearing should restore focus to the filter input.
+    expect(document.activeElement).toBe(filterInput)
+  })
+
+  it('supports rapid sequence: type filter -> click clear -> press Escape to close cleanly', () => {
+    render(
+      <>
+        <ShortcutsTrigger />
+        <ShortcutsDialog />
+      </>,
+    )
+
+    // Open dialog
+    fireEvent.click(screen.getByLabelText('Show keyboard shortcuts'))
+    const filterInput = screen.getByLabelText('Filter shortcuts') as HTMLInputElement
+
+    // Rapid type -> clear -> Escape
+    fireEvent.change(filterInput, { target: { value: 'Navigate' } })
+    const clearBtn = screen.getByLabelText('Clear filter search')
+    fireEvent.click(clearBtn)
+    expect(filterInput.value).toBe('')
+
+    // Press Escape
+    fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' })
+    expect(screen.queryByTestId('overlay')).toBeNull()
+  })
+})
 
 describe('ShortcutsTrigger', () => {
   beforeEach(() => {

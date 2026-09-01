@@ -333,7 +333,8 @@ When merging dependabot PRs or manually bumping dependencies:
   switches, bounds/presence checks, braces) — `.codacy.yml`
   suppressions do not cover new PR code (LESSON-031, plans/123,
   plans/112).
-- See `agents-docs/LESSONS.md` (LESSON-024..031) and
+- **Absolute-positioned clear buttons inside inputs require padding for total extent (`offset + width + clearance`)** — `size-9` (36px) button at `right-1.5` (6px) requires `pr-11` (44px) so text never clips underneath at narrow viewports (LESSON-033).
+- See `agents-docs/LESSONS.md` (LESSON-024..033) and
   `plans/116-ci-workflow-learnings-2026-08-11.md` for full detail.
 
 ## Skills
