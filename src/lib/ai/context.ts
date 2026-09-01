@@ -9,6 +9,14 @@ import { buildResearchContext } from './research'
 const SYSTEM_PROMPT_BASE =
   'You are assisting with a local knowledge base. Use the provided entities to inform your answers when applicable. Be concise and cite entity names when relevant.'
 
+/** Options controlling context injection budgets and formatting. */
+export interface ContextBudgetOptions {
+  /** Maximum number of relevant search results to include (default: 5). */
+  maxResults?: number
+  /** Maximum snippet character length per item (default: 200). */
+  maxSnippetLength?: number
+}
+
 /** Build the system prompt enriched with local entity context and research results. */
 export function buildSystemPrompt(
   query: string,
@@ -16,11 +24,14 @@ export function buildSystemPrompt(
   claims: Claim[],
   augmentWithLocal: boolean,
   researchResults?: ResearchResult[],
+  options?: ContextBudgetOptions,
 ): string {
   let prompt = SYSTEM_PROMPT_BASE
+  const maxResults = options?.maxResults ?? 5
+  const maxSnippetLength = options?.maxSnippetLength ?? 200
 
   if (augmentWithLocal && entities.length > 0) {
-    const results = search(entities, claims, query, 5)
+    const results = search(entities, claims, query, maxResults)
     if (results.length > 0) {
       const entityIndex = buildEntityIndex(entities)
       const contextParts = results.map((r) => {
@@ -28,7 +39,7 @@ export function buildSystemPrompt(
         const entity = entityIndex.get(targetId)
         const tags = entity?.tags ?? []
         const tagStr = tags.length > 0 ? ` [${tags.join(', ')}]` : ''
-        const desc = r.snippet ? `: ${r.snippet.slice(0, 200)}` : ''
+        const desc = r.snippet ? `: ${r.snippet.slice(0, maxSnippetLength)}` : ''
         return `- ${r.name}${tagStr}${desc}`
       })
       prompt += `\n\nRelevant entities from your library:\n${contextParts.join('\n')}`
@@ -54,6 +65,7 @@ export function buildMessages(
   claims: Claim[],
   augmentWithLocal: boolean,
   researchResults?: ResearchResult[],
+  options?: ContextBudgetOptions,
 ): ChatMessage[] {
   const systemContent = buildSystemPrompt(
     userMessage,
@@ -61,6 +73,7 @@ export function buildMessages(
     claims,
     augmentWithLocal,
     researchResults,
+    options,
   )
   const systemMsg: ChatMessage = { role: 'system', content: systemContent }
   return [systemMsg, ...history, { role: 'user', content: userMessage }]
