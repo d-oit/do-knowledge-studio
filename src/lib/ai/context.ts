@@ -17,48 +17,62 @@ export interface ContextBudgetOptions {
   maxSnippetLength?: number
 }
 
+/** Formats matching local entities into prompt context parts. */
+const formatLocalContext = (
+  entities: Entity[],
+  claims: Claim[],
+  query: string,
+  maxResults: number,
+  maxSnippetLength: number,
+): string => {
+  const results = search(entities, claims, query, maxResults)
+  if (results.length === 0) return ''
+
+  const entityIndex = buildEntityIndex(entities)
+  const contextParts = results.map((r) => {
+    const targetId = r.entityId ?? r.id
+    const entity = entityIndex.get(targetId)
+    const tags = entity?.tags ?? []
+    const tagStr = tags.length > 0 ? ` [${tags.join(', ')}]` : ''
+    const desc = r.snippet ? `: ${r.snippet.slice(0, maxSnippetLength)}` : ''
+    return `- ${r.name}${tagStr}${desc}`
+  })
+
+  return `\n\nRelevant entities from your library:\n${contextParts.join('\n')}`
+}
+
+/** Formats research results into prompt context text. */
+const formatResearchSection = (researchResults?: ResearchResult[]): string => {
+  if (!researchResults || researchResults.length === 0) return ''
+  const researchCtx = buildResearchContext(researchResults)
+  if (!researchCtx) return ''
+  return `\n${researchCtx}\n\nUse the fetched web content above to inform your answer. Cite URLs when referencing fetched content.`
+}
+
 /** Build the system prompt enriched with local entity context and research results. */
-export function buildSystemPrompt(
+export const buildSystemPrompt = (
   query: string,
   entities: Entity[],
   claims: Claim[],
   augmentWithLocal: boolean,
   researchResults?: ResearchResult[],
   options?: ContextBudgetOptions,
-): string {
+): string => {
   let prompt = SYSTEM_PROMPT_BASE
   const maxResults = options?.maxResults ?? 5
   const maxSnippetLength = options?.maxSnippetLength ?? 200
 
   if (augmentWithLocal && entities.length > 0) {
-    const results = search(entities, claims, query, maxResults)
-    if (results.length > 0) {
-      const entityIndex = buildEntityIndex(entities)
-      const contextParts = results.map((r) => {
-        const targetId = r.entityId ?? r.id
-        const entity = entityIndex.get(targetId)
-        const tags = entity?.tags ?? []
-        const tagStr = tags.length > 0 ? ` [${tags.join(', ')}]` : ''
-        const desc = r.snippet ? `: ${r.snippet.slice(0, maxSnippetLength)}` : ''
-        return `- ${r.name}${tagStr}${desc}`
-      })
-      prompt += `\n\nRelevant entities from your library:\n${contextParts.join('\n')}`
-    }
+    prompt += formatLocalContext(entities, claims, query, maxResults, maxSnippetLength)
   }
 
-  if (researchResults && researchResults.length > 0) {
-    const researchCtx = buildResearchContext(researchResults)
-    if (researchCtx) {
-      prompt += `\n${researchCtx}`
-      prompt += '\n\nUse the fetched web content above to inform your answer. Cite URLs when referencing fetched content.'
-    }
-  }
+  prompt += formatResearchSection(researchResults)
 
   return prompt
 }
 
 /** Build the full message array (system + history + user) for an AI chat request. */
-export function buildMessages(
+export const buildMessages = (
   history: ChatMessage[],
   userMessage: string,
   entities: Entity[],
@@ -66,7 +80,7 @@ export function buildMessages(
   augmentWithLocal: boolean,
   researchResults?: ResearchResult[],
   options?: ContextBudgetOptions,
-): ChatMessage[] {
+): ChatMessage[] => {
   const systemContent = buildSystemPrompt(
     userMessage,
     entities,

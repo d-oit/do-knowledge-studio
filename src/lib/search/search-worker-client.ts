@@ -77,14 +77,14 @@ export class SearchWorkerClient {
    * Search entities and claims asynchronously.
    * Uses Web Worker if available, otherwise executes synchronously.
    */
-  async searchAsync(
+  searchAsync(
     entities: Entity[],
     claims: Claim[],
     query: string,
     limit?: number,
   ): Promise<SearchResult[]> {
     if (!this.worker) {
-      return search(entities, claims, query, limit)
+      return Promise.resolve(search(entities, claims, query, limit))
     }
 
     const id = generateTransactionId()
@@ -127,7 +127,7 @@ export const defaultSearchWorkerClient = new SearchWorkerClient()
 /**
  * Convenient standalone async search helper using the default worker client.
  */
-export const searchAsync = async (
+export const searchAsync = (
   entities: Entity[],
   claims: Claim[],
   query: string,

@@ -87,6 +87,38 @@ export const STUDIO_AI_TOOLS: AiToolDefinition[] = [
   },
 ]
 
+const handleSearchLibrary = (
+  args: Record<string, unknown>,
+  entities: Entity[],
+  claims: Claim[],
+) => {
+  const query = typeof args.query === 'string' ? args.query : ''
+  const limit = typeof args.limit === 'number' ? args.limit : 5
+  return search(entities, claims, query, limit)
+}
+
+const handleGetEntityClaims = (
+  args: Record<string, unknown>,
+  claims: Claim[],
+) => {
+  const entityId = typeof args.entityId === 'string' ? args.entityId : ''
+  return claims.filter((c) => c.entityId === entityId)
+}
+
+const handleGetGraphNeighborhood = (
+  args: Record<string, unknown>,
+  entities: Entity[],
+) => {
+  const entityId = typeof args.entityId === 'string' ? args.entityId : ''
+  const adjacency = buildAdjacencyIndex(entities)
+  const neighborIds = Array.from(adjacency.get(entityId) ?? [])
+  const entityIndex = buildEntityIndex(entities)
+  return neighborIds
+    .map((id) => entityIndex.get(id))
+    .filter((e): e is Entity => Boolean(e))
+    .map((e) => ({ id: e.id, name: e.name, type: e.type, tags: e.tags }))
+}
+
 /** Execute a library tool call locally against the studio state. */
 export const executeStudioTool = (
   name: string,
@@ -96,28 +128,12 @@ export const executeStudioTool = (
 ): { success: boolean; data?: unknown; error?: string } => {
   try {
     switch (name) {
-      case 'search_library': {
-        const query = typeof args.query === 'string' ? args.query : ''
-        const limit = typeof args.limit === 'number' ? args.limit : 5
-        const results = search(entities, claims, query, limit)
-        return { success: true, data: results }
-      }
-      case 'get_entity_claims': {
-        const entityId = typeof args.entityId === 'string' ? args.entityId : ''
-        const entityClaims = claims.filter((c) => c.entityId === entityId)
-        return { success: true, data: entityClaims }
-      }
-      case 'get_graph_neighborhood': {
-        const entityId = typeof args.entityId === 'string' ? args.entityId : ''
-        const adjacency = buildAdjacencyIndex(entities)
-        const neighborIds = Array.from(adjacency.get(entityId) ?? [])
-        const entityIndex = buildEntityIndex(entities)
-        const neighbors = neighborIds
-          .map((id) => entityIndex.get(id))
-          .filter((e): e is Entity => Boolean(e))
-          .map((e) => ({ id: e.id, name: e.name, type: e.type, tags: e.tags }))
-        return { success: true, data: neighbors }
-      }
+      case 'search_library':
+        return { success: true, data: handleSearchLibrary(args, entities, claims) }
+      case 'get_entity_claims':
+        return { success: true, data: handleGetEntityClaims(args, claims) }
+      case 'get_graph_neighborhood':
+        return { success: true, data: handleGetGraphNeighborhood(args, entities) }
       default:
         return { success: false, error: `Unknown tool: ${name}` }
     }
