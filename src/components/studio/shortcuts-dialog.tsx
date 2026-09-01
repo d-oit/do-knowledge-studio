@@ -279,7 +279,7 @@ export const ShortcutsDialog = (): React.JSX.Element => {
               placeholder="Filter shortcuts..."
               className={cn(
                 'w-full rounded-md border border-border bg-background py-1.5 pl-8 text-body-sm text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30',
-                filter ? 'pr-8' : 'pr-3',
+                filter ? 'pr-11' : 'pr-3',
               )}
               aria-label="Filter shortcuts"
             />

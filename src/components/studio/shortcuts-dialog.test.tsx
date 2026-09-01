@@ -82,11 +82,14 @@ describe('ShortcutsDialog', () => {
 
     const filterInput = screen.getByLabelText('Filter shortcuts') as HTMLInputElement
     expect(filterInput.value).toBe('')
+    expect(filterInput.className).toContain('pr-3')
+    expect(filterInput.className).not.toContain('pr-11')
     expect(screen.queryByLabelText('Clear filter search')).toBeNull()
 
     // Type filter text
     fireEvent.change(filterInput, { target: { value: 'Bold' } })
     expect(filterInput.value).toBe('Bold')
+    expect(filterInput.className).toContain('pr-11')
 
     // Clear button should now be visible
     const clearBtn = screen.getByLabelText('Clear filter search')
@@ -96,10 +99,35 @@ describe('ShortcutsDialog', () => {
     // Click clear button (prevent default / click handlers on buttons contained inside mocked Overlay)
     fireEvent.click(clearBtn)
     expect(filterInput.value).toBe('')
+    expect(filterInput.className).toContain('pr-3')
+    expect(filterInput.className).not.toContain('pr-11')
     expect(screen.queryByLabelText('Clear filter search')).toBeNull()
 
     // Clearing should restore focus to the filter input.
     expect(document.activeElement).toBe(filterInput)
+  })
+
+  it('supports rapid sequence: type filter -> click clear -> press Escape to close cleanly', () => {
+    render(
+      <>
+        <ShortcutsTrigger />
+        <ShortcutsDialog />
+      </>,
+    )
+
+    // Open dialog
+    fireEvent.click(screen.getByLabelText('Show keyboard shortcuts'))
+    const filterInput = screen.getByLabelText('Filter shortcuts') as HTMLInputElement
+
+    // Rapid type -> clear -> Escape
+    fireEvent.change(filterInput, { target: { value: 'Navigate' } })
+    const clearBtn = screen.getByLabelText('Clear filter search')
+    fireEvent.click(clearBtn)
+    expect(filterInput.value).toBe('')
+
+    // Press Escape
+    fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' })
+    expect(screen.queryByTestId('overlay')).toBeNull()
   })
 })
 
