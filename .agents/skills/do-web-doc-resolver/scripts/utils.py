@@ -117,8 +117,8 @@ def is_safe_url(url: str) -> bool:
                     ip = ipaddress.ip_address(sockaddr[0])
                     if any(ip in network for network in BLOCKED_NETWORKS):
                         return False
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("DNS resolution failed for hostname %s: %s", hostname, e)
             finally:
                 # Restore the caller's default, not None, to avoid clobbering
                 # a timeout configured elsewhere in the process.
