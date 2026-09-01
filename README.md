@@ -1,155 +1,145 @@
 # DO Knowledge Studio
 
-A local-first knowledge studio for rich notes, knowledge graphs, mind maps,
-semantic search, and AI-assisted thinking — all in your browser, no backend
-required.
+A local-first knowledge studio for rich notes, knowledge graphs, mind maps, client-side semantic search, TRIZ inventive problem-solving, and AI-assisted synthesis — all inside your browser with **zero server backend required**.
 
-This repository contains the redesigned DO Knowledge Studio: a Next.js 16 app
-that reimagines the original Vite + React SPA as a calmer, more deliberate
-editorial workspace. The visual language is "Editorial Paper & Saffron" — warm
-paper backgrounds, deep ink type, and a single saffron accent. See
-[DESIGN.md](./DESIGN.md) for the full design reference.
+The visual language follows **Editorial Paper & Saffron**: warm paper backgrounds, crisp ink typography, and a purposeful saffron accent. See [DESIGN.md](./DESIGN.md) for the complete design token reference.
 
-## Tech stack
+---
 
-- **Next.js 16** (App Router) with React 19
-- **TypeScript** strict mode
-- **Tailwind CSS 4** with `@theme inline` token mapping
-- **shadcn/ui** primitives (Radix UI + CVA)
-- **Zustand** for app state
-- **Framer Motion** for animation
-- **Lucide** icon set
-- **Sonner** for toast notifications
-- **next-themes** for light/dark theming
-- **cmdk** for the command palette
-- **next/font/google** for Newsreader, Geist Sans, Geist Mono
+## Key Capabilities
 
-## The nine views
+- **Local-First & Private**: All notes, entities, and claims persist directly in your browser (`localStorage` + `IndexedDB` tiered backup). No remote backend or database setup needed.
+- **Peer-to-Peer Multi-Device Sync**: Decentralized WebRTC peer-to-peer synchronization powered by Yjs CRDTs, featuring QR-code device pairing, live presence indicators, and remote collaborative cursors.
+- **Client-Side Search Engine**: High-performance in-browser BM25 and TF-IDF search engine offloaded to dedicated Web Workers for zero main-thread lag during live typing.
+- **Knowledge Graph & Mind Map**: Interactive SVG graph visualization with Force, Circular, and Hierarchical layouts, alongside expandable mind map tree navigation with depth filtering.
+- **TRIZ Contradiction Matrix**: Full interactive Altshuller 39×39 contradiction matrix with 40 inventive principles to systematically resolve engineering trade-offs without compromise.
+- **Universal Export & OKF Bundles**: Export and share your knowledge as Open Knowledge Format (OKF v0.2) agent-readable bundles, AES-GCM password-encrypted `.okf` archives, Markdown, JSON, HTML, Docx, or PDF.
+- **AI Assistant Harness**: Connect to [OpenRouter](https://openrouter.ai/) (with support for both concrete models and smart automated routers) or local [Ollama](https://ollama.ai/) instances for on-device inference, grounded citations, and client-side tool-calling.
+- **Accessible & Responsive**: WCAG 2.2 AA compliant, comprehensive keyboard navigation (`?` for shortcuts palette), mobile drawer layout, and respect for `prefers-reduced-motion`.
 
-| View         | One-line description                                                        |
-|--------------|-----------------------------------------------------------------------------|
-| Home         | Dashboard with stats, recent activity, and entity-type breakdown.           |
-| Editor       | Capture a thought, claim, or note with floating toolbar, tags, and meta.    |
-| Library      | Browse and filter entities in a grid or list with sort and type filters.    |
-| Graph        | Visualize relationships as an interactive SVG graph with three layouts.     |
-| Mind Map     | Hierarchical exploration with expandable tree, depth slider, and root selector. |
-| Chat         | Ask your library; the assistant answers with grounded citations.            |
-| AI Harness   | Configure LLM providers (Anthropic, OpenAI, Ollama) and chat with models.   |
-| TRIZ Matrix  | Solve inventive contradictions via a 2-step parameter picker + principle results. |
-| Export       | Backup and share your knowledge as Markdown, JSON, or encrypted archive.    |
+---
 
-## How to run
+## Tech Stack
 
-```bash
-bun install
-bun run dev
-```
-
-The app is served at `http://localhost:3000`. The dev log is tee'd to
-`dev.log` in the project root.
-
-Other scripts:
-
-```bash
-bun run lint      # eslint
-bun run build     # production build
-bun run start     # serve the standalone production build
-bun run db:push   # prisma db push (if you use the prisma layer)
-```
-
-## Project structure
-
-```
-src/
-  app/
-    globals.css          # design tokens, base layer, utility classes
-    layout.tsx           # root layout, fonts, toaster, theme provider
-    page.tsx             # renders <AppShell />
-  components/
-    studio/
-      app-shell.tsx      # 3-column shell: sidebar | main | right panel
-      topbar.tsx         # responsive header with inline quick-search
-      sidebar.tsx        # nav with grouped items + shortcuts
-      right-panel.tsx    # contextual search / inspector / citations
-      command-palette.tsx
-      theme-provider.tsx
-      views/             # the 9 view components
-      ...
-    ui/                  # shadcn primitives (do not hand-edit)
-  lib/
-    studio/
-      store.ts           # zustand store + selectors
-      types.ts           # Entity, Claim, ChatMessage, ENTITY_TYPE_META
-      seed-data.ts       # mock entities / claims / chat
-    utils.ts             # cn() class merge
-    db.ts                # prisma client (unused by the studio shell)
-public/
-  favicon.svg
-  logo.svg
-DESIGN.md                 # full design reference
-worklog.md               # build log
-```
-
-## Design system
-
-The full design reference — color tokens, typography, spacing, radius,
-shadows, focus rings, component patterns, layout, and accessibility rules —
-lives in [DESIGN.md](./DESIGN.md). Read it before adding new
-components or touching tokens in `globals.css`.
-
-## Local-first principles
-
-- All entity data lives in the Zustand store (seeded from
-  `src/lib/studio/seed-data.ts`). There is no network call required to use the
-  app.
-- The "Offline ready" badge in the topbar is a constant reminder of this
-  promise.
-- Export is the user's escape hatch — OKF v0.2 Bundle (agent-readable Markdown ZIP), Markdown, JSON, or an encrypted archive.
-- The AI Harness view supports local Ollama models so the entire workflow can
-  stay on-device.
-
-## OpenRouter Integration & Routers
-
-The AI Harness integrates with [OpenRouter](https://openrouter.ai/), supporting both specific, concrete models (e.g. Claude 3.5 Sonnet) and OpenRouter's first-class **Routers** as selectable engines.
-
-### Why use a Router instead of a specific model?
-
-Routers expose higher-level, automated behaviors that optimize speed, cost, or response quality, making them incredibly useful for agentic, evaluation, or high-throughput workflows.
-
-| Router | Behavior & Recommended Workflow |
+| Layer | Technologies |
 |---|---|
-| **Auto Router** (`openrouter/auto`) | Dynamically selects the best model for your prompt. Recommended for general reasoning or tasks with highly variable complexity. |
-| **Free Models Router** (`openrouter/free`) | Cost-optimized routing that stays 100% free. Recommended for cost-sensitive experiments and high-volume local-first playground queries. |
-| **Fusion Router** (`openrouter/fusion`) | Runs multi-model deliberation and merges responses with a judge panel. Recommended for deep analysis, synthesis, or highly creative tasks. |
-| **Pareto Router** (`openrouter/pareto`) | Scores models based on speed/cost vs quality tradeoffs. Recommended for high-speed coding and instruction-following agent tasks. |
-| **Latest Model Resolution** (`openrouter/flavor-latest`) | Automatically resolves family-latest style slugs so you are always using the absolute latest model in a specific lineage. |
+| **Framework & UI** | [Next.js 16](https://nextjs.org/) (App Router), [React 19](https://react.dev/), [Tailwind CSS 4](https://tailwindcss.com/) (`@theme inline`), [shadcn/ui](https://ui.shadcn.com/) (Radix UI + CVA) |
+| **State & Storage** | [Zustand](https://github.com/pmndrs/zustand) with localStorage persistence, IndexedDB tiered recovery snapshots, Zod schema boundaries |
+| **Sync & CRDT** | [Yjs](https://yjs.dev/), WebRTC peer channels, tombstone tracking, three-way merge resolution |
+| **Search & Retrieval** | In-browser BM25 term-frequency engine, Web Worker async client, fast prefix tokenization |
+| **Animations & Icons** | [Framer Motion](https://www.framer.com/motion/), [Lucide React](https://lucide.dev/), [Sonner](https://sonner.emilkowal.ski/) toasts |
+| **Typography & Theme** | Newsreader (serif headings), Geist Sans (body), Geist Mono (code), `next-themes` (Light/Dark) |
+| **Testing & Quality** | [Vitest](https://vitest.dev/) (2,300+ tests), [Playwright](https://playwright.dev/) E2E, [ESLint 9](https://eslint.org/), [Biome](https://biomejs.dev/) |
 
-### Example Configuration Snippet
+---
 
-When calling OpenRouter programmatically, you can pass either a concrete model slug or a router target object:
+## The Nine Studio Views
 
-```typescript
-// Example 1: Passing a Router Slug
-await sendChat({
-  provider: 'openrouter',
-  model: 'openrouter/auto',
-  apiKey: 'YOUR_API_KEY',
-  messages: [...]
-})
+| View | Description |
+|---|---|
+| **Home** | Overview dashboard with entity metrics, recent activity timeline, and entity-type distribution badges. |
+| **Editor** | Rich markdown note and claim editor with floating formatting toolbar, tag selector, metadata editor, and link autocomplete. |
+| **Library** | Grid and list browser with real-time full-text search, type filtering, tag chips, and multiple sorting dimensions. |
+| **Graph** | Interactive knowledge graph supporting Force-directed, Circular, and Hierarchical layout algorithms with focus neighborhood mode. |
+| **Mind Map** | Hierarchical knowledge exploration with expandable root branches, depth slider controls, and subtree zooming. |
+| **Chat** | Local search chat assistant that answers queries with verifiable, clickable citations linked directly to your entities. |
+| **AI Harness** | Multi-provider playground supporting OpenRouter smart routers, concrete models, Ollama local inference, and live tool calls. |
+| **TRIZ Matrix** | 2-step inventive contradiction solver mapping 39 improving vs. 39 worsening engineering parameters to 40 Altshuller principles. |
+| **Export** | Comprehensive backup and sharing suite supporting OKF v0.2 ZIP bundles, encrypted archives, Markdown, JSON, HTML, Docx, and PDF. |
 
-// Example 2: Passing an OpenRouterTarget Object
-await sendChat({
-  provider: 'openrouter',
-  model: {
-    kind: 'router',
-    slug: 'openrouter/fusion',
-    display_name: 'Fusion Router'
-  },
-  apiKey: 'YOUR_API_KEY',
-  messages: [...]
-})
+---
+
+## Getting Started
+
+### Prerequisites
+
+- **Node.js**: $\ge 20$ (enforced via `.nvmrc` and `package.json` `engines`)
+- **pnpm**: $\ge 10$ (this repository uses `pnpm` exclusively)
+
+### Installation & Development
+
+```bash
+# Clone the repository
+git clone https://github.com/d-oit/do-knowledge-studio.git
+cd do-knowledge-studio
+
+# Install dependencies and git hooks
+pnpm install
+
+# Start the local development server
+pnpm run dev
 ```
+
+The application is served at `http://localhost:3000`.
+
+### Available Scripts
+
+```bash
+pnpm run dev          # Start Next.js development server with hot reloading
+pnpm run build        # Build optimized production bundle
+pnpm run start        # Start Next.js production server
+pnpm run lint         # Run ESLint across all source files (zero-warning policy)
+pnpm run typecheck    # Run TypeScript compiler type-checking without emitting
+pnpm run test         # Run Vitest test suite with type-checking and assertions
+pnpm run test:coverage# Run tests with v8 code coverage reporting
+pnpm run test:e2e     # Run Playwright end-to-end browser tests
+./scripts/minimal_quality_gate.sh # Fast-path local validation suite
+./scripts/quality_gate.sh         # Complete pre-commit quality gate
+```
+
+---
+
+## Repository Structure
+
+```
+.
+├── src/
+│   ├── app/                 # Next.js App Router (layout, page shell, globals.css tokens)
+│   ├── components/
+│   │   ├── studio/          # Studio shell, topbar, sidebar, right panel, dialogs
+│   │   │   ├── views/       # The 9 view implementations (Home, Editor, Graph, Chat, etc.)
+│   │   │   └── ui/          # Shared studio UI primitives
+│   │   └── ui/              # shadcn/ui accessible components (Radix primitives)
+│   ├── hooks/               # Reusable React hooks (reduced motion, speech, keyboard)
+│   ├── lib/
+│   │   ├── ai/              # AI provider adapters (OpenRouter, Ollama), tools, and context
+│   │   ├── export/          # Export handlers (OKF bundle, JSON, Markdown, HTML, AES encrypt)
+│   │   ├── search/          # Client BM25 retrieval engine & Web Worker client
+│   │   ├── studio/          # Zustand store, schema, hydration, migrations, IndexedDB backup
+│   │   └── sync/            # WebRTC sync bridge, Yjs CRDT documents, presence, conflict logic
+│   └── test/                # Test utilities, fixtures, and builder helpers
+├── plans/                   # GOAP plans, task decomposition, and architecture decision records (ADRs)
+├── analysis/                # Systematic architectural audits (e.g. TRIZ Contradiction Audits)
+├── scripts/                 # Reusable validation, quality gates, and automated repair scripts
+├── agents-docs/             # Multi-agent coordination guides, rules, and hook documentation
+└── public/                  # Static assets and PWA service worker manifest
+```
+
+---
+
+## AI Harness & OpenRouter Routers
+
+The AI Harness integrates with [OpenRouter](https://openrouter.ai/) for seamless access to top-tier LLMs, as well as first-class support for OpenRouter's smart **Routers**:
+
+| Router | Purpose & Best Use Case |
+|---|---|
+| **Auto Router** (`openrouter/auto`) | Automatically chooses the optimal model based on prompt complexity and length. |
+| **Free Models Router** (`openrouter/free`) | Routes exclusively to available free models for zero-cost experimentation. |
+| **Fusion Router** (`openrouter/fusion`) | Multi-model deliberation panel that synthesizes responses for complex research. |
+| **Pareto Router** (`openrouter/pareto`) | Balances speed, cost, and benchmark performance for fast agentic execution. |
+| **Latest Model Resolution** (`openrouter/flavor-latest`) | Dynamically resolves to the newest available model in a specific model family. |
+
+---
+
+## Local-First Philosophy & Design Rules
+
+1. **Zero Required Backend**: Persistence is 100% browser-based via Zustand, `localStorage`, and `IndexedDB`.
+2. **Strict Quality Gates**: Zero warnings tolerated in quality gates (`pnpm run lint`, `typecheck`, `test`, `build`).
+3. **Max 500 LOC per File**: Source files remain modular, composable, and single-responsibility.
+4. **Privacy & Security**: Cryptographic operations use standard WebCrypto APIs (`crypto.subtle`, `crypto.randomUUID()`). No user data is sent over the network unless the user explicitly configures an AI provider.
+
+---
 
 ## License
 
-Internal project. See the original repository for licensing context.
+Internal project. See [LICENSE](./LICENSE) and [NOTICE](./NOTICE) for details.

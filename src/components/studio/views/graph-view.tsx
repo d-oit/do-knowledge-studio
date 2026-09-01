@@ -4,22 +4,12 @@ import { useStudioStore } from '@/lib/studio/store'
 import { ENTITY_TYPE_META } from '@/lib/studio/types'
 import { seedGraph } from '@/lib/studio/seed-data'
 import { todayStamp, downloadBlob } from './export-types'
-import {
-  CircleDot,
-  Circle,
-  GitFork,
-  Layers,
-  Focus,
-  Camera,
-  RotateCcw,
-  RotateCw,
-  Download,
-  MoreHorizontal,
-  HelpCircle,
-} from 'lucide-react'
+import { CircleDot } from 'lucide-react'
 import { useState, useRef, useMemo, useCallback } from 'react'
-import { ToggleButtonGroup, Divider } from '../ui/shared-primitives'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { GraphToolbar, type LayoutType } from './graph-toolbar'
+import { cn } from '@/lib/utils'
+import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
+import { buildAdjacencyIndex } from '@/lib/studio/graph-index'
 
 /**
  * Deterministic hash → [0, 1) float for stable graph node positions.
@@ -33,66 +23,11 @@ const seededRandom = (seed: string): number => {
   // Mix the bits for better distribution, then scale to [0, 1)
   return (Math.abs((hash * 2654435761) >>> 0) % 10_000) / 10_000
 }
-import { cn } from '@/lib/utils'
-import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
-import { buildAdjacencyIndex } from '@/lib/studio/graph-index'
-
-type LayoutType = 'force' | 'circular' | 'hierarchical'
 
 /** CSS filter applied to focused nodes in focus mode. */
 const FOCUS_MODE_FILTER_STYLE: React.CSSProperties = {
   filter: 'drop-shadow(0 0 3px var(--saffron))',
 } as const
-
-/** Icon button with optional tooltip for progressive disclosure. */
-const ToolbarBtn = ({
-  icon: Icon,
-  label,
-  help,
-  active,
-  onClick,
-  disabled,
-}: {
-  icon: typeof Focus
-  label: string
-  /** Contextual help shown on hover (progressive disclosure). */
-  help?: string
-  active?: boolean
-  onClick?: () => void
-  disabled?: boolean
-}) => {
-  const button = (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={label}
-      aria-pressed={active}
-      className={cn(
-        'flex min-h-[44px] min-w-[44px] items-center gap-1 rounded-md px-2 py-1.5 text-label font-medium transition-colors focus-ring disabled:cursor-not-allowed disabled:opacity-40',
-        active ? 'bg-saffron-soft text-saffron-deep' : 'text-ink-mute hover:bg-muted hover:text-ink',
-      )}
-    >
-      <Icon className="h-3.5 w-3.5" />
-      <span className="hidden sm:inline">{label}</span>
-    </button>
-  )
-
-  if (!help) return button
-
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>{button}</TooltipTrigger>
-        <TooltipContent side="bottom" className="max-w-52 text-center">
-          <span className="flex items-center justify-center gap-1">
-            <HelpCircle className="h-3 w-3 shrink-0" aria-hidden="true" />
-            {help}
-          </span>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  )
-}
 
 /** Interactive knowledge graph view with force, circular, and hierarchical layouts. */
 export const GraphView = () => {
@@ -114,7 +49,7 @@ export const GraphView = () => {
 
   const { nodes, edges } = useMemo(() => {
     const seedMap = new Map(seedGraph.nodes.map((n) => [n.id, n]))
-    const nodes = entities.map((e) => {
+    const nodesList = entities.map((e) => {
       const seed = seedMap.get(e.id)
       return {
         id: e.id,
@@ -124,8 +59,8 @@ export const GraphView = () => {
         y: seed?.y ?? seededRandom(e.id + ':y') * 400 + 80,
       }
     })
-    const nodeIds = new Set(nodes.map((n) => n.id))
-    const edges = entities
+    const nodeIds = new Set(nodesList.map((n) => n.id))
+    const edgesList = entities
       .flatMap((e) =>
         e.links
           .filter((l) => nodeIds.has(l.targetId))
@@ -137,7 +72,7 @@ export const GraphView = () => {
           })),
       )
       .filter((e, i, arr) => arr.findIndex((x) => x.id === e.id) === i)
-    return { nodes, edges }
+    return { nodes: nodesList, edges: edgesList }
   }, [entities])
 
   // Apply layout transforms
@@ -256,6 +191,7 @@ export const GraphView = () => {
     }
     img.src = url
   }, [])
+
   // Gate the rotation animation on the selected node indicator
   const animDur = reducedMotion ? '0s' : '8s'
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null)
@@ -293,47 +229,23 @@ export const GraphView = () => {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Toolbar — primary controls always visible; secondary behind "More" */}
-      <div className="flex flex-wrap items-center gap-1.5 border-b border-border bg-card/50 px-5 py-2.5" role="toolbar" aria-label="Graph controls">
-        <ToggleButtonGroup label="Layout">
-          {(['force', 'circular', 'hierarchical'] as LayoutType[]).map((l) => (
-            <button
-              key={l}
-              onClick={() => { setLayout(l) }}
-              aria-pressed={layout === l}
-              className={cn(
-                'flex min-h-[44px] min-w-[44px] items-center gap-1 rounded px-2 py-1 text-label font-medium capitalize transition-colors focus-ring',
-                layout === l ? 'bg-primary text-primary-foreground shadow-sm' : 'text-ink-mute hover:text-ink',
-              )}
-            >
-              {l === 'force' && <GitFork className="h-3 w-3" />}
-              {l === 'circular' && <Circle className="h-3 w-3" />}
-              {l === 'hierarchical' && <Layers className="h-3 w-3" />}
-              {l}
-            </button>
-          ))}
-        </ToggleButtonGroup>
-
-        <Divider />
-
-        <ToolbarBtn icon={Focus} label="Focus neighborhood" help="Show only the selected entity and its direct connections" active={focusMode} onClick={() => { setFocusMode(!focusMode) }} />
-        <ToolbarBtn icon={Camera} label="Save snapshot" help="Save the current layout, selection, and focus mode for later" onClick={saveSnapshot} />
-
-        <ToolbarBtn icon={MoreHorizontal} label="More controls" active={showMore} onClick={() => { setShowMore(!showMore) }} />
-        {showMore && (
-          <div className="flex items-center gap-1.5 rounded-md border border-border bg-background p-1">
-            <ToolbarBtn icon={RotateCcw} label="Undo" help="Step back through entity edits" disabled={historyIndex <= 0} onClick={undo} />
-            <ToolbarBtn icon={RotateCw} label="Redo" help="Reapply the last undone edit" disabled={historyIndex >= entityHistory.length - 1} onClick={redo} />
-            <ToolbarBtn icon={Download} label="Export PNG" help="Download the current graph view as a PNG image" onClick={handleExportPng} />
-          </div>
-        )}
-
-        <div className="flex-1" />
-
-        <span className="hidden text-label text-ink-faint sm:inline">
-          {visibleNodes.length} nodes · {visibleEdges.length} edges
-        </span>
-      </div>
+      {/* Toolbar — extracted to GraphToolbar */}
+      <GraphToolbar
+        layout={layout}
+        onLayoutChange={setLayout}
+        focusMode={focusMode}
+        onToggleFocusMode={() => { setFocusMode(!focusMode) }}
+        onSaveSnapshot={saveSnapshot}
+        showMore={showMore}
+        onToggleShowMore={() => { setShowMore(!showMore) }}
+        canUndo={historyIndex > 0}
+        canRedo={historyIndex < entityHistory.length - 1}
+        onUndo={undo}
+        onRedo={redo}
+        onExportPng={handleExportPng}
+        nodeCount={visibleNodes.length}
+        edgeCount={visibleEdges.length}
+      />
 
       {/* Canvas */}
       <div
@@ -351,7 +263,7 @@ export const GraphView = () => {
           role="img"
           aria-label={`Knowledge graph with ${visibleNodes.length} entities and ${visibleEdges.length} connections`}
         >
-          {/* Edges — use Map for O(1) node lookups */}
+          {/* Edges */}
           <g>
             {(() => {
               const nodeMap = new Map(visibleNodes.map((n) => [n.id, n]))
@@ -431,7 +343,6 @@ export const GraphView = () => {
                   )}
                   style={focusedNodeId === n.id ? FOCUS_MODE_FILTER_STYLE : undefined}
                 >
-                  {/* Visual children wrapped in aria-hidden <g> — the parent <g> aria-label provides the full accessible name. This prevents axe-core nested-interactive violations. */}
                   <g aria-hidden="true">
                     {isSelected && (
                       <circle r={r + 6} fill="none" className="stroke-saffron" strokeWidth={1.5} strokeDasharray="3 3" opacity={0.6}>
