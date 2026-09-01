@@ -236,8 +236,9 @@ export const ShortcutsDialog = (): React.JSX.Element => {
     if (!open) setFilter('')
   }, [open])
 
-  // skipcq: JS-0415 -- Overlay content legitimately nests 5 levels for grouped shortcuts layout
+  // skipcq: JS-0415
   return (
+    // skipcq: JS-0415
     <>
       <Overlay
         open={open}
