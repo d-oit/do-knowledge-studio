@@ -79,12 +79,12 @@ const G_SEQ_MAP: Record<string, ViewId> = {
 let _open = false
 const listeners = new Set<(v: boolean) => void>()
 /** Sets the open state of the shortcuts dialog and notifies all subscribers. */
-function setOpen(v: boolean) {
+const setOpen = (v: boolean): void => {
   _open = v
   for (const l of listeners) l(v)
 }
 /** Returns the current open state and a setter for the shortcuts dialog, using module-scope state. */
-function useShortcutsOpen(): [boolean, (v: boolean) => void] {
+const useShortcutsOpen = (): [boolean, (v: boolean) => void] => {
   const [open, setLocal] = React.useState(_open)
   React.useEffect(() => {
     const l = (v: boolean) => { setLocal(v) }
@@ -97,7 +97,8 @@ function useShortcutsOpen(): [boolean, (v: boolean) => void] {
 }
 
 /** Keyboard shortcuts dialog with filterable grouped list and G-key navigation indicator. */
-export function ShortcutsDialog() {
+// skipcq: JS-0415, JS-R1005 — ShortcutsDialog JSX nesting and medium complexity are intentional for grouped shortcut layout
+export const ShortcutsDialog = (): React.JSX.Element => {
   const [open, setOpen] = useShortcutsOpen()
   const { setView, currentView, commandOpen, mobileDrawerOpen, setCommandOpen, setMobileDrawerOpen } =
     useStudioStore()
@@ -368,7 +369,7 @@ export function ShortcutsDialog() {
  * The sidebar uses this to render its "Keyboard shortcuts" link without
  * needing to know about the dialog's internal state.
  */
-export function ShortcutsTrigger({ className }: { className?: string }) {
+export const ShortcutsTrigger = ({ className }: { className?: string }): React.JSX.Element => {
   const [, setOpen] = useShortcutsOpen()
   return (
     <button
