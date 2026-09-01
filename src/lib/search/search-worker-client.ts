@@ -7,12 +7,15 @@ import type { Entity, Claim } from '@/lib/studio/types'
 import { search, type SearchResult } from './retrieval'
 import type { SearchWorkerRequest, SearchWorkerResponse } from './search-worker'
 
-/** Generates a pseudo-random unique ID for message transactions. */
+let transactionSequence = 0
+
+/** Generates a unique transaction ID for worker message correlation without weak RNG. */
 const generateTransactionId = (): string => {
+  transactionSequence += 1
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID()
+    return `${transactionSequence}-${crypto.randomUUID()}`
   }
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+  return `tx-${Date.now()}-${transactionSequence}`
 }
 
 /** Client for executing off-thread search queries via Web Workers. */
