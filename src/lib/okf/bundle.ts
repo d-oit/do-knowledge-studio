@@ -236,15 +236,16 @@ const buildLog = (now: Date): string => {
 /**
  * Rewrites GraphEdge relationships as bundle-relative markdown links appended
  * under a "# Related" heading in each linked concept (§6.1; edges are untyped).
+ * Uses Map lookup for O(1) entity name resolution inside the edge iteration loop.
  * @param conceptFiles - Concept files mutated in place with related links.
  * @param edges - Graph edges to render as related links.
- * @param entities - Entities used to resolve target names.
+ * @param entityById - Entity id → Entity map for fast lookup.
  * @param pathByEntityId - Entity id → bundle-relative path index.
  */
 const appendRelatedLinks = (
   conceptFiles: OkfBundleFile[],
   edges: GraphEdge[],
-  entities: Entity[],
+  entityById: Map<string, Entity>,
   pathByEntityId: Map<string, string>,
 ): void => {
   for (const edge of edges) {
@@ -255,7 +256,7 @@ const appendRelatedLinks = (
     if (from && toPath && !from.content.includes(`](${toPath})`)) {
       from.content = from.content.replace(
         /\n?$/,
-        `\n\n# Related\n\n* [${entities.find((e) => e.id === edge.target)?.name ?? toPath}](${toPath})\n`,
+        `\n\n# Related\n\n* [${entityById.get(edge.target)?.name ?? toPath}](${toPath})\n`,
       )
     }
   }
@@ -300,7 +301,9 @@ export const buildOkfBundle = (
   )
   /** The entity by path (reverse of the path index above). */
   const entityByPath = new Map(entities.map((e, i) => [conceptFiles[i].path, e]))
-  appendRelatedLinks(conceptFiles, edges, entities, pathByEntityId)
+  /** Map<id, Entity> for O(1) entity lookups in appendRelatedLinks. */
+  const entityById = new Map(entities.map((e) => [e.id, e]))
+  appendRelatedLinks(conceptFiles, edges, entityById, pathByEntityId)
 
   /** Bundle files (path → content). */
   const files: OkfBundleFile[] = [{ path: 'log.md', content: buildLog(now) }, ...conceptFiles]
