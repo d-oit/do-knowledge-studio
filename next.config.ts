@@ -23,8 +23,8 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(__dirname),
   },
-  async headers() {
-    return [
+  headers() {
+    return Promise.resolve([
       {
         source: '/(.*)',
         headers: [
@@ -34,7 +34,7 @@ const nextConfig: NextConfig = {
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
         ],
       },
-    ];
+    ]);
   },
 };
 

@@ -54,18 +54,23 @@ describe('sanitizeHtml', () => {
   })
 
   it('strips javascript: URLs from links', () => {
+    // skipcq: JS-0125 — testing security sanitizer against script URLs
     const result = sanitizeHtml('<a href="javascript:alert(1)">click</a>')
     expect(result).not.toContain('javascript:')
   })
 
   it('strips javascript: URLs from img src', () => {
+    // skipcq: JS-0125 — testing security sanitizer against script URLs
     const result = sanitizeHtml('<img src="javascript:alert(1)">')
     expect(result).not.toContain('javascript:')
   })
 
   it('mitigates DOM clobbering via SANITIZE_NAMED_PROPS', () => {
-    const result = sanitizeHtml('<a id="cookie" href="https://example.com">click</a>')
+    const result = sanitizeHtml('<a id="cookie" name="victim" href="https://example.com">click</a>')
     expect(result).not.toContain('id="cookie"')
+    expect(result).not.toContain('name="victim"')
+    expect(result).toContain('user-content-cookie')
+    expect(result).toContain('user-content-victim')
   })
 })
 
@@ -114,6 +119,7 @@ describe('sanitizeUrl', () => {
   })
 
   it('blocks dangerous schemes (javascript, data, vbscript)', () => {
+    // skipcq: JS-0125 — testing security sanitizer against script URLs
     expect(sanitizeUrl('javascript:alert(1)')).toBe('')
     expect(sanitizeUrl('JAVASCRIPT:alert(1)')).toBe('')
     expect(sanitizeUrl('data:text/html,<script>alert(1)</script>')).toBe('')

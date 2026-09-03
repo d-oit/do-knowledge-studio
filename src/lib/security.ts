@@ -3,7 +3,7 @@ import DOMPurify from 'dompurify'
 /**
  * Escape HTML special characters so text can be safely embedded in HTML markup.
  */
-export function escapeHtml(s: string): string {
+export const escapeHtml = (s: string): string => {
   return s
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -16,7 +16,7 @@ export function escapeHtml(s: string): string {
  * Sanitize untrusted HTML using DOMPurify. Strips scripts, event handlers,
  * and any markup not on the allow-list.
  */
-export function sanitizeHtml(dirty: string): string {
+export const sanitizeHtml = (dirty: string): string => {
   return String(
     DOMPurify.sanitize(dirty, {
       ALLOWED_TAGS: [
@@ -25,7 +25,7 @@ export function sanitizeHtml(dirty: string): string {
         'blockquote', 'pre', 'code', 'a', 'span', 'img',
         'table', 'thead', 'tbody', 'tr', 'th', 'td',
       ],
-      ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class'],
+      ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'id', 'name'],
       SANITIZE_NAMED_PROPS: true,
     }),
   )
@@ -35,7 +35,7 @@ export function sanitizeHtml(dirty: string): string {
  * Sanitize text for safe rendering inside a React component.
  * Strips all HTML tags, returning plain text.
  */
-export function sanitizeText(dirty: string): string {
+export const sanitizeText = (dirty: string): string => {
   return DOMPurify.sanitize(dirty, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] })
 }
 
@@ -46,10 +46,10 @@ export function sanitizeText(dirty: string): string {
  * Allows relative path URLs (starting with / but not //) and absolute URLs
  * matching allowed protocols (defaulting to http:, https:, mailto:, tel:).
  */
-export function sanitizeUrl(
+export const sanitizeUrl = (
   url: string,
   allowedProtocols: string[] = ['http:', 'https:', 'mailto:', 'tel:'],
-): string {
+): string => {
   if (!url || typeof url !== 'string') {
     return ''
   }
