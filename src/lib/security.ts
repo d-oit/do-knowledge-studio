@@ -17,15 +17,18 @@ export function escapeHtml(s: string): string {
  * and any markup not on the allow-list.
  */
 export function sanitizeHtml(dirty: string): string {
-  return DOMPurify.sanitize(dirty, {
-    ALLOWED_TAGS: [
-      'b', 'i', 'em', 'strong', 'u', 's', 'sub', 'sup',
-      'p', 'br', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-      'blockquote', 'pre', 'code', 'a', 'span', 'img',
-      'table', 'thead', 'tbody', 'tr', 'th', 'td',
-    ],
-    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class'],
-  })
+  return String(
+    DOMPurify.sanitize(dirty, {
+      ALLOWED_TAGS: [
+        'b', 'i', 'em', 'strong', 'u', 's', 'sub', 'sup',
+        'p', 'br', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'blockquote', 'pre', 'code', 'a', 'span', 'img',
+        'table', 'thead', 'tbody', 'tr', 'th', 'td',
+      ],
+      ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class'],
+      SANITIZE_NAMED_PROPS: true,
+    }),
+  )
 }
 
 /**

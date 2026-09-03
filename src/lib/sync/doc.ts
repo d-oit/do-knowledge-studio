@@ -45,7 +45,7 @@ export async function initPersistence(): Promise<void> {
 /** Join a WebRTC signaling room for peer-to-peer sync. */
 export function joinRoom(
   roomId: string,
-  opts?: { signaling?: string[] },
+  opts?: { signaling?: string[]; password?: string },
 ): WebrtcProvider {
   if (currentProvider) {
     currentProvider.destroy()
@@ -57,6 +57,7 @@ export function joinRoom(
   ]
   currentProvider = new WebrtcProvider(`${ROOM_PREFIX}-${roomId}`, doc, {
     signaling,
+    password: opts?.password,
   })
   return currentProvider
 }

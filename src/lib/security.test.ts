@@ -62,6 +62,11 @@ describe('sanitizeHtml', () => {
     const result = sanitizeHtml('<img src="javascript:alert(1)">')
     expect(result).not.toContain('javascript:')
   })
+
+  it('mitigates DOM clobbering via SANITIZE_NAMED_PROPS', () => {
+    const result = sanitizeHtml('<a id="cookie" href="https://example.com">click</a>')
+    expect(result).not.toContain('id="cookie"')
+  })
 })
 
 describe('sanitizeText', () => {

@@ -22,15 +22,18 @@ let currentView = 'home'
 let searchQuery = ''
 
 vi.mock('@/lib/studio/store', () => ({
-  useStudioStore: () => ({
-    currentView,
-    startNew: mockStartNew,
-    setCommandOpen: mockSetCommandOpen,
-    searchQuery,
-    setSearchQuery: mockSetSearchQuery,
-    setMobileDrawerOpen: mockSetMobileDrawerOpen,
-    setMobilePanelView: mockSetMobilePanelView,
-  }),
+  useStudioStore: (selector?: (s: Record<string, unknown>) => unknown) => {
+    const state = {
+      currentView,
+      startNew: mockStartNew,
+      setCommandOpen: mockSetCommandOpen,
+      searchQuery,
+      setSearchQuery: mockSetSearchQuery,
+      setMobileDrawerOpen: mockSetMobileDrawerOpen,
+      setMobilePanelView: mockSetMobilePanelView,
+    }
+    return typeof selector === 'function' ? selector(state) : state
+  },
 }))
 
 import { Topbar } from './topbar'
