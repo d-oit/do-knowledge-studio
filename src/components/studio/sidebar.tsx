@@ -73,8 +73,9 @@ export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
 
 /** Sidebar navigation with grouped nav items, search trigger, and theme toggle. */
 /** Sidebar navigation groups with active-state highlighting. */
-function SidebarNav() {
-  const { currentView, setView } = useStudioStore()
+const SidebarNav = () => {
+  const currentView = useStudioStore((s) => s.currentView)
+  const setView = useStudioStore((s) => s.setView)
 
   return (
     <nav className="flex-1 overflow-y-auto px-3 pb-2" aria-label="Main navigation">
@@ -128,8 +129,10 @@ function SidebarNav() {
 }
 
 /** Sidebar with brand, search trigger, navigation, and footer controls. */
-export function Sidebar() {
-  const { setCommandOpen, rightPanelOpen, setRightPanelOpen } = useStudioStore()
+export const Sidebar = () => {
+  const setCommandOpen = useStudioStore((s) => s.setCommandOpen)
+  const rightPanelOpen = useStudioStore((s) => s.rightPanelOpen)
+  const setRightPanelOpen = useStudioStore((s) => s.setRightPanelOpen)
   const { theme, setTheme } = useTheme()
 
   return (

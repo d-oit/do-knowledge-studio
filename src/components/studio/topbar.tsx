@@ -20,15 +20,13 @@ const VIEW_TITLES: Record<ViewId, { title: string; subtitle: string }> = {
 
 /** Top header bar with view title, inline search, offline badge, and new entity button. */
 export const Topbar = () => {
-  const {
-    currentView,
-    startNew,
-    setCommandOpen,
-    searchQuery,
-    setSearchQuery,
-    setMobileDrawerOpen,
-    setMobilePanelView,
-  } = useStudioStore()
+  const currentView = useStudioStore((s) => s.currentView)
+  const searchQuery = useStudioStore((s) => s.searchQuery)
+  const startNew = useStudioStore((s) => s.startNew)
+  const setCommandOpen = useStudioStore((s) => s.setCommandOpen)
+  const setSearchQuery = useStudioStore((s) => s.setSearchQuery)
+  const setMobileDrawerOpen = useStudioStore((s) => s.setMobileDrawerOpen)
+  const setMobilePanelView = useStudioStore((s) => s.setMobilePanelView)
   const meta = VIEW_TITLES[currentView as keyof typeof VIEW_TITLES]
 
   // Inline input doubles as a quick filter for the Library + right-panel SearchPanel,
