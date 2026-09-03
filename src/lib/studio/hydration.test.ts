@@ -176,9 +176,17 @@ describe('migratePersistedState', () => {
     expect(result.entities[0]?.tags).toEqual([])
   })
 
-  it('throws HydrationRejectedError when migration fails or version is unsupported', () => {
-    expect(() => migratePersistedState({}, 9999)).toThrow(HydrationRejectedError)
-    expect(() => migratePersistedState({}, 9999)).toThrow(
+  it('throws HydrationRejectedError when payload is incomplete or invalid during migration', () => {
+    expect(() => migratePersistedState({}, 1)).toThrow(HydrationRejectedError)
+    expect(() => migratePersistedState({}, 1)).toThrow(
+      'Persisted state rejected: no safe migration from version 1; payload preserved on disk',
+    )
+  })
+
+  it('throws HydrationRejectedError when envelope version is unsupported (future version)', () => {
+    const validSlice = createValidPersistedSlice()
+    expect(() => migratePersistedState(validSlice, 9999)).toThrow(HydrationRejectedError)
+    expect(() => migratePersistedState(validSlice, 9999)).toThrow(
       'Persisted state rejected: no safe migration from version 9999; payload preserved on disk',
     )
   })
