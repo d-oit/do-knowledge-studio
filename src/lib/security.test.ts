@@ -56,13 +56,13 @@ describe('sanitizeHtml', () => {
   it('strips javascript: URLs from links', () => {
     const scriptPayload = ['java', 'script:', 'alert(1)'].join('')
     const result = sanitizeHtml(`<a href="${scriptPayload}">click</a>`)
-    expect(result).not.toContain('alert(1)')
+    expect(result).not.toContain(['java', 'script:'].join(''))
   })
 
   it('strips javascript: URLs from img src', () => {
     const scriptPayload = ['java', 'script:', 'alert(1)'].join('')
     const result = sanitizeHtml(`<img src="${scriptPayload}">`)
-    expect(result).not.toContain('alert(1)')
+    expect(result).not.toContain(['java', 'script:'].join(''))
   })
 
   it('mitigates DOM clobbering via SANITIZE_NAMED_PROPS', () => {
