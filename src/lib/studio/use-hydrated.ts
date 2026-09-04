@@ -13,13 +13,18 @@ export const useStoreHydrated = (): boolean => {
   )
 
   useEffect(() => {
-    if (!useStudioStore.persist?.onFinishHydration) return
-    const unsub = useStudioStore.persist.onFinishHydration(() => {
-      setHydrated(true)
-    })
-    setHydrated(Boolean(useStudioStore.persist.hasHydrated()))
+    let unsub: (() => void) | undefined
+    const persist = useStudioStore.persist
+    if (persist?.onFinishHydration) {
+      unsub = persist.onFinishHydration(() => {
+        setHydrated(true)
+      })
+      setHydrated(Boolean(persist.hasHydrated()))
+    }
     return () => {
-      unsub()
+      if (unsub) {
+        unsub()
+      }
     }
   }, [])
 
