@@ -211,6 +211,7 @@ export const EditorView = () => {
 
       {showAdvanced && (
         <div
+          id="advanced-metadata-panel"
           className="mb-4 space-y-3 rounded-lg border border-dashed border-border bg-muted/30 p-4"
           role="group"
           aria-labelledby="advanced-fields-heading"
