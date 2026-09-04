@@ -189,7 +189,7 @@ describe('EditorToolbar', () => {
     expect(screen.queryByTestId('voice-input')).toBeNull()
   })
 
-  it('sets aria-expanded and aria-controls on Advanced button based on showAdvanced', () => {
+  it('sets aria-expanded and conditionally sets aria-controls on Advanced button based on showAdvanced', () => {
     const { rerender } = render(
       <EditorToolbar
         showAdvanced={false}
@@ -199,7 +199,7 @@ describe('EditorToolbar', () => {
     )
     const advButton = screen.getByRole('button', { name: /Advanced/ })
     expect(advButton.getAttribute('aria-expanded')).toBe('false')
-    expect(advButton.getAttribute('aria-controls')).toBe('advanced-metadata-panel')
+    expect(advButton.getAttribute('aria-controls')).toBeNull()
     rerender(
       <EditorToolbar
         showAdvanced

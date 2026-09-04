@@ -73,7 +73,7 @@ export function EditorToolbar({
           type="button"
           onClick={onToggleAdvanced}
           aria-expanded={showAdvanced}
-          aria-controls="advanced-metadata-panel"
+          aria-controls={showAdvanced ? 'advanced-metadata-panel' : undefined}
           className={`flex min-h-[44px] items-center gap-1 rounded-md px-2 py-1 text-label font-medium transition-colors hover:bg-muted focus-ring ${
             showAdvanced ? 'text-ink' : 'text-ink-mute'
           }`}
