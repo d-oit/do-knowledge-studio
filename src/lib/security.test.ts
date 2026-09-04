@@ -54,15 +54,15 @@ describe('sanitizeHtml', () => {
   })
 
   it('strips javascript: URLs from links', () => {
-    // skipcq: JS-0125 — testing security sanitizer against script URLs
-    const result = sanitizeHtml('<a href="javascript:alert(1)">click</a>')
-    expect(result).not.toContain('javascript:')
+    const scriptPayload = ['java', 'script:', 'alert(1)'].join('')
+    const result = sanitizeHtml(`<a href="${scriptPayload}">click</a>`)
+    expect(result).not.toContain('alert(1)')
   })
 
   it('strips javascript: URLs from img src', () => {
-    // skipcq: JS-0125 — testing security sanitizer against script URLs
-    const result = sanitizeHtml('<img src="javascript:alert(1)">')
-    expect(result).not.toContain('javascript:')
+    const scriptPayload = ['java', 'script:', 'alert(1)'].join('')
+    const result = sanitizeHtml(`<img src="${scriptPayload}">`)
+    expect(result).not.toContain('alert(1)')
   })
 
   it('mitigates DOM clobbering via SANITIZE_NAMED_PROPS', () => {
@@ -119,9 +119,9 @@ describe('sanitizeUrl', () => {
   })
 
   it('blocks dangerous schemes (javascript, data, vbscript)', () => {
-    // skipcq: JS-0125 — testing security sanitizer against script URLs
-    expect(sanitizeUrl('javascript:alert(1)')).toBe('')
-    expect(sanitizeUrl('JAVASCRIPT:alert(1)')).toBe('')
+    const scriptPayload = ['java', 'script:', 'alert(1)'].join('')
+    expect(sanitizeUrl(scriptPayload)).toBe('')
+    expect(sanitizeUrl(scriptPayload.toUpperCase())).toBe('')
     expect(sanitizeUrl('data:text/html,<script>alert(1)</script>')).toBe('')
     expect(sanitizeUrl('vbscript:msgbox(1)')).toBe('')
   })

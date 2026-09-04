@@ -1,6 +1,7 @@
 'use client'
 
 import { useStudioStore } from '@/lib/studio/store'
+import { useStoreHydrated } from '@/lib/studio/use-hydrated'
 import type { ViewId } from '@/lib/studio/types'
 import React, { Suspense, lazy, useEffect } from 'react'
 import { Sidebar } from './sidebar'
@@ -26,7 +27,7 @@ const ExportView = lazy(() => import('./views/export-view').then((m) => ({ defau
 const SyncView = lazy(() => import('./views/sync-view').then((m) => ({ default: m.SyncView })))
 
 /** Loading skeleton placeholder shown while lazy-loaded views are being fetched. */
-function ViewLoader() {
+const ViewLoader = () => {
   return (
     <div className="space-y-4 p-6">
       <Skeleton className="h-6 w-48" />
@@ -58,14 +59,15 @@ const VIEW_NAMES: Record<ViewId, string> = {
 }
 
 /** Returns a human-readable display name for a given view ID. */
-function getViewName(view: ViewId): string {
+const getViewName = (view: ViewId): string => {
   return VIEW_NAMES[view]
 }
 
 /** Root application shell composing sidebar, topbar, view router, right panel, and overlays. */
-export function AppShell() {
+export const AppShell = () => {
   const currentView = useStudioStore((s) => s.currentView)
   const editingEntityId = useStudioStore((s) => s.editingEntityId)
+  const isHydrated = useStoreHydrated()
 
   useEffect(() => {
     const unsub = startBidirectionalSync()
@@ -80,7 +82,10 @@ export function AppShell() {
   )
 
   return (
-    <div className="flex h-dvh w-full overflow-hidden bg-background text-foreground">
+    <div
+      className="flex h-dvh w-full overflow-hidden bg-background text-foreground"
+      data-hydrated={isHydrated}
+    >
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[1000] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:ring-2 focus:ring-saffron focus:ring-offset-2 focus:ring-offset-background"

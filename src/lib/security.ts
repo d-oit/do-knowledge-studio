@@ -39,6 +39,19 @@ export const sanitizeText = (dirty: string): string => {
   return DOMPurify.sanitize(dirty, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] })
 }
 
+const isRelativeUrl = (trimmed: string): boolean =>
+  trimmed.startsWith('/') && !trimmed.startsWith('//')
+
+const isAllowedProtocol = (url: string, allowed: string[]): boolean => {
+  try {
+    const parsed = new URL(url)
+    const normalized = parsed.protocol.toLowerCase()
+    return allowed.some((p) => (p.endsWith(':') ? p.toLowerCase() : `${p.toLowerCase()}:`) === normalized)
+  } catch {
+    return false
+  }
+}
+
 /**
  * Sanitize a URL to prevent XSS attacks via dangerous protocols or schemes
  * (e.g. javascript:, data:, vbscript:).
@@ -50,44 +63,14 @@ export const sanitizeUrl = (
   url: string,
   allowedProtocols: string[] = ['http:', 'https:', 'mailto:', 'tel:'],
 ): string => {
-  if (!url || typeof url !== 'string') {
+  if (typeof url !== 'string' || !url.trim() || url.includes('\\')) {
     return ''
   }
 
   const trimmed = url.trim()
-  if (!trimmed) {
-    return ''
-  }
-
-  // Browsers normalize backslashes to slashes when resolving hrefs, so a URL
-  // like `https:/\\evil.com` would render as `https://evil.com`. Reject any
-  // backslash outright to close that bypass (defense in depth).
-  if (trimmed.includes('\\')) {
-    return ''
-  }
-
-  // Allow safe site-relative paths (e.g. /path/to/page). A leading slash
-  // binds the URL to the current origin, so it can never become a scheme in
-  // an href context — `javascript:` requires a scheme before the first slash.
-  // Protocol-relative (//evil.com) is rejected; backslash variants were
-  // already rejected above (browsers normalize \ to /).
-  if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
+  if (isRelativeUrl(trimmed)) {
     return trimmed
   }
 
-  try {
-    const parsed = new URL(trimmed)
-    const normalizedProtocol = parsed.protocol.toLowerCase()
-    const normalizedAllowed = allowedProtocols.map((p) =>
-      p.endsWith(':') ? p.toLowerCase() : `${p.toLowerCase()}:`,
-    )
-
-    if (normalizedAllowed.includes(normalizedProtocol)) {
-      return trimmed
-    }
-    return ''
-  } catch {
-    // Malformed or unsupported URL — treat as unsafe.
-    return ''
-  }
+  return isAllowedProtocol(trimmed, allowedProtocols) ? trimmed : ''
 }
