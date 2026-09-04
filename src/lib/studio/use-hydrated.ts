@@ -8,13 +8,16 @@ import { useStudioStore } from './store'
  * from storage (e.g. localStorage).
  */
 export const useStoreHydrated = (): boolean => {
-  const [hydrated, setHydrated] = useState<boolean>(() => useStudioStore.persist.hasHydrated())
+  const [hydrated, setHydrated] = useState<boolean>(() =>
+    Boolean(useStudioStore.persist?.hasHydrated ? useStudioStore.persist.hasHydrated() : true),
+  )
 
   useEffect(() => {
+    if (!useStudioStore.persist?.onFinishHydration) return
     const unsub = useStudioStore.persist.onFinishHydration(() => {
       setHydrated(true)
     })
-    setHydrated(useStudioStore.persist.hasHydrated())
+    setHydrated(Boolean(useStudioStore.persist.hasHydrated()))
     return () => {
       unsub()
     }
