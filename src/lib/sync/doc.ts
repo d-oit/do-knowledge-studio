@@ -14,7 +14,7 @@ let currentPersistence: IndexeddbPersistence | null = null
 let currentProvider: WebrtcProvider | null = null
 
 /** Get or create the shared Yjs document. */
-export function getDoc(): Y.Doc {
+export const getDoc = (): Y.Doc => {
   if (!currentDoc) {
     currentDoc = new Y.Doc()
   }
@@ -22,7 +22,7 @@ export function getDoc(): Y.Doc {
 }
 
 /** Get or create the typed sync document view over the Yjs doc. */
-export function getSyncDoc(): SyncDoc {
+export const getSyncDoc = (): SyncDoc => {
   if (!currentSync) {
     const doc = getDoc()
     currentSync = {
@@ -35,7 +35,7 @@ export function getSyncDoc(): SyncDoc {
 }
 
 /** Initialize IndexedDB persistence for the Yjs document. */
-export async function initPersistence(): Promise<void> {
+export const initPersistence = async (): Promise<void> => {
   if (currentPersistence) return
   const doc = getDoc()
   currentPersistence = new IndexeddbPersistence(DB_NAME, doc)
@@ -43,10 +43,10 @@ export async function initPersistence(): Promise<void> {
 }
 
 /** Join a WebRTC signaling room for peer-to-peer sync. */
-export function joinRoom(
+export const joinRoom = (
   roomId: string,
   opts?: { signaling?: string[]; password?: string },
-): WebrtcProvider {
+): WebrtcProvider => {
   if (currentProvider) {
     currentProvider.destroy()
   }
@@ -63,17 +63,17 @@ export function joinRoom(
 }
 
 /** Get the active WebRTC provider or null. */
-export function getProvider(): WebrtcProvider | null {
+export const getProvider = (): WebrtcProvider | null => {
   return currentProvider
 }
 
 /** Get the awareness instance from the active provider, or null. */
-export function getAwareness(): WebrtcProvider['awareness'] | null {
+export const getAwareness = (): WebrtcProvider['awareness'] | null => {
   return currentProvider?.awareness ?? null
 }
 
 /** Destroy the provider, persistence, and Yjs document, cleaning up all resources. */
-export function destroy(): void {
+export const destroy = (): void => {
   currentProvider?.destroy()
   currentProvider = null
   currentPersistence?.destroy()
