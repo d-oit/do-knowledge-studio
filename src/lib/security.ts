@@ -39,6 +39,9 @@ export const sanitizeText = (dirty: string): string => {
   return DOMPurify.sanitize(dirty, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] })
 }
 
+const isInvalidUrlCandidate = (url: unknown): boolean =>
+  typeof url !== 'string' || !url.trim() || url.includes('\\')
+
 const isRelativeUrl = (trimmed: string): boolean =>
   trimmed.startsWith('/') && !trimmed.startsWith('//')
 
@@ -63,7 +66,7 @@ export const sanitizeUrl = (
   url: string,
   allowedProtocols: string[] = ['http:', 'https:', 'mailto:', 'tel:'],
 ): string => {
-  if (typeof url !== 'string' || !url.trim() || url.includes('\\')) {
+  if (isInvalidUrlCandidate(url)) {
     return ''
   }
 
