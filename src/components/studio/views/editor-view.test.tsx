@@ -73,7 +73,13 @@ vi.mock('@/lib/utils', () => ({
 }))
 
 vi.mock('./editor-toolbar', () => ({
-  EditorToolbar: () => <div data-testid="editor-toolbar" />,
+  EditorToolbar: ({ onToggleAdvanced }: { onToggleAdvanced: () => void }) => (
+    <div data-testid="editor-toolbar">
+      <button type="button" onClick={onToggleAdvanced}>
+        Advanced
+      </button>
+    </div>
+  ),
 }))
 
 vi.mock('../remote-cursors', () => ({
@@ -129,6 +135,8 @@ vi.mock('@/lib/studio/store', () => ({
     }),
 }))
 
+import { fireEvent } from '@testing-library/react'
+import { toast } from 'sonner'
 import { EditorView } from './editor-view'
 
 describe('EditorView', () => {
@@ -203,5 +211,23 @@ describe('EditorView', () => {
     currentEditingEntityId = null
     render(<EditorView />)
     expect(screen.queryByTestId('claims-panel')).toBeNull()
+  })
+
+  it('blocks saving and shows toast error when sourceUrl is unsafe or invalid', () => {
+    render(<EditorView />)
+    const nameInput = screen.getByPlaceholderText('Entity name…')
+    fireEvent.change(nameInput, { target: { value: 'Valid Name' } })
+
+    const advancedButton = screen.getByText('Advanced')
+    fireEvent.click(advancedButton)
+
+    const sourceInput = screen.getByPlaceholderText('https://…')
+    fireEvent.change(sourceInput, { target: { value: 'javascript:alert(1)' } })
+
+    const saveButton = screen.getByText('Save to library')
+    fireEvent.click(saveButton)
+
+    expect(mockCommitEntity).not.toHaveBeenCalled()
+    expect(toast.error).toHaveBeenCalledWith('Invalid or unsafe source URL')
   })
 })

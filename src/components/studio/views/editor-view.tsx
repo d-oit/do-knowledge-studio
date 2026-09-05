@@ -27,6 +27,7 @@ import {
   applyLink,
   removeDraft,
 } from '@/lib/editor'
+import { sanitizeUrl } from '@/lib/security'
 import {
   useEditorDraft,
   useEditorKeyboardShortcuts,
@@ -158,13 +159,18 @@ export const EditorView = () => {
       toast.error('Entity name cannot be empty')
       return
     }
+    const trimmedSourceUrl = sourceUrl.trim()
+    if (trimmedSourceUrl && !sanitizeUrl(trimmedSourceUrl)) {
+      toast.error('Invalid or unsafe source URL')
+      return
+    }
     const entity: Entity = {
       id: editing?.id || crypto.randomUUID(),
       name: name.trim(),
       type,
       description: description.trim() || content.slice(0, 200).replace(/[#*]/g, '').trim(),
       content,
-      sourceUrl: sourceUrl.trim() || undefined,
+      sourceUrl: trimmedSourceUrl || undefined,
       tags,
       createdAt: editing?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),

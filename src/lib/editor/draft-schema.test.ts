@@ -56,6 +56,22 @@ describe('EditorDraftSchema', () => {
     const result = EditorDraftSchema.safeParse({ ...VALID_DRAFT, tags: 'not-array' })
     expect(result.success).toBe(false)
   })
+
+  it('accepts empty sourceUrl', () => {
+    const result = EditorDraftSchema.safeParse({ ...VALID_DRAFT, sourceUrl: '' })
+    expect(result.success).toBe(true)
+  })
+
+  it.each([
+    'javascript:alert(1)',
+    'data:text/html,<script>alert(1)</script>',
+    'vbscript:msgbox(1)',
+    'not-a-url',
+    'https:/\\evil.com',
+  ])('rejects unsafe or malformed sourceUrl %s', (unsafeUrl) => {
+    const result = EditorDraftSchema.safeParse({ ...VALID_DRAFT, sourceUrl: unsafeUrl })
+    expect(result.success).toBe(false)
+  })
 })
 
 describe('CURRENT_DRAFT_VERSION', () => {

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { sanitizeUrl } from '../security'
 
 /** Zod schema validating an editor draft record. */
 export const EditorDraftSchema = z.object({
@@ -8,7 +9,12 @@ export const EditorDraftSchema = z.object({
   content: z.string(),
   description: z.string(),
   type: z.string(),
-  sourceUrl: z.string(),
+  sourceUrl: z
+    .string()
+    .refine(
+      (url) => !url || (z.string().url().safeParse(url).success && sanitizeUrl(url) !== ''),
+      { message: 'Invalid or unsafe source URL' },
+    ),
   tags: z.array(z.string()),
   createdAt: z.string(),
   updatedAt: z.string(),
