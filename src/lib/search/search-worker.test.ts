@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { handleWorkerMessage, type SearchWorkerRequest } from './search-worker'
-import { SearchWorkerClient, searchAsync } from './search-worker-client'
+import { SearchWorkerClient, searchAsync, SEARCH_WORKER_TIMEOUT_MS } from './search-worker-client'
 import type { Entity, Claim } from '@/lib/studio/types'
 
 const testEntities: Entity[] = [
@@ -145,6 +145,21 @@ describe('SearchWorkerClient', () => {
     await Promise.resolve()
     expect(mockWorker.postMessage).toHaveBeenCalledTimes(1)
     client.terminate()
+  })
+
+  it('rejects with a TimeoutError when the worker never responds', async () => {
+    vi.useFakeTimers()
+    try {
+      const mockWorker = { postMessage: vi.fn(), terminate: vi.fn() } as unknown as Worker
+      const client = new SearchWorkerClient(mockWorker)
+      const pending = client.searchAsync(testEntities, testClaims, 'mock', 5)
+      const assertion = expect(pending).rejects.toMatchObject({ name: 'TimeoutError' })
+      await vi.advanceTimersByTimeAsync(SEARCH_WORKER_TIMEOUT_MS)
+      await assertion
+      client.terminate()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('resolves normally when the signal is never aborted (mock worker)', async () => {
