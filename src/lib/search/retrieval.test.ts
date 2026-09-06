@@ -175,6 +175,11 @@ describe('BM25 Retrieval Engine', () => {
       const single = search([short], [], '茶')
       expect(single.length).toBeGreaterThan(0)
       expect(single[0].id).toBe('e-zh')
+      // Two-character CJK segments must survive too, isolated from the single
+      // char so the retained-token rule is actually exercised for both lengths.
+      const pair = search([short], [], '文化')
+      expect(pair.length).toBeGreaterThan(0)
+      expect(pair[0].id).toBe('e-zh')
     })
 
     it('matches a multilingual query against an English-styled token that splits on a hyphen', () => {
