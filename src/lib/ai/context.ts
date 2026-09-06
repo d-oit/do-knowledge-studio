@@ -1,6 +1,7 @@
 import type { Entity, Claim } from '@/lib/studio/types'
 import type { ChatMessage } from './types'
 import { search } from '@/lib/search/retrieval'
+import { searchAsync } from '@/lib/search/search-worker-client'
 import { buildEntityIndex } from '@/lib/studio/graph-index'
 import type { ResearchResult } from './research'
 import { buildResearchContext } from './research'
@@ -17,15 +18,12 @@ export interface ContextBudgetOptions {
   maxSnippetLength?: number
 }
 
-/** Formats matching local entities into prompt context parts. */
-const formatLocalContext = (
+/** Formats a set of search results into prompt context parts. */
+const formatLocalContextFromResults = (
   entities: Entity[],
-  claims: Claim[],
-  query: string,
-  maxResults: number,
+  results: import('@/lib/search/retrieval').SearchResult[],
   maxSnippetLength: number,
 ): string => {
-  const results = search(entities, claims, query, maxResults)
   if (results.length === 0) return ''
 
   const entityIndex = buildEntityIndex(entities)
@@ -39,6 +37,31 @@ const formatLocalContext = (
   })
 
   return `\n\nRelevant entities from your library:\n${contextParts.join('\n')}`
+}
+
+/** Formats matching local entities into prompt context parts (synchronous BM25). */
+const formatLocalContext = (
+  entities: Entity[],
+  claims: Claim[],
+  query: string,
+  maxResults: number,
+  maxSnippetLength: number,
+): string => {
+  const results = search(entities, claims, query, maxResults)
+  return formatLocalContextFromResults(entities, results, maxSnippetLength)
+}
+
+/** Formats matching local entities into prompt context parts, offloading BM25 to a worker. */
+const formatLocalContextAsync = async (
+  entities: Entity[],
+  claims: Claim[],
+  query: string,
+  maxResults: number,
+  maxSnippetLength: number,
+  signal?: AbortSignal,
+): Promise<string> => {
+  const results = await searchAsync(entities, claims, query, maxResults, signal)
+  return formatLocalContextFromResults(entities, results, maxSnippetLength)
 }
 
 /** Formats research results into prompt context text. */
@@ -71,6 +94,34 @@ export const buildSystemPrompt = (
   return prompt
 }
 
+/**
+ * Asynchronous variant of {@link buildSystemPrompt} that offloads the BM25
+ * retrieval to the search Web Worker (falling back to synchronous search in
+ * environments without worker support). Throws an AbortError when the signal
+ * fires mid-retrieval.
+ */
+export const buildSystemPromptAsync = async (
+  query: string,
+  entities: Entity[],
+  claims: Claim[],
+  augmentWithLocal: boolean,
+  researchResults?: ResearchResult[],
+  options?: ContextBudgetOptions,
+  signal?: AbortSignal,
+): Promise<string> => {
+  let prompt = SYSTEM_PROMPT_BASE
+  const maxResults = options?.maxResults ?? 5
+  const maxSnippetLength = options?.maxSnippetLength ?? 200
+
+  if (augmentWithLocal && entities.length > 0) {
+    prompt += await formatLocalContextAsync(entities, claims, query, maxResults, maxSnippetLength, signal)
+  }
+
+  prompt += formatResearchSection(researchResults)
+
+  return prompt
+}
+
 /** Build the full message array (system + history + user) for an AI chat request. */
 export const buildMessages = (
   history: ChatMessage[],
@@ -88,6 +139,33 @@ export const buildMessages = (
     augmentWithLocal,
     researchResults,
     options,
+  )
+  const systemMsg: ChatMessage = { role: 'system', content: systemContent }
+  return [systemMsg, ...history, { role: 'user', content: userMessage }]
+}
+
+/**
+ * Asynchronous variant of {@link buildMessages} that offloads the BM25 retrieval
+ * to the search Web Worker. Throws an AbortError when the signal fires.
+ */
+export const buildMessagesAsync = async (
+  history: ChatMessage[],
+  userMessage: string,
+  entities: Entity[],
+  claims: Claim[],
+  augmentWithLocal: boolean,
+  researchResults?: ResearchResult[],
+  options?: ContextBudgetOptions,
+  signal?: AbortSignal,
+): Promise<ChatMessage[]> => {
+  const systemContent = await buildSystemPromptAsync(
+    userMessage,
+    entities,
+    claims,
+    augmentWithLocal,
+    researchResults,
+    options,
+    signal,
   )
   const systemMsg: ChatMessage = { role: 'system', content: systemContent }
   return [systemMsg, ...history, { role: 'user', content: userMessage }]

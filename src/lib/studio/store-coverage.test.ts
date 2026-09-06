@@ -193,8 +193,8 @@ describe('Studio Store branch coverage', () => {
   })
 
   describe('sendMessage reply branches', () => {
-    it('produces a no-match reply when search returns nothing', () => {
-      useStudioStore.getState().sendMessage('quantum flux')
+    it('produces a no-match reply when search returns nothing', async () => {
+      await useStudioStore.getState().sendMessage('quantum flux')
       const { chat, chatLoading } = useStudioStore.getState()
       expect(chatLoading).toBe(false)
       expect(chat).toHaveLength(2)
@@ -202,38 +202,38 @@ describe('Studio Store branch coverage', () => {
       expect(chat[1].citations).toHaveLength(0)
     })
 
-    it('uses singular match wording for a single result', () => {
+    it('uses singular match wording for a single result', async () => {
       useStudioStore.getState().saveEntity(
         makeEntity({ id: 'e-solar', name: 'Solar Panel', description: 'solar energy technology' }),
       )
-      useStudioStore.getState().sendMessage('solar')
+      await useStudioStore.getState().sendMessage('solar')
       const chat = useStudioStore.getState().chat
       expect(chat[1].content).toContain('Based on 1 match')
     })
 
-    it('uses plural match wording for multiple results', () => {
+    it('uses plural match wording for multiple results', async () => {
       useStudioStore.getState().saveEntity(
         makeEntity({ id: 'e-a', name: 'Reactor A', description: 'reactor design' }),
       )
       useStudioStore.getState().saveEntity(
         makeEntity({ id: 'e-b', name: 'Reactor B', description: 'reactor coolant' }),
       )
-      useStudioStore.getState().sendMessage('reactor')
+      await useStudioStore.getState().sendMessage('reactor')
       expect(useStudioStore.getState().chat[1].content).toContain('Based on 2 matches')
     })
 
-    it('maps entity results to citations via id/name fallbacks', () => {
+    it('maps entity results to citations via id/name fallbacks', async () => {
       useStudioStore.getState().saveEntity(
         makeEntity({ id: 'e-solar', name: 'Solar Panel', description: 'solar energy technology' }),
       )
-      useStudioStore.getState().sendMessage('solar')
+      await useStudioStore.getState().sendMessage('solar')
       const citations = useStudioStore.getState().chat[1].citations ?? []
       expect(citations).toHaveLength(1)
       expect(citations[0].entityId).toBe('e-solar')
       expect(citations[0].entityName).toBe('Solar Panel')
     })
 
-    it('maps claim results to citations via entityId/entityName', () => {
+    it('maps claim results to citations via entityId/entityName', async () => {
       useStudioStore.getState().saveEntity(
         makeEntity({ id: 'e-reactor', name: 'Reactor', description: 'core reactor' }),
       )
@@ -244,7 +244,7 @@ describe('Studio Store branch coverage', () => {
           statement: 'neutron absorption drives fission',
         }),
       )
-      useStudioStore.getState().sendMessage('neutron')
+      await useStudioStore.getState().sendMessage('neutron')
       const citations = useStudioStore.getState().chat[1].citations ?? []
       expect(citations).toHaveLength(1)
       expect(citations[0].entityId).toBe('e-reactor')
@@ -253,50 +253,50 @@ describe('Studio Store branch coverage', () => {
   })
 
   describe('sendMessage with BM25 reference cache (PR #647)', () => {
-    it('returns consistent citations on repeated messages with unchanged state', () => {
+    it('returns consistent citations on repeated messages with unchanged state', async () => {
       useStudioStore.getState().saveEntity(
         makeEntity({ id: 'e-cache', name: 'Cache Probe', description: 'reference caching works' }),
       )
-      useStudioStore.getState().sendMessage('reference caching')
+      await useStudioStore.getState().sendMessage('reference caching')
       const first = useStudioStore.getState().chat[1]
       // No store mutations between calls — search must hit the cached index.
-      useStudioStore.getState().sendMessage('reference caching')
+      await useStudioStore.getState().sendMessage('reference caching')
       const second = useStudioStore.getState().chat[3]
       expect(second.citations).toEqual(first.citations)
       expect(second.content).toBe(first.content)
       expect(first.citations?.[0].entityId).toBe('e-cache')
     })
 
-    it('invalidates the cached index when entities change via saveEntity', () => {
+    it('invalidates the cached index when entities change via saveEntity', async () => {
       useStudioStore.getState().saveEntity(
         makeEntity({ id: 'e-before', name: 'Old Topic', description: 'outdated search text' }),
       )
-      useStudioStore.getState().sendMessage('outdated search')
+      await useStudioStore.getState().sendMessage('outdated search')
       expect(useStudioStore.getState().chat[1].citations?.[0].entityId).toBe('e-before')
 
       // saveEntity replaces the entities array — next search must rebuild the index.
       useStudioStore.getState().saveEntity(
         makeEntity({ id: 'e-after', name: 'New Topic', description: 'fresh search text' }),
       )
-      useStudioStore.getState().sendMessage('fresh search')
+      await useStudioStore.getState().sendMessage('fresh search')
       const citations = useStudioStore.getState().chat[3].citations ?? []
       expect(citations.some((c) => c.entityId === 'e-after')).toBe(true)
     })
 
-    it('invalidates the cached index when claims change via addClaim', () => {
+    it('invalidates the cached index when claims change via addClaim', async () => {
       useStudioStore.getState().saveEntity(
         makeEntity({ id: 'e-claims', name: 'Claims Cache', description: 'claims invalidation' }),
       )
       useStudioStore.getState().addClaim(
         makeClaim({ id: 'c-cache-1', entityId: 'e-claims', statement: 'first claim about claims' }),
       )
-      useStudioStore.getState().sendMessage('first claim about')
+      await useStudioStore.getState().sendMessage('first claim about')
       expect(useStudioStore.getState().chat[1].citations?.length).toBeGreaterThan(0)
 
       useStudioStore.getState().addClaim(
         makeClaim({ id: 'c-cache-2', entityId: 'e-claims', statement: 'second claim content' }),
       )
-      useStudioStore.getState().sendMessage('second claim')
+      await useStudioStore.getState().sendMessage('second claim')
       const citations = useStudioStore.getState().chat[3].citations ?? []
       expect(citations.some((c) => c.entityId === 'e-claims')).toBe(true)
     })

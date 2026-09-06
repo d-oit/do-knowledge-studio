@@ -20,6 +20,6 @@ export {
 } from './types'
 
 export { getAdapter, sendChat, sendChatStream, fetchOllamaModels } from './providers'
-export { buildSystemPrompt, buildMessages } from './context'
+export { buildSystemPrompt, buildMessages, buildSystemPromptAsync, buildMessagesAsync } from './context'
 export { useRateLimiter } from './use-rate-limiter'
 export type { RateLimitDecision } from './use-rate-limiter'
