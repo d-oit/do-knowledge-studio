@@ -174,7 +174,7 @@ describe('BM25 Retrieval Engine', () => {
 
     it('matches a multilingual query against an English-styled token that splits on a hyphen', () => {
       // "bulk-20005" must tokenize as [bulk, 20005] so the numeric suffix is
-      // still searchable rather than being swallowed by the old `[^a-z0-9]` strip.
+      // still searchable after the hyphen is split by the script-aware tokenizer.
       const hyph = makeEntity({
         id: 'e-hyph',
         name: 'bulk-20005',

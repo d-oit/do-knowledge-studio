@@ -24,6 +24,15 @@ const MAX_HISTORY = 50
 /** Abort controller for the in-flight local-chat retrieval (see {@link StudioState.sendMessage}). */
 let chatSendAbort: AbortController | null = null
 
+/** Abort and drop any in-flight chat retrieval. Called by `clearChat`/`resetStore`
+ * so a pending send can't append its assistant reply into a cleared/reset
+ * conversation (the send is never the active controller afterward, so its
+ * completion is dropped in `sendMessage`'s catch). */
+const abortChatSend = (): void => {
+  chatSendAbort?.abort()
+  chatSendAbort = null
+}
+
 /** Optional graph/mindmap metadata attached to an import operation. */
 interface ImportOptions {
   graph?: ValidatedGraph
@@ -349,7 +358,10 @@ export const useStudioStore = create<StudioState>()(
           })
       },
 
-      clearChat: () => set({ chat: [], chatLoading: false }),
+      clearChat: () => {
+        abortChatSend()
+        set({ chat: [], chatLoading: false })
+      },
 
       setRightPanelOpen: (o) => set({ rightPanelOpen: o }),
 
@@ -428,7 +440,9 @@ export const useStudioStore = create<StudioState>()(
       },
 
       resetStore: () => {
-        // Returning to the seed workspace — release any large cached index.
+        // Returning to the seed workspace — release any large cached index and
+        // drop any pending chat retrieval so it can't answer post-reset.
+        abortChatSend()
         resetSearchCache()
         set({
           ...SEED_STATE,
