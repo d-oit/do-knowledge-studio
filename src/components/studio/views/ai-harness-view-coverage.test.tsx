@@ -8,6 +8,7 @@ const aiMocks = vi.hoisted(() => {
   const mockSendChatStream = vi.fn()
   const mockFetchOllamaModels = vi.fn(() => Promise.resolve(['llama3']))
   const mockBuildMessages = vi.fn(() => [])
+  const mockBuildMessagesAsync = vi.fn(async () => [])
   const mockLoadAISettings = vi.fn(() =>
     Promise.resolve({
       provider: 'openrouter',
@@ -27,6 +28,7 @@ const aiMocks = vi.hoisted(() => {
     mockSendChatStream,
     mockFetchOllamaModels,
     mockBuildMessages,
+    mockBuildMessagesAsync,
     mockLoadAISettings,
     mockSaveAISettings,
     mockFetchUrls,
@@ -114,6 +116,7 @@ vi.mock('@/lib/ai', () => ({
   sendChatStream: aiMocks.mockSendChatStream,
   fetchOllamaModels: aiMocks.mockFetchOllamaModels,
   buildMessages: aiMocks.mockBuildMessages,
+  buildMessagesAsync: aiMocks.mockBuildMessagesAsync,
   useRateLimiter: () => ({ canRequest: () => rateLimitState.decision }),
   OPENROUTER_ROUTERS: [{ slug: 'openrouter/auto', display_name: 'Auto Router' }],
   OPENROUTER_MODELS: [{ slug: 'openai/gpt-4o-mini', display_name: 'GPT-4o Mini' }],
@@ -238,7 +241,7 @@ describe('AIHarnessView branch coverage', () => {
     await waitFor(() => {
       expect(aiMocks.mockSendChatStream).toHaveBeenCalled()
     })
-    expect(aiMocks.mockBuildMessages).toHaveBeenCalled()
+    expect(aiMocks.mockBuildMessagesAsync).toHaveBeenCalled()
   })
 
   it('adds error message when sendChatStream throws', async () => {

@@ -227,8 +227,8 @@ describe('Studio Store', () => {
   })
 
   describe('Chat', () => {
-    it('sendMessage adds a user message and assistant reply', () => {
-      useStudioStore.getState().sendMessage('Hello there')
+    it('sendMessage adds a user message and assistant reply', async () => {
+      await useStudioStore.getState().sendMessage('Hello there')
       const { chat } = useStudioStore.getState()
       expect(chat).toHaveLength(2)
       expect(chat[0].role).toBe('user')
@@ -236,11 +236,11 @@ describe('Studio Store', () => {
       expect(chat[1].role).toBe('assistant')
     })
 
-    it('sendMessage adds an assistant reply synchronously', () => {
+    it('sendMessage adds an assistant reply after async search resolves', async () => {
       useStudioStore.getState().saveEntity(
         makeEntity({ id: 'e-1', name: 'React Hooks', description: 'React hooks are functions' }),
       )
-      useStudioStore.getState().sendMessage('Tell me about React Hooks')
+      await useStudioStore.getState().sendMessage('Tell me about React Hooks')
       const { chat } = useStudioStore.getState()
       expect(chat).toHaveLength(2)
       expect(chat[0].role).toBe('user')

@@ -5,7 +5,8 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { Entity, Claim, ViewId, ChatMessage, EntityType } from './types'
 import { seedEntities, seedClaims, seedChat } from './seed-data'
-import { search, resetSearchCache } from '@/lib/search/retrieval'
+import { resetSearchCache } from '@/lib/search/retrieval'
+import { searchAsync } from '@/lib/search/search-worker-client'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from './schema'
 import {
   CURRENT_SCHEMA_VERSION,
@@ -19,6 +20,9 @@ export { restoreFromRecovery } from './recovery-helpers'
 
 /** Maximum number of undo history snapshots retained in memory. */
 const MAX_HISTORY = 50
+
+/** Abort controller for the in-flight local-chat retrieval (see {@link StudioState.sendMessage}). */
+let chatSendAbort: AbortController | null = null
 
 /** Optional graph/mindmap metadata attached to an import operation. */
 interface ImportOptions {
@@ -75,7 +79,7 @@ interface StudioState {
   // Chat
   chat: ChatMessage[]
   chatLoading: boolean
-  sendMessage: (content: string) => void
+  sendMessage: (content: string) => Promise<void>
   clearChat: () => void
 
   // Right panel
@@ -289,23 +293,43 @@ export const useStudioStore = create<StudioState>()(
         }
         set((state) => ({ chat: [...state.chat, userMsg], chatLoading: true }))
 
+        // Cancel any in-flight retrieval from a previous send so a newer message
+        // never races a stale search result (AGENTS.md: AbortController for all
+        // async work). The active controller owns state updates; stale ones are
+        // dropped on abort.
+        chatSendAbort?.abort()
+        const controller = new AbortController()
+        chatSendAbort = controller
+
         const { entities, claims } = get()
-        const results = search(entities, claims, content, 5)
-        const cited = results.map((r) => ({
-          entityId: r.entityId ?? r.id,
-          entityName: r.entityName ?? r.name,
-          snippet: r.snippet,
-        }))
-        const reply: ChatMessage = {
-          id: generateId(),
-          role: 'assistant',
-          content: results.length
-            ? `Based on ${results.length === 1 ? '1 match' : `${results.length} matches`} in your library, here is what I found. ${results[0].snippet} You can open the cited sources for full detail, or ask me to compare them.`
-            : "I could not find a direct match in your local library. Try rephrasing with keywords that appear in your entity names or descriptions, or capture a new entity first via the Editor.",
-          citations: cited,
-          timestamp: new Date().toISOString(),
-        }
-        set((state) => ({ chat: [...state.chat, reply], chatLoading: false }))
+        return searchAsync(entities, claims, content, 5, controller.signal)
+          .then((results) => {
+            if (controller.signal.aborted) return
+            const cited = results.map((r) => ({
+              entityId: r.entityId ?? r.id,
+              entityName: r.entityName ?? r.name,
+              snippet: r.snippet,
+            }))
+            const reply: ChatMessage = {
+              id: generateId(),
+              role: 'assistant',
+              content: results.length
+                ? `Based on ${results.length === 1 ? '1 match' : `${results.length} matches`} in your library, here is what I found. ${results[0].snippet} You can open the cited sources for full detail, or ask me to compare them.`
+                : "I could not find a direct match in your local library. Try rephrasing with keywords that appear in your entity names or descriptions, or capture a new entity first via the Editor.",
+              citations: cited,
+              timestamp: new Date().toISOString(),
+            }
+            set((state) => ({ chat: [...state.chat, reply], chatLoading: false }))
+          })
+          .catch((err: unknown) => {
+            // Stale (aborted) sends defer chatLoading ownership to the active
+            // controller; only the active one should clear loading.
+            if (chatSendAbort === controller) {
+              set({ chatLoading: false })
+            }
+            if (err instanceof DOMException && err.name === 'AbortError') return
+            console.error('Local chat search failed:', err)
+          })
       },
 
       clearChat: () => set({ chat: [], chatLoading: false }),

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { toast } from 'sonner'
-import { sendChatStream, buildMessages, useRateLimiter } from '@/lib/ai'
+import { sendChatStream, buildMessagesAsync, useRateLimiter } from '@/lib/ai'
 import type { ChatMessage } from '@/lib/ai'
 import type { Entity, Claim } from '@/lib/studio/types'
 import type { AIProvider } from '@/lib/studio/ai-settings'
@@ -101,13 +101,15 @@ export const useAiHarnessChat = ({
         }
       }
 
-      const apiMessages = buildMessages(
+      const apiMessages = await buildMessagesAsync(
         messages.filter((m) => m.role !== 'system'),
         input,
         entities,
         claims,
         augment,
         researchResults,
+        undefined,
+        controller.signal,
       )
 
       let streamedContent = ''

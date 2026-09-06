@@ -112,4 +112,72 @@ describe('SearchWorkerClient', () => {
     client.terminate()
     expect(mockWorker.terminate).toHaveBeenCalled()
   })
+
+  it('rejects when given an already-aborted signal (no worker path)', async () => {
+    const client = new SearchWorkerClient()
+    const controller = new AbortController()
+    controller.abort()
+    await expect(
+      client.searchAsync(testEntities, testClaims, 'triz', 5, controller.signal),
+    ).rejects.toMatchObject({ name: 'AbortError' })
+  })
+
+  it('aborts an in-flight mock Worker request when the signal fires', async () => {
+    let messageHandler: ((e: MessageEvent) => void) | null = null
+    let resolvePost!: (req: { id: string }) => void
+    const postPromise = new Promise<{ id: string }>((resolve) => {
+      resolvePost = resolve
+    })
+    const mockWorker = {
+      postMessage: vi.fn((req: { id: string }) => {
+        resolvePost(req)
+      }),
+      set onmessage(fn: (e: MessageEvent) => void) {
+        messageHandler = fn
+      },
+      terminate: vi.fn(),
+    } as unknown as Worker
+
+    const client = new SearchWorkerClient(mockWorker)
+    const controller = new AbortController()
+    const pending = client.searchAsync(testEntities, testClaims, 'mock', 5, controller.signal)
+    const posted = await postPromise
+    controller.abort()
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' })
+    // Wait a tick to ensure the abort settled cleanly; postMessage should not
+    // be requeued after the request was already removed.
+    await Promise.resolve()
+    expect(mockWorker.postMessage).toHaveBeenCalledTimes(1)
+    void messageHandler
+    void posted
+    client.terminate()
+  })
+
+  it('resolves normally when the signal is never aborted (mock worker)', async () => {
+    let messageHandler: ((e: MessageEvent) => void) | null = null
+    const mockWorker = {
+      postMessage: vi.fn((req) => {
+        setTimeout(() => {
+          if (messageHandler) {
+            messageHandler({
+              data: {
+                id: req.id,
+                type: 'SUCCESS',
+                results: [{ id: 'mock-2', name: 'Mock Result', type: 'entity', score: 1, snippet: '' }],
+              },
+            } as MessageEvent)
+          }
+        }, 0)
+      }),
+      set onmessage(fn: (e: MessageEvent) => void) {
+        messageHandler = fn
+      },
+      terminate: vi.fn(),
+    } as unknown as Worker
+
+    const client = new SearchWorkerClient(mockWorker)
+    const results = await client.searchAsync(testEntities, testClaims, 'mock', 5, new AbortController().signal)
+    expect(results).toHaveLength(1)
+    client.terminate()
+  })
 })
