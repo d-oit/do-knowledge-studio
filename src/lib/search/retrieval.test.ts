@@ -117,6 +117,83 @@ describe('BM25 Retrieval Engine', () => {
     expect(results).toHaveLength(0)
   })
 
+  describe('multilingual & script-aware tokenization', () => {
+    it('indexes and retrieves Japanese text', () => {
+      const jp = makeEntity({
+        id: 'e-ja',
+        name: '経営戦略入門',
+        description: '日本の会社経営に関する戦略',
+        content: '市場分析と競争戦略',
+        tags: ['経営', '戦略'],
+      })
+      const results = search([jp], [], '経営戦略')
+      expect(results.length).toBeGreaterThan(0)
+      expect(results[0].id).toBe('e-ja')
+    })
+
+    it('indexes and retrieves accented (Latin-extended) text', () => {
+      const fr = makeEntity({
+        id: 'e-fr',
+        name: 'Café & Théorie',
+        description: 'Une étude sur le café et la théorie économique',
+        content: 'Le café est une boisson mondiale.',
+        tags: ['café', 'économie'],
+      })
+      const results = search([fr], [], 'café')
+      expect(results.length).toBeGreaterThan(0)
+      expect(results[0].id).toBe('e-fr')
+    })
+
+    it('indexes and retrieves Cyrillic (Russian) text', () => {
+      const ru = makeEntity({
+        id: 'e-ru',
+        name: 'Научная статья',
+        description: 'Исследование в области физики',
+        content: 'Современная наука развивается быстро.',
+        tags: ['наука'],
+      })
+      const results = search([ru], [], 'научная')
+      expect(results.length).toBeGreaterThan(0)
+      expect(results[0].id).toBe('e-ru')
+    })
+
+    it('keeps short but meaningful CJK segments (1-2 chars) instead of dropping them', () => {
+      const short = makeEntity({
+        id: 'e-zh',
+        name: '茶文化',
+        description: '中国の茶の歴史',
+        content: '茶道は日本の伝統文化。',
+        tags: ['茶'],
+      })
+      // "茶" and "文化" are meaningful single/two-character tokens; the old
+      // ASCII-only `length > 2` filter would have discarded them entirely.
+      const results = search([short], [], '茶文化')
+      expect(results.length).toBeGreaterThan(0)
+      expect(results[0].id).toBe('e-zh')
+    })
+
+    it('matches a multilingual query against an English-styled token that splits on a hyphen', () => {
+      // "bulk-20005" must tokenize as [bulk, 20005] so the numeric suffix is
+      // still searchable rather than being swallowed by the old `[^a-z0-9]` strip.
+      const hyph = makeEntity({
+        id: 'e-hyph',
+        name: 'bulk-20005',
+        description: 'bulk corpus entry number 20005',
+        content: 'x',
+        tags: [],
+      })
+      const results = search([hyph], [], 'bulk-20005')
+      expect(results.length).toBeGreaterThan(0)
+      expect(results[0].id).toBe('e-hyph')
+    })
+
+    it('still ignores pure-symbol queries (no accidental matches)', () => {
+      const sym = makeEntity({ id: 'e-sym', name: 'Alpha', description: 'plain text', tags: [] })
+      const results = search([sym], [], '!!! @@@ ###')
+      expect(results).toHaveLength(0)
+    })
+  })
+
   it('serves consistent results from the reference cache on repeated searches', () => {
     const first = search(entities, claims, 'react hooks')
     const second = search(entities, claims, 'react hooks')
