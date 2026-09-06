@@ -123,7 +123,6 @@ describe('SearchWorkerClient', () => {
   })
 
   it('aborts an in-flight mock Worker request when the signal fires', async () => {
-    let messageHandler: ((e: MessageEvent) => void) | null = null
     let resolvePost!: (req: { id: string }) => void
     const postPromise = new Promise<{ id: string }>((resolve) => {
       resolvePost = resolve
@@ -132,24 +131,19 @@ describe('SearchWorkerClient', () => {
       postMessage: vi.fn((req: { id: string }) => {
         resolvePost(req)
       }),
-      set onmessage(fn: (e: MessageEvent) => void) {
-        messageHandler = fn
-      },
       terminate: vi.fn(),
     } as unknown as Worker
 
     const client = new SearchWorkerClient(mockWorker)
     const controller = new AbortController()
     const pending = client.searchAsync(testEntities, testClaims, 'mock', 5, controller.signal)
-    const posted = await postPromise
+    await postPromise
     controller.abort()
     await expect(pending).rejects.toMatchObject({ name: 'AbortError' })
     // Wait a tick to ensure the abort settled cleanly; postMessage should not
     // be requeued after the request was already removed.
     await Promise.resolve()
     expect(mockWorker.postMessage).toHaveBeenCalledTimes(1)
-    void messageHandler
-    void posted
     client.terminate()
   })
 
