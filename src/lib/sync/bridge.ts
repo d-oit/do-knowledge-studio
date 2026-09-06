@@ -182,18 +182,22 @@ export function applyRemoteUpdate(
 
   const entityMap = new Map(localEntities.map((e) => [e.id, e]))
   for (const remote of validEntities) {
+    // A tombstoned remote must never be (re)inserted, even when no local record
+    // exists — otherwise a deleted entity resurrects on the next merge. Check
+    // the tombstone first so `!local` cannot short-circuit past the guard (the
+    // previous `!local ||` form inverted the guard for absent-local records).
+    if (isTombstoned(remote.id)) continue
     const local = entityMap.get(remote.id)
-    if (!local || !isTombstoned(remote.id)) {
-      entityMap.set(remote.id, local ? resolveEntityConflict(local, remote) : remote)
-    }
+    entityMap.set(remote.id, local ? resolveEntityConflict(local, remote) : remote)
   }
 
   const claimMap = new Map(localClaims.map((c) => [c.id, c]))
   for (const remote of validClaims) {
+    // Same tombstone-first guard: absent-local records must never resurrect a
+    // tombstoned remote claim.
+    if (isTombstoned(remote.id)) continue
     const local = claimMap.get(remote.id)
-    if (!local || !isTombstoned(remote.id)) {
-      claimMap.set(remote.id, local ? resolveClaimConflict(local, remote) : remote)
-    }
+    claimMap.set(remote.id, local ? resolveClaimConflict(local, remote) : remote)
   }
 
   return {

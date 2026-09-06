@@ -311,4 +311,20 @@ describe('edge cases — branch coverage', () => {
     expect(result.entities).toHaveLength(1)
     expect(result.entities[0].name).toBe('Remote')
   })
+
+  it('applyRemoteUpdate does not insert a tombstoned remote entity when local is absent', () => {
+    const remote = makeEntity({ id: 'e-resurrect', name: 'Should stay deleted' })
+    addTombstone('e-resurrect')
+    const result = applyRemoteUpdate([remote], [], [], [])
+    // The old `!local ||` guard short-circuited to true on absent local, so the
+    // tombstoned entity came back; it must instead be skipped.
+    expect(result.entities).toHaveLength(0)
+  })
+
+  it('applyRemoteUpdate does not insert a tombstoned remote claim when local is absent', () => {
+    const remote = makeClaim({ id: 'c-resurrect', statement: 'Should stay deleted' })
+    addTombstone('c-resurrect')
+    const result = applyRemoteUpdate([], [remote], [], [])
+    expect(result.claims).toHaveLength(0)
+  })
 })
