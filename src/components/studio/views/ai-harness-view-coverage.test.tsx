@@ -8,7 +8,7 @@ const aiMocks = vi.hoisted(() => {
   const mockSendChatStream = vi.fn()
   const mockFetchOllamaModels = vi.fn(() => Promise.resolve(['llama3']))
   const mockBuildMessages = vi.fn(() => [])
-  const mockBuildMessagesAsync = vi.fn(async () => [])
+  const mockBuildMessagesAsync = vi.fn(() => Promise.resolve([]))
   const mockLoadAISettings = vi.fn(() =>
     Promise.resolve({
       provider: 'openrouter',

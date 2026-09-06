@@ -53,10 +53,26 @@ const getSegmenter = (): Intl.Segmenter => {
  * to a CJK, Cyrillic, accented, or Latin-extension script. Such tokens carry
  * real meaning at 1-2 characters (e.g. a single Han ideograph), so they must
  * not be filtered out by the ASCII-only minimum-length rule.
+ *
+ * Implemented with a code-point scan rather than a `[^\x00-\x7f]` regex so the
+ * pattern contains no control characters (DeepSource JS-0004 / JS-W1035).
  */
-const containsNonAscii = (token: string): boolean => /[^\x00-\x7f]/.test(token)
+const containsNonAscii = (token: string): boolean => {
+  for (let i = 0; i < token.length; i++) {
+    if (token.charCodeAt(i) > 0x7f) return true
+  }
+  return false
+}
 
-function tokenize(text: string): string[] {
+/** ASCII-only fallback used when Intl.Segmenter is unavailable. */
+const tokenizeAsciiFallback = (text: string): string[] =>
+  text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length > 2 && !STOP_WORDS.has(w))
+
+const tokenize = (text: string): string[] => {
   const tokens: string[] = []
   try {
     // Intl.Segmenter splits script-aware word boundaries (per grapheme/word
@@ -77,13 +93,7 @@ function tokenize(text: string): string[] {
     // ASCII `[a-z0-9]` splitting preserves the previous behavior so indexing
     // degrades gracefully instead of throwing on an unsupported environment.
     console.warn('Intl.Segmenter unavailable — falling back to ASCII tokenizer')
-    tokens.push(
-      ...text
-        .toLowerCase()
-        .replace(/[^a-z0-9\s]/g, ' ')
-        .split(/\s+/)
-        .filter((w) => w.length > 2 && !STOP_WORDS.has(w)),
-    )
+    return tokenizeAsciiFallback(text)
   }
   return tokens
 }
