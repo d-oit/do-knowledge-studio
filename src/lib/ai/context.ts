@@ -10,6 +10,11 @@ import { buildResearchContext } from './research'
 const SYSTEM_PROMPT_BASE =
   'You are assisting with a local knowledge base. Use the provided entities to inform your answers when applicable. Be concise and cite entity names when relevant.'
 
+/** Throws an AbortError when the supplied signal has already fired. */
+const throwIfAborted = (signal?: AbortSignal): void => {
+  if (signal?.aborted) throw new DOMException('Build aborted', 'AbortError')
+}
+
 /** Options controlling context injection budgets and formatting. */
 export interface ContextBudgetOptions {
   /** Maximum number of relevant search results to include (default: 5). */
@@ -113,8 +118,13 @@ export const buildSystemPromptAsync = async (
   const maxResults = options?.maxResults ?? 5
   const maxSnippetLength = options?.maxSnippetLength ?? 200
 
+  // Honor the abort contract even when local augmentation is skipped, so an
+  // already-aborted request rejects instead of resolving successfully.
+  throwIfAborted(signal)
+
   if (augmentWithLocal && entities.length > 0) {
     prompt += await formatLocalContextAsync(entities, claims, query, maxResults, maxSnippetLength, signal)
+    throwIfAborted(signal)
   }
 
   prompt += formatResearchSection(researchResults)

@@ -371,8 +371,9 @@ export const useStudioStore = create<StudioState>()(
       setMobilePanelView: (v) => set({ mobilePanelView: v }),
 
       importData: (entities, claims, options) => {
-        // A new corpus means the cached search index is stale — drop it so
-        // the previous dataset's memory is released immediately.
+        // Cancel any pending chat retrieval so it can't answer from the
+        // pre-import corpus, then drop the stale cached search index.
+        abortChatSend()
         resetSearchCache()
         set({
           entities,
@@ -390,8 +391,10 @@ export const useStudioStore = create<StudioState>()(
       },
 
       importWithRollback: (entities, claims, options) => {
-        // Drop the cached index before swapping corpora; on rollback the
-        // restored snapshot references force a clean rebuild on next search.
+        // Cancel any pending chat retrieval and drop the cached index before
+        // swapping corpora; on rollback the restored snapshot references force
+        // a clean rebuild on next search.
+        abortChatSend()
         resetSearchCache()
         const state = get()
         const snapshot = buildRecoverySnapshot(state)

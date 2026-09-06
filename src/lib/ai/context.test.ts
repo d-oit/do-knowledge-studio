@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildSystemPrompt } from './context'
+import { buildSystemPrompt, buildSystemPromptAsync } from './context'
 import type { Entity, Claim } from '@/lib/studio/types'
 
 const makeEntity = (overrides: Partial<Entity> = {}): Entity => ({
@@ -62,5 +62,15 @@ describe('buildSystemPrompt', () => {
     const elapsed = performance.now() - start
     expect(prompt).toContain('Topic 250')
     expect(elapsed).toBeLessThan(50)
+  })
+})
+
+describe('buildSystemPromptAsync', () => {
+  it('rejects with AbortError when the signal is aborted even if augmentation is skipped', async () => {
+    const controller = new AbortController()
+    controller.abort()
+    await expect(
+      buildSystemPromptAsync('query', [], NO_CLAIMS, false, undefined, undefined, controller.signal),
+    ).rejects.toMatchObject({ name: 'AbortError' })
   })
 })

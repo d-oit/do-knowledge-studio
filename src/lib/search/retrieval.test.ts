@@ -187,6 +187,21 @@ describe('BM25 Retrieval Engine', () => {
       expect(results[0].id).toBe('e-hyph')
     })
 
+    it('matches decomposed and precomposed accented spellings (Unicode NFC normalization)', () => {
+      // "cafe\u0301" is the decomposed form of "café"; the tokenizer NFC-normalizes
+      // both the indexed name and the query so they share one token key.
+      const decomposed = makeEntity({
+        id: 'e-nfc',
+        name: 'cafe\u0301',
+        description: 'decomposed accent spelling',
+        content: 'x',
+        tags: [],
+      })
+      const results = search([decomposed], [], 'café')
+      expect(results.length).toBeGreaterThan(0)
+      expect(results[0].id).toBe('e-nfc')
+    })
+
     it('still ignores pure-symbol queries (no accidental matches)', () => {
       const sym = makeEntity({ id: 'e-sym', name: 'Alpha', description: 'plain text', tags: [] })
       const results = search([sym], [], '!!! @@@ ###')
