@@ -144,4 +144,50 @@ describe('mergeClaims', () => {
     expect(result.merged[0].statement).toBe('Local statement')
     expect(result.merged[0].confidence).toBe(0.5)
   })
+
+  it('newer claim wins fields based on updatedAt, not id', () => {
+    // Same claim id (so mergeSingleClaim runs) but different updatedAt. The
+    // previous implementation compared the claim id as the LWW timestamp, so an
+    // id that ties (or sorts oddly) forced a local default even when the remote
+    // record was clearly newer. The fix compares updatedAt instead.
+    const local = makeClaim({
+      statement: 'Local statement',
+      updatedAt: '2026-01-01T00:00:00Z',
+    })
+    const remote = makeClaim({
+      statement: 'Remote statement',
+      updatedAt: '2026-01-03T00:00:00Z',
+    })
+    const result = mergeClaims([local], [remote])
+    // Remote is newer by updatedAt; the LWW timestamp must not fall back to id.
+    expect(result.merged[0].statement).toBe('Remote statement')
+  })
+
+  it('preserves claim provenance across a merge', () => {
+    const local = makeClaim({
+      statement: 'Local statement',
+      confidence: 0.5,
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z',
+      version: 2,
+      editHistory: [{ statement: 'v1 wording', editedAt: '2025-12-31T00:00:00Z' }],
+    })
+    const remote = makeClaim({
+      statement: 'Remote statement',
+      confidence: 0.9,
+      evidence: 'Remote evidence',
+      createdAt: '2026-01-02T00:00:00Z',
+      updatedAt: '2026-01-02T00:00:00Z',
+      version: 3,
+      editHistory: [{ statement: 'v2 wording', editedAt: '2026-01-01T00:00:00Z' }],
+    })
+    const result = mergeClaims([local], [remote])
+    const merged = result.merged[0]
+    // createdAt keeps the earliest timestamp; updatedAt the latest; version monotonic.
+    expect(merged.createdAt).toBe('2026-01-01T00:00:00Z')
+    expect(merged.updatedAt).toBe('2026-01-02T00:00:00Z')
+    expect(merged.version).toBe(3)
+    // Both edit-history trails survive, in chronological order.
+    expect(merged.editHistory?.map((h) => h.statement)).toEqual(['v1 wording', 'v2 wording'])
+  })
 })
