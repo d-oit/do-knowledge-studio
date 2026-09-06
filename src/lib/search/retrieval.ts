@@ -35,12 +35,57 @@ interface IndexEntry {
   fullText: string
 }
 
+// Lazy, runtime-locale word segmenter (Intl.Segmenter, granularity 'word').
+// Constructed once and reused across every index/query call so tokenization
+// costs are amortized instead of re-allocating a Segmenter per tokenization.
+let segmenter: Intl.Segmenter | null = null
+
+/** Lazy per-runtime word segmenter with a defensive ASCII fallback. */
+const getSegmenter = (): Intl.Segmenter => {
+  if (segmenter === null) {
+    segmenter = new Intl.Segmenter(undefined, { granularity: 'word' })
+  }
+  return segmenter
+}
+
+/**
+ * True when a token carries at least one non-ASCII character, i.e. it belongs
+ * to a CJK, Cyrillic, accented, or Latin-extension script. Such tokens carry
+ * real meaning at 1-2 characters (e.g. a single Han ideograph), so they must
+ * not be filtered out by the ASCII-only minimum-length rule.
+ */
+const containsNonAscii = (token: string): boolean => /[^\x00-\x7f]/.test(token)
+
 function tokenize(text: string): string[] {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .split(/\s+/)
-    .filter((w) => w.length > 2 && !STOP_WORDS.has(w))
+  const tokens: string[] = []
+  try {
+    // Intl.Segmenter splits script-aware word boundaries (per grapheme/word
+    // cluster for CJK) and exposes isWordLike so punctuation/whitespace are
+    // dropped without clobbering meaningful non-Latin content.
+    for (const part of getSegmenter().segment(text)) {
+      if (!part.isWordLike) continue
+      const token = part.segment.toLowerCase()
+      // Keep English-like tokens of 3+ chars and any non-ASCII word segment
+      // (Chinese/Japanese/Korean and composed scripts are meaningful at 1-2
+      // characters). The English stop-word list never applies to non-ASCII.
+      if (!STOP_WORDS.has(token) && (token.length > 2 || containsNonAscii(token))) {
+        tokens.push(token)
+      }
+    }
+  } catch {
+    // Fallback for runtimes without Intl.Segmenter (legacy Node/browsers):
+    // ASCII `[a-z0-9]` splitting preserves the previous behavior so indexing
+    // degrades gracefully instead of throwing on an unsupported environment.
+    console.warn('Intl.Segmenter unavailable — falling back to ASCII tokenizer')
+    tokens.push(
+      ...text
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .split(/\s+/)
+        .filter((w) => w.length > 2 && !STOP_WORDS.has(w)),
+    )
+  }
+  return tokens
 }
 
 function buildTfMap(tokens: string[]): Map<string, number> {
