@@ -65,8 +65,10 @@ const getSegmenter = (): Intl.Segmenter | null => {
  * real meaning at 1-2 characters (e.g. a single Han ideograph), so they must
  * not be filtered out by the ASCII-only minimum-length rule.
  *
- * Implemented with a code-point scan rather than a `[^\x00-\x7f]` regex so the
- * pattern contains no control characters (DeepSource JS-0004 / JS-W1035).
+ * Implemented with a UTF-16 code-unit scan rather than a `[^\x00-\x7f]` regex so
+ * the pattern contains no control characters (DeepSource JS-0004 / JS-W1035).
+ * Surrogate pairs are visited as two units but the ASCII/non-ASCII verdict is
+ * unchanged.
  */
 const containsNonAscii = (token: string): boolean => {
   for (let i = 0; i < token.length; i++) {

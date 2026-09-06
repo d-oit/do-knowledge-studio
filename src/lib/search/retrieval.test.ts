@@ -170,6 +170,11 @@ describe('BM25 Retrieval Engine', () => {
       const results = search([short], [], '茶文化')
       expect(results.length).toBeGreaterThan(0)
       expect(results[0].id).toBe('e-zh')
+      // A bare single-character query must also retain the indexed single
+      // character (from the tag/name), proving 1-char CJK tokens survive.
+      const single = search([short], [], '茶')
+      expect(single.length).toBeGreaterThan(0)
+      expect(single[0].id).toBe('e-zh')
     })
 
     it('matches a multilingual query against an English-styled token that splits on a hyphen', () => {
