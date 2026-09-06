@@ -190,4 +190,22 @@ describe('mergeClaims', () => {
     // Both edit-history trails survive, in chronological order.
     expect(merged.editHistory?.map((h) => h.statement)).toEqual(['v1 wording', 'v2 wording'])
   })
+
+  it('keeps distinct edit-history entries that share an edit timestamp', () => {
+    // ClaimSchema allows two distinct statements to carry the same editedAt; a
+    // timestamp-only de-dup key would silently drop the later valid entry.
+    const local = makeClaim({
+      statement: 'Local statement',
+      updatedAt: '2026-01-01T00:00:00Z',
+      editHistory: [{ statement: 'wording A', editedAt: '2025-12-31T00:00:00Z' }],
+    })
+    const remote = makeClaim({
+      statement: 'Remote statement',
+      updatedAt: '2026-01-02T00:00:00Z',
+      editHistory: [{ statement: 'wording B', editedAt: '2025-12-31T00:00:00Z' }],
+    })
+    const result = mergeClaims([local], [remote])
+    const statements = result.merged[0].editHistory?.map((h) => h.statement)
+    expect(statements).toEqual(['wording A', 'wording B'])
+  })
 })

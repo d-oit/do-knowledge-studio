@@ -39,14 +39,25 @@ interface IndexEntry {
 // Constructed once and reused across every index/query call so tokenization
 // costs are amortized instead of re-allocating a Segmenter per tokenization.
 let segmenter: Intl.Segmenter | null = null
+let segmenterUnavailable = false
+let segmenterFallbackLogged = false
 
 /** Lazy per-runtime word segmenter with a defensive ASCII fallback. */
-const getSegmenter = (): Intl.Segmenter => {
-  if (segmenter === null) {
+const getSegmenter = (): Intl.Segmenter | null => {
+  if (segmenter !== null) return segmenter
+  if (segmenterUnavailable) return null
+  try {
     segmenter = new Intl.Segmenter(undefined, { granularity: 'word' })
+    return segmenter
+  } catch {
+    // Remember the failure so we never re-create (and re-log) per tokenize
+    // call on a runtime without Intl.Segmenter; the ASCII fallback below runs
+    // silently on a legacy environment.
+    segmenterUnavailable = true
+    return null
   }
-  return segmenter
 }
+
 
 /**
  * True when a token carries at least one non-ASCII character, i.e. it belongs
@@ -74,11 +85,23 @@ const tokenizeAsciiFallback = (text: string): string[] =>
 
 const tokenize = (text: string): string[] => {
   const tokens: string[] = []
+  const seg = getSegmenter()
+  if (seg === null) {
+    // Legacy runtime without Intl.Segmenter — ASCII splitting preserves the
+    // previous behavior so indexing degrades gracefully instead of throwing.
+    // Log the transition exactly once; caching the failure avoids flooding the
+    // console on every tokenized entity/claim in the corpus.
+    if (!segmenterFallbackLogged) {
+      segmenterFallbackLogged = true
+      console.warn('Intl.Segmenter unavailable — falling back to ASCII tokenizer')
+    }
+    return tokenizeAsciiFallback(text)
+  }
   try {
     // Intl.Segmenter splits script-aware word boundaries (per grapheme/word
     // cluster for CJK) and exposes isWordLike so punctuation/whitespace are
     // dropped without clobbering meaningful non-Latin content.
-    for (const part of getSegmenter().segment(text)) {
+    for (const part of seg.segment(text)) {
       if (!part.isWordLike) continue
       const token = part.segment.toLowerCase()
       // Keep English-like tokens of 3+ chars and any non-ASCII word segment
@@ -89,10 +112,13 @@ const tokenize = (text: string): string[] => {
       }
     }
   } catch {
-    // Fallback for runtimes without Intl.Segmenter (legacy Node/browsers):
-    // ASCII `[a-z0-9]` splitting preserves the previous behavior so indexing
-    // degrades gracefully instead of throwing on an unsupported environment.
-    console.warn('Intl.Segmenter unavailable — falling back to ASCII tokenizer')
+    // A segmenter that throws mid-segment should be treated as unavailable so
+    // we stop retrying it and fall back silently on subsequent calls.
+    segmenterUnavailable = true
+    if (!segmenterFallbackLogged) {
+      segmenterFallbackLogged = true
+      console.warn('Intl.Segmenter failed — falling back to ASCII tokenizer')
+    }
     return tokenizeAsciiFallback(text)
   }
   return tokens

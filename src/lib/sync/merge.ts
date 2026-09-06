@@ -213,15 +213,18 @@ function mergeLinks(
 /**
  * Merge two claim edit-history trails into a chronological, de-duplicated list.
  *
- * Each entry is keyed by its `editedAt` timestamp; the union is sorted oldest
- * first so the provenance trail is never lost or reordered by a sync round-trip.
+ * Each entry is keyed by its `editedAt` timestamp *and* statement so that two
+ * distinct statements sharing the same edit timestamp (allowed by the schema)
+ * are both preserved; the union is sorted oldest first so the provenance trail
+ * is never lost or reordered by a sync round-trip.
  */
 const mergeEditHistory = (local: Claim, remote: Claim): { statement: string; editedAt: string }[] => {
   const seen = new Set<string>()
   const merged: { statement: string; editedAt: string }[] = []
   for (const entry of [...(local.editHistory ?? []), ...(remote.editHistory ?? [])]) {
-    if (!seen.has(entry.editedAt)) {
-      seen.add(entry.editedAt)
+    const key = `${entry.editedAt}\u0000${entry.statement}`
+    if (!seen.has(key)) {
+      seen.add(key)
       merged.push(entry)
     }
   }
