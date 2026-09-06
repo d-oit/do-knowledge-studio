@@ -24,10 +24,23 @@ interface PendingRequest {
   reject: (error: Error) => void
   /** Detach the abort listener; invoked once the request settles. */
   cleanup?: () => void
+  /** Timer that bounds the request; cleared once it settles. */
+  timer?: ReturnType<typeof setTimeout>
 }
 
 /** The abort error thrown to callers of {@link SearchWorkerClient.searchAsync}. */
 const abortError = (): Error => new DOMException('Search aborted', 'AbortError')
+
+/** The error thrown when the worker fails to respond within the timeout. */
+const timeoutError = (): Error => new DOMException('Search worker timed out', 'TimeoutError')
+
+/**
+ * Maximum time a worker request may stay in flight before it is treated as
+ * failed. A silent worker (e.g. the chunk never loads in a dev server) would
+ * otherwise leave `searchAsync` pending forever; this bound lets callers fall
+ * back to synchronous search so the local-first chat always answers.
+ */
+export const SEARCH_WORKER_TIMEOUT_MS = 3000
 
 /** Client for executing off-thread search queries via Web Workers. */
 export class SearchWorkerClient {
@@ -56,6 +69,7 @@ export class SearchWorkerClient {
     const pending = this.pendingRequests.get(id)
     if (!pending) return
     this.pendingRequests.delete(id)
+    if (pending.timer) clearTimeout(pending.timer)
     pending.cleanup?.()
     pending.reject(error)
   }
@@ -65,6 +79,7 @@ export class SearchWorkerClient {
     const pending = this.pendingRequests.get(id)
     if (!pending) return
     this.pendingRequests.delete(id)
+    if (pending.timer) clearTimeout(pending.timer)
     pending.cleanup?.()
     pending.resolve(results)
   }
@@ -133,7 +148,12 @@ export class SearchWorkerClient {
 
     return new Promise<SearchResult[]>((resolve, reject) => {
       const cleanup = this.wireAbort(id, signal)
-      this.pendingRequests.set(id, { resolve, reject, cleanup })
+      // Bound the request so a silent/broken worker can't leave callers (e.g.
+      // the chat) waiting forever; the caller falls back to sync search.
+      const timer = setTimeout(() => {
+        this.settle(id, timeoutError())
+      }, SEARCH_WORKER_TIMEOUT_MS)
+      this.pendingRequests.set(id, { resolve, reject, cleanup, timer })
       if (signal?.aborted) {
         this.settle(id, abortError())
         return
