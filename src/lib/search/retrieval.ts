@@ -103,7 +103,7 @@ const tokenize = (text: string): string[] => {
     // dropped without clobbering meaningful non-Latin content.
     for (const part of seg.segment(text)) {
       if (!part.isWordLike) continue
-      const token = part.segment.toLowerCase()
+      const token = part.segment.normalize('NFC').toLowerCase()
       // Keep English-like tokens of 3+ chars and any non-ASCII word segment
       // (Chinese/Japanese/Korean and composed scripts are meaningful at 1-2
       // characters). The English stop-word list never applies to non-ASCII.
@@ -112,8 +112,10 @@ const tokenize = (text: string): string[] => {
       }
     }
   } catch {
-    // A segmenter that throws mid-segment should be treated as unavailable so
-    // we stop retrying it and fall back silently on subsequent calls.
+    // A segmenter that throws mid-segment is broken: clear the cached instance
+    // and mark it unavailable so every later call takes the fallback path
+    // instead of reusing the failing segmenter.
+    segmenter = null
     segmenterUnavailable = true
     if (!segmenterFallbackLogged) {
       segmenterFallbackLogged = true

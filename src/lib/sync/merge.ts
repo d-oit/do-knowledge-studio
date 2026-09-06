@@ -17,8 +17,21 @@ export interface FieldConflict {
   reason: string
 }
 
+/**
+ * Canonical sortable instant for an ISO-8601 timestamp string. Lexicographic
+ * comparison of raw ISO strings is not chronological when timestamps carry
+ * timezone offsets (e.g. `2026-01-01T00:00:00+01:00` is 23:00Z, earlier than
+ * `2025-12-31T23:30:00Z`), so LWW and edit-history ordering must compare the
+ * parsed instant. Unparseable values fall back to the raw string so ordering
+ * stays deterministic.
+ */
+const timestampInstant = (value: string): string => {
+  const parsed = Date.parse(value)
+  return Number.isNaN(parsed) ? value : new Date(parsed).toISOString()
+}
+
 function isNewer(a: string, b: string): boolean {
-  return a > b
+  return timestampInstant(a) > timestampInstant(b)
 }
 
 function arraysEqual(a: unknown[], b: unknown[]): boolean {
@@ -222,13 +235,15 @@ const mergeEditHistory = (local: Claim, remote: Claim): { statement: string; edi
   const seen = new Set<string>()
   const merged: { statement: string; editedAt: string }[] = []
   for (const entry of [...(local.editHistory ?? []), ...(remote.editHistory ?? [])]) {
-    const key = `${entry.editedAt}\u0000${entry.statement}`
+    // JSON-serialized pair is injective for arbitrary strings, unlike a plain
+    // separator-based key which could collide when a value contains it.
+    const key = JSON.stringify([entry.editedAt, entry.statement])
     if (!seen.has(key)) {
       seen.add(key)
       merged.push(entry)
     }
   }
-  return merged.sort((a, b) => a.editedAt.localeCompare(b.editedAt))
+  return merged.sort((a, b) => timestampInstant(a.editedAt).localeCompare(timestampInstant(b.editedAt)))
 }
 
 /** LWW comparator timestamp for a claim: updatedAt, falling back to createdAt. */
@@ -286,10 +301,10 @@ function mergeSingleClaim(
     // keeps the earliest timestamp, updatedAt the latest, version is monotonic,
     // and editHistory is a chronological union of both trails.
     createdAt: local.createdAt && remote.createdAt
-      ? (local.createdAt < remote.createdAt ? local.createdAt : remote.createdAt)
+      ? (timestampInstant(local.createdAt) < timestampInstant(remote.createdAt) ? local.createdAt : remote.createdAt)
       : (local.createdAt ?? remote.createdAt),
     updatedAt: local.updatedAt && remote.updatedAt
-      ? (local.updatedAt > remote.updatedAt ? local.updatedAt : remote.updatedAt)
+      ? (timestampInstant(local.updatedAt) > timestampInstant(remote.updatedAt) ? local.updatedAt : remote.updatedAt)
       : (local.updatedAt ?? remote.updatedAt),
     version: Math.max(local.version ?? 1, remote.version ?? 1),
     editHistory: mergedHistory.length > 0 ? mergedHistory : undefined,

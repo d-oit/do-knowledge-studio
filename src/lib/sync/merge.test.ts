@@ -191,6 +191,22 @@ describe('mergeClaims', () => {
     expect(merged.editHistory?.map((h) => h.statement)).toEqual(['v1 wording', 'v2 wording'])
   })
 
+  it('resolves LWW by instant, not by raw ISO string, when offsets are present', () => {
+    // Lexically '2026-01-01T00:00:00+01:00' sorts after '2025-12-31T23:30:00Z',
+    // but the former is 23:00Z — an EARLIER instant. Remote (23:30Z) is newer.
+    const local = makeClaim({
+      statement: 'Local statement',
+      updatedAt: '2026-01-01T00:00:00+01:00',
+    })
+    const remote = makeClaim({
+      statement: 'Remote statement',
+      updatedAt: '2025-12-31T23:30:00Z',
+    })
+    const result = mergeClaims([local], [remote])
+    // Remote is the later instant, so it must win despite its smaller raw string.
+    expect(result.merged[0].statement).toBe('Remote statement')
+  })
+
   it('keeps distinct edit-history entries that share an edit timestamp', () => {
     // ClaimSchema allows two distinct statements to carry the same editedAt; a
     // timestamp-only de-dup key would silently drop the later valid entry.
