@@ -5,7 +5,7 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { Entity, Claim, ViewId, ChatMessage, EntityType } from './types'
 import { seedEntities, seedClaims, seedChat } from './seed-data'
-import { resetSearchCache } from '@/lib/search/retrieval'
+import { search, resetSearchCache, type SearchResult } from '@/lib/search/retrieval'
 import { searchAsync } from '@/lib/search/search-worker-client'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from './schema'
 import {
@@ -108,6 +108,26 @@ interface StudioState {
 
 /** Generates a new UUID for entities, claims, and chat messages. */
 const generateId = (): string => crypto.randomUUID()
+
+/** Builds the local assistant chat reply from BM25 results. Shared by the
+ * worker-backed async path and the synchronous fallback so both render an
+ * identical, deterministic answer (AGENTS.md: local-first, never hang the UI). */
+const buildLocalChatReply = (results: SearchResult[]): ChatMessage => {
+  const cited = results.map((r) => ({
+    entityId: r.entityId ?? r.id,
+    entityName: r.entityName ?? r.name,
+    snippet: r.snippet,
+  }))
+  return {
+    id: generateId(),
+    role: 'assistant',
+    content: results.length
+      ? `Based on ${results.length === 1 ? '1 match' : `${results.length} matches`} in your library, here is what I found. ${results[0].snippet} You can open the cited sources for full detail, or ask me to compare them.`
+      : "I could not find a direct match in your local library. Try rephrasing with keywords that appear in your entity names or descriptions, or capture a new entity first via the Editor.",
+    citations: cited,
+    timestamp: new Date().toISOString(),
+  }
+}
 
 // The default (seed) state — used on first load and as a fallback when a
 // persisted state is missing fields. Kept here so both the store initializer
@@ -305,30 +325,27 @@ export const useStudioStore = create<StudioState>()(
         return searchAsync(entities, claims, content, 5, controller.signal)
           .then((results) => {
             if (controller.signal.aborted) return
-            const cited = results.map((r) => ({
-              entityId: r.entityId ?? r.id,
-              entityName: r.entityName ?? r.name,
-              snippet: r.snippet,
-            }))
-            const reply: ChatMessage = {
-              id: generateId(),
-              role: 'assistant',
-              content: results.length
-                ? `Based on ${results.length === 1 ? '1 match' : `${results.length} matches`} in your library, here is what I found. ${results[0].snippet} You can open the cited sources for full detail, or ask me to compare them.`
-                : "I could not find a direct match in your local library. Try rephrasing with keywords that appear in your entity names or descriptions, or capture a new entity first via the Editor.",
-              citations: cited,
-              timestamp: new Date().toISOString(),
-            }
+            const reply = buildLocalChatReply(results)
             set((state) => ({ chat: [...state.chat, reply], chatLoading: false }))
           })
           .catch((err: unknown) => {
-            // Stale (aborted) sends defer chatLoading ownership to the active
-            // controller; only the active one should clear loading.
-            if (chatSendAbort === controller) {
-              set({ chatLoading: false })
-            }
+            // A stale send no longer owns chat state; the active controller owns
+            // the reply and the typing indicator.
+            if (chatSendAbort !== controller) return
+            set({ chatLoading: false })
             if (err instanceof DOMException && err.name === 'AbortError') return
-            console.error('Local chat search failed:', err)
+
+            // The worker-backed async path failed (worker error, late module
+            // load, etc.). Fall back to the synchronous engine so the local-
+            // first chat still answers instead of hanging on the indicator.
+            let results: SearchResult[] = []
+            try {
+              results = search(entities, claims, content, 5)
+            } catch (fallbackErr) {
+              console.error('Local chat synchronous fallback failed:', fallbackErr)
+            }
+            const reply = buildLocalChatReply(results)
+            set((state) => ({ chat: [...state.chat, reply], chatLoading: false }))
           })
       },
 
