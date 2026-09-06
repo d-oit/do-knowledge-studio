@@ -85,4 +85,21 @@ describe('claimToYMap / ymapToClaim', () => {
     expect(result.evidence).toBe('Some evidence')
     expect(result.source).toBe('Source A')
   })
+
+  it('preserves claim provenance fields through the round-trip', () => {
+    const claim = makeClaim({
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-02T00:00:00Z',
+      version: 4,
+      editHistory: [
+        { statement: 'First wording', editedAt: '2026-01-01T12:00:00Z' },
+        { statement: 'Revised wording', editedAt: '2026-01-02T12:00:00Z' },
+      ],
+    })
+    const map = claimToYMap(claim)
+    const result = ymapToClaim(map)
+    expect(result).toEqual(claim)
+    expect(result.version).toBe(4)
+    expect(result.editHistory).toHaveLength(2)
+  })
 })

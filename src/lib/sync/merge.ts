@@ -210,6 +210,27 @@ function mergeLinks(
   return Array.from(linkMap.values())
 }
 
+/**
+ * Merge two claim edit-history trails into a chronological, de-duplicated list.
+ *
+ * Each entry is keyed by its `editedAt` timestamp; the union is sorted oldest
+ * first so the provenance trail is never lost or reordered by a sync round-trip.
+ */
+const mergeEditHistory = (local: Claim, remote: Claim): { statement: string; editedAt: string }[] => {
+  const seen = new Set<string>()
+  const merged: { statement: string; editedAt: string }[] = []
+  for (const entry of [...(local.editHistory ?? []), ...(remote.editHistory ?? [])]) {
+    if (!seen.has(entry.editedAt)) {
+      seen.add(entry.editedAt)
+      merged.push(entry)
+    }
+  }
+  return merged.sort((a, b) => a.editedAt.localeCompare(b.editedAt))
+}
+
+/** LWW comparator timestamp for a claim: updatedAt, falling back to createdAt. */
+const claimTimestamp = (claim: Claim): string => claim.updatedAt ?? claim.createdAt ?? ''
+
 /** Merge two claim lists, resolving conflicts by timestamp and tracking field-level disagreements. */
 export function mergeClaims(
   local: Claim[],
@@ -246,15 +267,29 @@ function mergeSingleClaim(
   remote: Claim,
 ): MergeResult<Claim> {
   const conflicts: FieldConflict[] = []
+  const localTime = claimTimestamp(local)
+  const remoteTime = claimTimestamp(remote)
+  const mergedHistory = mergeEditHistory(local, remote)
 
   const merged: Claim = {
     id: local.id,
-    entityId: mergeField(local.id, 'claim', 'entityId', local.entityId, remote.entityId, local.id, remote.id, conflicts),
-    statement: mergeField(local.id, 'claim', 'statement', local.statement, remote.statement, local.id, remote.id, conflicts),
-    evidence: mergeField(local.id, 'claim', 'evidence', local.evidence, remote.evidence, local.id, remote.id, conflicts),
-    confidence: mergeField(local.id, 'claim', 'confidence', local.confidence, remote.confidence, local.id, remote.id, conflicts),
-    verification: mergeField(local.id, 'claim', 'verification', local.verification, remote.verification, local.id, remote.id, conflicts),
-    source: mergeField(local.id, 'claim', 'source', local.source, remote.source, local.id, remote.id, conflicts),
+    entityId: mergeField(local.id, 'claim', 'entityId', local.entityId, remote.entityId, localTime, remoteTime, conflicts),
+    statement: mergeField(local.id, 'claim', 'statement', local.statement, remote.statement, localTime, remoteTime, conflicts),
+    evidence: mergeField(local.id, 'claim', 'evidence', local.evidence, remote.evidence, localTime, remoteTime, conflicts),
+    confidence: mergeField(local.id, 'claim', 'confidence', local.confidence, remote.confidence, localTime, remoteTime, conflicts),
+    verification: mergeField(local.id, 'claim', 'verification', local.verification, remote.verification, localTime, remoteTime, conflicts),
+    source: mergeField(local.id, 'claim', 'source', local.source, remote.source, localTime, remoteTime, conflicts),
+    // Provenance fields are preserved rather than dropped on merge: createdAt
+    // keeps the earliest timestamp, updatedAt the latest, version is monotonic,
+    // and editHistory is a chronological union of both trails.
+    createdAt: local.createdAt && remote.createdAt
+      ? (local.createdAt < remote.createdAt ? local.createdAt : remote.createdAt)
+      : (local.createdAt ?? remote.createdAt),
+    updatedAt: local.updatedAt && remote.updatedAt
+      ? (local.updatedAt > remote.updatedAt ? local.updatedAt : remote.updatedAt)
+      : (local.updatedAt ?? remote.updatedAt),
+    version: Math.max(local.version ?? 1, remote.version ?? 1),
+    editHistory: mergedHistory.length > 0 ? mergedHistory : undefined,
   }
 
   return { merged, conflicts }

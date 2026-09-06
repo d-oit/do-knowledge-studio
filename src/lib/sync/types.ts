@@ -69,6 +69,10 @@ export function claimToYMap(claim: Claim): Record<string, unknown> {
   if (claim.source !== undefined) data.source = claim.source
   if (claim.createdAt !== undefined) data.createdAt = claim.createdAt
   if (claim.updatedAt !== undefined) data.updatedAt = claim.updatedAt
+  // Provenance must survive the sync round-trip — otherwise LWW degrades and
+  // versioning restarts after a single merge (ADR 027 §2).
+  if (claim.version !== undefined) data.version = claim.version
+  if (claim.editHistory !== undefined) data.editHistory = claim.editHistory
   return data
 }
 
@@ -84,5 +88,7 @@ export function ymapToClaim(data: Record<string, unknown>): Claim {
     source: data.source as string | undefined,
     createdAt: data.createdAt as string | undefined,
     updatedAt: data.updatedAt as string | undefined,
+    version: data.version as number | undefined,
+    editHistory: data.editHistory as Claim['editHistory'],
   }
 }
