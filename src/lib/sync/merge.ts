@@ -26,7 +26,12 @@ export interface FieldConflict {
  * stays deterministic.
  */
 const timestampInstant = (value: string): string => {
-  const parsed = Date.parse(value)
+  // A zone-less ISO timestamp (e.g. `2026-01-01T12:00:00`) would be interpreted
+  // in local time by Date.parse; treat it as UTC so comparisons stay
+  // deterministic across environments. Offset-bearing and Z-suffixed strings
+  // already carry an explicit zone and are parsed as-is.
+  const normalized = /Z$|[+-]\d{2}:?\d{2}$/.test(value) ? value : `${value}Z`
+  const parsed = Date.parse(normalized)
   return Number.isNaN(parsed) ? value : new Date(parsed).toISOString()
 }
 
