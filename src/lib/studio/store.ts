@@ -476,7 +476,9 @@ export const useStudioStore = create<StudioState>()(
 )
 
 // Selectors
-/** Returns entities filtered by search query, type, and sorted by the active sort criteria.
+/** Returns entities filtered by type and search query. When a search query is active,
+ * results are ranked by BM25 relevance score (reversed if sortDir is 'asc'); otherwise,
+ * entities are sorted by the active sort criteria (sortBy/sortDir).
  * Uses BM25 retrieval across entities and claims when a search query is present, unifying
  * relevance semantics with Chat/AI and right-panel ranked mode. */
 export const useFilteredEntities = (): Entity[] => {
