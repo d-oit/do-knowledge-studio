@@ -476,35 +476,62 @@ export const useStudioStore = create<StudioState>()(
 )
 
 // Selectors
-/** Returns entities filtered by search query, type, and sorted by the active sort criteria. */
+/** Returns entities filtered by search query, type, and sorted by the active sort criteria.
+ * Uses BM25 retrieval across entities and claims when a search query is present, unifying
+ * relevance semantics with Chat/AI and right-panel ranked mode. */
 export const useFilteredEntities = (): Entity[] => {
   const entities = useStudioStore((s) => s.entities)
+  const claims = useStudioStore((s) => s.claims)
   const searchQuery = useStudioStore((s) => s.searchQuery)
   const typeFilter = useStudioStore((s) => s.typeFilter)
   const sortBy = useStudioStore((s) => s.sortBy)
   const sortDir = useStudioStore((s) => s.sortDir)
 
   return useMemo(() => {
-    let list = entities
-    if (typeFilter !== 'all') list = list.filter((e) => e.type === typeFilter)
-    if (searchQuery.trim()) {
-      const query = searchQuery.trim().toLowerCase()
-      list = list.filter(
-        (e) =>
-          e.name.toLowerCase().includes(query) ||
-          e.description.toLowerCase().includes(query) ||
-          e.tags.some((t) => t.toLowerCase().includes(query)),
-      )
+    let list: Entity[]
+    const q = searchQuery.trim()
+
+    if (q) {
+      // Use BM25 retrieval engine across entities and claims for consistent relevance semantics
+      const results = search(entities, claims, q, Math.max(entities.length + claims.length, 100))
+      const entityMap = new Map(entities.map((e) => [e.id, e]))
+      const matched: Entity[] = []
+      const seen = new Set<string>()
+
+      for (const r of results) {
+        const id = r.type === 'entity' ? r.id : r.entityId
+        if (id && !seen.has(id)) {
+          seen.add(id)
+          const ent = entityMap.get(id)
+          if (ent) matched.push(ent)
+        }
+      }
+      list = matched
+    } else {
+      list = entities
     }
-    list = [...list].sort((a, b) => {
-      let cmp = 0
-      if (sortBy === 'name') cmp = a.name.localeCompare(b.name)
-      else if (sortBy === 'created') cmp = a.createdAt.localeCompare(b.createdAt)
-      else cmp = a.updatedAt.localeCompare(b.updatedAt)
-      return sortDir === 'asc' ? cmp : -cmp
-    })
+
+    if (typeFilter !== 'all') {
+      list = list.filter((e) => e.type === typeFilter)
+    }
+
+    // When no search query is active, apply selected sort field and direction.
+    // When a search query is active, BM25 relevance score order is preserved
+    // (reversed if sortDir === 'asc').
+    if (!q) {
+      list = [...list].sort((a, b) => {
+        let cmp = 0
+        if (sortBy === 'name') cmp = a.name.localeCompare(b.name)
+        else if (sortBy === 'created') cmp = a.createdAt.localeCompare(b.createdAt)
+        else cmp = a.updatedAt.localeCompare(b.updatedAt)
+        return sortDir === 'asc' ? cmp : -cmp
+      })
+    } else if (sortDir === 'asc') {
+      list = [...list].reverse()
+    }
+
     return list
-  }, [entities, searchQuery, typeFilter, sortBy, sortDir])
+  }, [entities, claims, searchQuery, typeFilter, sortBy, sortDir])
 }
 
 /** Computes library statistics: entity counts by type, claim totals, and recent items. */
