@@ -16,7 +16,9 @@ import {
   partializePersistedState,
 } from './hydration'
 import { buildRecoverySnapshot, persistRecoverySnapshot } from './recovery-helpers'
+import { initCrossTabSync } from './cross-tab'
 export { restoreFromRecovery } from './recovery-helpers'
+export { initCrossTabSync, stopCrossTabSync } from './cross-tab'
 
 /** Maximum number of undo history snapshots retained in memory. */
 const MAX_HISTORY = 50
@@ -530,4 +532,9 @@ export const useStats = () => {
       recent,
     }
   }, [entities, claims])
+}
+
+// Auto-start cross-tab store coordination when running in browser environments
+if (typeof window !== 'undefined') {
+  initCrossTabSync()
 }
