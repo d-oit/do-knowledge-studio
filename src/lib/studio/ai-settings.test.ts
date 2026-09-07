@@ -322,4 +322,79 @@ describe('ai-settings encryption and persistence', () => {
     expect(stored!.encryptedApiKey).toBeDefined()
     expect(stored!.encryptedApiKey).not.toBe('secret-key-abc')
   })
+
+  it('falls back to default settings when IndexedDB contains schema-invalid data', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+
+    if (!idbStores.has('settings')) idbStores.set('settings', new Map())
+    const store = idbStores.get('settings')!
+    store.set('ai-settings', { provider: 12345, model: null })
+
+    // Bypassing migration since flag is set
+    localStorageMock['dks-ls-migrated-to-idb'] = '1'
+
+    const loaded = await loadAISettings()
+    expect(loaded.provider).toBe('openrouter')
+    expect(loaded.model).toBe('openrouter/free')
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Failed to validate AI settings schema from IndexedDB:',
+      expect.anything()
+    )
+
+    consoleSpy.mockRestore()
+  })
+
+  it('fails migration and preserves legacy storage if IndexedDB read-back yields invalid data', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+
+    // Seed legacy localStorage
+    localStorageMock['dks-ai-settings'] = JSON.stringify({
+      provider: 'openrouter',
+      model: 'openrouter/free',
+    })
+
+    if (!idbStores.has('settings')) idbStores.set('settings', new Map())
+    const mockMap = idbStores.get('settings')!
+
+    // Save initial mock implementation
+    const originalSet = mockMap.set.bind(mockMap)
+    // Override set so that when idbSet puts data, we corrupt it before idbGet reads back
+    mockMap.set = (key: string, _val: unknown) => {
+      originalSet(key, { corrupt: true })
+      return mockMap
+    }
+
+    const loaded = await loadAISettings()
+    // Returns default settings because migration failed
+    expect(loaded.provider).toBe('openrouter')
+
+    // Restore the overridden set method before this test ends so the next
+    // migration test observes a pristine store (defensive even though
+    // beforeEach reinstalls the fixture).
+    mockMap.set = originalSet
+
+    // MIGRATION_KEY should NOT be set
+    expect(localStorageMock['dks-ls-migrated-to-idb']).toBeUndefined()
+    // Legacy localStorage key should NOT be deleted
+    expect(localStorageMock['dks-ai-settings']).toBeDefined()
+
+    consoleSpy.mockRestore()
+  })
+
+  it('completes migration and clears legacy storage when IndexedDB read-back succeeds', async () => {
+    localStorageMock['dks-ai-settings'] = JSON.stringify({
+      provider: 'ollama',
+      model: 'llama3',
+      augmentWithLocal: true,
+    })
+
+    const loaded = await loadAISettings()
+    expect(loaded.provider).toBe('ollama')
+    expect(loaded.model).toBe('llama3')
+
+    // MIGRATION_KEY should be set
+    expect(localStorageMock['dks-ls-migrated-to-idb']).toBe('1')
+    // Legacy storage should be removed
+    expect(localStorageMock['dks-ai-settings']).toBeUndefined()
+  })
 })

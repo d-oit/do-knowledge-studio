@@ -13,6 +13,7 @@ import {
   LinkSchema,
   TagSchema,
   PersistedEnvelopeSchema,
+  StoredSettingsSchema,
   VerificationStatusSchema,
   validateImportPayload,
   validatePersistedState,
@@ -573,5 +574,39 @@ describe('validateImportPayload', () => {
   it('accepts version 1.5', () => {
     const result = validateImportPayload({ ...payload, version: 1.5 })
     expect(result.success).toBe(true)
+  })
+})
+
+// ── StoredSettingsSchema ───────────────────────────────────────────
+
+describe('StoredSettingsSchema', () => {
+  it('accepts valid stored settings object', () => {
+    const valid = {
+      provider: 'openrouter',
+      model: 'openrouter/free',
+      encryptedApiKey: 'enc123',
+      augmentWithLocal: true,
+      ollamaCpuOnly: false,
+      allowWebResearch: false,
+      ollamaBaseUrl: 'http://localhost:11434',
+    }
+    expect(StoredSettingsSchema.parse(valid)).toEqual(valid)
+  })
+
+  it('applies defaults for missing optional boolean fields', () => {
+    const minimal = {
+      provider: 'openrouter',
+      model: 'openrouter/free',
+    }
+    const parsed = StoredSettingsSchema.parse(minimal)
+    expect(parsed.augmentWithLocal).toBe(true)
+    expect(parsed.ollamaCpuOnly).toBe(false)
+    expect(parsed.allowWebResearch).toBe(false)
+  })
+
+  it('rejects invalid field types', () => {
+    expect(() => StoredSettingsSchema.parse({ provider: 123, model: 'm' })).toThrow()
+    expect(() => StoredSettingsSchema.parse(null)).toThrow()
+    expect(() => StoredSettingsSchema.parse('invalid')).toThrow()
   })
 })

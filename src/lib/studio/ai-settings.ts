@@ -1,5 +1,6 @@
 import type { ProviderId } from '@/lib/ai/types'
 import { AppError, ErrorCode } from '@/lib/errors'
+import { StoredSettingsSchema, type ValidatedStoredSettings } from '@/lib/studio/schema'
 
 const LEGACY_STORAGE_KEY = 'dks-ai-settings'
 const CRYPTO_KEY_STORAGE = 'dks-ai-enc-key'
@@ -23,17 +24,8 @@ export interface AISettings {
   ollamaBaseUrl: string
 }
 
-/** Stored settings shape before decryption. */
-interface StoredSettings {
-  provider: string
-  model: string
-  encryptedApiKey?: string
-  apiKey?: string
-  augmentWithLocal: boolean
-  ollamaCpuOnly?: boolean
-  allowWebResearch?: boolean
-  ollamaBaseUrl?: string
-}
+/** Stored settings shape before decryption, validated by {@link StoredSettingsSchema}. */
+export type StoredSettings = ValidatedStoredSettings
 
 /** Default AI settings applied on first load. */
 const DEFAULT_SETTINGS: AISettings = {
@@ -132,7 +124,33 @@ function migrateModel(provider: AIProvider, storedModel: string): string {
   return storedModel
 }
 
-// ── Encryption (unchanged — sessionStorage for session-scoped key) ───
+/**
+ * ── AI Settings Threat Model & Security Architecture ───────────────────────
+ *
+ * 1. Storage Layers:
+ *    - IndexedDB (`dks-ai-settings-db` / `settings` store): Persists AI settings
+ *      (provider, model, local model flags) plus the API key credential. New
+ *      writes store the credential as an AES-GCM encrypted value
+ *      (`encryptedApiKey`). Records migrated from the legacy localStorage key
+ *      are written through unchanged and may still carry a plaintext `apiKey`
+ *      until the user re-enters the credential — both shapes are accepted by
+ *      {@link StoredSettingsSchema}.
+ *    - `sessionStorage` (`dks-ai-enc-key`): Holds the raw base64-encoded symmetric AES-GCM (256-bit)
+ *      encryption key used to encrypt/decrypt API key credentials at rest.
+ *
+ * 2. Threat Model & Security Boundaries:
+ *    - Session Lifecycle: `sessionStorage` is strictly scoped to the active browser tab/window.
+ *      Closing the tab destroys the encryption key in `sessionStorage`.
+ *    - Data at Rest: After a credential has been (re-)entered, an offline attacker inspecting
+ *      the IndexedDB store after session termination sees only AES-GCM ciphertext without the
+ *      key, preventing API key extraction from disk. Legacy plaintext `apiKey` records remain
+ *      readable at rest until the credential is re-entered and re-encrypted.
+ *    - In-Session Threat Boundary (XSS): Same-origin scripts executing in the active tab session
+ *      can access `sessionStorage` and WebCrypto APIs. Imported CryptoKeys use `extractable: false`
+ *      in memory, but `sessionStorage` retains the base64 seed key for page reloads within the same session.
+ *    - Multi-Tab Isolation: `sessionStorage` is per-tab. Opening a new tab creates an isolated context
+ *      where decryption fails gracefully unless key credentials are re-entered or transferred explicitly.
+ */
 
 async function getOrCreateEncryptionKey(): Promise<CryptoKey> {
   const stored = sessionStorage.getItem(CRYPTO_KEY_STORAGE)
@@ -180,13 +198,28 @@ async function migrateFromLocalStorage(): Promise<StoredSettings | null> {
   try {
     const raw = localStorage.getItem(LEGACY_STORAGE_KEY)
     if (!raw) return null
-    const stored = JSON.parse(raw) as StoredSettings
+    const parsed: unknown = JSON.parse(raw)
+    const parseResult = StoredSettingsSchema.safeParse(parsed)
+    if (!parseResult.success) {
+      console.error('localStorage settings schema validation failed:', parseResult.error)
+      return null
+    }
+    const stored = parseResult.data
     // Persist to IndexedDB
     await idbSet(SETTINGS_RECORD_KEY, stored)
-    // Mark migration done and clean up localStorage
+
+    // Verify subsequent read-back from IndexedDB before marking migration complete
+    const readBack = await idbGet<unknown>(SETTINGS_RECORD_KEY)
+    const readBackResult = StoredSettingsSchema.safeParse(readBack)
+    if (!readBackResult.success) {
+      console.error('IndexedDB read-back validation failed after migration; preserving legacy storage')
+      return null
+    }
+
+    // Mark migration done and clean up localStorage only after confirmed successful read-back
     localStorage.setItem(MIGRATION_KEY, '1')
     localStorage.removeItem(LEGACY_STORAGE_KEY)
-    return stored
+    return readBackResult.data
   } catch (error) {
     console.error('localStorage→IndexedDB migration failed:', error instanceof Error ? error.message : error)
     return null
@@ -208,9 +241,14 @@ export async function loadAISettings(): Promise<AISettings> {
       }
     }
 
-    const stored = await idbGet<StoredSettings>(SETTINGS_RECORD_KEY)
-    if (!stored) return DEFAULT_SETTINGS
-    return applyStoredSettings(stored)
+    const rawStored = await idbGet<unknown>(SETTINGS_RECORD_KEY)
+    if (!rawStored) return DEFAULT_SETTINGS
+    const parseResult = StoredSettingsSchema.safeParse(rawStored)
+    if (!parseResult.success) {
+      console.error('Failed to validate AI settings schema from IndexedDB:', parseResult.error)
+      return DEFAULT_SETTINGS
+    }
+    return applyStoredSettings(parseResult.data)
   } catch (error) {
     console.error('Failed to load AI settings:', error instanceof Error ? error.message : error)
     return DEFAULT_SETTINGS
@@ -227,7 +265,7 @@ async function applyStoredSettings(stored: StoredSettings): Promise<AISettings> 
     provider,
     model,
     apiKey,
-    augmentWithLocal: stored.augmentWithLocal,
+    augmentWithLocal: stored.augmentWithLocal ?? true,
     ollamaCpuOnly: stored.ollamaCpuOnly ?? false,
     allowWebResearch: stored.allowWebResearch ?? false,
     ollamaBaseUrl: stored.ollamaBaseUrl ?? DEFAULT_SETTINGS.ollamaBaseUrl,
@@ -248,7 +286,11 @@ export async function saveAISettings(settings: AISettings): Promise<void> {
       allowWebResearch: settings.allowWebResearch,
       ollamaBaseUrl: settings.ollamaBaseUrl,
     }
-    await idbSet(SETTINGS_RECORD_KEY, toStore)
+    const parseResult = StoredSettingsSchema.safeParse(toStore)
+    if (!parseResult.success) {
+      throw new AppError(ErrorCode.STORAGE_WRITE_FAILED, 'Invalid AI settings schema', { cause: parseResult.error })
+    }
+    await idbSet(SETTINGS_RECORD_KEY, parseResult.data)
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     console.error('Failed to save AI settings:', message)
