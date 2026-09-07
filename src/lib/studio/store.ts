@@ -16,9 +16,7 @@ import {
   partializePersistedState,
 } from './hydration'
 import { buildRecoverySnapshot, persistRecoverySnapshot } from './recovery-helpers'
-import { initCrossTabSync } from './cross-tab'
 export { restoreFromRecovery } from './recovery-helpers'
-export { initCrossTabSync, stopCrossTabSync } from './cross-tab'
 
 /** Maximum number of undo history snapshots retained in memory. */
 const MAX_HISTORY = 50
@@ -534,7 +532,16 @@ export const useStats = () => {
   }, [entities, claims])
 }
 
-// Auto-start cross-tab store coordination when running in browser environments
+// Auto-start cross-tab store coordination when running in browser environments.
+// The dynamic import keeps the store<->cross-tab module graph acyclic: cross-tab.ts
+// reads this store at module scope, so a static import here would re-enter this
+// module mid-evaluation and let cross-tab's module-scoped bindings stay in the
+// temporal dead zone whenever cross-tab is the entry module. Deferring with a
+// promise also guarantees every module body has evaluated before listeners attach.
 if (typeof window !== 'undefined') {
-  initCrossTabSync()
+  void import('./cross-tab')
+    .then(({ initCrossTabSync }) => initCrossTabSync())
+    .catch((error: unknown) => {
+      console.error('Failed to start cross-tab store coordination:', error)
+    })
 }

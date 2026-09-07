@@ -160,6 +160,48 @@ describe('cross-tab store coordination', () => {
     expect(applied).toBe(false)
   })
 
+  it('applies remote canvas fields even when entities and claims are unchanged', () => {
+    const remoteGraph = {
+      nodes: [{ id: 'ent-b', label: 'Node B', type: 'concept' as const, x: 0, y: 0 }],
+      edges: [],
+    }
+    const remoteTags = [{ id: 'tag-1', name: 'Important', color: '#ff0000' }]
+
+    useStudioStore.setState({ entities: [ENTITY_B], claims: [CLAIM_B], graph: undefined, tags: undefined })
+
+    const applied = applyRemoteEnvelope(
+      {
+        entities: [ENTITY_B],
+        claims: [CLAIM_B],
+        graph: remoteGraph,
+        tags: remoteTags,
+      },
+      'tab-a-origin',
+    )
+
+    expect(applied).toBe(true)
+    expect(useStudioStore.getState().graph).toEqual(remoteGraph)
+    expect(useStudioStore.getState().tags).toEqual(remoteTags)
+  })
+
+  it('ignores redundant envelopes whose canvas fields also match local state', () => {
+    const remoteGraph = {
+      nodes: [{ id: 'ent-b', label: 'Node B', type: 'concept' as const, x: 0, y: 0 }],
+      edges: [],
+    }
+
+    useStudioStore.setState({ entities: [ENTITY_A], claims: [CLAIM_A], graph: remoteGraph })
+
+    const matchingPayload = {
+      entities: [ENTITY_A],
+      claims: [CLAIM_A],
+      graph: remoteGraph,
+    }
+
+    const applied = applyRemoteEnvelope(matchingPayload, 'tab-a-origin')
+    expect(applied).toBe(false)
+  })
+
   it('manages isApplyingRemoteUpdate flag state during remote application', () => {
     expect(getIsApplyingRemoteUpdate()).toBe(false)
 
@@ -183,10 +225,12 @@ describe('cross-tab store coordination', () => {
       constructor(name: string) {
         this.name = name
       }
-      postMessage(msg: unknown) {
+      // Arrow properties so the class-methods-use-this lint does not flag the
+      // mock methods: they intentionally delegate to the outer vi.fn spies.
+      postMessage = (msg: unknown): void => {
         postMessageMock(msg)
       }
-      close() {
+      close = (): void => {
         closeMock()
       }
     }
@@ -238,5 +282,81 @@ describe('cross-tab store coordination', () => {
     expect(current).toHaveLength(2)
 
     addEventListenerSpy.mockRestore()
+  })
+
+  it('propagates deletions broadcast by another tab', () => {
+    useStudioStore.setState({ entities: [ENTITY_A, ENTITY_B], claims: [CLAIM_A, CLAIM_B] })
+
+    const capturedChannels: FakeBroadcastChannel[] = []
+    class FakeBroadcastChannel {
+      onmessage: ((event: MessageEvent) => void) | null = null
+      constructor() {
+        capturedChannels.push(this)
+      }
+      close = (): void => undefined
+    }
+    vi.stubGlobal('BroadcastChannel', FakeBroadcastChannel)
+
+    initCrossTabSync()
+    const fakeChannel = capturedChannels[0]
+    expect(fakeChannel?.onmessage).not.toBeNull()
+
+    fakeChannel?.onmessage?.({
+      data: {
+        origin: 'tab-a-origin',
+        payload: {
+          entities: [ENTITY_B],
+          claims: [CLAIM_B],
+        },
+        deletedEntityIds: ['ent-a'],
+        deletedClaimIds: ['claim-a'],
+        timestamp: Date.now(),
+      },
+    } as MessageEvent)
+
+    const state = useStudioStore.getState()
+    expect(state.entities.map((entity) => entity.id)).toEqual(['ent-b'])
+    expect(state.claims.map((claim) => claim.id)).toEqual(['claim-b'])
+
+    vi.unstubAllGlobals()
+  })
+
+  it('keeps local items updated after the remote deletion was sent', () => {
+    const recreatedEntity = { ...ENTITY_A, updatedAt: new Date(Date.now() + 60_000).toISOString() }
+    const recreatedClaim = { ...CLAIM_A, updatedAt: new Date(Date.now() + 60_000).toISOString() }
+    useStudioStore.setState({ entities: [recreatedEntity], claims: [recreatedClaim] })
+
+    const capturedChannels: FakeBroadcastChannel[] = []
+    class FakeBroadcastChannel {
+      onmessage: ((event: MessageEvent) => void) | null = null
+      constructor() {
+        capturedChannels.push(this)
+      }
+      close = (): void => undefined
+    }
+    vi.stubGlobal('BroadcastChannel', FakeBroadcastChannel)
+
+    initCrossTabSync()
+
+    // Remote tab deleted the items before the local re-creation landed.
+    const fakeChannel = capturedChannels[0]
+    fakeChannel?.onmessage?.({
+      data: {
+        origin: 'tab-a-origin',
+        payload: {
+          entities: [],
+          claims: [],
+        },
+        deletedEntityIds: ['ent-a'],
+        deletedClaimIds: ['claim-a'],
+        timestamp: Date.now(),
+      },
+    } as MessageEvent)
+
+    const state = useStudioStore.getState()
+    expect(state.entities.map((entity) => entity.id)).toEqual(['ent-a'])
+    expect(state.claims.map((claim) => claim.id)).toEqual(['claim-a'])
+
+    vi.unstubAllGlobals()
   })
 })

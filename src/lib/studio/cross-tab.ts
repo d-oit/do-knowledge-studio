@@ -2,45 +2,234 @@
  * Cross-tab store coordination module (Plan 134 F4 / ADR 028).
  *
  * Listens for cross-tab state updates via `BroadcastChannel` and window `storage`
- * events. Incoming persistence envelopes are re-validated with {@link sanitizeHydration}
- * and merged field-by-field using {@link mergeEntities} and {@link mergeClaims}
- * to prevent LWW whole-blob clobbering when multiple tabs edit the same corpus.
+ * events. Incoming persistence envelopes are re-validated with
+ * {@link sanitizeHydration} and merged field-by-field using {@link mergeEntities}
+ * and {@link mergeClaims} to prevent LWW whole-blob clobbering when multiple
+ * tabs edit the same corpus.
+ *
+ * Deletions propagate over `BroadcastChannel` through per-message deleted-id
+ * lists: each broadcast diffs the local change and carries the ids that just
+ * disappeared, and a receiving tab drops those ids (unless the local item was
+ * updated after the broadcast was sent). Plain `storage` snapshots carry no
+ * tombstones — an absent id is indistinguishable from one never seen — so they
+ * union-merge and never resurrect items deleted in the sender.
  */
 
 import { useStudioStore } from './store'
 import { STUDIO_STORAGE_KEY, sanitizeHydration, partializePersistedState } from './hydration'
 import { mergeEntities, mergeClaims } from '../sync/merge'
 import type { Entity, Claim } from './types'
+import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from './schema'
 
 /** BroadcastChannel name for cross-tab store synchronization. */
 export const STUDIO_CROSS_TAB_CHANNEL = 'do-knowledge-studio-crosstab'
 
-/** Unique identifier generated per tab window instance to prevent self-echoes. */
-export const TAB_ORIGIN_ID =
-  typeof crypto !== 'undefined' && crypto.randomUUID
-    ? crypto.randomUUID()
-    : Math.random().toString(36).substring(2)
+/** Optional canvas fields a remote envelope may carry alongside the corpus. */
+interface RemoteCanvasFields {
+  graph?: ValidatedGraph
+  mindMap?: ValidatedMindMap
+  links?: ValidatedLink[]
+  tags?: ValidatedTag[]
+}
+
+/** Payload broadcast to other tabs by {@link initCrossTabSync}. */
+interface CrossTabMessage {
+  origin?: string
+  payload?: unknown
+  /** Send time (ms epoch) used to arbitrate re-created items against deletions. */
+  timestamp?: number
+  /** Ids deleted from the sender's corpus by the change being broadcast. */
+  deletedEntityIds?: readonly string[]
+  deletedClaimIds?: readonly string[]
+}
+
+/** Shape of the studio store state as read through {@link useStudioStore}. */
+type StoreSnapshot = ReturnType<typeof useStudioStore.getState>
 
 let broadcastChannel: BroadcastChannel | null = null
 let unsubscribeStore: (() => void) | null = null
 let storageEventListener: ((event: StorageEvent) => void) | null = null
 let isApplyingRemoteUpdate = false
+let fallbackOriginCounter = 0
 
 /** Returns whether a remote cross-tab update is currently being applied to the store. */
 export const getIsApplyingRemoteUpdate = (): boolean => isApplyingRemoteUpdate
 
-function areEntitiesEqual(a: Entity[], b: Entity[]): boolean {
-  if (a.length !== b.length) return false
-  return JSON.stringify(a) === JSON.stringify(b)
+/**
+ * Builds a per-tab-session origin id without `Math.random`: prefers Web Crypto
+ * `randomUUID`, falls back to `getRandomValues`, then to a timestamp plus a
+ * monotonic counter for non-secure contexts without Web Crypto.
+ */
+const generateTabOriginId = (): string => {
+  const webCrypto = globalThis.crypto
+  if (webCrypto && typeof webCrypto.randomUUID === 'function') {
+    return webCrypto.randomUUID()
+  }
+  if (webCrypto && typeof webCrypto.getRandomValues === 'function') {
+    const randomValues = new Uint32Array(4)
+    webCrypto.getRandomValues(randomValues)
+    return Array.from(randomValues, (value) => value.toString(16).padStart(8, '0')).join('-')
+  }
+  fallbackOriginCounter += 1
+  const nowMs = typeof performance !== 'undefined' ? performance.now() : 0
+  return `${Date.now().toString(36)}-${Math.floor(nowMs).toString(36)}-${fallbackOriginCounter.toString(36)}`
 }
 
-function areClaimsEqual(a: Claim[], b: Claim[]): boolean {
-  if (a.length !== b.length) return false
-  return JSON.stringify(a) === JSON.stringify(b)
+/** Unique identifier generated per tab window instance to prevent self-echoes. */
+export const TAB_ORIGIN_ID = generateTabOriginId()
+
+/** Structural equality for persisted arrays (objects compare by serialized value). */
+const arraysEqual = (left: readonly unknown[], right: readonly unknown[]): boolean =>
+  left.length === right.length && JSON.stringify(left) === JSON.stringify(right)
+
+/** Structural inequality for a single optional persisted field. */
+const jsonChanged = <T,>(local: T | undefined, remote: T | undefined): boolean =>
+  remote !== undefined && JSON.stringify(local) !== JSON.stringify(remote)
+
+/** Ids of items present in `previous` but absent in `next` (the local deletions). */
+const removedIds = <T extends { id: string }>(previous: readonly T[], next: readonly T[]): string[] => {
+  const nextIds = new Set(next.map((item) => item.id))
+  const removed: string[] = []
+  for (const item of previous) {
+    if (!nextIds.has(item.id)) {
+      removed.push(item.id)
+    }
+  }
+  return removed
 }
 
-/** Processes a validated incoming remote slice and merges it into the local store. */
-export function applyRemoteEnvelope(payload: unknown, origin?: string): boolean {
+/** Whether an item was last written after the given delete-broadcast time. */
+const updatedAfter = (item: { updatedAt?: string; createdAt?: string }, timestamp: number): boolean => {
+  const lastWrite = item.updatedAt ?? item.createdAt
+  if (!lastWrite) return false
+  const parsed = Date.parse(lastWrite)
+  return !Number.isNaN(parsed) && parsed > timestamp
+}
+
+/** Drops local items a remote tab reports as deleted, unless re-created later. */
+const withoutRemoteDeletes = <T extends { id: string; updatedAt?: string; createdAt?: string }>(
+  items: readonly T[],
+  deletedIds: readonly string[],
+  timestamp: number,
+): T[] => {
+  if (deletedIds.length === 0) {
+    return [...items]
+  }
+  const deleted = new Set(deletedIds)
+  return items.filter((item) => !deleted.has(item.id) || updatedAfter(item, timestamp))
+}
+
+/** Outcome of a corpus merge: merged lists plus per-list change flags. */
+interface CorpusMerge {
+  entities: Entity[]
+  claims: Claim[]
+  entitiesChanged: boolean
+  claimsChanged: boolean
+}
+
+/** Field-level merge of the remote corpus against local state, deletions applied. */
+const mergeCorpus = (
+  currentEntities: readonly Entity[],
+  currentClaims: readonly Claim[],
+  remoteEntities: readonly Entity[],
+  remoteClaims: readonly Claim[],
+  deletedEntityIds: readonly string[],
+  deletedClaimIds: readonly string[],
+  timestamp: number,
+): CorpusMerge => {
+  const localEntities = withoutRemoteDeletes(currentEntities, deletedEntityIds, timestamp)
+  const localClaims = withoutRemoteDeletes(currentClaims, deletedClaimIds, timestamp)
+  const mergedEntities = mergeEntities([...localEntities], [...remoteEntities]).merged
+  const mergedClaims = mergeClaims([...localClaims], [...remoteClaims]).merged
+  return {
+    entities: mergedEntities,
+    claims: mergedClaims,
+    entitiesChanged: !arraysEqual(currentEntities, mergedEntities),
+    claimsChanged: !arraysEqual(currentClaims, mergedClaims),
+  }
+}
+
+/** Whether any optional canvas field in the remote envelope differs from local. */
+const canvasFieldsChanged = (current: StoreSnapshot, remote: RemoteCanvasFields): boolean =>
+  jsonChanged(current.graph, remote.graph) ||
+  jsonChanged(current.mindMap, remote.mindMap) ||
+  jsonChanged(current.links, remote.links) ||
+  jsonChanged(current.tags, remote.tags)
+
+const setGraphIfChanged = (
+  patch: Partial<StoreSnapshot>,
+  local: ValidatedGraph | undefined,
+  remote: ValidatedGraph | undefined,
+): void => {
+  if (jsonChanged(local, remote)) {
+    patch.graph = remote
+  }
+}
+
+const setMindMapIfChanged = (
+  patch: Partial<StoreSnapshot>,
+  local: ValidatedMindMap | undefined,
+  remote: ValidatedMindMap | undefined,
+): void => {
+  if (jsonChanged(local, remote)) {
+    patch.mindMap = remote
+  }
+}
+
+const setLinksIfChanged = (
+  patch: Partial<StoreSnapshot>,
+  local: ValidatedLink[] | undefined,
+  remote: ValidatedLink[] | undefined,
+): void => {
+  if (jsonChanged(local, remote)) {
+    patch.links = remote
+  }
+}
+
+const setTagsIfChanged = (
+  patch: Partial<StoreSnapshot>,
+  local: ValidatedTag[] | undefined,
+  remote: ValidatedTag[] | undefined,
+): void => {
+  if (jsonChanged(local, remote)) {
+    patch.tags = remote
+  }
+}
+
+/** Builds the partial store update that applies an accepted remote envelope. */
+const buildStatePatch = (
+  current: StoreSnapshot,
+  merge: CorpusMerge,
+  remote: RemoteCanvasFields,
+): Partial<StoreSnapshot> => {
+  const patch: Partial<StoreSnapshot> = {}
+  const corpusChanged = merge.entitiesChanged || merge.claimsChanged
+  if (merge.entitiesChanged) {
+    patch.entities = merge.entities
+  }
+  if (merge.claimsChanged) {
+    patch.claims = merge.claims
+  }
+  if (corpusChanged) {
+    // Rebase the undo baseline so a remote apply can never be undone away.
+    patch.entityHistory = [merge.entities.map((entity) => ({ ...entity }))]
+    patch.historyIndex = 0
+  }
+  setGraphIfChanged(patch, current.graph, remote.graph)
+  setMindMapIfChanged(patch, current.mindMap, remote.mindMap)
+  setLinksIfChanged(patch, current.links, remote.links)
+  setTagsIfChanged(patch, current.tags, remote.tags)
+  return patch
+}
+
+/** Applies a validated remote slice; returns whether the store was updated. */
+const applyRemoteMessage = (
+  payload: unknown,
+  origin: string | undefined,
+  deletedEntityIds: readonly string[],
+  deletedClaimIds: readonly string[],
+  timestamp: number,
+): boolean => {
   if (origin === TAB_ORIGIN_ID) {
     return false
   }
@@ -51,51 +240,106 @@ export function applyRemoteEnvelope(payload: unknown, origin?: string): boolean 
   }
 
   const current = useStudioStore.getState()
-  const remoteEntities = verdict.data.entities ?? []
-  const remoteClaims = verdict.data.claims ?? []
-
-  const entityResult = mergeEntities(current.entities, remoteEntities)
-  const claimResult = mergeClaims(current.claims, remoteClaims)
-
-  const entitiesChanged = !areEntitiesEqual(current.entities, entityResult.merged)
-  const claimsChanged = !areClaimsEqual(current.claims, claimResult.merged)
-
-  if (!entitiesChanged && !claimsChanged) {
+  const merge = mergeCorpus(
+    current.entities,
+    current.claims,
+    verdict.data.entities ?? [],
+    verdict.data.claims ?? [],
+    deletedEntityIds,
+    deletedClaimIds,
+    timestamp,
+  )
+  const changed = merge.entitiesChanged || merge.claimsChanged || canvasFieldsChanged(current, verdict.data)
+  if (!changed) {
     return false
   }
 
   isApplyingRemoteUpdate = true
   try {
-    useStudioStore.setState({
-      entities: entityResult.merged,
-      claims: claimResult.merged,
-      entityHistory: [entityResult.merged.map((e) => ({ ...e }))],
-      historyIndex: 0,
-      ...(verdict.data.graph !== undefined ? { graph: verdict.data.graph } : {}),
-      ...(verdict.data.mindMap !== undefined ? { mindMap: verdict.data.mindMap } : {}),
-      ...(verdict.data.links !== undefined ? { links: verdict.data.links } : {}),
-      ...(verdict.data.tags !== undefined ? { tags: verdict.data.tags } : {}),
-    })
+    useStudioStore.setState(buildStatePatch(current, merge, verdict.data))
     return true
   } finally {
     isApplyingRemoteUpdate = false
   }
 }
 
-/** Broadcasts the current persisted slice to other tabs. */
-function broadcastLocalStoreChange(state: ReturnType<typeof useStudioStore.getState>): void {
-  if (isApplyingRemoteUpdate) return
-  if (!broadcastChannel) return
+/** Processes a validated incoming remote slice and merges it into the local store. */
+export const applyRemoteEnvelope = (payload: unknown, origin?: string): boolean =>
+  applyRemoteMessage(payload, origin, [], [], Date.now())
+
+/** Broadcasts the current persisted slice plus locally-deleted ids to other tabs. */
+const broadcastLocalStoreChange = (
+  state: StoreSnapshot,
+  deleted: { deletedEntityIds: readonly string[]; deletedClaimIds: readonly string[] },
+): void => {
+  if (isApplyingRemoteUpdate || broadcastChannel === null) {
+    return
+  }
 
   try {
-    const payload = partializePersistedState(state)
-    broadcastChannel.postMessage({
+    const message: CrossTabMessage = {
       origin: TAB_ORIGIN_ID,
-      payload,
+      payload: partializePersistedState(state),
       timestamp: Date.now(),
-    })
-  } catch (err) {
-    console.warn('Failed to broadcast cross-tab store update:', err)
+      deletedEntityIds: [...deleted.deletedEntityIds],
+      deletedClaimIds: [...deleted.deletedClaimIds],
+    }
+    broadcastChannel.postMessage(message)
+  } catch (error) {
+    console.warn('Failed to broadcast cross-tab store update:', error)
+  }
+}
+
+/** Handles one inbound `BroadcastChannel` message. */
+const handleChannelMessage = (message: CrossTabMessage): void => {
+  const { origin, payload, deletedEntityIds, deletedClaimIds, timestamp } = message
+  if (payload === undefined) {
+    return
+  }
+  applyRemoteMessage(payload, origin, deletedEntityIds ?? [], deletedClaimIds ?? [], timestamp ?? Date.now())
+}
+
+/** Attaches the `BroadcastChannel` listener that receives remote envelopes. */
+const setupBroadcastChannel = (): void => {
+  if (typeof BroadcastChannel === 'undefined') {
+    return
+  }
+  try {
+    broadcastChannel = new BroadcastChannel(STUDIO_CROSS_TAB_CHANNEL)
+    broadcastChannel.onmessage = (event: MessageEvent<CrossTabMessage>) => {
+      if (!event.data || typeof event.data !== 'object') {
+        return
+      }
+      handleChannelMessage(event.data)
+    }
+  } catch (error) {
+    broadcastChannel = null
+    console.warn('Failed to open cross-tab BroadcastChannel:', error)
+  }
+}
+
+/** Unwraps a zustand persist envelope ({ state, version }) if present. */
+const unwrapPersistEnvelope = (parsed: unknown): unknown => {
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return parsed
+  }
+  return 'state' in parsed ? (parsed as { state: unknown }).state : parsed
+}
+
+/** Builds the listener that applies localStorage writes from other tabs. */
+const createStorageEventListener = (): ((event: StorageEvent) => void) => {
+  return (event: StorageEvent) => {
+    if (event.key !== STUDIO_STORAGE_KEY || event.newValue === null) {
+      return
+    }
+    try {
+      const parsed: unknown = JSON.parse(event.newValue)
+      applyRemoteEnvelope(unwrapPersistEnvelope(parsed))
+    } catch (error) {
+      // A cross-tab write can be observed mid-flight; the next write (or the
+      // BroadcastChannel message for the same change) carries the full state.
+      console.warn('Ignored unreadable cross-tab storage event:', error)
+    }
   }
 }
 
@@ -105,61 +349,37 @@ function broadcastLocalStoreChange(state: ReturnType<typeof useStudioStore.getSt
  * Subscribes to `BroadcastChannel` and `window` 'storage' events, as well as
  * local Zustand store updates, maintaining passive field-level sync across tabs.
  */
-export function initCrossTabSync(): () => void {
+export const initCrossTabSync = (): (() => void) => {
   stopCrossTabSync()
 
   if (typeof window === 'undefined') {
     return () => undefined
   }
 
-  // Setup BroadcastChannel if supported
-  if (typeof BroadcastChannel !== 'undefined') {
-    try {
-      broadcastChannel = new BroadcastChannel(STUDIO_CROSS_TAB_CHANNEL)
-      broadcastChannel.onmessage = (event: MessageEvent<{ origin?: string; payload?: unknown }>) => {
-        if (!event.data || typeof event.data !== 'object') return
-        const { origin, payload } = event.data
-        if (payload) {
-          applyRemoteEnvelope(payload, origin)
-        }
-      }
-    } catch {
-      broadcastChannel = null
-    }
-  }
-
-  // Setup window 'storage' listener
-  storageEventListener = (event: StorageEvent) => {
-    if (event.key !== STUDIO_STORAGE_KEY || !event.newValue) return
-    try {
-      const parsed = JSON.parse(event.newValue)
-      // Zustand persist wraps data in { state, version }
-      const payload = parsed && typeof parsed === 'object' && 'state' in parsed ? parsed.state : parsed
-      applyRemoteEnvelope(payload)
-    } catch {
-      // Ignore unparseable storage events
-    }
-  }
+  setupBroadcastChannel()
+  storageEventListener = createStorageEventListener()
   window.addEventListener('storage', storageEventListener)
 
-  // Subscribe to local Zustand store changes
-  let prevEntities = useStudioStore.getState().entities
-  let prevClaims = useStudioStore.getState().claims
-
-  unsubscribeStore = useStudioStore.subscribe((state) => {
-    if (isApplyingRemoteUpdate) return
-    if (state.entities !== prevEntities || state.claims !== prevClaims) {
-      prevEntities = state.entities
-      prevClaims = state.claims
-      broadcastLocalStoreChange(state)
+  // Subscribe to local Zustand store changes. The persisted corpus is diffed
+  // against the previous state so deletions ride along with the snapshot.
+  unsubscribeStore = useStudioStore.subscribe((state, previous) => {
+    if (isApplyingRemoteUpdate) {
+      return
     }
+    if (state.entities === previous.entities && state.claims === previous.claims) {
+      return
+    }
+    broadcastLocalStoreChange(state, {
+      deletedEntityIds: removedIds(previous.entities, state.entities),
+      deletedClaimIds: removedIds(previous.claims, state.claims),
+    })
   })
 
   return stopCrossTabSync
 }
 
 /** Tears down cross-tab store listeners and channels. */
-export function stopCrossTabSync(): void {
+export const stopCrossTabSync = (): void => {
   if (unsubscribeStore) {
     unsubscribeStore()
     unsubscribeStore = null
