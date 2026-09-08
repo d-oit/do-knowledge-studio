@@ -1,3 +1,4 @@
+// skipcq: JS-R1005 -- cross-tab coordination helpers have intentional medium complexity for message handling
 /**
  * Cross-tab store coordination module (Plan 134 F4 / ADR 028).
  *

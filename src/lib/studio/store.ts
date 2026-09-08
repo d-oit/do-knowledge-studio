@@ -539,6 +539,7 @@ export const useStats = () => {
 // temporal dead zone whenever cross-tab is the entry module. Deferring with a
 // promise also guarantees every module body has evaluated before listeners attach.
 if (typeof window !== 'undefined') {
+  // skipcq: JS-0098 -- void is required for Codacy no-floating-promises on fire-and-forget import
   void import('./cross-tab')
     .then(({ initCrossTabSync }) => initCrossTabSync())
     .catch((error: unknown) => {

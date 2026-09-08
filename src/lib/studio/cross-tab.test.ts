@@ -1,3 +1,4 @@
+// skipcq: JS-0105 -- mock BroadcastChannel class methods intentionally delegate to vi.fn spies without using this
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { useStudioStore } from './store'
 import {

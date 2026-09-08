@@ -1,3 +1,4 @@
+// skipcq: JS-R1005 -- hydration sanitizer complexity is intentional for Zod validation
 /**
  * Persistence hydration pipeline (ADR 028 §4).
  *
