@@ -195,8 +195,8 @@ export type ValidatedPersistedEnvelope = z.infer<typeof PersistedEnvelopeSchema>
 
 /** Zod schema validating stored AI provider settings before decryption. */
 export const StoredSettingsSchema = z.object({
-  provider: z.string(),
-  model: z.string(),
+  provider: z.string().min(1),
+  model: z.string().min(1),
   encryptedApiKey: z.string().optional(),
   apiKey: z.string().optional(),
   augmentWithLocal: z.boolean().optional().default(true),

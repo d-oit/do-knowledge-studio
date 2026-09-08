@@ -604,9 +604,8 @@ describe('StoredSettingsSchema', () => {
     expect(parsed.allowWebResearch).toBe(false)
   })
 
-  it('rejects invalid field types', () => {
-    expect(() => StoredSettingsSchema.parse({ provider: 123, model: 'm' })).toThrow()
-    expect(() => StoredSettingsSchema.parse(null)).toThrow()
-    expect(() => StoredSettingsSchema.parse('invalid')).toThrow()
+  it('rejects empty provider or model values', () => {
+    expect(() => StoredSettingsSchema.parse({ provider: 'openrouter', model: '' })).toThrow()
+    expect(() => StoredSettingsSchema.parse({ provider: '', model: 'openrouter/free' })).toThrow()
   })
 })

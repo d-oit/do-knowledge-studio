@@ -135,12 +135,14 @@ function migrateModel(provider: AIProvider, storedModel: string): string {
  *      are written through unchanged and may still carry a plaintext `apiKey`
  *      until the user re-enters the credential — both shapes are accepted by
  *      {@link StoredSettingsSchema}.
- *    - `sessionStorage` (`dks-ai-enc-key`): Holds the raw base64-encoded symmetric AES-GCM (256-bit)
- *      encryption key used to encrypt/decrypt API key credentials at rest.
- *
- * 2. Threat Model & Security Boundaries:
- *    - Session Lifecycle: `sessionStorage` is strictly scoped to the active browser tab/window.
- *      Closing the tab destroys the encryption key in `sessionStorage`.
+ *    - Session Lifecycle: `sessionStorage` is scoped to the top-level browsing context (tab/window),
+ *      not the whole browser session. Closing the tab destroys the encryption key in `sessionStorage`.
+ *      A tab spawned BY an opener — `window.open()` or `target="_blank"` without `rel="noopener"` —
+ *      starts with a copy of the opener's `sessionStorage` (per the HTML spec), so such a tab CAN
+ *      decrypt the shared IndexedDB ciphertext. Tabs opened without an opener (fresh navigation,
+ *      `rel="noopener"`/`rel="noreferrer"`) start with an empty session and decryption fails
+ *      gracefully: the key must be re-entered. External release links in this app use
+ *      `rel="noreferrer"`, which implies `noopener`, so they never copy the key.
  *    - Data at Rest: After a credential has been (re-)entered, an offline attacker inspecting
  *      the IndexedDB store after session termination sees only AES-GCM ciphertext without the
  *      key, preventing API key extraction from disk. Legacy plaintext `apiKey` records remain
@@ -148,8 +150,10 @@ function migrateModel(provider: AIProvider, storedModel: string): string {
  *    - In-Session Threat Boundary (XSS): Same-origin scripts executing in the active tab session
  *      can access `sessionStorage` and WebCrypto APIs. Imported CryptoKeys use `extractable: false`
  *      in memory, but `sessionStorage` retains the base64 seed key for page reloads within the same session.
- *    - Multi-Tab Isolation: `sessionStorage` is per-tab. Opening a new tab creates an isolated context
- *      where decryption fails gracefully unless key credentials are re-entered or transferred explicitly.
+ *    - Multi-Tab Isolation: `sessionStorage` is per-tab, but NOT an isolation boundary against tabs
+ *      with an opener (see Session Lifecycle above) — the raw key is copied to them. The isolation
+ *      guarantee is only "session-scoped": any tab that shares the session's key can decrypt the
+ *      same-origin IndexedDB ciphertext until every such tab is closed.
  */
 
 async function getOrCreateEncryptionKey(): Promise<CryptoKey> {
