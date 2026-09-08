@@ -8,6 +8,7 @@ import {
   STUDIO_CROSS_TAB_CHANNEL,
   getIsApplyingRemoteUpdate,
 } from './cross-tab'
+import { resetDeletions } from './cross-tab-tombstones'
 import { STUDIO_STORAGE_KEY } from './hydration'
 import type { Entity, Claim } from './types'
 
@@ -64,16 +65,23 @@ const RECREATED_AFTER_DELETE_TIME = '2026-01-03T00:00:00.000Z'
 describe('cross-tab store coordination', () => {
   beforeEach(() => {
     stopCrossTabSync()
+    resetDeletions()
     useStudioStore.setState({
       entities: [],
       claims: [],
       entityHistory: [[]],
       historyIndex: 0,
+      graph: undefined,
+      mindMap: undefined,
+      links: undefined,
+      tags: undefined,
     })
   })
 
   afterEach(() => {
     stopCrossTabSync()
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
   })
 
   it('performs field-level entity merge without overwriting local tab entities', () => {
@@ -441,5 +449,78 @@ describe('cross-tab store coordination', () => {
     expect(state.claims.map((claim) => claim.id)).toEqual(['claim-a'])
 
     vi.unstubAllGlobals()
+  })
+
+  it('does not resurrect tombstoned items via the storage fallback path', () => {
+    useStudioStore.setState({ entities: [ENTITY_A, ENTITY_B], claims: [CLAIM_A, CLAIM_B] })
+
+    // Seed the session tombstone registry with a broadcast deletion.
+    const capturedChannels: FakeBroadcastChannel[] = []
+    class FakeBroadcastChannel5 {
+      onmessage: ((event: MessageEvent) => void) | null = null
+      constructor() {
+        capturedChannels.push(this)
+      }
+      close = (): void => undefined
+    }
+    vi.stubGlobal('BroadcastChannel', FakeBroadcastChannel5)
+    initCrossTabSync()
+    const fakeChannel = capturedChannels[0]
+    expect(fakeChannel?.onmessage).not.toBeNull()
+
+    fakeChannel?.onmessage?.({
+      data: {
+        origin: 'tab-a-origin',
+        payload: { entities: [ENTITY_B], claims: [CLAIM_B] },
+        deletedEntityIds: ['ent-a'],
+        deletedClaimIds: ['claim-a'],
+        timestamp: DELETE_BROADCAST_TIME,
+      },
+    } as MessageEvent)
+    expect(useStudioStore.getState().entities.map((entity) => entity.id)).toEqual(['ent-b'])
+
+    // A stale storage snapshot carries no delete lists; the tombstone registry
+    // must keep the deleted item out of the merge union.
+    const applied = applyRemoteEnvelope({ entities: [ENTITY_A, ENTITY_B], claims: [CLAIM_A, CLAIM_B] })
+    expect(applied).toBe(false)
+    expect(useStudioStore.getState().entities.map((entity) => entity.id)).toEqual(['ent-b'])
+    expect(useStudioStore.getState().claims.map((claim) => claim.id)).toEqual(['claim-b'])
+  })
+
+  it('keeps items re-created after a tombstone via the storage fallback path', () => {
+    useStudioStore.setState({ entities: [ENTITY_A, ENTITY_B], claims: [CLAIM_A, CLAIM_B] })
+
+    const capturedChannels: FakeBroadcastChannel[] = []
+    class FakeBroadcastChannel6 {
+      onmessage: ((event: MessageEvent) => void) | null = null
+      constructor() {
+        capturedChannels.push(this)
+      }
+      close = (): void => undefined
+    }
+    vi.stubGlobal('BroadcastChannel', FakeBroadcastChannel6)
+    initCrossTabSync()
+    const fakeChannel = capturedChannels[0]
+    expect(fakeChannel?.onmessage).not.toBeNull()
+
+    fakeChannel?.onmessage?.({
+      data: {
+        origin: 'tab-a-origin',
+        payload: { entities: [ENTITY_B], claims: [CLAIM_B] },
+        deletedEntityIds: ['ent-a'],
+        deletedClaimIds: ['claim-a'],
+        timestamp: DELETE_BROADCAST_TIME,
+      },
+    } as MessageEvent)
+    expect(useStudioStore.getState().entities.map((entity) => entity.id)).toEqual(['ent-b'])
+
+    // Another tab re-created ent-a after the deletion: the tombstone must not
+    // swallow the newer item arriving through the tombstone-less storage path.
+    const recreatedEntity = { ...ENTITY_A, updatedAt: RECREATED_AFTER_DELETE_TIME }
+    const recreatedClaim = { ...CLAIM_A, updatedAt: RECREATED_AFTER_DELETE_TIME }
+    const applied = applyRemoteEnvelope({ entities: [recreatedEntity], claims: [recreatedClaim] })
+    expect(applied).toBe(true)
+    expect(useStudioStore.getState().entities.map((entity) => entity.id).sort()).toEqual(['ent-a', 'ent-b'])
+    expect(useStudioStore.getState().claims.map((claim) => claim.id).sort()).toEqual(['claim-a', 'claim-b'])
   })
 })

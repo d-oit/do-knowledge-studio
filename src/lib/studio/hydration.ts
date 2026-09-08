@@ -154,10 +154,10 @@ export const partializePersistedState = (state: PersistedSlice): Partial<Persist
   sortBy: state.sortBy,
   sortDir: state.sortDir,
   rightPanelOpen: state.rightPanelOpen,
-  graph: state.graph,
-  mindMap: state.mindMap,
-  links: state.links,
-  tags: state.tags,
+  graph: state.graph ?? null,
+  mindMap: state.mindMap ?? null,
+  links: state.links ?? null,
+  tags: state.tags ?? null,
 })
 
 /**
