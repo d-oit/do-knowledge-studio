@@ -475,7 +475,48 @@ export const useStudioStore = create<StudioState>()(
   ),
 )
 
-// Selectors
+/** Minimum result capacity for BM25-ranked Library queries (covers the full corpus). */
+const MIN_SEARCH_CAPACITY = 100
+
+/** Deduplicated entities from BM25 results, retaining relevance order. */
+const rankEntitiesByQuery = (entities: Entity[], claims: Claim[], query: string): Entity[] => {
+  const results = search(
+    entities,
+    claims,
+    query,
+    Math.max(entities.length + claims.length, MIN_SEARCH_CAPACITY),
+  )
+  const entityMap = new Map(entities.map((entity) => [entity.id, entity]))
+  const matched: Entity[] = []
+  const seen = new Set<string>()
+  for (const result of results) {
+    const entityId = result.type === 'entity' ? result.id : result.entityId
+    if (entityId === undefined || seen.has(entityId)) {
+      continue
+    }
+    seen.add(entityId)
+    const entity = entityMap.get(entityId)
+    if (entity) {
+      matched.push(entity)
+    }
+  }
+  return matched
+}
+
+/** Sorts entities by the active sort criteria ('updated' is the default field). */
+const sortEntitiesBy = (
+  entities: Entity[],
+  sortBy: 'name' | 'created' | 'updated',
+  sortDir: 'asc' | 'desc',
+): Entity[] =>
+  [...entities].sort((a, b) => {
+    let cmp = 0
+    if (sortBy === 'name') cmp = a.name.localeCompare(b.name)
+    else if (sortBy === 'created') cmp = a.createdAt.localeCompare(b.createdAt)
+    else cmp = a.updatedAt.localeCompare(b.updatedAt)
+    return sortDir === 'asc' ? cmp : -cmp
+  })
+
 /** Returns entities filtered by type and search query. When a search query is active,
  * results are ranked by BM25 relevance score (reversed if sortDir is 'asc'); otherwise,
  * entities are sorted by the active sort criteria (sortBy/sortDir).
@@ -490,49 +531,19 @@ export const useFilteredEntities = (): Entity[] => {
   const sortDir = useStudioStore((s) => s.sortDir)
 
   return useMemo(() => {
-    let list: Entity[]
-    const q = searchQuery.trim()
-
-    if (q) {
-      // Use BM25 retrieval engine across entities and claims for consistent relevance semantics
-      const results = search(entities, claims, q, Math.max(entities.length + claims.length, 100))
-      const entityMap = new Map(entities.map((e) => [e.id, e]))
-      const matched: Entity[] = []
-      const seen = new Set<string>()
-
-      for (const r of results) {
-        const id = r.type === 'entity' ? r.id : r.entityId
-        if (id && !seen.has(id)) {
-          seen.add(id)
-          const ent = entityMap.get(id)
-          if (ent) matched.push(ent)
-        }
-      }
-      list = matched
-    } else {
-      list = entities
-    }
+    const query = searchQuery.trim()
+    let list = query === '' ? entities : rankEntitiesByQuery(entities, claims, query)
 
     if (typeFilter !== 'all') {
-      list = list.filter((e) => e.type === typeFilter)
+      list = list.filter((entity) => entity.type === typeFilter)
     }
 
-    // When no search query is active, apply selected sort field and direction.
-    // When a search query is active, BM25 relevance score order is preserved
-    // (reversed if sortDir === 'asc').
-    if (!q) {
-      list = [...list].sort((a, b) => {
-        let cmp = 0
-        if (sortBy === 'name') cmp = a.name.localeCompare(b.name)
-        else if (sortBy === 'created') cmp = a.createdAt.localeCompare(b.createdAt)
-        else cmp = a.updatedAt.localeCompare(b.updatedAt)
-        return sortDir === 'asc' ? cmp : -cmp
-      })
-    } else if (sortDir === 'asc') {
-      list = [...list].reverse()
+    // No search query: apply the selected sort field and direction.
+    // Active query: preserve BM25 relevance order (reversed for 'asc').
+    if (query === '') {
+      return sortEntitiesBy(list, sortBy, sortDir)
     }
-
-    return list
+    return sortDir === 'asc' ? [...list].reverse() : list
   }, [entities, claims, searchQuery, typeFilter, sortBy, sortDir])
 }
 
