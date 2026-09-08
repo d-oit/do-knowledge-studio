@@ -24,7 +24,7 @@
 import { useStudioStore } from './store'
 import { STUDIO_STORAGE_KEY, sanitizeHydration, partializePersistedState } from './hydration'
 import { mergeEntities, mergeClaims } from '../sync/merge'
-import { recordDeletions, getDeletions } from './cross-tab-tombstones'
+import { recordDeletions, getDeletions, resetDeletions } from './cross-tab-tombstones'
 import type { Entity, Claim } from './types'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from './schema'
 
@@ -147,30 +147,40 @@ const mergeCorpus = (
   currentClaims: readonly Claim[],
   remoteEntities: readonly Entity[],
   remoteClaims: readonly Claim[],
-  deletedById: ReadonlyMap<string, number>,
+  deletedEntities: ReadonlyMap<string, number>,
+  deletedClaims: ReadonlyMap<string, number>,
 ): CorpusMerge => {
-  // Deletions apply to both sides: local items the map tombstoned are dropped,
+  // Deletions apply to both sides: local items the maps tombstone are dropped,
   // and remote items from a stale snapshot that were already deleted (unless
   // re-created after the tombstone) must not re-enter through the merge union.
-  const localEntities = withoutRemoteDeletes(currentEntities, deletedById)
-  const localClaims = withoutRemoteDeletes(currentClaims, deletedById)
-  const remoteSurvivors = withoutRemoteDeletes(remoteEntities, deletedById)
-  const remoteClaimSurvivors = withoutRemoteDeletes(remoteClaims, deletedById)
+  const localEntities = withoutRemoteDeletes(currentEntities, deletedEntities)
+  const localClaims = withoutRemoteDeletes(currentClaims, deletedClaims)
+  const remoteSurvivors = withoutRemoteDeletes(remoteEntities, deletedEntities)
+  const remoteClaimSurvivors = withoutRemoteDeletes(remoteClaims, deletedClaims)
   const mergedEntities = mergeEntities([...localEntities], [...remoteSurvivors]).merged
   const mergedClaims = mergeClaims([...localClaims], [...remoteClaimSurvivors]).merged
+
+  const deletedEntitySet = new Set(deletedEntities.keys())
+  const survivingEntityIds = new Set(mergedEntities.map((entity) => entity.id))
   // Preserve the no-dangling-claims invariant that deleteEntity enforces
   // locally (ADR 028): a claim whose entity was removed by the same remote
   // deletion — and is absent from both merge sides — cannot survive, or the
   // receiving tab ends up with an entityId that no longer exists anywhere.
-  const deletedEntitySet = new Set(deletedById.keys())
-  const survivingEntityIds = new Set(mergedEntities.map((entity) => entity.id))
   const survivingClaims = mergedClaims.filter(
     (claim) => !deletedEntitySet.has(claim.entityId) || survivingEntityIds.has(claim.entityId),
   )
+  // Local deleteEntity also strips links that target the removed entity from
+  // every surviving entity; mirror that so remote deletions cannot leave a
+  // link pointing at a now-gone entity.
+  const goneEntityIds = new Set([...deletedEntitySet].filter((id) => !survivingEntityIds.has(id)))
+  const entitiesWithCleanLinks = mergedEntities.map((entity) => {
+    const keptLinks = entity.links.filter((link) => !goneEntityIds.has(link.targetId))
+    return keptLinks.length === entity.links.length ? entity : { ...entity, links: keptLinks }
+  })
   return {
-    entities: mergedEntities,
+    entities: entitiesWithCleanLinks,
     claims: survivingClaims,
-    entitiesChanged: !arraysEqual(currentEntities, mergedEntities),
+    entitiesChanged: !arraysEqual(currentEntities, entitiesWithCleanLinks),
     claimsChanged: !arraysEqual(currentClaims, survivingClaims),
   }
 }
@@ -258,7 +268,8 @@ const buildStatePatch = (
 const applyRemoteMessage = (
   payload: unknown,
   origin: string | undefined,
-  deletedById: ReadonlyMap<string, number>,
+  deletedEntities: ReadonlyMap<string, number>,
+  deletedClaims: ReadonlyMap<string, number>,
 ): boolean => {
   if (origin === TAB_ORIGIN_ID) {
     return false
@@ -275,7 +286,8 @@ const applyRemoteMessage = (
     current.claims,
     verdict.data.entities ?? [],
     verdict.data.claims ?? [],
-    deletedById,
+    deletedEntities,
+    deletedClaims,
   )
   const changed = merge.entitiesChanged || merge.claimsChanged || canvasFieldsChanged(current, verdict.data)
   if (!changed) {
@@ -293,7 +305,7 @@ const applyRemoteMessage = (
 
 /** Processes a validated incoming remote slice and merges it into the local store. */
 export const applyRemoteEnvelope = (payload: unknown, origin?: string): boolean =>
-  applyRemoteMessage(payload, origin, getDeletions())
+  applyRemoteMessage(payload, origin, getDeletions('entity'), getDeletions('claim'))
 
 /** Broadcasts the current persisted slice plus locally-deleted ids to other tabs. */
 const broadcastLocalStoreChange = (
@@ -320,18 +332,27 @@ const broadcastLocalStoreChange = (
   }
 }
 
+/** Records this message's deletions into the session tombstone registry. */
+const recordMessageDeletions = (message: CrossTabMessage): void => {
+  const messageTime = message.timestamp ?? Date.now()
+  if (message.deletedEntityIds && message.deletedEntityIds.length > 0) {
+    recordDeletions('entity', message.deletedEntityIds, messageTime)
+  }
+  if (message.deletedClaimIds && message.deletedClaimIds.length > 0) {
+    recordDeletions('claim', message.deletedClaimIds, messageTime)
+  }
+}
+
 /** Handles one inbound `BroadcastChannel` message. */
 const handleChannelMessage = (message: CrossTabMessage): void => {
-  const { origin, payload, deletedEntityIds, deletedClaimIds, timestamp } = message
+  const { origin, payload } = message
   if (payload === undefined) {
     return
   }
-  const deletedIds = [...(deletedEntityIds ?? []), ...(deletedClaimIds ?? [])]
-  const messageTime = timestamp ?? Date.now()
-  if (deletedIds.length > 0) {
-    recordDeletions(deletedIds, messageTime)
-  }
-  applyRemoteMessage(payload, origin, new Map(deletedIds.map((id) => [id, messageTime])))
+  recordMessageDeletions(message)
+  // The aggregated registry (not just this message's lists) guards later
+  // snapshots from stale tabs that still hold previously deleted items.
+  applyRemoteMessage(payload, origin, getDeletions('entity'), getDeletions('claim'))
 }
 
 /** Attaches the `BroadcastChannel` listener that receives remote envelopes. */
@@ -395,6 +416,7 @@ export const stopCrossTabSync = (): void => {
     broadcastChannel.close()
     broadcastChannel = null
   }
+  resetDeletions()
 }
 
 /**
@@ -429,7 +451,8 @@ export const initCrossTabSync = (): (() => void) => {
     }
     const deletedEntityIds = removedIds(previous.entities, state.entities)
     const deletedClaimIds = removedIds(previous.claims, state.claims)
-    recordDeletions([...deletedEntityIds, ...deletedClaimIds], Date.now())
+    recordDeletions('entity', deletedEntityIds, Date.now())
+    recordDeletions('claim', deletedClaimIds, Date.now())
     broadcastLocalStoreChange(state, { deletedEntityIds, deletedClaimIds })
   })
 

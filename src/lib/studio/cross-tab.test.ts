@@ -525,4 +525,36 @@ describe('cross-tab store coordination', () => {
     expect(useStudioStore.getState().entities.map((entity) => entity.id).sort()).toEqual(['ent-a', 'ent-b'])
     expect(useStudioStore.getState().claims.map((claim) => claim.id).sort()).toEqual(['claim-a', 'claim-b'])
   })
+  it('strips links targeting remotely deleted entities', () => {
+    const entityLinkedToB = { ...ENTITY_A, links: [{ targetId: 'ent-b', relation: 'related' }] }
+    useStudioStore.setState({ entities: [entityLinkedToB, ENTITY_B], claims: [] })
+
+    const capturedChannels: FakeBroadcastChannel[] = []
+    class FakeBroadcastChannel7 {
+      onmessage: ((event: MessageEvent) => void) | null = null
+      constructor() {
+        capturedChannels.push(this)
+      }
+      close = (): void => { this.onmessage = null }
+    }
+    vi.stubGlobal('BroadcastChannel', FakeBroadcastChannel7)
+    initCrossTabSync()
+    const fakeChannel = capturedChannels[0]
+    expect(fakeChannel?.onmessage).not.toBeNull()
+
+    fakeChannel?.onmessage?.({
+      data: {
+        origin: 'tab-a-origin',
+        payload: { entities: [entityLinkedToB], claims: [] },
+        deletedEntityIds: ['ent-b'],
+        deletedClaimIds: [],
+        timestamp: DELETE_BROADCAST_TIME,
+      },
+    } as MessageEvent)
+
+    const state = useStudioStore.getState()
+    expect(state.entities.map((entity) => entity.id)).toEqual(['ent-a'])
+    expect(state.entities[0]?.links).toEqual([])
+  })
+
 })
