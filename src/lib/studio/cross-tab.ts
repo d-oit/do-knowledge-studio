@@ -13,6 +13,11 @@
  * updated after the broadcast was sent). Plain `storage` snapshots carry no
  * tombstones — an absent id is indistinguishable from one never seen — so they
  * union-merge and never resurrect items deleted in the sender.
+ *
+ * Canvas fields (graph / mindMap / links / tags) broadcast with `null` as an
+ * explicit "cleared" sentinel: Zod strips `undefined` optional keys during
+ * sanitization, which would otherwise make a reset/import clear
+ * indistinguishable from an omitted field.
  */
 
 import { useStudioStore } from './store'
@@ -26,10 +31,10 @@ export const STUDIO_CROSS_TAB_CHANNEL = 'do-knowledge-studio-crosstab'
 
 /** Optional canvas fields a remote envelope may carry alongside the corpus. */
 interface RemoteCanvasFields {
-  graph?: ValidatedGraph
-  mindMap?: ValidatedMindMap
-  links?: ValidatedLink[]
-  tags?: ValidatedTag[]
+  graph?: ValidatedGraph | null
+  mindMap?: ValidatedMindMap | null
+  links?: ValidatedLink[] | null
+  tags?: ValidatedTag[] | null
 }
 
 /** Payload broadcast to other tabs by {@link initCrossTabSync}. */
@@ -82,9 +87,15 @@ export const TAB_ORIGIN_ID = generateTabOriginId()
 const arraysEqual = (left: readonly unknown[], right: readonly unknown[]): boolean =>
   left.length === right.length && JSON.stringify(left) === JSON.stringify(right)
 
-/** Structural inequality for a single optional persisted field. */
-const jsonChanged = <T,>(local: T | undefined, remote: T | undefined): boolean =>
-  remote !== undefined && JSON.stringify(local) !== JSON.stringify(remote)
+/** Structural inequality for a single optional persisted field.
+ * `null` is the explicit "cleared" sentinel used by broadcasts; `undefined`
+ * means the sender omitted the field (no update). */
+const jsonChanged = <T,>(local: T | undefined, remote: T | null | undefined): boolean => {
+  if (remote === undefined) return false
+  const localJson = local === undefined ? null : JSON.stringify(local)
+  const remoteJson = remote === null ? null : JSON.stringify(remote)
+  return localJson !== remoteJson
+}
 
 /** Ids of items present in `previous` but absent in `next` (the local deletions). */
 const removedIds = <T extends { id: string }>(previous: readonly T[], next: readonly T[]): string[] => {
@@ -141,11 +152,20 @@ const mergeCorpus = (
   const localClaims = withoutRemoteDeletes(currentClaims, deletedClaimIds, timestamp)
   const mergedEntities = mergeEntities([...localEntities], [...remoteEntities]).merged
   const mergedClaims = mergeClaims([...localClaims], [...remoteClaims]).merged
+  // Preserve the no-dangling-claims invariant that deleteEntity enforces
+  // locally (ADR 028): a claim whose entity was removed by the same remote
+  // deletion — and is absent from both merge sides — cannot survive, or the
+  // receiving tab ends up with an entityId that no longer exists anywhere.
+  const deletedEntitySet = new Set(deletedEntityIds)
+  const survivingEntityIds = new Set(mergedEntities.map((entity) => entity.id))
+  const survivingClaims = mergedClaims.filter(
+    (claim) => !deletedEntitySet.has(claim.entityId) || survivingEntityIds.has(claim.entityId),
+  )
   return {
     entities: mergedEntities,
-    claims: mergedClaims,
+    claims: survivingClaims,
     entitiesChanged: !arraysEqual(currentEntities, mergedEntities),
-    claimsChanged: !arraysEqual(currentClaims, mergedClaims),
+    claimsChanged: !arraysEqual(currentClaims, survivingClaims),
   }
 }
 
@@ -159,40 +179,40 @@ const canvasFieldsChanged = (current: StoreSnapshot, remote: RemoteCanvasFields)
 const setGraphIfChanged = (
   patch: Partial<StoreSnapshot>,
   local: ValidatedGraph | undefined,
-  remote: ValidatedGraph | undefined,
+  remote: ValidatedGraph | null | undefined,
 ): void => {
   if (jsonChanged(local, remote)) {
-    patch.graph = remote
+    patch.graph = remote === null ? undefined : remote
   }
 }
 
 const setMindMapIfChanged = (
   patch: Partial<StoreSnapshot>,
   local: ValidatedMindMap | undefined,
-  remote: ValidatedMindMap | undefined,
+  remote: ValidatedMindMap | null | undefined,
 ): void => {
   if (jsonChanged(local, remote)) {
-    patch.mindMap = remote
+    patch.mindMap = remote === null ? undefined : remote
   }
 }
 
 const setLinksIfChanged = (
   patch: Partial<StoreSnapshot>,
   local: ValidatedLink[] | undefined,
-  remote: ValidatedLink[] | undefined,
+  remote: ValidatedLink[] | null | undefined,
 ): void => {
   if (jsonChanged(local, remote)) {
-    patch.links = remote
+    patch.links = remote === null ? undefined : remote
   }
 }
 
 const setTagsIfChanged = (
   patch: Partial<StoreSnapshot>,
   local: ValidatedTag[] | undefined,
-  remote: ValidatedTag[] | undefined,
+  remote: ValidatedTag[] | null | undefined,
 ): void => {
   if (jsonChanged(local, remote)) {
-    patch.tags = remote
+    patch.tags = remote === null ? undefined : remote
   }
 }
 
@@ -279,7 +299,16 @@ const broadcastLocalStoreChange = (
   try {
     const message: CrossTabMessage = {
       origin: TAB_ORIGIN_ID,
-      payload: partializePersistedState(state),
+      // Canvas fields use `null` (not `undefined`) as an explicit "cleared"
+      // sentinel: structured-clone keeps null, and Zod sanitization keeps it
+      // too, so a reset/import clear reaches other tabs as a real update.
+      payload: {
+        ...partializePersistedState(state),
+        graph: state.graph ?? null,
+        mindMap: state.mindMap ?? null,
+        links: state.links ?? null,
+        tags: state.tags ?? null,
+      },
       timestamp: Date.now(),
       deletedEntityIds: [...deleted.deletedEntityIds],
       deletedClaimIds: [...deleted.deletedClaimIds],
@@ -323,7 +352,10 @@ const unwrapPersistEnvelope = (parsed: unknown): unknown => {
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     return parsed
   }
-  return 'state' in parsed ? (parsed as { state: unknown }).state : parsed
+  if ('state' in parsed) {
+    return parsed.state
+  }
+  return parsed
 }
 
 /** Builds the listener that applies localStorage writes from other tabs. */
@@ -340,6 +372,22 @@ const createStorageEventListener = (): ((event: StorageEvent) => void) => {
       // BroadcastChannel message for the same change) carries the full state.
       console.warn('Ignored unreadable cross-tab storage event:', error)
     }
+  }
+}
+
+/** Tears down cross-tab store listeners and channels. */
+export const stopCrossTabSync = (): void => {
+  if (unsubscribeStore) {
+    unsubscribeStore()
+    unsubscribeStore = null
+  }
+  if (storageEventListener && typeof window !== 'undefined') {
+    window.removeEventListener('storage', storageEventListener)
+    storageEventListener = null
+  }
+  if (broadcastChannel) {
+    broadcastChannel.close()
+    broadcastChannel = null
   }
 }
 
@@ -376,20 +424,4 @@ export const initCrossTabSync = (): (() => void) => {
   })
 
   return stopCrossTabSync
-}
-
-/** Tears down cross-tab store listeners and channels. */
-export const stopCrossTabSync = (): void => {
-  if (unsubscribeStore) {
-    unsubscribeStore()
-    unsubscribeStore = null
-  }
-  if (storageEventListener && typeof window !== 'undefined') {
-    window.removeEventListener('storage', storageEventListener)
-    storageEventListener = null
-  }
-  if (broadcastChannel) {
-    broadcastChannel.close()
-    broadcastChannel = null
-  }
 }

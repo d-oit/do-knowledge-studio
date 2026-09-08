@@ -147,10 +147,10 @@ export const PersistedEnvelopeSchema = z.object({
   version: z.number().int().positive().optional(),
   entities: z.array(EntitySchema),
   claims: z.array(ClaimSchema),
-  graph: GraphSchema.optional(),
-  mindMap: MindMapSchema.optional(),
-  links: z.array(LinkSchema).optional(),
-  tags: z.array(TagSchema).optional(),
+  graph: GraphSchema.nullable().optional(),
+  mindMap: MindMapSchema.nullable().optional(),
+  links: z.array(LinkSchema).nullable().optional(),
+  tags: z.array(TagSchema).nullable().optional(),
   // Durable UI preferences. Optional: envelopes written before these keys
   // existed must still load — user data below stays strictly required.
   // Every partialize key must appear here — enforced by a guard test.
