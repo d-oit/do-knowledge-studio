@@ -283,6 +283,7 @@ describe('cross-tab store coordination', () => {
       }
       close = (): void => {
         closeMock()
+        this.onmessage = null
       }
     }
 
@@ -344,7 +345,7 @@ describe('cross-tab store coordination', () => {
       constructor() {
         capturedChannels.push(this)
       }
-      close = (): void => undefined
+      close = (): void => { this.onmessage = null }
     }
     vi.stubGlobal('BroadcastChannel', FakeBroadcastChannel)
 
@@ -375,13 +376,13 @@ describe('cross-tab store coordination', () => {
   it('drops claims whose entity was removed by the same remote deletion', () => {
     useStudioStore.setState({ entities: [ENTITY_A, ENTITY_B], claims: [CLAIM_A, CLAIM_B] })
 
-    const capturedChannels: FakeBroadcastChannel[] = []
+    const capturedChannels: FakeBroadcastChannel2[] = []
     class FakeBroadcastChannel2 {
       onmessage: ((event: MessageEvent) => void) | null = null
       constructor() {
         capturedChannels.push(this)
       }
-      close = (): void => undefined
+      close = (): void => { this.onmessage = null }
     }
     vi.stubGlobal('BroadcastChannel', FakeBroadcastChannel2)
 
@@ -422,7 +423,7 @@ describe('cross-tab store coordination', () => {
       constructor() {
         capturedChannels.push(this)
       }
-      close = (): void => undefined
+      close = (): void => { this.onmessage = null }
     }
     vi.stubGlobal('BroadcastChannel', FakeBroadcastChannel)
 
@@ -455,13 +456,13 @@ describe('cross-tab store coordination', () => {
     useStudioStore.setState({ entities: [ENTITY_A, ENTITY_B], claims: [CLAIM_A, CLAIM_B] })
 
     // Seed the session tombstone registry with a broadcast deletion.
-    const capturedChannels: FakeBroadcastChannel[] = []
+    const capturedChannels: FakeBroadcastChannel5[] = []
     class FakeBroadcastChannel5 {
       onmessage: ((event: MessageEvent) => void) | null = null
       constructor() {
         capturedChannels.push(this)
       }
-      close = (): void => undefined
+      close = (): void => { this.onmessage = null }
     }
     vi.stubGlobal('BroadcastChannel', FakeBroadcastChannel5)
     initCrossTabSync()
@@ -490,13 +491,13 @@ describe('cross-tab store coordination', () => {
   it('keeps items re-created after a tombstone via the storage fallback path', () => {
     useStudioStore.setState({ entities: [ENTITY_A, ENTITY_B], claims: [CLAIM_A, CLAIM_B] })
 
-    const capturedChannels: FakeBroadcastChannel[] = []
+    const capturedChannels: FakeBroadcastChannel6[] = []
     class FakeBroadcastChannel6 {
       onmessage: ((event: MessageEvent) => void) | null = null
       constructor() {
         capturedChannels.push(this)
       }
-      close = (): void => undefined
+      close = (): void => { this.onmessage = null }
     }
     vi.stubGlobal('BroadcastChannel', FakeBroadcastChannel6)
     initCrossTabSync()

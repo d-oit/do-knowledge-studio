@@ -180,6 +180,12 @@ const canvasFieldsChanged = (current: StoreSnapshot, remote: RemoteCanvasFields)
   jsonChanged(current.mindMap, remote.mindMap) ||
   jsonChanged(current.links, remote.links) ||
   jsonChanged(current.tags, remote.tags)
+/** Whether any canvas field changed reference between two local snapshots. */
+const canvasChanged = (previous: StoreSnapshot, next: StoreSnapshot): boolean =>
+  previous.graph !== next.graph ||
+  previous.mindMap !== next.mindMap ||
+  previous.links !== next.links ||
+  previous.tags !== next.tags
 
 const setGraphIfChanged = (
   patch: Partial<StoreSnapshot>,
@@ -300,16 +306,9 @@ const broadcastLocalStoreChange = (
   try {
     const message: CrossTabMessage = {
       origin: TAB_ORIGIN_ID,
-      // Canvas fields use `null` (not `undefined`) as an explicit "cleared"
-      // sentinel: structured-clone keeps null, and Zod sanitization keeps it
-      // too, so a reset/import clear reaches other tabs as a real update.
-      payload: {
-        ...partializePersistedState(state),
-        graph: state.graph ?? null,
-        mindMap: state.mindMap ?? null,
-        links: state.links ?? null,
-        tags: state.tags ?? null,
-      },
+      // partializePersistedState already encodes cleared canvas fields as the
+      // `null` sentinel, so the raw persisted slice is the broadcast payload.
+      payload: partializePersistedState(state),
       timestamp: Date.now(),
       deletedEntityIds: [...deleted.deletedEntityIds],
       deletedClaimIds: [...deleted.deletedClaimIds],
@@ -420,7 +419,11 @@ export const initCrossTabSync = (): (() => void) => {
     if (isApplyingRemoteUpdate) {
       return
     }
-    if (state.entities === previous.entities && state.claims === previous.claims) {
+    if (
+      state.entities === previous.entities &&
+      state.claims === previous.claims &&
+      !canvasChanged(previous, state)
+    ) {
       return
     }
     const deletedEntityIds = removedIds(previous.entities, state.entities)
