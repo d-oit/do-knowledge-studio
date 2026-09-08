@@ -193,6 +193,21 @@ export type ValidatedChatMessage = z.infer<typeof ChatMessageSchema>
 /** Type of a validated localStorage persistence envelope. */
 export type ValidatedPersistedEnvelope = z.infer<typeof PersistedEnvelopeSchema>
 
+/** Zod schema validating stored AI provider settings before decryption. */
+export const StoredSettingsSchema = z.object({
+  provider: z.string().min(1),
+  model: z.string().min(1),
+  encryptedApiKey: z.string().optional(),
+  apiKey: z.string().optional(),
+  augmentWithLocal: z.boolean().optional().default(true),
+  ollamaCpuOnly: z.boolean().optional().default(false),
+  allowWebResearch: z.boolean().optional().default(false),
+  ollamaBaseUrl: z.string().optional(),
+})
+
+/** Type of validated stored AI provider settings, before credential decryption. */
+export type ValidatedStoredSettings = z.infer<typeof StoredSettingsSchema>
+
 /** Describes a single validation failure with the offending data path. */
 export interface ValidationError {
   path: string
