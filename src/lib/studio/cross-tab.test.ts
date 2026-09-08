@@ -266,6 +266,24 @@ describe('cross-tab store coordination', () => {
     expect(getIsApplyingRemoteUpdate()).toBe(false)
   })
 
+  it('raises isApplyingRemoteUpdate while a remote update is applied', () => {
+    // Sample the flag from inside the store subscription: without the guard the
+    // observed value is false and this test fails, so a guard regression cannot
+    // slip through a before/after sampling.
+    const observed: boolean[] = []
+    const unsubscribe = useStudioStore.subscribe((state, previous) => {
+      if (state.entities !== previous.entities) {
+        observed.push(getIsApplyingRemoteUpdate())
+      }
+    })
+
+    applyRemoteEnvelope({ entities: [ENTITY_A], claims: [] }, 'tab-a-origin')
+    unsubscribe()
+
+    expect(observed).toEqual([true])
+    expect(getIsApplyingRemoteUpdate()).toBe(false)
+  })
+
   it('subscribes and cleans up BroadcastChannel and window storage listener on init/stop', () => {
     expect(STUDIO_CROSS_TAB_CHANNEL).toBe('do-knowledge-studio-crosstab')
     const postMessageMock = vi.fn()
