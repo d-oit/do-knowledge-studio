@@ -112,14 +112,23 @@ function migrateProvider(stored: StoredSettings): AIProvider {
   return 'openrouter'
 }
 
+/** Legacy OpenRouter model names remapped to the current default target. */
+const LEGACY_OPENROUTER_MODELS = new Set(['gpt-4o', 'gpt-4o-mini', 'gpt-3.5-turbo'])
+
+/** Maps legacy OpenRouter model names to current targets. */
+const migrateOpenRouterModel = (storedModel: string): string => {
+  if (LEGACY_OPENROUTER_MODELS.has(storedModel)) {
+    return 'openrouter/free'
+  }
+  if (storedModel.startsWith('claude-')) {
+    return `anthropic/${storedModel}`
+  }
+  return storedModel
+}
+
 function migrateModel(provider: AIProvider, storedModel: string): string {
   if (provider === 'openrouter') {
-    if (storedModel === 'gpt-4o' || storedModel === 'gpt-4o-mini' || storedModel === 'gpt-3.5-turbo') {
-      return 'openrouter/free'
-    }
-    if (storedModel.startsWith('claude-')) {
-      return `anthropic/${storedModel}`
-    }
+    return migrateOpenRouterModel(storedModel)
   }
   return storedModel
 }
@@ -232,6 +241,24 @@ async function migrateFromLocalStorage(): Promise<StoredSettings | null> {
 
 // ── Public API ───────────────────────────────────────────────────────
 
+/** Resolves validated stored settings into decryptable AI settings. */
+async function applyStoredSettings(stored: StoredSettings): Promise<AISettings> {
+  const provider = migrateProvider(stored)
+  const model = migrateModel(provider, stored.model)
+  const apiKey = stored.encryptedApiKey
+    ? await decryptApiKey(stored.encryptedApiKey)
+    : (stored.apiKey ?? '')
+  return {
+    provider,
+    model,
+    apiKey,
+    augmentWithLocal: stored.augmentWithLocal ?? true,
+    ollamaCpuOnly: stored.ollamaCpuOnly ?? false,
+    allowWebResearch: stored.allowWebResearch ?? false,
+    ollamaBaseUrl: stored.ollamaBaseUrl ?? DEFAULT_SETTINGS.ollamaBaseUrl,
+  }
+}
+
 /** Load AI settings from IndexedDB, migrating from localStorage if needed. */
 export async function loadAISettings(): Promise<AISettings> {
   if (typeof window === 'undefined') return DEFAULT_SETTINGS
@@ -256,23 +283,6 @@ export async function loadAISettings(): Promise<AISettings> {
   } catch (error) {
     console.error('Failed to load AI settings:', error instanceof Error ? error.message : error)
     return DEFAULT_SETTINGS
-  }
-}
-
-async function applyStoredSettings(stored: StoredSettings): Promise<AISettings> {
-  const provider = migrateProvider(stored)
-  const model = migrateModel(provider, stored.model)
-  const apiKey = stored.encryptedApiKey
-    ? await decryptApiKey(stored.encryptedApiKey)
-    : (stored.apiKey ?? '')
-  return {
-    provider,
-    model,
-    apiKey,
-    augmentWithLocal: stored.augmentWithLocal ?? true,
-    ollamaCpuOnly: stored.ollamaCpuOnly ?? false,
-    allowWebResearch: stored.allowWebResearch ?? false,
-    ollamaBaseUrl: stored.ollamaBaseUrl ?? DEFAULT_SETTINGS.ollamaBaseUrl,
   }
 }
 
