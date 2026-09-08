@@ -333,8 +333,8 @@ When merging dependabot PRs or manually bumping dependencies:
   switches, bounds/presence checks, braces) — `.codacy.yml`
   suppressions do not cover new PR code (LESSON-031, plans/123,
   plans/112).
-- **Absolute-positioned clear buttons inside inputs require padding for total extent (`offset + width + clearance`)** — `size-9` (36px) button at `right-1.5` (6px) requires `pr-11` (44px) so text never clips underneath at narrow viewports (LESSON-033).
-- See `agents-docs/LESSONS.md` (LESSON-024..033) and
+- **GitNexus/DeepSource re-post stale positional findings as NEW unresolved threads on every push** — the same fixed finding reappears with a fresh thread id (observed 4× on PR #758), and `required_review_thread_resolution` turns each re-post into a merge blocker. Verify the working tree is fixed (locals confirm), reply with evidence, resolve via GraphQL `resolveReviewThread`, and stop pushing until CI demands it. Long-term fix: switch both integrations to check-summary-only reporting (LESSON-034).
+- See `agents-docs/LESSONS.md` (LESSON-024..034) and
   `plans/116-ci-workflow-learnings-2026-08-11.md` for full detail.
 
 ## Skills
