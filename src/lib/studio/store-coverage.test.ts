@@ -510,6 +510,59 @@ describe('Studio Store branch coverage', () => {
       })
       expect(result.current.map((e) => e.id)).toEqual(['e-1', 'e-2'])
     })
+
+    it('matches entities via attached claim statements in BM25 retrieval', () => {
+      const e3 = makeEntity({
+        id: 'e-3',
+        name: 'Project Alpha',
+        description: 'internal research project',
+        tags: ['project'],
+      })
+      const claim = makeClaim({
+        id: 'c-3',
+        entityId: 'e-3',
+        statement: 'photovoltaic energy efficiency reached 25%',
+      })
+      useStudioStore.setState({
+        entities: [e1, e2, e3],
+        claims: [claim],
+        typeFilter: 'all',
+        searchQuery: '',
+      })
+      const { result } = renderHook(() => useFilteredEntities())
+      act(() => {
+        useStudioStore.getState().setSearchQuery('photovoltaic')
+      })
+      expect(result.current.map((e) => e.id)).toEqual(['e-3'])
+    })
+
+    it('preserves BM25 relevance score order and supports sortDir reversal when search query is set', () => {
+      const eA = makeEntity({
+        id: 'e-a',
+        name: 'Topic Alpha',
+        description: 'quantum computing quantum algorithms',
+      })
+      const eB = makeEntity({
+        id: 'e-b',
+        name: 'Topic Beta',
+        description: 'quantum physics intro',
+      })
+      useStudioStore.setState({
+        entities: [eA, eB],
+        claims: [],
+        typeFilter: 'all',
+        searchQuery: 'quantum',
+        sortDir: 'desc',
+      })
+      const { result } = renderHook(() => useFilteredEntities())
+      // eA has higher term frequency for 'quantum', so it ranks first in BM25 relevance
+      expect(result.current.map((e) => e.id)).toEqual(['e-a', 'e-b'])
+
+      act(() => {
+        useStudioStore.getState().setSortDir('asc')
+      })
+      expect(result.current.map((e) => e.id)).toEqual(['e-b', 'e-a'])
+    })
   })
 
   describe('useStats', () => {
