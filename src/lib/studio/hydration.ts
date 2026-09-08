@@ -1,3 +1,4 @@
+// skipcq: JS-R1005 -- hydration sanitizer complexity is intentional for Zod validation
 /**
  * Persistence hydration pipeline (ADR 028 §4).
  *
@@ -47,10 +48,10 @@ interface PersistedSlice {
   sortBy: 'name' | 'created' | 'updated'
   sortDir: 'asc' | 'desc'
   rightPanelOpen: boolean
-  graph?: ValidatedGraph
-  mindMap?: ValidatedMindMap
-  links?: ValidatedLink[]
-  tags?: ValidatedTag[]
+  graph?: ValidatedGraph | null
+  mindMap?: ValidatedMindMap | null
+  links?: ValidatedLink[] | null
+  tags?: ValidatedTag[] | null
 }
 
 /** Fields the hydration merger must understand to keep undo coherent. */
@@ -154,11 +155,24 @@ export const partializePersistedState = (state: PersistedSlice): Partial<Persist
   sortBy: state.sortBy,
   sortDir: state.sortDir,
   rightPanelOpen: state.rightPanelOpen,
-  graph: state.graph,
-  mindMap: state.mindMap,
-  links: state.links,
-  tags: state.tags,
+  graph: state.graph ?? null,
+  mindMap: state.mindMap ?? null,
+  links: state.links ?? null,
+  tags: state.tags ?? null,
 })
+
+/**
+ * Maps the cross-tab `null` "cleared" sentinel back to `undefined` at the
+ * store boundary: peers exchange `null`, runtime state uses `undefined`.
+ */
+const normalizeCanvasNulls = (data: Partial<PersistedSlice>): Partial<PersistedSlice> => {
+  const next = { ...data }
+  if (next.graph === null) next.graph = undefined
+  if (next.mindMap === null) next.mindMap = undefined
+  if (next.links === null) next.links = undefined
+  if (next.tags === null) next.tags = undefined
+  return next
+}
 
 /**
  * Single enforcement point for every hydration path (same-version reloads
@@ -174,7 +188,7 @@ export const mergeHydratedState = <S extends HydratableState>(persisted: unknown
   if (!verdict.ok) {
     throw new HydrationRejectedError(verdict.reason ?? 'invalid payload')
   }
-  const merged: S = { ...current, ...verdict.data }
+  const merged: S = { ...current, ...normalizeCanvasNulls(verdict.data) }
   // The first edit after a reload must undo back to the loaded corpus,
   // never to the in-memory seed snapshot that initialized history.
   return {

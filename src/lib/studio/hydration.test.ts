@@ -39,6 +39,10 @@ const createValidPersistedSlice = () => ({
   sortBy: 'updated' as const,
   sortDir: 'desc' as const,
   rightPanelOpen: true,
+  graph: null,
+  mindMap: null,
+  links: null,
+  tags: null,
 })
 
 describe('sanitizeHydration', () => {
