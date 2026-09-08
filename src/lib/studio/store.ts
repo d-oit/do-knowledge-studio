@@ -479,6 +479,7 @@ export const useStudioStore = create<StudioState>()(
 const MIN_SEARCH_CAPACITY = 100
 
 /** Deduplicated entities from BM25 results, retaining relevance order. */
+// skipcq: JS-R1005 -- BM25 ranking helper complexity is intentional and covered by tests
 const rankEntitiesByQuery = (entities: Entity[], claims: Claim[], query: string): Entity[] => {
   const results = search(
     entities,
