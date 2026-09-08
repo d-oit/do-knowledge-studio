@@ -332,15 +332,19 @@ const broadcastLocalStoreChange = (
   }
 }
 
+/** Records a deletion list after validating every entry is a string id. */
+const recordDeletionsIfAny = (kind: 'entity' | 'claim', ids: unknown, timestamp: number): void => {
+  const safeIds = Array.isArray(ids) ? ids.filter((id): id is string => typeof id === 'string') : []
+  if (safeIds.length > 0) {
+    recordDeletions(kind, safeIds, timestamp)
+  }
+}
+
 /** Records this message's deletions into the session tombstone registry. */
 const recordMessageDeletions = (message: CrossTabMessage): void => {
   const messageTime = message.timestamp ?? Date.now()
-  if (message.deletedEntityIds && message.deletedEntityIds.length > 0) {
-    recordDeletions('entity', message.deletedEntityIds, messageTime)
-  }
-  if (message.deletedClaimIds && message.deletedClaimIds.length > 0) {
-    recordDeletions('claim', message.deletedClaimIds, messageTime)
-  }
+  recordDeletionsIfAny('entity', message.deletedEntityIds, messageTime)
+  recordDeletionsIfAny('claim', message.deletedClaimIds, messageTime)
 }
 
 /** Handles one inbound `BroadcastChannel` message. */

@@ -529,7 +529,7 @@ describe('cross-tab store coordination', () => {
     const entityLinkedToB = { ...ENTITY_A, links: [{ targetId: 'ent-b', relation: 'related' }] }
     useStudioStore.setState({ entities: [entityLinkedToB, ENTITY_B], claims: [] })
 
-    const capturedChannels: FakeBroadcastChannel[] = []
+    const capturedChannels: FakeBroadcastChannel7[] = []
     class FakeBroadcastChannel7 {
       onmessage: ((event: MessageEvent) => void) | null = null
       constructor() {
