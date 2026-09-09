@@ -75,6 +75,17 @@ const mockEntities = [
     updatedAt: new Date().toISOString(),
     links: [],
   },
+  {
+    id: 'ent-3',
+    name: 'Unrelated Entity',
+    type: 'person' as const,
+    description: 'desc',
+    content: '',
+    tags: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    links: [],
+  },
 ]
 
 let currentEntities = mockEntities
@@ -143,7 +154,7 @@ describe('GraphView', () => {
 
   it('shows node and edge count', () => {
     render(<GraphView />)
-    expect(screen.getByText(/2 nodes · 1 edges/)).toBeDefined()
+    expect(screen.getByText(/3 nodes · 1 edges/)).toBeDefined()
   })
 
   it('renders entity type legend', () => {
@@ -238,5 +249,18 @@ describe('GraphView', () => {
     const y = parseFloat(label.getAttribute('y') || '0')
     expect(x).not.toBeNaN()
     expect(y).not.toBeNaN()
+  })
+
+  it('filters visible nodes correctly when toggling focus neighborhood mode', () => {
+    currentSelectedEntityId = 'ent-1'
+    render(<GraphView />)
+
+    const focusBtn = screen.getByLabelText('Focus neighborhood')
+    fireEvent.click(focusBtn)
+
+    // In focus mode for ent-1, ent-1 and its neighbor ent-2 remain visible;
+    // the unrelated ent-3 is filtered out (3 nodes unfiltered -> 2 focused).
+    expect(screen.getByText(/2 nodes · 1 edges/)).toBeDefined()
+    expect(screen.queryByText('Unrelated Entity')).toBeNull()
   })
 })

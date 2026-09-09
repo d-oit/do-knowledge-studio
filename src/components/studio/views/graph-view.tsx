@@ -1,7 +1,7 @@
 'use client'
 
 import { useStudioStore } from '@/lib/studio/store'
-import { ENTITY_TYPE_META } from '@/lib/studio/types'
+import { ENTITY_TYPE_META, type GraphEdge, type GraphNode } from '@/lib/studio/types'
 import { seedGraph } from '@/lib/studio/seed-data'
 import { todayStamp, downloadBlob } from './export-types'
 import { CircleDot } from 'lucide-react'
@@ -28,6 +28,93 @@ const seededRandom = (seed: string): number => {
 const FOCUS_MODE_FILTER_STYLE: React.CSSProperties = {
   filter: 'drop-shadow(0 0 3px var(--saffron))',
 } as const
+
+/** Perpendicular offset (px) of the highlighted-edge relation label. */
+const EDGE_LABEL_OFFSET_PX = 14
+
+/** True when the edge touches the selected entity (drives highlight styling). */
+const isEdgeHighlighted = (edge: GraphEdge, selectedEntityId: string | null): boolean =>
+  Boolean(selectedEntityId) &&
+  (edge.source === selectedEntityId || edge.target === selectedEntityId)
+
+/** Highlighted vs default stroke styling for an edge line. */
+const EDGE_STROKE: Record<'highlighted' | 'default', { className: string; width: number }> = {
+  highlighted: { className: 'stroke-saffron', width: 2 },
+  default: { className: 'stroke-border', width: 1.5 },
+}
+
+/** Relation label at the highlighted edge midpoint, perpendicular to the line. */
+const EdgeRelationLabel = ({
+  sourceNode,
+  targetNode,
+  relation,
+}: {
+  sourceNode: GraphNode
+  targetNode: GraphNode
+  relation: string
+}) => {
+  const dx = targetNode.x - sourceNode.x
+  const dy = targetNode.y - sourceNode.y
+  const edgeLength = Math.hypot(dx, dy) || 1
+  // The perpendicular unit vector is (-dy, dx) / length.
+  const labelX = (sourceNode.x + targetNode.x) / 2 + (-dy / edgeLength) * EDGE_LABEL_OFFSET_PX
+  const labelY = (sourceNode.y + targetNode.y) / 2 + (dx / edgeLength) * EDGE_LABEL_OFFSET_PX
+
+  return (
+    <text
+      x={labelX}
+      y={labelY}
+      textAnchor="middle"
+      dominantBaseline="central"
+      stroke="var(--background)"
+      strokeWidth={4}
+      strokeLinejoin="round"
+      paintOrder="stroke fill"
+      className="fill-ink-mute font-sans text-badge italic"
+    >
+      {relation}
+    </text>
+  )
+}
+
+/**
+ * Edge line + (when highlighted) relation label. Extracted from the edge map
+ * callback so the GraphView render body stays within the complexity ceiling.
+ */
+const GraphEdgeElement = ({
+  edge,
+  sourceNode,
+  targetNode,
+  selectedEntityId,
+}: {
+  edge: GraphEdge
+  sourceNode: GraphNode
+  targetNode: GraphNode
+  selectedEntityId: string | null
+}) => {
+  const isHighlighted = isEdgeHighlighted(edge, selectedEntityId)
+  const stroke = EDGE_STROKE[isHighlighted ? 'highlighted' : 'default']
+
+  return (
+    <g>
+      <line
+        x1={sourceNode.x}
+        y1={sourceNode.y}
+        x2={targetNode.x}
+        y2={targetNode.y}
+        className={cn('transition-all', stroke.className)}
+        strokeWidth={stroke.width}
+      />
+      {isHighlighted && (
+        <EdgeRelationLabel
+          sourceNode={sourceNode}
+          targetNode={targetNode}
+          relation={edge.relation}
+        />
+      )}
+    </g>
+  )
+}
 
 /** Interactive knowledge graph view with force, circular, and hierarchical layouts. */
 export const GraphView = () => {
@@ -96,19 +183,25 @@ export const GraphView = () => {
     return nodes
   }, [nodes, layout])
 
-  const visibleNodes = focusMode && selectedEntityId
-    ? positioned.filter((n) => {
-        if (n.id === selectedEntityId) return true
-        const neighbors = adjacency.get(selectedEntityId)
-        return neighbors?.has(n.id) ?? false
-      })
-    : positioned
+  const visibleNodes = useMemo(() => {
+    if (focusMode && selectedEntityId) {
+      const neighbors = adjacency.get(selectedEntityId)
+      return positioned.filter(
+        (n) => n.id === selectedEntityId || (neighbors?.has(n.id) ?? false),
+      )
+    }
+    return positioned
+  }, [focusMode, selectedEntityId, adjacency, positioned])
 
-  const { visibleEdges } = useMemo(() => {
+  const visibleEdges = useMemo(() => {
     const ids = new Set(visibleNodes.map((n) => n.id))
-    const filtered = edges.filter((e) => ids.has(e.source) && ids.has(e.target))
-    return { visibleEdges: filtered }
+    return edges.filter((e) => ids.has(e.source) && ids.has(e.target))
   }, [visibleNodes, edges])
+
+  const visibleNodeMap = useMemo(
+    () => new Map(visibleNodes.map((n) => [n.id, n])),
+    [visibleNodes],
+  )
 
   const svgRef = useRef<SVGSVGElement>(null)
   const reducedMotion = useReducedMotion()
@@ -265,57 +358,20 @@ export const GraphView = () => {
         >
           {/* Edges */}
           <g>
-            {(() => {
-              const nodeMap = new Map(visibleNodes.map((n) => [n.id, n]))
-              return visibleEdges.map((e) => {
-                const s = nodeMap.get(e.source)
-                const t = nodeMap.get(e.target)
-                if (!s || !t) return null
-                const isHighlight =
-                  selectedEntityId && (e.source === selectedEntityId || e.target === selectedEntityId)
-                return (
-                  <g key={e.id}>
-                    <line
-                      x1={s.x}
-                      y1={s.y}
-                      x2={t.x}
-                      y2={t.y}
-                      className={cn(
-                        'transition-all',
-                        isHighlight ? 'stroke-saffron' : 'stroke-border',
-                      )}
-                      strokeWidth={isHighlight ? 2 : 1.5}
-                    />
-                    {isHighlight && (() => {
-                      const dx = t.x - s.x
-                      const dy = t.y - s.y
-                      const length = Math.hypot(dx, dy) || 1
-                      const isAttachedToSelected = selectedEntityId && (e.source === selectedEntityId || e.target === selectedEntityId)
-                      const labelOffset = isAttachedToSelected ? 14 : 8
-
-                      const labelX = (s.x + t.x) / 2 + (-dy / length) * labelOffset
-                      const labelY = (s.y + t.y) / 2 + (dx / length) * labelOffset
-
-                      return (
-                        <text
-                          x={labelX}
-                          y={labelY}
-                          textAnchor="middle"
-                          dominantBaseline="central"
-                          stroke="var(--background)"
-                          strokeWidth={4}
-                          strokeLinejoin="round"
-                          paintOrder="stroke fill"
-                          className="fill-ink-mute font-sans text-badge italic"
-                        >
-                          {e.relation}
-                        </text>
-                      )
-                    })()}
-                  </g>
-                )
-              })
-            })()}
+            {visibleEdges.map((edge) => {
+              const sourceNode = visibleNodeMap.get(edge.source)
+              const targetNode = visibleNodeMap.get(edge.target)
+              if (!sourceNode || !targetNode) return null
+              return (
+                <GraphEdgeElement
+                  key={edge.id}
+                  edge={edge}
+                  sourceNode={sourceNode}
+                  targetNode={targetNode}
+                  selectedEntityId={selectedEntityId}
+                />
+              )
+            })}
           </g>
 
           {/* Nodes */}
