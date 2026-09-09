@@ -211,35 +211,36 @@ const runGeneration = async (
   }
 }
 
+/** Resolves the runtime model/execution options for a local chat request. */
+const resolveLocalTarget = (
+  request: ChatRequest,
+): { model: string; dtype: 'q4' | 'q8'; device: 'wasm' | 'webgpu' } => {
+  const model = typeof request.model === 'string' ? request.model : request.model.slug
+  const option = DEFAULT_LOCAL_MODELS.find((m) => m.id === model)
+  const device = request.localDevice ?? LOCAL_DEFAULT_DEVICE
+  return { model, dtype: option?.dtype ?? LOCAL_FALLBACK_DTYPE, device }
+}
+
 /** Adapter that runs a quantized instruct model locally in the browser. */
 class LocalAdapter implements ProviderAdapter {
   readonly id: ProviderId = 'local'
   readonly requiresKey = false
 
-  private static resolveTarget(
-    request: ChatRequest,
-  ): { model: string; dtype: 'q4' | 'q8'; device: 'wasm' | 'webgpu' } {
-    const model = typeof request.model === 'string' ? request.model : request.model.slug
-    const option = DEFAULT_LOCAL_MODELS.find((m) => m.id === model)
-    const device = request.localDevice ?? LOCAL_DEFAULT_DEVICE
-    return { model, dtype: option?.dtype ?? LOCAL_FALLBACK_DTYPE, device }
-  }
-
   async send(request: ChatRequest): Promise<ChatResult> {
-    const { model, dtype, device } = LocalAdapter.resolveTarget(request)
+    const { model, dtype, device } = resolveLocalTarget(request)
     const runtime = await loadTransformersRuntime(model, device, dtype)
     const content = await runGeneration(runtime, request.messages, request.signal)
-    return { content, provider: 'local', model }
+    return { content, provider: this.id, model }
   }
 
   async sendStream(
     request: ChatRequest,
     onChunk: (chunk: string) => void,
   ): Promise<ChatResult> {
-    const { model, dtype, device } = LocalAdapter.resolveTarget(request)
+    const { model, dtype, device } = resolveLocalTarget(request)
     const runtime = await loadTransformersRuntime(model, device, dtype)
     const content = await runGeneration(runtime, request.messages, request.signal, onChunk)
-    return { content, provider: 'local', model }
+    return { content, provider: this.id, model }
   }
 }
 

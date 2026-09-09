@@ -264,11 +264,11 @@ const buildVectorIndex = async (
   }
 }
 
-const isAbortError = (err: unknown): boolean =>
-  err instanceof DOMException && err.name === 'AbortError'
-
 /** Fire-and-forget rejection sink for discarded promise chains. */
 const noop = (): void => {}
+
+const isAbortError = (err: unknown): boolean =>
+  err instanceof DOMException && err.name === 'AbortError'
 
 const lexicalFallback = (
   entities: Entity[],
