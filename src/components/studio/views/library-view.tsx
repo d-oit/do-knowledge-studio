@@ -104,6 +104,7 @@ export const LibraryView = () => {
 
     let cancelled = false
     const controller = new AbortController()
+    setSemanticOutcome(null)
     setSemanticBusy(true)
     const debounce = setTimeout(() => {
       void searchSemantic(

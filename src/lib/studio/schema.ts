@@ -25,7 +25,7 @@ export const VerificationStatusSchema = z.enum(['unverified', 'verified', 'dispu
 export const EntitySchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  type: AnyEntityTypeSchema,
+  type: z.union([EntityTypeSchema, CustomEntityTypeSchema.refine((type) => type !== 'all', { message: 'Entity type cannot be "all"' })]),
   description: z.string(),
   content: z.string(),
   sourceUrl: z
