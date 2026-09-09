@@ -149,7 +149,9 @@ export const EditorMentionPicker = memo(function EditorMentionPicker({
     // Re-measure on scroll while the picker stays open; cleanup on close.
     el.addEventListener('scroll', measure, { passive: true })
     measure()
-    return () => el.removeEventListener('scroll', measure)
+    return () => {
+      el.removeEventListener('scroll', measure)
+    }
   }, [open, textarea, content, caret, candidates.length, query, triggerStart])
 
   if (!open) return null
