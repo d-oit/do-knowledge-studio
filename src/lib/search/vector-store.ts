@@ -255,7 +255,11 @@ const buildVectorIndex = async (
         .finally(() => {
           if (indexBuilding === promise) indexBuilding = null
         })
-        .catch(noop)
+        .catch((error: unknown) => {
+          // Original rejection still surfaces to the returned promise;
+          // this branch only keeps the discarded finally-chain quiet.
+          void error
+        })
       return promise
     }
     // Another build is in flight — wait for it, then re-check whether it
@@ -263,9 +267,6 @@ const buildVectorIndex = async (
     await indexBuilding.catch(() => undefined)
   }
 }
-
-/** Fire-and-forget rejection sink for discarded promise chains. */
-const noop = (): void => {}
 
 const isAbortError = (err: unknown): boolean =>
   err instanceof DOMException && err.name === 'AbortError'
