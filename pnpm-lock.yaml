@@ -4,6 +4,27 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+<<<<<<< HEAD
+=======
+overrides:
+  lodash: ^4.18.0
+  lodash-es: ^4.18.0
+  postcss: ^8.5.23
+  sharp: ^0.35.4
+  brace-expansion@<1.1.16: 1.1.16
+  defu: ^6.1.5
+  picomatch: ^4.0.4
+  js-yaml: ^4.3.1
+  js-cookie: ^3.0.7
+  adm-zip: ^0.6.0
+  effect: ^3.20.0
+  prismjs: ^1.30.0
+  diff: ^5.2.2
+  dompurify: ^3.4.13
+  undici: ^7.29.0
+  nanoid@3: 3.3.18
+
+>>>>>>> 9acf66e (fix(studio): resolve Codacy findings on N1-N7 sprint tree)
 importers:
 
   .:
@@ -2661,9 +2682,9 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
-  adm-zip@0.5.18:
-    resolution: {integrity: sha512-ufJnssQGbxzLNS1Ho9bCtX4rQKCCvoVuDLHoJyc3F9dOGDB4BkWs2Ci0kv53lqocAEQ/Cbi+I2XCsNYGqVYqng==}
-    engines: {node: '>=12.0'}
+  adm-zip@0.6.0:
+    resolution: {integrity: sha512-XleryMhbuksdKtofnWZ9Sk+4CUTbms4Mb/EU32SZwToAyZ5RgVos/ki8n+yr0LWHOGKuakbXTuuYNHLQjhddgg==}
+    engines: {node: '>=14.0'}
 
   ajv@6.15.0:
     resolution: {integrity: sha512-fgFx7Hfoq60ytK2c7DhnF8jIvzYgOMxfugjLOSMHjLIPgenqa7S7oaagATUq99mV6IYvN2tRmC0wnTYX6iPbMw==}
@@ -7117,7 +7138,7 @@ snapshots:
 
   acorn@8.17.0: {}
 
-  adm-zip@0.5.18: {}
+  adm-zip@0.6.0: {}
 
   ajv@6.15.0:
     dependencies:
@@ -8992,7 +9013,7 @@ snapshots:
 
   onnxruntime-node@1.24.3:
     dependencies:
-      adm-zip: 0.5.18
+      adm-zip: 0.6.0
       global-agent: 3.0.0
       onnxruntime-common: 1.24.3
 

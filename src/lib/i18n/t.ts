@@ -26,8 +26,16 @@ export type MessageEntry = string | ((...args: string[]) => string)
 export const makeT = <const T extends Record<string, MessageEntry>>(
   messages: T,
 ): ((key: keyof T, ...args: string[]) => string) => {
+  // Materialize the message map once; Map.get is a bounded retrieval and does
+  // not expose prototype-chain lookups, so dynamic keys are injection-safe
+  // (Codacy `detect-object-injection`).
+  const entries = new Map<string, MessageEntry>(Object.entries(messages))
   return (key, ...args) => {
-    const entry = messages[key]
-    return typeof entry === 'function' ? entry(...args) : entry
+    // `keyof T` may be wider than `string` at the generic boundary; message
+    // maps are keyed by string per the `Record<string, MessageEntry>` bound.
+    const entry = entries.get(key as string)
+    if (typeof entry === 'function') return entry(...args)
+    if (entry !== undefined) return entry
+    return String(key)
   }
 }

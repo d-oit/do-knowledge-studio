@@ -25,7 +25,8 @@ const TimelineRow = memo(function TimelineRow({
   item: TimelineItem
   onOpen: (item: TimelineItem) => void
 }) {
-  const meta = item.entityType ? getEntityTypeMeta(item.entityType) : null
+  const entityType = item.entityType
+  const meta = entityType ? getEntityTypeMeta(entityType) : null
   return (
     <li>
       <button
@@ -39,8 +40,8 @@ const TimelineRow = memo(function TimelineRow({
             meta ? cn(meta.bg, meta.text) : 'bg-muted text-ink-faint',
           )}
         >
-          {meta ? (
-            <EntityIcon type={item.entityType!} className="h-4 w-4" />
+          {meta && entityType ? (
+            <EntityIcon type={entityType} className="h-4 w-4" />
           ) : (
             <Quote className="h-4 w-4" />
           )}

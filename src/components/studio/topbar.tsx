@@ -21,6 +21,12 @@ const VIEW_TITLES: Record<ViewId, { title: string; subtitle: string }> = {
   timeline: { title: timelineT('timeline.title'), subtitle: timelineT('timeline.subtitle') },
 }
 
+/** Own-property-guarded lookup (Codacy injection-sink safe, mirrors entity-types). */
+const getViewMeta = (view: ViewId): { title: string; subtitle: string } => {
+  if (!Object.prototype.hasOwnProperty.call(VIEW_TITLES, view)) return VIEW_TITLES.home
+  return VIEW_TITLES[view]
+}
+
 /** Top header bar with view title, inline search, offline badge, and new entity button. */
 export const Topbar = () => {
   const currentView = useStudioStore((s) => s.currentView)
@@ -31,7 +37,7 @@ export const Topbar = () => {
   const setMobileDrawerOpen = useStudioStore((s) => s.setMobileDrawerOpen)
   const setMobilePanelView = useStudioStore((s) => s.setMobilePanelView)
   const isHydrated = useStoreHydrated()
-  const meta = VIEW_TITLES[currentView as keyof typeof VIEW_TITLES]
+  const meta = getViewMeta(currentView)
 
   // Inline input doubles as a quick filter for the Library + right-panel SearchPanel,
   // and as a launcher for the command palette (via ⌘K or the kbd chip).
