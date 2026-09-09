@@ -14,7 +14,7 @@
  * @see plans/131-goap-swarm-improvement-audit-2026-08-22.md (G1)
  */
 
-import type { Claim, Entity, ChatMessage, ViewId, EntityType } from './types'
+import type { Claim, Entity, ChatMessage, ViewId, AnyEntityType } from './types'
 import { validatePersistedState } from './schema'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from './schema'
 import { CURRENT_SCHEMA_VERSION, runMigrations } from './migrations'
@@ -44,7 +44,7 @@ interface PersistedSlice {
   claims: Claim[]
   chat: ChatMessage[]
   currentView: ViewId
-  typeFilter: EntityType | 'all'
+  typeFilter: AnyEntityType | 'all'
   sortBy: 'name' | 'created' | 'updated'
   sortDir: 'asc' | 'desc'
   rightPanelOpen: boolean

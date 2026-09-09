@@ -1,11 +1,22 @@
 /**
  * Asynchronous Search Worker Client with graceful fallback to synchronous in-memory search
  * for environments without Web Worker support (SSR, Node/Vitest, legacy browsers).
+ *
+ * Lexical `searchAsync` runs through the Web Worker when available. Semantic
+ * `searchSemantic` (N1, Issue #751) deliberately executes in-process on the
+ * main thread: the worker's dynamic `import('@huggingface/transformers')`
+ * never resolves under Turbopack's module-worker bundling (dev and prod),
+ * which left semantic requests pending forever without any network activity.
+ * Running the shared vector store on the main thread resolves reliably and
+ * retains the lexical fallback contract.
  */
 
 import type { Entity, Claim } from '@/lib/studio/types'
 import { search, type SearchResult } from './retrieval'
+import { semanticSearch, type SemanticSearchOutcome } from './vector-store'
 import type { SearchWorkerRequest, SearchWorkerResponse } from './search-worker'
+
+export type { SemanticSearchOutcome } from './vector-store'
 
 let transactionSequence = 0
 
@@ -42,7 +53,7 @@ const timeoutError = (): Error => new DOMException('Search worker timed out', 'T
  */
 export const SEARCH_WORKER_TIMEOUT_MS = 3000
 
-/** Client for executing off-thread search queries via Web Workers. */
+/** Client for executing off-thread lexical search queries via a Web Worker. */
 export class SearchWorkerClient {
   private worker: Worker | null = null
   private pendingRequests = new Map<string, PendingRequest>()
@@ -69,7 +80,7 @@ export class SearchWorkerClient {
     const pending = this.pendingRequests.get(id)
     if (!pending) return
     this.pendingRequests.delete(id)
-    if (pending.timer) clearTimeout(pending.timer)
+    clearTimeout(pending.timer)
     pending.cleanup?.()
     pending.reject(error)
   }
@@ -79,20 +90,23 @@ export class SearchWorkerClient {
     const pending = this.pendingRequests.get(id)
     if (!pending) return
     this.pendingRequests.delete(id)
-    if (pending.timer) clearTimeout(pending.timer)
+    clearTimeout(pending.timer)
     pending.cleanup?.()
     pending.resolve(results)
   }
 
-  /** Attach an abort listener; rejects the pending request when the signal fires. */
-  private wireAbort(id: string, signal: AbortSignal | undefined): (() => void) | undefined {
+  /** Attach an abort listener; settles the pending request when the signal fires. */
+  private wireAbort(
+    signal: AbortSignal | undefined,
+    onAbort: (error: Error) => void,
+  ): (() => void) | undefined {
     if (!signal) return undefined
-    const onAbort = () => {
-      this.settle(id, abortError())
-      signal.removeEventListener('abort', onAbort)
+    const handler = () => {
+      onAbort(abortError())
+      signal.removeEventListener('abort', handler)
     }
-    signal.addEventListener('abort', onAbort)
-    return () => signal.removeEventListener('abort', onAbort)
+    signal.addEventListener('abort', handler)
+    return () => signal.removeEventListener('abort', handler)
   }
 
   private initWorkerListeners(): void {
@@ -100,8 +114,7 @@ export class SearchWorkerClient {
 
     this.worker.onmessage = (e: MessageEvent<SearchWorkerResponse>) => {
       const data = e.data
-      const pending = this.pendingRequests.get(data.id)
-      if (!pending) return
+      if (!this.pendingRequests.has(data.id)) return
       if (data.type === 'SUCCESS') {
         this.resolvePending(data.id, data.results)
       } else if (data.type === 'ERROR') {
@@ -147,7 +160,7 @@ export class SearchWorkerClient {
     }
 
     return new Promise<SearchResult[]>((resolve, reject) => {
-      const cleanup = this.wireAbort(id, signal)
+      const cleanup = this.wireAbort(signal, () => this.settle(id, abortError()))
       // Bound the request so a silent/broken worker can't leave callers (e.g.
       // the chat) waiting forever; the caller falls back to sync search.
       const timer = setTimeout(() => {
@@ -164,6 +177,27 @@ export class SearchWorkerClient {
         this.settle(id, err instanceof Error ? err : new Error('Failed to post message to worker'))
       }
     })
+  }
+
+  /**
+   * Semantic (multilingual embedding) search over entities and claims.
+   * Runs in-process on the main thread (see the module doc for why the
+   * worker is not used). Resolves with an outcome carrying
+   * `source: 'semantic'` or a lexical fallback with the surfaced reason —
+   * rejection only on abort.
+   *
+   * @param signal - Optional abort signal; the pending search is cancelled
+   *   and the promise rejects with `AbortError`.
+   */
+  searchSemantic(
+    entities: Entity[],
+    claims: Claim[],
+    query: string,
+    limit?: number,
+    signal?: AbortSignal,
+  ): Promise<SemanticSearchOutcome> {
+    if (signal?.aborted) return Promise.reject(abortError())
+    return semanticSearch(entities, claims, query, limit, signal)
   }
 
   /** Terminate the underlying Web Worker and reject pending requests. */
@@ -194,4 +228,18 @@ export const searchAsync = (
   signal?: AbortSignal,
 ): Promise<SearchResult[]> => {
   return defaultSearchWorkerClient.searchAsync(entities, claims, query, limit, signal)
+}
+
+/**
+ * Convenient standalone semantic search helper using the default worker
+ * client; mirrors {@link searchAsync} with the semantic outcome contract.
+ */
+export const searchSemantic = (
+  entities: Entity[],
+  claims: Claim[],
+  query: string,
+  limit?: number,
+  signal?: AbortSignal,
+): Promise<SemanticSearchOutcome> => {
+  return defaultSearchWorkerClient.searchSemantic(entities, claims, query, limit, signal)
 }

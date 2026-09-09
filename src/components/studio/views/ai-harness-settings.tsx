@@ -7,7 +7,10 @@ import {
   PROVIDER_LABELS,
   OPENROUTER_DEFAULT_MODELS,
   OLLAMA_DEFAULT_MODELS,
-} from '@/lib/ai/types'
+  DEFAULT_LOCAL_MODELS,
+  LOCAL_PROVIDER_ID,
+} from '@/lib/ai'
+import { t as tAi } from '@/lib/i18n/messages/ai'
 
 /** Configuration entry for a supported AI provider. */
 export interface ProviderOption {
@@ -21,6 +24,12 @@ export interface ProviderOption {
 export const PROVIDERS: ProviderOption[] = [
   { id: 'openrouter', label: PROVIDER_LABELS.openrouter, models: OPENROUTER_DEFAULT_MODELS, requiresKey: true },
   { id: 'ollama', label: PROVIDER_LABELS.ollama, models: OLLAMA_DEFAULT_MODELS, requiresKey: false },
+  {
+    id: LOCAL_PROVIDER_ID,
+    label: tAi('ai.settings.provider.local.label'),
+    models: DEFAULT_LOCAL_MODELS.map((m) => m.id),
+    requiresKey: false,
+  },
 ]
 
 

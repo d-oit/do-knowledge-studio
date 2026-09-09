@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { Overlay } from '@/components/studio/ui/shared-primitives'
 import type { ImportPreview } from './export-types'
+import { t } from '@/lib/i18n/messages/import'
 
 interface ImportPreviewDialogProps {
   importPreview: ImportPreview | null
@@ -27,7 +28,7 @@ export const ImportPreviewDialog = memo(function ImportPreviewDialog({
     <Overlay
       open={!!importPreview}
       onClose={() => { setImportPreview(null) }}
-      aria-label="Confirm import"
+      aria-label={t('import.ariaLabel')}
     >
       <motion.div
         initial={reducedMotion ? false : { opacity: 0, scale: 0.96 }}
@@ -41,32 +42,32 @@ export const ImportPreviewDialog = memo(function ImportPreviewDialog({
             <Eye className="h-4 w-4" />
           </div>
           <div>
-            <h3 className="font-serif text-[15px] font-semibold text-ink">Import preview</h3>
-            <p className="text-[12px] text-ink-mute">Review before replacing your library.</p>
+            <h3 className="font-serif text-[15px] font-semibold text-ink">{t('import.title')}</h3>
+            <p className="text-[12px] text-ink-mute">{t('import.subtitle')}</p>
           </div>
         </div>
 
         <div className="mb-4 space-y-2 rounded-lg border border-border bg-background p-3">
           <div className="flex items-center justify-between text-[13px]">
-            <span className="text-ink-mute">Entities</span>
+            <span className="text-ink-mute">{t('import.entities')}</span>
             <span className="font-semibold text-ink">{importPreview.entityCount}</span>
           </div>
           <div className="flex items-center justify-between text-[13px]">
-            <span className="text-ink-mute">Claims</span>
+            <span className="text-ink-mute">{t('import.claims')}</span>
             <span className="font-semibold text-ink">{importPreview.claimCount}</span>
           </div>
           {importPreview.duplicateIds.length > 0 && (
             <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-2 dark:border-amber-900 dark:bg-amber-950/40">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
               <p className="text-label text-amber-700 dark:text-amber-300">
-                {importPreview.duplicateIds.length} existing {importPreview.duplicateIds.length === 1 ? 'entity' : 'entities'} will be replaced (matching IDs detected).
+                {t('import.duplicates', String(importPreview.duplicateIds.length))}
               </p>
             </div>
           )}
         </div>
 
         <p className="mb-4 text-[12px] text-ink-mute">
-          This will replace all current entities and claims. A snapshot is taken so you can undo if something goes wrong.
+          {t('import.body')}
         </p>
 
         <div className="flex justify-end gap-2">
@@ -74,13 +75,13 @@ export const ImportPreviewDialog = memo(function ImportPreviewDialog({
             onClick={() => { setImportPreview(null) }}
             className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
           >
-            Cancel
+            {t('import.cancel')}
           </button>
           <button
             onClick={handleConfirmImport}
             className="rounded-md bg-primary px-4 py-1.5 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
           >
-            Confirm import
+            {t('import.confirm')}
           </button>
         </div>
       </motion.div>

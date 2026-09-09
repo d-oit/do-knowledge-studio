@@ -1,8 +1,10 @@
 'use client'
 
 import { useStudioStore } from '@/lib/studio/store'
-import { ENTITY_TYPE_META, type GraphEdge, type GraphNode } from '@/lib/studio/types'
+import { type GraphEdge, type GraphNode } from '@/lib/studio/types'
 import { seedGraph } from '@/lib/studio/seed-data'
+import { getEntityTypeDefs, getEntityTypeMeta } from '@/lib/studio/entity-types'
+import { t as entityTypesT } from '@/lib/i18n/messages/entity-types'
 import { todayStamp, downloadBlob } from './export-types'
 import { CircleDot } from 'lucide-react'
 import { useState, useRef, useMemo, useCallback } from 'react'
@@ -377,7 +379,7 @@ export const GraphView = () => {
           {/* Nodes */}
           <g>
             {visibleNodes.map((n) => {
-              const meta = ENTITY_TYPE_META[n.type]
+              const meta = getEntityTypeMeta(n.type)
               const isSelected = n.id === selectedEntityId
               const r = isSelected ? 14 : 11
               return (
@@ -445,18 +447,15 @@ export const GraphView = () => {
         {/* Floating legend */}
         <div className="absolute bottom-4 left-4 rounded-lg border border-border bg-background/90 p-3 backdrop-blur-sm">
           <div className="mb-2 text-caption font-semibold uppercase tracking-wide text-ink-faint">
-            Entity types
+            {entityTypesT('entity-types.legendHeading')}
           </div>
           <div className="space-y-1">
-            {(Object.keys(ENTITY_TYPE_META) as (keyof typeof ENTITY_TYPE_META)[]).map((t) => {
-              const m = ENTITY_TYPE_META[t as keyof typeof ENTITY_TYPE_META]
-              return (
-                <div key={t} className="flex items-center gap-2 text-label text-ink-soft">
-                  <span className={cn('h-2 w-2 rounded-full', m.dot)} />
-                  {m.label}
-                </div>
-              )
-            })}
+            {getEntityTypeDefs().map((def) => (
+              <div key={def.id} className="flex items-center gap-2 text-label text-ink-soft">
+                <span className={cn('h-2 w-2 rounded-full', def.dot)} />
+                {def.label}
+              </div>
+            ))}
           </div>
         </div>
 

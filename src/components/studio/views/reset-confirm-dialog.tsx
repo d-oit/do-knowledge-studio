@@ -5,6 +5,7 @@ import { RotateCcw } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { Overlay } from '@/components/studio/ui/shared-primitives'
+import { t } from '@/lib/i18n/messages/export'
 
 interface ResetConfirmDialogProps {
   showResetConfirm: boolean
@@ -28,7 +29,7 @@ export const ResetConfirmDialog = memo(function ResetConfirmDialog({
     <Overlay
       open={showResetConfirm}
       onClose={() => { setShowResetConfirm(false) }}
-      aria-label="Confirm reset"
+      aria-label={t('export.reset.ariaLabel')}
       initialFocusRef={resetCancelRef}
     >
       <motion.div
@@ -43,12 +44,12 @@ export const ResetConfirmDialog = memo(function ResetConfirmDialog({
             <RotateCcw className="h-4 w-4" />
           </div>
           <div>
-            <h3 className="font-serif text-[15px] font-semibold text-ink">Reset to demo data?</h3>
-            <p className="text-[12px] text-ink-mute">This will delete all your entities and claims.</p>
+            <h3 className="font-serif text-[15px] font-semibold text-ink">{t('export.reset.title')}</h3>
+            <p className="text-[12px] text-ink-mute">{t('export.reset.subtitle')}</p>
           </div>
         </div>
         <p className="mb-4 text-[13px] text-ink-soft">
-          This action cannot be undone. Export your data first if you want to keep it.
+          {t('export.reset.body')}
         </p>
         <div className="flex justify-end gap-2">
           <button
@@ -56,7 +57,7 @@ export const ResetConfirmDialog = memo(function ResetConfirmDialog({
             onClick={() => { setShowResetConfirm(false) }}
             className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
           >
-            Cancel
+            {t('export.reset.cancel')}
           </button>
           <button
             onClick={() => {
@@ -65,7 +66,7 @@ export const ResetConfirmDialog = memo(function ResetConfirmDialog({
             }}
             className="rounded-md bg-red-600 px-4 py-1.5 text-[12px] font-semibold text-white shadow-sm transition-all hover:bg-red-700 focus-ring"
           >
-            Reset everything
+            {t('export.reset.confirm')}
           </button>
         </div>
       </motion.div>

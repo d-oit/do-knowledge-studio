@@ -4,7 +4,8 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import type { VirtualItem } from '@tanstack/react-virtual'
 import { motion } from 'framer-motion'
 import { Clock } from 'lucide-react'
-import { ENTITY_TYPE_META, type Entity } from '@/lib/studio/types'
+import type { Entity } from '@/lib/studio/types'
+import { getEntityTypeMeta } from '@/lib/studio/entity-types'
 import { EntityIcon } from '../entity-type-icon'
 import { cn } from '@/lib/utils'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
@@ -226,7 +227,7 @@ function GridCard({
   index: number
   animate: boolean
 }) {
-  const meta = ENTITY_TYPE_META[entity.type]
+  const meta = getEntityTypeMeta(entity.type)
   return (
     <motion.button
       initial={animate ? { opacity: 0, y: 6 } : false}
@@ -353,7 +354,7 @@ function TableRow({
   vi: VirtualItem | null
   measure?: (node: HTMLTableRowElement | null) => void
 }) {
-  const meta = ENTITY_TYPE_META[entity.type]
+  const meta = getEntityTypeMeta(entity.type)
   return (
     <tr
       key={entity.id}

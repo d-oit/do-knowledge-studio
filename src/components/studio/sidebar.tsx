@@ -17,6 +17,7 @@ import {
   PanelRight,
   PanelRightClose,
   Wifi,
+  CalendarDays,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { RELEASES_BASE_URL } from '@/lib/studio/constants'
@@ -24,6 +25,7 @@ import { useStudioStore } from '@/lib/studio/store'
 import type { ViewId } from '@/lib/studio/types'
 import packageJson from '../../../package.json'
 import { cn } from '@/lib/utils'
+import { t } from '@/lib/i18n/messages/timeline'
 import { ShortcutsTrigger } from './shortcuts-dialog'
 
 interface NavItem {
@@ -38,7 +40,10 @@ interface NavItem {
 export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: 'Overview',
-    items: [{ id: 'home', label: 'Home', icon: Home, shortcut: 'G H' }],
+    items: [
+      { id: 'home', label: 'Home', icon: Home, shortcut: 'G H' },
+      { id: 'timeline', label: t('timeline.nav.label'), icon: CalendarDays },
+    ],
   },
   {
     label: 'Capture',

@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import type { Entity, Claim, ViewId, ChatMessage, EntityType } from './types'
+import type { Entity, Claim, ViewId, ChatMessage, AnyEntityType } from './types'
 import { seedEntities, seedClaims, seedChat } from './seed-data'
 import { search, resetSearchCache, type SearchResult } from '@/lib/search/retrieval'
 import { searchAsync } from '@/lib/search/search-worker-client'
@@ -78,8 +78,10 @@ interface StudioState {
   // Library controls
   searchQuery: string
   setSearchQuery: (q: string) => void
-  typeFilter: EntityType | 'all'
-  setTypeFilter: (t: EntityType | 'all') => void
+  typeFilter: AnyEntityType | 'all'
+  setTypeFilter: (t: AnyEntityType | 'all') => void
+  semanticSearchEnabled: boolean
+  setSemanticSearchEnabled: (enabled: boolean) => void
   sortBy: 'name' | 'created' | 'updated'
   setSortBy: (s: 'name' | 'created' | 'updated') => void
   sortDir: 'asc' | 'desc'
@@ -149,7 +151,8 @@ const SEED_STATE = {
   chatLoading: false,
   currentView: 'home' as ViewId,
   searchQuery: '',
-  typeFilter: 'all' as EntityType | 'all',
+  typeFilter: 'all' as AnyEntityType | 'all',
+  semanticSearchEnabled: false,
   sortBy: 'updated' as 'name' | 'created' | 'updated',
   sortDir: 'desc' as 'asc' | 'desc',
   rightPanelOpen: true,
@@ -310,6 +313,7 @@ export const useStudioStore = create<StudioState>()(
 
       setSearchQuery: (q) => set({ searchQuery: q }),
       setTypeFilter: (t) => set({ typeFilter: t }),
+      setSemanticSearchEnabled: (enabled) => set({ semanticSearchEnabled: enabled }),
       setSortBy: (s) => set({ sortBy: s }),
       setSortDir: (d) => set({ sortDir: d }),
 
@@ -559,7 +563,7 @@ export const useStats = () => {
         acc[e.type] = (acc[e.type] || 0) + 1
         return acc
       },
-      {} as Record<EntityType, number>,
+      {} as Record<string, number>,
     )
     const verified = claims.filter((c) => c.verification === 'verified').length
     const recent = [...entities].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 5)

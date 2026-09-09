@@ -2,7 +2,7 @@
 
 import { useMemo, useCallback } from 'react'
 import { useStudioStore, useStats } from '@/lib/studio/store'
-import { ENTITY_TYPE_META } from '@/lib/studio/types'
+import { getEntityTypeMeta } from '@/lib/studio/entity-types'
 import {
   FileText,
   ArrowUpRight,
@@ -92,9 +92,7 @@ export function HomeView() {
 
   const typeEntries = useMemo(
     () =>
-      (Object.entries(stats.byType) as [string, number][]).map(
-        ([t, c]) => [t as keyof typeof ENTITY_TYPE_META, c] as const,
-      ),
+      (Object.entries(stats.byType) as [string, number][]).map(([t, c]) => [t, c] as const),
     [stats.byType],
   )
 
@@ -153,7 +151,7 @@ export function HomeView() {
         ) : (
           <ul className="divide-y divide-border rounded-lg border border-border bg-card">
             {recentEntities.map((entity) => {
-              const meta = ENTITY_TYPE_META[entity.type]
+              const meta = getEntityTypeMeta(entity.type)
               return (
                 <li key={entity.id}>
                   <button
@@ -235,7 +233,7 @@ export function HomeView() {
           <div className="rounded-lg border border-border bg-card p-4">
             <div className="space-y-3">
               {typeEntries.map(([type, count]) => {
-                const meta = ENTITY_TYPE_META[type as keyof typeof ENTITY_TYPE_META]
+                const meta = getEntityTypeMeta(type)
                 const pct = stats.total > 0 ? (count / stats.total) * 100 : 0
                 return (
                   <div key={type}>

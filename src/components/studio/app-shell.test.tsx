@@ -38,6 +38,10 @@ vi.mock('./views/library-view', () => ({
   LibraryView: () => <div data-testid="library-view">Library</div>,
 }))
 
+vi.mock('./views/timeline-view', () => ({
+  TimelineView: () => <div data-testid="timeline-view">Timeline</div>,
+}))
+
 vi.mock('./views/chat-view', () => ({
   ChatView: () => <div data-testid="chat-view">Chat</div>,
 }))
@@ -182,6 +186,12 @@ describe('AppShell', () => {
     currentView = 'library'
     render(<AppShell />)
     expect(screen.getByTestId('library-view')).toBeDefined()
+  })
+
+  it('renders TimelineView when currentView is timeline', () => {
+    currentView = 'timeline'
+    render(<AppShell />)
+    expect(screen.getByTestId('timeline-view')).toBeDefined()
   })
 
   it('renders ChatView when currentView is chat', () => {

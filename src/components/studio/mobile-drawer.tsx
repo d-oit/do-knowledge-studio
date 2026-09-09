@@ -7,10 +7,12 @@ import packageJson from '../../../package.json'
 import { useTheme } from 'next-themes'
 import { RELEASES_BASE_URL } from '@/lib/studio/constants'
 import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
-import { ENTITY_TYPE_META, type Entity } from '@/lib/studio/types'
+import type { Entity } from '@/lib/studio/types'
+import { getEntityTypeMeta } from '@/lib/studio/entity-types'
 import { NAV_GROUPS } from './sidebar'
 import { cn } from '@/lib/utils'
 import { search } from '@/lib/search/retrieval'
+import { t } from '@/lib/i18n/messages/mobile-drawer'
 
 /**
  * MobileDrawer — slide-in drawer from the left, visible only below `lg`
@@ -50,7 +52,7 @@ export function MobileDrawer() {
     <Overlay
       open={open}
       onClose={() => setOpen(false)}
-      aria-label="Navigation and search"
+      aria-label={t('drawer.ariaLabel')}
       variant="sheet-left"
       initialFocusRef={closeBtnRef}
       className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-lifted lg:hidden"
@@ -88,22 +90,22 @@ function DrawerHeader({
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-serif text-[15px] font-semibold leading-tight tracking-tight">
-          Knowledge Studio
+          {t('drawer.brand')}
         </span>
         <a
           href={`${RELEASES_BASE_URL}/tag/v${packageJson.version}`}
           target="_blank"
           rel="noreferrer"
-          aria-label={`Knowledge Studio v${packageJson.version} release page`}
+          aria-label={t('drawer.releaseAriaLabel', packageJson.version)}
           className="inline-flex min-h-[44px] items-center text-caption uppercase tracking-[0.14em] text-ink-faint transition-colors hover:text-saffron focus-ring"
         >
-          Local-first · v{packageJson.version}
+          {t('drawer.releaseBadge', packageJson.version)}
         </a>
       </div>
       <button
         ref={closeBtnRef}
         onClick={onClose}
-        aria-label="Close drawer"
+        aria-label={t('drawer.close')}
         className="-mr-1 flex-shrink-0 rounded-md p-2 text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
       >
         <X className="h-4 w-4" />
@@ -126,7 +128,7 @@ function TabSwitcher({
     <div className="px-3 pt-3">
       <div
         role="tablist"
-        aria-label="Drawer view"
+        aria-label={t('drawer.tabsAriaLabel')}
         className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1"
       >
         <button
@@ -140,7 +142,7 @@ function TabSwitcher({
               : 'text-ink-mute hover:text-ink',
           )}
         >
-          Navigate
+          {t('drawer.tab.navigate')}
         </button>
         <button
           role="tab"
@@ -153,7 +155,7 @@ function TabSwitcher({
               : 'text-ink-mute hover:text-ink',
           )}
         >
-          Search
+          {t('drawer.tab.search')}
         </button>
       </div>
     </div>
@@ -173,7 +175,7 @@ function NavTab({ onNavigate }: { onNavigate: () => void }) {
   }
 
   return (
-    <nav className="px-3 pb-3 pt-3" aria-label="Main navigation">
+    <nav className="px-3 pb-3 pt-3" aria-label={t('drawer.navAriaLabel')}>
       {NAV_GROUPS.map((group) => (
         <div key={group.label} className="mb-3.5">
           <div className="mb-1.5 px-2 text-caption font-semibold uppercase tracking-[0.14em] text-ink-faint">
@@ -206,7 +208,7 @@ function NavTab({ onNavigate }: { onNavigate: () => void }) {
                     <span className="flex-1 text-left">{item.label}</span>
                     {item.experimental && (
                       <span className="rounded-full border border-dashed border-saffron/40 px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-saffron-deep">
-                        Lab
+                        {t('drawer.lab')}
                       </span>
                     )}
                     {item.shortcut && (
@@ -249,7 +251,7 @@ function SearchTab({ onSelect }: { onSelect: () => void }) {
     : filtered
 
   // Empty-state copy follows the desktop SearchPanel exactly
-  const emptyCopy = searchQuery ? 'No matches found.' : 'Your library is empty.'
+  const emptyCopy = searchQuery ? t('drawer.search.empty') : t('drawer.search.libraryEmpty')
 
   return (
     <div className="flex h-full flex-col">
@@ -259,8 +261,8 @@ function SearchTab({ onSelect }: { onSelect: () => void }) {
           <input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search knowledge base…"
-            aria-label="Search knowledge base"
+            placeholder={t('drawer.search.placeholder')}
+            aria-label={t('drawer.search.ariaLabel')}
             className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-3 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/30"
           />
         </div>
@@ -299,9 +301,9 @@ function SearchTab({ onSelect }: { onSelect: () => void }) {
             <p className="text-[12px] text-ink-mute">{emptyCopy}</p>
           </div>
         ) : (
-          <ul className="space-y-1.5" role="list" aria-label="Search results">
+          <ul className="space-y-1.5" role="list" aria-label={t('drawer.search.resultsAriaLabel')}>
             {displayEntities.map((e) => {
-              const meta = ENTITY_TYPE_META[e.type]
+              const meta = getEntityTypeMeta(e.type)
               return (
                 <li key={e.id}>
                   <button
@@ -335,10 +337,10 @@ function SearchTab({ onSelect }: { onSelect: () => void }) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-label font-medium text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-400">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            Offline ready
+            {t('drawer.offlineReady')}
           </div>
           <span className="text-label text-ink-faint">
-            {entities.length} entities
+            {t('drawer.entityCount', String(entities.length))}
           </span>
         </div>
       </div>
@@ -364,25 +366,25 @@ function DrawerFooter() {
       <div className="flex items-center gap-2">
         <button
           onClick={toggle}
-          aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+          aria-label={isDark ? t('drawer.theme.lightAria') : t('drawer.theme.darkAria')}
           className="flex flex-1 items-center gap-2 rounded-md px-2.5 py-1.5 text-[12px] font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
         >
           {isDark ? (
             <>
               <Sun className="h-4 w-4" />
-              <span>Light</span>
+              <span>{t('drawer.theme.light')}</span>
             </>
           ) : (
             <>
               <Moon className="h-4 w-4" />
-              <span>Dark</span>
+              <span>{t('drawer.theme.dark')}</span>
             </>
           )}
         </button>
       </div>
       <div className="mt-2 flex items-center gap-1.5 px-2.5 text-label text-ink-faint">
         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-        Local search · {entities.length} entities
+        {t('drawer.footer.localSearch', String(entities.length))}
       </div>
     </div>
   )

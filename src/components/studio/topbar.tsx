@@ -3,6 +3,7 @@
 import { useStudioStore } from '@/lib/studio/store'
 import { useStoreHydrated } from '@/lib/studio/use-hydrated'
 import type { ViewId } from '@/lib/studio/types'
+import { t as timelineT } from '@/lib/i18n/messages/timeline'
 import { Menu, Plus, Search } from 'lucide-react'
 import type { KeyboardEvent } from 'react'
 
@@ -17,6 +18,7 @@ const VIEW_TITLES: Record<ViewId, { title: string; subtitle: string }> = {
   triz: { title: 'TRIZ Matrix', subtitle: 'Solve inventive contradictions' },
   export: { title: 'Export', subtitle: 'Backup and share your knowledge' },
   sync: { title: 'Sync', subtitle: 'Connect devices and sync peer-to-peer' },
+  timeline: { title: timelineT('timeline.title'), subtitle: timelineT('timeline.subtitle') },
 }
 
 /** Top header bar with view title, inline search, offline badge, and new entity button. */

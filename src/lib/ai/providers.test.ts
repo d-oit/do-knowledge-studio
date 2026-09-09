@@ -22,6 +22,19 @@ describe('getAdapter', () => {
     expect(adapter.id).toBe('ollama')
     expect(adapter.requiresKey).toBe(false)
   })
+  it('returns Local adapter for "local"', () => {
+    const adapter = getAdapter('local')
+    expect(adapter.id).toBe('local')
+    expect(adapter.requiresKey).toBe(false)
+  })
+
+  it('local adapter has sendStream method', () => {
+    expect(typeof getAdapter('local').sendStream).toBe('function')
+  })
+
+  it('local adapter does not require an API key', () => {
+    expect(getAdapter('local').requiresKey).toBe(false)
+  })
 
   it('adapters both have sendStream method', () => {
     expect(typeof getAdapter('openrouter').sendStream).toBe('function')

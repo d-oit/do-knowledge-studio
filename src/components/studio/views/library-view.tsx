@@ -1,10 +1,13 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
-import { type EntityType } from '@/lib/studio/types'
+import { type EntityType, type Entity } from '@/lib/studio/types'
 import { ToggleButtonGroup } from '../ui/shared-primitives'
 import { Checkbox } from '@/components/ui/checkbox'
+import { SemanticSearchToggle } from './semantic-search-toggle'
+import { t } from '@/lib/i18n/messages/search'
+import { searchSemantic, type SemanticSearchOutcome } from '@/lib/search/search-worker-client'
 import {
   FileText,
   LayoutGrid,
@@ -18,6 +21,8 @@ import {
   SlidersHorizontal,
   Tag,
   ChevronDown,
+  Loader2,
+  Sparkles,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { EntityGrid, EntityTable } from './library-entities'
@@ -49,10 +54,13 @@ const LIBRARY_INITIAL_LIMIT = 24
 const showAllLabel = (total: number): string => `Show all ${total} entities`
 /** Label for the button that collapses the expanded entity list. */
 const SHOW_FEWER_LABEL = 'Show fewer'
+/** Debounce before running a semantic search so keystrokes do not re-embed. */
+const SEMANTIC_DEBOUNCE_MS = 300
 
 /** Entity library view with grid/list layout, search, type filters, and sort controls. */
 export const LibraryView = () => {
   const allEntities = useStudioStore((s) => s.entities)
+  const claims = useStudioStore((s) => s.claims)
   const typeFilter = useStudioStore((s) => s.typeFilter)
   const setTypeFilter = useStudioStore((s) => s.setTypeFilter)
   const sortBy = useStudioStore((s) => s.sortBy)
@@ -64,22 +72,108 @@ export const LibraryView = () => {
   const searchQuery = useStudioStore((s) => s.searchQuery)
   const setSearchQuery = useStudioStore((s) => s.setSearchQuery)
   const rightPanelOpen = useStudioStore((s) => s.rightPanelOpen)
+  const semanticMode = useStudioStore((s) => s.semanticSearchEnabled)
+  const setSemanticMode = useStudioStore((s) => s.setSemanticSearchEnabled)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [tagQuery, setTagQuery] = useState('')
   const [hasDescriptionOnly, setHasDescriptionOnly] = useState(false)
   const [showAll, setShowAll] = useState(false)
+  const [semanticOutcome, setSemanticOutcome] = useState<SemanticSearchOutcome | null>(null)
+  const [semanticBusy, setSemanticBusy] = useState(false)
   const filteredEntities = useFilteredEntities()
+
+  const semanticQuery = searchQuery.trim()
+
+  // Runs a debounced semantic search whenever the toggle is on and a query
+  // exists. Every keystroke/toggle aborts the in-flight request; because the
+  // embedder is a lazy singleton, the first query pays the model download and
+  // later ones reuse it.
+  useEffect(() => {
+    if (!semanticMode || semanticQuery === '') {
+      setSemanticOutcome(null)
+      setSemanticBusy(false)
+      return
+    }
+
+    let cancelled = false
+    const controller = new AbortController()
+    setSemanticBusy(true)
+    const debounce = setTimeout(() => {
+      void searchSemantic(
+        allEntities,
+        claims,
+        semanticQuery,
+        LIBRARY_INITIAL_LIMIT,
+        controller.signal,
+      )
+        .then((outcome) => {
+          if (cancelled) return
+          setSemanticOutcome(outcome)
+          setSemanticBusy(false)
+        })
+        .catch((err: unknown) => {
+          if (cancelled) return
+          // Only aborts reject; surface anything else as a lexical fallback
+          // so the search box never dies silently.
+          if (err instanceof DOMException && err.name === 'AbortError') return
+          console.error('Semantic search failed:', err)
+          setSemanticOutcome({
+            source: 'lexical',
+            results: [],
+            reason: err instanceof Error ? err.message : String(err),
+          })
+          setSemanticBusy(false)
+        })
+    }, SEMANTIC_DEBOUNCE_MS)
+
+    return () => {
+      cancelled = true
+      clearTimeout(debounce)
+      controller.abort()
+    }
+  }, [semanticMode, semanticQuery, allEntities, claims])
+
+  const entityById = useMemo(
+    () => new Map(allEntities.map((e) => [e.id, e])),
+    [allEntities],
+  )
+
+  const semanticActive = semanticMode && semanticQuery !== ''
+
+  // Resolves semantic results (entity ids, or claim ids via their entity) to
+  // entities in rank order — deduped and type-filtered — mirroring what the
+  // lexical path renders into the grid/table.
+  const semanticEntities = useMemo(() => {
+    if (semanticOutcome === null) return []
+    const seen = new Set<string>()
+    const resolved: Entity[] = []
+    for (const result of semanticOutcome.results) {
+      const entity =
+        entityById.get(result.id) ??
+        (result.entityId !== undefined ? entityById.get(result.entityId) : undefined)
+      if (entity === undefined || seen.has(entity.id)) continue
+      if (typeFilter !== 'all' && entity.type !== typeFilter) continue
+      seen.add(entity.id)
+      resolved.push(entity)
+    }
+    return resolved
+  }, [semanticOutcome, entityById, typeFilter])
+
+  // While the first semantic result is pending (e.g. model download), fall
+  // back to lexical ranking so the grid never flickers blank.
+  const baseEntities =
+    semanticActive && semanticOutcome !== null ? semanticEntities : filteredEntities
 
   const advancedFilteredEntities = useMemo(() => {
     const tag = tagQuery.trim().toLowerCase()
-    if (!tag && !hasDescriptionOnly) return filteredEntities
-    return filteredEntities.filter((e) => {
+    if (!tag && !hasDescriptionOnly) return baseEntities
+    return baseEntities.filter((e) => {
       if (tag && !e.tags.some((t) => t.toLowerCase().includes(tag))) return false
       if (hasDescriptionOnly && !e.description.trim()) return false
       return true
     })
-  }, [filteredEntities, tagQuery, hasDescriptionOnly])
+  }, [baseEntities, tagQuery, hasDescriptionOnly])
 
   const hasAdvancedFilters = tagQuery.trim().length > 0 || hasDescriptionOnly
 
@@ -104,6 +198,14 @@ export const LibraryView = () => {
     setTagQuery('')
     setHasDescriptionOnly(false)
   }, [])
+
+  /** Stable handler for the semantic search toggle (memoized component). */
+  const onSemanticToggleChange = useCallback(
+    (checked: boolean) => {
+      setSemanticMode(checked)
+    },
+    [setSemanticMode],
+  )
 
   return (
     <div className={cn('mx-auto px-6 py-6 lg:px-10 lg:py-8', rightPanelOpen ? 'max-w-5xl' : 'max-w-6xl')}>
@@ -130,6 +232,12 @@ export const LibraryView = () => {
             </button>
           )}
         </div>
+
+        <SemanticSearchToggle
+          checked={semanticMode}
+          onCheckedChange={onSemanticToggleChange}
+          className="shrink-0"
+        />
 
         <ToggleButtonGroup label="Filter by type">
           {FILTERS.map((f) => (
@@ -204,6 +312,29 @@ export const LibraryView = () => {
           New
         </button>
       </div>
+
+      {/* Semantic search status — surfaces loading and lexical fallback states */}
+      {semanticActive && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="mb-4 flex items-center gap-2 text-caption text-ink-faint"
+        >
+          {semanticBusy ? (
+            <>
+              <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+              {t('search.semanticLoading')}
+            </>
+          ) : semanticOutcome?.source === 'semantic' ? (
+            <>
+              <Sparkles className="h-3 w-3" aria-hidden="true" />
+              {t('search.semanticOnDescription')}
+            </>
+          ) : (
+            <span>{t('search.semanticUnavailable')}</span>
+          )}
+        </div>
+      )}
 
       {/* Advanced filters disclosure */}
       <div className="mb-4">

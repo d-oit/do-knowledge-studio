@@ -7,6 +7,7 @@ import type {
   OpenRouterTarget,
 } from './types'
 import { DEFAULT_OLLAMA_BASE_URL, OPENROUTER_DEFAULT_TARGETS } from './types'
+import { localAdapter } from './local-adapter'
 
 const OPENROUTER_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions'
 const APP_TITLE = 'Do Knowledge Studio'
@@ -316,6 +317,7 @@ class OllamaAdapter implements ProviderAdapter {
 const adapters: Record<ProviderId, ProviderAdapter> = {
   openrouter: new OpenRouterAdapter(),
   ollama: new OllamaAdapter(),
+  local: localAdapter,
 }
 
 /** Return the provider adapter for the given provider ID. */

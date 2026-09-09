@@ -106,7 +106,11 @@ function idbSet(key: IDBValidKey, value: unknown): Promise<void> {
 // ── Provider / model migrations (unchanged logic) ────────────────────
 
 function migrateProvider(stored: StoredSettings): AIProvider {
-  if (stored.provider === 'openrouter' || stored.provider === 'ollama') {
+  if (
+    stored.provider === 'openrouter' ||
+    stored.provider === 'ollama' ||
+    stored.provider === 'local'
+  ) {
     return stored.provider as AIProvider
   }
   return 'openrouter'
@@ -329,6 +333,8 @@ export function getProviderEndpoint(provider: AIProvider): string {
       return 'https://openrouter.ai/api/v1/chat/completions'
     case 'ollama':
       return 'http://localhost:11434/api/chat'
+    case 'local':
+      return ''
     default:
       return ''
   }

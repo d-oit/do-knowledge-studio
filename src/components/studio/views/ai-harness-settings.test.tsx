@@ -22,6 +22,14 @@ describe('PROVIDERS', () => {
     expect(ollama).toBeDefined()
     expect(ollama?.requiresKey).toBe(false)
   })
+  it('includes the in-browser local provider without a key requirement', () => {
+    const local = PROVIDERS.find((p) => p.id === 'local')
+    expect(local).toBeDefined()
+    expect(local?.requiresKey).toBe(false)
+    expect(local?.label).toBe('Local (in-browser)')
+    expect(Array.isArray(local?.models)).toBe(true)
+    expect((local?.models.length ?? 0)).toBeGreaterThan(0)
+  })
 
   it('each provider has required fields', () => {
     for (const provider of PROVIDERS) {

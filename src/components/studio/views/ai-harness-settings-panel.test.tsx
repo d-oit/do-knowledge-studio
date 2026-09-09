@@ -26,10 +26,12 @@ vi.mock('@/lib/utils', () => ({
 vi.mock('@/lib/ai', () => ({
   OPENROUTER_ROUTERS: [{ slug: 'openrouter/auto', display_name: 'Auto Router' }],
   OPENROUTER_MODELS: [{ slug: 'openai/gpt-4o-mini', display_name: 'GPT-4o Mini' }],
+  DEFAULT_LOCAL_MODELS: [{ id: 'onnx-community/Qwen2.5-0.5B-Instruct', displayName: 'Qwen2.5 0.5B Instruct', dtype: 'q4' }],
+  LOCAL_PROVIDER_ID: 'local',
 }))
 
 vi.mock('@/lib/ai/types', () => ({
-  DEFAULT_MODEL: { openrouter: 'openrouter/free', ollama: 'llama3' },
+  DEFAULT_MODEL: { openrouter: 'openrouter/free', ollama: 'llama3', local: 'onnx-community/Qwen2.5-0.5B-Instruct' },
   DEFAULT_OLLAMA_BASE_URL: 'http://localhost:11434',
 }))
 
@@ -37,6 +39,7 @@ vi.mock('./ai-harness-settings', () => ({
   PROVIDERS: [
     { id: 'openrouter', label: 'OpenRouter', models: ['openrouter/free'], requiresKey: true },
     { id: 'ollama', label: 'Ollama (local)', models: ['llama3'], requiresKey: false },
+    { id: 'local', label: 'Local (in-browser)', models: ['onnx-community/Qwen2.5-0.5B-Instruct'], requiresKey: false },
   ],
   Field: ({ label, children }: { label: string; children?: ReactNode }) => (
     <div data-testid="field">
@@ -111,6 +114,20 @@ describe('AiHarnessSettingsPanel', () => {
   it('does not render API key input for ollama', () => {
     render(<AiHarnessSettingsPanel {...defaultProps} provider="ollama" />)
     expect(screen.queryByPlaceholderText('sk-or-…')).toBeNull()
+  })
+
+  it('hides the API key field and shows the download hint for the local provider', () => {
+    render(<AiHarnessSettingsPanel {...defaultProps} provider="local" model="onnx-community/Qwen2.5-0.5B-Instruct" />)
+    expect(screen.queryByPlaceholderText('sk-or-…')).toBeNull()
+    expect(screen.getByText(/First use downloads the model/)).toBeDefined()
+    expect(screen.getByText('Qwen2.5 0.5B Instruct')).toBeDefined()
+  })
+
+  it('sets the local default model when switching the provider to local', () => {
+    const setModel = vi.fn()
+    render(<AiHarnessSettingsPanel {...defaultProps} setModel={setModel} />)
+    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: 'local' } })
+    expect(setModel).toHaveBeenCalledWith('onnx-community/Qwen2.5-0.5B-Instruct')
   })
 
   it('renders augment toggle', () => {

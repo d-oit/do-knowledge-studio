@@ -1,5 +1,5 @@
 /** Supported AI provider identifiers. */
-export type ProviderId = 'openrouter' | 'ollama'
+export type ProviderId = 'openrouter' | 'ollama' | 'local'
 
 /** Chat message with role and content for AI conversation. */
 export interface ChatMessage {
@@ -87,6 +87,9 @@ export const OPENROUTER_DEFAULT_TARGETS: OpenRouterTarget[] = [
   ...OPENROUTER_MODELS,
 ]
 
+/** Provider id for the fully-offline, in-browser transformers.js provider. */
+export const LOCAL_PROVIDER_ID = 'local' as const
+
 /** Parameters for a chat completion request. */
 export interface ChatRequest {
   provider: ProviderId
@@ -96,6 +99,8 @@ export interface ChatRequest {
   signal?: AbortSignal
   ollamaCpuOnly?: boolean
   ollamaBaseUrl?: string
+  /** Inference device for the in-browser 'local' provider: 'wasm' (default) or 'webgpu'. */
+  localDevice?: 'wasm' | 'webgpu'
 }
 
 /** Result returned by a chat completion call. */
@@ -120,6 +125,7 @@ export interface ProviderAdapter {
 export const PROVIDER_LABELS: Record<ProviderId, string> = {
   openrouter: 'OpenRouter',
   ollama: 'Ollama (local)',
+  local: 'Local (in-browser)',
 }
 
 /** Default model slugs for the OpenRouter provider. */
@@ -142,6 +148,7 @@ export const OLLAMA_DEFAULT_MODELS = [
 export const DEFAULT_MODEL: Record<ProviderId, string> = {
   openrouter: 'openrouter/free',
   ollama: 'llama3',
+  local: 'onnx-community/Qwen2.5-0.5B-Instruct',
 }
 
 /** Default base URL for a local Ollama instance. */

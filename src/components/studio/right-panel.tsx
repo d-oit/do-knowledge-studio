@@ -1,7 +1,7 @@
 'use client'
 
 import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
-import { ENTITY_TYPE_META } from '@/lib/studio/types'
+import { getEntityTypeMeta } from '@/lib/studio/entity-types'
 import { search, type SearchResult } from '@/lib/search/retrieval'
 import { buildEntityIndex } from '@/lib/studio/graph-index'
 import { Search, X, Sparkles, FileText, Quote, ArrowRight } from 'lucide-react'
@@ -115,7 +115,7 @@ function SearchPanel({ onCreateEntity }: { onCreateEntity?: (name: string) => vo
             {rankedResults.map((r: SearchResult) => {
               const targetId = r.type === 'entity' ? r.id : r.entityId
               const resolvedEntity = targetId ? entityIndex.get(targetId) : undefined
-              const meta = resolvedEntity ? ENTITY_TYPE_META[resolvedEntity.type] : undefined
+              const meta = resolvedEntity ? getEntityTypeMeta(resolvedEntity.type) : undefined
               return (
                 <li key={r.id}>
                   <button
@@ -146,7 +146,7 @@ function SearchPanel({ onCreateEntity }: { onCreateEntity?: (name: string) => vo
         ) : (
           <ul className="space-y-1.5" role="list" aria-label="Keyword search results">
             {filtered.slice(0, 20).map((e) => {
-              const meta = ENTITY_TYPE_META[e.type]
+              const meta = getEntityTypeMeta(e.type)
               return (
                 <li key={e.id}>
                   <button
@@ -203,7 +203,7 @@ function InspectorPanel() {
     )
   }
 
-  const meta = ENTITY_TYPE_META[entity.type]
+  const meta = getEntityTypeMeta(entity.type)
 
   const handleDelete = () => {
     deleteEntity(entity.id)

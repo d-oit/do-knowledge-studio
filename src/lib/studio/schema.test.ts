@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  AnyEntityTypeSchema,
   ClaimSchema,
+  CustomEntityTypeSchema,
   EntitySchema,
   EntityTypeSchema,
   ExportPayloadSchema,
@@ -28,6 +30,38 @@ describe('EntityTypeSchema', () => {
 
   it.each(['', 'NOTE', 'unknown', null, undefined, 42])('rejects %s', (val) => {
     expect(() => EntityTypeSchema.parse(val)).toThrow()
+  })
+})
+
+// ── CustomEntityTypeSchema ──────────────────────────────────────────
+
+describe('CustomEntityTypeSchema', () => {
+  it.each(['roadmap', 'topic-with-dash', 'é', 'x'.repeat(64)])('accepts custom type %s', (val) => {
+    expect(CustomEntityTypeSchema.parse(val)).toBe(val)
+  })
+
+  it.each(['', '   ', '\t\n', 'x'.repeat(65)])('rejects invalid custom type %j', (val) => {
+    expect(() => CustomEntityTypeSchema.parse(val)).toThrow()
+  })
+})
+
+// ── AnyEntityTypeSchema ─────────────────────────────────────────────
+
+describe('AnyEntityTypeSchema', () => {
+  it('accepts built-in types', () => {
+    expect(AnyEntityTypeSchema.parse('note')).toBe('note')
+    expect(AnyEntityTypeSchema.parse('project')).toBe('project')
+  })
+
+  it('accepts custom type strings', () => {
+    expect(AnyEntityTypeSchema.parse('roadmap')).toBe('roadmap')
+  })
+
+  it('rejects garbage, blank, and oversized strings', () => {
+    expect(() => AnyEntityTypeSchema.parse('')).toThrow()
+    expect(() => AnyEntityTypeSchema.parse('   ')).toThrow()
+    expect(() => AnyEntityTypeSchema.parse('x'.repeat(65))).toThrow()
+    expect(() => AnyEntityTypeSchema.parse(null)).toThrow()
   })
 })
 
@@ -60,6 +94,15 @@ const validEntity = {
 describe('EntitySchema', () => {
   it('accepts a valid entity', () => {
     expect(EntitySchema.parse(validEntity)).toEqual(validEntity)
+  })
+  it('accepts a custom registered type string', () => {
+    const entity = Object.assign({}, validEntity, { type: 'roadmap' })
+    expect(EntitySchema.parse(entity).type).toBe('roadmap')
+  })
+
+  it.each(['', '   ', 'x'.repeat(65)])('rejects invalid custom type %j', (type) => {
+    const entity = Object.assign({}, validEntity, { type })
+    expect(() => EntitySchema.parse(entity)).toThrow()
   })
 
   it('accepts valid sourceUrl', () => {
@@ -184,8 +227,13 @@ describe('GraphNodeSchema', () => {
     expect(() => GraphNodeSchema.parse({ id: '', label: 'A', type: 'note', x: 0, y: 0 })).toThrow()
   })
 
-  it('rejects invalid type', () => {
-    expect(() => GraphNodeSchema.parse({ id: 'n1', label: 'A', type: 'bad', x: 0, y: 0 })).toThrow()
+  it('accepts a registered custom type string', () => {
+    const node = { id: 'n1', label: 'A', type: 'roadmap' as const, x: 0, y: 0 }
+    expect(GraphNodeSchema.parse(node)).toEqual(node)
+  })
+
+  it.each(['', '   ', 'x'.repeat(65)])('rejects invalid custom type %j', (type) => {
+    expect(() => GraphNodeSchema.parse({ id: 'n1', label: 'A', type, x: 0, y: 0 })).toThrow()
   })
 
   it('rejects non-number x', () => {
@@ -258,8 +306,13 @@ describe('MindMapNodeSchema', () => {
     expect(() => MindMapNodeSchema.parse({ id: '', label: 'A', type: 'note' })).toThrow()
   })
 
-  it('rejects invalid type', () => {
-    expect(() => MindMapNodeSchema.parse({ id: 'n1', label: 'A', type: 'bad' })).toThrow()
+  it('accepts a registered custom type string', () => {
+    const node = { id: 'n1', label: 'A', type: 'roadmap' as const }
+    expect(MindMapNodeSchema.parse(node)).toEqual(node)
+  })
+
+  it.each(['', '   ', 'x'.repeat(65)])('rejects invalid custom type %j', (type) => {
+    expect(() => MindMapNodeSchema.parse({ id: 'n1', label: 'A', type })).toThrow()
   })
 
   it('rejects non-number x when provided', () => {
@@ -490,6 +543,30 @@ describe('validatePersistedState', () => {
     if (result.success) {
       expect(result.data.version).toBe(1)
     }
+  })
+  it('accepts entities with custom types and a custom typeFilter', () => {
+    const result = validatePersistedState({
+      version: 1,
+      entities: [Object.assign({}, validEntity, { type: 'roadmap' })],
+      claims: [validClaim],
+      chat: [],
+      currentView: 'home',
+      typeFilter: 'roadmap',
+      sortBy: 'updated',
+      sortDir: 'desc',
+      rightPanelOpen: true,
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects a blank custom typeFilter value', () => {
+    const result = validatePersistedState({
+      version: 1,
+      entities: [validEntity],
+      claims: [validClaim],
+      typeFilter: '   ',
+    })
+    expect(result.success).toBe(false)
   })
 
   it.each([null, undefined, 42, [1, 2], 'hello'])('returns errors for %s', (val) => {

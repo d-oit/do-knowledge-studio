@@ -19,6 +19,7 @@ vi.mock('lucide-react', () => {
     Sun: Icon,
     Moon: Icon,
     Search: Icon,
+    CalendarDays: Icon,
     PanelRight: Icon,
     PanelRightClose: Icon,
     Wifi: Icon,

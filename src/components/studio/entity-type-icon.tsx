@@ -1,11 +1,15 @@
-import { FileText, Lightbulb, User, FolderKanban } from 'lucide-react'
-import type { EntityType } from '@/lib/studio/types'
+import { FileText, FolderKanban, Lightbulb, Shapes, User } from 'lucide-react'
+import { memo } from 'react'
+import type { AnyEntityType } from '@/lib/studio/types'
+import { getEntityTypeMeta } from '@/lib/studio/entity-types'
 
 /**
  * Icon component for an entity type, rendered with the given classes.
- * Single source of truth for type→icon mapping (home, library grid/list).
+ * Built-in types keep an explicit switch (single source of truth for the
+ * type→icon mapping); registered custom types resolve through the registry
+ * and unknown types fall back to a neutral icon. Never throws.
  */
-export function EntityIcon({ type, className }: { type: EntityType; className?: string }) {
+export const EntityIcon = memo(({ type, className }: { type: AnyEntityType; className?: string }) => {
   switch (type) {
     case 'note':
       return <FileText className={className} />
@@ -15,8 +19,11 @@ export function EntityIcon({ type, className }: { type: EntityType; className?: 
       return <User className={className} />
     case 'project':
       return <FolderKanban className={className} />
-    default:
-      // Safe fallback if the EntityType union is extended.
-      return <FileText className={className} />
+    default: {
+      const Icon = getEntityTypeMeta(type).icon ?? Shapes
+      return <Icon className={className} />
+    }
   }
-}
+})
+
+EntityIcon.displayName = 'EntityIcon'

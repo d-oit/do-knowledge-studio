@@ -2,12 +2,12 @@
 
 import { useStudioStore } from '@/lib/studio/store'
 import {
+  type AnyEntityType,
   type Entity,
-  type EntityType,
 } from '@/lib/studio/types'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { toast } from 'sonner'
-import Markdown from 'react-markdown'
+import Markdown, { defaultUrlTransform } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
   ExternalLink,
@@ -28,11 +28,31 @@ import {
   removeDraft,
 } from '@/lib/editor'
 import {
+  applyMentionBacklinks,
+  extractMentionLinks,
+  getMentionTrigger,
+  insertMentionToken,
+  mergeMentionLinks,
+  MENTION_SCHEME,
+  type MentionTrigger,
+} from '@/lib/editor/mention'
+
+import {
+  EditorMentionPicker,
+  MENTION_LISTBOX_ID,
+  MENTION_MAX_RESULTS,
+  mentionOptionId,
+} from './editor-mention-picker'
+import {
   useEditorDraft,
   useEditorKeyboardShortcuts,
   EditorModeSelector,
   EditorStatusBar,
 } from '../editor-hooks'
+
+/** Preserve the reserved dks:// mention protocol (defaultUrlTransform strips it). */
+const mentionAwareUrlTransform = (url: string): string =>
+  url.startsWith(MENTION_SCHEME) ? url : defaultUrlTransform(url)
 
 const SERIF_FONT_STYLE: React.CSSProperties = {
   fontFamily: 'var(--font-newsreader), Georgia, serif',
@@ -52,6 +72,7 @@ export const EditorView = () => {
   const editingEntityId = useStudioStore((s) => s.editingEntityId)
   const commitEntity = useStudioStore((s) => s.commitEntity)
   const finishEditing = useStudioStore((s) => s.finishEditing)
+  const saveEntity = useStudioStore((s) => s.saveEntity)
   const claims = useStudioStore((s) => s.claims)
   const addClaim = useStudioStore((s) => s.addClaim)
   const updateClaim = useStudioStore((s) => s.updateClaim)
@@ -69,7 +90,7 @@ export const EditorView = () => {
   )
 
   const [name, setName] = useState(editing?.name || '')
-  const [type, setType] = useState<EntityType>(editing?.type || 'note')
+  const [type, setType] = useState<AnyEntityType>(editing?.type ?? 'note')
   const [content, setContent] = useState(editing?.content || '')
   const [description, setDescription] = useState(editing?.description || '')
   const [sourceUrl, setSourceUrl] = useState(editing?.sourceUrl || '')
@@ -77,6 +98,12 @@ export const EditorView = () => {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [showTypeMenu, setShowTypeMenu] = useState(false)
   const [editMode, setEditMode] = useState<'edit' | 'preview' | 'split'>('edit')
+  // Caret position driving the @mention trigger (updated on change/click/keys).
+  const [caret, setCaret] = useState(0)
+  const [mentionHighlight, setMentionHighlight] = useState(0)
+  // Index of the '@' trigger dismissed by Escape/blur; the same trigger stays
+  // closed until a NEW '@' context starts.
+  const [dismissedMentionStart, setDismissedMentionStart] = useState<number | null>(null)
 
   const { draftStatus, draftIdRef } = useEditorDraft({
     editing,
@@ -120,6 +147,68 @@ export const EditorView = () => {
       JSON.stringify(editing.tags) !== JSON.stringify(tags)
     : name.trim() !== '' || content.trim() !== ''
 
+  /**
+   * @mention entity linking (N3): the trigger derives from the live content
+   * and caret — typing '@' opens the picker, moving the caret into/out of a
+   * mention context opens/closes it, and the inserted token is a plain
+   * markdown link `[@Name](dks://entity/<id>)` (see src/lib/editor/mention.ts
+   * for the token convention and save-time link derivation).
+   */
+  const mentionTrigger = useMemo<MentionTrigger>(
+    () => getMentionTrigger(content, caret),
+    [content, caret],
+  )
+  const mentionOpen = mentionTrigger.active && dismissedMentionStart !== mentionTrigger.start
+
+  const mentionCandidates = useMemo(() => {
+    if (!mentionTrigger.active) return []
+    const query = mentionTrigger.query.toLowerCase()
+    return entities
+      .filter((e) => e.id !== editingEntityId && e.name.toLowerCase().includes(query))
+      .slice(0, MENTION_MAX_RESULTS)
+  }, [entities, editingEntityId, mentionTrigger])
+
+  // Re-anchor the highlighted option whenever the query/context changes.
+  useEffect(() => {
+    setMentionHighlight(0)
+  }, [mentionTrigger.start, mentionTrigger.query, mentionOpen])
+
+  const selectMention = useCallback((entity: Entity) => {
+    const result = insertMentionToken(content, mentionTrigger, entity)
+    setContent(result.text)
+    setCaret(result.selection)
+    setMentionHighlight(0)
+    setDismissedMentionStart(mentionTrigger.start)
+    requestAnimationFrame(() => {
+      const el = textareaRef.current
+      if (el) restoreSelection(el, result.selection, result.selection)
+    })
+  }, [content, mentionTrigger])
+
+  const handleMentionKeyDown = useCallback((e: ReactKeyboardEvent<HTMLTextAreaElement>) => {
+    if (!mentionOpen) return
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      setDismissedMentionStart(mentionTrigger.start)
+      return
+    }
+    if (mentionCandidates.length === 0) return
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setMentionHighlight((i) => (i + 1) % mentionCandidates.length)
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setMentionHighlight((i) => (i - 1 + mentionCandidates.length) % mentionCandidates.length)
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      // Index-bounds check (not a falsy check) — Codacy-safe and correct even
+      // if the highlight ever drifted past the list.
+      if (mentionHighlight < mentionCandidates.length) {
+        selectMention(mentionCandidates[mentionHighlight])
+      }
+    }
+  }, [mentionOpen, mentionCandidates, mentionHighlight, mentionTrigger.start, selectMention])
+
   const handleFormat = useCallback((command: string) => {
     const textarea = textareaRef.current
     if (!textarea) return
@@ -153,13 +242,26 @@ export const EditorView = () => {
     })
   }, [content])
 
-  const handleSave = () => {
+  /**
+   * Save writes mention links DERIVED from the final content (never
+   * accumulated): tokens are parsed into `links: [{ targetId, relation:
+   * 'mentions' }]` merged with existing links, so removing the mention text
+   * before saving automatically drops the link. Reciprocal backlinks
+   * (`mentioned-in` on each mentioned entity) are default-on and written via
+   * the existing `saveEntity` action — no store changes. Because saveEntity
+   * also navigates to the library and clears editing state, saving an entity
+   * WITH mentions lands on the library (matches the "Save to library"
+   * label); entities without mentions keep today's stay-in-editor behavior.
+   */
+  const handleSave = useCallback(() => {
     if (!name.trim()) {
       toast.error('Entity name cannot be empty')
       return
     }
+    const entityId = editing?.id || crypto.randomUUID()
+    const { mentionLinks, mentions } = extractMentionLinks(content, entities, entityId)
     const entity: Entity = {
-      id: editing?.id || crypto.randomUUID(),
+      id: entityId,
       name: name.trim(),
       type,
       description: description.trim() || content.slice(0, 200).replace(/[#*]/g, '').trim(),
@@ -168,12 +270,20 @@ export const EditorView = () => {
       tags,
       createdAt: editing?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      links: editing?.links || [],
+      links: mergeMentionLinks(editing?.links || [], mentionLinks),
     }
     commitEntity(entity)
     // Remove draft on commit
     if (draftIdRef.current) removeDraft(draftIdRef.current)
-  }
+
+    // Reciprocal backlinks + stale-backlink revocation, only touching
+    // entities whose links actually changed.
+    const mentionedIds = new Set(mentions.map((m) => m.entityId))
+    const backlinkUpdates = applyMentionBacklinks(entities, entityId, mentionedIds)
+    for (const updated of backlinkUpdates) {
+      saveEntity(updated)
+    }
+  }, [name, type, description, content, sourceUrl, tags, editing, entities, commitEntity, saveEntity, draftIdRef])
 
   const handleDiscard = () => {
     if (draftIdRef.current) removeDraft(draftIdRef.current)
@@ -242,23 +352,71 @@ export const EditorView = () => {
       <EditorModeSelector editMode={editMode} onEditModeChange={setEditMode} />
 
       <CursorTracker view="editor">
-        <div className={editMode === 'split' ? 'grid grid-cols-2 gap-4' : 'relative'}>
+        <div className={editMode === 'split' ? 'grid grid-cols-2 gap-4' : ''}>
         {(editMode === 'edit' || editMode === 'split') && (
-          <textarea
-            ref={textareaRef}
-            value={content}
-            onChange={(e) => {
-              setContent(e.target.value)
-            }}
-            placeholder="Start writing. Use markdown for headings, lists, and emphasis…"
-            className={`min-h-[420px] w-full resize-none bg-transparent font-serif text-[16px] leading-[1.75] text-ink placeholder:text-ink-faint/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-saffron/40 focus-visible:ring-inset ${editMode === 'split' ? 'rounded-lg border border-border p-4' : ''}`}
-            style={SERIF_FONT_STYLE}
-            aria-label="Editor content"
-          />
+          <div className="relative">
+            <textarea
+              ref={textareaRef}
+              value={content}
+              onChange={(e) => {
+                setContent(e.target.value)
+                setCaret(e.target.selectionStart)
+              }}
+              onClick={(e) => { setCaret(e.currentTarget.selectionStart) }}
+              onKeyUp={(e) => { setCaret(e.currentTarget.selectionStart) }}
+              onKeyDown={handleMentionKeyDown}
+              onBlur={() => {
+                if (mentionTrigger.active) setDismissedMentionStart(mentionTrigger.start)
+              }}
+              placeholder="Start writing. Use markdown for headings, lists, and emphasis…"
+              className={`min-h-[420px] w-full resize-none bg-transparent font-serif text-[16px] leading-[1.75] text-ink placeholder:text-ink-faint/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-saffron/40 focus-visible:ring-inset ${editMode === 'split' ? 'rounded-lg border border-border p-4' : ''}`}
+              style={SERIF_FONT_STYLE}
+              aria-label="Editor content"
+              role="combobox"
+              aria-expanded={mentionOpen}
+              aria-controls={mentionOpen ? MENTION_LISTBOX_ID : undefined}
+              aria-activedescendant={mentionOpen ? mentionOptionId(mentionHighlight) : undefined}
+              aria-autocomplete="list"
+            />
+            <EditorMentionPicker
+              open={mentionOpen}
+              query={mentionTrigger.query}
+              candidates={mentionCandidates}
+              highlightedIndex={mentionHighlight}
+              triggerStart={mentionTrigger.start}
+              content={content}
+              textarea={textareaRef}
+              onHighlight={setMentionHighlight}
+              onSelect={selectMention}
+            />
+          </div>
         )}
         {(editMode === 'preview' || editMode === 'split') && (
           <div className="prose prose-sm dark:prose-invert max-w-none min-h-[420px] rounded-lg border border-border bg-background p-4">
-            <Markdown remarkPlugins={[remarkGfm]}>{content || '_Nothing to preview._'}</Markdown>
+            <Markdown
+              urlTransform={mentionAwareUrlTransform}
+              remarkPlugins={[remarkGfm]}
+              components={{
+                a: ({ href, children }) => {
+                  // Mention tokens render as styled chips (no navigation);
+                  // anything else stays a normal external link.
+                  if (href?.startsWith(MENTION_SCHEME)) {
+                    const entityId = href.slice(MENTION_SCHEME.length)
+                    return (
+                      <span
+                        data-mention-id={entityId}
+                        className="mx-0.5 rounded-full bg-saffron-soft px-2 py-0.5 font-medium text-saffron-deep no-underline"
+                      >
+                        {children}
+                      </span>
+                    )
+                  }
+                  return <a href={href} target="_blank" rel="noreferrer">{children}</a>
+                },
+              }}
+            >
+              {content || '_Nothing to preview._'}
+            </Markdown>
           </div>
         )}
         </div>

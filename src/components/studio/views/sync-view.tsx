@@ -30,6 +30,7 @@ import { ConflictUI } from '../conflict-ui'
 import type { FieldConflict } from '@/lib/sync/merge'
 import { PresenceList } from '../presence-indicator'
 import { usePresence } from '@/lib/sync/use-presence'
+import { t } from '@/lib/i18n/messages/sync'
 
 type SyncStatus = 'disconnected' | 'connecting' | 'connected' | 'error'
 type PairingMode = 'none' | 'display' | 'scan'
@@ -70,16 +71,16 @@ const useSyncProviderEvents = ({
       setStatus('connected')
       setSyncedEntities(getYjsEntities().length)
       setSyncedClaims(getYjsClaims().length)
-      addEvent('sync', 'Document synchronized')
+      addEvent('sync', t('sync.event.synced'))
     }
 
     const handleStatus = (data: { connected: boolean }) => {
       if (data.connected) {
         setStatus('connected')
-        addEvent('join', 'Connected to signaling server')
+        addEvent('join', t('sync.event.connected'))
       } else {
         setStatus('disconnected')
-        addEvent('leave', 'Disconnected from signaling server')
+        addEvent('leave', t('sync.event.disconnected'))
       }
     }
 
@@ -150,11 +151,10 @@ const SyncHeader = ({ reducedMotion }: { reducedMotion: boolean }) => (
     <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-sage to-emerald-600 text-white shadow-sm">
       <Wifi className="h-6 w-6" />
     </div>
-    <div className="flex-1">
-      <h1 className="font-serif text-2xl font-semibold text-ink">Sync</h1>
-      <p className="text-[13px] text-ink-mute">
-        Connect devices and sync your knowledge base peer-to-peer.
-      </p>
+    <div className="flex-1">          <h1 className="font-serif text-2xl font-semibold text-ink">{t('sync.title')}</h1>
+          <p className="text-[13px] text-ink-mute">
+            {t('sync.subtitle')}
+          </p>
     </div>
   </motion.div>
 )
@@ -186,13 +186,12 @@ const ConflictSection = ({
 
 /** Chronological list of sync events. */
 const SyncHistoryCard = ({ events }: { events: SyncEvent[] }) => (
-  <div className="rounded-lg border border-border bg-card p-5">
-    <h2 className="mb-3 font-serif text-[15px] font-semibold text-ink">
-      <History className="mr-1.5 inline h-4 w-4" />
-      Sync History
-    </h2>
-    {events.length === 0 ? (
-      <p className="text-[13px] text-ink-faint">No sync events yet.</p>
+  <div className="rounded-lg border border-border bg-card p-5">      <h2 className="mb-3 font-serif text-[15px] font-semibold text-ink">
+        <History className="mr-1.5 inline h-4 w-4" />
+        {t('sync.history.title')}
+      </h2>
+      {events.length === 0 ? (
+        <p className="text-[13px] text-ink-faint">{t('sync.history.empty')}</p>
     ) : (
       <div className="space-y-2">
         {events.map((event) => (
@@ -216,11 +215,10 @@ const SyncHistoryCard = ({ events }: { events: SyncEvent[] }) => (
 const OnlineUsersCard = ({ visible }: { visible: boolean }) => {
   if (!visible) return null
   return (
-    <div className="mt-6 rounded-lg border border-border bg-card p-5">
-      <h2 className="mb-3 font-serif text-[15px] font-semibold text-ink">
-        <Users className="mr-1.5 inline h-4 w-4" />
-        Online Users
-      </h2>
+    <div className="mt-6 rounded-lg border border-border bg-card p-5">        <h2 className="mb-3 font-serif text-[15px] font-semibold text-ink">
+          <Users className="mr-1.5 inline h-4 w-4" />
+          {t('sync.onlineUsers')}
+        </h2>
       <PresenceList />
     </div>
   )
@@ -259,7 +257,7 @@ export const SyncView = () => {
 
   useEffect(() => {
     initSync().catch(() => {
-      addEvent('error', 'Failed to initialize sync storage')
+      addEvent('error', t('sync.event.initFailed'))
     })
   }, [addEvent])
 
@@ -272,7 +270,7 @@ export const SyncView = () => {
     // path stays identical instead of passing an empty-string secret to y-webrtc.
     const password = roomPassword.trim()
     setStatus('connecting')
-    addEvent('join', `Joining room ${id}…`)
+    addEvent('join', t('sync.event.joining', id))
 
     try {
       // Call through with no second argument when unencrypted, so the existing code path
@@ -287,13 +285,13 @@ export const SyncView = () => {
       setRoomPassword('')
 
       mergeIntoYjs(entities, claims)
-      addEvent('sync', `Merged ${entities.length} entities, ${claims.length} claims`)
-      toast.success(`Joined room ${id}`)
+      addEvent('sync', t('sync.event.merged', String(entities.length), String(claims.length)))
+      toast.success(t('sync.toast.joined', id))
     } catch (err) {
       setStatus('error')
-      const msg = err instanceof Error ? err.message : 'Unknown error'
-      addEvent('error', `Failed to join: ${msg}`)
-      toast.error(`Failed to join room: ${msg}`)
+      const msg = err instanceof Error ? err.message : t('sync.error.unknown')
+      addEvent('error', t('sync.event.joinFailed', msg))
+      toast.error(t('sync.toast.joinFailed', msg))
     }
   }, [inputRoomId, roomPassword, entities, claims, addEvent])
 
@@ -305,8 +303,8 @@ export const SyncView = () => {
     setPeerCount(0)
     setDiscoveredPeers([])
     setRoomPassword('')
-    addEvent('leave', 'Left sync room')
-    toast.info('Left sync room')
+    addEvent('leave', t('sync.event.left'))
+    toast.info(t('sync.toast.left'))
   }, [addEvent])
 
   const handleResync = useCallback(() => {
@@ -315,10 +313,10 @@ export const SyncView = () => {
     setSyncedClaims(getYjsClaims().length)
     if (result.conflicts.length > 0) {
       setPendingConflicts(result.conflicts)
-      addEvent('sync', `Found ${result.conflicts.length} conflict(s) requiring resolution`)
+      addEvent('sync', t('sync.event.conflictsFound', String(result.conflicts.length)))
     } else {
-      addEvent('sync', `Re-synced ${entities.length} entities, ${claims.length} claims`)
-      toast.success('Re-synced local data')
+      addEvent('sync', t('sync.event.resynced', String(entities.length), String(claims.length)))
+      toast.success(t('sync.toast.resynced'))
     }
   }, [entities, claims, addEvent])
 
@@ -326,8 +324,8 @@ export const SyncView = () => {
     const resolvedConflicts = [...pendingConflicts]
     applyConflictResolution(resolutions, resolvedConflicts, entities, claims)
     setPendingConflicts([])
-    addEvent('sync', `Applied ${resolutions.size} conflict resolution(s)`)
-    toast.success(`Applied ${resolutions.size} conflict resolution(s)`)
+    addEvent('sync', t('sync.event.conflictApplied', String(resolutions.size)))
+    toast.success(t('sync.toast.conflictApplied', String(resolutions.size)))
   }, [pendingConflicts, entities, claims, addEvent])
 
   const handleConflictDismiss = useCallback(() => {
@@ -337,7 +335,7 @@ export const SyncView = () => {
   const handleQrScan = useCallback((scannedRoomId: string) => {
     setInputRoomId(scannedRoomId)
     setPairingMode('none')
-    toast.info(`Scanned room: ${scannedRoomId}`)
+    toast.info(t('sync.toast.scannedRoom', scannedRoomId))
   }, [])
 
   return (

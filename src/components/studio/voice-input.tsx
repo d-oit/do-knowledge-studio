@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import { useSpeechRecognition } from '@/lib/use-speech-recognition'
 import { useEffect, useState, useCallback } from 'react'
 import { parseIntent, formatIntentSummary, type Intent } from '@/lib/nlp'
+import { t } from '@/lib/i18n/messages/voice-input'
 
 interface VoiceInputProps {
   onTranscript: (text: string) => void
@@ -76,7 +77,7 @@ export function VoiceInput({
             : 'text-ink-faint hover:bg-border hover:text-ink',
           disabled && 'opacity-40',
         )}
-        aria-label={isListening ? 'Stop recording' : 'Start voice input'}
+        aria-label={isListening ? t('voice.stopRecording') : t('voice.startInput')}
         aria-pressed={isListening}
       >
         {isListening ? (

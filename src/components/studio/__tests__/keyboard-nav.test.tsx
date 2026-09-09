@@ -157,30 +157,24 @@ describe('Sidebar keyboard navigation', () => {
     // If jsdom Enter doesn't trigger onClick on buttons, we test via click instead.
   })
 
-  it('Home button triggers setView on click (Enter/Space simulation)', () => {
+it('Home button triggers setView on click', () => {
     render(<Sidebar />)
-    const nav = screen.getByRole('navigation', { name: 'Main navigation' })
-    const buttons = nav.querySelectorAll('button')
-    const homeBtn = buttons[0]
+    const homeBtn = screen.getByRole('button', { name: /Home/ })
     fireEvent.click(homeBtn)
     expect(storeFns.setView).toHaveBeenCalledWith('home')
   })
 
   it('Library button triggers setView on click', () => {
     render(<Sidebar />)
-    const nav = screen.getByRole('navigation', { name: 'Main navigation' })
-    const buttons = nav.querySelectorAll('button')
-    // Buttons are: Home, Editor, Library, Graph, Mind Map, Chat, AI Harness, TRIZ Matrix, Sync, Export
-    const libraryBtn = buttons[2]
+    // Role/text-based lookup keeps this robust as nav items are added.
+    const libraryBtn = screen.getByRole('button', { name: /Library/ })
     fireEvent.click(libraryBtn)
     expect(storeFns.setView).toHaveBeenCalledWith('library')
   })
 
   it('Graph button triggers setView on click', () => {
     render(<Sidebar />)
-    const nav = screen.getByRole('navigation', { name: 'Main navigation' })
-    const buttons = nav.querySelectorAll('button')
-    const graphBtn = buttons[3]
+    const graphBtn = screen.getByRole('button', { name: /Graph/ })
     fireEvent.click(graphBtn)
     expect(storeFns.setView).toHaveBeenCalledWith('graph')
   })
@@ -188,18 +182,14 @@ describe('Sidebar keyboard navigation', () => {
   it('marks the active view with aria-current="page"', () => {
     storeState.currentView = 'editor'
     render(<Sidebar />)
-    const nav = screen.getByRole('navigation', { name: 'Main navigation' })
-    const buttons = nav.querySelectorAll('button')
-    const editorBtn = buttons[1]
+    const editorBtn = screen.getByRole('button', { name: /Editor/ })
     expect(editorBtn.getAttribute('aria-current')).toBe('page')
   })
 
   it('non-active views do not have aria-current', () => {
     storeState.currentView = 'editor'
     render(<Sidebar />)
-    const nav = screen.getByRole('navigation', { name: 'Main navigation' })
-    const buttons = nav.querySelectorAll('button')
-    const homeBtn = buttons[0]
+    const homeBtn = screen.getByRole('button', { name: /Home/ })
     expect(homeBtn.getAttribute('aria-current')).toBeNull()
   })
 })

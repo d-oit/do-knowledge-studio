@@ -47,7 +47,7 @@ describe('validateInboundEntity', () => {
   })
 
   it('rejects entity with invalid type', () => {
-    const result = validateInboundEntity({ ...makeEntity(), type: 'bogus' })
+    const result = validateInboundEntity({ ...makeEntity(), type: 'x'.repeat(65) })
     expect(result.success).toBe(false)
   })
 

@@ -55,7 +55,7 @@ describe('Inbound validation: entities', () => {
   })
 
   it('rejects entity with invalid type', () => {
-    const result = validateInboundEntity(makeEntity({ type: 'invalid' }))
+    const result = validateInboundEntity(makeEntity({ type: '' }))
     expect(result.success).toBe(false)
   })
 
@@ -80,9 +80,7 @@ describe('Inbound validation: claims', () => {
   })
 
   it('accepts claim without timestamps (backward compat)', () => {
-    const claim = makeClaim()
-    delete (claim as Record<string, unknown>).createdAt
-    delete (claim as Record<string, unknown>).updatedAt
+    const claim = makeClaim({ createdAt: undefined, updatedAt: undefined })
     const result = validateInboundClaim(claim)
     expect(result.success).toBe(true)
   })

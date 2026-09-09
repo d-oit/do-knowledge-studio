@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Save } from 'lucide-react'
-import type { Entity, EntityType } from '@/lib/studio/types'
+import type { AnyEntityType, Entity } from '@/lib/studio/types'
 import {
   generateDraftId,
   saveDraft,
@@ -46,13 +46,13 @@ interface UseEditorDraftParams {
   name: string
   content: string
   description: string
-  type: EntityType
+  type: AnyEntityType
   sourceUrl: string
   tags: string[]
   setName: (name: string) => void
   setContent: (content: string) => void
   setDescription: (desc: string) => void
-  setType: (type: EntityType) => void
+  setType: (type: AnyEntityType) => void
   setSourceUrl: (url: string) => void
   setTags: (tags: string[]) => void
 }
@@ -87,7 +87,7 @@ const buildDraft = (
   name: string,
   content: string,
   description: string,
-  type: EntityType,
+  type: AnyEntityType,
   sourceUrl: string,
   tags: string[],
 ): EditorDraft => ({
@@ -132,7 +132,7 @@ export const useEditorDraft = ({
         setName(existing.name)
         setContent(existing.content)
         setDescription(existing.description)
-        setType(existing.type as EntityType)
+        setType(existing.type as AnyEntityType)
         setSourceUrl(existing.sourceUrl)
         setTags(existing.tags)
       }

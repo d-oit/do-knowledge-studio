@@ -22,11 +22,12 @@ describe('Switch', () => {
     expect(switchEl.getAttribute('data-state')).toBe('checked')
   })
 
-  it('applies default size and shape classes', () => {
+  it('meets the 44x44 touch-target minimum and pill shape', () => {
     render(<Switch aria-label="styled-sw" />)
     const switchEl = screen.getByRole('switch', { name: 'styled-sw' })
-    expect(switchEl.className).toContain('h-[1.15rem]')
-    expect(switchEl.className).toContain('w-8')
+    // Hit area: the interactive element itself must be 44x44 (WCAG 2.5.5).
+    expect(switchEl.className).toContain('h-11')
+    expect(switchEl.className).toContain('w-11')
     expect(switchEl.className).toContain('rounded-full')
   })
 
@@ -47,7 +48,11 @@ describe('Switch', () => {
   it('applies checked background class', () => {
     render(<Switch aria-label="bg-sw" />)
     const switchEl = screen.getByRole('switch', { name: 'bg-sw' })
-    expect(switchEl.className).toContain('data-[state=checked]:bg-primary')
+    // The checked track style lives on the nested track span
+    // (group-data-[state=checked]), not the hit-area button.
+    expect(switchEl.className).toContain('group')
+    const track = switchEl.querySelector('[data-slot="switch-thumb"]')?.parentElement
+    expect(track?.className).toContain('group-data-[state=checked]:bg-primary')
   })
 
   it('accepts custom className', () => {

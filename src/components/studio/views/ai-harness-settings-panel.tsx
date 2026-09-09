@@ -17,6 +17,8 @@ import {
   OPENROUTER_MODELS,
 } from '@/lib/ai'
 import { DEFAULT_MODEL, DEFAULT_OLLAMA_BASE_URL } from '@/lib/ai/types'
+import { DEFAULT_LOCAL_MODELS, LOCAL_PROVIDER_ID } from '@/lib/ai'
+import { t as tAi } from '@/lib/i18n/messages/ai'
 import { Field, PROVIDERS } from './ai-harness-settings'
 import { SwitchToggle } from '../ui/shared-primitives'
 
@@ -98,7 +100,12 @@ export const AiHarnessSettingsPanel = ({
                 const val = e.target.value
                 if (!PROVIDERS.some((pr) => pr.id === val)) return
                 setProvider(val as AIProvider)
-                const defaultModel = val === 'openrouter' ? DEFAULT_MODEL.openrouter : DEFAULT_MODEL.ollama
+                const defaultModel =
+                  val === 'openrouter'
+                    ? DEFAULT_MODEL.openrouter
+                    : val === 'ollama'
+                      ? DEFAULT_MODEL.ollama
+                      : DEFAULT_MODEL.local
                 setModel(defaultModel)
                 setCustomModel('')
               }}
@@ -123,6 +130,12 @@ export const AiHarnessSettingsPanel = ({
                   ollamaModels.map((m) => (
                     <option key={m} value={m}>
                       {m}
+                    </option>
+                  ))
+                ) : provider === LOCAL_PROVIDER_ID ? (
+                  DEFAULT_LOCAL_MODELS.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.displayName}
                     </option>
                   ))
                 ) : (
@@ -166,6 +179,11 @@ export const AiHarnessSettingsPanel = ({
               <div className="mt-2 rounded border border-border bg-muted/30 p-2 text-[11px] leading-relaxed text-ink-mute">
                 <strong className="text-ink-soft">{selectedEngineTarget.display_name}: </strong>
                 {selectedEngineTarget.description}
+              </div>
+            )}
+            {provider === LOCAL_PROVIDER_ID && (
+              <div className="mt-2 rounded border border-border bg-muted/30 p-2 text-[11px] leading-relaxed text-ink-mute">
+                {tAi('ai.settings.local.downloadHint')}
               </div>
             )}
           </Field>

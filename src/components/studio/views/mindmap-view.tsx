@@ -1,7 +1,7 @@
 'use client'
 
 import { useStudioStore } from '@/lib/studio/store'
-import { ENTITY_TYPE_META } from '@/lib/studio/types'
+import { getEntityTypeMeta } from '@/lib/studio/entity-types'
 import {
   BrainCircuit,
   Plus,
@@ -24,7 +24,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { buildEntityIndex } from '@/lib/studio/graph-index'
 
 interface TreeNode {
-  entity: { id: string; name: string; type: keyof typeof ENTITY_TYPE_META }
+  entity: { id: string; name: string; type: string }
   children: TreeNode[]
   expanded: boolean
 }
@@ -216,7 +216,7 @@ export function MindMapView() {
   }, [tree, expandedNodes, syncKey])
 
   const renderNode = (node: TreeNode, level: number = 0): React.ReactNode => {
-    const meta = ENTITY_TYPE_META[node.entity.type]
+    const meta = getEntityTypeMeta(node.entity.type)
     const isExpanded = expandedNodes.has(node.entity.id) || level === 0
     const hasChildren = node.children.length > 0
 

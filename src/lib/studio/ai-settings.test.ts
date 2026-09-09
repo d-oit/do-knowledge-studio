@@ -84,6 +84,9 @@ describe('getProviderEndpoint', () => {
   it('returns Ollama endpoint', () => {
     expect(getProviderEndpoint('ollama')).toBe('http://localhost:11434/api/chat')
   })
+  it('returns empty endpoint for the in-browser local provider', () => {
+    expect(getProviderEndpoint('local')).toBe('')
+  })
 })
 
 describe('isSessionOnlyCredential', () => {
@@ -268,6 +271,34 @@ describe('ai-settings encryption and persistence', () => {
     expect(loaded.ollamaCpuOnly).toBe(false)
     expect(loaded.allowWebResearch).toBe(false)
     expect(loaded.ollamaBaseUrl).toBe('http://localhost:11434')
+  })
+
+  it('persists and loads the in-browser local provider round-trip', async () => {
+    const settings = {
+      provider: 'local' as const,
+      model: 'onnx-community/Qwen2.5-0.5B-Instruct',
+      apiKey: '',
+      augmentWithLocal: true,
+      ollamaCpuOnly: false,
+      allowWebResearch: false,
+      ollamaBaseUrl: 'http://localhost:11434',
+    }
+
+    await saveAISettings(settings)
+    const loaded = await loadAISettings()
+    expect(loaded.provider).toBe('local')
+    expect(loaded.model).toBe('onnx-community/Qwen2.5-0.5B-Instruct')
+  })
+
+  it('keeps the local provider when migrating from localStorage', async () => {
+    localStorageMock['dks-ai-settings'] = JSON.stringify({
+      provider: 'local',
+      model: 'onnx-community/Qwen2.5-0.5B-Instruct',
+    })
+
+    const loaded = await loadAISettings()
+    expect(loaded.provider).toBe('local')
+    expect(loaded.model).toBe('onnx-community/Qwen2.5-0.5B-Instruct')
   })
 
   it('cleans up localStorage after migration', async () => {
