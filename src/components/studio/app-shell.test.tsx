@@ -71,11 +71,11 @@ vi.mock('./views/sync-view', () => ({
 }))
 
 vi.mock('./error-boundary', () => ({
-  ErrorBoundary: ({ children }: { children?: ReactNode }) => <>{children}</>,
+  ErrorBoundary: ({ children }: { children?: ReactNode }) => children,
 }))
 
 vi.mock('./view-error-boundary', () => ({
-  ViewErrorBoundary: ({ children }: { children?: ReactNode; viewName?: string }) => <>{children}</>,
+  ViewErrorBoundary: ({ children }: { children?: ReactNode; viewName?: string }) => children,
 }))
 
 vi.mock('./ui/skeleton', () => ({
