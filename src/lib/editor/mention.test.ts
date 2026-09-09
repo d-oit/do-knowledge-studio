@@ -91,6 +91,12 @@ describe('buildMentionToken', () => {
   it('strips square brackets from names so the token stays well-formed', () => {
     expect(buildMentionToken('e1', 'A[B]C')).toBe('[@ABC](dks://entity/e1)')
   })
+
+  it('percent-encodes reserved chars in entity ids so the token stays well-formed', () => {
+    const token = buildMentionToken('a)b', 'Weird')
+    expect(token).toBe('[@Weird](dks://entity/a%29b)')
+    expect(findMentionTokens(token)[0]?.entityId).toBe('a)b')
+  })
 })
 
 describe('insertMentionToken', () => {

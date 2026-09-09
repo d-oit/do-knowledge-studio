@@ -247,9 +247,15 @@ const buildVectorIndex = async (
     if (indexBuilding === null) {
       indexBuilding = doBuildIndex(entities, claims, signal)
       const promise = indexBuilding
-      void promise.finally(() => {
-        if (indexBuilding === promise) indexBuilding = null
-      })
+      // finally() returns a new promise that preserves the original
+      // rejection — attach a catch so abort rejections don't surface as an
+      // unhandled rejection on the discarded chain (callers still observe
+      // them via `promise` itself).
+      void promise
+        .finally(() => {
+          if (indexBuilding === promise) indexBuilding = null
+        })
+        .catch(noop)
       return promise
     }
     // Another build is in flight — wait for it, then re-check whether it
@@ -260,6 +266,9 @@ const buildVectorIndex = async (
 
 const isAbortError = (err: unknown): boolean =>
   err instanceof DOMException && err.name === 'AbortError'
+
+/** Fire-and-forget rejection sink for discarded promise chains. */
+const noop = (): void => {}
 
 const lexicalFallback = (
   entities: Entity[],

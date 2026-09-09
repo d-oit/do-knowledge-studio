@@ -126,22 +126,30 @@ export const EditorMentionPicker = memo(function EditorMentionPicker({
   useLayoutEffect(() => {
     const el = textarea.current
     if (!open || !el) return
-    const measured = measureCaretLine(el, content, caret)
-    if (!measured) return
-    const rowCount = Math.max(candidates.length, 1)
-    const popoverHeight = estimatePopoverHeight(rowCount)
-    // The mirror measures in unscrolled document coordinates; the picker is
-    // positioned inside the textarea's scrolling viewport, so subtract the
-    // current scrollTop before comparing/placing.
-    const viewTop = measured.lineTop - el.scrollTop
-    const fitsBelow =
-      viewTop + measured.lineHeight + PICKER_CARET_GAP + popoverHeight <= el.clientHeight
-    const top = fitsBelow
-      ? viewTop + measured.lineHeight + PICKER_CARET_GAP
-      : viewTop - popoverHeight
-    const maxLeft = Math.max(PICKER_MIN_INSET, el.clientWidth - PICKER_WIDTH)
-    const left = Math.min(Math.max(measured.lineLeft, PICKER_MIN_INSET), maxLeft)
-    setPosition({ top: Math.max(PICKER_MIN_INSET, top), left })
+    const measure = () => {
+      const measured = measureCaretLine(el, content, caret)
+      if (!measured) return
+      const rowCount = Math.max(candidates.length, 1)
+      const popoverHeight = estimatePopoverHeight(rowCount)
+      // The mirror measures in unscrolled document coordinates; the picker is
+      // positioned inside the textarea's scrolling viewport, so subtract the
+      // current scrollTop before comparing/placing.
+      const viewTop = measured.lineTop - el.scrollTop
+      const fitsBelow =
+        viewTop + measured.lineHeight + PICKER_CARET_GAP + popoverHeight <= el.clientHeight
+      const top = fitsBelow
+        ? viewTop + measured.lineHeight + PICKER_CARET_GAP
+        : viewTop - popoverHeight
+      const maxLeft = Math.max(PICKER_MIN_INSET, el.clientWidth - PICKER_WIDTH)
+      const left = Math.min(Math.max(measured.lineLeft, PICKER_MIN_INSET), maxLeft)
+      setPosition({ top: Math.max(PICKER_MIN_INSET, top), left })
+    }
+    // Native textarea scrolling mutates scrollTop without any React render,
+    // so a plain effect would leave the popover at its pre-scroll coordinate.
+    // Re-measure on scroll while the picker stays open; cleanup on close.
+    el.addEventListener('scroll', measure, { passive: true })
+    measure()
+    return () => el.removeEventListener('scroll', measure)
   }, [open, textarea, content, caret, candidates.length, query, triggerStart])
 
   if (!open) return null

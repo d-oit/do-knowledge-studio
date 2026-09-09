@@ -34,7 +34,7 @@ const makeClaim = (overrides: Partial<Claim> = {}): Claim => ({
 
 /** Keyword-triggered 8-dim vectors: shared keywords give high cosine. */
 const makeExtractor = (): ReturnType<typeof vi.fn> =>
-  vi.fn(async (texts: string[]) => ({
+  vi.fn((texts: string[]) => ({
     dims: [texts.length, 8],
     tolist: () =>
       texts.map((text: string) => {
@@ -159,7 +159,7 @@ describe('semanticSearch (mocked embedder)', () => {
     disposeEmbedder()
     resetSemanticCache()
     extractor = makeExtractor()
-    transformersMock.pipeline.mockImplementation(async () => extractor)
+    transformersMock.pipeline.mockImplementation(() => extractor)
   })
 
   it('ranks documents by semantic cosine similarity', async () => {

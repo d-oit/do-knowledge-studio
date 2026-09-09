@@ -202,37 +202,37 @@ describe('AppShell', () => {
 
   it('renders ExportView when currentView is export', async () => {
     currentView = 'export'
-    await act(async () => { render(<AppShell />) })
+    await act(() => { render(<AppShell />) })
     expect(screen.getByTestId('export-view')).toBeDefined()
   })
 
   it('renders SyncView when currentView is sync', async () => {
     currentView = 'sync'
-    await act(async () => { render(<AppShell />) })
+    await act(() => { render(<AppShell />) })
     expect(screen.getByTestId('sync-view')).toBeDefined()
   })
 
   it('renders GraphView when currentView is graph', async () => {
     currentView = 'graph'
-    await act(async () => { render(<AppShell />) })
+    await act(() => { render(<AppShell />) })
     expect(screen.getByTestId('graph-view')).toBeDefined()
   })
 
   it('renders MindMapView when currentView is mindmap', async () => {
     currentView = 'mindmap'
-    await act(async () => { render(<AppShell />) })
+    await act(() => { render(<AppShell />) })
     expect(screen.getByTestId('mindmap-view')).toBeDefined()
   })
 
   it('renders AIHarnessView when currentView is ai', async () => {
     currentView = 'ai'
-    await act(async () => { render(<AppShell />) })
+    await act(() => { render(<AppShell />) })
     expect(screen.getByTestId('ai-harness-view')).toBeDefined()
   })
 
   it('renders TrizView when currentView is triz', async () => {
     currentView = 'triz'
-    await act(async () => { render(<AppShell />) })
+    await act(() => { render(<AppShell />) })
     expect(screen.getByTestId('triz-view')).toBeDefined()
   })
 

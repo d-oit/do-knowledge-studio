@@ -216,7 +216,7 @@ class LocalAdapter implements ProviderAdapter {
   readonly id: ProviderId = 'local'
   readonly requiresKey = false
 
-  private resolveTarget(
+  private static resolveTarget(
     request: ChatRequest,
   ): { model: string; dtype: 'q4' | 'q8'; device: 'wasm' | 'webgpu' } {
     const model = typeof request.model === 'string' ? request.model : request.model.slug
@@ -226,7 +226,7 @@ class LocalAdapter implements ProviderAdapter {
   }
 
   async send(request: ChatRequest): Promise<ChatResult> {
-    const { model, dtype, device } = this.resolveTarget(request)
+    const { model, dtype, device } = LocalAdapter.resolveTarget(request)
     const runtime = await loadTransformersRuntime(model, device, dtype)
     const content = await runGeneration(runtime, request.messages, request.signal)
     return { content, provider: 'local', model }
@@ -236,7 +236,7 @@ class LocalAdapter implements ProviderAdapter {
     request: ChatRequest,
     onChunk: (chunk: string) => void,
   ): Promise<ChatResult> {
-    const { model, dtype, device } = this.resolveTarget(request)
+    const { model, dtype, device } = LocalAdapter.resolveTarget(request)
     const runtime = await loadTransformersRuntime(model, device, dtype)
     const content = await runGeneration(runtime, request.messages, request.signal, onChunk)
     return { content, provider: 'local', model }

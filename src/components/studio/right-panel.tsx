@@ -273,11 +273,11 @@ function InspectorPanel() {
               Connections ({entity.links.length})
             </h4>
             <ul className="space-y-1">
-              {entity.links.map((l) => {
+              {entity.links.map((l, i) => {
                 const target = entityIndex.get(l.targetId)
                 if (!target) return null
                 return (
-                  <li key={`${l.targetId}:${l.relation}`}>
+                  <li key={`${l.targetId}:${l.relation}:${i}`}>
                     <button
                       onClick={() => selectEntity(target.id)}
                       className="flex w-full min-h-[44px] items-center gap-2 rounded-md p-1.5 text-left text-[12px] text-ink-soft transition-colors hover:bg-muted focus-ring"
@@ -373,7 +373,7 @@ function CitationsPanel() {
           <ul className="space-y-2">
             {citations.map((c, i) => (
               <li
-                key={`${c.entityId}:${c.snippet}`}
+                key={`${c.entityId}:${c.snippet}:${i}`}
                 className="rounded-md border border-border bg-muted/30 p-3"
               >
                 <div className="mb-1 flex items-center gap-2">

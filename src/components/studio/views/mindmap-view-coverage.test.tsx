@@ -53,7 +53,7 @@ vi.mock('./export-types', () => ({
 
 const mockSelectEntity = vi.fn()
 const mockSetView = vi.fn()
-const mockCommitEntity = vi.fn()
+const mockCommitEntities = vi.fn()
 const mockDeleteEntity = vi.fn()
 const mockStartEdit = vi.fn()
 const mockUndo = vi.fn()
@@ -113,7 +113,7 @@ vi.mock('@/lib/studio/store', () => ({
       entities: currentEntities,
       selectEntity: mockSelectEntity,
       setView: mockSetView,
-      commitEntity: mockCommitEntity,
+      commitEntities: mockCommitEntities,
       deleteEntity: mockDeleteEntity,
       startEdit: mockStartEdit,
       undo: mockUndo,
@@ -236,7 +236,8 @@ describe('MindMapView branch coverage', () => {
     render(<MindMapView />)
     fireEvent.focus(screen.getByText('Root Entity').closest('[role="treeitem"]') as HTMLElement)
     fireEvent.click(screen.getByLabelText('Add child'))
-    expect(mockCommitEntity).toHaveBeenCalledTimes(2)
+    expect(mockCommitEntities).toHaveBeenCalledTimes(1)
+    expect(mockCommitEntities.mock.calls[0][0]).toHaveLength(2)
   })
 
   it('starts editing focused node when rename button is clicked', () => {
@@ -258,7 +259,8 @@ describe('MindMapView branch coverage', () => {
     const canvas = screen.getByRole('tree', { name: 'Knowledge mind map' }).parentElement as HTMLElement
     fireEvent.focus(screen.getByText('Root Entity').closest('[role="treeitem"]') as HTMLElement)
     fireEvent.keyDown(canvas, { key: 'Tab', ctrlKey: true })
-    expect(mockCommitEntity).toHaveBeenCalledTimes(2)
+    expect(mockCommitEntities).toHaveBeenCalledTimes(1)
+    expect(mockCommitEntities.mock.calls[0][0]).toHaveLength(2)
   })
 
   it('starts editing via global F2 keyboard shortcut', () => {

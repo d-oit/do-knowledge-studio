@@ -23,7 +23,7 @@ vi.mock('./embeddings', () => ({
   EMBED_POOLING: 'mean',
   EmbedderError: class EmbedderError extends Error {},
   embedTexts: embeddingsMock.embedTexts,
-  getEmbedder: vi.fn(async () => ({})),
+  getEmbedder: vi.fn(() => ({})),
   getEmbedderStatus: () => 'ready',
   isEmbedderReady: () => true,
   disposeEmbedder: vi.fn(),
@@ -70,7 +70,7 @@ const testClaims: Claim[] = [
 
 describe('Search Worker Handler', () => {
   beforeEach(() => {
-    embeddingsMock.embedTexts.mockImplementation(async (texts: string[]) =>
+    embeddingsMock.embedTexts.mockImplementation((texts: string[]) =>
       texts.map(bucketVector),
     )
     resetSemanticCache()
@@ -118,7 +118,7 @@ describe('Search Worker Handler', () => {
 
 describe('SearchWorkerClient', () => {
   beforeEach(() => {
-    embeddingsMock.embedTexts.mockImplementation(async (texts: string[]) =>
+    embeddingsMock.embedTexts.mockImplementation((texts: string[]) =>
       texts.map(bucketVector),
     )
     resetSemanticCache()
@@ -246,8 +246,8 @@ describe('SearchWorkerClient', () => {
   })
 
   it('searchSemantic runs the in-process semantic path without a Worker', async () => {
-    const client = new SearchWorkerClient()
-    const outcome = await client.searchSemantic(testEntities, testClaims, 'triz', 5)
+
+    const outcome = await SearchWorkerClient.searchSemantic(testEntities, testClaims, 'triz', 5)
     expect(outcome.source).toBe('semantic')
     expect(outcome.results.length).toBeGreaterThan(0)
     expect(outcome.results[0].id).toBe('e1')
@@ -261,11 +261,11 @@ describe('SearchWorkerClient', () => {
   })
 
   it('searchSemantic rejects an already-aborted signal (no worker path)', async () => {
-    const client = new SearchWorkerClient()
+
     const controller = new AbortController()
     controller.abort()
     await expect(
-      client.searchSemantic(testEntities, testClaims, 'triz', 5, controller.signal),
+      SearchWorkerClient.searchSemantic(testEntities, testClaims, 'triz', 5, controller.signal),
     ).rejects.toMatchObject({ name: 'AbortError' })
   })
 
@@ -279,7 +279,7 @@ describe('SearchWorkerClient', () => {
     } as unknown as Worker
 
     const client = new SearchWorkerClient(mockWorker)
-    const outcome = await client.searchSemantic(testEntities, testClaims, 'triz', 5)
+    const outcome = await SearchWorkerClient.searchSemantic(testEntities, testClaims, 'triz', 5)
     expect(outcome.source).toBe('semantic')
     expect(outcome.results.length).toBeGreaterThan(0)
     // No worker round-trip happens for semantic search.
@@ -289,8 +289,8 @@ describe('SearchWorkerClient', () => {
 
   it('searchSemantic surfaces a lexical fallback outcome when embedding fails', async () => {
     embeddingsMock.embedTexts.mockRejectedValue(new EmbedderError('model offline'))
-    const client = new SearchWorkerClient()
-    const outcome = await client.searchSemantic(testEntities, testClaims, 'segmentation', 5)
+
+    const outcome = await SearchWorkerClient.searchSemantic(testEntities, testClaims, 'segmentation', 5)
     expect(outcome.source).toBe('lexical')
     expect(outcome.reason).toContain('model offline')
     expect(outcome.results.length).toBeGreaterThan(0)

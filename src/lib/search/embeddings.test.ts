@@ -21,7 +21,7 @@ import {
 
 /** A fake pipeline returning deterministic 4-dim vectors per text. */
 const makeExtractor = (): unknown =>
-  vi.fn(async (texts: string[]) => ({
+  vi.fn((texts: string[]) => ({
     dims: [texts.length, 4],
     tolist: () => texts.map((text: string) => [text.length % 7, 0, 0, 0]),
   }))
@@ -30,7 +30,7 @@ describe('embedding runtime (mocked transformers)', () => {
   beforeEach(() => {
     disposeEmbedder()
     transformersMock.pipeline.mockClear()
-    transformersMock.pipeline.mockImplementation(async () => makeExtractor())
+    transformersMock.pipeline.mockImplementation(() => makeExtractor())
   })
 
   it('lazily loads the pipeline once and reuses it across calls', async () => {
@@ -75,7 +75,7 @@ describe('embedding runtime (mocked transformers)', () => {
 
   it('embeds a batch in one extractor call and L2-normalizes each row', async () => {
     const extractor = makeExtractor() as ReturnType<typeof vi.fn>
-    transformersMock.pipeline.mockImplementation(async () => extractor)
+    transformersMock.pipeline.mockImplementation(() => extractor)
 
     const vectors = await embedTexts(['alpha', 'beta'])
     expect(extractor).toHaveBeenCalledTimes(1)
@@ -90,7 +90,7 @@ describe('embedding runtime (mocked transformers)', () => {
 
   it('truncates long documents to EMBED_MAX_CHARS before embedding', async () => {
     const extractor = makeExtractor() as ReturnType<typeof vi.fn>
-    transformersMock.pipeline.mockImplementation(async () => extractor)
+    transformersMock.pipeline.mockImplementation(() => extractor)
 
     const longDoc = 'a'.repeat(EMBED_MAX_CHARS + 100)
     await embedTexts([longDoc])
@@ -118,7 +118,7 @@ describe('embedding runtime (mocked transformers)', () => {
     transformersMock.pipeline.mockRejectedValueOnce(new Error('first attempt failed'))
     await expect(embedTexts(['x'])).rejects.toMatchObject({ name: 'EmbedderError' })
 
-    transformersMock.pipeline.mockImplementation(async () => makeExtractor())
+    transformersMock.pipeline.mockImplementation(() => makeExtractor())
     const vectors = await embedTexts(['y'])
     expect(vectors).toHaveLength(1)
     expect(transformersMock.pipeline).toHaveBeenCalledTimes(2)

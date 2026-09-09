@@ -70,7 +70,7 @@ const restoreSelection = (textarea: HTMLTextAreaElement, start: number, end: num
 export const EditorView = () => {
   const entities = useStudioStore((s) => s.entities)
   const editingEntityId = useStudioStore((s) => s.editingEntityId)
-  const commitEntity = useStudioStore((s) => s.commitEntity)
+  const commitEntities = useStudioStore((s) => s.commitEntities)
   const finishEditing = useStudioStore((s) => s.finishEditing)
   const navigateToView = useStudioStore((s) => s.navigateToView)
   const claims = useStudioStore((s) => s.claims)
@@ -263,11 +263,11 @@ export const EditorView = () => {
    * accumulated): tokens are parsed into `links: [{ targetId, relation:
    * 'mentions' }]` merged with existing links, so removing the mention text
    * before saving automatically drops the link. Reciprocal backlinks
-   * ('`mentioned-in` on each mentioned entity) are default-on; backlink
-   * writes use the navigation-free commitEntity so a pure revocation does
-   * not leave the editor. Because navigation to the library happens only
-   * when the entity mentions someone (matches the "Save to library"
-   * label), entities without mentions keep today's stay-in-editor behavior.
+   * ('`mentioned-in` on each mentioned entity) are default-on; the source
+   * entity and its backlinks commit under one history snapshot so a single
+   * Undo restores the whole operation. Navigation to the library happens
+   * only when the entity mentions someone (matches the "Save to library"
+   * label); entities without mentions keep today's stay-in-editor behavior.
    */
   const handleSave = useCallback(() => {
     if (!name.trim()) {
@@ -288,18 +288,16 @@ export const EditorView = () => {
       updatedAt: new Date().toISOString(),
       links: mergeMentionLinks(editing?.links || [], mentionLinks),
     }
-    commitEntity(entity)
-    // Remove draft on commit
-    if (draftIdRef.current) removeDraft(draftIdRef.current)
-
     // Reciprocal backlinks + stale-backlink revocation, only touching
-    // entities whose links actually changed. Written via commitEntity so a
-    // pure revocation (last mention deleted) does not navigate away.
+    // entities whose links actually changed. Committed together with the
+    // source entity under a single history snapshot so one Undo restores the
+    // whole operation (reverting only the backlink write would break the
+    // reciprocal-link invariant).
     const mentionedIds = new Set(mentions.map((m) => m.entityId))
     const backlinkUpdates = applyMentionBacklinks(entities, entityId, mentionedIds)
-    for (const updated of backlinkUpdates) {
-      commitEntity(updated)
-    }
+    commitEntities([entity, ...backlinkUpdates])
+    // Remove draft on commit
+    if (draftIdRef.current) removeDraft(draftIdRef.current)
     // Navigate to the library only when the entity actually mentions someone
     // (matches the "Save to library" label); entities without mentions keep
     // today's stay-in-editor behavior.
@@ -307,7 +305,7 @@ export const EditorView = () => {
       finishEditing()
       navigateToView('library')
     }
-  }, [name, type, description, content, sourceUrl, tags, editing, entities, commitEntity, finishEditing, navigateToView, draftIdRef])
+  }, [name, type, description, content, sourceUrl, tags, editing, entities, commitEntities, finishEditing, navigateToView, draftIdRef])
 
   const handleDiscard = () => {
     if (draftIdRef.current) removeDraft(draftIdRef.current)

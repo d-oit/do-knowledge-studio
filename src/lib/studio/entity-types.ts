@@ -86,13 +86,15 @@ export const registerEntityType = (def: EntityTypeDef): void => {
     console.error(`entity-types: cannot register built-in entity type "${id}"`)
     return
   }
-  customTypeDefs.set(id, parsed.data)
+  customTypeDefs.set(id, { ...parsed.data })
 }
 
-/** Lists all known type definitions: built-ins (canonical order) then custom registrations. */
+/** Lists all known type definitions: built-ins (canonical order) then custom
+ * registrations. Each def is a fresh shallow copy so callers may mutate the
+ * result without corrupting the cached registry. */
 export const getEntityTypeDefs = (): EntityTypeDef[] => [
-  ...builtinTypeDefs,
-  ...Array.from(customTypeDefs.values()),
+  ...builtinTypeDefs.map((def) => ({ ...def })),
+  ...Array.from(customTypeDefs.values()).map((def) => ({ ...def })),
 ]
 
 /**

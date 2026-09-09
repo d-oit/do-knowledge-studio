@@ -19,8 +19,6 @@ const ASSERTION_MARKER = /\bassertion\s*:\s*/gi
 /** Prefix of a parenthesized source group. */
 const SOURCE_PREFIX = /^source\s*:/i
 
-const DEDUPE_SEPARATOR = '\u0000'
-
 /**
  * Finds the last parenthesized group in `block` whose content starts with
  * `Source:`. Handles nested parens and returns the group's start index plus
@@ -87,7 +85,10 @@ export const extractClaimsFromText = (text: string): ParsedClaimDraft[] => {
     if (!statement) continue
 
     const source = sourceGroup && sourceGroup.value.length > 0 ? sourceGroup.value : undefined
-    const key = `${statement}${DEDUPE_SEPARATOR}${source ?? ''}`
+    // JSON-encoded tuple key: no single-char delimiter is safe because both
+    // statement and source are unrestricted strings (a NUL inside either
+    // would otherwise collide distinct claims onto one key).
+    const key = JSON.stringify([statement, source ?? ''])
     if (seen.has(key)) continue
     seen.add(key)
     drafts.push({ statement, source })

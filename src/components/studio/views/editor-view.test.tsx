@@ -95,7 +95,7 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }))
 
-const mockCommitEntity = vi.fn()
+const mockCommitEntities = vi.fn()
 const mockSaveEntity = vi.fn()
 const mockFinishEditing = vi.fn()
 const mockNavigateToView = vi.fn()
@@ -147,7 +147,7 @@ vi.mock('@/lib/studio/store', () => ({
     selector({
       entities: currentEntities,
       editingEntityId: currentEditingEntityId,
-      commitEntity: mockCommitEntity,
+      commitEntities: mockCommitEntities,
       saveEntity: mockSaveEntity,
       finishEditing: mockFinishEditing,
       navigateToView: mockNavigateToView,
@@ -228,7 +228,7 @@ describe('EditorView', () => {
     expect(screen.getByTestId('claims-panel')).toBeDefined()
   })
 
-  it('does not render claims panel for new entity', () => {
+  it('does not render claims panel for new entity', async () => {
     currentEditingEntityId = null
     render(<EditorView />)
     expect(screen.queryByTestId('claims-panel')).toBeNull()
@@ -292,21 +292,22 @@ describe('EditorView @mention linking', () => {
     await screen.findByRole('listbox', { name: 'Mention an entity' })
   })
 
-  it('derives mention links and writes reciprocal backlinks on save', async () => {
+  it('derives mention links and writes reciprocal backlinks on save', () => {
         render(<EditorView />)
     const textarea = screen.getByLabelText('Editor content')
     const value = `See ${buildMentionToken('ent-2', 'Alice Entity')}`
     fireEvent.change(textarea, { target: { value, selectionStart: value.length, selectionEnd: value.length } })
     fireEvent.click(screen.getByText('Commit changes'))
 
-    const saved = mockCommitEntity.mock.calls[0][0]
+    const batch = mockCommitEntities.mock.calls[0][0]
+    const saved = batch[0]
     expect(saved.id).toBe('ent-1')
     expect(saved.links).toContainEqual({ targetId: 'ent-2', relation: 'mentions' })
 
-    // Reciprocal backlink written via the navigation-free commitEntity
-    // (backlink revocation must not navigate away from the editor).
-    expect(mockCommitEntity).toHaveBeenCalledTimes(2)
-    const backlinked = mockCommitEntity.mock.calls[1][0]
+    // Reciprocal backlink committed in the same batch (single history
+    // snapshot) so one Undo restores the whole operation.
+    expect(batch).toHaveLength(2)
+    const backlinked = batch[1]
     expect(backlinked.id).toBe('ent-2')
     expect(backlinked.links).toContainEqual({ targetId: 'ent-1', relation: 'mentioned-in' })
     // The entity mentions someone → save finishes editing and lands on library.
@@ -314,20 +315,20 @@ describe('EditorView @mention linking', () => {
     expect(mockNavigateToView).toHaveBeenCalledWith('library')
   })
 
-  it('does not write a mention link when the token text was removed before saving', async () => {
+  it('does not write a mention link when the token text was removed before saving', () => {
         render(<EditorView />)
     const textarea = screen.getByLabelText('Editor content')
     fireEvent.change(textarea, { target: { value: 'Mentions were removed', selectionStart: 21, selectionEnd: 21 } })
     fireEvent.click(screen.getByText('Commit changes'))
 
-    const saved = mockCommitEntity.mock.calls[0][0]
-    expect(saved.links.filter((l: { relation: string }) => l.relation === 'mentions')).toHaveLength(0)
-    // No targets mentioned → no backlink writes, no navigation.
-    expect(mockCommitEntity).toHaveBeenCalledTimes(1)
+    const batch = mockCommitEntities.mock.calls[0][0]
+    expect(batch[0].links.filter((l: { relation: string }) => l.relation === 'mentions')).toHaveLength(0)
+    // No targets mentioned → single-entity batch, no navigation.
+    expect(batch).toHaveLength(1)
     expect(mockNavigateToView).not.toHaveBeenCalled()
   })
 
-  it('revokes stale backlinks when a previously mentioned entity is no longer mentioned', async () => {
+  it('revokes stale backlinks when a previously mentioned entity is no longer mentioned', () => {
     currentEntities = mockEntities.map((e) =>
       e.id === 'ent-2'
         ? { ...e, links: [{ targetId: 'ent-1', relation: 'mentioned-in' as const }] }
@@ -338,8 +339,10 @@ describe('EditorView @mention linking', () => {
     fireEvent.change(textarea, { target: { value: 'No mentions now', selectionStart: 15, selectionEnd: 15 } })
     fireEvent.click(screen.getByText('Commit changes'))
 
-    expect(mockCommitEntity).toHaveBeenCalledTimes(2)
-    const updated = mockCommitEntity.mock.calls[1][0]
+    expect(mockCommitEntities).toHaveBeenCalledTimes(1)
+    const batch = mockCommitEntities.mock.calls[0][0]
+    expect(batch).toHaveLength(2)
+    const updated = batch[1]
     expect(updated.id).toBe('ent-2')
     expect(updated.links).toEqual([])
   })

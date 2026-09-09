@@ -108,7 +108,6 @@ export function TimelineView() {
   const entities = useStudioStore((s) => s.entities)
   const claims = useStudioStore((s) => s.claims)
   const startEdit = useStudioStore((s) => s.startEdit)
-  const setView = useStudioStore((s) => s.setView)
   const startNew = useStudioStore((s) => s.startNew)
 
   const groups = useMemo(() => buildTimelineGroups(entities, claims), [entities, claims])
@@ -117,12 +116,13 @@ export function TimelineView() {
     (item: TimelineItem) => {
       const targetId = item.kind === 'claim' ? item.entityId : item.id
       if (!targetId) return
-      // startEdit opens the target in the editor (sets editingEntityId),
-      // unlike selectEntity which only highlights the node.
+      // startEdit opens the target in the editor (sets editingEntityId and
+      // the editor view) but only when the entity exists — an orphan claim
+      // (no matching entity) stays on the timeline instead of landing on a
+      // blank editor.
       startEdit(targetId)
-      setView('editor')
     },
-    [startEdit, setView],
+    [startEdit],
   )
 
   return (

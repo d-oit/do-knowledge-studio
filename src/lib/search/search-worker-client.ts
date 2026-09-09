@@ -96,7 +96,7 @@ export class SearchWorkerClient {
   }
 
   /** Attach an abort listener; settles the pending request when the signal fires. */
-  private wireAbort(
+  private static wireAbort(
     signal: AbortSignal | undefined,
     onAbort: (error: Error) => void,
   ): (() => void) | undefined {
@@ -160,7 +160,7 @@ export class SearchWorkerClient {
     }
 
     return new Promise<SearchResult[]>((resolve, reject) => {
-      const cleanup = this.wireAbort(signal, () => this.settle(id, abortError()))
+      const cleanup = SearchWorkerClient.wireAbort(signal, () => this.settle(id, abortError()))
       // Bound the request so a silent/broken worker can't leave callers (e.g.
       // the chat) waiting forever; the caller falls back to sync search.
       const timer = setTimeout(() => {
@@ -189,7 +189,7 @@ export class SearchWorkerClient {
    * @param signal - Optional abort signal; the pending search is cancelled
    *   and the promise rejects with `AbortError`.
    */
-  searchSemantic(
+  static searchSemantic(
     entities: Entity[],
     claims: Claim[],
     query: string,
@@ -241,5 +241,5 @@ export const searchSemantic = (
   limit?: number,
   signal?: AbortSignal,
 ): Promise<SemanticSearchOutcome> => {
-  return defaultSearchWorkerClient.searchSemantic(entities, claims, query, limit, signal)
+  return SearchWorkerClient.searchSemantic(entities, claims, query, limit, signal)
 }

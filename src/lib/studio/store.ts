@@ -58,6 +58,10 @@ interface StudioState {
   startNew: () => void
   saveEntity: (e: Entity) => void
   commitEntity: (e: Entity) => void
+  /** Atomically commit several entities under a single history snapshot.
+   * Use for reciprocal writes (a save plus its backlinks) so one Undo
+   * restores the whole operation, not just the last write. */
+  commitEntities: (entities: Entity[]) => void
   finishEditing: () => void
   navigateToView: (v: ViewId) => void
   deleteEntity: (id: string) => void
@@ -245,6 +249,18 @@ export const useStudioStore = create<StudioState>()(
             ? state.entities.map((x) => (x.id === e.id ? e : x))
             : [e, ...state.entities]
           return { entities }
+        })
+      },
+
+      commitEntities: (upserts) => {
+        const { pushHistory } = get()
+        pushHistory()
+        set((state) => {
+          const upsertById = new Map(upserts.map((e) => [e.id, e]))
+          const existingIds = new Set(state.entities.map((x) => x.id))
+          const fresh = upserts.filter((e) => !existingIds.has(e.id))
+          const merged = state.entities.map((x) => upsertById.get(x.id) ?? x)
+          return { entities: [...fresh, ...merged] }
         })
       },
 

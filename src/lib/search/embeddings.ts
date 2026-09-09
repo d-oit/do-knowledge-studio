@@ -35,9 +35,10 @@ export interface EmbeddingTensor {
  * Minimal callable shape of the feature-extraction pipeline this module
  * consumes: batch texts in, mean-pooled tensor out.
  */
-export interface EmbeddingPipeline {
-  (texts: string[], options: { pooling: 'mean' }): Promise<EmbeddingTensor>
-}
+export type EmbeddingPipeline = (
+  texts: string[],
+  options: { pooling: 'mean' },
+) => Promise<EmbeddingTensor>
 
 /** Model id exported from a quantized ONNX (transformers.js) conversion. */
 export const EMBEDDING_MODEL_ID = 'Xenova/paraphrase-multilingual-MiniLM-L12-v2'
@@ -63,10 +64,6 @@ export const EMBED_POOLING = 'mean' as const
 /** Descriptive error thrown by every public embedding failure path. */
 export class EmbedderError extends Error {
   override name = 'EmbedderError'
-
-  constructor(message: string, options?: { cause?: unknown }) {
-    super(message, options)
-  }
 }
 
 /** Abort error thrown when the caller aborts an embedding request. */

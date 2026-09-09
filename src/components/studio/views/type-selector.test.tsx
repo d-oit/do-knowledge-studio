@@ -71,12 +71,12 @@ describe('TypeSelector', () => {
   })
 
   it('renders the menu when showMenu is true', () => {
-    render(<TypeSelector type="note" showMenu={true} onToggleMenu={mockOnToggleMenu} onSelect={mockOnSelect} />)
+    render(<TypeSelector type="note" showMenu onToggleMenu={mockOnToggleMenu} onSelect={mockOnSelect} />)
     expect(screen.getByRole('listbox')).toBeDefined()
   })
 
   it('renders all four built-in entity type options', () => {
-    render(<TypeSelector type="note" showMenu={true} onToggleMenu={mockOnToggleMenu} onSelect={mockOnSelect} />)
+    render(<TypeSelector type="note" showMenu onToggleMenu={mockOnToggleMenu} onSelect={mockOnSelect} />)
     const options = screen.getAllByRole('option')
     expect(options).toHaveLength(4)
     expect(screen.getByRole('option', { name: /Note/ })).toBeDefined()
@@ -87,14 +87,14 @@ describe('TypeSelector', () => {
 
   it('renders registered custom types as options', () => {
     mockDefs.push({ id: 'roadmap', label: 'Roadmap', color: 'violet', bg: 'bg-violet-100', text: 'text-violet-700', dot: 'bg-violet-500' })
-    render(<TypeSelector type="note" showMenu={true} onToggleMenu={mockOnToggleMenu} onSelect={mockOnSelect} />)
+    render(<TypeSelector type="note" showMenu onToggleMenu={mockOnToggleMenu} onSelect={mockOnSelect} />)
     expect(screen.getAllByRole('option')).toHaveLength(5)
     expect(screen.getByRole('option', { name: /Roadmap/ })).toBeDefined()
     mockDefs.pop()
   })
 
   it('marks the current type as aria-selected', () => {
-    render(<TypeSelector type="concept" showMenu={true} onToggleMenu={mockOnToggleMenu} onSelect={mockOnSelect} />)
+    render(<TypeSelector type="concept" showMenu onToggleMenu={mockOnToggleMenu} onSelect={mockOnSelect} />)
     const conceptOption = screen.getByRole('option', { name: /Concept/ })
     expect(conceptOption.getAttribute('aria-selected')).toBe('true')
     const noteOption = screen.getByRole('option', { name: /Note/ })
@@ -102,21 +102,21 @@ describe('TypeSelector', () => {
   })
 
   it('calls onSelect when an option is clicked', () => {
-    render(<TypeSelector type="note" showMenu={true} onToggleMenu={mockOnToggleMenu} onSelect={mockOnSelect} />)
+    render(<TypeSelector type="note" showMenu onToggleMenu={mockOnToggleMenu} onSelect={mockOnSelect} />)
     fireEvent.click(screen.getByRole('option', { name: /Person/ }))
     expect(mockOnSelect).toHaveBeenCalledWith('person')
   })
 
   it('calls onSelect with a custom type id when clicked', () => {
     mockDefs.push({ id: 'roadmap', label: 'Roadmap', color: 'violet', bg: 'bg-violet-100', text: 'text-violet-700', dot: 'bg-violet-500' })
-    render(<TypeSelector type="note" showMenu={true} onToggleMenu={mockOnToggleMenu} onSelect={mockOnSelect} />)
+    render(<TypeSelector type="note" showMenu onToggleMenu={mockOnToggleMenu} onSelect={mockOnSelect} />)
     fireEvent.click(screen.getByRole('option', { name: /Roadmap/ }))
     expect(mockOnSelect).toHaveBeenCalledWith('roadmap')
     mockDefs.pop()
   })
 
   it('sets aria-haspopup and aria-expanded on the trigger button', () => {
-    render(<TypeSelector type="note" showMenu={true} onToggleMenu={mockOnToggleMenu} onSelect={mockOnSelect} />)
+    render(<TypeSelector type="note" showMenu onToggleMenu={mockOnToggleMenu} onSelect={mockOnSelect} />)
     const button = screen.getByRole('button')
     expect(button.getAttribute('aria-haspopup')).toBe('listbox')
     expect(button.getAttribute('aria-expanded')).toBe('true')
@@ -129,14 +129,14 @@ describe('TypeSelector', () => {
   })
 
   it('closes menu on Escape key', () => {
-    render(<TypeSelector type="note" showMenu={true} onToggleMenu={mockOnToggleMenu} onSelect={mockOnSelect} />)
+    render(<TypeSelector type="note" showMenu onToggleMenu={mockOnToggleMenu} onSelect={mockOnSelect} />)
     const listbox = screen.getByRole('listbox')
     fireEvent.keyDown(listbox, { key: 'Escape' })
     expect(mockOnToggleMenu).toHaveBeenCalledTimes(1)
   })
 
   it('moves focus with ArrowDown', () => {
-    render(<TypeSelector type="note" showMenu={true} onToggleMenu={mockOnToggleMenu} onSelect={mockOnSelect} />)
+    render(<TypeSelector type="note" showMenu onToggleMenu={mockOnToggleMenu} onSelect={mockOnSelect} />)
     const listbox = screen.getByRole('listbox')
     const options = screen.getAllByRole('option')
     options[0].focus()
@@ -145,7 +145,7 @@ describe('TypeSelector', () => {
   })
 
   it('moves focus with ArrowUp wrapping around', () => {
-    render(<TypeSelector type="note" showMenu={true} onToggleMenu={mockOnToggleMenu} onSelect={mockOnSelect} />)
+    render(<TypeSelector type="note" showMenu onToggleMenu={mockOnToggleMenu} onSelect={mockOnSelect} />)
     const listbox = screen.getByRole('listbox')
     const options = screen.getAllByRole('option')
     options[0].focus()

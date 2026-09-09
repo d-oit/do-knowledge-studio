@@ -50,7 +50,7 @@ export function MindMapView() {
   const canvasRef = useRef<HTMLDivElement>(null)
   const treeItemsRef = useRef<NodeListOf<HTMLElement> | null>(null)
   const [syncKey, setSyncKey] = useState(0)
-  const commitEntity = useStudioStore((s) => s.commitEntity)
+  const commitEntities = useStudioStore((s) => s.commitEntities)
   const deleteEntity = useStudioStore((s) => s.deleteEntity)
   const startEdit = useStudioStore((s) => s.startEdit)
   const undo = useStudioStore((s) => s.undo)
@@ -78,10 +78,9 @@ export function MindMapView() {
       links: [...nodeEntity.links, { targetId: childId, relation: 'contains' }],
       updatedAt: new Date().toISOString(),
     }
-    commitEntity(childEntity)
-    commitEntity(parentWithLink)
+    commitEntities([childEntity, parentWithLink])
     setFocusedNodeId(childId)
-  }, [entityIndex, commitEntity])
+  }, [entityIndex, commitEntities])
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {

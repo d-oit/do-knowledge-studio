@@ -125,11 +125,10 @@ export const LibraryView = () => {
           // so the search box never dies silently.
           if (err instanceof DOMException && err.name === 'AbortError') return
           console.error('Semantic search failed:', err)
-          setSemanticOutcome({
-            source: 'lexical',
-            results: [],
-            reason: err instanceof Error ? err.message : String(err),
-          })
+          // Clear — not `{ source: 'lexical', results: [] }` — so the grid
+          // falls back to the lexical `filteredEntities` rather than an
+          // empty semantic result list.
+          setSemanticOutcome(null)
           setSemanticBusy(false)
         })
     }, SEMANTIC_DEBOUNCE_MS)

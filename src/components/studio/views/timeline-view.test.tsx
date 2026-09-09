@@ -171,7 +171,6 @@ describe('TimelineView', () => {
     render(<TimelineView />)
     fireEvent.click(screen.getByRole('button', { name: 'Open Alpha Note in editor' }))
     expect(mockStartEdit).toHaveBeenCalledWith('e1')
-    expect(mockSetView).toHaveBeenCalledWith('editor')
   })
 
   it('opens the editor and starts editing the owning entity when a claim row is clicked', () => {
@@ -184,7 +183,6 @@ describe('TimelineView', () => {
     render(<TimelineView />)
     fireEvent.click(screen.getByRole('button', { name: 'Open A testable claim in editor' }))
     expect(mockStartEdit).toHaveBeenCalledWith('e1')
-    expect(mockSetView).toHaveBeenCalledWith('editor')
   })
 
   it('exposes semantic list structure for markers', () => {

@@ -95,7 +95,7 @@ describe('Ollama no API key requirement', () => {
     const originalFetch = globalThis.fetch
     globalThis.fetch = vi.fn().mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ message: { content: 'hi from ollama' } }),
+      json: () => ({ message: { content: 'hi from ollama' } }),
     } as Response)
 
     const adapter = getAdapter('ollama')
@@ -229,7 +229,7 @@ describe('fetchOllamaModels', () => {
   it('fetches model list from Ollama', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ models: [{ name: 'llama3' }, { name: 'mistral' }] }),
+      json: () => ({ models: [{ name: 'llama3' }, { name: 'mistral' }] }),
     } as Response)
 
     const models = await fetchOllamaModels('http://localhost:11434')
@@ -239,7 +239,7 @@ describe('fetchOllamaModels', () => {
   it('returns empty array when models field is missing', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({}),
+      json: () => ({}),
     } as Response)
 
     const models = await fetchOllamaModels('http://localhost:11434')
@@ -249,7 +249,7 @@ describe('fetchOllamaModels', () => {
   it('returns empty array when models field is empty array', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ models: [] }),
+      json: () => ({ models: [] }),
     } as Response)
 
     const models = await fetchOllamaModels('http://localhost:11434')
@@ -307,7 +307,7 @@ describe('sendChat', () => {
   it('delegates to the correct OpenRouter adapter', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ choices: [{ message: { content: 'Hello!' } }] }),
+      json: () => ({ choices: [{ message: { content: 'Hello!' } }] }),
     } as Response)
 
     const result = await sendChat({
@@ -384,7 +384,7 @@ describe('OpenRouterAdapter integration', () => {
   it('calls OpenRouter API with Auto Router successfully', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({
+      json: () => ({
         choices: [{ message: { content: 'Hello from Auto Router!' } }],
       }),
     } as Response)
@@ -416,7 +416,7 @@ describe('OpenRouterAdapter integration', () => {
   it('calls OpenRouter API with Free Router successfully', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({
+      json: () => ({
         choices: [{ message: { content: 'Hello from Free Router!' } }],
       }),
     } as Response)
@@ -442,7 +442,7 @@ describe('OpenRouterAdapter integration', () => {
   it('calls OpenRouter API with Fusion Router successfully', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({
+      json: () => ({
         choices: [{ message: { content: 'Hello from Fusion Router!' } }],
       }),
     } as Response)
@@ -468,7 +468,7 @@ describe('OpenRouterAdapter integration', () => {
   it('calls OpenRouter API with concrete model successfully', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({
+      json: () => ({
         choices: [{ message: { content: 'Hello from GPT-4o Mini!' } }],
       }),
     } as Response)
@@ -494,7 +494,7 @@ describe('OpenRouterAdapter integration', () => {
   it('correctly handles OpenRouter Target object as model parameter', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({
+      json: () => ({
         choices: [{ message: { content: 'Hello from Target object!' } }],
       }),
     } as Response)
@@ -522,7 +522,7 @@ describe('OpenRouterAdapter integration', () => {
   it('calls OpenRouter API with Pareto Router successfully', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({
+      json: () => ({
         choices: [{ message: { content: 'Hello from Pareto Router!' } }],
       }),
     } as Response)
@@ -548,7 +548,7 @@ describe('OpenRouterAdapter integration', () => {
   it('calls OpenRouter API with Body Builder Router successfully', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({
+      json: () => ({
         choices: [{ message: { content: 'Hello from Body Builder!' } }],
       }),
     } as Response)
@@ -574,7 +574,7 @@ describe('OpenRouterAdapter integration', () => {
   it('merges default_params into the request body correctly', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({
+      json: () => ({
         choices: [{ message: { content: 'Params test' } }],
       }),
     } as Response)
@@ -612,7 +612,7 @@ describe('OpenRouterAdapter integration', () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: false,
       status: 500,
-      text: async () => 'Internal Server Error fallback failure',
+      text: () => Promise.resolve('Internal Server Error fallback failure'),
     } as Response)
 
     const adapter = getAdapter('openrouter')
@@ -631,7 +631,7 @@ describe('OpenRouterAdapter integration', () => {
   it('throws when response has no content', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ choices: [] }),
+      json: () => ({ choices: [] }),
     } as Response)
 
     const adapter = getAdapter('openrouter')
@@ -662,7 +662,7 @@ describe('OllamaAdapter integration', () => {
   it('calls Ollama API successfully', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ message: { content: 'Hello from Ollama!' } }),
+      json: () => ({ message: { content: 'Hello from Ollama!' } }),
     } as Response)
 
     const adapter = getAdapter('ollama')
@@ -690,7 +690,7 @@ describe('OllamaAdapter integration', () => {
   it('calls Ollama API with custom base URL', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ message: { content: 'custom url response' } }),
+      json: () => ({ message: { content: 'custom url response' } }),
     } as Response)
 
     const adapter = getAdapter('ollama')
@@ -711,7 +711,7 @@ describe('OllamaAdapter integration', () => {
   it('calls Ollama API with CPU-only option', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ message: { content: 'CPU response' } }),
+      json: () => ({ message: { content: 'CPU response' } }),
     } as Response)
 
     const adapter = getAdapter('ollama')
@@ -733,7 +733,7 @@ describe('OllamaAdapter integration', () => {
   it('throws when Ollama response has no content', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({}),
+      json: () => ({}),
     } as Response)
 
     const adapter = getAdapter('ollama')
@@ -750,7 +750,7 @@ describe('OllamaAdapter integration', () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: false,
       status: 503,
-      text: async () => 'Service Unavailable',
+      text: () => Promise.resolve('Service Unavailable'),
     } as Response)
 
     const adapter = getAdapter('ollama')
@@ -942,7 +942,7 @@ describe('OpenRouterAdapter sendStream', () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: false,
       status: 401,
-      text: async () => 'Unauthorized',
+      text: () => Promise.resolve('Unauthorized'),
     } as Response)
 
     const adapter = getAdapter('openrouter')

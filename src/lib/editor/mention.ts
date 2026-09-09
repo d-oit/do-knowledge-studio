@@ -77,6 +77,16 @@ export interface ExtractedMentions {
 /** The canonical inert trigger (caret not in a mention context). */
 export const NO_MENTION_TRIGGER: MentionTrigger = { active: false, start: -1, query: '' }
 
+/** Decode a mention-link destination back to an entity id; legacy tokens may
+ * hold raw ids with invalid escape sequences, so falls back to the raw form. */
+const decodeMentionId = (raw: string): string => {
+  try {
+    return decodeURIComponent(raw)
+  } catch {
+    return raw
+  }
+}
+
 /** Returns every complete mention token in the content, in source order. */
 export const findMentionTokens = (content: string): MentionToken[] => {
   const tokens: MentionToken[] = []
@@ -86,7 +96,7 @@ export const findMentionTokens = (content: string): MentionToken[] => {
     const start = match.index
     const raw = match[0]
     tokens.push({
-      entityId: match[2],
+      entityId: decodeMentionId(match[2]),
       name: match[1],
       start,
       end: start + raw.length,
@@ -127,9 +137,14 @@ export const getMentionTrigger = (content: string, caret: number): MentionTrigge
   return { active: true, start: at, query }
 }
 
+/** Encode an entity id for a mention link destination: parens and other URI
+ * reserved chars would otherwise terminate the markdown token early. */
+const encodeMentionId = (entityId: string): string =>
+  encodeURIComponent(entityId).replace(/\(/g, '%28').replace(/\)/g, '%29')
+
 /** Builds the raw mention token for an entity, sanitizing bracket chars. */
 export const buildMentionToken = (entityId: string, name: string): string =>
-  `[@${name.replace(MENTION_NAME_INVALID, '')}](${MENTION_SCHEME}${entityId})`
+  `[@${name.replace(MENTION_NAME_INVALID, '')}](${MENTION_SCHEME}${encodeMentionId(entityId)})`
 
 /**
  * Replaces the active trigger span (`@query`) with the mention token.

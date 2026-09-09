@@ -256,7 +256,7 @@ describe('LocalAdapter load failures', () => {
 describe('LocalAdapter sendStream', () => {
   it('emits chunked deltas and returns the concatenated content', async () => {
     const generator = makeGenerator({
-      onCall: async (_messages, options) => {
+      onCall: (_messages, options) => {
         const streamer = options.streamer as {
           options: { callback_function?: (text: string) => void }
         }

@@ -79,7 +79,7 @@ describe('extractClaimsFromText', () => {
   it('handles unmatched open parens linearly without breaking source detection', () => {
     // Regression: many unbalanced `(` before a valid Source group must not
     // defeat detection nor degrade to quadratic rescans.
-    const blocked = 'Assertion: X ' + '('.repeat(50) + ' (Source: leading parens)'
+    const blocked = `Assertion: X ${'('.repeat(50)} (Source: leading parens)` 
     expect(extractClaimsFromText(blocked)).toEqual([
       { statement: `X ${'('.repeat(50)}`, source: 'leading parens' },
     ])

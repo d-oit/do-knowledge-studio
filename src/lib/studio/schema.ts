@@ -18,6 +18,18 @@ export const CustomEntityTypeSchema = z
 /** Zod schema for any runtime entity type: built-in unions or custom strings. */
 export const AnyEntityTypeSchema = z.union([EntityTypeSchema, CustomEntityTypeSchema])
 
+/**
+ * Zod schema for a type value that can be PERSISTED on an entity or graph
+ * node. Rejects the `'all'` filter sentinel: that string is a query filter,
+ * never a stored entity type.
+ */
+export const StoredEntityTypeSchema = z.union([
+  EntityTypeSchema,
+  CustomEntityTypeSchema.refine((type) => type !== 'all', {
+    message: 'Entity type cannot be "all"',
+  }),
+])
+
 /** Zod enum schema for VerificationStatus. */
 export const VerificationStatusSchema = z.enum(['unverified', 'verified', 'disputed'])
 
@@ -25,7 +37,7 @@ export const VerificationStatusSchema = z.enum(['unverified', 'verified', 'dispu
 export const EntitySchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  type: z.union([EntityTypeSchema, CustomEntityTypeSchema.refine((type) => type !== 'all', { message: 'Entity type cannot be "all"' })]),
+  type: StoredEntityTypeSchema,
   description: z.string(),
   content: z.string(),
   sourceUrl: z
@@ -68,7 +80,7 @@ export const ClaimSchema = z.object({
 export const GraphNodeSchema = z.object({
   id: z.string().min(1),
   label: z.string(),
-  type: AnyEntityTypeSchema,
+  type: StoredEntityTypeSchema,
   x: z.number(),
   y: z.number(),
 })
@@ -91,7 +103,7 @@ export const GraphSchema = z.object({
 export const MindMapNodeSchema = z.object({
   id: z.string().min(1),
   label: z.string(),
-  type: AnyEntityTypeSchema,
+  type: StoredEntityTypeSchema,
   x: z.number().optional(),
   y: z.number().optional(),
 })

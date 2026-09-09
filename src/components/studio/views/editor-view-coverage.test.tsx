@@ -113,7 +113,7 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }))
 
-const mockCommitEntity = vi.fn()
+const mockCommitEntities = vi.fn()
 const mockFinishEditing = vi.fn()
 const mockAddClaim = vi.fn()
 const mockUpdateClaim = vi.fn()
@@ -141,7 +141,7 @@ vi.mock('@/lib/studio/store', () => ({
     selector({
       entities: currentEntities,
       editingEntityId: currentEditingEntityId,
-      commitEntity: mockCommitEntity,
+      commitEntities: mockCommitEntities,
       finishEditing: mockFinishEditing,
       claims: [],
       addClaim: mockAddClaim,
@@ -243,10 +243,10 @@ describe('EditorView branch coverage', () => {
     fireEvent.change(nameInput, { target: { value: 'New Entity' } })
     const saveBtn = screen.getByText('Save to library')
     fireEvent.click(saveBtn)
-    expect(mockCommitEntity).toHaveBeenCalledTimes(1)
-    expect(mockCommitEntity).toHaveBeenCalledWith(
+    expect(mockCommitEntities).toHaveBeenCalledTimes(1)
+    expect(mockCommitEntities).toHaveBeenCalledWith([
       expect.objectContaining({ id: 'new-entity-id', name: 'New Entity' }),
-    )
+    ])
   })
 
   it('discards changes when discard is clicked for existing entity', () => {
@@ -324,7 +324,7 @@ describe('EditorView branch coverage', () => {
     render(<EditorView />)
     const saveBtn = screen.getByText('Commit changes')
     fireEvent.click(saveBtn)
-    expect(mockCommitEntity).toHaveBeenCalledTimes(1)
+    expect(mockCommitEntities).toHaveBeenCalledTimes(1)
     expect(editor.removeDraft).toHaveBeenCalled()
   })
 
@@ -391,6 +391,6 @@ describe('EditorView branch coverage', () => {
     fireEvent.change(nameInput, { target: { value: 'Saved Entity' } })
     const textarea = screen.getByLabelText('Editor content')
     fireEvent.keyDown(textarea, { key: 's', ctrlKey: true })
-    expect(mockCommitEntity).toHaveBeenCalled()
+    expect(mockCommitEntities).toHaveBeenCalled()
   })
 })
