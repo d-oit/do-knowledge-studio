@@ -1,7 +1,7 @@
 'use client'
 
 import { useStudioStore } from '@/lib/studio/store'
-import { ENTITY_TYPE_META } from '@/lib/studio/types'
+import { ENTITY_TYPE_META, type GraphEdge, type GraphNode } from '@/lib/studio/types'
 import { seedGraph } from '@/lib/studio/seed-data'
 import { todayStamp, downloadBlob } from './export-types'
 import { CircleDot } from 'lucide-react'
@@ -28,6 +28,63 @@ const seededRandom = (seed: string): number => {
 const FOCUS_MODE_FILTER_STYLE: React.CSSProperties = {
   filter: 'drop-shadow(0 0 3px var(--saffron))',
 } as const
+
+/**
+ * Edge line + (when highlighted) relation label. Extracted from the edge map
+ * callback so the GraphView render body stays within the complexity ceiling.
+ */
+const GraphEdgeElement = ({
+  edge,
+  sourceNode,
+  targetNode,
+  selectedEntityId,
+}: {
+  edge: GraphEdge
+  sourceNode: GraphNode
+  targetNode: GraphNode
+  selectedEntityId: string | null
+}) => {
+  const isHighlighted =
+    selectedEntityId !== null &&
+    (edge.source === selectedEntityId || edge.target === selectedEntityId)
+  const dx = targetNode.x - sourceNode.x
+  const dy = targetNode.y - sourceNode.y
+  const edgeLength = Math.hypot(dx, dy) || 1
+  const labelOffset = isHighlighted ? 14 : 8
+  const labelX = (sourceNode.x + targetNode.x) / 2 + (-dy / edgeLength) * labelOffset
+  const labelY = (sourceNode.y + targetNode.y) / 2 + (dx / edgeLength) * labelOffset
+
+  return (
+    <g>
+      <line
+        x1={sourceNode.x}
+        y1={sourceNode.y}
+        x2={targetNode.x}
+        y2={targetNode.y}
+        className={cn(
+          'transition-all',
+          isHighlighted ? 'stroke-saffron' : 'stroke-border',
+        )}
+        strokeWidth={isHighlighted ? 2 : 1.5}
+      />
+      {isHighlighted && (
+        <text
+          x={labelX}
+          y={labelY}
+          textAnchor="middle"
+          dominantBaseline="central"
+          stroke="var(--background)"
+          strokeWidth={4}
+          strokeLinejoin="round"
+          paintOrder="stroke fill"
+          className="fill-ink-mute font-sans text-badge italic"
+        >
+          {edge.relation}
+        </text>
+      )}
+    </g>
+  )
+}
 
 /** Interactive knowledge graph view with force, circular, and hierarchical layouts. */
 export const GraphView = () => {
@@ -271,53 +328,19 @@ export const GraphView = () => {
         >
           {/* Edges */}
           <g>
-            {visibleEdges.map((e) => {
-              const s = visibleNodeMap.get(e.source)
-              const t = visibleNodeMap.get(e.target)
-                if (!s || !t) return null
-                const isHighlight =
-                  selectedEntityId && (e.source === selectedEntityId || e.target === selectedEntityId)
-                return (
-                  <g key={e.id}>
-                    <line
-                      x1={s.x}
-                      y1={s.y}
-                      x2={t.x}
-                      y2={t.y}
-                      className={cn(
-                        'transition-all',
-                        isHighlight ? 'stroke-saffron' : 'stroke-border',
-                      )}
-                      strokeWidth={isHighlight ? 2 : 1.5}
-                    />
-                    {isHighlight && (() => {
-                      const dx = t.x - s.x
-                      const dy = t.y - s.y
-                      const length = Math.hypot(dx, dy) || 1
-                      const isAttachedToSelected = selectedEntityId && (e.source === selectedEntityId || e.target === selectedEntityId)
-                      const labelOffset = isAttachedToSelected ? 14 : 8
-
-                      const labelX = (s.x + t.x) / 2 + (-dy / length) * labelOffset
-                      const labelY = (s.y + t.y) / 2 + (dx / length) * labelOffset
-
-                      return (
-                        <text
-                          x={labelX}
-                          y={labelY}
-                          textAnchor="middle"
-                          dominantBaseline="central"
-                          stroke="var(--background)"
-                          strokeWidth={4}
-                          strokeLinejoin="round"
-                          paintOrder="stroke fill"
-                          className="fill-ink-mute font-sans text-badge italic"
-                        >
-                          {e.relation}
-                        </text>
-                      )
-                    })()}
-                  </g>
-                )
+            {visibleEdges.map((edge) => {
+              const sourceNode = visibleNodeMap.get(edge.source)
+              const targetNode = visibleNodeMap.get(edge.target)
+              if (!sourceNode || !targetNode) return null
+              return (
+                <GraphEdgeElement
+                  key={edge.id}
+                  edge={edge}
+                  sourceNode={sourceNode}
+                  targetNode={targetNode}
+                  selectedEntityId={selectedEntityId}
+                />
+              )
             })}
           </g>
 

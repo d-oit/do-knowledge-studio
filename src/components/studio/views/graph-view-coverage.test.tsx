@@ -72,6 +72,17 @@ const mockEntities = [
     updatedAt: new Date().toISOString(),
     links: [],
   },
+  {
+    id: 'ent-3',
+    name: 'Unrelated Entity',
+    type: 'person' as const,
+    description: 'desc',
+    content: '',
+    tags: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    links: [],
+  },
 ]
 
 let currentEntities = mockEntities
@@ -224,15 +235,18 @@ describe('GraphView branch coverage', () => {
 
   it('shows correct node and edge counts', () => {
     render(<GraphView />)
-    expect(screen.getByText(/2 nodes · 1 edges/)).toBeDefined()
+    expect(screen.getByText(/3 nodes · 1 edges/)).toBeDefined()
   })
 
   it('shows correct counts with focus mode enabled (only selected + neighbors)', () => {
     currentSelectedEntityId = 'ent-1'
     render(<GraphView />)
+    // Unfiltered: all 3 fixture entities render.
+    expect(screen.getByText(/3 nodes · 1 edges/)).toBeDefined()
     const focusBtn = screen.getByLabelText('Focus neighborhood')
     fireEvent.click(focusBtn)
     expect(screen.getByText(/2 nodes · 1 edges/)).toBeDefined()
+    expect(screen.queryByText('Unrelated Entity')).toBeNull()
   })
 
   it('removes edges when entity type is filtered', () => {
