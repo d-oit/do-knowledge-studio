@@ -174,11 +174,11 @@ export const LibraryView = () => {
   const advancedFilteredEntities = useMemo(() => {
     const tag = tagQuery.trim().toLowerCase()
     if (!tag && !hasDescriptionOnly) return baseEntities
-    return baseEntities.filter((e) => {
-      if (tag && !e.tags.some((t) => t.toLowerCase().includes(tag))) return false
-      if (hasDescriptionOnly && !e.description.trim()) return false
-      return true
-    })
+    return baseEntities.filter(
+      (e) =>
+        (!tag || e.tags.some((et) => et.toLowerCase().includes(tag))) &&
+        (!hasDescriptionOnly || e.description.trim().length > 0),
+    )
   }, [baseEntities, tagQuery, hasDescriptionOnly])
 
   const hasAdvancedFilters = tagQuery.trim().length > 0 || hasDescriptionOnly
