@@ -200,13 +200,16 @@ export type VectorIndexResult =
   | { ok: true; count: number }
   | { ok: false; error: string }
 
-/** Embeds every document and upserts it into the shared store. */
+/** Embeds every document into the shared store, replacing the previous corpus. */
 const doBuildIndex = async (
   entities: Entity[],
   claims: Claim[],
   signal?: AbortSignal,
 ): Promise<VectorIndexResult> => {
   const docs = buildDocs(entities, claims)
+  // The index is a full snapshot of the corpus: clear it first so documents
+  // removed from the new arrays cannot linger and rank in later searches.
+  defaultVectorStore.clear()
   try {
     for (let offset = 0; offset < docs.length; offset += EMBED_BATCH_SIZE) {
       const batch = docs.slice(offset, offset + EMBED_BATCH_SIZE)

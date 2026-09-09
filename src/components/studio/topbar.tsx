@@ -7,33 +7,24 @@ import { t as timelineT } from '@/lib/i18n/messages/timeline'
 import { Menu, Plus, Search } from 'lucide-react'
 import type { KeyboardEvent } from 'react'
 
-/** Exhaustive view-title lookup — no dynamic indexing (Codacy-safe). */
-const getViewMeta = (view: ViewId): { title: string; subtitle: string } => {
-  switch (view) {
-    case 'home':
-      return { title: 'Studio', subtitle: 'Your knowledge base at a glance' }
-    case 'editor':
-      return { title: 'Editor', subtitle: 'Capture a thought, claim, or note' }
-    case 'library':
-      return { title: 'Library', subtitle: 'Browse and filter your entities' }
-    case 'graph':
-      return { title: 'Graph', subtitle: 'Visualize relationships' }
-    case 'mindmap':
-      return { title: 'Mind Map', subtitle: 'Hierarchical exploration' }
-    case 'chat':
-      return { title: 'Chat', subtitle: 'Ask your library' }
-    case 'ai':
-      return { title: 'AI Harness', subtitle: 'Configure and chat with LLMs' }
-    case 'triz':
-      return { title: 'TRIZ Matrix', subtitle: 'Solve inventive contradictions' }
-    case 'export':
-      return { title: 'Export', subtitle: 'Backup and share your knowledge' }
-    case 'sync':
-      return { title: 'Sync', subtitle: 'Connect devices and sync peer-to-peer' }
-    case 'timeline':
-      return { title: timelineT('timeline.title'), subtitle: timelineT('timeline.subtitle') }
-  }
-}
+/** View title metadata keyed by ViewId (bounded Map retrieval — no dynamic indexing). */
+const VIEW_TITLES: ReadonlyMap<ViewId, { title: string; subtitle: string }> = new Map([
+  ['home', { title: 'Studio', subtitle: 'Your knowledge base at a glance' }],
+  ['editor', { title: 'Editor', subtitle: 'Capture a thought, claim, or note' }],
+  ['library', { title: 'Library', subtitle: 'Browse and filter your entities' }],
+  ['graph', { title: 'Graph', subtitle: 'Visualize relationships' }],
+  ['mindmap', { title: 'Mind Map', subtitle: 'Hierarchical exploration' }],
+  ['chat', { title: 'Chat', subtitle: 'Ask your library' }],
+  ['ai', { title: 'AI Harness', subtitle: 'Configure and chat with LLMs' }],
+  ['triz', { title: 'TRIZ Matrix', subtitle: 'Solve inventive contradictions' }],
+  ['export', { title: 'Export', subtitle: 'Backup and share your knowledge' }],
+  ['sync', { title: 'Sync', subtitle: 'Connect devices and sync peer-to-peer' }],
+  ['timeline', { title: timelineT('timeline.title'), subtitle: timelineT('timeline.subtitle') }],
+])
+
+/** Bounded lookup; falls back to the home title for unknown view ids. */
+const getViewMeta = (view: ViewId): { title: string; subtitle: string } =>
+  VIEW_TITLES.get(view) ?? { title: 'Studio', subtitle: 'Your knowledge base at a glance' }
 
 /** Top header bar with view title, inline search, offline badge, and new entity button. */
 export const Topbar = () => {

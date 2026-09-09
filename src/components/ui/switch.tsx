@@ -21,7 +21,7 @@ function Switch({
     >
       <span
         className={cn(
-          "dark:data-[state=unchecked]:bg-input/80 relative inline-flex h-[1.15rem] w-8 items-center rounded-full border border-transparent bg-input shadow-xs transition-all group-data-[state=checked]:bg-primary"
+          "dark:group-data-[state=unchecked]:bg-input/80 relative inline-flex h-[1.15rem] w-8 items-center rounded-full border border-transparent bg-input shadow-xs transition-all group-data-[state=checked]:bg-primary"
         )}
       >
         <SwitchPrimitive.Thumb

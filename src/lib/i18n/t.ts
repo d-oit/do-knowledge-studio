@@ -31,9 +31,10 @@ export const makeT = <const T extends Record<string, MessageEntry>>(
   // (Codacy `detect-object-injection`).
   const entries = new Map<string, MessageEntry>(Object.entries(messages))
   return (key, ...args) => {
-    // `keyof T` may be wider than `string` at the generic boundary; message
-    // maps are keyed by string per the `Record<string, MessageEntry>` bound.
-    const entry = entries.get(key as string)
+    // `keyof T` is `string` per the bound, but a numeric/symbol key can be
+    // passed at runtime; Object.entries keys are always strings, so coerce
+    // before the Map lookup to keep both sides aligned.
+    const entry = entries.get(String(key))
     if (typeof entry === 'function') return entry(...args)
     if (entry !== undefined) return entry
     return String(key)

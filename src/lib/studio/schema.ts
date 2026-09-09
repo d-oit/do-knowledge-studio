@@ -170,7 +170,7 @@ export const PersistedEnvelopeSchema = z.object({
   // Every partialize key must appear here — enforced by a guard test.
   chat: z.array(ChatMessageSchema).optional(),
   currentView: z
-    .enum(['home', 'editor', 'library', 'graph', 'mindmap', 'chat', 'ai', 'triz', 'export', 'sync'])
+    .enum(['home', 'editor', 'library', 'graph', 'mindmap', 'timeline', 'chat', 'ai', 'triz', 'export', 'sync'])
     .optional(),
   typeFilter: z.union([AnyEntityTypeSchema, z.literal('all')]).optional(),
   sortBy: z.enum(['name', 'created', 'updated']).optional(),

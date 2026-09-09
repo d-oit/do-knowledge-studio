@@ -4,6 +4,7 @@ import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
 import { getEntityTypeMeta } from '@/lib/studio/entity-types'
 import { search, type SearchResult } from '@/lib/search/retrieval'
 import { buildEntityIndex } from '@/lib/studio/graph-index'
+import type { Entity } from '@/lib/studio/types'
 import { Search, X, Sparkles, FileText, Quote, ArrowRight } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -29,6 +30,49 @@ export function RightPanel() {
   }
 
   return <SearchPanel onCreateEntity={() => startNew()} />
+}
+
+/**
+ * Single ranked search result row. Extracted from the SearchPanel map
+ * callback so the render body stays within the complexity ceiling.
+ */
+const RankedResultRow = ({
+  result,
+  entityIndex,
+  onStartEdit,
+}: {
+  result: SearchResult
+  entityIndex: Map<string, Entity>
+  onStartEdit: (id: string) => void
+}) => {
+  const targetId = result.type === 'entity' ? result.id : result.entityId
+  const resolvedEntity = targetId ? entityIndex.get(targetId) : undefined
+  const meta = resolvedEntity ? getEntityTypeMeta(resolvedEntity.type) : undefined
+  return (
+    <li key={result.id}>
+      <button
+        onClick={() => { if (targetId) onStartEdit(targetId) }}
+        className="group block w-full min-h-[44px] rounded-md border border-transparent p-2.5 text-left transition-colors hover:border-border hover:bg-muted/50 focus-ring"
+        aria-label={`${result.name} — score ${result.score.toFixed(2)}`}
+      >
+        <div className="mb-1 flex items-center gap-2">
+          {meta && <span className={cn('h-1.5 w-1.5 rounded-full', meta.dot)} />}
+          {meta && (
+            <span className="rounded px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-ink-faint">
+              {meta.label}
+            </span>
+          )}
+          <span className="ml-auto text-caption tabular-nums text-ink-faint">
+            {result.score.toFixed(1)}
+          </span>
+        </div>
+        <div className="truncate text-[13px] font-medium text-ink">{result.name}</div>
+        <p className="mt-0.5 line-clamp-2 text-label leading-snug text-ink-mute">
+          {result.snippet}
+        </p>
+      </button>
+    </li>
+  )
 }
 
 /** Search panel with keyword/ranked mode toggle and entity results. */
@@ -112,36 +156,14 @@ function SearchPanel({ onCreateEntity }: { onCreateEntity?: (name: string) => vo
           </div>
         ) : mode === 'ranked' ? (
           <ul className="space-y-1.5" role="list" aria-label="Ranked search results">
-            {rankedResults.map((r: SearchResult) => {
-              const targetId = r.type === 'entity' ? r.id : r.entityId
-              const resolvedEntity = targetId ? entityIndex.get(targetId) : undefined
-              const meta = resolvedEntity ? getEntityTypeMeta(resolvedEntity.type) : undefined
-              return (
-                <li key={r.id}>
-                  <button
-                    onClick={() => targetId && startEdit(targetId)}
-                    className="group block w-full min-h-[44px] rounded-md border border-transparent p-2.5 text-left transition-colors hover:border-border hover:bg-muted/50 focus-ring"
-                    aria-label={`${r.name} — score ${r.score.toFixed(2)}`}
-                  >
-                    <div className="mb-1 flex items-center gap-2">
-                      {meta && <span className={cn('h-1.5 w-1.5 rounded-full', meta.dot)} />}
-                      {meta && (
-                        <span className="rounded px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-ink-faint">
-                          {meta.label}
-                        </span>
-                      )}
-                      <span className="ml-auto text-caption tabular-nums text-ink-faint">
-                        {r.score.toFixed(1)}
-                      </span>
-                    </div>
-                    <div className="truncate text-[13px] font-medium text-ink">{r.name}</div>
-                    <p className="mt-0.5 line-clamp-2 text-label leading-snug text-ink-mute">
-                      {r.snippet}
-                    </p>
-                  </button>
-                </li>
-              )
-            })}
+            {rankedResults.map((r) => (
+              <RankedResultRow
+                key={r.id}
+                result={r}
+                entityIndex={entityIndex}
+                onStartEdit={startEdit}
+              />
+            ))}
           </ul>
         ) : (
           <ul className="space-y-1.5" role="list" aria-label="Keyword search results">

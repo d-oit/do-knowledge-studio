@@ -75,6 +75,30 @@ const abortError = (): Error => new DOMException('Embedding aborted', 'AbortErro
 const isAbortError = (err: unknown): boolean =>
   err instanceof DOMException && err.name === 'AbortError'
 
+/**
+ * Resolves with the awaitable's result unless `signal` fires first, in which
+ * case it rejects with AbortError and cleans up its listener. Used to keep
+ * long model loads and inference responsive to cancellation.
+ */
+const raceWithAbort = async <T>(awaitable: Promise<T>, signal?: AbortSignal): Promise<T> => {
+  if (!signal || signal.aborted) {
+    if (signal?.aborted) throw abortError()
+    return awaitable
+  }
+  const { promise, resolve, reject } = Promise.withResolvers<T>()
+  const onAbort = (): void => reject(abortError())
+  signal.addEventListener('abort', onAbort)
+  awaitable.then(
+    (value) => resolve(value),
+    (err) => reject(err),
+  )
+  try {
+    return await promise
+  } finally {
+    signal.removeEventListener('abort', onAbort)
+  }
+}
+
 /** Lifecycle of the lazily-loaded embedding runtime. */
 export type EmbedderStatus = 'idle' | 'loading' | 'ready' | 'error'
 
@@ -175,13 +199,16 @@ export const embedTexts = async (
   if (signal?.aborted) throw abortError()
   if (texts.length === 0) return []
 
-  const extractor = await getEmbedder()
+  // A model download can take a long time; an abort signal must settle the
+  // request instead of waiting for getEmbedder() to finish. Racing the
+  // pending load with the signal keeps the cancellation path responsive.
+  const extractor = await raceWithAbort(getEmbedder(), signal)
   const prepared = texts.map((text) => truncateForEmbedding(text).trim())
   if (signal?.aborted) throw abortError()
 
   let output: EmbeddingTensor
   try {
-    output = await extractor(prepared, { pooling: EMBED_POOLING })
+    output = await raceWithAbort(extractor(prepared, { pooling: EMBED_POOLING }), signal)
   } catch (err) {
     if (isAbortError(err)) throw err
     throw new EmbedderError('Semantic embedding inference failed', { cause: err })

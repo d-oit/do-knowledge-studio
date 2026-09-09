@@ -188,16 +188,24 @@ export const extractMentionLinks = (
 }
 
 /**
- * Merges derived mention links into the entity's existing links, keeping
- * existing entries (and their order) and appending only missing (targetId,
- * relation) pairs. Never mutates the input arrays.
+ * Reconciles derived mention links against the entity's existing links.
+ * Mention links (`relation: 'mentions'`) are derived state: entries whose
+ * token no longer appears in the content are dropped, missing ones appended,
+ * and the remaining order is preserved. Manually authored relations (any
+ * other relation) are never touched. Never mutates the input arrays.
  */
 export const mergeMentionLinks = (
   existing: MentionLink[],
   mentionLinks: MentionLink[],
 ): MentionLink[] => {
-  const result = [...existing]
-  const present = new Set(existing.map((l) => JSON.stringify([l.targetId, l.relation])))
+  const derivedKeys = new Set(
+    mentionLinks.map((l) => JSON.stringify([l.targetId, l.relation])),
+  )
+  const keptManual = existing.filter(
+    (l) => l.relation !== MENTION_LINK_RELATION || derivedKeys.has(JSON.stringify([l.targetId, l.relation])),
+  )
+  const result = [...keptManual]
+  const present = new Set(keptManual.map((l) => JSON.stringify([l.targetId, l.relation])))
   for (const link of mentionLinks) {
     const key = JSON.stringify([link.targetId, link.relation])
     if (present.has(key)) continue

@@ -32,29 +32,45 @@ export interface TimelineGroup {
  * Groups entities (by createdAt) and claims (by their own createdAt, falling
  * back to the owning entity's createdAt) into month bands containing day
  * bands. Bands and items are ordered newest first. Claims whose entity is
- * unknown and which carry no createdAt are skipped.
+ * unknown and which carry no createdAt are skipped. Items with unparsable
+ * timestamps are skipped too (persisted claims allow any string).
  *
  * Pure and deterministic — unit-tested in timeline-view.test.tsx.
  */
+
+/** Builds a Date or null when the raw timestamp string is unparsable. */
+const parseTimestamp = (raw: string | undefined | null): Date | null => {
+  if (!raw) return null
+  const date = new Date(raw)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
 export const buildTimelineGroups = (entities: Entity[], claims: Claim[]): TimelineGroup[] => {
   const entityById = new Map(entities.map((entity) => [entity.id, entity]))
 
-  const items: TimelineItem[] = entities.map((entity) => ({
-    kind: 'entity',
-    id: entity.id,
-    label: entity.name,
-    date: new Date(entity.createdAt),
-    entityType: entity.type,
-  }))
+  const items: TimelineItem[] = []
+  for (const entity of entities) {
+    const date = parseTimestamp(entity.createdAt)
+    if (date === null) continue
+    items.push({
+      kind: 'entity',
+      id: entity.id,
+      label: entity.name,
+      date,
+      entityType: entity.type,
+    })
+  }
 
   for (const claim of claims) {
     const createdAt = claim.createdAt ?? entityById.get(claim.entityId)?.createdAt
     if (!createdAt) continue
+    const date = parseTimestamp(createdAt)
+    if (date === null) continue
     items.push({
       kind: 'claim',
       id: claim.id,
       label: claim.statement,
-      date: new Date(createdAt),
+      date,
       entityId: claim.entityId,
     })
   }

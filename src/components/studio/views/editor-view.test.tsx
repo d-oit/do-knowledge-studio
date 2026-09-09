@@ -98,6 +98,7 @@ vi.mock('sonner', () => ({
 const mockCommitEntity = vi.fn()
 const mockSaveEntity = vi.fn()
 const mockFinishEditing = vi.fn()
+const mockNavigateToView = vi.fn()
 const mockAddClaim = vi.fn()
 const mockUpdateClaim = vi.fn()
 const mockDeleteClaim = vi.fn()
@@ -149,6 +150,7 @@ vi.mock('@/lib/studio/store', () => ({
       commitEntity: mockCommitEntity,
       saveEntity: mockSaveEntity,
       finishEditing: mockFinishEditing,
+      navigateToView: mockNavigateToView,
       claims: [],
       addClaim: mockAddClaim,
       updateClaim: mockUpdateClaim,
@@ -301,11 +303,15 @@ describe('EditorView @mention linking', () => {
     expect(saved.id).toBe('ent-1')
     expect(saved.links).toContainEqual({ targetId: 'ent-2', relation: 'mentions' })
 
-    // Reciprocal backlink written via the existing saveEntity action.
-    expect(mockSaveEntity).toHaveBeenCalledTimes(1)
-    const backlinked = mockSaveEntity.mock.calls[0][0]
+    // Reciprocal backlink written via the navigation-free commitEntity
+    // (backlink revocation must not navigate away from the editor).
+    expect(mockCommitEntity).toHaveBeenCalledTimes(2)
+    const backlinked = mockCommitEntity.mock.calls[1][0]
     expect(backlinked.id).toBe('ent-2')
     expect(backlinked.links).toContainEqual({ targetId: 'ent-1', relation: 'mentioned-in' })
+    // The entity mentions someone → save finishes editing and lands on library.
+    expect(mockFinishEditing).toHaveBeenCalledTimes(1)
+    expect(mockNavigateToView).toHaveBeenCalledWith('library')
   })
 
   it('does not write a mention link when the token text was removed before saving', async () => {
@@ -316,8 +322,9 @@ describe('EditorView @mention linking', () => {
 
     const saved = mockCommitEntity.mock.calls[0][0]
     expect(saved.links.filter((l: { relation: string }) => l.relation === 'mentions')).toHaveLength(0)
-    // No targets mentioned → no backlink writes.
-    expect(mockSaveEntity).not.toHaveBeenCalled()
+    // No targets mentioned → no backlink writes, no navigation.
+    expect(mockCommitEntity).toHaveBeenCalledTimes(1)
+    expect(mockNavigateToView).not.toHaveBeenCalled()
   })
 
   it('revokes stale backlinks when a previously mentioned entity is no longer mentioned', async () => {
@@ -331,8 +338,8 @@ describe('EditorView @mention linking', () => {
     fireEvent.change(textarea, { target: { value: 'No mentions now', selectionStart: 15, selectionEnd: 15 } })
     fireEvent.click(screen.getByText('Commit changes'))
 
-    expect(mockSaveEntity).toHaveBeenCalledTimes(1)
-    const updated = mockSaveEntity.mock.calls[0][0]
+    expect(mockCommitEntity).toHaveBeenCalledTimes(2)
+    const updated = mockCommitEntity.mock.calls[1][0]
     expect(updated.id).toBe('ent-2')
     expect(updated.links).toEqual([])
   })

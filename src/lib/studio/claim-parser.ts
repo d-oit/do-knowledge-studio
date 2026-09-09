@@ -28,6 +28,11 @@ const DEDUPE_SEPARATOR = '\u0000'
  */
 const findSourceGroup = (block: string): { start: number; value: string } | null => {
   let searchFrom = block.length - 1
+  // Once a scan from a given `(` fails to close before the block end, every
+  // later candidate's close paren — if it exists — lies strictly before that
+  // failure point; scanning past it can never resolve. Bounding here keeps
+  // unbalanced input linear instead of quadratic.
+  let scanLimit = block.length
   while (searchFrom >= 0) {
     const openIndex = block.lastIndexOf('(', searchFrom)
     if (openIndex === -1) return null
@@ -35,7 +40,7 @@ const findSourceGroup = (block: string): { start: number; value: string } | null
     // Resolve the matching close paren, tolerating nested groups.
     let depth = 1
     let cursor = openIndex + 1
-    while (cursor < block.length && depth > 0) {
+    while (cursor < scanLimit && depth > 0) {
       const char = block[cursor]
       if (char === '(') depth += 1
       else if (char === ')') depth -= 1
@@ -43,6 +48,7 @@ const findSourceGroup = (block: string): { start: number; value: string } | null
     }
     if (depth !== 0) {
       // Unbalanced group — treat its `(` as plain text, keep scanning left.
+      scanLimit = openIndex
       searchFrom = openIndex - 1
       continue
     }

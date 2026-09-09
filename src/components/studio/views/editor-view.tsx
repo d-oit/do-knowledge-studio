@@ -72,7 +72,7 @@ export const EditorView = () => {
   const editingEntityId = useStudioStore((s) => s.editingEntityId)
   const commitEntity = useStudioStore((s) => s.commitEntity)
   const finishEditing = useStudioStore((s) => s.finishEditing)
-  const saveEntity = useStudioStore((s) => s.saveEntity)
+  const navigateToView = useStudioStore((s) => s.navigateToView)
   const claims = useStudioStore((s) => s.claims)
   const addClaim = useStudioStore((s) => s.addClaim)
   const updateClaim = useStudioStore((s) => s.updateClaim)
@@ -101,9 +101,20 @@ export const EditorView = () => {
   // Caret position driving the @mention trigger (updated on change/click/keys).
   const [caret, setCaret] = useState(0)
   const [mentionHighlight, setMentionHighlight] = useState(0)
-  // Index of the '@' trigger dismissed by Escape/blur; the same trigger stays
-  // closed until a NEW '@' context starts.
-  const [dismissedMentionStart, setDismissedMentionStart] = useState<number | null>(null)
+  // Trigger dismissed by Escape/blur. Bound to the content prefix at that
+  // offset so deleting the `@` and typing a fresh one at the same index
+  // reopens the picker (a NEW trigger), while continued query typing keeps
+  // the dismissal intact.
+  const [dismissedMention, setDismissedMention] = useState<{
+    start: number
+    prefix: string
+  } | null>(null)
+  const dismissMention = useCallback(
+    (start: number): void => {
+      setDismissedMention({ start, prefix: content.slice(0, start) })
+    },
+    [content],
+  )
 
   const { draftStatus, draftIdRef } = useEditorDraft({
     editing,
@@ -158,7 +169,13 @@ export const EditorView = () => {
     () => getMentionTrigger(content, caret),
     [content, caret],
   )
-  const mentionOpen = mentionTrigger.active && dismissedMentionStart !== mentionTrigger.start
+  // A dismissal applies only while the content prefix at the trigger offset is
+  // unchanged — a deleted/re-typed `@` at the same index is a new trigger.
+  const mentionOpen =
+    mentionTrigger.active &&
+    (dismissedMention === null ||
+      dismissedMention.start !== mentionTrigger.start ||
+      dismissedMention.prefix !== content.slice(0, mentionTrigger.start))
 
   const mentionCandidates = useMemo(() => {
     if (!mentionTrigger.active) return []
@@ -178,18 +195,18 @@ export const EditorView = () => {
     setContent(result.text)
     setCaret(result.selection)
     setMentionHighlight(0)
-    setDismissedMentionStart(mentionTrigger.start)
+    dismissMention(mentionTrigger.start)
     requestAnimationFrame(() => {
       const el = textareaRef.current
       if (el) restoreSelection(el, result.selection, result.selection)
     })
-  }, [content, mentionTrigger])
+  }, [content, mentionTrigger, dismissMention])
 
   const handleMentionKeyDown = useCallback((e: ReactKeyboardEvent<HTMLTextAreaElement>) => {
     if (!mentionOpen) return
     if (e.key === 'Escape') {
       e.preventDefault()
-      setDismissedMentionStart(mentionTrigger.start)
+      dismissMention(mentionTrigger.start)
       return
     }
     if (mentionCandidates.length === 0) return
@@ -206,7 +223,7 @@ export const EditorView = () => {
       const candidate = mentionCandidates.at(mentionHighlight)
       if (candidate !== undefined) selectMention(candidate)
     }
-  }, [mentionOpen, mentionCandidates, mentionHighlight, mentionTrigger.start, selectMention])
+  }, [mentionOpen, mentionCandidates, mentionHighlight, mentionTrigger.start, selectMention, dismissMention])
 
   const handleFormat = useCallback((command: string) => {
     const textarea = textareaRef.current
@@ -246,11 +263,11 @@ export const EditorView = () => {
    * accumulated): tokens are parsed into `links: [{ targetId, relation:
    * 'mentions' }]` merged with existing links, so removing the mention text
    * before saving automatically drops the link. Reciprocal backlinks
-   * (`mentioned-in` on each mentioned entity) are default-on and written via
-   * the existing `saveEntity` action — no store changes. Because saveEntity
-   * also navigates to the library and clears editing state, saving an entity
-   * WITH mentions lands on the library (matches the "Save to library"
-   * label); entities without mentions keep today's stay-in-editor behavior.
+   * ('`mentioned-in` on each mentioned entity) are default-on; backlink
+   * writes use the navigation-free commitEntity so a pure revocation does
+   * not leave the editor. Because navigation to the library happens only
+   * when the entity mentions someone (matches the "Save to library"
+   * label), entities without mentions keep today's stay-in-editor behavior.
    */
   const handleSave = useCallback(() => {
     if (!name.trim()) {
@@ -276,13 +293,21 @@ export const EditorView = () => {
     if (draftIdRef.current) removeDraft(draftIdRef.current)
 
     // Reciprocal backlinks + stale-backlink revocation, only touching
-    // entities whose links actually changed.
+    // entities whose links actually changed. Written via commitEntity so a
+    // pure revocation (last mention deleted) does not navigate away.
     const mentionedIds = new Set(mentions.map((m) => m.entityId))
     const backlinkUpdates = applyMentionBacklinks(entities, entityId, mentionedIds)
     for (const updated of backlinkUpdates) {
-      saveEntity(updated)
+      commitEntity(updated)
     }
-  }, [name, type, description, content, sourceUrl, tags, editing, entities, commitEntity, saveEntity, draftIdRef])
+    // Navigate to the library only when the entity actually mentions someone
+    // (matches the "Save to library" label); entities without mentions keep
+    // today's stay-in-editor behavior.
+    if (mentions.length > 0) {
+      finishEditing()
+      navigateToView('library')
+    }
+  }, [name, type, description, content, sourceUrl, tags, editing, entities, commitEntity, finishEditing, navigateToView, draftIdRef])
 
   const handleDiscard = () => {
     if (draftIdRef.current) removeDraft(draftIdRef.current)
@@ -365,7 +390,7 @@ export const EditorView = () => {
               onKeyUp={(e) => { setCaret(e.currentTarget.selectionStart) }}
               onKeyDown={handleMentionKeyDown}
               onBlur={() => {
-                if (mentionTrigger.active) setDismissedMentionStart(mentionTrigger.start)
+                if (mentionTrigger.active) dismissMention(mentionTrigger.start)
               }}
               placeholder="Start writing. Use markdown for headings, lists, and emphasis…"
               className={`min-h-[420px] w-full resize-none bg-transparent font-serif text-[16px] leading-[1.75] text-ink placeholder:text-ink-faint/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-saffron/40 focus-visible:ring-inset ${editMode === 'split' ? 'rounded-lg border border-border p-4' : ''}`}

@@ -195,6 +195,15 @@ describe('mergeMentionLinks', () => {
     mergeMentionLinks(existing, [{ targetId: 'e1', relation: MENTION_LINK_RELATION }])
     expect(existing).toEqual([{ targetId: 'e9', relation: 'related' }])
   })
+
+  it('drops stale mention links whose token left the content', () => {
+    const existing = [
+      { targetId: 'e1', relation: MENTION_LINK_RELATION },
+      { targetId: 'e9', relation: 'related' },
+    ]
+    // e1 no longer appears in the content; e9 is a manual relation.
+    expect(mergeMentionLinks(existing, [])).toEqual([{ targetId: 'e9', relation: 'related' }])
+  })
 })
 
 describe('applyMentionBacklinks', () => {

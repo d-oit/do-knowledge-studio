@@ -130,11 +130,15 @@ export const EditorMentionPicker = memo(function EditorMentionPicker({
     if (!measured) return
     const rowCount = Math.max(candidates.length, 1)
     const popoverHeight = estimatePopoverHeight(rowCount)
+    // The mirror measures in unscrolled document coordinates; the picker is
+    // positioned inside the textarea's scrolling viewport, so subtract the
+    // current scrollTop before comparing/placing.
+    const viewTop = measured.lineTop - el.scrollTop
     const fitsBelow =
-      measured.lineTop + measured.lineHeight + PICKER_CARET_GAP + popoverHeight <= el.clientHeight
+      viewTop + measured.lineHeight + PICKER_CARET_GAP + popoverHeight <= el.clientHeight
     const top = fitsBelow
-      ? measured.lineTop + measured.lineHeight + PICKER_CARET_GAP
-      : measured.lineTop - popoverHeight
+      ? viewTop + measured.lineHeight + PICKER_CARET_GAP
+      : viewTop - popoverHeight
     const maxLeft = Math.max(PICKER_MIN_INSET, el.clientWidth - PICKER_WIDTH)
     const left = Math.min(Math.max(measured.lineLeft, PICKER_MIN_INSET), maxLeft)
     setPosition({ top: Math.max(PICKER_MIN_INSET, top), left })

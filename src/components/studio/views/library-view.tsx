@@ -50,6 +50,12 @@ const HAS_DESCRIPTION_LABEL = 'Only show entities with a description'
 const CLEAR_ADVANCED_LABEL = 'Clear advanced filters'
 /** Initial number of entities rendered before the "Show all" expansion (large-list cap). */
 const LIBRARY_INITIAL_LIMIT = 24
+/**
+ * Ranked results returned by a semantic query. Deliberately larger than the
+ * render cap so the "Show all" expansion has results to reveal; the render
+ * limit is a grid concern, not a retrieval concern.
+ */
+const SEMANTIC_RESULT_LIMIT = 100
 /** Label for the button that expands the entity list beyond the initial cap. */
 const showAllLabel = (total: number): string => `Show all ${total} entities`
 /** Label for the button that collapses the expanded entity list. */
@@ -104,7 +110,7 @@ export const LibraryView = () => {
         allEntities,
         claims,
         semanticQuery,
-        LIBRARY_INITIAL_LIMIT,
+        SEMANTIC_RESULT_LIMIT,
         controller.signal,
       )
         .then((outcome) => {

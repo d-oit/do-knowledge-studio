@@ -5,7 +5,7 @@ import type { Claim, Entity } from '@/lib/studio/types'
 import { buildTimelineGroups } from './timeline-helpers'
 import { TimelineView } from './timeline-view'
 
-const mockSelectEntity = vi.fn()
+const mockStartEdit = vi.fn()
 const mockSetView = vi.fn()
 const mockStartNew = vi.fn()
 
@@ -17,7 +17,7 @@ vi.mock('@/lib/studio/store', () => ({
     selector({
       entities: mockEntities,
       claims: mockClaims,
-      selectEntity: mockSelectEntity,
+      startEdit: mockStartEdit,
       setView: mockSetView,
       startNew: mockStartNew,
     }),
@@ -166,15 +166,15 @@ describe('TimelineView', () => {
     expect(screen.getByText('2 items')).toBeDefined()
   })
 
-  it('opens the editor and selects the entity when an entity row is clicked', () => {
+  it('opens the editor and starts editing the entity when an entity row is clicked', () => {
     mockEntities = [makeEntity({ id: 'e1', name: 'Alpha Note' })]
     render(<TimelineView />)
     fireEvent.click(screen.getByRole('button', { name: 'Open Alpha Note in editor' }))
-    expect(mockSelectEntity).toHaveBeenCalledWith('e1')
+    expect(mockStartEdit).toHaveBeenCalledWith('e1')
     expect(mockSetView).toHaveBeenCalledWith('editor')
   })
 
-  it('opens the editor and selects the owning entity when a claim row is clicked', () => {
+  it('opens the editor and starts editing the owning entity when a claim row is clicked', () => {
     mockEntities = [
       makeEntity({ id: 'e1', name: 'Alpha Note', createdAt: '2026-09-08T12:00:00' }),
     ]
@@ -183,7 +183,7 @@ describe('TimelineView', () => {
     ]
     render(<TimelineView />)
     fireEvent.click(screen.getByRole('button', { name: 'Open A testable claim in editor' }))
-    expect(mockSelectEntity).toHaveBeenCalledWith('e1')
+    expect(mockStartEdit).toHaveBeenCalledWith('e1')
     expect(mockSetView).toHaveBeenCalledWith('editor')
   })
 
