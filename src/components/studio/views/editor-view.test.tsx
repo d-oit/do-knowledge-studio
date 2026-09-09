@@ -228,7 +228,7 @@ describe('EditorView', () => {
     expect(screen.getByTestId('claims-panel')).toBeDefined()
   })
 
-  it('does not render claims panel for new entity', async () => {
+  it('does not render claims panel for new entity', () => {
     currentEditingEntityId = null
     render(<EditorView />)
     expect(screen.queryByTestId('claims-panel')).toBeNull()

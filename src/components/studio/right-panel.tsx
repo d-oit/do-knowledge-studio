@@ -33,6 +33,39 @@ export function RightPanel() {
 }
 
 /**
+ * Dedupes an entity's links for rendering: the persisted schema permits
+ * repeated `{ targetId, relation }` objects (imports/legacy data), which
+ * would otherwise produce duplicate React keys. Keeps first occurrence
+ * order-stable.
+ */
+const dedupeLinks = (links: Entity['links']): Entity['links'] => {
+  const seen = new Set<string>()
+  const out: Entity['links'] = []
+  for (const link of links) {
+    const key = `${link.targetId}:${link.relation}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(link)
+  }
+  return out
+}
+
+/** Dedupes chat citations for rendering (same entityId+snippet repeats on retries). */
+const dedupeCitations = (
+  citations: { entityId: string; entityName: string; snippet: string }[],
+): { entityId: string; entityName: string; snippet: string }[] => {
+  const seen = new Set<string>()
+  const out: { entityId: string; entityName: string; snippet: string }[] = []
+  for (const c of citations) {
+    const key = `${c.entityId}:${c.snippet}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(c)
+  }
+  return out
+}
+
+/**
  * Single ranked search result row. Extracted from the SearchPanel map
  * callback so the render body stays within the complexity ceiling.
  */
@@ -273,11 +306,11 @@ function InspectorPanel() {
               Connections ({entity.links.length})
             </h4>
             <ul className="space-y-1">
-              {entity.links.map((l, i) => {
+              {dedupeLinks(entity.links).map((l) => {
                 const target = entityIndex.get(l.targetId)
                 if (!target) return null
                 return (
-                  <li key={`${l.targetId}:${l.relation}:${i}`}>
+                  <li key={`${l.targetId}:${l.relation}`}>
                     <button
                       onClick={() => selectEntity(target.id)}
                       className="flex w-full min-h-[44px] items-center gap-2 rounded-md p-1.5 text-left text-[12px] text-ink-soft transition-colors hover:bg-muted focus-ring"
@@ -371,9 +404,9 @@ function CitationsPanel() {
           </div>
         ) : (
           <ul className="space-y-2">
-            {citations.map((c, i) => (
+            {dedupeCitations(citations).map((c, i) => (
               <li
-                key={`${c.entityId}:${c.snippet}:${i}`}
+                key={`${c.entityId}:${c.snippet}`}
                 className="rounded-md border border-border bg-muted/30 p-3"
               >
                 <div className="mb-1 flex items-center gap-2">
