@@ -201,13 +201,10 @@ export const EditorView = () => {
       setMentionHighlight((i) => (i - 1 + mentionCandidates.length) % mentionCandidates.length)
     } else if (e.key === 'Enter') {
       e.preventDefault()
-      // Presence check before indexing into the call — Codacy-safe, and the
-      // highlight cannot drift past the list while mentionCandidates is
-      // frozen for this render.
-      if (mentionHighlight >= 0 && mentionHighlight < mentionCandidates.length) {
-        const candidate = mentionCandidates[mentionHighlight]
-        if (candidate !== undefined) selectMention(candidate)
-      }
+      // `.at()` returns undefined out of range; presence-check before use
+      // (Codacy-safe — mirrors TRIZ_PARAMETERS.at() in triz-results-view).
+      const candidate = mentionCandidates.at(mentionHighlight)
+      if (candidate !== undefined) selectMention(candidate)
     }
   }, [mentionOpen, mentionCandidates, mentionHighlight, mentionTrigger.start, selectMention])
 
