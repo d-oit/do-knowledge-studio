@@ -96,19 +96,25 @@ export const GraphView = () => {
     return nodes
   }, [nodes, layout])
 
-  const visibleNodes = focusMode && selectedEntityId
-    ? positioned.filter((n) => {
-        if (n.id === selectedEntityId) return true
-        const neighbors = adjacency.get(selectedEntityId)
-        return neighbors?.has(n.id) ?? false
-      })
-    : positioned
+  const visibleNodes = useMemo(() => {
+    if (focusMode && selectedEntityId) {
+      const neighbors = adjacency.get(selectedEntityId)
+      return positioned.filter(
+        (n) => n.id === selectedEntityId || (neighbors?.has(n.id) ?? false),
+      )
+    }
+    return positioned
+  }, [focusMode, selectedEntityId, adjacency, positioned])
 
-  const { visibleEdges } = useMemo(() => {
+  const visibleEdges = useMemo(() => {
     const ids = new Set(visibleNodes.map((n) => n.id))
-    const filtered = edges.filter((e) => ids.has(e.source) && ids.has(e.target))
-    return { visibleEdges: filtered }
+    return edges.filter((e) => ids.has(e.source) && ids.has(e.target))
   }, [visibleNodes, edges])
+
+  const visibleNodeMap = useMemo(
+    () => new Map(visibleNodes.map((n) => [n.id, n])),
+    [visibleNodes],
+  )
 
   const svgRef = useRef<SVGSVGElement>(null)
   const reducedMotion = useReducedMotion()
@@ -265,11 +271,9 @@ export const GraphView = () => {
         >
           {/* Edges */}
           <g>
-            {(() => {
-              const nodeMap = new Map(visibleNodes.map((n) => [n.id, n]))
-              return visibleEdges.map((e) => {
-                const s = nodeMap.get(e.source)
-                const t = nodeMap.get(e.target)
+            {visibleEdges.map((e) => {
+              const s = visibleNodeMap.get(e.source)
+              const t = visibleNodeMap.get(e.target)
                 if (!s || !t) return null
                 const isHighlight =
                   selectedEntityId && (e.source === selectedEntityId || e.target === selectedEntityId)
@@ -314,8 +318,7 @@ export const GraphView = () => {
                     })()}
                   </g>
                 )
-              })
-            })()}
+            })}
           </g>
 
           {/* Nodes */}

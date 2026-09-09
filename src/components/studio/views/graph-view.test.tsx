@@ -239,4 +239,15 @@ describe('GraphView', () => {
     expect(x).not.toBeNaN()
     expect(y).not.toBeNaN()
   })
+
+  it('filters visible nodes correctly when toggling focus neighborhood mode', () => {
+    currentSelectedEntityId = 'ent-1'
+    render(<GraphView />)
+
+    const focusBtn = screen.getByLabelText('Focus neighborhood')
+    fireEvent.click(focusBtn)
+
+    // In focus mode for ent-1, ent-1 and its neighbor ent-2 should remain visible
+    expect(screen.getByText(/2 nodes · 1 edges/)).toBeDefined()
+  })
 })
