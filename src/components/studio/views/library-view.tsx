@@ -87,31 +87,32 @@ const useSemanticSearch = (
       controller = new AbortController()
       setSemanticOutcome(null)
       setSemanticBusy(true)
-      debounce = window.setTimeout(() => {
-        void searchSemantic(
-          allEntities,
-          claims,
-          semanticQuery,
-          SEMANTIC_RESULT_LIMIT,
-          controller?.signal,
-        )
-          .then((outcome) => {
-            if (cancelled) return
-            setSemanticOutcome(outcome)
-            setSemanticBusy(false)
-          })
-          .catch((err: unknown) => {
-            if (cancelled) return
-            // Only aborts reject; surface anything else as a lexical fallback
-            // so the search box never dies silently.
-            if (err instanceof DOMException && err.name === 'AbortError') return
-            console.error('Semantic search failed:', err)
-            // Clear — not `{ source: 'lexical', results: [] }` — so the grid
-            // falls back to the lexical `filteredEntities` rather than an
-            // empty semantic result list.
-            setSemanticOutcome(null)
-            setSemanticBusy(false)
-          })
+      // Async callback: the timer owns the promise, so no `void`/floating
+      // chain — rejection is handled inside with try/catch.
+      debounce = window.setTimeout(async () => {
+        try {
+          const outcome = await searchSemantic(
+            allEntities,
+            claims,
+            semanticQuery,
+            SEMANTIC_RESULT_LIMIT,
+            controller?.signal,
+          )
+          if (cancelled) return
+          setSemanticOutcome(outcome)
+          setSemanticBusy(false)
+        } catch (err: unknown) {
+          if (cancelled) return
+          // Only aborts reject; surface anything else as a lexical fallback
+          // so the search box never dies silently.
+          if (err instanceof DOMException && err.name === 'AbortError') return
+          console.error('Semantic search failed:', err)
+          // Clear — not `{ source: 'lexical', results: [] }` — so the grid
+          // falls back to the lexical `filteredEntities` rather than an
+          // empty semantic result list.
+          setSemanticOutcome(null)
+          setSemanticBusy(false)
+        }
       }, SEMANTIC_DEBOUNCE_MS)
     } else {
       setSemanticOutcome(null)
@@ -127,6 +128,20 @@ const useSemanticSearch = (
   return { semanticOutcome, semanticBusy }
 }
 
+/** Looks up the entity a semantic result refers to (id, or claim id via its entity). */
+const entityForResult = (
+  result: SemanticSearchOutcome['results'][number],
+  entityById: Map<string, Entity>,
+): Entity | undefined =>
+  entityById.get(result.id) ??
+  (result.entityId !== undefined ? entityById.get(result.entityId) : undefined)
+
+/** Whether an entity passes the current type filter. */
+const passesTypeFilter = (
+  entity: Entity,
+  typeFilter: AnyEntityType | 'all',
+): boolean => typeFilter === 'all' || entity.type === typeFilter
+
 /**
  * Resolves ranked semantic result ids (entity ids, or claim ids via their
  * entity) to entities in rank order — deduped and type-filtered — mirroring
@@ -140,11 +155,9 @@ const resolveSemanticEntities = (
   const seen = new Set<string>()
   const resolved: Entity[] = []
   for (const result of outcome.results) {
-    const entity =
-      entityById.get(result.id) ??
-      (result.entityId !== undefined ? entityById.get(result.entityId) : undefined)
+    const entity = entityForResult(result, entityById)
     if (entity === undefined || seen.has(entity.id)) continue
-    if (typeFilter !== 'all' && entity.type !== typeFilter) continue
+    if (!passesTypeFilter(entity, typeFilter)) continue
     seen.add(entity.id)
     resolved.push(entity)
   }
@@ -235,6 +248,44 @@ const LibraryEmptyState = ({
     </div>
   )
 }
+
+/** Result count + Show-all toggle row under the library grid/table. */
+const LibraryFooter = ({
+  isCapped,
+  visibleCount,
+  totalCount,
+  showAll,
+  onToggleShowAll,
+}: {
+  isCapped: boolean
+  visibleCount: number
+  totalCount: number
+  showAll: boolean
+  onToggleShowAll: () => void
+}) => (
+  <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+    <div className="flex items-center gap-2 text-label text-ink-faint">
+      <ArrowUpDown className="h-3 w-3" />
+      {isCapped
+        ? `Showing ${visibleCount} of ${totalCount} entities`
+        : `Showing ${visibleCount} ${visibleCount === 1 ? 'entity' : 'entities'}`}
+    </div>
+    <div className="sr-only" role="status" aria-live="polite">
+      {isCapped
+        ? `Showing ${visibleCount} of ${totalCount} entities`
+        : `Showing ${visibleCount} ${visibleCount === 1 ? 'entity' : 'entities'}`}
+    </div>
+    {isCapped && (
+      <button
+        onClick={onToggleShowAll}
+        className="flex min-h-[44px] items-center gap-1 rounded-md border border-border bg-background px-3 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 hover:text-ink focus-ring"
+        aria-expanded={showAll}
+      >
+        {showAll ? SHOW_FEWER_LABEL : showAllLabel(totalCount)}
+      </button>
+    )}
+  </div>
+)
 
 /** Entity library view with grid/list layout, search, type filters, and sort controls. */
 export const LibraryView = () => {
@@ -540,28 +591,13 @@ export const LibraryView = () => {
         <EntityTable entities={visibleEntities} startEdit={startEdit} />
       )}
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-label text-ink-faint">
-          <ArrowUpDown className="h-3 w-3" />
-          {isCapped
-            ? `Showing ${visibleEntities.length} of ${advancedFilteredEntities.length} entities`
-            : `Showing ${visibleEntities.length} ${visibleEntities.length === 1 ? 'entity' : 'entities'}`}
-        </div>
-        <div className="sr-only" role="status" aria-live="polite">
-          {isCapped
-            ? `Showing ${visibleEntities.length} of ${advancedFilteredEntities.length} entities`
-            : `Showing ${visibleEntities.length} ${visibleEntities.length === 1 ? 'entity' : 'entities'}`}
-        </div>
-        {isCapped && (
-          <button
-            onClick={() => { setShowAll(!showAll) }}
-            className="flex min-h-[44px] items-center gap-1 rounded-md border border-border bg-background px-3 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 hover:text-ink focus-ring"
-            aria-expanded={showAll}
-          >
-            {showAll ? SHOW_FEWER_LABEL : showAllLabel(advancedFilteredEntities.length)}
-          </button>
-        )}
-      </div>
+      <LibraryFooter
+        isCapped={isCapped}
+        visibleCount={visibleEntities.length}
+        totalCount={advancedFilteredEntities.length}
+        showAll={showAll}
+        onToggleShowAll={() => setShowAll(!showAll)}
+      />
     </div>
   )
 }

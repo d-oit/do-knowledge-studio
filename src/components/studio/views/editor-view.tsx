@@ -1,5 +1,6 @@
 'use client'
 
+import type { MarkdownCommandResult, MarkdownSelection } from '@/lib/editor/markdown-types'
 import { useStudioStore } from '@/lib/studio/store'
 import {
   type AnyEntityType,
@@ -64,6 +65,68 @@ const ADVANCED_METADATA_DESCRIPTION = 'Optional context that helps you find and 
 const restoreSelection = (textarea: HTMLTextAreaElement, start: number, end: number) => {
   textarea.focus()
   textarea.setSelectionRange(start, end)
+}
+
+/** Builds the draft's Entity record from the current form state. */
+const buildEditorEntity = (
+  editing: Entity | null,
+  input: {
+    name: string
+    type: AnyEntityType
+    description: string
+    content: string
+    sourceUrl: string
+    tags: string[]
+  },
+  mentionLinks: { targetId: string; relation: string }[],
+): Entity => {
+  const id = editing?.id ?? crypto.randomUUID()
+  const fallbackDescription = input.content.slice(0, 200).replace(/[#*]/g, '').trim()
+  return {
+    id,
+    name: input.name.trim(),
+    type: input.type,
+    description: input.description.trim() || fallbackDescription,
+    content: input.content,
+    sourceUrl: input.sourceUrl.trim() || undefined,
+    tags: input.tags,
+    createdAt: editing?.createdAt ?? new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    links: mergeMentionLinks(editing?.links ?? [], mentionLinks),
+  }
+}
+
+/** Describes the textarea selection within the current content. */
+const describeSelection = (
+  content: string,
+  textarea: HTMLTextAreaElement,
+): MarkdownSelection => {
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const after = content.slice(end)
+  const newline = after.indexOf('\n')
+  return {
+    text: content.slice(start, end),
+    range: { start, end },
+    lineStart: content.slice(0, start).lastIndexOf('\n') + 1,
+    lineEnd: newline === -1 ? content.length : end + newline,
+  }
+}
+
+/** Format commands: command name → editor transform applied to the selection. */
+const FORMAT_HANDLERS: Record<
+  string,
+  (content: string, sel: MarkdownSelection) => MarkdownCommandResult
+> = {
+  bold: (c, s) => applyBold(c, s),
+  italic: (c, s) => applyItalic(c, s),
+  h1: (c, s) => applyHeading(c, s, 1),
+  h2: (c, s) => applyHeading(c, s, 2),
+  bullet: (c, s) => applyBulletList(c, s),
+  ordered: (c, s) => applyOrderedList(c, s),
+  quote: (c, s) => applyQuote(c, s),
+  code: (c, s) => applyInlineCode(c, s),
+  link: (c, s) => applyLink(c, s),
 }
 
 /** Rich-text entity editor with markdown preview, claims panel, and draft persistence. */
@@ -228,29 +291,9 @@ export const EditorView = () => {
   const handleFormat = useCallback((command: string) => {
     const textarea = textareaRef.current
     if (!textarea) return
-    const sel = {
-      text: content.slice(textarea.selectionStart, textarea.selectionEnd),
-      range: { start: textarea.selectionStart, end: textarea.selectionEnd },
-      lineStart: content.slice(0, textarea.selectionStart).lastIndexOf('\n') + 1,
-      lineEnd: (() => {
-        const after = content.slice(textarea.selectionEnd)
-        const n = after.indexOf('\n')
-        return n === -1 ? content.length : textarea.selectionEnd + n
-      })(),
-    }
-    let result
-    switch (command) {
-      case 'bold': result = applyBold(content, sel); break
-      case 'italic': result = applyItalic(content, sel); break
-      case 'h1': result = applyHeading(content, sel, 1); break
-      case 'h2': result = applyHeading(content, sel, 2); break
-      case 'bullet': result = applyBulletList(content, sel); break
-      case 'ordered': result = applyOrderedList(content, sel); break
-      case 'quote': result = applyQuote(content, sel); break
-      case 'code': result = applyInlineCode(content, sel); break
-      case 'link': result = applyLink(content, sel); break
-      default: return
-    }
+    const handler = FORMAT_HANDLERS[command]
+    if (!handler) return
+    const result = handler(content, describeSelection(content, textarea))
     setContent(result.text)
     requestAnimationFrame(() => {
       const el = textareaRef.current
@@ -276,18 +319,11 @@ export const EditorView = () => {
     }
     const entityId = editing?.id || crypto.randomUUID()
     const { mentionLinks, mentions } = extractMentionLinks(content, entities, entityId)
-    const entity: Entity = {
-      id: entityId,
-      name: name.trim(),
-      type,
-      description: description.trim() || content.slice(0, 200).replace(/[#*]/g, '').trim(),
-      content,
-      sourceUrl: sourceUrl.trim() || undefined,
-      tags,
-      createdAt: editing?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      links: mergeMentionLinks(editing?.links || [], mentionLinks),
-    }
+    const entity = buildEditorEntity(
+      editing,
+      { name, type, description, content, sourceUrl, tags },
+      mentionLinks,
+    )
     // Reciprocal backlinks + stale-backlink revocation, only touching
     // entities whose links actually changed. Committed together with the
     // source entity under a single history snapshot so one Undo restores the

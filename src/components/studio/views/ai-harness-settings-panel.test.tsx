@@ -151,7 +151,7 @@ describe('AiHarnessSettingsPanel', () => {
   })
 
   it('shows Thinking when loading', () => {
-    render(<AiHarnessSettingsPanel {...defaultProps} isLoading={true} />)
+    render(<AiHarnessSettingsPanel {...defaultProps} isLoading />)
     expect(screen.getByText('Thinking…')).toBeDefined()
   })
 

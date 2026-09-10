@@ -4,8 +4,9 @@ import { memo, useCallback, useMemo } from 'react'
 import { format } from 'date-fns'
 import { CalendarDays, Clock, FileText, Quote } from 'lucide-react'
 import { useStudioStore } from '@/lib/studio/store'
-import { getEntityTypeMeta } from '@/lib/studio/entity-types'
+import { getEntityTypeMeta, type EntityTypeMeta } from '@/lib/studio/entity-types'
 import { cn } from '@/lib/utils'
+import type { AnyEntityType } from '@/lib/studio/types'
 import { translate } from '@/lib/i18n/messages/timeline'
 import { EntityIcon } from '../entity-type-icon'
 import { buildTimelineGroups, type TimelineGroup, type TimelineItem } from './timeline-helpers'
@@ -13,6 +14,40 @@ import { buildTimelineGroups, type TimelineGroup, type TimelineItem } from './ti
 /** Total number of markers inside a month band, used for the count badge. */
 const monthItemCount = (group: TimelineGroup): number =>
   group.days.reduce((sum, day) => sum + day.items.length, 0)
+
+/** Leading icon for a timeline row: entity-type icon or a claim quote glyph. */
+const RowIcon = ({ entityType, meta }: { entityType?: AnyEntityType; meta: EntityTypeMeta | null }) => (
+  <span
+    className={cn(
+      'flex h-8 w-8 shrink-0 items-center justify-center rounded-md',
+      meta ? cn(meta.bg, meta.text) : 'bg-muted text-ink-faint',
+    )}
+  >
+    {meta && entityType ? (
+      <EntityIcon type={entityType} className="h-4 w-4" />
+    ) : (
+      <Quote className="h-4 w-4" />
+    )}
+  </span>
+)
+
+/** Trailing type badge on a timeline row (claim rows render the claim label). */
+const RowTypeBadge = ({ meta }: { meta: EntityTypeMeta | null }) =>
+  meta ? (
+    <span
+      className={cn(
+        'shrink-0 rounded px-1.5 py-0 text-badge font-semibold uppercase tracking-wide',
+        meta.bg,
+        meta.text,
+      )}
+    >
+      {meta.label}
+    </span>
+  ) : (
+    <span className="shrink-0 rounded border border-border px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-ink-faint">
+      {translate('timeline.claimBadge')}
+    </span>
+  )
 
 /**
  * Single interactive timeline row — an entity or claim marker.
@@ -34,18 +69,7 @@ const TimelineRow = memo(function TimelineRow({
         aria-label={translate('timeline.openItem', item.label)}
         className="group flex w-full items-center gap-3 rounded-md border border-border bg-card px-3 py-2 text-left transition-colors hover:border-saffron/40 hover:bg-saffron-soft/40 focus-ring"
       >
-        <span
-          className={cn(
-            'flex h-8 w-8 shrink-0 items-center justify-center rounded-md',
-            meta ? cn(meta.bg, meta.text) : 'bg-muted text-ink-faint',
-          )}
-        >
-          {meta && entityType ? (
-            <EntityIcon type={entityType} className="h-4 w-4" />
-          ) : (
-            <Quote className="h-4 w-4" />
-          )}
-        </span>
+        <RowIcon entityType={entityType} meta={meta} />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[13px] font-medium text-ink group-hover:text-saffron-deep">
             {item.label}
@@ -55,21 +79,7 @@ const TimelineRow = memo(function TimelineRow({
           <Clock className="h-3 w-3" />
           {format(item.date, translate('timeline.timeFormat'))}
         </span>
-        {meta ? (
-          <span
-            className={cn(
-              'shrink-0 rounded px-1.5 py-0 text-badge font-semibold uppercase tracking-wide',
-              meta.bg,
-              meta.text,
-            )}
-          >
-            {meta.label}
-          </span>
-        ) : (
-          <span className="shrink-0 rounded border border-border px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-ink-faint">
-            {translate('timeline.claimBadge')}
-          </span>
-        )}
+        <RowTypeBadge meta={meta} />
       </button>
     </li>
   )

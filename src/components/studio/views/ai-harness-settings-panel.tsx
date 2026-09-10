@@ -49,6 +49,91 @@ interface SettingsPanelProps {
   isLoading: boolean
 }
 
+/** Default model slug for a given provider. */
+const DEFAULT_MODEL_FOR_PROVIDER: Record<AIProvider, string> = {
+  openrouter: DEFAULT_MODEL.openrouter,
+  ollama: DEFAULT_MODEL.ollama,
+  local: DEFAULT_MODEL.local,
+}
+
+/** Engine options rendered for the current provider. */
+const EngineOptions = ({
+  provider,
+  ollamaModels,
+}: {
+  provider: AIProvider
+  ollamaModels: string[]
+}) => {
+  if (provider === 'ollama') {
+    return ollamaModels.map((m) => (
+      <option key={m} value={m}>
+        {m}
+      </option>
+    ))
+  }
+  if (provider === LOCAL_PROVIDER_ID) {
+    return DEFAULT_LOCAL_MODELS.map((m) => (
+      <option key={m.id} value={m.id}>
+        {m.displayName}
+      </option>
+    ))
+  }
+  return (
+    <>
+      <optgroup label="Routers">
+        {OPENROUTER_ROUTERS.map((r) => (
+          <option key={r.slug} value={r.slug}>
+            {r.display_name}
+          </option>
+        ))}
+      </optgroup>
+      <optgroup label="Concrete Models">
+        {OPENROUTER_MODELS.map((m) => (
+          <option key={m.slug} value={m.slug}>
+            {m.display_name}
+          </option>
+        ))}
+      </optgroup>
+    </>
+  )
+}
+
+/** Full model/engine select with inline refresh for Ollama. */
+const EngineSelect = ({
+  provider,
+  model,
+  setModel,
+  setCustomModel,
+  ollamaModels,
+  handleRefreshOllamaModels,
+}: {
+  provider: AIProvider
+  model: string
+  setModel: (m: string) => void
+  setCustomModel: (m: string) => void
+  ollamaModels: string[]
+  handleRefreshOllamaModels: () => void | Promise<void>
+}) => (
+  <div className="flex gap-1.5">
+    <select
+      value={model}
+      onChange={(e) => { setModel(e.target.value); setCustomModel('') }}
+      className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+    >
+      <EngineOptions provider={provider} ollamaModels={ollamaModels} />
+    </select>
+    {provider === 'ollama' && (
+      <button
+        onClick={() => { void handleRefreshOllamaModels() }}
+        className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-md border border-border bg-background text-ink-faint transition-colors hover:border-saffron/40 hover:text-saffron focus-ring"
+        aria-label="Refresh Ollama models"
+      >
+        <RefreshCw className="h-3.5 w-3.5" />
+      </button>
+    )}
+  </div>
+)
+
 /** Settings panel for AI provider configuration, model selection, and augmentation options. */
 export const AiHarnessSettingsPanel = ({
   provider,
@@ -100,13 +185,7 @@ export const AiHarnessSettingsPanel = ({
                 const val = e.target.value
                 if (!PROVIDERS.some((pr) => pr.id === val)) return
                 setProvider(val as AIProvider)
-                const defaultModel =
-                  val === 'openrouter'
-                    ? DEFAULT_MODEL.openrouter
-                    : val === 'ollama'
-                      ? DEFAULT_MODEL.ollama
-                      : DEFAULT_MODEL.local
-                setModel(defaultModel)
+                setModel(DEFAULT_MODEL_FOR_PROVIDER[val as AIProvider] ?? DEFAULT_MODEL.local)
                 setCustomModel('')
               }}
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
@@ -120,53 +199,14 @@ export const AiHarnessSettingsPanel = ({
           </Field>
 
           <Field label="Engine" icon={Cpu}>
-            <div className="flex gap-1.5">
-              <select
-                value={model}
-                onChange={(e) => { setModel(e.target.value); setCustomModel('') }}
-                className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
-              >
-                {provider === 'ollama' ? (
-                  ollamaModels.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))
-                ) : provider === LOCAL_PROVIDER_ID ? (
-                  DEFAULT_LOCAL_MODELS.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.displayName}
-                    </option>
-                  ))
-                ) : (
-                  <>
-                    <optgroup label="Routers">
-                      {OPENROUTER_ROUTERS.map((r) => (
-                        <option key={r.slug} value={r.slug}>
-                          {r.display_name}
-                        </option>
-                      ))}
-                    </optgroup>
-                    <optgroup label="Concrete Models">
-                      {OPENROUTER_MODELS.map((m) => (
-                        <option key={m.slug} value={m.slug}>
-                          {m.display_name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  </>
-                )}
-              </select>
-              {provider === 'ollama' && (
-                <button
-                  onClick={() => { void handleRefreshOllamaModels() }}
-                  className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-md border border-border bg-background text-ink-faint transition-colors hover:border-saffron/40 hover:text-saffron focus-ring"
-                  aria-label="Refresh Ollama models"
-                >
-                  <RefreshCw className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
+            <EngineSelect
+              provider={provider}
+              model={model}
+              setModel={setModel}
+              setCustomModel={setCustomModel}
+              ollamaModels={ollamaModels}
+              handleRefreshOllamaModels={handleRefreshOllamaModels}
+            />
             <input
               type="text"
               value={customModel}

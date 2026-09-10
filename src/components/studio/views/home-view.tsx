@@ -3,7 +3,7 @@
 import { useMemo, useCallback } from 'react'
 import { useStudioStore, useStats } from '@/lib/studio/store'
 import type { Entity } from '@/lib/studio/types'
-import { getEntityTypeMeta } from '@/lib/studio/entity-types'
+import { getEntityTypeMeta, type EntityTypeMeta } from '@/lib/studio/entity-types'
 import {
   FileText,
   ArrowUpRight,
@@ -64,6 +64,29 @@ const formatRelativeTime = (dateStr: string): string => {
 const RECENT_LIMIT = 6
 
 
+/** Type badge + name + description block inside a RecentItem. */
+const RecentItemBody = ({ entity, meta }: { entity: Entity; meta: EntityTypeMeta }) => (
+  <div className="min-w-0 flex-1">
+    <div className="flex items-center gap-2">
+      <span className="truncate text-[14px] font-semibold text-ink group-hover:text-saffron-deep">
+        {entity.name}
+      </span>
+      <span
+        className={cn(
+          'shrink-0 rounded px-1.5 py-0 text-badge font-semibold uppercase tracking-wide',
+          meta.bg,
+          meta.text,
+        )}
+      >
+        {meta.label}
+      </span>
+    </div>
+    <p className="truncate text-[12px] text-ink-mute">
+      {entity.description}
+    </p>
+  </div>
+)
+
 /** A single row in the "Recent work" list — extracted to keep HomeView's JSX shallow. */
 const RecentItem = ({ entity, onOpen }: { entity: Entity; onOpen: () => void }) => {
   const meta = getEntityTypeMeta(entity.type)
@@ -82,25 +105,7 @@ const RecentItem = ({ entity, onOpen }: { entity: Entity; onOpen: () => void }) 
         >
           <EntityIcon type={entity.type} className="h-4 w-4" />
         </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="truncate text-[14px] font-semibold text-ink group-hover:text-saffron-deep">
-              {entity.name}
-            </span>
-            <span
-              className={cn(
-                'shrink-0 rounded px-1.5 py-0 text-badge font-semibold uppercase tracking-wide',
-                meta.bg,
-                meta.text,
-              )}
-            >
-              {meta.label}
-            </span>
-          </div>
-          <p className="truncate text-[12px] text-ink-mute">
-            {entity.description}
-          </p>
-        </div>
+        <RecentItemBody entity={entity} meta={meta} />
         <span className="flex shrink-0 items-center gap-1 text-label text-ink-faint">
           <Clock className="h-3 w-3" />
           {formatRelativeTime(entity.updatedAt)}

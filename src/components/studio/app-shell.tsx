@@ -65,6 +65,37 @@ function getViewName(view: ViewId): string {
   return VIEW_NAMES[view]
 }
 
+/** Renders the active view inside the error/suspense boundaries. */
+const ViewRouter = ({
+  currentView,
+  editingEntityId,
+  onError,
+}: {
+  currentView: ViewId
+  editingEntityId: string | null
+  onError: (error: Error, errorInfo: React.ErrorInfo) => void
+}) => (
+  <ErrorBoundary key={currentView}>
+    <ViewErrorBoundary viewName={getViewName(currentView)} onError={onError}>
+      <Suspense fallback={<ViewLoader />}>
+        {currentView === 'home' && <HomeView />}
+        {currentView === 'editor' && (
+          <EditorView key={editingEntityId || 'new'} />
+        )}
+        {currentView === 'library' && <LibraryView />}
+        {currentView === 'timeline' && <TimelineView />}
+        {currentView === 'graph' && <GraphView />}
+        {currentView === 'mindmap' && <MindMapView />}
+        {currentView === 'chat' && <ChatView />}
+        {currentView === 'ai' && <AIHarnessView />}
+        {currentView === 'triz' && <TrizView />}
+        {currentView === 'export' && <ExportView />}
+        {currentView === 'sync' && <SyncView />}
+      </Suspense>
+    </ViewErrorBoundary>
+  </ErrorBoundary>
+)
+
 /** Root application shell composing sidebar, topbar, view router, right panel, and overlays. */
 export const AppShell = () => {
   const currentView = useStudioStore((s) => s.currentView)
@@ -95,28 +126,11 @@ export const AppShell = () => {
         <Topbar />
         <main id="main-content" className="flex min-h-0 flex-1">
           <div className="min-w-0 flex-1 overflow-y-auto">
-            <ErrorBoundary key={currentView}>
-              <ViewErrorBoundary
-                viewName={getViewName(currentView)}
-                onError={handleViewError}
-              >
-                <Suspense fallback={<ViewLoader />}>
-                  {currentView === 'home' && <HomeView />}
-                  {currentView === 'editor' && (
-                    <EditorView key={editingEntityId || 'new'} />
-                  )}
-                  {currentView === 'library' && <LibraryView />}
-                  {currentView === 'timeline' && <TimelineView />}
-                  {currentView === 'graph' && <GraphView />}
-                  {currentView === 'mindmap' && <MindMapView />}
-                  {currentView === 'chat' && <ChatView />}
-                  {currentView === 'ai' && <AIHarnessView />}
-                  {currentView === 'triz' && <TrizView />}
-                  {currentView === 'export' && <ExportView />}
-                  {currentView === 'sync' && <SyncView />}
-                </Suspense>
-              </ViewErrorBoundary>
-            </ErrorBoundary>
+            <ViewRouter
+              currentView={currentView}
+              editingEntityId={editingEntityId}
+              onError={handleViewError}
+            />
           </div>
           <RightPanel />
         </main>

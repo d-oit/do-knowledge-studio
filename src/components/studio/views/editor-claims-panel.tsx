@@ -37,6 +37,78 @@ const DEFAULT_CONFIDENCE = 0.5
 /** Joins statement and source into a stable duplicate-detection key. */
 const DRAFT_KEY_SEPARATOR = '\u0000'
 
+/** A single claim row with verification, confidence, and edit/delete actions. */
+const ClaimRow = ({
+  claim,
+  onEdit,
+  onDelete,
+}: {
+  claim: Claim
+  onEdit: (claim: Claim) => void
+  onDelete: (id: string) => void
+}) => (
+  <li
+    key={claim.id}
+    className="rounded-md border border-border bg-background p-3 shadow-soft"
+    style={{ borderLeft: '3px solid var(--saffron)' }}
+  >
+    <p className="font-serif text-[14px] italic leading-relaxed text-ink">
+      &ldquo;{claim.statement}&rdquo;
+    </p>
+
+    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+      <VerificationBadge status={claim.verification} />
+      <div className="flex items-center gap-1.5">
+        <span className="text-caption font-medium uppercase tracking-wide text-ink-faint">
+          {translate('claims.confidenceLabel')}
+        </span>
+        <div className="h-1.5 w-20 overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full rounded-full bg-saffron"
+            style={{ width: `${Math.round(claim.confidence * 100)}%` }}
+          />
+        </div>
+        <span className="font-mono text-caption text-ink-mute">
+          {Math.round(claim.confidence * 100)}%
+        </span>
+      </div>
+      {claim.source && (
+        <span className="flex items-center gap-1 text-caption text-ink-faint">
+          <ExternalLink className="h-2.5 w-2.5" />
+          {claim.source}
+        </span>
+      )}
+    </div>
+
+    {claim.evidence && (
+      <p className="mt-1.5 text-label italic leading-relaxed text-ink-mute">
+        {claim.evidence}
+      </p>
+    )}
+
+    <div className="mt-2 flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => { onEdit(claim) }}
+        className="flex min-h-[44px] items-center gap-1 rounded-md px-2 py-1 text-label font-medium text-ink-faint transition-colors hover:bg-muted hover:text-ink focus-ring"
+        aria-label={translate('claims.editLabel')}
+      >
+        <Pencil className="h-3 w-3" />
+        {translate('claims.edit')}
+      </button>
+      <button
+        type="button"
+        onClick={() => { onDelete(claim.id) }}
+        className="flex min-h-[44px] items-center gap-1 rounded-md px-2 py-1 text-label font-medium text-ink-faint transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40 focus-ring"
+        aria-label={translate('claims.deleteLabel')}
+      >
+        <Trash2 className="h-3 w-3" />
+        {translate('claims.delete')}
+      </button>
+    </div>
+  </li>
+)
+
 /** Panel for viewing, creating, editing, and deleting claims on an entity. */
 export const ClaimsPanel = ({
   claims,
@@ -197,66 +269,7 @@ export const ClaimsPanel = ({
 
       <ul className="space-y-3">
         {claims.map((c) => (
-          <li
-            key={c.id}
-            className="rounded-md border border-border bg-background p-3 shadow-soft"
-            style={{ borderLeft: '3px solid var(--saffron)' }}
-          >
-            <p className="font-serif text-[14px] italic leading-relaxed text-ink">
-              &ldquo;{c.statement}&rdquo;
-            </p>
-
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-              <VerificationBadge status={c.verification} />
-              <div className="flex items-center gap-1.5">
-                <span className="text-caption font-medium uppercase tracking-wide text-ink-faint">
-                  {translate('claims.confidenceLabel')}
-                </span>
-                <div className="h-1.5 w-20 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-saffron"
-                    style={{ width: `${Math.round(c.confidence * 100)}%` }}
-                  />
-                </div>
-                <span className="font-mono text-caption text-ink-mute">
-                  {Math.round(c.confidence * 100)}%
-                </span>
-              </div>
-              {c.source && (
-                <span className="flex items-center gap-1 text-caption text-ink-faint">
-                  <ExternalLink className="h-2.5 w-2.5" />
-                  {c.source}
-                </span>
-              )}
-            </div>
-
-            {c.evidence && (
-              <p className="mt-1.5 text-label italic leading-relaxed text-ink-mute">
-                {c.evidence}
-              </p>
-            )}
-
-            <div className="mt-2 flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => { startEdit(c) }}
-                className="flex min-h-[44px] items-center gap-1 rounded-md px-2 py-1 text-label font-medium text-ink-faint transition-colors hover:bg-muted hover:text-ink focus-ring"
-                aria-label={translate('claims.editLabel')}
-              >
-                <Pencil className="h-3 w-3" />
-                {translate('claims.edit')}
-              </button>
-              <button
-                type="button"
-                onClick={() => { handleDelete(c.id) }}
-                className="flex min-h-[44px] items-center gap-1 rounded-md px-2 py-1 text-label font-medium text-ink-faint transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40 focus-ring"
-                aria-label={translate('claims.deleteLabel')}
-              >
-                <Trash2 className="h-3 w-3" />
-                {translate('claims.delete')}
-              </button>
-            </div>
-          </li>
+          <ClaimRow key={c.id} claim={c} onEdit={startEdit} onDelete={handleDelete} />
         ))}
       </ul>
 
