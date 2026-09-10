@@ -149,6 +149,65 @@ const chunkBy = <T,>(items: T[], size: number): T[][] => {
 /** Scroll container shared by grid and list when windowed rendering is active. */
 const SCROLL_CONTAINER_CLASS = 'max-h-[65vh] overflow-auto'
 
+
+/** Single entity card (entrance animation only in the eager path). */
+const GridCard = ({
+  entity,
+  startEdit,
+  index,
+  animate,
+}: {
+  entity: Entity
+  startEdit: (id: string) => void
+  index: number
+  animate: boolean
+}) => {
+  const meta = getEntityTypeMeta(entity.type)
+  return (
+    <motion.button
+      initial={animate ? { opacity: 0, y: 6 } : false}
+      animate={{ opacity: 1, y: 0 }}
+      transition={animate ? { duration: 0.25, delay: Math.min(index * 0.03, 0.3) } : { duration: 0 }}
+      onClick={() => { startEdit(entity.id) }}
+      className="group flex flex-col rounded-lg border border-border bg-card p-4 text-left transition-all hover:border-saffron/30 hover:shadow-md hover-lift focus-ring"
+    >
+      <div className="mb-3 flex items-center justify-between">
+        <div className={cn('flex h-9 w-9 items-center justify-center rounded-md', meta.bg, meta.text)}>
+          <EntityIcon type={entity.type} className="h-4 w-4" />
+        </div>
+        <span className="text-caption font-semibold uppercase tracking-wide text-ink-faint">
+          {meta.label}
+        </span>
+      </div>
+      <h3 className="mb-1.5 font-serif text-[15px] font-semibold leading-snug text-ink group-hover:text-saffron-deep">
+        {entity.name}
+      </h3>
+      <p className="line-clamp-3 flex-1 text-[12px] leading-relaxed text-ink-mute">
+        {entity.description}
+      </p>
+      <div className="mt-3 flex items-center justify-between border-t border-border pt-2.5">
+        <div className="flex flex-wrap gap-1">
+          {entity.tags.slice(0, 2).map((t) => (
+            <span
+              key={t}
+              className="rounded-full bg-muted px-1.5 py-0 text-badge font-medium text-ink-faint"
+            >
+              #{t}
+            </span>
+          ))}
+          {entity.tags.length > 2 && (
+            <span className="text-badge text-ink-faint">+{entity.tags.length - 2}</span>
+          )}
+        </div>
+        <div className="flex items-center gap-1 text-caption text-ink-faint">
+          <Clock className="h-2.5 w-2.5" />
+          {formatDate(entity.updatedAt)}
+        </div>
+      </div>
+    </motion.button>
+  )
+}
+
 /** Grid of entity cards with staggered entrance animation. */
 export const EntityGrid = ({
   entities,
@@ -228,63 +287,7 @@ export const EntityGrid = ({
   )
 }
 
-/** Single entity card (entrance animation only in the eager path). */
-const GridCard = ({
-  entity,
-  startEdit,
-  index,
-  animate,
-}: {
-  entity: Entity
-  startEdit: (id: string) => void
-  index: number
-  animate: boolean
-}) => {
-  const meta = getEntityTypeMeta(entity.type)
-  return (
-    <motion.button
-      initial={animate ? { opacity: 0, y: 6 } : false}
-      animate={{ opacity: 1, y: 0 }}
-      transition={animate ? { duration: 0.25, delay: Math.min(index * 0.03, 0.3) } : { duration: 0 }}
-      onClick={() => { startEdit(entity.id) }}
-      className="group flex flex-col rounded-lg border border-border bg-card p-4 text-left transition-all hover:border-saffron/30 hover:shadow-md hover-lift focus-ring"
-    >
-      <div className="mb-3 flex items-center justify-between">
-        <div className={cn('flex h-9 w-9 items-center justify-center rounded-md', meta.bg, meta.text)}>
-          <EntityIcon type={entity.type} className="h-4 w-4" />
-        </div>
-        <span className="text-caption font-semibold uppercase tracking-wide text-ink-faint">
-          {meta.label}
-        </span>
-      </div>
-      <h3 className="mb-1.5 font-serif text-[15px] font-semibold leading-snug text-ink group-hover:text-saffron-deep">
-        {entity.name}
-      </h3>
-      <p className="line-clamp-3 flex-1 text-[12px] leading-relaxed text-ink-mute">
-        {entity.description}
-      </p>
-      <div className="mt-3 flex items-center justify-between border-t border-border pt-2.5">
-        <div className="flex flex-wrap gap-1">
-          {entity.tags.slice(0, 2).map((t) => (
-            <span
-              key={t}
-              className="rounded-full bg-muted px-1.5 py-0 text-badge font-medium text-ink-faint"
-            >
-              #{t}
-            </span>
-          ))}
-          {entity.tags.length > 2 && (
-            <span className="text-badge text-ink-faint">+{entity.tags.length - 2}</span>
-          )}
-        </div>
-        <div className="flex items-center gap-1 text-caption text-ink-faint">
-          <Clock className="h-2.5 w-2.5" />
-          {formatDate(entity.updatedAt)}
-        </div>
-      </div>
-    </motion.button>
-  )
-}
+
 
 /** Column headers for the entity table — extracted to keep EntityTable's JSX shallow. */
 const EntityTableHeader = () => (
@@ -297,68 +300,6 @@ const EntityTableHeader = () => (
     </tr>
   </thead>
 )
-
-/** Table of entity rows for the library list view. */
-export const EntityTable = ({
-  entities,
-  startEdit,
-}: {
-  entities: Entity[]
-  startEdit: (id: string) => void
-}) => {
-  // See EntityGrid — windowed rows must re-render on scroll, so opt out of the
-  // React Compiler's memoization here too (plans/128, issue #699).
-  'use no memo'
-  const containerRef = useRef<HTMLDivElement>(null)
-  const hasHeight = useMeasurableHeight(containerRef)
-  const virtualize = shouldVirtualize(hasHeight, entities.length)
-  const virtualizer = useEntityListVirtualizer(
-    entities.length,
-    () => containerRef.current,
-    () => TABLE_ROW_ESTIMATE_PX,
-  )
-  // Stable ref callback so rows are not re-measured on every render.
-  const measureRow = useCallback(
-    (node: HTMLTableRowElement | null) => {
-      if (node) virtualizer.measureElement(node)
-    },
-    [virtualizer],
-  )
-
-  return (
-    <div ref={containerRef} className={cn(SCROLL_CONTAINER_CLASS, 'rounded-lg border border-border bg-card')}>
-      <table className="w-full">
-        <caption className="sr-only">Library entities</caption>
-        <EntityTableHeader />
-        <tbody
-          style={
-            virtualize ? { position: 'relative', height: virtualizer.getTotalSize() } : undefined
-          }
-        >
-          {virtualize
-            ? virtualizer.getVirtualItems().map((vi) => {
-                // Defensive: skip if the list shrinks between renders (the
-                // virtual range can briefly reference old indices).
-                if (vi.index >= entities.length) return null
-                const entity = entities[vi.index]
-                return (
-                  <TableRow
-                    key={entity.id}
-                    entity={entity}
-                    startEdit={startEdit}
-                    vi={vi}
-                    measure={measureRow}
-                  />
-                )
-              })
-            : entities.map((e) => (
-                <TableRow key={e.id} entity={e} startEdit={startEdit} vi={null} />
-              ))}
-        </tbody>
-      </table>
-    </div>
-  )
-}
 
 /** Name cell for an entity table row (icon + truncated name/description). */
 const EntityNameCell = ({ entity }: { entity: Entity }) => {
@@ -445,3 +386,66 @@ const TableRow = ({
     </tr>
   )
 }
+
+/** Table of entity rows for the library list view. */
+export const EntityTable = ({
+  entities,
+  startEdit,
+}: {
+  entities: Entity[]
+  startEdit: (id: string) => void
+}) => {
+  // See EntityGrid — windowed rows must re-render on scroll, so opt out of the
+  // React Compiler's memoization here too (plans/128, issue #699).
+  'use no memo'
+  const containerRef = useRef<HTMLDivElement>(null)
+  const hasHeight = useMeasurableHeight(containerRef)
+  const virtualize = shouldVirtualize(hasHeight, entities.length)
+  const virtualizer = useEntityListVirtualizer(
+    entities.length,
+    () => containerRef.current,
+    () => TABLE_ROW_ESTIMATE_PX,
+  )
+  // Stable ref callback so rows are not re-measured on every render.
+  const measureRow = useCallback(
+    (node: HTMLTableRowElement | null) => {
+      if (node) virtualizer.measureElement(node)
+    },
+    [virtualizer],
+  )
+
+  return (
+    <div ref={containerRef} className={cn(SCROLL_CONTAINER_CLASS, 'rounded-lg border border-border bg-card')}>
+      <table className="w-full">
+        <caption className="sr-only">Library entities</caption>
+        <EntityTableHeader />
+        <tbody
+          style={
+            virtualize ? { position: 'relative', height: virtualizer.getTotalSize() } : undefined
+          }
+        >
+          {virtualize
+            ? virtualizer.getVirtualItems().map((vi) => {
+                // Defensive: skip if the list shrinks between renders (the
+                // virtual range can briefly reference old indices).
+                if (vi.index >= entities.length) return null
+                const entity = entities[vi.index]
+                return (
+                  <TableRow
+                    key={entity.id}
+                    entity={entity}
+                    startEdit={startEdit}
+                    vi={vi}
+                    measure={measureRow}
+                  />
+                )
+              })
+            : entities.map((e) => (
+                <TableRow key={e.id} entity={e} startEdit={startEdit} vi={null} />
+              ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+

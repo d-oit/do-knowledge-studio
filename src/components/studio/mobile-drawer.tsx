@@ -14,64 +14,6 @@ import { cn } from '@/lib/utils'
 import { search } from '@/lib/search/retrieval'
 import { translate } from '@/lib/i18n/messages/mobile-drawer'
 
-/**
- * MobileDrawer — slide-in drawer from the left, visible only below `lg`
- * (1024px). Provides the same navigation as the desktop Sidebar plus a
- * Search tab that reuses the store's `searchQuery` and `useFilteredEntities`
- * selector, and a theme toggle in the footer (fixes the mobile theme-picker
- * gap from research pain point #9).
- *
- * Accessibility:
- * - role="dialog" + aria-modal="true" + aria-label on the panel
- * - Escape closes
- * - On open, focus is moved to the close button (first interactive element)
- * - Tab/Shift+Tab cycles focus within the panel (simple focus trap)
- * - Backdrop tap closes
- * - Auto-closes when viewport grows to lg+
- */
-export const MobileDrawer = () => {
-  const open = useStudioStore((s) => s.mobileDrawerOpen)
-  const setOpen = useStudioStore((s) => s.setMobileDrawerOpen)
-  const view = useStudioStore((s) => s.mobilePanelView)
-  const setView = useStudioStore((s) => s.setMobilePanelView)
-  const closeBtnRef = useRef<HTMLButtonElement>(null)
-
-  // Auto-close when resizing up to desktop so the drawer never overlaps the
-  // desktop sidebar.
-  useEffect(() => {
-    if (!open) return
-    const mql = window.matchMedia('(min-width: 1024px)')
-    const onChange = (e: MediaQueryListEvent) => {
-      if (e.matches) setOpen(false)
-    }
-    mql.addEventListener('change', onChange)
-    return () => { mql.removeEventListener('change', onChange) }
-  }, [open, setOpen])
-
-  return (
-    <Overlay
-      open={open}
-      onClose={() => setOpen(false)}
-      aria-label={translate('drawer.ariaLabel')}
-      variant="sheet-left"
-      initialFocusRef={closeBtnRef}
-      className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-lifted lg:hidden"
-    >
-      <DrawerHeader closeBtnRef={closeBtnRef} onClose={() => setOpen(false)} />
-      <TabSwitcher view={view} setView={setView} />
-
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        {view === 'nav' ? (
-          <NavTab onNavigate={() => setOpen(false)} />
-        ) : (
-          <SearchTab onSelect={() => setOpen(false)} />
-        )}
-      </div>
-
-      <DrawerFooter />
-    </Overlay>
-  )
-}
 
 /* ---------------------------------- Header --------------------------------- */
 
@@ -387,5 +329,65 @@ const DrawerFooter = () => {
         {translate('drawer.footer.localSearch', String(entities.length))}
       </div>
     </div>
+  )
+}
+
+
+/**
+ * MobileDrawer — slide-in drawer from the left, visible only below `lg`
+ * (1024px). Provides the same navigation as the desktop Sidebar plus a
+ * Search tab that reuses the store's `searchQuery` and `useFilteredEntities`
+ * selector, and a theme toggle in the footer (fixes the mobile theme-picker
+ * gap from research pain point #9).
+ *
+ * Accessibility:
+ * - role="dialog" + aria-modal="true" + aria-label on the panel
+ * - Escape closes
+ * - On open, focus is moved to the close button (first interactive element)
+ * - Tab/Shift+Tab cycles focus within the panel (simple focus trap)
+ * - Backdrop tap closes
+ * - Auto-closes when viewport grows to lg+
+ */
+export const MobileDrawer = () => {
+  const open = useStudioStore((s) => s.mobileDrawerOpen)
+  const setOpen = useStudioStore((s) => s.setMobileDrawerOpen)
+  const view = useStudioStore((s) => s.mobilePanelView)
+  const setView = useStudioStore((s) => s.setMobilePanelView)
+  const closeBtnRef = useRef<HTMLButtonElement>(null)
+
+  // Auto-close when resizing up to desktop so the drawer never overlaps the
+  // desktop sidebar.
+  useEffect(() => {
+    if (!open) return
+    const mql = window.matchMedia('(min-width: 1024px)')
+    const onChange = (e: MediaQueryListEvent) => {
+      if (e.matches) setOpen(false)
+    }
+    mql.addEventListener('change', onChange)
+    return () => { mql.removeEventListener('change', onChange) }
+  }, [open, setOpen])
+
+  return (
+    <Overlay
+      open={open}
+      onClose={() => setOpen(false)}
+      aria-label={translate('drawer.ariaLabel')}
+      variant="sheet-left"
+      initialFocusRef={closeBtnRef}
+      className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-lifted lg:hidden"
+    >
+      <DrawerHeader closeBtnRef={closeBtnRef} onClose={() => setOpen(false)} />
+      <TabSwitcher view={view} setView={setView} />
+
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {view === 'nav' ? (
+          <NavTab onNavigate={() => setOpen(false)} />
+        ) : (
+          <SearchTab onSelect={() => setOpen(false)} />
+        )}
+      </div>
+
+      <DrawerFooter />
+    </Overlay>
   )
 }

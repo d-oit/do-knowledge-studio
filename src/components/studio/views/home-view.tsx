@@ -63,6 +63,97 @@ const formatRelativeTime = (dateStr: string): string => {
 
 const RECENT_LIMIT = 6
 
+
+/** A single row in the "Recent work" list — extracted to keep HomeView's JSX shallow. */
+const RecentItem = ({ entity, onOpen }: { entity: Entity; onOpen: () => void }) => {
+  const meta = getEntityTypeMeta(entity.type)
+  return (
+    <li>
+      <button
+        onClick={onOpen}
+        className="group flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-saffron-soft/30 focus-ring"
+      >
+        <span
+          className={cn(
+            'flex h-8 w-8 shrink-0 items-center justify-center rounded-md',
+            meta.bg,
+            meta.text,
+          )}
+        >
+          <EntityIcon type={entity.type} className="h-4 w-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="truncate text-[14px] font-semibold text-ink group-hover:text-saffron-deep">
+              {entity.name}
+            </span>
+            <span
+              className={cn(
+                'shrink-0 rounded px-1.5 py-0 text-badge font-semibold uppercase tracking-wide',
+                meta.bg,
+                meta.text,
+              )}
+            >
+              {meta.label}
+            </span>
+          </div>
+          <p className="truncate text-[12px] text-ink-mute">
+            {entity.description}
+          </p>
+        </div>
+        <span className="flex shrink-0 items-center gap-1 text-label text-ink-faint">
+          <Clock className="h-3 w-3" />
+          {formatRelativeTime(entity.updatedAt)}
+        </span>
+      </button>
+    </li>
+  )
+}
+
+/** Empty-state placeholder prompting the user to create their first entity. */
+const EmptyState = ({ onCreate }: { onCreate: () => void }) => {
+  return (
+    <div className="rounded-lg border border-dashed border-border bg-card/50 p-8 text-center">
+      <FileText aria-hidden="true" className="mx-auto mb-3 h-8 w-8 text-ink-faint/40" />
+      <p className="text-[13px] text-ink-mute">
+        No entities yet. Create your first one to get started.
+      </p>
+      <button
+        onClick={onCreate}
+        className="mt-3 inline-flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+      >
+        <FileText className="h-3.5 w-3.5" />
+        Create entity
+      </button>
+    </div>
+  )
+}
+
+/** Compact stat card showing a numeric value with an icon and label. */
+const CompactStat = ({
+  label,
+  value,
+  icon: Icon,
+  onClick,
+}: {
+  label: string
+  value: number
+  icon: typeof FileText
+  onClick?: () => void
+}) => {
+  return (
+    <button
+      onClick={onClick}
+      className="group flex min-h-[44px] items-center gap-2 transition-opacity hover:opacity-80 focus-ring"
+    >
+      <Icon className="h-4 w-4 text-ink-faint group-hover:text-saffron" />
+      <span className="font-mono text-[15px] font-semibold text-ink">{value}</span>
+      <span className="text-label uppercase tracking-wide text-ink-faint">{label}</span>
+    </button>
+  )
+}
+
+
 /** Home dashboard showing recent work, stats, type breakdown, and tips. */
 export const HomeView = () => {
   const setView = useStudioStore((s) => s.setView)
@@ -245,94 +336,5 @@ export const HomeView = () => {
         </p>
       </section>
     </div>
-  )
-}
-
-/** A single row in the "Recent work" list — extracted to keep HomeView's JSX shallow. */
-const RecentItem = ({ entity, onOpen }: { entity: Entity; onOpen: () => void }) => {
-  const meta = getEntityTypeMeta(entity.type)
-  return (
-    <li>
-      <button
-        onClick={onOpen}
-        className="group flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-saffron-soft/30 focus-ring"
-      >
-        <span
-          className={cn(
-            'flex h-8 w-8 shrink-0 items-center justify-center rounded-md',
-            meta.bg,
-            meta.text,
-          )}
-        >
-          <EntityIcon type={entity.type} className="h-4 w-4" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="truncate text-[14px] font-semibold text-ink group-hover:text-saffron-deep">
-              {entity.name}
-            </span>
-            <span
-              className={cn(
-                'shrink-0 rounded px-1.5 py-0 text-badge font-semibold uppercase tracking-wide',
-                meta.bg,
-                meta.text,
-              )}
-            >
-              {meta.label}
-            </span>
-          </div>
-          <p className="truncate text-[12px] text-ink-mute">
-            {entity.description}
-          </p>
-        </div>
-        <span className="flex shrink-0 items-center gap-1 text-label text-ink-faint">
-          <Clock className="h-3 w-3" />
-          {formatRelativeTime(entity.updatedAt)}
-        </span>
-      </button>
-    </li>
-  )
-}
-
-/** Empty-state placeholder prompting the user to create their first entity. */
-const EmptyState = ({ onCreate }: { onCreate: () => void }) => {
-  return (
-    <div className="rounded-lg border border-dashed border-border bg-card/50 p-8 text-center">
-      <FileText aria-hidden="true" className="mx-auto mb-3 h-8 w-8 text-ink-faint/40" />
-      <p className="text-[13px] text-ink-mute">
-        No entities yet. Create your first one to get started.
-      </p>
-      <button
-        onClick={onCreate}
-        className="mt-3 inline-flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
-      >
-        <FileText className="h-3.5 w-3.5" />
-        Create entity
-      </button>
-    </div>
-  )
-}
-
-/** Compact stat card showing a numeric value with an icon and label. */
-const CompactStat = ({
-  label,
-  value,
-  icon: Icon,
-  onClick,
-}: {
-  label: string
-  value: number
-  icon: typeof FileText
-  onClick?: () => void
-}) => {
-  return (
-    <button
-      onClick={onClick}
-      className="group flex min-h-[44px] items-center gap-2 transition-opacity hover:opacity-80 focus-ring"
-    >
-      <Icon className="h-4 w-4 text-ink-faint group-hover:text-saffron" />
-      <span className="font-mono text-[15px] font-semibold text-ink">{value}</span>
-      <span className="text-label uppercase tracking-wide text-ink-faint">{label}</span>
-    </button>
   )
 }
