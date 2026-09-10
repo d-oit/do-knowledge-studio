@@ -149,6 +149,16 @@ export class VectorStore {
   ): { id: string; score: number; doc: SemanticDoc }[] {
     if (this.docs.size === 0 || topK <= 0) return []
     const query = normalizeEmbedding(queryVector)
+    const scored = this.scoreAll(query, filter)
+    scored.sort((a, b) => b.score - a.score)
+    return scored.slice(0, topK)
+  }
+
+  /** Scores every indexed document against the query vector (optionally filtered). */
+  private scoreAll(
+    query: number[],
+    filter?: SemanticDocFilter,
+  ): { id: string; score: number; doc: SemanticDoc }[] {
     const scored: { id: string; score: number; doc: SemanticDoc }[] = []
     for (const [id, doc] of this.docs) {
       if (filter && !filter(doc)) continue
@@ -156,8 +166,7 @@ export class VectorStore {
       if (vector === undefined) continue
       scored.push({ id, score: cosineSimilarity(query, vector), doc })
     }
-    scored.sort((a, b) => b.score - a.score)
-    return scored.slice(0, topK)
+    return scored
   }
 
   /** JSON-safe snapshot for optional persistence. */
@@ -200,6 +209,15 @@ export type VectorIndexResult =
   | { ok: true; count: number }
   | { ok: false; error: string }
 
+/** Embeds one batch of docs into the shared store. */
+const embedBatch = async (docs: SemanticDoc[], signal?: AbortSignal): Promise<void> => {
+  const texts = docs.map((doc) => truncateForEmbedding(doc.fullText))
+  const vectors = await embedTexts(texts, signal)
+  for (let i = 0; i < docs.length; i += 1) {
+    defaultVectorStore.upsert(docs[i], vectors[i])
+  }
+}
+
 /** Embeds every document into the shared store, replacing the previous corpus. */
 const doBuildIndex = async (
   entities: Entity[],
@@ -212,12 +230,7 @@ const doBuildIndex = async (
   defaultVectorStore.clear()
   try {
     for (let offset = 0; offset < docs.length; offset += EMBED_BATCH_SIZE) {
-      const batch = docs.slice(offset, offset + EMBED_BATCH_SIZE)
-      const texts = batch.map((doc) => truncateForEmbedding(doc.fullText))
-      const vectors = await embedTexts(texts, signal)
-      for (let i = 0; i < batch.length; i += 1) {
-        defaultVectorStore.upsert(batch[i], vectors[i])
-      }
+      await embedBatch(docs.slice(offset, offset + EMBED_BATCH_SIZE), signal)
     }
   } catch (err) {
     if (signal?.aborted) throw err
@@ -245,22 +258,16 @@ const buildVectorIndex = async (
       return { ok: true, count: defaultVectorStore.size }
     }
     if (indexBuilding === null) {
-      indexBuilding = doBuildIndex(entities, claims, signal)
-      const promise = indexBuilding
-      // finally() returns a new promise that preserves the original
-      // rejection — attach a catch so abort rejections don't surface as an
-      // unhandled rejection on the discarded chain (callers still observe
-      // them via `promise` itself).
-      void promise
-        .finally(() => {
-          if (indexBuilding === promise) indexBuilding = null
-        })
-        .catch((error: unknown) => {
-          // Original rejection still surfaces to the returned promise;
-          // this branch only keeps the discarded finally-chain quiet.
-          void error
-        })
-      return promise
+      const promise = doBuildIndex(entities, claims, signal)
+      indexBuilding = promise
+      try {
+        // Await directly so the module slot clears only after settlement
+        // and no discarded/finally-forked promise can float. Concurrent
+        // callers see the non-null slot and wait on the same build.
+        return await promise
+      } finally {
+        if (indexBuilding === promise) indexBuilding = null
+      }
     }
     // Another build is in flight — wait for it, then re-check whether it
     // covered our inputs (it may have started with different arrays).
@@ -282,6 +289,18 @@ const lexicalFallback = (
   results: search(entities, claims, query, limit),
   reason,
 })
+
+/** Maps ranked hits to the search result shape the UI consumes. */
+const toSearchResults = (hits: { id: string; score: number; doc: SemanticDoc }[]): SearchResult[] =>
+  hits.map((hit) => ({
+    id: hit.doc.id,
+    type: hit.doc.type,
+    name: hit.doc.type === 'entity' ? hit.doc.name : (hit.doc.entityName ?? hit.doc.name),
+    snippet: makeSnippet(hit.doc.fullText),
+    score: hit.score,
+    entityId: hit.doc.entityId,
+    entityName: hit.doc.entityName,
+  }))
 
 /**
  * Runs a semantic search: builds (or reuses) the vector index, embeds the
@@ -317,14 +336,5 @@ export const semanticSearch = async (
   }
 
   const hits = defaultVectorStore.search(queryVector, limit)
-  const results: SearchResult[] = hits.map((hit) => ({
-    id: hit.doc.id,
-    type: hit.doc.type,
-    name: hit.doc.type === 'entity' ? hit.doc.name : (hit.doc.entityName ?? hit.doc.name),
-    snippet: makeSnippet(hit.doc.fullText),
-    score: hit.score,
-    entityId: hit.doc.entityId,
-    entityName: hit.doc.entityName,
-  }))
-  return { source: 'semantic', results }
+  return { source: 'semantic', results: toSearchResults(hits) }
 }

@@ -19,6 +19,13 @@ const ASSERTION_MARKER = /\bassertion\s*:\s*/gi
 /** Prefix of a parenthesized source group. */
 const SOURCE_PREFIX = /^source\s*:/i
 
+/** Nesting contribution of a single character: +1 for '(', -1 for ')', else 0. */
+const parenDelta = (char: string): number => {
+  if (char === '(') return 1
+  if (char === ')') return -1
+  return 0
+}
+
 /**
  * Resolves the close paren matching `openIndex`, tolerating nested groups and
  * scanning only up to `scanLimit`. Returns the index just past the close
@@ -28,9 +35,7 @@ const findMatchingClose = (block: string, openIndex: number, scanLimit: number):
   let depth = 1
   let cursor = openIndex + 1
   while (cursor < scanLimit && depth > 0) {
-    const char = block[cursor]
-    if (char === '(') depth += 1
-    else if (char === ')') depth -= 1
+    depth += parenDelta(block[cursor])
     cursor += 1
   }
   return depth === 0 ? cursor : -1
@@ -90,22 +95,24 @@ export const extractClaimsFromText = (text: string): ParsedClaimDraft[] => {
   const seen = new Set<string>()
   const markers = Array.from(text.matchAll(ASSERTION_MARKER))
 
+  const accept = (draft: ParsedClaimDraft | null): void => {
+    if (draft === null) return
+    // JSON-encoded tuple key: no single-char delimiter is safe because both
+    // statement and source are unrestricted strings (a NUL inside either
+    // would otherwise collide distinct claims onto one key).
+    const key = JSON.stringify([draft.statement, draft.source ?? ''])
+    if (seen.has(key)) return
+    seen.add(key)
+    drafts.push(draft)
+  }
+
   for (let index = 0; index < markers.length; index += 1) {
     const marker = markers[index]
     if (!marker) continue
     const blockStart = marker.index + marker[0].length
     const next = markers[index + 1]
     const blockEnd = next ? next.index : text.length
-    const parsed = parseBlock(text.slice(blockStart, blockEnd))
-    if (parsed === null) continue
-
-    // JSON-encoded tuple key: no single-char delimiter is safe because both
-    // statement and source are unrestricted strings (a NUL inside either
-    // would otherwise collide distinct claims onto one key).
-    const key = JSON.stringify([parsed.statement, parsed.source ?? ''])
-    if (seen.has(key)) continue
-    seen.add(key)
-    drafts.push({ statement: parsed.statement, source: parsed.source })
+    accept(parseBlock(text.slice(blockStart, blockEnd)))
   }
   return drafts
 }

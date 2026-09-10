@@ -11,7 +11,7 @@ import type { Entity } from '@/lib/studio/types'
 import { getEntityTypeMeta } from '@/lib/studio/entity-types'
 import { NAV_GROUPS } from './sidebar'
 import { cn } from '@/lib/utils'
-import { search } from '@/lib/search/retrieval'
+import { search, type SearchResult } from '@/lib/search/retrieval'
 import { translate } from '@/lib/i18n/messages/mobile-drawer'
 
 
@@ -172,6 +172,17 @@ const NavTab = ({ onNavigate }: { onNavigate: () => void }) => {
 /* ------------------------------- Search tab -------------------------------- */
 
 /** Search tab with keyword/ranked toggle and entity results list. */
+/** Resolves ranked hits back to entities in rank order (drops unresolvable ids). */
+const rankedToEntities = (results: SearchResult[], entities: Entity[]): Entity[] => {
+  const byId = new Map(entities.map((e) => [e.id, e]))
+  const out: Entity[] = []
+  for (const r of results) {
+    const entity = byId.get(r.entityId ?? r.id)
+    if (entity !== undefined) out.push(entity)
+  }
+  return out
+}
+
 const SearchTab = ({ onSelect }: { onSelect: () => void }) => {
   const searchQuery = useStudioStore((s) => s.searchQuery)
   const setSearchQuery = useStudioStore((s) => s.setSearchQuery)
@@ -186,10 +197,7 @@ const SearchTab = ({ onSelect }: { onSelect: () => void }) => {
     : []
 
   const displayEntities = mode === 'ranked' && searchQuery.trim()
-    ? rankedResults
-        .map((r) => entities.find((e) => e.id === (r.entityId ?? r.id)))
-        .filter((e): e is Entity => e !== undefined)
-        .slice(0, 20)
+    ? rankedToEntities(rankedResults, entities).slice(0, 20)
     : filtered
 
   // Empty-state copy follows the desktop SearchPanel exactly
@@ -361,7 +369,8 @@ export const MobileDrawer = () => {
     if (!open) return
     const mql = window.matchMedia('(min-width: 1024px)')
     const onChange = (e: MediaQueryListEvent) => {
-      if (e.matches) setOpen(false)
+      if (!e.matches) return
+      setOpen(false)
     }
     mql.addEventListener('change', onChange)
     return () => { mql.removeEventListener('change', onChange) }

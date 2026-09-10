@@ -1,7 +1,7 @@
 'use client'
 
 import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
-import { getEntityTypeMeta } from '@/lib/studio/entity-types'
+import { getEntityTypeMeta, type EntityTypeMeta } from '@/lib/studio/entity-types'
 import { search, type SearchResult } from '@/lib/search/retrieval'
 import { buildEntityIndex } from '@/lib/studio/graph-index'
 import type { Entity } from '@/lib/studio/types'
@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils'
 import { Overlay } from '@/components/studio/ui/shared-primitives'
 
 /** Right sidebar panel that switches between search, inspector, and citations based on the active view. */
-export function RightPanel() {
+export const RightPanel = () => {
   const currentView = useStudioStore((s) => s.currentView)
   const rightPanelOpen = useStudioStore((s) => s.rightPanelOpen)
   const chat = useStudioStore((s) => s.chat)
@@ -65,6 +65,16 @@ const dedupeCitations = (
   return out
 }
 
+/** Resolves a ranked row's click target and type metadata. */
+const resolveRankedRowMeta = (
+  result: SearchResult,
+  entityIndex: Map<string, Entity>,
+): { targetId: string | undefined; meta: EntityTypeMeta | undefined } => {
+  const targetId = result.type === 'entity' ? result.id : result.entityId
+  const resolvedEntity = targetId ? entityIndex.get(targetId) : undefined
+  return { targetId, meta: resolvedEntity ? getEntityTypeMeta(resolvedEntity.type) : undefined }
+}
+
 /**
  * Single ranked search result row. Extracted from the SearchPanel map
  * callback so the render body stays within the complexity ceiling.
@@ -78,9 +88,7 @@ const RankedResultRow = ({
   entityIndex: Map<string, Entity>
   onStartEdit: (id: string) => void
 }) => {
-  const targetId = result.type === 'entity' ? result.id : result.entityId
-  const resolvedEntity = targetId ? entityIndex.get(targetId) : undefined
-  const meta = resolvedEntity ? getEntityTypeMeta(resolvedEntity.type) : undefined
+  const { targetId, meta } = resolveRankedRowMeta(result, entityIndex)
   return (
     <li key={result.id}>
       <button
@@ -109,7 +117,82 @@ const RankedResultRow = ({
 }
 
 /** Search panel with keyword/ranked mode toggle and entity results. */
-function SearchPanel({ onCreateEntity }: { onCreateEntity?: (name: string) => void }) {
+/** Ranked result rows for SearchPanel. */
+const RankedResultList = ({
+  results,
+  entityIndex,
+  onStartEdit,
+}: {
+  results: SearchResult[]
+  entityIndex: Map<string, Entity>
+  onStartEdit: (id: string) => void
+}) => (
+  <ul className="space-y-1.5" role="list" aria-label="Ranked search results">
+    {results.map((r) => (
+      <RankedResultRow key={r.id} result={r} entityIndex={entityIndex} onStartEdit={onStartEdit} />
+    ))}
+  </ul>
+)
+
+/** Keyword result rows for SearchPanel. */
+const KeywordResultList = ({
+  entities,
+  onStartEdit,
+}: {
+  entities: Entity[]
+  onStartEdit: (id: string) => void
+}) => (
+  <ul className="space-y-1.5" role="list" aria-label="Keyword search results">
+    {entities.slice(0, 20).map((e) => {
+      const meta = getEntityTypeMeta(e.type)
+      return (
+        <li key={e.id}>
+          <button
+            onClick={() => onStartEdit(e.id)}
+            className="group block w-full min-h-[44px] rounded-md border border-transparent p-2.5 text-left transition-colors hover:border-border hover:bg-muted/50 focus-ring"
+          >
+            <div className="mb-1 flex items-center gap-2">
+              <span className={cn('h-1.5 w-1.5 rounded-full', meta.dot)} />
+              <span className="rounded px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-ink-faint">
+                {meta.label}
+              </span>
+            </div>
+            <div className="truncate text-[13px] font-medium text-ink">{e.name}</div>
+            <p className="mt-0.5 line-clamp-2 text-label leading-snug text-ink-mute">
+              {e.description}
+            </p>
+          </button>
+        </li>
+      )
+    })}
+  </ul>
+)
+
+/** Empty state for SearchPanel (prompts for a query or offers to create an entity). */
+const SearchEmptyState = ({
+  query,
+  onCreate,
+}: {
+  query: string
+  onCreate?: (name: string) => void
+}) => (
+  <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+    <FileText className="h-8 w-8 text-ink-faint/50" />
+    <p className="text-[12px] text-ink-mute">
+      {query ? 'No matches found.' : 'Your library is empty.'}
+    </p>
+    {query && onCreate && (
+      <button
+        onClick={() => { onCreate(query) }}
+        className="mt-2 rounded-md border border-saffron/30 bg-saffron-soft px-3 py-1.5 text-[12px] font-medium text-saffron-deep transition-colors hover:bg-saffron/10 focus-ring min-h-[44px]"
+      >
+        Create &quot;{query}&quot; as new entity
+      </button>
+    )}
+  </div>
+)
+
+const SearchPanel = ({ onCreateEntity }: { onCreateEntity?: (name: string) => void }) => {
   const searchQuery = useStudioStore((s) => s.searchQuery)
   const setSearchQuery = useStudioStore((s) => s.setSearchQuery)
   const entities = useStudioStore((s) => s.entities)
@@ -173,56 +256,11 @@ function SearchPanel({ onCreateEntity }: { onCreateEntity?: (name: string) => vo
 
       <div className="flex-1 overflow-y-auto p-3" aria-live="polite" aria-atomic="false">
         {results.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-            <FileText className="h-8 w-8 text-ink-faint/50" />
-            <p className="text-[12px] text-ink-mute">
-              {searchQuery ? 'No matches found.' : 'Your library is empty.'}
-            </p>
-            {searchQuery && onCreateEntity && (
-              <button
-                onClick={() => { onCreateEntity(searchQuery) }}
-                className="mt-2 rounded-md border border-saffron/30 bg-saffron-soft px-3 py-1.5 text-[12px] font-medium text-saffron-deep transition-colors hover:bg-saffron/10 focus-ring min-h-[44px]"
-              >
-                Create &quot;{searchQuery}&quot; as new entity
-              </button>
-            )}
-          </div>
+          <SearchEmptyState query={searchQuery} onCreate={onCreateEntity} />
         ) : mode === 'ranked' ? (
-          <ul className="space-y-1.5" role="list" aria-label="Ranked search results">
-            {rankedResults.map((r) => (
-              <RankedResultRow
-                key={r.id}
-                result={r}
-                entityIndex={entityIndex}
-                onStartEdit={startEdit}
-              />
-            ))}
-          </ul>
+          <RankedResultList results={rankedResults} entityIndex={entityIndex} onStartEdit={startEdit} />
         ) : (
-          <ul className="space-y-1.5" role="list" aria-label="Keyword search results">
-            {filtered.slice(0, 20).map((e) => {
-              const meta = getEntityTypeMeta(e.type)
-              return (
-                <li key={e.id}>
-                  <button
-                    onClick={() => startEdit(e.id)}
-                    className="group block w-full min-h-[44px] rounded-md border border-transparent p-2.5 text-left transition-colors hover:border-border hover:bg-muted/50 focus-ring"
-                  >
-                    <div className="mb-1 flex items-center gap-2">
-                      <span className={cn('h-1.5 w-1.5 rounded-full', meta.dot)} />
-                      <span className="rounded px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-ink-faint">
-                        {meta.label}
-                      </span>
-                    </div>
-                    <div className="truncate text-[13px] font-medium text-ink">{e.name}</div>
-                    <p className="mt-0.5 line-clamp-2 text-label leading-snug text-ink-mute">
-                      {e.description}
-                    </p>
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
+          <KeywordResultList entities={filtered} onStartEdit={startEdit} />
         )}
       </div>
 
@@ -237,7 +275,37 @@ function SearchPanel({ onCreateEntity }: { onCreateEntity?: (name: string) => vo
 }
 
 /** Inspector panel showing details, connections, and actions for the selected graph/mind map node. */
-function InspectorPanel() {
+/** Connection rows for the inspector (linked entities with their relation). */
+const ConnectionList = ({
+  links,
+  entityIndex,
+  onSelect,
+}: {
+  links: Entity['links']
+  entityIndex: Map<string, Entity>
+  onSelect: (id: string) => void
+}) => (
+  <ul className="space-y-1">
+    {dedupeLinks(links).map((l) => {
+      const target = entityIndex.get(l.targetId)
+      if (!target) return null
+      return (
+        <li key={`${l.targetId}:${l.relation}`}>
+          <button
+            onClick={() => onSelect(target.id)}
+            className="flex w-full min-h-[44px] items-center gap-2 rounded-md p-1.5 text-left text-[12px] text-ink-soft transition-colors hover:bg-muted focus-ring"
+          >
+            <ArrowRight className="h-3 w-3 shrink-0 text-ink-faint" />
+            <span className="flex-1 truncate">{target.name}</span>
+            <span className="text-caption italic text-ink-faint">{l.relation}</span>
+          </button>
+        </li>
+      )
+    })}
+  </ul>
+)
+
+const InspectorPanel = () => {
   const entities = useStudioStore((s) => s.entities)
   const selectedEntityId = useStudioStore((s) => s.selectedEntityId)
   const startEdit = useStudioStore((s) => s.startEdit)
@@ -306,22 +374,7 @@ function InspectorPanel() {
               Connections ({entity.links.length})
             </h4>
             <ul className="space-y-1">
-              {dedupeLinks(entity.links).map((l) => {
-                const target = entityIndex.get(l.targetId)
-                if (!target) return null
-                return (
-                  <li key={`${l.targetId}:${l.relation}`}>
-                    <button
-                      onClick={() => selectEntity(target.id)}
-                      className="flex w-full min-h-[44px] items-center gap-2 rounded-md p-1.5 text-left text-[12px] text-ink-soft transition-colors hover:bg-muted focus-ring"
-                    >
-                      <ArrowRight className="h-3 w-3 shrink-0 text-ink-faint" />
-                      <span className="flex-1 truncate">{target.name}</span>
-                      <span className="text-caption italic text-ink-faint">{l.relation}</span>
-                    </button>
-                  </li>
-                )
-              })}
+              <ConnectionList links={entity.links} entityIndex={entityIndex} onSelect={selectEntity} />
             </ul>
           </div>
         )}
@@ -381,7 +434,7 @@ function InspectorPanel() {
 }
 
 /** Citations panel listing sources cited by the AI assistant in chat. */
-function CitationsPanel() {
+const CitationsPanel = () => {
   const chat = useStudioStore((s) => s.chat)
   const entities = useStudioStore((s) => s.entities)
   const lastAssistant = [...chat].reverse().find((m) => m.role === 'assistant')
