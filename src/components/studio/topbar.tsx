@@ -3,7 +3,7 @@
 import { useStudioStore } from '@/lib/studio/store'
 import { useStoreHydrated } from '@/lib/studio/use-hydrated'
 import type { ViewId } from '@/lib/studio/types'
-import { t as timelineT } from '@/lib/i18n/messages/timeline'
+import { translate as timelineT } from '@/lib/i18n/messages/timeline'
 import { Menu, Plus, Search } from 'lucide-react'
 import type { KeyboardEvent } from 'react'
 

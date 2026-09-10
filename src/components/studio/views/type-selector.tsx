@@ -5,8 +5,28 @@ import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { AnyEntityType } from '@/lib/studio/types'
 import { getEntityTypeDefs, getEntityTypeMeta } from '@/lib/studio/entity-types'
-import { t as entityTypesT } from '@/lib/i18n/messages/entity-types'
+import { translate as entityTypesT } from '@/lib/i18n/messages/entity-types'
 import { EntityIcon } from '../entity-type-icon'
+
+/**
+ * Moves listbox keyboard focus to the option adjacent to the currently focused
+ * one, wrapping around at the ends. No-op when there are no options.
+ */
+const focusAdjacentOption = (
+  menuEl: HTMLDivElement | null,
+  direction: 'next' | 'previous',
+): void => {
+  const options = menuEl?.querySelectorAll<HTMLElement>('[role="option"]')
+  if (!options?.length) return
+  const currentIdx = Array.from(options).findIndex((o) => o === document.activeElement)
+  const nextIdx =
+    direction === 'next'
+      ? (currentIdx + 1) % options.length
+      : (currentIdx - 1 + options.length) % options.length
+  // nextIdx is always within [0, options.length) via the modulo above, and the
+  // non-empty guard runs earlier — .item() is safe to call directly.
+  options.item(nextIdx).focus()
+}
 
 /** Dropdown selector for choosing an entity type with keyboard navigation. */
 export const TypeSelector = ({
@@ -25,9 +45,8 @@ export const TypeSelector = ({
   const typeDefs = getEntityTypeDefs()
 
   useEffect(() => {
-    if (!showMenu) return
     const handleClick = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      if (showMenu && menuRef.current && !menuRef.current.contains(e.target as Node)) {
         onToggleMenu()
       }
     }
@@ -60,20 +79,12 @@ export const TypeSelector = ({
               onToggleMenu()
             } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
               e.preventDefault()
-              const options = menuRef.current?.querySelectorAll<HTMLElement>('[role="option"]')
-              if (!options?.length) return
-              const currentIdx = Array.from(options).findIndex((o) => o === document.activeElement)
-              const nextIdx = e.key === 'ArrowDown'
-                ? (currentIdx + 1) % options.length
-                : (currentIdx - 1 + options.length) % options.length
-              // nextIdx is always within [0, options.length) via the modulo above,
-              // and the non-empty guard runs earlier — .item() is safe to call directly.
-              options.item(nextIdx).focus()
+              focusAdjacentOption(menuRef.current, e.key === 'ArrowDown' ? 'next' : 'previous')
             }
           }}
         >
           {typeDefs.map((def) => {
-            const m = getEntityTypeMeta(def.id)
+            const meta = getEntityTypeMeta(def.id)
             return (
               <button
                 key={def.id}
@@ -87,8 +98,8 @@ export const TypeSelector = ({
                   def.id === type ? 'font-semibold text-ink' : 'text-ink-soft',
                 )}
               >
-                <EntityIcon type={def.id} className={cn('h-3.5 w-3.5', m.text)} />
-                {m.label}
+                <EntityIcon type={def.id} className={cn('h-3.5 w-3.5', meta.text)} />
+                {meta.label}
               </button>
             )
           })}

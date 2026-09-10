@@ -12,7 +12,7 @@ import { ToggleButtonGroup } from '../ui/shared-primitives'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { ParamPicker } from './triz-helpers'
 import { filterParams } from './triz-view-utils'
-import { t } from '@/lib/i18n/messages/triz'
+import { translate } from '@/lib/i18n/messages/triz'
 
 export { filterParams } from './triz-view-utils'
 
@@ -33,13 +33,13 @@ const TrizBranding = () => (
     </div>
     <div>
       <div className="flex items-center gap-2">
-        <h1 className="font-serif text-2xl font-semibold text-ink">{t('triz.branding.title')}</h1>
+        <h1 className="font-serif text-2xl font-semibold text-ink">{translate('triz.branding.title')}</h1>
         <span className="rounded-full border border-dashed border-saffron/50 px-2 py-0 text-badge font-semibold uppercase tracking-wide text-saffron-deep">
-          {t('triz.branding.lab')}
+          {translate('triz.branding.lab')}
         </span>
       </div>
       <p className="text-[12px] text-ink-mute">
-        {t('triz.branding.subtitle')}
+        {translate('triz.branding.subtitle')}
       </p>
     </div>
   </div>
@@ -67,7 +67,7 @@ const TrizHeaderControls = ({
     )
   return (
     <div className="mt-4 flex items-center gap-4">
-      <ToggleButtonGroup label={t('triz.viewAriaLabel')}>
+      <ToggleButtonGroup label={translate('triz.viewAriaLabel')}>
         <button
           type="button"
           onClick={() => { onViewChange('pick') }}
@@ -75,7 +75,7 @@ const TrizHeaderControls = ({
           className={toggleClasses(view === 'pick')}
         >
           <List className="mr-1 inline h-3 w-3" />
-          {t('triz.view.pick')}
+          {translate('triz.view.pick')}
         </button>
         <button
           type="button"
@@ -84,7 +84,7 @@ const TrizHeaderControls = ({
           className={toggleClasses(view === 'matrix')}
         >
           <Grid3X3 className="mr-1 inline h-3 w-3" />
-          {t('triz.view.matrix')}
+          {translate('triz.view.matrix')}
         </button>
         {resultsCount > 0 && (
           <button
@@ -94,7 +94,7 @@ const TrizHeaderControls = ({
             className={toggleClasses(view === 'results')}
           >
             <Sparkles className="mr-1 inline h-3 w-3" />
-            {t('triz.view.results', String(resultsCount))}
+            {translate('triz.view.results', String(resultsCount))}
           </button>
         )}
       </ToggleButtonGroup>
@@ -105,7 +105,7 @@ const TrizHeaderControls = ({
           className="ml-auto flex min-h-[44px] items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1.5 text-label font-medium text-ink-soft transition-colors hover:text-ink focus-ring"
         >
           <RotateCcw className="h-3 w-3" />
-          {t('triz.reset')}
+          {translate('triz.reset')}
         </button>
       )}
     </div>
@@ -157,8 +157,8 @@ export const TrizPickView = ({
       className="grid grid-cols-1 gap-6 lg:grid-cols-2"
     >
       <ParamPicker
-        title={t('triz.pick.improvingTitle')}
-        subtitle={t('triz.pick.improvingSubtitle')}
+        title={translate('triz.pick.improvingTitle')}
+        subtitle={translate('triz.pick.improvingSubtitle')}
         accent="saffron"
         selected={improving}
         onSelect={onImprovingChange}
@@ -168,8 +168,8 @@ export const TrizPickView = ({
         disabled={[]}
       />
       <ParamPicker
-        title={t('triz.pick.worseningTitle')}
-        subtitle={t('triz.pick.worseningSubtitle')}
+        title={translate('triz.pick.worseningTitle')}
+        subtitle={translate('triz.pick.worseningSubtitle')}
         accent="clay"
         selected={worsening}
         onSelect={onWorseningChange}

@@ -196,7 +196,7 @@ describe('LocalAdapter send', () => {
   })
 
   it('interrupts generation and rejects with AbortError when aborted mid-stream', async () => {
-    let release: () => void = () => {}
+    let release: () => void = () => undefined
     const gate = new Promise<void>((resolve) => { release = resolve })
     let capturedCriteria: { interrupted: boolean; interrupt: () => void } | undefined
     const generator = makeGenerator({

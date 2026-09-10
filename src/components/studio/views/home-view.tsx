@@ -2,6 +2,7 @@
 
 import { useMemo, useCallback } from 'react'
 import { useStudioStore, useStats } from '@/lib/studio/store'
+import type { Entity } from '@/lib/studio/types'
 import { getEntityTypeMeta } from '@/lib/studio/entity-types'
 import {
   FileText,
@@ -46,7 +47,7 @@ const RELATIVE_DIVISIONS: [number, Intl.RelativeTimeFormatUnit][] = [
 ]
 
 /** Converts an ISO date string into a human-readable relative time (e.g. "3 hours ago"). */
-function formatRelativeTime(dateStr: string): string {
+const formatRelativeTime = (dateStr: string): string => {
   const diffSeconds = Math.round(
     (new Date(dateStr).getTime() - Date.now()) / 1000,
   )
@@ -63,7 +64,7 @@ function formatRelativeTime(dateStr: string): string {
 const RECENT_LIMIT = 6
 
 /** Home dashboard showing recent work, stats, type breakdown, and tips. */
-export function HomeView() {
+export const HomeView = () => {
   const setView = useStudioStore((s) => s.setView)
   const startNew = useStudioStore((s) => s.startNew)
   const startEdit = useStudioStore((s) => s.startEdit)
@@ -150,50 +151,13 @@ export function HomeView() {
           <EmptyState onCreate={startNew} />
         ) : (
           <ul className="divide-y divide-border rounded-lg border border-border bg-card">
-            {recentEntities.map((entity) => {
-              const meta = getEntityTypeMeta(entity.type)
-              return (
-                <li key={entity.id}>
-                  <button
-                    onClick={() => { handleOpenEntity(entity.id) }}
-                    className="group flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-saffron-soft/30 focus-ring"
-                  >
-                    <span
-                      className={cn(
-                        'flex h-8 w-8 shrink-0 items-center justify-center rounded-md',
-                        meta.bg,
-                        meta.text,
-                      )}
-                    >
-                      <EntityIcon type={entity.type} className="h-4 w-4" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="truncate text-[14px] font-semibold text-ink group-hover:text-saffron-deep">
-                          {entity.name}
-                        </span>
-                        <span
-                          className={cn(
-                            'shrink-0 rounded px-1.5 py-0 text-badge font-semibold uppercase tracking-wide',
-                            meta.bg,
-                            meta.text,
-                          )}
-                        >
-                          {meta.label}
-                        </span>
-                      </div>
-                      <p className="truncate text-[12px] text-ink-mute">
-                        {entity.description}
-                      </p>
-                    </div>
-                    <span className="flex shrink-0 items-center gap-1 text-label text-ink-faint">
-                      <Clock className="h-3 w-3" />
-                      {formatRelativeTime(entity.updatedAt)}
-                    </span>
-                  </button>
-                </li>
-              )
-            })}
+            {recentEntities.map((entity) => (
+              <RecentItem
+                key={entity.id}
+                entity={entity}
+                onOpen={() => { handleOpenEntity(entity.id) }}
+              />
+            ))}
           </ul>
         )}
       </motion.section>
@@ -284,8 +248,54 @@ export function HomeView() {
   )
 }
 
+/** A single row in the "Recent work" list — extracted to keep HomeView's JSX shallow. */
+const RecentItem = ({ entity, onOpen }: { entity: Entity; onOpen: () => void }) => {
+  const meta = getEntityTypeMeta(entity.type)
+  return (
+    <li>
+      <button
+        onClick={onOpen}
+        className="group flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-saffron-soft/30 focus-ring"
+      >
+        <span
+          className={cn(
+            'flex h-8 w-8 shrink-0 items-center justify-center rounded-md',
+            meta.bg,
+            meta.text,
+          )}
+        >
+          <EntityIcon type={entity.type} className="h-4 w-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="truncate text-[14px] font-semibold text-ink group-hover:text-saffron-deep">
+              {entity.name}
+            </span>
+            <span
+              className={cn(
+                'shrink-0 rounded px-1.5 py-0 text-badge font-semibold uppercase tracking-wide',
+                meta.bg,
+                meta.text,
+              )}
+            >
+              {meta.label}
+            </span>
+          </div>
+          <p className="truncate text-[12px] text-ink-mute">
+            {entity.description}
+          </p>
+        </div>
+        <span className="flex shrink-0 items-center gap-1 text-label text-ink-faint">
+          <Clock className="h-3 w-3" />
+          {formatRelativeTime(entity.updatedAt)}
+        </span>
+      </button>
+    </li>
+  )
+}
+
 /** Empty-state placeholder prompting the user to create their first entity. */
-function EmptyState({ onCreate }: { onCreate: () => void }) {
+const EmptyState = ({ onCreate }: { onCreate: () => void }) => {
   return (
     <div className="rounded-lg border border-dashed border-border bg-card/50 p-8 text-center">
       <FileText aria-hidden="true" className="mx-auto mb-3 h-8 w-8 text-ink-faint/40" />
@@ -304,7 +314,7 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
 }
 
 /** Compact stat card showing a numeric value with an icon and label. */
-function CompactStat({
+const CompactStat = ({
   label,
   value,
   icon: Icon,
@@ -314,7 +324,7 @@ function CompactStat({
   value: number
   icon: typeof FileText
   onClick?: () => void
-}) {
+}) => {
   return (
     <button
       onClick={onClick}

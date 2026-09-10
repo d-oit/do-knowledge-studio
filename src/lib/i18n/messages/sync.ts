@@ -60,5 +60,5 @@ const messages = {
   'sync.toast.scannedRoom': (roomId: string) => `Scanned room: ${roomId}`,
 } as const
 
-/** Typed `t` helper bound to the sync view message scope. */
-export const t = makeT(messages)
+/** Typed `translate` helper bound to the sync view message scope. */
+export const translate = makeT(messages)

@@ -5,7 +5,7 @@ import type { Claim, VerificationStatus } from '@/lib/studio/types'
 import { useStudioStore } from '@/lib/studio/store'
 import { Overlay } from '@/components/studio/ui/shared-primitives'
 import { extractClaimsFromText, hasExtractableClaims, type ParsedClaimDraft } from '@/lib/studio/claim-parser'
-import { t } from '@/lib/i18n/messages/claims'
+import { translate } from '@/lib/i18n/messages/claims'
 
 /** Colored badge indicating a claim&apos;s verification status. */
 export function VerificationBadge({ status }: { status: VerificationStatus }) {
@@ -13,20 +13,20 @@ export function VerificationBadge({ status }: { status: VerificationStatus }) {
     return (
       <span className="flex items-center gap-1 text-caption font-medium text-emerald-600 dark:text-emerald-400">
         <CheckCircle2 className="h-3 w-3" />
-        {t('claims.verified')}
+        {translate('claims.verified')}
       </span>
     )
   if (status === 'disputed')
     return (
       <span className="flex items-center gap-1 text-caption font-medium text-amber-600 dark:text-amber-400">
         <AlertTriangle className="h-3 w-3" />
-        {t('claims.disputed')}
+        {translate('claims.disputed')}
       </span>
     )
   return (
     <span className="flex items-center gap-1 text-caption font-medium text-ink-faint">
       <Circle className="h-3 w-3" />
-      {t('claims.unverified')}
+      {translate('claims.unverified')}
     </span>
   )
 }
@@ -38,7 +38,7 @@ const DEFAULT_CONFIDENCE = 0.5
 const DRAFT_KEY_SEPARATOR = '\u0000'
 
 /** Panel for viewing, creating, editing, and deleting claims on an entity. */
-export function ClaimsPanel({
+export const ClaimsPanel = ({
   claims,
   editingEntityId,
   addClaim,
@@ -50,7 +50,7 @@ export function ClaimsPanel({
   addClaim: (claim: Omit<Claim, 'id'>) => void
   updateClaim: (id: string, updates: Partial<Omit<Claim, 'id' | 'entityId'>>) => void
   deleteClaim: (id: string) => void
-}) {
+}) => {
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [statement, setStatement] = useState('')
@@ -82,7 +82,7 @@ export function ClaimsPanel({
   const handleSave = () => {
     const trimmed = statement.trim()
     if (!trimmed) {
-      toast.error(t('claims.statementRequired'))
+      toast.error(translate('claims.statementRequired'))
       return
     }
     if (editingId) {
@@ -92,7 +92,7 @@ export function ClaimsPanel({
         confidence: confidence / 100,
         source: source.trim() || undefined,
       })
-      toast.success(t('claims.updated'))
+      toast.success(translate('claims.updated'))
     } else {
       addClaim({
         entityId: editingEntityId,
@@ -107,7 +107,7 @@ export function ClaimsPanel({
 
   const handleDelete = (id: string) => {
     deleteClaim(id)
-    toast.success(t('claims.deleted'))
+    toast.success(translate('claims.deleted'))
   }
   const entityContent = useMemo(
     () => entities.find((entity) => entity.id === editingEntityId)?.content ?? '',
@@ -119,7 +119,7 @@ export function ClaimsPanel({
   const openExtractDialog = useCallback(() => {
     const drafts = extractClaimsFromText(entityContent)
     if (drafts.length === 0) {
-      toast.info(t('claims.noneFound'))
+      toast.info(translate('claims.noneFound'))
       return
     }
     setExtractDrafts(drafts)
@@ -148,21 +148,21 @@ export function ClaimsPanel({
       })
     }
     setExtractDrafts(null)
-    if (toAdd.length > 0) toast.success(t('claims.added', String(toAdd.length)))
-    if (skipped > 0) toast.info(t('claims.skipped', String(skipped)))
+    if (toAdd.length > 0) toast.success(translate('claims.added', String(toAdd.length)))
+    if (skipped > 0) toast.info(translate('claims.skipped', String(skipped)))
   }, [claims, extractDrafts, editingEntityId, addClaim])
 
   return (
     <section
-      aria-label={t('claims.title')}
+      aria-label={translate('claims.title')}
       className="mt-6 rounded-lg border border-border bg-surface-sunken/40 p-4"
     >
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <ShieldCheck className="h-4 w-4 text-saffron" />
-          <h3 className="font-serif text-[15px] font-semibold text-ink">{t('claims.title')}</h3>
+          <h3 className="font-serif text-[15px] font-semibold text-ink">{translate('claims.title')}</h3>
           <span className="rounded-full bg-muted px-2 py-0 text-caption font-semibold text-ink-mute">
-            {t('claims.count', String(claims.length))}
+            {translate('claims.count', String(claims.length))}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -173,7 +173,7 @@ export function ClaimsPanel({
               className="flex min-h-[44px] items-center gap-1 rounded-md border border-border px-2.5 py-1 text-label font-medium text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
             >
               <Wand2 className="h-3.5 w-3.5 text-saffron" />
-              {t('claims.extract')}
+              {translate('claims.extract')}
             </button>
           )}
           {!showForm && (
@@ -183,7 +183,7 @@ export function ClaimsPanel({
               className="flex min-h-[44px] items-center gap-1 rounded-md border border-dashed border-saffron/50 px-2.5 py-1 text-label font-medium text-saffron-deep transition-colors hover:bg-saffron-soft focus-ring"
             >
               <Plus className="h-3 w-3" />
-              {t('claims.add')}
+              {translate('claims.add')}
             </button>
           )}
         </div>
@@ -191,7 +191,7 @@ export function ClaimsPanel({
 
       {claims.length === 0 && !showForm && (
         <p className="text-[12px] leading-relaxed text-ink-mute">
-          {t('claims.empty')}
+          {translate('claims.empty')}
         </p>
       )}
 
@@ -210,7 +210,7 @@ export function ClaimsPanel({
               <VerificationBadge status={c.verification} />
               <div className="flex items-center gap-1.5">
                 <span className="text-caption font-medium uppercase tracking-wide text-ink-faint">
-                  {t('claims.confidenceLabel')}
+                  {translate('claims.confidenceLabel')}
                 </span>
                 <div className="h-1.5 w-20 overflow-hidden rounded-full bg-muted">
                   <div
@@ -241,19 +241,19 @@ export function ClaimsPanel({
                 type="button"
                 onClick={() => { startEdit(c) }}
                 className="flex min-h-[44px] items-center gap-1 rounded-md px-2 py-1 text-label font-medium text-ink-faint transition-colors hover:bg-muted hover:text-ink focus-ring"
-                aria-label={t('claims.editLabel')}
+                aria-label={translate('claims.editLabel')}
               >
                 <Pencil className="h-3 w-3" />
-                {t('claims.edit')}
+                {translate('claims.edit')}
               </button>
               <button
                 type="button"
                 onClick={() => { handleDelete(c.id) }}
                 className="flex min-h-[44px] items-center gap-1 rounded-md px-2 py-1 text-label font-medium text-ink-faint transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40 focus-ring"
-                aria-label={t('claims.deleteLabel')}
+                aria-label={translate('claims.deleteLabel')}
               >
                 <Trash2 className="h-3 w-3" />
-                {t('claims.delete')}
+                {translate('claims.delete')}
               </button>
             </div>
           </li>
@@ -263,13 +263,13 @@ export function ClaimsPanel({
       {showForm && (
         <div className="mt-3 rounded-md border border-saffron/40 bg-background p-3">
           <label htmlFor="claim-statement" className="mb-1 block text-label font-semibold uppercase tracking-wide text-ink-faint">
-            {editingId ? t('claims.editStatementLabel') : t('claims.statementLabel')}
+            {editingId ? translate('claims.editStatementLabel') : translate('claims.statementLabel')}
           </label>
           <textarea
             id="claim-statement"
             value={statement}
             onChange={(e) => { setStatement(e.target.value) }}
-            placeholder={t('claims.statementPlaceholder')}
+            placeholder={translate('claims.statementPlaceholder')}
             rows={3}
             className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-[13px] leading-relaxed text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/30"
           />
@@ -277,7 +277,7 @@ export function ClaimsPanel({
           <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label htmlFor="claim-verification" className="mb-1 block text-label font-semibold uppercase tracking-wide text-ink-faint">
-                {t('claims.verificationLabel')}
+                {translate('claims.verificationLabel')}
               </label>
               <select
                 id="claim-verification"
@@ -285,14 +285,14 @@ export function ClaimsPanel({
                 onChange={(e) => { setVerification(e.target.value as VerificationStatus) }}
                 className="w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-[12px] text-ink focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/30"
               >
-                <option value="unverified">{t('claims.unverified')}</option>
-                <option value="verified">{t('claims.verified')}</option>
-                <option value="disputed">{t('claims.disputed')}</option>
+                <option value="unverified">{translate('claims.unverified')}</option>
+                <option value="verified">{translate('claims.verified')}</option>
+                <option value="disputed">{translate('claims.disputed')}</option>
               </select>
             </div>
             <div>
               <label htmlFor="claim-confidence" className="mb-1 flex items-center justify-between text-label font-semibold uppercase tracking-wide text-ink-faint">
-                <span>{t('claims.confidenceLabel')}</span>
+                <span>{translate('claims.confidenceLabel')}</span>
                 <span className="font-mono text-caption text-ink-mute">{confidence}%</span>
               </label>
               <input
@@ -310,13 +310,13 @@ export function ClaimsPanel({
 
           <div className="mt-3">
             <label htmlFor="claim-source" className="mb-1 block text-label font-semibold uppercase tracking-wide text-ink-faint">
-              {t('claims.sourceOptionalLabel')}
+              {translate('claims.sourceOptionalLabel')}
             </label>
             <input
               id="claim-source"
               value={source}
               onChange={(e) => { setSource(e.target.value) }}
-              placeholder={t('claims.sourcePlaceholder')}
+              placeholder={translate('claims.sourcePlaceholder')}
               className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-[12px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/30"
             />
           </div>
@@ -327,7 +327,7 @@ export function ClaimsPanel({
               onClick={resetForm}
               className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring min-h-[44px]"
             >
-              {t('claims.cancel')}
+              {translate('claims.cancel')}
             </button>
             <button
               type="button"
@@ -336,7 +336,7 @@ export function ClaimsPanel({
               className="flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 press-scale focus-ring"
             >
               <Save className="h-3.5 w-3.5" />
-              {editingId ? t('claims.update') : t('claims.save')}
+              {editingId ? translate('claims.update') : translate('claims.save')}
             </button>
           </div>
         </div>
@@ -345,22 +345,22 @@ export function ClaimsPanel({
       <Overlay
         open={extractDrafts !== null}
         onClose={closeExtractDialog}
-        aria-label={t('claims.extractTitle')}
+        aria-label={translate('claims.extractTitle')}
       >
         <div className="rounded-xl border border-border bg-popover p-5 shadow-2xl">
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
               <h3 className="font-serif text-[15px] font-semibold text-ink">
-                {t('claims.extractTitle')}
+                {translate('claims.extractTitle')}
               </h3>
               <p className="mt-1 text-[12px] leading-relaxed text-ink-mute">
-                {t('claims.extractBody')}
+                {translate('claims.extractBody')}
               </p>
             </div>
             <button
               type="button"
               onClick={closeExtractDialog}
-              aria-label={t('claims.close')}
+              aria-label={translate('claims.close')}
               className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-muted hover:text-ink focus-ring"
             >
               <X className="h-4 w-4" />
@@ -378,9 +378,9 @@ export function ClaimsPanel({
                 </p>
                 <p className="mt-1 text-caption text-ink-faint">
                   <span className="font-medium uppercase tracking-wide">
-                    {t('claims.listSource')}:{' '}
+                    {translate('claims.listSource')}:{' '}
                   </span>
-                  {draft.source ?? t('claims.listNoSource')}
+                  {draft.source ?? translate('claims.listNoSource')}
                 </p>
               </li>
             ))}
@@ -392,14 +392,14 @@ export function ClaimsPanel({
               onClick={closeExtractDialog}
               className="min-h-[44px] rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
             >
-              {t('claims.cancel')}
+              {translate('claims.cancel')}
             </button>
             <button
               type="button"
               onClick={handleExtractConfirm}
               className="flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
             >
-              {t('claims.confirm', String(extractDrafts?.length ?? 0))}
+              {translate('claims.confirm', String(extractDrafts?.length ?? 0))}
             </button>
           </div>
         </div>

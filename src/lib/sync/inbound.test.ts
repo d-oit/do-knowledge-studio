@@ -7,7 +7,7 @@ import {
 } from './inbound'
 import type { Entity, Claim } from '@/lib/studio/types'
 
-function makeEntity(overrides: Partial<Entity> = {}): Entity {
+const makeEntity = (overrides: Partial<Entity> = {}): Entity => {
   return {
     id: 'e1',
     name: 'Test',
@@ -22,7 +22,7 @@ function makeEntity(overrides: Partial<Entity> = {}): Entity {
   }
 }
 
-function makeClaim(overrides: Partial<Claim> = {}): Claim {
+const makeClaim = (overrides: Partial<Claim> = {}): Claim => {
   return {
     id: 'c1',
     entityId: 'e1',

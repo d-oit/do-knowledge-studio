@@ -18,7 +18,7 @@ import { ErrorBoundary } from './error-boundary'
 import { ViewErrorBoundary } from './view-error-boundary'
 import { Skeleton } from './ui/skeleton'
 import { startBidirectionalSync } from '@/lib/sync/bridge'
-import { t } from '@/lib/i18n/messages/timeline'
+import { translate } from '@/lib/i18n/messages/timeline'
 
 const GraphView = lazy(() => import('./views/graph-view').then((m) => ({ default: m.GraphView })))
 const MindMapView = lazy(() => import('./views/mindmap-view').then((m) => ({ default: m.MindMapView })))
@@ -50,7 +50,7 @@ const VIEW_NAMES: Record<ViewId, string> = {
   home: 'Home',
   editor: 'Editor',
   library: 'Library',
-  timeline: t('timeline.nav.label'),
+  timeline: translate('timeline.nav.label'),
   graph: 'Graph',
   mindmap: 'Mind Map',
   chat: 'Chat',
@@ -66,7 +66,7 @@ function getViewName(view: ViewId): string {
 }
 
 /** Root application shell composing sidebar, topbar, view router, right panel, and overlays. */
-export function AppShell() {
+export const AppShell = () => {
   const currentView = useStudioStore((s) => s.currentView)
   const editingEntityId = useStudioStore((s) => s.editingEntityId)
 

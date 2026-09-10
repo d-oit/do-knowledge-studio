@@ -12,7 +12,7 @@ import { getEntityTypeMeta } from '@/lib/studio/entity-types'
 import { NAV_GROUPS } from './sidebar'
 import { cn } from '@/lib/utils'
 import { search } from '@/lib/search/retrieval'
-import { t } from '@/lib/i18n/messages/mobile-drawer'
+import { translate } from '@/lib/i18n/messages/mobile-drawer'
 
 /**
  * MobileDrawer — slide-in drawer from the left, visible only below `lg`
@@ -29,7 +29,7 @@ import { t } from '@/lib/i18n/messages/mobile-drawer'
  * - Backdrop tap closes
  * - Auto-closes when viewport grows to lg+
  */
-export function MobileDrawer() {
+export const MobileDrawer = () => {
   const open = useStudioStore((s) => s.mobileDrawerOpen)
   const setOpen = useStudioStore((s) => s.setMobileDrawerOpen)
   const view = useStudioStore((s) => s.mobilePanelView)
@@ -52,7 +52,7 @@ export function MobileDrawer() {
     <Overlay
       open={open}
       onClose={() => setOpen(false)}
-      aria-label={t('drawer.ariaLabel')}
+      aria-label={translate('drawer.ariaLabel')}
       variant="sheet-left"
       initialFocusRef={closeBtnRef}
       className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-lifted lg:hidden"
@@ -76,13 +76,13 @@ export function MobileDrawer() {
 /* ---------------------------------- Header --------------------------------- */
 
 /** Header of the mobile drawer with brand logo and close button. */
-function DrawerHeader({
+const DrawerHeader = ({
   closeBtnRef,
   onClose,
 }: {
   closeBtnRef: RefObject<HTMLButtonElement | null>
   onClose: () => void
-}) {
+}) => {
   return (
     <div className="flex items-center gap-2.5 border-b border-sidebar-border px-4 pb-4 pt-5">
       <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
@@ -90,22 +90,22 @@ function DrawerHeader({
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-serif text-[15px] font-semibold leading-tight tracking-tight">
-          {t('drawer.brand')}
+          {translate('drawer.brand')}
         </span>
         <a
           href={`${RELEASES_BASE_URL}/tag/v${packageJson.version}`}
           target="_blank"
           rel="noreferrer"
-          aria-label={t('drawer.releaseAriaLabel', packageJson.version)}
+          aria-label={translate('drawer.releaseAriaLabel', packageJson.version)}
           className="inline-flex min-h-[44px] items-center text-caption uppercase tracking-[0.14em] text-ink-faint transition-colors hover:text-saffron focus-ring"
         >
-          {t('drawer.releaseBadge', packageJson.version)}
+          {translate('drawer.releaseBadge', packageJson.version)}
         </a>
       </div>
       <button
         ref={closeBtnRef}
         onClick={onClose}
-        aria-label={t('drawer.close')}
+        aria-label={translate('drawer.close')}
         className="-mr-1 flex-shrink-0 rounded-md p-2 text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
       >
         <X className="h-4 w-4" />
@@ -117,18 +117,18 @@ function DrawerHeader({
 /* ------------------------------- Tab switcher ------------------------------ */
 
 /** Tab switcher for toggling between navigation and search modes. */
-function TabSwitcher({
+const TabSwitcher = ({
   view,
   setView,
 }: {
   view: 'nav' | 'search'
   setView: (v: 'nav' | 'search') => void
-}) {
+}) => {
   return (
     <div className="px-3 pt-3">
       <div
         role="tablist"
-        aria-label={t('drawer.tabsAriaLabel')}
+        aria-label={translate('drawer.tabsAriaLabel')}
         className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1"
       >
         <button
@@ -142,7 +142,7 @@ function TabSwitcher({
               : 'text-ink-mute hover:text-ink',
           )}
         >
-          {t('drawer.tab.navigate')}
+          {translate('drawer.tab.navigate')}
         </button>
         <button
           role="tab"
@@ -155,7 +155,7 @@ function TabSwitcher({
               : 'text-ink-mute hover:text-ink',
           )}
         >
-          {t('drawer.tab.search')}
+          {translate('drawer.tab.search')}
         </button>
       </div>
     </div>
@@ -165,7 +165,7 @@ function TabSwitcher({
 /* --------------------------------- Nav tab --------------------------------- */
 
 /** Navigation tab listing all sidebar nav groups with active state. */
-function NavTab({ onNavigate }: { onNavigate: () => void }) {
+const NavTab = ({ onNavigate }: { onNavigate: () => void }) => {
   const currentView = useStudioStore((s) => s.currentView)
   const setView = useStudioStore((s) => s.setView)
 
@@ -175,7 +175,7 @@ function NavTab({ onNavigate }: { onNavigate: () => void }) {
   }
 
   return (
-    <nav className="px-3 pb-3 pt-3" aria-label={t('drawer.navAriaLabel')}>
+    <nav className="px-3 pb-3 pt-3" aria-label={translate('drawer.navAriaLabel')}>
       {NAV_GROUPS.map((group) => (
         <div key={group.label} className="mb-3.5">
           <div className="mb-1.5 px-2 text-caption font-semibold uppercase tracking-[0.14em] text-ink-faint">
@@ -208,7 +208,7 @@ function NavTab({ onNavigate }: { onNavigate: () => void }) {
                     <span className="flex-1 text-left">{item.label}</span>
                     {item.experimental && (
                       <span className="rounded-full border border-dashed border-saffron/40 px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-saffron-deep">
-                        {t('drawer.lab')}
+                        {translate('drawer.lab')}
                       </span>
                     )}
                     {item.shortcut && (
@@ -230,7 +230,7 @@ function NavTab({ onNavigate }: { onNavigate: () => void }) {
 /* ------------------------------- Search tab -------------------------------- */
 
 /** Search tab with keyword/ranked toggle and entity results list. */
-function SearchTab({ onSelect }: { onSelect: () => void }) {
+const SearchTab = ({ onSelect }: { onSelect: () => void }) => {
   const searchQuery = useStudioStore((s) => s.searchQuery)
   const setSearchQuery = useStudioStore((s) => s.setSearchQuery)
   const entities = useStudioStore((s) => s.entities)
@@ -251,7 +251,7 @@ function SearchTab({ onSelect }: { onSelect: () => void }) {
     : filtered
 
   // Empty-state copy follows the desktop SearchPanel exactly
-  const emptyCopy = searchQuery ? t('drawer.search.empty') : t('drawer.search.libraryEmpty')
+  const emptyCopy = searchQuery ? translate('drawer.search.empty') : translate('drawer.search.libraryEmpty')
 
   return (
     <div className="flex h-full flex-col">
@@ -261,8 +261,8 @@ function SearchTab({ onSelect }: { onSelect: () => void }) {
           <input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t('drawer.search.placeholder')}
-            aria-label={t('drawer.search.ariaLabel')}
+            placeholder={translate('drawer.search.placeholder')}
+            aria-label={translate('drawer.search.ariaLabel')}
             className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-3 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/30"
           />
         </div>
@@ -301,7 +301,7 @@ function SearchTab({ onSelect }: { onSelect: () => void }) {
             <p className="text-[12px] text-ink-mute">{emptyCopy}</p>
           </div>
         ) : (
-          <ul className="space-y-1.5" role="list" aria-label={t('drawer.search.resultsAriaLabel')}>
+          <ul className="space-y-1.5" role="list" aria-label={translate('drawer.search.resultsAriaLabel')}>
             {displayEntities.map((e) => {
               const meta = getEntityTypeMeta(e.type)
               return (
@@ -337,10 +337,10 @@ function SearchTab({ onSelect }: { onSelect: () => void }) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-label font-medium text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-400">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            {t('drawer.offlineReady')}
+            {translate('drawer.offlineReady')}
           </div>
           <span className="text-label text-ink-faint">
-            {t('drawer.entityCount', String(entities.length))}
+            {translate('drawer.entityCount', String(entities.length))}
           </span>
         </div>
       </div>
@@ -351,7 +351,7 @@ function SearchTab({ onSelect }: { onSelect: () => void }) {
 /* --------------------------------- Footer ---------------------------------- */
 
 /** Footer of the mobile drawer with theme toggle and entity count. */
-function DrawerFooter() {
+const DrawerFooter = () => {
   const { theme, setTheme } = useTheme()
   const entities = useStudioStore((s) => s.entities)
   // The drawer is only opened via a client tap, so by the time it mounts the
@@ -366,25 +366,25 @@ function DrawerFooter() {
       <div className="flex items-center gap-2">
         <button
           onClick={toggle}
-          aria-label={isDark ? t('drawer.theme.lightAria') : t('drawer.theme.darkAria')}
+          aria-label={isDark ? translate('drawer.theme.lightAria') : translate('drawer.theme.darkAria')}
           className="flex flex-1 items-center gap-2 rounded-md px-2.5 py-1.5 text-[12px] font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
         >
           {isDark ? (
             <>
               <Sun className="h-4 w-4" />
-              <span>{t('drawer.theme.light')}</span>
+              <span>{translate('drawer.theme.light')}</span>
             </>
           ) : (
             <>
               <Moon className="h-4 w-4" />
-              <span>{t('drawer.theme.dark')}</span>
+              <span>{translate('drawer.theme.dark')}</span>
             </>
           )}
         </button>
       </div>
       <div className="mt-2 flex items-center gap-1.5 px-2.5 text-label text-ink-faint">
         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-        {t('drawer.footer.localSearch', String(entities.length))}
+        {translate('drawer.footer.localSearch', String(entities.length))}
       </div>
     </div>
   )

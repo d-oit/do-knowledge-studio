@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils'
 import { usePresence, type UserPresence } from '@/lib/sync/use-presence'
-import { t } from '@/lib/i18n/messages/presence'
+import { translate } from '@/lib/i18n/messages/presence'
 
 interface PresenceIndicatorProps {
   className?: string
@@ -34,7 +34,7 @@ export function PresenceIndicator({ className }: PresenceIndicatorProps) {
         )}
       </div>
       <span className="text-[11px] text-ink-faint">
-        {t('presence.online', String(peerCount))}
+        {translate('presence.online', String(peerCount))}
       </span>
     </div>
   )
@@ -75,7 +75,7 @@ function PresenceRow({
       <div className="flex-1">
         <div className="font-medium text-ink">
           {presence.name}
-          {isLocal && <span className="ml-1 text-ink-faint">{t('presence.you')}</span>}
+          {isLocal && <span className="ml-1 text-ink-faint">{translate('presence.you')}</span>}
         </div>
         <div className="text-[11px] text-ink-faint">
           {presence.currentView}

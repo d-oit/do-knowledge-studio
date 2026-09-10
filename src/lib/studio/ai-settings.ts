@@ -105,7 +105,7 @@ function idbSet(key: IDBValidKey, value: unknown): Promise<void> {
 
 // ── Provider / model migrations (unchanged logic) ────────────────────
 
-function migrateProvider(stored: StoredSettings): AIProvider {
+const migrateProvider = (stored: StoredSettings): AIProvider => {
   if (
     stored.provider === 'openrouter' ||
     stored.provider === 'ollama' ||
@@ -327,7 +327,7 @@ export function getSessionOnlyMessage(): string {
 }
 
 /** Return the API endpoint URL for a given provider. */
-export function getProviderEndpoint(provider: AIProvider): string {
+export const getProviderEndpoint = (provider: AIProvider): string => {
   switch (provider) {
     case 'openrouter':
       return 'https://openrouter.ai/api/v1/chat/completions'

@@ -22,4 +22,4 @@ const messages = {
   'timeline.empty.action': 'Create an entity',
 } as const
 
-export const t = makeT(messages)
+export const translate = makeT(messages)

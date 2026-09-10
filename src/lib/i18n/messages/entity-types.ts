@@ -12,4 +12,4 @@ const messages = {
   'entity-types.neutralLabel': 'Item',
 } as const
 
-export const t = makeT(messages)
+export const translate = makeT(messages)

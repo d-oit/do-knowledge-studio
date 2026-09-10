@@ -182,6 +182,20 @@ const toRows = (output: EmbeddingTensor): number[][] => {
   return output.tolist() as number[][]
 }
 
+/** Runs the extractor over prepared texts, mapping failures to EmbedderError. */
+const runInference = async (
+  extractor: EmbeddingPipeline,
+  prepared: string[],
+  signal?: AbortSignal,
+): Promise<EmbeddingTensor> => {
+  try {
+    return await raceWithAbort(extractor(prepared, { pooling: EMBED_POOLING }), signal)
+  } catch (err) {
+    if (isAbortError(err)) throw err
+    throw new EmbedderError('Semantic embedding inference failed', { cause: err })
+  }
+}
+
 /**
  * Embeds texts into L2-normalized vectors. Batch input is truncated per
  * document and mean-pooled. Aborting the signal rejects with `AbortError`.
@@ -203,13 +217,7 @@ export const embedTexts = async (
   const prepared = texts.map((text) => truncateForEmbedding(text).trim())
   if (signal?.aborted) throw abortError()
 
-  let output: EmbeddingTensor
-  try {
-    output = await raceWithAbort(extractor(prepared, { pooling: EMBED_POOLING }), signal)
-  } catch (err) {
-    if (isAbortError(err)) throw err
-    throw new EmbedderError('Semantic embedding inference failed', { cause: err })
-  }
+  const output = await runInference(extractor, prepared, signal)
   if (signal?.aborted) throw abortError()
 
   return toRows(output).map(normalizeEmbedding)

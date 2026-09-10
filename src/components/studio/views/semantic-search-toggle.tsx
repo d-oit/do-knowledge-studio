@@ -2,7 +2,7 @@
 
 import { memo } from 'react'
 import { Switch } from '@/components/ui/switch'
-import { t } from '@/lib/i18n/messages/search'
+import { translate } from '@/lib/i18n/messages/search'
 import { cn } from '@/lib/utils'
 
 interface SemanticSearchToggleProps {
@@ -28,14 +28,14 @@ export const SemanticSearchToggle = memo(function SemanticSearchToggle({
         'flex min-h-[44px] cursor-pointer select-none items-center gap-2 rounded-md border border-border bg-background px-3 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-within:ring-1 focus-within:ring-saffron/30',
         className,
       )}
-      title={t('search.semanticToggleHint')}
+      title={translate('search.semanticToggleHint')}
     >
       <Switch
         checked={checked}
         onCheckedChange={onCheckedChange}
-        aria-label={t('search.semanticToggleLabel')}
+        aria-label={translate('search.semanticToggleLabel')}
       />
-      {t('search.semanticToggleLabel')}
+      {translate('search.semanticToggleLabel')}
     </label>
   )
 })

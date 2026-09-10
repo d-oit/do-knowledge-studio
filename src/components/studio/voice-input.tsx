@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 import { useSpeechRecognition } from '@/lib/use-speech-recognition'
 import { useEffect, useState, useCallback } from 'react'
 import { parseIntent, formatIntentSummary, type Intent } from '@/lib/nlp'
-import { t } from '@/lib/i18n/messages/voice-input'
+import { translate } from '@/lib/i18n/messages/voice-input'
 
 interface VoiceInputProps {
   onTranscript: (text: string) => void
@@ -16,13 +16,13 @@ interface VoiceInputProps {
 }
 
 /** Toggle button for browser speech recognition with live interim transcript display. */
-export function VoiceInput({
+export const VoiceInput = ({
   onTranscript,
   onIntent,
   className,
   disabled,
   showIntentPreview = false,
-}: VoiceInputProps) {
+}: VoiceInputProps) => {
   const {
     isSupported,
     isListening,
@@ -77,7 +77,7 @@ export function VoiceInput({
             : 'text-ink-faint hover:bg-border hover:text-ink',
           disabled && 'opacity-40',
         )}
-        aria-label={isListening ? t('voice.stopRecording') : t('voice.startInput')}
+        aria-label={isListening ? translate('voice.stopRecording') : translate('voice.startInput')}
         aria-pressed={isListening}
       >
         {isListening ? (

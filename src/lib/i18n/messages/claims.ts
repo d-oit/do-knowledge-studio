@@ -44,4 +44,4 @@ const messages = {
   'claims.noneFound': 'No extractable assertions found in this note.',
 } as const
 
-export const t = makeT(messages)
+export const translate = makeT(messages)

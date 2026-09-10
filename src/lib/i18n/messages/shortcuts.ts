@@ -90,5 +90,5 @@ const messages = {
   'shortcuts.action.newEntity': 'New entity',
 } as const
 
-/** Typed `t` helper bound to the shortcuts dialog message scope. */
-export const t = makeT(messages)
+/** Typed `translate` helper bound to the shortcuts dialog message scope. */
+export const translate = makeT(messages)

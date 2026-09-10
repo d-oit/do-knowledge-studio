@@ -37,7 +37,7 @@ function getNodeIndentStyle(level: number): React.CSSProperties {
 }
 
 /** Interactive mind map view with expandable tree, keyboard navigation, and PNG export. */
-export function MindMapView() {
+export const MindMapView = () => {
   const entities = useStudioStore((s) => s.entities)
   const selectEntity = useStudioStore((s) => s.selectEntity)
   const setView = useStudioStore((s) => s.setView)

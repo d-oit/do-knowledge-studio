@@ -23,5 +23,5 @@ const messages = {
   'qr.pointHint': 'Point camera at QR code from another device',
 } as const
 
-/** Typed `t` helper bound to the QR pairing message scope. */
-export const t = makeT(messages)
+/** Typed `translate` helper bound to the QR pairing message scope. */
+export const translate = makeT(messages)

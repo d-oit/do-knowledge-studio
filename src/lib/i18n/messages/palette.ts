@@ -47,5 +47,5 @@ const messages = {
   'palette.footer.results': (count: string) => `${count} results`,
 } as const
 
-/** Typed `t` helper bound to the command palette message scope. */
-export const t = makeT(messages)
+/** Typed `translate` helper bound to the command palette message scope. */
+export const translate = makeT(messages)

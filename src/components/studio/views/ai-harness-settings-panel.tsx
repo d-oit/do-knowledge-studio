@@ -18,7 +18,7 @@ import {
 } from '@/lib/ai'
 import { DEFAULT_MODEL, DEFAULT_OLLAMA_BASE_URL } from '@/lib/ai/types'
 import { DEFAULT_LOCAL_MODELS, LOCAL_PROVIDER_ID } from '@/lib/ai'
-import { t as tAi } from '@/lib/i18n/messages/ai'
+import { translate as tAi } from '@/lib/i18n/messages/ai'
 import { Field, PROVIDERS } from './ai-harness-settings'
 import { SwitchToggle } from '../ui/shared-primitives'
 

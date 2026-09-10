@@ -20,6 +20,23 @@ const ASSERTION_MARKER = /\bassertion\s*:\s*/gi
 const SOURCE_PREFIX = /^source\s*:/i
 
 /**
+ * Resolves the close paren matching `openIndex`, tolerating nested groups and
+ * scanning only up to `scanLimit`. Returns the index just past the close
+ * paren, or -1 when the group is unbalanced before the limit.
+ */
+const findMatchingClose = (block: string, openIndex: number, scanLimit: number): number => {
+  let depth = 1
+  let cursor = openIndex + 1
+  while (cursor < scanLimit && depth > 0) {
+    const char = block[cursor]
+    if (char === '(') depth += 1
+    else if (char === ')') depth -= 1
+    cursor += 1
+  }
+  return depth === 0 ? cursor : -1
+}
+
+/**
  * Finds the last parenthesized group in `block` whose content starts with
  * `Source:`. Handles nested parens and returns the group's start index plus
  * the cleaned source value. Returns null when there is no source group.
@@ -35,23 +52,15 @@ const findSourceGroup = (block: string): { start: number; value: string } | null
     const openIndex = block.lastIndexOf('(', searchFrom)
     if (openIndex === -1) return null
 
-    // Resolve the matching close paren, tolerating nested groups.
-    let depth = 1
-    let cursor = openIndex + 1
-    while (cursor < scanLimit && depth > 0) {
-      const char = block[cursor]
-      if (char === '(') depth += 1
-      else if (char === ')') depth -= 1
-      cursor += 1
-    }
-    if (depth !== 0) {
+    const closePast = findMatchingClose(block, openIndex, scanLimit)
+    if (closePast === -1) {
       // Unbalanced group — treat its `(` as plain text, keep scanning left.
       scanLimit = openIndex
       searchFrom = openIndex - 1
       continue
     }
 
-    const inner = block.slice(openIndex + 1, cursor - 1).trim()
+    const inner = block.slice(openIndex + 1, closePast - 1).trim()
     if (SOURCE_PREFIX.test(inner)) {
       return {
         start: openIndex,
@@ -61,6 +70,15 @@ const findSourceGroup = (block: string): { start: number; value: string } | null
     searchFrom = openIndex - 1
   }
   return null
+}
+
+/** Parses one assertion block into a statement, stripping its source group. */
+const parseBlock = (block: string): { statement: string; source?: string } | null => {
+  const sourceGroup = findSourceGroup(block)
+  const statement = sourceGroup ? block.slice(0, sourceGroup.start).trim() : block.trim()
+  if (!statement) return null
+  const source = sourceGroup && sourceGroup.value.length > 0 ? sourceGroup.value : undefined
+  return { statement, source }
 }
 
 /**
@@ -78,20 +96,16 @@ export const extractClaimsFromText = (text: string): ParsedClaimDraft[] => {
     const blockStart = marker.index + marker[0].length
     const next = markers[index + 1]
     const blockEnd = next ? next.index : text.length
-    const block = text.slice(blockStart, blockEnd)
+    const parsed = parseBlock(text.slice(blockStart, blockEnd))
+    if (parsed === null) continue
 
-    const sourceGroup = findSourceGroup(block)
-    const statement = sourceGroup ? block.slice(0, sourceGroup.start).trim() : block.trim()
-    if (!statement) continue
-
-    const source = sourceGroup && sourceGroup.value.length > 0 ? sourceGroup.value : undefined
     // JSON-encoded tuple key: no single-char delimiter is safe because both
     // statement and source are unrestricted strings (a NUL inside either
     // would otherwise collide distinct claims onto one key).
-    const key = JSON.stringify([statement, source ?? ''])
+    const key = JSON.stringify([parsed.statement, parsed.source ?? ''])
     if (seen.has(key)) continue
     seen.add(key)
-    drafts.push({ statement, source })
+    drafts.push({ statement: parsed.statement, source: parsed.source })
   }
   return drafts
 }

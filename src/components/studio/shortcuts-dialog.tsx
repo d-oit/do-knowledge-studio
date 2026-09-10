@@ -8,7 +8,7 @@ import type { ViewId } from '@/lib/studio/types'
 import { Overlay } from '@/components/studio/ui/shared-primitives'
 import { cn } from '@/lib/utils'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
-import { t } from '@/lib/i18n/messages/shortcuts'
+import { translate } from '@/lib/i18n/messages/shortcuts'
 
 interface ShortcutRow {
   keys: string
@@ -17,44 +17,44 @@ interface ShortcutRow {
 
 const SHORTCUTS: { group: string; rows: ShortcutRow[] }[] = [
   {
-    group: t('shortcuts.group.global'),
+    group: translate('shortcuts.group.global'),
     rows: [
-      { keys: '⌘K', action: t('shortcuts.action.openPalette') },
-      { keys: '?', action: t('shortcuts.action.showHelp') },
-      { keys: 'Esc', action: t('shortcuts.action.closeOverlay') },
+      { keys: '⌘K', action: translate('shortcuts.action.openPalette') },
+      { keys: '?', action: translate('shortcuts.action.showHelp') },
+      { keys: 'Esc', action: translate('shortcuts.action.closeOverlay') },
     ],
   },
   {
-    group: t('shortcuts.group.navigate'),
+    group: translate('shortcuts.group.navigate'),
     rows: [
-      { keys: 'G  H', action: t('shortcuts.action.goHome') },
-      { keys: 'G  E', action: t('shortcuts.action.goEditor') },
-      { keys: 'G  L', action: t('shortcuts.action.goLibrary') },
-      { keys: 'G  G', action: t('shortcuts.action.goGraph') },
-      { keys: 'G  M', action: t('shortcuts.action.goMindMap') },
-      { keys: 'G  C', action: t('shortcuts.action.goChat') },
-      { keys: 'G  A', action: t('shortcuts.action.goAi') },
-      { keys: 'G  T', action: t('shortcuts.action.goTriz') },
-      { keys: 'G  X', action: t('shortcuts.action.goExport') },
-      { keys: 'G  S', action: t('shortcuts.action.goSync') },
+      { keys: 'G  H', action: translate('shortcuts.action.goHome') },
+      { keys: 'G  E', action: translate('shortcuts.action.goEditor') },
+      { keys: 'G  L', action: translate('shortcuts.action.goLibrary') },
+      { keys: 'G  G', action: translate('shortcuts.action.goGraph') },
+      { keys: 'G  M', action: translate('shortcuts.action.goMindMap') },
+      { keys: 'G  C', action: translate('shortcuts.action.goChat') },
+      { keys: 'G  A', action: translate('shortcuts.action.goAi') },
+      { keys: 'G  T', action: translate('shortcuts.action.goTriz') },
+      { keys: 'G  X', action: translate('shortcuts.action.goExport') },
+      { keys: 'G  S', action: translate('shortcuts.action.goSync') },
     ],
   },
   {
-    group: t('shortcuts.group.editor'),
+    group: translate('shortcuts.group.editor'),
     rows: [
-      { keys: '⌘B', action: t('shortcuts.action.bold') },
-      { keys: '⌘I', action: t('shortcuts.action.italic') },
-      { keys: '⌘U', action: t('shortcuts.action.underline') },
-      { keys: '⌘⇧X', action: t('shortcuts.action.strikethrough') },
-      { keys: '⌘⇧H', action: t('shortcuts.action.highlight') },
-      { keys: '⌘⇧M', action: t('shortcuts.action.codeBlock') },
+      { keys: '⌘B', action: translate('shortcuts.action.bold') },
+      { keys: '⌘I', action: translate('shortcuts.action.italic') },
+      { keys: '⌘U', action: translate('shortcuts.action.underline') },
+      { keys: '⌘⇧X', action: translate('shortcuts.action.strikethrough') },
+      { keys: '⌘⇧H', action: translate('shortcuts.action.highlight') },
+      { keys: '⌘⇧M', action: translate('shortcuts.action.codeBlock') },
     ],
   },
   {
-    group: t('shortcuts.group.library'),
+    group: translate('shortcuts.group.library'),
     rows: [
-      { keys: '⌘F', action: t('shortcuts.action.focusSearch') },
-      { keys: '⌘N', action: t('shortcuts.action.newEntity') },
+      { keys: '⌘F', action: translate('shortcuts.action.focusSearch') },
+      { keys: '⌘N', action: translate('shortcuts.action.newEntity') },
     ],
   },
 ]
@@ -248,7 +248,7 @@ export const ShortcutsDialog = (): React.JSX.Element => {
       <Overlay
         open={open}
         onClose={() => { setOpen(false) }}
-        aria-label={t('shortcuts.ariaLabel')}
+        aria-label={translate('shortcuts.ariaLabel')}
         variant="center"
         closeOnEscape={false}
         initialFocusRef={closeBtnRef}
@@ -259,13 +259,13 @@ export const ShortcutsDialog = (): React.JSX.Element => {
           <div className="flex items-center gap-2">
             <Keyboard className="h-4 w-4 text-saffron" />
             <h2 className="font-serif text-[15px] font-semibold text-ink">
-              {t('shortcuts.title')}
+              {translate('shortcuts.title')}
             </h2>
           </div>
           <button
             ref={closeBtnRef}
             onClick={() => { setOpen(false) }}
-            aria-label={t('shortcuts.close')}
+            aria-label={translate('shortcuts.close')}
             className="rounded-md p-1.5 text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
           >
             <X className="h-4 w-4" />
@@ -281,12 +281,12 @@ export const ShortcutsDialog = (): React.JSX.Element => {
               type="text"
               value={filter}
               onChange={(e) => { setFilter(e.target.value); }}
-              placeholder={t('shortcuts.filterPlaceholder')}
+              placeholder={translate('shortcuts.filterPlaceholder')}
               className={cn(
                 'w-full rounded-md border border-border bg-background py-1.5 pl-8 text-body-sm text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30',
                 filter ? 'pr-11' : 'pr-3',
               )}
-              aria-label={t('shortcuts.filterAriaLabel')}
+              aria-label={translate('shortcuts.filterAriaLabel')}
             />
             {filter && (
               <button
@@ -295,8 +295,8 @@ export const ShortcutsDialog = (): React.JSX.Element => {
                   setFilter('')
                   filterInputRef.current?.focus()
                 }}
-                aria-label={t('shortcuts.clearFilter')}
-                title={t('shortcuts.clearFilter')}
+                aria-label={translate('shortcuts.clearFilter')}
+                title={translate('shortcuts.clearFilter')}
                 className="absolute right-1.5 top-1/2 size-9 -translate-y-1/2 inline-flex items-center justify-center rounded text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
               >
                 <X className="h-3.5 w-3.5" />
@@ -309,7 +309,7 @@ export const ShortcutsDialog = (): React.JSX.Element => {
         <div className="max-h-[70vh] overflow-y-auto px-5 py-4">
           {filteredShortcuts.length === 0 ? (
             <p className="py-8 text-center text-body-sm text-ink-mute">
-              {t('shortcuts.noMatch', filter)}
+              {translate('shortcuts.noMatch', filter)}
             </p>
           ) : (
             <div className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
@@ -340,8 +340,8 @@ export const ShortcutsDialog = (): React.JSX.Element => {
           )}
 
           <p className="mt-5 border-t border-border pt-3 text-label leading-relaxed text-ink-faint">
-            {t('shortcuts.tipPrefix')}<kbd className="rounded border border-border bg-muted px-1 font-mono text-caption">G</kbd>
-            {t('shortcuts.tipSuffix')}
+            {translate('shortcuts.tipPrefix')}<kbd className="rounded border border-border bg-muted px-1 font-mono text-caption">G</kbd>
+            {translate('shortcuts.tipSuffix')}
           </p>
         </div>
       </Overlay>
@@ -363,7 +363,7 @@ export const ShortcutsDialog = (): React.JSX.Element => {
             <kbd className="rounded border border-saffron/40 bg-saffron-soft px-1.5 py-0 font-mono text-caption font-semibold text-saffron-deep">
               g
             </kbd>
-            <span className="text-label font-medium text-ink-soft">{t('shortcuts.gIndicator')}</span>
+            <span className="text-label font-medium text-ink-soft">{translate('shortcuts.gIndicator')}</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -383,11 +383,11 @@ export const ShortcutsTrigger = ({ className }: { className?: string }): React.J
       type="button"
       onClick={() => { setOpen(true) }}
       className={className}
-      aria-label={t('shortcuts.triggerAria')}
-      title={t('shortcuts.triggerTitle')}
+      aria-label={translate('shortcuts.triggerAria')}
+      title={translate('shortcuts.triggerTitle')}
     >
       <Keyboard className="h-4 w-4" />
-      <span>{t('shortcuts.triggerLabel')}</span>
+      <span>{translate('shortcuts.triggerLabel')}</span>
     </button>
   )
 }

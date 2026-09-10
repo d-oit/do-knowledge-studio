@@ -41,5 +41,5 @@ const messages = {
   'import.dropzone.chooseButton': 'Choose file',
 } as const
 
-/** Typed `t` helper bound to the import message scope. */
-export const t = makeT(messages)
+/** Typed `translate` helper bound to the import message scope. */
+export const translate = makeT(messages)

@@ -13,5 +13,5 @@ const messages = {
   'voice.startInput': 'Start voice input',
 } as const
 
-/** Typed `t` helper bound to the voice input message scope. */
-export const t = makeT(messages)
+/** Typed `translate` helper bound to the voice input message scope. */
+export const translate = makeT(messages)

@@ -87,5 +87,5 @@ const messages = {
   'export.reset.confirm': 'Reset everything',
 } as const
 
-/** Typed `t` helper bound to the export view message scope. */
-export const t = makeT(messages)
+/** Typed `translate` helper bound to the export view message scope. */
+export const translate = makeT(messages)

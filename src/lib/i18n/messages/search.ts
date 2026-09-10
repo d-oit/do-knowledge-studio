@@ -27,5 +27,5 @@ const messages = {
     'Search by meaning is disabled. Results use exact keyword matching.',
 } as const
 
-/** Typed `t` helper bound to the search message scope. */
-export const t = makeT(messages)
+/** Typed `translate` helper bound to the search message scope. */
+export const translate = makeT(messages)

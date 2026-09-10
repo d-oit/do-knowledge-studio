@@ -107,6 +107,27 @@ export const findMentionTokens = (content: string): MentionToken[] => {
   return tokens
 }
 
+/** True when `position` falls strictly inside a complete mention token. */
+const isInsideToken = (position: number, tokens: MentionToken[]): boolean =>
+  tokens.some((t) => position > t.start && position < t.end)
+
+/**
+ * Index of the nearest `@` at or before `caret` that is not part of a token,
+ * or -1 when there is none.
+ */
+const findMentionAt = (content: string, caret: number, tokens: MentionToken[]): number => {
+  for (let i = caret - 1; i >= 0; i -= 1) {
+    if (content[i] !== '@') continue
+    if (isInsideToken(i, tokens)) continue
+    return i
+  }
+  return -1
+}
+
+/** A `@`-query is only active when it contains no whitespace or `]`. */
+const isValidMentionQuery = (query: string): boolean =>
+  !/\s/.test(query) && !query.includes(']')
+
 /**
  * Detects an active mention-typing context at the caret.
  *
@@ -119,21 +140,14 @@ export const getMentionTrigger = (content: string, caret: number): MentionTrigge
   if (caret <= 0) return NO_MENTION_TRIGGER
   const tokens = findMentionTokens(content)
   // Caret inside a complete token? That is editing raw token text, not typing a mention.
-  if (tokens.some((t) => caret > t.start && caret < t.end)) return NO_MENTION_TRIGGER
+  if (isInsideToken(caret, tokens)) return NO_MENTION_TRIGGER
 
   // Scan backwards for the nearest '@' that is not part of a token.
-  let at = -1
-  for (let i = caret - 1; i >= 0; i -= 1) {
-    if (content[i] !== '@') continue
-    if (tokens.some((t) => i > t.start && i < t.end)) continue
-    at = i
-    break
-  }
+  const at = findMentionAt(content, caret, tokens)
   if (at === -1) return NO_MENTION_TRIGGER
 
   const query = content.slice(at + 1, caret)
-  if (/\s/.test(query)) return NO_MENTION_TRIGGER
-  if (query.includes(']')) return NO_MENTION_TRIGGER
+  if (!isValidMentionQuery(query)) return NO_MENTION_TRIGGER
   return { active: true, start: at, query }
 }
 

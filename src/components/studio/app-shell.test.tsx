@@ -162,7 +162,7 @@ describe('AppShell', () => {
 
   it('renders the footer', () => {
     render(<AppShell />)
-    expect(screen.getByText(/Knowledge Studio — local-first knowledge engine/)).toBeDefined()
+    expect(screen.getByText(/Knowledge Studio — local-first knowledge engine/u)).toBeDefined()
   })
 
   it('footer has contentinfo role', () => {

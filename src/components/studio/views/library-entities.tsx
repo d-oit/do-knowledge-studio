@@ -38,38 +38,28 @@ const useMeasurableHeight = (ref: RefObject<HTMLElement | null>): boolean => {
   const [hasHeight, setHasHeight] = useState(false)
   useLayoutEffect(() => {
     const el = ref.current
-    if (!el) return
-    const update = () => { setHasHeight(el.clientHeight > 0) }
-    update()
-    if (typeof ResizeObserver !== 'undefined') {
-      const observer = new ResizeObserver(update)
-      observer.observe(el)
-      return () => { observer.disconnect() }
+    let observer: ResizeObserver | null = null
+    if (el) {
+      const update = () => { setHasHeight(el.clientHeight > 0) }
+      update()
+      if (typeof ResizeObserver !== 'undefined') {
+        observer = new ResizeObserver(update)
+        observer.observe(el)
+      }
     }
-    return undefined
+    return () => {
+      observer?.disconnect()
+    }
   }, [ref])
   return hasHeight
 }
 
 /**
- * Reads a `--breakpoint-*` theme variable as pixels. The variables are emitted
- * by Tailwind v4 from the @theme block in globals.css (rem is resolved against
- * the root font size), so the virtual grid rows chunk on the same values the
- * `sm:`/`lg:` CSS classes use — one source of truth.
+ * Converts a CSS-length raw value (rem or px) into pixels. `rem` resolves
+ * against the root font size (default 16px when unset). Returns null for any
+ * other unit or a malformed numeric value.
  */
-const readBreakpointPx = (name: string): number | null => {
-  if (
-    typeof window === 'undefined' ||
-    typeof document === 'undefined' ||
-    typeof getComputedStyle !== 'function'
-  ) {
-    return null
-  }
-  // document.documentElement is non-nullable per DOM types; the presence
-  // checks above (window/document) are the environment guard the caller needs.
-  const root = document.documentElement
-  const raw = getComputedStyle(root).getPropertyValue(name).trim()
-  if (!raw) return null
+const resolveLengthPx = (raw: string, root: HTMLElement): number | null => {
   const value = Number.parseFloat(raw)
   if (Number.isNaN(value)) return null
   if (raw.endsWith('rem')) {
@@ -80,23 +70,46 @@ const readBreakpointPx = (name: string): number | null => {
   return null
 }
 
+/**
+ * Reads a `--breakpoint-*` theme variable as pixels. The variables are emitted
+ * by Tailwind v4 from the @theme block in globals.css (rem is resolved against
+ * the root font size), so the virtual grid rows chunk on the same values the
+ * `sm:`/`lg:` CSS classes use — one source of truth.
+ */
+const readBreakpointPx = (name: string): number | null => {
+  if (typeof window === 'undefined') return null
+  if (typeof document === 'undefined') return null
+  if (typeof getComputedStyle !== 'function') return null
+  // document.documentElement is non-nullable per DOM types; the presence
+  // checks above (window/document) are the environment guard the caller needs.
+  const root = document.documentElement
+  const raw = getComputedStyle(root).getPropertyValue(name).trim()
+  if (!raw) return null
+  return resolveLengthPx(raw, root)
+}
+
 /** Tracks the responsive grid column count (1 / 2 / 3) matching the CSS breakpoints. */
 const useColumnCount = (): number => {
   const [columns, setColumns] = useState(1)
   useLayoutEffect(() => {
     // jsdom has no matchMedia — tests stay on the single-column eager path.
-    if (typeof window.matchMedia !== 'function') return
-    const smPx = readBreakpointPx('--breakpoint-sm') ?? 640
-    const lgPx = readBreakpointPx('--breakpoint-lg') ?? 1024
-    const mqTwo = window.matchMedia(`(min-width: ${smPx}px)`)
-    const mqThree = window.matchMedia(`(min-width: ${lgPx}px)`)
-    const update = () => { setColumns(mqThree.matches ? 3 : mqTwo.matches ? 2 : 1) }
-    update()
-    mqTwo.addEventListener('change', update)
-    mqThree.addEventListener('change', update)
+    let mqTwo: MediaQueryList | null = null
+    let mqThree: MediaQueryList | null = null
+    const update = () => {
+      if (mqThree && mqTwo) setColumns(mqThree.matches ? 3 : mqTwo.matches ? 2 : 1)
+    }
+    if (typeof window.matchMedia === 'function') {
+      const smPx = readBreakpointPx('--breakpoint-sm') ?? 640
+      const lgPx = readBreakpointPx('--breakpoint-lg') ?? 1024
+      mqTwo = window.matchMedia(`(min-width: ${smPx}px)`)
+      mqThree = window.matchMedia(`(min-width: ${lgPx}px)`)
+      update()
+      mqTwo.addEventListener('change', update)
+      mqThree.addEventListener('change', update)
+    }
     return () => {
-      mqTwo.removeEventListener('change', update)
-      mqThree.removeEventListener('change', update)
+      mqTwo?.removeEventListener('change', update)
+      mqThree?.removeEventListener('change', update)
     }
   }, [])
   return columns
@@ -137,13 +150,13 @@ const chunkBy = <T,>(items: T[], size: number): T[][] => {
 const SCROLL_CONTAINER_CLASS = 'max-h-[65vh] overflow-auto'
 
 /** Grid of entity cards with staggered entrance animation. */
-export function EntityGrid({
+export const EntityGrid = ({
   entities,
   startEdit,
 }: {
   entities: Entity[]
   startEdit: (id: string) => void
-}) {
+}) => {
   // The virtualizer drives re-renders from DOM measurements (scroll/resize),
   // which the React Compiler's auto-memoization does not track — opt out so
   // windowed rows keep mounting on scroll (see plans/128, issue #699).
@@ -216,7 +229,7 @@ export function EntityGrid({
 }
 
 /** Single entity card (entrance animation only in the eager path). */
-function GridCard({
+const GridCard = ({
   entity,
   startEdit,
   index,
@@ -226,7 +239,7 @@ function GridCard({
   startEdit: (id: string) => void
   index: number
   animate: boolean
-}) {
+}) => {
   const meta = getEntityTypeMeta(entity.type)
   return (
     <motion.button
@@ -273,14 +286,26 @@ function GridCard({
   )
 }
 
+/** Column headers for the entity table — extracted to keep EntityTable's JSX shallow. */
+const EntityTableHeader = () => (
+  <thead className="sticky top-0 z-10 bg-card">
+    <tr className="border-b border-border bg-muted/30 text-left text-label font-semibold uppercase tracking-wide text-ink-faint">
+      <th className="px-4 py-2.5">Name</th>
+      <th className="hidden px-4 py-2.5 sm:table-cell">Type</th>
+      <th className="hidden px-4 py-2.5 lg:table-cell">Tags</th>
+      <th className="px-4 py-2.5 text-right">Updated</th>
+    </tr>
+  </thead>
+)
+
 /** Table of entity rows for the library list view. */
-export function EntityTable({
+export const EntityTable = ({
   entities,
   startEdit,
 }: {
   entities: Entity[]
   startEdit: (id: string) => void
-}) {
+}) => {
   // See EntityGrid — windowed rows must re-render on scroll, so opt out of the
   // React Compiler's memoization here too (plans/128, issue #699).
   'use no memo'
@@ -304,14 +329,7 @@ export function EntityTable({
     <div ref={containerRef} className={cn(SCROLL_CONTAINER_CLASS, 'rounded-lg border border-border bg-card')}>
       <table className="w-full">
         <caption className="sr-only">Library entities</caption>
-        <thead className="sticky top-0 z-10 bg-card">
-          <tr className="border-b border-border bg-muted/30 text-left text-label font-semibold uppercase tracking-wide text-ink-faint">
-            <th className="px-4 py-2.5">Name</th>
-            <th className="hidden px-4 py-2.5 sm:table-cell">Type</th>
-            <th className="hidden px-4 py-2.5 lg:table-cell">Tags</th>
-            <th className="px-4 py-2.5 text-right">Updated</th>
-          </tr>
-        </thead>
+        <EntityTableHeader />
         <tbody
           style={
             virtualize ? { position: 'relative', height: virtualizer.getTotalSize() } : undefined
@@ -342,8 +360,28 @@ export function EntityTable({
   )
 }
 
+/** Name cell for an entity table row (icon + truncated name/description). */
+const EntityNameCell = ({ entity }: { entity: Entity }) => {
+  const meta = getEntityTypeMeta(entity.type)
+  return (
+    <td className="px-4 py-3">
+      <div className="flex items-center gap-2.5">
+        <div className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded', meta.bg, meta.text)}>
+          <EntityIcon type={entity.type} className="h-3.5 w-3.5" />
+        </div>
+        <div className="min-w-0">
+          <div className="truncate text-[13px] font-semibold text-ink group-hover:text-saffron-deep">
+            {entity.name}
+          </div>
+          <div className="truncate text-label text-ink-mute">{entity.description}</div>
+        </div>
+      </div>
+    </td>
+  )
+}
+
 /** Single table row (absolutely positioned in the windowed path). */
-function TableRow({
+const TableRow = ({
   entity,
   startEdit,
   vi,
@@ -353,7 +391,7 @@ function TableRow({
   startEdit: (id: string) => void
   vi: VirtualItem | null
   measure?: (node: HTMLTableRowElement | null) => void
-}) {
+}) => {
   const meta = getEntityTypeMeta(entity.type)
   return (
     <tr
@@ -383,19 +421,7 @@ function TableRow({
       }
       className="group cursor-pointer border-b border-border last:border-0 transition-colors hover:bg-muted/30 focus-ring"
     >
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-2.5">
-          <div className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded', meta.bg, meta.text)}>
-            <EntityIcon type={entity.type} className="h-3.5 w-3.5" />
-          </div>
-          <div className="min-w-0">
-            <div className="truncate text-[13px] font-semibold text-ink group-hover:text-saffron-deep">
-              {entity.name}
-            </div>
-            <div className="truncate text-label text-ink-mute">{entity.description}</div>
-          </div>
-        </div>
-      </td>
+      <EntityNameCell entity={entity} />
       <td className="hidden px-4 py-3 sm:table-cell">
         <span className={cn('rounded-full px-2 py-0.5 text-caption font-medium', meta.bg, meta.text)}>
           {meta.label}

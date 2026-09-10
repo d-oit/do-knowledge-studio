@@ -16,5 +16,5 @@ const messages = {
   'offline.banner': 'You are offline — changes will sync when reconnected',
 } as const
 
-/** Typed `t` helper bound to the presence/offline message scope. */
-export const t = makeT(messages)
+/** Typed `translate` helper bound to the presence/offline message scope. */
+export const translate = makeT(messages)

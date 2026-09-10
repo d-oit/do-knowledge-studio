@@ -11,4 +11,4 @@ const messages = {
   'mentions.picker.option': (name: string, typeLabel: string) => `${name} (${typeLabel})`,
 } as const
 
-export const t = makeT(messages)
+export const translate = makeT(messages)

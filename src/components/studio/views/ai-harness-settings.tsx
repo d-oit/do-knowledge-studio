@@ -10,7 +10,7 @@ import {
   DEFAULT_LOCAL_MODELS,
   LOCAL_PROVIDER_ID,
 } from '@/lib/ai'
-import { t as tAi } from '@/lib/i18n/messages/ai'
+import { translate as tAi } from '@/lib/i18n/messages/ai'
 
 /** Configuration entry for a supported AI provider. */
 export interface ProviderOption {

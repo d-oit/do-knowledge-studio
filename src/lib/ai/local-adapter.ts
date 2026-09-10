@@ -1,5 +1,5 @@
 import type { ChatRequest, ChatResult, ProviderAdapter, ProviderId } from './types'
-import { t } from '@/lib/i18n/messages/ai'
+import { translate } from '@/lib/i18n/messages/ai'
 
 // The transformers.js package is deliberately absent from the static import
 // graph: it is a heavyweight client-only bundle, so it is reached ONLY via
@@ -145,7 +145,7 @@ const loadTransformersRuntime = (
       pipelineCache.delete(key)
       if (error instanceof DOMException && error.name === ABORT_ERROR_NAME) throw error
       const reason = error instanceof Error ? error.message : String(error)
-      throw new Error(t('ai.local.error.loadFailed', model, reason))
+      throw new Error(translate('ai.local.error.loadFailed', model, reason))
     })
   pipelineCache.set(key, pending)
   return pending
@@ -205,7 +205,7 @@ const runGeneration = async (
     const full = extractGeneratedContent(output)
     if (streamed) return streamed
     if (full) return full
-    throw new Error(t('ai.local.error.empty'))
+    throw new Error(translate('ai.local.error.empty'))
   } finally {
     signal?.removeEventListener('abort', onAbort)
   }

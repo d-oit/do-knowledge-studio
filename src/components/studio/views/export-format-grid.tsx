@@ -8,7 +8,7 @@ import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { FORMATS, COLOR_MAP } from './export-types'
 import type { ExportFormatId } from './export-types'
 import type { Entity, ViewId } from '@/lib/studio/types'
-import { t } from '@/lib/i18n/messages/export'
+import { translate } from '@/lib/i18n/messages/export'
 
 interface ExportFormatGridProps {
   entities: Entity[]
@@ -34,22 +34,22 @@ export const ExportFormatGrid = memo(({
       className="mb-8"
     >
       <div className="mb-4">
-        <h2 className="font-serif text-lg font-semibold text-ink">{t('export.grid.title')}</h2>
+        <h2 className="font-serif text-lg font-semibold text-ink">{translate('export.grid.title')}</h2>
         <p className="mt-1 text-[13px] text-ink-mute">
-          {t('export.grid.subtitle')}
+          {translate('export.grid.subtitle')}
         </p>
       </div>
 
       {entities.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border bg-card/50 p-8 text-center">
           <Download aria-hidden="true" className="mx-auto mb-3 h-8 w-8 text-ink-faint/40" />
-          <p className="text-[13px] text-ink-mute">{t('export.grid.empty')}</p>
+          <p className="text-[13px] text-ink-mute">{translate('export.grid.empty')}</p>
           <button
             onClick={() => { setView('editor') }}
             className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
           >
             <FileText className="h-3.5 w-3.5" />
-            {t('export.grid.createEntity')}
+            {translate('export.grid.createEntity')}
           </button>
         </div>
       ) : (
@@ -107,12 +107,12 @@ export const ExportFormatGrid = memo(({
               {isAvailable ? (
                 <div className="mt-3 flex items-center gap-1 text-label font-medium text-saffron-deep opacity-0 transition-opacity group-hover:opacity-100">
                   <Download className="h-3 w-3" />
-                  {t('export.grid.exportNow')}
+                  {translate('export.grid.exportNow')}
                   <ArrowRight className="h-3 w-3" />
                 </div>
               ) : (
                 <div className="mt-3 flex items-center gap-1 text-label font-medium text-ink-faint">
-                  {t('export.grid.notAvailable')}
+                  {translate('export.grid.notAvailable')}
                 </div>
               )}
             </button>

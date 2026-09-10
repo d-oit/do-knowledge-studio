@@ -45,9 +45,8 @@ const parseTimestamp = (raw: string | undefined | null): Date | null => {
   return Number.isNaN(date.getTime()) ? null : date
 }
 
-export const buildTimelineGroups = (entities: Entity[], claims: Claim[]): TimelineGroup[] => {
-  const entityById = new Map(entities.map((entity) => [entity.id, entity]))
-
+/** Collects entity markers (skipping unparsable created timestamps). */
+const collectEntityItems = (entities: Entity[]): TimelineItem[] => {
   const items: TimelineItem[] = []
   for (const entity of entities) {
     const date = parseTimestamp(entity.createdAt)
@@ -60,7 +59,15 @@ export const buildTimelineGroups = (entities: Entity[], claims: Claim[]): Timeli
       entityType: entity.type,
     })
   }
+  return items
+}
 
+/**
+ * Collects claim markers. The date is the claim's own createdAt, falling back
+ * to the owning entity's createdAt; claims with neither are skipped.
+ */
+const collectClaimItems = (claims: Claim[], entityById: Map<string, Entity>): TimelineItem[] => {
+  const items: TimelineItem[] = []
   for (const claim of claims) {
     const createdAt = claim.createdAt ?? entityById.get(claim.entityId)?.createdAt
     if (!createdAt) continue
@@ -74,11 +81,11 @@ export const buildTimelineGroups = (entities: Entity[], claims: Claim[]): Timeli
       entityId: claim.entityId,
     })
   }
+  return items
+}
 
-  items.sort(
-    (a, b) => b.date.getTime() - a.date.getTime() || a.label.localeCompare(b.label),
-  )
-
+/** Buckets sorted items into month bands containing day bands (newest first). */
+const bucketTimelineItems = (items: TimelineItem[]): TimelineGroup[] => {
   const groups: TimelineGroup[] = []
   let currentMonth: TimelineGroup | undefined
   let currentDay: TimelineDay | undefined
@@ -97,4 +104,19 @@ export const buildTimelineGroups = (entities: Entity[], claims: Claim[]): Timeli
   }
 
   return groups
+}
+
+export const buildTimelineGroups = (entities: Entity[], claims: Claim[]): TimelineGroup[] => {
+  const entityById = new Map(entities.map((entity) => [entity.id, entity]))
+
+  const items = [
+    ...collectEntityItems(entities),
+    ...collectClaimItems(claims, entityById),
+  ]
+
+  items.sort(
+    (a, b) => b.date.getTime() - a.date.getTime() || a.label.localeCompare(b.label),
+  )
+
+  return bucketTimelineItems(items)
 }

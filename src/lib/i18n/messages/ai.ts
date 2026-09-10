@@ -17,4 +17,4 @@ const messages = {
   'ai.local.error.empty': 'The local model returned an empty response.',
 } as const
 
-export const t = makeT(messages)
+export const translate = makeT(messages)

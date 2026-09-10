@@ -2,11 +2,11 @@
 
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
-import { type EntityType, type Entity } from '@/lib/studio/types'
+import { type AnyEntityType, type EntityType, type Entity, type Claim } from '@/lib/studio/types'
 import { ToggleButtonGroup } from '../ui/shared-primitives'
 import { Checkbox } from '@/components/ui/checkbox'
 import { SemanticSearchToggle } from './semantic-search-toggle'
-import { t } from '@/lib/i18n/messages/search'
+import { translate } from '@/lib/i18n/messages/search'
 import { searchSemantic, type SemanticSearchOutcome } from '@/lib/search/search-worker-client'
 import {
   FileText,
@@ -63,6 +63,179 @@ const SHOW_FEWER_LABEL = 'Show fewer'
 /** Debounce before running a semantic search so keystrokes do not re-embed. */
 const SEMANTIC_DEBOUNCE_MS = 300
 
+/**
+ * Runs a debounced, abortable semantic search whenever the toggle is on and a
+ * query exists. Every keystroke/toggle aborts the in-flight request; because
+ * the embedder is a lazy singleton, the first query pays the model download
+ * and later ones reuse it. Returns the outcome plus a busy flag.
+ */
+const useSemanticSearch = (
+  semanticMode: boolean,
+  query: string,
+  allEntities: Entity[],
+  claims: Claim[],
+) => {
+  const [semanticOutcome, setSemanticOutcome] = useState<SemanticSearchOutcome | null>(null)
+  const [semanticBusy, setSemanticBusy] = useState(false)
+  const semanticQuery = query.trim()
+
+  useEffect(() => {
+    let cancelled = false
+    let controller: AbortController | null = null
+    let debounce: number | undefined
+    if (semanticMode && semanticQuery !== '') {
+      controller = new AbortController()
+      setSemanticOutcome(null)
+      setSemanticBusy(true)
+      debounce = window.setTimeout(() => {
+        void searchSemantic(
+          allEntities,
+          claims,
+          semanticQuery,
+          SEMANTIC_RESULT_LIMIT,
+          controller?.signal,
+        )
+          .then((outcome) => {
+            if (cancelled) return
+            setSemanticOutcome(outcome)
+            setSemanticBusy(false)
+          })
+          .catch((err: unknown) => {
+            if (cancelled) return
+            // Only aborts reject; surface anything else as a lexical fallback
+            // so the search box never dies silently.
+            if (err instanceof DOMException && err.name === 'AbortError') return
+            console.error('Semantic search failed:', err)
+            // Clear — not `{ source: 'lexical', results: [] }` — so the grid
+            // falls back to the lexical `filteredEntities` rather than an
+            // empty semantic result list.
+            setSemanticOutcome(null)
+            setSemanticBusy(false)
+          })
+      }, SEMANTIC_DEBOUNCE_MS)
+    } else {
+      setSemanticOutcome(null)
+      setSemanticBusy(false)
+    }
+    return () => {
+      cancelled = true
+      clearTimeout(debounce)
+      controller?.abort()
+    }
+  }, [semanticMode, semanticQuery, allEntities, claims])
+
+  return { semanticOutcome, semanticBusy }
+}
+
+/**
+ * Resolves ranked semantic result ids (entity ids, or claim ids via their
+ * entity) to entities in rank order — deduped and type-filtered — mirroring
+ * what the lexical path renders into the grid/table.
+ */
+const resolveSemanticEntities = (
+  outcome: SemanticSearchOutcome,
+  entityById: Map<string, Entity>,
+  typeFilter: AnyEntityType | 'all',
+): Entity[] => {
+  const seen = new Set<string>()
+  const resolved: Entity[] = []
+  for (const result of outcome.results) {
+    const entity =
+      entityById.get(result.id) ??
+      (result.entityId !== undefined ? entityById.get(result.entityId) : undefined)
+    if (entity === undefined || seen.has(entity.id)) continue
+    if (typeFilter !== 'all' && entity.type !== typeFilter) continue
+    seen.add(entity.id)
+    resolved.push(entity)
+  }
+  return resolved
+}
+
+/** Surfaces semantic-search loading and lexical-fallback states under the controls. */
+const SemanticStatusBanner = ({
+  active,
+  busy,
+  outcome,
+}: {
+  active: boolean
+  busy: boolean
+  outcome: SemanticSearchOutcome | null
+}) => {
+  if (!active) return null
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="mb-4 flex items-center gap-2 text-caption text-ink-faint"
+    >
+      {busy ? (
+        <>
+          <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+          {translate('search.semanticLoading')}
+        </>
+      ) : outcome?.source === 'semantic' ? (
+        <>
+          <Sparkles className="h-3 w-3" aria-hidden="true" />
+          {translate('search.semanticOnDescription')}
+        </>
+      ) : (
+        <span>{translate('search.semanticUnavailable')}</span>
+      )}
+    </div>
+  )
+}
+
+/** Empty/error placeholder when the library has no entities or no matches. */
+const LibraryEmptyState = ({
+  hasEntities,
+  onStartNew,
+  onClearFilters,
+}: {
+  hasEntities: boolean
+  onStartNew: () => void
+  onClearFilters: () => void
+}) => {
+  if (!hasEntities) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 py-20 text-center">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-saffron-soft">
+          <FileText className="h-6 w-6 text-saffron" />
+        </div>
+        <h3 className="font-serif text-lg font-semibold text-ink">No entities yet</h3>
+        <p className="mt-1 max-w-sm text-[13px] text-ink-mute">
+          Capture your first thought, concept, person, or project. Everything you save stays local
+          and offline-ready.
+        </p>
+        <button
+          onClick={onStartNew}
+          className="mt-4 flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 text-[13px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+        >
+          <Plus className="h-4 w-4" />
+          Create your first entity
+        </button>
+      </div>
+    )
+  }
+  return (
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 py-20 text-center">
+      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+        <Search className="h-6 w-6 text-ink-faint" />
+      </div>
+      <h3 className="font-serif text-lg font-semibold text-ink">No matches found</h3>
+      <p className="mt-1 max-w-sm text-[13px] text-ink-mute">
+        Try adjusting your search terms or filters to find what you&apos;re looking for.
+      </p>
+      <button
+        onClick={onClearFilters}
+        className="mt-4 flex min-h-[44px] items-center gap-1.5 rounded-md bg-secondary px-4 text-[13px] font-semibold text-ink transition-all hover:opacity-90 press-scale focus-ring"
+      >
+        <X className="h-4 w-4" />
+        Clear all filters
+      </button>
+    </div>
+  )
+}
+
 /** Entity library view with grid/list layout, search, type filters, and sort controls. */
 export const LibraryView = () => {
   const allEntities = useStudioStore((s) => s.entities)
@@ -85,60 +258,15 @@ export const LibraryView = () => {
   const [tagQuery, setTagQuery] = useState('')
   const [hasDescriptionOnly, setHasDescriptionOnly] = useState(false)
   const [showAll, setShowAll] = useState(false)
-  const [semanticOutcome, setSemanticOutcome] = useState<SemanticSearchOutcome | null>(null)
-  const [semanticBusy, setSemanticBusy] = useState(false)
   const filteredEntities = useFilteredEntities()
+  const { semanticOutcome, semanticBusy } = useSemanticSearch(
+    semanticMode,
+    searchQuery,
+    allEntities,
+    claims,
+  )
 
   const semanticQuery = searchQuery.trim()
-
-  // Runs a debounced semantic search whenever the toggle is on and a query
-  // exists. Every keystroke/toggle aborts the in-flight request; because the
-  // embedder is a lazy singleton, the first query pays the model download and
-  // later ones reuse it.
-  useEffect(() => {
-    if (!semanticMode || semanticQuery === '') {
-      setSemanticOutcome(null)
-      setSemanticBusy(false)
-      return
-    }
-
-    let cancelled = false
-    const controller = new AbortController()
-    setSemanticOutcome(null)
-    setSemanticBusy(true)
-    const debounce = setTimeout(() => {
-      void searchSemantic(
-        allEntities,
-        claims,
-        semanticQuery,
-        SEMANTIC_RESULT_LIMIT,
-        controller.signal,
-      )
-        .then((outcome) => {
-          if (cancelled) return
-          setSemanticOutcome(outcome)
-          setSemanticBusy(false)
-        })
-        .catch((err: unknown) => {
-          if (cancelled) return
-          // Only aborts reject; surface anything else as a lexical fallback
-          // so the search box never dies silently.
-          if (err instanceof DOMException && err.name === 'AbortError') return
-          console.error('Semantic search failed:', err)
-          // Clear — not `{ source: 'lexical', results: [] }` — so the grid
-          // falls back to the lexical `filteredEntities` rather than an
-          // empty semantic result list.
-          setSemanticOutcome(null)
-          setSemanticBusy(false)
-        })
-    }, SEMANTIC_DEBOUNCE_MS)
-
-    return () => {
-      cancelled = true
-      clearTimeout(debounce)
-      controller.abort()
-    }
-  }, [semanticMode, semanticQuery, allEntities, claims])
 
   const entityById = useMemo(
     () => new Map(allEntities.map((e) => [e.id, e])),
@@ -150,21 +278,13 @@ export const LibraryView = () => {
   // Resolves semantic results (entity ids, or claim ids via their entity) to
   // entities in rank order — deduped and type-filtered — mirroring what the
   // lexical path renders into the grid/table.
-  const semanticEntities = useMemo(() => {
-    if (semanticOutcome === null) return []
-    const seen = new Set<string>()
-    const resolved: Entity[] = []
-    for (const result of semanticOutcome.results) {
-      const entity =
-        entityById.get(result.id) ??
-        (result.entityId !== undefined ? entityById.get(result.entityId) : undefined)
-      if (entity === undefined || seen.has(entity.id)) continue
-      if (typeFilter !== 'all' && entity.type !== typeFilter) continue
-      seen.add(entity.id)
-      resolved.push(entity)
-    }
-    return resolved
-  }, [semanticOutcome, entityById, typeFilter])
+  const semanticEntities = useMemo(
+    () =>
+      semanticOutcome === null
+        ? []
+        : resolveSemanticEntities(semanticOutcome, entityById, typeFilter),
+    [semanticOutcome, entityById, typeFilter],
+  )
 
   // While the first semantic result is pending (e.g. model download), fall
   // back to lexical ranking so the grid never flickers blank.
@@ -320,27 +440,11 @@ export const LibraryView = () => {
       </div>
 
       {/* Semantic search status — surfaces loading and lexical fallback states */}
-      {semanticActive && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="mb-4 flex items-center gap-2 text-caption text-ink-faint"
-        >
-          {semanticBusy ? (
-            <>
-              <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
-              {t('search.semanticLoading')}
-            </>
-          ) : semanticOutcome?.source === 'semantic' ? (
-            <>
-              <Sparkles className="h-3 w-3" aria-hidden="true" />
-              {t('search.semanticOnDescription')}
-            </>
-          ) : (
-            <span>{t('search.semanticUnavailable')}</span>
-          )}
-        </div>
-      )}
+      <SemanticStatusBanner
+        active={semanticActive}
+        busy={semanticBusy}
+        outcome={semanticOutcome}
+      />
 
       {/* Advanced filters disclosure */}
       <div className="mb-4">
@@ -420,42 +524,11 @@ export const LibraryView = () => {
       </div>
 
       {/* Empty states */}
-      {allEntities.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 py-20 text-center">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-saffron-soft">
-            <FileText className="h-6 w-6 text-saffron" />
-          </div>
-          <h3 className="font-serif text-lg font-semibold text-ink">No entities yet</h3>
-          <p className="mt-1 max-w-sm text-[13px] text-ink-mute">
-            Capture your first thought, concept, person, or project. Everything you save stays local
-            and offline-ready.
-          </p>
-          <button
-            onClick={startNew}
-            className="mt-4 flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 text-[13px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
-          >
-            <Plus className="h-4 w-4" />
-            Create your first entity
-          </button>
-        </div>
-      ) : advancedFilteredEntities.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 py-20 text-center">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
-            <Search className="h-6 w-6 text-ink-faint" />
-          </div>
-          <h3 className="font-serif text-lg font-semibold text-ink">No matches found</h3>
-          <p className="mt-1 max-w-sm text-[13px] text-ink-mute">
-            Try adjusting your search terms or filters to find what you&apos;re looking for.
-          </p>
-          <button
-            onClick={clearFilters}
-            className="mt-4 flex min-h-[44px] items-center gap-1.5 rounded-md bg-secondary px-4 text-[13px] font-semibold text-ink transition-all hover:opacity-90 press-scale focus-ring"
-          >
-            <X className="h-4 w-4" />
-            Clear all filters
-          </button>
-        </div>
-      ) : null}
+      <LibraryEmptyState
+        hasEntities={allEntities.length > 0}
+        onStartNew={startNew}
+        onClearFilters={clearFilters}
+      />
 
       {/* Grid view */}
       {visibleEntities.length > 0 && viewMode === 'grid' && (

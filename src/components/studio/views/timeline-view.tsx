@@ -6,7 +6,7 @@ import { CalendarDays, Clock, FileText, Quote } from 'lucide-react'
 import { useStudioStore } from '@/lib/studio/store'
 import { getEntityTypeMeta } from '@/lib/studio/entity-types'
 import { cn } from '@/lib/utils'
-import { t } from '@/lib/i18n/messages/timeline'
+import { translate } from '@/lib/i18n/messages/timeline'
 import { EntityIcon } from '../entity-type-icon'
 import { buildTimelineGroups, type TimelineGroup, type TimelineItem } from './timeline-helpers'
 
@@ -31,7 +31,7 @@ const TimelineRow = memo(function TimelineRow({
     <li>
       <button
         onClick={() => { onOpen(item) }}
-        aria-label={t('timeline.openItem', item.label)}
+        aria-label={translate('timeline.openItem', item.label)}
         className="group flex w-full items-center gap-3 rounded-md border border-border bg-card px-3 py-2 text-left transition-colors hover:border-saffron/40 hover:bg-saffron-soft/40 focus-ring"
       >
         <span
@@ -53,7 +53,7 @@ const TimelineRow = memo(function TimelineRow({
         </span>
         <span className="flex shrink-0 items-center gap-1 text-label text-ink-faint">
           <Clock className="h-3 w-3" />
-          {format(item.date, t('timeline.timeFormat'))}
+          {format(item.date, translate('timeline.timeFormat'))}
         </span>
         {meta ? (
           <span
@@ -67,7 +67,7 @@ const TimelineRow = memo(function TimelineRow({
           </span>
         ) : (
           <span className="shrink-0 rounded border border-border px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-ink-faint">
-            {t('timeline.claimBadge')}
+            {translate('timeline.claimBadge')}
           </span>
         )}
       </button>
@@ -82,10 +82,10 @@ const EmptyState = ({ onCreate }: { onCreate: () => void }) => {
       <CalendarDays className="h-10 w-10 text-ink-faint" />
       <div>
         <h2 className="font-serif text-lg font-semibold text-ink">
-          {t('timeline.empty.title')}
+          {translate('timeline.empty.title')}
         </h2>
         <p className="mx-auto mt-1 max-w-sm text-[13px] text-ink-mute">
-          {t('timeline.empty.body')}
+          {translate('timeline.empty.body')}
         </p>
       </div>
       <button
@@ -93,7 +93,7 @@ const EmptyState = ({ onCreate }: { onCreate: () => void }) => {
         className="flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 text-[13px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
       >
         <FileText className="h-4 w-4" />
-        {t('timeline.empty.action')}
+        {translate('timeline.empty.action')}
       </button>
     </div>
   )
@@ -104,7 +104,7 @@ const EmptyState = ({ onCreate }: { onCreate: () => void }) => {
  * bands, newest first. Clicking a marker opens the owning entity in the
  * editor. Mobile-first, design tokens only, semantic list structure.
  */
-export function TimelineView() {
+export const TimelineView = () => {
   const entities = useStudioStore((s) => s.entities)
   const claims = useStudioStore((s) => s.claims)
   const startEdit = useStudioStore((s) => s.startEdit)
@@ -128,8 +128,8 @@ export function TimelineView() {
   return (
     <div className="mx-auto max-w-5xl px-6 py-8 lg:px-10 lg:py-12">
       <header className="mb-8">
-        <h1 className="font-serif text-2xl font-semibold text-ink">{t('timeline.title')}</h1>
-        <p className="mt-1 text-[13px] text-ink-mute">{t('timeline.subtitle')}</p>
+        <h1 className="font-serif text-2xl font-semibold text-ink">{translate('timeline.title')}</h1>
+        <p className="mt-1 text-[13px] text-ink-mute">{translate('timeline.subtitle')}</p>
       </header>
 
       {groups.length === 0 ? (
@@ -139,16 +139,16 @@ export function TimelineView() {
           {groups.map((group) => (
             <li key={group.month.toISOString()}>
               <h2 className="mb-3 flex flex-wrap items-baseline gap-2 font-serif text-lg font-semibold text-ink">
-                {format(group.month, t('timeline.monthFormat'))}
+                {format(group.month, translate('timeline.monthFormat'))}
                 <span className="font-sans text-badge font-semibold uppercase tracking-wide text-ink-faint">
-                  {t('timeline.itemCount', String(monthItemCount(group)))}
+                  {translate('timeline.itemCount', String(monthItemCount(group)))}
                 </span>
               </h2>
               <ol className="space-y-3">
                 {group.days.map((day) => (
                   <li key={day.day.toISOString()}>
                     <h3 className="mb-1.5 text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
-                      {format(day.day, t('timeline.dayFormat'))}
+                      {format(day.day, translate('timeline.dayFormat'))}
                     </h3>
                     <ol className="space-y-1.5">
                       {day.items.map((item) => (

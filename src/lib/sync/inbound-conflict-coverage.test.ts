@@ -3,7 +3,7 @@ import { validateInboundEntity, validateInboundClaim } from './inbound'
 import { resolveEntityConflict, resolveClaimConflict } from './conflict'
 import type { Entity, Claim } from '@/lib/studio/types'
 
-function makeEntity(overrides: Partial<Entity> = {}): Entity {
+const makeEntity = (overrides: Partial<Entity> = {}): Entity => {
   return {
     id: 'entity-1',
     name: 'Test Entity',
@@ -18,7 +18,7 @@ function makeEntity(overrides: Partial<Entity> = {}): Entity {
   }
 }
 
-function makeClaim(overrides: Partial<Claim> = {}): Claim {
+const makeClaim = (overrides: Partial<Claim> = {}): Claim => {
   return {
     id: 'claim-1',
     entityId: 'entity-1',
@@ -97,7 +97,7 @@ describe('Inbound validation: claims', () => {
 
   it('rejects non-object input', () => {
     expect(validateInboundClaim(null).success).toBe(false)
-    expect(validateInboundClaim(undefined).success).toBe(false)
+    expect(validateInboundClaim().success).toBe(false)
   })
 })
 

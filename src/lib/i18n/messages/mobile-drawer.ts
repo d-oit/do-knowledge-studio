@@ -53,5 +53,5 @@ const messages = {
   'drawer.footer.localSearch': (count: string) => `Local search · ${count} entities`,
 } as const
 
-/** Typed `t` helper bound to the mobile drawer message scope. */
-export const t = makeT(messages)
+/** Typed `translate` helper bound to the mobile drawer message scope. */
+export const translate = makeT(messages)

@@ -10,7 +10,7 @@ import {
 } from './triz-subviews'
 import { TrizMatrixView } from './triz-matrix-view'
 import { TrizResultsView } from './triz-results-view'
-import { t } from '@/lib/i18n/messages/triz'
+import { translate } from '@/lib/i18n/messages/triz'
 
 /** TRIZ contradiction matrix view for picking parameters and viewing suggested inventive principles. */
 export const TrizView = () => {
@@ -43,7 +43,7 @@ export const TrizView = () => {
       console.error('Clipboard API unavailable:', error)
     }
     setCopied(id)
-    toast.success(t('triz.toast.copied'))
+    toast.success(translate('triz.toast.copied'))
     clearTimeout(copiedTimerRef.current)
     copiedTimerRef.current = setTimeout(() => { setCopied(null) }, 2000)
   }

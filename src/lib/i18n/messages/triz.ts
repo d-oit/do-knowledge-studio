@@ -82,5 +82,5 @@ const messages = {
   'triz.matrix.filterAria': 'Filter TRIZ contradiction matrix parameters',
 } as const
 
-/** Typed `t` helper bound to the TRIZ message scope. */
-export const t = makeT(messages)
+/** Typed `translate` helper bound to the TRIZ message scope. */
+export const translate = makeT(messages)
