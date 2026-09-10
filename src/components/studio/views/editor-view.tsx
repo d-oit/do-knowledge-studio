@@ -317,10 +317,10 @@ export const EditorView = () => {
       toast.error('Entity name cannot be empty')
       return
     }
-    const entityId = editing?.id || crypto.randomUUID()
+    const entityId = editing?.id ?? crypto.randomUUID()
     const { mentionLinks, mentions } = extractMentionLinks(content, entities, entityId)
     const entity = buildEditorEntity(
-      editing,
+      editing ? { ...editing, id: entityId } : null,
       { name, type, description, content, sourceUrl, tags },
       mentionLinks,
     )

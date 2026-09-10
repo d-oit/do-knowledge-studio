@@ -57,7 +57,7 @@ const dedupeCitations = (
   const seen = new Set<string>()
   const out: { entityId: string; entityName: string; snippet: string }[] = []
   for (const c of citations) {
-    const key = `${c.entityId}:${c.snippet}`
+    const key = JSON.stringify([c.entityId, c.snippet])
     if (seen.has(key)) continue
     seen.add(key)
     out.push(c)
