@@ -25,6 +25,11 @@ vi.mock('lucide-react', () => {
   }
 })
 
+const mockSetTheme = vi.fn()
+const mockSetView = vi.fn()
+const mockSetCommandOpen = vi.fn()
+const mockSetRightPanelOpen = vi.fn()
+
 vi.mock('next-themes', () => ({
   useTheme: () => ({ theme: 'light', setTheme: mockSetTheme }),
 }))
@@ -39,22 +44,20 @@ vi.mock('./shortcuts-dialog', () => ({
   ),
 }))
 
-const mockSetTheme = vi.fn()
-const mockSetView = vi.fn()
-const mockSetCommandOpen = vi.fn()
-const mockSetRightPanelOpen = vi.fn()
-
 let currentView = 'home'
 let rightPanelOpen = false
 
 vi.mock('@/lib/studio/store', () => ({
-  useStudioStore: () => ({
-    currentView,
-    setView: mockSetView,
-    setCommandOpen: mockSetCommandOpen,
-    rightPanelOpen,
-    setRightPanelOpen: mockSetRightPanelOpen,
-  }),
+  useStudioStore: (selector?: (s: Record<string, unknown>) => unknown) => {
+    const state = {
+      currentView,
+      setView: mockSetView,
+      setCommandOpen: mockSetCommandOpen,
+      rightPanelOpen,
+      setRightPanelOpen: mockSetRightPanelOpen,
+    }
+    return typeof selector === 'function' ? selector(state) : state
+  },
 }))
 
 import { Sidebar, NAV_GROUPS } from './sidebar'

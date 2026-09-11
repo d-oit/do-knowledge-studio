@@ -1,6 +1,7 @@
 'use client'
 
 import { useStudioStore } from '@/lib/studio/store'
+import { useStoreHydrated } from '@/lib/studio/use-hydrated'
 import type { ViewId } from '@/lib/studio/types'
 import { Menu, Plus, Search } from 'lucide-react'
 import type { KeyboardEvent } from 'react'
@@ -20,15 +21,14 @@ const VIEW_TITLES: Record<ViewId, { title: string; subtitle: string }> = {
 
 /** Top header bar with view title, inline search, offline badge, and new entity button. */
 export const Topbar = () => {
-  const {
-    currentView,
-    startNew,
-    setCommandOpen,
-    searchQuery,
-    setSearchQuery,
-    setMobileDrawerOpen,
-    setMobilePanelView,
-  } = useStudioStore()
+  const currentView = useStudioStore((s) => s.currentView)
+  const searchQuery = useStudioStore((s) => s.searchQuery)
+  const startNew = useStudioStore((s) => s.startNew)
+  const setCommandOpen = useStudioStore((s) => s.setCommandOpen)
+  const setSearchQuery = useStudioStore((s) => s.setSearchQuery)
+  const setMobileDrawerOpen = useStudioStore((s) => s.setMobileDrawerOpen)
+  const setMobilePanelView = useStudioStore((s) => s.setMobilePanelView)
+  const isHydrated = useStoreHydrated()
   const meta = VIEW_TITLES[currentView as keyof typeof VIEW_TITLES]
 
   // Inline input doubles as a quick filter for the Library + right-panel SearchPanel,
@@ -110,7 +110,10 @@ export const Topbar = () => {
       </div>
 
       {/* Offline-ready badge — hidden on mobile (< 768px) */}
-      <div className="hidden flex-shrink-0 items-center gap-1.5 rounded-full border border-saffron/30 bg-saffron-soft px-2.5 py-1 text-label font-medium text-saffron-deep md:flex">
+      <div
+        className="hidden flex-shrink-0 items-center gap-1.5 rounded-full border border-saffron/30 bg-saffron-soft px-2.5 py-1 text-label font-medium text-saffron-deep md:flex"
+        data-hydrated={isHydrated}
+      >
         <span className="h-1.5 w-1.5 rounded-full bg-saffron" />
         Offline ready
       </div>

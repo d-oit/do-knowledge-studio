@@ -4,7 +4,7 @@ import { vi } from 'vitest'
 // Zustand persist middleware uses localStorage. In jsdom/Node.js this may not be
 // available (or may require --localstorage-file flag in Node 22), so we provide
 // a lightweight in-memory mock so store tests do not crash on setItem.
-function createLocalStorageMock(): Storage {
+const createLocalStorageMock = (): Storage => {
   let store: Record<string, string> = {}
   return {
     getItem: vi.fn((key: string) => store[key] ?? null),

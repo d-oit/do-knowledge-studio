@@ -48,19 +48,32 @@ const mockSetView = vi.fn()
 const mockSetCommandOpen = vi.fn()
 const mockSetMobileDrawerOpen = vi.fn()
 
-vi.mock('@/lib/studio/store', () => ({
-  useStudioStore: Object.assign(
-    () => ({
+// The component selects individual slices (`useStudioStore((s) => s.commandOpen)`), so this
+// mock has to apply the selector. Returning the whole state object for every call would make
+// each selected value the state object itself, which is always truthy — leaving guards such
+// as `!commandOpen` impossible to exercise.
+//
+// The state is built inside the call rather than at factory scope because this factory is
+// hoisted above the `mockSet*` declarations below, so touching them eagerly would throw a
+// temporal-dead-zone ReferenceError.
+vi.mock('@/lib/studio/store', () => {
+  const useStudioStore = (selector?: (s: Record<string, unknown>) => unknown) => {
+    const state = {
       currentView: 'home',
       setView: mockSetView,
       commandOpen: false,
       mobileDrawerOpen: false,
       setCommandOpen: mockSetCommandOpen,
       setMobileDrawerOpen: mockSetMobileDrawerOpen,
+    }
+    return typeof selector === 'function' ? selector(state) : state
+  }
+  return {
+    useStudioStore: Object.assign(useStudioStore, {
+      getState: () => ({ currentView: 'home', setView: mockSetView }),
     }),
-    { getState: () => ({ currentView: 'home', setView: mockSetView }) },
-  ),
-}))
+  }
+})
 
 import { ShortcutsDialog, ShortcutsTrigger } from './shortcuts-dialog'
 

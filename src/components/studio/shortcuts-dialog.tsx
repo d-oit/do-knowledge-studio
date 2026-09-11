@@ -100,8 +100,12 @@ const useShortcutsOpen = (): [boolean, (v: boolean) => void] => {
 // skipcq: JS-0415, JS-R1005 — ShortcutsDialog JSX nesting and medium complexity are intentional for grouped shortcut layout
 export const ShortcutsDialog = (): React.JSX.Element => {
   const [open, setOpen] = useShortcutsOpen()
-  const { setView, currentView, commandOpen, mobileDrawerOpen, setCommandOpen, setMobileDrawerOpen } =
-    useStudioStore()
+  const currentView = useStudioStore((s) => s.currentView)
+  const commandOpen = useStudioStore((s) => s.commandOpen)
+  const mobileDrawerOpen = useStudioStore((s) => s.mobileDrawerOpen)
+  const setView = useStudioStore((s) => s.setView)
+  const setCommandOpen = useStudioStore((s) => s.setCommandOpen)
+  const setMobileDrawerOpen = useStudioStore((s) => s.setMobileDrawerOpen)
   const reducedMotion = useReducedMotion()
 
   const [filter, setFilter] = React.useState('')

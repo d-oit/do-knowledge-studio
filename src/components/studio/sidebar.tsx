@@ -1,5 +1,6 @@
 'use client'
 
+import { useCallback } from 'react'
 import {
   Home,
   FileText,
@@ -71,10 +72,72 @@ export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   },
 ]
 
-/** Sidebar navigation with grouped nav items, search trigger, and theme toggle. */
+interface SidebarItemBadgeProps {
+  experimental?: boolean
+  shortcut?: string
+}
+
+const SidebarItemBadge = ({ experimental, shortcut }: SidebarItemBadgeProps) => {
+  if (experimental) {
+    return (
+      <span className="rounded-full border border-dashed border-saffron/40 px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-saffron-deep">
+        Lab
+      </span>
+    )
+  }
+  if (shortcut) {
+    return (
+      <kbd className="hidden font-mono text-badge text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 lg:inline">
+        {shortcut}
+      </kbd>
+    )
+  }
+  return null
+}
+
+interface SidebarNavItemProps {
+  item: NavItem
+  active: boolean
+  onSelect: (id: ViewId) => void
+}
+
+const SidebarNavItem = ({ item, active, onSelect }: SidebarNavItemProps) => {
+  const Icon = item.icon
+  const buttonStateClass = active
+    ? 'bg-saffron-soft text-saffron-deep'
+    : 'text-ink-soft hover:bg-sidebar-accent hover:text-ink'
+  const iconStateClass = active
+    ? 'text-saffron'
+    : 'text-ink-faint group-hover:text-ink-soft'
+
+  return (
+    <li>
+      <button
+        onClick={() => { onSelect(item.id) }}
+        aria-current={active ? 'page' : undefined}
+        className={cn(
+          'group flex w-full items-center gap-2.5 rounded-md px-2.5 min-h-[44px] text-[13px] font-medium transition-all press-scale focus-ring',
+          buttonStateClass,
+        )}
+      >
+        <Icon className={cn('h-4 w-4 shrink-0 transition-colors', iconStateClass)} />
+        <span className="flex-1 text-left">{item.label}</span>
+        <SidebarItemBadge experimental={item.experimental} shortcut={item.shortcut} />
+      </button>
+    </li>
+  )
+}
+
 /** Sidebar navigation groups with active-state highlighting. */
-function SidebarNav() {
-  const { currentView, setView } = useStudioStore()
+const SidebarNav = () => {
+  const currentView = useStudioStore((s) => s.currentView)
+  const setView = useStudioStore((s) => s.setView)
+  const handleSelect = useCallback(
+    (id: ViewId) => {
+      setView(id)
+    },
+    [setView],
+  )
 
   return (
     <nav className="flex-1 overflow-y-auto px-3 pb-2" aria-label="Main navigation">
@@ -84,42 +147,14 @@ function SidebarNav() {
             {group.label}
           </div>
           <ul className="space-y-0.5">
-            {group.items.map((item) => {
-              const Icon = item.icon
-              const active = currentView === item.id
-              return (
-                <li key={item.id}>
-                  <button
-                    onClick={() => { setView(item.id) }}
-                    aria-current={active ? 'page' : undefined}
-                    className={cn(
-                      'group flex w-full items-center gap-2.5 rounded-md px-2.5 min-h-[44px] text-[13px] font-medium transition-all press-scale focus-ring',
-                      active
-                        ? 'bg-saffron-soft text-saffron-deep'
-                        : 'text-ink-soft hover:bg-sidebar-accent hover:text-ink',
-                    )}
-                  >
-                    <Icon
-                      className={cn(
-                        'h-4 w-4 shrink-0 transition-colors',
-                        active ? 'text-saffron' : 'text-ink-faint group-hover:text-ink-soft',
-                      )}
-                    />
-                    <span className="flex-1 text-left">{item.label}</span>
-                    {item.experimental && (
-                      <span className="rounded-full border border-dashed border-saffron/40 px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-saffron-deep">
-                        Lab
-                      </span>
-                    )}
-                    {item.shortcut && !item.experimental && (
-                      <kbd className="hidden font-mono text-badge text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 lg:inline">
-                        {item.shortcut}
-                      </kbd>
-                    )}
-                  </button>
-                </li>
-              )
-            })}
+            {group.items.map((item) => (
+              <SidebarNavItem
+                key={item.id}
+                item={item}
+                active={currentView === item.id}
+                onSelect={handleSelect}
+              />
+            ))}
           </ul>
         </div>
       ))}
@@ -128,8 +163,10 @@ function SidebarNav() {
 }
 
 /** Sidebar with brand, search trigger, navigation, and footer controls. */
-export function Sidebar() {
-  const { setCommandOpen, rightPanelOpen, setRightPanelOpen } = useStudioStore()
+export const Sidebar = () => {
+  const setCommandOpen = useStudioStore((s) => s.setCommandOpen)
+  const rightPanelOpen = useStudioStore((s) => s.rightPanelOpen)
+  const setRightPanelOpen = useStudioStore((s) => s.setRightPanelOpen)
   const { theme, setTheme } = useTheme()
 
   return (
