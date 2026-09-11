@@ -109,14 +109,17 @@ const useRoomDiscovery = (
   setDiscoveredPeers: (peers: PeerInfo[]) => void,
 ): void => {
   useEffect(() => {
-    if (status !== 'connected' || !roomId) return
-    startDiscovery(roomId, (peers) => {
-      setDiscoveredPeers(peers)
-    })
-    // Returned directly rather than wrapped in an arrow: `stopDiscovery` already takes no
-    // arguments and returns void, so it satisfies the cleanup signature as-is (and avoids
-    // the value-returning-shorthand reading DeepSource's JS-0045 objects to).
-    return stopDiscovery
+    // A single guarded branch rather than an early bare `return` plus a value return:
+    // mixing those makes the callback's return paths inconsistent, which is what
+    // DeepSource's JS-0045 consistent-return rule reports.
+    if (status === 'connected' && roomId) {
+      startDiscovery(roomId, (peers) => {
+        setDiscoveredPeers(peers)
+      })
+      // Returned directly: `stopDiscovery` takes no arguments and returns void, so it is
+      // already a valid cleanup with no wrapper arrow needed.
+      return stopDiscovery
+    }
   }, [status, roomId, setDiscoveredPeers])
 }
 
