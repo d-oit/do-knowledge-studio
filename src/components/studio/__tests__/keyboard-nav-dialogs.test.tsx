@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { ReactNode } from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 
@@ -404,19 +404,18 @@ describe('CommandPalette keyboard navigation', () => {
 
 
 describe('ShortcutsDialog keyboard navigation', () => {
-  let ShortcutsDialog: React.ComponentType & {
-    ShortcutsTrigger: React.ComponentType<{ className?: string }>
-  }
+  let ShortcutsDialog: React.ComponentType
   let ShortcutsTrigger: React.ComponentType<{ className?: string }>
 
-  beforeAll(async () => {
+  // ShortcutsDialog keeps its open flag in module scope, so importing once for the whole
+  // suite left the dialog open for every test after the first one that opened it — which
+  // made the "opens on click" assertion unfalsifiable. Reset the module registry per test
+  // so each one starts from a genuinely closed dialog.
+  beforeEach(async () => {
     vi.resetModules()
     const mod = await import('@/components/studio/shortcuts-dialog')
     ShortcutsDialog = mod.ShortcutsDialog
     ShortcutsTrigger = mod.ShortcutsTrigger
-  })
-
-  beforeEach(() => {
     vi.clearAllMocks()
   })
 
@@ -433,6 +432,9 @@ describe('ShortcutsDialog keyboard navigation', () => {
         <ShortcutsDialog />
       </>,
     )
+    // Pre-condition: if the module-scope open flag leaked in from an earlier test, the
+    // dialog would already be open and the post-click assertion below could never fail.
+    expect(screen.queryByRole('dialog', { name: 'Keyboard shortcuts' })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Show keyboard shortcuts' }))
     const dialog = screen.getByRole('dialog', { name: 'Keyboard shortcuts' })
     expect(dialog).toBeDefined()
@@ -445,6 +447,9 @@ describe('ShortcutsDialog keyboard navigation', () => {
         <ShortcutsDialog />
       </>,
     )
+    // This test runs straight after one that opens the dialog and never closes it, so the
+    // pre-condition is what proves the module-scope flag no longer leaks between tests.
+    expect(screen.queryByRole('button', { name: 'Close shortcuts dialog' })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Show keyboard shortcuts' }))
     const closeBtn = screen.getByRole('button', { name: 'Close shortcuts dialog' })
     expect(document.activeElement).toBe(closeBtn)

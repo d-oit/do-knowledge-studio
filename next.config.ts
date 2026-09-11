@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 import path from "path";
 
+// `connect-src` has to permit the local AI endpoint. The Ollama adapter fetches
+// `${validateOllamaUrl(url)}/api/chat`, and that validator only accepts `localhost`,
+// loopback addresses, or `.local` hostnames (see src/lib/ai/providers.ts). Without
+// these sources the default `http://localhost:11434` is rejected by CSP before the
+// request ever reaches Ollama, silently breaking the built-in local provider.
 const cspHeader = `
   default-src 'self';
   script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval';
@@ -12,7 +17,7 @@ const cspHeader = `
   form-action 'self';
   frame-ancestors 'none';
   worker-src 'self' blob:;
-  connect-src 'self' https: wss:;
+  connect-src 'self' https: wss: http://localhost:* http://127.0.0.1:* http://[::1]:* http://*.local:*;
 `.replace(/\s{2,}/g, ' ').trim();
 
 const nextConfig: NextConfig = {

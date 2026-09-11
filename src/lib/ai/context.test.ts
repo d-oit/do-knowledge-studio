@@ -21,7 +21,8 @@ const NO_CLAIMS: Claim[] = []
 // Smoke guard, not a micro-benchmark. The indexed lookup resolves 500 entities in
 // roughly 10-40ms on a quiet machine, but this file runs alongside 150+ others, and
 // CPU saturation has pushed the same measurement past 180ms. The ceiling keeps a wide
-// margin over that worst case while still catching a regression to a linear scan.
+// margin over that worst case. It is only a smoke guard: it catches an order-of-magnitude
+// regression, not a cost-curve change, and should not be read as proving sub-linear lookup.
 const INDEXED_LOOKUP_MS_CEILING = 500
 
 describe('buildSystemPrompt', () => {

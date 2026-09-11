@@ -116,14 +116,34 @@ Verified after the fix: three consecutive 8x-saturated runs, 119/119 passing eac
 cold builds of 690ms / 780ms / 1147ms — every one of which the old 500ms ceiling would have
 failed.
 
+### Review findings (gitnexus-check) — resolved
+
+The PR review bot raised five findings. Each was verified against the code before acting;
+two were real defects introduced by this branch, one was inaccurate wording this branch
+added, and two were pre-existing patterns carried into the split test file.
+
+| # | Severity | Finding | Verdict | Resolution |
+| --- | --- | --- | --- | --- |
+| 1 | 🔴 Error | `connect-src` rejects the built-in Ollama endpoint | **Real regression** — `validateOllamaUrl` explicitly sanctions `http://localhost:11434`, but the new CSP allowed only `'self'`, `https:` and `wss:` | Added `http://localhost:*`, `http://127.0.0.1:*`, `http://[::1]:*` and `http://*.local:*` to `connect-src` (the validator accepts `localhost`, loopback, or `.local` hosts) |
+| 2 | 🔴 Error | `shortcuts-dialog.test.tsx` store mock ignores selectors | **Real** — the component now selects slices, but the mock returned whole state for every call, so `commandOpen` was a truthy object and the `!commandOpen` guard could never be exercised | Mock now applies the selector; state stays built inside the call because the factory is hoisted above the `mockSet*` declarations (building it eagerly threw a TDZ `ReferenceError`) |
+| 3 | 🟡 Warning | Module-scope dialog `_open` leaks between tests | **Real, but pre-existing** — copied from `keyboard-nav.test.tsx`, which used the same single `beforeAll` import | `vi.resetModules()` + import moved to `beforeEach`, and pre-condition assertions now prove the dialog starts closed (the focus test follows a test that leaves it open, so it would fail under the old behaviour) |
+| 4 | ⚪ Nit | `context.test.ts` comment claims the ceiling catches a "linear scan" regression | **Real** — the timed path already performs linear passes, so the claim was unprovable | Reworded to state it is a smoke guard for order-of-magnitude regressions only |
+| 5 | ⚪ Nit | `ShortcutsDialog` declared with a nonexistent `ShortcutsTrigger` static member | **Real, but pre-existing** — copied from the original file | Removed the intersection; `ShortcutsTrigger` is already declared separately. Confirmed fixed: root `tsc` no longer reports the error at that line |
+
 ## Follow-ups
 
-1. **eslint 9.39.x deprecation warning.** `pnpm install` warns that `eslint@9.39.4` is
+1. **Test files are excluded from `pnpm run typecheck`.** `tsconfig.app.json` excludes
+   `src/**/__tests__/**`, while the root `tsconfig.json` includes every `.tsx`, so a root
+   `tsc -p tsconfig.json` surfaces pre-existing test type errors that no gate catches
+   (e.g. `Cannot find namespace 'JSX'` in `keyboard-nav*.test.tsx:39-40`, and an
+   `ErrorCode` mismatch in `error-boundary.test.tsx:69`). Consider a dedicated
+   `typecheck:tests` project so test types are actually verified.
+2. **eslint 9.39.x deprecation warning.** `pnpm install` warns that `eslint@9.39.4` is
    out of support. Evaluate moving to a supported release so the install path is clean
    under the warnings-as-errors policy.
-2. **Unskip or relocate the JSDOM-indexedDB bridge test.** `bridge-branch-coverage.test.ts`
+3. **Unskip or relocate the JSDOM-indexedDB bridge test.** `bridge-branch-coverage.test.ts`
    skips the dynamic-import persistence path. A jsdom `indexedDB` shim would restore
    coverage of the `initSync` bridge lifecycle.
-3. **pnpm upgrade evaluation.** The install output advertises `10.30.3 → 12.3.4`.
+4. **pnpm upgrade evaluation.** The install output advertises `10.30.3 → 12.3.4`.
    Out of scope here, but worth a dedicated dependency-upgrade pass per the
    dependency upgrade rules in `AGENTS.md`.
