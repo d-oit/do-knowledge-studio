@@ -373,9 +373,11 @@ const InspectorPanel = () => {
             <h4 className="mb-2 text-caption font-semibold uppercase tracking-[0.14em] text-ink-faint">
               Connections ({entity.links.length})
             </h4>
-            <ul className="space-y-1">
+            {/* ConnectionList renders its own <ul>; a wrapper <ul> here would nest
+                lists directly (axe `list` violation), so use a plain <div>. */}
+            <div>
               <ConnectionList links={entity.links} entityIndex={entityIndex} onSelect={selectEntity} />
-            </ul>
+            </div>
           </div>
         )}
 

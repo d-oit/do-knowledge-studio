@@ -445,7 +445,9 @@ export const GraphView = () => {
         )}
 
         {/* Floating legend */}
-        <div className="absolute bottom-4 left-4 rounded-lg border border-border bg-background/90 p-3 backdrop-blur-sm">
+        {/* pointer-events-none: display-only legend must not block clicks on
+            nodes rendered beneath it (intermittent `Mentions Note` click loss). */}
+        <div className="pointer-events-none absolute bottom-4 left-4 rounded-lg border border-border bg-background/90 p-3 backdrop-blur-sm">
           <div className="mb-2 text-caption font-semibold uppercase tracking-wide text-ink-faint">
             {entityTypesT('entity-types.legendHeading')}
           </div>

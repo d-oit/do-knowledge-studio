@@ -67,8 +67,12 @@ const restoreSelection = (textarea: HTMLTextAreaElement, start: number, end: num
   textarea.setSelectionRange(start, end)
 }
 
-/** Builds the draft's Entity record from the current form state. */
+/** Builds the draft's Entity record from the current form state.
+ * `entityId` is passed in (not generated here) so the saved id always matches
+ * the id used to derive mention links and reciprocal backlinks — a locally
+ * generated id would orphan every backlink written for a new entity. */
 const buildEditorEntity = (
+  entityId: string,
   editing: Entity | null,
   input: {
     name: string
@@ -80,10 +84,9 @@ const buildEditorEntity = (
   },
   mentionLinks: { targetId: string; relation: string }[],
 ): Entity => {
-  const id = editing?.id ?? crypto.randomUUID()
   const fallbackDescription = input.content.slice(0, 200).replace(/[#*]/g, '').trim()
   return {
-    id,
+    id: entityId,
     name: input.name.trim(),
     type: input.type,
     description: input.description.trim() || fallbackDescription,
@@ -320,7 +323,8 @@ export const EditorView = () => {
     const entityId = editing?.id ?? crypto.randomUUID()
     const { mentionLinks, mentions } = extractMentionLinks(content, entities, entityId)
     const entity = buildEditorEntity(
-      editing ? { ...editing, id: entityId } : null,
+      entityId,
+      editing,
       { name, type, description, content, sourceUrl, tags },
       mentionLinks,
     )
