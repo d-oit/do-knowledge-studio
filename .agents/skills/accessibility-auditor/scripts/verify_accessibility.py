@@ -207,7 +207,7 @@ def check_link_purpose(html: str) -> List[Dict]:
                 'severity': 'medium',
                 'message': f'Ambiguous link text: "{link_text}"',
                 'context': match.group(0)[:80],
-                'fix': f'Use descriptive text like "Read about [topic]"'
+                'fix': 'Use descriptive text like "Read about [topic]"'
             })
     return issues
 
