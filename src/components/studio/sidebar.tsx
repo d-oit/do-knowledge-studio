@@ -72,6 +72,29 @@ export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   },
 ]
 
+interface SidebarItemBadgeProps {
+  experimental?: boolean
+  shortcut?: string
+}
+
+const SidebarItemBadge = ({ experimental, shortcut }: SidebarItemBadgeProps) => {
+  if (experimental) {
+    return (
+      <span className="rounded-full border border-dashed border-saffron/40 px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-saffron-deep">
+        Lab
+      </span>
+    )
+  }
+  if (shortcut) {
+    return (
+      <kbd className="hidden font-mono text-badge text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 lg:inline">
+        {shortcut}
+      </kbd>
+    )
+  }
+  return null
+}
+
 interface SidebarNavItemProps {
   item: NavItem
   active: boolean
@@ -80,6 +103,12 @@ interface SidebarNavItemProps {
 
 const SidebarNavItem = ({ item, active, onSelect }: SidebarNavItemProps) => {
   const Icon = item.icon
+  const buttonStateClass = active
+    ? 'bg-saffron-soft text-saffron-deep'
+    : 'text-ink-soft hover:bg-sidebar-accent hover:text-ink'
+  const iconStateClass = active
+    ? 'text-saffron'
+    : 'text-ink-faint group-hover:text-ink-soft'
 
   return (
     <li>
@@ -88,28 +117,12 @@ const SidebarNavItem = ({ item, active, onSelect }: SidebarNavItemProps) => {
         aria-current={active ? 'page' : undefined}
         className={cn(
           'group flex w-full items-center gap-2.5 rounded-md px-2.5 min-h-[44px] text-[13px] font-medium transition-all press-scale focus-ring',
-          active
-            ? 'bg-saffron-soft text-saffron-deep'
-            : 'text-ink-soft hover:bg-sidebar-accent hover:text-ink',
+          buttonStateClass,
         )}
       >
-        <Icon
-          className={cn(
-            'h-4 w-4 shrink-0 transition-colors',
-            active ? 'text-saffron' : 'text-ink-faint group-hover:text-ink-soft',
-          )}
-        />
+        <Icon className={cn('h-4 w-4 shrink-0 transition-colors', iconStateClass)} />
         <span className="flex-1 text-left">{item.label}</span>
-        {item.experimental && (
-          <span className="rounded-full border border-dashed border-saffron/40 px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-saffron-deep">
-            Lab
-          </span>
-        )}
-        {item.shortcut && !item.experimental && (
-          <kbd className="hidden font-mono text-badge text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 lg:inline">
-            {item.shortcut}
-          </kbd>
-        )}
+        <SidebarItemBadge experimental={item.experimental} shortcut={item.shortcut} />
       </button>
     </li>
   )
