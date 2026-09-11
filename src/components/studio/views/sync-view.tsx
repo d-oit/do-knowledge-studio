@@ -113,9 +113,10 @@ const useRoomDiscovery = (
     startDiscovery(roomId, (peers) => {
       setDiscoveredPeers(peers)
     })
-    return () => {
-      stopDiscovery()
-    }
+    // Returned directly rather than wrapped in an arrow: `stopDiscovery` already takes no
+    // arguments and returns void, so it satisfies the cleanup signature as-is (and avoids
+    // the value-returning-shorthand reading DeepSource's JS-0045 objects to).
+    return stopDiscovery
   }, [status, roomId, setDiscoveredPeers])
 }
 
@@ -130,6 +131,8 @@ const eventDotClass = (type: SyncEvent['type']): string => {
       return 'bg-saffron'
     case 'error':
       return 'bg-red-500'
+    default:
+      return 'bg-ink-faint'
   }
 }
 
