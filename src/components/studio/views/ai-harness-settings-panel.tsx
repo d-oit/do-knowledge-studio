@@ -49,11 +49,19 @@ interface SettingsPanelProps {
   isLoading: boolean
 }
 
-/** Default model slug for a given provider. */
-const DEFAULT_MODEL_FOR_PROVIDER: Record<AIProvider, string> = {
-  openrouter: DEFAULT_MODEL.openrouter,
-  ollama: DEFAULT_MODEL.ollama,
-  local: DEFAULT_MODEL.local,
+/**
+ * Default model slug per provider; exhaustive-switch lookup (no dynamic
+ * indexing) — mirrors the object-injection pattern used in `entity-types`.
+ */
+const getDefaultModelForProvider = (provider: AIProvider): string => {
+  switch (provider) {
+    case 'openrouter':
+      return DEFAULT_MODEL.openrouter
+    case 'ollama':
+      return DEFAULT_MODEL.ollama
+    case 'local':
+      return DEFAULT_MODEL.local
+  }
 }
 
 /** Engine options rendered for the current provider. */
@@ -185,7 +193,7 @@ export const AiHarnessSettingsPanel = ({
                 const val = e.target.value
                 if (!PROVIDERS.some((pr) => pr.id === val)) return
                 setProvider(val as AIProvider)
-                setModel(DEFAULT_MODEL_FOR_PROVIDER[val as AIProvider] ?? DEFAULT_MODEL.local)
+                setModel(getDefaultModelForProvider(val as AIProvider))
                 setCustomModel('')
               }}
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"

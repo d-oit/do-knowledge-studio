@@ -89,30 +89,32 @@ const useSemanticSearch = (
       setSemanticBusy(true)
       // Async callback: the timer owns the promise, so no `void`/floating
       // chain — rejection is handled inside with try/catch.
-      debounce = window.setTimeout(async () => {
-        try {
-          const outcome = await searchSemantic(
-            allEntities,
-            claims,
-            semanticQuery,
-            SEMANTIC_RESULT_LIMIT,
-            controller?.signal,
-          )
-          if (cancelled) return
-          setSemanticOutcome(outcome)
-          setSemanticBusy(false)
-        } catch (err: unknown) {
-          if (cancelled) return
-          // Only aborts reject; surface anything else as a lexical fallback
-          // so the search box never dies silently.
-          if (err instanceof DOMException && err.name === 'AbortError') return
-          console.error('Semantic search failed:', err)
-          // Clear — not `{ source: 'lexical', results: [] }` — so the grid
-          // falls back to the lexical `filteredEntities` rather than an
-          // empty semantic result list.
-          setSemanticOutcome(null)
-          setSemanticBusy(false)
-        }
+      debounce = window.setTimeout(() => {
+        void (async () => {
+          try {
+            const outcome = await searchSemantic(
+              allEntities,
+              claims,
+              semanticQuery,
+              SEMANTIC_RESULT_LIMIT,
+              controller?.signal,
+            )
+            if (cancelled) return
+            setSemanticOutcome(outcome)
+            setSemanticBusy(false)
+          } catch (err: unknown) {
+            if (cancelled) return
+            // Only aborts reject; surface anything else as a lexical fallback
+            // so the search box never dies silently.
+            if (err instanceof DOMException && err.name === 'AbortError') return
+            console.error('Semantic search failed:', err)
+            // Clear — not `{ source: 'lexical', results: [] }` — so the grid
+            // falls back to the lexical `filteredEntities` rather than an
+            // empty semantic result list.
+            setSemanticOutcome(null)
+            setSemanticBusy(false)
+          }
+        })()
       }, SEMANTIC_DEBOUNCE_MS)
     } else {
       setSemanticOutcome(null)
@@ -596,7 +598,9 @@ export const LibraryView = () => {
         visibleCount={visibleEntities.length}
         totalCount={advancedFilteredEntities.length}
         showAll={showAll}
-        onToggleShowAll={() => setShowAll(!showAll)}
+        onToggleShowAll={() => {
+          setShowAll(!showAll)
+        }}
       />
     </div>
   )

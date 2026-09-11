@@ -294,8 +294,8 @@ export const EditorView = () => {
   const handleFormat = useCallback((command: string) => {
     const textarea = textareaRef.current
     if (!textarea) return
+    if (!Object.prototype.hasOwnProperty.call(FORMAT_HANDLERS, command)) return
     const handler = FORMAT_HANDLERS[command]
-    if (!handler) return
     const result = handler(content, describeSelection(content, textarea))
     setContent(result.text)
     requestAnimationFrame(() => {

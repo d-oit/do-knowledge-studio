@@ -148,7 +148,9 @@ const KeywordResultList = ({
       return (
         <li key={e.id}>
           <button
-            onClick={() => onStartEdit(e.id)}
+            onClick={() => {
+              onStartEdit(e.id)
+            }}
             className="group block w-full min-h-[44px] rounded-md border border-transparent p-2.5 text-left transition-colors hover:border-border hover:bg-muted/50 focus-ring"
           >
             <div className="mb-1 flex items-center gap-2">
@@ -292,7 +294,9 @@ const ConnectionList = ({
       return (
         <li key={`${l.targetId}:${l.relation}`}>
           <button
-            onClick={() => onSelect(target.id)}
+            onClick={() => {
+              onSelect(target.id)
+            }}
             className="flex w-full min-h-[44px] items-center gap-2 rounded-md p-1.5 text-left text-[12px] text-ink-soft transition-colors hover:bg-muted focus-ring"
           >
             <ArrowRight className="h-3 w-3 shrink-0 text-ink-faint" />
