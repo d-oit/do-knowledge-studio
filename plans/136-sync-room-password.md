@@ -49,3 +49,12 @@ Passing `undefined` as an explicit second argument broke 11 pre-existing asserti
 `('room-123', undefined)`). Rather than loosen those tests, the implementation branches and
 calls `joinRoom(id)` with a single argument when there is no password, which also makes the
 unencrypted path provably unchanged.
+
+### Static analysis
+
+DeepSource's JavaScript analyzer failed this branch on **JS-0067** — `SyncView` was declared
+as a top-level `export function`, which the analyzer reads as a global-scope declaration.
+The `.deepsource.toml` `skip = true` for JS-0067 does not suppress findings on new code
+(LESSON-031, plans/112), so the fix is at code level: `SyncView` is now
+`export const SyncView = () => {}`, matching the repo convention. This was pre-existing
+style in a file this branch had to touch.

@@ -42,7 +42,9 @@ interface SyncEvent {
 }
 
 /** Peer-to-peer sync view with room management, QR pairing, conflict resolution, and presence. */
-export function SyncView() {
+// Arrow form, not `function`: DeepSource flags top-level function declarations in modules
+// as global-scope declarations (JS-0067), and the repo convention is `const fn = () => {}`.
+export const SyncView = () => {
   const entities = useStudioStore((s) => s.entities)
   const claims = useStudioStore((s) => s.claims)
   const { peers: presencePeers } = usePresence()
