@@ -113,8 +113,111 @@ const useRoomDiscovery = (
     startDiscovery(roomId, (peers) => {
       setDiscoveredPeers(peers)
     })
-    return () => { stopDiscovery() }
+    return () => {
+      stopDiscovery()
+    }
   }, [status, roomId, setDiscoveredPeers])
+}
+
+/** Maps a sync event type to its status-dot colour. */
+const eventDotClass = (type: SyncEvent['type']): string => {
+  switch (type) {
+    case 'join':
+      return 'bg-emerald-500'
+    case 'leave':
+      return 'bg-ink-faint'
+    case 'sync':
+      return 'bg-saffron'
+    case 'error':
+      return 'bg-red-500'
+  }
+}
+
+/** Page header for the sync view. */
+const SyncHeader = ({ reducedMotion }: { reducedMotion: boolean }) => (
+  <motion.div
+    initial={reducedMotion ? false : { opacity: 0, y: 6 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={reducedMotion ? { duration: 0 } : undefined}
+    className="mb-6 flex items-start gap-4"
+  >
+    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-sage to-emerald-600 text-white shadow-sm">
+      <Wifi className="h-6 w-6" />
+    </div>
+    <div className="flex-1">
+      <h1 className="font-serif text-2xl font-semibold text-ink">Sync</h1>
+      <p className="text-[13px] text-ink-mute">
+        Connect devices and sync your knowledge base peer-to-peer.
+      </p>
+    </div>
+  </motion.div>
+)
+
+/** Conflict-resolution card, rendered only while conflicts are pending. */
+const ConflictSection = ({
+  conflicts,
+  onResolve,
+  onDismiss,
+  reducedMotion,
+}: {
+  conflicts: FieldConflict[]
+  onResolve: (resolutions: Map<string, 'local' | 'remote'>) => void
+  onDismiss: () => void
+  reducedMotion: boolean
+}) => {
+  if (conflicts.length === 0) return null
+  return (
+    <motion.div
+      initial={reducedMotion ? false : { opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={reducedMotion ? { duration: 0 } : undefined}
+      className="mb-6"
+    >
+      <ConflictUI conflicts={conflicts} onResolve={onResolve} onDismiss={onDismiss} />
+    </motion.div>
+  )
+}
+
+/** Chronological list of sync events. */
+const SyncHistoryCard = ({ events }: { events: SyncEvent[] }) => (
+  <div className="rounded-lg border border-border bg-card p-5">
+    <h2 className="mb-3 font-serif text-[15px] font-semibold text-ink">
+      <History className="mr-1.5 inline h-4 w-4" />
+      Sync History
+    </h2>
+    {events.length === 0 ? (
+      <p className="text-[13px] text-ink-faint">No sync events yet.</p>
+    ) : (
+      <div className="space-y-2">
+        {events.map((event) => (
+          <div
+            key={event.id}
+            className="flex items-center gap-3 rounded-md bg-muted/30 px-3 py-2"
+          >
+            <span className={cn('h-2 w-2 shrink-0 rounded-full', eventDotClass(event.type))} />
+            <span className="flex-1 text-[13px] text-ink">{event.message}</span>
+            <span className="text-caption text-ink-faint">
+              {new Date(event.timestamp).toLocaleTimeString()}
+            </span>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+)
+
+/** Online collaborators card, rendered only when peers are present. */
+const OnlineUsersCard = ({ visible }: { visible: boolean }) => {
+  if (!visible) return null
+  return (
+    <div className="mt-6 rounded-lg border border-border bg-card p-5">
+      <h2 className="mb-3 font-serif text-[15px] font-semibold text-ink">
+        <Users className="mr-1.5 inline h-4 w-4" />
+        Online Users
+      </h2>
+      <PresenceList />
+    </div>
+  )
 }
 
 /** Peer-to-peer sync view with room management, QR pairing, conflict resolution, and presence. */
@@ -233,22 +336,7 @@ export const SyncView = () => {
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-6 lg:px-10 lg:py-8">
-      <motion.div
-        initial={reducedMotion ? false : { opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={reducedMotion ? { duration: 0 } : undefined}
-        className="mb-6 flex items-start gap-4"
-      >
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-sage to-emerald-600 text-white shadow-sm">
-          <Wifi className="h-6 w-6" />
-        </div>
-        <div className="flex-1">
-          <h1 className="font-serif text-2xl font-semibold text-ink">Sync</h1>
-          <p className="text-[13px] text-ink-mute">
-            Connect devices and sync your knowledge base peer-to-peer.
-          </p>
-        </div>
-      </motion.div>
+      <SyncHeader reducedMotion={reducedMotion} />
 
       <SyncStatusCard
         status={status}
@@ -269,66 +357,16 @@ export const SyncView = () => {
         onQrScan={handleQrScan}
       />
 
-      {/* Conflict Resolution */}
-      {pendingConflicts.length > 0 && (
-        <motion.div
-          initial={reducedMotion ? false : { opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={reducedMotion ? { duration: 0 } : undefined}
-          className="mb-6"
-        >
-          <ConflictUI
-            conflicts={pendingConflicts}
-            onResolve={handleConflictResolve}
-            onDismiss={handleConflictDismiss}
-          />
-        </motion.div>
-      )}
+      <ConflictSection
+        conflicts={pendingConflicts}
+        onResolve={handleConflictResolve}
+        onDismiss={handleConflictDismiss}
+        reducedMotion={reducedMotion}
+      />
 
-      {/* Sync History */}
-      <div className="rounded-lg border border-border bg-card p-5">
-        <h2 className="mb-3 font-serif text-[15px] font-semibold text-ink">
-          <History className="mr-1.5 inline h-4 w-4" />
-          Sync History
-        </h2>
-        {events.length === 0 ? (
-          <p className="text-[13px] text-ink-faint">No sync events yet.</p>
-        ) : (
-          <div className="space-y-2">
-            {events.map((event) => (
-              <div
-                key={event.id}
-                className="flex items-center gap-3 rounded-md bg-muted/30 px-3 py-2"
-              >
-                <span
-                  className={cn(
-                    'h-2 w-2 shrink-0 rounded-full',
-                    event.type === 'join' && 'bg-emerald-500',
-                    event.type === 'leave' && 'bg-ink-faint',
-                    event.type === 'sync' && 'bg-saffron',
-                    event.type === 'error' && 'bg-red-500',
-                  )}
-                />
-                <span className="flex-1 text-[13px] text-ink">{event.message}</span>
-                <span className="text-caption text-ink-faint">
-                  {new Date(event.timestamp).toLocaleTimeString()}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <SyncHistoryCard events={events} />
 
-      {/* Online Users */}
-      {presencePeers.length > 0 && (
-        <div className="mt-6 rounded-lg border border-border bg-card p-5">
-          <h2 className="mb-3 font-serif text-[15px] font-semibold text-ink">
-            <Users className="mr-1.5 inline h-4 w-4" />
-            Online Users
-          </h2>
-          <PresenceList />
-        </div>
-      )}
+      <OnlineUsersCard visible={presencePeers.length > 0} />
     </div>
   )
 }
