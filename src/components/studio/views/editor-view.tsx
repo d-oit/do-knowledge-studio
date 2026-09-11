@@ -117,8 +117,27 @@ const describeSelection = (
 }
 
 /** Format commands: command name → editor transform applied to the selection. */
+/** Supported toolbar/keyboard format commands (static allowlist). */
+const FORMAT_COMMANDS = [
+  'bold',
+  'italic',
+  'h1',
+  'h2',
+  'bullet',
+  'ordered',
+  'quote',
+  'code',
+  'link',
+] as const
+
+type FormatCommand = (typeof FORMAT_COMMANDS)[number]
+
+/** Narrows a raw command string to a supported FormatCommand. */
+const isFormatCommand = (command: string): command is FormatCommand =>
+  (FORMAT_COMMANDS as readonly string[]).includes(command)
+
 const FORMAT_HANDLERS: Record<
-  string,
+  FormatCommand,
   (content: string, sel: MarkdownSelection) => MarkdownCommandResult
 > = {
   bold: (c, s) => applyBold(c, s),
@@ -294,9 +313,11 @@ export const EditorView = () => {
   const handleFormat = useCallback((command: string) => {
     const textarea = textareaRef.current
     if (!textarea) return
-    if (!Object.prototype.hasOwnProperty.call(FORMAT_HANDLERS, command)) return
-    const handler = FORMAT_HANDLERS[command]
-    const result = handler(content, describeSelection(content, textarea))
+    // Allowlist guard narrows the key to the FormatCommand union, so the
+    // lookup below is over a closed literal key space (no dynamic string
+    // indexing) — mirrors the object-injection-safe pattern in `topbar`.
+    if (!isFormatCommand(command)) return
+    const result = FORMAT_HANDLERS[command](content, describeSelection(content, textarea))
     setContent(result.text)
     requestAnimationFrame(() => {
       const el = textareaRef.current
