@@ -41,6 +41,82 @@ interface SyncEvent {
   timestamp: number
 }
 
+interface SyncProviderEventHandlers {
+  addEvent: (type: SyncEvent['type'], message: string) => void
+  setStatus: (status: SyncStatus) => void
+  setSyncedEntities: (count: number) => void
+  setSyncedClaims: (count: number) => void
+  setPeerCount: (count: number) => void
+}
+
+/**
+ * Subscribes to the active provider's `synced`, `status`, and `peers` events and folds them
+ * into view state. Extracted from `SyncView` to keep that component under the DeepSource
+ * JS-R1005 complexity ceiling; every handler passed in is a stable setter or `useCallback`,
+ * so the subscription is established once rather than re-bound on each render.
+ */
+const useSyncProviderEvents = ({
+  addEvent,
+  setStatus,
+  setSyncedEntities,
+  setSyncedClaims,
+  setPeerCount,
+}: SyncProviderEventHandlers): void => {
+  useEffect(() => {
+    const provider = getProvider()
+    if (!provider) return
+
+    const handleSynced = () => {
+      setStatus('connected')
+      setSyncedEntities(getYjsEntities().length)
+      setSyncedClaims(getYjsClaims().length)
+      addEvent('sync', 'Document synchronized')
+    }
+
+    const handleStatus = (data: { connected: boolean }) => {
+      if (data.connected) {
+        setStatus('connected')
+        addEvent('join', 'Connected to signaling server')
+      } else {
+        setStatus('disconnected')
+        addEvent('leave', 'Disconnected from signaling server')
+      }
+    }
+
+    const handlePeers = (data: { webrtcPeers: string[]; bcPeers: string[] }) => {
+      setPeerCount(data.webrtcPeers.length + data.bcPeers.length)
+    }
+
+    provider.on('synced', handleSynced)
+    provider.on('status', handleStatus)
+    provider.on('peers', handlePeers)
+
+    return () => {
+      provider.off('synced', handleSynced)
+      provider.off('status', handleStatus)
+      provider.off('peers', handlePeers)
+    }
+  }, [addEvent, setStatus, setSyncedEntities, setSyncedClaims, setPeerCount])
+}
+
+/**
+ * Starts LAN peer discovery while the room is connected and tears it down on cleanup.
+ * Extracted from `SyncView` for the same JS-R1005 reason as `useSyncProviderEvents`.
+ */
+const useRoomDiscovery = (
+  status: SyncStatus,
+  roomId: string,
+  setDiscoveredPeers: (peers: PeerInfo[]) => void,
+): void => {
+  useEffect(() => {
+    if (status !== 'connected' || !roomId) return
+    startDiscovery(roomId, (peers) => {
+      setDiscoveredPeers(peers)
+    })
+    return () => { stopDiscovery() }
+  }, [status, roomId, setDiscoveredPeers])
+}
+
 /** Peer-to-peer sync view with room management, QR pairing, conflict resolution, and presence. */
 // Arrow form, not `function`: DeepSource flags top-level function declarations in modules
 // as global-scope declarations (JS-0067), and the repo convention is `const fn = () => {}`.
@@ -78,52 +154,10 @@ export const SyncView = () => {
     })
   }, [addEvent])
 
-  useEffect(() => {
-    const provider = getProvider()
-    if (!provider) return
+  useSyncProviderEvents({ addEvent, setStatus, setSyncedEntities, setSyncedClaims, setPeerCount })
+  useRoomDiscovery(status, roomId, setDiscoveredPeers)
 
-    const handleSynced = () => {
-      setStatus('connected')
-      setSyncedEntities(getYjsEntities().length)
-      setSyncedClaims(getYjsClaims().length)
-      addEvent('sync', 'Document synchronized')
-    }
-
-    const handleStatus = (data: { connected: boolean }) => {
-      if (data.connected) {
-        setStatus('connected')
-        addEvent('join', 'Connected to signaling server')
-      } else {
-        setStatus('disconnected')
-        addEvent('leave', 'Disconnected from signaling server')
-      }
-    }
-
-    const handlePeers = (data: { webrtcPeers: string[]; bcPeers: string[] }) => {
-      setPeerCount(data.webrtcPeers.length + data.bcPeers.length)
-    }
-
-    provider.on('synced', handleSynced)
-    provider.on('status', handleStatus)
-    provider.on('peers', handlePeers)
-
-    return () => {
-      provider.off('synced', handleSynced)
-      provider.off('status', handleStatus)
-      provider.off('peers', handlePeers)
-    }
-  }, [addEvent])
-
-  useEffect(() => {
-    if (status === 'connected' && roomId) {
-      startDiscovery(roomId, (peers) => {
-        setDiscoveredPeers(peers)
-      })
-      return () => { stopDiscovery() }
-    }
-  }, [status, roomId])
-
-  const handleJoin = useCallback(async () => {
+  const handleJoin = useCallback(() => {
     const id = inputRoomId.trim() || generateRoomId()
     // A blank password means "no encryption": omit the option entirely so the unencrypted
     // path stays identical instead of passing an empty-string secret to y-webrtc.
@@ -223,7 +257,7 @@ export const SyncView = () => {
         onInputChange={setInputRoomId}
         inputPassword={roomPassword}
         onPasswordChange={setRoomPassword}
-        onJoin={() => { void handleJoin() }}
+        onJoin={handleJoin}
         peerCount={peerCount}
         syncedEntities={syncedEntities}
         syncedClaims={syncedClaims}

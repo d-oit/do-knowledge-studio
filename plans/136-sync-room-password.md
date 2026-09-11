@@ -58,3 +58,14 @@ The `.deepsource.toml` `skip = true` for JS-0067 does not suppress findings on n
 (LESSON-031, plans/112), so the fix is at code level: `SyncView` is now
 `export const SyncView = () => {}`, matching the repo convention. This was pre-existing
 style in a file this branch had to touch.
+
+A second DeepSource round then flagged two more findings on the same file, both fixed at
+code level rather than suppressed:
+
+- **JS-R1005** — `SyncView` had a cyclomatic complexity of 8. The provider-event and LAN
+  discovery effects were extracted into `useSyncProviderEvents` and `useRoomDiscovery` at
+  module scope. Both take only stable setters/`useCallback`s, so subscriptions are still
+  established once; the component's own complexity drops well under the ceiling.
+- **JS-0116** — `handleJoin` was declared `async` without a single `await`. It is now a
+  plain callback, and `onJoin` receives it directly instead of wrapping it in
+  `() => { void handleJoin() }`.
