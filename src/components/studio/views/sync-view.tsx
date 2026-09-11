@@ -30,7 +30,7 @@ import { ConflictUI } from '../conflict-ui'
 import type { FieldConflict } from '@/lib/sync/merge'
 import { PresenceList } from '../presence-indicator'
 import { usePresence } from '@/lib/sync/use-presence'
-import { t } from '@/lib/i18n/messages/sync'
+import { translate as t } from '@/lib/i18n/messages/sync'
 
 type SyncStatus = 'disconnected' | 'connecting' | 'connected' | 'error'
 type PairingMode = 'none' | 'display' | 'scan'

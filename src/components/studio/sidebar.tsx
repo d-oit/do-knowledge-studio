@@ -25,7 +25,7 @@ import { useStudioStore } from '@/lib/studio/store'
 import type { ViewId } from '@/lib/studio/types'
 import packageJson from '../../../package.json'
 import { cn } from '@/lib/utils'
-import { t } from '@/lib/i18n/messages/timeline'
+import { translate as t } from '@/lib/i18n/messages/timeline'
 import { ShortcutsTrigger } from './shortcuts-dialog'
 
 interface NavItem {
