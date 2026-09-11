@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { ReactNode } from 'react'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
+import { joinRoom } from '@/lib/sync'
 
 vi.mock('framer-motion', () => ({
   motion: {
@@ -178,5 +179,33 @@ describe('SyncView', () => {
   it('renders wifi icon in header', () => {
     const { container } = render(<SyncView />)
     expect(container.querySelector('[data-testid="icon"]')).toBeDefined()
+  })
+
+  it('renders the room password input masked', () => {
+    render(<SyncView />)
+    expect(screen.getByLabelText('Room password')).toHaveAttribute('type', 'password')
+  })
+
+  it('passes the room password through to joinRoom', () => {
+    render(<SyncView />)
+    fireEvent.change(screen.getByLabelText('Room ID'), { target: { value: 'room-42' } })
+    fireEvent.change(screen.getByLabelText('Room password'), { target: { value: 'hunter2' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Join' }))
+    expect(joinRoom).toHaveBeenCalledWith('room-42', { password: 'hunter2' })
+  })
+
+  it('omits the password option entirely when the field is blank', () => {
+    render(<SyncView />)
+    fireEvent.change(screen.getByLabelText('Room ID'), { target: { value: 'room-99' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Join' }))
+    expect(joinRoom).toHaveBeenCalledWith('room-99')
+  })
+
+  it('never writes the room password into the sync event history', () => {
+    render(<SyncView />)
+    fireEvent.change(screen.getByLabelText('Room ID'), { target: { value: 'room-7' } })
+    fireEvent.change(screen.getByLabelText('Room password'), { target: { value: 'top-secret' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Join' }))
+    expect(screen.queryByText(/top-secret/)).toBeNull()
   })
 })

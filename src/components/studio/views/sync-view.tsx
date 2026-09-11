@@ -49,6 +49,8 @@ export function SyncView() {
   const [status, setStatus] = useState<SyncStatus>('disconnected')
   const [roomId, setRoomId] = useState('')
   const [inputRoomId, setInputRoomId] = useState('')
+  // Held in component state only — never persisted, logged, or added to the event history.
+  const [roomPassword, setRoomPassword] = useState('')
   const [peerCount, setPeerCount] = useState(0)
   const [events, setEvents] = useState<SyncEvent[]>([])
   const [syncedEntities, setSyncedEntities] = useState(0)
@@ -121,13 +123,23 @@ export function SyncView() {
 
   const handleJoin = useCallback(async () => {
     const id = inputRoomId.trim() || generateRoomId()
+    // A blank password means "no encryption": omit the option entirely so the unencrypted
+    // path stays identical instead of passing an empty-string secret to y-webrtc.
+    const password = roomPassword.trim()
     setStatus('connecting')
     addEvent('join', `Joining room ${id}…`)
 
     try {
-      joinRoom(id)
+      // Call through with no second argument when unencrypted, so the existing code path
+      // (and its arity) is untouched.
+      if (password) {
+        joinRoom(id, { password })
+      } else {
+        joinRoom(id)
+      }
       setRoomId(id)
       setInputRoomId('')
+      setRoomPassword('')
 
       mergeIntoYjs(entities, claims)
       addEvent('sync', `Merged ${entities.length} entities, ${claims.length} claims`)
@@ -138,7 +150,7 @@ export function SyncView() {
       addEvent('error', `Failed to join: ${msg}`)
       toast.error(`Failed to join room: ${msg}`)
     }
-  }, [inputRoomId, entities, claims, addEvent])
+  }, [inputRoomId, roomPassword, entities, claims, addEvent])
 
   const handleLeave = useCallback(() => {
     stopDiscovery()
@@ -147,6 +159,7 @@ export function SyncView() {
     setRoomId('')
     setPeerCount(0)
     setDiscoveredPeers([])
+    setRoomPassword('')
     addEvent('leave', 'Left sync room')
     toast.info('Left sync room')
   }, [addEvent])
@@ -206,6 +219,8 @@ export function SyncView() {
         roomId={roomId}
         inputRoomId={inputRoomId}
         onInputChange={setInputRoomId}
+        inputPassword={roomPassword}
+        onPasswordChange={setRoomPassword}
         onJoin={() => { void handleJoin() }}
         peerCount={peerCount}
         syncedEntities={syncedEntities}

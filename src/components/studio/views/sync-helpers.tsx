@@ -250,10 +250,24 @@ const ConnectedControls = ({
   )
 }
 
-/** Panel shown when disconnected: room ID input, QR pairing, and join controls. */
+/**
+ * User-facing copy for the room password control, grouped so the strings stay
+ * localizable. `help` deliberately states that the password is never stored: it lives in
+ * component state only, and `y-webrtc` derives an encryption key from it without ever
+ * putting it on the wire.
+ */
+const ROOM_PASSWORD_STRINGS = {
+  label: 'Room password',
+  placeholder: 'Optional — encrypt this room',
+  help: 'Both devices must enter the same password to read each other\u2019s changes. It is never stored, and a mismatch cannot be signalled — the room simply will not decrypt.',
+} as const
+
+/** Panel shown when disconnected: room ID input, optional room password, QR pairing, and join controls. */
 const DisconnectedPanel = ({
   inputRoomId,
   onInputChange,
+  inputPassword,
+  onPasswordChange,
   onJoin,
   pairingMode,
   onPairingModeChange,
@@ -262,6 +276,8 @@ const DisconnectedPanel = ({
 }: {
   inputRoomId: string
   onInputChange: (value: string) => void
+  inputPassword: string
+  onPasswordChange: (value: string) => void
   onJoin: () => void
   pairingMode: PairingMode
   onPairingModeChange: (mode: PairingMode) => void
@@ -294,6 +310,25 @@ const DisconnectedPanel = ({
           </button>
         </div>
       </div>
+      <div>
+        <label htmlFor="sync-room-password" className="mb-1.5 text-label font-semibold uppercase tracking-wide text-ink-faint">
+          {ROOM_PASSWORD_STRINGS.label}
+        </label>
+        <input
+          id="sync-room-password"
+          type="password"
+          autoComplete="off"
+          value={inputPassword}
+          onChange={(e) => { onPasswordChange(e.target.value) }}
+          onKeyDown={(e) => { if (e.key === 'Enter') onJoin() }}
+          aria-describedby="sync-room-password-help"
+          placeholder={ROOM_PASSWORD_STRINGS.placeholder}
+          className="w-full min-h-[44px] rounded-md border border-border bg-background px-3 py-2 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+        />
+        <p id="sync-room-password-help" className="mt-1.5 text-caption text-ink-faint">
+          {ROOM_PASSWORD_STRINGS.help}
+        </p>
+      </div>
       <p className="text-caption text-ink-faint">
         Share the room ID or QR code with another device to start syncing. Both devices must be online simultaneously for initial connection.
       </p>
@@ -307,6 +342,8 @@ export const SyncStatusCard = ({
   roomId,
   inputRoomId,
   onInputChange,
+  inputPassword,
+  onPasswordChange,
   onJoin,
   peerCount,
   syncedEntities,
@@ -322,6 +359,8 @@ export const SyncStatusCard = ({
   roomId: string
   inputRoomId: string
   onInputChange: (value: string) => void
+  inputPassword: string
+  onPasswordChange: (value: string) => void
   onJoin: () => void
   peerCount: number
   syncedEntities: number
@@ -356,6 +395,8 @@ export const SyncStatusCard = ({
         <DisconnectedPanel
           inputRoomId={inputRoomId}
           onInputChange={onInputChange}
+          inputPassword={inputPassword}
+          onPasswordChange={onPasswordChange}
           onJoin={onJoin}
           pairingMode={pairingMode}
           onPairingModeChange={onPairingModeChange}

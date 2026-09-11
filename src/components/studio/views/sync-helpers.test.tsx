@@ -19,6 +19,8 @@ const defaultProps = {
   roomId: 'room-123',
   inputRoomId: '',
   onInputChange: vi.fn(),
+  inputPassword: '',
+  onPasswordChange: vi.fn(),
   onJoin: vi.fn(),
   peerCount: 0,
   syncedEntities: 0,
@@ -79,6 +81,25 @@ describe('SyncStatusCard', () => {
     fireEvent.change(input, { target: { value: 'abc123' } })
     expect(defaultProps.onInputChange).toHaveBeenCalledWith('abc123')
     fireEvent.keyDown(input, { key: 'Enter' })
+    expect(defaultProps.onJoin).toHaveBeenCalled()
+  })
+
+  it('renders the room password input masked and labelled', () => {
+    render(<SyncStatusCard {...defaultProps} />)
+    expect(screen.getByLabelText('Room password')).toHaveAttribute('type', 'password')
+  })
+
+  it('forwards room password changes', () => {
+    render(<SyncStatusCard {...defaultProps} />)
+    fireEvent.change(screen.getByLabelText('Room password'), { target: { value: 's3cret' } })
+    expect(defaultProps.onPasswordChange).toHaveBeenCalledWith('s3cret')
+  })
+
+  it('joins on Enter from the password field and links its help text', () => {
+    render(<SyncStatusCard {...defaultProps} />)
+    const password = screen.getByLabelText('Room password')
+    expect(password).toHaveAttribute('aria-describedby', 'sync-room-password-help')
+    fireEvent.keyDown(password, { key: 'Enter' })
     expect(defaultProps.onJoin).toHaveBeenCalled()
   })
 
