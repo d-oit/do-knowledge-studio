@@ -175,6 +175,59 @@ describe('buildHtmlExport', () => {
     const html = buildHtmlExport(SAMPLE_ENTITIES, [])
     expect(html).toContain('Content-Security-Policy')
   })
+
+  it('escapes malicious entity type and verification status strings', () => {
+    const untrustedEntities = [
+      {
+        ...SAMPLE_ENTITIES[0],
+        type: 'concept" onload="alert(1)' as any,
+      },
+    ]
+    const untrustedClaims = [
+      {
+        ...SAMPLE_CLAIMS[0],
+        verification: '<script>alert(1)</script>' as any,
+      },
+    ]
+    const html = buildHtmlExport(untrustedEntities, untrustedClaims)
+    expect(html).not.toContain('onload="alert(1)"')
+    expect(html).not.toContain('<script>alert(1)</script>')
+    expect(html).toContain('concept&quot; onload=&quot;alert(1)')
+    expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;')
+  })
+
+  it('renders safe sourceUrl and strips dangerous schemes in HTML, Markdown, and DOCX exports', async () => {
+    const safeEntity = [
+      {
+        ...SAMPLE_ENTITIES[0],
+        sourceUrl: 'https://example.com/valid',
+      },
+    ]
+    const maliciousEntity = [
+      {
+        ...SAMPLE_ENTITIES[0],
+        sourceUrl: 'javascript:alert(1)',
+      },
+    ]
+
+    const safeHtml = buildHtmlExport(safeEntity, [])
+    expect(safeHtml).toContain('<a href="https://example.com/valid">https://example.com/valid</a>')
+
+    const unsafeHtml = buildHtmlExport(maliciousEntity, [])
+    expect(unsafeHtml).not.toContain('javascript:alert(1)')
+
+    const safeMd = buildMarkdownExport(safeEntity, [])
+    expect(safeMd).toContain('**Source:** https://example.com/valid')
+
+    const unsafeMd = buildMarkdownExport(maliciousEntity, [])
+    expect(unsafeMd).not.toContain('javascript:')
+
+    const safeDocx = await buildDocxExport(safeEntity, [])
+    expect(safeDocx).toBeInstanceOf(Blob)
+
+    const unsafeDocx = await buildDocxExport(maliciousEntity, [])
+    expect(unsafeDocx).toBeInstanceOf(Blob)
+  })
 })
 
 describe('parseImportFile', () => {
