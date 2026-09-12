@@ -3,6 +3,22 @@ import { validateImportPayload } from '@/lib/studio/schema'
 import { escapeHtml, sanitizeUrl } from '@/lib/security'
 import { buildClaimsByEntityId, type ExportOptions, type ImportResult } from './export-types'
 
+/**
+ * Sanitizes a URL for embedding inside exported *markup* (Markdown/HTML text).
+ * `sanitizeUrl` only vets the protocol — a value such as
+ * `https://example.test/<script>alert(1)</script>` would otherwise reach the
+ * output verbatim. Angle brackets are percent-encoded, which keeps the URL
+ * resolvable (unlike HTML-entity escaping, which would corrupt query strings)
+ * while making raw-tag injection impossible.
+ *
+ * Returns `null` when the URL is unsafe or empty (nothing should be emitted).
+ */
+const sanitizeExportUrl = (url: string): string | null => {
+  const safe = sanitizeUrl(url)
+  if (safe === '') return null
+  return safe.replace(/</g, '%3C').replace(/>/g, '%3E')
+}
+
 /** Builds a JSON export string including graph, mind map, links, and tags. */
 export const buildJsonExport = (
   entities: Entity[],
@@ -42,7 +58,7 @@ export const buildMarkdownExport = (entities: Entity[], claims: Claim[]): string
     parts.push(`**Type:** ${safeType.charAt(0).toUpperCase() + safeType.slice(1)}  `)
     parts.push(`**Tags:** ${tags}  `)
     if (e.sourceUrl) {
-      const safeUrl = sanitizeUrl(e.sourceUrl)
+      const safeUrl = sanitizeExportUrl(e.sourceUrl)
       if (safeUrl) parts.push(`**Source:** ${safeUrl}  `)
     }
     parts.push(`**Created:** ${created}  `)
@@ -88,12 +104,14 @@ export const buildHtmlExport = (entities: Entity[], claims: Claim[]): string => 
             )
             .join('')}</ul>`
         : '<p class="meta">No claims.</p>'
-      const safeSource = e.sourceUrl ? sanitizeUrl(e.sourceUrl) : ''
-      const sourceHtml = safeSource
-        ? `<p class="meta">Source: <a href="${escapeHtml(safeSource)}">${escapeHtml(
-            e.sourceUrl!,
-          )}</a></p>`
-        : ''
+      const rawSource = e.sourceUrl
+      const safeSource = rawSource ? sanitizeUrl(rawSource) : ''
+      const sourceHtml =
+        rawSource && safeSource
+          ? `<p class="meta">Source: <a href="${escapeHtml(safeSource)}">${escapeHtml(
+              rawSource,
+            )}</a></p>`
+          : ''
       return `<article>
   <header>
     <span class="type ${escapeHtml(e.type)}">${escapeHtml(e.type)}</span>

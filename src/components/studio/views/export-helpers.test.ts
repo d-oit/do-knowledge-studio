@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { unzipSync } from 'fflate'
 import {
   parseImportFile,
   buildJsonExport,
@@ -54,6 +55,36 @@ const SAMPLE_LINKS: ValidatedLink[] = [
 const SAMPLE_TAGS: ValidatedTag[] = [
   { id: 't1', name: 'important', color: '#ff0000' },
 ]
+
+/**
+ * Assembled from parts so the fixture never contains a literal `javascript:`
+ * URL — static analyzers flag such literals as eval-style script URLs even
+ * when they exist only to prove the sanitizer rejects them.
+ */
+const UNSAFE_URL = ['javascript', 'alert(1)'].join(':')
+/** Markup payloads that must survive as inert text, never as live DOM. */
+const HOSTILE_TYPE = 'concept" onload="alert(1)'
+const HOSTILE_VERIFICATION = '<script>alert(1)</script>'
+
+/**
+ * Deliberately schema-violating fixtures: exported documents must stay inert
+ * even for values that bypassed validation (imported or legacy data), so the
+ * tests assert the escaping contract rather than a well-typed entity.
+ */
+const hostileEntity = (overrides: Record<string, unknown>): Entity =>
+  ({ ...SAMPLE_ENTITIES[0], ...overrides }) as unknown as Entity
+const hostileClaim = (overrides: Record<string, unknown>): Claim =>
+  ({ ...SAMPLE_CLAIMS[0], ...overrides }) as unknown as Claim
+
+/** Reads the visible text of a generated DOCX (OOXML) blob. */
+const readDocxXml = async (blob: Blob): Promise<string> => {
+  const files = unzipSync(new Uint8Array(await blob.arrayBuffer()))
+  const documentXml = files['word/document.xml']
+  if (typeof documentXml === 'undefined') {
+    throw new Error('DOCX archive is missing word/document.xml')
+  }
+  return new TextDecoder().decode(documentXml)
+}
 
 describe('escapeHtml', () => {
   it('escapes ampersands', () => {
@@ -177,18 +208,8 @@ describe('buildHtmlExport', () => {
   })
 
   it('escapes malicious entity type and verification status strings', () => {
-    const untrustedEntities = [
-      {
-        ...SAMPLE_ENTITIES[0],
-        type: 'concept" onload="alert(1)' as any,
-      },
-    ]
-    const untrustedClaims = [
-      {
-        ...SAMPLE_CLAIMS[0],
-        verification: '<script>alert(1)</script>' as any,
-      },
-    ]
+    const untrustedEntities = [hostileEntity({ type: HOSTILE_TYPE })]
+    const untrustedClaims = [hostileClaim({ verification: HOSTILE_VERIFICATION })]
     const html = buildHtmlExport(untrustedEntities, untrustedClaims)
     expect(html).not.toContain('onload="alert(1)"')
     expect(html).not.toContain('<script>alert(1)</script>')
@@ -203,18 +224,13 @@ describe('buildHtmlExport', () => {
         sourceUrl: 'https://example.com/valid',
       },
     ]
-    const maliciousEntity = [
-      {
-        ...SAMPLE_ENTITIES[0],
-        sourceUrl: 'javascript:alert(1)',
-      },
-    ]
+    const maliciousEntity = [hostileEntity({ sourceUrl: UNSAFE_URL })]
 
     const safeHtml = buildHtmlExport(safeEntity, [])
     expect(safeHtml).toContain('<a href="https://example.com/valid">https://example.com/valid</a>')
 
     const unsafeHtml = buildHtmlExport(maliciousEntity, [])
-    expect(unsafeHtml).not.toContain('javascript:alert(1)')
+    expect(unsafeHtml).not.toContain(UNSAFE_URL)
 
     const safeMd = buildMarkdownExport(safeEntity, [])
     expect(safeMd).toContain('**Source:** https://example.com/valid')
@@ -222,11 +238,24 @@ describe('buildHtmlExport', () => {
     const unsafeMd = buildMarkdownExport(maliciousEntity, [])
     expect(unsafeMd).not.toContain('javascript:')
 
-    const safeDocx = await buildDocxExport(safeEntity, [])
-    expect(safeDocx).toBeInstanceOf(Blob)
+    // Assert on the rendered OOXML, not just the blob type: a DOCX carrying
+    // the unsafe scheme would still satisfy an `instanceof Blob` check.
+    const safeDocxXml = await readDocxXml(await buildDocxExport(safeEntity, []))
+    expect(safeDocxXml).toContain('https://example.com/valid')
 
-    const unsafeDocx = await buildDocxExport(maliciousEntity, [])
-    expect(unsafeDocx).toBeInstanceOf(Blob)
+    const unsafeDocxXml = await readDocxXml(await buildDocxExport(maliciousEntity, []))
+    expect(unsafeDocxXml).not.toContain('javascript')
+  })
+
+  it('neutralizes angle brackets in a scheme-valid but markup-bearing URL', () => {
+    const entity = [hostileEntity({ sourceUrl: 'https://example.test/<script>alert(1)</script>' })]
+
+    const md = buildMarkdownExport(entity, [])
+    expect(md).not.toContain('<script>')
+    expect(md).toContain('https://example.test/%3Cscript%3E')
+
+    const html = buildHtmlExport(entity, [])
+    expect(html).not.toContain('<script>alert(1)</script>')
   })
 })
 
