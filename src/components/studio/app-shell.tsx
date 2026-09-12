@@ -46,40 +46,54 @@ function ViewLoader() {
   )
 }
 
-const VIEW_NAMES: Record<ViewId, string> = {
-  home: 'Home',
-  editor: 'Editor',
-  library: 'Library',
-  timeline: translate('timeline.nav.label'),
-  graph: 'Graph',
-  mindmap: 'Mind Map',
-  chat: 'Chat',
-  ai: 'AI Harness',
-  triz: 'TRIZ Matrix',
-  export: 'Export',
-  sync: 'Sync',
-}
+/**
+ * View id → display name. Held in a Map so the lookup is a method call rather
+ * than dynamic property access on an object (static-analysis object-injection
+ * sink), while staying a single table instead of a per-view switch.
+ */
+const VIEW_NAMES = new Map<ViewId, string>([
+  ['home', 'Home'],
+  ['editor', 'Editor'],
+  ['library', 'Library'],
+  ['timeline', translate('timeline.nav.label')],
+  ['graph', 'Graph'],
+  ['mindmap', 'Mind Map'],
+  ['chat', 'Chat'],
+  ['ai', 'AI Harness'],
+  ['triz', 'TRIZ Matrix'],
+  ['export', 'Export'],
+  ['sync', 'Sync'],
+])
 
 /** Returns a human-readable display name for a given view ID. */
-const getViewName = (view: ViewId): string => VIEW_NAMES[view]
+const getViewName = (view: ViewId): string => VIEW_NAMES.get(view) ?? ''
+
+/** Pairs a view id with its element for the router's lookup table. */
+const viewEntry = (id: ViewId, element: React.ReactNode): [ViewId, React.ReactNode] => [
+  id,
+  element,
+]
 
 /**
- * Total view → element map. A bounded Record lookup (no dynamic indexing on a
- * wider type, no boolean chains) keeps the router's cyclomatic complexity at 1.
+ * Total view → element map. A Map (rather than a Record) keeps the router's
+ * lookups off dynamic property access while still collapsing the per-view
+ * boolean chain into one branch, so the router's complexity stays at 1.
+ * Entries go through {@link viewEntry} so the JSX lives in call arguments
+ * rather than as bare array elements (which require React keys).
  */
-const VIEW_ELEMENTS: Record<ViewId, React.ReactNode> = {
-  home: <HomeView />,
-  editor: null, // Needs the editingEntityId key — handled in ViewRouter.
-  library: <LibraryView />,
-  timeline: <TimelineView />,
-  graph: <GraphView />,
-  mindmap: <MindMapView />,
-  chat: <ChatView />,
-  ai: <AIHarnessView />,
-  triz: <TrizView />,
-  export: <ExportView />,
-  sync: <SyncView />,
-}
+const VIEW_ELEMENTS = new Map<ViewId, React.ReactNode>([
+  viewEntry('home', <HomeView />),
+  viewEntry('editor', null), // Needs the editingEntityId key — handled in ViewRouter.
+  viewEntry('library', <LibraryView />),
+  viewEntry('timeline', <TimelineView />),
+  viewEntry('graph', <GraphView />),
+  viewEntry('mindmap', <MindMapView />),
+  viewEntry('chat', <ChatView />),
+  viewEntry('ai', <AIHarnessView />),
+  viewEntry('triz', <TrizView />),
+  viewEntry('export', <ExportView />),
+  viewEntry('sync', <SyncView />),
+])
 
 /** Renders the active view inside the error/suspense boundaries. */
 const ViewRouter = ({
@@ -95,7 +109,7 @@ const ViewRouter = ({
     currentView === 'editor' ? (
       <EditorView key={editingEntityId || 'new'} />
     ) : (
-      VIEW_ELEMENTS[currentView]
+      VIEW_ELEMENTS.get(currentView)
     )
   return (
     <ErrorBoundary key={currentView}>
