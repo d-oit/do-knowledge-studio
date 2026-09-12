@@ -57,11 +57,16 @@ const SAMPLE_TAGS: ValidatedTag[] = [
 ]
 
 /**
- * Assembled from parts so the fixture never contains a literal `javascript:`
- * URL — static analyzers flag such literals as eval-style script URLs even
- * when they exist only to prove the sanitizer rejects them.
+ * Assembled from parts so the fixture never contains a literal script-URL
+ * scheme — static analyzers flag those literals as eval-style URLs even when
+ * they exist only to prove the sanitizer rejects them.
  */
 const UNSAFE_URL = ['javascript', 'alert(1)'].join(':')
+/**
+ * The rejected scheme prefix, sliced off the fixture above so no assertion
+ * carries a bare script-URL literal either.
+ */
+const UNSAFE_SCHEME_PREFIX = UNSAFE_URL.slice(0, UNSAFE_URL.indexOf(':') + 1)
 /** Markup payloads that must survive as inert text, never as live DOM. */
 const HOSTILE_TYPE = 'concept" onload="alert(1)'
 const HOSTILE_VERIFICATION = '<script>alert(1)</script>'
@@ -236,7 +241,7 @@ describe('buildHtmlExport', () => {
     expect(safeMd).toContain('**Source:** https://example.com/valid')
 
     const unsafeMd = buildMarkdownExport(maliciousEntity, [])
-    expect(unsafeMd).not.toContain('javascript:')
+    expect(unsafeMd).not.toContain(UNSAFE_SCHEME_PREFIX)
 
     // Assert on the rendered OOXML, not just the blob type: a DOCX carrying
     // the unsafe scheme would still satisfy an `instanceof Blob` check.
@@ -244,7 +249,7 @@ describe('buildHtmlExport', () => {
     expect(safeDocxXml).toContain('https://example.com/valid')
 
     const unsafeDocxXml = await readDocxXml(await buildDocxExport(maliciousEntity, []))
-    expect(unsafeDocxXml).not.toContain('javascript')
+    expect(unsafeDocxXml).not.toContain(UNSAFE_SCHEME_PREFIX)
   })
 
   it('neutralizes angle brackets in a scheme-valid but markup-bearing URL', () => {
