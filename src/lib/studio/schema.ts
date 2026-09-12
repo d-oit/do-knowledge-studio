@@ -1,8 +1,34 @@
 import { z } from 'zod'
 import { sanitizeUrl } from '../security'
 
-/** Zod enum schema for EntityType. */
+/** Zod enum schema for EntityType (built-in types only). */
 export const EntityTypeSchema = z.enum(['note', 'concept', 'person', 'project'])
+
+/**
+ * Zod schema for plugin-registered custom entity type ids: a non-blank string
+ * of at most 64 characters. Validates runtime-registered types so persisted
+ * entities with custom types pass hydration.
+ */
+export const CustomEntityTypeSchema = z
+  .string()
+  .min(1)
+  .max(64)
+  .refine((s) => s.trim().length > 0, { message: 'Entity type must be a non-blank string' })
+
+/** Zod schema for any runtime entity type: built-in unions or custom strings. */
+export const AnyEntityTypeSchema = z.union([EntityTypeSchema, CustomEntityTypeSchema])
+
+/**
+ * Zod schema for a type value that can be PERSISTED on an entity or graph
+ * node. Rejects the `'all'` filter sentinel: that string is a query filter,
+ * never a stored entity type.
+ */
+export const StoredEntityTypeSchema = z.union([
+  EntityTypeSchema,
+  CustomEntityTypeSchema.refine((type) => type !== 'all', {
+    message: 'Entity type cannot be "all"',
+  }),
+])
 
 /** Zod enum schema for VerificationStatus. */
 export const VerificationStatusSchema = z.enum(['unverified', 'verified', 'disputed'])
@@ -11,7 +37,7 @@ export const VerificationStatusSchema = z.enum(['unverified', 'verified', 'dispu
 export const EntitySchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  type: EntityTypeSchema,
+  type: StoredEntityTypeSchema,
   description: z.string(),
   content: z.string(),
   sourceUrl: z
@@ -54,7 +80,7 @@ export const ClaimSchema = z.object({
 export const GraphNodeSchema = z.object({
   id: z.string().min(1),
   label: z.string(),
-  type: EntityTypeSchema,
+  type: StoredEntityTypeSchema,
   x: z.number(),
   y: z.number(),
 })
@@ -77,7 +103,7 @@ export const GraphSchema = z.object({
 export const MindMapNodeSchema = z.object({
   id: z.string().min(1),
   label: z.string(),
-  type: EntityTypeSchema,
+  type: StoredEntityTypeSchema,
   x: z.number().optional(),
   y: z.number().optional(),
 })
@@ -156,9 +182,9 @@ export const PersistedEnvelopeSchema = z.object({
   // Every partialize key must appear here — enforced by a guard test.
   chat: z.array(ChatMessageSchema).optional(),
   currentView: z
-    .enum(['home', 'editor', 'library', 'graph', 'mindmap', 'chat', 'ai', 'triz', 'export', 'sync'])
+    .enum(['home', 'editor', 'library', 'graph', 'mindmap', 'timeline', 'chat', 'ai', 'triz', 'export', 'sync'])
     .optional(),
-  typeFilter: z.union([EntityTypeSchema, z.literal('all')]).optional(),
+  typeFilter: z.union([AnyEntityTypeSchema, z.literal('all')]).optional(),
   sortBy: z.enum(['name', 'created', 'updated']).optional(),
   sortDir: z.enum(['asc', 'desc']).optional(),
   rightPanelOpen: z.boolean().optional(),

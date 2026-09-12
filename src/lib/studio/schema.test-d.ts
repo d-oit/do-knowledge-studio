@@ -1,7 +1,6 @@
 import { describe, it, expectTypeOf } from 'vitest'
 import { validatePersistedState, validateImportPayload } from './schema'
-import type { ValidatedPersistedEnvelope, ValidationError } from './schema'
-import type { Entity } from './types'
+import type { ValidatedPersistedEnvelope, ValidatedEntity, ValidationError } from './schema'
 
 /**
  * Compile-time contract tests for the studio validation layer. These files
@@ -16,7 +15,7 @@ describe('schema type contracts', () => {
       { success: true; data: ValidatedPersistedEnvelope } | { success: false; errors: ValidationError[] }
     >()
     if (result.success) {
-      expectTypeOf(result.data.entities).toEqualTypeOf<Entity[]>()
+      expectTypeOf(result.data.entities).toEqualTypeOf<ValidatedEntity[]>()
       expectTypeOf(result.data.chat).toEqualTypeOf<import('./schema').ValidatedChatMessage[] | undefined>()
     } else {
       expectTypeOf(result.errors[0].path).toEqualTypeOf<string>()

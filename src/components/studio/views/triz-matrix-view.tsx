@@ -8,6 +8,7 @@ import { TRIZ_MATRIX, TRIZ_PARAMETERS, TRIZ_PRINCIPLES } from '@/lib/studio/triz
 import { TextInput } from '../ui/shared-primitives'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { filterParams } from './triz-view-utils'
+import { translate } from '@/lib/i18n/messages/triz'
 
 type FilteredParameter = ReturnType<typeof filterParams>[number]
 
@@ -31,7 +32,7 @@ const MatrixCell = ({
   isHighlighted,
   onSelectCell,
 }: MatrixCellProps) => {
-  const cellLabel = `Principles for improving ${rowLabel} while worsening ${colLabel}`
+  const cellLabel = translate('triz.matrix.cellAria', rowLabel, colLabel)
   const cellClasses = cn(
     'min-h-[44px] min-w-[44px] px-1 py-1 text-center',
     isHighlighted
@@ -124,11 +125,11 @@ const MatrixTable = ({
   onSelectCell,
 }: MatrixTableProps) => (
   <table className="w-full text-[10px]">
-    <caption className="sr-only">TRIZ Contradiction Matrix</caption>
+    <caption className="sr-only">{translate('triz.matrix.caption')}</caption>
     <thead>
       <tr>
         <th className="sticky left-0 z-10 bg-card px-2 py-1.5 text-left font-semibold text-ink-faint">
-          ↓ Improving → Worsening
+          {translate('triz.matrix.header')}
         </th>
         {filtered.map(({ label, index }) => (
           <th
@@ -189,19 +190,19 @@ export const TrizMatrixView = ({
       <div className="mb-4 rounded-lg border border-border bg-card p-4">
         <div className="mb-3 flex items-center gap-2">
           <Eye className="h-4 w-4 text-saffron" />
-          <h2 className="font-serif text-[15px] font-semibold text-ink">Contradiction Matrix</h2>
+          <h2 className="font-serif text-[15px] font-semibold text-ink">{translate('triz.matrix.title')}</h2>
           <span className="text-caption text-ink-faint">
-            {TRIZ_PARAMETERS.length} parameters × {TRIZ_PRINCIPLES.length} principles
+            {translate('triz.matrix.dimensions', String(TRIZ_PARAMETERS.length), String(TRIZ_PRINCIPLES.length))}
           </span>
         </div>
         <p className="mb-3 text-[12px] text-ink-mute">
-          Click any cell to see the recommended inventive principles. Highlighted rows/columns show your current selection.
+          {translate('triz.matrix.hint')}
         </p>
         <TextInput
           value={matrixSearch}
           onChange={(event) => { onMatrixSearchChange(event.target.value) }}
-          placeholder="Filter parameters…"
-          aria-label="Filter TRIZ contradiction matrix parameters"
+          placeholder={translate('triz.matrix.filterPlaceholder')}
+          aria-label={translate('triz.matrix.filterAria')}
           className="mb-3"
         />
         <div className="overflow-auto rounded-md border border-border">

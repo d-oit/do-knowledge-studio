@@ -1,38 +1,188 @@
 'use client'
 
 import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
-import { ENTITY_TYPE_META } from '@/lib/studio/types'
+import { getEntityTypeMeta, type EntityTypeMeta } from '@/lib/studio/entity-types'
 import { search, type SearchResult } from '@/lib/search/retrieval'
 import { buildEntityIndex } from '@/lib/studio/graph-index'
+import type { Entity } from '@/lib/studio/types'
 import { Search, X, Sparkles, FileText, Quote, ArrowRight } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Overlay } from '@/components/studio/ui/shared-primitives'
 
-/** Right sidebar panel that switches between search, inspector, and citations based on the active view. */
-export function RightPanel() {
-  const currentView = useStudioStore((s) => s.currentView)
-  const rightPanelOpen = useStudioStore((s) => s.rightPanelOpen)
-  const chat = useStudioStore((s) => s.chat)
-  const startNew = useStudioStore((s) => s.startNew)
-
-  if (!rightPanelOpen) return null
-
-  // Contextual content per view
-  if (currentView === 'graph' || currentView === 'mindmap') {
-    return <InspectorPanel />
+/**
+ * Dedupes an entity's links for rendering: the persisted schema permits
+ * repeated `{ targetId, relation }` objects (imports/legacy data), which
+ * would otherwise produce duplicate React keys. Keeps first occurrence
+ * order-stable.
+ */
+const dedupeLinks = (links: Entity['links']): Entity['links'] => {
+  const seen = new Set<string>()
+  const out: Entity['links'] = []
+  for (const link of links) {
+    // JSON tuple key: `:` inside an id or relation would collide distinct
+    // pairs onto one key (same reason dedupeCitations uses this shape).
+    const key = JSON.stringify([link.targetId, link.relation])
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(link)
   }
-  if (currentView === 'chat' || currentView === 'ai') {
-    const hasCitations = chat.some((m) => m.citations && m.citations.length > 0)
-    if (!hasCitations) return <SearchPanel onCreateEntity={() => startNew()} />
-    return <CitationsPanel />
-  }
+  return out
+}
 
-  return <SearchPanel onCreateEntity={() => startNew()} />
+/** Dedupes chat citations for rendering (same entityId+snippet repeats on retries). */
+const dedupeCitations = (
+  citations: { entityId: string; entityName: string; snippet: string }[],
+): { entityId: string; entityName: string; snippet: string }[] => {
+  const seen = new Set<string>()
+  const out: { entityId: string; entityName: string; snippet: string }[] = []
+  for (const c of citations) {
+    const key = JSON.stringify([c.entityId, c.snippet])
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(c)
+  }
+  return out
+}
+
+/** Resolves a ranked row's click target and type metadata. */
+const resolveRankedRowMeta = (
+  result: SearchResult,
+  entityIndex: Map<string, Entity>,
+): { targetId: string | undefined; meta: EntityTypeMeta | undefined } => {
+  const targetId = result.type === 'entity' ? result.id : result.entityId
+  const resolvedEntity = targetId ? entityIndex.get(targetId) : undefined
+  return { targetId, meta: resolvedEntity ? getEntityTypeMeta(resolvedEntity.type) : undefined }
+}
+
+/** Type dot + label badge for a ranked row (extracted for complexity). */
+const RankedRowMetaBadge = ({ meta }: { meta: EntityTypeMeta | undefined }) => {
+  if (!meta) return null
+  return (
+    <>
+      <span className={cn('h-1.5 w-1.5 rounded-full', meta.dot)} />
+      <span className="rounded px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-ink-faint">
+        {meta.label}
+      </span>
+    </>
+  )
+}
+
+/**
+ * Single ranked search result row. Extracted from the SearchPanel map
+ * callback so the render body stays within the complexity ceiling.
+ */
+const RankedResultRow = ({
+  result,
+  entityIndex,
+  onStartEdit,
+}: {
+  result: SearchResult
+  entityIndex: Map<string, Entity>
+  onStartEdit: (id: string) => void
+}) => {
+  const { targetId, meta } = resolveRankedRowMeta(result, entityIndex)
+  return (
+    <li key={result.id}>
+      <button
+        onClick={() => { if (targetId) onStartEdit(targetId) }}
+        className="group block w-full min-h-[44px] rounded-md border border-transparent p-2.5 text-left transition-colors hover:border-border hover:bg-muted/50 focus-ring"
+        aria-label={`${result.name} — score ${result.score.toFixed(2)}`}
+      >
+        <div className="mb-1 flex items-center gap-2">
+          <RankedRowMetaBadge meta={meta} />
+          <span className="ml-auto text-caption tabular-nums text-ink-faint">
+            {result.score.toFixed(1)}
+          </span>
+        </div>
+        <div className="truncate text-[13px] font-medium text-ink">{result.name}</div>
+        <p className="mt-0.5 line-clamp-2 text-label leading-snug text-ink-mute">
+          {result.snippet}
+        </p>
+      </button>
+    </li>
+  )
 }
 
 /** Search panel with keyword/ranked mode toggle and entity results. */
-function SearchPanel({ onCreateEntity }: { onCreateEntity?: (name: string) => void }) {
+/** Ranked result rows for SearchPanel. */
+const RankedResultList = ({
+  results,
+  entityIndex,
+  onStartEdit,
+}: {
+  results: SearchResult[]
+  entityIndex: Map<string, Entity>
+  onStartEdit: (id: string) => void
+}) => (
+  <ul className="space-y-1.5" role="list" aria-label="Ranked search results">
+    {results.map((r) => (
+      <RankedResultRow key={r.id} result={r} entityIndex={entityIndex} onStartEdit={onStartEdit} />
+    ))}
+  </ul>
+)
+
+/** Keyword result rows for SearchPanel. */
+const KeywordResultList = ({
+  entities,
+  onStartEdit,
+}: {
+  entities: Entity[]
+  onStartEdit: (id: string) => void
+}) => (
+  <ul className="space-y-1.5" role="list" aria-label="Keyword search results">
+    {entities.slice(0, 20).map((e) => {
+      const meta = getEntityTypeMeta(e.type)
+      return (
+        <li key={e.id}>
+          <button
+            onClick={() => {
+              onStartEdit(e.id)
+            }}
+            className="group block w-full min-h-[44px] rounded-md border border-transparent p-2.5 text-left transition-colors hover:border-border hover:bg-muted/50 focus-ring"
+          >
+            <div className="mb-1 flex items-center gap-2">
+              <span className={cn('h-1.5 w-1.5 rounded-full', meta.dot)} />
+              <span className="rounded px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-ink-faint">
+                {meta.label}
+              </span>
+            </div>
+            <div className="truncate text-[13px] font-medium text-ink">{e.name}</div>
+            <p className="mt-0.5 line-clamp-2 text-label leading-snug text-ink-mute">
+              {e.description}
+            </p>
+          </button>
+        </li>
+      )
+    })}
+  </ul>
+)
+
+/** Empty state for SearchPanel (prompts for a query or offers to create an entity). */
+const SearchEmptyState = ({
+  query,
+  onCreate,
+}: {
+  query: string
+  onCreate?: (name: string) => void
+}) => (
+  <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+    <FileText className="h-8 w-8 text-ink-faint/50" />
+    <p className="text-[12px] text-ink-mute">
+      {query ? 'No matches found.' : 'Your library is empty.'}
+    </p>
+    {query && onCreate && (
+      <button
+        onClick={() => { onCreate(query) }}
+        className="mt-2 rounded-md border border-saffron/30 bg-saffron-soft px-3 py-1.5 text-[12px] font-medium text-saffron-deep transition-colors hover:bg-saffron/10 focus-ring min-h-[44px]"
+      >
+        Create &quot;{query}&quot; as new entity
+      </button>
+    )}
+  </div>
+)
+
+const SearchPanel = ({ onCreateEntity }: { onCreateEntity?: (name: string) => void }) => {
   const searchQuery = useStudioStore((s) => s.searchQuery)
   const setSearchQuery = useStudioStore((s) => s.setSearchQuery)
   const entities = useStudioStore((s) => s.entities)
@@ -96,78 +246,11 @@ function SearchPanel({ onCreateEntity }: { onCreateEntity?: (name: string) => vo
 
       <div className="flex-1 overflow-y-auto p-3" aria-live="polite" aria-atomic="false">
         {results.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-            <FileText className="h-8 w-8 text-ink-faint/50" />
-            <p className="text-[12px] text-ink-mute">
-              {searchQuery ? 'No matches found.' : 'Your library is empty.'}
-            </p>
-            {searchQuery && onCreateEntity && (
-              <button
-                onClick={() => { onCreateEntity(searchQuery) }}
-                className="mt-2 rounded-md border border-saffron/30 bg-saffron-soft px-3 py-1.5 text-[12px] font-medium text-saffron-deep transition-colors hover:bg-saffron/10 focus-ring min-h-[44px]"
-              >
-                Create &quot;{searchQuery}&quot; as new entity
-              </button>
-            )}
-          </div>
+          <SearchEmptyState query={searchQuery} onCreate={onCreateEntity} />
         ) : mode === 'ranked' ? (
-          <ul className="space-y-1.5" role="list" aria-label="Ranked search results">
-            {rankedResults.map((r: SearchResult) => {
-              const targetId = r.type === 'entity' ? r.id : r.entityId
-              const resolvedEntity = targetId ? entityIndex.get(targetId) : undefined
-              const meta = resolvedEntity ? ENTITY_TYPE_META[resolvedEntity.type] : undefined
-              return (
-                <li key={r.id}>
-                  <button
-                    onClick={() => targetId && startEdit(targetId)}
-                    className="group block w-full min-h-[44px] rounded-md border border-transparent p-2.5 text-left transition-colors hover:border-border hover:bg-muted/50 focus-ring"
-                    aria-label={`${r.name} — score ${r.score.toFixed(2)}`}
-                  >
-                    <div className="mb-1 flex items-center gap-2">
-                      {meta && <span className={cn('h-1.5 w-1.5 rounded-full', meta.dot)} />}
-                      {meta && (
-                        <span className="rounded px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-ink-faint">
-                          {meta.label}
-                        </span>
-                      )}
-                      <span className="ml-auto text-caption tabular-nums text-ink-faint">
-                        {r.score.toFixed(1)}
-                      </span>
-                    </div>
-                    <div className="truncate text-[13px] font-medium text-ink">{r.name}</div>
-                    <p className="mt-0.5 line-clamp-2 text-label leading-snug text-ink-mute">
-                      {r.snippet}
-                    </p>
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
+          <RankedResultList results={rankedResults} entityIndex={entityIndex} onStartEdit={startEdit} />
         ) : (
-          <ul className="space-y-1.5" role="list" aria-label="Keyword search results">
-            {filtered.slice(0, 20).map((e) => {
-              const meta = ENTITY_TYPE_META[e.type]
-              return (
-                <li key={e.id}>
-                  <button
-                    onClick={() => startEdit(e.id)}
-                    className="group block w-full min-h-[44px] rounded-md border border-transparent p-2.5 text-left transition-colors hover:border-border hover:bg-muted/50 focus-ring"
-                  >
-                    <div className="mb-1 flex items-center gap-2">
-                      <span className={cn('h-1.5 w-1.5 rounded-full', meta.dot)} />
-                      <span className="rounded px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-ink-faint">
-                        {meta.label}
-                      </span>
-                    </div>
-                    <div className="truncate text-[13px] font-medium text-ink">{e.name}</div>
-                    <p className="mt-0.5 line-clamp-2 text-label leading-snug text-ink-mute">
-                      {e.description}
-                    </p>
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
+          <KeywordResultList entities={filtered} onStartEdit={startEdit} />
         )}
       </div>
 
@@ -182,7 +265,39 @@ function SearchPanel({ onCreateEntity }: { onCreateEntity?: (name: string) => vo
 }
 
 /** Inspector panel showing details, connections, and actions for the selected graph/mind map node. */
-function InspectorPanel() {
+/** Connection rows for the inspector (linked entities with their relation). */
+const ConnectionList = ({
+  links,
+  entityIndex,
+  onSelect,
+}: {
+  links: Entity['links']
+  entityIndex: Map<string, Entity>
+  onSelect: (id: string) => void
+}) => (
+  <ul className="space-y-1">
+    {dedupeLinks(links).map((l) => {
+      const target = entityIndex.get(l.targetId)
+      if (!target) return null
+      return (
+        <li key={JSON.stringify([l.targetId, l.relation])}>
+          <button
+            onClick={() => {
+              onSelect(target.id)
+            }}
+            className="flex w-full min-h-[44px] items-center gap-2 rounded-md p-1.5 text-left text-[12px] text-ink-soft transition-colors hover:bg-muted focus-ring"
+          >
+            <ArrowRight className="h-3 w-3 shrink-0 text-ink-faint" />
+            <span className="flex-1 truncate">{target.name}</span>
+            <span className="text-caption italic text-ink-faint">{l.relation}</span>
+          </button>
+        </li>
+      )
+    })}
+  </ul>
+)
+
+const InspectorPanel = () => {
   const entities = useStudioStore((s) => s.entities)
   const selectedEntityId = useStudioStore((s) => s.selectedEntityId)
   const startEdit = useStudioStore((s) => s.startEdit)
@@ -203,7 +318,7 @@ function InspectorPanel() {
     )
   }
 
-  const meta = ENTITY_TYPE_META[entity.type]
+  const meta = getEntityTypeMeta(entity.type)
 
   const handleDelete = () => {
     deleteEntity(entity.id)
@@ -248,26 +363,13 @@ function InspectorPanel() {
         {entity.links.length > 0 && (
           <div className="mt-5">
             <h4 className="mb-2 text-caption font-semibold uppercase tracking-[0.14em] text-ink-faint">
-              Connections ({entity.links.length})
+              Connections ({dedupeLinks(entity.links).length})
             </h4>
-            <ul className="space-y-1">
-              {entity.links.map((l, i) => {
-                const target = entityIndex.get(l.targetId)
-                if (!target) return null
-                return (
-                  <li key={i}>
-                    <button
-                      onClick={() => selectEntity(target.id)}
-                      className="flex w-full min-h-[44px] items-center gap-2 rounded-md p-1.5 text-left text-[12px] text-ink-soft transition-colors hover:bg-muted focus-ring"
-                    >
-                      <ArrowRight className="h-3 w-3 shrink-0 text-ink-faint" />
-                      <span className="flex-1 truncate">{target.name}</span>
-                      <span className="text-caption italic text-ink-faint">{l.relation}</span>
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
+            {/* ConnectionList renders its own <ul>; a wrapper <ul> here would nest
+                lists directly (axe `list` violation), so use a plain <div>. */}
+            <div>
+              <ConnectionList links={entity.links} entityIndex={entityIndex} onSelect={selectEntity} />
+            </div>
           </div>
         )}
 
@@ -326,7 +428,7 @@ function InspectorPanel() {
 }
 
 /** Citations panel listing sources cited by the AI assistant in chat. */
-function CitationsPanel() {
+const CitationsPanel = () => {
   const chat = useStudioStore((s) => s.chat)
   const entities = useStudioStore((s) => s.entities)
   const lastAssistant = [...chat].reverse().find((m) => m.role === 'assistant')
@@ -349,9 +451,9 @@ function CitationsPanel() {
           </div>
         ) : (
           <ul className="space-y-2">
-            {citations.map((c, i) => (
+            {dedupeCitations(citations).map((c, i) => (
               <li
-                key={i}
+                key={JSON.stringify([c.entityId, c.snippet])}
                 className="rounded-md border border-border bg-muted/30 p-3"
               >
                 <div className="mb-1 flex items-center gap-2">
@@ -375,4 +477,26 @@ function CitationsPanel() {
       </div>
     </aside>
   )
+}
+
+/** Right sidebar panel that switches between search, inspector, and citations based on the active view. */
+export const RightPanel = () => {
+  const currentView = useStudioStore((s) => s.currentView)
+  const rightPanelOpen = useStudioStore((s) => s.rightPanelOpen)
+  const chat = useStudioStore((s) => s.chat)
+  const startNew = useStudioStore((s) => s.startNew)
+
+  if (!rightPanelOpen) return null
+
+  // Contextual content per view
+  if (currentView === 'graph' || currentView === 'mindmap') {
+    return <InspectorPanel />
+  }
+  if (currentView === 'chat' || currentView === 'ai') {
+    const hasCitations = chat.some((m) => m.citations && m.citations.length > 0)
+    if (!hasCitations) return <SearchPanel onCreateEntity={() => startNew()} />
+    return <CitationsPanel />
+  }
+
+  return <SearchPanel onCreateEntity={() => startNew()} />
 }

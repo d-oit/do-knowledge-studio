@@ -11,6 +11,7 @@ import { BackupTips } from './backup-tips'
 import { EncryptExportDialog } from './encrypt-export-dialog'
 import { ResetConfirmDialog } from './reset-confirm-dialog'
 import { ImportPreviewDialog } from './import-preview-dialog'
+import { translate } from '@/lib/i18n/messages/export'
 
 /** Export and import view with format grid, dropzone, backup tips, and dialogs. */
 export const ExportView = () => {
@@ -96,15 +97,15 @@ export const ExportView = () => {
 
       <div className="mt-8 flex items-center justify-between border-t border-border pt-4">
         <p className="text-label text-ink-faint">
-          {entities.length} entities · {claims.length} claims · saved to this browser
+          {translate('export.view.counts', String(entities.length), String(claims.length))}
         </p>
         <button
           onClick={() => { setShowResetConfirm(true) }}
           className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:border-red-300 hover:text-red-600 focus-ring"
-          title="Clear the local store and restore the seed entities"
+          title={translate('export.view.resetTitle')}
         >
           <RotateCcw className="h-3.5 w-3.5" />
-          Reset to demo data
+          {translate('export.view.resetButton')}
         </button>
       </div>
 

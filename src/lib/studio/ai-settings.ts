@@ -103,10 +103,17 @@ function idbSet(key: IDBValidKey, value: unknown): Promise<void> {
   )
 }
 
-// ── Provider / model migrations (unchanged logic) ────────────────────
-
-function migrateProvider(stored: StoredSettings): AIProvider {
-  if (stored.provider === 'openrouter' || stored.provider === 'ollama') {
+// ── Provider / model migrations ─────────────────────────────
+// migrateProvider preserves every currently-valid provider id ('openrouter',
+// 'ollama', and 'local') and migrates anything else (legacy/unknown ids) to
+// 'openrouter'. Adding a provider extends the preserved set — the fallback
+// branch only exists for ids that are no longer valid.
+const migrateProvider = (stored: StoredSettings): AIProvider => {
+  if (
+    stored.provider === 'openrouter' ||
+    stored.provider === 'ollama' ||
+    stored.provider === 'local'
+  ) {
     return stored.provider as AIProvider
   }
   return 'openrouter'
@@ -323,12 +330,14 @@ export function getSessionOnlyMessage(): string {
 }
 
 /** Return the API endpoint URL for a given provider. */
-export function getProviderEndpoint(provider: AIProvider): string {
+export const getProviderEndpoint = (provider: AIProvider): string => {
   switch (provider) {
     case 'openrouter':
       return 'https://openrouter.ai/api/v1/chat/completions'
     case 'ollama':
       return 'http://localhost:11434/api/chat'
+    case 'local':
+      return ''
     default:
       return ''
   }

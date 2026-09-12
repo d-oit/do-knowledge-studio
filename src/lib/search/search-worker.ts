@@ -1,6 +1,14 @@
 /**
  * Dedicated Web Worker for offloading BM25 indexing and search query execution
  * off the JavaScript main thread (TRIZ Principle #4 Asymmetry & #10 Preliminary Action).
+ *
+ * Semantic embedding search (N1, Issue #751) intentionally runs on the main
+ * thread instead of through this worker: the worker's dynamic
+ * `import('@huggingface/transformers')` never resolves under the Turbopack
+ * module-worker bundling used by this repo's dev server and production
+ * builds, leaving requests pending forever without any network activity.
+ * The main-thread import resolves reliably, so `searchSemantic` in
+ * `search-worker-client` executes the shared vector store directly.
  */
 
 import type { Entity, Claim } from '@/lib/studio/types'
@@ -36,7 +44,10 @@ export type SearchWorkerResponse =
       error: string
     }
 
-/** Handles messages received by the search web worker. */
+/**
+ * Synchronous handler for SEARCH/RESET requests; errors are reported as
+ * explicit ERROR replies so the worker never silently drops a request.
+ */
 export const handleWorkerMessage = (
   data: SearchWorkerRequest,
   postReply: (msg: SearchWorkerResponse) => void,
@@ -62,7 +73,7 @@ export const handleWorkerMessage = (
   }
 }
 
-// Attach listener if executed within a dedicated Web Worker environment
+// Attach listener if executed within a dedicated Web Worker environment.
 if (typeof self !== 'undefined' && typeof window === 'undefined') {
   self.onmessage = (e: MessageEvent<SearchWorkerRequest>) => {
     handleWorkerMessage(e.data, (reply) => {

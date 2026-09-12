@@ -53,7 +53,7 @@ vi.mock('sonner', () => ({
 
 const mockSelectEntity = vi.fn()
 const mockSetView = vi.fn()
-const mockCommitEntity = vi.fn()
+const mockCommitEntities = vi.fn()
 const mockDeleteEntity = vi.fn()
 const mockStartEdit = vi.fn()
 const mockUndo = vi.fn()
@@ -92,7 +92,7 @@ vi.mock('@/lib/studio/store', () => ({
       entities: currentEntities,
       selectEntity: mockSelectEntity,
       setView: mockSetView,
-      commitEntity: mockCommitEntity,
+      commitEntities: mockCommitEntities,
       deleteEntity: mockDeleteEntity,
       startEdit: mockStartEdit,
       undo: mockUndo,

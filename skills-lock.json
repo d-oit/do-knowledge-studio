@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "deepsource": {
+      "source": "DeepSourceCorp/skills",
+      "sourceType": "github",
+      "skillPath": "skills/deepsource/SKILL.md",
+      "computedHash": "b4467600fef85ed3ad99e12766b6aedc66ddb87f2e9c2b9eb23afb8cbfbb7eba"
+    }
+  }
+}

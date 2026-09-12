@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { X, Plus, Tag } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { ENTITY_TYPE_META, type EntityType } from '@/lib/studio/types'
+import type { AnyEntityType } from '@/lib/studio/types'
+import { getEntityTypeMeta } from '@/lib/studio/entity-types'
 import { TypeSelector } from './type-selector'
 
 /** Entity editor header with type badge, name input, and description. */
@@ -18,11 +19,11 @@ export const EditorHeader = ({
   editing: { updatedAt: string } | null
   name: string
   onNameChange: (name: string) => void
-  type: EntityType
+  type: AnyEntityType
   description: string
   onDescriptionChange: (description: string) => void
 }) => {
-  const meta = ENTITY_TYPE_META[type as keyof typeof ENTITY_TYPE_META]
+  const meta = getEntityTypeMeta(type)
 
   return (
     <div className="mb-6">
@@ -68,10 +69,10 @@ export const EditorTags = ({
 }: {
   tags: string[]
   onTagsChange: (tags: string[]) => void
-  type: EntityType
+  type: AnyEntityType
   showTypeMenu: boolean
   onToggleTypeMenu: () => void
-  onSelectType: (type: EntityType) => void
+  onSelectType: (type: AnyEntityType) => void
 }) => {
   const [newTag, setNewTag] = useState('')
 

@@ -2,9 +2,32 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import type { Claim } from '@/lib/studio/types'
 
-vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
+const sonnerMocks = vi.hoisted(() => ({
+  success: vi.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
 }))
+
+vi.mock('sonner', () => ({ toast: sonnerMocks }))
+
+const storeState = vi.hoisted(() => ({
+  entities: [] as Array<{ id: string; content: string }>,
+}))
+
+vi.mock('@/lib/studio/store', () => ({
+  useStudioStore: (selector: (s: { entities: typeof storeState.entities }) => unknown) =>
+    selector({ entities: storeState.entities }),
+}))
+
+// Keep the real parser; make the visibility gate content-presence based so the
+// defensive "nothing to extract" toast branch stays reachable in tests.
+vi.mock('@/lib/studio/claim-parser', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/studio/claim-parser')>()
+  return {
+    ...actual,
+    hasExtractableClaims: (text: string) => text.trim().length > 0,
+  }
+})
 
 vi.mock('lucide-react', () => {
   const I = ({ className }: { className?: string }) => (
@@ -20,6 +43,8 @@ vi.mock('lucide-react', () => {
     Save: I,
     Pencil: I,
     Trash2: I,
+    Wand2: I,
+    X: I,
   }
 })
 
@@ -58,6 +83,7 @@ describe('VerificationBadge', () => {
 describe('ClaimsPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    storeState.entities = []
   })
 
   it('renders claims heading', () => {
@@ -321,5 +347,136 @@ describe('ClaimsPanel', () => {
       confidence: 0.8,
       source: 'https://example.com',
     })
+  })
+
+  it('renders Extract claims button when the note has content', () => {
+    storeState.entities = [{ id: 'ent-1', content: 'Assertion: Bees dance to communicate (Source: Nature documentary)' }]
+    render(
+      <ClaimsPanel
+        claims={[]}
+        editingEntityId="ent-1"
+        addClaim={mockAddClaim}
+        updateClaim={mockUpdateClaim}
+        deleteClaim={mockDeleteClaim}
+      />,
+    )
+    expect(screen.getByRole('button', { name: /Extract claims/ })).toBeDefined()
+  })
+
+  it('hides Extract claims button when the note has no content', () => {
+    storeState.entities = [{ id: 'ent-1', content: '' }]
+    render(
+      <ClaimsPanel
+        claims={[]}
+        editingEntityId="ent-1"
+        addClaim={mockAddClaim}
+        updateClaim={mockUpdateClaim}
+        deleteClaim={mockDeleteClaim}
+      />,
+    )
+    expect(screen.queryByRole('button', { name: /Extract claims/ })).toBeNull()
+  })
+
+  it('opens a preview dialog listing parsed assertions with sources', () => {
+    storeState.entities = [{ id: 'ent-1', content: 'Assertion: Bees dance to communicate (Source: Nature documentary)' }]
+    render(
+      <ClaimsPanel
+        claims={[]}
+        editingEntityId="ent-1"
+        addClaim={mockAddClaim}
+        updateClaim={mockUpdateClaim}
+        deleteClaim={mockDeleteClaim}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /Extract claims/ }))
+    expect(screen.getByText(/Bees dance to communicate/)).toBeDefined()
+    expect(screen.getByText('Nature documentary')).toBeDefined()
+    expect(screen.getByRole('button', { name: /Add 1 claim/ })).toBeDefined()
+  })
+
+  it('adds extracted claims with default confidence on confirm', () => {
+    storeState.entities = [{ id: 'ent-1', content: 'Assertion: Bees dance to communicate (Source: Nature documentary)' }]
+    render(
+      <ClaimsPanel
+        claims={[]}
+        editingEntityId="ent-1"
+        addClaim={mockAddClaim}
+        updateClaim={mockUpdateClaim}
+        deleteClaim={mockDeleteClaim}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /Extract claims/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Add 1 claim/ }))
+    expect(mockAddClaim).toHaveBeenCalledWith({
+      entityId: 'ent-1',
+      statement: 'Bees dance to communicate',
+      source: 'Nature documentary',
+      confidence: 0.5,
+      verification: 'unverified',
+    })
+    expect(sonnerMocks.success).toHaveBeenCalledWith('Added 1 claim')
+  })
+
+  it('cancel closes the dialog without adding claims', () => {
+    storeState.entities = [{ id: 'ent-1', content: 'Assertion: Bees dance to communicate (Source: Nature documentary)' }]
+    render(
+      <ClaimsPanel
+        claims={[]}
+        editingEntityId="ent-1"
+        addClaim={mockAddClaim}
+        updateClaim={mockUpdateClaim}
+        deleteClaim={mockDeleteClaim}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /Extract claims/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(mockAddClaim).not.toHaveBeenCalled()
+    expect(screen.queryByText(/Bees dance to communicate/)).toBeNull()
+    expect(sonnerMocks.success).not.toHaveBeenCalled()
+  })
+
+  it('skips claims that already exist for the entity', () => {
+    storeState.entities = [
+      { id: 'ent-1', content: 'Assertion: Existing claim (Source: same)\nAssertion: Brand new claim' },
+    ]
+    const existingClaim = { ...baseClaim, id: 'claim-9', statement: 'Existing claim', source: 'same' }
+    render(
+      <ClaimsPanel
+        claims={[existingClaim]}
+        editingEntityId="ent-1"
+        addClaim={mockAddClaim}
+        updateClaim={mockUpdateClaim}
+        deleteClaim={mockDeleteClaim}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /Extract claims/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Add 2 claims/ }))
+    expect(mockAddClaim).toHaveBeenCalledTimes(1)
+    expect(mockAddClaim).toHaveBeenCalledWith({
+      entityId: 'ent-1',
+      statement: 'Brand new claim',
+      source: undefined,
+      confidence: 0.5,
+      verification: 'unverified',
+    })
+    expect(sonnerMocks.success).toHaveBeenCalledWith('Added 1 claim')
+    expect(sonnerMocks.info).toHaveBeenCalledWith('Skipped 1 duplicate')
+  })
+
+  it('shows an info toast when nothing can be extracted', () => {
+    storeState.entities = [{ id: 'ent-1', content: 'No assertions here' }]
+    render(
+      <ClaimsPanel
+        claims={[]}
+        editingEntityId="ent-1"
+        addClaim={mockAddClaim}
+        updateClaim={mockUpdateClaim}
+        deleteClaim={mockDeleteClaim}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /Extract claims/ }))
+    expect(sonnerMocks.info).toHaveBeenCalledWith('No extractable assertions found in this note.')
+    expect(screen.queryByRole('button', { name: /Add 1 claim/ })).toBeNull()
+    expect(mockAddClaim).not.toHaveBeenCalled()
   })
 })

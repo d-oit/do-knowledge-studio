@@ -38,6 +38,10 @@ vi.mock('./views/library-view', () => ({
   LibraryView: () => <div data-testid="library-view">Library</div>,
 }))
 
+vi.mock('./views/timeline-view', () => ({
+  TimelineView: () => <div data-testid="timeline-view">Timeline</div>,
+}))
+
 vi.mock('./views/chat-view', () => ({
   ChatView: () => <div data-testid="chat-view">Chat</div>,
 }))
@@ -67,11 +71,11 @@ vi.mock('./views/sync-view', () => ({
 }))
 
 vi.mock('./error-boundary', () => ({
-  ErrorBoundary: ({ children }: { children?: ReactNode }) => <>{children}</>,
+  ErrorBoundary: ({ children }: { children?: ReactNode }) => children,
 }))
 
 vi.mock('./view-error-boundary', () => ({
-  ViewErrorBoundary: ({ children }: { children?: ReactNode; viewName?: string }) => <>{children}</>,
+  ViewErrorBoundary: ({ children }: { children?: ReactNode; viewName?: string }) => children,
 }))
 
 vi.mock('./ui/skeleton', () => ({
@@ -158,7 +162,7 @@ describe('AppShell', () => {
 
   it('renders the footer', () => {
     render(<AppShell />)
-    expect(screen.getByText(/Knowledge Studio — local-first knowledge engine/)).toBeDefined()
+    expect(screen.getByText(/Knowledge Studio — local-first knowledge engine/u)).toBeDefined()
   })
 
   it('footer has contentinfo role', () => {
@@ -184,6 +188,12 @@ describe('AppShell', () => {
     expect(screen.getByTestId('library-view')).toBeDefined()
   })
 
+  it('renders TimelineView when currentView is timeline', () => {
+    currentView = 'timeline'
+    render(<AppShell />)
+    expect(screen.getByTestId('timeline-view')).toBeDefined()
+  })
+
   it('renders ChatView when currentView is chat', () => {
     currentView = 'chat'
     render(<AppShell />)
@@ -192,37 +202,37 @@ describe('AppShell', () => {
 
   it('renders ExportView when currentView is export', async () => {
     currentView = 'export'
-    await act(async () => { render(<AppShell />) })
+    await act(() => { render(<AppShell />) })
     expect(screen.getByTestId('export-view')).toBeDefined()
   })
 
   it('renders SyncView when currentView is sync', async () => {
     currentView = 'sync'
-    await act(async () => { render(<AppShell />) })
+    await act(() => { render(<AppShell />) })
     expect(screen.getByTestId('sync-view')).toBeDefined()
   })
 
   it('renders GraphView when currentView is graph', async () => {
     currentView = 'graph'
-    await act(async () => { render(<AppShell />) })
+    await act(() => { render(<AppShell />) })
     expect(screen.getByTestId('graph-view')).toBeDefined()
   })
 
   it('renders MindMapView when currentView is mindmap', async () => {
     currentView = 'mindmap'
-    await act(async () => { render(<AppShell />) })
+    await act(() => { render(<AppShell />) })
     expect(screen.getByTestId('mindmap-view')).toBeDefined()
   })
 
   it('renders AIHarnessView when currentView is ai', async () => {
     currentView = 'ai'
-    await act(async () => { render(<AppShell />) })
+    await act(() => { render(<AppShell />) })
     expect(screen.getByTestId('ai-harness-view')).toBeDefined()
   })
 
   it('renders TrizView when currentView is triz', async () => {
     currentView = 'triz'
-    await act(async () => { render(<AppShell />) })
+    await act(() => { render(<AppShell />) })
     expect(screen.getByTestId('triz-view')).toBeDefined()
   })
 

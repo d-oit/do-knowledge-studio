@@ -300,12 +300,12 @@ describe('Zod Schemas', () => {
     })
 
     it('rejects entity with invalid type', () => {
-      const result = EntitySchema.safeParse(makeEntity({ type: 'invalid' }))
+      const result = EntitySchema.safeParse(makeEntity({ type: '   ' }))
       expect(result.success).toBe(false)
     })
 
     it('rejects entity with non-array tags', () => {
-      const result = EntitySchema.safeParse(makeEntity({ tags: 'not-array' }))
+      const result = EntitySchema.safeParse({ ...makeEntity(), tags: 'not-array' })
       expect(result.success).toBe(false)
     })
   })
@@ -325,9 +325,7 @@ describe('Zod Schemas', () => {
     })
 
     it('accepts a claim without timestamps (backward compat)', () => {
-      const claim = makeClaim()
-      delete (claim as Record<string, unknown>).createdAt
-      delete (claim as Record<string, unknown>).updatedAt
+      const claim = makeClaim({ createdAt: undefined, updatedAt: undefined })
       const result = ClaimSchema.safeParse(claim)
       expect(result.success).toBe(true)
     })
@@ -343,7 +341,7 @@ describe('Zod Schemas', () => {
     })
 
     it('rejects claim with invalid verification', () => {
-      const result = ClaimSchema.safeParse(makeClaim({ verification: 'bogus' }))
+      const result = ClaimSchema.safeParse({ ...makeClaim(), verification: 'bogus' })
       expect(result.success).toBe(false)
     })
   })

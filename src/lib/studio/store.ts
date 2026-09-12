@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import type { Entity, Claim, ViewId, ChatMessage, EntityType } from './types'
+import type { Entity, Claim, ViewId, ChatMessage, AnyEntityType } from './types'
 import { seedEntities, seedClaims, seedChat } from './seed-data'
 import { search, resetSearchCache, type SearchResult } from '@/lib/search/retrieval'
 import { searchAsync } from '@/lib/search/search-worker-client'
@@ -58,6 +58,10 @@ interface StudioState {
   startNew: () => void
   saveEntity: (e: Entity) => void
   commitEntity: (e: Entity) => void
+  /** Atomically commit several entities under a single history snapshot.
+   * Use for reciprocal writes (a save plus its backlinks) so one Undo
+   * restores the whole operation, not just the last write. */
+  commitEntities: (entities: Entity[]) => void
   finishEditing: () => void
   navigateToView: (v: ViewId) => void
   deleteEntity: (id: string) => void
@@ -78,8 +82,10 @@ interface StudioState {
   // Library controls
   searchQuery: string
   setSearchQuery: (q: string) => void
-  typeFilter: EntityType | 'all'
-  setTypeFilter: (t: EntityType | 'all') => void
+  typeFilter: AnyEntityType | 'all'
+  setTypeFilter: (t: AnyEntityType | 'all') => void
+  semanticSearchEnabled: boolean
+  setSemanticSearchEnabled: (enabled: boolean) => void
   sortBy: 'name' | 'created' | 'updated'
   setSortBy: (s: 'name' | 'created' | 'updated') => void
   sortDir: 'asc' | 'desc'
@@ -149,7 +155,8 @@ const SEED_STATE = {
   chatLoading: false,
   currentView: 'home' as ViewId,
   searchQuery: '',
-  typeFilter: 'all' as EntityType | 'all',
+  typeFilter: 'all' as AnyEntityType | 'all',
+  semanticSearchEnabled: false,
   sortBy: 'updated' as 'name' | 'created' | 'updated',
   sortDir: 'desc' as 'asc' | 'desc',
   rightPanelOpen: true,
@@ -191,6 +198,9 @@ export const useStudioStore = create<StudioState>()(
       },
 
       pushHistory: () => {
+        // Appends a snapshot of the CURRENT (post-mutation) entities. Every
+        // mutating action applies its change first and pushes afterwards, so
+        // the stack holds full states and undo/redo restore them verbatim.
         const { entities, historyIndex, entityHistory } = get()
         const snapshot = entities.map((e) => ({ ...e }))
         const trimmed = entityHistory.slice(0, historyIndex + 1)
@@ -218,8 +228,6 @@ export const useStudioStore = create<StudioState>()(
         set({ entities: snapshot, historyIndex: newIndex })
       },
       saveEntity: (e) => {
-        const { pushHistory } = get()
-        pushHistory()
         set((state) => {
           const exists = state.entities.some((x) => x.id === e.id)
           const entities = exists
@@ -231,11 +239,10 @@ export const useStudioStore = create<StudioState>()(
             currentView: 'library',
           }
         })
+        get().pushHistory()
       },
 
       commitEntity: (e) => {
-        const { pushHistory } = get()
-        pushHistory()
         set((state) => {
           const exists = state.entities.some((x) => x.id === e.id)
           const entities = exists
@@ -243,6 +250,20 @@ export const useStudioStore = create<StudioState>()(
             : [e, ...state.entities]
           return { entities }
         })
+        get().pushHistory()
+      },
+
+      commitEntities: (upserts) => {
+        // Single history step for the whole batch: apply all upserts, then
+        // push once so one undo/redo spans the entire commit.
+        set((state) => {
+          const upsertById = new Map(upserts.map((e) => [e.id, e]))
+          const existingIds = new Set(state.entities.map((x) => x.id))
+          const fresh = upserts.filter((e) => !existingIds.has(e.id))
+          const merged = state.entities.map((x) => upsertById.get(x.id) ?? x)
+          return { entities: [...fresh, ...merged] }
+        })
+        get().pushHistory()
       },
 
       finishEditing: () => {
@@ -254,8 +275,6 @@ export const useStudioStore = create<StudioState>()(
       },
 
       deleteEntity: (id) => {
-        const { pushHistory } = get()
-        pushHistory()
         set((state) => ({
           entities: state.entities
             .filter((x) => x.id !== id)
@@ -266,6 +285,7 @@ export const useStudioStore = create<StudioState>()(
           claims: state.claims.filter((c) => c.entityId !== id),
           selectedEntityId: state.selectedEntityId === id ? null : state.selectedEntityId,
         }))
+        get().pushHistory()
       },
 
       addClaim: (claim) => {
@@ -310,6 +330,7 @@ export const useStudioStore = create<StudioState>()(
 
       setSearchQuery: (q) => set({ searchQuery: q }),
       setTypeFilter: (t) => set({ typeFilter: t }),
+      setSemanticSearchEnabled: (enabled) => set({ semanticSearchEnabled: enabled }),
       setSortBy: (s) => set({ sortBy: s }),
       setSortDir: (d) => set({ sortDir: d }),
 
@@ -559,7 +580,7 @@ export const useStats = () => {
         acc[e.type] = (acc[e.type] || 0) + 1
         return acc
       },
-      {} as Record<EntityType, number>,
+      {} as Record<string, number>,
     )
     const verified = claims.filter((c) => c.verification === 'verified').length
     const recent = [...entities].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 5)

@@ -12,11 +12,13 @@ import { ShortcutsDialog } from './shortcuts-dialog'
 import { HomeView } from './views/home-view'
 import { EditorView } from './views/editor-view'
 import { LibraryView } from './views/library-view'
+import { TimelineView } from './views/timeline-view'
 import { ChatView } from './views/chat-view'
 import { ErrorBoundary } from './error-boundary'
 import { ViewErrorBoundary } from './view-error-boundary'
 import { Skeleton } from './ui/skeleton'
 import { startBidirectionalSync } from '@/lib/sync/bridge'
+import { translate } from '@/lib/i18n/messages/timeline'
 
 const GraphView = lazy(() => import('./views/graph-view').then((m) => ({ default: m.GraphView })))
 const MindMapView = lazy(() => import('./views/mindmap-view').then((m) => ({ default: m.MindMapView })))
@@ -44,26 +46,82 @@ function ViewLoader() {
   )
 }
 
-const VIEW_NAMES: Record<ViewId, string> = {
-  home: 'Home',
-  editor: 'Editor',
-  library: 'Library',
-  graph: 'Graph',
-  mindmap: 'Mind Map',
-  chat: 'Chat',
-  ai: 'AI Harness',
-  triz: 'TRIZ Matrix',
-  export: 'Export',
-  sync: 'Sync',
-}
+/**
+ * View id → display name. Held in a Map so the lookup is a method call rather
+ * than dynamic property access on an object (static-analysis object-injection
+ * sink), while staying a single table instead of a per-view switch.
+ */
+const VIEW_NAMES = new Map<ViewId, string>([
+  ['home', 'Home'],
+  ['editor', 'Editor'],
+  ['library', 'Library'],
+  ['timeline', translate('timeline.nav.label')],
+  ['graph', 'Graph'],
+  ['mindmap', 'Mind Map'],
+  ['chat', 'Chat'],
+  ['ai', 'AI Harness'],
+  ['triz', 'TRIZ Matrix'],
+  ['export', 'Export'],
+  ['sync', 'Sync'],
+])
 
 /** Returns a human-readable display name for a given view ID. */
-function getViewName(view: ViewId): string {
-  return VIEW_NAMES[view]
+const getViewName = (view: ViewId): string => VIEW_NAMES.get(view) ?? ''
+
+/** Pairs a view id with its element for the router's lookup table. */
+const viewEntry = (id: ViewId, element: React.ReactNode): [ViewId, React.ReactNode] => [
+  id,
+  element,
+]
+
+/**
+ * Total view → element map. A Map (rather than a Record) keeps the router's
+ * lookups off dynamic property access while still collapsing the per-view
+ * boolean chain into one branch, so the router's complexity stays at 1.
+ * Entries go through {@link viewEntry} so the JSX lives in call arguments
+ * rather than as bare array elements (which require React keys).
+ */
+const VIEW_ELEMENTS = new Map<ViewId, React.ReactNode>([
+  viewEntry('home', <HomeView />),
+  viewEntry('editor', null), // Needs the editingEntityId key — handled in ViewRouter.
+  viewEntry('library', <LibraryView />),
+  viewEntry('timeline', <TimelineView />),
+  viewEntry('graph', <GraphView />),
+  viewEntry('mindmap', <MindMapView />),
+  viewEntry('chat', <ChatView />),
+  viewEntry('ai', <AIHarnessView />),
+  viewEntry('triz', <TrizView />),
+  viewEntry('export', <ExportView />),
+  viewEntry('sync', <SyncView />),
+])
+
+/** Renders the active view inside the error/suspense boundaries. */
+const ViewRouter = ({
+  currentView,
+  editingEntityId,
+  onError,
+}: {
+  currentView: ViewId
+  editingEntityId: string | null
+  onError: (error: Error, errorInfo: React.ErrorInfo) => void
+}) => {
+  const activeView =
+    currentView === 'editor' ? (
+      <EditorView key={editingEntityId || 'new'} />
+    ) : (
+      VIEW_ELEMENTS.get(currentView)
+    )
+  return (
+    <ErrorBoundary key={currentView}>
+      <ViewErrorBoundary viewName={getViewName(currentView)} onError={onError}>
+        <Suspense fallback={<ViewLoader />}>{activeView}</Suspense>
+      </ViewErrorBoundary>
+    </ErrorBoundary>
+  )
 }
 
 /** Root application shell composing sidebar, topbar, view router, right panel, and overlays. */
-export function AppShell() {
+export const AppShell = () => {
   const currentView = useStudioStore((s) => s.currentView)
   const editingEntityId = useStudioStore((s) => s.editingEntityId)
 
@@ -92,27 +150,11 @@ export function AppShell() {
         <Topbar />
         <main id="main-content" className="flex min-h-0 flex-1">
           <div className="min-w-0 flex-1 overflow-y-auto">
-            <ErrorBoundary key={currentView}>
-              <ViewErrorBoundary
-                viewName={getViewName(currentView)}
-                onError={handleViewError}
-              >
-                <Suspense fallback={<ViewLoader />}>
-                  {currentView === 'home' && <HomeView />}
-                  {currentView === 'editor' && (
-                    <EditorView key={editingEntityId || 'new'} />
-                  )}
-                  {currentView === 'library' && <LibraryView />}
-                  {currentView === 'graph' && <GraphView />}
-                  {currentView === 'mindmap' && <MindMapView />}
-                  {currentView === 'chat' && <ChatView />}
-                  {currentView === 'ai' && <AIHarnessView />}
-                  {currentView === 'triz' && <TrizView />}
-                  {currentView === 'export' && <ExportView />}
-                  {currentView === 'sync' && <SyncView />}
-                </Suspense>
-              </ViewErrorBoundary>
-            </ErrorBoundary>
+            <ViewRouter
+              currentView={currentView}
+              editingEntityId={editingEntityId}
+              onError={handleViewError}
+            />
           </div>
           <RightPanel />
         </main>

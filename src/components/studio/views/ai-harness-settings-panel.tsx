@@ -17,6 +17,8 @@ import {
   OPENROUTER_MODELS,
 } from '@/lib/ai'
 import { DEFAULT_MODEL, DEFAULT_OLLAMA_BASE_URL } from '@/lib/ai/types'
+import { DEFAULT_LOCAL_MODELS, LOCAL_PROVIDER_ID } from '@/lib/ai'
+import { translate as tAi } from '@/lib/i18n/messages/ai'
 import { Field, PROVIDERS } from './ai-harness-settings'
 import { SwitchToggle } from '../ui/shared-primitives'
 
@@ -46,6 +48,99 @@ interface SettingsPanelProps {
   selectedEngineTarget: { slug: string; display_name: string; description?: string } | null
   isLoading: boolean
 }
+
+/**
+ * Default model slug per provider; exhaustive-switch lookup (no dynamic
+ * indexing) — mirrors the object-injection pattern used in `entity-types`.
+ */
+const getDefaultModelForProvider = (provider: AIProvider): string => {
+  switch (provider) {
+    case 'openrouter':
+      return DEFAULT_MODEL.openrouter
+    case 'ollama':
+      return DEFAULT_MODEL.ollama
+    case 'local':
+      return DEFAULT_MODEL.local
+  }
+}
+
+/** Engine options rendered for the current provider. */
+const EngineOptions = ({
+  provider,
+  ollamaModels,
+}: {
+  provider: AIProvider
+  ollamaModels: string[]
+}) => {
+  if (provider === 'ollama') {
+    return ollamaModels.map((m) => (
+      <option key={m} value={m}>
+        {m}
+      </option>
+    ))
+  }
+  if (provider === LOCAL_PROVIDER_ID) {
+    return DEFAULT_LOCAL_MODELS.map((m) => (
+      <option key={m.id} value={m.id}>
+        {m.displayName}
+      </option>
+    ))
+  }
+  return (
+    <>
+      <optgroup label="Routers">
+        {OPENROUTER_ROUTERS.map((r) => (
+          <option key={r.slug} value={r.slug}>
+            {r.display_name}
+          </option>
+        ))}
+      </optgroup>
+      <optgroup label="Concrete Models">
+        {OPENROUTER_MODELS.map((m) => (
+          <option key={m.slug} value={m.slug}>
+            {m.display_name}
+          </option>
+        ))}
+      </optgroup>
+    </>
+  )
+}
+
+/** Full model/engine select with inline refresh for Ollama. */
+const EngineSelect = ({
+  provider,
+  model,
+  setModel,
+  setCustomModel,
+  ollamaModels,
+  handleRefreshOllamaModels,
+}: {
+  provider: AIProvider
+  model: string
+  setModel: (m: string) => void
+  setCustomModel: (m: string) => void
+  ollamaModels: string[]
+  handleRefreshOllamaModels: () => void | Promise<void>
+}) => (
+  <div className="flex gap-1.5">
+    <select
+      value={model}
+      onChange={(e) => { setModel(e.target.value); setCustomModel('') }}
+      className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+    >
+      <EngineOptions provider={provider} ollamaModels={ollamaModels} />
+    </select>
+    {provider === 'ollama' && (
+      <button
+        onClick={() => { void handleRefreshOllamaModels() }}
+        className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-md border border-border bg-background text-ink-faint transition-colors hover:border-saffron/40 hover:text-saffron focus-ring"
+        aria-label="Refresh Ollama models"
+      >
+        <RefreshCw className="h-3.5 w-3.5" />
+      </button>
+    )}
+  </div>
+)
 
 /** Settings panel for AI provider configuration, model selection, and augmentation options. */
 export const AiHarnessSettingsPanel = ({
@@ -98,8 +193,7 @@ export const AiHarnessSettingsPanel = ({
                 const val = e.target.value
                 if (!PROVIDERS.some((pr) => pr.id === val)) return
                 setProvider(val as AIProvider)
-                const defaultModel = val === 'openrouter' ? DEFAULT_MODEL.openrouter : DEFAULT_MODEL.ollama
-                setModel(defaultModel)
+                setModel(getDefaultModelForProvider(val as AIProvider))
                 setCustomModel('')
               }}
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
@@ -113,47 +207,14 @@ export const AiHarnessSettingsPanel = ({
           </Field>
 
           <Field label="Engine" icon={Cpu}>
-            <div className="flex gap-1.5">
-              <select
-                value={model}
-                onChange={(e) => { setModel(e.target.value); setCustomModel('') }}
-                className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
-              >
-                {provider === 'ollama' ? (
-                  ollamaModels.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))
-                ) : (
-                  <>
-                    <optgroup label="Routers">
-                      {OPENROUTER_ROUTERS.map((r) => (
-                        <option key={r.slug} value={r.slug}>
-                          {r.display_name}
-                        </option>
-                      ))}
-                    </optgroup>
-                    <optgroup label="Concrete Models">
-                      {OPENROUTER_MODELS.map((m) => (
-                        <option key={m.slug} value={m.slug}>
-                          {m.display_name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  </>
-                )}
-              </select>
-              {provider === 'ollama' && (
-                <button
-                  onClick={() => { void handleRefreshOllamaModels() }}
-                  className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-md border border-border bg-background text-ink-faint transition-colors hover:border-saffron/40 hover:text-saffron focus-ring"
-                  aria-label="Refresh Ollama models"
-                >
-                  <RefreshCw className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
+            <EngineSelect
+              provider={provider}
+              model={model}
+              setModel={setModel}
+              setCustomModel={setCustomModel}
+              ollamaModels={ollamaModels}
+              handleRefreshOllamaModels={handleRefreshOllamaModels}
+            />
             <input
               type="text"
               value={customModel}
@@ -166,6 +227,11 @@ export const AiHarnessSettingsPanel = ({
               <div className="mt-2 rounded border border-border bg-muted/30 p-2 text-[11px] leading-relaxed text-ink-mute">
                 <strong className="text-ink-soft">{selectedEngineTarget.display_name}: </strong>
                 {selectedEngineTarget.description}
+              </div>
+            )}
+            {provider === LOCAL_PROVIDER_ID && (
+              <div className="mt-2 rounded border border-border bg-muted/30 p-2 text-[11px] leading-relaxed text-ink-mute">
+                {tAi('ai.settings.local.downloadHint')}
               </div>
             )}
           </Field>

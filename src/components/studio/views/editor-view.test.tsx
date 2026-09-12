@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { ReactNode } from 'react'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
+import type { Entity } from '@/lib/studio/types'
+import { buildMentionToken } from '@/lib/editor/mention'
 
 vi.mock('framer-motion', () => ({
   motion: {
@@ -21,6 +23,7 @@ vi.mock('lucide-react', () => {
     Plus: Icon,
     ExternalLink: Icon,
     Tag: Icon,
+    AtSign: Icon,
     Bold: Icon,
     Italic: Icon,
     Heading1: Icon,
@@ -92,19 +95,43 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }))
 
-const mockCommitEntity = vi.fn()
+const mockCommitEntities = vi.fn()
+const mockSaveEntity = vi.fn()
 const mockFinishEditing = vi.fn()
+const mockNavigateToView = vi.fn()
 const mockAddClaim = vi.fn()
 const mockUpdateClaim = vi.fn()
 const mockDeleteClaim = vi.fn()
 
-const mockEntities = [
+const mockEntities: Entity[] = [
   {
     id: 'ent-1',
     name: 'Test Entity',
     type: 'concept' as const,
     description: 'A test concept',
     content: '# Hello',
+    tags: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    links: [],
+  },
+  {
+    id: 'ent-2',
+    name: 'Alice Entity',
+    type: 'person' as const,
+    description: 'Mention target',
+    content: '',
+    tags: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    links: [],
+  },
+  {
+    id: 'ent-3',
+    name: 'Bob Entity',
+    type: 'note' as const,
+    description: 'Second mention target',
+    content: '',
     tags: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -120,8 +147,10 @@ vi.mock('@/lib/studio/store', () => ({
     selector({
       entities: currentEntities,
       editingEntityId: currentEditingEntityId,
-      commitEntity: mockCommitEntity,
+      commitEntities: mockCommitEntities,
+      saveEntity: mockSaveEntity,
       finishEditing: mockFinishEditing,
+      navigateToView: mockNavigateToView,
       claims: [],
       addClaim: mockAddClaim,
       updateClaim: mockUpdateClaim,
@@ -203,5 +232,118 @@ describe('EditorView', () => {
     currentEditingEntityId = null
     render(<EditorView />)
     expect(screen.queryByTestId('claims-panel')).toBeNull()
+  })
+})
+
+describe('EditorView @mention linking', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    currentEntities = mockEntities
+    currentEditingEntityId = 'ent-1'
+  })
+
+  const openPicker = async (text = 'Hello @Ali', caret = text.length) => {
+    render(<EditorView />)
+    const textarea = screen.getByLabelText('Editor content')
+    fireEvent.change(textarea, { target: { value: text, selectionStart: caret, selectionEnd: caret } })
+    await screen.findByRole('listbox', { name: 'Mention an entity' })
+    return textarea
+  }
+
+  it('opens the mention listbox on @ and filters case-insensitively by name', async () => {
+    const textarea = await openPicker('Hello @ali', 10)
+    expect(textarea).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('option', { name: 'Alice Entity (Person)' })).toBeDefined()
+    // 'Bob Entity' does not match the query, and the editing entity is excluded.
+    expect(screen.queryByRole('option', { name: 'Bob Entity (Note)' })).toBeNull()
+    expect(screen.queryByRole('option', { name: /Test Entity/ })).toBeNull()
+  })
+
+  it('shows an initial list for a bare @', async () => {
+    await openPicker('Hello @', 7)
+    expect(screen.getAllByRole('option')).toHaveLength(2)
+  })
+
+  it('inserts the mention token on option click', async () => {
+    const textarea = await openPicker()
+    fireEvent.click(screen.getByRole('option', { name: 'Alice Entity (Person)' }))
+    expect(textarea).toHaveValue(`Hello ${buildMentionToken('ent-2', 'Alice Entity')}`)
+    // Picker closes after insertion.
+    expect(screen.queryByRole('listbox')).toBeNull()
+  })
+
+  it('moves the highlight with Arrow keys and inserts with Enter', async () => {
+    const textarea = await openPicker('Hello @', 7)
+    fireEvent.keyDown(textarea, { key: 'ArrowDown' })
+    fireEvent.keyDown(textarea, { key: 'Enter' })
+    // Empty query + one ArrowDown on a 2-item list wraps... no: ArrowDown once → item 1.
+    expect(textarea).toHaveValue(`Hello ${buildMentionToken('ent-3', 'Bob Entity')}`)
+  })
+
+  it('closes on Escape and reopens only for a NEW @ context', async () => {
+    const textarea = await openPicker('Hello @Ali', 10)
+    fireEvent.keyDown(textarea, { key: 'Escape' })
+    expect(screen.queryByRole('listbox')).toBeNull()
+    // Continuing the same trigger stays closed…
+    fireEvent.change(textarea, { target: { value: 'Hello @Alic', selectionStart: 11, selectionEnd: 11 } })
+    expect(screen.queryByRole('listbox')).toBeNull()
+    // …a new @ reopens.
+    fireEvent.change(textarea, { target: { value: 'Hello @Alic @', selectionStart: 13, selectionEnd: 13 } })
+    await screen.findByRole('listbox', { name: 'Mention an entity' })
+  })
+
+  it('derives mention links and writes reciprocal backlinks on save', () => {
+        render(<EditorView />)
+    const textarea = screen.getByLabelText('Editor content')
+    const value = `See ${buildMentionToken('ent-2', 'Alice Entity')}`
+    fireEvent.change(textarea, { target: { value, selectionStart: value.length, selectionEnd: value.length } })
+    fireEvent.click(screen.getByText('Commit changes'))
+
+    const batch = mockCommitEntities.mock.calls[0][0]
+    const saved = batch[0]
+    expect(saved.id).toBe('ent-1')
+    expect(saved.links).toContainEqual({ targetId: 'ent-2', relation: 'mentions' })
+
+    // Reciprocal backlink committed in the same batch (single history
+    // snapshot) so one Undo restores the whole operation.
+    expect(batch).toHaveLength(2)
+    const backlinked = batch[1]
+    expect(backlinked.id).toBe('ent-2')
+    expect(backlinked.links).toContainEqual({ targetId: 'ent-1', relation: 'mentioned-in' })
+    // The entity mentions someone → save finishes editing and lands on library.
+    expect(mockFinishEditing).toHaveBeenCalledTimes(1)
+    expect(mockNavigateToView).toHaveBeenCalledWith('library')
+  })
+
+  it('does not write a mention link when the token text was removed before saving', () => {
+        render(<EditorView />)
+    const textarea = screen.getByLabelText('Editor content')
+    fireEvent.change(textarea, { target: { value: 'Mentions were removed', selectionStart: 21, selectionEnd: 21 } })
+    fireEvent.click(screen.getByText('Commit changes'))
+
+    const batch = mockCommitEntities.mock.calls[0][0]
+    expect(batch[0].links.filter((l: { relation: string }) => l.relation === 'mentions')).toHaveLength(0)
+    // No targets mentioned → single-entity batch, no navigation.
+    expect(batch).toHaveLength(1)
+    expect(mockNavigateToView).not.toHaveBeenCalled()
+  })
+
+  it('revokes stale backlinks when a previously mentioned entity is no longer mentioned', () => {
+    currentEntities = mockEntities.map((e) =>
+      e.id === 'ent-2'
+        ? { ...e, links: [{ targetId: 'ent-1', relation: 'mentioned-in' as const }] }
+        : e,
+    )
+        render(<EditorView />)
+    const textarea = screen.getByLabelText('Editor content')
+    fireEvent.change(textarea, { target: { value: 'No mentions now', selectionStart: 15, selectionEnd: 15 } })
+    fireEvent.click(screen.getByText('Commit changes'))
+
+    expect(mockCommitEntities).toHaveBeenCalledTimes(1)
+    const batch = mockCommitEntities.mock.calls[0][0]
+    expect(batch).toHaveLength(2)
+    const updated = batch[1]
+    expect(updated.id).toBe('ent-2')
+    expect(updated.links).toEqual([])
   })
 })

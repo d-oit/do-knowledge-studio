@@ -1,5 +1,13 @@
-/** Discriminated union of entity categories. */
+/** Discriminated union of entity categories (built-in types only). */
 export type EntityType = 'note' | 'concept' | 'person' | 'project'
+
+/**
+ * Runtime entity type: the built-in union plus any string id registered via
+ * the entity-type plugin registry (`src/lib/studio/entity-types.ts`). The
+ * narrow {@link EntityType} union stays authoritative for persisted-data
+ * compatibility and exhaustive switches over built-ins.
+ */
+export type AnyEntityType = EntityType | (string & {})
 
 /** Verification lifecycle of a claim. */
 export type VerificationStatus = 'unverified' | 'verified' | 'disputed'
@@ -11,6 +19,7 @@ export type ViewId =
   | 'library'
   | 'graph'
   | 'mindmap'
+  | 'timeline'
   | 'chat'
   | 'ai'
   | 'triz'
@@ -21,7 +30,7 @@ export type ViewId =
 export interface Entity {
   id: string
   name: string
-  type: EntityType
+  type: AnyEntityType
   description: string
   content: string
   sourceUrl?: string
@@ -59,7 +68,7 @@ export interface ChatMessage {
 export interface GraphNode {
   id: string
   label: string
-  type: EntityType
+  type: AnyEntityType
   x: number
   y: number
 }

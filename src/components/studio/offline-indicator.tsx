@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { WifiOff } from "lucide-react";
 import { useReducedMotion } from "@/lib/studio/use-reduced-motion";
+import { translate } from "@/lib/i18n/messages/presence";
 
 const ANIMATION_VARIANTS = {
   hidden: { y: "-100%", opacity: 0 },
@@ -48,7 +49,7 @@ export function OfflineIndicator() {
         >
           <WifiOff className="h-4 w-4 shrink-0" />
           <span>
-            You are offline — changes will sync when reconnected
+            {translate("offline.banner")}
           </span>
         </motion.div>
       )}

@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Camera, X, Copy, Check } from 'lucide-react'
 import { toast } from 'sonner'
+import { translate } from '@/lib/i18n/messages/qr-pairing'
 
 /** Renders a QR code for the given room ID with a copy button. */
 export const QRDisplay = ({ roomId }: { roomId: string }) => {
@@ -30,13 +31,13 @@ export const QRDisplay = ({ roomId }: { roomId: string }) => {
         <button
           onClick={handleCopy}
           className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-border hover:text-ink focus-ring"
-          aria-label="Copy room ID"
+          aria-label={translate('qr.copyRoomId')}
         >
           {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
         </button>
       </div>
       <p className="text-center text-caption text-ink-faint">
-        Scan this QR code with another device to pair
+        {translate('qr.scanHint')}
       </p>
     </div>
   )
@@ -80,9 +81,9 @@ export const QRScanner = ({ onScan }: { onScan: (roomId: string) => void }) => {
         setIsActive(true)
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Camera access denied'
+      const msg = err instanceof Error ? err.message : translate('qr.cameraDenied')
       setError(msg)
-      toast.error(`Camera error: ${msg}`)
+      toast.error(translate('qr.cameraError', msg))
     }
   }, [])
 
@@ -148,7 +149,7 @@ export const QRScanner = ({ onScan }: { onScan: (roomId: string) => void }) => {
         <button
           onClick={stopCamera}
           className="absolute right-1 top-1 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-black/50 text-white transition-colors hover:bg-black/70 focus-ring"
-          aria-label="Stop camera"
+          aria-label={translate('qr.stopCamera')}
         >
           <X className="h-3.5 w-3.5" />
         </button>
@@ -160,7 +161,7 @@ export const QRScanner = ({ onScan }: { onScan: (roomId: string) => void }) => {
           className="flex h-48 w-48 flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/30 transition-colors hover:border-saffron/40 hover:bg-muted/50"
         >
           <Camera className="h-8 w-8 text-ink-faint" />
-          <span className="text-[12px] text-ink-faint">Tap to scan QR code</span>
+          <span className="text-[12px] text-ink-faint">{translate('qr.tapToScan')}</span>
         </button>
       )}
       {error && (
@@ -168,7 +169,7 @@ export const QRScanner = ({ onScan }: { onScan: (roomId: string) => void }) => {
       )}
       {!isActive && (
         <p className="text-center text-caption text-ink-faint">
-          Point camera at QR code from another device
+          {translate('qr.pointHint')}
         </p>
       )}
     </div>

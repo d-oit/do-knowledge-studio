@@ -4,6 +4,7 @@ import { memo } from 'react'
 import { Upload } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
+import { translate } from '@/lib/i18n/messages/import'
 
 interface ImportDropzoneProps {
   handleImportClick: () => void
@@ -27,9 +28,9 @@ export const ImportDropzone = memo(function ImportDropzone({
       className="mb-8"
     >
       <div className="mb-4">
-        <h2 className="font-serif text-lg font-semibold text-ink">Import knowledge</h2>
+        <h2 className="font-serif text-lg font-semibold text-ink">{translate('import.dropzone.title')}</h2>
         <p className="mt-1 text-[13px] text-ink-mute">
-          Replace your current library with the contents of a JSON export. This action cannot be undone.
+          {translate('import.dropzone.subtitle')}
         </p>
       </div>
 
@@ -39,15 +40,15 @@ export const ImportDropzone = memo(function ImportDropzone({
         <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-saffron-soft">
           <Upload className="h-5 w-5 text-saffron" />
         </div>
-        <h3 className="font-serif text-[15px] font-semibold text-ink">Choose a JSON file</h3>
+        <h3 className="font-serif text-[15px] font-semibold text-ink">{translate('import.dropzone.chooseHeading')}</h3>
         <p className="mt-1 text-[12px] text-ink-mute">
-          Accepts exports from this view ({'{ entities: [], claims: [] }'})
+          {translate('import.dropzone.acceptsHint')}
         </p>
         <button
           onClick={handleImportClick}
           className="mt-3 rounded-md bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
         >
-          Choose file
+          {translate('import.dropzone.chooseButton')}
         </button>
         <input
           ref={fileInputRef}

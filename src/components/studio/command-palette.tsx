@@ -17,8 +17,9 @@ import {
 } from 'lucide-react'
 import { useStudioStore } from '@/lib/studio/store'
 import { Overlay } from '@/components/studio/ui/shared-primitives'
-import type { ViewId, EntityType } from '@/lib/studio/types'
-import { ENTITY_TYPE_META } from '@/lib/studio/types'
+import type { ViewId } from '@/lib/studio/types'
+import { getEntityTypeMeta } from '@/lib/studio/entity-types'
+import { translate } from '@/lib/i18n/messages/palette'
 
 interface CmdItem {
   id: string
@@ -26,7 +27,7 @@ interface CmdItem {
   hint?: string
   icon: React.ComponentType<{ className?: string }>
   onSelect: () => void
-  group: 'Navigate' | 'Create' | 'Library'
+  group: string
 }
 
 interface CommandPaletteProps {
@@ -66,25 +67,25 @@ export const CommandPalette = ({ onEntitySelect }: CommandPaletteProps) => {
   }
 
   const navItems: CmdItem[] = [
-    { id: 'nav-home', label: 'Home', icon: Home, onSelect: () => { goTo('home') }, group: 'Navigate' },
-    { id: 'nav-editor', label: 'Editor', icon: FileText, onSelect: () => { goTo('editor') }, group: 'Navigate' },
-    { id: 'nav-library', label: 'Library', icon: Library, onSelect: () => { goTo('library') }, group: 'Navigate' },
-    { id: 'nav-graph', label: 'Graph', icon: GitBranch, onSelect: () => { goTo('graph') }, group: 'Navigate' },
-    { id: 'nav-mindmap', label: 'Mind Map', icon: BrainCircuit, onSelect: () => { goTo('mindmap') }, group: 'Navigate' },
-    { id: 'nav-chat', label: 'Chat', icon: MessageSquare, onSelect: () => { goTo('chat') }, group: 'Navigate' },
-    { id: 'nav-ai', label: 'AI Harness', icon: FlaskConical, onSelect: () => { goTo('ai') }, group: 'Navigate' },
-    { id: 'nav-triz', label: 'TRIZ Matrix', icon: Grid3X3, onSelect: () => { goTo('triz') }, group: 'Navigate' },
-    { id: 'nav-export', label: 'Export', icon: Download, onSelect: () => { goTo('export') }, group: 'Navigate' },
+    { id: 'nav-home', label: translate('palette.nav.home'), icon: Home, onSelect: () => { goTo('home') }, group: translate('palette.group.navigate') },
+    { id: 'nav-editor', label: translate('palette.nav.editor'), icon: FileText, onSelect: () => { goTo('editor') }, group: translate('palette.group.navigate') },
+    { id: 'nav-library', label: translate('palette.nav.library'), icon: Library, onSelect: () => { goTo('library') }, group: translate('palette.group.navigate') },
+    { id: 'nav-graph', label: translate('palette.nav.graph'), icon: GitBranch, onSelect: () => { goTo('graph') }, group: translate('palette.group.navigate') },
+    { id: 'nav-mindmap', label: translate('palette.nav.mindmap'), icon: BrainCircuit, onSelect: () => { goTo('mindmap') }, group: translate('palette.group.navigate') },
+    { id: 'nav-chat', label: translate('palette.nav.chat'), icon: MessageSquare, onSelect: () => { goTo('chat') }, group: translate('palette.group.navigate') },
+    { id: 'nav-ai', label: translate('palette.nav.ai'), icon: FlaskConical, onSelect: () => { goTo('ai') }, group: translate('palette.group.navigate') },
+    { id: 'nav-triz', label: translate('palette.nav.triz'), icon: Grid3X3, onSelect: () => { goTo('triz') }, group: translate('palette.group.navigate') },
+    { id: 'nav-export', label: translate('palette.nav.export'), icon: Download, onSelect: () => { goTo('export') }, group: translate('palette.group.navigate') },
     {
       id: 'create-entity',
-      label: 'Create new entity',
-      hint: 'Opens the Editor',
+      label: translate('palette.create.label'),
+      hint: translate('palette.create.hint'),
       icon: FileText,
       onSelect: () => {
         startNew()
         close()
       },
-      group: 'Create',
+      group: translate('palette.group.create'),
     },
   ]
 
@@ -99,13 +100,13 @@ export const CommandPalette = ({ onEntitySelect }: CommandPaletteProps) => {
     .map((e) => ({
       id: `lib-${e.id}`,
       label: e.name,
-      hint: ENTITY_TYPE_META[e.type as EntityType].label,
+      hint: getEntityTypeMeta(e.type).label,
       icon: FileText,
       onSelect: () => {
         onEntitySelect(e.id)
         close()
       },
-      group: 'Library',
+      group: translate('palette.group.library'),
     }))
 
   const allItems = [...navItems, ...libItems]
@@ -122,17 +123,17 @@ export const CommandPalette = ({ onEntitySelect }: CommandPaletteProps) => {
   if (!commandOpen) return null
 
   return (
-    <Overlay open={commandOpen} onClose={close} aria-label="Command palette" variant="center" className="mt-[12vh] w-[640px] max-w-[92vw] overflow-hidden rounded-xl border border-border bg-popover shadow-2xl">
+    <Overlay open={commandOpen} onClose={close} aria-label={translate('palette.ariaLabel')} variant="center" className="mt-[12vh] w-[640px] max-w-[92vw] overflow-hidden rounded-xl border border-border bg-popover shadow-2xl">
       <CommandPrimitive
         loop
-        label="Command palette"
+        label={translate('palette.ariaLabel')}
         shouldFilter={false}
       >
         <div className="flex items-center gap-3 border-b border-border px-4 py-3">
           <Search className="h-4 w-4 text-ink-faint" />
           <CommandPrimitive.Input
             autoFocus
-            placeholder="Search commands and entities…"
+            placeholder={translate('palette.inputPlaceholder')}
             value={query}
             onValueChange={setQuery}
             className="flex-1 bg-transparent text-[14px] text-ink placeholder:text-ink-faint focus:outline-none"
@@ -143,7 +144,7 @@ export const CommandPalette = ({ onEntitySelect }: CommandPaletteProps) => {
         </div>
         <CommandPrimitive.List className="max-h-[420px] overflow-y-auto p-2">
           <CommandPrimitive.Empty className="px-3 py-6 text-center text-[13px] text-ink-mute">
-            No matches.
+            {translate('palette.empty')}
           </CommandPrimitive.Empty>
           {[...grouped].map(([group, items]) =>
             items.length ? (
@@ -175,8 +176,8 @@ export const CommandPalette = ({ onEntitySelect }: CommandPaletteProps) => {
           )}
         </CommandPrimitive.List>
         <div className="flex items-center justify-between border-t border-border px-4 py-2 text-label text-ink-faint">
-          <span>↑↓ navigate · ↵ select · esc close</span>
-          <span className="font-mono">{allItems.length} results</span>
+          <span>{translate('palette.footer.hints')}</span>
+          <span className="font-mono">{translate('palette.footer.results', String(allItems.length))}</span>
         </div>
       </CommandPrimitive>
     </Overlay>

@@ -8,12 +8,27 @@ import {
   OPENROUTER_ROUTERS,
   OPENROUTER_MODELS,
   OPENROUTER_DEFAULT_TARGETS,
+  LOCAL_PROVIDER_ID,
 } from './types'
+import { DEFAULT_LOCAL_MODELS } from './local-adapter'
 
 describe('AI types: constants', () => {
   it('PROVIDER_LABELS has openrouter and ollama', () => {
     expect(PROVIDER_LABELS).toHaveProperty('openrouter')
     expect(PROVIDER_LABELS).toHaveProperty('ollama')
+  })
+  it('PROVIDER_LABELS covers the local provider', () => {
+    expect(PROVIDER_LABELS).toHaveProperty('local')
+    expect(PROVIDER_LABELS.local).toBe('Local (in-browser)')
+  })
+
+  it('DEFAULT_MODEL has a local model that exists in DEFAULT_LOCAL_MODELS', () => {
+    expect(DEFAULT_MODEL).toHaveProperty('local')
+    expect(DEFAULT_LOCAL_MODELS.some((m) => m.id === DEFAULT_MODEL.local)).toBe(true)
+  })
+
+  it('LOCAL_PROVIDER_ID is the local provider id', () => {
+    expect(LOCAL_PROVIDER_ID).toBe('local')
   })
 
   it('OPENROUTER_DEFAULT_MODELS is a non-empty array', () => {

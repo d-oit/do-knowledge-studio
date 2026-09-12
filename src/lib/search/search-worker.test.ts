@@ -1,7 +1,47 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { handleWorkerMessage, type SearchWorkerRequest } from './search-worker'
-import { SearchWorkerClient, searchAsync, SEARCH_WORKER_TIMEOUT_MS } from './search-worker-client'
+import {
+  SearchWorkerClient,
+  searchAsync,
+  searchSemantic,
+  SEARCH_WORKER_TIMEOUT_MS,
+} from './search-worker-client'
+import { resetSemanticCache } from './vector-store'
 import type { Entity, Claim } from '@/lib/studio/types'
+import { EmbedderError } from './embeddings'
+
+// Mock the embeddings module so worker/client semantic tests never touch a
+// real model. Deterministic char-bucket vectors keep cosine ranking stable.
+const embeddingsMock = vi.hoisted(() => ({ embedTexts: vi.fn() }))
+
+vi.mock('./embeddings', () => ({
+  EMBEDDING_MODEL_ID: 'mock-model',
+  EMBEDDING_DTYPE: 'q8',
+  EMBEDDING_DEVICE: 'wasm',
+  EMBED_MAX_CHARS: 512,
+  EMBED_BATCH_SIZE: 32,
+  EMBED_POOLING: 'mean',
+  EmbedderError: class EmbedderError extends Error {},
+  embedTexts: embeddingsMock.embedTexts,
+  getEmbedder: vi.fn(() => ({})),
+  getEmbedderStatus: () => 'ready',
+  isEmbedderReady: () => true,
+  disposeEmbedder: vi.fn(),
+  normalizeEmbedding: (vector: number[]) => {
+    const norm = Math.sqrt(vector.reduce((sum, v) => sum + v * v, 0)) || 1
+    return vector.map((v) => v / norm)
+  },
+  serializeEmbedding: (vector: number[]) => vector.slice(),
+  truncateForEmbedding: (text: string) => text,
+}))
+
+/** Shared bucket vector: similar text → high cosine (no real model needed). */
+const bucketVector = (text: string): number[] => {
+  const vec = new Array(8).fill(0)
+  for (const ch of text.toLowerCase()) vec[ch.charCodeAt(0) % 8] += 1
+  const norm = Math.sqrt(vec.reduce((sum, v) => sum + v * v, 0)) || 1
+  return vec.map((v) => v / norm)
+}
 
 const testEntities: Entity[] = [
   {
@@ -11,8 +51,8 @@ const testEntities: Entity[] = [
     description: 'Systematic innovation principles',
     content: 'Forty inventive principles for engineering contradictions',
     tags: ['triz', 'innovation'],
-    created: '2026-09-01T00:00:00.000Z',
-    updated: '2026-09-01T00:00:00.000Z',
+    createdAt: '2026-09-01T00:00:00.000Z',
+    updatedAt: '2026-09-01T00:00:00.000Z',
     links: [],
   },
 ]
@@ -22,12 +62,20 @@ const testClaims: Claim[] = [
     id: 'c1',
     entityId: 'e1',
     statement: 'Principle 1 Segmentation separates conflicting components.',
-    confidence: 'confirmed',
-    created: '2026-09-01T00:00:00.000Z',
+    confidence: 0.9,
+    verification: 'verified',
+    createdAt: '2026-09-01T00:00:00.000Z',
   },
 ]
 
 describe('Search Worker Handler', () => {
+  beforeEach(() => {
+    embeddingsMock.embedTexts.mockImplementation((texts: string[]) =>
+      texts.map(bucketVector),
+    )
+    resetSemanticCache()
+  })
+
   it('handles SEARCH request and returns matching results', () => {
     const postReply = vi.fn()
     const req: SearchWorkerRequest = {
@@ -69,6 +117,13 @@ describe('Search Worker Handler', () => {
 })
 
 describe('SearchWorkerClient', () => {
+  beforeEach(() => {
+    embeddingsMock.embedTexts.mockImplementation((texts: string[]) =>
+      texts.map(bucketVector),
+    )
+    resetSemanticCache()
+  })
+
   it('falls back to synchronous search when no Worker is active', async () => {
     const client = new SearchWorkerClient()
     const results = await client.searchAsync(testEntities, testClaims, 'triz', 5)
@@ -188,5 +243,56 @@ describe('SearchWorkerClient', () => {
     const results = await client.searchAsync(testEntities, testClaims, 'mock', 5, new AbortController().signal)
     expect(results).toHaveLength(1)
     client.terminate()
+  })
+
+  it('searchSemantic runs the in-process semantic path without a Worker', async () => {
+
+    const outcome = await SearchWorkerClient.searchSemantic(testEntities, testClaims, 'triz', 5)
+    expect(outcome.source).toBe('semantic')
+    expect(outcome.results.length).toBeGreaterThan(0)
+    expect(outcome.results[0].id).toBe('e1')
+    expect(embeddingsMock.embedTexts).toHaveBeenCalled()
+  })
+
+  it('works via standalone searchSemantic helper', async () => {
+    const outcome = await searchSemantic(testEntities, testClaims, 'triz', 5)
+    expect(outcome.source).toBe('semantic')
+    expect(outcome.results.length).toBeGreaterThan(0)
+  })
+
+  it('searchSemantic rejects an already-aborted signal (no worker path)', async () => {
+
+    const controller = new AbortController()
+    controller.abort()
+    await expect(
+      SearchWorkerClient.searchSemantic(testEntities, testClaims, 'triz', 5, controller.signal),
+    ).rejects.toMatchObject({ name: 'AbortError' })
+  })
+
+  it('searchSemantic runs in-process even when a Worker is present', async () => {
+    // Regression guard (N1): semantic search must never depend on the search
+    // worker — its dynamic transformers.js import cannot resolve under
+    // Turbopack's module-worker bundling, which left requests pending forever.
+    const mockWorker = {
+      postMessage: vi.fn(),
+      terminate: vi.fn(),
+    } as unknown as Worker
+
+    const client = new SearchWorkerClient(mockWorker)
+    const outcome = await SearchWorkerClient.searchSemantic(testEntities, testClaims, 'triz', 5)
+    expect(outcome.source).toBe('semantic')
+    expect(outcome.results.length).toBeGreaterThan(0)
+    // No worker round-trip happens for semantic search.
+    expect(mockWorker.postMessage).not.toHaveBeenCalled()
+    client.terminate()
+  })
+
+  it('searchSemantic surfaces a lexical fallback outcome when embedding fails', async () => {
+    embeddingsMock.embedTexts.mockRejectedValue(new EmbedderError('model offline'))
+
+    const outcome = await SearchWorkerClient.searchSemantic(testEntities, testClaims, 'segmentation', 5)
+    expect(outcome.source).toBe('lexical')
+    expect(outcome.reason).toContain('model offline')
+    expect(outcome.results.length).toBeGreaterThan(0)
   })
 })

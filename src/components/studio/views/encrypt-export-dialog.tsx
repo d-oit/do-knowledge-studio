@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { Overlay } from '@/components/studio/ui/shared-primitives'
 import type { ExportFormatId } from './export-types'
+import { translate } from '@/lib/i18n/messages/export'
 
 interface EncryptExportDialogProps {
   showPassword: boolean
@@ -39,7 +40,7 @@ export const EncryptExportDialog = memo(function EncryptExportDialog({
     <Overlay
       open={showPassword}
       onClose={() => { setShowPassword(false) }}
-      aria-label="Encrypt export"
+      aria-label={translate('export.encrypt.ariaLabel')}
     >
       <motion.div
         initial={reducedMotion ? false : { opacity: 0, scale: 0.96 }}
@@ -53,9 +54,9 @@ export const EncryptExportDialog = memo(function EncryptExportDialog({
             <FileLock className="h-4 w-4" />
           </div>
           <div>
-            <h3 className="font-serif text-[15px] font-semibold text-ink">Encrypt export</h3>
+            <h3 className="font-serif text-[15px] font-semibold text-ink">{translate('export.encrypt.title')}</h3>
             <p className="text-label text-ink-faint">
-              AES-256-GCM encryption with PBKDF2 key derivation.
+              {translate('export.encrypt.subtitle')}
             </p>
           </div>
         </div>
@@ -63,7 +64,7 @@ export const EncryptExportDialog = memo(function EncryptExportDialog({
         <div className="space-y-3">
           <div>
             <label htmlFor="encrypt-password" className="mb-1 block text-label font-semibold uppercase tracking-wide text-ink-faint">
-              Password
+              {translate('export.encrypt.passwordLabel')}
             </label>
             <div className="relative">
               <input
@@ -71,7 +72,7 @@ export const EncryptExportDialog = memo(function EncryptExportDialog({
                 type={showPass ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => { setPassword(e.target.value) }}
-                placeholder="Choose a strong password"
+                placeholder={translate('export.encrypt.passwordPlaceholder')}
                 aria-invalid={Boolean(password && confirm && password !== confirm)}
                 aria-describedby={password && confirm && password !== confirm ? 'password-mismatch-error' : undefined}
                 className="w-full rounded-md border border-border bg-background px-3 py-2 pr-16 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
@@ -79,29 +80,29 @@ export const EncryptExportDialog = memo(function EncryptExportDialog({
               <button
                 onClick={() => { setShowPass(!showPass) }}
                 className="absolute right-2 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] flex items-center justify-center text-caption font-medium text-ink-faint hover:text-ink focus-ring"
-                aria-label={showPass ? 'Hide password' : 'Show password'}
+                aria-label={showPass ? translate('export.encrypt.hidePassword') : translate('export.encrypt.showPassword')}
               >
-                {showPass ? 'Hide' : 'Show'}
+                {showPass ? translate('export.encrypt.hide') : translate('export.encrypt.show')}
               </button>
             </div>
           </div>
           <div>
             <label htmlFor="encrypt-confirm-password" className="mb-1 block text-label font-semibold uppercase tracking-wide text-ink-faint">
-              Confirm password
+              {translate('export.encrypt.confirmLabel')}
             </label>
             <input
               id="encrypt-confirm-password"
               type={showPass ? 'text' : 'password'}
               value={confirm}
               onChange={(e) => { setConfirm(e.target.value) }}
-              placeholder="Re-enter password"
+              placeholder={translate('export.encrypt.confirmPlaceholder')}
               aria-invalid={Boolean(password && confirm && password !== confirm)}
               aria-describedby={password && confirm && password !== confirm ? 'password-mismatch-error' : undefined}
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
             />
           </div>
           {password && confirm && password !== confirm && (
-            <p id="password-mismatch-error" className="text-label text-red-500">Passwords do not match.</p>
+            <p id="password-mismatch-error" className="text-label text-red-500">{translate('export.encrypt.mismatch')}</p>
           )}
         </div>
 
@@ -110,14 +111,14 @@ export const EncryptExportDialog = memo(function EncryptExportDialog({
             onClick={() => { setShowPassword(false) }}
             className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
           >
-            Cancel
+            {translate('export.encrypt.cancel')}
           </button>
           <button
             onClick={() => { handleExport('encrypted').catch(() => undefined) }}
             disabled={!password || password !== confirm}
             className="rounded-md bg-primary px-4 py-1.5 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:opacity-40 press-scale focus-ring"
           >
-            Encrypt &amp; export
+            {translate('export.encrypt.submit')}
           </button>
         </div>
       </motion.div>

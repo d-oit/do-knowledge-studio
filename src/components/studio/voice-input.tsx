@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import { useSpeechRecognition } from '@/lib/use-speech-recognition'
 import { useEffect, useState, useCallback } from 'react'
 import { parseIntent, formatIntentSummary, type Intent } from '@/lib/nlp'
+import { translate } from '@/lib/i18n/messages/voice-input'
 
 interface VoiceInputProps {
   onTranscript: (text: string) => void
@@ -14,14 +15,46 @@ interface VoiceInputProps {
   showIntentPreview?: boolean
 }
 
+/** Transcribes the latest result, parsing an intent when a handler exists. */
+const useTranscriptEffects = (
+  transcript: string,
+  onTranscript: (text: string) => void,
+  onIntent: ((intent: Intent) => void) | undefined,
+  setLastIntent: (intent: Intent | null) => void,
+): void => {
+  useEffect(() => {
+    if (!transcript) return
+    onTranscript(transcript)
+    if (!onIntent) return
+    const intent = parseIntent(transcript)
+    setLastIntent(intent)
+    onIntent(intent)
+  }, [transcript, onTranscript, onIntent, setLastIntent])
+}
+
+/** Live interim transcript while listening. */
+const InterimTranscript = ({ text }: { text: string }) =>
+  text ? (
+    <span className="max-w-[200px] truncate text-[12px] text-ink-faint italic">{text}</span>
+  ) : null
+
+/** Parsed-intent preview chip (shown after a finished utterance). */
+const IntentPreview = ({ intent }: { intent: Intent | null }) =>
+  intent ? (
+    <span className="flex items-center gap-1 text-[11px] text-saffron-deep">
+      <Sparkles className="h-3 w-3" />
+      {formatIntentSummary(intent)}
+    </span>
+  ) : null
+
 /** Toggle button for browser speech recognition with live interim transcript display. */
-export function VoiceInput({
+export const VoiceInput = ({
   onTranscript,
   onIntent,
   className,
   disabled,
   showIntentPreview = false,
-}: VoiceInputProps) {
+}: VoiceInputProps) => {
   const {
     isSupported,
     isListening,
@@ -35,16 +68,7 @@ export function VoiceInput({
 
   const [lastIntent, setLastIntent] = useState<Intent | null>(null)
 
-  useEffect(() => {
-    if (transcript) {
-      onTranscript(transcript)
-      if (onIntent) {
-        const intent = parseIntent(transcript)
-        setLastIntent(intent)
-        onIntent(intent)
-      }
-    }
-  }, [transcript, onTranscript, onIntent])
+  useTranscriptEffects(transcript, onTranscript, onIntent, setLastIntent)
 
   useEffect(() => {
     if (error) {
@@ -76,7 +100,7 @@ export function VoiceInput({
             : 'text-ink-faint hover:bg-border hover:text-ink',
           disabled && 'opacity-40',
         )}
-        aria-label={isListening ? 'Stop recording' : 'Start voice input'}
+        aria-label={isListening ? translate('voice.stopRecording') : translate('voice.startInput')}
         aria-pressed={isListening}
       >
         {isListening ? (
@@ -85,17 +109,8 @@ export function VoiceInput({
           <Mic className="h-4 w-4" />
         )}
       </button>
-      {isListening && interimTranscript && (
-        <span className="max-w-[200px] truncate text-[12px] text-ink-faint italic">
-          {interimTranscript}
-        </span>
-      )}
-      {showIntentPreview && lastIntent && !isListening && (
-        <span className="flex items-center gap-1 text-[11px] text-saffron-deep">
-          <Sparkles className="h-3 w-3" />
-          {formatIntentSummary(lastIntent)}
-        </span>
-      )}
+      <InterimTranscript text={isListening ? interimTranscript : ''} />
+      {!isListening && <IntentPreview intent={showIntentPreview ? lastIntent : null} />}
     </div>
   )
 }

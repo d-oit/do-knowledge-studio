@@ -78,13 +78,13 @@ describe('sanitizeHydration', () => {
     expect('version' in verdict.data).toBe(false)
   })
 
-  it('rejects state with invalid entity structure and formats error reason with path', () => {
+  it('rejects state with an invalid entity type and formats error reason with path', () => {
     const invalidSlice = {
       ...createValidPersistedSlice(),
       entities: [
         {
           ...SAMPLE_ENTITY,
-          type: 'invalid-type', // Invalid entity type enum
+          type: '', // Blank custom type string is rejected
         },
       ],
     }
@@ -94,6 +94,24 @@ describe('sanitizeHydration', () => {
     expect(verdict.ok).toBe(false)
     expect(verdict.data).toEqual({})
     expect(verdict.reason).toContain('entities.0.type')
+  })
+
+  it('accepts entities with a custom registered type string', () => {
+    const slice = {
+      ...createValidPersistedSlice(),
+      entities: [
+        {
+          ...SAMPLE_ENTITY,
+          type: 'roadmap',
+        },
+      ],
+      typeFilter: 'roadmap' as const,
+    }
+
+    const verdict = sanitizeHydration(slice)
+
+    expect(verdict.ok).toBe(true)
+    expect(verdict.data.entities![0].type).toBe('roadmap')
   })
 
   it('rejects state with invalid claim structure and formats path', () => {

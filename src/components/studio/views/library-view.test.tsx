@@ -75,6 +75,7 @@ const mockSetSortDir = vi.fn()
 const mockStartEdit = vi.fn()
 const mockStartNew = vi.fn()
 const mockSetSearchQuery = vi.fn()
+const mockSetSemanticSearchEnabled = vi.fn()
 
 const mockEntities = [
   {
@@ -106,6 +107,7 @@ let currentSortBy = 'updated'
 let currentSortDir = 'asc'
 let currentSearchQuery = ''
 let currentRightPanelOpen = false
+let currentSemanticSearchEnabled = false
 let currentEntities = mockEntities
 let filteredEntities = mockEntities
 
@@ -124,6 +126,8 @@ vi.mock('@/lib/studio/store', () => ({
       searchQuery: currentSearchQuery,
       setSearchQuery: mockSetSearchQuery,
       rightPanelOpen: currentRightPanelOpen,
+      semanticSearchEnabled: currentSemanticSearchEnabled,
+      setSemanticSearchEnabled: mockSetSemanticSearchEnabled,
     }),
   useFilteredEntities: () => filteredEntities,
 }))
@@ -140,6 +144,7 @@ describe('LibraryView', () => {
     currentSortDir = 'asc'
     currentSearchQuery = ''
     currentRightPanelOpen = false
+    currentSemanticSearchEnabled = false
   })
 
   it('renders empty state when no entities', () => {
@@ -367,5 +372,11 @@ describe('LibraryView', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Show all 30 entities' }))
     expect(screen.getByText('Entity 29')).toBeDefined()
     expect(screen.getAllByText(/Showing 30 of 30 entities/).length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('semantic toggle drives the store action', () => {
+    render(<LibraryView />)
+    fireEvent.click(screen.getByRole('switch', { name: 'Semantic search' }))
+    expect(mockSetSemanticSearchEnabled).toHaveBeenCalledWith(true)
   })
 })

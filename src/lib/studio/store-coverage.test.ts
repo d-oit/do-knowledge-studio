@@ -163,6 +163,30 @@ describe('Studio Store branch coverage', () => {
     })
   })
 
+  describe('commitEntities', () => {
+    it('commits a batch under one history snapshot so a single undo restores all writes', () => {
+      const source = makeEntity({ id: 'e-src', name: 'Source' })
+      const target = makeEntity({ id: 'e-tgt', name: 'Target' })
+      useStudioStore.setState({ entities: [source, target] })
+
+      useStudioStore.getState().commitEntities([
+        { ...source, links: [{ targetId: 'e-tgt', relation: 'mentions' }] },
+        { ...target, links: [{ targetId: 'e-src', relation: 'mentioned-in' }] },
+      ])
+      expect(useStudioStore.getState().entities.find((e) => e.id === 'e-src')?.links).toHaveLength(1)
+      expect(useStudioStore.getState().entities.find((e) => e.id === 'e-tgt')?.links).toHaveLength(1)
+      // The batch is one history step (pre-change snapshot appended once).
+      expect(useStudioStore.getState().historyIndex).toBe(1)
+
+      useStudioStore.getState().undo()
+      // One undo restores the pre-batch snapshot: both entities keep their
+      // ids but the reciprocal links are gone together.
+      const { entities } = useStudioStore.getState()
+      expect(entities.find((e) => e.id === 'e-src')?.links ?? []).toHaveLength(0)
+      expect(entities.find((e) => e.id === 'e-tgt')?.links ?? []).toHaveLength(0)
+    })
+  })
+
   describe('updateClaim edit history', () => {
     it('records a history entry when statement changes', () => {
       useStudioStore.getState().addClaim(makeClaim({ entityId: 'e-1', statement: 'Original' }))

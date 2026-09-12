@@ -3,21 +3,28 @@
 import { useStudioStore } from '@/lib/studio/store'
 import { useStoreHydrated } from '@/lib/studio/use-hydrated'
 import type { ViewId } from '@/lib/studio/types'
+import { translate as timelineT } from '@/lib/i18n/messages/timeline'
 import { Menu, Plus, Search } from 'lucide-react'
 import type { KeyboardEvent } from 'react'
 
-const VIEW_TITLES: Record<ViewId, { title: string; subtitle: string }> = {
-  home: { title: 'Studio', subtitle: 'Your knowledge base at a glance' },
-  editor: { title: 'Editor', subtitle: 'Capture a thought, claim, or note' },
-  library: { title: 'Library', subtitle: 'Browse and filter your entities' },
-  graph: { title: 'Graph', subtitle: 'Visualize relationships' },
-  mindmap: { title: 'Mind Map', subtitle: 'Hierarchical exploration' },
-  chat: { title: 'Chat', subtitle: 'Ask your library' },
-  ai: { title: 'AI Harness', subtitle: 'Configure and chat with LLMs' },
-  triz: { title: 'TRIZ Matrix', subtitle: 'Solve inventive contradictions' },
-  export: { title: 'Export', subtitle: 'Backup and share your knowledge' },
-  sync: { title: 'Sync', subtitle: 'Connect devices and sync peer-to-peer' },
-}
+/** View title metadata keyed by ViewId (bounded Map retrieval — no dynamic indexing). */
+const VIEW_TITLES: ReadonlyMap<ViewId, { title: string; subtitle: string }> = new Map([
+  ['home', { title: 'Studio', subtitle: 'Your knowledge base at a glance' }],
+  ['editor', { title: 'Editor', subtitle: 'Capture a thought, claim, or note' }],
+  ['library', { title: 'Library', subtitle: 'Browse and filter your entities' }],
+  ['graph', { title: 'Graph', subtitle: 'Visualize relationships' }],
+  ['mindmap', { title: 'Mind Map', subtitle: 'Hierarchical exploration' }],
+  ['chat', { title: 'Chat', subtitle: 'Ask your library' }],
+  ['ai', { title: 'AI Harness', subtitle: 'Configure and chat with LLMs' }],
+  ['triz', { title: 'TRIZ Matrix', subtitle: 'Solve inventive contradictions' }],
+  ['export', { title: 'Export', subtitle: 'Backup and share your knowledge' }],
+  ['sync', { title: 'Sync', subtitle: 'Connect devices and sync peer-to-peer' }],
+  ['timeline', { title: timelineT('timeline.title'), subtitle: timelineT('timeline.subtitle') }],
+])
+
+/** Bounded lookup; falls back to the home title for unknown view ids. */
+const getViewMeta = (view: ViewId): { title: string; subtitle: string } =>
+  VIEW_TITLES.get(view) ?? { title: 'Studio', subtitle: 'Your knowledge base at a glance' }
 
 /** Top header bar with view title, inline search, offline badge, and new entity button. */
 export const Topbar = () => {
@@ -29,7 +36,7 @@ export const Topbar = () => {
   const setMobileDrawerOpen = useStudioStore((s) => s.setMobileDrawerOpen)
   const setMobilePanelView = useStudioStore((s) => s.setMobilePanelView)
   const isHydrated = useStoreHydrated()
-  const meta = VIEW_TITLES[currentView as keyof typeof VIEW_TITLES]
+  const meta = getViewMeta(currentView)
 
   // Inline input doubles as a quick filter for the Library + right-panel SearchPanel,
   // and as a launcher for the command palette (via ⌘K or the kbd chip).

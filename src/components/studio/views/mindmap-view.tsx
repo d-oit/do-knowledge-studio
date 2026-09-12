@@ -1,7 +1,7 @@
 'use client'
 
 import { useStudioStore } from '@/lib/studio/store'
-import { ENTITY_TYPE_META } from '@/lib/studio/types'
+import { getEntityTypeMeta } from '@/lib/studio/entity-types'
 import {
   BrainCircuit,
   Plus,
@@ -24,7 +24,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { buildEntityIndex } from '@/lib/studio/graph-index'
 
 interface TreeNode {
-  entity: { id: string; name: string; type: keyof typeof ENTITY_TYPE_META }
+  entity: { id: string; name: string; type: string }
   children: TreeNode[]
   expanded: boolean
 }
@@ -37,7 +37,7 @@ function getNodeIndentStyle(level: number): React.CSSProperties {
 }
 
 /** Interactive mind map view with expandable tree, keyboard navigation, and PNG export. */
-export function MindMapView() {
+export const MindMapView = () => {
   const entities = useStudioStore((s) => s.entities)
   const selectEntity = useStudioStore((s) => s.selectEntity)
   const setView = useStudioStore((s) => s.setView)
@@ -50,7 +50,7 @@ export function MindMapView() {
   const canvasRef = useRef<HTMLDivElement>(null)
   const treeItemsRef = useRef<NodeListOf<HTMLElement> | null>(null)
   const [syncKey, setSyncKey] = useState(0)
-  const commitEntity = useStudioStore((s) => s.commitEntity)
+  const commitEntities = useStudioStore((s) => s.commitEntities)
   const deleteEntity = useStudioStore((s) => s.deleteEntity)
   const startEdit = useStudioStore((s) => s.startEdit)
   const undo = useStudioStore((s) => s.undo)
@@ -78,10 +78,9 @@ export function MindMapView() {
       links: [...nodeEntity.links, { targetId: childId, relation: 'contains' }],
       updatedAt: new Date().toISOString(),
     }
-    commitEntity(childEntity)
-    commitEntity(parentWithLink)
+    commitEntities([childEntity, parentWithLink])
     setFocusedNodeId(childId)
-  }, [entityIndex, commitEntity])
+  }, [entityIndex, commitEntities])
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -216,7 +215,7 @@ export function MindMapView() {
   }, [tree, expandedNodes, syncKey])
 
   const renderNode = (node: TreeNode, level: number = 0): React.ReactNode => {
-    const meta = ENTITY_TYPE_META[node.entity.type]
+    const meta = getEntityTypeMeta(node.entity.type)
     const isExpanded = expandedNodes.has(node.entity.id) || level === 0
     const hasChildren = node.children.length > 0
 

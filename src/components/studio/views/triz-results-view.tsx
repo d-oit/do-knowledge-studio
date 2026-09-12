@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { TRIZ_PARAMETERS, type TrizPrinciple } from '@/lib/studio/triz-data'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { ContradictionChip } from './triz-helpers'
+import { translate } from '@/lib/i18n/messages/triz'
 
 interface PrincipleCardProps {
   principle: TrizPrinciple
@@ -38,7 +39,7 @@ const PrincipleCard = ({
           type="button"
           onClick={() => { onCopy(`${name}: ${description}`, id) }}
           className="rounded-md p-1.5 text-ink-faint transition-colors hover:bg-muted hover:text-ink focus-ring min-h-[44px] min-w-[44px] flex items-center justify-center"
-          aria-label="Copy principle"
+          aria-label={translate('triz.results.copyAria')}
         >
           {copied === id ? (
             <Check className="h-3.5 w-3.5 text-emerald-500" />
@@ -53,7 +54,7 @@ const PrincipleCard = ({
       <p className="mb-2 flex-1 text-[12px] leading-relaxed text-ink-mute">{description}</p>
       {examples.length > 0 && (
         <div className="mt-auto border-t border-border pt-2">
-          <p className="mb-1 text-caption font-semibold uppercase tracking-wide text-ink-faint">Examples</p>
+          <p className="mb-1 text-caption font-semibold uppercase tracking-wide text-ink-faint">{translate('triz.results.examples')}</p>
           <ul className="list-inside list-disc space-y-0.5 text-[11px] text-ink-mute">
             {examples.slice(0, 3).map((example) => (
               <li key={example}>{example}</li>
@@ -77,20 +78,17 @@ const ResultsSummaryDescription = ({
   hasSuggestions,
 }: ResultsSummaryProps) => (
   <p className="mt-3 text-[13px] leading-relaxed text-ink-mute">
-    You want to improve <strong className="text-ink-soft">{TRIZ_PARAMETERS.at(improving)?.toLowerCase() ?? ''}</strong>,
-    but doing so worsens <strong className="text-ink-soft">{TRIZ_PARAMETERS.at(worsening)?.toLowerCase() ?? ''}</strong>.
-    {hasSuggestions ? (
-      ' TRIZ suggests these inventive principles:'
-    ) : (
-      ' No principles found for this pair in the matrix. Try a different combination.'
-    )}
+    {translate('triz.results.summaryPrefix')}<strong className="text-ink-soft">{TRIZ_PARAMETERS.at(improving)?.toLowerCase() ?? ''}</strong>
+    {translate('triz.results.summaryMiddle')}<strong className="text-ink-soft">{TRIZ_PARAMETERS.at(worsening)?.toLowerCase() ?? ''}</strong>
+    {translate('triz.results.summarySuffix')}
+    {hasSuggestions ? translate('triz.results.summarySuggestions') : translate('triz.results.summaryNone')}
   </p>
 )
 
 const ResultsSummary = ({ improving, worsening, hasSuggestions }: ResultsSummaryProps) => (
   <div className="mb-6 rounded-lg border border-border bg-card p-4">
     <div className="mb-3 text-label font-semibold uppercase tracking-[0.14em] text-ink-faint">
-      Your contradiction
+      {translate('triz.results.summaryLabel')}
     </div>
     <div className="flex flex-wrap items-center gap-3">
       <ContradictionChip n={improving + 1} label={TRIZ_PARAMETERS.at(improving) ?? ''} accent="saffron" />
@@ -124,7 +122,7 @@ const ResultsPrinciples = ({
       <div className="mb-4 flex items-center gap-2">
         <Sparkles className="h-4 w-4 text-saffron" />
         <h2 className="font-serif text-lg font-semibold text-ink">
-          Suggested inventive principles
+          {translate('triz.results.title')}
         </h2>
         <span className="rounded-full bg-saffron-soft px-2 py-0 text-label font-semibold text-saffron-deep">
           {suggestedPrinciples.length}
@@ -159,14 +157,14 @@ const ResultsActions = ({ onReset, onChangeParams }: ResultsActionsProps) => (
       className="flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
     >
       <RotateCcw className="h-3.5 w-3.5" />
-      Try another contradiction
+      {translate('triz.results.tryAnother')}
     </button>
     <button
       type="button"
       onClick={onChangeParams}
       className="flex min-h-[44px] items-center gap-1.5 rounded-md border border-border bg-background px-4 py-2 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
     >
-      Change parameters
+      {translate('triz.results.changeParams')}
     </button>
   </div>
 )

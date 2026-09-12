@@ -8,6 +8,7 @@ import type { ViewId } from '@/lib/studio/types'
 import { Overlay } from '@/components/studio/ui/shared-primitives'
 import { cn } from '@/lib/utils'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
+import { translate } from '@/lib/i18n/messages/shortcuts'
 
 interface ShortcutRow {
   keys: string
@@ -16,44 +17,44 @@ interface ShortcutRow {
 
 const SHORTCUTS: { group: string; rows: ShortcutRow[] }[] = [
   {
-    group: 'Global',
+    group: translate('shortcuts.group.global'),
     rows: [
-      { keys: '⌘K', action: 'Open command palette' },
-      { keys: '?', action: 'Show this help' },
-      { keys: 'Esc', action: 'Close dialog / palette / drawer' },
+      { keys: '⌘K', action: translate('shortcuts.action.openPalette') },
+      { keys: '?', action: translate('shortcuts.action.showHelp') },
+      { keys: 'Esc', action: translate('shortcuts.action.closeOverlay') },
     ],
   },
   {
-    group: 'Navigate (press G, then a letter)',
+    group: translate('shortcuts.group.navigate'),
     rows: [
-      { keys: 'G  H', action: 'Go to Home' },
-      { keys: 'G  E', action: 'Go to Editor' },
-      { keys: 'G  L', action: 'Go to Library' },
-      { keys: 'G  G', action: 'Go to Graph' },
-      { keys: 'G  M', action: 'Go to Mind Map' },
-      { keys: 'G  C', action: 'Go to Chat' },
-      { keys: 'G  A', action: 'Go to AI Harness' },
-      { keys: 'G  T', action: 'Go to TRIZ Matrix' },
-      { keys: 'G  X', action: 'Go to Export' },
-      { keys: 'G  S', action: 'Go to Sync' },
+      { keys: 'G  H', action: translate('shortcuts.action.goHome') },
+      { keys: 'G  E', action: translate('shortcuts.action.goEditor') },
+      { keys: 'G  L', action: translate('shortcuts.action.goLibrary') },
+      { keys: 'G  G', action: translate('shortcuts.action.goGraph') },
+      { keys: 'G  M', action: translate('shortcuts.action.goMindMap') },
+      { keys: 'G  C', action: translate('shortcuts.action.goChat') },
+      { keys: 'G  A', action: translate('shortcuts.action.goAi') },
+      { keys: 'G  T', action: translate('shortcuts.action.goTriz') },
+      { keys: 'G  X', action: translate('shortcuts.action.goExport') },
+      { keys: 'G  S', action: translate('shortcuts.action.goSync') },
     ],
   },
   {
-    group: 'Editor',
+    group: translate('shortcuts.group.editor'),
     rows: [
-      { keys: '⌘B', action: 'Bold' },
-      { keys: '⌘I', action: 'Italic' },
-      { keys: '⌘U', action: 'Underline' },
-      { keys: '⌘⇧X', action: 'Strikethrough' },
-      { keys: '⌘⇧H', action: 'Highlight' },
-      { keys: '⌘⇧M', action: 'Code block' },
+      { keys: '⌘B', action: translate('shortcuts.action.bold') },
+      { keys: '⌘I', action: translate('shortcuts.action.italic') },
+      { keys: '⌘U', action: translate('shortcuts.action.underline') },
+      { keys: '⌘⇧X', action: translate('shortcuts.action.strikethrough') },
+      { keys: '⌘⇧H', action: translate('shortcuts.action.highlight') },
+      { keys: '⌘⇧M', action: translate('shortcuts.action.codeBlock') },
     ],
   },
   {
-    group: 'Library',
+    group: translate('shortcuts.group.library'),
     rows: [
-      { keys: '⌘F', action: 'Focus search' },
-      { keys: '⌘N', action: 'New entity' },
+      { keys: '⌘F', action: translate('shortcuts.action.focusSearch') },
+      { keys: '⌘N', action: translate('shortcuts.action.newEntity') },
     ],
   },
 ]
@@ -247,7 +248,7 @@ export const ShortcutsDialog = (): React.JSX.Element => {
       <Overlay
         open={open}
         onClose={() => { setOpen(false) }}
-        aria-label="Keyboard shortcuts"
+        aria-label={translate('shortcuts.ariaLabel')}
         variant="center"
         closeOnEscape={false}
         initialFocusRef={closeBtnRef}
@@ -258,13 +259,13 @@ export const ShortcutsDialog = (): React.JSX.Element => {
           <div className="flex items-center gap-2">
             <Keyboard className="h-4 w-4 text-saffron" />
             <h2 className="font-serif text-[15px] font-semibold text-ink">
-              Keyboard shortcuts
+              {translate('shortcuts.title')}
             </h2>
           </div>
           <button
             ref={closeBtnRef}
             onClick={() => { setOpen(false) }}
-            aria-label="Close shortcuts dialog"
+            aria-label={translate('shortcuts.close')}
             className="rounded-md p-1.5 text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
           >
             <X className="h-4 w-4" />
@@ -280,12 +281,12 @@ export const ShortcutsDialog = (): React.JSX.Element => {
               type="text"
               value={filter}
               onChange={(e) => { setFilter(e.target.value); }}
-              placeholder="Filter shortcuts..."
+              placeholder={translate('shortcuts.filterPlaceholder')}
               className={cn(
                 'w-full rounded-md border border-border bg-background py-1.5 pl-8 text-body-sm text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30',
                 filter ? 'pr-11' : 'pr-3',
               )}
-              aria-label="Filter shortcuts"
+              aria-label={translate('shortcuts.filterAriaLabel')}
             />
             {filter && (
               <button
@@ -294,8 +295,8 @@ export const ShortcutsDialog = (): React.JSX.Element => {
                   setFilter('')
                   filterInputRef.current?.focus()
                 }}
-                aria-label="Clear filter search"
-                title="Clear filter search"
+                aria-label={translate('shortcuts.clearFilter')}
+                title={translate('shortcuts.clearFilter')}
                 className="absolute right-1.5 top-1/2 size-9 -translate-y-1/2 inline-flex items-center justify-center rounded text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
               >
                 <X className="h-3.5 w-3.5" />
@@ -308,7 +309,7 @@ export const ShortcutsDialog = (): React.JSX.Element => {
         <div className="max-h-[70vh] overflow-y-auto px-5 py-4">
           {filteredShortcuts.length === 0 ? (
             <p className="py-8 text-center text-body-sm text-ink-mute">
-              No shortcuts match &quot;{filter}&quot;
+              {translate('shortcuts.noMatch', filter)}
             </p>
           ) : (
             <div className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
@@ -339,8 +340,8 @@ export const ShortcutsDialog = (): React.JSX.Element => {
           )}
 
           <p className="mt-5 border-t border-border pt-3 text-label leading-relaxed text-ink-faint">
-            Tip: the <kbd className="rounded border border-border bg-muted px-1 font-mono text-caption">G</kbd>{' '}
-            sequence waits 1 second for the next key — if you change your mind, just wait or press any other key to cancel.
+            {translate('shortcuts.tipPrefix')}<kbd className="rounded border border-border bg-muted px-1 font-mono text-caption">G</kbd>
+            {translate('shortcuts.tipSuffix')}
           </p>
         </div>
       </Overlay>
@@ -362,7 +363,7 @@ export const ShortcutsDialog = (): React.JSX.Element => {
             <kbd className="rounded border border-saffron/40 bg-saffron-soft px-1.5 py-0 font-mono text-caption font-semibold text-saffron-deep">
               g
             </kbd>
-            <span className="text-label font-medium text-ink-soft">Press a key…</span>
+            <span className="text-label font-medium text-ink-soft">{translate('shortcuts.gIndicator')}</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -382,11 +383,11 @@ export const ShortcutsTrigger = ({ className }: { className?: string }): React.J
       type="button"
       onClick={() => { setOpen(true) }}
       className={className}
-      aria-label="Show keyboard shortcuts"
-      title="Keyboard shortcuts (?)"
+      aria-label={translate('shortcuts.triggerAria')}
+      title={translate('shortcuts.triggerTitle')}
     >
       <Keyboard className="h-4 w-4" />
-      <span>Shortcuts</span>
+      <span>{translate('shortcuts.triggerLabel')}</span>
     </button>
   )
 }
