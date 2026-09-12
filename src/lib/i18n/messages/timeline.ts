@@ -14,7 +14,9 @@ const messages = {
   'timeline.monthFormat': 'MMMM yyyy',
   'timeline.dayFormat': 'EEEE, MMMM d',
   'timeline.timeFormat': 'h:mm a',
-  'timeline.itemCount': (n: string) => `${n} items`,
+  // `n` arrives as the raw count string; the singular form is selected here
+  // because this message layer has no plural-rule support yet.
+  'timeline.itemCount': (n: string) => (n === '1' ? '1 item' : `${n} items`),
   'timeline.openItem': (label: string) => `Open ${label} in editor`,
   'timeline.claimBadge': 'Claim',
   'timeline.empty.title': 'Nothing here yet',
