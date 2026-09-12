@@ -25,15 +25,27 @@ export interface EntityTypeDef extends EntityTypeMeta {
 const RESERVED_TYPE_IDS: ReadonlySet<string> = new Set(['all'])
 
 /**
- * A LucideIcon is a forwardRef component: a `$$typeof`-tagged object at
- * runtime (plain functions also accepted for exotic cases). The predicate
- * keeps Zod 4's `z.custom` from accepting arbitrary values like `{}`.
+ * `$$typeof` tags that denote a component *type* — a `forwardRef` (what Lucide
+ * icons are) or a `memo` wrapper. A React *element* (`createElement(Map)`) is
+ * also `$$typeof`-tagged, but it is an already-instantiated element, not an
+ * icon component, so it must not pass validation.
  */
-const isReactComponentValue = (value: unknown): boolean =>
-  typeof value === 'function' ||
-  (typeof value === 'object' &&
-    value !== null &&
-    typeof (value as { $$typeof?: unknown }).$$typeof === 'symbol')
+const REACT_COMPONENT_TAGS: ReadonlySet<symbol> = new Set([
+  Symbol.for('react.forward_ref'),
+  Symbol.for('react.memo'),
+])
+
+/**
+ * Accepts a component type: a plain function, or a `$$typeof`-tagged
+ * component wrapper. Keeps Zod 4's `z.custom` from accepting `{}`, arbitrary
+ * objects, or React elements that cannot be rendered as `icon`.
+ */
+const isReactComponentValue = (value: unknown): boolean => {
+  if (typeof value === 'function') return true
+  if (typeof value !== 'object' || value === null) return false
+  const tag = (value as { $$typeof?: unknown }).$$typeof
+  return typeof tag === 'symbol' && REACT_COMPONENT_TAGS.has(tag)
+}
 
 /**
  * Zod schema for plugin-supplied type definitions. Mirrors the persisted

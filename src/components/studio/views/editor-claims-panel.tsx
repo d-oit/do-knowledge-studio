@@ -35,7 +35,13 @@ export function VerificationBadge({ status }: { status: VerificationStatus }) {
 const DEFAULT_CONFIDENCE = 0.5
 
 /** Joins statement and source into a stable duplicate-detection key. */
-const DRAFT_KEY_SEPARATOR = '\u0000'
+/**
+ * Identity key for a (statement, source) pair. JSON-encoded rather than
+ * delimiter-joined: both fields are unrestricted strings, so any single
+ * separator can collide two distinct claims onto one key.
+ */
+const draftKey = (statement: string, source: string | undefined): string =>
+  JSON.stringify([statement, source ?? ''])
 
 /** A single claim row with verification, confidence, and edit/delete actions. */
 const ClaimRow = ({
@@ -212,10 +218,10 @@ export const ClaimsPanel = ({
   const handleExtractConfirm = useCallback(() => {
     if (!extractDrafts) return
     const existing = new Set(
-      claims.map((claim) => `${claim.statement}${DRAFT_KEY_SEPARATOR}${claim.source ?? ''}`),
+      claims.map((claim) => draftKey(claim.statement, claim.source)),
     )
     const toAdd = extractDrafts.filter(
-      (draft) => !existing.has(`${draft.statement}${DRAFT_KEY_SEPARATOR}${draft.source ?? ''}`),
+      (draft) => !existing.has(draftKey(draft.statement, draft.source)),
     )
     const skipped = extractDrafts.length - toAdd.length
     for (const draft of toAdd) {
@@ -391,7 +397,7 @@ export const ClaimsPanel = ({
           <ul className="max-h-64 space-y-2 overflow-y-auto">
             {(extractDrafts ?? []).map((draft) => (
               <li
-                key={`${draft.statement}${DRAFT_KEY_SEPARATOR}${draft.source ?? ''}`}
+                key={draftKey(draft.statement, draft.source)}
                 className="rounded-md border border-border bg-background p-3"
               >
                 <p className="font-serif text-[13px] italic leading-relaxed text-ink">

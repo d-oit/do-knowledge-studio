@@ -97,6 +97,22 @@ Commit `7733a1d` + `1f65ab5` on
    metric gate (DCV/coverage) configuration; `.deepsource.toml` issue-pattern
    suppressions demonstrably do not clear the status (LESSON-031/034).
 
+### Deferred findings (valid, needs a behavioural change + tests)
+
+GitNexus's review of commit `1a68ac5` raised these; they are **not** fixed here
+because each changes search/a11y semantics and deserves its own scoped change:
+
+| Finding | Why deferred |
+|---|---|
+| `library-view.tsx` — type filter applied *after* semantic truncation (top-100) | Passing the type-filtered corpus into `searchSemantic` fixes it, but changes index-rebuild/perf behaviour for every filter change; needs its own plan + benchmark. |
+| `mention.ts` — matcher also matches escaped/code-span mention syntax | Needs Markdown-context awareness (code fences/inline code/escapes) rather than a raw-text regex. |
+| `type-selector.tsx` — the entity's current unregistered type has no reachable option (keyboard trap) | Needs an explicit "current type" option plus a11y test coverage. |
+| `local-adapter.ts` — a non-streamed fallback reply never reaches `onChunk` | The adapter's contract is deliberate and covered by 7 tests (`chunks` stays empty; the text rides on the returned `ChatResult`). The defect is in the consumer: `use-ai-harness-chat.ts` renders only from `onChunk` and discards the awaited result, so the fix belongs there. |
+
+Also refuted with evidence (threads replied to and resolved): the
+`right-panel.tsx` "unused citation index" nit is a false positive — `i` still
+renders the citation number (`{i + 1}`).
+
 ## 6. Merge order (dependency-driven)
 
 Both PRs are independent, so the order is by risk and size:

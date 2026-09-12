@@ -454,7 +454,9 @@ export const GraphView = () => {
           <div className="space-y-1">
             {getEntityTypeDefs().map((def) => (
               <div key={def.id} className="flex items-center gap-2 text-label text-ink-soft">
-                <span className={cn('h-2 w-2 rounded-full', def.dot)} />
+                {/* A registered type may carry a blank `dot` class; fall back
+                    to the neutral token so the legend marker stays visible. */}
+                <span className={cn('h-2 w-2 rounded-full', def.dot.trim() ? def.dot : 'bg-ink-faint')} />
                 {def.label}
               </div>
             ))}

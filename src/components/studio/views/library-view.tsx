@@ -87,8 +87,9 @@ const useSemanticSearch = (
       controller = new AbortController()
       setSemanticOutcome(null)
       setSemanticBusy(true)
-      // Async callback: the timer owns the promise, so no `void`/floating
-      // chain — rejection is handled inside with try/catch.
+      // The async IIFE is `void`-ed because nothing awaits it; the timer owns
+      // the timer handle and the rejection is handled inside try/catch, so the
+      // promise can never surface as an unhandled rejection.
       debounce = window.setTimeout(() => {
         void (async () => {
           try {

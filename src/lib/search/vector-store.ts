@@ -278,6 +278,10 @@ const buildVectorIndex = async (
   signal?: AbortSignal,
 ): Promise<VectorIndexResult> => {
   for (;;) {
+    // Checked before the cached fast path too: an abort that arrives after the
+    // query embedding (an await point) must still settle the request as an
+    // AbortError rather than ranking a cached index.
+    if (signal?.aborted) throw abortError()
     if (entities === lastIndexedEntities && claims === lastIndexedClaims) {
       return { ok: true, count: defaultVectorStore.size }
     }
