@@ -102,9 +102,15 @@ export type EmbedderStatus = 'idle' | 'loading' | 'ready' | 'error'
 let embedderPromise: Promise<EmbeddingPipeline> | null = null
 let embedderStatus: EmbedderStatus = 'idle'
 let embedderFailure: string | null = null
+/**
+ * Incremented by {@link disposeEmbedder} so an in-flight load from before the
+ * dispose can detect that its runtime is obsolete and must not write state
+ * (status/failure/singleton) that belongs to a newer load.
+ */
+let embedderGeneration = 0
 
 /** Loads the transformers.js pipeline; resolves once and caches itself. */
-const loadEmbedder = async (): Promise<EmbeddingPipeline> => {
+const loadEmbedder = async (generation: number): Promise<EmbeddingPipeline> => {
   embedderStatus = 'loading'
   try {
     const { pipeline } = await import('@huggingface/transformers')
@@ -112,16 +118,22 @@ const loadEmbedder = async (): Promise<EmbeddingPipeline> => {
       dtype: EMBEDDING_DTYPE,
       device: EMBEDDING_DEVICE,
     })) as EmbeddingPipeline
-    embedderStatus = 'ready'
-    embedderFailure = null
+    if (generation === embedderGeneration) {
+      embedderStatus = 'ready'
+      embedderFailure = null
+    }
     return extractor
   } catch (err) {
-    embedderStatus = 'error'
-    embedderFailure = err instanceof Error ? err.message : String(err)
-    // Drop the rejected promise so the next call retries the model download.
-    embedderPromise = null
+    if (generation === embedderGeneration) {
+      embedderStatus = 'error'
+      embedderFailure = err instanceof Error ? err.message : String(err)
+      // Drop the rejected promise so the next call retries the model download.
+      embedderPromise = null
+    }
     throw new EmbedderError(
-      `Semantic embedding model failed to load (${EMBEDDING_MODEL_ID}): ${embedderFailure}`,
+      `Semantic embedding model failed to load (${EMBEDDING_MODEL_ID}): ${
+        embedderFailure ?? (err instanceof Error ? err.message : String(err))
+      }`,
       { cause: err },
     )
   }
@@ -133,7 +145,7 @@ const loadEmbedder = async (): Promise<EmbeddingPipeline> => {
  */
 export const getEmbedder = (): Promise<EmbeddingPipeline> => {
   if (embedderPromise === null) {
-    embedderPromise = loadEmbedder()
+    embedderPromise = loadEmbedder(embedderGeneration)
   }
   return embedderPromise
 }
@@ -149,6 +161,7 @@ export const getEmbedderError = (): string | null => embedderFailure
 
 /** Resets the singleton so the next call reloads the model (tests, retries). */
 export const disposeEmbedder = (): void => {
+  embedderGeneration += 1
   embedderPromise = null
   embedderStatus = 'idle'
   embedderFailure = null

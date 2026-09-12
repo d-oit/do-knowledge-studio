@@ -10,28 +10,6 @@ import { useMemo, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Overlay } from '@/components/studio/ui/shared-primitives'
 
-/** Right sidebar panel that switches between search, inspector, and citations based on the active view. */
-export const RightPanel = () => {
-  const currentView = useStudioStore((s) => s.currentView)
-  const rightPanelOpen = useStudioStore((s) => s.rightPanelOpen)
-  const chat = useStudioStore((s) => s.chat)
-  const startNew = useStudioStore((s) => s.startNew)
-
-  if (!rightPanelOpen) return null
-
-  // Contextual content per view
-  if (currentView === 'graph' || currentView === 'mindmap') {
-    return <InspectorPanel />
-  }
-  if (currentView === 'chat' || currentView === 'ai') {
-    const hasCitations = chat.some((m) => m.citations && m.citations.length > 0)
-    if (!hasCitations) return <SearchPanel onCreateEntity={() => startNew()} />
-    return <CitationsPanel />
-  }
-
-  return <SearchPanel onCreateEntity={() => startNew()} />
-}
-
 /**
  * Dedupes an entity's links for rendering: the persisted schema permits
  * repeated `{ targetId, relation }` objects (imports/legacy data), which
@@ -42,7 +20,9 @@ const dedupeLinks = (links: Entity['links']): Entity['links'] => {
   const seen = new Set<string>()
   const out: Entity['links'] = []
   for (const link of links) {
-    const key = `${link.targetId}:${link.relation}`
+    // JSON tuple key: `:` inside an id or relation would collide distinct
+    // pairs onto one key (same reason dedupeCitations uses this shape).
+    const key = JSON.stringify([link.targetId, link.relation])
     if (seen.has(key)) continue
     seen.add(key)
     out.push(link)
@@ -75,6 +55,19 @@ const resolveRankedRowMeta = (
   return { targetId, meta: resolvedEntity ? getEntityTypeMeta(resolvedEntity.type) : undefined }
 }
 
+/** Type dot + label badge for a ranked row (extracted for complexity). */
+const RankedRowMetaBadge = ({ meta }: { meta: EntityTypeMeta | undefined }) => {
+  if (!meta) return null
+  return (
+    <>
+      <span className={cn('h-1.5 w-1.5 rounded-full', meta.dot)} />
+      <span className="rounded px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-ink-faint">
+        {meta.label}
+      </span>
+    </>
+  )
+}
+
 /**
  * Single ranked search result row. Extracted from the SearchPanel map
  * callback so the render body stays within the complexity ceiling.
@@ -97,12 +90,7 @@ const RankedResultRow = ({
         aria-label={`${result.name} — score ${result.score.toFixed(2)}`}
       >
         <div className="mb-1 flex items-center gap-2">
-          {meta && <span className={cn('h-1.5 w-1.5 rounded-full', meta.dot)} />}
-          {meta && (
-            <span className="rounded px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-ink-faint">
-              {meta.label}
-            </span>
-          )}
+          <RankedRowMetaBadge meta={meta} />
           <span className="ml-auto text-caption tabular-nums text-ink-faint">
             {result.score.toFixed(1)}
           </span>
@@ -292,7 +280,7 @@ const ConnectionList = ({
       const target = entityIndex.get(l.targetId)
       if (!target) return null
       return (
-        <li key={`${l.targetId}:${l.relation}`}>
+        <li key={JSON.stringify([l.targetId, l.relation])}>
           <button
             onClick={() => {
               onSelect(target.id)
@@ -375,7 +363,7 @@ const InspectorPanel = () => {
         {entity.links.length > 0 && (
           <div className="mt-5">
             <h4 className="mb-2 text-caption font-semibold uppercase tracking-[0.14em] text-ink-faint">
-              Connections ({entity.links.length})
+              Connections ({dedupeLinks(entity.links).length})
             </h4>
             {/* ConnectionList renders its own <ul>; a wrapper <ul> here would nest
                 lists directly (axe `list` violation), so use a plain <div>. */}
@@ -465,7 +453,7 @@ const CitationsPanel = () => {
           <ul className="space-y-2">
             {dedupeCitations(citations).map((c, i) => (
               <li
-                key={`${c.entityId}:${c.snippet}`}
+                key={JSON.stringify([c.entityId, c.snippet])}
                 className="rounded-md border border-border bg-muted/30 p-3"
               >
                 <div className="mb-1 flex items-center gap-2">
@@ -489,4 +477,26 @@ const CitationsPanel = () => {
       </div>
     </aside>
   )
+}
+
+/** Right sidebar panel that switches between search, inspector, and citations based on the active view. */
+export const RightPanel = () => {
+  const currentView = useStudioStore((s) => s.currentView)
+  const rightPanelOpen = useStudioStore((s) => s.rightPanelOpen)
+  const chat = useStudioStore((s) => s.chat)
+  const startNew = useStudioStore((s) => s.startNew)
+
+  if (!rightPanelOpen) return null
+
+  // Contextual content per view
+  if (currentView === 'graph' || currentView === 'mindmap') {
+    return <InspectorPanel />
+  }
+  if (currentView === 'chat' || currentView === 'ai') {
+    const hasCitations = chat.some((m) => m.citations && m.citations.length > 0)
+    if (!hasCitations) return <SearchPanel onCreateEntity={() => startNew()} />
+    return <CitationsPanel />
+  }
+
+  return <SearchPanel onCreateEntity={() => startNew()} />
 }

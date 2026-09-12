@@ -147,11 +147,15 @@ export const EditorMentionPicker = memo(function EditorMentionPicker({
       }
       // Native textarea scrolling mutates scrollTop without any React render,
       // so a plain effect would leave the popover at its pre-scroll coordinate.
-      // Re-measure on scroll while the picker stays open; cleanup on close.
+      // Re-measure on scroll and on resizes (viewport/container changes reflow
+      // this w-full textarea without a scroll or render event); cleanup on close.
       el.addEventListener('scroll', measure, { passive: true })
+      const resizeObserver = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null
+      resizeObserver?.observe(el)
       measure()
       cleanup = () => {
         el.removeEventListener('scroll', measure)
+        resizeObserver?.disconnect()
       }
     }
     return cleanup

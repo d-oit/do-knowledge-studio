@@ -198,6 +198,9 @@ export const useStudioStore = create<StudioState>()(
       },
 
       pushHistory: () => {
+        // Appends a snapshot of the CURRENT (post-mutation) entities. Every
+        // mutating action applies its change first and pushes afterwards, so
+        // the stack holds full states and undo/redo restore them verbatim.
         const { entities, historyIndex, entityHistory } = get()
         const snapshot = entities.map((e) => ({ ...e }))
         const trimmed = entityHistory.slice(0, historyIndex + 1)
@@ -225,8 +228,6 @@ export const useStudioStore = create<StudioState>()(
         set({ entities: snapshot, historyIndex: newIndex })
       },
       saveEntity: (e) => {
-        const { pushHistory } = get()
-        pushHistory()
         set((state) => {
           const exists = state.entities.some((x) => x.id === e.id)
           const entities = exists
@@ -238,11 +239,10 @@ export const useStudioStore = create<StudioState>()(
             currentView: 'library',
           }
         })
+        get().pushHistory()
       },
 
       commitEntity: (e) => {
-        const { pushHistory } = get()
-        pushHistory()
         set((state) => {
           const exists = state.entities.some((x) => x.id === e.id)
           const entities = exists
@@ -250,11 +250,12 @@ export const useStudioStore = create<StudioState>()(
             : [e, ...state.entities]
           return { entities }
         })
+        get().pushHistory()
       },
 
       commitEntities: (upserts) => {
-        const { pushHistory } = get()
-        pushHistory()
+        // Single history step for the whole batch: apply all upserts, then
+        // push once so one undo/redo spans the entire commit.
         set((state) => {
           const upsertById = new Map(upserts.map((e) => [e.id, e]))
           const existingIds = new Set(state.entities.map((x) => x.id))
@@ -262,6 +263,7 @@ export const useStudioStore = create<StudioState>()(
           const merged = state.entities.map((x) => upsertById.get(x.id) ?? x)
           return { entities: [...fresh, ...merged] }
         })
+        get().pushHistory()
       },
 
       finishEditing: () => {
@@ -273,8 +275,6 @@ export const useStudioStore = create<StudioState>()(
       },
 
       deleteEntity: (id) => {
-        const { pushHistory } = get()
-        pushHistory()
         set((state) => ({
           entities: state.entities
             .filter((x) => x.id !== id)
@@ -285,6 +285,7 @@ export const useStudioStore = create<StudioState>()(
           claims: state.claims.filter((c) => c.entityId !== id),
           selectedEntityId: state.selectedEntityId === id ? null : state.selectedEntityId,
         }))
+        get().pushHistory()
       },
 
       addClaim: (claim) => {

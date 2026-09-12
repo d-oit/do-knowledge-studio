@@ -458,7 +458,9 @@ export const EditorView = () => {
               role="combobox"
               aria-expanded={mentionOpen}
               aria-controls={mentionOpen ? MENTION_LISTBOX_ID : undefined}
-              aria-activedescendant={mentionOpen ? mentionOptionId(mentionHighlight) : undefined}
+              aria-activedescendant={
+                mentionOpen && mentionCandidates.length > 0 ? mentionOptionId(mentionHighlight) : undefined
+              }
               aria-autocomplete="list"
             />
             <EditorMentionPicker
@@ -509,6 +511,7 @@ export const EditorView = () => {
         <ClaimsPanel
           claims={entityClaims}
           editingEntityId={editing.id}
+          entityContent={content}
           addClaim={addClaim}
           updateClaim={updateClaim}
           deleteClaim={deleteClaim}

@@ -113,12 +113,17 @@ const ClaimRow = ({
 export const ClaimsPanel = ({
   claims,
   editingEntityId,
+  entityContent,
   addClaim,
   updateClaim,
   deleteClaim,
 }: {
   claims: Claim[]
   editingEntityId: string
+  /** The editor's CURRENT draft content — extraction must see unsaved edits,
+   * not the last persisted entity record. Falls back to the persisted entity
+   * content when omitted (standalone/test usage). */
+  entityContent?: string
   addClaim: (claim: Omit<Claim, 'id'>) => void
   updateClaim: (id: string, updates: Partial<Omit<Claim, 'id' | 'entityId'>>) => void
   deleteClaim: (id: string) => void
@@ -181,21 +186,24 @@ export const ClaimsPanel = ({
     deleteClaim(id)
     toast.success(translate('claims.deleted'))
   }
-  const entityContent = useMemo(
+  // Prefer the live draft passed by the editor; fall back to the persisted
+  // entity record when the caller does not supply draft content.
+  const persistedContent = useMemo(
     () => entities.find((entity) => entity.id === editingEntityId)?.content ?? '',
     [entities, editingEntityId],
   )
+  const extractionSource = entityContent ?? persistedContent
 
-  const canExtract = useMemo(() => hasExtractableClaims(entityContent), [entityContent])
+  const canExtract = useMemo(() => hasExtractableClaims(extractionSource), [extractionSource])
 
   const openExtractDialog = useCallback(() => {
-    const drafts = extractClaimsFromText(entityContent)
+    const drafts = extractClaimsFromText(extractionSource)
     if (drafts.length === 0) {
       toast.info(translate('claims.noneFound'))
       return
     }
     setExtractDrafts(drafts)
-  }, [entityContent])
+  }, [extractionSource])
 
   const closeExtractDialog = useCallback(() => {
     setExtractDrafts(null)

@@ -157,6 +157,28 @@ const throwIfAborted = (signal?: AbortSignal): void => {
   }
 }
 
+/**
+ * Resolves with the awaitable's result unless `signal` fires first, in which
+ * case it rejects with AbortError and cleans up its listener. Used to keep a
+ * long model download/load responsive to cancellation: the request settles
+ * immediately on abort while the load continues warming the pipeline cache.
+ */
+const raceWithAbort = async <T>(awaitable: Promise<T>, signal?: AbortSignal): Promise<T> => {
+  throwIfAborted(signal)
+  if (!signal) return awaitable
+  const { promise, resolve, reject } = Promise.withResolvers<T>()
+  const onAbort = (): void => {
+    reject(new DOMException('The operation was aborted.', ABORT_ERROR_NAME))
+  }
+  signal.addEventListener('abort', onAbort, { once: true })
+  awaitable.then(resolve, reject)
+  try {
+    return await promise
+  } finally {
+    signal.removeEventListener('abort', onAbort)
+  }
+}
+
 /** Extracts the assistant reply from a chat-mode generation output. */
 const extractGeneratedContent = (output: TextGenerationChatOutput): string => {
   const first = output[0]
@@ -228,7 +250,12 @@ class LocalAdapter implements ProviderAdapter {
 
   async send(request: ChatRequest): Promise<ChatResult> {
     const { model, dtype, device } = resolveLocalTarget(request)
-    const runtime = await loadTransformersRuntime(model, device, dtype)
+    // Observe cancellation before and during the lazy runtime load so an
+    // aborted request never starts (or waits out) a model download.
+    const runtime = await raceWithAbort(
+      loadTransformersRuntime(model, device, dtype),
+      request.signal,
+    )
     const content = await runGeneration(runtime, request.messages, request.signal)
     return { content, provider: this.id, model }
   }
@@ -238,7 +265,10 @@ class LocalAdapter implements ProviderAdapter {
     onChunk: (chunk: string) => void,
   ): Promise<ChatResult> {
     const { model, dtype, device } = resolveLocalTarget(request)
-    const runtime = await loadTransformersRuntime(model, device, dtype)
+    const runtime = await raceWithAbort(
+      loadTransformersRuntime(model, device, dtype),
+      request.signal,
+    )
     const content = await runGeneration(runtime, request.messages, request.signal, onChunk)
     return { content, provider: this.id, model }
   }

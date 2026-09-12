@@ -61,8 +61,24 @@ const VIEW_NAMES: Record<ViewId, string> = {
 }
 
 /** Returns a human-readable display name for a given view ID. */
-function getViewName(view: ViewId): string {
-  return VIEW_NAMES[view]
+const getViewName = (view: ViewId): string => VIEW_NAMES[view]
+
+/**
+ * Total view → element map. A bounded Record lookup (no dynamic indexing on a
+ * wider type, no boolean chains) keeps the router's cyclomatic complexity at 1.
+ */
+const VIEW_ELEMENTS: Record<ViewId, React.ReactNode> = {
+  home: <HomeView />,
+  editor: null, // Needs the editingEntityId key — handled in ViewRouter.
+  library: <LibraryView />,
+  timeline: <TimelineView />,
+  graph: <GraphView />,
+  mindmap: <MindMapView />,
+  chat: <ChatView />,
+  ai: <AIHarnessView />,
+  triz: <TrizView />,
+  export: <ExportView />,
+  sync: <SyncView />,
 }
 
 /** Renders the active view inside the error/suspense boundaries. */
@@ -74,27 +90,21 @@ const ViewRouter = ({
   currentView: ViewId
   editingEntityId: string | null
   onError: (error: Error, errorInfo: React.ErrorInfo) => void
-}) => (
-  <ErrorBoundary key={currentView}>
-    <ViewErrorBoundary viewName={getViewName(currentView)} onError={onError}>
-      <Suspense fallback={<ViewLoader />}>
-        {currentView === 'home' && <HomeView />}
-        {currentView === 'editor' && (
-          <EditorView key={editingEntityId || 'new'} />
-        )}
-        {currentView === 'library' && <LibraryView />}
-        {currentView === 'timeline' && <TimelineView />}
-        {currentView === 'graph' && <GraphView />}
-        {currentView === 'mindmap' && <MindMapView />}
-        {currentView === 'chat' && <ChatView />}
-        {currentView === 'ai' && <AIHarnessView />}
-        {currentView === 'triz' && <TrizView />}
-        {currentView === 'export' && <ExportView />}
-        {currentView === 'sync' && <SyncView />}
-      </Suspense>
-    </ViewErrorBoundary>
-  </ErrorBoundary>
-)
+}) => {
+  const activeView =
+    currentView === 'editor' ? (
+      <EditorView key={editingEntityId || 'new'} />
+    ) : (
+      VIEW_ELEMENTS[currentView]
+    )
+  return (
+    <ErrorBoundary key={currentView}>
+      <ViewErrorBoundary viewName={getViewName(currentView)} onError={onError}>
+        <Suspense fallback={<ViewLoader />}>{activeView}</Suspense>
+      </ViewErrorBoundary>
+    </ErrorBoundary>
+  )
+}
 
 /** Root application shell composing sidebar, topbar, view router, right panel, and overlays. */
 export const AppShell = () => {

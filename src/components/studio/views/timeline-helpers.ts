@@ -69,7 +69,11 @@ const collectEntityItems = (entities: Entity[]): TimelineItem[] => {
 const collectClaimItems = (claims: Claim[], entityById: Map<string, Entity>): TimelineItem[] => {
   const items: TimelineItem[] = []
   for (const claim of claims) {
-    const createdAt = claim.createdAt ?? entityById.get(claim.entityId)?.createdAt
+    // A blank-but-present timestamp (`''`) must fall back to the owning
+    // entity just like an absent one — `??` alone would keep the empty string
+    // and drop the claim entirely below.
+    const claimCreatedAt = claim.createdAt?.trim() ? claim.createdAt : undefined
+    const createdAt = claimCreatedAt ?? entityById.get(claim.entityId)?.createdAt
     if (!createdAt) continue
     const date = parseTimestamp(createdAt)
     if (date === null) continue

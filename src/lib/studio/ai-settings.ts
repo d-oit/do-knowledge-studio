@@ -103,8 +103,11 @@ function idbSet(key: IDBValidKey, value: unknown): Promise<void> {
   )
 }
 
-// ── Provider / model migrations (unchanged logic) ────────────────────
-
+// ── Provider / model migrations ─────────────────────────────
+// migrateProvider preserves every currently-valid provider id ('openrouter',
+// 'ollama', and 'local') and migrates anything else (legacy/unknown ids) to
+// 'openrouter'. Adding a provider extends the preserved set — the fallback
+// branch only exists for ids that are no longer valid.
 const migrateProvider = (stored: StoredSettings): AIProvider => {
   if (
     stored.provider === 'openrouter' ||

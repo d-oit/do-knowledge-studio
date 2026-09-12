@@ -191,8 +191,10 @@ describe('LocalAdapter send', () => {
     await expect(
       localAdapter.send(baseRequest({ signal: controller.signal })),
     ).rejects.toMatchObject({ name: 'AbortError' })
-    // The pipeline must not be touched when aborting before generation.
+    // The pipeline must not be touched when aborting before generation, and
+    // the runtime load itself must be skipped: no import, no model download.
     expect(generator).not.toHaveBeenCalled()
+    expect(pipelineMock).not.toHaveBeenCalled()
   })
 
   it('interrupts generation and rejects with AbortError when aborted mid-stream', async () => {

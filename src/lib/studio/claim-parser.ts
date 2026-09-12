@@ -26,19 +26,31 @@ const parenDelta = (char: string): number => {
   return 0
 }
 
+/** One `(` with its matching `)` position (-1 when unbalanced). */
+interface MatchEntry {
+  openIndex: number
+  closeIndex: number
+}
+
 /**
- * Resolves the close paren matching `openIndex`, tolerating nested groups and
- * scanning only up to `scanLimit`. Returns the index just past the close
- * paren, or -1 when the group is unbalanced before the limit.
+ * Matches every `(` in `block` with its `)` in a single right-to-left stack
+ * pass — each paren is visited exactly once, so balanced and unbalanced input
+ * alike are handled in O(n) (no per-candidate rescans).
  */
-const findMatchingClose = (block: string, openIndex: number, scanLimit: number): number => {
-  let depth = 1
-  let cursor = openIndex + 1
-  while (cursor < scanLimit && depth > 0) {
-    depth += parenDelta(block[cursor])
-    cursor += 1
+const buildParenMatches = (block: string): MatchEntry[] => {
+  const opens: number[] = []
+  const matches: MatchEntry[] = []
+  for (let i = block.length - 1; i >= 0; i -= 1) {
+    const delta = parenDelta(block[i])
+    if (delta === 0) continue
+    if (delta < 0) {
+      opens.push(i)
+      continue
+    }
+    const closeIndex = opens.pop()
+    matches.push({ openIndex: i, closeIndex: closeIndex ?? -1 })
   }
-  return depth === 0 ? cursor : -1
+  return matches
 }
 
 /**
@@ -47,34 +59,23 @@ const findMatchingClose = (block: string, openIndex: number, scanLimit: number):
  * the cleaned source value. Returns null when there is no source group.
  */
 const findSourceGroup = (block: string): { start: number; value: string } | null => {
-  let searchFrom = block.length - 1
-  // Once a scan from a given `(` fails to close before the block end, every
-  // later candidate's close paren — if it exists — lies strictly before that
-  // failure point; scanning past it can never resolve. Bounding here keeps
-  // unbalanced input linear instead of quadratic.
-  let scanLimit = block.length
-  while (searchFrom >= 0) {
-    const openIndex = block.lastIndexOf('(', searchFrom)
-    if (openIndex === -1) return null
-
-    const closePast = findMatchingClose(block, openIndex, scanLimit)
-    if (closePast === -1) {
-      // Unbalanced group — treat its `(` as plain text, keep scanning left.
-      scanLimit = openIndex
-      searchFrom = openIndex - 1
-      continue
-    }
-
-    const inner = block.slice(openIndex + 1, closePast - 1).trim()
-    if (SOURCE_PREFIX.test(inner)) {
-      return {
-        start: openIndex,
-        value: inner.replace(SOURCE_PREFIX, '').trim(),
-      }
-    }
-    searchFrom = openIndex - 1
+  const matches = buildParenMatches(block)
+  // The LAST parenthesized group wins: the source-group candidate with the
+  // greatest openIndex, nesting aside (matches are pushed in close order, so
+  // select by openIndex rather than iteration order).
+  let best: MatchEntry | null = null
+  for (const match of matches) {
+    if (match.closeIndex === -1) continue
+    if (best !== null && match.openIndex <= best.openIndex) continue
+    const inner = block.slice(match.openIndex + 1, match.closeIndex).trim()
+    if (SOURCE_PREFIX.test(inner)) best = match
   }
-  return null
+  if (best === null) return null
+  const inner = block.slice(best.openIndex + 1, best.closeIndex).trim()
+  return {
+    start: best.openIndex,
+    value: inner.replace(SOURCE_PREFIX, '').trim(),
+  }
 }
 
 /** Parses one assertion block into a statement, stripping its source group. */

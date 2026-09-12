@@ -369,8 +369,7 @@ export const MobileDrawer = () => {
     if (!open) return
     const mql = window.matchMedia('(min-width: 1024px)')
     const onChange = (e: MediaQueryListEvent) => {
-      if (!e.matches) return
-      setOpen(false)
+      if (e.matches) setOpen(false)
     }
     mql.addEventListener('change', onChange)
     return () => { mql.removeEventListener('change', onChange) }

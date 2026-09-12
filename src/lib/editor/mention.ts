@@ -32,6 +32,10 @@ const MENTION_TOKEN_PATTERN = /\[@([^\]]+)\]\(dks:\/\/entity\/([^)]+)\)/g
 /** Characters stripped from a mention's display name so the token stays well-formed markdown. */
 const MENTION_NAME_INVALID = /[[\]]/g
 
+/** A lone backslash in a display name would escape the token's closing `]`
+ * in Markdown, breaking the link. Doubled, it renders as a literal `\`. */
+const escapeMarkdownBackslashes = (name: string): string => name.replace(/\\/g, '\\\\')
+
 /** A parsed mention token located in the raw content. */
 export interface MentionToken {
   entityId: string
@@ -156,9 +160,10 @@ export const getMentionTrigger = (content: string, caret: number): MentionTrigge
 const encodeMentionId = (entityId: string): string =>
   encodeURIComponent(entityId).replace(/\(/g, '%28').replace(/\)/g, '%29')
 
-/** Builds the raw mention token for an entity, sanitizing bracket chars. */
+/** Builds the raw mention token for an entity, sanitizing bracket chars and
+ * escaping backslashes so the emitted Markdown link is always well-formed. */
 export const buildMentionToken = (entityId: string, name: string): string =>
-  `[@${name.replace(MENTION_NAME_INVALID, '')}](${MENTION_SCHEME}${encodeMentionId(entityId)})`
+  `[@${escapeMarkdownBackslashes(name).replace(MENTION_NAME_INVALID, '')}](${MENTION_SCHEME}${encodeMentionId(entityId)})`
 
 /**
  * Replaces the active trigger span (`@query`) with the mention token.

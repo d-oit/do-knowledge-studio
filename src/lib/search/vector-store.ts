@@ -248,6 +248,30 @@ const doBuildIndex = async (
   return { ok: true, count: defaultVectorStore.size }
 }
 
+/** The cancellation error every abort path in this module rejects with. */
+const abortError = (): Error => new DOMException('Semantic search aborted', 'AbortError')
+
+/**
+ * Resolves with the awaitable's result unless `signal` fires first, in which
+ * case it rejects with AbortError and cleans up its listener.
+ */
+const raceWithAbort = async <T>(awaitable: Promise<T>, signal?: AbortSignal): Promise<T> => {
+  if (signal?.aborted) throw abortError()
+  if (!signal) return awaitable
+  const { promise, resolve, reject } = Promise.withResolvers<T>()
+  const onAbort = (): void => reject(abortError())
+  signal.addEventListener('abort', onAbort)
+  awaitable.then(
+    (value) => resolve(value),
+    (err) => reject(err),
+  )
+  try {
+    return await promise
+  } finally {
+    signal.removeEventListener('abort', onAbort)
+  }
+}
+
 const buildVectorIndex = async (
   entities: Entity[],
   claims: Claim[],
@@ -269,9 +293,12 @@ const buildVectorIndex = async (
         if (indexBuilding === promise) indexBuilding = null
       }
     }
-    // Another build is in flight — wait for it, then re-check whether it
-    // covered our inputs (it may have started with different arrays).
-    await indexBuilding.catch(() => undefined)
+    // Another build is in flight — wait for it (cancellation-responsive, so
+    // this caller's own signal still settles its request on abort) and then
+    // re-check whether that build covered our inputs (it may have started
+    // with different arrays). The rejection is deliberately observed here so
+    // no discarded promise can surface an unhandled rejection.
+    await raceWithAbort(indexBuilding.catch(() => undefined), signal)
   }
 }
 
@@ -333,6 +360,16 @@ export const semanticSearch = async (
     if (isAbortError(err)) throw err
     const reason = err instanceof Error ? err.message : String(err)
     return lexicalFallback(entities, claims, trimmed, limit, reason)
+  }
+
+  // Query embedding awaits, so a concurrent caller may have replaced the
+  // shared index with a different corpus in the meantime. Re-validate the
+  // index against THIS request's arrays (a no-op when they still match) and
+  // rank only once the store is known to hold this corpus — otherwise the
+  // ranking would score documents the caller never passed in.
+  const revalidated = await buildVectorIndex(entities, claims, signal)
+  if (!revalidated.ok) {
+    return lexicalFallback(entities, claims, trimmed, limit, revalidated.error)
   }
 
   const hits = defaultVectorStore.search(queryVector, limit)

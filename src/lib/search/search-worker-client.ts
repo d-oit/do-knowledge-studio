@@ -13,7 +13,10 @@
 
 import type { Entity, Claim } from '@/lib/studio/types'
 import { search, type SearchResult } from './retrieval'
-import { semanticSearch, type SemanticSearchOutcome } from './vector-store'
+import {
+  semanticSearch as vectorStoreSemanticSearch,
+  type SemanticSearchOutcome,
+} from './vector-store'
 import type { SearchWorkerRequest, SearchWorkerResponse } from './search-worker'
 
 export type { SemanticSearchOutcome } from './vector-store'
@@ -197,7 +200,7 @@ export class SearchWorkerClient {
     signal?: AbortSignal,
   ): Promise<SemanticSearchOutcome> {
     if (signal?.aborted) return Promise.reject(abortError())
-    return semanticSearch(entities, claims, query, limit, signal)
+    return vectorStoreSemanticSearch(entities, claims, query, limit, signal)
   }
 
   /** Terminate the underlying Web Worker and reject pending requests. */

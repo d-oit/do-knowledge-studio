@@ -18,14 +18,39 @@ export interface EntityTypeDef extends EntityTypeMeta {
 }
 
 /**
+ * Reserved type ids that are query filter sentinels, never stored entity
+ * types — registration rejects them so every registered id is hydratable
+ * (mirrors `StoredEntityTypeSchema` in ./schema).
+ */
+const RESERVED_TYPE_IDS: ReadonlySet<string> = new Set(['all'])
+
+/**
+ * A LucideIcon is a forwardRef component: a `$$typeof`-tagged object at
+ * runtime (plain functions also accepted for exotic cases). The predicate
+ * keeps Zod 4's `z.custom` from accepting arbitrary values like `{}`.
+ */
+const isReactComponentValue = (value: unknown): boolean =>
+  typeof value === 'function' ||
+  (typeof value === 'object' &&
+    value !== null &&
+    typeof (value as { $$typeof?: unknown }).$$typeof === 'symbol')
+
+/**
  * Zod schema for plugin-supplied type definitions. Mirrors the persisted
  * `AnyEntityTypeSchema` constraints (non-blank, ≤ 64 chars) so an id that
  * passes registration is always accepted by hydration validation.
  */
 const EntityTypeDefSchema = z.object({
-  id: z.string().min(1).max(64).refine((s) => s.trim().length > 0, {
-    message: 'Entity type id must be a non-blank string',
-  }),
+  id: z
+    .string()
+    .min(1)
+    .max(64)
+    .refine((s) => s.trim().length > 0, {
+      message: 'Entity type id must be a non-blank string',
+    })
+    .refine((s) => !RESERVED_TYPE_IDS.has(s), {
+      message: `Entity type id cannot be a reserved filter sentinel: ${Array.from(RESERVED_TYPE_IDS).join(', ')}`,
+    }),
   label: z.string().min(1).max(64).refine((s) => s.trim().length > 0, {
     message: 'Entity type label must be a non-blank string',
   }),
@@ -33,7 +58,7 @@ const EntityTypeDefSchema = z.object({
   bg: z.string(),
   text: z.string(),
   dot: z.string(),
-  icon: z.custom<LucideIcon>().optional(),
+  icon: z.custom<LucideIcon>(isReactComponentValue).optional(),
 })
 
 /** Neutral fallback styling for unregistered/unknown type strings. */

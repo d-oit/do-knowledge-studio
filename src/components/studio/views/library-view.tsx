@@ -330,13 +330,16 @@ export const LibraryView = () => {
 
   // Resolves semantic results (entity ids, or claim ids via their entity) to
   // entities in rank order — deduped and type-filtered — mirroring what the
-  // lexical path renders into the grid/table.
+  // lexical path renders into the grid/table. The rank order is descending
+  // relevance; the sort-direction control reverses it for ascending, matching
+  // the lexical query path's contract.
   const semanticEntities = useMemo(
-    () =>
-      semanticOutcome === null
-        ? []
-        : resolveSemanticEntities(semanticOutcome, entityById, typeFilter),
-    [semanticOutcome, entityById, typeFilter],
+    () => {
+      if (semanticOutcome === null) return []
+      const resolved = resolveSemanticEntities(semanticOutcome, entityById, typeFilter)
+      return sortDir === 'asc' ? [...resolved].reverse() : resolved
+    },
+    [semanticOutcome, entityById, typeFilter, sortDir],
   )
 
   // While the first semantic result is pending (e.g. model download), fall
@@ -576,12 +579,14 @@ export const LibraryView = () => {
         )}
       </div>
 
-      {/* Empty states */}
-      <LibraryEmptyState
-        hasEntities={allEntities.length > 0}
-        onStartNew={startNew}
-        onClearFilters={clearFilters}
-      />
+      {/* Empty states — only when there is truly nothing to render below */}
+      {(allEntities.length === 0 || advancedFilteredEntities.length === 0) && (
+        <LibraryEmptyState
+          hasEntities={allEntities.length > 0}
+          onStartNew={startNew}
+          onClearFilters={clearFilters}
+        />
+      )}
 
       {/* Grid view */}
       {visibleEntities.length > 0 && viewMode === 'grid' && (
