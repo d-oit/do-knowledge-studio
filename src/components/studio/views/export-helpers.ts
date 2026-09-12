@@ -1,7 +1,23 @@
 import type { Entity, Claim } from '@/lib/studio/types'
 import { validateImportPayload } from '@/lib/studio/schema'
-import { escapeHtml } from '@/lib/security'
+import { escapeHtml, sanitizeUrl } from '@/lib/security'
 import { buildClaimsByEntityId, type ExportOptions, type ImportResult } from './export-types'
+
+/**
+ * Sanitizes a URL for embedding inside exported *markup* (Markdown/HTML text).
+ * `sanitizeUrl` only vets the protocol — a value such as
+ * `https://example.test/<script>alert(1)</script>` would otherwise reach the
+ * output verbatim. Angle brackets are percent-encoded, which keeps the URL
+ * resolvable (unlike HTML-entity escaping, which would corrupt query strings)
+ * while making raw-tag injection impossible.
+ *
+ * Returns `null` when the URL is unsafe or empty (nothing should be emitted).
+ */
+const sanitizeExportUrl = (url: string): string | null => {
+  const safe = sanitizeUrl(url)
+  if (safe === '') return null
+  return safe.replace(/</g, '%3C').replace(/>/g, '%3E')
+}
 
 /** Builds a JSON export string including graph, mind map, links, and tags. */
 export const buildJsonExport = (
@@ -38,9 +54,13 @@ export const buildMarkdownExport = (entities: Entity[], claims: Claim[]): string
 
     parts.push('\n---\n')
     parts.push(`# ${e.name}\n`)
-    parts.push(`**Type:** ${e.type.charAt(0).toUpperCase() + e.type.slice(1)}  `)
+    const safeType = escapeHtml(e.type)
+    parts.push(`**Type:** ${safeType.charAt(0).toUpperCase() + safeType.slice(1)}  `)
     parts.push(`**Tags:** ${tags}  `)
-    if (e.sourceUrl) parts.push(`**Source:** ${e.sourceUrl}  `)
+    if (e.sourceUrl) {
+      const safeUrl = sanitizeExportUrl(e.sourceUrl)
+      if (safeUrl) parts.push(`**Source:** ${safeUrl}  `)
+    }
     parts.push(`**Created:** ${created}  `)
     parts.push(`**Updated:** ${updated}\n`)
     if (e.description) parts.push(`> ${e.description}\n`)
@@ -76,17 +96,28 @@ export const buildHtmlExport = (entities: Entity[], claims: Claim[]): string => 
         ? `<ul class="claims">${entityClaims
             .map(
               (c) =>
-                `<li><span class="v ${c.verification}">${c.verification}</span> ${escapeHtml(
+                `<li><span class="v ${escapeHtml(c.verification)}">${escapeHtml(
+                  c.verification,
+                )}</span> ${escapeHtml(
                   c.statement,
                 )} <span class="meta">(${Math.round(c.confidence * 100)}%)</span></li>`,
             )
             .join('')}</ul>`
         : '<p class="meta">No claims.</p>'
+      const rawSource = e.sourceUrl
+      const safeSource = rawSource ? sanitizeUrl(rawSource) : ''
+      const sourceHtml =
+        rawSource && safeSource
+          ? `<p class="meta">Source: <a href="${escapeHtml(safeSource)}">${escapeHtml(
+              rawSource,
+            )}</a></p>`
+          : ''
       return `<article>
   <header>
-    <span class="type ${e.type}">${e.type}</span>
+    <span class="type ${escapeHtml(e.type)}">${escapeHtml(e.type)}</span>
     <h2>${escapeHtml(e.name)}</h2>
     <p class="meta">${e.tags.map((t) => `#${escapeHtml(t)}`).join(' ')}</p>
+    ${sourceHtml}
   </header>
   <p class="desc">${escapeHtml(e.description)}</p>
   <pre class="content">${escapeHtml(e.content)}</pre>

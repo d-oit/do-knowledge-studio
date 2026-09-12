@@ -9,6 +9,7 @@ import {
   AlignmentType,
   ExternalHyperlink,
 } from 'docx'
+import { sanitizeUrl } from '@/lib/security'
 import { buildClaimsByEntityId } from './export-types'
 
 /** A4 PDF layout constants shared by the PDF builder helpers. */
@@ -230,15 +231,18 @@ const buildDocxEntityParagraphs = (e: Entity): Paragraph[] => {
   }
 
   if (e.sourceUrl) {
-    paragraphs.push(
-      new Paragraph({
-        children: [
-          new TextRun({ text: 'Source: ', size: 18, color: '6B6760' }),
-          new ExternalHyperlink({ children: [new TextRun({ text: e.sourceUrl, style: 'Hyperlink', size: 18 })], link: e.sourceUrl }),
-        ],
-        spacing: { after: 100 },
-      }),
-    )
+    const safeUrl = sanitizeUrl(e.sourceUrl)
+    if (safeUrl) {
+      paragraphs.push(
+        new Paragraph({
+          children: [
+            new TextRun({ text: 'Source: ', size: 18, color: '6B6760' }),
+            new ExternalHyperlink({ children: [new TextRun({ text: safeUrl, style: 'Hyperlink', size: 18 })], link: safeUrl }),
+          ],
+          spacing: { after: 100 },
+        }),
+      )
+    }
   }
 
   return paragraphs
