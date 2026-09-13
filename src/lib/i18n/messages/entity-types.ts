@@ -10,6 +10,7 @@ const messages = {
   'entity-types.typePrefix': (label: string) => `Type: ${label}`,
   'entity-types.listboxLabel': 'Select entity type',
   'entity-types.neutralLabel': 'Item',
+  'entity-types.currentType': (label: string) => `${label} (current)`,
 } as const
 
 export const translate = makeT(messages)

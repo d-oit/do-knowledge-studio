@@ -260,3 +260,103 @@ describe('applyMentionBacklinks', () => {
     expect(byId.get('b')?.links).toEqual([])
   })
 })
+
+// ─── literal Markdown contexts ───────────────────────────────────────────────
+
+describe('literal Markdown contexts', () => {
+  const alice = makeEntity({ id: 'a', name: 'Alice' })
+  const token = buildMentionToken('a', 'Alice')
+
+  it('ignores mention tokens inside a fenced code block', () => {
+    expect(findMentionTokens(`before\n\`\`\`\n${token}\n\`\`\`\nafter`)).toEqual([])
+  })
+
+  it('ignores mention tokens inside a tilde fenced block', () => {
+    expect(findMentionTokens(`~~~\n${token}\n~~~`)).toEqual([])
+  })
+
+  it('treats an unterminated fence as literal to the end of the content', () => {
+    expect(findMentionTokens(`\`\`\`\n${token}`)).toEqual([])
+  })
+
+  it('ignores mention tokens inside an inline code span', () => {
+    expect(findMentionTokens(`docs: \`${token}\` here`)).toEqual([])
+  })
+
+  it('ignores backslash-escaped mention tokens', () => {
+    expect(findMentionTokens(`\\${token}`)).toEqual([])
+  })
+
+  it('still parses a live token next to a literal one', () => {
+    const tokens = findMentionTokens(`\`${token}\` and ${token}`)
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0].entityId).toBe('a')
+  })
+
+  it('does not derive links from a fenced example', () => {
+    expect(extractMentionLinks(`\`\`\`md\n${token}\n\`\`\``, [alice]).mentions).toEqual([])
+  })
+
+  it('leaves a fenced example in place when removing tokens', () => {
+    const content = `\`\`\`\n${token}\n\`\`\``
+    expect(removeMentionTokens(content, 'a')).toBe(content)
+  })
+})
+
+// ─── trigger inside literal Markdown ─────────────────────────────────────────
+
+describe('getMentionTrigger in literal Markdown', () => {
+  const token = buildMentionToken('a', 'Alice')
+
+  it('stays inactive while typing inside an inline code span', () => {
+    const content = 'see `@foo` here'
+    const caret = content.indexOf('@foo') + '@foo'.length
+    expect(getMentionTrigger(content, caret).active).toBe(false)
+  })
+
+  it('stays inactive while typing inside a fenced code block', () => {
+    const content = '```\n@foo\n```'
+    const caret = content.indexOf('@foo') + '@foo'.length
+    expect(getMentionTrigger(content, caret).active).toBe(false)
+  })
+
+  it('stays inactive just after a complete token that sits in a code span', () => {
+    const content = `example: \`${token}\``
+    const caret = content.indexOf(token) + token.length
+    expect(getMentionTrigger(content, caret).active).toBe(false)
+  })
+
+  it('does not trigger from an @ inside a code span when the caret is after it', () => {
+    const content = '`@foo` and '
+    expect(getMentionTrigger(content, content.length).active).toBe(false)
+  })
+
+  it('still activates for a query in ordinary prose', () => {
+    expect(getMentionTrigger('hello @al', 'hello @al'.length)).toEqual({
+      active: true,
+      start: 6,
+      query: 'al',
+    })
+  })
+
+  it('activates for prose that follows an inline code span', () => {
+    expect(getMentionTrigger('`code` @al', '`code` @al'.length).active).toBe(true)
+  })
+
+  it('stays inactive inside an escaped complete token', () => {
+    const content = `\\${token}`
+    // The token is present verbatim but escaped, so it is not a live mention.
+    expect(content).toContain(token)
+    expect(findMentionTokens(content)).toEqual([])
+    for (let caret = 1; caret <= content.length; caret += 1) {
+      expect(getMentionTrigger(content, caret).active).toBe(false)
+    }
+  })
+
+  it('treats a backtick fence with a backtick in its info string as prose', () => {
+    // CommonMark: a backtick fence's info string may not contain a backtick,
+    // so this line is paragraph text and the token below stays live.
+    const content = `\`\`\`md\`x\n${token}`
+    expect(findMentionTokens(content)).toHaveLength(1)
+  })
+})

@@ -15,6 +15,10 @@ import type { Entity } from '@/lib/studio/types'
  * - A single regex round-trips tokens, so links are DERIVED from the FINAL
  *   content at save time — deleting the mention text automatically removes
  *   the link (no accumulation, no desync).
+ *
+ * Literal contexts are excluded: a token-shaped string inside a fenced block,
+ * inside an inline code span, or escaped with a backslash is documentation —
+ * not a live mention — so it must not create links or backlinks.
  */
 
 /** Relation written on the source entity for each parsed mention. */
@@ -28,6 +32,139 @@ export const MENTION_SCHEME = 'dks://entity/'
 
 /** Matches a complete mention token: [@Name](dks://entity/<id>). */
 const MENTION_TOKEN_PATTERN = /\[@([^\]]+)\]\(dks:\/\/entity\/([^)]+)\)/g
+
+/** A fenced code-block delimiter at the start of a line (CommonMark: 3+ backticks or tildes). */
+const FENCE_DELIMITER_PATTERN = /^ {0,3}(`{3,}|~{3,})/
+
+/** A run of one or more backticks (an inline code-span delimiter). */
+const BACKTICK_RUN_PATTERN = /`+/g
+
+/** A half-open `[start, end)` range of content where mention syntax is literal text. */
+interface MarkdownLiteralRange {
+  start: number
+  end: number
+}
+
+/** True when `position` sits inside one of the given ranges. */
+const isInsideRanges = (position: number, ranges: MarkdownLiteralRange[]): boolean =>
+  ranges.some((range) => position >= range.start && position < range.end)
+
+/** A potential fence-delimiter line, with the offsets needed to pair it. */
+interface FenceLine {
+  char: string
+  length: number
+  /** Offset of the delimiter's first character. */
+  start: number
+  /** Offset just past the whole line. */
+  lineEnd: number
+  /** True when only whitespace follows the delimiter (closing-fence shape). */
+  closes: boolean
+}
+
+/**
+ * Parses one line as a fence delimiter, or null when it is not one.
+ *
+ * A backtick fence's info string may not itself contain a backtick
+ * (CommonMark; tilde fences have no such rule), so e.g. `` ```md`x `` is
+ * ordinary paragraph text to a renderer and must not open a code block here.
+ */
+const toFenceLine = (line: string, offset: number): FenceLine | null => {
+  const delimiter = FENCE_DELIMITER_PATTERN.exec(line)
+  if (delimiter === null) return null
+  const char = delimiter[1][0]
+  const rest = line.slice(delimiter[0].length)
+  if (char === '`' && rest.includes('`')) return null
+  return {
+    char,
+    length: delimiter[1].length,
+    start: offset,
+    lineEnd: offset + line.length,
+    closes: rest.trim() === '',
+  }
+}
+
+/** Every line that can open or close a fence, in source order. */
+const findFenceLines = (content: string): FenceLine[] => {
+  const lines: FenceLine[] = []
+  let offset = 0
+  for (const line of content.split('\n')) {
+    const fence = toFenceLine(line, offset)
+    if (fence !== null) lines.push(fence)
+    offset += line.length + 1
+  }
+  return lines
+}
+
+/**
+ * True when `line` closes `open`: the same delimiter char, a run at least as
+ * long, and nothing after it. An info string is only valid on an opener.
+ */
+const closesFence = (line: FenceLine, open: FenceLine): boolean =>
+  line.closes && line.char === open.char && line.length >= open.length
+
+/** Ranges covered by fenced code blocks, including both fences. */
+const findFencedCodeRanges = (content: string): MarkdownLiteralRange[] => {
+  const ranges: MarkdownLiteralRange[] = []
+  let open: FenceLine | null = null
+  for (const line of findFenceLines(content)) {
+    if (open === null) {
+      open = line
+      continue
+    }
+    if (!closesFence(line, open)) continue
+    ranges.push({ start: open.start, end: line.lineEnd })
+    open = null
+  }
+  // An unterminated fence extends to the end of the content.
+  if (open !== null) ranges.push({ start: open.start, end: content.length })
+  return ranges
+}
+
+/**
+ * Ranges covered by inline code spans. Delimiters are paired by equal run
+ * length, and runs inside fenced blocks are ignored (they are block code, not
+ * span delimiters).
+ */
+const findInlineCodeRanges = (
+  content: string,
+  fenced: MarkdownLiteralRange[],
+): MarkdownLiteralRange[] => {
+  const ranges: MarkdownLiteralRange[] = []
+  let open: { length: number; start: number } | null = null
+  BACKTICK_RUN_PATTERN.lastIndex = 0
+  let match = BACKTICK_RUN_PATTERN.exec(content)
+  while (match !== null) {
+    const start = match.index
+    const length = match[0].length
+    if (!isInsideRanges(start, fenced)) {
+      if (open === null) {
+        open = { length, start }
+      } else if (open.length === length) {
+        ranges.push({ start: open.start, end: start + length })
+        open = null
+      }
+    }
+    match = BACKTICK_RUN_PATTERN.exec(content)
+  }
+  return ranges
+}
+
+/** Every range in which a token-shaped string is literal Markdown, not a mention. */
+const findMarkdownLiteralRanges = (content: string): MarkdownLiteralRange[] => {
+  const fenced = findFencedCodeRanges(content)
+  return [...fenced, ...findInlineCodeRanges(content, fenced)]
+}
+
+/** True when the `[` at `start` is backslash-escaped (an odd number of backslashes). */
+const isEscapedToken = (content: string, start: number): boolean => {
+  let backslashes = 0
+  let index = start - 1
+  while (index >= 0 && content[index] === '\\') {
+    backslashes += 1
+    index -= 1
+  }
+  return backslashes % 2 === 1
+}
 
 /** Characters stripped from a mention's display name so the token stays well-formed markdown. */
 const MENTION_NAME_INVALID = /[[\]]/g
@@ -91,38 +228,75 @@ const decodeMentionId = (raw: string): string => {
   }
 }
 
-/** Returns every complete mention token in the content, in source order. */
-export const findMentionTokens = (content: string): MentionToken[] => {
+/** Result of scanning token-shaped text: what is live, and what is literal. */
+interface MentionScan {
+  /** Live tokens, in source order. */
+  tokens: MentionToken[]
+  /** Code ranges plus every token-shaped run that is documentation, not a mention. */
+  literalRanges: MarkdownLiteralRange[]
+}
+
+/**
+ * Scans token-shaped text once, splitting live mentions from literal ones.
+ *
+ * A token is literal when it sits in code or when its `[` is backslash-escaped.
+ * Escaped tokens must still be reported as literal *ranges*: they are absent
+ * from `tokens`, so without a range a `getMentionTrigger` scan would find their
+ * `@` and open the picker inside documentation.
+ */
+const scanMentionTokens = (content: string, codeRanges: MarkdownLiteralRange[]): MentionScan => {
   const tokens: MentionToken[] = []
+  const literalRanges = [...codeRanges]
   MENTION_TOKEN_PATTERN.lastIndex = 0
   let match = MENTION_TOKEN_PATTERN.exec(content)
   while (match !== null) {
     const start = match.index
     const raw = match[0]
-    tokens.push({
-      entityId: decodeMentionId(match[2]),
-      name: match[1],
-      start,
-      end: start + raw.length,
-      raw,
-    })
+    const end = start + raw.length
+    if (isInsideRanges(start, codeRanges) || isEscapedToken(content, start)) {
+      literalRanges.push({ start, end })
+    } else {
+      tokens.push({ entityId: decodeMentionId(match[2]), name: match[1], start, end, raw })
+    }
     match = MENTION_TOKEN_PATTERN.exec(content)
   }
-  return tokens
+  return { tokens, literalRanges }
 }
+
+/**
+ * Returns every complete mention token in the content, in source order.
+ * Tokens inside code fences/spans and backslash-escaped tokens are skipped.
+ */
+export const findMentionTokens = (content: string): MentionToken[] =>
+  scanMentionTokens(content, findMarkdownLiteralRanges(content)).tokens
 
 /** True when `position` falls strictly inside a complete mention token. */
 const isInsideToken = (position: number, tokens: MentionToken[]): boolean =>
   tokens.some((t) => position > t.start && position < t.end)
 
 /**
- * Index of the nearest `@` at or before `caret` that is not part of a token,
- * or -1 when there is none.
+ * True when `position` falls inside literal Markdown — a code fence/span, or a
+ * backslash-escaped token — or inside a live mention token. Neither may open
+ * the picker or be rewritten.
  */
-const findMentionAt = (content: string, caret: number, tokens: MentionToken[]): number => {
+const isBlockedPosition = (
+  position: number,
+  literal: MarkdownLiteralRange[],
+  tokens: MentionToken[],
+): boolean => isInsideRanges(position, literal) || isInsideToken(position, tokens)
+
+/**
+ * Index of the nearest `@` at or before `caret` that is neither inside a
+ * complete token nor inside literal Markdown, or -1 when there is none.
+ */
+const findMentionAt = (
+  content: string,
+  caret: number,
+  isBlocked: (position: number) => boolean,
+): number => {
   for (let i = caret - 1; i >= 0; i -= 1) {
     if (content[i] !== '@') continue
-    if (isInsideToken(i, tokens)) continue
+    if (isBlocked(i)) continue
     return i
   }
   return -1
@@ -142,12 +316,15 @@ const isValidMentionQuery = (query: string): boolean =>
  */
 export const getMentionTrigger = (content: string, caret: number): MentionTrigger => {
   if (caret <= 0) return NO_MENTION_TRIGGER
-  const tokens = findMentionTokens(content)
-  // Caret inside a complete token? That is editing raw token text, not typing a mention.
-  if (isInsideToken(caret, tokens)) return NO_MENTION_TRIGGER
+  const { tokens, literalRanges } = scanMentionTokens(content, findMarkdownLiteralRanges(content))
+  const isBlocked = (position: number): boolean =>
+    isBlockedPosition(position, literalRanges, tokens)
+  // Caret in literal Markdown (code or an escaped token) or inside a complete
+  // token? That is editing documentation, not typing a mention.
+  if (isBlocked(caret)) return NO_MENTION_TRIGGER
 
-  // Scan backwards for the nearest '@' that is not part of a token.
-  const at = findMentionAt(content, caret, tokens)
+  // Scan backwards for the nearest '@' that is not part of a token or code.
+  const at = findMentionAt(content, caret, isBlocked)
   if (at === -1) return NO_MENTION_TRIGGER
 
   const query = content.slice(at + 1, caret)
