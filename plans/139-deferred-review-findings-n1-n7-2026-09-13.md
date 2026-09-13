@@ -130,9 +130,22 @@ The PR review raised 7 findings. All were valid and are fixed in the same PR:
 | The comment claimed the local adapter “never calls `onChunk`” | Real doc defect | Corrected: the adapter streams via `TextStreamer`, and `runGeneration` returns the complete text when no fragment was emitted |
 | `library-semantic-search.tsx` complexity 6 on the effect | Real | Same restructure as the `void` fix |
 
-New tests for the trigger behaviour (6): inactive inside an inline code span, inside a
+New tests for the trigger behaviour: inactive inside an inline code span, inside a
 fenced block, just after a complete token in a code span, and after a code span
 containing `@`; still active in ordinary prose and in prose following a code span.
+
+### Second review round (same PR)
+
+| Finding | Verdict | Fix |
+|---|---|---|
+| `findFencedCodeRanges` still complexity 6 | Real | Split into `findFenceLines` (complexity 3) + `closesFence` + a loop-only pairing function (complexity 5) |
+| **Escaped complete tokens were not blocked in `getMentionTrigger`** — `scanMentionTokens` omits them from `tokens`, and the literal ranges only covered code, so the picker still opened inside `\[@Alice\](…)` | **Real** | The scan now returns `literalRanges` **including every escaped token's range**, not just code ranges, so the caret and the backward `@` scan are both blocked |
+| A backtick fence whose info string contains a backtick was treated as a fence | Real | `toFenceLine` rejects it (CommonMark: only backtick fences forbid a backtick in the info string) |
+
+Two further tests: the escaped-token case sweeps **every** caret position and first
+asserts the token is present verbatim but not live (the assertion caught that the
+first version of this test was silently testing a literal `${token}` string), and
+`\`\`\`md\`x` is asserted to be prose so a token below it stays live.
 
 ## 6. Remaining follow-ups (documented, not ignored)
 

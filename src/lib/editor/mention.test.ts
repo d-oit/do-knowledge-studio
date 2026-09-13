@@ -342,4 +342,21 @@ describe('getMentionTrigger in literal Markdown', () => {
   it('activates for prose that follows an inline code span', () => {
     expect(getMentionTrigger('`code` @al', '`code` @al'.length).active).toBe(true)
   })
+
+  it('stays inactive inside an escaped complete token', () => {
+    const content = `\\${token}`
+    // The token is present verbatim but escaped, so it is not a live mention.
+    expect(content).toContain(token)
+    expect(findMentionTokens(content)).toEqual([])
+    for (let caret = 1; caret <= content.length; caret += 1) {
+      expect(getMentionTrigger(content, caret).active).toBe(false)
+    }
+  })
+
+  it('treats a backtick fence with a backtick in its info string as prose', () => {
+    // CommonMark: a backtick fence's info string may not contain a backtick,
+    // so this line is paragraph text and the token below stays live.
+    const content = `\`\`\`md\`x\n${token}`
+    expect(findMentionTokens(content)).toHaveLength(1)
+  })
 })
