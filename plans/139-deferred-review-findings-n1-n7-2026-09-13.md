@@ -116,7 +116,25 @@ store mock never supplied `claims`, so `claims.filter(...)` threw. The mock now
 provides `claims` (defaulting to `[]`). This was a fixture gap, not a product
 bug.
 
-## 5. Remaining follow-ups (documented, not ignored)
+## 5. Review round on PR #781
+
+The PR review raised 7 findings. All were valid and are fixed in the same PR:
+
+| Finding | Verdict | Fix |
+|---|---|---|
+| **`getMentionTrigger` could open the picker inside code** — `findMentionTokens` was its only guard, so once literal tokens were filtered out, an `@query` inside a code span/fence read as live and Enter would rewrite documentation into a link | **Real regression from this change** | `getMentionTrigger` is now literal-aware: blocked when the caret is in a literal range, and the backward `@` scan (`findMentionAt`) skips `@`s inside literal ranges too. Also fixes the pre-existing incomplete-`@query`-in-code-span case. |
+| `findFencedCodeRanges` cyclomatic complexity 9 (JS-R1005) | Real | Extracted `toOpenFence` / `closesFence`; loop body is now flat — complexity 5 |
+| `void` operand in the extracted hook (JS-0240-style) | Real | Replaced the `void`-ed async IIFE with a `.then()/.catch()` chain plus `applyOutcome`; `AbortController` + `cancelled` semantics preserved, complexity of the effect callback 6 → 3 |
+| The non-streamed regression test did not actually select the local provider (it exercised OpenRouter) | Real | Added `local` to the mocked `PROVIDERS`/`DEFAULT_MODEL` and drives the real provider `<select>`; the test now also asserts the request carried `provider: 'local'` |
+| `async` arrow with no `await` in the new test | Real | Added the awaited microtask flush the surrounding tests already use |
+| The comment claimed the local adapter “never calls `onChunk`” | Real doc defect | Corrected: the adapter streams via `TextStreamer`, and `runGeneration` returns the complete text when no fragment was emitted |
+| `library-semantic-search.tsx` complexity 6 on the effect | Real | Same restructure as the `void` fix |
+
+New tests for the trigger behaviour (6): inactive inside an inline code span, inside a
+fenced block, just after a complete token in a code span, and after a code span
+containing `@`; still active in ordinary prose and in prose following a code span.
+
+## 6. Remaining follow-ups (documented, not ignored)
 
 1. **Top-level `package.json` `overrides` are inert under pnpm** (plans/138
    §5.1). All 17 entries — including the security-relevant `undici`,

@@ -60,51 +60,43 @@ export const useSemanticSearch = (
   const semanticQuery = query.trim()
 
   useEffect(() => {
+    const controller = new AbortController()
+    let timer: number | undefined
     let cancelled = false
-    let controller: AbortController | null = null
-    let debounce: number | undefined
-    if (semanticMode && semanticQuery !== '') {
-      controller = new AbortController()
-      setSemanticOutcome(null)
-      setSemanticBusy(true)
-      // The async IIFE is `void`-ed because nothing awaits it; the timer owns
-      // the timer handle and the rejection is handled inside try/catch, so the
-      // promise can never surface as an unhandled rejection.
-      debounce = window.setTimeout(() => {
-        void (async () => {
-          try {
-            const outcome = await searchSemantic(
-              allEntities,
-              claims,
-              semanticQuery,
-              SEMANTIC_RESULT_LIMIT,
-              controller?.signal,
-            )
-            if (cancelled) return
-            setSemanticOutcome(outcome)
-            setSemanticBusy(false)
-          } catch (err: unknown) {
-            if (cancelled) return
-            // Only aborts reject; surface anything else as a lexical fallback
-            // so the search box never dies silently.
-            if (err instanceof DOMException && err.name === 'AbortError') return
-            console.error('Semantic search failed:', err)
-            // Clear — not `{ source: 'lexical', results: [] }` — so the grid
-            // falls back to the lexical `filteredEntities` rather than an
-            // empty semantic result list.
-            setSemanticOutcome(null)
-            setSemanticBusy(false)
-          }
-        })()
-      }, SEMANTIC_DEBOUNCE_MS)
-    } else {
-      setSemanticOutcome(null)
-      setSemanticBusy(false)
+
+    /** Ignores a settled request once this effect run has been cleaned up. */
+    const applyOutcome = (outcome: SemanticSearchOutcome | null, busy: boolean): void => {
+      if (cancelled) return
+      setSemanticOutcome(outcome)
+      setSemanticBusy(busy)
     }
+
+    const run = (): void => {
+      searchSemantic(allEntities, claims, semanticQuery, SEMANTIC_RESULT_LIMIT, controller.signal)
+        .then((outcome) => { applyOutcome(outcome, false) })
+        .catch((err: unknown) => {
+          // Only aborts reject; surface anything else as a lexical fallback
+          // so the search box never dies silently.
+          if (err instanceof DOMException && err.name === 'AbortError') return
+          console.error('Semantic search failed:', err)
+          // Clear — not `{ source: 'lexical', results: [] }` — so the grid
+          // falls back to the lexical `filteredEntities` rather than an
+          // empty semantic result list.
+          applyOutcome(null, false)
+        })
+    }
+
+    if (semanticMode && semanticQuery !== '') {
+      applyOutcome(null, true)
+      timer = window.setTimeout(run, SEMANTIC_DEBOUNCE_MS)
+    } else {
+      applyOutcome(null, false)
+    }
+
     return () => {
       cancelled = true
-      clearTimeout(debounce)
-      controller?.abort()
+      clearTimeout(timer)
+      controller.abort()
     }
   }, [semanticMode, semanticQuery, allEntities, claims])
 

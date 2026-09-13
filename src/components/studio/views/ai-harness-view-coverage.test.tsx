@@ -129,7 +129,7 @@ vi.mock('@/lib/ai', () => ({
 }))
 
 vi.mock('@/lib/ai/types', () => ({
-  DEFAULT_MODEL: { openrouter: 'openrouter/free', ollama: 'llama3' },
+  DEFAULT_MODEL: { openrouter: 'openrouter/free', ollama: 'llama3', local: 'local' },
   OLLAMA_DEFAULT_MODELS: ['llama3', 'mistral'],
   DEFAULT_OLLAMA_BASE_URL: 'http://localhost:11434',
 }))
@@ -143,6 +143,7 @@ vi.mock('./ai-harness-settings', () => ({
   PROVIDERS: [
     { id: 'openrouter', label: 'OpenRouter', models: ['openrouter/free'], requiresKey: true },
     { id: 'ollama', label: 'Ollama (local)', models: ['llama3'], requiresKey: false },
+    { id: 'local', label: 'Local (in-browser)', models: ['local'], requiresKey: false },
   ],
   Field: ({ label, children }: { label: string; children?: ReactNode }) => (
     <div data-testid="field">
@@ -246,9 +247,11 @@ describe('AIHarnessView branch coverage', () => {
     expect(aiMocks.mockBuildMessagesAsync).toHaveBeenCalled()
   })
 
-  it('renders the reply when a provider returns it without streaming', async () => {
-    // The local (in-browser) adapter never calls onChunk: the reply only ever
-    // exists on the resolved result, so the consumer must render it.
+  it('renders the reply when the local provider returns it without streaming', async () => {
+    // The local (in-browser) adapter can answer without emitting any chunk
+    // (the reply then only exists on the resolved result), so the consumer
+    // must render `result.content`. Select the provider for real: the request
+    // provider comes from view state, not from the mocked result.
     aiMocks.mockSendChatStream.mockResolvedValue({
       content: 'non-streamed reply',
       provider: 'local',
@@ -256,14 +259,19 @@ describe('AIHarnessView branch coverage', () => {
     })
     await act(async () => {
       render(<AIHarnessView />)
+      await Promise.resolve()
     })
     fireEvent.click(screen.getByText('Show settings'))
-    const keyInput = screen.getByPlaceholderText('sk-or-\u2026')
-    fireEvent.change(keyInput, { target: { value: 'test-key' } })
+    const providerSelect = screen.getAllByRole('combobox')[0]
+    fireEvent.change(providerSelect, { target: { value: 'local' } })
     await sendMessage('Hello')
     await waitFor(() => {
       expect(screen.getByText('non-streamed reply')).toBeDefined()
     })
+    expect(aiMocks.mockSendChatStream).toHaveBeenCalledWith(
+      expect.objectContaining({ provider: 'local', model: 'local' }),
+      expect.any(Function),
+    )
   })
 
   it('adds error message when sendChatStream throws', async () => {

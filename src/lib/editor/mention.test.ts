@@ -302,3 +302,44 @@ describe('literal Markdown contexts', () => {
     expect(removeMentionTokens(content, 'a')).toBe(content)
   })
 })
+
+// ─── trigger inside literal Markdown ─────────────────────────────────────────
+
+describe('getMentionTrigger in literal Markdown', () => {
+  const token = buildMentionToken('a', 'Alice')
+
+  it('stays inactive while typing inside an inline code span', () => {
+    const content = 'see `@foo` here'
+    const caret = content.indexOf('@foo') + '@foo'.length
+    expect(getMentionTrigger(content, caret).active).toBe(false)
+  })
+
+  it('stays inactive while typing inside a fenced code block', () => {
+    const content = '```\n@foo\n```'
+    const caret = content.indexOf('@foo') + '@foo'.length
+    expect(getMentionTrigger(content, caret).active).toBe(false)
+  })
+
+  it('stays inactive just after a complete token that sits in a code span', () => {
+    const content = `example: \`${token}\``
+    const caret = content.indexOf(token) + token.length
+    expect(getMentionTrigger(content, caret).active).toBe(false)
+  })
+
+  it('does not trigger from an @ inside a code span when the caret is after it', () => {
+    const content = '`@foo` and '
+    expect(getMentionTrigger(content, content.length).active).toBe(false)
+  })
+
+  it('still activates for a query in ordinary prose', () => {
+    expect(getMentionTrigger('hello @al', 'hello @al'.length)).toEqual({
+      active: true,
+      start: 6,
+      query: 'al',
+    })
+  })
+
+  it('activates for prose that follows an inline code span', () => {
+    expect(getMentionTrigger('`code` @al', '`code` @al'.length).active).toBe(true)
+  })
+})

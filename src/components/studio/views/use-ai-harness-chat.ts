@@ -20,9 +20,9 @@ const RATE_LIMIT_MESSAGE =
 /**
  * Replaces the trailing assistant placeholder with `content`.
  *
- * Used for providers that answer without emitting deltas (the local adapter's
- * non-streamed path): the placeholder is appended before the request, so the
- * result has to be written back explicitly or the bubble stays empty.
+ * Used when a request emits no deltas: the placeholder is appended before the
+ * request, so the reply has to be written back explicitly or the bubble stays
+ * empty even though the request succeeded.
  */
 const renderAssistantReply = (
   setMessages: Dispatch<SetStateAction<ChatMessage[]>>,
@@ -158,9 +158,10 @@ export const useAiHarnessChat = ({
         },
       )
 
-      // The local (in-browser) adapter has no streaming path at all: it
-      // never calls `onChunk` and returns the reply on the result instead.
-      // Render that fallback so the assistant bubble is never left empty.
+      // Not every reply streams. The local adapter emits fragments through a
+      // TextStreamer, but `runGeneration` returns the complete generated text
+      // when no fragment was emitted, and a provider may answer only on the
+      // result. Render that case so the assistant bubble is never left empty.
       if (streamedContent === '') {
         renderAssistantReply(setMessages, result.content)
       }
