@@ -152,4 +152,19 @@ describe('TypeSelector', () => {
     fireEvent.keyDown(listbox, { key: 'ArrowUp' })
     expect(document.activeElement).toBe(options[options.length - 1])
   })
+
+  it('offers an explicit focusable option when the current type is unregistered', () => {
+    render(<TypeSelector type="archived" showMenu onToggleMenu={mockOnToggleMenu} onSelect={mockOnSelect} />)
+    const options = screen.getAllByRole('option')
+    expect(options).toHaveLength(5)
+    const current = screen.getByRole('option', { name: /archived \(current\)/ })
+    expect(current.getAttribute('aria-selected')).toBe('true')
+    expect(current.getAttribute('tabindex')).toBe('0')
+  })
+
+  it('keeps the registered types selectable alongside an unregistered current type', () => {
+    render(<TypeSelector type="archived" showMenu onToggleMenu={mockOnToggleMenu} onSelect={mockOnSelect} />)
+    fireEvent.click(screen.getByRole('option', { name: /Person/ }))
+    expect(mockOnSelect).toHaveBeenCalledWith('person')
+  })
 })

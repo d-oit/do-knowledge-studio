@@ -246,6 +246,26 @@ describe('AIHarnessView branch coverage', () => {
     expect(aiMocks.mockBuildMessagesAsync).toHaveBeenCalled()
   })
 
+  it('renders the reply when a provider returns it without streaming', async () => {
+    // The local (in-browser) adapter never calls onChunk: the reply only ever
+    // exists on the resolved result, so the consumer must render it.
+    aiMocks.mockSendChatStream.mockResolvedValue({
+      content: 'non-streamed reply',
+      provider: 'local',
+      model: 'local',
+    })
+    await act(async () => {
+      render(<AIHarnessView />)
+    })
+    fireEvent.click(screen.getByText('Show settings'))
+    const keyInput = screen.getByPlaceholderText('sk-or-\u2026')
+    fireEvent.change(keyInput, { target: { value: 'test-key' } })
+    await sendMessage('Hello')
+    await waitFor(() => {
+      expect(screen.getByText('non-streamed reply')).toBeDefined()
+    })
+  })
+
   it('adds error message when sendChatStream throws', async () => {
     aiMocks.mockSendChatStream.mockRejectedValue(new Error('boom'))
     await act(async () => {

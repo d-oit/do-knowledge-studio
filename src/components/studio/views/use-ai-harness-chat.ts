@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
+import type { Dispatch, SetStateAction } from 'react'
 import { toast } from 'sonner'
 import { sendChatStream, buildMessagesAsync, useRateLimiter } from '@/lib/ai'
 import type { ChatMessage } from '@/lib/ai'
@@ -15,6 +16,25 @@ const INITIAL_ASSISTANT_MESSAGE: ChatMessage = {
 
 const RATE_LIMIT_MESSAGE =
   'I\u2019m being rate-limited \u2014 please slow down and try again in a few seconds.'
+
+/**
+ * Replaces the trailing assistant placeholder with `content`.
+ *
+ * Used for providers that answer without emitting deltas (the local adapter's
+ * non-streamed path): the placeholder is appended before the request, so the
+ * result has to be written back explicitly or the bubble stays empty.
+ */
+const renderAssistantReply = (
+  setMessages: Dispatch<SetStateAction<ChatMessage[]>>,
+  content: string,
+): void => {
+  setMessages((m) => {
+    if (m.length === 0) return m
+    const updated = [...m]
+    updated[updated.length - 1] = { role: 'assistant', content }
+    return updated
+  })
+}
 
 interface UseAiHarnessChatOptions {
   provider: AIProvider
@@ -115,7 +135,7 @@ export const useAiHarnessChat = ({
       let streamedContent = ''
       setMessages((m) => [...m, { role: 'assistant', content: '' }])
 
-      await sendChatStream(
+      const result = await sendChatStream(
         {
           provider,
           model,
@@ -137,6 +157,13 @@ export const useAiHarnessChat = ({
           })
         },
       )
+
+      // The local (in-browser) adapter has no streaming path at all: it
+      // never calls `onChunk` and returns the reply on the result instead.
+      // Render that fallback so the assistant bubble is never left empty.
+      if (streamedContent === '') {
+        renderAssistantReply(setMessages, result.content)
+      }
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return
       const msg = err instanceof Error ? err.message : 'Unknown error'

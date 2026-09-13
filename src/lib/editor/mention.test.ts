@@ -260,3 +260,45 @@ describe('applyMentionBacklinks', () => {
     expect(byId.get('b')?.links).toEqual([])
   })
 })
+
+// ─── literal Markdown contexts ───────────────────────────────────────────────
+
+describe('literal Markdown contexts', () => {
+  const alice = makeEntity({ id: 'a', name: 'Alice' })
+  const token = buildMentionToken('a', 'Alice')
+
+  it('ignores mention tokens inside a fenced code block', () => {
+    expect(findMentionTokens(`before\n\`\`\`\n${token}\n\`\`\`\nafter`)).toEqual([])
+  })
+
+  it('ignores mention tokens inside a tilde fenced block', () => {
+    expect(findMentionTokens(`~~~\n${token}\n~~~`)).toEqual([])
+  })
+
+  it('treats an unterminated fence as literal to the end of the content', () => {
+    expect(findMentionTokens(`\`\`\`\n${token}`)).toEqual([])
+  })
+
+  it('ignores mention tokens inside an inline code span', () => {
+    expect(findMentionTokens(`docs: \`${token}\` here`)).toEqual([])
+  })
+
+  it('ignores backslash-escaped mention tokens', () => {
+    expect(findMentionTokens(`\\${token}`)).toEqual([])
+  })
+
+  it('still parses a live token next to a literal one', () => {
+    const tokens = findMentionTokens(`\`${token}\` and ${token}`)
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0].entityId).toBe('a')
+  })
+
+  it('does not derive links from a fenced example', () => {
+    expect(extractMentionLinks(`\`\`\`md\n${token}\n\`\`\``, [alice]).mentions).toEqual([])
+  })
+
+  it('leaves a fenced example in place when removing tokens', () => {
+    const content = `\`\`\`\n${token}\n\`\`\``
+    expect(removeMentionTokens(content, 'a')).toBe(content)
+  })
+})

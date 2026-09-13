@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { ReactNode } from 'react'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 
 vi.mock('framer-motion', () => ({
   motion: {
@@ -40,6 +40,7 @@ vi.mock('lucide-react', () => {
     Trash2: Icon,
     History: Icon,
     Loader2: Icon,
+    Sparkles: Icon,
     QrCode: Icon,
     Camera: Icon,
     Radio: Icon,
@@ -61,6 +62,20 @@ vi.mock('@/lib/utils', () => ({
 
 vi.mock('@/lib/studio/use-reduced-motion', () => ({
   useReducedMotion: () => false,
+}))
+
+type SemanticSearchMock = (
+  entities: { id: string }[],
+  claims: { id: string }[],
+  query: string,
+  limit?: number,
+  signal?: AbortSignal,
+) => Promise<{ source: 'semantic'; results: { id: string }[] }>
+
+const mockSearchSemantic = vi.hoisted(() => vi.fn<SemanticSearchMock>())
+
+vi.mock('@/lib/search/search-worker-client', () => ({
+  searchSemantic: mockSearchSemantic,
 }))
 
 vi.mock('../ui/shared-primitives', () => ({
@@ -110,11 +125,13 @@ let currentRightPanelOpen = false
 let currentSemanticSearchEnabled = false
 let currentEntities = mockEntities
 let filteredEntities = mockEntities
+let currentClaims: { id: string; entityId: string }[] = []
 
 vi.mock('@/lib/studio/store', () => ({
   useStudioStore: (selector: (s: Record<string, unknown>) => unknown) =>
     selector({
       entities: currentEntities,
+      claims: currentClaims,
       typeFilter: currentTypeFilter,
       setTypeFilter: mockSetTypeFilter,
       sortBy: currentSortBy,
@@ -139,12 +156,32 @@ describe('LibraryView', () => {
     vi.clearAllMocks()
     currentEntities = mockEntities
     filteredEntities = mockEntities
+    currentClaims = []
     currentTypeFilter = 'all'
     currentSortBy = 'updated'
     currentSortDir = 'asc'
     currentSearchQuery = ''
     currentRightPanelOpen = false
     currentSemanticSearchEnabled = false
+    mockSearchSemantic.mockReset()
+    mockSearchSemantic.mockResolvedValue({ source: 'semantic', results: [] })
+  })
+
+  it('narrows the semantic corpus by type before the query', async () => {
+    currentSemanticSearchEnabled = true
+    currentSearchQuery = 'alpha'
+    currentTypeFilter = 'concept'
+    currentClaims = [
+      { id: 'c-1', entityId: 'ent-1' },
+      { id: 'c-2', entityId: 'ent-2' },
+    ]
+    render(<LibraryView />)
+    await waitFor(() => {
+      expect(mockSearchSemantic).toHaveBeenCalled()
+    })
+    const [entitiesArg, claimsArg] = mockSearchSemantic.mock.calls[0]
+    expect(entitiesArg.map((entity) => entity.id)).toEqual(['ent-1'])
+    expect(claimsArg.map((claim) => claim.id)).toEqual(['c-1'])
   })
 
   it('renders empty state when no entities', () => {

@@ -42,7 +42,29 @@ export const TypeSelector = ({
 }) => {
   const menuRef = useRef<HTMLDivElement>(null)
   const meta = getEntityTypeMeta(type)
+  // A stored entity can carry a type that is no longer registered (custom type
+  // removed or renamed, or content imported from another workspace). The
+  // registry renders no option for it, which used to leave the open listbox
+  // with no focusable option at all — a keyboard trap. An explicit "current
+  // type" entry keeps the list navigable and shows what the entity is now.
   const typeDefs = getEntityTypeDefs()
+  const isCurrentTypeRegistered = typeDefs.some((def) => def.id === type)
+  const options: { id: AnyEntityType; label: string; current: boolean }[] = [
+    ...(isCurrentTypeRegistered
+      ? []
+      : [
+          {
+            id: type,
+            label: entityTypesT('entity-types.currentType', meta.label),
+            current: true,
+          },
+        ]),
+    ...typeDefs.map((def) => ({
+      id: def.id,
+      label: getEntityTypeMeta(def.id).label,
+      current: def.id === type,
+    })),
+  ]
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -83,23 +105,23 @@ export const TypeSelector = ({
             }
           }}
         >
-          {typeDefs.map((def) => {
-            const meta = getEntityTypeMeta(def.id)
+          {options.map((option) => {
+            const optionMeta = getEntityTypeMeta(option.id)
             return (
               <button
-                key={def.id}
+                key={option.id}
                 role="option"
-                aria-selected={type === def.id}
+                aria-selected={option.current}
                 type="button"
-                tabIndex={def.id === type ? 0 : -1}
-                onClick={() => { onSelect(def.id) }}
+                tabIndex={option.current ? 0 : -1}
+                onClick={() => { onSelect(option.id) }}
                 className={cn(
                   'flex w-full items-center gap-2 rounded px-2 py-1.5 text-[12px] transition-colors hover:bg-muted focus-ring',
-                  def.id === type ? 'font-semibold text-ink' : 'text-ink-soft',
+                  option.current ? 'font-semibold text-ink' : 'text-ink-soft',
                 )}
               >
-                <EntityIcon type={def.id} className={cn('h-3.5 w-3.5', meta.text)} />
-                {meta.label}
+                <EntityIcon type={option.id} className={cn('h-3.5 w-3.5', optionMeta.text)} />
+                {option.label}
               </button>
             )
           })}
