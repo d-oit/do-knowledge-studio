@@ -232,16 +232,15 @@ export const mergeMentionLinks = (
   existing: MentionLink[],
   mentionLinks: MentionLink[],
 ): MentionLink[] => {
-  const derivedKeys = new Set(
-    mentionLinks.map((l) => JSON.stringify([l.targetId, l.relation])),
-  )
+  const linkKey = (l: MentionLink): string => `${l.targetId}\0${l.relation}`
+  const derivedKeys = new Set(mentionLinks.map(linkKey))
   const keptManual = existing.filter(
-    (l) => l.relation !== MENTION_LINK_RELATION || derivedKeys.has(JSON.stringify([l.targetId, l.relation])),
+    (l) => l.relation !== MENTION_LINK_RELATION || derivedKeys.has(linkKey(l)),
   )
   const result = [...keptManual]
-  const present = new Set(keptManual.map((l) => JSON.stringify([l.targetId, l.relation])))
+  const present = new Set(keptManual.map(linkKey))
   for (const link of mentionLinks) {
-    const key = JSON.stringify([link.targetId, link.relation])
+    const key = linkKey(link)
     if (present.has(key)) continue
     present.add(key)
     result.push(link)

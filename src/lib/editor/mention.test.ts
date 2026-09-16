@@ -210,6 +210,25 @@ describe('mergeMentionLinks', () => {
     // e1 no longer appears in the content; e9 is a manual relation.
     expect(mergeMentionLinks(existing, [])).toEqual([{ targetId: 'e9', relation: 'related' }])
   })
+
+  it('handles large link sets efficiently without errors', () => {
+    const count = 500
+    const existing = Array.from({ length: count }, (_, i) => ({
+      targetId: `target-${i}`,
+      relation: i % 2 === 0 ? MENTION_LINK_RELATION : 'related',
+    }))
+    const derived = Array.from({ length: count / 2 }, (_, i) => ({
+      targetId: `target-${i * 2}`,
+      relation: MENTION_LINK_RELATION,
+    }))
+
+    const start = performance.now()
+    const result = mergeMentionLinks(existing, derived)
+    const duration = performance.now() - start
+
+    expect(result.length).toBeGreaterThan(0)
+    expect(duration).toBeLessThan(100)
+  })
 })
 
 describe('applyMentionBacklinks', () => {
