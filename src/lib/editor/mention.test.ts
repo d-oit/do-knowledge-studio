@@ -229,6 +229,18 @@ describe('mergeMentionLinks', () => {
     expect(result.length).toBeGreaterThan(0)
     expect(duration).toBeLessThan(100)
   })
+
+  it('correctly distinguishes pairs containing NUL bytes or colons without key collision', () => {
+    const existing = [{ targetId: 'a', relation: 'b\0mentions' }]
+    const derived = [{ targetId: 'a\0b', relation: 'mentions' }]
+
+    const merged = mergeMentionLinks(existing, derived)
+    expect(merged).toHaveLength(2)
+    expect(merged).toEqual([
+      { targetId: 'a', relation: 'b\0mentions' },
+      { targetId: 'a\0b', relation: 'mentions' },
+    ])
+  })
 })
 
 describe('applyMentionBacklinks', () => {

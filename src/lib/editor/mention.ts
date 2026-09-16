@@ -232,7 +232,7 @@ export const mergeMentionLinks = (
   existing: MentionLink[],
   mentionLinks: MentionLink[],
 ): MentionLink[] => {
-  const linkKey = (l: MentionLink): string => `${l.targetId}\0${l.relation}`
+  const linkKey = (l: MentionLink): string => `${l.targetId.length}:${l.targetId}:${l.relation}`
   const derivedKeys = new Set(mentionLinks.map(linkKey))
   const keptManual = existing.filter(
     (l) => l.relation !== MENTION_LINK_RELATION || derivedKeys.has(linkKey(l)),
