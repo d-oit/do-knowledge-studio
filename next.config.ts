@@ -25,6 +25,13 @@ const nextConfig: NextConfig = {
   // React Compiler (stable in Next.js 16) auto-memoizes components and hooks,
   // completing the deferred Task 141 rerender audit (see plans/128 and issue #699).
   reactCompiler: true,
+  experimental: {
+    // Next 16.3 flipped the default typechecker from the API (which ignores
+    // `*.test.*`/`__tests__` diagnostics) to the raw CLI `tsc --project`.
+    // The repo keeps test sources intentionally loose (mock casts); restore
+    // the API checker so `next build` typechecks app code, not test mocks.
+    useTypeScriptCli: false,
+  },
   turbopack: {
     root: path.resolve(__dirname),
   },
