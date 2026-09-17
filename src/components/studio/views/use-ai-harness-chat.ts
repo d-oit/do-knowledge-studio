@@ -30,6 +30,20 @@ export interface UseAiHarnessChatOptions {
 }
 
 /**
+ * Replaces the trailing assistant bubble — the placeholder created just before
+ * a send — with new content. Both reply paths (streamed deltas and a whole
+ * reply returned on the result) update that same bubble.
+ */
+const withTrailingAssistantMessage = (
+  messages: ChatMessage[],
+  content: string,
+): ChatMessage[] => {
+  const updated = [...messages]
+  updated[updated.length - 1] = { role: 'assistant', content }
+  return updated
+}
+
+/**
  * Owns the AI Harness chat session: message history, input, loading state,
  * rate limiting, and the streaming send pipeline. Kept outside the view
  * component so the view stays small and the send flow is unit-testable.
@@ -127,14 +141,7 @@ export const useAiHarnessChat = ({
         },
         (chunk) => {
           streamedContent += chunk
-          setMessages((m) => {
-            const updated = [...m]
-            updated[updated.length - 1] = {
-              role: 'assistant',
-              content: streamedContent,
-            }
-            return updated
-          })
+          setMessages((m) => withTrailingAssistantMessage(m, streamedContent))
         },
       )
 
@@ -144,14 +151,7 @@ export const useAiHarnessChat = ({
       // `onChunk` would leave the placeholder bubble blank, so fall back to
       // the awaited result whenever nothing was streamed.
       if (streamedContent === '' && result.content !== '') {
-        setMessages((m) => {
-          const updated = [...m]
-          updated[updated.length - 1] = {
-            role: 'assistant',
-            content: result.content,
-          }
-          return updated
-        })
+        setMessages((m) => withTrailingAssistantMessage(m, result.content))
       }
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return
