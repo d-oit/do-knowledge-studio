@@ -105,9 +105,11 @@ in both directions). **14 tests, all passing** (previously 9 failing).
    `WARN deprecated eslint@9.39.4: This version is no longer supported` on
    every install. `eslint: ^9` needs a bump to a supported major, which also
    drags `eslint-config-next`, `typescript-eslint` and the plugin set. Own plan.
+   → **Blocked upstream; evidence in plans/140 §2.**
 2. **`Ignored build scripts`** (`core-js`, `esbuild`, `onnxruntime-node`,
    `protobufjs`, `unrs-resolver`) — the allowlist decision from plans/138 §5.2
    is still open.
+   → **Resolved in plans/140 §1** (explicitly ignored, warning cleared).
 3. **DeepSource: JavaScript metric-level failure** with no blocking finding —
    plans/138 §5.3.
 4. **Four deferred review findings** from plans/137 §5 (semantic type-filter
