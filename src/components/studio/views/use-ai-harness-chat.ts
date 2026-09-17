@@ -16,7 +16,7 @@ const INITIAL_ASSISTANT_MESSAGE: ChatMessage = {
 const RATE_LIMIT_MESSAGE =
   'I\u2019m being rate-limited \u2014 please slow down and try again in a few seconds.'
 
-interface UseAiHarnessChatOptions {
+export interface UseAiHarnessChatOptions {
   provider: AIProvider
   model: string
   apiKey: string
@@ -115,7 +115,7 @@ export const useAiHarnessChat = ({
       let streamedContent = ''
       setMessages((m) => [...m, { role: 'assistant', content: '' }])
 
-      await sendChatStream(
+      const result = await sendChatStream(
         {
           provider,
           model,
@@ -137,6 +137,22 @@ export const useAiHarnessChat = ({
           })
         },
       )
+
+      // A provider can answer without emitting any delta: the in-browser local
+      // adapter returns the whole reply on the result when its streamer stayed
+      // silent (a non-streamed fallback generation). Rendering only from
+      // `onChunk` would leave the placeholder bubble blank, so fall back to
+      // the awaited result whenever nothing was streamed.
+      if (streamedContent === '' && result.content !== '') {
+        setMessages((m) => {
+          const updated = [...m]
+          updated[updated.length - 1] = {
+            role: 'assistant',
+            content: result.content,
+          }
+          return updated
+        })
+      }
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return
       const msg = err instanceof Error ? err.message : 'Unknown error'
