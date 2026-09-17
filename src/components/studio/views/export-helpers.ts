@@ -42,7 +42,7 @@ export const buildJsonExport = (
 export const buildMarkdownExport = (entities: Entity[], claims: Claim[]): string => {
   const claimsByEntity = buildClaimsByEntityId(claims)
   const parts: string[] = []
-  parts.push(`# DO Knowledge Studio — export\n`)
+  parts.push('# DO Knowledge Studio — export\n')
   parts.push(`Exported ${new Date().toLocaleString()}. ${entities.length} entities, ${claims.length} claims.\n`)
   for (const e of entities) {
     const tags = e.tags.length ? e.tags.map((t) => `#${t}`).join('  ') : '—'

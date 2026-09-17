@@ -43,7 +43,7 @@ function installMockIDB() {
           contains: (n: string) => n === storeName,
           length: 1,
           item: (i: number) => i === 0 ? storeName : null,
-          [Symbol.iterator]: function* () { yield storeName },
+          *[Symbol.iterator]() { yield storeName },
         } as unknown as DOMStringList,
         createObjectStore: (name: string) => createObjectStore(name),
         transaction: (_names: string | string[], _mode?: IDBTransactionMode) => {
@@ -114,13 +114,14 @@ describe('ai-settings encryption and persistence', () => {
     vi.stubGlobal('localStorage', {
       getItem: (key: string) => localStorageMock[key] || null,
       setItem: (key: string, value: string) => { localStorageMock[key] = value },
-      removeItem: (key: string) => { delete localStorageMock[key] },
+      // Reflect.deleteProperty keeps the dynamic key out of a `delete` sink.
+      removeItem: (key: string) => { Reflect.deleteProperty(localStorageMock, key) },
     })
 
     vi.stubGlobal('sessionStorage', {
       getItem: (key: string) => sessionStorageMock[key] || null,
       setItem: (key: string, value: string) => { sessionStorageMock[key] = value },
-      removeItem: (key: string) => { delete sessionStorageMock[key] },
+      removeItem: (key: string) => { Reflect.deleteProperty(sessionStorageMock, key) },
     })
 
     installMockIDB()

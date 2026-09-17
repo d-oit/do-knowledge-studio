@@ -20,6 +20,7 @@ export const TrizView = () => {
   const [copied, setCopied] = useState<number | null>(null)
   const [view, setView] = useState<'pick' | 'results' | 'matrix'>('pick')
   const [matrixSearch, setMatrixSearch] = useState('')
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const suggestedPrinciples = useMemo(
     () => improving === null || worsening === null ? [] : lookupPrinciples(improving, worsening),
@@ -44,11 +45,9 @@ export const TrizView = () => {
     }
     setCopied(id)
     toast.success(translate('triz.toast.copied'))
-    clearTimeout(copiedTimerRef.current)
+    if (copiedTimerRef.current !== null) clearTimeout(copiedTimerRef.current)
     copiedTimerRef.current = setTimeout(() => { setCopied(null) }, 2000)
   }
-
-  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   useEffect(() => {
     return () => { if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current) }

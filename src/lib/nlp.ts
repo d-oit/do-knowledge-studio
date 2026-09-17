@@ -140,6 +140,6 @@ export function formatIntentSummary(intent: Intent): string {
     case 'unknown':
       return `Unrecognized: "${intent.raw.slice(0, 60)}${intent.raw.length > 60 ? '…' : ''}"`
     default:
-      return `Unknown intent`
+      return 'Unknown intent'
   }
 }
