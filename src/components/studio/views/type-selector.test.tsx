@@ -133,7 +133,12 @@ describe('TypeSelector', () => {
     render(<TypeSelector type="legacy-type" showMenu onToggleMenu={mockOnToggleMenu} onSelect={mockOnSelect} />)
     const listbox = screen.getByRole('listbox')
     const options = screen.getAllByRole('option')
-    options[0].focus()
+    // Focus the unregistered option by name, not by position: if the selector
+    // stopped rendering it, this lookup fails instead of silently focusing a
+    // registered option and passing.
+    const current = screen.getByRole('option', { name: /legacy-type/ })
+    current.focus()
+    expect(document.activeElement).toBe(current)
     fireEvent.keyDown(listbox, { key: 'ArrowDown' })
     expect(document.activeElement).toBe(options[1])
   })

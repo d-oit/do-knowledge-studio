@@ -80,7 +80,9 @@ describe('useAiHarnessChat', () => {
   it('does not overwrite streamed content with the returned result', async () => {
     mockSendChatStream.mockImplementation(async (_request, onChunk) => {
       onChunk('streamed')
-      return resultFor('streamed')
+      // Deliberately different from the streamed text: an implementation that
+      // unconditionally replaced the chunks with the result would fail here.
+      return resultFor('returned result')
     })
 
     const hook = await sendMessage('hi')
