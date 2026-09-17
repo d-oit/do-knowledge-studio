@@ -136,8 +136,17 @@ export const OPENROUTER_DEFAULT_MODELS = [
   'meta-llama/llama-3.3-70b-instruct:free',
 ]
 
-/** Default model slugs for the local Ollama provider. */
+/**
+ * Default model slugs for the local Ollama provider.
+ *
+ * The two small models lead the list because the provider's "CPU only" setting
+ * sends `num_gpu: 0` (see `OllamaAdapter`), and a 7-8B model on CPU is
+ * impractically slow — `qwen2.5:0.5b` (~400 MB) and `smollm2:360m` (~730 MB)
+ * answer in seconds on CPU. Tags verified against the Ollama library.
+ */
 export const OLLAMA_DEFAULT_MODELS = [
+  'qwen2.5:0.5b',
+  'smollm2:360m',
   'llama3',
   'mistral',
   'qwen2.5',

@@ -41,6 +41,13 @@ describe('AI types: constants', () => {
     expect(OLLAMA_DEFAULT_MODELS.length).toBeGreaterThan(0)
   })
 
+  it('OLLAMA_DEFAULT_MODELS offers small CPU-friendly models', () => {
+    // The provider's "CPU only" setting sends `num_gpu: 0`, where a 7-8B model
+    // is unusably slow; these sub-1B tags keep that path practical.
+    expect(OLLAMA_DEFAULT_MODELS).toContain('qwen2.5:0.5b')
+    expect(OLLAMA_DEFAULT_MODELS).toContain('smollm2:360m')
+  })
+
   it('DEFAULT_MODEL is defined', () => {
     expect(DEFAULT_MODEL).toBeDefined()
   })

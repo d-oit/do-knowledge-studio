@@ -16,7 +16,7 @@ const INITIAL_ASSISTANT_MESSAGE: ChatMessage = {
 const RATE_LIMIT_MESSAGE =
   'I\u2019m being rate-limited \u2014 please slow down and try again in a few seconds.'
 
-interface UseAiHarnessChatOptions {
+export interface UseAiHarnessChatOptions {
   provider: AIProvider
   model: string
   apiKey: string
@@ -27,6 +27,20 @@ interface UseAiHarnessChatOptions {
   entities: Entity[]
   claims: Claim[]
   requiresKey: boolean
+}
+
+/**
+ * Replaces the trailing assistant bubble — the placeholder created just before
+ * a send — with new content. Both reply paths (streamed deltas and a whole
+ * reply returned on the result) update that same bubble.
+ */
+const withTrailingAssistantMessage = (
+  messages: ChatMessage[],
+  content: string,
+): ChatMessage[] => {
+  const updated = [...messages]
+  updated[updated.length - 1] = { role: 'assistant', content }
+  return updated
 }
 
 /**
@@ -115,7 +129,7 @@ export const useAiHarnessChat = ({
       let streamedContent = ''
       setMessages((m) => [...m, { role: 'assistant', content: '' }])
 
-      await sendChatStream(
+      const result = await sendChatStream(
         {
           provider,
           model,
@@ -127,16 +141,18 @@ export const useAiHarnessChat = ({
         },
         (chunk) => {
           streamedContent += chunk
-          setMessages((m) => {
-            const updated = [...m]
-            updated[updated.length - 1] = {
-              role: 'assistant',
-              content: streamedContent,
-            }
-            return updated
-          })
+          setMessages((m) => withTrailingAssistantMessage(m, streamedContent))
         },
       )
+
+      // A provider can answer without emitting any delta: the in-browser local
+      // adapter returns the whole reply on the result when its streamer stayed
+      // silent (a non-streamed fallback generation). Rendering only from
+      // `onChunk` would leave the placeholder bubble blank, so fall back to
+      // the awaited result whenever nothing was streamed.
+      if (streamedContent === '' && result.content !== '') {
+        setMessages((m) => withTrailingAssistantMessage(m, result.content))
+      }
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return
       const msg = err instanceof Error ? err.message : 'Unknown error'
