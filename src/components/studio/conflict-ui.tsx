@@ -59,13 +59,13 @@ export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps)
       </div>
 
       <div className="max-h-[300px] divide-y divide-amber-200 overflow-y-auto dark:divide-amber-800">
-        {conflicts.map((conflict, idx) => {
+        {conflicts.map((conflict) => {
           const key = `${conflict.entityId}:${conflict.field}`
           const resolution = resolutions.get(key) ?? conflict.winner
           const isExpanded = expandedId === key
 
           return (
-            <div key={idx} className="px-4 py-3">
+            <div key={key} className="px-4 py-3">
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => { setExpandedId(isExpanded ? null : key) }}

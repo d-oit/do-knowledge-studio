@@ -233,7 +233,7 @@ export const fetchUrlContent = async (
     const titleMatch = text.match(/^#\s+(.+)/m)
     const title = titleMatch?.[1] ?? new URL(url).hostname
     const content = text.length > MAX_CONTENT_LENGTH
-      ? text.slice(0, MAX_CONTENT_LENGTH) + '\n\n[Content truncated]'
+      ? `${text.slice(0, MAX_CONTENT_LENGTH)}\n\n[Content truncated]`
       : text
 
     return { url, title, content, success: true }

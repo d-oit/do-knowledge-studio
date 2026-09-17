@@ -26,7 +26,7 @@ export const ImportPreviewDialog = memo(function ImportPreviewDialog({
 
   return (
     <Overlay
-      open={!!importPreview}
+      open={Boolean(importPreview)}
       onClose={() => { setImportPreview(null) }}
       aria-label={translate('import.ariaLabel')}
     >

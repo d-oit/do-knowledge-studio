@@ -114,7 +114,7 @@ describe('EncryptExportDialog', () => {
   })
 
   it('Hide button shown when showPass is true', () => {
-    render(<EncryptExportDialog {...defaultProps} showPass={true} />)
+    render(<EncryptExportDialog {...defaultProps} showPass />)
     expect(screen.getByText('Hide')).toBeDefined()
   })
 

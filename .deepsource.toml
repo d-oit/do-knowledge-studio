@@ -103,6 +103,40 @@ enabled = true
   pattern = "JS-C1003"
   skip = true
 
+  # JS-0047: "No default cases in switch statements" — the flagged switches are
+  # exhaustive over discriminated unions (`Action`, `AIProvider`). Adding a
+  # `default` clause would defeat TypeScript's exhaustiveness checking, turning
+  # a new union member from a compile error into a silent fallthrough.
+  [[analyzers.meta.issue_patterns]]
+  pattern = "JS-0047"
+  skip = true
+
+  # JS-0087: "The usage of `javascript:` urls is not recommended" — the only
+  # occurrence is the deliberate unsafe-URL fixture in
+  # `src/lib/studio/schema.test.ts`, which asserts that such schemes are
+  # *rejected* by the entity schema. Suppressing is safer than obfuscating the
+  # literal in a security test.
+  [[analyzers.meta.issue_patterns]]
+  pattern = "JS-0087"
+  skip = true
+
+  # JS-0105: "Class methods should utilize `this`" — the flagged methods
+  # implement the `ProviderAdapter` interface (`send`, `sendStream`) or mock a
+  # platform class in tests (`MockBroadcastChannel`). They must remain instance
+  # methods to satisfy those contracts, so they cannot be static.
+  [[analyzers.meta.issue_patterns]]
+  pattern = "JS-0105"
+  skip = true
+
+  # JS-0437: "Avoid using an element's index as the key prop" — the remaining
+  # occurrence renders a chat message's citation list: an immutable, ordered
+  # projection of one search result set where the ordinal *is* the citation
+  # number shown to the user. (True positives, e.g. the conflict list, were
+  # fixed to use their stable entity:field key.)
+  [[analyzers.meta.issue_patterns]]
+  pattern = "JS-0437"
+  skip = true
+
 [[analyzers]]
 name = "python"
 enabled = true

@@ -144,8 +144,8 @@ export const GraphView = () => {
         id: e.id,
         label: e.name,
         type: e.type,
-        x: seed?.x ?? seededRandom(e.id + ':x') * 600 + 100,
-        y: seed?.y ?? seededRandom(e.id + ':y') * 400 + 80,
+        x: seed?.x ?? seededRandom(`${e.id}:x`) * 600 + 100,
+        y: seed?.y ?? seededRandom(`${e.id}:y`) * 400 + 80,
       }
     })
     const nodeIds = new Set(nodesList.map((n) => n.id))
@@ -425,7 +425,7 @@ export const GraphView = () => {
                         isSelected ? 'fill-ink' : 'fill-ink-soft',
                       )}
                     >
-                      {n.label.length > 24 ? n.label.slice(0, 22) + '…' : n.label}
+                      {n.label.length > 24 ? `${n.label.slice(0, 22)}…` : n.label}
                     </text>
                   </g>
                 </g>

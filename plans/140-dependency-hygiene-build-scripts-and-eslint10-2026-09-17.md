@@ -84,4 +84,6 @@ lint result itself is unaffected.
 1. **`@eslint/js` is still `^9.39.5`** — bump together with the ESLint 10
    migration (its 10.x line requires `eslint: ^10.0.0`).
 2. **DeepSource: JavaScript metric-level failure** — plans/138 §5.3.
+   → **Root-caused in plans/141 §1** (the check is *skipped*, not failing: the
+   account's analysis quota is exhausted; 36 findings triaged in plans/141 §2).
 3. **Four deferred review findings** — plans/137 §5.

@@ -24,7 +24,7 @@ describe('WebCrypto AES-GCM Encryption', () => {
     const encrypted = await encryptData('secret data', 'password')
     const parsed = JSON.parse(encrypted)
     // Tamper with the last char of the data
-    parsed.data = parsed.data.slice(0, -2) + 'AA'
+    parsed.data = `${parsed.data.slice(0, -2)}AA`
     const tampered = JSON.stringify(parsed)
     await expect(decryptData(tampered, 'password')).rejects.toThrow()
   })

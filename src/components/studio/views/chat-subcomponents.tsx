@@ -365,7 +365,7 @@ export const InputBar = ({
           />
           <VoiceInput
             onTranscript={(text) => {
-              setInput((prev) => prev + ' ' + text)
+              setInput((prev) => `${prev} ${text}`)
             }}
             disabled={chatLoading}
           />

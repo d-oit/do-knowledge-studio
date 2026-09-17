@@ -42,11 +42,18 @@ export const CommandPalette = ({ onEntitySelect }: CommandPaletteProps) => {
   const startNew = useStudioStore((s) => s.startNew)
   const entities = useStudioStore((s) => s.entities)
   const [query, setQuery] = React.useState('')
+  const inputRef = React.useRef<HTMLInputElement>(null)
 
   const close = React.useCallback(() => {
     setCommandOpen(false)
     setQuery('')
   }, [setCommandOpen])
+
+  // Focus the search input whenever the palette opens. Done imperatively
+  // instead of via `autoFocus` so focus lands only on an explicit open.
+  React.useEffect(() => {
+    if (commandOpen) inputRef.current?.focus()
+  }, [commandOpen])
 
   React.useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -132,7 +139,7 @@ export const CommandPalette = ({ onEntitySelect }: CommandPaletteProps) => {
         <div className="flex items-center gap-3 border-b border-border px-4 py-3">
           <Search className="h-4 w-4 text-ink-faint" />
           <CommandPrimitive.Input
-            autoFocus
+            ref={inputRef}
             placeholder={translate('palette.inputPlaceholder')}
             value={query}
             onValueChange={setQuery}

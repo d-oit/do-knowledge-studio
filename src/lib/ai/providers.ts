@@ -134,28 +134,29 @@ async function consumeNDJSON(
   return fullContent
 }
 
+/** Resolves a model slug (or an explicit target) to a full OpenRouter target. */
+const resolveOpenRouterTarget = (model: string | OpenRouterTarget): OpenRouterTarget => {
+  if (typeof model === 'object' && model !== null) {
+    return model
+  }
+  const found = OPENROUTER_DEFAULT_TARGETS.find((t) => t.slug === model)
+  if (found) return found
+  return {
+    kind: 'model',
+    slug: model,
+    display_name: model,
+  }
+}
+
 class OpenRouterAdapter implements ProviderAdapter {
   readonly id: ProviderId = 'openrouter'
   readonly requiresKey = true
-
-  private resolveTarget(model: string | OpenRouterTarget): OpenRouterTarget {
-    if (typeof model === 'object' && model !== null) {
-      return model
-    }
-    const found = OPENROUTER_DEFAULT_TARGETS.find((t) => t.slug === model)
-    if (found) return found
-    return {
-      kind: 'model',
-      slug: model,
-      display_name: model,
-    }
-  }
 
   async send(request: ChatRequest): Promise<ChatResult> {
     const { model, apiKey, messages, signal } = request
     if (!apiKey) throw new Error('OpenRouter API key is required')
 
-    const target = this.resolveTarget(model)
+    const target = resolveOpenRouterTarget(model)
     const modelSlug = target.slug
 
     const body: Record<string, unknown> = { model: modelSlug, messages }
@@ -193,7 +194,7 @@ class OpenRouterAdapter implements ProviderAdapter {
     const { model, apiKey, messages, signal } = request
     if (!apiKey) throw new Error('OpenRouter API key is required')
 
-    const target = this.resolveTarget(model)
+    const target = resolveOpenRouterTarget(model)
     const modelSlug = target.slug
 
     const body: Record<string, unknown> = { model: modelSlug, messages, stream: true }
