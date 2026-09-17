@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { AnyEntityType } from '@/lib/studio/types'
-import { getEntityTypeDefs, getEntityTypeMeta } from '@/lib/studio/entity-types'
+import { getEntityTypeDefs, getEntityTypeMeta, type EntityTypeDef } from '@/lib/studio/entity-types'
 import { translate as entityTypesT } from '@/lib/i18n/messages/entity-types'
 import { EntityIcon } from '../entity-type-icon'
 
@@ -43,6 +43,18 @@ export const TypeSelector = ({
   const menuRef = useRef<HTMLDivElement>(null)
   const meta = getEntityTypeMeta(type)
   const typeDefs = getEntityTypeDefs()
+  /**
+   * Options rendered in the listbox. A stored entity can carry a type that is
+   * no longer registered — the custom type that created it was removed, or the
+   * entity arrived over sync from a peer with extra types. Such a type has no
+   * registry entry, so the current value would be unreachable *and*, because
+   * every option would then sit at `tabIndex={-1}`, the listbox would trap
+   * keyboard focus. Prepending the entity's own type keeps it visible,
+   * selectable, and the single focusable option.
+   */
+  const selectableDefs: EntityTypeDef[] = typeDefs.some((def) => def.id === type)
+    ? typeDefs
+    : [{ ...meta, id: type }, ...typeDefs]
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -83,7 +95,7 @@ export const TypeSelector = ({
             }
           }}
         >
-          {typeDefs.map((def) => {
+          {selectableDefs.map((def) => {
             const meta = getEntityTypeMeta(def.id)
             return (
               <button

@@ -115,6 +115,40 @@ describe('TypeSelector', () => {
     mockDefs.pop()
   })
 
+  it('keeps an unregistered current type selectable and focusable', () => {
+    render(<TypeSelector type="legacy-type" showMenu onToggleMenu={mockOnToggleMenu} onSelect={mockOnSelect} />)
+    const options = screen.getAllByRole('option')
+    // Four registered types plus the entity's own unregistered type.
+    expect(options).toHaveLength(5)
+    const current = screen.getByRole('option', { name: /legacy-type/ })
+    expect(current.getAttribute('aria-selected')).toBe('true')
+    expect(current.getAttribute('tabindex')).toBe('0')
+    // Exactly one option is focusable — the keyboard trap regression guard.
+    const focusable = options.filter((o) => o.getAttribute('tabindex') === '0')
+    expect(focusable).toHaveLength(1)
+    expect(focusable[0]).toBe(current)
+  })
+
+  it('moves focus from an unregistered current type to the next option', () => {
+    render(<TypeSelector type="legacy-type" showMenu onToggleMenu={mockOnToggleMenu} onSelect={mockOnSelect} />)
+    const listbox = screen.getByRole('listbox')
+    const options = screen.getAllByRole('option')
+    options[0].focus()
+    fireEvent.keyDown(listbox, { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(options[1])
+  })
+
+  it('calls onSelect with an unregistered type id when its option is clicked', () => {
+    render(<TypeSelector type="legacy-type" showMenu onToggleMenu={mockOnToggleMenu} onSelect={mockOnSelect} />)
+    fireEvent.click(screen.getByRole('option', { name: /legacy-type/ }))
+    expect(mockOnSelect).toHaveBeenCalledWith('legacy-type')
+  })
+
+  it('renders only registered options when the current type is registered', () => {
+    render(<TypeSelector type="person" showMenu onToggleMenu={mockOnToggleMenu} onSelect={mockOnSelect} />)
+    expect(screen.getAllByRole('option')).toHaveLength(4)
+  })
+
   it('sets aria-haspopup and aria-expanded on the trigger button', () => {
     render(<TypeSelector type="note" showMenu onToggleMenu={mockOnToggleMenu} onSelect={mockOnSelect} />)
     const button = screen.getByRole('button')
