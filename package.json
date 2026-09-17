@@ -128,6 +128,13 @@
       "dompurify": "^3.4.13",
       "undici": "^7.29.0",
       "nanoid@3": "3.3.18"
-    }
+    },
+    "ignoredBuiltDependencies": [
+      "core-js",
+      "esbuild",
+      "onnxruntime-node",
+      "protobufjs",
+      "unrs-resolver"
+    ]
   }
 }
