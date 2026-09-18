@@ -59,7 +59,7 @@ const CODE_NODE_TYPES = new Set(['code', 'inlineCode'])
  * Cheap guard before parsing: code needs a backtick/tilde delimiter or a
  * 4-space indented line, so prose-only content skips the parser entirely.
  */
-const MAY_CONTAIN_CODE_PATTERN = /[`~]|^ {4}/m
+const MAY_CONTAIN_CODE_PATTERN = /[`~]|^(?: {4}|\t| {1,3}\t)/m
 
 /** Collects the source range of every code node, blocks and inline spans alike. */
 const collectCodeRanges = (node: MarkdownNode, ranges: CodeRange[]): void => {
