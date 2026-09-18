@@ -64,6 +64,23 @@ describe('findMentionTokens', () => {
     expect(findMentionTokens(content)).toEqual([])
   })
 
+  it('ignores tokens in indented code blocks', () => {
+    const content = [`    ${token('e1', 'Alice')}`, '', token('e2', 'Bob')].join('\n')
+    expect(findMentionTokens(content).map((t) => t.entityId)).toEqual(['e2'])
+  })
+
+  it('treats an escaped backtick as literal text, not a span delimiter', () => {
+    // The opening backtick is escaped and the trailing one is unmatched, so the
+    // renderer shows the token as a link.
+    const content = `\\\`${token('e1', 'Alice')}\``
+    expect(findMentionTokens(content).map((t) => t.entityId)).toEqual(['e1'])
+  })
+
+  it('does not treat a backtick fence with backticks in its info string as code', () => {
+    const content = ['```js `not-a-fence`', token('e1', 'Alice')].join('\n')
+    expect(findMentionTokens(content).map((t) => t.entityId)).toEqual(['e1'])
+  })
+
   it('ignores escaped tokens but keeps tokens after a literal backslash', () => {
     expect(findMentionTokens(`\\${token('e1', 'Alice')}`)).toEqual([])
     expect(findMentionTokens(`\\\\${token('e1', 'Alice')}`).map((t) => t.entityId)).toEqual(['e1'])

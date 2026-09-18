@@ -24,25 +24,53 @@ The failure mode is concrete: documenting the token syntax inside a code fence
 entity.
 
 **Fix** — `findMentionTokens` now skips tokens that start inside a Markdown code
-range or whose opening `[` is escaped:
+range or whose opening `[` is escaped. Code ranges come from **the preview's own
+Markdown pipeline** rather than a hand-rolled scanner:
 
-- `collectFenceRanges` — fenced blocks (``` ``` ``` / `~~~`, 3+ chars, up to 3
-  spaces of indent, closing run must match char and length). An unclosed fence
-  runs to the end of the content.
-- `collectInlineCodeRanges` — code spans delimited by backtick runs; a span
-  closes on the next run of *exactly* the same length (CommonMark). Runs already
-  inside a fence are skipped. An unmatched opening run is literal text.
-- `isEscaped` — odd backslash run before the token start means the bracket is
-  escaped (`\\[@…` is a literal backslash plus a real token).
+```ts
+const markdownProcessor = unified().use(remarkParse).use(remarkGfm)
+```
 
-`getMentionTrigger` is gated the same way: a `@` typed inside code never becomes
-a link, so the picker stays closed instead of inserting an inert token. The
-caret test looks at the character it *follows* (`caret - 1`), which keeps a
-caret at the end of an unclosed fence inside the region.
+`collectCodeRanges` walks the mdast tree collecting the source range of every
+`code` (fenced **and** indented) and `inlineCode` node, so mention matching
+agrees with what `react-markdown` renders by construction — including escaped
+backticks, invalid fence info strings, and code spans that must not close on a
+fence delimiter. `isEscaped` still guards the token's opening bracket (odd
+backslash run), and `getMentionTrigger` is gated the same way: a `@` typed
+inside code never becomes a link, so the picker stays closed instead of
+inserting an inert token (the caret test looks at the character it *follows*,
+`caret - 1`, which keeps a caret at the end of an unclosed fence inside the
+region).
 
-Deliberate approximation, documented on `collectFenceRanges`: every miss errs
-toward treating content as code, so the failure mode is a missed link, never a
-link the renderer shows as literal text.
+A first implementation hand-rolled the CommonMark rules; review findings
+(GitNexus, PR #795) showed each remaining gap — indented code blocks, escaped
+backticks, backtick fences whose info string contains a backtick, a fence
+delimiter closing an inline span — was another hand-written rule. Parsing with
+the renderer's pipeline removes the class instead of the instances.
+
+`unified` and `remark-parse` were added as direct dependencies (`remark-gfm`
+already was); all three were already in the client bundle via `react-markdown`,
+so no new download or bundle weight.
+
+### Hot-path cost
+
+`getMentionTrigger` runs on every keystroke, so the parse is guarded and cached
+(median of 21 cold calls — unique content each call, so the cache never hits):
+
+| Path | Cost |
+|---|---|
+| Save / scan, prose-only 5.8 KB | 0.012 ms |
+| Save / scan, 5.8 KB containing code | 7.2 ms |
+| Save / scan, 58 KB containing code | 64.7 ms |
+| Caret move, prose-only | 0.013 ms |
+| Caret + `@` typing, prose-only | 0.011 ms |
+| Caret + `@` typing, 5.8 KB containing code | 6.9 ms |
+
+Two guards keep the parser off the common path: `MAY_CONTAIN_CODE_PATTERN`
+(no backtick, tilde, or 4-space indent ⇒ no code ⇒ no parse), and the trigger
+checks for a valid `@` query **before** the code check, so ordinary typing never
+parses. Only typing a mention inside a document that actually contains code pays
+the parse (≈7 ms per keystroke at 5.8 KB); the save path pays it once.
 
 ## 2. Type filter applied after semantic truncation
 

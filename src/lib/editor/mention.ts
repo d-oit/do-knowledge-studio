@@ -1,3 +1,6 @@
+import { unified } from 'unified'
+import remarkParse from 'remark-parse'
+import remarkGfm from 'remark-gfm'
 import type { Entity } from '@/lib/studio/types'
 
 /**
@@ -29,14 +32,12 @@ export const MENTION_SCHEME = 'dks://entity/'
 /** Matches a complete mention token: [@Name](dks://entity/<id>). */
 const MENTION_TOKEN_PATTERN = /\[@([^\]]+)\]\(dks:\/\/entity\/([^)]+)\)/g
 
-/** Up to 3 spaces of indent, then a fence run of 3+ backticks or tildes. */
-const FENCE_OPEN_PATTERN = /^ {0,3}(`{3,}|~{3,})/
-
-/** A closing fence: the same run alone on its line (no info string). */
-const FENCE_CLOSE_PATTERN = /^ {0,3}(`{3,}|~{3,})[ \t]*$/
-
-/** A run of one or more backticks (an inline code-span delimiter candidate). */
-const BACKTICK_RUN_PATTERN = /`+/g
+/**
+ * The Markdown pipeline the editor preview renders with (react-markdown +
+ * remark-gfm), reused here so code detection agrees with the rendered document
+ * instead of approximating CommonMark by hand.
+ */
+const markdownProcessor = unified().use(remarkParse).use(remarkGfm)
 
 /** A half-open `[start, end)` range of content that Markdown renders as code. */
 interface CodeRange {
@@ -44,83 +45,54 @@ interface CodeRange {
   end: number
 }
 
+/** The mdast surface this module reads: node type, children, and source offsets. */
+interface MarkdownNode {
+  type: string
+  position?: { start: { offset?: number }; end: { offset?: number } }
+  children?: MarkdownNode[]
+}
+
+/** Node types the renderer shows as code: fenced/indented blocks and inline spans. */
+const CODE_NODE_TYPES = new Set(['code', 'inlineCode'])
+
 /**
- * Marks the ranges covered by fenced code blocks, fence lines included. An
- * unclosed fence runs to the end of the content. This is a deliberate
- * approximation of CommonMark (the closing run must match the opening
- * character and be at least as long); every miss errs toward treating content
- * as code, which never links a mention the renderer shows as literal text.
+ * Cheap guard before parsing: code needs a backtick/tilde delimiter or a
+ * 4-space indented line, so prose-only content skips the parser entirely.
  */
-const collectFenceRanges = (content: string, ranges: CodeRange[]): void => {
-  let openChar = ''
-  let openLength = 0
-  let openStart = 0
-  let lineStart = 0
+const MAY_CONTAIN_CODE_PATTERN = /[`~]|^ {4}/m
 
-  while (lineStart <= content.length) {
-    const newline = content.indexOf('\n', lineStart)
-    const lineEnd = newline === -1 ? content.length : newline
-    const line = content.slice(lineStart, lineEnd)
-
-    if (openChar === '') {
-      const open = FENCE_OPEN_PATTERN.exec(line)
-      if (open !== null) {
-        openChar = open[1][0]
-        openLength = open[1].length
-        openStart = lineStart
-      }
-    } else {
-      const close = FENCE_CLOSE_PATTERN.exec(line)
-      if (close !== null && close[1][0] === openChar && close[1].length >= openLength) {
-        ranges.push({ start: openStart, end: lineEnd })
-        openChar = ''
-      }
-    }
-
-    if (newline === -1) break
-    lineStart = newline + 1
+/** Collects the source range of every code node, blocks and inline spans alike. */
+const collectCodeRanges = (node: MarkdownNode, ranges: CodeRange[]): void => {
+  if (CODE_NODE_TYPES.has(node.type)) {
+    const start = node.position?.start.offset
+    const end = node.position?.end.offset
+    if (start !== undefined && end !== undefined) ranges.push({ start, end })
+    return
   }
-
-  if (openChar !== '') ranges.push({ start: openStart, end: content.length })
+  for (const child of node.children ?? []) collectCodeRanges(child, ranges)
 }
 
 /**
- * Marks inline code spans (`` `code` ``). A span opens on a backtick run and
- * closes on the next run of exactly the same length (CommonMark); an unmatched
- * opening run is literal text and scanning continues after it. Runs already
- * inside a fence are skipped.
+ * Ranges of `content` that the editor preview renders as code. Parsing with the
+ * preview's own pipeline keeps mention matching in step with the rendered
+ * document: fenced and indented blocks, inline spans, escaped backticks, and
+ * invalid fence info strings all follow CommonMark rather than a hand-rolled
+ * approximation.
+ *
+ * The last result is cached: the caret path calls this on every keystroke, and
+ * the content is unchanged between caret moves.
  */
-const collectInlineCodeRanges = (content: string, ranges: CodeRange[]): void => {
-  BACKTICK_RUN_PATTERN.lastIndex = 0
-  let match = BACKTICK_RUN_PATTERN.exec(content)
-  while (match !== null) {
-    const openStart = match.index
-    if (ranges.some((range) => openStart >= range.start && openStart < range.end)) {
-      match = BACKTICK_RUN_PATTERN.exec(content)
-      continue
-    }
-    const runLength = match[0].length
-    let close = BACKTICK_RUN_PATTERN.exec(content)
-    while (close !== null && close[0].length !== runLength) {
-      close = BACKTICK_RUN_PATTERN.exec(content)
-    }
-    if (close === null) {
-      // No matching delimiter: this run is literal text, so resume scanning
-      // right after it — a later pair can still form a span.
-      BACKTICK_RUN_PATTERN.lastIndex = openStart + runLength
-      match = BACKTICK_RUN_PATTERN.exec(content)
-      continue
-    }
-    ranges.push({ start: openStart, end: close.index + close[0].length })
-    match = BACKTICK_RUN_PATTERN.exec(content)
-  }
-}
+let cachedCodeSource: string | null = null
+let cachedCodeRanges: CodeRange[] = []
 
-/** Ranges of `content` that Markdown renders as code (fenced blocks, inline spans). */
 const findCodeRanges = (content: string): CodeRange[] => {
+  if (content === cachedCodeSource) return cachedCodeRanges
   const ranges: CodeRange[] = []
-  collectFenceRanges(content, ranges)
-  collectInlineCodeRanges(content, ranges)
+  if (MAY_CONTAIN_CODE_PATTERN.test(content)) {
+    collectCodeRanges(markdownProcessor.parse(content), ranges)
+  }
+  cachedCodeSource = content
+  cachedCodeRanges = ranges
   return ranges
 }
 
@@ -259,22 +231,26 @@ const isValidMentionQuery = (query: string): boolean =>
  */
 export const getMentionTrigger = (content: string, caret: number): MentionTrigger => {
   if (caret <= 0) return NO_MENTION_TRIGGER
-  const codeRanges = findCodeRanges(content)
-  // A token typed inside code never links (findMentionTokens ignores code), so
-  // the picker stays closed there instead of inserting an inert token. The
-  // caret is "inside" when the character it follows is code, which keeps a
-  // caret at the end of an unclosed fence inside the region.
-  if (isInCodeRange(caret - 1, codeRanges)) return NO_MENTION_TRIGGER
-  const tokens = collectMentionTokens(content, codeRanges)
-  // Caret inside a complete token? That is editing raw token text, not typing a mention.
-  if (isInsideToken(caret, tokens)) return NO_MENTION_TRIGGER
-
-  // Scan backwards for the nearest '@' that is not part of a token.
+  // Cheap path first: without a valid `@` query before the caret there is no
+  // trigger, and that test needs no Markdown parsing — the expensive step is
+  // reserved for the moment a mention is actually being typed. Tokens are
+  // collected unfiltered here; a caret inside a token that sits in code is
+  // rejected by the code check below, so the filter cannot change the outcome.
+  const tokens = collectMentionTokens(content, [])
   const at = findMentionAt(content, caret, tokens)
   if (at === -1) return NO_MENTION_TRIGGER
 
   const query = content.slice(at + 1, caret)
   if (!isValidMentionQuery(query)) return NO_MENTION_TRIGGER
+
+  // A token typed inside code never links (findMentionTokens ignores code), so
+  // the picker stays closed there instead of inserting an inert token. The
+  // caret is "inside" when the character it follows is code, which keeps a
+  // caret at the end of an unclosed fence inside the region.
+  if (isInCodeRange(caret - 1, findCodeRanges(content))) return NO_MENTION_TRIGGER
+
+  // Caret inside a complete token? That is editing raw token text, not typing a mention.
+  if (isInsideToken(caret, tokens)) return NO_MENTION_TRIGGER
   return { active: true, start: at, query }
 }
 
