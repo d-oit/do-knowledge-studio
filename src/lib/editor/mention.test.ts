@@ -91,6 +91,11 @@ describe('findMentionTokens', () => {
     expect(findMentionTokens(fenced)).toEqual([])
   })
 
+  it('ignores tokens in code blocks indented after a list marker', () => {
+    const content = ['-     ' + token('e1', 'Alice'), '', token('e2', 'Bob')].join(NEWLINE)
+    expect(findMentionTokens(content).map((t) => t.entityId)).toEqual(['e2'])
+  })
+
   it('treats an escaped backtick as literal text, not a span delimiter', () => {
     // The opening backtick is escaped and the trailing one is unmatched, so the
     // renderer shows the token as a link.

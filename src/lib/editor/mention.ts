@@ -55,6 +55,9 @@ interface CodeRange {
 /** Line feed, built from its code point to keep this module escape-free. */
 const LINE_FEED = String.fromCharCode(10)
 
+/** Tab character, built from its code point to keep this module escape-free. */
+const TAB_CHARACTER = String.fromCharCode(9)
+
 /** The mdast surface this module reads: node type, children, and source offsets. */
 interface MarkdownNode {
   type: string
@@ -67,35 +70,58 @@ const CODE_NODE_TYPES = new Set(['code', 'inlineCode'])
 
 /**
  * Cheap guard before parsing: code needs a backtick/tilde delimiter, a tab, or
- * an indented line. Indentation at the start of a source line (four columns) or
- * behind a block-quote marker both open an indented code block, and list-item
- * continuation lines are indented too — so any of those shapes parses. Only
- * flat prose skips the parser.
+ * an indented line. Indentation at the start of a source line, behind a
+ * block-quote marker, or after a list marker all open an indented code block,
+ * and list-item continuation lines are indented too — so any of those line
+ * shapes parses. Only flat prose skips the parser.
  */
-const TAB_CHARACTER = String.fromCharCode(9)
+const CODE_LEADING_CHARACTERS = new Set([' ', '>', '-', '+', '*'])
 
-const mayContainCode = (content: string): boolean =>
-  content.includes('`') ||
-  content.includes('~') ||
-  content.includes(TAB_CHARACTER) ||
-  /^[ >]/m.test(content)
-
-/** True when `line` is a bare code-fence delimiter (3+ backticks or tildes). */
-const isFenceDelimiter = (line: string): boolean => {
-  const trimmed = line.trim()
-  if (trimmed.length < 3) return false
-  const marker = trimmed[0]
-  if (marker !== '`' && marker !== '~') return false
-  for (const character of trimmed) {
-    if (character !== marker) return false
+const mayContainCode = (content: string): boolean => {
+  if (content.includes('`') || content.includes('~') || content.includes(TAB_CHARACTER)) {
+    return true
   }
-  return true
+  return content.split(LINE_FEED).some((line) => {
+    const first = line[0]
+    if (first === undefined) return false
+    return CODE_LEADING_CHARACTERS.has(first) || (first >= '0' && first <= '9')
+  })
 }
 
-/** True when `source` ends with a closing fence delimiter line. */
+/** Length of a bare fence run on `line` (0 when the line is not a delimiter). */
+const fenceRunLength = (line: string): number => {
+  const trimmed = line.trim()
+  if (trimmed.length < 3) return 0
+  const marker = trimmed[0]
+  if (marker !== '`' && marker !== '~') return 0
+  for (const character of trimmed) {
+    if (character !== marker) return 0
+  }
+  return trimmed.length
+}
+
+/** Length of the fence run that opens `line` (info string allowed), or 0. */
+const openingFenceRunLength = (line: string): number => {
+  const trimmed = line.trimStart()
+  const marker = trimmed[0]
+  if (marker !== '`' && marker !== '~') return 0
+  let run = 0
+  while (trimmed[run] === marker) run += 1
+  return run >= 3 ? run : 0
+}
+
+/**
+ * True when `source` is a fenced block closed by its final line. Markdown
+ * requires the closing run to be at least as long as the opening one, so a
+ * shorter trailing run is content and the block stays open; indented blocks
+ * have no fence and are never closed this way.
+ */
 const endsWithFenceDelimiter = (source: string): boolean => {
-  const lastBreak = source.lastIndexOf(LINE_FEED)
-  return isFenceDelimiter(lastBreak === -1 ? source : source.slice(lastBreak + 1))
+  const lines = source.split(LINE_FEED)
+  if (lines.length < 2) return false
+  const opening = openingFenceRunLength(lines[0])
+  if (opening === 0) return false
+  return fenceRunLength(lines[lines.length - 1]) >= opening
 }
 
 /** Collects the source range of every code node, blocks and inline spans alike. */

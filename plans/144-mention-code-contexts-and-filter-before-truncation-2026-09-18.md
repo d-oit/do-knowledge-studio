@@ -66,11 +66,18 @@ so no new download or bundle weight.
 | Caret + `@` typing, prose-only | 0.011 ms |
 | Caret + `@` typing, 5.8 KB containing code | 6.9 ms |
 
-Two guards keep the parser off the common path: `MAY_CONTAIN_CODE_PATTERN`
-(no backtick, tilde, or 4-space indent ⇒ no code ⇒ no parse), and the trigger
-checks for a valid `@` query **before** the code check, so ordinary typing never
-parses. Only typing a mention inside a document that actually contains code pays
-the parse (≈7 ms per keystroke at 5.8 KB); the save path pays it once.
+Two guards keep the parser off the common path: `mayContainCode` (no backtick,
+tilde, tab, or structural line start — space, block quote, list marker, digit —
+⇒ no code ⇒ no parse), and the trigger checks for a valid `@` query **before**
+the code check, so ordinary typing never parses. Only typing a mention inside a
+document that actually contains code pays the parse (≈7 ms per keystroke at
+5.8 KB); the save path pays it once.
+
+The caret rule (`isCaretInCode`) treats a caret as inside only strictly between
+a range's edges, plus one exception: at the end of the content while a block is
+still open there (`CodeRange.openEnded`, computed from whether a fence's final
+line closes it at a length the opening run allows). A caret just after a closing
+delimiter is therefore outside, so the picker opens again in prose.
 
 ## 2. Type filter applied after semantic truncation
 
