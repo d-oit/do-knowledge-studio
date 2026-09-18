@@ -73,6 +73,15 @@ filter change.
 The corpus is untouched, so the cached index and its embeddings are reused
 across filter changes (asserted by a test).
 
+### File-size compliance
+
+`library-view.tsx` was 613 LOC before this change — already over the 500 LOC
+hard limit, and this change would have extended it further. The semantic-search
+concerns this change touches (the hook, the type-filter builder, the result
+resolver, and the status banner) moved verbatim to
+`library-semantic-search.tsx` (172 LOC), bringing the view to **468 LOC**. No
+behaviour change: the view's tests pass unchanged.
+
 ### Benchmark (the plans/137 §5 requirement)
 
 Median of 25 runs after 3 warm-ups, temp harness deleted after the run
