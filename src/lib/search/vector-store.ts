@@ -22,7 +22,7 @@ import {
   normalizeEmbedding,
   truncateForEmbedding,
 } from './embeddings'
-import { search, type SearchResult } from './retrieval'
+import { search, type SearchResult, type SearchFilter, type FilterableDoc } from './retrieval'
 
 /** Where a semantic result came from — the worker response carries this. */
 export type SearchSource = 'semantic' | 'lexical'
@@ -36,17 +36,14 @@ export type SemanticSearchOutcome =
   | { source: 'lexical'; results: SearchResult[]; reason: string }
 
 /** A searchable unit: an entity or one of its claims. */
-export interface SemanticDoc {
-  id: string
-  type: 'entity' | 'claim'
+export interface SemanticDoc extends FilterableDoc {
   name: string
   fullText: string
-  entityId?: string
   entityName?: string
 }
 
 /** Optional predicate to narrow vector search by document metadata. */
-export type SemanticDocFilter = (doc: SemanticDoc) => boolean
+export type SemanticDocFilter = SearchFilter
 
 /** Snippet length matched to the BM25 result snippet. */
 const SNIPPET_MAX_LENGTH = 140
@@ -72,6 +69,7 @@ const buildDocs = (entities: Entity[], claims: Claim[]): SemanticDoc[] => {
       type: 'entity',
       name: entity.name,
       fullText: entityDocText(entity),
+      entityType: entity.type,
     })
   }
   for (const claim of claims) {
@@ -83,6 +81,7 @@ const buildDocs = (entities: Entity[], claims: Claim[]): SemanticDoc[] => {
       fullText: claimDocText(claim),
       entityId: claim.entityId,
       entityName: entity?.name,
+      entityType: entity?.type,
     })
   }
   return docs
@@ -315,9 +314,10 @@ const lexicalFallback = (
   query: string,
   limit: number,
   reason: string,
+  filter?: SearchFilter,
 ): SemanticSearchOutcome => ({
   source: 'lexical',
-  results: search(entities, claims, query, limit),
+  results: search(entities, claims, query, limit, filter),
   reason,
 })
 
@@ -339,6 +339,12 @@ const toSearchResults = (hits: { id: string; score: number; doc: SemanticDoc }[]
  * fails, degrades to lexical BM25 with the reason marked on the outcome so
  * the UI can surface it — never silently returns keyword results.
  *
+ * `filter` narrows the ranked candidate set in both paths, before the `limit`
+ * cut: ranking and truncation run inside the filtered set, so documents the
+ * caller cannot display never consume result slots. The corpus itself is
+ * unchanged, so the cached index (and its embeddings) is reused across
+ * different filters.
+ *
  * @throws {DOMException} `AbortError` when `signal` fires before completion.
  */
 export const semanticSearch = async (
@@ -347,13 +353,14 @@ export const semanticSearch = async (
   query: string,
   limit = 5,
   signal?: AbortSignal,
+  filter?: SearchFilter,
 ): Promise<SemanticSearchOutcome> => {
   const trimmed = query.trim()
   if (trimmed === '') return { source: 'semantic', results: [] }
 
   const buildResult = await buildVectorIndex(entities, claims, signal)
   if (!buildResult.ok) {
-    return lexicalFallback(entities, claims, trimmed, limit, buildResult.error)
+    return lexicalFallback(entities, claims, trimmed, limit, buildResult.error, filter)
   }
 
   let queryVector: number[]
@@ -363,7 +370,7 @@ export const semanticSearch = async (
   } catch (err) {
     if (isAbortError(err)) throw err
     const reason = err instanceof Error ? err.message : String(err)
-    return lexicalFallback(entities, claims, trimmed, limit, reason)
+    return lexicalFallback(entities, claims, trimmed, limit, reason, filter)
   }
 
   // Query embedding awaits, so a concurrent caller may have replaced the
@@ -373,9 +380,9 @@ export const semanticSearch = async (
   // ranking would score documents the caller never passed in.
   const revalidated = await buildVectorIndex(entities, claims, signal)
   if (!revalidated.ok) {
-    return lexicalFallback(entities, claims, trimmed, limit, revalidated.error)
+    return lexicalFallback(entities, claims, trimmed, limit, revalidated.error, filter)
   }
 
-  const hits = defaultVectorStore.search(queryVector, limit)
+  const hits = defaultVectorStore.search(queryVector, limit, filter)
   return { source: 'semantic', results: toSearchResults(hits) }
 }

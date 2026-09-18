@@ -7,7 +7,7 @@ import { ToggleButtonGroup } from '../ui/shared-primitives'
 import { Checkbox } from '@/components/ui/checkbox'
 import { SemanticSearchToggle } from './semantic-search-toggle'
 import { translate } from '@/lib/i18n/messages/search'
-import { searchSemantic, type SemanticSearchOutcome } from '@/lib/search/search-worker-client'
+import { searchSemantic, type SemanticSearchOutcome, type SemanticDocFilter } from '@/lib/search/search-worker-client'
 import {
   FileText,
   LayoutGrid,
@@ -64,16 +64,28 @@ const SHOW_FEWER_LABEL = 'Show fewer'
 const SEMANTIC_DEBOUNCE_MS = 300
 
 /**
+ * Builds the search filter for the active type filter — `undefined` for 'all'.
+ * Applied INSIDE the search so ranking and truncation happen within the
+ * filtered set: a post-hoc filter over the top-100 could hide matching
+ * entities that rank below the cut.
+ */
+const buildTypeFilter = (
+  typeFilter: AnyEntityType | 'all',
+): SemanticDocFilter | undefined =>
+  typeFilter === 'all' ? undefined : (doc) => doc.entityType === typeFilter
+
+/**
  * Runs a debounced, abortable semantic search whenever the toggle is on and a
- * query exists. Every keystroke/toggle aborts the in-flight request; because
- * the embedder is a lazy singleton, the first query pays the model download
- * and later ones reuse it. Returns the outcome plus a busy flag.
+ * query exists. Every keystroke/toggle/type-filter change aborts the in-flight
+ * request; because the embedder is a lazy singleton, the first query pays the
+ * model download and later ones reuse it. Returns the outcome plus a busy flag.
  */
 const useSemanticSearch = (
   semanticMode: boolean,
   query: string,
   allEntities: Entity[],
   claims: Claim[],
+  typeFilter: AnyEntityType | 'all',
 ) => {
   const [semanticOutcome, setSemanticOutcome] = useState<SemanticSearchOutcome | null>(null)
   const [semanticBusy, setSemanticBusy] = useState(false)
@@ -99,6 +111,7 @@ const useSemanticSearch = (
               semanticQuery,
               SEMANTIC_RESULT_LIMIT,
               controller?.signal,
+              buildTypeFilter(typeFilter),
             )
             if (cancelled) return
             setSemanticOutcome(outcome)
@@ -126,7 +139,7 @@ const useSemanticSearch = (
       clearTimeout(debounce)
       controller?.abort()
     }
-  }, [semanticMode, semanticQuery, allEntities, claims])
+  }, [semanticMode, semanticQuery, allEntities, claims, typeFilter])
 
   return { semanticOutcome, semanticBusy }
 }
@@ -318,6 +331,7 @@ export const LibraryView = () => {
     searchQuery,
     allEntities,
     claims,
+    typeFilter,
   )
 
   const semanticQuery = searchQuery.trim()

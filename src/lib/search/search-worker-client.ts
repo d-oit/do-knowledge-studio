@@ -16,10 +16,11 @@ import { search, type SearchResult } from './retrieval'
 import {
   semanticSearch as vectorStoreSemanticSearch,
   type SemanticSearchOutcome,
+  type SemanticDocFilter,
 } from './vector-store'
 import type { SearchWorkerRequest, SearchWorkerResponse } from './search-worker'
 
-export type { SemanticSearchOutcome } from './vector-store'
+export type { SemanticSearchOutcome, SemanticDocFilter } from './vector-store'
 
 let transactionSequence = 0
 
@@ -191,6 +192,8 @@ export class SearchWorkerClient {
    *
    * @param signal - Optional abort signal; the pending search is cancelled
    *   and the promise rejects with `AbortError`.
+   * @param filter - Optional predicate narrowing ranked candidates before the
+   *   `limit` cut (see `semanticSearch` in vector-store).
    */
   static searchSemantic(
     entities: Entity[],
@@ -198,9 +201,10 @@ export class SearchWorkerClient {
     query: string,
     limit?: number,
     signal?: AbortSignal,
+    filter?: SemanticDocFilter,
   ): Promise<SemanticSearchOutcome> {
     if (signal?.aborted) return Promise.reject(abortError())
-    return vectorStoreSemanticSearch(entities, claims, query, limit, signal)
+    return vectorStoreSemanticSearch(entities, claims, query, limit, signal, filter)
   }
 
   /** Terminate the underlying Web Worker and reject pending requests. */
@@ -243,6 +247,7 @@ export const searchSemantic = (
   query: string,
   limit?: number,
   signal?: AbortSignal,
+  filter?: SemanticDocFilter,
 ): Promise<SemanticSearchOutcome> => {
-  return SearchWorkerClient.searchSemantic(entities, claims, query, limit, signal)
+  return SearchWorkerClient.searchSemantic(entities, claims, query, limit, signal, filter)
 }

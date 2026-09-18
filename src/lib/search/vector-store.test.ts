@@ -202,6 +202,78 @@ describe('semanticSearch (mocked embedder)', () => {
     expect(extractor.mock.calls.length).toBe(callsAfterBuild + 1)
   })
 
+  it('reuses the built index when only the filter changes', async () => {
+    const entities = [trizEntity, genericsEntity]
+    const claims: Claim[] = []
+    await semanticSearch(entities, claims, 'triz', 5)
+    const callsAfterBuild = extractor.mock.calls.length
+    await semanticSearch(entities, claims, 'triz', 5, undefined, (doc) => doc.entityType === 'concept')
+    // A filter change must not re-embed the corpus: query embedding only.
+    expect(extractor.mock.calls.length).toBe(callsAfterBuild + 1)
+  })
+
+  it('applies the filter before the top-K cut', async () => {
+    // The concept doc matches both query terms, so it outranks the note doc
+    // and owns the single result slot when nothing is filtered out.
+    const noteEntity = makeEntity({
+      id: 'note-1',
+      name: 'Note',
+      type: 'note',
+      description: 'triz',
+      content: '',
+    })
+    const conceptEntity = makeEntity({
+      id: 'concept-1',
+      name: 'Concept',
+      type: 'concept',
+      description: 'triz segmentation',
+      content: '',
+    })
+    const corpus = [noteEntity, conceptEntity]
+
+    const unfiltered = await semanticSearch(corpus, [], 'triz segmentation', 1)
+    expect(unfiltered.results.map((r) => r.id)).toEqual(['concept-1'])
+
+    // A post-truncation filter would have nothing left to return here.
+    const filtered = await semanticSearch(
+      corpus,
+      [],
+      'triz segmentation',
+      1,
+      undefined,
+      (doc) => doc.entityType === 'note',
+    )
+    expect(filtered.results.map((r) => r.id)).toEqual(['note-1'])
+  })
+
+  it('filters claim docs by their entity type', async () => {
+    const noteEntity = makeEntity({ id: 'n1', name: 'Note', type: 'note', description: 'segmentation', content: '' })
+    const conceptEntity = makeEntity({
+      id: 'c1',
+      name: 'Concept',
+      type: 'concept',
+      description: 'segmentation',
+      content: '',
+    })
+    const claims = [
+      makeClaim({ id: 'cl-note', entityId: 'n1', statement: 'segmentation' }),
+      makeClaim({ id: 'cl-concept', entityId: 'c1', statement: 'segmentation' }),
+    ]
+
+    const outcome = await semanticSearch(
+      [noteEntity, conceptEntity],
+      claims,
+      'segmentation',
+      5,
+      undefined,
+      (doc) => doc.entityType === 'note',
+    )
+    if (outcome.source !== 'semantic') {
+      throw new Error(`expected semantic results, got ${outcome.source}`)
+    }
+    expect(outcome.results.map((r) => r.id).sort()).toEqual(['cl-note', 'n1'])
+  })
+
   it('falls back to lexical BM25 with a surfaced reason when the embedder fails', async () => {
     transformersMock.pipeline.mockRejectedValue(new Error('model download blocked'))
     const outcome = await semanticSearch([trizEntity], [], 'triz', 5)
