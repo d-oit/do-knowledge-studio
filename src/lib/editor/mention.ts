@@ -87,7 +87,8 @@ const collectFenceRanges = (content: string, ranges: CodeRange[]): void => {
 /**
  * Marks inline code spans (`` `code` ``). A span opens on a backtick run and
  * closes on the next run of exactly the same length (CommonMark); an unmatched
- * opening run is literal text. Runs already inside a fence are skipped.
+ * opening run is literal text and scanning continues after it. Runs already
+ * inside a fence are skipped.
  */
 const collectInlineCodeRanges = (content: string, ranges: CodeRange[]): void => {
   BACKTICK_RUN_PATTERN.lastIndex = 0
@@ -103,7 +104,13 @@ const collectInlineCodeRanges = (content: string, ranges: CodeRange[]): void => 
     while (close !== null && close[0].length !== runLength) {
       close = BACKTICK_RUN_PATTERN.exec(content)
     }
-    if (close === null) return
+    if (close === null) {
+      // No matching delimiter: this run is literal text, so resume scanning
+      // right after it — a later pair can still form a span.
+      BACKTICK_RUN_PATTERN.lastIndex = openStart + runLength
+      match = BACKTICK_RUN_PATTERN.exec(content)
+      continue
+    }
     ranges.push({ start: openStart, end: close.index + close[0].length })
     match = BACKTICK_RUN_PATTERN.exec(content)
   }

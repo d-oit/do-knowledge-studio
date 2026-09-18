@@ -57,6 +57,13 @@ describe('findMentionTokens', () => {
     expect(findMentionTokens(content).map((t) => t.entityId)).toEqual(['e2'])
   })
 
+  it('keeps scanning after an unmatched multi-backtick run', () => {
+    // The leading `` run has no matching delimiter, so it is literal text and
+    // the later single-backtick span still hides its token.
+    const content = `\`\`literal and \`${token('e1', 'Alice')}\``
+    expect(findMentionTokens(content)).toEqual([])
+  })
+
   it('ignores escaped tokens but keeps tokens after a literal backslash', () => {
     expect(findMentionTokens(`\\${token('e1', 'Alice')}`)).toEqual([])
     expect(findMentionTokens(`\\\\${token('e1', 'Alice')}`).map((t) => t.entityId)).toEqual(['e1'])
