@@ -21,6 +21,9 @@ const messages = {
   'shortcuts.filterAriaLabel': 'Filter shortcuts',
   /** Clear-filter button label. */
   'shortcuts.clearFilter': 'Clear filter search',
+  /** Result count for screen reader live status announcement. */
+  'shortcuts.resultCount': (count: string) =>
+    count === '1' ? '1 shortcut found' : `${count} shortcuts found`,
   /** Empty results state; filter text interpolated. */
   'shortcuts.noMatch': (filter: string) => `No shortcuts match "${filter}"`,
   /** Tip text before the G key label. */

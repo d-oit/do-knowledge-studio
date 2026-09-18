@@ -94,6 +94,7 @@ describe('ShortcutsDialog', () => {
     fireEvent.click(screen.getByLabelText('Show keyboard shortcuts'))
 
     const filterInput = screen.getByLabelText('Filter shortcuts') as HTMLInputElement
+    expect(filterInput.type).toBe('search')
     expect(filterInput.value).toBe('')
     expect(filterInput.className).toContain('pr-3')
     expect(filterInput.className).not.toContain('pr-11')
@@ -103,6 +104,7 @@ describe('ShortcutsDialog', () => {
     fireEvent.change(filterInput, { target: { value: 'Bold' } })
     expect(filterInput.value).toBe('Bold')
     expect(filterInput.className).toContain('pr-11')
+    expect(screen.getByRole('status').textContent).toBe('1 shortcut found')
 
     // Clear button should now be visible
     const clearBtn = screen.getByLabelText('Clear filter search')

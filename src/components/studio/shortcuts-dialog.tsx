@@ -125,6 +125,10 @@ export const ShortcutsDialog = (): React.JSX.Element => {
     })).filter((section) => section.rows.length > 0)
   }, [filter])
 
+  const totalFilteredCount = React.useMemo(() => {
+    return filteredShortcuts.reduce((sum, sec) => sum + sec.rows.length, 0)
+  }, [filteredShortcuts])
+
   // Close button ref — focused when the dialog opens.
   const closeBtnRef = React.useRef<HTMLButtonElement | null>(null)
 
@@ -278,7 +282,7 @@ export const ShortcutsDialog = (): React.JSX.Element => {
             <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-faint" />
             <input
               ref={filterInputRef}
-              type="text"
+              type="search"
               value={filter}
               onChange={(e) => { setFilter(e.target.value); }}
               placeholder={translate('shortcuts.filterPlaceholder')}
@@ -303,6 +307,11 @@ export const ShortcutsDialog = (): React.JSX.Element => {
               </button>
             )}
           </div>
+        </div>
+
+        {/* Visually hidden live region announcing filter search results to screen readers */}
+        <div className="sr-only" role="status" aria-live="polite">
+          {filter.trim() ? translate('shortcuts.resultCount', String(totalFilteredCount)) : ''}
         </div>
 
         {/* Body — two-column grouped list */}
