@@ -168,6 +168,18 @@ describe('getMentionTrigger', () => {
     const content = '`code` @Ali'
     expect(getMentionTrigger(content, content.length)).toMatchObject({ active: true, query: 'Ali' })
   })
+
+  it('activates when the caret sits just after a closed inline code span', () => {
+    // The preceding character is the span's closing delimiter, but the caret
+    // itself is outside the span, so typing there continues in prose.
+    const content = '@Bo' + inlineCode('x')
+    expect(getMentionTrigger(content, content.length)).toMatchObject({ active: true })
+  })
+
+  it('stays inactive at the end of an unclosed fence', () => {
+    const content = ['```', '@Ali'].join(NEWLINE)
+    expect(getMentionTrigger(content, content.length)).toMatchObject({ active: false })
+  })
 })
 
 describe('buildMentionToken', () => {
