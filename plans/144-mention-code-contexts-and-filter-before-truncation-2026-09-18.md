@@ -111,5 +111,11 @@ the documented intent of the `typeFilter` control and is covered here.
 
 ## 5. Follow-ups
 
-- DeepSource quota (plans/141 §1) — account-level, needs the maintainer.
-- ESLint 10 (plans/140 §2) — blocked upstream.
+- **DeepSource quota** (plans/141 §1) — account-level, needs the maintainer.
+  Re-checked 2026-09-18: no DeepSource check run is posted on the recent PR
+  heads (#793/#794/#795) and no `DEEPSOURCE_TOKEN` exists locally, so the
+  service state cannot be queried from the repository. Nothing actionable here.
+- **ESLint 10** (plans/140 §2) — blocked upstream. Re-checked 2026-09-18:
+  `eslint-plugin-react` latest is still `7.37.5` with a `^9.7` peer ceiling,
+  `eslint` latest is `10.10.0` while the `9.39.5` maintenance line is
+  deprecated. Revisit condition unchanged.
