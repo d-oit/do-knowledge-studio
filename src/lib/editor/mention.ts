@@ -39,17 +39,10 @@ const MENTION_TOKEN_PATTERN = /\[@([^\]]+)\]\(dks:\/\/entity\/([^)]+)\)/g
  */
 const markdownProcessor = unified().use(remarkParse).use(remarkGfm)
 
-/** A range of content that Markdown renders as code. */
+/** A half-open `[start, end)` range of content that Markdown renders as code. */
 interface CodeRange {
   start: number
   end: number
-  /**
-   * True when the range runs to the end of the content without closing (an
-   * unclosed fence, or a trailing indented block). Typing at that end continues
-   * the block, so the caret still counts as inside; a closed fence or an inline
-   * span does not.
-   */
-  openEnded: boolean
 }
 
 /** Line feed, built from its code point to keep this module escape-free. */
@@ -88,63 +81,15 @@ const mayContainCode = (content: string): boolean => {
   })
 }
 
-/** Length of a bare fence run on `line` (0 when the line is not a delimiter). */
-const fenceRunLength = (line: string): number => {
-  const trimmed = line.trim()
-  if (trimmed.length < 3) return 0
-  const marker = trimmed[0]
-  if (marker !== '`' && marker !== '~') return 0
-  for (const character of trimmed) {
-    if (character !== marker) return 0
-  }
-  return trimmed.length
-}
-
-/** Length of the fence run that opens `line` (info string allowed), or 0. */
-const openingFenceRunLength = (line: string): number => {
-  const trimmed = line.trimStart()
-  const marker = trimmed[0]
-  if (marker !== '`' && marker !== '~') return 0
-  let run = 0
-  while (trimmed[run] === marker) run += 1
-  return run >= 3 ? run : 0
-}
-
-/**
- * True when `source` is a fenced block closed by its final line. Markdown
- * requires the closing run to be at least as long as the opening one, so a
- * shorter trailing run is content and the block stays open; indented blocks
- * have no fence and are never closed this way.
- */
-const endsWithFenceDelimiter = (source: string): boolean => {
-  const lines = source.split(LINE_FEED)
-  if (lines.length < 2) return false
-  const opening = openingFenceRunLength(lines[0])
-  if (opening === 0) return false
-  return fenceRunLength(lines[lines.length - 1]) >= opening
-}
-
 /** Collects the source range of every code node, blocks and inline spans alike. */
-const collectCodeRanges = (
-  node: MarkdownNode,
-  ranges: CodeRange[],
-  content: string,
-): void => {
+const collectCodeRanges = (node: MarkdownNode, ranges: CodeRange[]): void => {
   if (CODE_NODE_TYPES.has(node.type)) {
     const start = node.position?.start.offset
     const end = node.position?.end.offset
-    if (start === undefined || end === undefined) return
-    ranges.push({
-      start,
-      end,
-      openEnded:
-        node.type === 'code' &&
-        end === content.length &&
-        !endsWithFenceDelimiter(content.slice(start, end)),
-    })
+    if (start !== undefined && end !== undefined) ranges.push({ start, end })
     return
   }
-  for (const child of node.children ?? []) collectCodeRanges(child, ranges, content)
+  for (const child of node.children ?? []) collectCodeRanges(child, ranges)
 }
 
 /**
@@ -164,7 +109,7 @@ const findCodeRanges = (content: string): CodeRange[] => {
   if (content === cachedCodeSource) return cachedCodeRanges
   const ranges: CodeRange[] = []
   if (mayContainCode(content)) {
-    collectCodeRanges(markdownProcessor.parse(content), ranges, content)
+    collectCodeRanges(markdownProcessor.parse(content), ranges)
   }
   cachedCodeSource = content
   cachedCodeRanges = ranges
@@ -176,14 +121,11 @@ const isInCodeRange = (position: number, ranges: CodeRange[]): boolean =>
   ranges.some((range) => position >= range.start && position < range.end)
 
 /**
- * True when the caret sits inside code. A caret counts as inside only strictly
- * between a range's edges, or at the end of the content while a block is still
- * open there: a caret placed just after a closing delimiter is outside the
- * rendered span, so the picker can open again.
+ * True when a code range overlaps the half-open `[start, end)` span, so text in
+ * that span cannot be replaced without deleting code.
  */
-const isCaretInCode = (caret: number, ranges: CodeRange[]): boolean =>
-  ranges.some((range) => caret > range.start && caret < range.end) ||
-  ranges.some((range) => range.openEnded && caret === range.end)
+const overlapsCodeRange = (start: number, end: number, ranges: CodeRange[]): boolean =>
+  ranges.some((range) => range.start < end && range.end > start)
 
 /** True when the character at `index` is escaped by an odd run of backslashes. */
 const isEscaped = (content: string, index: number): boolean => {
@@ -260,14 +202,20 @@ const decodeMentionId = (raw: string): string => {
  * bracket is escaped are skipped: Markdown renders those as literal text, so
  * they must not create links or backlinks.
  */
-const collectMentionTokens = (content: string, codeRanges: CodeRange[]): MentionToken[] => {
+const collectMentionTokens = (
+  content: string,
+  codeRanges: CodeRange[],
+  /** Keep tokens inside code and escaped ones too (raw-syntax scans). */
+  includeNonLinking = false,
+): MentionToken[] => {
   const tokens: MentionToken[] = []
   MENTION_TOKEN_PATTERN.lastIndex = 0
   let match = MENTION_TOKEN_PATTERN.exec(content)
   while (match !== null) {
     const start = match.index
     const raw = match[0]
-    if (!isInCodeRange(start, codeRanges) && !isEscaped(content, start)) {
+    const links = !isInCodeRange(start, codeRanges) && !isEscaped(content, start)
+    if (links || includeNonLinking) {
       tokens.push({
         entityId: decodeMentionId(match[2]),
         name: match[1],
@@ -318,22 +266,21 @@ export const getMentionTrigger = (content: string, caret: number): MentionTrigge
   if (caret <= 0) return NO_MENTION_TRIGGER
   // Cheap path first: without a valid `@` query before the caret there is no
   // trigger, and that test needs no Markdown parsing — the expensive step is
-  // reserved for the moment a mention is actually being typed. Tokens are
-  // collected unfiltered here; a caret inside a token that sits in code is
-  // rejected by the code check below, so the filter cannot change the outcome.
-  const tokens = collectMentionTokens(content, [])
+  // reserved for the moment a mention is actually being typed. Raw token spans
+  // (escaped and in-code ones included) are the boundaries here: an `@` inside
+  // token-shaped text is syntax being edited, never a trigger.
+  const tokens = collectMentionTokens(content, [], true)
   const at = findMentionAt(content, caret, tokens)
   if (at === -1) return NO_MENTION_TRIGGER
 
   const query = content.slice(at + 1, caret)
   if (!isValidMentionQuery(query)) return NO_MENTION_TRIGGER
 
-  // A token typed inside code never links (findMentionTokens ignores code), so
-  // the picker stays closed there instead of inserting an inert token.
-  if (isCaretInCode(caret, findCodeRanges(content))) return NO_MENTION_TRIGGER
-
-  // Caret inside a complete token? That is editing raw token text, not typing a mention.
-  if (isInsideToken(caret, tokens)) return NO_MENTION_TRIGGER
+  // The trigger must live entirely in prose: the `@` may not sit inside
+  // token-shaped text, and no code range may overlap the query span — picking a
+  // mention replaces that span, which would delete code the user typed.
+  if (isInsideToken(at, tokens)) return NO_MENTION_TRIGGER
+  if (overlapsCodeRange(at, caret, findCodeRanges(content))) return NO_MENTION_TRIGGER
   return { active: true, start: at, query }
 }
 

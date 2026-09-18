@@ -73,11 +73,11 @@ the code check, so ordinary typing never parses. Only typing a mention inside a
 document that actually contains code pays the parse (≈7 ms per keystroke at
 5.8 KB); the save path pays it once.
 
-The caret rule (`isCaretInCode`) treats a caret as inside only strictly between
-a range's edges, plus one exception: at the end of the content while a block is
-still open there (`CodeRange.openEnded`, computed from whether a fence's final
-line closes it at a length the opening run allows). A caret just after a closing
-delimiter is therefore outside, so the picker opens again in prose.
+The trigger is gated so it can only ever start in prose: an `@` inside
+token-shaped text (escaped or in-code) is syntax being edited, and no code range
+may overlap the query span the picker would replace — otherwise choosing an
+entity would delete code the user typed. That single overlap rule also covers
+the end of an unclosed fence, so no separate fence-state bookkeeping is needed.
 
 ## 2. Type filter applied after semantic truncation
 
@@ -136,9 +136,10 @@ per document. No index rebuild is involved.
 
 | Check | Result |
 |---|---|
-| `vitest run` (mention) | 48 passed (14 new) |
+| `vitest run` (mention) | 53 passed (19 new) |
 | `vitest run` (retrieval / vector-store / library-view) | 72 passed (7 new) |
-| Checked out `origin/main`'s `mention.ts` | 12 of the 14 new mention tests fail; the 2 that still pass are deliberate non-regression guards |
+| Checked out `origin/main`'s `mention.ts` | 12 of the new mention tests fail; the rest are deliberate non-regression guards |
+| Mutation checks | dropping the query-span overlap rule fails 4 tests; using code-filtered tokens for the trigger boundary fails the escaped-token test; reverting the guard fails the list-marker test |
 | Hand-rolled iteration vs the parser | the parser-fidelity tests (indented code, escaped backtick, invalid fence info string) fail — the A/B that motivated the parser |
 | Search fix reverted | 6 of the 7 new search tests fail (`expected [ 'concept-1' ] to deeply equal [ 'note-1' ]`, `expected undefined to be true`) |
 | `pnpm run lint` | clean, 0 warnings |

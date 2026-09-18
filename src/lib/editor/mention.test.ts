@@ -174,11 +174,23 @@ describe('getMentionTrigger', () => {
     expect(getMentionTrigger(content, content.length)).toMatchObject({ active: true, query: 'Ali' })
   })
 
-  it('activates when the caret sits just after a closed inline code span', () => {
-    // The preceding character is the span's closing delimiter, but the caret
-    // itself is outside the span, so typing there continues in prose.
+  it('activates when the @ is typed right after a closed inline code span', () => {
+    const content = inlineCode('code') + '@Ali'
+    expect(getMentionTrigger(content, content.length)).toMatchObject({ active: true, query: 'Ali' })
+  })
+
+  it('stays inactive when the query span would cover a code span', () => {
+    // The `@` starts before the span and the caret is after it: selecting a
+    // mention would replace the code span too, so the trigger stays closed.
     const content = '@Bo' + inlineCode('x')
-    expect(getMentionTrigger(content, content.length)).toMatchObject({ active: true })
+    expect(getMentionTrigger(content, content.length)).toMatchObject({ active: false })
+  })
+
+  it('stays inactive inside escaped token syntax', () => {
+    // An escaped token never links, so its `@` is syntax being edited rather
+    // than the start of a trigger.
+    const content = BACKSLASH + token('e1', 'Alice')
+    expect(getMentionTrigger(content, 7)).toMatchObject({ active: false })
   })
 
   it('stays inactive at the end of an unclosed fence', () => {
