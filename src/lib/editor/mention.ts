@@ -56,10 +56,19 @@ interface MarkdownNode {
 const CODE_NODE_TYPES = new Set(['code', 'inlineCode'])
 
 /**
- * Cheap guard before parsing: code needs a backtick/tilde delimiter or a
- * 4-space indented line, so prose-only content skips the parser entirely.
+ * Cheap guard before parsing: code needs a backtick/tilde delimiter, a tab, or
+ * an indented line. Indentation at the start of a source line (four columns) or
+ * behind a block-quote marker both open an indented code block, and list-item
+ * continuation lines are indented too — so any of those shapes parses. Only
+ * flat prose skips the parser.
  */
-const MAY_CONTAIN_CODE_PATTERN = /[`~]|^(?: {4}|\t| {1,3}\t)/m
+const TAB_CHARACTER = String.fromCharCode(9)
+
+const mayContainCode = (content: string): boolean =>
+  content.includes('`') ||
+  content.includes('~') ||
+  content.includes(TAB_CHARACTER) ||
+  /^[ >]/m.test(content)
 
 /** Collects the source range of every code node, blocks and inline spans alike. */
 const collectCodeRanges = (node: MarkdownNode, ranges: CodeRange[]): void => {
@@ -88,7 +97,7 @@ let cachedCodeRanges: CodeRange[] = []
 const findCodeRanges = (content: string): CodeRange[] => {
   if (content === cachedCodeSource) return cachedCodeRanges
   const ranges: CodeRange[] = []
-  if (MAY_CONTAIN_CODE_PATTERN.test(content)) {
+  if (mayContainCode(content)) {
     collectCodeRanges(markdownProcessor.parse(content), ranges)
   }
   cachedCodeSource = content

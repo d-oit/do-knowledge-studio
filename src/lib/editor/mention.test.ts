@@ -28,6 +28,15 @@ const makeEntity = (overrides: Partial<Entity> = {}): Entity => ({
 
 const token = (id: string, name: string): string => buildMentionToken(id, name)
 
+/** Newline, built from its code point so the content under test is unambiguous. */
+const NEWLINE = String.fromCharCode(10)
+/** Tab character, built from its code point. */
+const TAB = String.fromCharCode(9)
+/** Backslash character, built from its code point. */
+const BACKSLASH = String.fromCharCode(92)
+/** Wraps `text` in an inline code span delimited by `delimiter`. */
+const inlineCode = (text: string, delimiter = '`'): string => delimiter + text + delimiter
+
 describe('findMentionTokens', () => {
   it('parses ids that are not hex (e.g. seeded ent-N ids)', () => {
     expect(findMentionTokens(token('ent-2', 'Alice'))[0].entityId).toBe('ent-2')
@@ -38,57 +47,67 @@ describe('findMentionTokens', () => {
   })
 
   it('ignores tokens inside a fenced code block', () => {
-    const content = ['Before', '```md', token('e1', 'Alice'), '```', 'After', token('e2', 'Bob')].join('\n')
+    const content = ['Before', '```md', token('e1', 'Alice'), '```', 'After', token('e2', 'Bob')].join(NEWLINE)
     expect(findMentionTokens(content).map((t) => t.entityId)).toEqual(['e2'])
   })
 
   it('ignores tokens in tilde fences and unclosed fences', () => {
-    expect(findMentionTokens(['~~~', token('e1', 'Alice'), '~~~'].join('\n'))).toEqual([])
-    expect(findMentionTokens(['```', token('e1', 'Alice')].join('\n'))).toEqual([])
+    expect(findMentionTokens(['~~~', token('e1', 'Alice'), '~~~'].join(NEWLINE))).toEqual([])
+    expect(findMentionTokens(['```', token('e1', 'Alice')].join(NEWLINE))).toEqual([])
   })
 
   it('ignores tokens inside inline code spans', () => {
-    const content = `Use \`${token('e1', 'Alice')}\` but ${token('e2', 'Bob')} links`
+    const content = `Use ${inlineCode(token('e1', 'Alice'))} but ${token('e2', 'Bob')} links`
     expect(findMentionTokens(content).map((t) => t.entityId)).toEqual(['e2'])
   })
 
   it('handles multi-backtick inline spans', () => {
-    const content = `\`\`${token('e1', 'Alice')}\`\` and ${token('e2', 'Bob')}`
+    const content = `${inlineCode(token('e1', 'Alice'), '``')} and ${token('e2', 'Bob')}`
     expect(findMentionTokens(content).map((t) => t.entityId)).toEqual(['e2'])
   })
 
   it('keeps scanning after an unmatched multi-backtick run', () => {
-    // The leading `` run has no matching delimiter, so it is literal text and
-    // the later single-backtick span still hides its token.
-    const content = `\`\`literal and \`${token('e1', 'Alice')}\``
+    // The leading two-backtick run has no matching delimiter, so it is literal
+    // text and the later single-backtick span still hides its token.
+    const content = '``literal and ' + inlineCode(token('e1', 'Alice'))
     expect(findMentionTokens(content)).toEqual([])
   })
 
   it('ignores tokens in indented code blocks', () => {
-    const content = [`    ${token('e1', 'Alice')}`, '', token('e2', 'Bob')].join('\n')
+    const content = [`    ${token('e1', 'Alice')}`, '', token('e2', 'Bob')].join(NEWLINE)
     expect(findMentionTokens(content).map((t) => t.entityId)).toEqual(['e2'])
   })
 
   it('ignores tokens in tab-indented code blocks', () => {
-    const content = [`\t${token('e1', 'Alice')}`, '', token('e2', 'Bob')].join('\n')
+    const content = [TAB + token('e1', 'Alice'), '', token('e2', 'Bob')].join(NEWLINE)
     expect(findMentionTokens(content).map((t) => t.entityId)).toEqual(['e2'])
+  })
+
+  it('ignores tokens in code blocks inside block quotes', () => {
+    const indented = ['>     ' + token('e1', 'Alice'), '', token('e2', 'Bob')].join(NEWLINE)
+    expect(findMentionTokens(indented).map((t) => t.entityId)).toEqual(['e2'])
+
+    const fenced = ['> ```md', '> ' + token('e1', 'Alice'), '> ```'].join(NEWLINE)
+    expect(findMentionTokens(fenced)).toEqual([])
   })
 
   it('treats an escaped backtick as literal text, not a span delimiter', () => {
     // The opening backtick is escaped and the trailing one is unmatched, so the
     // renderer shows the token as a link.
-    const content = `\\\`${token('e1', 'Alice')}\``
+    const content = BACKSLASH + '`' + token('e1', 'Alice') + '`'
     expect(findMentionTokens(content).map((t) => t.entityId)).toEqual(['e1'])
   })
 
   it('does not treat a backtick fence with backticks in its info string as code', () => {
-    const content = ['```js `not-a-fence`', token('e1', 'Alice')].join('\n')
+    const content = ['```js `not-a-fence`', token('e1', 'Alice')].join(NEWLINE)
     expect(findMentionTokens(content).map((t) => t.entityId)).toEqual(['e1'])
   })
 
   it('ignores escaped tokens but keeps tokens after a literal backslash', () => {
-    expect(findMentionTokens(`\\${token('e1', 'Alice')}`)).toEqual([])
-    expect(findMentionTokens(`\\\\${token('e1', 'Alice')}`).map((t) => t.entityId)).toEqual(['e1'])
+    expect(findMentionTokens(BACKSLASH + token('e1', 'Alice'))).toEqual([])
+    expect(
+      findMentionTokens(BACKSLASH + BACKSLASH + token('e1', 'Alice')).map((t) => t.entityId),
+    ).toEqual(['e1'])
   })
 })
 
@@ -137,7 +156,7 @@ describe('getMentionTrigger', () => {
   })
 
   it('stays inactive inside a fenced code block', () => {
-    const content = ['```', '@Ali'].join('\n')
+    const content = ['```', '@Ali'].join(NEWLINE)
     expect(getMentionTrigger(content, content.length)).toMatchObject({ active: false })
   })
 
@@ -256,9 +275,9 @@ describe('extractMentionLinks', () => {
       '```md',
       token('e1', 'Alice'),
       '```',
-      `Inline: \`${token('e1', 'Alice')}\``,
+      'Inline: ' + inlineCode(token('e1', 'Alice')),
       `Real link: ${token('e2', 'Bob')}`,
-    ].join('\n')
+    ].join(NEWLINE)
     const { mentionLinks } = extractMentionLinks(content, entities)
     expect(mentionLinks).toEqual([{ targetId: 'e2', relation: MENTION_LINK_RELATION }])
   })

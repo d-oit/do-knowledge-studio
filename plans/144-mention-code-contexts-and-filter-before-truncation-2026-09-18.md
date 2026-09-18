@@ -129,17 +129,23 @@ per document. No index rebuild is involved.
 
 | Check | Result |
 |---|---|
-| `vitest run` (mention) | 46 passed (13 new) |
+| `vitest run` (mention) | 48 passed (14 new) |
 | `vitest run` (retrieval / vector-store / library-view) | 72 passed (7 new) |
-| Checked out `origin/main`'s `mention.ts` | 10 of the 13 new mention tests fail; the 3 that still pass are deliberate non-regression guards |
-| Hand-rolled iteration vs the parser | the 3 parser-fidelity tests (indented code, escaped backtick, invalid fence info string) fail — the A/B that motivated the parser |
+| Checked out `origin/main`'s `mention.ts` | 12 of the 14 new mention tests fail; the 2 that still pass are deliberate non-regression guards |
+| Hand-rolled iteration vs the parser | the parser-fidelity tests (indented code, escaped backtick, invalid fence info string) fail — the A/B that motivated the parser |
 | Search fix reverted | 6 of the 7 new search tests fail (`expected [ 'concept-1' ] to deeply equal [ 'note-1' ]`, `expected undefined to be true`) |
 | `pnpm run lint` | clean, 0 warnings |
 | `pnpm run typecheck` | clean |
-| `pnpm test` | 169 files, 2608 passed / 1 skipped |
+| `pnpm test` | 169 files, 2610 passed / 1 skipped |
 | `pnpm run build` | clean (the `useTypeScriptCli` notice is pre-existing — plans/142 §4) |
 | `./scripts/verify-deps.sh` | ✓ after the `unified`/`remark-parse` addition (the `boolean@3.2.0` deprecation notice is pre-existing in the lockfile) |
 | `./scripts/quality_gate.sh` | ✓ all gates passed, 0 warnings |
+
+Test content is built from `String.fromCharCode` constants (`NEWLINE`, `TAB`,
+`BACKSLASH`) and an `inlineCode` helper: an earlier revision carried
+double-escaped `\n`/`\t` literals in the test sources, which made several cases
+pass on single-line content. The counts above are from the corrected sources.
+
 
 ## 4. ADR check
 
