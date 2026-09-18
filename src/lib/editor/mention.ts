@@ -29,6 +29,105 @@ export const MENTION_SCHEME = 'dks://entity/'
 /** Matches a complete mention token: [@Name](dks://entity/<id>). */
 const MENTION_TOKEN_PATTERN = /\[@([^\]]+)\]\(dks:\/\/entity\/([^)]+)\)/g
 
+/** Up to 3 spaces of indent, then a fence run of 3+ backticks or tildes. */
+const FENCE_OPEN_PATTERN = /^ {0,3}(`{3,}|~{3,})/
+
+/** A closing fence: the same run alone on its line (no info string). */
+const FENCE_CLOSE_PATTERN = /^ {0,3}(`{3,}|~{3,})[ \t]*$/
+
+/** A run of one or more backticks (an inline code-span delimiter candidate). */
+const BACKTICK_RUN_PATTERN = /`+/g
+
+/** A half-open `[start, end)` range of content that Markdown renders as code. */
+interface CodeRange {
+  start: number
+  end: number
+}
+
+/**
+ * Marks the ranges covered by fenced code blocks, fence lines included. An
+ * unclosed fence runs to the end of the content. This is a deliberate
+ * approximation of CommonMark (the closing run must match the opening
+ * character and be at least as long); every miss errs toward treating content
+ * as code, which never links a mention the renderer shows as literal text.
+ */
+const collectFenceRanges = (content: string, ranges: CodeRange[]): void => {
+  let openChar = ''
+  let openLength = 0
+  let openStart = 0
+  let lineStart = 0
+
+  while (lineStart <= content.length) {
+    const newline = content.indexOf('\n', lineStart)
+    const lineEnd = newline === -1 ? content.length : newline
+    const line = content.slice(lineStart, lineEnd)
+
+    if (openChar === '') {
+      const open = FENCE_OPEN_PATTERN.exec(line)
+      if (open !== null) {
+        openChar = open[1][0]
+        openLength = open[1].length
+        openStart = lineStart
+      }
+    } else {
+      const close = FENCE_CLOSE_PATTERN.exec(line)
+      if (close !== null && close[1][0] === openChar && close[1].length >= openLength) {
+        ranges.push({ start: openStart, end: lineEnd })
+        openChar = ''
+      }
+    }
+
+    if (newline === -1) break
+    lineStart = newline + 1
+  }
+
+  if (openChar !== '') ranges.push({ start: openStart, end: content.length })
+}
+
+/**
+ * Marks inline code spans (`` `code` ``). A span opens on a backtick run and
+ * closes on the next run of exactly the same length (CommonMark); an unmatched
+ * opening run is literal text. Runs already inside a fence are skipped.
+ */
+const collectInlineCodeRanges = (content: string, ranges: CodeRange[]): void => {
+  BACKTICK_RUN_PATTERN.lastIndex = 0
+  let match = BACKTICK_RUN_PATTERN.exec(content)
+  while (match !== null) {
+    const openStart = match.index
+    if (ranges.some((range) => openStart >= range.start && openStart < range.end)) {
+      match = BACKTICK_RUN_PATTERN.exec(content)
+      continue
+    }
+    const runLength = match[0].length
+    let close = BACKTICK_RUN_PATTERN.exec(content)
+    while (close !== null && close[0].length !== runLength) {
+      close = BACKTICK_RUN_PATTERN.exec(content)
+    }
+    if (close === null) return
+    ranges.push({ start: openStart, end: close.index + close[0].length })
+    match = BACKTICK_RUN_PATTERN.exec(content)
+  }
+}
+
+/** Ranges of `content` that Markdown renders as code (fenced blocks, inline spans). */
+const findCodeRanges = (content: string): CodeRange[] => {
+  const ranges: CodeRange[] = []
+  collectFenceRanges(content, ranges)
+  collectInlineCodeRanges(content, ranges)
+  return ranges
+}
+
+/** True when `position` falls inside a code range. */
+const isInCodeRange = (position: number, ranges: CodeRange[]): boolean =>
+  ranges.some((range) => position >= range.start && position < range.end)
+
+/** True when the character at `index` is escaped by an odd run of backslashes. */
+const isEscaped = (content: string, index: number): boolean => {
+  let backslashes = 0
+  for (let i = index - 1; i >= 0 && content[i] === '\\'; i -= 1) backslashes += 1
+  return backslashes % 2 === 1
+}
+
 /** Characters stripped from a mention's display name so the token stays well-formed markdown. */
 const MENTION_NAME_INVALID = /[[\]]/g
 
@@ -91,25 +190,36 @@ const decodeMentionId = (raw: string): string => {
   }
 }
 
-/** Returns every complete mention token in the content, in source order. */
-export const findMentionTokens = (content: string): MentionToken[] => {
+/**
+ * Collects every complete mention token in the content, in source order.
+ * Tokens inside code (fenced blocks, inline spans) and tokens whose opening
+ * bracket is escaped are skipped: Markdown renders those as literal text, so
+ * they must not create links or backlinks.
+ */
+const collectMentionTokens = (content: string, codeRanges: CodeRange[]): MentionToken[] => {
   const tokens: MentionToken[] = []
   MENTION_TOKEN_PATTERN.lastIndex = 0
   let match = MENTION_TOKEN_PATTERN.exec(content)
   while (match !== null) {
     const start = match.index
     const raw = match[0]
-    tokens.push({
-      entityId: decodeMentionId(match[2]),
-      name: match[1],
-      start,
-      end: start + raw.length,
-      raw,
-    })
+    if (!isInCodeRange(start, codeRanges) && !isEscaped(content, start)) {
+      tokens.push({
+        entityId: decodeMentionId(match[2]),
+        name: match[1],
+        start,
+        end: start + raw.length,
+        raw,
+      })
+    }
     match = MENTION_TOKEN_PATTERN.exec(content)
   }
   return tokens
 }
+
+/** Returns every complete, link-creating mention token in the content, in source order. */
+export const findMentionTokens = (content: string): MentionToken[] =>
+  collectMentionTokens(content, findCodeRanges(content))
 
 /** True when `position` falls strictly inside a complete mention token. */
 const isInsideToken = (position: number, tokens: MentionToken[]): boolean =>
@@ -142,7 +252,13 @@ const isValidMentionQuery = (query: string): boolean =>
  */
 export const getMentionTrigger = (content: string, caret: number): MentionTrigger => {
   if (caret <= 0) return NO_MENTION_TRIGGER
-  const tokens = findMentionTokens(content)
+  const codeRanges = findCodeRanges(content)
+  // A token typed inside code never links (findMentionTokens ignores code), so
+  // the picker stays closed there instead of inserting an inert token. The
+  // caret is "inside" when the character it follows is code, which keeps a
+  // caret at the end of an unclosed fence inside the region.
+  if (isInCodeRange(caret - 1, codeRanges)) return NO_MENTION_TRIGGER
+  const tokens = collectMentionTokens(content, codeRanges)
   // Caret inside a complete token? That is editing raw token text, not typing a mention.
   if (isInsideToken(caret, tokens)) return NO_MENTION_TRIGGER
 

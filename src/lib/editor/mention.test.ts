@@ -36,6 +36,31 @@ describe('findMentionTokens', () => {
   it('returns an empty list for token-free content', () => {
     expect(findMentionTokens('plain text with no tokens')).toEqual([])
   })
+
+  it('ignores tokens inside a fenced code block', () => {
+    const content = ['Before', '```md', token('e1', 'Alice'), '```', 'After', token('e2', 'Bob')].join('\n')
+    expect(findMentionTokens(content).map((t) => t.entityId)).toEqual(['e2'])
+  })
+
+  it('ignores tokens in tilde fences and unclosed fences', () => {
+    expect(findMentionTokens(['~~~', token('e1', 'Alice'), '~~~'].join('\n'))).toEqual([])
+    expect(findMentionTokens(['```', token('e1', 'Alice')].join('\n'))).toEqual([])
+  })
+
+  it('ignores tokens inside inline code spans', () => {
+    const content = `Use \`${token('e1', 'Alice')}\` but ${token('e2', 'Bob')} links`
+    expect(findMentionTokens(content).map((t) => t.entityId)).toEqual(['e2'])
+  })
+
+  it('handles multi-backtick inline spans', () => {
+    const content = `\`\`${token('e1', 'Alice')}\`\` and ${token('e2', 'Bob')}`
+    expect(findMentionTokens(content).map((t) => t.entityId)).toEqual(['e2'])
+  })
+
+  it('ignores escaped tokens but keeps tokens after a literal backslash', () => {
+    expect(findMentionTokens(`\\${token('e1', 'Alice')}`)).toEqual([])
+    expect(findMentionTokens(`\\\\${token('e1', 'Alice')}`).map((t) => t.entityId)).toEqual(['e1'])
+  })
 })
 
 describe('getMentionTrigger', () => {
@@ -80,6 +105,20 @@ describe('getMentionTrigger', () => {
 
   it('finds an @ mid-word', () => {
     expect(getMentionTrigger('hello@wor', 9)).toMatchObject({ active: true, start: 5, query: 'wor' })
+  })
+
+  it('stays inactive inside a fenced code block', () => {
+    const content = ['```', '@Ali'].join('\n')
+    expect(getMentionTrigger(content, content.length)).toMatchObject({ active: false })
+  })
+
+  it('stays inactive inside an inline code span', () => {
+    expect(getMentionTrigger('`@Ali`', 4)).toMatchObject({ active: false })
+  })
+
+  it('activates right after a closed inline code span', () => {
+    const content = '`code` @Ali'
+    expect(getMentionTrigger(content, content.length)).toMatchObject({ active: true, query: 'Ali' })
   })
 })
 
@@ -180,6 +219,19 @@ describe('extractMentionLinks', () => {
     const { mentionLinks, mentions } = extractMentionLinks(content, entities)
     expect(mentionLinks).toHaveLength(1)
     expect(mentions).toEqual([{ entityId: 'e1', name: 'Alice' }])
+  })
+
+  it('ignores mention syntax shown inside code spans and fences', () => {
+    const content = [
+      'Documenting the syntax:',
+      '```md',
+      token('e1', 'Alice'),
+      '```',
+      `Inline: \`${token('e1', 'Alice')}\``,
+      `Real link: ${token('e2', 'Bob')}`,
+    ].join('\n')
+    const { mentionLinks } = extractMentionLinks(content, entities)
+    expect(mentionLinks).toEqual([{ targetId: 'e2', relation: MENTION_LINK_RELATION }])
   })
 })
 
