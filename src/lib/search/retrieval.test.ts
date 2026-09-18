@@ -89,6 +89,46 @@ describe('BM25 Retrieval Engine', () => {
     expect(results).toHaveLength(1)
   })
 
+  it('applies a filter before truncation so excluded hits cannot consume the limit', () => {
+    // The concept matches the query more strongly (higher term frequency), so
+    // it owns the single result slot when nothing is filtered out.
+    const corpus: Entity[] = [
+      makeEntity({
+        id: 'concept-1',
+        name: 'React Concepts',
+        type: 'concept',
+        description: 'react react react core ideas',
+        content: '',
+      }),
+      makeEntity({
+        id: 'note-1',
+        name: 'React Notes',
+        type: 'note',
+        description: 'react notes',
+        content: '',
+      }),
+    ]
+
+    expect(search(corpus, [], 'react', 1).map((r) => r.id)).toEqual(['concept-1'])
+    // A post-truncation filter would have nothing left to return here.
+    const filtered = search(corpus, [], 'react', 1, (doc) => doc.entityType === 'note')
+    expect(filtered.map((r) => r.id)).toEqual(['note-1'])
+  })
+
+  it('filters claim results by their entity type', () => {
+    const corpus: Entity[] = [
+      makeEntity({ id: 'note-1', name: 'Note entity', type: 'note', description: '', content: '' }),
+      makeEntity({ id: 'concept-1', name: 'Concept entity', type: 'concept', description: '', content: '' }),
+    ]
+    const corpusClaims: Claim[] = [
+      makeClaim({ id: 'c-note', entityId: 'note-1', statement: 'segmentation separates components' }),
+      makeClaim({ id: 'c-concept', entityId: 'concept-1', statement: 'segmentation separates components' }),
+    ]
+
+    const filtered = search(corpus, corpusClaims, 'segmentation', 5, (doc) => doc.entityType === 'note')
+    expect(filtered.map((r) => r.id)).toEqual(['c-note'])
+  })
+
   it('handles empty entities and claims', () => {
     const results = search([], [], 'test')
     expect(results).toHaveLength(0)

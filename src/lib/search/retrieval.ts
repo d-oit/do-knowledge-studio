@@ -25,12 +25,25 @@ export interface SearchResult {
   entityName?: string
 }
 
-interface IndexEntry {
+/**
+ * Minimal document metadata a search filter predicate can inspect. Shared by
+ * the lexical (BM25) and vector paths so one predicate narrows either engine.
+ */
+export interface FilterableDoc {
   id: string
   type: 'entity' | 'claim'
+  /** Owning entity id (claims only). */
+  entityId?: string
+  /** Type of the document's entity, so callers can filter entities and their claims together. */
+  entityType?: string
+}
+
+/** Predicate that keeps only the documents matching the caller's criteria. */
+export type SearchFilter = (doc: FilterableDoc) => boolean
+
+interface IndexEntry extends FilterableDoc {
   tokenCount: number
   tfMap: Map<string, number>
-  entityId?: string
   entityName?: string
   fullText: string
 }
@@ -149,6 +162,7 @@ function buildIndex(
     entries.push({
       id: e.id,
       type: 'entity',
+      entityType: e.type,
       tokenCount: tokens.length,
       tfMap: buildTfMap(tokens),
       fullText: text,
@@ -162,10 +176,11 @@ function buildIndex(
     entries.push({
       id: c.id,
       type: 'claim',
-      tokenCount: tokens.length,
-      tfMap: buildTfMap(tokens),
       entityId: c.entityId,
       entityName: entity?.name,
+      entityType: entity?.type,
+      tokenCount: tokens.length,
+      tfMap: buildTfMap(tokens),
       fullText: text,
     })
   }
@@ -281,14 +296,26 @@ const getIndex = (entities: Entity[], claims: Claim[]): SearchIndex => {
   return { entityMap, entries, avgDl }
 }
 
+/** Mean document length over the entries being ranked. */
+const averageTokenCount = (entries: IndexEntry[]): number => {
+  if (entries.length === 0) return 0
+  return entries.reduce((sum, entry) => sum + entry.tokenCount, 0) / entries.length
+}
+
 /** Run a BM25 full-text search over entities and claims. */
 export const search = (
   entities: Entity[],
   claims: Claim[],
   query: string,
   limit = 5,
+  filter?: SearchFilter,
 ): SearchResult[] => {
-  const { entityMap, entries, avgDl } = getIndex(entities, claims)
+  const { entityMap, entries: allEntries, avgDl: corpusAvgDl } = getIndex(entities, claims)
+
+  // The filter narrows candidates BEFORE ranking and truncation, so
+  // filtered-out documents cannot consume the limit, and the IDF/length
+  // statistics are computed over the set the query actually ranks.
+  const entries = filter === undefined ? allEntries : allEntries.filter(filter)
 
   if (entries.length === 0) return []
 
@@ -296,6 +323,7 @@ export const search = (
   if (queryTokens.length === 0) return []
 
   const idf = computeIDF(entries, queryTokens)
+  const avgDl = filter === undefined ? corpusAvgDl : averageTokenCount(entries)
 
   const scored = entries
     .map((entry) => ({

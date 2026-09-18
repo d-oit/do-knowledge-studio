@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { ReactNode } from 'react'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 
 vi.mock('framer-motion', () => ({
   motion: {
@@ -48,6 +48,7 @@ vi.mock('lucide-react', () => {
     Tag: Icon,
     ChevronDown: Icon,
     CheckIcon: Icon,
+    Sparkles: Icon,
   }
 })
 
@@ -132,7 +133,27 @@ vi.mock('@/lib/studio/store', () => ({
   useFilteredEntities: () => filteredEntities,
 }))
 
+const { mockSearchSemantic } = vi.hoisted(() => ({
+  mockSearchSemantic: vi.fn<
+    (
+      entities: unknown,
+      claims: unknown,
+      query: string,
+      limit?: number,
+      signal?: AbortSignal,
+      filter?: (doc: { id: string; type: 'entity' | 'claim'; entityType?: string }) => boolean,
+    ) => Promise<unknown>
+  >(),
+}))
+
+vi.mock('@/lib/search/search-worker-client', () => ({
+  searchSemantic: mockSearchSemantic,
+}))
+
 import { LibraryView } from './library-view'
+
+/** Advances fake timers past the view's 300ms semantic-search debounce. */
+const SEMANTIC_DEBOUNCE_PROBE_MS = 400
 
 describe('LibraryView', () => {
   beforeEach(() => {
@@ -378,5 +399,58 @@ describe('LibraryView', () => {
     render(<LibraryView />)
     fireEvent.click(screen.getByRole('switch', { name: 'Semantic search' }))
     expect(mockSetSemanticSearchEnabled).toHaveBeenCalledWith(true)
+  })
+
+  it('passes the active type filter into the semantic search', async () => {
+    vi.useFakeTimers()
+    try {
+      currentSemanticSearchEnabled = true
+      currentSearchQuery = 'triz'
+      currentTypeFilter = 'note'
+      mockSearchSemantic.mockResolvedValue({ source: 'semantic', results: [] })
+
+      render(<LibraryView />)
+      await act(async () => {
+        vi.advanceTimersByTime(SEMANTIC_DEBOUNCE_PROBE_MS)
+      })
+
+      expect(mockSearchSemantic).toHaveBeenCalledTimes(1)
+      const filter = mockSearchSemantic.mock.calls[0]?.[5]
+      expect(filter?.({ id: 'e1', type: 'entity', entityType: 'note' })).toBe(true)
+      expect(filter?.({ id: 'e2', type: 'entity', entityType: 'concept' })).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('re-runs the semantic search when the type filter changes', async () => {
+    vi.useFakeTimers()
+    try {
+      currentSemanticSearchEnabled = true
+      currentSearchQuery = 'triz'
+      currentTypeFilter = 'note'
+      mockSearchSemantic.mockResolvedValue({ source: 'semantic', results: [] })
+
+      const { rerender } = render(<LibraryView />)
+      await act(async () => {
+        vi.advanceTimersByTime(SEMANTIC_DEBOUNCE_PROBE_MS)
+      })
+      expect(mockSearchSemantic).toHaveBeenCalledTimes(1)
+
+      currentTypeFilter = 'concept'
+      rerender(<LibraryView />)
+      await act(async () => {
+        vi.advanceTimersByTime(SEMANTIC_DEBOUNCE_PROBE_MS)
+      })
+
+      // Re-ranking must happen within the new filtered set, not by re-filtering
+      // the previous unfiltered ranking.
+      expect(mockSearchSemantic).toHaveBeenCalledTimes(2)
+      const filter = mockSearchSemantic.mock.calls[1]?.[5]
+      expect(filter?.({ id: 'e1', type: 'entity', entityType: 'concept' })).toBe(true)
+      expect(filter?.({ id: 'e2', type: 'entity', entityType: 'note' })).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

@@ -1,3 +1,6 @@
+import { unified } from 'unified'
+import remarkParse from 'remark-parse'
+import remarkGfm from 'remark-gfm'
 import type { Entity } from '@/lib/studio/types'
 
 /**
@@ -28,6 +31,108 @@ export const MENTION_SCHEME = 'dks://entity/'
 
 /** Matches a complete mention token: [@Name](dks://entity/<id>). */
 const MENTION_TOKEN_PATTERN = /\[@([^\]]+)\]\(dks:\/\/entity\/([^)]+)\)/g
+
+/**
+ * The Markdown pipeline the editor preview renders with (react-markdown +
+ * remark-gfm), reused here so code detection agrees with the rendered document
+ * instead of approximating CommonMark by hand.
+ */
+const markdownProcessor = unified().use(remarkParse).use(remarkGfm)
+
+/** A half-open `[start, end)` range of content that Markdown renders as code. */
+interface CodeRange {
+  start: number
+  end: number
+}
+
+/** Line feed, built from its code point to keep this module escape-free. */
+const LINE_FEED = String.fromCharCode(10)
+
+/** Tab character, built from its code point to keep this module escape-free. */
+const TAB_CHARACTER = String.fromCharCode(9)
+
+/** The mdast surface this module reads: node type, children, and source offsets. */
+interface MarkdownNode {
+  type: string
+  position?: { start: { offset?: number }; end: { offset?: number } }
+  children?: MarkdownNode[]
+}
+
+/** Node types the renderer shows as code: fenced/indented blocks and inline spans. */
+const CODE_NODE_TYPES = new Set(['code', 'inlineCode'])
+
+/**
+ * Cheap guard before parsing: code needs a backtick/tilde delimiter, a tab, or
+ * an indented line. Indentation at the start of a source line, behind a
+ * block-quote marker, or after a list marker all open an indented code block,
+ * and list-item continuation lines are indented too — so any of those line
+ * shapes parses. Only flat prose skips the parser.
+ */
+const CODE_LEADING_CHARACTERS = new Set([' ', '>', '-', '+', '*'])
+
+const mayContainCode = (content: string): boolean => {
+  if (content.includes('`') || content.includes('~') || content.includes(TAB_CHARACTER)) {
+    return true
+  }
+  return content.split(LINE_FEED).some((line) => {
+    const first = line[0]
+    if (first === undefined) return false
+    return CODE_LEADING_CHARACTERS.has(first) || (first >= '0' && first <= '9')
+  })
+}
+
+/** Collects the source range of every code node, blocks and inline spans alike. */
+const collectCodeRanges = (node: MarkdownNode, ranges: CodeRange[]): void => {
+  if (CODE_NODE_TYPES.has(node.type)) {
+    const start = node.position?.start.offset
+    const end = node.position?.end.offset
+    if (start !== undefined && end !== undefined) ranges.push({ start, end })
+    return
+  }
+  for (const child of node.children ?? []) collectCodeRanges(child, ranges)
+}
+
+/**
+ * Ranges of `content` that the editor preview renders as code. Parsing with the
+ * preview's own pipeline keeps mention matching in step with the rendered
+ * document: fenced and indented blocks, inline spans, escaped backticks, and
+ * invalid fence info strings all follow CommonMark rather than a hand-rolled
+ * approximation.
+ *
+ * The last result is cached: the caret path calls this on every keystroke, and
+ * the content is unchanged between caret moves.
+ */
+let cachedCodeSource: string | null = null
+let cachedCodeRanges: CodeRange[] = []
+
+const findCodeRanges = (content: string): CodeRange[] => {
+  if (content === cachedCodeSource) return cachedCodeRanges
+  const ranges: CodeRange[] = []
+  if (mayContainCode(content)) {
+    collectCodeRanges(markdownProcessor.parse(content), ranges)
+  }
+  cachedCodeSource = content
+  cachedCodeRanges = ranges
+  return ranges
+}
+
+/** True when `position` falls inside a code range. */
+const isInCodeRange = (position: number, ranges: CodeRange[]): boolean =>
+  ranges.some((range) => position >= range.start && position < range.end)
+
+/**
+ * True when a code range overlaps the half-open `[start, end)` span, so text in
+ * that span cannot be replaced without deleting code.
+ */
+const overlapsCodeRange = (start: number, end: number, ranges: CodeRange[]): boolean =>
+  ranges.some((range) => range.start < end && range.end > start)
+
+/** True when the character at `index` is escaped by an odd run of backslashes. */
+const isEscaped = (content: string, index: number): boolean => {
+  let backslashes = 0
+  for (let i = index - 1; i >= 0 && content[i] === '\\'; i -= 1) backslashes += 1
+  return backslashes % 2 === 1
+}
 
 /** Characters stripped from a mention's display name so the token stays well-formed markdown. */
 const MENTION_NAME_INVALID = /[[\]]/g
@@ -91,25 +196,42 @@ const decodeMentionId = (raw: string): string => {
   }
 }
 
-/** Returns every complete mention token in the content, in source order. */
-export const findMentionTokens = (content: string): MentionToken[] => {
+/**
+ * Collects every complete mention token in the content, in source order.
+ * Tokens inside code (fenced blocks, inline spans) and tokens whose opening
+ * bracket is escaped are skipped: Markdown renders those as literal text, so
+ * they must not create links or backlinks.
+ */
+const collectMentionTokens = (
+  content: string,
+  codeRanges: CodeRange[],
+  /** Keep tokens inside code and escaped ones too (raw-syntax scans). */
+  includeNonLinking = false,
+): MentionToken[] => {
   const tokens: MentionToken[] = []
   MENTION_TOKEN_PATTERN.lastIndex = 0
   let match = MENTION_TOKEN_PATTERN.exec(content)
   while (match !== null) {
     const start = match.index
     const raw = match[0]
-    tokens.push({
-      entityId: decodeMentionId(match[2]),
-      name: match[1],
-      start,
-      end: start + raw.length,
-      raw,
-    })
+    const links = !isInCodeRange(start, codeRanges) && !isEscaped(content, start)
+    if (links || includeNonLinking) {
+      tokens.push({
+        entityId: decodeMentionId(match[2]),
+        name: match[1],
+        start,
+        end: start + raw.length,
+        raw,
+      })
+    }
     match = MENTION_TOKEN_PATTERN.exec(content)
   }
   return tokens
 }
+
+/** Returns every complete, link-creating mention token in the content, in source order. */
+export const findMentionTokens = (content: string): MentionToken[] =>
+  collectMentionTokens(content, findCodeRanges(content))
 
 /** True when `position` falls strictly inside a complete mention token. */
 const isInsideToken = (position: number, tokens: MentionToken[]): boolean =>
@@ -142,16 +264,23 @@ const isValidMentionQuery = (query: string): boolean =>
  */
 export const getMentionTrigger = (content: string, caret: number): MentionTrigger => {
   if (caret <= 0) return NO_MENTION_TRIGGER
-  const tokens = findMentionTokens(content)
-  // Caret inside a complete token? That is editing raw token text, not typing a mention.
-  if (isInsideToken(caret, tokens)) return NO_MENTION_TRIGGER
-
-  // Scan backwards for the nearest '@' that is not part of a token.
+  // Cheap path first: without a valid `@` query before the caret there is no
+  // trigger, and that test needs no Markdown parsing — the expensive step is
+  // reserved for the moment a mention is actually being typed. Raw token spans
+  // (escaped and in-code ones included) are the boundaries here: an `@` inside
+  // token-shaped text is syntax being edited, never a trigger.
+  const tokens = collectMentionTokens(content, [], true)
   const at = findMentionAt(content, caret, tokens)
   if (at === -1) return NO_MENTION_TRIGGER
 
   const query = content.slice(at + 1, caret)
   if (!isValidMentionQuery(query)) return NO_MENTION_TRIGGER
+
+  // The trigger must live entirely in prose: the `@` may not sit inside
+  // token-shaped text, and no code range may overlap the query span — picking a
+  // mention replaces that span, which would delete code the user typed.
+  if (isInsideToken(at, tokens)) return NO_MENTION_TRIGGER
+  if (overlapsCodeRange(at, caret, findCodeRanges(content))) return NO_MENTION_TRIGGER
   return { active: true, start: at, query }
 }
 
