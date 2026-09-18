@@ -463,7 +463,7 @@ describe('ShortcutsDialog keyboard navigation', () => {
       </>,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Show keyboard shortcuts' }))
-    const filterInput = screen.getByRole('textbox', { name: 'Filter shortcuts' })
+    const filterInput = screen.getByLabelText('Filter shortcuts')
     expect(filterInput).toBeDefined()
   })
 
