@@ -30,9 +30,11 @@ export interface UseAiHarnessChatOptions {
 }
 
 /**
- * Replaces the trailing assistant bubble — the placeholder created just before
- * a send — with new content. Both reply paths (streamed deltas and a whole
- * reply returned on the result) update that same bubble.
+ * Replaces the trailing assistant bubble with new content. The bubble is
+ * created by the sender once the turn has content to show, so the trailing
+ * message is the turn's assistant bubble whenever this is called. Both reply
+ * paths (streamed deltas and a whole reply returned on the result) update that
+ * same bubble.
  */
 const withTrailingAssistantMessage = (
   messages: ChatMessage[],
@@ -126,8 +128,20 @@ export const useAiHarnessChat = ({
         controller.signal,
       )
 
+      // The assistant bubble is created with its first content, never as an
+      // empty placeholder: a provider failure or an abort before the first
+      // delta would otherwise leave a blank bubble in the transcript.
       let streamedContent = ''
-      setMessages((m) => [...m, { role: 'assistant', content: '' }])
+      let assistantBubbleStarted = false
+
+      const upsertAssistantBubble = (content: string) => {
+        if (assistantBubbleStarted) {
+          setMessages((m) => withTrailingAssistantMessage(m, content))
+          return
+        }
+        assistantBubbleStarted = true
+        setMessages((m) => [...m, { role: 'assistant', content }])
+      }
 
       const result = await sendChatStream(
         {
@@ -141,19 +155,22 @@ export const useAiHarnessChat = ({
         },
         (chunk) => {
           streamedContent += chunk
-          setMessages((m) => withTrailingAssistantMessage(m, streamedContent))
+          upsertAssistantBubble(streamedContent)
         },
       )
 
       // A provider can answer without emitting any delta: the in-browser local
       // adapter returns the whole reply on the result when its streamer stayed
       // silent (a non-streamed fallback generation). Rendering only from
-      // `onChunk` would leave the placeholder bubble blank, so fall back to
-      // the awaited result whenever nothing was streamed.
+      // `onChunk` would leave the turn without a bubble, so fall back to the
+      // awaited result whenever nothing was streamed.
       if (streamedContent === '' && result.content !== '') {
-        setMessages((m) => withTrailingAssistantMessage(m, result.content))
+        upsertAssistantBubble(result.content)
       }
     } catch (err) {
+      // Aborting (the turn was superseded, or generation was stopped) keeps
+      // whatever already streamed and adds nothing: the bubble only exists once
+      // content does, so an aborted turn never leaves an empty bubble behind.
       if (err instanceof DOMException && err.name === 'AbortError') return
       const msg = err instanceof Error ? err.message : 'Unknown error'
       setMessages((m) => [
