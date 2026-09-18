@@ -100,4 +100,38 @@ describe('useAiHarnessChat', () => {
     expect(last?.role).toBe('assistant')
     expect(last?.content).toContain('[Error] provider exploded')
   })
+
+  it('leaves no empty assistant bubble behind when the provider fails', async () => {
+    mockSendChatStream.mockRejectedValue(new Error('provider exploded'))
+
+    const hook = await sendMessage('hi')
+
+    const empty = hook.result.current.messages.filter(
+      (m) => m.role === 'assistant' && m.content.trim() === '',
+    )
+    expect(empty).toEqual([])
+  })
+
+  it('leaves no assistant bubble when the turn is aborted before any delta', async () => {
+    mockSendChatStream.mockRejectedValue(new DOMException('Aborted', 'AbortError'))
+
+    const hook = await sendMessage('hi')
+
+    const messages = hook.result.current.messages
+    expect(messages.map((m) => m.role)).toEqual(['assistant', 'user'])
+    expect(messages.at(-1)?.content).toBe('hi')
+  })
+
+  it('keeps the partial reply when the turn is aborted mid-stream', async () => {
+    mockSendChatStream.mockImplementation(async (_request, onChunk) => {
+      onChunk('Partial answer')
+      throw new DOMException('Aborted', 'AbortError')
+    })
+
+    const hook = await sendMessage('hi')
+
+    const last = hook.result.current.messages.at(-1)
+    expect(last?.role).toBe('assistant')
+    expect(last?.content).toBe('Partial answer')
+  })
 })
