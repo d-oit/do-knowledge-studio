@@ -42,7 +42,7 @@ replays the old warning on a no-op install. `pnpm install --force` or
 `rm -rf node_modules` regenerates the record. Fresh installs (CI, Vercel, new
 clones) are silent.
 
-## 2. ESLint 10 blocker (documented — not actionable yet)
+## 2. ESLint 10 blocker — resolved 2026-09-18 (upgraded with a workaround)
 
 plans/139 §6 item 1 flagged that pnpm warns
 `deprecated eslint@9.39.4: This version is no longer supported` on every install.
@@ -68,22 +68,46 @@ The warning cannot be cleared by a patch bump: **`eslint@9.39.5` — the current
 4. `eslint-plugin-jsx-a11y@6.10.2` (also via `eslint-config-next`) declares a
    `^9` ceiling as well.
 
-Forcing the upgrade would mean pinning peer ranges past their declared ceilings
-and accepting known-broken rules — and possibly editing `eslint.config.mjs`,
-which is off-limits without an explicit request (AGENTS.md hard rule).
+**Resolution (2026-09-18).** The blocker was re-checked against the upstream
+sources and then resolved by a documented workaround:
 
-**Revisit when** `eslint-plugin-react` publishes an ESLint 10 peer range (or
-vercel/next.js#91702 closes). Node is already compliant: ESLint 10 needs
-`^20.19.0 || ^22.13.0 || >=24`, and this repo pins Node 22 (`.nvmrc`, CI, Vercel).
+- ESLint **9.39.5 reached end-of-life on 2026-08-06** (no fixes, security
+  included) — see the official [version support policy](https://eslint.org/version-support/).
+  Staying was therefore a "stop the rot" decision, not a safe default.
+- The crash has one root cause: `eslint-plugin-react@7.37.5` reads the React
+  version through `context.getFilename()`, removed in ESLint 10. Reproduced
+  directly: `eslint@10` against this config throws
+  `TypeError: Error while loading rule 'react/no-direct-mutation-state':
+  contextOrFilename.getFilename is not a function`.
+- Adding `settings.react.version = "19"` to `eslint.config.mjs` skips that
+  auto-detection path. Verified: `eslint@10.11.0 .` over the whole repository is
+  clean (exit 0, zero warnings). The pin is accurate — the app is React 19 — so
+  no rule coverage changes.
+- `eslint-plugin-jsx-a11y@6.10.2` and `eslint-plugin-import@2.32.0` still
+  declare `^9` peer ceilings. Those ranges are accepted **explicitly** via
+  `pnpm.peerDependencyRules.allowedVersions` in `package.json`, so install output
+  stays warning-free and the acceptance is visible in-repo rather than looking
+  like a defect. `typescript-eslint@8.70`, `eslint-plugin-react-hooks@7.1.1` and
+  `eslint-plugin-react-refresh@0.5.7` already allow `^10`.
+- `@eslint/js@9` was a direct dependency imported nowhere — dropped rather than
+  bumped.
+- Node was already compliant: ESLint 10 needs `^20.19.0 || ^22.13.0 || >=24`,
+  and this repo pins Node 22 (`.nvmrc`, CI, Vercel; local 22.23.2).
 
-Until then the deprecation warning is a known, upstream-owned condition — the
-lint result itself is unaffected.
+**Remove the workaround when** `eslint-plugin-react` ships ESLint 10 support
+([#3977](https://github.com/jsx-eslint/eslint-plugin-react/issues/3977), open
+with PRs #3979/#4022; Next.js tracks its side in
+[vercel/next.js#89764](https://github.com/vercel/next.js/issues/89764)). At that
+point drop `settings.react.version`, re-test without it, and keep the peer rule
+only while a plugin still caps at `^9`.
 
 ## 3. Follow-ups
 
-1. **`@eslint/js` is still `^9.39.5`** — bump together with the ESLint 10
-   migration (its 10.x line requires `eslint: ^10.0.0`).
+1. **ESLint 10 workaround** — drop `settings.react.version` once
+   `eslint-plugin-react` supports ESLint 10 (§2), and drop the peer rule when no
+   plugin caps at `^9` any more.
 2. **DeepSource: JavaScript metric-level failure** — plans/138 §5.3.
    → **Root-caused in plans/141 §1** (the check is *skipped*, not failing: the
    account's analysis quota is exhausted; 36 findings triaged in plans/141 §2).
-3. **Four deferred review findings** — plans/137 §5.
+3. **Four deferred review findings** — plans/137 §5: all resolved
+   (plans/142 §1–2, plans/144 §1–2).
