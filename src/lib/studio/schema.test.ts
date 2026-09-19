@@ -685,4 +685,19 @@ describe('StoredSettingsSchema', () => {
     expect(() => StoredSettingsSchema.parse({ provider: 'openrouter', model: '' })).toThrow()
     expect(() => StoredSettingsSchema.parse({ provider: '', model: 'openrouter/free' })).toThrow()
   })
+
+  it('accepts valid localhost and .local ollamaBaseUrl values', () => {
+    const validBase = { provider: 'ollama', model: 'llama3' }
+    expect(StoredSettingsSchema.parse({ ...validBase, ollamaBaseUrl: 'http://localhost:11434' }).ollamaBaseUrl).toBe('http://localhost:11434')
+    expect(StoredSettingsSchema.parse({ ...validBase, ollamaBaseUrl: 'http://127.0.0.1:11434' }).ollamaBaseUrl).toBe('http://127.0.0.1:11434')
+    expect(StoredSettingsSchema.parse({ ...validBase, ollamaBaseUrl: 'http://my-pc.local:11434' }).ollamaBaseUrl).toBe('http://my-pc.local:11434')
+  })
+
+  it('rejects invalid or unsafe ollamaBaseUrl values', () => {
+    const validBase = { provider: 'ollama', model: 'llama3' }
+    expect(() => StoredSettingsSchema.parse({ ...validBase, ollamaBaseUrl: 'http://evil.com:11434' })).toThrow()
+    expect(() => StoredSettingsSchema.parse({ ...validBase, ollamaBaseUrl: 'ftp://localhost:11434' })).toThrow()
+    expect(() => StoredSettingsSchema.parse({ ...validBase, ollamaBaseUrl: 'javascript:alert(1)' })).toThrow()
+    expect(() => StoredSettingsSchema.parse({ ...validBase, ollamaBaseUrl: 'not a url' })).toThrow()
+  })
 })
