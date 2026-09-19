@@ -11,6 +11,15 @@ const eslintConfig = [...nextCoreWebVitals, ...nextTypescript, {
   plugins: {
     "react-hooks": reactHooks,
   },
+  settings: {
+    // eslint-plugin-react@7.37.5 detects the React version through the
+    // `context.getFilename()` API that ESLint 10 removed, which throws in every
+    // react/* rule ("contextOrFilename.getFilename is not a function").
+    // Pinning the version — accurate here, the app is React 19 — skips that
+    // auto-detection path. Remove once the plugin supports ESLint 10:
+    // https://github.com/jsx-eslint/eslint-plugin-react/issues/3977
+    react: { version: "19" },
+  },
   rules: {
     // Plan 131 G7 (governance decision 2026-08-22): re-enabled — the
     // codebase contains zero `any` usages, matching AGENTS.md.
