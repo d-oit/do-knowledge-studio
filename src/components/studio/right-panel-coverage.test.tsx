@@ -35,7 +35,7 @@ const storeState = vi.hoisted(() => {
     chat: [] as Array<{
       role: string
       content: string
-      citations?: Array<{ entityName: string; snippet: string }>
+      citations?: Array<{ entityId?: string; entityName: string; snippet: string }>
     }>,
     currentView: 'home',
     rightPanelOpen: true,
@@ -46,6 +46,7 @@ const storeState = vi.hoisted(() => {
     deleteEntity: vi.fn(),
     selectEntity: vi.fn(),
     setSearchQuery: vi.fn(),
+    setRightPanelOpen: vi.fn(),
   }
 })
 
@@ -119,6 +120,7 @@ vi.mock('@/lib/studio/store', () => ({
         selectEntity: storeState.selectEntity,
         searchQuery: storeState.searchQuery,
         setSearchQuery: storeState.setSearchQuery,
+        setRightPanelOpen: storeState.setRightPanelOpen,
         selectedEntityId: storeState.selectedEntityId,
       }),
     { getState: () => ({}) },
@@ -190,6 +192,20 @@ describe('RightPanel branch coverage', () => {
       render(<RightPanel />)
       expect(screen.getByText(/Grounded in 2 local entities/)).toBeDefined()
     })
+
+    it('closes the citations panel', () => {
+      storeState.currentView = 'chat'
+      storeState.chat = [
+        {
+          role: 'assistant',
+          content: 'a',
+          citations: [{ entityId: 'ent-1', entityName: 'Entity One', snippet: 'Snippet one' }],
+        },
+      ]
+      render(<RightPanel />)
+      fireEvent.click(screen.getByRole('button', { name: 'Close panel' }))
+      expect(storeState.setRightPanelOpen).toHaveBeenCalledWith(false)
+    })
   })
 
   describe('InspectorPanel', () => {
@@ -208,8 +224,9 @@ describe('RightPanel branch coverage', () => {
 
     it('closes inspector via close button', () => {
       openGraphView()
-      fireEvent.click(screen.getByLabelText('Close inspector'))
-      expect(storeState.selectEntity).toHaveBeenCalledWith(null)
+      fireEvent.click(screen.getByRole('button', { name: 'Close panel' }))
+      expect(storeState.setRightPanelOpen).toHaveBeenCalledWith(false)
+      expect(storeState.selectEntity).not.toHaveBeenCalled()
     })
 
     it('selects entity when a connection is clicked', () => {

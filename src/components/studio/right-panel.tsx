@@ -5,10 +5,12 @@ import { getEntityTypeMeta, type EntityTypeMeta } from '@/lib/studio/entity-type
 import { search, type SearchResult } from '@/lib/search/retrieval'
 import { buildEntityIndex } from '@/lib/studio/graph-index'
 import type { Entity } from '@/lib/studio/types'
-import { Search, X, Sparkles, FileText, Quote, ArrowRight } from 'lucide-react'
-import { useMemo, useRef, useState } from 'react'
+import { Search, FileText, ArrowRight } from 'lucide-react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Overlay } from '@/components/studio/ui/shared-primitives'
+import { CitationsPanel } from './right-panel-citations'
+import { PanelCloseButton } from './right-panel-close-button'
 
 /**
  * Dedupes an entity's links for rendering: the persisted schema permits
@@ -26,21 +28,6 @@ const dedupeLinks = (links: Entity['links']): Entity['links'] => {
     if (seen.has(key)) continue
     seen.add(key)
     out.push(link)
-  }
-  return out
-}
-
-/** Dedupes chat citations for rendering (same entityId+snippet repeats on retries). */
-const dedupeCitations = (
-  citations: { entityId: string; entityName: string; snippet: string }[],
-): { entityId: string; entityName: string; snippet: string }[] => {
-  const seen = new Set<string>()
-  const out: { entityId: string; entityName: string; snippet: string }[] = []
-  for (const c of citations) {
-    const key = JSON.stringify([c.entityId, c.snippet])
-    if (seen.has(key)) continue
-    seen.add(key)
-    out.push(c)
   }
   return out
 }
@@ -182,7 +169,13 @@ const SearchEmptyState = ({
   </div>
 )
 
-const SearchPanel = ({ onCreateEntity }: { onCreateEntity?: (name: string) => void }) => {
+const SearchPanel = ({
+  onCreateEntity,
+  onClose,
+}: {
+  onCreateEntity?: (name: string) => void
+  onClose: () => void
+}) => {
   const searchQuery = useStudioStore((s) => s.searchQuery)
   const setSearchQuery = useStudioStore((s) => s.setSearchQuery)
   const entities = useStudioStore((s) => s.entities)
@@ -203,12 +196,7 @@ const SearchPanel = ({ onCreateEntity }: { onCreateEntity?: (name: string) => vo
       <div className="border-b border-border px-4 py-3">
         <div className="mb-2 flex items-center justify-between">
           <h2 className="font-serif text-[14px] font-semibold text-ink">Search</h2>
-          <button
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center text-ink-faint transition-colors hover:text-ink focus-ring"
-            aria-label="Close"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <PanelCloseButton onClose={onClose} />
         </div>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-faint" />
@@ -297,7 +285,7 @@ const ConnectionList = ({
   </ul>
 )
 
-const InspectorPanel = () => {
+const InspectorPanel = ({ onClose }: { onClose: () => void }) => {
   const entities = useStudioStore((s) => s.entities)
   const selectedEntityId = useStudioStore((s) => s.selectedEntityId)
   const startEdit = useStudioStore((s) => s.startEdit)
@@ -310,7 +298,11 @@ const InspectorPanel = () => {
 
   if (!entity) {
     return (
-      <aside className="hidden h-full w-[320px] shrink-0 border-l border-border bg-background wide:flex">
+      <aside className="hidden h-full w-[320px] shrink-0 flex-col border-l border-border bg-background wide:flex">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <h2 className="font-serif text-[14px] font-semibold text-ink">Inspector</h2>
+          <PanelCloseButton onClose={onClose} />
+        </div>
         <div className="flex h-full flex-1 items-center justify-center p-6 text-center text-[12px] text-ink-mute">
           Select a node to inspect.
         </div>
@@ -330,13 +322,7 @@ const InspectorPanel = () => {
     <aside className="hidden h-full w-[340px] shrink-0 flex-col border-l border-border bg-background wide:flex">
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <h2 className="font-serif text-[14px] font-semibold text-ink">Inspector</h2>
-        <button
-          onClick={() => selectEntity(null)}
-          className="min-h-[44px] min-w-[44px] flex items-center justify-center text-ink-faint transition-colors hover:text-ink focus-ring"
-          aria-label="Close inspector"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        <PanelCloseButton onClose={onClose} />
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
@@ -427,76 +413,29 @@ const InspectorPanel = () => {
   )
 }
 
-/** Citations panel listing sources cited by the AI assistant in chat. */
-const CitationsPanel = () => {
-  const chat = useStudioStore((s) => s.chat)
-  const entities = useStudioStore((s) => s.entities)
-  const lastAssistant = [...chat].reverse().find((m) => m.role === 'assistant')
-  const citations = lastAssistant?.citations || []
-
-  return (
-    <aside className="hidden h-full w-[320px] shrink-0 flex-col border-l border-border bg-background wide:flex">
-      <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-        <Quote className="h-3.5 w-3.5 text-saffron" />
-        <h2 className="font-serif text-[14px] font-semibold text-ink">Cited sources</h2>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-3">
-        {citations.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 py-12 text-center">
-            <Sparkles className="h-8 w-8 text-ink-faint/40" />
-            <p className="px-6 text-[12px] text-ink-mute">
-              When the assistant cites your library, the sources appear here for verification.
-            </p>
-          </div>
-        ) : (
-          <ul className="space-y-2">
-            {dedupeCitations(citations).map((c, i) => (
-              <li
-                key={JSON.stringify([c.entityId, c.snippet])}
-                className="rounded-md border border-border bg-muted/30 p-3"
-              >
-                <div className="mb-1 flex items-center gap-2">
-                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-saffron text-badge font-bold text-white">
-                    {i + 1}
-                  </span>
-                  <span className="text-[12px] font-medium text-ink">{c.entityName}</span>
-                </div>
-                <p className="text-label leading-snug text-ink-mute">{c.snippet}</p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      <div className="border-t border-border px-4 py-2.5">
-        <div className="flex items-center gap-1.5 text-label text-ink-faint">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-          Grounded in {entities.length} local entities
-        </div>
-      </div>
-    </aside>
-  )
-}
-
 /** Right sidebar panel that switches between search, inspector, and citations based on the active view. */
 export const RightPanel = () => {
   const currentView = useStudioStore((s) => s.currentView)
   const rightPanelOpen = useStudioStore((s) => s.rightPanelOpen)
   const chat = useStudioStore((s) => s.chat)
+  const entities = useStudioStore((s) => s.entities)
   const startNew = useStudioStore((s) => s.startNew)
+  const setRightPanelOpen = useStudioStore((s) => s.setRightPanelOpen)
+  const handleClose = useCallback(() => {
+    setRightPanelOpen(false)
+  }, [setRightPanelOpen])
 
   if (!rightPanelOpen) return null
 
   // Contextual content per view
   if (currentView === 'graph' || currentView === 'mindmap') {
-    return <InspectorPanel />
+    return <InspectorPanel onClose={handleClose} />
   }
   if (currentView === 'chat' || currentView === 'ai') {
     const hasCitations = chat.some((m) => m.citations && m.citations.length > 0)
-    if (!hasCitations) return <SearchPanel onCreateEntity={() => startNew()} />
-    return <CitationsPanel />
+    if (!hasCitations) return <SearchPanel onCreateEntity={() => startNew()} onClose={handleClose} />
+    return <CitationsPanel chat={chat} entities={entities} onClose={handleClose} />
   }
 
-  return <SearchPanel onCreateEntity={() => startNew()} />
+  return <SearchPanel onCreateEntity={() => startNew()} onClose={handleClose} />
 }
