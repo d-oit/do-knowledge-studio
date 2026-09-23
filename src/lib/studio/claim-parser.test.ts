@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest'
 import { extractClaimsFromText, hasExtractableClaims } from './claim-parser'
 
-// Smoke guard, not a micro-benchmark. Both loops short-circuit on the first
-// assertion (or the absence of one) and finish in single-digit milliseconds on a
-// quiet machine, but this file runs alongside 150+ others and CPU saturation has
-// pushed comparable measurements past 180ms (see the ceiling note in
-// src/lib/ai/context.test.ts). The wide margin keeps the assertion about parser
-// behaviour rather than host scheduling, and still catches an order-of-magnitude
-// regression.
+// Smoke guard, not a micro-benchmark. The plain-text loop returns on a single
+// regex probe and the large-document loop stops parsing after the first
+// assertion, so both finish in single-digit milliseconds on a quiet machine.
+// This file runs alongside 150+ others, and CPU saturation has pushed comparable
+// measurements past 180ms (see the ceiling note in src/lib/ai/context.test.ts),
+// so the wide margin keeps the assertion about parser behaviour rather than host
+// scheduling, and still catches an order-of-magnitude regression.
 const CLAIM_PARSE_MS_CEILING = 500
 
 describe('extractClaimsFromText', () => {
@@ -157,7 +157,13 @@ describe('hasExtractableClaims', () => {
     expect(hasExtractableClaims('Assertion: \nAssertion: Valid statement')).toBe(true)
   })
 
-  it('performance: short-circuits plain text and exits early on large documents', () => {
+  it('performance: stays within the smoke-test ceiling for plain text and large documents', () => {
+    // This is a regression ceiling, not a proof of early exit.
+    // `hasExtractableClaims` still materializes every marker up front — a block's
+    // end needs the next marker's index — so the marker scan is O(n) either way.
+    // What short-circuits is `parseBlock`, which runs only until the first block
+    // parses. Asserting that behaviourally would need an injection point inside
+    // the module, which the exported API deliberately does not have.
     const plainText = 'This is a long document with no assertions. '.repeat(1000)
     const startPlain = performance.now()
     for (let i = 0; i < 500; i += 1) {
