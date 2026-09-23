@@ -94,21 +94,83 @@ if [[ -z "$SCOPE" ]] && [ "$CHANGED_ONLY" = false ]; then
     SCOPE="all"
 fi
 
+# Resolve the ref that --changed diffs against, most specific first:
+#   1. QUALITY_GATE_BASE_REF  explicit override (also what the BATS tests drive)
+#   2. GITHUB_BASE_REF        set by GitHub Actions on pull_request events
+#   3. origin/HEAD            the remote's default branch
+#   4. main
+# Returns non-zero when nothing resolves, so the caller can fail closed instead
+# of reporting success for work nobody checked (plans/147).
+resolve_base_ref() {
+    local candidate
+    local candidates=()
+    local default_branch=""
+
+    if [ -n "${QUALITY_GATE_BASE_REF:-}" ]; then
+        candidates+=("$QUALITY_GATE_BASE_REF")
+    fi
+    if [ -n "${GITHUB_BASE_REF:-}" ]; then
+        candidates+=("origin/$GITHUB_BASE_REF" "$GITHUB_BASE_REF")
+    fi
+    default_branch=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null || true)
+    if [ -n "$default_branch" ]; then
+        candidates+=("$default_branch" "${default_branch#origin/}")
+    fi
+    candidates+=("origin/main" "main")
+
+    for candidate in "${candidates[@]}"; do
+        [ -n "$candidate" ] || continue
+        if git rev-parse --verify --quiet "${candidate}^{commit}" >/dev/null 2>&1; then
+            printf '%s\n' "$candidate"
+            return 0
+        fi
+    done
+    return 1
+}
+
 # Detect changed scope if requested
 if [ "$CHANGED_ONLY" = true ]; then
     if ! command -v git &> /dev/null; then
         echo -e "${YELLOW}Warning: git not found, defaulting to scope 'all'${NC}"
+        SCOPE="all"
     else
         echo -e "${BLUE}Detecting changed files...${NC}"
-        # Get changed files against main or develop
-        BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
-        BASE_BRANCH=${BASE_BRANCH:-main}
+        CHANGED_FILES=""
+        MERGE_BASE=""
+        CHANGE_SET_UNKNOWN=false
 
-        CHANGED_FILES=$(git diff --name-only "$BASE_BRANCH" 2>/dev/null || git diff --name-only HEAD~1 2>/dev/null || echo "")
-
-        if [ -z "$CHANGED_FILES" ]; then
-            echo -e "${GREEN}No changes detected.${NC}"
-            exit 0
+        # Fail closed: an undeterminable change set must widen the gate, never
+        # narrow it to nothing (plans/147).
+        BASE_REF=""
+        if BASE_REF=$(resolve_base_ref); then
+            # Diff from the merge base so every commit on the branch is checked,
+            # not just its tip. The previous HEAD~1 fallback hid the shell changes
+            # on PR #806 behind a trailing docs-only commit.
+            MERGE_BASE=$(git merge-base "$BASE_REF" HEAD 2>/dev/null || true)
+            if [ -z "$MERGE_BASE" ]; then
+                echo -e "${YELLOW}  ⚠ No merge base with '$BASE_REF' - running the full gate${NC}"
+                SCOPE="${SCOPE:-all}"
+                CHANGE_SET_UNKNOWN=true
+            else
+                if [ "$MERGE_BASE" = "$(git rev-parse HEAD 2>/dev/null)" ] && git rev-parse --verify --quiet HEAD~1 >/dev/null 2>&1; then
+                    # The tip *is* the base, i.e. this is a push to the default
+                    # branch: check the commit that landed, not nothing.
+                    MERGE_BASE=$(git rev-parse HEAD~1)
+                fi
+                if CHANGED_FILES=$(git diff --name-only "$MERGE_BASE" 2>/dev/null); then
+                    echo "  Base: $BASE_REF (diff from $(git rev-parse --short "$MERGE_BASE" 2>/dev/null))"
+                else
+                    echo -e "${YELLOW}  ⚠ git diff against '$MERGE_BASE' failed - running the full gate${NC}"
+                    SCOPE="${SCOPE:-all}"
+                    CHANGED_FILES=""
+                    CHANGE_SET_UNKNOWN=true
+                fi
+            fi
+        else
+            echo -e "${YELLOW}  ⚠ No base ref found (QUALITY_GATE_BASE_REF, GITHUB_BASE_REF, origin/HEAD, main)${NC}"
+            echo -e "${YELLOW}    Running the full gate instead of checking nothing.${NC}"
+            SCOPE="${SCOPE:-all}"
+            CHANGE_SET_UNKNOWN=true
         fi
 
         # Mapping patterns to scopes
@@ -119,18 +181,22 @@ if [ "$CHANGED_ONLY" = true ]; then
         HAS_EXPORT=false
         HAS_TOOLING=false
 
-        while IFS= read -r file; do
-            [[ "$file" =~ \.md$ ]] || [[ "$file" =~ ^agents-docs/ ]] && HAS_DOCS=true
-            [[ "$file" =~ ^\.agents/ ]] || [[ "$file" =~ ^AGENTS\.md$ ]] || [[ "$file" =~ ^scripts/validate-(skills|skill-format|links)\.sh$ ]] && HAS_AGENT=true
-            [[ "$file" =~ ^src/ ]] || [[ "$file" =~ ^public/ ]] || [[ "$file" =~ ^index\.html$ ]] || [[ "$file" =~ ^vite\.config\.ts$ ]] && HAS_FRONTEND=true
-            [[ "$file" =~ ^cli/ ]] && HAS_CLI=true
-            [[ "$file" =~ ^export/ ]] && HAS_EXPORT=true
-            [[ "$file" =~ ^scripts/ ]] || [[ "$file" =~ ^tests/ ]] || [[ "$file" =~ ^\.github/ ]] || [[ "$file" =~ ^package\.json$ ]] && HAS_TOOLING=true
-        done <<< "$CHANGED_FILES"
+        # Only a *determined* empty change set means there is nothing to check.
+        if [ "$CHANGE_SET_UNKNOWN" = false ] && [ -z "$CHANGED_FILES" ]; then
+            echo -e "${GREEN}No changes detected.${NC}"
+            exit 0
+        fi
 
-        # If multiple scopes changed, we might want to run all or a subset
-        # For simplicity, if anything besides docs changed, we might skip doc-only logic
-        # But here we'll just refine what to run below.
+        if [ -n "$CHANGED_FILES" ]; then
+            while IFS= read -r file; do
+                [[ "$file" =~ \.md$ ]] || [[ "$file" =~ ^agents-docs/ ]] && HAS_DOCS=true
+                [[ "$file" =~ ^\.agents/ ]] || [[ "$file" =~ ^AGENTS\.md$ ]] || [[ "$file" =~ ^scripts/validate-(skills|skill-format|links)\.sh$ ]] && HAS_AGENT=true
+                [[ "$file" =~ ^src/ ]] || [[ "$file" =~ ^public/ ]] || [[ "$file" =~ ^index\.html$ ]] || [[ "$file" =~ ^vite\.config\.ts$ ]] && HAS_FRONTEND=true
+                [[ "$file" =~ ^cli/ ]] && HAS_CLI=true
+                [[ "$file" =~ ^export/ ]] && HAS_EXPORT=true
+                [[ "$file" =~ ^scripts/ ]] || [[ "$file" =~ ^tests/ ]] || [[ "$file" =~ ^\.github/ ]] || [[ "$file" =~ ^package\.json$ ]] && HAS_TOOLING=true
+            done <<< "$CHANGED_FILES"
+        fi
     fi
 fi
 
@@ -541,7 +607,7 @@ if [[ " ${DETECTED_LANGUAGES[*]} " =~ " shell " ]] && [[ "$SCOPE" == "all" || "$
     # BATS coverage pairing: every new top-level scripts/*.sh added in
     # this PR must have matching tests/<name>.bats or be referenced from
     # an existing test, so new scripts always ship with regression tests.
-    if [ "${CHANGED_ONLY:-false}" = true ] && [ -n "${BASE_BRANCH:-}" ]; then
+    if [ "${CHANGED_ONLY:-false}" = true ] && [ -n "${MERGE_BASE:-}" ]; then
         NEW_UNCOVERED=()
         while IFS= read -r file; do
             [ -n "$file" ] || continue
@@ -551,14 +617,14 @@ if [[ " ${DETECTED_LANGUAGES[*]} " =~ " shell " ]] && [[ "$SCOPE" == "all" || "$
             if [ -f "tests/$script_base.bats" ]; then continue; fi
             if grep -rlq "$file" tests/*.bats 2>/dev/null; then continue; fi
             NEW_UNCOVERED+=("$file")
-        done < <(git diff --diff-filter=A --name-only "$BASE_BRANCH" -- 'scripts/*.sh' 2>/dev/null || true)
+        done < <(git diff --diff-filter=A --name-only "$MERGE_BASE" -- 'scripts/*.sh' 2>/dev/null || true)
         if [ "${#NEW_UNCOVERED[@]}" -gt 0 ]; then
             echo -e "${RED}  ✗ new shell scripts missing BATS coverage:${NC}"
             for s in "${NEW_UNCOVERED[@]}"; do
                 echo -e "${RED}    $s (add tests/$(basename "$s" .sh).bats)${NC}"
             done
             FAILED=1
-        elif git diff --diff-filter=A --name-only "$BASE_BRANCH" -- 'scripts/*.sh' 2>/dev/null | grep -q .; then
+        elif git diff --diff-filter=A --name-only "$MERGE_BASE" -- 'scripts/*.sh' 2>/dev/null | grep -q .; then
             echo -e "${GREEN}  ✓ new shell scripts have BATS coverage${NC}"
         fi
     fi
