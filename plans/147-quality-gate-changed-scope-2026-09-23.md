@@ -62,6 +62,18 @@ branch** is checked, not just the tip. Two special cases:
 The resolved base and the diffed commit are echoed (`Base: origin/main (diff
 from 646682a)`) so the next diagnosis starts from CI logs instead of guesswork.
 
+Two boundary notes:
+
+- **An explicit `--scope` now wins over an empty change set.** Previously
+  `--scope frontend --changed` with no detected changes exited 0; it now runs the
+  requested scope, because a caller who names a scope is asking for that scope,
+  not for a change-set report.
+- **A multi-commit push to the default branch is covered only by its last
+  commit.** `HEAD~1` is the base for the tip-is-base case; the exact range would
+  need the push event's `before` SHA. Squash merging (`required_linear_history`)
+  makes single-commit pushes the norm here, so this is recorded rather than
+  built.
+
 ### Also repaired: the BATS coverage-pairing block
 
 The "new shell scripts need `tests/<name>.bats`" check read `$BASE_BRANCH` —
