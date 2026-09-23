@@ -16,17 +16,22 @@ if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
   exit 1
 fi
 
-VALIDATOR_PYTHON="$PYTHON_BIN"
-if ! "$VALIDATOR_PYTHON" -c 'import yaml' >/dev/null 2>&1; then
+# agent-surface.py imports PyYAML. Use the system module when it is importable;
+# otherwise provision a cached virtual environment and put it first on PATH so the
+# validator's own `#!/usr/bin/env python3` shebang resolves to an interpreter that
+# has the dependency. The validator is still executed directly, so the delegation
+# contract (and the BATS suite that encodes it) is unchanged.
+if ! "$PYTHON_BIN" -c 'import yaml' >/dev/null 2>&1; then
   mkdir -p "$VALIDATOR_CACHE_DIR"
   if [ ! -x "$VALIDATOR_VENV_DIR/bin/python" ]; then
     "$PYTHON_BIN" -m venv "$VALIDATOR_VENV_DIR"
   fi
-  VALIDATOR_PYTHON="$VALIDATOR_VENV_DIR/bin/python"
-  if ! "$VALIDATOR_PYTHON" -c 'import yaml' >/dev/null 2>&1; then
-    "$VALIDATOR_PYTHON" -m pip install --disable-pip-version-check "PyYAML==$PY_YAML_VERSION"
+  if ! "$VALIDATOR_VENV_DIR/bin/python" -c 'import yaml' >/dev/null 2>&1; then
+    "$VALIDATOR_VENV_DIR/bin/python" -m pip install --disable-pip-version-check "PyYAML==$PY_YAML_VERSION"
   fi
+  PATH="$VALIDATOR_VENV_DIR/bin:$PATH"
+  export PATH
 fi
 
 echo "Validating skills via agent-surface.py..."
-"$VALIDATOR_PYTHON" ./scripts/agent-surface.py validate
+./scripts/agent-surface.py validate
