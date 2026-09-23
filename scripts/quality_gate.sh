@@ -152,12 +152,24 @@ if [ "$CHANGED_ONLY" = true ]; then
                 SCOPE="${SCOPE:-all}"
                 CHANGE_SET_UNKNOWN=true
             else
-                if [ "$MERGE_BASE" = "$(git rev-parse HEAD 2>/dev/null)" ] && git rev-parse --verify --quiet HEAD~1 >/dev/null 2>&1; then
-                    # The tip *is* the base, i.e. this is a push to the default
-                    # branch: check the commit that landed, not nothing.
-                    MERGE_BASE=$(git rev-parse HEAD~1)
+                if [ "$MERGE_BASE" = "$(git rev-parse HEAD 2>/dev/null)" ]; then
+                    if git rev-parse --verify --quiet HEAD~1 >/dev/null 2>&1; then
+                        # The tip *is* the base, i.e. this is a push to the default
+                        # branch: check the commit that landed, not nothing.
+                        MERGE_BASE=$(git rev-parse HEAD~1)
+                    else
+                        # Tip is the base and there is no history to say what
+                        # landed (a shallow checkout). Widen rather than report
+                        # "no changes" for work nobody looked at.
+                        echo -e "${YELLOW}  ⚠ '$BASE_REF' is the tip and no parent commit is available (shallow checkout)${NC}"
+                        echo -e "${YELLOW}    Running the full gate instead of checking nothing.${NC}"
+                        SCOPE="${SCOPE:-all}"
+                        CHANGE_SET_UNKNOWN=true
+                    fi
                 fi
-                if CHANGED_FILES=$(git diff --name-only "$MERGE_BASE" 2>/dev/null); then
+                if [ "$CHANGE_SET_UNKNOWN" = true ]; then
+                    CHANGED_FILES=""
+                elif CHANGED_FILES=$(git diff --name-only "$MERGE_BASE" 2>/dev/null); then
                     echo "  Base: $BASE_REF (diff from $(git rev-parse --short "$MERGE_BASE" 2>/dev/null))"
                 else
                     echo -e "${YELLOW}  ⚠ git diff against '$MERGE_BASE' failed - running the full gate${NC}"

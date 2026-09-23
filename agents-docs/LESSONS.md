@@ -1249,8 +1249,16 @@ broke three `tests/validate-skills.bats` cases — its Quality Gate check passed
   `No changes detected.`; that message is reserved for a *determined* empty set.
 - Echo the resolved base and diffed commit (`Base: origin/main (diff from
   646682a)`) so CI logs answer "what did this gate actually check?".
-- `tests/quality-gate-scope.bats` pins all seven cases; six fail against the
-  pre-fix script, and the Quality Gate job's runtime on the fix PR jumped from
-  ~30 s to 2 m 34 s — the signature of sections that now actually run.
+- `tests/quality-gate-scope.bats` pins all eight cases; six fail against the
+  pre-fix script.
+- **A fix that leans on git history must verify the CI checkout has that
+  history.** The first version of this fix (#809) passed 7/7 local tests, a green
+  full gate, and a Quality Gate job that jumped from ~30 s to 2 m 34 s on the PR.
+  What exposed the gap was measuring the job on `main` *after* the merge: 29 s,
+  because `actions/checkout` defaults to `fetch-depth: 1`, so `HEAD~1` did not
+  exist and the "check what landed" branch could not diff. The job now checks
+  out with `fetch-depth: 2`, and a tip-with-no-parent widens the gate instead of
+  passing. Local verification cannot catch this class of bug: a local clone
+  always has history.
 
-**Tags**: #quality-gate #ci #git #fail-closed #bats
+**Tags**: #quality-gate #ci #git #fail-closed #bats #shallow-clone

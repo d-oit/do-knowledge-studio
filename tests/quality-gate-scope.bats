@@ -175,11 +175,29 @@ run_gate() {
   [[ "$output" == *"scripts/uncovered.sh"* ]]
 }
 
-@test "reports no changes only when there is nothing to diff" {
+@test "fails closed when the default-branch tip has no parent to diff" {
   local repo="$BATS_TEST_TMPDIR/repo"
   make_repo "$repo"
 
-  # A single-commit repository whose tip is the base: no parent to fall back to.
+  # A single-commit repository whose tip is the base: a shallow checkout has no
+  # history to say what landed, so the gate must widen rather than pass.
+  run_gate "$repo" QUALITY_GATE_BASE_REF=trunk
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"no parent commit is available"* ]]
+  [[ "$output" == *"Running quality gate (Scope: all)"* ]]
+  [[ "$output" != *"No changes detected."* ]]
+}
+
+@test "reports no changes for a determined empty diff" {
+  local repo="$BATS_TEST_TMPDIR/repo"
+  make_repo "$repo"
+  (
+    cd "$repo" || exit 1
+    # An empty commit leaves the tree identical to its parent, so the landed
+    # commit genuinely changes nothing and the gate has nothing to check.
+    git commit -q --allow-empty -m "chore: empty"
+  )
+
   run_gate "$repo" QUALITY_GATE_BASE_REF=trunk
   [ "$status" -eq 0 ]
   [[ "$output" == *"No changes detected."* ]]
