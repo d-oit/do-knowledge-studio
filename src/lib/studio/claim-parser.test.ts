@@ -1,6 +1,15 @@
 import { describe, it, expect } from 'vitest'
 import { extractClaimsFromText, hasExtractableClaims } from './claim-parser'
 
+// Smoke guard, not a micro-benchmark. Both loops short-circuit on the first
+// assertion (or the absence of one) and finish in single-digit milliseconds on a
+// quiet machine, but this file runs alongside 150+ others and CPU saturation has
+// pushed comparable measurements past 180ms (see the ceiling note in
+// src/lib/ai/context.test.ts). The wide margin keeps the assertion about parser
+// behaviour rather than host scheduling, and still catches an order-of-magnitude
+// regression.
+const CLAIM_PARSE_MS_CEILING = 500
+
 describe('extractClaimsFromText', () => {
   it('extracts a single assertion with a source', () => {
     expect(extractClaimsFromText('Assertion: Water boils at 100C (Source: physics textbook)')).toEqual([
@@ -164,7 +173,7 @@ describe('hasExtractableClaims', () => {
     }
     const durationDoc = performance.now() - startDoc
 
-    expect(durationPlain).toBeLessThan(100)
-    expect(durationDoc).toBeLessThan(100)
+    expect(durationPlain).toBeLessThan(CLAIM_PARSE_MS_CEILING)
+    expect(durationDoc).toBeLessThan(CLAIM_PARSE_MS_CEILING)
   })
 })
