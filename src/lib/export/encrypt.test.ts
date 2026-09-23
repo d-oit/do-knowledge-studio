@@ -23,8 +23,11 @@ describe('WebCrypto AES-GCM Encryption', () => {
   it('tampered ciphertext throws on decrypt', async () => {
     const encrypted = await encryptData('secret data', 'password')
     const parsed = JSON.parse(encrypted)
-    // Tamper with the last char of the data
-    parsed.data = `${parsed.data.slice(0, -2)}AA`
+    // Flip the trailing character to a different base64 digit so the tamper
+    // always alters the GCM tag (a fixed literal is a no-op when the random
+    // ciphertext already ends with those characters).
+    const tail = parsed.data.endsWith('A') ? 'B' : 'A'
+    parsed.data = `${parsed.data.slice(0, -1)}${tail}`
     const tampered = JSON.stringify(parsed)
     await expect(decryptData(tampered, 'password')).rejects.toThrow()
   })

@@ -1,7 +1,6 @@
 'use client'
 
 import { useStudioStore } from '@/lib/studio/store'
-import { useStoreHydrated } from '@/lib/studio/use-hydrated'
 import type { ViewId } from '@/lib/studio/types'
 import { translate as timelineT } from '@/lib/i18n/messages/timeline'
 import { Menu, Plus, Search } from 'lucide-react'
@@ -35,7 +34,6 @@ export const Topbar = () => {
   const setSearchQuery = useStudioStore((s) => s.setSearchQuery)
   const setMobileDrawerOpen = useStudioStore((s) => s.setMobileDrawerOpen)
   const setMobilePanelView = useStudioStore((s) => s.setMobilePanelView)
-  const isHydrated = useStoreHydrated()
   const meta = getViewMeta(currentView)
 
   // Inline input doubles as a quick filter for the Library + right-panel SearchPanel,
@@ -117,10 +115,7 @@ export const Topbar = () => {
       </div>
 
       {/* Offline-ready badge — hidden on mobile (< 768px) */}
-      <div
-        className="hidden flex-shrink-0 items-center gap-1.5 rounded-full border border-saffron/30 bg-saffron-soft px-2.5 py-1 text-label font-medium text-saffron-deep md:flex"
-        data-hydrated={isHydrated}
-      >
+      <div className="hidden flex-shrink-0 items-center gap-1.5 rounded-full border border-saffron/30 bg-saffron-soft px-2.5 py-1 text-label font-medium text-saffron-deep md:flex">
         <span className="h-1.5 w-1.5 rounded-full bg-saffron" />
         Offline ready
       </div>

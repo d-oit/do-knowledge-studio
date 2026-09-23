@@ -179,7 +179,7 @@ fi
 
 # --- Always: validate agent-facing surfaces ---
 echo -e "${BLUE}Validating agent-facing surfaces...${NC}"
-if ! ./scripts/agent-surface.py validate; then
+if ! ./scripts/validate-skills.sh; then
     FAILED=1
 fi
 echo ""

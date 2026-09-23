@@ -46,6 +46,7 @@ const mockStartEdit = vi.fn()
 const mockDeleteEntity = vi.fn()
 const mockSelectEntity = vi.fn()
 const mockSetSearchQuery = vi.fn()
+const mockSetRightPanelOpen = vi.fn()
 
 let currentView = 'home'
 let rightPanelOpen = false
@@ -94,6 +95,7 @@ vi.mock('@/lib/studio/store', () => ({
         selectEntity: mockSelectEntity,
         searchQuery,
         setSearchQuery: mockSetSearchQuery,
+        setRightPanelOpen: mockSetRightPanelOpen,
         selectedEntityId,
       }),
     { getState: () => ({}) },
@@ -174,10 +176,11 @@ describe('RightPanel', () => {
     expect(screen.getByText('Search')).toBeDefined()
   })
 
-  it('renders close button in SearchPanel', () => {
+  it('closes SearchPanel via its close button', () => {
     rightPanelOpen = true
     render(<RightPanel />)
-    expect(screen.getByLabelText('Close')).toBeDefined()
+    fireEvent.click(screen.getByRole('button', { name: 'Close panel' }))
+    expect(mockSetRightPanelOpen).toHaveBeenCalledWith(false)
   })
 
   it('renders search input', () => {
@@ -216,7 +219,7 @@ describe('RightPanel', () => {
     rightPanelOpen = true
     currentView = 'graph'
     render(<RightPanel />)
-    expect(screen.getByLabelText('Close inspector')).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Close panel' })).toBeDefined()
   })
 
   it('shows entity name in inspector', () => {

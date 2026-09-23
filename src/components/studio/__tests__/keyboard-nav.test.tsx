@@ -136,7 +136,6 @@ describe('Sidebar keyboard navigation', () => {
   let Sidebar: React.ComponentType
 
   beforeAll(async () => {
-    vi.resetModules()
     const mod = await import('@/components/studio/sidebar')
     Sidebar = mod.Sidebar
   })
@@ -202,7 +201,6 @@ describe('Topbar keyboard navigation', () => {
   let Topbar: React.ComponentType
 
   beforeAll(async () => {
-    vi.resetModules()
     const mod = await import('@/components/studio/topbar')
     Topbar = mod.Topbar
   })
@@ -254,7 +252,6 @@ describe('Arrow key navigation in menus/lists', () => {
   }>
 
   beforeAll(async () => {
-    vi.resetModules()
     const mod = await import('@/components/studio/views/type-selector')
     TypeSelector = mod.TypeSelector
   })
@@ -341,7 +338,6 @@ describe('MobileDrawer keyboard navigation', () => {
   let MobileDrawer: React.ComponentType
 
   beforeAll(async () => {
-    vi.resetModules()
     const mod = await import('@/components/studio/mobile-drawer')
     MobileDrawer = mod.MobileDrawer
   })
@@ -396,7 +392,6 @@ describe('AppShell keyboard navigation', () => {
   let AppShell: React.ComponentType
 
   beforeAll(async () => {
-    vi.resetModules()
     const mod = await import('@/components/studio/app-shell')
     AppShell = mod.AppShell
   })
