@@ -135,6 +135,26 @@ run_gate() {
   [[ "$output" != *"No changes detected."* ]]
 }
 
+@test "keeps an explicit scope when the base cannot be resolved" {
+  local repo="$BATS_TEST_TMPDIR/repo"
+  make_repo "$repo"
+  (
+    cd "$repo" || exit 1
+    git checkout -q -b feature
+    printf 'export const widget = 1\n' >src/widget.ts
+    git add -A
+    git commit -qm "feat: widget"
+  )
+
+  run env -u QUALITY_GATE_BASE_REF -u GITHUB_BASE_REF SKIP_TESTS=true \
+    bash "$repo/scripts/quality_gate.sh" --changed --scope frontend
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"No base ref found"* ]]
+  # Widening to `all` would ignore the scope the caller asked for.
+  [[ "$output" == *"Running quality gate (Scope: frontend)"* ]]
+  [[ "$output" != *"Running quality gate (Scope: all)"* ]]
+}
+
 @test "flags new shell scripts without BATS coverage from anywhere on the branch" {
   local repo="$BATS_TEST_TMPDIR/repo"
   make_repo "$repo"

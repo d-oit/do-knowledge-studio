@@ -137,6 +137,7 @@ if [ "$CHANGED_ONLY" = true ]; then
         echo -e "${BLUE}Detecting changed files...${NC}"
         CHANGED_FILES=""
         MERGE_BASE=""
+        CHANGE_SET_UNKNOWN=false
 
         # Fail closed: an undeterminable change set must widen the gate, never
         # narrow it to nothing (plans/147).
@@ -149,6 +150,7 @@ if [ "$CHANGED_ONLY" = true ]; then
             if [ -z "$MERGE_BASE" ]; then
                 echo -e "${YELLOW}  ⚠ No merge base with '$BASE_REF' - running the full gate${NC}"
                 SCOPE="${SCOPE:-all}"
+                CHANGE_SET_UNKNOWN=true
             else
                 if [ "$MERGE_BASE" = "$(git rev-parse HEAD 2>/dev/null)" ] && git rev-parse --verify --quiet HEAD~1 >/dev/null 2>&1; then
                     # The tip *is* the base, i.e. this is a push to the default
@@ -161,12 +163,14 @@ if [ "$CHANGED_ONLY" = true ]; then
                     echo -e "${YELLOW}  ⚠ git diff against '$MERGE_BASE' failed - running the full gate${NC}"
                     SCOPE="${SCOPE:-all}"
                     CHANGED_FILES=""
+                    CHANGE_SET_UNKNOWN=true
                 fi
             fi
         else
             echo -e "${YELLOW}  ⚠ No base ref found (QUALITY_GATE_BASE_REF, GITHUB_BASE_REF, origin/HEAD, main)${NC}"
             echo -e "${YELLOW}    Running the full gate instead of checking nothing.${NC}"
             SCOPE="${SCOPE:-all}"
+            CHANGE_SET_UNKNOWN=true
         fi
 
         # Mapping patterns to scopes
@@ -177,7 +181,8 @@ if [ "$CHANGED_ONLY" = true ]; then
         HAS_EXPORT=false
         HAS_TOOLING=false
 
-        if [ -z "$SCOPE" ] && [ -z "$CHANGED_FILES" ]; then
+        # Only a *determined* empty change set means there is nothing to check.
+        if [ "$CHANGE_SET_UNKNOWN" = false ] && [ -z "$CHANGED_FILES" ]; then
             echo -e "${GREEN}No changes detected.${NC}"
             exit 0
         fi

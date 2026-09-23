@@ -64,10 +64,9 @@ from 646682a)`) so the next diagnosis starts from CI logs instead of guesswork.
 
 Two boundary notes:
 
-- **An explicit `--scope` now wins over an empty change set.** Previously
-  `--scope frontend --changed` with no detected changes exited 0; it now runs the
-  requested scope, because a caller who names a scope is asking for that scope,
-  not for a change-set report.
+- **An explicit `--scope` survives a fail-closed base resolution.** The gate
+  widens to `all` only when no scope was named; `--scope frontend --changed`
+  without a resolvable base still runs the frontend scope.
 - **A multi-commit push to the default branch is covered only by its last
   commit.** `HEAD~1` is the base for the tip-is-base case; the exact range would
   need the push event's `before` SHA. Squash merging (`required_linear_history`)
@@ -83,7 +82,7 @@ unset variable and silently stopped enforcing coverage. It now uses
 
 ## 3. Verification
 
-`tests/quality-gate-scope.bats` (6 cases) runs the gate in throwaway
+`tests/quality-gate-scope.bats` (7 cases) runs the gate in throwaway
 repositories holding a copy of the script, `scripts/lib/lint_cache.sh`, and stub
 validators, so only scope detection is exercised.
 
@@ -93,14 +92,15 @@ validators, so only scope detection is exercised.
 | tip is the default branch | the landed commit's shell change is checked |
 | explicit override | `QUALITY_GATE_BASE_REF=HEAD~1` narrows to the tip |
 | no base ref | prints `No base ref found`, runs `Scope: all`, never `No changes detected.` |
+| explicit scope + no base ref | keeps `Scope: frontend` instead of widening to `all` |
 | coverage pairing | a branch-wide new script without `tests/<name>.bats` fails the gate |
 | nothing to diff | a single-commit repository still exits 0 with `No changes detected.` |
 
 | Check | Result |
 |---|---|
-| `bats tests/quality-gate-scope.bats` | 6/6 pass |
-| Same tests against the pre-fix script | 5/6 fail — the suite encodes the new contract |
-| `bats tests/` | 113/113 pass (107 before, 6 added) |
+| `bats tests/quality-gate-scope.bats` | 7/7 pass |
+| Same tests against the pre-fix script | 6/7 fail — the suite encodes the new contract |
+| `bats tests/` | 114/114 pass (107 before, 7 added) |
 | `./scripts/quality_gate.sh` (scope `all`) | ✓ all gates passed |
 | `--changed` on a branch | `Base: origin/main (diff from 646682a)`, shell section runs, exit 0 |
 | `--changed` at the default-branch tip | diff from `646682a` (`HEAD~1`), shell section runs, exit 0 |
