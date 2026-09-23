@@ -1212,3 +1212,45 @@ outdated ones) flipped `BLOCKED` → merged within seconds.
 - Maintain test assertions on conditional padding classes (`pr-3` vs `pr-11`) for filter inputs.
 
 **Tags**: #ui #accessibility #padding #shortcuts #dialog #clear-button #vitest
+
+## LESSON-035: A `--changed` gate can silently check nothing if it guesses its own base
+
+**Issue**: `quality_gate.sh --changed` (the CI Quality Gate job) derived its
+change set with `git diff --name-only "${BASE_BRANCH:-main}" || git diff
+--name-only HEAD~1 || echo ""`. A PR checkout has no local `main`, so the first
+diff failed and the `HEAD~1` fallback silently reduced the change set to the
+**tip commit**; when both diffs failed, the empty result was read as "nothing to
+check" and the gate exited 0. PR #806 changed `scripts/validate-skills.sh` and
+broke three `tests/validate-skills.bats` cases — its Quality Gate check passed in
+30 s (#807: 39 s), and `main` failed the full gate minutes after the merge
+(plans/146, plans/147).
+
+**Root Cause**:
+
+- The base ref was assumed to exist locally, and every fallback narrowed the
+  input silently — no diagnostic, no widening.
+- Section guards are `SCOPE == all|tooling|agent || HAS_TOOLING || HAS_AGENT`;
+  a collapsed change set leaves those flags false, so whole sections
+  (shellcheck, BATS, validators) never execute while the job stays green.
+- The BATS coverage-pairing block read the same `$BASE_BRANCH`, so removing it
+  would have silently stopped enforcing "new scripts need tests".
+- A missing `scripts/lib/lint_cache.sh` leaves `lint_if_changed` undefined; every
+  lint then reports as failed — fail-closed, but with a misleading message.
+
+**Prevention**:
+
+- Resolve the base explicitly, first match wins: `QUALITY_GATE_BASE_REF` →
+  `GITHUB_BASE_REF` → `origin/HEAD` → `origin/main` → `main`; then diff from
+  `git merge-base "$BASE_REF" HEAD` so the whole branch is checked.
+- Treat the default-branch tip (`merge-base == HEAD`) as a push and diff from
+  `HEAD~1`, so post-merge runs check what landed instead of no-oping.
+- Fail closed: an undeterminable base, merge base, or diff widens the gate to
+  `all` (an explicit `--scope` is preserved) and never prints
+  `No changes detected.`; that message is reserved for a *determined* empty set.
+- Echo the resolved base and diffed commit (`Base: origin/main (diff from
+  646682a)`) so CI logs answer "what did this gate actually check?".
+- `tests/quality-gate-scope.bats` pins all seven cases; six fail against the
+  pre-fix script, and the Quality Gate job's runtime on the fix PR jumped from
+  ~30 s to 2 m 34 s — the signature of sections that now actually run.
+
+**Tags**: #quality-gate #ci #git #fail-closed #bats
