@@ -119,5 +119,18 @@ export const extractClaimsFromText = (text: string): ParsedClaimDraft[] => {
 }
 
 /** Cheap check for whether `text` contains at least one parseable assertion. */
-export const hasExtractableClaims = (text: string): boolean =>
-  extractClaimsFromText(text).length > 0
+export const hasExtractableClaims = (text: string): boolean => {
+  if (!text || !/assertion\s*:/i.test(text)) return false
+  const markers = Array.from(text.matchAll(ASSERTION_MARKER))
+  for (let index = 0; index < markers.length; index += 1) {
+    const marker = markers[index]
+    if (!marker) continue
+    const blockStart = marker.index + marker[0].length
+    const next = markers[index + 1]
+    const blockEnd = next ? next.index : text.length
+    if (parseBlock(text.slice(blockStart, blockEnd)) !== null) {
+      return true
+    }
+  }
+  return false
+}

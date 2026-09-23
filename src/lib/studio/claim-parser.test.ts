@@ -1,6 +1,15 @@
 import { describe, it, expect } from 'vitest'
 import { extractClaimsFromText, hasExtractableClaims } from './claim-parser'
 
+// Smoke guard, not a micro-benchmark. The plain-text loop returns on a single
+// regex probe and the large-document loop stops parsing after the first
+// assertion, so both finish in single-digit milliseconds on a quiet machine.
+// This file runs alongside 150+ others, and CPU saturation has pushed comparable
+// measurements past 180ms (see the ceiling note in src/lib/ai/context.test.ts),
+// so the wide margin keeps the assertion about parser behaviour rather than host
+// scheduling, and still catches an order-of-magnitude regression.
+const CLAIM_PARSE_MS_CEILING = 500
+
 describe('extractClaimsFromText', () => {
   it('extracts a single assertion with a source', () => {
     expect(extractClaimsFromText('Assertion: Water boils at 100C (Source: physics textbook)')).toEqual([
@@ -141,5 +150,36 @@ describe('hasExtractableClaims', () => {
     expect(hasExtractableClaims('Nothing here')).toBe(false)
     expect(hasExtractableClaims('')).toBe(false)
     expect(hasExtractableClaims('Assertion:')).toBe(false)
+    expect(hasExtractableClaims('Assertion:    ')).toBe(false)
+  })
+
+  it('handles malformed initial assertion followed by a valid assertion', () => {
+    expect(hasExtractableClaims('Assertion: \nAssertion: Valid statement')).toBe(true)
+  })
+
+  it('performance: stays within the smoke-test ceiling for plain text and large documents', () => {
+    // This is a regression ceiling, not a proof of early exit.
+    // `hasExtractableClaims` still materializes every marker up front — a block's
+    // end needs the next marker's index — so the marker scan is O(n) either way.
+    // What short-circuits is `parseBlock`, which runs only until the first block
+    // parses. Asserting that behaviourally would need an injection point inside
+    // the module, which the exported API deliberately does not have.
+    const plainText = 'This is a long document with no assertions. '.repeat(1000)
+    const startPlain = performance.now()
+    for (let i = 0; i < 500; i += 1) {
+      hasExtractableClaims(plainText)
+    }
+    const durationPlain = performance.now() - startPlain
+
+    const largeDoc = 'Assertion: First valid claim (Source: source 1)\n' +
+      Array.from({ length: 500 }, (_, i) => `Assertion: Claim ${i} (Source: s${i})`).join('\n')
+    const startDoc = performance.now()
+    for (let i = 0; i < 500; i += 1) {
+      hasExtractableClaims(largeDoc)
+    }
+    const durationDoc = performance.now() - startDoc
+
+    expect(durationPlain).toBeLessThan(CLAIM_PARSE_MS_CEILING)
+    expect(durationDoc).toBeLessThan(CLAIM_PARSE_MS_CEILING)
   })
 })
