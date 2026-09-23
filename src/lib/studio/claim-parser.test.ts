@@ -141,5 +141,30 @@ describe('hasExtractableClaims', () => {
     expect(hasExtractableClaims('Nothing here')).toBe(false)
     expect(hasExtractableClaims('')).toBe(false)
     expect(hasExtractableClaims('Assertion:')).toBe(false)
+    expect(hasExtractableClaims('Assertion:    ')).toBe(false)
+  })
+
+  it('handles malformed initial assertion followed by a valid assertion', () => {
+    expect(hasExtractableClaims('Assertion: \nAssertion: Valid statement')).toBe(true)
+  })
+
+  it('performance: short-circuits plain text and exits early on large documents', () => {
+    const plainText = 'This is a long document with no assertions. '.repeat(1000)
+    const startPlain = performance.now()
+    for (let i = 0; i < 500; i += 1) {
+      hasExtractableClaims(plainText)
+    }
+    const durationPlain = performance.now() - startPlain
+
+    const largeDoc = 'Assertion: First valid claim (Source: source 1)\n' +
+      Array.from({ length: 500 }, (_, i) => `Assertion: Claim ${i} (Source: s${i})`).join('\n')
+    const startDoc = performance.now()
+    for (let i = 0; i < 500; i += 1) {
+      hasExtractableClaims(largeDoc)
+    }
+    const durationDoc = performance.now() - startDoc
+
+    expect(durationPlain).toBeLessThan(100)
+    expect(durationDoc).toBeLessThan(100)
   })
 })
