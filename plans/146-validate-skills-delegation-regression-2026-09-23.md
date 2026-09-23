@@ -43,14 +43,14 @@ check on both #806 (`ba6c3b8`) and #807 (`47e9a24`) completed in **30 s and
 39 s** respectively — far below the several minutes a gate that includes the
 shell/BATS section takes, so that section did not run.
 
-The `--changed` scope detection (§3 of this plan) explains how it can be
-skipped: it derives the file list from `git diff --name-only "$BASE_BRANCH"`,
+The `--changed` scope detection in `scripts/quality_gate.sh` explains how it can
+be skipped: it derives the file list from `git diff --name-only "$BASE_BRANCH"`,
 falling back to `git diff --name-only HEAD~1` when that fails. A PR checkout
 has no local `main` branch, so the fallback sees only the **last commit** of
 the PR — and the shell/BATS section is gated on the resulting `HAS_TOOLING` /
 `HAS_AGENT` flags. A commit that touches only `e2e/` and `plans/` sets neither.
 
-This is recorded as a follow-up (§4) rather than fixed here: it changes CI
+This is recorded as a follow-up (§5) rather than fixed here: it changes CI
 behaviour for every PR and deserves its own plan and verification.
 
 ## 3. Fix
