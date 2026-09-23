@@ -55,3 +55,29 @@ before changing this repository's test configuration.
 The preview also exposed a pre-existing hydration warning from a diagnostic
 `data-hydrated` attribute on the Topbar badge. The attribute had no consumer,
 so it was removed to keep server and client markup aligned.
+
+## Review follow-up — viewport gate on the E2E spec
+
+The GitNexus review flagged `e2e/right-panel.spec.ts` as desktop-only: the
+panel containers are `hidden … wide:flex` and `wide` is 1100px
+(`src/app/globals.css`), while the spec ran in every Playwright project.
+CI masks this because the E2E job runs `--project=chromium` only (1280px), but
+a plain `pnpm run test:e2e` failed on the 390px `mobile` and 834px `tablet`
+projects — reproduced before the fix:
+
+```
+1 failed
+  [mobile] › e2e/right-panel.spec.ts:8:3 › Right panel › close control …
+```
+
+The spec now skips itself below `WIDE_BREAKPOINT_PX` (1100, kept in sync with
+the `--breakpoint-wide` token) instead of naming projects, so the guard follows
+the breakpoint if the project list changes. Verified across all four projects:
+
+| Project | Viewport | Result |
+|---|---|---|
+| `chromium` | 1280×720 | passed |
+| `desktop-xl` | 1920×1080 | passed |
+| `tablet` | 834×1194 | skipped |
+| `mobile` | 390×844 | skipped |
+
