@@ -50,17 +50,25 @@ and passed. The full gate failed on `main` immediately afterwards (plans/146 §1
 
 The change set is then `git diff --name-only "$MERGE_BASE"` where
 `MERGE_BASE=$(git merge-base "$BASE_REF" HEAD)` — so **every commit on the
-branch** is checked, not just the tip. Two special cases:
+branch** is checked, not just the tip. Special cases:
 
 - **Tip is the base** (a push to the default branch, where
   `merge-base == HEAD`): diff from `HEAD~1` instead, so the commit that landed is
   checked rather than nothing. Previously this path produced an empty diff and a
   green no-op.
+- **Tip is the base with no parent available** (a shallow checkout, which is what
+  `actions/checkout` produces by default): there is no history that says what
+  landed, so the gate widens to the full gate. This case was found by verifying
+  the merged fix against the real `main` push — see §3.
 - **Undeterminable base, no merge base, or a failed diff**: warn and run the
   **full gate** (`SCOPE=all`). An explicit `--scope` is still honoured.
 
 The resolved base and the diffed commit are echoed (`Base: origin/main (diff
 from 646682a)`) so the next diagnosis starts from CI logs instead of guesswork.
+
+The Quality Gate job in `.github/workflows/ci-and-labels.yml` now checks out with
+`fetch-depth: 2`, so the tip-is-base case has the parent commit to diff against.
+Without it the gate still widens (correct, but a full gate on every `main` push).
 
 Two boundary notes:
 
@@ -82,7 +90,7 @@ unset variable and silently stopped enforcing coverage. It now uses
 
 ## 3. Verification
 
-`tests/quality-gate-scope.bats` (7 cases) runs the gate in throwaway
+`tests/quality-gate-scope.bats` (8 cases) runs the gate in throwaway
 repositories holding a copy of the script, `scripts/lib/lint_cache.sh`, and stub
 validators, so only scope detection is exercised.
 
@@ -94,25 +102,40 @@ validators, so only scope detection is exercised.
 | no base ref | prints `No base ref found`, runs `Scope: all`, never `No changes detected.` |
 | explicit scope + no base ref | keeps `Scope: frontend` instead of widening to `all` |
 | coverage pairing | a branch-wide new script without `tests/<name>.bats` fails the gate |
-| nothing to diff | a single-commit repository still exits 0 with `No changes detected.` |
+| parent-less tip | a single-commit repository widens to `Scope: all` instead of passing |
+| determined empty diff | an empty commit still reports `No changes detected.` |
 
 | Check | Result |
 |---|---|
-| `bats tests/quality-gate-scope.bats` | 7/7 pass |
-| Same tests against the pre-fix script | 6/7 fail — the suite encodes the new contract |
-| `bats tests/` | 114/114 pass (107 before, 7 added) |
+| `bats tests/quality-gate-scope.bats` | 8/8 pass |
+| Same tests against the pre-fix script | 6/8 fail — the suite encodes the new contract |
+| `bats tests/` | 115/115 pass (107 before, 8 added) |
 | `./scripts/quality_gate.sh` (scope `all`) | ✓ all gates passed |
 | `--changed` on a branch | `Base: origin/main (diff from 646682a)`, shell section runs, exit 0 |
-| `--changed` at the default-branch tip | diff from `646682a` (`HEAD~1`), shell section runs, exit 0 |
+| `--changed` at the default-branch tip, local repo | diff from `646682a` (`HEAD~1`), shell section runs, exit 0 |
+| Quality Gate job on the fix PR | 2 m 34 s (was 30–39 s) — the tooling sections now run |
+| Quality Gate job on `main` after merge | 29 s — `fetch-depth: 1` left no `HEAD~1`; this plan raises it to 2 |
 
 ### Behaviour change
 
 CI on pushes to `main` now checks what landed instead of no-oping: previously
 `git diff main` was empty at the tip and the gate exited 0. Shell, BATS,
 markdown and validator sections can now run on `main` pushes when the landed
-commit touches their paths. That is the intent — a gate that verifies nothing is
-worse than a slow one — but it is the one change in this plan that alters what
-CI enforces, so it is called out here explicitly.
+commit touches their paths — provided the checkout has a parent commit, which is
+why the job's `fetch-depth` is raised to 2 in this plan. That is the intent — a
+gate that verifies nothing is worse than a slow one — but it is the one change in
+this plan that alters what CI enforces, so it is called out here explicitly.
+
+### How the shallow-checkout case was found
+
+The first version of this fix was merged as #809 and looked verified: 7/7 BATS
+cases, the full gate green, and the fix PR's own Quality Gate job ran 2 m 34 s
+instead of 30 s. The check that actually caught the gap was measuring the job on
+`main` **after** the merge — 29 s, i.e. the tooling sections had not run. The
+job's checkout keeps `fetch-depth: 1`, so `HEAD~1` did not exist, the
+tip-is-base branch could not diff, and the gate reported `No changes detected.`
+for the commit that had just landed. Local verification could not surface this
+because a local clone always has history.
 
 ## 4. Follow-ups
 
