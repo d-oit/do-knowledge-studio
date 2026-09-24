@@ -201,12 +201,20 @@ jobs:
           else
             pnpm run test:e2e --project=chromium
           fi
-      - name: Upload Playwright report
+      - name: Upload Playwright artifacts
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
-          name: playwright-report
-          path: playwright-report/
+          name: playwright-artifacts
+          # Both directories matter. The HTML report is written by the `html`
+          # reporter (CI only), and `test-results/` holds the traces and error
+          # contexts (`trace: 'on-first-retry'`). Uploading `playwright-report/`
+          # alone kept nothing at all, because the list reporter never creates it —
+          # so a failed run left no evidence to diagnose (plans/153).
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: warn
           retention-days: 14
 
   build:
