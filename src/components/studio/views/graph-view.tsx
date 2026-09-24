@@ -4,6 +4,7 @@ import { useStudioStore } from '@/lib/studio/store'
 import { type GraphEdge, type GraphNode } from '@/lib/studio/types'
 import { seedGraph } from '@/lib/studio/seed-data'
 import { placeGraphNodes } from '@/lib/studio/graph-layout'
+import { canvasSize, canvasViewBox } from '@/lib/studio/graph-viewport'
 import { getEntityTypeDefs, getEntityTypeMeta } from '@/lib/studio/entity-types'
 import { translate as entityTypesT } from '@/lib/i18n/messages/entity-types'
 import { todayStamp, downloadBlob } from './export-types'
@@ -162,6 +163,11 @@ export const GraphView = () => {
     }
     return nodes
   }, [nodes, layout])
+
+  // The canvas grows with the placed nodes so nothing is drawn off-canvas. It is
+  // derived from `positioned` rather than `visibleNodes`: focus mode filters what
+  // is drawn, and the canvas must not shrink under the nodes when it toggles.
+  const canvas = useMemo(() => canvasSize(positioned), [positioned])
 
   const visibleNodes = useMemo(() => {
     if (focusMode && selectedEntityId) {
@@ -330,7 +336,7 @@ export const GraphView = () => {
       >
         <svg
           ref={svgRef}
-          viewBox={`${-panOffset.x / zoom} ${-panOffset.y / zoom} ${800 / zoom} ${560 / zoom}`}
+          viewBox={canvasViewBox(canvas, zoom, panOffset)}
           className="h-full w-full"
           preserveAspectRatio="xMidYMid meet"
           role="img"

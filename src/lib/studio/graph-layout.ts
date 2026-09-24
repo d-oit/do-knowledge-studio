@@ -31,6 +31,58 @@ export const PLACEMENT_Y_MIN = 80
 export const PLACEMENT_Y_MAX = 480
 
 /**
+ * A rectangle in graph coordinates that unseeded nodes are placed inside.
+ * The band starts at the authored seed layout's scale and grows with the library
+ * (see `placementBand`).
+ */
+export interface PlacementBand {
+  xMin: number
+  xMax: number
+  yMin: number
+  yMax: number
+}
+
+/** The unscaled band: 600×400 inside the 800×560 canvas the seed layout uses. */
+export const BASE_PLACEMENT_BAND: PlacementBand = {
+  xMin: PLACEMENT_X_MIN,
+  xMax: PLACEMENT_X_MAX,
+  yMin: PLACEMENT_Y_MIN,
+  yMax: PLACEMENT_Y_MAX,
+}
+
+/**
+ * Preferred-spacing slots the base band holds once the authored seed layout has
+ * taken its share: (600×400 − 8 seed obstacles × ~17k px²) ÷ ~17k px² ≈ 6, where
+ * 17k px² is one node's share of the plane at `PREFERRED_NODE_DISTANCE_PX` under
+ * hexagonal packing. Exported because it is the band's first growth threshold.
+ */
+export const BASE_BAND_CAPACITY = 6
+
+/** Per-tier growth: √2 per axis, so the band's area doubles each tier. */
+const BAND_GROWTH_PER_TIER = Math.SQRT2
+
+/**
+ * Placement band for `unseededCount` nodes. A band that holds only ~6 nodes at
+ * the preferred spacing would otherwise crowd everything beyond that into
+ * less-than-click-safe gaps — 40 new entities produced 42 such pairs, including
+ * pairs with seed nodes, which is the wrong-entity selection plans/148 fixed.
+ * The band therefore grows in tiers as the library does, and the graph canvas
+ * grows with it (`canvasSize` in `graph-viewport.ts`) so no node leaves the
+ * viewport. Positions stay stable inside a tier, so adding an entity does not
+ * reshuffle the graph until the next tier is reached.
+ */
+export const placementBand = (unseededCount: number): PlacementBand => {
+  const tiers = Math.max(0, Math.ceil(Math.log2(Math.max(1, unseededCount) / BASE_BAND_CAPACITY)))
+  const scale = BAND_GROWTH_PER_TIER ** tiers
+  return {
+    xMin: BASE_PLACEMENT_BAND.xMin,
+    yMin: BASE_PLACEMENT_BAND.yMin,
+    xMax: BASE_PLACEMENT_BAND.xMin + (BASE_PLACEMENT_BAND.xMax - BASE_PLACEMENT_BAND.xMin) * scale,
+    yMax: BASE_PLACEMENT_BAND.yMin + (BASE_PLACEMENT_BAND.yMax - BASE_PLACEMENT_BAND.yMin) * scale,
+  }
+}
+
+/**
  * Preferred centre-to-centre distance between two placed nodes. Labels render at
  * `text-caption` (10px) and truncate at 24 characters, so one spans ~132px; at
  * this spacing two labels no longer overlap at the same height. Seed nodes sit
@@ -64,10 +116,13 @@ export interface NodePosition {
 const clamp = (value: number, min: number, max: number): number =>
   Math.min(Math.max(value, min), max)
 
-/** Hash-derived position for an entity id, clamped into the placement band. */
-export const baseNodePosition = (id: string): NodePosition => ({
-  x: PLACEMENT_X_MIN + seededRandom(`${id}:x`) * (PLACEMENT_X_MAX - PLACEMENT_X_MIN),
-  y: PLACEMENT_Y_MIN + seededRandom(`${id}:y`) * (PLACEMENT_Y_MAX - PLACEMENT_Y_MIN),
+/** Hash-derived position for an entity id, clamped into `band`. */
+export const baseNodePosition = (
+  id: string,
+  band: PlacementBand = BASE_PLACEMENT_BAND,
+): NodePosition => ({
+  x: band.xMin + seededRandom(`${id}:x`) * (band.xMax - band.xMin),
+  y: band.yMin + seededRandom(`${id}:y`) * (band.yMax - band.yMin),
 })
 
 /** Smallest distance from (x, y) to any placed node; Infinity when none are placed. */
@@ -77,13 +132,13 @@ const clearance = (x: number, y: number, placed: readonly NodePosition[]): numbe
     Number.POSITIVE_INFINITY,
   )
 
-/** The `attempt`-th probe point around `base`, clamped into the placement band. */
-const probePosition = (base: NodePosition, attempt: number): NodePosition => {
+/** The `attempt`-th probe point around `base`, clamped into `band`. */
+const probePosition = (base: NodePosition, attempt: number, band: PlacementBand): NodePosition => {
   const radius = PREFERRED_NODE_DISTANCE_PX * Math.sqrt(attempt)
   const angle = attempt * PROBE_ANGLE_RAD
   return {
-    x: clamp(base.x + radius * Math.cos(angle), PLACEMENT_X_MIN, PLACEMENT_X_MAX),
-    y: clamp(base.y + radius * Math.sin(angle), PLACEMENT_Y_MIN, PLACEMENT_Y_MAX),
+    x: clamp(base.x + radius * Math.cos(angle), band.xMin, band.xMax),
+    y: clamp(base.y + radius * Math.sin(angle), band.yMin, band.yMax),
   }
 }
 
@@ -95,9 +150,10 @@ const probeForClearance = (
   base: NodePosition,
   placed: readonly NodePosition[],
   minDistance: number,
+  band: PlacementBand,
 ): NodePosition | null => {
   for (let attempt = 1; attempt <= PLACEMENT_ATTEMPTS; attempt += 1) {
-    const candidate = probePosition(base, attempt)
+    const candidate = probePosition(base, attempt, band)
     if (clearance(candidate.x, candidate.y, placed) >= minDistance) return candidate
   }
   return null
@@ -114,14 +170,15 @@ const probeForClearance = (
 export const resolveNodePosition = (
   id: string,
   placed: readonly NodePosition[],
+  band: PlacementBand = BASE_PLACEMENT_BAND,
 ): NodePosition => {
-  const base = baseNodePosition(id)
+  const base = baseNodePosition(id, band)
   let best = base
   let bestClearance = clearance(base.x, base.y, placed)
   if (bestClearance >= PREFERRED_NODE_DISTANCE_PX) return best
 
   for (let attempt = 1; attempt <= PLACEMENT_ATTEMPTS; attempt += 1) {
-    const candidate = probePosition(base, attempt)
+    const candidate = probePosition(base, attempt, band)
     const candidateClearance = clearance(candidate.x, candidate.y, placed)
     if (candidateClearance >= PREFERRED_NODE_DISTANCE_PX) return candidate
     if (candidateClearance > bestClearance) {
@@ -130,7 +187,7 @@ export const resolveNodePosition = (
     }
   }
 
-  return probeForClearance(base, placed, CLICK_SAFE_NODE_DISTANCE_PX) ?? best
+  return probeForClearance(base, placed, CLICK_SAFE_NODE_DISTANCE_PX, band) ?? best
 }
 
 const byEntityId = (a: Entity, b: Entity): number => a.id.localeCompare(b.id)
@@ -138,7 +195,9 @@ const byEntityId = (a: Entity, b: Entity): number => a.id.localeCompare(b.id)
 /**
  * Resolve every entity to a graph node. Entities with an authored seed position
  * keep it and act as fixed obstacles; the rest are placed in id order, so the
- * result does not depend on the library's sort order.
+ * result does not depend on the library's sort order. The band the unseeded nodes
+ * are placed in grows with their count, so a large library spreads out instead of
+ * crowding into sub-click-safe gaps (see `placementBand`).
  */
 export const placeGraphNodes = (
   entities: readonly Entity[],
@@ -156,8 +215,9 @@ export const placeGraphNodes = (
   }
 
   const unseeded = entities.filter((entity) => !positions.has(entity.id)).sort(byEntityId)
+  const band = placementBand(unseeded.length)
   for (const entity of unseeded) {
-    const position = resolveNodePosition(entity.id, placed)
+    const position = resolveNodePosition(entity.id, placed, band)
     positions.set(entity.id, position)
     placed.push(position)
   }
