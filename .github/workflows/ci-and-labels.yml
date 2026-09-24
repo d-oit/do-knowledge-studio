@@ -16,7 +16,10 @@ on:
     branches: [main, develop]
   schedule:
     # Nightly E2E backfill on main so the suite never goes stale between
-    # frontend PRs (see plans/122). Only the e2e-tests job runs on schedule.
+    # frontend PRs (see plans/122). Only `unit-tests` and `e2e-tests` run on
+    # schedule — and `unit-tests` must keep running there, because `e2e-tests`
+    # needs it: a job whose dependency was skipped is skipped too, which is how
+    # this nightly silently did nothing for weeks (plans/149).
     - cron: '0 3 * * *'
   workflow_dispatch:
     # Manual lever to exercise the E2E-on-main path on demand (plans/122 W2).
@@ -105,7 +108,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [changes]
-    if: needs.changes.outputs.any_code == 'true' && github.event_name != 'schedule'
+    # Runs on schedule as well as on PRs: `e2e-tests` needs this job, and GitHub
+    # skips a job whose dependency was skipped — excluding schedule here is what
+    # made the nightly sweep a no-op (plans/149).
+    if: needs.changes.outputs.any_code == 'true'
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1

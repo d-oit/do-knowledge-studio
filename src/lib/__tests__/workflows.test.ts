@@ -168,6 +168,22 @@ describe('GitHub Actions Workflows', () => {
       expect(install.run).toContain('github.event_name')
       expect(runTests.run).toContain('github.event_name')
     })
+
+    it('should not let a skipped dependency silence the nightly E2E sweep', () => {
+      const e2eTests = workflow.jobs['e2e-tests']
+      const unitTests = workflow.jobs['unit-tests']
+
+      // GitHub skips a job whose needed job was skipped, unless that job uses a
+      // status function. `unit-tests` therefore has to run on schedule for the
+      // nightly E2E to run at all — excluding schedule there is exactly what
+      // made the sweep a no-op until plans/149.
+      expect(String(e2eTests.needs)).toContain('unit-tests')
+      expect(String(unitTests.if)).not.toContain("event_name != 'schedule'")
+      expect(String(unitTests.if)).toContain("needs.changes.outputs.any_code == 'true'")
+
+      // The other dependency must run on schedule too (it has no `if` guard).
+      expect(String(workflow.jobs['changes'].if ?? '')).not.toContain('schedule')
+    })
   })
 
   describe('YAML Lint Workflow', () => {
