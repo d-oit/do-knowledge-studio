@@ -145,25 +145,42 @@ sidebar is *visible*, which it is from server-rendered HTML. The shortcut is
 bound by an effect, so a press issued before hydration is simply lost, and no
 timeout increase would recover it.
 
-Fix: the pattern the other two specs already used (`networkidle` + the `<main>`
-landmark) is now the shared `waitForAppReady(page)` helper in
-`e2e/helpers/navigation.ts`, called from the `beforeEach` of all three specs.
-One source of truth instead of three drifting copies — the drift is what produced
-the flake.
+Fix: the shell now renders a real readiness signal, and the specs wait on it.
+
+- `AppShell` sets `data-app-ready="true"` from a mount effect. React flushes child
+  effects before parent effects, so when the attribute appears every descendant
+  listener — including `CommandPalette`'s window-level Ctrl+K handler — is bound.
+  It is set from an effect rather than rendered during hydration, so server and
+  client markup still match on the first pass (the mistake that forced the removal
+  of a `data-hydrated` attribute in plans/145).
+- `e2e/helpers/navigation.ts` gains `waitForAppReady(page)`, which waits for that
+  attribute, and all three specs call it from `beforeEach`.
+
+Verified in a live browser: the attribute is absent immediately after `goto`
+(count 0), appears after mount (count 1), Ctrl+K opens the palette immediately
+after it appears, and there are **no hydration-related console messages**.
+`src/components/studio/app-shell.test.tsx` pins the hook so it cannot be dropped
+silently.
+
+### What the first fix got wrong
+
+The first attempt waited on `networkidle` plus a visible `<main>` landmark. Review
+correctly rejected it: `AppShell` renders `<main>` unconditionally, so a
+server-rendered DOM satisfies both conditions before hydration — the helper
+correlated with readiness without observing it. It happened to remove the flake,
+but for the wrong reason, and the plan already argued for the marker it should
+have used.
 
 ## 5. Follow-ups
 
 1. **The next real nightly should be confirmed.** The dispatch run proves the
    mechanism; the 03:00 UTC schedule run is the last piece. If it reports
    `E2E Tests: skipped` again, the cause is a dependency this plan did not see.
-2. **Pre-hydration interactions are still a latent class.** `waitForAppReady`
-   fixes the shortcut specs, but any spec that clicks a server-rendered control
-   immediately after `goto` can still act before React attaches its handlers.
-   The durable fix is an explicit post-hydration marker rendered by the shell
-   (set in an effect, so it cannot cause a hydration mismatch — plans/145 removed
-   a `data-hydrated` attribute that *was* rendered during hydration) plus a
-   helper that waits for it. Worth doing when a click-order flake actually shows
-   up, rather than pre-emptively across 24 specs.
+2. **Pre-hydration interactions are now observable, but not everywhere.** The
+   shell exposes `data-app-ready`, so any spec that interacts before hydration can
+   call `waitForAppReady`. The specs that click server-rendered controls straight
+   after `goto` have not been audited — worth doing when a click-order flake
+   actually shows up, rather than pre-emptively across 24 specs.
 3. **PR runs still cover one viewport.** The nightly closes the gap daily, not
    per PR. If a viewport-specific regression lands, the next nightly catches it —
    acceptable for now; a matrix job per viewport would cost ~3× the runner time

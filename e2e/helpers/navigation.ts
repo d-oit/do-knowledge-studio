@@ -52,19 +52,18 @@ export const expectNavigationReachable = async (page: Page): Promise<void> => {
 }
 
 /**
- * Wait until React has mounted and the shell's global listeners are bound.
+ * Wait until the app shell has mounted and its global listeners are bound.
  *
- * `expectNavigationReachable` only proves the sidebar is *visible*, and the
- * sidebar is server-rendered — so a keypress issued before hydration is simply
- * lost, with nothing to retry it. `networkidle` settles the initial bundle and
- * the <main> landmark confirms the mounted shell on every viewport (the sidebar
- * is hidden below `lg`, so it cannot serve as the signal there).
+ * Waits on `data-app-ready`, which AppShell sets from its own mount effect. React
+ * flushes child effects before parent effects, so when the attribute appears
+ * every descendant listener — including CommandPalette's window-level Ctrl+K
+ * handler — has already been bound. A keypress issued before that is simply lost,
+ * with nothing to retry it.
  *
- * Every spec that presses a global shortcut should call this first; the one that
- * did not (`keyboard-navigation.spec.ts`) produced the flaky Ctrl+K that the
- * dispatched four-project sweep caught (plans/149 §4).
+ * Neither `networkidle` nor the `<main>` landmark can stand in for this: the
+ * shell renders `<main>` unconditionally, so a server-rendered DOM satisfies both
+ * before hydration (plans/149 §4).
  */
 export const waitForAppReady = async (page: Page): Promise<void> => {
-  await page.waitForLoadState('networkidle');
-  await expect(page.getByRole('main')).toBeVisible();
+  await expect(page.locator('[data-app-ready="true"]')).toBeAttached();
 }

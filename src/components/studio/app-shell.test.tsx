@@ -119,6 +119,13 @@ describe('AppShell', () => {
     expect(screen.getByTestId('sidebar')).toBeDefined()
   })
 
+  it('marks the shell ready after mount for the app-ready E2E wait', () => {
+    const { container } = render(<AppShell />)
+    // The E2E helper `waitForAppReady` waits on this attribute; React flushes
+    // child effects first, so its presence means descendant listeners are bound.
+    expect(container.querySelector('[data-app-ready="true"]')).not.toBeNull()
+  })
+
   it('renders the Topbar', () => {
     render(<AppShell />)
     expect(screen.getByTestId('topbar')).toBeDefined()
