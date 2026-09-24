@@ -3,6 +3,7 @@
 import { useStudioStore } from '@/lib/studio/store'
 import { type GraphEdge, type GraphNode } from '@/lib/studio/types'
 import { seedGraph } from '@/lib/studio/seed-data'
+import { placeGraphNodes } from '@/lib/studio/graph-layout'
 import { getEntityTypeDefs, getEntityTypeMeta } from '@/lib/studio/entity-types'
 import { translate as entityTypesT } from '@/lib/i18n/messages/entity-types'
 import { todayStamp, downloadBlob } from './export-types'
@@ -12,19 +13,6 @@ import { GraphToolbar, type LayoutType } from './graph-toolbar'
 import { cn } from '@/lib/utils'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { buildAdjacencyIndex } from '@/lib/studio/graph-index'
-
-/**
- * Deterministic hash → [0, 1) float for stable graph node positions.
- * Replaces Math.random() so the layout does not shuffle on every render.
- */
-const seededRandom = (seed: string): number => {
-  let hash = 0
-  for (let i = 0; i < seed.length; i++) {
-    hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0
-  }
-  // Mix the bits for better distribution, then scale to [0, 1)
-  return (Math.abs((hash * 2654435761) >>> 0) % 10_000) / 10_000
-}
 
 /** CSS filter applied to focused nodes in focus mode. */
 const FOCUS_MODE_FILTER_STYLE: React.CSSProperties = {
@@ -137,17 +125,7 @@ export const GraphView = () => {
   const adjacency = useMemo(() => buildAdjacencyIndex(entities), [entities])
 
   const { nodes, edges } = useMemo(() => {
-    const seedMap = new Map(seedGraph.nodes.map((n) => [n.id, n]))
-    const nodesList = entities.map((e) => {
-      const seed = seedMap.get(e.id)
-      return {
-        id: e.id,
-        label: e.name,
-        type: e.type,
-        x: seed?.x ?? seededRandom(`${e.id}:x`) * 600 + 100,
-        y: seed?.y ?? seededRandom(`${e.id}:y`) * 400 + 80,
-      }
-    })
+    const nodesList = placeGraphNodes(entities, seedGraph.nodes)
     const nodeIds = new Set(nodesList.map((n) => n.id))
     const edgesList = entities
       .flatMap((e) =>
