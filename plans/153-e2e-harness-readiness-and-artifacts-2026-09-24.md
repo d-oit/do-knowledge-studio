@@ -78,6 +78,13 @@ above. Each assertion was mutation-checked:
 failure happened: it starts `pnpm run dev` itself and now must see a served
 response before the first test begins.
 
+**Confirmed on `main`** (dispatch run
+[`36048842590`](https://github.com/d-oit/do-knowledge-studio/actions/runs/36048842590)):
+the E2E job spent **85 seconds** between installing the browsers and starting the
+first test — the readiness wait for `next dev` to answer — where the failing run
+had started tests 3 seconds after the server bound. The sweep then ran
+`604 tests`, `600 passed`, in 9.9 min.
+
 ## 4. What this does not fix
 
 The underlying stall is unexplained — with the dev server answering HTTP while
