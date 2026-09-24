@@ -185,11 +185,23 @@ have used.
 1. **The next real nightly should be confirmed.** The dispatch run proves the
    mechanism; the 03:00 UTC schedule run is the last piece. If it reports
    `E2E Tests: skipped` again, the cause is a dependency this plan did not see.
-2. **Pre-hydration interactions are now observable, but not everywhere.** The
-   shell exposes `data-app-ready`, so any spec that interacts before hydration can
-   call `waitForAppReady`. The specs that click server-rendered controls straight
-   after `goto` have not been audited — worth doing when a click-order flake
-   actually shows up, rather than pre-emptively across 24 specs.
+2. **Pre-hydration interaction audit — closed at the helpers (2026-09-24).** The
+   exposure was measured across all 24 specs rather than patched per spec:
+   - `openNavIfHidden` (and therefore `navClick`) now waits for `data-app-ready`
+     first. That covers the 22 specs that navigate through the helpers —
+     `crud-workflow`, `home`, `timeline`, `progressive-disclosure` and
+     `accessibility` all have `navClick(...)` as their first action, so no per-spec
+     edit was needed.
+   - `responsive.spec.ts` waits after each of its seven `goto` calls. It sets the
+     viewport *before* navigating, so a `beforeEach` wait would run against
+     `about:blank` and time out — worth remembering for viewport-specific specs.
+   - `right-panel.spec.ts` waits in its `beforeEach`: its first action is a click
+     on a server-rendered close control.
+   - `contrast.spec.ts` performs no interactions.
+   - `claim-extraction` and `editor-mentions` build on `createNewEntity`, which
+     navigates via `navClick`.
+   What remains unguarded is a spec that clicks a statically imported view's
+   element before hydration *without* going through the helpers; none does today.
 3. **PR runs still cover one viewport.** The nightly closes the gap daily, not
    per PR. If a viewport-specific regression lands, the next nightly catches it —
    acceptable for now; a matrix job per viewport would cost ~3× the runner time
