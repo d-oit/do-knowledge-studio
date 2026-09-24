@@ -1,9 +1,12 @@
 import { test, expect } from '@playwright/test';
+import { waitForAppReady } from './helpers/navigation';
 
 test.describe('Responsive behavior', () => {
   test('desktop: sidebar is visible', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/');
+    // Server-rendered controls: a click before hydration is lost (plans/149 §5.2).
+    await waitForAppReady(page);
 
     const sidebar = page.getByRole('navigation', { name: /main navigation/i });
     await expect(sidebar).toBeVisible();
@@ -12,6 +15,8 @@ test.describe('Responsive behavior', () => {
   test('tablet: sidebar is hidden, mobile drawer available', async ({ page }) => {
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.goto('/');
+    // Server-rendered controls: a click before hydration is lost (plans/149 §5.2).
+    await waitForAppReady(page);
 
     // Desktop sidebar should be hidden at tablet size
     // The mobile drawer hamburger should be visible
@@ -27,6 +32,8 @@ test.describe('Responsive behavior', () => {
   test('mobile: layout adapts to small viewport', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto('/');
+    // Server-rendered controls: a click before hydration is lost (plans/149 §5.2).
+    await waitForAppReady(page);
 
     // Page should still be functional
     await expect(page).toHaveTitle(/DO Knowledge Studio/);
@@ -41,6 +48,8 @@ test.describe('Responsive behavior', () => {
   test('desktop: three-pane layout at wide viewport', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/');
+    // Server-rendered controls: a click before hydration is lost (plans/149 §5.2).
+    await waitForAppReady(page);
 
     // At wide viewport, the right panel may be visible
     await expect(page).toHaveTitle(/DO Knowledge Studio/);
@@ -49,6 +58,8 @@ test.describe('Responsive behavior', () => {
   test('larger screen (1920px): layout scales without horizontal overflow', async ({ page }) => {
     await page.setViewportSize({ width: 1920, height: 1080 });
     await page.goto('/');
+    // Server-rendered controls: a click before hydration is lost (plans/149 §5.2).
+    await waitForAppReady(page);
 
     const sidebar = page.getByRole('navigation', { name: /main navigation/i });
     await expect(sidebar).toBeVisible();
@@ -66,6 +77,8 @@ test.describe('Responsive behavior', () => {
   test('larger screen (1920px): library grid shows multiple columns', async ({ page }) => {
     await page.setViewportSize({ width: 1920, height: 1080 });
     await page.goto('/');
+    // Server-rendered controls: a click before hydration is lost (plans/149 §5.2).
+    await waitForAppReady(page);
     const nav = page.getByRole('navigation', { name: /main navigation/i });
     await nav.getByRole('button', { name: /library/i }).first().click();
 
@@ -77,6 +90,8 @@ test.describe('Responsive behavior', () => {
 
   test('viewport resize does not break layout', async ({ page }) => {
     await page.goto('/');
+    // Server-rendered controls: a click before hydration is lost (plans/149 §5.2).
+    await waitForAppReady(page);
     await expect(page).toHaveTitle(/DO Knowledge Studio/);
 
     // Resize through breakpoints
