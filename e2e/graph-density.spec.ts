@@ -25,7 +25,7 @@ const STORE_KEY = 'do-knowledge-studio-store';
 /** Enough entities that the placement band outgrows the authored canvas. */
 const ENTITY_COUNT = 60;
 
-/** The entity the click test targets — the last one placed. */
+/** The entity the click test targets — any node at this scale would do. */
 const TARGET_ENTITY = `Entity ${ENTITY_COUNT - 1}`;
 
 const SEED_ENVELOPE = {

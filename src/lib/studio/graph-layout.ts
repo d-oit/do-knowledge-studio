@@ -68,8 +68,13 @@ const BAND_GROWTH_PER_TIER = Math.SQRT2
  * pairs with seed nodes, which is the wrong-entity selection plans/148 fixed.
  * The band therefore grows in tiers as the library does, and the graph canvas
  * grows with it (`canvasSize` in `graph-viewport.ts`) so no node leaves the
- * viewport. Positions stay stable inside a tier, so adding an entity does not
- * reshuffle the graph until the next tier is reached.
+ * viewport.
+ *
+ * Growth is tiered, not continuous: the band's bounds change only when the count
+ * crosses a tier, so the canvas grows in steps instead of rescaling on every
+ * insert. Individual positions can still move when an entity is added, because
+ * placement is sequential over a deterministic id order and every later node
+ * probes against the ones already placed.
  */
 export const placementBand = (unseededCount: number): PlacementBand => {
   const tiers = Math.max(0, Math.ceil(Math.log2(Math.max(1, unseededCount) / BASE_BAND_CAPACITY)))

@@ -48,9 +48,10 @@ tier (`√2` per axis) until it holds the library at the preferred spacing:
 
 `BASE_BAND_CAPACITY = 6` is derived from the authored layout: (600×400 − 8 seed
 obstacles × ~17k px²) ÷ ~17k px², where 17k px² is one node's share of the plane
-at `PREFERRED_NODE_DISTANCE_PX` under hexagonal packing. Positions stay stable
-inside a tier, so adding an entity does not reshuffle the graph until the next
-tier is reached.
+at `PREFERRED_NODE_DISTANCE_PX` under hexagonal packing. Growth is tiered rather
+than continuous, so the canvas grows in steps instead of rescaling on every
+insert; individual positions can still shift when an entity is added, because
+placement is sequential over a deterministic id order.
 
 ### 2.2 The canvas grows with the band (`graph-viewport.ts`, new)
 
@@ -100,8 +101,11 @@ is inside the canvas, and that clicking a node selects *that* node.
   intended reading of "fit to content": detail comes from zooming in, and the
   alternative is the wrong-entity click. Labels stay legible until roughly the
   40-entity tier.
-- **Growth is tiered, not continuous.** Crossing a tier rescales the graph once.
-  Continuous growth would move every node on every insert, which is worse.
+- **Growth is tiered, not continuous.** Crossing a tier grows the canvas once.
+  Continuous growth would rescale the graph on every insert, which is worse. It
+  does not make positions immutable within a tier: placement is sequential over a
+  deterministic id order, so inserting an entity that sorts before others can move
+  theirs (corrected after review — the first version of this note overclaimed).
 - **The seed layout never moves.** Growth extends the band right and down from
   (100, 80), so the authored 8-node layout keeps its positions.
 
