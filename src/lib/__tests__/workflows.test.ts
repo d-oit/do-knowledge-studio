@@ -149,24 +149,27 @@ describe('GitHub Actions Workflows', () => {
         run: string
       }
 
-      // Both blocks are `if pull_request … else …`, so splitting on `else` yields
-      // the PR branch and the nightly/dispatch branch. Asserting the exact
-      // commands per branch is the point: `--project=chromium` is a prefix of the
-      // nightly command and `chromium` is a prefix of `chromium webkit`, so
-      // substring checks would still pass on a Chromium-only nightly.
-      const [prInstall, nightlyInstall] = install.run.split('else')
-      expect(prInstall).toContain('pnpm exec playwright install --with-deps chromium')
-      expect(prInstall).not.toContain('webkit')
-      expect(nightlyInstall).toContain('pnpm exec playwright install --with-deps chromium webkit')
+      // Both blocks branch on the event, so splitting on `else` yields the
+      // sweep branch and the default branch. Asserting the exact commands per
+      // branch is the point: `--project=chromium` is a prefix of the nightly
+      // command and `chromium` is a prefix of `chromium webkit`, so substring
+      // checks would still pass on a Chromium-only nightly.
+      const [sweepInstall, defaultInstall] = install.run.split('else')
+      expect(sweepInstall).toContain('pnpm exec playwright install --with-deps chromium webkit')
+      expect(defaultInstall).toContain('pnpm exec playwright install --with-deps chromium')
+      expect(defaultInstall).not.toContain('webkit')
 
-      const [prRun, nightlyRun] = runTests.run.split('else')
-      expect(prRun).toContain('pnpm run test:e2e --project=chromium')
-      expect(nightlyRun).toContain('pnpm run test:e2e')
-      expect(nightlyRun).not.toContain('--project')
+      const [sweepRun, defaultRun] = runTests.run.split('else')
+      expect(sweepRun).toContain('pnpm run test:e2e')
+      expect(sweepRun).not.toContain('--project')
+      expect(defaultRun).toContain('pnpm run test:e2e --project=chromium')
 
-      // Both branches must be conditioned on the event, not merely present.
-      expect(install.run).toContain('github.event_name')
-      expect(runTests.run).toContain('github.event_name')
+      // The sweep is gated on the scheduled and manual events only. A push to
+      // main is a merge the PR already validated, so it must not pay the
+      // four-project cost (plans/149).
+      expect(sweepRun).toContain('= "schedule"')
+      expect(sweepRun).toContain('= "workflow_dispatch"')
+      expect(sweepRun).not.toContain('pull_request')
     })
 
     it('should not let a skipped dependency silence the nightly E2E sweep', () => {

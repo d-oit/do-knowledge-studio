@@ -160,24 +160,28 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Install Playwright browsers
-        # PR runs stay on Chromium for speed. The nightly sweep and manual
-        # dispatch also install WebKit: the `mobile` (iPhone 13, 390px) and
-        # `tablet` (iPad Pro 11, 834px) projects are WebKit device descriptors,
-        # and viewport-specific layout regressions are invisible to a
-        # Chromium-only run — that is how the graph label-click defect reached
-        # main (plans/148 §6.2, plans/149).
+        # Only the nightly sweep and a manual dispatch install WebKit: the
+        # `mobile` (iPhone 13, 390px) and `tablet` (iPad Pro 11, 834px) projects
+        # are WebKit device descriptors, and viewport-specific layout regressions
+        # are invisible to a Chromium-only run — that is how the graph
+        # label-click defect reached main (plans/148 §6.2, plans/149).
+        #
+        # Pull requests *and* pushes to main stay on Chromium: a push to main is
+        # a merge that the PR already validated, and the four-project sweep costs
+        # ~10 minutes there. The sweep belongs to the nightly, which exists for
+        # exactly that gap.
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            pnpm exec playwright install --with-deps chromium
-          else
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             pnpm exec playwright install --with-deps chromium webkit
+          else
+            pnpm exec playwright install --with-deps chromium
           fi
       - name: Run E2E tests
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            pnpm run test:e2e --project=chromium
-          else
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             pnpm run test:e2e
+          else
+            pnpm run test:e2e --project=chromium
           fi
       - name: Upload Playwright report
         if: failure()
