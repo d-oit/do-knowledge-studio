@@ -206,17 +206,34 @@ describe('GitHub Actions Workflows', () => {
       expect(String(forced?.if)).toBe(
         "github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'"
       )
-      expect(String(forced?.run)).toContain('any_code=true')
 
       // Pull requests and pushes keep their real diff — forcing them would run the
       // full four-project sweep on every frontend PR (plans/149 §5.3).
       expect(String(forced?.if)).not.toContain('pull_request')
       expect(String(forced?.if)).not.toContain('push')
 
-      // Each job output prefers the forced value, then the filter, then the
-      // diff-API default; dropping the forced term re-opens the silent no-op.
-      for (const output of ['frontend', 'tooling', 'any_code']) {
-        expect(String(changes.outputs[output])).toContain(`steps.forced.outputs.${output}`)
+      const outputs = ['frontend', 'tooling', 'any_code']
+
+      // Every output must actually be forced, not just the one a test happens to
+      // name: dropping an emission silently restores the filter's value there.
+      for (const output of outputs) {
+        expect(String(forced?.run)).toContain(`${output}=true`)
+      }
+
+      // Order matters as much as presence: in an `||` chain the first non-empty
+      // term wins, so a forced term placed after the filter — or after the
+      // diff-API default — would never apply, yet a `toContain` check passes.
+      for (const output of outputs) {
+        const terms = String(changes.outputs[output])
+          .replace(/^\$\{\{|\}\}$/g, '')
+          .split('||')
+          .map((term) => term.trim())
+
+        expect(terms).toEqual([
+          `steps.forced.outputs.${output}`,
+          `steps.filter.outputs.${output}`,
+          `steps.default.outputs.${output}`,
+        ])
       }
     })
   })

@@ -85,6 +85,23 @@ matters, and `workflow_dispatch` remains the on-demand lever.
 whether shellcheck/markdownlint are installed and of their versions. Test 2 pins
 the other direction: a stub that exits 1 must still fail the gate.
 
+### Review finding on the workflow contract test
+
+The first version of the contract test asserted the forced term with `toContain`
+and checked only `any_code=true`. Both were too weak, and the second was wrong in
+a way that matters:
+
+- **Ordering.** In a GitHub Actions `||` chain the first non-empty term wins, so
+  a forced term placed *after* the filter would never apply — and `toContain`
+  passes anyway. The test now splits each output expression on `||` and asserts the
+  exact order: forced, filter, diff-API default.
+- **Emissions.** Only one of the three emissions was asserted, so deleting
+  `frontend=true` or `tooling=true` would have passed while restoring the
+  fallback-dependent value for that output. All three are now asserted.
+
+Both gaps were confirmed by mutation before pushing: reordering the `frontend`
+output and deleting the `frontend=true` emission each fail the test.
+
 ## 4. Gate and CI results
 
 | Check | Result |
