@@ -185,6 +185,13 @@ have used.
 1. **The next real nightly should be confirmed.** The dispatch run proves the
    mechanism; the 03:00 UTC schedule run is the last piece. If it reports
    `E2E Tests: skipped` again, the cause is a dependency this plan did not see.
+   → **Explained and hardened** (plans/151 §2). The `2026-09-24T07:59Z` scheduled
+   run skipped every job because its head (`064702a`) predates this plan's fix;
+   the schedule runs the workflow as it exists on the default branch at trigger
+   time. The same investigation found the nightly's scope depended on the path
+   filter's incidental fallback, which plans/151 replaced with an explicit
+   `schedule`/`workflow_dispatch` guard. The next nightly is the first scheduled
+   execution of the fixed workflow.
 2. **Pre-hydration interaction audit — closed at the helpers (2026-09-24).** The
    exposure was measured across all 24 specs rather than patched per spec:
    - `openNavIfHidden` (and therefore `navClick`) now waits for `data-app-ready`

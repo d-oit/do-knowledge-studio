@@ -1,6 +1,7 @@
 ---
 name: CI
 
+# yamllint disable-line rule:truthy
 on:
   push:
     branches: [main, develop, 'release/**']
@@ -21,8 +22,8 @@ on:
     # needs it: a job whose dependency was skipped is skipped too, which is how
     # this nightly silently did nothing for weeks (plans/149).
     - cron: '0 3 * * *'
+  # Manual lever to exercise the E2E-on-main path on demand (plans/122 W2).
   workflow_dispatch:
-    # Manual lever to exercise the E2E-on-main path on demand (plans/122 W2).
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -37,9 +38,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
-      frontend: ${{ steps.filter.outputs.frontend || steps.default.outputs.frontend }}
-      tooling: ${{ steps.filter.outputs.tooling || steps.default.outputs.tooling }}
-      any_code: ${{ steps.filter.outputs.any_code || steps.default.outputs.any_code }}
+      frontend: ${{ steps.forced.outputs.frontend || steps.filter.outputs.frontend || steps.default.outputs.frontend }}
+      tooling: ${{ steps.forced.outputs.tooling || steps.filter.outputs.tooling || steps.default.outputs.tooling }}
+      any_code: ${{ steps.forced.outputs.any_code || steps.filter.outputs.any_code || steps.default.outputs.any_code }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -61,6 +62,21 @@ jobs:
               - 'tsconfig.json'
             any_code:
               - '!(**.md|docs/**)'
+      - name: Treat every path as changed on scheduled and manual runs
+        id: forced
+        # A nightly or a manual dispatch is a full sweep by definition: there is no
+        # diff to filter, and the filter's fallback (list every file as added) is
+        # incidental, not guaranteed. If it ever resolves to `false`, `unit-tests`
+        # is skipped, and `e2e-tests` — which needs it — is skipped with it, which
+        # is exactly the silent no-op that hid the nightly for weeks (plans/149).
+        # Pull requests and pushes keep the real diff so their scope is unchanged.
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: |
+          {
+            echo "frontend=true"
+            echo "tooling=true"
+            echo "any_code=true"
+          } >> "$GITHUB_OUTPUT"
       - name: Default outputs on diff API failure
         id: default
         if: always()
@@ -68,9 +84,11 @@ jobs:
           frontend="${{ steps.filter.outputs.frontend || 'true' }}"
           tooling="${{ steps.filter.outputs.tooling || 'true' }}"
           any_code="${{ steps.filter.outputs.any_code || 'true' }}"
-          echo "frontend=$frontend" >> "$GITHUB_OUTPUT"
-          echo "tooling=$tooling" >> "$GITHUB_OUTPUT"
-          echo "any_code=$any_code" >> "$GITHUB_OUTPUT"
+          {
+            echo "frontend=$frontend"
+            echo "tooling=$tooling"
+            echo "any_code=$any_code"
+          } >> "$GITHUB_OUTPUT"
 
   quality-gate:
     name: Quality Gate

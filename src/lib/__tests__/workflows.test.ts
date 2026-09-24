@@ -192,6 +192,33 @@ describe('GitHub Actions Workflows', () => {
       // The other dependency must run on schedule too (it has no `if` guard).
       expect(String(workflow.jobs['changes'].if ?? '')).not.toContain('schedule')
     })
+
+    it('should treat every path as changed on scheduled and manual runs', () => {
+      const changes = workflow.jobs['changes']
+      const steps = changes.steps as Array<{ id?: string; if?: string; run?: string }>
+      const forced = steps.find((step) => step.id === 'forced')
+      expect(forced).toBeDefined()
+
+      // A nightly or manual dispatch has no diff to filter, so its scope must not
+      // depend on the filter's fallback (list every file) reporting work: when it
+      // resolves to `false`, `unit-tests` is skipped and `e2e-tests` follows it
+      // into silence — the no-op that hid the nightly for weeks (plans/149).
+      expect(String(forced?.if)).toBe(
+        "github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'"
+      )
+      expect(String(forced?.run)).toContain('any_code=true')
+
+      // Pull requests and pushes keep their real diff — forcing them would run the
+      // full four-project sweep on every frontend PR (plans/149 §5.3).
+      expect(String(forced?.if)).not.toContain('pull_request')
+      expect(String(forced?.if)).not.toContain('push')
+
+      // Each job output prefers the forced value, then the filter, then the
+      // diff-API default; dropping the forced term re-opens the silent no-op.
+      for (const output of ['frontend', 'tooling', 'any_code']) {
+        expect(String(changes.outputs[output])).toContain(`steps.forced.outputs.${output}`)
+      }
+    })
   })
 
   describe('YAML Lint Workflow', () => {

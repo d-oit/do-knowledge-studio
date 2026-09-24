@@ -16,6 +16,18 @@ cd "$REPO_ROOT" || exit 1
 if [ -f "$REPO_ROOT/scripts/lib/lint_cache.sh" ]; then
     # shellcheck source=scripts/lib/lint_cache.sh
     source "$REPO_ROOT/scripts/lib/lint_cache.sh"
+else
+    # Fail soft when the library is absent: leaving `lint_if_changed` undefined
+    # makes every call fail as `command not found`, which the gate reports as
+    # "<linter> failed: <file>" for every file. That is a false failure, not a
+    # real one (the shellcheck call even discards stderr, so the cause is
+    # invisible). Run the linter directly instead — no cache, but truthful
+    # results — and say so once (plans/147 §4.1).
+    echo "Warning: scripts/lib/lint_cache.sh is missing - lints run uncached" >&2
+    lint_if_changed() {
+        shift 3
+        "$@"
+    }
 fi
 
 # Colors for output (disabled in CI via TTY check, or via FORCE_COLOR=0)
