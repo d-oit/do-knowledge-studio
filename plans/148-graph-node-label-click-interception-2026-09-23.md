@@ -72,6 +72,11 @@ placement logic moved out, taking the file from 469 to 447 lines (limit 500).
   avoids already-placed nodes. Seeded nodes never move.
 - A canvas too crowded for both tiers keeps the most-clear position found, so
   overlap is minimised rather than guaranteed absent.
+- Placement is `O(n²)` in the worst case (each unseeded node probes up to 64
+  candidates against every placed node) and re-runs whenever the entity list
+  changes. That is milliseconds at the library sizes this view renders
+  unvirtualised today; a much larger library would want the probe capped or the
+  placement cached.
 
 ## 4. Verification
 
