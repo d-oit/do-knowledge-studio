@@ -54,6 +54,7 @@ Two things therefore stood in the way of a working nightly:
 | Event | Browsers installed | Projects run |
 |---|---|---|
 | `pull_request` | chromium | `--project=chromium` |
+| push to `main` | chromium | `--project=chromium` |
 | `schedule` (nightly, main) | chromium + webkit | all four |
 | `workflow_dispatch` | chromium + webkit | all four |
 
@@ -61,6 +62,14 @@ Two things therefore stood in the way of a working nightly:
 nightly now runs 596 tests across four projects on WebKit as well as Chromium.
 The existing `actions/cache` step for `~/.cache/ms-playwright` keeps the WebKit
 download off the nightly's critical path after the first run.
+
+The condition is written as `event_name == 'schedule' || event_name ==
+'workflow_dispatch'` rather than `event_name != 'pull_request'`. The first
+version used the negation, which silently included **pushes to `main`** — every
+frontend merge then paid the four-project cost (~10 minutes, observed on the
+merge that landed this work). A push to `main` is a merge the PR already
+validated; the sweep belongs to the nightly that exists for that gap. The
+contract test now pins the sweep to those two events.
 
 **Workflow** (`unit-tests` job): the `github.event_name != 'schedule'` exclusion
 is dropped, so the job runs nightly. This is the fix for the silently skipped

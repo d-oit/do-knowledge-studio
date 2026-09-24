@@ -149,24 +149,32 @@ describe('GitHub Actions Workflows', () => {
         run: string
       }
 
-      // Both blocks are `if pull_request … else …`, so splitting on `else` yields
-      // the PR branch and the nightly/dispatch branch. Asserting the exact
-      // commands per branch is the point: `--project=chromium` is a prefix of the
-      // nightly command and `chromium` is a prefix of `chromium webkit`, so
-      // substring checks would still pass on a Chromium-only nightly.
-      const [prInstall, nightlyInstall] = install.run.split('else')
-      expect(prInstall).toContain('pnpm exec playwright install --with-deps chromium')
-      expect(prInstall).not.toContain('webkit')
-      expect(nightlyInstall).toContain('pnpm exec playwright install --with-deps chromium webkit')
+      // Splitting on `else` yields the sweep branch and the default branch.
+      // `condition` is everything before `then` (only the first segment has one);
+      // `command` is the first line that is neither the condition nor `fi`.
+      const condition = (block: string): string => block.split('then')[0].trim()
+      const command = (block: string): string =>
+        block
+          .split('\n')
+          .map((line) => line.trim())
+          .find((line) => line.length > 0 && !line.startsWith('if [') && line !== 'fi') ?? ''
 
-      const [prRun, nightlyRun] = runTests.run.split('else')
-      expect(prRun).toContain('pnpm run test:e2e --project=chromium')
-      expect(nightlyRun).toContain('pnpm run test:e2e')
-      expect(nightlyRun).not.toContain('--project')
+      // The exact condition matters, in both blocks: substring checks let a
+      // sweep that also runs on pushes (`… || event_name == "push"`) pass, and
+      // a Chromium-only sweep passes `toContain('pnpm run test:e2e')` because
+      // `--project=chromium` is a prefix of it (plans/149).
+      const SWEEP_CONDITION =
+        'if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ];'
 
-      // Both branches must be conditioned on the event, not merely present.
-      expect(install.run).toContain('github.event_name')
-      expect(runTests.run).toContain('github.event_name')
+      const [sweepInstall, defaultInstall] = install.run.split('else')
+      expect(condition(sweepInstall)).toBe(SWEEP_CONDITION)
+      expect(command(sweepInstall)).toBe('pnpm exec playwright install --with-deps chromium webkit')
+      expect(command(defaultInstall)).toBe('pnpm exec playwright install --with-deps chromium')
+
+      const [sweepRun, defaultRun] = runTests.run.split('else')
+      expect(condition(sweepRun)).toBe(SWEEP_CONDITION)
+      expect(command(sweepRun)).toBe('pnpm run test:e2e')
+      expect(command(defaultRun)).toBe('pnpm run test:e2e --project=chromium')
     })
 
     it('should not let a skipped dependency silence the nightly E2E sweep', () => {
