@@ -133,9 +133,33 @@ describe('GitHub Actions Workflows', () => {
       expect(jobs['changes']['timeout-minutes']).toBe(10)
       expect(jobs['quality-gate']['timeout-minutes']).toBe(15)
       expect(jobs['unit-tests']['timeout-minutes']).toBe(15)
-      expect(jobs['e2e-tests']['timeout-minutes']).toBe(20)
+      // The nightly sweep runs all four Playwright projects (two of them on
+      // WebKit); PR runs stay on Chromium and finish in ~3 minutes (plans/149).
+      expect(jobs['e2e-tests']['timeout-minutes']).toBe(40)
       expect(jobs['build']['timeout-minutes']).toBe(15)
       expect(jobs['coverage']['timeout-minutes']).toBe(20)
+    })
+
+    it('should keep PR E2E on Chromium and sweep every project nightly', () => {
+      const steps = workflow.jobs['e2e-tests'].steps
+      const install = steps.find((step: { name?: string }) =>
+        step.name?.startsWith('Install Playwright browsers')
+      ) as { run: string }
+      const runTests = steps.find((step: { name?: string }) => step.name === 'Run E2E tests') as {
+        run: string
+      }
+
+      // PR runs: Chromium only, one project.
+      expect(install.run).toContain('playwright install --with-deps chromium')
+      expect(runTests.run).toContain('test:e2e --project=chromium')
+
+      // Nightly / manual dispatch: WebKit too, so the 390px and 834px projects
+      // actually execute. They were Chromium-only before plans/149, which is how
+      // a viewport-blind regression (plans/148) reached main.
+      expect(install.run).toContain('chromium webkit')
+      expect(runTests.run).toContain('pnpm run test:e2e')
+      expect(install.run).toContain('github.event_name')
+      expect(runTests.run).toContain('github.event_name')
     })
   })
 
