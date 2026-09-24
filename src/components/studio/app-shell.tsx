@@ -2,7 +2,7 @@
 
 import { useStudioStore } from '@/lib/studio/store'
 import type { ViewId } from '@/lib/studio/types'
-import React, { Suspense, lazy, useEffect } from 'react'
+import React, { Suspense, lazy, useEffect, useState } from 'react'
 import { Sidebar } from './sidebar'
 import { Topbar } from './topbar'
 import { CommandPalette } from './command-palette'
@@ -124,10 +124,20 @@ const ViewRouter = ({
 export const AppShell = () => {
   const currentView = useStudioStore((s) => s.currentView)
   const editingEntityId = useStudioStore((s) => s.editingEntityId)
+  const [appReady, setAppReady] = useState(false)
 
   useEffect(() => {
     const unsub = startBidirectionalSync()
     return unsub
+  }, [])
+
+  // Readiness hook for the E2E `waitForAppReady` helper. React flushes child
+  // effects before parent effects, so once this flag is set every descendant
+  // listener (the Ctrl+K handler in CommandPalette, Escape handlers, ...) has
+  // been bound. It is set from an effect rather than rendered during hydration,
+  // so server and client markup still match on the first pass (plans/149 §4).
+  useEffect(() => {
+    setAppReady(true)
   }, [])
 
   const handleViewError = React.useCallback(
@@ -138,7 +148,10 @@ export const AppShell = () => {
   )
 
   return (
-    <div className="flex h-dvh w-full overflow-hidden bg-background text-foreground">
+    <div
+      className="flex h-dvh w-full overflow-hidden bg-background text-foreground"
+      data-app-ready={appReady ? 'true' : undefined}
+    >
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[1000] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:ring-2 focus:ring-saffron focus:ring-offset-2 focus:ring-offset-background"

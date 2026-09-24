@@ -50,3 +50,20 @@ export const expectNavigationReachable = async (page: Page): Promise<void> => {
     await expect(page.getByRole('button', { name: /open menu/i })).toBeVisible();
   }
 }
+
+/**
+ * Wait until the app shell has mounted and its global listeners are bound.
+ *
+ * Waits on `data-app-ready`, which AppShell sets from its own mount effect. React
+ * flushes child effects before parent effects, so when the attribute appears
+ * every descendant listener — including CommandPalette's window-level Ctrl+K
+ * handler — has already been bound. A keypress issued before that is simply lost,
+ * with nothing to retry it.
+ *
+ * Neither `networkidle` nor the `<main>` landmark can stand in for this: the
+ * shell renders `<main>` unconditionally, so a server-rendered DOM satisfies both
+ * before hydration (plans/149 §4).
+ */
+export const waitForAppReady = async (page: Page): Promise<void> => {
+  await expect(page.locator('[data-app-ready="true"]')).toBeAttached();
+}
