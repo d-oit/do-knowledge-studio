@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import {
+  BASE_BAND_CAPACITY,
+  BASE_PLACEMENT_BAND,
   baseNodePosition,
   placeGraphNodes,
+  placementBand,
   resolveNodePosition,
   seededRandom,
   CLICK_SAFE_NODE_DISTANCE_PX,
@@ -104,6 +107,31 @@ describe('resolveNodePosition', () => {
   })
 })
 
+describe('placementBand', () => {
+  it('is the authored band while the library fits it', () => {
+    expect(placementBand(1)).toEqual(BASE_PLACEMENT_BAND)
+    expect(placementBand(BASE_BAND_CAPACITY)).toEqual(BASE_PLACEMENT_BAND)
+  })
+
+  it('grows monotonically with the number of unseeded nodes', () => {
+    let previous = placementBand(0)
+    for (const count of [1, 7, 13, 25, 49, 100]) {
+      const band = placementBand(count)
+      expect(band.xMax).toBeGreaterThanOrEqual(previous.xMax)
+      expect(band.yMax).toBeGreaterThanOrEqual(previous.yMax)
+      previous = band
+    }
+    // Growth is real, not just monotonic: 100 nodes cannot share the base band.
+    expect(placementBand(100).xMax).toBeGreaterThan(BASE_PLACEMENT_BAND.xMax)
+  })
+
+  it('is deterministic and keeps the band anchored at its origin', () => {
+    expect(placementBand(20)).toEqual(placementBand(20))
+    expect(placementBand(20).xMin).toBe(BASE_PLACEMENT_BAND.xMin)
+    expect(placementBand(20).yMin).toBe(BASE_PLACEMENT_BAND.yMin)
+  })
+})
+
 describe('placeGraphNodes', () => {
   it('keeps authored seed positions', () => {
     const seedNode = seedGraph.nodes[0] as GraphNode
@@ -158,5 +186,33 @@ describe('placeGraphNodes', () => {
     expect(positionsById(placeGraphNodes(entities, []))).toEqual(
       positionsById(placeGraphNodes([...entities].reverse(), [])),
     )
+  })
+
+  it('keeps every pair at click-safe spacing as the library grows', () => {
+    const seedEntities = seedGraph.nodes.map((node) =>
+      makeEntity(node.id, { name: node.label, type: node.type }),
+    )
+    const count = 40
+    const entities = [
+      ...seedEntities,
+      ...Array.from({ length: count }, (_, i) => makeEntity(`new-${i}`)),
+    ]
+
+    const nodes = placeGraphNodes(entities, seedGraph.nodes)
+    const tooClose: string[] = []
+    for (const a of nodes) {
+      for (const b of nodes) {
+        if (a.id >= b.id) continue
+        const gap = distance(a, b)
+        if (gap < CLICK_SAFE_NODE_DISTANCE_PX) {
+          tooClose.push(`${a.label} ↔ ${b.label}: ${gap.toFixed(1)}px`)
+        }
+      }
+    }
+
+    // A node placed closer than the click-safe distance can be covered by its
+    // neighbour's label, which is the wrong-entity selection plans/148 fixed. A
+    // library of this size must therefore widen the canvas, not crowd it.
+    expect(tooClose).toEqual([])
   })
 })

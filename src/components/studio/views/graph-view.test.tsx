@@ -113,6 +113,7 @@ vi.mock('@/lib/studio/store', () => ({
 }))
 
 import { GraphView } from './graph-view'
+import { BASE_CANVAS_HEIGHT, BASE_CANVAS_WIDTH } from '@/lib/studio/graph-viewport'
 
 describe('GraphView', () => {
   beforeEach(() => {
@@ -262,5 +263,44 @@ describe('GraphView', () => {
     // the unrelated ent-3 is filtered out (3 nodes unfiltered -> 2 focused).
     expect(screen.getByText(/2 nodes · 1 edges/)).toBeDefined()
     expect(screen.queryByText('Unrelated Entity')).toBeNull()
+  })
+
+  it('grows the canvas past the authored size so a large library stays on it', () => {
+    currentEntities = [
+      ...mockEntities,
+      ...Array.from({ length: 40 }, (_, i) => ({
+        id: `new-${i}`,
+        name: `Entity new-${i}`,
+        type: 'concept' as const,
+        description: '',
+        content: '',
+        tags: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        links: [],
+      })),
+    ]
+    render(<GraphView />)
+
+    const svg = screen.getByRole('img', { name: /knowledge graph/i })
+    const [, , width, height] = (svg.getAttribute('viewBox') ?? '').split(' ').map(Number)
+
+    // The regression: the view hard-coded an 800×560 viewBox while placement
+    // spread nodes over a grown band, drawing most of the graph off-canvas.
+    expect(width).toBeGreaterThan(BASE_CANVAS_WIDTH)
+    expect(height).toBeGreaterThan(BASE_CANVAS_HEIGHT)
+  })
+
+  it('keeps the canvas size while focus mode filters nodes', () => {
+    currentSelectedEntityId = 'ent-1'
+    render(<GraphView />)
+
+    const svg = screen.getByRole('img', { name: /knowledge graph/i })
+    const before = svg.getAttribute('viewBox')
+    fireEvent.click(screen.getByLabelText('Focus neighborhood'))
+
+    // Focus mode hides nodes; shrinking the canvas under the remaining ones
+    // would rescale the graph every time the toggle is used.
+    expect(svg.getAttribute('viewBox')).toBe(before)
   })
 })
