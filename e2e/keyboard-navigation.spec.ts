@@ -3,11 +3,15 @@ import {
   expectNavigationReachable,
   navClick,
   openNavIfHidden,
+  waitForAppReady,
 } from './helpers/navigation';
 
 test.describe('Keyboard navigation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
+    // Global shortcuts are bound by an effect, so waiting for the (server
+    // rendered) sidebar to be visible is not enough — see waitForAppReady.
+    await waitForAppReady(page);
   });
 
   test('Tab moves focus through sidebar navigation items', async ({ page }) => {

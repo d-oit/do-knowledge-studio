@@ -1,10 +1,11 @@
 import { test, expect } from '@playwright/test';
-import { navClick, openNavIfHidden } from './helpers/navigation';
+import { navClick, openNavIfHidden, waitForAppReady } from './helpers/navigation';
 
 test.describe('Keyboard accessibility — comprehensive', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    // Global shortcuts are bound by an effect; see waitForAppReady.
+    await waitForAppReady(page);
   });
 
   // T2: Skip-nav link

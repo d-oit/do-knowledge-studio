@@ -50,3 +50,21 @@ export const expectNavigationReachable = async (page: Page): Promise<void> => {
     await expect(page.getByRole('button', { name: /open menu/i })).toBeVisible();
   }
 }
+
+/**
+ * Wait until React has mounted and the shell's global listeners are bound.
+ *
+ * `expectNavigationReachable` only proves the sidebar is *visible*, and the
+ * sidebar is server-rendered — so a keypress issued before hydration is simply
+ * lost, with nothing to retry it. `networkidle` settles the initial bundle and
+ * the <main> landmark confirms the mounted shell on every viewport (the sidebar
+ * is hidden below `lg`, so it cannot serve as the signal there).
+ *
+ * Every spec that presses a global shortcut should call this first; the one that
+ * did not (`keyboard-navigation.spec.ts`) produced the flaky Ctrl+K that the
+ * dispatched four-project sweep caught (plans/149 §4).
+ */
+export const waitForAppReady = async (page: Page): Promise<void> => {
+  await page.waitForLoadState('networkidle');
+  await expect(page.getByRole('main')).toBeVisible();
+}

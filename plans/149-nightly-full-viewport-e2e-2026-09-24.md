@@ -111,21 +111,64 @@ executes the mobile/tablet projects on `main`. `workflow_dispatch` exists for
 exactly this (plans/122 W2), so the run is triggered immediately after merge
 rather than waiting for the 03:00 UTC cron.
 
-Dispatch exercises the same dependency chain the schedule does — `changes` runs
-in both, `unit-tests` now runs in both, and `e2e-tests` follows it. What dispatch
-cannot show is that the *other* jobs stay skipped on schedule, which does not
-affect `e2e-tests`.
+**Result** — dispatch run [`35986156948`](https://github.com/d-oit/do-knowledge-studio/actions/runs/35986156948)
+on `main` (`9d693ba`):
+
+| Job | Result |
+|---|---|
+| Detect Changes | success |
+| Quality Gate | success |
+| Unit Tests | success |
+| Coverage Report | success |
+| Build | success |
+| **E2E Tests** | **success — `Running 596 tests using 2 workers`, 591 passed, 4 skipped, 1 flaky (8.5 m)** |
+
+So the full-viewport sweep now executes in CI for the first time: 596 tests, not
+the 149 that a Chromium-only run covers. The dispatch also confirmed the
+dependency fix — `unit-tests` ran and `e2e-tests` followed it, which is the exact
+chain the schedule needs.
+
+Note: the dispatch and the post-merge push run share the `ci-main` concurrency
+group, so the push-triggered run was cancelled by the dispatch. Same commit, and
+the dispatch ran the superset.
+
+### The flaky test it surfaced
+
+`1 flaky`: `[desktop-xl] keyboard-navigation.spec.ts:27 › Escape closes command palette`
+failed on the first attempt and passed on retry — `getByRole('dialog', { name:
+/command/i })` was not found within 5 s.
+
+Cause: `keyboard-navigation.spec.ts` was the only one of the three specs that
+presses Ctrl+K *without* a readiness wait — its `beforeEach` was just
+`page.goto('/')`, and the in-test `expectNavigationReachable` only proves the
+sidebar is *visible*, which it is from server-rendered HTML. The shortcut is
+bound by an effect, so a press issued before hydration is simply lost, and no
+timeout increase would recover it.
+
+Fix: the pattern the other two specs already used (`networkidle` + the `<main>`
+landmark) is now the shared `waitForAppReady(page)` helper in
+`e2e/helpers/navigation.ts`, called from the `beforeEach` of all three specs.
+One source of truth instead of three drifting copies — the drift is what produced
+the flake.
 
 ## 5. Follow-ups
 
 1. **The next real nightly should be confirmed.** The dispatch run proves the
    mechanism; the 03:00 UTC schedule run is the last piece. If it reports
    `E2E Tests: skipped` again, the cause is a dependency this plan did not see.
-2. **PR runs still cover one viewport.** The nightly closes the gap daily, not
+2. **Pre-hydration interactions are still a latent class.** `waitForAppReady`
+   fixes the shortcut specs, but any spec that clicks a server-rendered control
+   immediately after `goto` can still act before React attaches its handlers.
+   The durable fix is an explicit post-hydration marker rendered by the shell
+   (set in an effect, so it cannot cause a hydration mismatch — plans/145 removed
+   a `data-hydrated` attribute that *was* rendered during hydration) plus a
+   helper that waits for it. Worth doing when a click-order flake actually shows
+   up, rather than pre-emptively across 24 specs.
+3. **PR runs still cover one viewport.** The nightly closes the gap daily, not
    per PR. If a viewport-specific regression lands, the next nightly catches it —
    acceptable for now; a matrix job per viewport would cost ~3× the runner time
    on every frontend PR.
-3. **`lint_cache.sh` is skipped silently when absent** (plans/147 §4.1) — every
+4. **`lint_cache.sh` is skipped silently when absent** (plans/147 §4.1) — every
    lint reports as failed with a misleading message.
-4. **DeepSource quota** (plans/141 §1) — account-level, needs the maintainer.
-5. **ESLint 10 workaround** (plans/140 §2) — blocked upstream.
+5. **DeepSource quota** (plans/141 §1) — account-level, needs the maintainer.
+6. **ESLint 10 workaround** (plans/140 §2) — blocked upstream.
