@@ -149,15 +149,22 @@ describe('GitHub Actions Workflows', () => {
         run: string
       }
 
-      // PR runs: Chromium only, one project.
-      expect(install.run).toContain('playwright install --with-deps chromium')
-      expect(runTests.run).toContain('test:e2e --project=chromium')
+      // Both blocks are `if pull_request … else …`, so splitting on `else` yields
+      // the PR branch and the nightly/dispatch branch. Asserting the exact
+      // commands per branch is the point: `--project=chromium` is a prefix of the
+      // nightly command and `chromium` is a prefix of `chromium webkit`, so
+      // substring checks would still pass on a Chromium-only nightly.
+      const [prInstall, nightlyInstall] = install.run.split('else')
+      expect(prInstall).toContain('pnpm exec playwright install --with-deps chromium')
+      expect(prInstall).not.toContain('webkit')
+      expect(nightlyInstall).toContain('pnpm exec playwright install --with-deps chromium webkit')
 
-      // Nightly / manual dispatch: WebKit too, so the 390px and 834px projects
-      // actually execute. They were Chromium-only before plans/149, which is how
-      // a viewport-blind regression (plans/148) reached main.
-      expect(install.run).toContain('chromium webkit')
-      expect(runTests.run).toContain('pnpm run test:e2e')
+      const [prRun, nightlyRun] = runTests.run.split('else')
+      expect(prRun).toContain('pnpm run test:e2e --project=chromium')
+      expect(nightlyRun).toContain('pnpm run test:e2e')
+      expect(nightlyRun).not.toContain('--project')
+
+      // Both branches must be conditioned on the event, not merely present.
       expect(install.run).toContain('github.event_name')
       expect(runTests.run).toContain('github.event_name')
     })
