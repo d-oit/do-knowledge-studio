@@ -48,8 +48,12 @@ test.describe('Semantic search toggle', () => {
 
     const status = page.getByRole('status').filter({ hasText: /keyword results/i });
     // transformers.js spends several seconds failing its CDN fetches (model
-    // + WASM) before surfacing the embedder error that drives the fallback.
-    await expect(status).toBeVisible({ timeout: 20_000 });
+    // + WASM) before surfacing the embedder error that drives the fallback, and a
+    // full parallel sweep stretches that well past 20s — it failed on both the
+    // attempt and the retry of one four-project run while passing 9/9 in
+    // isolation (plans/149). The budget is deliberately generous because this
+    // assertion waits on a failing network stack, not on app logic.
+    await expect(status).toBeVisible({ timeout: 60_000 });
 
     // The search box keeps working — results still render (graceful fallback).
     await expect(page.getByRole('searchbox', { name: /search library/i })).toHaveValue('triz');

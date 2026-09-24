@@ -133,9 +133,56 @@ describe('GitHub Actions Workflows', () => {
       expect(jobs['changes']['timeout-minutes']).toBe(10)
       expect(jobs['quality-gate']['timeout-minutes']).toBe(15)
       expect(jobs['unit-tests']['timeout-minutes']).toBe(15)
-      expect(jobs['e2e-tests']['timeout-minutes']).toBe(20)
+      // The nightly sweep runs all four Playwright projects (two of them on
+      // WebKit); PR runs stay on Chromium and finish in ~3 minutes (plans/149).
+      expect(jobs['e2e-tests']['timeout-minutes']).toBe(40)
       expect(jobs['build']['timeout-minutes']).toBe(15)
       expect(jobs['coverage']['timeout-minutes']).toBe(20)
+    })
+
+    it('should keep PR E2E on Chromium and sweep every project nightly', () => {
+      const steps = workflow.jobs['e2e-tests'].steps
+      const install = steps.find((step: { name?: string }) =>
+        step.name?.startsWith('Install Playwright browsers')
+      ) as { run: string }
+      const runTests = steps.find((step: { name?: string }) => step.name === 'Run E2E tests') as {
+        run: string
+      }
+
+      // Both blocks are `if pull_request … else …`, so splitting on `else` yields
+      // the PR branch and the nightly/dispatch branch. Asserting the exact
+      // commands per branch is the point: `--project=chromium` is a prefix of the
+      // nightly command and `chromium` is a prefix of `chromium webkit`, so
+      // substring checks would still pass on a Chromium-only nightly.
+      const [prInstall, nightlyInstall] = install.run.split('else')
+      expect(prInstall).toContain('pnpm exec playwright install --with-deps chromium')
+      expect(prInstall).not.toContain('webkit')
+      expect(nightlyInstall).toContain('pnpm exec playwright install --with-deps chromium webkit')
+
+      const [prRun, nightlyRun] = runTests.run.split('else')
+      expect(prRun).toContain('pnpm run test:e2e --project=chromium')
+      expect(nightlyRun).toContain('pnpm run test:e2e')
+      expect(nightlyRun).not.toContain('--project')
+
+      // Both branches must be conditioned on the event, not merely present.
+      expect(install.run).toContain('github.event_name')
+      expect(runTests.run).toContain('github.event_name')
+    })
+
+    it('should not let a skipped dependency silence the nightly E2E sweep', () => {
+      const e2eTests = workflow.jobs['e2e-tests']
+      const unitTests = workflow.jobs['unit-tests']
+
+      // GitHub skips a job whose needed job was skipped, unless that job uses a
+      // status function. `unit-tests` therefore has to run on schedule for the
+      // nightly E2E to run at all — excluding schedule there is exactly what
+      // made the sweep a no-op until plans/149.
+      expect(String(e2eTests.needs)).toContain('unit-tests')
+      expect(String(unitTests.if)).not.toContain("event_name != 'schedule'")
+      expect(String(unitTests.if)).toContain("needs.changes.outputs.any_code == 'true'")
+
+      // The other dependency must run on schedule too (it has no `if` guard).
+      expect(String(workflow.jobs['changes'].if ?? '')).not.toContain('schedule')
     })
   })
 

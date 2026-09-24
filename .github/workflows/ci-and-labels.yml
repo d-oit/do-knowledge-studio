@@ -16,7 +16,10 @@ on:
     branches: [main, develop]
   schedule:
     # Nightly E2E backfill on main so the suite never goes stale between
-    # frontend PRs (see plans/122). Only the e2e-tests job runs on schedule.
+    # frontend PRs (see plans/122). Only `unit-tests` and `e2e-tests` run on
+    # schedule — and `unit-tests` must keep running there, because `e2e-tests`
+    # needs it: a job whose dependency was skipped is skipped too, which is how
+    # this nightly silently did nothing for weeks (plans/149).
     - cron: '0 3 * * *'
   workflow_dispatch:
     # Manual lever to exercise the E2E-on-main path on demand (plans/122 W2).
@@ -105,7 +108,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [changes]
-    if: needs.changes.outputs.any_code == 'true' && github.event_name != 'schedule'
+    # Runs on schedule as well as on PRs: `e2e-tests` needs this job, and GitHub
+    # skips a job whose dependency was skipped — excluding schedule here is what
+    # made the nightly sweep a no-op (plans/149).
+    if: needs.changes.outputs.any_code == 'true'
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -126,7 +132,9 @@ jobs:
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # PR runs finish in ~3 minutes; the nightly sweep runs every project,
+    # including the two WebKit ones, so the ceiling covers both shapes.
+    timeout-minutes: 40
     needs: [changes, unit-tests]
     if: >-
       (github.event_name == 'schedule' && github.ref == 'refs/heads/main') ||
@@ -151,10 +159,26 @@ jobs:
             ${{ runner.os }}-playwright-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Install Playwright Chromium
-        run: pnpm exec playwright install --with-deps chromium
+      - name: Install Playwright browsers
+        # PR runs stay on Chromium for speed. The nightly sweep and manual
+        # dispatch also install WebKit: the `mobile` (iPhone 13, 390px) and
+        # `tablet` (iPad Pro 11, 834px) projects are WebKit device descriptors,
+        # and viewport-specific layout regressions are invisible to a
+        # Chromium-only run — that is how the graph label-click defect reached
+        # main (plans/148 §6.2, plans/149).
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            pnpm exec playwright install --with-deps chromium
+          else
+            pnpm exec playwright install --with-deps chromium webkit
+          fi
       - name: Run E2E tests
-        run: pnpm run test:e2e --project=chromium
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            pnpm run test:e2e --project=chromium
+          else
+            pnpm run test:e2e
+          fi
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
