@@ -192,6 +192,50 @@ describe('GitHub Actions Workflows', () => {
       // The other dependency must run on schedule too (it has no `if` guard).
       expect(String(workflow.jobs['changes'].if ?? '')).not.toContain('schedule')
     })
+
+    it('should treat every path as changed on scheduled and manual runs', () => {
+      const changes = workflow.jobs['changes']
+      const steps = changes.steps as Array<{ id?: string; if?: string; run?: string }>
+      const forced = steps.find((step) => step.id === 'forced')
+      expect(forced).toBeDefined()
+
+      // A nightly or manual dispatch has no diff to filter, so its scope must not
+      // depend on the filter's fallback (list every file) reporting work: when it
+      // resolves to `false`, `unit-tests` is skipped and `e2e-tests` follows it
+      // into silence — the no-op that hid the nightly for weeks (plans/149).
+      expect(String(forced?.if)).toBe(
+        "github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'"
+      )
+
+      // Pull requests and pushes keep their real diff — forcing them would run the
+      // full four-project sweep on every frontend PR (plans/149 §5.3).
+      expect(String(forced?.if)).not.toContain('pull_request')
+      expect(String(forced?.if)).not.toContain('push')
+
+      const outputs = ['frontend', 'tooling', 'any_code']
+
+      // Every output must actually be forced, not just the one a test happens to
+      // name: dropping an emission silently restores the filter's value there.
+      for (const output of outputs) {
+        expect(String(forced?.run)).toContain(`${output}=true`)
+      }
+
+      // Order matters as much as presence: in an `||` chain the first non-empty
+      // term wins, so a forced term placed after the filter — or after the
+      // diff-API default — would never apply, yet a `toContain` check passes.
+      for (const output of outputs) {
+        const terms = String(changes.outputs[output])
+          .replace(/^\$\{\{|\}\}$/g, '')
+          .split('||')
+          .map((term) => term.trim())
+
+        expect(terms).toEqual([
+          `steps.forced.outputs.${output}`,
+          `steps.filter.outputs.${output}`,
+          `steps.default.outputs.${output}`,
+        ])
+      }
+    })
   })
 
   describe('YAML Lint Workflow', () => {

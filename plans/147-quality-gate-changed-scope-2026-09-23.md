@@ -144,5 +144,11 @@ because a local clone always has history.
    `lint_if_changed` undefined; every lint then reports as failed. Fail-closed
    (good) but the error message is misleading. Worth a clear "missing lint cache
    library" diagnostic.
+   → **Fixed** in plans/151 §1: an uncached fallback plus a one-line warning, with
+   a BATS suite that reproduces the false failure.
 2. **DeepSource quota** (plans/141 §1) — account-level, needs the maintainer.
-3. **ESLint 10 workaround** (plans/140 §2) — blocked upstream.
+   → **Moot** (2026-09-24): the DeepSource GitHub app is uninstalled, so it no
+   longer reports checks on this repository.
+3. **ESLint 10 workaround** (plans/140 §2) — blocked upstream
+   (`eslint-plugin-react@7.37.5` still caps its peer range at `^9.7`; re-checked
+   against the registry 2026-09-24).
