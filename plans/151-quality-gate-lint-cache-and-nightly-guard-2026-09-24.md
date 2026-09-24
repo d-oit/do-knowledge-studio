@@ -119,6 +119,14 @@ output and deleting the `frontend=true` emission each fail the test.
 2. **Confirm the next nightly** — the first scheduled execution of the guarded
    workflow. `gh api "repos/d-oit/do-knowledge-studio/actions/runs?event=schedule"`
    and check `E2E Tests` is not `skipped`.
+   → **Mechanism proven on `main`** (dispatch run
+   [`36048842590`](https://github.com/d-oit/do-knowledge-studio/actions/runs/36048842590),
+   head `55033bf`): `Treat every path as changed on scheduled and manual runs`
+   ran, **Unit Tests ran** instead of being skipped, and `E2E Tests` swept
+   `604 tests` with `600 passed` in 9.9 min across all four projects. The guarded
+   path and the scheduled path differ only in `github.event_name`, which the
+   contract test pins — the remaining confirmation is the next 03:00 UTC
+   (observed ~08:00 UTC) scheduled run.
 3. **`semantic-search.spec.ts` load sensitivity** (plans/148 §6.1) — unchanged.
 4. **ESLint 10 workaround** (plans/140 §2) — still blocked upstream.
 5. **Graph density** (plans/148 §6.3) — the remaining item from the same follow-up
