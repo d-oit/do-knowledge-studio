@@ -5,7 +5,7 @@ vi.mock('lucide-react', () => {
   const Icon = ({ className }: { className?: string }) => (
     <span data-testid="icon" className={className} />
   )
-  return { Menu: Icon, Plus: Icon, Search: Icon }
+  return { Menu: Icon, Plus: Icon, Search: Icon, X: Icon }
 })
 
 vi.mock('@/lib/utils', () => ({
@@ -175,5 +175,28 @@ describe('Topbar', () => {
     currentView = 'home'
     render(<Topbar />)
     expect(screen.getByLabelText('Search')).toBeDefined()
+  })
+
+  it('renders input with type="search"', () => {
+    render(<Topbar />)
+    const input = screen.getByLabelText('Search') as HTMLInputElement
+    expect(input.type).toBe('search')
+  })
+
+  it('renders clear search button when searchQuery is non-empty and handles click', () => {
+    searchQuery = 'test query'
+    render(<Topbar />)
+    const clearButton = screen.getByLabelText('Clear quick filter')
+    expect(clearButton).toBeDefined()
+    expect(clearButton.getAttribute('title')).toBe('Clear quick filter')
+    fireEvent.click(clearButton)
+    expect(mockSetSearchQuery).toHaveBeenCalledWith('')
+  })
+
+  it('clears searchQuery on Escape key in search input when searchQuery is non-empty', () => {
+    searchQuery = 'test query'
+    render(<Topbar />)
+    fireEvent.keyDown(screen.getByLabelText('Search'), { key: 'Escape' })
+    expect(mockSetSearchQuery).toHaveBeenCalledWith('')
   })
 })
