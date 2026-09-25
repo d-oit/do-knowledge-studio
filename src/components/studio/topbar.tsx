@@ -3,7 +3,7 @@
 import { useStudioStore } from '@/lib/studio/store'
 import type { ViewId } from '@/lib/studio/types'
 import { translate as timelineT } from '@/lib/i18n/messages/timeline'
-import { Menu, Plus, Search } from 'lucide-react'
+import { Menu, Plus, Search, X } from 'lucide-react'
 import type { KeyboardEvent } from 'react'
 
 /** View title metadata keyed by ViewId (bounded Map retrieval — no dynamic indexing). */
@@ -46,6 +46,9 @@ export const Topbar = () => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
       e.preventDefault()
       setCommandOpen(true)
+    } else if (e.key === 'Escape' && searchQuery) {
+      e.preventDefault()
+      setSearchQuery('')
     }
   }
 
@@ -96,14 +99,25 @@ export const Topbar = () => {
           aria-hidden
         />
         <input
-          type="text"
+          type="search"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyDown={handleSearchKeyDown}
           placeholder={placeholder}
           aria-label={inputAriaLabel}
-          className="min-h-[44px] w-full rounded-md border border-border bg-background pl-9 pr-12 text-[13px] text-ink placeholder:text-ink-faint transition-colors focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/40"
+          className="min-h-[44px] w-full rounded-md border border-border bg-background pl-9 pr-20 text-[13px] text-ink placeholder:text-ink-faint transition-colors focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/40"
         />
+        {searchQuery ? (
+          <button
+            type="button"
+            onClick={() => setSearchQuery('')}
+            aria-label="Clear quick filter"
+            title="Clear quick filter"
+            className="absolute right-[3.25rem] top-1/2 flex min-h-[44px] min-w-[44px] items-center justify-center -translate-y-1/2 rounded text-ink-faint transition-colors hover:bg-muted hover:text-ink focus-ring"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={() => setCommandOpen(true)}
