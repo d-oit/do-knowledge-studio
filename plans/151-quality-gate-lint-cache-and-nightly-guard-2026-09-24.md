@@ -116,18 +116,28 @@ output and deleting the `frontend=true` emission each fail the test.
    (`ci-and-labels.yml`, "Generate coverage badge"). Pre-existing and style-level
    (`actionlint` runs with `fail_level: error`), so it does not fail CI; it is the
    last finding in that file and unrelated to this change.
-2. **Confirm the next nightly** — the first scheduled execution of the guarded
-   workflow. `gh api "repos/d-oit/do-knowledge-studio/actions/runs?event=schedule"`
-   and check `E2E Tests` is not `skipped`.
-   → **Mechanism proven on `main`** (dispatch run
-   [`36048842590`](https://github.com/d-oit/do-knowledge-studio/actions/runs/36048842590),
-   head `55033bf`): `Treat every path as changed on scheduled and manual runs`
-   ran, **Unit Tests ran** instead of being skipped, and `E2E Tests` swept
-   `604 tests` with `600 passed` in 9.9 min across all four projects. The guarded
-   path and the scheduled path differ only in `github.event_name`, which the
-   contract test pins — the remaining confirmation is the next 03:00 UTC
-   (observed ~08:00 UTC) scheduled run.
-3. **`semantic-search.spec.ts` load sensitivity** (plans/148 §6.1) — unchanged.
+2. **Confirm the next nightly** — closed 2026-09-25. Scheduled run
+   [`36112610311`](https://github.com/d-oit/do-knowledge-studio/actions/runs/36112610311)
+   on `main` (`094b7e0`) ran `Unit Tests` and `E2E Tests` successfully; E2E
+   completed `604` tests (`600 passed`, `4 skipped`) in `13.6m` across all four
+   projects. `Quality Gate`, `Build`, `Coverage Report`, and `Dependency Verify`
+   were skipped as configured; the workflow limits scheduled runs to unit and
+   E2E jobs; this confirmation came from the scheduled event, not a manual dispatch.
+3. **`semantic-search.spec.ts` load sensitivity** (plans/148 §6.1) — resolved
+   in test code only. The spec blocks service workers (the app SW bypassed
+   Playwright routes) and returns deterministic `404`s for Hugging Face
+   Hub/CDN and jsDelivr model requests. The fallback uses a `10s` assertion
+   timeout inside a `15s` test timeout. Chromium repeat-each=3 passed all nine
+   test instances in `29.8s`; the latest-main four-project, zero-retry sweep
+   passed `600/604` (`4` skipped) in `8.8m`.
+   The nightly at `094b7e0` confirms the scheduled job runs but predates this
+   local edit; it does not validate the updated semantic-search spec. No
+   production semantic-search code changed.
 4. **ESLint 10 workaround** (plans/140 §2) — still blocked upstream.
 5. **Graph density** (plans/148 §6.3) — the remaining item from the same follow-up
    sweep; tracked in plans/152.
+6. **HomeView hydration mismatch (E2E warning)** — React logs mismatched motion
+   styles during the local and scheduled sweeps (`opacity: "0"` vs `1`; progress
+   widths `0px` vs computed percentages). The same warning appears in the
+   pre-change manual run `36048842590`; track it separately rather than
+   suppressing it in the semantic-search test.

@@ -1,23 +1,34 @@
 import { test, expect } from '@playwright/test';
 import { navClick } from './helpers/navigation';
 
+const SEMANTIC_FALLBACK_ASSERTION_TIMEOUT_MS = 10_000;
+const SEMANTIC_FALLBACK_TEST_TIMEOUT_MS = 15_000;
+
 /**
  * Semantic search (N1, Issue #751) — UI-level coverage only.
  *
- * No model download happens here: the spec aborts requests to the Hugging
- * Face Hub and the transformers.js WASM CDN, which forces the graceful
+ * No model download happens here: the spec returns a deterministic 404 for
+ * Hugging Face Hub and transformers.js WASM CDN requests to force the graceful
  * lexical fallback path with its surfaced hint. Ranking behavior itself is
  * covered by the mocked unit tests (embeddings/vector-store/worker).
  */
 test.describe('Semantic search toggle', () => {
+  // Prevent the app service worker from forwarding model requests outside the
+  // Playwright route handler.
+  test.use({ serviceWorkers: 'block' });
+
   test.beforeEach(async ({ page }) => {
-    // Block the embedding model and WASM binaries so the embedder cannot
-    // load — semantic queries then degrade to the lexical fallback hint.
-    // Subdomains matter: the model files live on cdn-lfs.huggingface.co and
-    // the tokenizer/assets may come from jsdelivr subdomains.
+    // Use an immediate missing-asset response instead of relying on browser
+    // network abort/retry scheduling. Subdomains matter: model files live on
+    // cdn-lfs.huggingface.co and tokenizer/assets may come from jsdelivr.
     await page.route(
-      /^https:\/\/(?:[a-z0-9-]+\.)*(?:huggingface\.co|cdn\.jsdelivr\.net)\//,
-      (route) => route.abort(),
+      /^https:\/\/(?:[a-z0-9-]+\.)*(?:huggingface\.co|cdn\.hf\.co|cdn\.jsdelivr\.net)\//,
+      (route) =>
+        route.fulfill({
+          status: 404,
+          contentType: 'text/plain',
+          body: 'Model unavailable in E2E',
+        }),
     );
     await page.goto('/');
     await navClick(page, /library/i);
@@ -43,19 +54,19 @@ test.describe('Semantic search toggle', () => {
   test('surfaces a lexical fallback hint when the semantic model is unavailable', async ({
     page,
   }) => {
+    test.setTimeout(SEMANTIC_FALLBACK_TEST_TIMEOUT_MS);
+
     await page.getByRole('switch', { name: /semantic search/i }).click();
-    await page.getByRole('searchbox', { name: /search library/i }).fill('triz');
+    const searchInput = page.getByRole('searchbox', { name: /search library/i });
+    await searchInput.fill('triz');
 
     const status = page.getByRole('status').filter({ hasText: /keyword results/i });
-    // transformers.js spends several seconds failing its CDN fetches (model
-    // + WASM) before surfacing the embedder error that drives the fallback, and a
-    // full parallel sweep stretches that well past 20s — it failed on both the
-    // attempt and the retry of one four-project run while passing 9/9 in
-    // isolation (plans/149). The budget is deliberately generous because this
-    // assertion waits on a failing network stack, not on app logic.
-    await expect(status).toBeVisible({ timeout: 60_000 });
-
-    // The search box keeps working — results still render (graceful fallback).
-    await expect(page.getByRole('searchbox', { name: /search library/i })).toHaveValue('triz');
+    await expect(status).toBeVisible({
+      timeout: SEMANTIC_FALLBACK_ASSERTION_TIMEOUT_MS,
+    });
+    await expect(searchInput).toHaveValue('triz');
+    await expect(
+      page.getByRole('heading', { name: 'TRIZ Contradiction Matrix' }),
+    ).toBeVisible();
   });
 });
