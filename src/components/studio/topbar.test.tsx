@@ -186,9 +186,9 @@ describe('Topbar', () => {
   it('renders clear search button when searchQuery is non-empty and handles click', () => {
     searchQuery = 'test query'
     render(<Topbar />)
-    const clearButton = screen.getByLabelText('Clear search')
+    const clearButton = screen.getByLabelText('Clear quick filter')
     expect(clearButton).toBeDefined()
-    expect(clearButton.getAttribute('title')).toBe('Clear search')
+    expect(clearButton.getAttribute('title')).toBe('Clear quick filter')
     fireEvent.click(clearButton)
     expect(mockSetSearchQuery).toHaveBeenCalledWith('')
   })

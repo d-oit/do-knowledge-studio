@@ -111,8 +111,8 @@ export const Topbar = () => {
           <button
             type="button"
             onClick={() => setSearchQuery('')}
-            aria-label="Clear search"
-            title="Clear search"
+            aria-label="Clear quick filter"
+            title="Clear quick filter"
             className="absolute right-12 top-1/2 flex min-h-[44px] min-w-[44px] items-center justify-center -translate-y-1/2 rounded text-ink-faint transition-colors hover:bg-muted hover:text-ink focus-ring"
           >
             <X className="h-3.5 w-3.5" />
