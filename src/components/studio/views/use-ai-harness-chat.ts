@@ -24,6 +24,7 @@ export interface UseAiHarnessChatOptions {
   allowWebResearch: boolean
   ollamaCpuOnly: boolean
   ollamaBaseUrl: string
+  localDevice: 'wasm' | 'webgpu'
   entities: Entity[]
   claims: Claim[]
   requiresKey: boolean
@@ -58,6 +59,7 @@ export const useAiHarnessChat = ({
   allowWebResearch,
   ollamaCpuOnly,
   ollamaBaseUrl,
+  localDevice,
   entities,
   claims,
   requiresKey,
@@ -152,6 +154,7 @@ export const useAiHarnessChat = ({
           signal: controller.signal,
           ollamaCpuOnly,
           ollamaBaseUrl,
+          localDevice,
         },
         (chunk) => {
           streamedContent += chunk
@@ -191,6 +194,7 @@ export const useAiHarnessChat = ({
     allowWebResearch,
     ollamaCpuOnly,
     ollamaBaseUrl,
+    localDevice,
     entities,
     claims,
     messages,

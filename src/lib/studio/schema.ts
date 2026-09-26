@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { sanitizeUrl } from '../security'
-import { validateOllamaUrl } from '../ai/providers'
+import { validateOllamaUrl } from '../ai/url-guard'
 
 /** Zod enum schema for EntityType (built-in types only). */
 export const EntityTypeSchema = z.enum(['note', 'concept', 'person', 'project'])
@@ -227,7 +227,7 @@ export const StoredSettingsSchema = z.object({
   encryptedApiKey: z.string().optional(),
   apiKey: z.string().optional(),
   augmentWithLocal: z.boolean().optional().default(true),
-  ollamaCpuOnly: z.boolean().optional().default(false),
+  ollamaCpuOnly: z.boolean().optional().default(true),
   allowWebResearch: z.boolean().optional().default(false),
   ollamaBaseUrl: z
     .string()
@@ -243,6 +243,7 @@ export const StoredSettingsSchema = z.object({
       { message: 'Invalid Ollama base URL or forbidden host/protocol' },
     )
     .optional(),
+  localDevice: z.enum(['wasm', 'webgpu']).optional().default('wasm'),
 })
 
 /** Type of validated stored AI provider settings, before credential decryption. */

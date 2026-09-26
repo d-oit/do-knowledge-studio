@@ -134,11 +134,15 @@ describe('validateOllamaUrl: accepts valid URLs', () => {
     )
   })
 
-  // ::1 is listed in ALLOWED_OLLAMA_HOSTS but URL.hostname returns '[::1]'
-  // (with brackets) per the WHATWG URL spec, so `::1` without brackets never matches.
-  // This test documents the actual runtime behavior.
-  it('rejects ::1 IPv6 localhost — hostname returns bracketed [::1]', () => {
-    expect(() => validateOllamaUrl('http://[::1]:11434')).toThrow(
+  // URL.hostname returns '[::1]' (bracketed) per the WHATWG URL spec, so the
+  // allowlist carries the bracketed form. This test previously documented the
+  // reverse — that a valid IPv6 loopback Ollama URL was rejected as untrusted.
+  it('accepts bracketed IPv6 loopback', () => {
+    expect(validateOllamaUrl('http://[::1]:11434')).toBe('http://[::1]:11434')
+  })
+
+  it('still rejects a non-loopback IPv6 literal', () => {
+    expect(() => validateOllamaUrl('http://[2001:db8::1]:11434')).toThrow(
       'must point to localhost',
     )
   })
