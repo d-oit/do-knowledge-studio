@@ -86,20 +86,27 @@ const BaseUrlInput = ({
 }) => {
   const [draft, setDraft] = useState(value)
   const [invalid, setInvalid] = useState(false)
+  // True once the user types, so an async hydration landing mid-edit adopts the
+  // value only when the field is untouched. The panel is mounted before
+  // `loadAISettings()` resolves, and its completion replaces the prop; without
+  // this a URL typed in that window would be silently discarded.
+  const [dirty, setDirty] = useState(false)
   const errorId = `${id}-error`
 
-  // Adopt an externally restored value (settings load, provider switch) while
-  // leaving an in-progress edit untouched.
   useEffect(() => {
+    if (dirty) return
     setDraft(value)
     setInvalid(false)
-  }, [value])
+  }, [value, dirty])
 
   const commit = () => {
     try {
       // The validator normalizes (strips trailing slashes); commit what it
       // returns so the stored record is the canonical URL, not the raw draft.
       onCommit(validate(draft))
+      // The committed value is now the stored one, so a later external change
+      // may safely re-seed the draft.
+      setDirty(false)
       setInvalid(false)
     } catch {
       setInvalid(true)
@@ -112,7 +119,7 @@ const BaseUrlInput = ({
         id={id}
         type="text"
         value={draft}
-        onChange={(e) => { setDraft(e.target.value) }}
+        onChange={(e) => { setDirty(true); setDraft(e.target.value) }}
         onBlur={commit}
         onKeyDown={(e) => {
           if (e.key === 'Enter') { e.preventDefault(); commit() }

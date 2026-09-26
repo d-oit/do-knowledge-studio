@@ -10,12 +10,11 @@
 /**
  * Hosts treated as "this machine" for the self-hosted provider.
  *
- * `URL.hostname` returns a bracketed IPv6 literal (`[::1]`), not the bare
- * `::1`, so the bracketed entry is the one that can actually match — without
- * it, IPv6 loopback looks like an untrusted remote host and is rejected. The
- * bare spelling is kept for a caller that passes a hostname directly.
+ * Only the bracketed IPv6 spelling appears here: the sole caller passes
+ * `URL.hostname`, and that returns `[::1]` for a loopback URL, never the bare
+ * `::1`. Listing the bare form would be dead allowlist data.
  */
-const ALLOWED_LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]'])
+const ALLOWED_LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
 
 const isAllowedLocalHost = (hostname: string): boolean =>
   ALLOWED_LOCAL_HOSTS.has(hostname) || hostname.endsWith('.local')

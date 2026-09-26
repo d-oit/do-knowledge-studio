@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
+import * as React from 'react'
 import type { ReactNode } from 'react'
 
 vi.mock('lucide-react', () => {
@@ -53,12 +54,20 @@ vi.mock('./ai-harness-settings', () => ({
     { id: 'ollama', label: 'Ollama (local)', models: ['llama3'], requiresKey: false },
     { id: 'local', label: 'Local (in-browser)', models: ['onnx-community/Qwen2.5-0.5B-Instruct'], requiresKey: false },
   ],
-  Field: ({ label, children }: { label: string; children?: ReactNode }) => (
-    <div data-testid="field">
-      <span>{label}</span>
-      {children}
-    </div>
-  ),
+  // Mirrors the real Field, which renders a <label htmlFor> and injects the id
+  // into its first native input child. A <span> here would make the
+  // label-association test pass without any association existing.
+  Field: ({ label, children }: { label: string; children?: ReactNode }) => {
+    const fieldId = `field-${label.toLowerCase().replace(/\s+/g, '-')}`
+    return (
+      <div data-testid="field">
+        <label htmlFor={fieldId}>{label}</label>
+        {React.isValidElement(children)
+          ? React.cloneElement(children as React.ReactElement<{ id?: string }>, { id: fieldId })
+          : children}
+      </div>
+    )
+  },
 }))
 
 vi.mock('../ui/shared-primitives', () => ({
@@ -257,7 +266,45 @@ describe('AiHarnessSettingsPanel', () => {
 
   it('associates the base URL label with its input', () => {
     render(<AiHarnessSettingsPanel {...defaultProps} provider="ollama" />)
-    expect(screen.getByLabelText('Ollama Base URL').getAttribute('id')).toBe('field-ollama-base-url')
+    // Asserts the real htmlFor -> id relationship, not just that an id exists.
+    const input = screen.getByLabelText('Ollama Base URL')
+    expect(input.tagName).toBe('INPUT')
+    expect(document.querySelector('label[for="field-ollama-base-url"]')?.textContent).toBe(
+      'Ollama Base URL',
+    )
+  })
+
+  it('keeps an in-progress edit when hydration lands mid-edit', () => {
+    // The panel mounts before loadAISettings() resolves, so a URL typed in
+    // that window must survive the stored value arriving.
+    const { rerender } = render(
+      <AiHarnessSettingsPanel {...defaultProps} provider="ollama" ollamaBaseUrl="http://localhost:11434" />,
+    )
+    fireEvent.change(screen.getByLabelText('Ollama Base URL'), {
+      target: { value: 'http://my-host.local:11434' },
+    })
+
+    rerender(
+      <AiHarnessSettingsPanel {...defaultProps} provider="ollama" ollamaBaseUrl="http://127.0.0.1:11434" />,
+    )
+
+    expect((screen.getByLabelText('Ollama Base URL') as HTMLInputElement).value).toBe(
+      'http://my-host.local:11434',
+    )
+  })
+
+  it('adopts an externally restored value when the field is untouched', () => {
+    const { rerender } = render(
+      <AiHarnessSettingsPanel {...defaultProps} provider="ollama" ollamaBaseUrl="http://localhost:11434" />,
+    )
+
+    rerender(
+      <AiHarnessSettingsPanel {...defaultProps} provider="ollama" ollamaBaseUrl="http://127.0.0.1:11434" />,
+    )
+
+    expect((screen.getByLabelText('Ollama Base URL') as HTMLInputElement).value).toBe(
+      'http://127.0.0.1:11434',
+    )
   })
 
   it('describes a rejected base URL to assistive tech', () => {
@@ -269,20 +316,6 @@ describe('AiHarnessSettingsPanel', () => {
     const described = input.getAttribute('aria-describedby')
     expect(described).toBeTruthy()
     expect(document.getElementById(described as string)?.textContent).toMatch(/localhost/i)
-  })
-
-  it('restores the draft when the stored value is replaced externally', () => {
-    const { rerender } = render(
-      <AiHarnessSettingsPanel {...defaultProps} provider="ollama" ollamaBaseUrl="http://localhost:11434" />,
-    )
-    fireEvent.change(screen.getByLabelText('Ollama Base URL'), { target: { value: 'edited' } })
-
-    rerender(
-      <AiHarnessSettingsPanel {...defaultProps} provider="ollama" ollamaBaseUrl="http://127.0.0.1:11434" />,
-    )
-    expect((screen.getByLabelText('Ollama Base URL') as HTMLInputElement).value).toBe(
-      'http://127.0.0.1:11434',
-    )
   })
 
   it('defaults the local inference device to CPU and allows WebGPU', () => {
