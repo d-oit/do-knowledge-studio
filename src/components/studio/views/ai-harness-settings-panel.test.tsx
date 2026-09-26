@@ -54,10 +54,11 @@ vi.mock('./ai-harness-settings', () => ({
     { id: 'ollama', label: 'Ollama (local)', models: ['llama3'], requiresKey: false },
     { id: 'local', label: 'Local (in-browser)', models: ['onnx-community/Qwen2.5-0.5B-Instruct'], requiresKey: false },
   ],
-  // Mirrors the real Field: a <label htmlFor> plus id injection into the first
-  // NATIVE input/select/textarea child only. Cloning onto components would let
-  // the label-association test pass even with the explicit id removed from
-  // BaseUrlInput, which production Field would never supply.
+  // Mirrors the real Field: a <label htmlFor> plus recursive id injection that
+  // targets native input/select/textarea elements and skips components. The
+  // recursion matches production (which also walks the whole tree); what
+  // matters here is that components are skipped, so the label-association
+  // test cannot pass with the explicit id removed from BaseUrlInput.
   Field: ({ label, children }: { label: string; children?: ReactNode }) => {
     const fieldId = `field-${label.toLowerCase().replace(/\s+/g, '-')}`
     const injectId = (child: React.ReactNode): React.ReactNode => {
