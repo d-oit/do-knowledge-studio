@@ -334,8 +334,9 @@ export const fetchOllamaModels = async (
   signal?: AbortSignal,
 ): Promise<string[]> => {
   const validatedUrl = validateOllamaUrl(baseUrl)
+  // `redirect: 'error'` blocks a permitted host bouncing the request to a
+  // public origin; see the chat fetches above.
   // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
-  // redirect: 'error' — see the chat fetches above.
   const res = await fetch(`${validatedUrl}/api/tags`, { signal, redirect: 'error' })
   if (!res.ok) throw new Error(`Ollama tags error ${res.status}`)
   const data = OllamaTagsSchema.parse(await res.json())
