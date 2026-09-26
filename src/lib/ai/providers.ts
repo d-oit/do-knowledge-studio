@@ -233,12 +233,15 @@ class OllamaAdapter implements ProviderAdapter {
       body.options = { num_gpu: 0 }
     }
 
-    // URL is validated to localhost-only by validateOllamaUrl above
+    // URL is validated to the allowlist above; `redirect: 'error'` stops a
+    // permitted host from bouncing the request to a public origin, which the
+    // initial-host check cannot see.
     const res = await fetch(`${validatedUrl}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
       signal,
+      redirect: 'error',
     })
 
     if (!res.ok) {
@@ -277,13 +280,15 @@ class OllamaAdapter implements ProviderAdapter {
       body.options = { num_gpu: 0 }
     }
 
-    // URL is validated to localhost-only by validateOllamaUrl above
+    // URL is validated to the allowlist above; `redirect: 'error'` stops a
+    // permitted host from bouncing the request to a public origin.
     // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
     const res = await fetch(`${validatedUrl}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
       signal,
+      redirect: 'error',
     })
 
     if (!res.ok) {
@@ -330,7 +335,8 @@ export const fetchOllamaModels = async (
 ): Promise<string[]> => {
   const validatedUrl = validateOllamaUrl(baseUrl)
   // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
-  const res = await fetch(`${validatedUrl}/api/tags`, { signal })
+  // redirect: 'error' — see the chat fetches above.
+  const res = await fetch(`${validatedUrl}/api/tags`, { signal, redirect: 'error' })
   if (!res.ok) throw new Error(`Ollama tags error ${res.status}`)
   const data = OllamaTagsSchema.parse(await res.json())
   return data.models?.map((m) => m.name) ?? []

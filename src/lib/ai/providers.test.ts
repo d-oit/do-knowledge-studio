@@ -240,6 +240,21 @@ describe('fetchOllamaModels', () => {
     expect(models).toEqual(['llama3', 'mistral'])
   })
 
+  it('refuses to follow a redirect off the allowlist', async () => {
+    const mockFetch = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: () => ({ models: [] }),
+    } as Response)
+    globalThis.fetch = mockFetch
+
+    await fetchOllamaModels('http://localhost:11434')
+
+    // fetch follows redirects by default, so a permitted host could bounce the
+    // request to a public origin the hostname check never sees. redirect:
+    // 'error' closes that hop.
+    expect(mockFetch.mock.calls[0][1]).toMatchObject({ redirect: 'error' })
+  })
+
   it('returns empty array when models field is missing', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,

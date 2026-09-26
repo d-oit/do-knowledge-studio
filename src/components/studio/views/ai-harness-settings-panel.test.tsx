@@ -273,12 +273,14 @@ describe('AiHarnessSettingsPanel', () => {
 
   it('associates the base URL label with its input', () => {
     render(<AiHarnessSettingsPanel {...defaultProps} provider="ollama" />)
-    // Asserts the real htmlFor -> id relationship, not just that an id exists.
-    const input = screen.getByLabelText('Ollama Base URL')
-    expect(input.tagName).toBe('INPUT')
-    expect(document.querySelector('label[for="field-ollama-base-url"]')?.textContent).toBe(
-      'Ollama Base URL',
-    )
+    // The rendered <label for> must point at this exact input's id. Asserting
+    // only that some label has the attribute would pass even if BaseUrlInput
+    // lost its explicit id, because the component carries its own aria-label.
+    const input = document.querySelector('input#field-ollama-base-url')
+    expect(input).not.toBeNull()
+    const label = document.querySelector('label[for="field-ollama-base-url"]')
+    expect(label?.textContent).toBe('Ollama Base URL')
+    expect(label?.getAttribute('for')).toBe(input?.getAttribute('id'))
   })
 
   it('keeps an in-progress edit when hydration lands mid-edit', () => {
