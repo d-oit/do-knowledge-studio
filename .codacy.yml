@@ -51,3 +51,18 @@ engines:
       - "ESLint8_@typescript-eslint_no-floating-promises"  # handled in code via void + .catch; suppress engine noise
   opengrep:
     enabled: true
+  # Semgrep's SARIF output intentionally includes nosemgrep-suppressed
+  # findings (semgrep#11605, semgrep#11715), and Codacy consumes SARIF, so an
+  # inline `// nosemgrep` can never clear a finding here. Suppress the rule at
+  # the engine instead. The rule fires on any fetch() whose URL is a local
+  # variable, so it flags allowlist-validated base URLs in src/lib/ai/providers.ts.
+  # Those URLs are constrained by validateOllamaUrl (src/lib/ai/url-guard.ts:
+  # loopback or .local only, http(s) only) and every request also sets
+  # redirect: 'error' so a permitted host cannot bounce off the allowlist.
+  # Re-enabling this rule requires re-auditing that guard and its tests
+  # (lookalike hosts, userinfo, link-local metadata, non-http schemes, and the
+  # redirect-hop test) first.
+  semgrep:
+    enabled: true
+    disable_rules:
+      - "rules.lgpl.javascript.ssrf.rule-node-ssrf"
