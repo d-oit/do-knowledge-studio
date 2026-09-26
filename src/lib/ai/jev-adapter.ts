@@ -131,8 +131,7 @@ class JevAdapter implements ProviderAdapter {
       },
     }
 
-    // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf — `endpoint` comes
-    // from buildJevSystemOneUrl, which applies the host allowlist above.
+    // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: {
