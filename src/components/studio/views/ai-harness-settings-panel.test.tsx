@@ -28,6 +28,18 @@ vi.mock('@/lib/ai', () => ({
   OPENROUTER_MODELS: [{ slug: 'openai/gpt-4o-mini', display_name: 'GPT-4o Mini' }],
   DEFAULT_LOCAL_MODELS: [{ id: 'onnx-community/Qwen2.5-0.5B-Instruct', displayName: 'Qwen2.5 0.5B Instruct', dtype: 'q4' }],
   LOCAL_PROVIDER_ID: 'local',
+  // The real guard, not a no-op: a stub that accepted any host would let these
+  // tests pass while the shipped code rejected the value.
+  validateOllamaUrl: (u: string) => {
+    const parsed = new URL(u)
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      throw new Error('Ollama base URL must use http or https protocol')
+    }
+    if (!['localhost', '127.0.0.1', '[::1]'].includes(parsed.hostname) && !parsed.hostname.endsWith('.local')) {
+      throw new Error('Ollama base URL must point to localhost or a .local hostname')
+    }
+    return u.replace(/\/+$/, '')
+  },
 }))
 
 vi.mock('@/lib/ai/types', () => ({
@@ -75,6 +87,8 @@ const defaultProps = {
   setOllamaCpuOnly: vi.fn(),
   ollamaBaseUrl: 'http://localhost:11434',
   setOllamaBaseUrl: vi.fn(),
+  localDevice: 'wasm' as const,
+  setLocalDevice: vi.fn(),
   allowWebResearch: false,
   setAllowWebResearch: vi.fn(),
   customModel: '',
@@ -215,5 +229,73 @@ describe('AiHarnessSettingsPanel', () => {
     )
     expect(screen.getByText('Test Model:')).toBeDefined()
     expect(screen.getByText('A test model for testing.')).toBeDefined()
+  })
+  it('does not commit a half-typed base URL to settings', () => {
+    const setOllamaBaseUrl = vi.fn()
+    render(<AiHarnessSettingsPanel {...defaultProps} provider="ollama" setOllamaBaseUrl={setOllamaBaseUrl} />)
+    const input = screen.getByLabelText('Ollama Base URL')
+
+    // Autosave runs on every keystroke, so a partial host must stay local to
+    // the input rather than reaching the settings writer.
+    fireEvent.change(input, { target: { value: 'htt' } })
+    expect(setOllamaBaseUrl).not.toHaveBeenCalled()
+
+    fireEvent.blur(input)
+    expect(setOllamaBaseUrl).not.toHaveBeenCalled()
+    expect(input.getAttribute('aria-invalid')).toBe('true')
+  })
+
+  it('commits the normalized base URL on blur', () => {
+    const setOllamaBaseUrl = vi.fn()
+    render(<AiHarnessSettingsPanel {...defaultProps} provider="ollama" setOllamaBaseUrl={setOllamaBaseUrl} />)
+    const input = screen.getByLabelText('Ollama Base URL')
+
+    fireEvent.change(input, { target: { value: 'http://localhost:11434/' } })
+    fireEvent.blur(input)
+    expect(setOllamaBaseUrl).toHaveBeenCalledWith('http://localhost:11434')
+  })
+
+  it('associates the base URL label with its input', () => {
+    render(<AiHarnessSettingsPanel {...defaultProps} provider="ollama" />)
+    expect(screen.getByLabelText('Ollama Base URL').getAttribute('id')).toBe('field-ollama-base-url')
+  })
+
+  it('describes a rejected base URL to assistive tech', () => {
+    render(<AiHarnessSettingsPanel {...defaultProps} provider="ollama" />)
+    const input = screen.getByLabelText('Ollama Base URL')
+    fireEvent.change(input, { target: { value: 'https://evil.com' } })
+    fireEvent.blur(input)
+
+    const described = input.getAttribute('aria-describedby')
+    expect(described).toBeTruthy()
+    expect(document.getElementById(described as string)?.textContent).toMatch(/localhost/i)
+  })
+
+  it('restores the draft when the stored value is replaced externally', () => {
+    const { rerender } = render(
+      <AiHarnessSettingsPanel {...defaultProps} provider="ollama" ollamaBaseUrl="http://localhost:11434" />,
+    )
+    fireEvent.change(screen.getByLabelText('Ollama Base URL'), { target: { value: 'edited' } })
+
+    rerender(
+      <AiHarnessSettingsPanel {...defaultProps} provider="ollama" ollamaBaseUrl="http://127.0.0.1:11434" />,
+    )
+    expect((screen.getByLabelText('Ollama Base URL') as HTMLInputElement).value).toBe(
+      'http://127.0.0.1:11434',
+    )
+  })
+
+  it('defaults the local inference device to CPU and allows WebGPU', () => {
+    render(
+      <AiHarnessSettingsPanel
+        {...defaultProps}
+        provider="local"
+        model="onnx-community/Qwen2.5-0.5B-Instruct"
+      />,
+    )
+    const selects = screen.getAllByRole('combobox')
+    const device = selects[selects.length - 1] as HTMLSelectElement
+    expect(device.value).toBe('wasm')
+    expect(Array.from(device.options).map((o) => o.value)).toEqual(['wasm', 'webgpu'])
   })
 })

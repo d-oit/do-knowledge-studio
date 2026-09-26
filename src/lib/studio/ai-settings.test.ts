@@ -269,8 +269,10 @@ describe('ai-settings encryption and persistence', () => {
     })
 
     const loaded = await loadAISettings()
-    expect(loaded.ollamaCpuOnly).toBe(false)
+    // CPU-first default: an absent field resolves to true, not the older false.
+    expect(loaded.ollamaCpuOnly).toBe(true)
     expect(loaded.allowWebResearch).toBe(false)
+    expect(loaded.localDevice).toBe('wasm')
     expect(loaded.ollamaBaseUrl).toBe('http://localhost:11434')
   })
 

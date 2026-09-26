@@ -667,7 +667,9 @@ describe('StoredSettingsSchema', () => {
       allowWebResearch: false,
       ollamaBaseUrl: 'http://localhost:11434',
     }
-    expect(StoredSettingsSchema.parse(valid)).toEqual(valid)
+    // localDevice is backfilled by the schema; the explicitly-stored
+    // ollamaCpuOnly: false survives the new CPU-first default.
+    expect(StoredSettingsSchema.parse(valid)).toEqual({ ...valid, localDevice: 'wasm' })
   })
 
   it('applies defaults for missing optional boolean fields', () => {
@@ -677,7 +679,8 @@ describe('StoredSettingsSchema', () => {
     }
     const parsed = StoredSettingsSchema.parse(minimal)
     expect(parsed.augmentWithLocal).toBe(true)
-    expect(parsed.ollamaCpuOnly).toBe(false)
+    expect(parsed.ollamaCpuOnly).toBe(true)
+    expect(parsed.localDevice).toBe('wasm')
     expect(parsed.allowWebResearch).toBe(false)
   })
 
