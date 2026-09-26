@@ -3,16 +3,17 @@
  *
  * Ollama accepts a user-configured base URL, which is an SSRF sink: without a
  * host allowlist a stored settings record could point the app at an arbitrary
- * origin. The allowlist confines every base URL to the local machine.
+ * origin. The boundary is loopback plus `.local` names, so a user can reach an
+ * Ollama instance on another machine on their own network (`pi.homelab.local`)
+ * but never a public host. That is a deliberate trade: the alternative is
+ * loopback-only, which would break the documented LAN use case.
  */
 
-
 /**
- * Hosts treated as "this machine" for the self-hosted provider.
+ * Hosts accepted for the self-hosted provider.
  *
- * Only the bracketed IPv6 spelling appears here: the sole caller passes
- * `URL.hostname`, and that returns `[::1]` for a loopback URL, never the bare
- * `::1`. Listing the bare form would be dead allowlist data.
+ * Only the bracketed IPv6 spelling appears in the loopback set: the sole caller
+ * passes `URL.hostname`, which returns `[::1]`, never a bare `::1`.
  */
 const ALLOWED_LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
 

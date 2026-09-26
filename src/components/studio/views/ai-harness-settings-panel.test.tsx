@@ -54,17 +54,24 @@ vi.mock('./ai-harness-settings', () => ({
     { id: 'ollama', label: 'Ollama (local)', models: ['llama3'], requiresKey: false },
     { id: 'local', label: 'Local (in-browser)', models: ['onnx-community/Qwen2.5-0.5B-Instruct'], requiresKey: false },
   ],
-  // Mirrors the real Field, which renders a <label htmlFor> and injects the id
-  // into its first native input child. A <span> here would make the
-  // label-association test pass without any association existing.
+  // Mirrors the real Field: a <label htmlFor> plus id injection into the first
+  // NATIVE input/select/textarea child only. Cloning onto components would let
+  // the label-association test pass even with the explicit id removed from
+  // BaseUrlInput, which production Field would never supply.
   Field: ({ label, children }: { label: string; children?: ReactNode }) => {
     const fieldId = `field-${label.toLowerCase().replace(/\s+/g, '-')}`
+    const injectId = (child: React.ReactNode): React.ReactNode => {
+      if (!React.isValidElement(child)) return child
+      const el = child as React.ReactElement<{ id?: string; children?: ReactNode }>
+      if (typeof el.type === 'string' && ['input', 'select', 'textarea'].includes(el.type)) {
+        return React.cloneElement(el, { id: fieldId })
+      }
+      return React.cloneElement(el, { children: React.Children.map(el.props.children, injectId) })
+    }
     return (
       <div data-testid="field">
         <label htmlFor={fieldId}>{label}</label>
-        {React.isValidElement(children)
-          ? React.cloneElement(children as React.ReactElement<{ id?: string }>, { id: fieldId })
-          : children}
+        {React.Children.map(children, injectId)}
       </div>
     )
   },
