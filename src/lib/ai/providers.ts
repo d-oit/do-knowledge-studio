@@ -233,10 +233,9 @@ class OllamaAdapter implements ProviderAdapter {
       body.options = { num_gpu: 0 }
     }
 
-    // URL is validated to the allowlist above; `redirect: 'error'` stops a
-    // permitted host from bouncing the request to a public origin, which the
-    // initial-host check cannot see.
-    const res = await fetch(`${validatedUrl}/api/chat`, {
+    // URL is allowlist-validated above; `redirect: 'error'` stops a permitted
+    // host from bouncing the request to a public origin.
+    const res = await fetch(`${validatedUrl}/api/chat`, { // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -280,10 +279,9 @@ class OllamaAdapter implements ProviderAdapter {
       body.options = { num_gpu: 0 }
     }
 
-    // URL is validated to the allowlist above; `redirect: 'error'` stops a
-    // permitted host from bouncing the request to a public origin.
-    // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
-    const res = await fetch(`${validatedUrl}/api/chat`, {
+    // URL is allowlist-validated above; `redirect: 'error'` stops a permitted
+    // host from bouncing the request to a public origin.
+    const res = await fetch(`${validatedUrl}/api/chat`, { // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -334,10 +332,11 @@ export const fetchOllamaModels = async (
   signal?: AbortSignal,
 ): Promise<string[]> => {
   const validatedUrl = validateOllamaUrl(baseUrl)
-  // `redirect: 'error'` blocks a permitted host bouncing the request to a
-  // public origin; see the chat fetches above.
-  // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
-  const res = await fetch(`${validatedUrl}/api/tags`, { signal, redirect: 'error' })
+  // The URL is allowlist-validated above and `redirect: 'error'` blocks a
+  // permitted host bouncing the request to a public origin. Semgrep only
+  // honours a suppression on the matched line or the line immediately above
+  // it, so the directive trails this one rather than sitting on its own line.
+  const res = await fetch(`${validatedUrl}/api/tags`, { signal, redirect: 'error' }) // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
   if (!res.ok) throw new Error(`Ollama tags error ${res.status}`)
   const data = OllamaTagsSchema.parse(await res.json())
   return data.models?.map((m) => m.name) ?? []
