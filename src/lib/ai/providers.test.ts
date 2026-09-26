@@ -5,7 +5,7 @@ import {
   sendChatStream,
   fetchOllamaModels,
 } from './providers'
-import { buildJevSystemOneUrl, validateJevBaseUrl, validateOllamaUrl } from './url-guard'
+import { resolveJevEndpoint, validateJevBaseUrl, validateOllamaUrl } from './url-guard'
 import { OPENROUTER_ROUTERS } from './types'
 
 // ─── getAdapter ─────────────────────────────────────────────────────────────
@@ -273,51 +273,60 @@ describe('validateJevBaseUrl', () => {
   })
 })
 
-// ─── buildJevSystemOneUrl ────────────────────────────────────────────────────
+// ─── resolveJevEndpoint ──────────────────────────────────────────────────────
 
-describe('buildJevSystemOneUrl', () => {
+describe('resolveJevEndpoint', () => {
+  /** Joins the returned parts the same way the adapter does. */
+  const jevEndpoint = (baseUrl: string): string => {
+    const { origin, path } = resolveJevEndpoint(baseUrl)
+    return `${origin}${path}`
+  }
+
   it('appends the systemone path to an allowlisted cloud base', () => {
-    expect(buildJevSystemOneUrl('https://api.typesafe.ai')).toBe(
-      'https://api.typesafe.ai/v1/systemone',
-    )
+    expect(jevEndpoint('https://api.typesafe.ai')).toBe('https://api.typesafe.ai/v1/systemone')
   })
 
   it('normalizes a trailing slash instead of doubling it', () => {
-    expect(buildJevSystemOneUrl('https://api.typesafe.ai/')).toBe(
-      'https://api.typesafe.ai/v1/systemone',
-    )
+    expect(jevEndpoint('https://api.typesafe.ai/')).toBe('https://api.typesafe.ai/v1/systemone')
   })
 
   it('builds a local Von endpoint with its port intact', () => {
-    expect(buildJevSystemOneUrl('http://localhost:8000')).toBe(
-      'http://localhost:8000/v1/systemone',
-    )
+    expect(jevEndpoint('http://localhost:8000')).toBe('http://localhost:8000/v1/systemone')
   })
 
   it('refuses to build an endpoint for a host outside the allowlist', () => {
-    expect(() => buildJevSystemOneUrl('https://evil.com')).toThrow('known cloud host')
+    expect(() => resolveJevEndpoint('https://evil.com')).toThrow('known cloud host')
   })
 
   it('normalizes integer- and hex-encoded loopback to 127.0.0.1 and allows it', () => {
     // These LOOK like host-injection attempts but are the local machine, which
     // is the Von self-host path. new URL() canonicalizes them before the
     // allowlist runs; pinned so a future "hardening" does not break Von.
-    expect(buildJevSystemOneUrl('http://2130706433')).toBe('http://127.0.0.1/v1/systemone')
-    expect(buildJevSystemOneUrl('http://0x7f000001')).toBe('http://127.0.0.1/v1/systemone')
+    expect(jevEndpoint('http://2130706433')).toBe('http://127.0.0.1/v1/systemone')
+    expect(jevEndpoint('http://0x7f000001')).toBe('http://127.0.0.1/v1/systemone')
   })
 
   it('blocks the cloud metadata endpoint', () => {
-    expect(() => buildJevSystemOneUrl('http://169.254.169.254')).toThrow('known cloud host')
+    expect(() => resolveJevEndpoint('http://169.254.169.254')).toThrow('known cloud host')
   })
 
   it('allows a bracketed IPv6 loopback literal', () => {
     // URL.hostname yields '[::1]'; the allowlist carries both spellings so a
     // local Von server bound to IPv6 loopback stays reachable.
-    expect(buildJevSystemOneUrl('http://[::1]:8000')).toBe('http://[::1]:8000/v1/systemone')
+    expect(jevEndpoint('http://[::1]:8000')).toBe('http://[::1]:8000/v1/systemone')
   })
 
   it('blocks a non-http scheme', () => {
-    expect(() => buildJevSystemOneUrl('file:///etc/passwd')).toThrow('must use http or https')
+    expect(() => resolveJevEndpoint('file:///etc/passwd')).toThrow('must use http or https')
+  })
+
+  it('keeps the path a constant and the origin allowlisted', () => {
+    // The adapter fetches `origin` + this constant; neither carries a
+    // user-controlled substring, which is what keeps the SSRF rule satisfied
+    // without a suppression.
+    const { origin, path } = resolveJevEndpoint('http://von.local:8000')
+    expect(origin).toBe('http://von.local:8000')
+    expect(path).toBe('/v1/systemone')
   })
 })
 

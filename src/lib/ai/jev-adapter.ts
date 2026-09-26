@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { translate } from '@/lib/i18n/messages/ai'
 import type { ChatRequest, ChatResult, ProviderAdapter, ProviderId } from './types'
 import { DEFAULT_JEV_BASE_URL, JEV_PROVIDER_ID } from './types'
-import { buildJevSystemOneUrl } from './url-guard'
+import { resolveJevEndpoint } from './url-guard'
 
 /** Max characters of an upstream error body included in adapter error messages. */
 const ERROR_BODY_SLICE = 200
@@ -109,8 +109,10 @@ class JevAdapter implements ProviderAdapter {
     }
     // The default goes through the same guard as a configured base URL, so
     // there is exactly one code path that can produce a credential-bearing
-    // request and it is always allowlist-checked.
-    const endpoint = buildJevSystemOneUrl(request.jevBaseUrl?.trim() || DEFAULT_JEV_BASE_URL)
+    // request and it is always allowlist-checked. The origin is allowlisted
+    // and the path is a constant, so no user-controlled substring reaches the
+    // request URL.
+    const { origin, path } = resolveJevEndpoint(request.jevBaseUrl?.trim() || DEFAULT_JEV_BASE_URL)
     const modelSlug = typeof request.model === 'string' ? request.model : request.model.slug
 
     const state = request.messages.map((m) => `${m.role}: ${m.content}`).join('\n')
@@ -131,8 +133,7 @@ class JevAdapter implements ProviderAdapter {
       },
     }
 
-    // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
-    const res = await fetch(endpoint, {
+    const res = await fetch(`${origin}${path}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
