@@ -135,6 +135,10 @@ class JevAdapter implements ProviderAdapter {
         },
       },
     }
+    // `origin` is produced by resolveJevOrigin, which applies the host
+    // allowlist; `JEV_SYSTEM_ONE_PATH` is a constant. Neither the origin, the
+    // path, nor anything else user-controlled reaches the request URL.
+    // codacy-disable-next-line rules.lgpl.javascript.ssrf.rule-node-ssrf
     // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
     const res = await fetch(`${origin}${JEV_SYSTEM_ONE_PATH}`, {
       method: 'POST',
