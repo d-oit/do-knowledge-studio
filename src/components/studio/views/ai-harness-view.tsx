@@ -9,7 +9,8 @@ import { toast } from 'sonner'
 import { loadAISettings, saveAISettings, type AIProvider } from '@/lib/studio/ai-settings'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { fetchOllamaModels, OPENROUTER_DEFAULT_TARGETS } from '@/lib/ai'
-import { OLLAMA_DEFAULT_MODELS, DEFAULT_OLLAMA_BASE_URL } from '@/lib/ai/types'
+import { OLLAMA_DEFAULT_MODELS, DEFAULT_OLLAMA_BASE_URL, DEFAULT_JEV_BASE_URL } from '@/lib/ai/types'
+import { LOCAL_DEFAULT_DEVICE } from '@/lib/ai'
 import { AiHarnessSettingsPanel } from './ai-harness-settings-panel'
 import { AiHarnessChatPanel } from './ai-harness-chat'
 import { AiHarnessProviderSetup } from './ai-harness-provider-setup'
@@ -39,9 +40,11 @@ const useAIHarnessViewState = () => {
   const [apiKey, setApiKey] = useState('')
   const [showKey, setShowKey] = useState(false)
   const [augment, setAugment] = useState(true)
-  const [ollamaCpuOnly, setOllamaCpuOnly] = useState(false)
+  const [ollamaCpuOnly, setOllamaCpuOnly] = useState(true)
   const [ollamaBaseUrl, setOllamaBaseUrl] = useState(DEFAULT_OLLAMA_BASE_URL)
   const [allowWebResearch, setAllowWebResearch] = useState(false)
+  const [jevBaseUrl, setJevBaseUrl] = useState(DEFAULT_JEV_BASE_URL)
+  const [localDevice, setLocalDevice] = useState<'wasm' | 'webgpu'>(LOCAL_DEFAULT_DEVICE)
   const [customModel, setCustomModel] = useState('')
   const [showSettings, setShowSettings] = useState(false)
   const [settingsLoaded, setSettingsLoaded] = useState(false)
@@ -66,6 +69,8 @@ const useAIHarnessViewState = () => {
     allowWebResearch,
     ollamaCpuOnly,
     ollamaBaseUrl,
+    jevBaseUrl,
+    localDevice,
     entities,
     claims,
     requiresKey: activeProvider.requiresKey,
@@ -80,6 +85,8 @@ const useAIHarnessViewState = () => {
       setOllamaCpuOnly(saved.ollamaCpuOnly)
       setAllowWebResearch(saved.allowWebResearch)
       setOllamaBaseUrl(saved.ollamaBaseUrl)
+      setJevBaseUrl(saved.jevBaseUrl)
+      setLocalDevice(saved.localDevice)
       setSettingsLoaded(true)
     })
   }, [])
@@ -94,11 +101,13 @@ const useAIHarnessViewState = () => {
       ollamaCpuOnly,
       allowWebResearch,
       ollamaBaseUrl,
+      jevBaseUrl,
+      localDevice,
     }).catch((err) => {
       console.error('Failed to save AI settings:', err)
       toast.error('Failed to save settings. Your changes may not persist.')
     })
-  }, [provider, model, apiKey, augment, ollamaCpuOnly, allowWebResearch, ollamaBaseUrl, settingsLoaded])
+  }, [provider, model, apiKey, augment, ollamaCpuOnly, allowWebResearch, ollamaBaseUrl, jevBaseUrl, localDevice, settingsLoaded])
 
   const handleRefreshOllamaModels = useCallback(async () => {
     try {
@@ -134,6 +143,10 @@ const useAIHarnessViewState = () => {
     ollamaBaseUrl,
     setOllamaBaseUrl,
     allowWebResearch,
+    jevBaseUrl,
+    setJevBaseUrl,
+    localDevice,
+    setLocalDevice,
     setAllowWebResearch,
     customModel,
     setCustomModel,
@@ -233,6 +246,10 @@ export const AIHarnessView = () => {
     handleSend,
     effectiveModel,
     selectedEngineTarget,
+    jevBaseUrl,
+    setJevBaseUrl,
+    localDevice,
+    setLocalDevice,
   } = useAIHarnessViewState()
 
   return (
@@ -275,6 +292,10 @@ export const AIHarnessView = () => {
               effectiveModel={effectiveModel}
               selectedEngineTarget={selectedEngineTarget}
               isLoading={isLoading}
+              jevBaseUrl={jevBaseUrl}
+              setJevBaseUrl={setJevBaseUrl}
+              localDevice={localDevice}
+              setLocalDevice={setLocalDevice}
             />
           </motion.div>
         )}

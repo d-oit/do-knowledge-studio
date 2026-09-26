@@ -25,6 +25,8 @@ const baseOptions: UseAiHarnessChatOptions = {
   allowWebResearch: false,
   ollamaCpuOnly: false,
   ollamaBaseUrl: 'http://localhost:11434',
+  jevBaseUrl: 'https://api.typesafe.ai',
+  localDevice: 'wasm' as const,
   entities: [],
   claims: [],
   requiresKey: false,

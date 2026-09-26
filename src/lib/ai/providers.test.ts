@@ -4,8 +4,8 @@ import {
   sendChat,
   sendChatStream,
   fetchOllamaModels,
-  validateOllamaUrl,
 } from './providers'
+import { validateJevBaseUrl, validateOllamaUrl } from './url-guard'
 import { OPENROUTER_ROUTERS } from './types'
 
 // ─── getAdapter ─────────────────────────────────────────────────────────────
@@ -26,6 +26,12 @@ describe('getAdapter', () => {
     const adapter = getAdapter('local')
     expect(adapter.id).toBe('local')
     expect(adapter.requiresKey).toBe(false)
+  })
+
+  it('returns Jev adapter for "jev"', () => {
+    const adapter = getAdapter('jev')
+    expect(adapter.id).toBe('jev')
+    expect(adapter.requiresKey).toBe(true)
   })
 
   it('local adapter has sendStream method', () => {
@@ -210,6 +216,179 @@ describe('validateOllamaUrl: rejects invalid URLs', () => {
 
   it('rejects empty string', () => {
     expect(() => validateOllamaUrl('')).toThrow('Invalid Ollama base URL')
+  })
+})
+
+// ─── validateJevBaseUrl ──────────────────────────────────────────────────────
+
+describe('validateJevBaseUrl', () => {
+  it('accepts the TypeSafe cloud host', () => {
+    expect(validateJevBaseUrl('https://api.typesafe.ai')).toBe('https://api.typesafe.ai')
+  })
+
+  it('accepts a local Von server on localhost', () => {
+    expect(validateJevBaseUrl('http://localhost:8000')).toBe('http://localhost:8000')
+  })
+
+  it('accepts a .local Von server', () => {
+    expect(validateJevBaseUrl('http://von.local:8000')).toBe('http://von.local:8000')
+  })
+
+  it('strips trailing slashes', () => {
+    expect(validateJevBaseUrl('https://api.typesafe.ai/')).toBe('https://api.typesafe.ai')
+  })
+
+  it('rejects an arbitrary host', () => {
+    expect(() => validateJevBaseUrl('https://evil.com')).toThrow(
+      'known cloud host, localhost, or a .local hostname',
+    )
+  })
+
+  it('rejects a non-http protocol', () => {
+    expect(() => validateJevBaseUrl('ftp://api.typesafe.ai')).toThrow('must use http or https')
+  })
+
+  it('rejects an unparseable URL', () => {
+    expect(() => validateJevBaseUrl('not a url')).toThrow('Invalid Jev base URL')
+  })
+})
+
+// ─── JevAdapter ──────────────────────────────────────────────────────────────
+
+describe('JevAdapter', () => {
+  const originalFetch = globalThis.fetch
+
+  const jevRequest = {
+    provider: 'jev' as const,
+    model: 'jev-1.13.0',
+    apiKey: 'sk-jev-test',
+    messages: [{ role: 'user' as const, content: 'How should I structure my notes?' }],
+  }
+
+  const okResponse = (body: unknown) =>
+    vi.fn().mockResolvedValueOnce({ ok: true, json: () => body } as Response)
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch
+  })
+
+  it('posts to /v1/systemone with state and questions, not a chat endpoint', async () => {
+    const mockFetch = okResponse({
+      model: 'jev-1.13.0',
+      answers: {
+        respond: {
+          type: 'choice',
+          choice: 'helpful',
+          confidence: 0.95,
+          probabilities: { helpful: 0.95, clarify: 0.05 },
+        },
+      },
+      usage: { input_tokens: 100, output_tokens: 0 },
+    })
+    globalThis.fetch = mockFetch
+
+    const result = await getAdapter('jev').send(jevRequest)
+
+    const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit]
+    expect(url).toBe('https://api.typesafe.ai/v1/systemone')
+    expect(url).not.toContain('chat/completions')
+    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer sk-jev-test')
+    const body = JSON.parse(init.body as string) as {
+      model: string
+      state: string
+      questions: Record<string, { type: string; criteria: Record<string, string> }>
+    }
+    expect(body.model).toBe('jev-1.13.0')
+    expect(body.state).toContain('user: How should I structure my notes?')
+    expect(body.questions.respond.type).toBe('choice')
+    expect(body.questions.respond.criteria).toHaveProperty('helpful')
+
+    expect(result.provider).toBe('jev')
+    expect(result.model).toBe('jev-1.13.0')
+    expect(result.content).toContain('helpful')
+    expect(result.content).toContain('confidence: 95.0%')
+  })
+
+  it('uses a configured Von base URL instead of the cloud API', async () => {
+    const mockFetch = okResponse({ model: 'von-1.2', answers: {} })
+    globalThis.fetch = mockFetch
+
+    await getAdapter('jev').send({ ...jevRequest, model: 'von-1.2', jevBaseUrl: 'http://localhost:8000' })
+
+    expect(mockFetch.mock.calls[0][0]).toBe('http://localhost:8000/v1/systemone')
+  })
+
+  it('refuses to send to a base URL outside the allowlist', async () => {
+    const mockFetch = vi.fn()
+    globalThis.fetch = mockFetch
+
+    await expect(
+      getAdapter('jev').send({ ...jevRequest, jevBaseUrl: 'https://evil.com' }),
+    ).rejects.toThrow('known cloud host')
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it('maps a 401 to an invalid-key message', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      text: () => Promise.resolve('unauthorized'),
+    } as Response)
+
+    await expect(getAdapter('jev').send(jevRequest)).rejects.toThrow('invalid or revoked API key')
+  })
+
+  it('maps a 422 to a missing-field message', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 422,
+      text: () => Promise.resolve('state required'),
+    } as Response)
+
+    await expect(getAdapter('jev').send(jevRequest)).rejects.toThrow('missing required field')
+  })
+
+  it('mentions the versioned model id on a 400', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      text: () => Promise.resolve('unknown model'),
+    } as Response)
+
+    await expect(getAdapter('jev').send(jevRequest)).rejects.toThrow('jev-1.13.0, not jev-1.13')
+  })
+
+  it('falls back to status and body for an unmapped error code', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 503,
+      text: () => Promise.resolve('upstream busy'),
+    } as Response)
+
+    await expect(getAdapter('jev').send(jevRequest)).rejects.toThrow('Jev error 503: upstream busy')
+  })
+
+  it('emits a single chunk from sendStream because the endpoint is not streamable', async () => {
+    globalThis.fetch = okResponse({
+      model: 'jev-1.13.0',
+      answers: { respond: { type: 'choice', choice: 'clarify', confidence: 0.6 } },
+    })
+    const chunks: string[] = []
+
+    const result = await getAdapter('jev').sendStream(jevRequest, (c) => { chunks.push(c) })
+
+    expect(chunks).toHaveLength(1)
+    expect(result.content).toContain('clarify')
+  })
+
+  it('renders a noul answer as a likelihood without a confidence field', async () => {
+    globalThis.fetch = okResponse({
+      model: 'jev-1.13.0',
+      answers: { rain: { type: 'noul', noul: 0.31 } },
+    })
+
+    const result = await getAdapter('jev').send(jevRequest)
+    expect(result.content).toContain('**rain**: 31.0% likely')
   })
 })
 

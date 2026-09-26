@@ -9,6 +9,8 @@ import {
   OLLAMA_DEFAULT_MODELS,
   DEFAULT_LOCAL_MODELS,
   LOCAL_PROVIDER_ID,
+  JEV_PROVIDER_ID,
+  JEV_DEFAULT_MODELS,
 } from '@/lib/ai'
 import { translate as tAi } from '@/lib/i18n/messages/ai'
 
@@ -29,6 +31,12 @@ export const PROVIDERS: ProviderOption[] = [
     label: tAi('ai.settings.provider.local.label'),
     models: DEFAULT_LOCAL_MODELS.map((m) => m.id),
     requiresKey: false,
+  },
+  {
+    id: JEV_PROVIDER_ID,
+    label: PROVIDER_LABELS.jev,
+    models: [...JEV_DEFAULT_MODELS],
+    requiresKey: true,
   },
 ]
 

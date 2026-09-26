@@ -55,6 +55,8 @@ vi.mock('@/lib/studio/ai-settings', () => ({
       ollamaCpuOnly: false,
       allowWebResearch: false,
       ollamaBaseUrl: 'http://localhost:11434',
+      jevBaseUrl: 'https://api.typesafe.ai',
+      localDevice: 'wasm',
     }),
   ),
   saveAISettings: vi.fn(() => Promise.resolve()),
@@ -73,6 +75,11 @@ vi.mock('@/lib/ai', () => ({
   OPENROUTER_MODELS: [{ slug: 'openai/gpt-4o-mini', display_name: 'GPT-4o Mini' }],
   DEFAULT_LOCAL_MODELS: [{ id: 'onnx-community/Qwen2.5-0.5B-Instruct', displayName: 'Qwen2.5 0.5B Instruct', dtype: 'q4' }],
   LOCAL_PROVIDER_ID: 'local',
+  JEV_PROVIDER_ID: 'jev',
+  JEV_DEFAULT_MODELS: ['jev-1.13.0', 'jev-latest', 'von-1.2'],
+  LOCAL_DEFAULT_DEVICE: 'wasm',
+  validateJevBaseUrl: (u: string) => u.replace(/\/+$/, ''),
+  validateOllamaUrl: (u: string) => u.replace(/\/+$/, ''),
   OPENROUTER_DEFAULT_TARGETS: [
     { slug: 'openrouter/auto', display_name: 'Auto Router' },
     { slug: 'openai/gpt-4o-mini', display_name: 'GPT-4o Mini' },
@@ -83,12 +90,14 @@ vi.mock('@/lib/ai/types', () => ({
   DEFAULT_MODEL: { openrouter: 'openrouter/free', ollama: 'llama3' },
   OLLAMA_DEFAULT_MODELS: ['llama3', 'mistral'],
   DEFAULT_OLLAMA_BASE_URL: 'http://localhost:11434',
+  DEFAULT_JEV_BASE_URL: 'https://api.typesafe.ai',
 }))
 
 vi.mock('./ai-harness-settings', () => ({
   PROVIDERS: [
     { id: 'openrouter', label: 'OpenRouter', models: ['openrouter/free'], requiresKey: true },
     { id: 'ollama', label: 'Ollama (local)', models: ['llama3'], requiresKey: false },
+    { id: 'jev', label: 'TypeSafe Jev / Von (Decision API)', models: ['jev-1.13.0'], requiresKey: true },
   ],
   Field: ({ label, children }: { label: string; children?: ReactNode }) => (
     <div data-testid="field">

@@ -1,5 +1,5 @@
 /** Supported AI provider identifiers. */
-export type ProviderId = 'openrouter' | 'ollama' | 'local'
+export type ProviderId = 'openrouter' | 'ollama' | 'local' | 'jev'
 
 /** Chat message with role and content for AI conversation. */
 export interface ChatMessage {
@@ -90,6 +90,9 @@ export const OPENROUTER_DEFAULT_TARGETS: OpenRouterTarget[] = [
 /** Provider id for the fully-offline, in-browser transformers.js provider. */
 export const LOCAL_PROVIDER_ID = 'local' as const
 
+/** Provider id for the TypeSafe Jev / Von System One decision API. */
+export const JEV_PROVIDER_ID = 'jev' as const
+
 /** Parameters for a chat completion request. */
 export interface ChatRequest {
   provider: ProviderId
@@ -101,6 +104,8 @@ export interface ChatRequest {
   ollamaBaseUrl?: string
   /** Inference device for the in-browser 'local' provider: 'wasm' (default) or 'webgpu'. */
   localDevice?: 'wasm' | 'webgpu'
+  /** Base URL for the Jev/Von provider; defaults to the TypeSafe cloud API. */
+  jevBaseUrl?: string
 }
 
 /** Result returned by a chat completion call. */
@@ -126,6 +131,7 @@ export const PROVIDER_LABELS: Record<ProviderId, string> = {
   openrouter: 'OpenRouter',
   ollama: 'Ollama (local)',
   local: 'Local (in-browser)',
+  jev: 'TypeSafe Jev / Von (Decision API)',
 }
 
 /** Default model slugs for the OpenRouter provider. */
@@ -153,11 +159,22 @@ export const OLLAMA_DEFAULT_MODELS = [
   'gemma2',
 ]
 
+/** Default Jev base URL (TypeSafe hosted). */
+export const DEFAULT_JEV_BASE_URL = 'https://api.typesafe.ai'
+
+/**
+ * Default model slugs for the Jev/Von provider.
+ * Pin versioned IDs — aliases (jev-latest, jev-preview) drift across releases.
+ * Von models appear when the user points jevBaseUrl at a local Von server.
+ */
+export const JEV_DEFAULT_MODELS = ['jev-1.13.0', 'jev-latest', 'von-1.2'] as const
+
 /** Default model selected for each provider. */
 export const DEFAULT_MODEL: Record<ProviderId, string> = {
   openrouter: 'openrouter/free',
   ollama: 'llama3',
   local: 'onnx-community/Qwen2.5-0.5B-Instruct',
+  jev: 'jev-1.13.0',
 }
 
 /** Default base URL for a local Ollama instance. */

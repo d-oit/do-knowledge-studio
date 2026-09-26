@@ -1,7 +1,20 @@
 # Plans Index
 
-**Updated**: 2026-08-22
+**Updated**: 2026-09-26
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
+
+### Plan 155 — September 2026 modernization and local CPU-first AI (2026-09-26)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Add a correct Jev / Von System One provider; make CPU the invariant default | Done | `plans/155-september-2026-modernization-and-local-cpu-ai.md`. Corrects the retired `SEPTEMBER_2026_MODERNIZATION_PLAN.md`, which called a non-existent `POST /v1/chat/completions`; the adapter now posts `{ model, state, questions }` to `/v1/systemone` and flattens the chosen answer into `ChatResult.content`. Adds the `migrateProvider` allowlist entry that was missing from the original plan (without it a persisted `provider: 'jev'` silently rewrites to `'openrouter'` on every load). `ollamaCpuOnly` defaults to `true` and `localDevice` is persisted, closing a gap where the WASM/WebGPU toggle was consumed by the adapter but unreachable from the UI. Paired with ADR 040.
+
+### ADR 040 — CPU-first local AI and System One decision models (2026-09-26)
+
+| ADR | Status | Reason |
+|-----|--------|--------|
+| 040 | Implemented | CPU is the invariant default (WASM in-browser, `num_gpu: 0` for Ollama; GPU opt-in). Jev uses a chat-shim over `/v1/systemone`; `jevBaseUrl` is allowlisted to known cloud hosts plus localhost (SSRF guard). Supersedes ADR 025 in part: Ollama CPU-only moves from opt-in to default-on. |
+
 
 ### Plan 131 — GOAP Swarm Improvement Audit (2026-08-22)
 

@@ -18,10 +18,15 @@ export {
   OPENROUTER_MODELS,
   OPENROUTER_DEFAULT_TARGETS,
   LOCAL_PROVIDER_ID,
+  JEV_PROVIDER_ID,
+  JEV_DEFAULT_MODELS,
+  DEFAULT_JEV_BASE_URL,
 } from './types'
 
 export { getAdapter, sendChat, sendChatStream, fetchOllamaModels } from './providers'
 export { localAdapter, DEFAULT_LOCAL_MODELS, LOCAL_DEFAULT_DEVICE } from './local-adapter'
+export { jevAdapter } from './jev-adapter'
+export { validateJevBaseUrl, validateOllamaUrl } from './url-guard'
 export type { LocalModelOption } from './local-adapter'
 export { buildSystemPrompt, buildMessages, buildSystemPromptAsync, buildMessagesAsync } from './context'
 export { useRateLimiter } from './use-rate-limiter'

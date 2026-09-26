@@ -28,10 +28,23 @@ vi.mock('@/lib/ai', () => ({
   OPENROUTER_MODELS: [{ slug: 'openai/gpt-4o-mini', display_name: 'GPT-4o Mini' }],
   DEFAULT_LOCAL_MODELS: [{ id: 'onnx-community/Qwen2.5-0.5B-Instruct', displayName: 'Qwen2.5 0.5B Instruct', dtype: 'q4' }],
   LOCAL_PROVIDER_ID: 'local',
+  JEV_PROVIDER_ID: 'jev',
+  JEV_DEFAULT_MODELS: ['jev-1.13.0', 'jev-latest', 'von-1.2'],
+  // Mirrors the real guard: a partially-typed host must throw, which is what
+  // keeps autosave from writing a half-typed URL.
+  validateJevBaseUrl: (u: string) => {
+    const parsed = new URL(u)
+    const local = ['localhost', '127.0.0.1'].includes(parsed.hostname) || parsed.hostname.endsWith('.local')
+    if (!['api.typesafe.ai', 'openrouter.ai'].includes(parsed.hostname) && !local) {
+      throw new Error('Jev base URL must point to a known cloud host, localhost, or a .local hostname')
+    }
+    return u.replace(/\/+$/, '')
+  },
+  validateOllamaUrl: (u: string) => u.replace(/\/+$/, ''),
 }))
 
 vi.mock('@/lib/ai/types', () => ({
-  DEFAULT_MODEL: { openrouter: 'openrouter/free', ollama: 'llama3', local: 'onnx-community/Qwen2.5-0.5B-Instruct' },
+  DEFAULT_MODEL: { openrouter: 'openrouter/free', ollama: 'llama3', local: 'onnx-community/Qwen2.5-0.5B-Instruct', jev: 'jev-1.13.0' },
   DEFAULT_OLLAMA_BASE_URL: 'http://localhost:11434',
 }))
 
@@ -40,6 +53,7 @@ vi.mock('./ai-harness-settings', () => ({
     { id: 'openrouter', label: 'OpenRouter', models: ['openrouter/free'], requiresKey: true },
     { id: 'ollama', label: 'Ollama (local)', models: ['llama3'], requiresKey: false },
     { id: 'local', label: 'Local (in-browser)', models: ['onnx-community/Qwen2.5-0.5B-Instruct'], requiresKey: false },
+    { id: 'jev', label: 'TypeSafe Jev / Von (Decision API)', models: ['jev-1.13.0'], requiresKey: true },
   ],
   Field: ({ label, children }: { label: string; children?: ReactNode }) => (
     <div data-testid="field">
@@ -85,6 +99,10 @@ const defaultProps = {
   effectiveModel: 'openrouter/free',
   selectedEngineTarget: null,
   isLoading: false,
+  jevBaseUrl: 'https://api.typesafe.ai',
+  setJevBaseUrl: vi.fn(),
+  localDevice: 'wasm' as const,
+  setLocalDevice: vi.fn(),
 }
 
 describe('AiHarnessSettingsPanel', () => {
@@ -215,5 +233,78 @@ describe('AiHarnessSettingsPanel', () => {
     )
     expect(screen.getByText('Test Model:')).toBeDefined()
     expect(screen.getByText('A test model for testing.')).toBeDefined()
+  })
+
+  it('offers the Jev base URL field and its three decision models', () => {
+    render(<AiHarnessSettingsPanel {...defaultProps} provider="jev" model="jev-1.13.0" />)
+    expect(screen.getByPlaceholderText('https://api.typesafe.ai')).toBeDefined()
+    expect(screen.getByText('jev-1.13.0')).toBeDefined()
+    expect(screen.getByText('jev-latest')).toBeDefined()
+    expect(screen.getByText('von-1.2')).toBeDefined()
+  })
+
+  it('does not commit a half-typed Jev base URL to settings', () => {
+    const setJevBaseUrl = vi.fn()
+    render(<AiHarnessSettingsPanel {...defaultProps} provider="jev" setJevBaseUrl={setJevBaseUrl} />)
+    const input = screen.getByPlaceholderText('https://api.typesafe.ai')
+
+    // Autosave runs on every keystroke, so a partial host must stay local to
+    // the input rather than reaching the settings writer.
+    fireEvent.change(input, { target: { value: 'http' } })
+    expect(setJevBaseUrl).not.toHaveBeenCalled()
+
+    fireEvent.blur(input)
+    expect(setJevBaseUrl).not.toHaveBeenCalled()
+    expect(input.getAttribute('aria-invalid')).toBe('true')
+  })
+
+  it('commits the normalized Jev base URL on blur', () => {
+    const setJevBaseUrl = vi.fn()
+    render(<AiHarnessSettingsPanel {...defaultProps} provider="jev" setJevBaseUrl={setJevBaseUrl} />)
+    const input = screen.getByPlaceholderText('https://api.typesafe.ai')
+
+    fireEvent.change(input, { target: { value: 'http://localhost:8000/' } })
+    fireEvent.blur(input)
+    expect(setJevBaseUrl).toHaveBeenCalledWith('http://localhost:8000')
+  })
+
+  it('keeps the previous value and flags the field when the URL is rejected', () => {
+    const setJevBaseUrl = vi.fn()
+    render(<AiHarnessSettingsPanel {...defaultProps} provider="jev" setJevBaseUrl={setJevBaseUrl} />)
+    const input = screen.getByPlaceholderText('https://api.typesafe.ai')
+
+    fireEvent.change(input, { target: { value: 'https://evil.com' } })
+    fireEvent.blur(input)
+
+    expect(setJevBaseUrl).not.toHaveBeenCalled()
+    expect(input.getAttribute('aria-invalid')).toBe('true')
+  })
+
+  it('restores the draft when the stored value is replaced externally', () => {
+    const { rerender } = render(
+      <AiHarnessSettingsPanel {...defaultProps} provider="jev" jevBaseUrl="https://api.typesafe.ai" />,
+    )
+    fireEvent.change(screen.getByPlaceholderText('https://api.typesafe.ai'), { target: { value: 'edited' } })
+
+    rerender(
+      <AiHarnessSettingsPanel {...defaultProps} provider="jev" jevBaseUrl="http://localhost:8000" />,
+    )
+    expect((screen.getByPlaceholderText('https://api.typesafe.ai') as HTMLInputElement).value).toBe(
+      'http://localhost:8000',
+    )
+  })
+
+  it('defaults the local inference device to CPU and allows WebGPU', () => {
+    render(
+      <AiHarnessSettingsPanel
+        {...defaultProps}
+        provider="local"
+        model="onnx-community/Qwen2.5-0.5B-Instruct"
+      />,
+    )
+    const selects = screen.getAllByRole('combobox')
+    const device = selects[selects.length - 1] as HTMLSelectElement
+    expect(device.value).toBe('wasm')
+    expect(Array.from(device.options).map((o) => o.value)).toEqual(['wasm', 'webgpu'])
   })
 })

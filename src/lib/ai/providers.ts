@@ -8,31 +8,11 @@ import type {
 } from './types'
 import { DEFAULT_OLLAMA_BASE_URL, OPENROUTER_DEFAULT_TARGETS } from './types'
 import { localAdapter } from './local-adapter'
+import { jevAdapter } from './jev-adapter'
+import { validateOllamaUrl } from './url-guard'
 
 const OPENROUTER_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions'
 const APP_TITLE = 'Do Knowledge Studio'
-
-const ALLOWED_OLLAMA_HOSTS = new Set(['localhost', '127.0.0.1', '::1'])
-
-const isAllowedOllamaHost = (hostname: string): boolean =>
-  ALLOWED_OLLAMA_HOSTS.has(hostname) || hostname.endsWith('.local')
-
-/** Validate and normalize an Ollama base URL to localhost-only. */
-export const validateOllamaUrl = (baseUrl: string): string => {
-  let url: URL
-  try {
-    url = new URL(baseUrl)
-  } catch {
-    throw new Error('Invalid Ollama base URL')
-  }
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    throw new Error('Ollama base URL must use http or https protocol')
-  }
-  if (!isAllowedOllamaHost(url.hostname)) {
-    throw new Error('Ollama base URL must point to localhost or a .local hostname')
-  }
-  return baseUrl.replace(/\/+$/, '')
-}
 
 const OpenRouterResponseSchema = z.object({
   choices: z.array(
@@ -315,10 +295,12 @@ class OllamaAdapter implements ProviderAdapter {
   }
 }
 
+
 const adapters: Record<ProviderId, ProviderAdapter> = {
   openrouter: new OpenRouterAdapter(),
   ollama: new OllamaAdapter(),
   local: localAdapter,
+  jev: jevAdapter,
 }
 
 /** Return the provider adapter for the given provider ID. */

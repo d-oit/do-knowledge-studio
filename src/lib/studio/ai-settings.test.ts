@@ -1,5 +1,19 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { getProviderEndpoint, loadAISettings, saveAISettings, isSessionOnlyCredential, getSessionOnlyMessage, resetIDBConnection } from './ai-settings'
+import type { AISettings } from './ai-settings'
+
+/** A complete settings fixture; the two new fields are required by the type. */
+const baseSettings: AISettings = {
+  provider: 'openrouter',
+  model: 'openrouter/free',
+  apiKey: '',
+  augmentWithLocal: true,
+  ollamaCpuOnly: false,
+  allowWebResearch: false,
+  ollamaBaseUrl: 'http://localhost:11434',
+  jevBaseUrl: 'https://api.typesafe.ai',
+  localDevice: 'wasm',
+}
 
 // ── In-memory IndexedDB mock ─────────────────────────────────────────
 // Uses a shared Map so that multiple openDB() calls within the same test
@@ -133,15 +147,7 @@ describe('ai-settings encryption and persistence', () => {
   })
 
   it('encrypts API key when saving and decrypts when loading', async () => {
-    const settings = {
-      provider: 'openrouter' as const,
-      model: 'openrouter/free',
-      apiKey: 'test-api-key-123456789',
-      augmentWithLocal: true,
-      ollamaCpuOnly: false,
-      allowWebResearch: false,
-      ollamaBaseUrl: 'http://localhost:11434',
-    }
+    const settings = { ...baseSettings, apiKey: 'test-api-key-123456789' }
 
     await saveAISettings(settings)
 
@@ -153,15 +159,7 @@ describe('ai-settings encryption and persistence', () => {
   it('ensures that the key used is non-extractable in memory', async () => {
     const importKeySpy = vi.spyOn(crypto.subtle, 'importKey')
 
-    const settings = {
-      provider: 'openrouter' as const,
-      model: 'openrouter/free',
-      apiKey: 'another-secure-key',
-      augmentWithLocal: true,
-      ollamaCpuOnly: false,
-      allowWebResearch: false,
-      ollamaBaseUrl: 'http://localhost:11434',
-    }
+    const settings = { ...baseSettings, apiKey: 'another-secure-key' }
 
     await saveAISettings(settings)
 
@@ -216,15 +214,7 @@ describe('ai-settings encryption and persistence', () => {
   })
 
   it('handles empty API key', async () => {
-    const settings = {
-      provider: 'openrouter' as const,
-      model: 'openrouter/free',
-      apiKey: '',
-      augmentWithLocal: true,
-      ollamaCpuOnly: false,
-      allowWebResearch: false,
-      ollamaBaseUrl: 'http://localhost:11434',
-    }
+    const settings = { ...baseSettings, apiKey: '' }
 
     await saveAISettings(settings)
     const loaded = await loadAISettings()
@@ -243,13 +233,12 @@ describe('ai-settings encryption and persistence', () => {
 
   it('preserves all settings fields', async () => {
     const settings = {
+      ...baseSettings,
       provider: 'ollama' as const,
       model: 'llama3',
-      apiKey: '',
       augmentWithLocal: false,
       ollamaCpuOnly: true,
       allowWebResearch: true,
-      ollamaBaseUrl: 'http://localhost:11434',
     }
 
     await saveAISettings(settings)
@@ -262,6 +251,42 @@ describe('ai-settings encryption and persistence', () => {
     expect(loaded.ollamaBaseUrl).toBe('http://localhost:11434')
   })
 
+  it('preserves the jev provider instead of rewriting it to openrouter', async () => {
+    localStorageMock['dks-ai-settings'] = JSON.stringify({
+      provider: 'jev',
+      model: 'jev-1.13.0',
+    })
+
+    const loaded = await loadAISettings()
+    expect(loaded.provider).toBe('jev')
+    expect(loaded.model).toBe('jev-1.13.0')
+    expect(loaded.jevBaseUrl).toBe('https://api.typesafe.ai')
+  })
+
+  it('round-trips the jev base URL and the local inference device', async () => {
+    const settings = {
+      ...baseSettings,
+      provider: 'jev' as const,
+      model: 'von-1.2',
+      jevBaseUrl: 'http://localhost:8000',
+      localDevice: 'webgpu' as const,
+    }
+
+    await saveAISettings(settings)
+    const loaded = await loadAISettings()
+    expect(loaded.provider).toBe('jev')
+    expect(loaded.jevBaseUrl).toBe('http://localhost:8000')
+    expect(loaded.localDevice).toBe('webgpu')
+  })
+
+  it('rejects a jev base URL pointing at an arbitrary host', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    await expect(
+      saveAISettings({ ...baseSettings, provider: 'jev', jevBaseUrl: 'https://evil.example' }),
+    ).rejects.toThrow()
+    consoleSpy.mockRestore()
+  })
+
   it('handles missing optional fields in stored settings', async () => {
     localStorageMock['dks-ai-settings'] = JSON.stringify({
       provider: 'ollama',
@@ -269,20 +294,18 @@ describe('ai-settings encryption and persistence', () => {
     })
 
     const loaded = await loadAISettings()
-    expect(loaded.ollamaCpuOnly).toBe(false)
+    expect(loaded.ollamaCpuOnly).toBe(true)
     expect(loaded.allowWebResearch).toBe(false)
     expect(loaded.ollamaBaseUrl).toBe('http://localhost:11434')
+    expect(loaded.localDevice).toBe('wasm')
+    expect(loaded.jevBaseUrl).toBe('https://api.typesafe.ai')
   })
 
   it('persists and loads the in-browser local provider round-trip', async () => {
     const settings = {
+      ...baseSettings,
       provider: 'local' as const,
       model: 'onnx-community/Qwen2.5-0.5B-Instruct',
-      apiKey: '',
-      augmentWithLocal: true,
-      ollamaCpuOnly: false,
-      allowWebResearch: false,
-      ollamaBaseUrl: 'http://localhost:11434',
     }
 
     await saveAISettings(settings)
@@ -333,15 +356,7 @@ describe('ai-settings encryption and persistence', () => {
   })
 
   it('persists encryptedApiKey to IndexedDB, not plain apiKey', async () => {
-    const settings = {
-      provider: 'openrouter' as const,
-      model: 'openrouter/free',
-      apiKey: 'secret-key-abc',
-      augmentWithLocal: true,
-      ollamaCpuOnly: false,
-      allowWebResearch: false,
-      ollamaBaseUrl: 'http://localhost:11434',
-    }
+    const settings = { ...baseSettings, apiKey: 'secret-key-abc' }
 
     await saveAISettings(settings)
     const loaded = await loadAISettings()

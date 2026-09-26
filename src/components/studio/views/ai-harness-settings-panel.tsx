@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import {
   Database,
   Key,
@@ -15,12 +16,79 @@ import { type AIProvider } from '@/lib/studio/ai-settings'
 import {
   OPENROUTER_ROUTERS,
   OPENROUTER_MODELS,
+  JEV_PROVIDER_ID,
+  JEV_DEFAULT_MODELS,
+  LOCAL_PROVIDER_ID,
+  validateJevBaseUrl,
+  validateOllamaUrl,
 } from '@/lib/ai'
 import { DEFAULT_MODEL, DEFAULT_OLLAMA_BASE_URL } from '@/lib/ai/types'
-import { DEFAULT_LOCAL_MODELS, LOCAL_PROVIDER_ID } from '@/lib/ai'
+import { DEFAULT_LOCAL_MODELS } from '@/lib/ai'
 import { translate as tAi } from '@/lib/i18n/messages/ai'
 import { Field, PROVIDERS } from './ai-harness-settings'
 import { SwitchToggle } from '../ui/shared-primitives'
+
+/**
+ * Base URL input for a self-hosted provider.
+ *
+ * The harness autosaves every settings change, so a keystroke-by-keystroke
+ * "htt" would otherwise reach `saveAISettings` and fail schema validation on
+ * every character: the save rejects, the stored record keeps the last good
+ * value, and the user is left with a field that appears to edit but silently
+ * discards. Deferring the commit to blur means a half-typed host never leaves
+ * the input, and the stored value is always a complete, allowlisted URL.
+ * `aria-invalid` reports the problem on the field itself instead of a toast.
+ */
+const BaseUrlInput = ({
+  value,
+  validate,
+  onCommit,
+  placeholder,
+  label,
+}: {
+  value: string
+  validate: (url: string) => string
+  onCommit: (url: string) => void
+  placeholder: string
+  label: string
+}) => {
+  const [draft, setDraft] = useState(value)
+  const [invalid, setInvalid] = useState(false)
+
+  // Adopt an externally restored value (settings load, provider switch) while
+  // leaving an in-progress edit untouched.
+  useEffect(() => {
+    setDraft(value)
+    setInvalid(false)
+  }, [value])
+
+  const commit = () => {
+    try {
+      // The validator normalizes (strips trailing slashes); commit what it
+      // returns so the stored record is the canonical URL, not the raw draft.
+      onCommit(validate(draft))
+      setInvalid(false)
+    } catch {
+      setInvalid(true)
+    }
+  }
+
+  return (
+    <input
+      type="text"
+      value={draft}
+      onChange={(e) => { setDraft(e.target.value) }}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') { e.preventDefault(); commit() }
+      }}
+      placeholder={placeholder}
+      aria-label={label}
+      aria-invalid={invalid}
+      className="w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-mono text-ink-soft placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30 aria-invalid:border-destructive"
+    />
+  )
+}
 
 interface SettingsPanelProps {
   provider: AIProvider
@@ -47,6 +115,10 @@ interface SettingsPanelProps {
   effectiveModel: string
   selectedEngineTarget: { slug: string; display_name: string; description?: string } | null
   isLoading: boolean
+  jevBaseUrl: string
+  setJevBaseUrl: (u: string) => void
+  localDevice: 'wasm' | 'webgpu'
+  setLocalDevice: (d: 'wasm' | 'webgpu') => void
 }
 
 /**
@@ -61,6 +133,8 @@ const getDefaultModelForProvider = (provider: AIProvider): string => {
       return DEFAULT_MODEL.ollama
     case 'local':
       return DEFAULT_MODEL.local
+    case 'jev':
+      return DEFAULT_MODEL.jev
   }
 }
 
@@ -74,6 +148,13 @@ const EngineOptions = ({
 }) => {
   if (provider === 'ollama') {
     return ollamaModels.map((m) => (
+      <option key={m} value={m}>
+        {m}
+      </option>
+    ))
+  }
+  if (provider === JEV_PROVIDER_ID) {
+    return JEV_DEFAULT_MODELS.map((m) => (
       <option key={m} value={m}>
         {m}
       </option>
@@ -168,6 +249,10 @@ export const AiHarnessSettingsPanel = ({
   effectiveModel,
   selectedEngineTarget,
   isLoading,
+  jevBaseUrl,
+  setJevBaseUrl,
+  localDevice,
+  setLocalDevice,
 }: SettingsPanelProps) => {
   const activeProvider = PROVIDERS.find((p) => p.id === provider) ?? PROVIDERS[0]
 
@@ -234,6 +319,31 @@ export const AiHarnessSettingsPanel = ({
                 {tAi('ai.settings.local.downloadHint')}
               </div>
             )}
+            {provider === LOCAL_PROVIDER_ID && (
+              <Field label={tAi('ai.settings.local.device.label')} icon={Cpu}>
+                <select
+                  value={localDevice}
+                  onChange={(e) => {
+                    const val = e.target.value
+                    if (val !== 'wasm' && val !== 'webgpu') return
+                    setLocalDevice(val)
+                  }}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+                >
+                  <option value="wasm">{tAi('ai.settings.local.device.cpu')}</option>
+                  <option value="webgpu">{tAi('ai.settings.local.device.gpu')}</option>
+                </select>
+                <p className="mt-1.5 text-caption text-ink-faint">
+                  {tAi('ai.settings.local.device.description')}
+                </p>
+              </Field>
+            )}
+
+            {provider === JEV_PROVIDER_ID && (
+              <div className="mt-2 rounded border border-border bg-muted/30 p-2 text-[11px] leading-relaxed text-ink-mute">
+                {tAi('ai.settings.jev.hint')}
+              </div>
+            )}
           </Field>
 
           {activeProvider.requiresKey && (
@@ -263,12 +373,12 @@ export const AiHarnessSettingsPanel = ({
           {provider === 'ollama' && (
             <>
               <Field label="Ollama Base URL" icon={Globe}>
-                <input
-                  type="text"
+                <BaseUrlInput
                   value={ollamaBaseUrl}
-                  onChange={(e) => { setOllamaBaseUrl(e.target.value) }}
+                  validate={validateOllamaUrl}
+                  onCommit={setOllamaBaseUrl}
                   placeholder={DEFAULT_OLLAMA_BASE_URL}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-mono text-ink-soft placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+                  label="Ollama Base URL"
                 />
               </Field>
 
@@ -280,6 +390,18 @@ export const AiHarnessSettingsPanel = ({
                 onToggle={() => { setOllamaCpuOnly(!ollamaCpuOnly) }}
               />
             </>
+          )}
+
+          {provider === JEV_PROVIDER_ID && (
+            <Field label={tAi('ai.settings.jev.baseUrl.label')} icon={Globe}>
+              <BaseUrlInput
+                value={jevBaseUrl}
+                validate={validateJevBaseUrl}
+                onCommit={setJevBaseUrl}
+                placeholder={tAi('ai.settings.jev.baseUrl.placeholder')}
+                label={tAi('ai.settings.jev.baseUrl.label')}
+              />
+            </Field>
           )}
 
           <SwitchToggle

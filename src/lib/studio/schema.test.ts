@@ -667,7 +667,9 @@ describe('StoredSettingsSchema', () => {
       allowWebResearch: false,
       ollamaBaseUrl: 'http://localhost:11434',
     }
-    expect(StoredSettingsSchema.parse(valid)).toEqual(valid)
+    // localDevice is backfilled by the schema; the explicitly-stored
+    // ollamaCpuOnly: false survives the new CPU-first default.
+    expect(StoredSettingsSchema.parse(valid)).toEqual({ ...valid, localDevice: 'wasm' })
   })
 
   it('applies defaults for missing optional boolean fields', () => {
@@ -677,7 +679,8 @@ describe('StoredSettingsSchema', () => {
     }
     const parsed = StoredSettingsSchema.parse(minimal)
     expect(parsed.augmentWithLocal).toBe(true)
-    expect(parsed.ollamaCpuOnly).toBe(false)
+    expect(parsed.ollamaCpuOnly).toBe(true)
+    expect(parsed.localDevice).toBe('wasm')
     expect(parsed.allowWebResearch).toBe(false)
   })
 
@@ -699,5 +702,28 @@ describe('StoredSettingsSchema', () => {
     expect(() => StoredSettingsSchema.parse({ ...validBase, ollamaBaseUrl: 'ftp://localhost:11434' })).toThrow()
     expect(() => StoredSettingsSchema.parse({ ...validBase, ollamaBaseUrl: 'javascript:alert(1)' })).toThrow()
     expect(() => StoredSettingsSchema.parse({ ...validBase, ollamaBaseUrl: 'not a url' })).toThrow()
+  })
+
+  it('accepts the jev provider with a cloud or local Von base URL', () => {
+    const jev = { provider: 'jev', model: 'jev-1.13.0' }
+    expect(StoredSettingsSchema.parse({ ...jev, jevBaseUrl: 'https://api.typesafe.ai' }).jevBaseUrl).toBe('https://api.typesafe.ai')
+    expect(StoredSettingsSchema.parse({ ...jev, jevBaseUrl: 'http://localhost:8000' }).jevBaseUrl).toBe('http://localhost:8000')
+  })
+
+  it('rejects a jev base URL pointing at an arbitrary host', () => {
+    expect(() =>
+      StoredSettingsSchema.parse({ provider: 'jev', model: 'jev-1.13.0', jevBaseUrl: 'https://evil.example' }),
+    ).toThrow()
+  })
+
+  it('keeps an explicitly persisted false ollamaCpuOnly over the CPU-default', () => {
+    const parsed = StoredSettingsSchema.parse({ provider: 'ollama', model: 'llama3', ollamaCpuOnly: false })
+    expect(parsed.ollamaCpuOnly).toBe(false)
+  })
+
+  it('rejects an unknown localDevice value', () => {
+    expect(() =>
+      StoredSettingsSchema.parse({ provider: 'local', model: 'onnx-community/Qwen2.5-0.5B-Instruct', localDevice: 'cuda' }),
+    ).toThrow()
   })
 })

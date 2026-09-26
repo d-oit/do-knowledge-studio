@@ -1,4 +1,5 @@
 import type { ProviderId } from '@/lib/ai/types'
+import { DEFAULT_JEV_BASE_URL, LOCAL_DEFAULT_DEVICE } from '@/lib/ai'
 import { AppError, ErrorCode } from '@/lib/errors'
 import { StoredSettingsSchema, type ValidatedStoredSettings } from '@/lib/studio/schema'
 
@@ -22,6 +23,10 @@ export interface AISettings {
   ollamaCpuOnly: boolean
   allowWebResearch: boolean
   ollamaBaseUrl: string
+  /** Base URL for the Jev/Von provider — cloud API or a local Von server. */
+  jevBaseUrl: string
+  /** Inference device for the in-browser 'local' provider. */
+  localDevice: 'wasm' | 'webgpu'
 }
 
 /** Stored settings shape before decryption, validated by {@link StoredSettingsSchema}. */
@@ -33,9 +38,11 @@ const DEFAULT_SETTINGS: AISettings = {
   model: 'openrouter/free',
   apiKey: '',
   augmentWithLocal: true,
-  ollamaCpuOnly: false,
+  ollamaCpuOnly: true,
   allowWebResearch: false,
   ollamaBaseUrl: 'http://localhost:11434',
+  jevBaseUrl: DEFAULT_JEV_BASE_URL,
+  localDevice: LOCAL_DEFAULT_DEVICE,
 }
 
 // ── IndexedDB helpers ────────────────────────────────────────────────
@@ -105,14 +112,16 @@ function idbSet(key: IDBValidKey, value: unknown): Promise<void> {
 
 // ── Provider / model migrations ─────────────────────────────
 // migrateProvider preserves every currently-valid provider id ('openrouter',
-// 'ollama', and 'local') and migrates anything else (legacy/unknown ids) to
-// 'openrouter'. Adding a provider extends the preserved set — the fallback
-// branch only exists for ids that are no longer valid.
+// 'ollama', 'local', and 'jev') and migrates anything else (legacy/unknown
+// ids) to 'openrouter'. Adding a provider extends the preserved set — the
+// fallback branch only exists for ids that are no longer valid. Omitting a
+// valid id here silently rewrites a persisted selection on every load.
 const migrateProvider = (stored: StoredSettings): AIProvider => {
   if (
     stored.provider === 'openrouter' ||
     stored.provider === 'ollama' ||
-    stored.provider === 'local'
+    stored.provider === 'local' ||
+    stored.provider === 'jev'
   ) {
     return stored.provider as AIProvider
   }
@@ -260,9 +269,14 @@ async function applyStoredSettings(stored: StoredSettings): Promise<AISettings> 
     model,
     apiKey,
     augmentWithLocal: stored.augmentWithLocal ?? true,
-    ollamaCpuOnly: stored.ollamaCpuOnly ?? false,
+    // Schema-validated input always carries the value (the CPU-first default is
+    // applied during parse); this fallback must match DEFAULT_SETTINGS, not
+    // the pre-ADR-040 GPU-friendly default.
+    ollamaCpuOnly: stored.ollamaCpuOnly ?? DEFAULT_SETTINGS.ollamaCpuOnly,
     allowWebResearch: stored.allowWebResearch ?? false,
     ollamaBaseUrl: stored.ollamaBaseUrl ?? DEFAULT_SETTINGS.ollamaBaseUrl,
+    jevBaseUrl: stored.jevBaseUrl ?? DEFAULT_SETTINGS.jevBaseUrl,
+    localDevice: stored.localDevice ?? DEFAULT_SETTINGS.localDevice,
   }
 }
 
@@ -306,6 +320,8 @@ export async function saveAISettings(settings: AISettings): Promise<void> {
       ollamaCpuOnly: settings.ollamaCpuOnly,
       allowWebResearch: settings.allowWebResearch,
       ollamaBaseUrl: settings.ollamaBaseUrl,
+      jevBaseUrl: settings.jevBaseUrl,
+      localDevice: settings.localDevice,
     }
     const parseResult = StoredSettingsSchema.safeParse(toStore)
     if (!parseResult.success) {
@@ -338,6 +354,8 @@ export const getProviderEndpoint = (provider: AIProvider): string => {
       return 'http://localhost:11434/api/chat'
     case 'local':
       return ''
+    case 'jev':
+      return `${DEFAULT_JEV_BASE_URL}/v1/systemone`
     default:
       return ''
   }
