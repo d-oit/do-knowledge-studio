@@ -25,6 +25,7 @@ const baseOptions: UseAiHarnessChatOptions = {
   allowWebResearch: false,
   ollamaCpuOnly: false,
   ollamaBaseUrl: 'http://localhost:11434',
+  localDevice: 'wasm' as const,
   entities: [],
   claims: [],
   requiresKey: false,

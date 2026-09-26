@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import {
   Database,
   Key,
@@ -17,7 +18,7 @@ import {
   OPENROUTER_MODELS,
 } from '@/lib/ai'
 import { DEFAULT_MODEL, DEFAULT_OLLAMA_BASE_URL } from '@/lib/ai/types'
-import { DEFAULT_LOCAL_MODELS, LOCAL_PROVIDER_ID } from '@/lib/ai'
+import { DEFAULT_LOCAL_MODELS, LOCAL_PROVIDER_ID, validateOllamaUrl } from '@/lib/ai'
 import { translate as tAi } from '@/lib/i18n/messages/ai'
 import { Field, PROVIDERS } from './ai-harness-settings'
 import { SwitchToggle } from '../ui/shared-primitives'
@@ -47,6 +48,95 @@ interface SettingsPanelProps {
   effectiveModel: string
   selectedEngineTarget: { slug: string; display_name: string; description?: string } | null
   isLoading: boolean
+  localDevice: 'wasm' | 'webgpu'
+  setLocalDevice: (d: 'wasm' | 'webgpu') => void
+}
+
+/**
+ * Base URL input for a self-hosted provider.
+ *
+ * The harness autosaves every settings change, and `StoredSettingsSchema`
+ * rejects a base URL that does not parse. Typing character by character would
+ * therefore fire a failing save on most keystrokes: the schema rejected each
+ * partial host, the stored record kept the last good value, and the field
+ * looked editable while silently discarding the edit. Committing on blur
+ * means a half-typed host never leaves the input.
+ *
+ * The id is passed explicitly because `Field` only injects an id into native
+ * inputs, not into components; without it the rendered <label for> would point
+ * at nothing. A rejected value leaves storage untouched and is reported via
+ * `aria-invalid` plus a described-by message, not a toast.
+ */
+const BaseUrlInput = ({
+  id,
+  value,
+  validate,
+  onCommit,
+  placeholder,
+  label,
+  errorText,
+}: {
+  id: string
+  value: string
+  validate: (url: string) => string
+  onCommit: (url: string) => void
+  placeholder: string
+  label: string
+  errorText: string
+}) => {
+  const [draft, setDraft] = useState(value)
+  const [invalid, setInvalid] = useState(false)
+  // True once the user types, so an async hydration landing mid-edit adopts the
+  // value only when the field is untouched. The panel is mounted before
+  // `loadAISettings()` resolves, and its completion replaces the prop; without
+  // this a URL typed in that window would be silently discarded.
+  const [dirty, setDirty] = useState(false)
+  const errorId = `${id}-error`
+
+  useEffect(() => {
+    if (dirty) return
+    setDraft(value)
+    setInvalid(false)
+  }, [value, dirty])
+
+  const commit = () => {
+    try {
+      // The validator normalizes (strips trailing slashes); commit what it
+      // returns so the stored record is the canonical URL, not the raw draft.
+      onCommit(validate(draft))
+      // The committed value is now the stored one, so a later external change
+      // may safely re-seed the draft.
+      setDirty(false)
+      setInvalid(false)
+    } catch {
+      setInvalid(true)
+    }
+  }
+
+  return (
+    <div>
+      <input
+        id={id}
+        type="text"
+        value={draft}
+        onChange={(e) => { setDirty(true); setDraft(e.target.value) }}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') { e.preventDefault(); commit() }
+        }}
+        placeholder={placeholder}
+        aria-label={label}
+        aria-invalid={invalid}
+        aria-describedby={invalid ? errorId : undefined}
+        className="w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-mono text-ink-soft placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30 aria-invalid:border-destructive"
+      />
+      {invalid && (
+        <p id={errorId} role="alert" className="mt-1.5 text-caption text-destructive">
+          {errorText}
+        </p>
+      )}
+    </div>
+  )
 }
 
 /**
@@ -159,6 +249,8 @@ export const AiHarnessSettingsPanel = ({
   ollamaBaseUrl,
   setOllamaBaseUrl,
   allowWebResearch,
+  localDevice,
+  setLocalDevice,
   setAllowWebResearch,
   customModel,
   setCustomModel,
@@ -236,6 +328,26 @@ export const AiHarnessSettingsPanel = ({
             )}
           </Field>
 
+          {provider === LOCAL_PROVIDER_ID && (
+            <Field label={tAi('ai.settings.local.device.label')} icon={Cpu}>
+              <select
+                value={localDevice}
+                onChange={(e) => {
+                  const val = e.target.value
+                  if (val !== 'wasm' && val !== 'webgpu') return
+                  setLocalDevice(val)
+                }}
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+              >
+                <option value="wasm">{tAi('ai.settings.local.device.cpu')}</option>
+                <option value="webgpu">{tAi('ai.settings.local.device.gpu')}</option>
+              </select>
+              <p className="mt-1.5 text-caption text-ink-faint">
+                {tAi('ai.settings.local.device.description')}
+              </p>
+            </Field>
+          )}
+
           {activeProvider.requiresKey && (
             <Field label="API Key" icon={Key}>
               <div className="relative">
@@ -263,12 +375,14 @@ export const AiHarnessSettingsPanel = ({
           {provider === 'ollama' && (
             <>
               <Field label="Ollama Base URL" icon={Globe}>
-                <input
-                  type="text"
+                <BaseUrlInput
+                  id="field-ollama-base-url"
                   value={ollamaBaseUrl}
-                  onChange={(e) => { setOllamaBaseUrl(e.target.value) }}
+                  validate={validateOllamaUrl}
+                  onCommit={setOllamaBaseUrl}
                   placeholder={DEFAULT_OLLAMA_BASE_URL}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-mono text-ink-soft placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+                  label="Ollama Base URL"
+                  errorText={tAi('ai.settings.ollama.baseUrl.invalid')}
                 />
               </Field>
 

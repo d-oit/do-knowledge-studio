@@ -10,6 +10,7 @@ import { loadAISettings, saveAISettings, type AIProvider } from '@/lib/studio/ai
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { fetchOllamaModels, OPENROUTER_DEFAULT_TARGETS } from '@/lib/ai'
 import { OLLAMA_DEFAULT_MODELS, DEFAULT_OLLAMA_BASE_URL } from '@/lib/ai/types'
+import { LOCAL_DEFAULT_DEVICE } from '@/lib/ai'
 import { AiHarnessSettingsPanel } from './ai-harness-settings-panel'
 import { AiHarnessChatPanel } from './ai-harness-chat'
 import { AiHarnessProviderSetup } from './ai-harness-provider-setup'
@@ -39,8 +40,9 @@ const useAIHarnessViewState = () => {
   const [apiKey, setApiKey] = useState('')
   const [showKey, setShowKey] = useState(false)
   const [augment, setAugment] = useState(true)
-  const [ollamaCpuOnly, setOllamaCpuOnly] = useState(false)
+  const [ollamaCpuOnly, setOllamaCpuOnly] = useState(true)
   const [ollamaBaseUrl, setOllamaBaseUrl] = useState(DEFAULT_OLLAMA_BASE_URL)
+  const [localDevice, setLocalDevice] = useState<'wasm' | 'webgpu'>(LOCAL_DEFAULT_DEVICE)
   const [allowWebResearch, setAllowWebResearch] = useState(false)
   const [customModel, setCustomModel] = useState('')
   const [showSettings, setShowSettings] = useState(false)
@@ -66,6 +68,7 @@ const useAIHarnessViewState = () => {
     allowWebResearch,
     ollamaCpuOnly,
     ollamaBaseUrl,
+    localDevice,
     entities,
     claims,
     requiresKey: activeProvider.requiresKey,
@@ -80,6 +83,7 @@ const useAIHarnessViewState = () => {
       setOllamaCpuOnly(saved.ollamaCpuOnly)
       setAllowWebResearch(saved.allowWebResearch)
       setOllamaBaseUrl(saved.ollamaBaseUrl)
+      setLocalDevice(saved.localDevice)
       setSettingsLoaded(true)
     })
   }, [])
@@ -94,11 +98,12 @@ const useAIHarnessViewState = () => {
       ollamaCpuOnly,
       allowWebResearch,
       ollamaBaseUrl,
+      localDevice,
     }).catch((err) => {
       console.error('Failed to save AI settings:', err)
       toast.error('Failed to save settings. Your changes may not persist.')
     })
-  }, [provider, model, apiKey, augment, ollamaCpuOnly, allowWebResearch, ollamaBaseUrl, settingsLoaded])
+  }, [provider, model, apiKey, augment, ollamaCpuOnly, allowWebResearch, ollamaBaseUrl, localDevice, settingsLoaded])
 
   const handleRefreshOllamaModels = useCallback(async () => {
     try {
@@ -133,6 +138,8 @@ const useAIHarnessViewState = () => {
     setOllamaCpuOnly,
     ollamaBaseUrl,
     setOllamaBaseUrl,
+    localDevice,
+    setLocalDevice,
     allowWebResearch,
     setAllowWebResearch,
     customModel,
@@ -214,6 +221,8 @@ export const AIHarnessView = () => {
     setOllamaCpuOnly,
     ollamaBaseUrl,
     setOllamaBaseUrl,
+    localDevice,
+    setLocalDevice,
     allowWebResearch,
     setAllowWebResearch,
     customModel,
@@ -265,6 +274,8 @@ export const AIHarnessView = () => {
               setOllamaCpuOnly={setOllamaCpuOnly}
               ollamaBaseUrl={ollamaBaseUrl}
               setOllamaBaseUrl={setOllamaBaseUrl}
+              localDevice={localDevice}
+              setLocalDevice={setLocalDevice}
               allowWebResearch={allowWebResearch}
               setAllowWebResearch={setAllowWebResearch}
               customModel={customModel}

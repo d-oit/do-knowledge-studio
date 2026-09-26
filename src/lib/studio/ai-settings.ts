@@ -22,6 +22,8 @@ export interface AISettings {
   ollamaCpuOnly: boolean
   allowWebResearch: boolean
   ollamaBaseUrl: string
+  /** Inference device for the in-browser 'local' provider. */
+  localDevice: 'wasm' | 'webgpu'
 }
 
 /** Stored settings shape before decryption, validated by {@link StoredSettingsSchema}. */
@@ -33,9 +35,10 @@ const DEFAULT_SETTINGS: AISettings = {
   model: 'openrouter/free',
   apiKey: '',
   augmentWithLocal: true,
-  ollamaCpuOnly: false,
+  ollamaCpuOnly: true,
   allowWebResearch: false,
   ollamaBaseUrl: 'http://localhost:11434',
+  localDevice: 'wasm',
 }
 
 // ── IndexedDB helpers ────────────────────────────────────────────────
@@ -260,9 +263,13 @@ async function applyStoredSettings(stored: StoredSettings): Promise<AISettings> 
     model,
     apiKey,
     augmentWithLocal: stored.augmentWithLocal ?? true,
-    ollamaCpuOnly: stored.ollamaCpuOnly ?? false,
+    // Schema-validated input always carries the value (the CPU-first default is
+    // applied during parse); this fallback must match DEFAULT_SETTINGS rather
+    // than the older GPU-friendly default.
+    ollamaCpuOnly: stored.ollamaCpuOnly ?? DEFAULT_SETTINGS.ollamaCpuOnly,
     allowWebResearch: stored.allowWebResearch ?? false,
     ollamaBaseUrl: stored.ollamaBaseUrl ?? DEFAULT_SETTINGS.ollamaBaseUrl,
+    localDevice: stored.localDevice ?? DEFAULT_SETTINGS.localDevice,
   }
 }
 
@@ -306,6 +313,7 @@ export async function saveAISettings(settings: AISettings): Promise<void> {
       ollamaCpuOnly: settings.ollamaCpuOnly,
       allowWebResearch: settings.allowWebResearch,
       ollamaBaseUrl: settings.ollamaBaseUrl,
+      localDevice: settings.localDevice,
     }
     const parseResult = StoredSettingsSchema.safeParse(toStore)
     if (!parseResult.success) {
