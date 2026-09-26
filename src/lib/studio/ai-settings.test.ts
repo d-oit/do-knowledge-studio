@@ -101,6 +101,9 @@ describe('getProviderEndpoint', () => {
   it('returns empty endpoint for the in-browser local provider', () => {
     expect(getProviderEndpoint('local')).toBe('')
   })
+  it('returns the Jev System One endpoint, not a chat-completions URL', () => {
+    expect(getProviderEndpoint('jev')).toBe('https://api.typesafe.ai/v1/systemone')
+  })
 })
 
 describe('isSessionOnlyCredential', () => {

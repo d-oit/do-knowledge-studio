@@ -5,7 +5,7 @@ import {
   sendChatStream,
   fetchOllamaModels,
 } from './providers'
-import { validateJevBaseUrl, validateOllamaUrl } from './url-guard'
+import { buildJevSystemOneUrl, validateJevBaseUrl, validateOllamaUrl } from './url-guard'
 import { OPENROUTER_ROUTERS } from './types'
 
 // ─── getAdapter ─────────────────────────────────────────────────────────────
@@ -140,11 +140,15 @@ describe('validateOllamaUrl: accepts valid URLs', () => {
     )
   })
 
-  // ::1 is listed in ALLOWED_OLLAMA_HOSTS but URL.hostname returns '[::1]'
-  // (with brackets) per the WHATWG URL spec, so `::1` without brackets never matches.
-  // This test documents the actual runtime behavior.
-  it('rejects ::1 IPv6 localhost — hostname returns bracketed [::1]', () => {
-    expect(() => validateOllamaUrl('http://[::1]:11434')).toThrow(
+  // URL.hostname returns '[::1]' (bracketed) per the WHATWG URL spec, so the
+  // allowlist carries the bracketed form too. This previously documented the
+  // reverse — that a valid IPv6 loopback Ollama URL was rejected as untrusted.
+  it('accepts bracketed IPv6 loopback', () => {
+    expect(validateOllamaUrl('http://[::1]:11434')).toBe('http://[::1]:11434')
+  })
+
+  it('still rejects a non-loopback IPv6 literal', () => {
+    expect(() => validateOllamaUrl('http://[2001:db8::1]:11434')).toThrow(
       'must point to localhost',
     )
   })
@@ -250,6 +254,70 @@ describe('validateJevBaseUrl', () => {
 
   it('rejects an unparseable URL', () => {
     expect(() => validateJevBaseUrl('not a url')).toThrow('Invalid Jev base URL')
+  })
+
+  it('rejects a lookalike host that merely contains an allowlisted name', () => {
+    expect(() => validateJevBaseUrl('https://api.typesafe.ai.evil.com')).toThrow(
+      'known cloud host, localhost, or a .local hostname',
+    )
+  })
+
+  it('rejects credentials smuggled into the URL', () => {
+    expect(() => validateJevBaseUrl('https://api.typesafe.ai@evil.com')).toThrow(
+      'known cloud host, localhost, or a .local hostname',
+    )
+  })
+
+  it('rejects a non-loopback address', () => {
+    expect(() => validateJevBaseUrl('http://169.254.169.254')).toThrow('known cloud host')
+  })
+})
+
+// ─── buildJevSystemOneUrl ────────────────────────────────────────────────────
+
+describe('buildJevSystemOneUrl', () => {
+  it('appends the systemone path to an allowlisted cloud base', () => {
+    expect(buildJevSystemOneUrl('https://api.typesafe.ai')).toBe(
+      'https://api.typesafe.ai/v1/systemone',
+    )
+  })
+
+  it('normalizes a trailing slash instead of doubling it', () => {
+    expect(buildJevSystemOneUrl('https://api.typesafe.ai/')).toBe(
+      'https://api.typesafe.ai/v1/systemone',
+    )
+  })
+
+  it('builds a local Von endpoint with its port intact', () => {
+    expect(buildJevSystemOneUrl('http://localhost:8000')).toBe(
+      'http://localhost:8000/v1/systemone',
+    )
+  })
+
+  it('refuses to build an endpoint for a host outside the allowlist', () => {
+    expect(() => buildJevSystemOneUrl('https://evil.com')).toThrow('known cloud host')
+  })
+
+  it('normalizes integer- and hex-encoded loopback to 127.0.0.1 and allows it', () => {
+    // These LOOK like host-injection attempts but are the local machine, which
+    // is the Von self-host path. new URL() canonicalizes them before the
+    // allowlist runs; pinned so a future "hardening" does not break Von.
+    expect(buildJevSystemOneUrl('http://2130706433')).toBe('http://127.0.0.1/v1/systemone')
+    expect(buildJevSystemOneUrl('http://0x7f000001')).toBe('http://127.0.0.1/v1/systemone')
+  })
+
+  it('blocks the cloud metadata endpoint', () => {
+    expect(() => buildJevSystemOneUrl('http://169.254.169.254')).toThrow('known cloud host')
+  })
+
+  it('allows a bracketed IPv6 loopback literal', () => {
+    // URL.hostname yields '[::1]'; the allowlist carries both spellings so a
+    // local Von server bound to IPv6 loopback stays reachable.
+    expect(buildJevSystemOneUrl('http://[::1]:8000')).toBe('http://[::1]:8000/v1/systemone')
+  })
+
+  it('blocks a non-http scheme', () => {
+    expect(() => buildJevSystemOneUrl('file:///etc/passwd')).toThrow('must use http or https')
   })
 })
 
@@ -389,6 +457,82 @@ describe('JevAdapter', () => {
 
     const result = await getAdapter('jev').send(jevRequest)
     expect(result.content).toContain('**rain**: 31.0% likely')
+  })
+
+  it('rejects a malformed body instead of throwing a TypeError from the renderer', async () => {
+    // `answers` is remote input. A non-object value used to reach
+    // Object.entries/JSON.stringify and escape as a TypeError; it must surface
+    // as a provider error instead.
+    globalThis.fetch = okResponse({ model: 'jev-1.13.0', answers: 42 })
+    await expect(getAdapter('jev').send(jevRequest)).rejects.toThrow('malformed response')
+  })
+
+  it('rejects a body whose answer fields have the wrong types', async () => {
+    globalThis.fetch = okResponse({ model: 'jev-1.13.0', answers: { r: { choice: { nested: true } } } })
+    await expect(getAdapter('jev').send(jevRequest)).rejects.toThrow('malformed response')
+  })
+
+  it('renders a valid body with no answers key without erroring', async () => {
+    globalThis.fetch = okResponse({ model: 'jev-1.13.0' })
+    const result = await getAdapter('jev').send(jevRequest)
+    expect(result.model).toBe('jev-1.13.0')
+    expect(result.content.length).toBeGreaterThan(0)
+  })
+
+  it('sends the default cloud request through the same allowlist guard', async () => {
+    const mockFetch = okResponse({ model: 'jev-1.13.0', answers: {} })
+    globalThis.fetch = mockFetch
+
+    await getAdapter('jev').send({ ...jevRequest, jevBaseUrl: undefined })
+
+    // A single code path builds the endpoint, so the default cannot bypass the
+    // host allowlist the way a hardcoded constant would.
+    expect(mockFetch.mock.calls[0][0]).toBe('https://api.typesafe.ai/v1/systemone')
+  })
+
+  it('refuses an empty-string base URL by falling back to the guarded default', async () => {
+    const mockFetch = okResponse({ model: 'jev-1.13.0', answers: {} })
+    globalThis.fetch = mockFetch
+
+    await getAdapter('jev').send({ ...jevRequest, jevBaseUrl: '' })
+
+    expect(mockFetch.mock.calls[0][0]).toBe('https://api.typesafe.ai/v1/systemone')
+  })
+
+  it('refuses to send without an API key', async () => {
+    const mockFetch = okResponse({ model: 'jev-1.13.0', answers: {} })
+    globalThis.fetch = mockFetch
+
+    // requiresKey must be enforced at the adapter: sendChat/sendChatStream are
+    // exported and an empty key would leave as the header `Bearer `.
+    await expect(getAdapter('jev').send({ ...jevRequest, apiKey: '' })).rejects.toThrow(
+      'API key is required',
+    )
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it('never returns empty content when a probability table is empty', async () => {
+    // `probabilities: {}` is truthy but contributed nothing, which used to push
+    // an empty part into the joined output. The renderer now falls back to the
+    // raw answer JSON, so content is never the empty string the chat hook would
+    // silently drop.
+    globalThis.fetch = okResponse({
+      model: 'jev-1.13.0',
+      answers: { respond: { probabilities: {} } },
+    })
+    const result = await getAdapter('jev').send(jevRequest)
+    expect(result.content.length).toBeGreaterThan(0)
+  })
+
+  it('emits exactly one non-empty chunk from sendStream', async () => {
+    globalThis.fetch = okResponse({
+      model: 'jev-1.13.0',
+      answers: { respond: { type: 'choice', choice: 'helpful', confidence: 0.9 } },
+    })
+    const chunks: string[] = []
+    const result = await getAdapter('jev').sendStream(jevRequest, (c) => { chunks.push(c) })
+    expect(chunks).toEqual([result.content])
+    expect(chunks[0].length).toBeGreaterThan(0)
   })
 })
 

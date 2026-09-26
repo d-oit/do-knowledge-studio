@@ -40,18 +40,26 @@ import { SwitchToggle } from '../ui/shared-primitives'
  * `aria-invalid` reports the problem on the field itself instead of a toast.
  */
 const BaseUrlInput = ({
+  id,
   value,
   validate,
   onCommit,
   placeholder,
   label,
+  errorText,
 }: {
+  id: string
   value: string
   validate: (url: string) => string
   onCommit: (url: string) => void
   placeholder: string
   label: string
+  errorText: string
 }) => {
+  // `Field` only injects an id into native inputs, not into components, so the
+  // association is established here: without it the rendered <label for> would
+  // point at nothing and clicking the label would not focus the field.
+  const errorId = `${id}-error`
   const [draft, setDraft] = useState(value)
   const [invalid, setInvalid] = useState(false)
 
@@ -74,19 +82,28 @@ const BaseUrlInput = ({
   }
 
   return (
-    <input
-      type="text"
-      value={draft}
-      onChange={(e) => { setDraft(e.target.value) }}
-      onBlur={commit}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') { e.preventDefault(); commit() }
-      }}
-      placeholder={placeholder}
-      aria-label={label}
-      aria-invalid={invalid}
-      className="w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-mono text-ink-soft placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30 aria-invalid:border-destructive"
-    />
+    <div>
+      <input
+        id={id}
+        type="text"
+        value={draft}
+        onChange={(e) => { setDraft(e.target.value) }}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') { e.preventDefault(); commit() }
+        }}
+        placeholder={placeholder}
+        aria-label={label}
+        aria-invalid={invalid}
+        aria-describedby={invalid ? errorId : undefined}
+        className="w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-mono text-ink-soft placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30 aria-invalid:border-destructive"
+      />
+      {invalid && (
+        <p id={errorId} role="alert" className="mt-1.5 text-caption text-destructive">
+          {errorText}
+        </p>
+      )}
+    </div>
   )
 }
 
@@ -319,32 +336,33 @@ export const AiHarnessSettingsPanel = ({
                 {tAi('ai.settings.local.downloadHint')}
               </div>
             )}
-            {provider === LOCAL_PROVIDER_ID && (
-              <Field label={tAi('ai.settings.local.device.label')} icon={Cpu}>
-                <select
-                  value={localDevice}
-                  onChange={(e) => {
-                    const val = e.target.value
-                    if (val !== 'wasm' && val !== 'webgpu') return
-                    setLocalDevice(val)
-                  }}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
-                >
-                  <option value="wasm">{tAi('ai.settings.local.device.cpu')}</option>
-                  <option value="webgpu">{tAi('ai.settings.local.device.gpu')}</option>
-                </select>
-                <p className="mt-1.5 text-caption text-ink-faint">
-                  {tAi('ai.settings.local.device.description')}
-                </p>
-              </Field>
-            )}
-
             {provider === JEV_PROVIDER_ID && (
               <div className="mt-2 rounded border border-border bg-muted/30 p-2 text-[11px] leading-relaxed text-ink-mute">
                 {tAi('ai.settings.jev.hint')}
               </div>
             )}
           </Field>
+
+          {provider === LOCAL_PROVIDER_ID && (
+            <Field label={tAi('ai.settings.local.device.label')} icon={Cpu}>
+              <select
+                value={localDevice}
+                onChange={(e) => {
+                  const val = e.target.value
+                  if (val !== 'wasm' && val !== 'webgpu') return
+                  setLocalDevice(val)
+                }}
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+              >
+                <option value="wasm">{tAi('ai.settings.local.device.cpu')}</option>
+                <option value="webgpu">{tAi('ai.settings.local.device.gpu')}</option>
+              </select>
+              <p className="mt-1.5 text-caption text-ink-faint">
+                {tAi('ai.settings.local.device.description')}
+              </p>
+            </Field>
+          )}
+
 
           {activeProvider.requiresKey && (
             <Field label="API Key" icon={Key}>
@@ -365,7 +383,7 @@ export const AiHarnessSettingsPanel = ({
                 </button>
               </div>
               <p className="mt-1.5 text-caption text-ink-faint">
-                Stored in this browser only — sent directly to OpenRouter.
+                {tAi('ai.settings.apiKey.stored', activeProvider.label)}
               </p>
             </Field>
           )}
@@ -374,10 +392,12 @@ export const AiHarnessSettingsPanel = ({
             <>
               <Field label="Ollama Base URL" icon={Globe}>
                 <BaseUrlInput
+                  id="field-ollama-base-url"
                   value={ollamaBaseUrl}
                   validate={validateOllamaUrl}
                   onCommit={setOllamaBaseUrl}
                   placeholder={DEFAULT_OLLAMA_BASE_URL}
+                  errorText={tAi('ai.settings.ollama.baseUrl.invalid')}
                   label="Ollama Base URL"
                 />
               </Field>
@@ -395,11 +415,13 @@ export const AiHarnessSettingsPanel = ({
           {provider === JEV_PROVIDER_ID && (
             <Field label={tAi('ai.settings.jev.baseUrl.label')} icon={Globe}>
               <BaseUrlInput
+                id="field-jev-base-url"
                 value={jevBaseUrl}
-                validate={validateJevBaseUrl}
                 onCommit={setJevBaseUrl}
+                validate={validateJevBaseUrl}
                 placeholder={tAi('ai.settings.jev.baseUrl.placeholder')}
                 label={tAi('ai.settings.jev.baseUrl.label')}
+                errorText={tAi('ai.settings.jev.baseUrl.invalid')}
               />
             </Field>
           )}
