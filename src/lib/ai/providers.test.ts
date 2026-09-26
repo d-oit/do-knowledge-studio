@@ -5,8 +5,11 @@ import {
   sendChatStream,
   fetchOllamaModels,
 } from './providers'
-import { resolveJevEndpoint, validateJevBaseUrl, validateOllamaUrl } from './url-guard'
+import { resolveJevOrigin, validateJevBaseUrl, validateOllamaUrl } from './url-guard'
 import { OPENROUTER_ROUTERS } from './types'
+
+/** Mirrors the adapter's constant path. */
+const JEV_SYSTEM_ONE_PATH = '/v1/systemone'
 
 // ─── getAdapter ─────────────────────────────────────────────────────────────
 
@@ -273,14 +276,12 @@ describe('validateJevBaseUrl', () => {
   })
 })
 
-// ─── resolveJevEndpoint ──────────────────────────────────────────────────────
+// ─── resolveJevOrigin ────────────────────────────────────────────────────────
 
-describe('resolveJevEndpoint', () => {
-  /** Joins the returned parts the same way the adapter does. */
-  const jevEndpoint = (baseUrl: string): string => {
-    const { origin, path } = resolveJevEndpoint(baseUrl)
-    return `${origin}${path}`
-  }
+describe('resolveJevOrigin', () => {
+  /** Joins origin and path the same way the adapter does. */
+  const jevEndpoint = (baseUrl: string): string =>
+    `${resolveJevOrigin(baseUrl)}${JEV_SYSTEM_ONE_PATH}`
 
   it('appends the systemone path to an allowlisted cloud base', () => {
     expect(jevEndpoint('https://api.typesafe.ai')).toBe('https://api.typesafe.ai/v1/systemone')
@@ -295,7 +296,7 @@ describe('resolveJevEndpoint', () => {
   })
 
   it('refuses to build an endpoint for a host outside the allowlist', () => {
-    expect(() => resolveJevEndpoint('https://evil.com')).toThrow('known cloud host')
+    expect(() => resolveJevOrigin('https://evil.com')).toThrow('known cloud host')
   })
 
   it('normalizes integer- and hex-encoded loopback to 127.0.0.1 and allows it', () => {
@@ -307,7 +308,7 @@ describe('resolveJevEndpoint', () => {
   })
 
   it('blocks the cloud metadata endpoint', () => {
-    expect(() => resolveJevEndpoint('http://169.254.169.254')).toThrow('known cloud host')
+    expect(() => resolveJevOrigin('http://169.254.169.254')).toThrow('known cloud host')
   })
 
   it('allows a bracketed IPv6 loopback literal', () => {
@@ -317,16 +318,14 @@ describe('resolveJevEndpoint', () => {
   })
 
   it('blocks a non-http scheme', () => {
-    expect(() => resolveJevEndpoint('file:///etc/passwd')).toThrow('must use http or https')
+    expect(() => resolveJevOrigin('file:///etc/passwd')).toThrow('must use http or https')
   })
 
-  it('keeps the path a constant and the origin allowlisted', () => {
-    // The adapter fetches `origin` + this constant; neither carries a
-    // user-controlled substring, which is what keeps the SSRF rule satisfied
-    // without a suppression.
-    const { origin, path } = resolveJevEndpoint('http://von.local:8000')
-    expect(origin).toBe('http://von.local:8000')
-    expect(path).toBe('/v1/systemone')
+  it('returns only the allowlisted origin, discarding any path or query', () => {
+    // The adapter appends a constant path, so nothing from the configured base
+    // URL can reach the request URL beyond the validated origin.
+    expect(resolveJevOrigin('http://von.local:8000')).toBe('http://von.local:8000')
+    expect(resolveJevOrigin('http://localhost:8000/../evil?x=1')).toBe('http://localhost:8000')
   })
 })
 

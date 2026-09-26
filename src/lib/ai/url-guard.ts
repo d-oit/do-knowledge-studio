@@ -61,26 +61,16 @@ export const validateJevBaseUrl = (baseUrl: string): string => {
   return baseUrl.replace(/\/+$/, '')
 }
 
-/** Path appended to the validated origin. A constant keeps the path untainted. */
-const JEV_SYSTEM_ONE_PATH = '/v1/systemone'
-
 /**
- * Builds the System One endpoint from a user-configured base URL.
+ * Resolves a user-configured Jev base URL to its allowlisted origin.
  *
- * The host allowlist runs here rather than at the call site, so the returned
- * value is already validated and a caller cannot smuggle an arbitrary origin
- * into a request that carries the API key.
- *
- * Returning the origin and path separately (rather than one pre-joined string)
- * is deliberate: the call site fetches the allowlisted origin and appends a
- * compile-time constant path, so no user-controlled substring is ever
- * concatenated into the request URL.
+ * The host allowlist runs here rather than at the call site so the returned
+ * value is already validated, and only the origin is returned: the System One
+ * path is a compile-time constant appended by the caller, so no
+ * user-controlled substring ever reaches the request URL. Any path, query, or
+ * credential in the configured base URL is discarded rather than forwarded.
  */
-export const resolveJevEndpoint = (baseUrl: string): { origin: string; path: string } => {
+export const resolveJevOrigin = (baseUrl: string): string => {
   const validated = validateJevBaseUrl(baseUrl)
-  const url = new URL(`${validated}/`)
-  return {
-    origin: url.origin,
-    path: `${JEV_SYSTEM_ONE_PATH}${url.search}`.trimEnd(),
-  }
+  return new URL(`${validated}/`).origin
 }
