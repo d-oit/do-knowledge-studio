@@ -9,24 +9,44 @@
 
 ### Requirements
 
-- **Node.js ≥ 20** — enforced via `package.json` `engines.node` and `.nvmrc`
-- **pnpm** — Vercel uses `packageManager` field to install correct version
-- **Build must pass** — `pnpm run build` runs on every push to `main`
+- **Node.js ≥ 20.9** — Next 16 hard-asserts `>=20.9.0` in `bin/next`. The
+  `engines.node` floor is currently `">=20"`, which is 9 minor versions too
+  low; a Node 20.5 machine passes `engine-strict` install and then crashes the
+  build with a confusing error (Plan 158 P2-8).
+- **pnpm** — see the install-command note below.
+- **Build must pass** — `pnpm run build` runs on every push to `main`.
+
+### Install command — do not add one
+
+`vercel.json` deliberately sets **no** `installCommand`. Per
+https://vercel.com/docs/package-managers, an override makes Vercel use the
+*oldest* version of the named package manager in the build image — for pnpm
+that is **v6**, which cannot read this repo's `lockfileVersion: '9.0'` or its
+`pnpm.overrides`. With no override, Vercel infers pnpm from `pnpm-lock.yaml`
+and picks the right major.
+
+The `packageManager: "pnpm@10.30.3"` field only takes effect when Corepack is
+enabled on the Vercel project (`ENABLE_EXPERIMENTAL_COREPACK=1`). Do not assume
+it is active.
+
+`outputDirectory` is likewise absent on purpose: Vercel's own error docs say
+to remove it for Next.js projects unless `distDir` is overridden, which this
+repo does not. See Plan 158 P0-1 / P1-2.
 
 ### Configuration Files
 
 | File | Purpose | Do NOT delete |
 |------|---------|---------------|
-| `package.json` | `engines.node >= 20` tells Vercel which Node version | `engines` field |
-| `vercel.json` | Explicit build/install commands for Vercel | entire file |
+| `package.json` | `engines.node` tells Vercel which Node version | `engines` field |
+| `vercel.json` | Framework + build command only | entire file |
 | `.nvmrc` | Node version for local dev and CI | entire file |
 
 ### Preventing Deployment Failures
 
 1. **Always run `pnpm run build` locally** before pushing to `main`
-2. **Never remove `engines` field** from `package.json` — Vercel needs it
-3. **Never remove `vercel.json`** — Vercel needs explicit build config
-4. **Never change `build` script** without verifying `vercel.json` matches
+2. **Never remove the `engines` field** from `package.json`
+3. **Never add `installCommand` or `outputDirectory`** to `vercel.json`
+4. **Never change the `build` script** without re-running `pnpm run build`
 5. **If adding new deps**, run `pnpm install` to update `pnpm-lock.yaml`
 6. **If upgrading Next.js**, check Node.js version requirements
 

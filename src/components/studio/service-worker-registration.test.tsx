@@ -16,7 +16,13 @@ interface ServiceWorkerStub {
 
 /** Installs a controllable `navigator.serviceWorker` on the jsdom window. */
 const installServiceWorker = (
-  options: { updateRejects?: boolean } = {},
+  options: {
+    updateRejects?: boolean
+    /** Supplies a worker mid-install so the update lifecycle can be driven. */
+    installing?: unknown
+    /** Whether a previous worker is already controlling the page. */
+    controlled?: boolean
+  } = {},
 ): ServiceWorkerStub => {
   const listeners = new Map<string, Set<(event: Event) => void>>()
   const update = vi.fn(() =>
@@ -26,7 +32,7 @@ const installServiceWorker = (
   )
   const registration = {
     update,
-    installing: null,
+    installing: options.installing ?? null,
     addEventListener: vi.fn((type: string, handler: (event: Event) => void) => {
       const set = listeners.get(type) ?? new Set()
       set.add(handler)
@@ -38,7 +44,11 @@ const installServiceWorker = (
 
   Object.defineProperty(window.navigator, 'serviceWorker', {
     configurable: true,
-    value: { register, ready },
+    value: {
+      register,
+      ready,
+      controller: options.controlled ? {} : null,
+    },
   })
 
   return {
@@ -76,8 +86,8 @@ describe('ServiceWorkerRegistration', () => {
 
   afterEach(() => {
     cleanup()
-    vi.useRealTimers()
     removeServiceWorker()
+    vi.unstubAllGlobals()
     vi.restoreAllMocks()
   })
 
@@ -192,6 +202,59 @@ describe('ServiceWorkerRegistration', () => {
       )
     })
     expect(sw.register).toHaveBeenCalled()
+  })
+
+  it('never touches the cache or the worker lifecycle from the page', async () => {
+    // Regression guard for plans/158 P0-2. The component used to subscribe to
+    // `updatefound` and, on the new worker reaching `installed`, deleted every
+    // cache starting with `dks-`. The new worker's own caches are named
+    // `dks-*`, so that removed the precache it had just written and took the
+    // offline shell with it on every deploy. Cache lifecycle belongs to
+    // sw.js's `activate` handler, which allowlists the current caches.
+    const deleted: string[] = []
+    // jsdom ships no CacheStorage; install a spy-able one so the assertions
+    // are about whether the page touches the cache at all.
+    const cacheStorage = {
+      keys: vi.fn(() => Promise.resolve(['dks-static-v2', 'dks-api-v2'])),
+      delete: vi.fn((name: string | Request) => {
+        deleted.push(String(name))
+        return Promise.resolve(true)
+      }),
+      open: vi.fn(),
+      match: vi.fn(),
+    }
+    vi.stubGlobal('caches', cacheStorage)
+
+    // A worker is mid-install, and a previous one is already controlling —
+    // exactly the conditions under which the old code purged the cache.
+    const stateHandlers: ((e: Event) => void)[] = []
+    const installing = {
+      state: 'installing',
+      addEventListener: vi.fn((_type: string, handler: (e: Event) => void) => {
+        stateHandlers.push(handler)
+      }),
+    }
+    const sw = installServiceWorker({ installing, controlled: true })
+
+    render(<ServiceWorkerRegistration />)
+    await waitFor(() => { expect(sw.update).toHaveBeenCalled() })
+
+    // The page must not subscribe to the worker lifecycle at all; if it did,
+    // replaying the transition below would be the only way to reach a purge.
+    expect(sw.listeners.get('updatefound')?.size ?? 0).toBe(0)
+    expect(installing.addEventListener).not.toHaveBeenCalled()
+
+    // Replay the full transition anyway: nothing may reach the cache.
+    installing.state = 'installed'
+    await act(async () => {
+      stateHandlers.forEach((h) => { h(new Event('statechange')) })
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(cacheStorage.keys).not.toHaveBeenCalled()
+    expect(cacheStorage.delete).not.toHaveBeenCalled()
+    expect(deleted).toEqual([])
   })
 
   it('logs but does not throw when registration itself fails', async () => {

@@ -44,6 +44,21 @@ const messages = {
   'announce.libraryRestored': 'Library restored to demo data',
   /** Entity selection changed in the right panel. */
   'announce.entitySelected': (name: string) => `Selected ${name}`,
+  /** Banner heading when a payload was preserved but not loaded. */
+  'announce.quarantineTitle': 'A previous version of your library could not be loaded',
+  /** Banner body naming what was preserved. */
+  'announce.quarantineBody': (summary: string) =>
+    `We kept a copy of ${summary} rather than discard it. Download it to keep it safe, then re-import it here.`,
+  /** Banner action that downloads the preserved payload. */
+  'announce.quarantineDownload': 'Download copy',
+  /** Banner action that discards the preserved payload. */
+  'announce.quarantineDismiss': 'Discard the preserved copy',
+  /** Spoken confirmation after a download. */
+  'announce.preservedLibraryDownloaded': 'Preserved library downloaded',
+  /** Toast after a download succeeds. */
+  'announce.preservedLibrarySaved': 'Copy saved',
+  /** Toast when the download fails. */
+  'announce.preservedLibraryFailed': 'Could not download the preserved copy',
 } as const
 
 /** Typed `translate` helper bound to the announcement message scope. */

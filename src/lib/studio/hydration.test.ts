@@ -194,23 +194,27 @@ describe('migratePersistedState', () => {
     }
 
     const result = migratePersistedState(legacyState, 1)
-    expect(result.entities[0]?.id).toBe('e1')
-    expect(result.entities[0]?.tags).toEqual([])
+    // Migration reports through a return value, never a throw: a throw inside
+    // zustand's hydrate chain skips the branch that sets `hasHydrated`, so the
+    // store would never finish hydrating. Plan 158 P0-3.
+    expect(result.ok).toBe(true)
+    if (!result.ok) throw new Error('expected a successful migration')
+    expect(result.state.entities[0]?.id).toBe('e1')
+    expect(result.state.entities[0]?.tags).toEqual([])
   })
 
-  it('throws HydrationRejectedError when payload is incomplete or invalid during migration', () => {
-    expect(() => migratePersistedState({}, 1)).toThrow(HydrationRejectedError)
-    expect(() => migratePersistedState({}, 1)).toThrow(
-      'Persisted state rejected: no safe migration from version 1; payload preserved on disk',
-    )
+  it('reports a refusal instead of throwing when the payload is incomplete', () => {
+    const result = migratePersistedState({}, 1)
+    expect(result.ok).toBe(false)
+    if (result.ok) throw new Error('expected a refusal')
+    expect(result.reason).toBe('no safe migration from version 1')
   })
 
-  it('throws HydrationRejectedError when envelope version is unsupported (future version)', () => {
-    const validSlice = createValidPersistedSlice()
-    expect(() => migratePersistedState(validSlice, 9999)).toThrow(HydrationRejectedError)
-    expect(() => migratePersistedState(validSlice, 9999)).toThrow(
-      'Persisted state rejected: no safe migration from version 9999; payload preserved on disk',
-    )
+  it('reports a refusal instead of throwing for an unsupported future version', () => {
+    const result = migratePersistedState(createValidPersistedSlice(), 9999)
+    expect(result.ok).toBe(false)
+    if (result.ok) throw new Error('expected a refusal')
+    expect(result.reason).toBe('no safe migration from version 9999')
   })
 })
 

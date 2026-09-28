@@ -17,10 +17,11 @@ import type { Entity, Claim } from './types'
 import {
   CURRENT_SCHEMA_VERSION,
   STUDIO_STORAGE_KEY,
-  mergeHydratedState,
+  hydrateWithOutcome,
   migratePersistedState,
   partializePersistedState,
 } from './hydration'
+import { quarantinePayload } from './hydration-quarantine'
 import { buildSeedState } from './seed-state'
 import type { StudioState } from './store-types'
 import { createEntitiesSlice } from './slices/entities-slice'
@@ -32,7 +33,25 @@ import { createUiSlice } from './slices/ui-slice'
 import { snapshotCorpus } from './history-snapshot'
 
 export { restoreFromRecovery } from './recovery-helpers'
+export { readQuarantine, clearQuarantine, describeQuarantine } from './hydration-quarantine'
 export type { StudioState, ImportOptions } from './store-types'
+
+/** Why the last hydration attempt refused, or null when it succeeded. */
+let lastRejectionReason: string | null = null
+
+/**
+ * Reads the stored envelope verbatim so it can be preserved in quarantine.
+ * The persist `merge` callback receives already-deserialized data, so the
+ * original bytes have to be fetched separately.
+ */
+const readRawEnvelope = (): string | null => {
+  try {
+    return localStorage.getItem(STUDIO_STORAGE_KEY)
+  } catch (error) {
+    console.error('Failed to read the stored envelope:', error)
+    return null
+  }
+}
 
 /** Initial state: seed corpus plus a matching single-entry undo baseline. */
 const buildInitialState = () => {
@@ -66,11 +85,58 @@ export const useStudioStore = create<StudioState>()(
       // hydrated corpus. Ephemeral fields (searchQuery, selection, palette)
       // stay out of localStorage so keystrokes never serialize the corpus.
       partialize: partializePersistedState,
-      migrate: migratePersistedState,
+      // Both hooks report a refusal through a return value rather than a
+      // throw. A throw inside this promise chain lands in zustand's terminal
+      // catch, which skips the branch that sets `hasHydrated` — the store
+      // would then never finish hydrating and the user would see a silently
+      // broken app with no idea their data is at risk. Plan 158 P0-3.
+      // `migrate` must return the BARE migrated state: zustand passes that
+      // value straight into `merge`, so returning a wrapper object here would
+      // hand `merge` a shape the envelope schema rejects.
+      //
+      // On refusal, return the input UNCHANGED and quarantine the bytes
+      // separately. zustand treats any non-Promise return as "migrated" and
+      // calls setItem(), so echoing the input is what keeps the stored
+      // envelope byte-identical instead of replacing it with seed data.
+      migrate: (persisted: unknown, version: number): unknown => {
+        const outcome = migratePersistedState(persisted, version)
+        if (!outcome.ok) {
+          lastRejectionReason = outcome.reason
+          quarantinePayload(outcome.reason, readRawEnvelope())
+          return persisted
+        }
+        return outcome.state
+      },
       // Contextual wrapper pins zustand's store generic — the bare generic
       // helper leaks its type parameter into persist's inference.
-      merge: (persistedState: unknown, currentState: StudioState) =>
-        mergeHydratedState(persistedState, currentState),
+      merge: (persistedState: unknown, currentState: StudioState) => {
+        // `migrate` refuses (future version, no safe path) by returning the
+        // input unchanged. Accepting it would hydrate a payload written by a
+        // newer build, so treat any refusal as fatal for this attempt and
+        // keep the store on seed data. The bytes are already quarantined by
+        // the migrate hook; the next write can no longer reach them.
+        if (lastRejectionReason !== null) {
+          const reason = lastRejectionReason
+          lastRejectionReason = null
+          console.warn(`Studio hydration refused: ${reason}`)
+          return currentState
+        }
+        const outcome = hydrateWithOutcome(persistedState, currentState)
+        if (!outcome.ok) {
+          // Reachable without any version delta: same-version reloads skip
+          // `migrate` entirely, so validation is the only gate.
+          quarantinePayload(outcome.reason, readRawEnvelope())
+          return currentState
+        }
+        return outcome.state
+      },
+      // The documented channel for reporting a hydration problem, so a
+      // refused payload is visible rather than a silent downgrade to demo data.
+      onRehydrateStorage: () => (_state, error) => {
+        if (error) {
+          console.warn('Studio hydration failed:', error)
+        }
+      },
     },
   ),
 )

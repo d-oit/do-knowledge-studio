@@ -86,28 +86,13 @@ export function ServiceWorkerRegistration() {
       })
       .then((registration) => {
         if (disposed) return;
-        registration.addEventListener("updatefound", () => {
-          const installing = registration.installing;
-          if (!installing) return;
-          installing.addEventListener("statechange", () => {
-            // A new worker took control: drop the pre-cache it replaced so the
-            // next load cannot serve chunks from the previous deploy.
-            if (installing.state === "installed" && navigator.serviceWorker.controller) {
-              caches
-                .keys()
-                .then((keys) =>
-                  Promise.all(
-                    keys
-                      .filter((key) => key.startsWith("dks-"))
-                      .map((key) => caches.delete(key)),
-                  ),
-                )
-                .catch((error) => {
-                  console.error("Failed to purge stale caches:", error);
-                });
-            }
-          });
-        });
+        // Cache lifecycle deliberately lives in sw.js's `activate` handler,
+        // which deletes every cache NOT in the current allowlist. Doing it
+        // here instead was wrong on two counts: `installed` fires before
+        // `activate` and before any `fetch` can repopulate, and the new
+        // worker's own caches are named `dks-*`, so the filter deleted the
+        // precache the worker had just written — taking the offline shell
+        // with it on every deploy. See plans/158 §P0-2.
         startUpdateChecks(registration);
       })
       .catch((error) => {

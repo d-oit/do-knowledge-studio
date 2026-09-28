@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { PersistedEnvelopeSchema } from './schema'
 import { CURRENT_SCHEMA_VERSION } from './migrations'
 import { STUDIO_STORAGE_KEY, PERSISTED_KEYS } from './hydration'
+import { readQuarantine } from './hydration-quarantine'
 
 /**
  * Composed persistence round-trip tests (Plan 131 G1).
@@ -97,15 +98,46 @@ describe('persistence round-trip', () => {
     expect(localStorage.getItem(STUDIO_STORAGE_KEY)).toBe(raw)
   })
 
-  it('rejects future-version envelopes without rewriting them', async () => {
+  it('refuses a future-version envelope and quarantines it instead of destroying it', async () => {
     const raw = writeEnvelope(validEnvelope(), CURRENT_SCHEMA_VERSION + 5)
 
     const { useStudioStore } = await freshStore()
     await useStudioStore.persist.rehydrate()
 
+    // The store must not hydrate a payload written by a newer build.
     expect(useStudioStore.getState().entities.some((e) => e.id === USER_ENTITY.id)).toBe(false)
-    // The untouched envelope stays available for a newer build / recovery.
-    expect(localStorage.getItem(STUDIO_STORAGE_KEY)).toBe(raw)
+    // zustand calls setItem() whenever `migrate` returns a value, so the live
+    // key is rewritten no matter what we do. The refusal is therefore
+    // preserved in quarantine, where the next store write cannot reach it
+    // (Plan 158 P0-3). This assertion is what makes the loss non-silent.
+    const quarantined = readQuarantine()
+    expect(quarantined).not.toBeNull()
+    expect(quarantined?.raw).toBe(raw)
+    expect(quarantined?.reason).toContain('no safe migration')
+  })
+
+  it('keeps quarantined bytes intact after a subsequent store write', async () => {
+    // The original bug: the throw skipped only that one setItem, so the very
+    // next store write replaced the preserved envelope with seed data.
+    writeEnvelope(validEnvelope(), CURRENT_SCHEMA_VERSION + 5)
+    const { useStudioStore } = await freshStore()
+    await useStudioStore.persist.rehydrate()
+    const before = readQuarantine()?.raw
+
+    useStudioStore.getState().saveEntity({
+      id: 'post-hydration-write',
+      name: 'Written after hydration',
+      type: 'note',
+      description: '',
+      content: '',
+      tags: [],
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      links: [],
+    })
+
+    expect(readQuarantine()?.raw).toBe(before)
+    expect(readQuarantine()?.raw).not.toBeNull()
   })
 
   it('migrates legacy v1 envelopes lacking preference keys', async () => {

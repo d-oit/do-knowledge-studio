@@ -7,7 +7,8 @@ confined to one domain, each required to cite a primary source
 developer.chrome.com). Every finding below was then **independently re-verified
 against the running app** before being ranked. Three candidates were rejected
 by that verification — see §4.
-**Status**: Audit complete. No code changed by this plan.
+**Status**: Audit complete; P0-1, P0-2, P0-3 and P1-2 remediated in the
+commits that follow. P1/P2 remain open.
 
 ## Scope and method
 
