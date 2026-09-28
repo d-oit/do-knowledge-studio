@@ -139,8 +139,12 @@ silences nothing and costs automatic security updates.
 
 ## Notes
 - The change was committed on `fix/brace-expansion-audit` and submitted as a pull request against
-  `main`; no release was cut. The two advisories are cleared locally by the override; CI re-verifies
-  `pnpm audit` on the pull request head.
+  `main`; no release was cut. The two advisories are cleared by the override, verified locally by
+  `pnpm audit` (0 advisories across 889 dependencies). **CI does not re-run `pnpm audit`** — no
+  workflow in `.github/workflows/` invokes it, and `pnpm` itself exposes no audit step in
+  `verify-deps.sh`. The security jobs that do run (Trivy filesystem, ShellCheck, GitLeaks, IaC)
+  scan for vulnerabilities in code and images, not for registry advisories against the lockfile.
+  Re-running the audit on the pull request head is therefore a **manual** step for the reviewer.
 - The local `node_modules` was stale relative to the committed lockfile; `pnpm install` synced
   `next 16.3.5 → 16.3.6` and `zustand 5.0.14 → 5.0.15`. The committed lockfile already pinned
   those versions — no lockfile churn resulted, and no manifest change was made for them.
