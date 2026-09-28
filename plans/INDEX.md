@@ -1,7 +1,13 @@
 # Plans Index
 
-**Updated**: 2026-09-26
+**Updated**: 2026-09-28
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
+
+### Plan 156 — Dependency audit remediation: `brace-expansion` (2026-09-28)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Clear two high-severity `brace-expansion` advisories | Done | `plans/156-dependency-audit-brace-expansion-remediation-2026-09-28.md`. The `pnpm.overrides` selector pinned `brace-expansion@<1.1.16` to `1.1.16` — the vulnerable version itself, below both advisory floors (`>=1.1.17`, `>=1.1.18`). Narrowed to `<1.1.18` → `1.1.21`; `pnpm audit` now reports 0 advisories across 889 dependencies. The separate `5.0.9` branch is untouched. Two pre-existing warnings recorded as follow-ups F1 (`boolean@3.2.0` deprecation, no patched release exists) and F2 (Vitest experimental-typecheck notice, upstream and unavoidable without a regression). |
 
 ### Plan 155 — Local CPU-first AI and settings persistence (2026-09-26)
 
