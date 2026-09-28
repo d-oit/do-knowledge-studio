@@ -352,4 +352,67 @@ describe('MindMapView branch coverage', () => {
     // The child collapses again; the Expand label reappears.
     expect(screen.getByLabelText('Expand')).toBeDefined()
   })
+  describe('Compact density toggle (D4.2)', () => {
+    /** Class list of the node row wrapping the given entity name. */
+    const nodeRowClass = (name: string): string => {
+      const label = screen.getByText(name)
+      return label.closest('[role="treeitem"]')?.className ?? ''
+    }
+
+    /** Class list of the name label itself, which carries the type scale. */
+    const labelClass = (name: string): string => screen.getByText(name).className
+
+    it('renders the roomy density by default and marks the toggle unpressed', () => {
+      render(<MindMapView />)
+
+      const toggle = screen.getByTestId('mindmap-compact-toggle')
+      expect(toggle.getAttribute('aria-pressed')).toBe('false')
+      expect(nodeRowClass('Child Entity')).toContain('px-3')
+      expect(labelClass('Child Entity')).toContain('text-[13px]')
+      expect(screen.getByText(/Comfortable/)).toBeDefined()
+    })
+
+    it('applies the compact density to node padding, indent, and type when toggled on', () => {
+      render(<MindMapView />)
+      fireEvent.click(screen.getByTestId('mindmap-compact-toggle'))
+
+      const toggle = screen.getByTestId('mindmap-compact-toggle')
+      expect(toggle.getAttribute('aria-pressed')).toBe('true')
+      // Padding and type scale both tighten — the toggle is not decorative.
+      expect(nodeRowClass('Child Entity')).toContain('px-2.5')
+      expect(nodeRowClass('Child Entity')).toContain('py-1')
+      expect(labelClass('Child Entity')).toContain('text-[12px]')
+      expect(labelClass('Root Entity')).toContain('text-[13px]')
+      // The per-level indent shrinks from 28px to 18px, so level 1 moves left.
+      const childRow = screen.getByText('Child Entity').closest('.relative')
+        ?.firstElementChild as HTMLElement
+      expect(childRow.style.paddingLeft).toBe('18px')
+      expect(screen.getByText(/Compact/)).toBeDefined()
+    })
+
+    it('restores the roomy density when toggled back off', () => {
+      render(<MindMapView />)
+      const toggle = screen.getByTestId('mindmap-compact-toggle')
+
+      fireEvent.click(toggle)
+      expect(nodeRowClass('Child Entity')).toContain('px-2.5')
+
+      fireEvent.click(toggle)
+      expect(toggle.getAttribute('aria-pressed')).toBe('false')
+      expect(nodeRowClass('Child Entity')).toContain('px-3')
+      const childRow = screen.getByText('Child Entity').closest('.relative')
+        ?.firstElementChild as HTMLElement
+      expect(childRow.style.paddingLeft).toBe('28px')
+    })
+
+    it('keeps every interactive control at the 44px target in compact mode', () => {
+      render(<MindMapView />)
+      fireEvent.click(screen.getByTestId('mindmap-compact-toggle'))
+
+      // Compact reclaims chrome space, never touch-target size.
+      expect(screen.getByTestId('mindmap-compact-toggle').className).toContain('min-h-[44px]')
+      expect(screen.getByLabelText('Expand').className).toContain('min-h-[44px]')
+      expect(screen.getByLabelText('Expand').className).toContain('min-w-[44px]')
+    })
+  })
 })

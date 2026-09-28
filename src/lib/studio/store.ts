@@ -1,13 +1,19 @@
 'use client'
 
+/**
+ * Composition root for the studio store (Plan 157 Phase 3).
+ *
+ * The store's *shape* lives in `store-types.ts` and each concern lives in
+ * `./slices/*`, so this module only wires the persist middleware and exports
+ * the derived read hooks. Slices receive `StateCreator<StudioState>` and
+ * compose through the same `set`/`get` pair, so cross-slice calls (a claim
+ * write pushing history) still work without an import cycle.
+ */
 import { useMemo } from 'react'
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import type { Entity, Claim, ViewId, ChatMessage, AnyEntityType } from './types'
-import { seedEntities, seedClaims, seedChat } from './seed-data'
-import { search, resetSearchCache, type SearchResult } from '@/lib/search/retrieval'
-import { searchAsync } from '@/lib/search/search-worker-client'
-import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from './schema'
+import { search } from '@/lib/search/retrieval'
+import type { Entity, Claim } from './types'
 import {
   CURRENT_SCHEMA_VERSION,
   STUDIO_STORAGE_KEY,
@@ -15,467 +21,40 @@ import {
   migratePersistedState,
   partializePersistedState,
 } from './hydration'
-import { buildRecoverySnapshot, persistRecoverySnapshot } from './recovery-helpers'
+import { buildSeedState } from './seed-state'
+import type { StudioState } from './store-types'
+import { createEntitiesSlice } from './slices/entities-slice'
+import { createClaimsSlice } from './slices/claims-slice'
+import { createHistorySlice } from './slices/history-slice'
+import { createChatSlice } from './slices/chat-slice'
+import { createDataSlice } from './slices/data-slice'
+import { createUiSlice } from './slices/ui-slice'
+import { snapshotCorpus } from './history-snapshot'
+
 export { restoreFromRecovery } from './recovery-helpers'
+export type { StudioState, ImportOptions } from './store-types'
 
-/** Maximum number of undo history snapshots retained in memory. */
-const MAX_HISTORY = 50
-
-/** Abort controller for the in-flight local-chat retrieval (see {@link StudioState.sendMessage}). */
-let chatSendAbort: AbortController | null = null
-
-/** Abort and drop any in-flight chat retrieval. Called by `clearChat`/`resetStore`
- * so a pending send can't append its assistant reply into a cleared/reset
- * conversation (the send is never the active controller afterward, so its
- * completion is dropped in `sendMessage`'s catch). */
-const abortChatSend = (): void => {
-  chatSendAbort?.abort()
-  chatSendAbort = null
-}
-
-/** Optional graph/mindmap metadata attached to an import operation. */
-interface ImportOptions {
-  graph?: ValidatedGraph
-  mindMap?: ValidatedMindMap
-  links?: ValidatedLink[]
-  tags?: ValidatedTag[]
-}
-
-/** Full shape of the Zustand store state and actions. */
-interface StudioState {
-  // Navigation
-  currentView: ViewId
-  setView: (v: ViewId) => void
-  commandOpen: boolean
-  setCommandOpen: (o: boolean) => void
-
-  // Entities
-  entities: Entity[]
-  selectedEntityId: string | null
-  editingEntityId: string | null
-  selectEntity: (id: string | null) => void
-  startEdit: (id: string) => void
-  startNew: () => void
-  saveEntity: (e: Entity) => void
-  commitEntity: (e: Entity) => void
-  /** Atomically commit several entities under a single history snapshot.
-   * Use for reciprocal writes (a save plus its backlinks) so one Undo
-   * restores the whole operation, not just the last write. */
-  commitEntities: (entities: Entity[]) => void
-  finishEditing: () => void
-  navigateToView: (v: ViewId) => void
-  deleteEntity: (id: string) => void
-
-  // History (undo/redo)
-  entityHistory: Entity[][]
-  historyIndex: number
-  pushHistory: () => void
-  undo: () => void
-  redo: () => void
-
-  // Claims
-  claims: Claim[]
-  addClaim: (claim: Omit<Claim, 'id'>) => void
-  updateClaim: (id: string, updates: Partial<Omit<Claim, 'id' | 'entityId'>>) => void
-  deleteClaim: (id: string) => void
-
-  // Library controls
-  searchQuery: string
-  setSearchQuery: (q: string) => void
-  typeFilter: AnyEntityType | 'all'
-  setTypeFilter: (t: AnyEntityType | 'all') => void
-  semanticSearchEnabled: boolean
-  setSemanticSearchEnabled: (enabled: boolean) => void
-  sortBy: 'name' | 'created' | 'updated'
-  setSortBy: (s: 'name' | 'created' | 'updated') => void
-  sortDir: 'asc' | 'desc'
-  setSortDir: (d: 'asc' | 'desc') => void
-
-  // Chat
-  chat: ChatMessage[]
-  chatLoading: boolean
-  sendMessage: (content: string) => Promise<void>
-  clearChat: () => void
-
-  // Right panel
-  rightPanelOpen: boolean
-  setRightPanelOpen: (o: boolean) => void
-
-  // Mobile drawer (visible below lg)
-  mobileDrawerOpen: boolean
-  setMobileDrawerOpen: (o: boolean) => void
-  mobilePanelView: 'nav' | 'search'
-  setMobilePanelView: (v: 'nav' | 'search') => void
-
-  // Import / reset
-  importData: (entities: Entity[], claims: Claim[], options?: ImportOptions) => void
-  importWithRollback: (entities: Entity[], claims: Claim[], options?: ImportOptions) => { success: boolean; error?: string }
-  resetStore: () => void
-
-  // Graph, mind map, links, and tags
-  graph: ValidatedGraph | undefined
-  mindMap: ValidatedMindMap | undefined
-  links: ValidatedLink[] | undefined
-  tags: ValidatedTag[] | undefined
-
-  // Theme handled by next-themes — store tracks UI side effects only
-}
-
-/** Generates a new UUID for entities, claims, and chat messages. */
-const generateId = (): string => crypto.randomUUID()
-
-/** Builds the local assistant chat reply from BM25 results. Shared by the
- * worker-backed async path and the synchronous fallback so both render an
- * identical, deterministic answer (AGENTS.md: local-first, never hang the UI). */
-const buildLocalChatReply = (results: SearchResult[]): ChatMessage => {
-  const cited = results.map((r) => ({
-    entityId: r.entityId ?? r.id,
-    entityName: r.entityName ?? r.name,
-    snippet: r.snippet,
-  }))
+/** Initial state: seed corpus plus a matching single-entry undo baseline. */
+const buildInitialState = () => {
+  const seed = buildSeedState()
   return {
-    id: generateId(),
-    role: 'assistant',
-    content: results.length
-      ? `Based on ${results.length === 1 ? '1 match' : `${results.length} matches`} in your library, here is what I found. ${results[0].snippet} You can open the cited sources for full detail, or ask me to compare them.`
-      : "I could not find a direct match in your local library. Try rephrasing with keywords that appear in your entity names or descriptions, or capture a new entity first via the Editor.",
-    citations: cited,
-    timestamp: new Date().toISOString(),
+    ...seed,
+    entityHistory: [snapshotCorpus(seed.entities, seed.claims)],
+    historyIndex: 0,
   }
-}
-
-// The default (seed) state — used on first load and as a fallback when a
-// persisted state is missing fields. Kept here so both the store initializer
-// and `resetStore` reference the same defaults.
-/** Default seed state used on first load and as the reset baseline. */
-const SEED_STATE = {
-  entities: seedEntities,
-  claims: seedClaims,
-  chat: seedChat,
-  chatLoading: false,
-  currentView: 'home' as ViewId,
-  searchQuery: '',
-  typeFilter: 'all' as AnyEntityType | 'all',
-  semanticSearchEnabled: false,
-  sortBy: 'updated' as 'name' | 'created' | 'updated',
-  sortDir: 'desc' as 'asc' | 'desc',
-  rightPanelOpen: true,
-  graph: undefined as ValidatedGraph | undefined,
-  mindMap: undefined as ValidatedMindMap | undefined,
-  links: undefined as ValidatedLink[] | undefined,
-  tags: undefined as ValidatedTag[] | undefined,
 }
 
 /** Primary Zustand store for the knowledge studio with persistence and undo/redo. */
 export const useStudioStore = create<StudioState>()(
   persist(
     (set, get) => ({
-      ...SEED_STATE,
-
-      entityHistory: [seedEntities],
-      historyIndex: 0,
-
-      setView: (v) => set({ currentView: v }),
-
-      commandOpen: false,
-      setCommandOpen: (o) => set({ commandOpen: o }),
-
-      selectedEntityId: null,
-      editingEntityId: null,
-
-      selectEntity: (id) => set({ selectedEntityId: id }),
-      startEdit: (id) => {
-        const entity = get().entities.find((x) => x.id === id)
-        if (!entity) return
-        set({ editingEntityId: id, currentView: 'editor' })
-      },
-      startNew: () => {
-        set({
-          editingEntityId: null,
-          selectedEntityId: null,
-          currentView: 'editor',
-        })
-      },
-
-      pushHistory: () => {
-        // Appends a snapshot of the CURRENT (post-mutation) entities. Every
-        // mutating action applies its change first and pushes afterwards, so
-        // the stack holds full states and undo/redo restore them verbatim.
-        const { entities, historyIndex, entityHistory } = get()
-        const snapshot = entities.map((e) => ({ ...e }))
-        const trimmed = entityHistory.slice(0, historyIndex + 1)
-        const next = [...trimmed, snapshot]
-        if (next.length > MAX_HISTORY) next.shift()
-        set({
-          entityHistory: next,
-          historyIndex: next.length - 1,
-        })
-      },
-
-      undo: () => {
-        const { entityHistory, historyIndex } = get()
-        if (historyIndex <= 0) return
-        const newIndex = historyIndex - 1
-        const snapshot = entityHistory[newIndex].map((e) => ({ ...e }))
-        set({ entities: snapshot, historyIndex: newIndex })
-      },
-
-      redo: () => {
-        const { entityHistory, historyIndex } = get()
-        if (historyIndex >= entityHistory.length - 1) return
-        const newIndex = historyIndex + 1
-        const snapshot = entityHistory[newIndex].map((e) => ({ ...e }))
-        set({ entities: snapshot, historyIndex: newIndex })
-      },
-      saveEntity: (e) => {
-        set((state) => {
-          const exists = state.entities.some((x) => x.id === e.id)
-          const entities = exists
-            ? state.entities.map((x) => (x.id === e.id ? e : x))
-            : [e, ...state.entities]
-          return {
-            entities,
-            editingEntityId: null,
-            currentView: 'library',
-          }
-        })
-        get().pushHistory()
-      },
-
-      commitEntity: (e) => {
-        set((state) => {
-          const exists = state.entities.some((x) => x.id === e.id)
-          const entities = exists
-            ? state.entities.map((x) => (x.id === e.id ? e : x))
-            : [e, ...state.entities]
-          return { entities }
-        })
-        get().pushHistory()
-      },
-
-      commitEntities: (upserts) => {
-        // Single history step for the whole batch: apply all upserts, then
-        // push once so one undo/redo spans the entire commit.
-        set((state) => {
-          const upsertById = new Map(upserts.map((e) => [e.id, e]))
-          const existingIds = new Set(state.entities.map((x) => x.id))
-          const fresh = upserts.filter((e) => !existingIds.has(e.id))
-          const merged = state.entities.map((x) => upsertById.get(x.id) ?? x)
-          return { entities: [...fresh, ...merged] }
-        })
-        get().pushHistory()
-      },
-
-      finishEditing: () => {
-        set({ editingEntityId: null })
-      },
-
-      navigateToView: (v: ViewId) => {
-        set({ currentView: v })
-      },
-
-      deleteEntity: (id) => {
-        set((state) => ({
-          entities: state.entities
-            .filter((x) => x.id !== id)
-            .map((e) => ({
-              ...e,
-              links: e.links.filter((l) => l.targetId !== id),
-            })),
-          claims: state.claims.filter((c) => c.entityId !== id),
-          selectedEntityId: state.selectedEntityId === id ? null : state.selectedEntityId,
-        }))
-        get().pushHistory()
-      },
-
-      addClaim: (claim) => {
-        const now = new Date().toISOString()
-        const fullClaim: Claim = {
-          ...claim,
-          id: crypto.randomUUID(),
-          createdAt: now,
-          updatedAt: now,
-          version: 1,
-          editHistory: [],
-        }
-        set((state) => ({ claims: [fullClaim, ...state.claims] }))
-      },
-
-      updateClaim: (id, updates) => {
-        set((state) => ({
-          claims: state.claims.map((claim) => {
-            if (claim.id !== id) return claim
-            const now = new Date().toISOString()
-            const historyEntry = updates.statement && updates.statement !== claim.statement
-              ? { statement: claim.statement, editedAt: claim.updatedAt ?? now }
-              : null
-            return {
-              ...claim,
-              ...updates,
-              updatedAt: now,
-              version: (claim.version ?? 1) + 1,
-              editHistory: historyEntry
-                ? [...(claim.editHistory ?? []), historyEntry]
-                : claim.editHistory ?? [],
-            }
-          }),
-        }))
-      },
-
-      deleteClaim: (id) => {
-        set((state) => ({
-          claims: state.claims.filter((claim) => claim.id !== id),
-        }))
-      },
-
-      setSearchQuery: (q) => set({ searchQuery: q }),
-      setTypeFilter: (t) => set({ typeFilter: t }),
-      setSemanticSearchEnabled: (enabled) => set({ semanticSearchEnabled: enabled }),
-      setSortBy: (s) => set({ sortBy: s }),
-      setSortDir: (d) => set({ sortDir: d }),
-
-      sendMessage: (content) => {
-        const userMsg: ChatMessage = {
-          id: generateId(),
-          role: 'user',
-          content,
-          timestamp: new Date().toISOString(),
-        }
-        set((state) => ({ chat: [...state.chat, userMsg], chatLoading: true }))
-
-        // Cancel any in-flight retrieval from a previous send so a newer message
-        // never races a stale search result (AGENTS.md: AbortController for all
-        // async work). The active controller owns state updates; stale ones are
-        // dropped on abort.
-        chatSendAbort?.abort()
-        const controller = new AbortController()
-        chatSendAbort = controller
-
-        const { entities, claims } = get()
-        return searchAsync(entities, claims, content, 5, controller.signal)
-          .then((results) => {
-            if (controller.signal.aborted) return
-            const reply = buildLocalChatReply(results)
-            set((state) => ({ chat: [...state.chat, reply], chatLoading: false }))
-          })
-          .catch((err: unknown) => {
-            // A stale send no longer owns chat state; the active controller owns
-            // the reply and the typing indicator.
-            if (chatSendAbort !== controller) return
-            set({ chatLoading: false })
-            if (err instanceof DOMException && err.name === 'AbortError') return
-
-            // The worker-backed async path failed (worker error, late module
-            // load, etc.). Fall back to the synchronous engine so the local-
-            // first chat still answers instead of hanging on the indicator.
-            let results: SearchResult[] = []
-            try {
-              results = search(entities, claims, content, 5)
-            } catch (fallbackErr) {
-              console.error('Local chat synchronous fallback failed:', fallbackErr)
-            }
-            const reply = buildLocalChatReply(results)
-            set((state) => ({ chat: [...state.chat, reply], chatLoading: false }))
-          })
-      },
-
-      clearChat: () => {
-        abortChatSend()
-        set({ chat: [], chatLoading: false })
-      },
-
-      setRightPanelOpen: (o) => set({ rightPanelOpen: o }),
-
-      mobileDrawerOpen: false,
-      setMobileDrawerOpen: (o) => set({ mobileDrawerOpen: o }),
-      mobilePanelView: 'nav',
-      setMobilePanelView: (v) => set({ mobilePanelView: v }),
-
-      importData: (entities, claims, options) => {
-        // Cancel any pending chat retrieval so it can't answer from the
-        // pre-import corpus, then drop the stale cached search index.
-        abortChatSend()
-        resetSearchCache()
-        set({
-          entities,
-          claims,
-          selectedEntityId: null,
-          editingEntityId: null,
-          currentView: 'library',
-          entityHistory: [entities],
-          historyIndex: 0,
-          graph: options?.graph,
-          mindMap: options?.mindMap,
-          links: options?.links,
-          tags: options?.tags,
-        })
-      },
-
-      importWithRollback: (entities, claims, options) => {
-        // Cancel any pending chat retrieval and drop the cached index before
-        // swapping corpora; on rollback the restored snapshot references force
-        // a clean rebuild on next search.
-        abortChatSend()
-        resetSearchCache()
-        const state = get()
-        const snapshot = buildRecoverySnapshot(state)
-        persistRecoverySnapshot(snapshot)
-        try {
-          set({
-            entities,
-            claims,
-            selectedEntityId: null,
-            editingEntityId: null,
-            currentView: 'library',
-            entityHistory: [entities],
-            historyIndex: 0,
-            graph: options?.graph,
-            mindMap: options?.mindMap,
-            links: options?.links,
-            tags: options?.tags,
-          })
-          return { success: true }
-        } catch (err) {
-          try {
-            set({
-              entities: snapshot.entities,
-              claims: snapshot.claims,
-              entityHistory: snapshot.entityHistory,
-              historyIndex: snapshot.historyIndex,
-              graph: snapshot.graph,
-              mindMap: snapshot.mindMap,
-              links: snapshot.links,
-              tags: snapshot.tags,
-            })
-          } catch {
-            set({
-              ...SEED_STATE,
-              selectedEntityId: null,
-              editingEntityId: null,
-              entityHistory: [seedEntities],
-              historyIndex: 0,
-            })
-          }
-          return {
-            success: false,
-            error: err instanceof Error ? err.message : 'Import failed, state restored.',
-          }
-        }
-      },
-
-      resetStore: () => {
-        // Returning to the seed workspace — release any large cached index and
-        // drop any pending chat retrieval so it can't answer post-reset.
-        abortChatSend()
-        resetSearchCache()
-        set({
-          ...SEED_STATE,
-          selectedEntityId: null,
-          editingEntityId: null,
-          entityHistory: [seedEntities],
-          historyIndex: 0,
-        })
-      },
+      ...buildInitialState(),
+      ...createUiSlice(set, get),
+      ...createEntitiesSlice(set, get),
+      ...createClaimsSlice(set, get),
+      ...createHistorySlice(set, get),
+      ...createChatSlice(set, get),
+      ...createDataSlice(set, get),
     }),
     {
       name: STUDIO_STORAGE_KEY,

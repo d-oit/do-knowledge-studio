@@ -14,6 +14,8 @@ import { sanitizeUrl } from '@/lib/security'
 import {
   ExternalLink,
 } from 'lucide-react'
+import { useAnnouncer } from '@/lib/a11y/announcer'
+import { translate as announceT } from '@/lib/i18n/messages/announce'
 import { EditorToolbar } from './editor-toolbar'
 import { CursorTracker } from '../remote-cursors'
 import { ClaimsPanel } from './editor-claims-panel'
@@ -157,10 +159,12 @@ export const EditorView = () => {
   const entities = useStudioStore((s) => s.entities)
   const editingEntityId = useStudioStore((s) => s.editingEntityId)
   const commitEntities = useStudioStore((s) => s.commitEntities)
+  const announce = useAnnouncer()
   const finishEditing = useStudioStore((s) => s.finishEditing)
   const navigateToView = useStudioStore((s) => s.navigateToView)
   const claims = useStudioStore((s) => s.claims)
   const addClaim = useStudioStore((s) => s.addClaim)
+  const addClaims = useStudioStore((s) => s.addClaims)
   const updateClaim = useStudioStore((s) => s.updateClaim)
   const deleteClaim = useStudioStore((s) => s.deleteClaim)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -358,6 +362,9 @@ export const EditorView = () => {
     const mentionedIds = new Set(mentions.map((m) => m.entityId))
     const backlinkUpdates = applyMentionBacklinks(entities, entityId, mentionedIds)
     commitEntities([entity, ...backlinkUpdates])
+    // A save either navigates away (mentions present) or stays put, so the
+    // only reliable signal for a screen reader is the write itself.
+    announce(announceT(editing ? 'announce.entitySaved' : 'announce.entityCreated', entity.name))
     // Remove draft on commit
     if (draftIdRef.current) removeDraft(draftIdRef.current)
     // Navigate to the library only when the entity actually mentions someone
@@ -367,7 +374,7 @@ export const EditorView = () => {
       finishEditing()
       navigateToView('library')
     }
-  }, [name, type, description, content, sourceUrl, tags, editing, entities, commitEntities, finishEditing, navigateToView, draftIdRef])
+  }, [name, type, description, content, sourceUrl, tags, editing, entities, commitEntities, finishEditing, navigateToView, draftIdRef, announce])
 
   const handleDiscard = () => {
     if (draftIdRef.current) removeDraft(draftIdRef.current)
@@ -516,6 +523,7 @@ export const EditorView = () => {
           editingEntityId={editing.id}
           entityContent={content}
           addClaim={addClaim}
+          addClaims={addClaims}
           updateClaim={updateClaim}
           deleteClaim={deleteClaim}
         />

@@ -64,18 +64,18 @@ describe('Announcer', () => {
 })
 
 describe('useAnnouncer', () => {
-  it('throws when used outside Announcer provider', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
-
-    function BadComponent() {
-      useAnnouncer()
-      return null
+  it('degrades to a no-op when no provider is mounted', () => {
+    // Announcements are progressive enhancement: a missing live region must
+    // not take down the mutation it was describing.
+    function StandaloneComponent() {
+      const announce = useAnnouncer()
+      return <button onClick={() => announce('never heard')}>Announce</button>
     }
 
-    expect(() => render(<BadComponent />)).toThrow(
-      'useAnnouncer must be used within an <Announcer /> provider',
-    )
-
-    consoleError.mockRestore()
+    expect(() => { render(<StandaloneComponent />) }).not.toThrow()
+    const button = screen.getByRole('button', { name: /announce/i })
+    expect(() => { button.click() }).not.toThrow()
+    // No live region is rendered, so nothing is announced — but nothing threw.
+    expect(screen.queryByRole('status')).toBeNull()
   })
 })

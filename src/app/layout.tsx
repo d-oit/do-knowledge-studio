@@ -71,9 +71,14 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} antialiased bg-background text-foreground`}
       >
         <StudioThemeProvider>
-          <Announcer />
-          <OfflineIndicator />
-          {children}
+          {/* The provider must WRAP the app, not sit beside it: a sibling
+              <Announcer /> only provides context to its own children (the
+              live region itself), so every useAnnouncer() call in a view
+              would silently fall back to the no-op. */}
+          <Announcer>
+            <OfflineIndicator />
+            {children}
+          </Announcer>
         </StudioThemeProvider>
         <SonnerToaster position="bottom-right" richColors closeButton />
         <ServiceWorkerRegistration />

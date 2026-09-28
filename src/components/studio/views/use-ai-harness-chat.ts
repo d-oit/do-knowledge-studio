@@ -77,6 +77,17 @@ export const useAiHarnessChat = ({
     return () => { clearTimeout(timer) }
   }, [cooldownMs])
 
+  // Abort any in-flight turn when the view unmounts. Without this the
+  // provider stream keeps running (and keeps invoking `setMessages` on an
+  // unmounted hook) until the request settles, leaking the AbortController
+  // and the partially rendered transcript.
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort()
+      abortRef.current = null
+    }
+  }, [])
+
   const handleSend = useCallback(async () => {
     if (!input.trim()) return
     if (requiresKey && !apiKey) {

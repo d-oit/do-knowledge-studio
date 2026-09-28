@@ -236,7 +236,8 @@ describe('mergeHydratedState', () => {
     const currentSeedState = {
       ...createValidPersistedSlice(),
       entities: [],
-      entityHistory: [[]],
+      claims: [],
+      entityHistory: [{ entities: [], claims: [] }],
       historyIndex: 0,
     }
 
@@ -247,8 +248,12 @@ describe('mergeHydratedState', () => {
     expect(merged.entities).toEqual(persisted.entities)
     expect(merged.historyIndex).toBe(0)
     expect(merged.entityHistory).toHaveLength(1)
-    expect(merged.entityHistory[0]).not.toBe(merged.entities) // Shallow copy clone check
-    expect(merged.entityHistory[0]).toEqual(merged.entities)
+    // The rebased baseline is a deep copy, not a reference into live state,
+    // and it carries claims so the first undo restores the full corpus.
+    expect(merged.entityHistory[0].entities).not.toBe(merged.entities)
+    expect(merged.entityHistory[0].entities).toEqual(merged.entities)
+    expect(merged.entityHistory[0].entities).not.toBe(merged.entities[0])
+    expect(merged.entityHistory[0].claims).toEqual(merged.claims)
   })
 
   it('throws HydrationRejectedError on invalid persisted payload during merge', () => {

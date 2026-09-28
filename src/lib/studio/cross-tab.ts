@@ -27,6 +27,7 @@ import { mergeEntities, mergeClaims } from '../sync/merge'
 import { recordDeletions, getDeletions, resetDeletions } from './cross-tab-tombstones'
 import type { Entity, Claim } from './types'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from './schema'
+import { snapshotCorpus } from './history-snapshot'
 
 /** BroadcastChannel name for cross-tab store synchronization. */
 export const STUDIO_CROSS_TAB_CHANNEL = 'do-knowledge-studio-crosstab'
@@ -254,7 +255,8 @@ const buildStatePatch = (
   }
   if (corpusChanged) {
     // Rebase the undo baseline so a remote apply can never be undone away.
-    patch.entityHistory = [merge.entities.map((entity) => ({ ...entity }))]
+    // Claims ride along so the baseline is a complete corpus snapshot.
+    patch.entityHistory = [snapshotCorpus(merge.entities, merge.claims)]
     patch.historyIndex = 0
   }
   setGraphIfChanged(patch, current.graph, remote.graph)

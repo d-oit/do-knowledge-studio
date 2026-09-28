@@ -121,6 +121,7 @@ export const ClaimsPanel = ({
   editingEntityId,
   entityContent,
   addClaim,
+  addClaims,
   updateClaim,
   deleteClaim,
 }: {
@@ -131,6 +132,8 @@ export const ClaimsPanel = ({
    * content when omitted (standalone/test usage). */
   entityContent?: string
   addClaim: (claim: Omit<Claim, 'id'>) => void
+  /** Adds several claims under one history step; used by bulk extraction. */
+  addClaims?: (claims: Omit<Claim, 'id'>[]) => void
   updateClaim: (id: string, updates: Partial<Omit<Claim, 'id' | 'entityId'>>) => void
   deleteClaim: (id: string) => void
 }) => {
@@ -224,19 +227,28 @@ export const ClaimsPanel = ({
       (draft) => !existing.has(draftKey(draft.statement, draft.source)),
     )
     const skipped = extractDrafts.length - toAdd.length
-    for (const draft of toAdd) {
-      addClaim({
-        entityId: editingEntityId,
-        statement: draft.statement,
-        source: draft.source,
-        confidence: DEFAULT_CONFIDENCE,
-        verification: 'unverified',
-      })
+    const newClaims = toAdd.map((draft) => ({
+      entityId: editingEntityId,
+      statement: draft.statement,
+      source: draft.source,
+      confidence: DEFAULT_CONFIDENCE,
+      verification: 'unverified' as const,
+    }))
+    // One history step for the whole extraction: a batch of N claims must be
+    // undoable with a single Undo, not N of them.
+    if (newClaims.length > 0) {
+      if (addClaims) {
+        addClaims(newClaims)
+      } else {
+        for (const claim of newClaims) {
+          addClaim(claim)
+        }
+      }
     }
     setExtractDrafts(null)
     if (toAdd.length > 0) toast.success(translate('claims.added', String(toAdd.length)))
     if (skipped > 0) toast.info(translate('claims.skipped', String(skipped)))
-  }, [claims, extractDrafts, editingEntityId, addClaim])
+  }, [claims, extractDrafts, editingEntityId, addClaim, addClaims])
 
   return (
     <section

@@ -13,6 +13,8 @@ vi.mock('lucide-react', () => {
     Layers: I,
     Focus: I,
     Camera: I,
+    History: I,
+    Trash2: I,
     RotateCcw: I,
     RotateCw: I,
     Download: I,
@@ -214,14 +216,132 @@ describe('GraphView branch coverage', () => {
     expect(mockRedo).toHaveBeenCalled()
   })
 
-  it('saves snapshot when save snapshot button clicked', () => {
-    render(<GraphView />)
-    const snapshotBtn = screen.getByLabelText('Save snapshot')
-    fireEvent.click(snapshotBtn)
-    expect(localStorage.setItem).toHaveBeenCalledWith(
-      'dks-graph-snapshot',
-      expect.any(String),
-    )
+  describe('Snapshot save/restore round trip (D4.1)', () => {
+    beforeEach(() => {
+      // Round-trip coverage needs a real store, not the shared Storage spy:
+      // the restore path reads back what the save path wrote.
+      vi.restoreAllMocks()
+      localStorage.clear()
+    })
+
+    it('saves the canvas state under the snapshot key', () => {
+      render(<GraphView />)
+      fireEvent.click(screen.getByText('circular'))
+      currentSelectedEntityId = mockEntities[0].id
+      fireEvent.click(screen.getByLabelText('Focus neighborhood'))
+      fireEvent.click(screen.getByLabelText('Save snapshot'))
+
+      const stored = localStorage.getItem('dks-graph-snapshot')
+      expect(stored).not.toBeNull()
+      expect(JSON.parse(stored ?? '')).toMatchObject({
+        layout: 'circular',
+        selectedEntityId: mockEntities[0].id,
+        focusMode: true,
+        zoom: 1,
+      })
+    })
+
+    it('restores layout, focus mode, and selection from a stored snapshot', () => {
+      localStorage.setItem(
+        'dks-graph-snapshot',
+        JSON.stringify({
+          layout: 'hierarchical',
+          selectedEntityId: mockEntities[1].id,
+          focusMode: true,
+          panX: 12,
+          panY: -8,
+          zoom: 2.5,
+          timestamp: '2026-01-01T00:00:00.000Z',
+        }),
+      )
+
+      render(<GraphView />)
+      // The restore action is enabled only when a valid snapshot is stored.
+      const restoreBtn = screen.getByLabelText('Restore snapshot') as HTMLButtonElement
+      expect(restoreBtn.disabled).toBe(false)
+
+      fireEvent.click(restoreBtn)
+      expect(screen.getByText('hierarchical')).toHaveAttribute('aria-pressed', 'true')
+      expect(screen.getByLabelText('Focus neighborhood')).toHaveAttribute('aria-pressed', 'true')
+      expect(mockSelectEntity).toHaveBeenCalledWith(mockEntities[1].id)
+    })
+
+    it('disables restore and clear when no snapshot is stored', () => {
+      render(<GraphView />)
+      expect((screen.getByLabelText('Restore snapshot') as HTMLButtonElement).disabled).toBe(true)
+      expect((screen.getByLabelText('Clear snapshot') as HTMLButtonElement).disabled).toBe(true)
+    })
+
+    it('clears a stored snapshot and re-disables the restore action', () => {
+      localStorage.setItem(
+        'dks-graph-snapshot',
+        JSON.stringify({
+          layout: 'force',
+          selectedEntityId: null,
+          focusMode: false,
+          panX: 0,
+          panY: 0,
+          zoom: 1,
+          timestamp: '2026-01-01T00:00:00.000Z',
+        }),
+      )
+      render(<GraphView />)
+      fireEvent.click(screen.getByLabelText('Clear snapshot'))
+
+      expect(localStorage.getItem('dks-graph-snapshot')).toBeNull()
+      expect((screen.getByLabelText('Restore snapshot') as HTMLButtonElement).disabled).toBe(true)
+    })
+
+    it('drops a corrupt snapshot and leaves restore disabled instead of throwing', () => {
+      localStorage.setItem('dks-graph-snapshot', '{"layout":"telepathic"}')
+      expect(() => { render(<GraphView />) }).not.toThrow()
+      expect(localStorage.getItem('dks-graph-snapshot')).toBeNull()
+      expect((screen.getByLabelText('Restore snapshot') as HTMLButtonElement).disabled).toBe(true)
+    })
+
+    it('drops an unparseable snapshot entry', () => {
+      localStorage.setItem('dks-graph-snapshot', 'not json')
+      render(<GraphView />)
+      expect(localStorage.getItem('dks-graph-snapshot')).toBeNull()
+      expect((screen.getByLabelText('Restore snapshot') as HTMLButtonElement).disabled).toBe(true)
+    })
+
+    it('clears the selection when the snapshot names an entity that no longer exists', () => {
+      localStorage.setItem(
+        'dks-graph-snapshot',
+        JSON.stringify({
+          layout: 'circular',
+          selectedEntityId: 'deleted-entity',
+          focusMode: true,
+          panX: 0,
+          panY: 0,
+          zoom: 1,
+          timestamp: '2026-01-01T00:00:00.000Z',
+        }),
+      )
+      render(<GraphView />)
+      fireEvent.click(screen.getByLabelText('Restore snapshot'))
+
+      // A stale id must not leave focus mode pointed at a missing node.
+      expect(mockSelectEntity).toHaveBeenCalledWith(null)
+    })
+
+    it('round-trips save then restore back to the same canvas state', () => {
+      // The mocked store is read during render, so the selection is set before
+      // the layout click that forces the re-render which captures it.
+      currentSelectedEntityId = mockEntities[0].id
+      render(<GraphView />)
+      fireEvent.click(screen.getByText('circular'))
+      fireEvent.click(screen.getByLabelText('Save snapshot'))
+
+      // Move away from the saved state, then restore it.
+      fireEvent.click(screen.getByText('hierarchical'))
+      expect(screen.getByText('hierarchical')).toHaveAttribute('aria-pressed', 'true')
+
+      fireEvent.click(screen.getByLabelText('Restore snapshot'))
+      expect(screen.getByText('circular')).toHaveAttribute('aria-pressed', 'true')
+      expect(mockSelectEntity).toHaveBeenCalledWith(mockEntities[0].id)
+    })
   })
 
   it('renders entity type legend', () => {

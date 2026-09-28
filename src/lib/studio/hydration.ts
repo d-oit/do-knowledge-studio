@@ -18,6 +18,7 @@ import type { Claim, Entity, ChatMessage, ViewId, AnyEntityType } from './types'
 import { validatePersistedState } from './schema'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from './schema'
 import { CURRENT_SCHEMA_VERSION, runMigrations } from './migrations'
+import { snapshotCorpus, type HistorySnapshot } from './history-snapshot'
 
 /** localStorage key holding the studio persistence envelope. */
 export const STUDIO_STORAGE_KEY = 'do-knowledge-studio-store'
@@ -56,7 +57,7 @@ interface PersistedSlice {
 
 /** Fields the hydration merger must understand to keep undo coherent. */
 interface HistoryFields {
-  entityHistory: Entity[][]
+  entityHistory: HistorySnapshot[]
   historyIndex: number
 }
 
@@ -82,9 +83,6 @@ export class HydrationRejectedError extends Error {
     this.name = 'HydrationRejectedError'
   }
 }
-
-/** Shallow-clones entities so snapshots share no mutable references. */
-const cloneEntities = (entities: Entity[]): Entity[] => entities.map((e) => ({ ...e }))
 
 /**
  * Validates an incoming payload from localStorage against the envelope schema.
@@ -190,10 +188,11 @@ export const mergeHydratedState = <S extends HydratableState>(persisted: unknown
   }
   const merged: S = { ...current, ...normalizeCanvasNulls(verdict.data) }
   // The first edit after a reload must undo back to the loaded corpus,
-  // never to the in-memory seed snapshot that initialized history.
+  // never to the in-memory seed snapshot that initialized history. The
+  // baseline carries claims too, so the first undo restores the full corpus.
   return {
     ...merged,
-    entityHistory: [cloneEntities(merged.entities)],
+    entityHistory: [snapshotCorpus(merged.entities, merged.claims)],
     historyIndex: 0,
   }
 }
