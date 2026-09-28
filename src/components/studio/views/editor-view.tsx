@@ -8,8 +8,9 @@ import {
 } from '@/lib/studio/types'
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { toast } from 'sonner'
-import Markdown, { defaultUrlTransform } from 'react-markdown'
+import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { sanitizeUrl } from '@/lib/security'
 import {
   ExternalLink,
 } from 'lucide-react'
@@ -51,9 +52,9 @@ import {
   EditorStatusBar,
 } from '../editor-hooks'
 
-/** Preserve the reserved dks:// mention protocol (defaultUrlTransform strips it). */
+/** Preserve the reserved dks:// mention protocol (sanitizeUrl strips non-standard schemes). */
 const mentionAwareUrlTransform = (url: string): string =>
-  url.startsWith(MENTION_SCHEME) ? url : defaultUrlTransform(url)
+  url.startsWith(MENTION_SCHEME) ? url : sanitizeUrl(url)
 
 const SERIF_FONT_STYLE: React.CSSProperties = {
   fontFamily: 'var(--font-newsreader), Georgia, serif',
@@ -496,7 +497,9 @@ export const EditorView = () => {
                       </span>
                     )
                   }
-                  return <a href={href} target="_blank" rel="noreferrer">{children}</a>
+                  const safeHref = typeof href === 'string' && href ? sanitizeUrl(href) : ''
+                  if (!safeHref) return <span>{children}</span>
+                  return <a href={safeHref} target="_blank" rel="noopener noreferrer">{children}</a>
                 },
               }}
             >

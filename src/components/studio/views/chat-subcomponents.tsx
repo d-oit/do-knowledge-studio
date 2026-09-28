@@ -5,6 +5,7 @@ import { Send, Sparkles, Trash2, Bot, User, Quote, ChevronDown, MessageSquare } 
 import { VoiceInput } from '../voice-input'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { sanitizeUrl } from '@/lib/security'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ChatMessage } from '@/lib/studio/types'
@@ -254,7 +255,28 @@ export const MessageList = ({
             </span>
             {m.role === 'assistant' ? (
               <div className="prose prose-sm dark:prose-invert max-w-none">
-                <Markdown remarkPlugins={[remarkGfm]}>{m.content}</Markdown>
+                <Markdown
+                  remarkPlugins={[remarkGfm]}
+                  urlTransform={(url) => sanitizeUrl(url)}
+                  components={{
+                    a: ({ href, children }) => {
+                      const safeHref = typeof href === 'string' && href ? sanitizeUrl(href) : ''
+                      if (!safeHref) return <span>{children}</span>
+                      return (
+                        <a href={safeHref} target="_blank" rel="noopener noreferrer">
+                          {children}
+                        </a>
+                      )
+                    },
+                    img: ({ src, alt }) => {
+                      const safeSrc = typeof src === 'string' && src ? sanitizeUrl(src) : ''
+                      if (!safeSrc) return null
+                      return <img src={safeSrc} alt={alt ?? ''} />
+                    },
+                  }}
+                >
+                  {m.content}
+                </Markdown>
               </div>
             ) : (
               m.content
