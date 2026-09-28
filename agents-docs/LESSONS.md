@@ -1307,3 +1307,74 @@ the new Jev field too.
   errors" was the only signal that the persisted value was at risk.
 
 **Tags**: #ai #settings #persistence #zod #autosave #ssrf #ui
+
+
+## LESSON-038: Verify a vendor integration against the vendor's own docs, not the plan that proposed it
+
+**Date**: 2026-09-26
+**Component**: AI / external API integrations
+**Severity**: High
+
+**What happened**: A Jev (TypeSafe) chat-provider adapter was built, reviewed,
+and shipped to a PR on the strength of a prior plan document. When the vendor
+documentation was finally opened, the entire premise was wrong: Jev is a
+System One *decision* model that returns typed `choice` / `score` / `noul`
+answers and does not generate text or hold a conversation. The adapter shimmed
+a conversation into a `state` string and asked a two-option `choice` question —
+the exact anti-pattern the docs warn about. It would have shown a confidence
+percentage where an answer belongs.
+
+The supporting details in the plan were also unverified and wrong: `von-1.2`
+is not a model, no local Von server is documented, and 402/403 are not error
+codes (the real ones are 401, 422, 429, and 529 Overloaded).
+
+**Root cause**: the plan was treated as a specification instead of a set of
+claims to verify. Every field was traceable to the plan, never to the vendor.
+
+**Prevention**:
+
+- Open the vendor's documentation *before* the first line of adapter code, and
+  treat any plan's API details as unverified claims.
+- When a plan proposes an integration, ask what the vendor says the product
+  *is not*. A capability that needs a shim to fit an existing interface is
+  usually the wrong capability for that interface.
+- Prefer the vendor's own SDK and agent-skill docs over secondary summaries.
+- A green test suite proves the code matches its own assumptions. It cannot
+  prove the assumptions were right; only the primary source can.
+
+**Tags**: #integrations #vendor-api #verification #spec #ai
+
+
+## LESSON-039: Name the tool from Codacy's own API, not from the `nosemgrep` comment
+
+**Date**: 2026-09-26
+**Component**: CI / static analysis
+**Severity**: Medium
+
+**What happened**: A Codacy SSRF finding survived six inline-suppression
+variants and two PRs. I spent the whole effort reasoning about Semgrep, because
+the suppression comment said `nosemgrep` and my config attempt targeted
+`engines.semgrep.disable_rules`. The actual tool was **Opengrep** — obtained
+in one call from `codacy pull-request ... --output json`, which reports
+`toolInfo.name` and a numeric `resultDataId` per issue. The working fix was
+`--ignore-issue <resultDataId> --ignore-reason FalsePositive`, which clears the
+gate immediately and needs no config change.
+
+**Root cause**: I inferred the analysis tool from a suppression comment's
+namespace instead of asking the API that owns the finding. The `rules.lgpl.*`
+namespace is shared, so the comment gave no reliable signal about which engine
+reported it.
+
+**Prevention**:
+
+- Before reasoning about a Codacy finding, run the `codacy` skill's Cloud CLI
+  and read `toolInfo.name` plus `resultDataId`. That is two fields and it ends
+  the guesswork.
+- `.codacy.yml` `disable_rules` did not help here, and AGENTS.md already says
+  config suppressions do not cover new PR code (LESSON-031, plans/112) — read
+  that before reaching for a config edit.
+- The `static-analysis-suppression` decision tree is: fix code, then suppress
+  per-issue, and only then consider config or an admin merge.
+
+**Tags**: #ci #codacy #opengrep #static-analysis #suppression
+
