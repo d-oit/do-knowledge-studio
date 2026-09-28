@@ -11,6 +11,13 @@
 | W3 | Store undo integrity + LOC decomposition | Done | History snapshots carry claims alongside entities, so undo after `deleteEntity` no longer destroys the entity's claims; claim CRUD participates in history; dangling `selectedEntityId`/`editingEntityId` are cleared on restore (D1.6, D1.22). `store.ts` 610 → 189 LOC via `store-types.ts` + `slices/*`. |
 | W4 | 2026 PWA installability | Done | Raster `icon-192`/`icon-512`/maskable PNGs from `scripts/generate-pwa-icons.py`; manifest gains `id`/`orientation`/`categories`; service worker registers with `updateViaCache: 'none'`, hourly re-checks, visibility/online re-checks, and full teardown. |
 | W5 | Screen-reader live announcements | Done | `useAnnouncer` degrades to a no-op without a provider; 9 mutations now announce (view switch, save/create, delete, import success/failure, reset, snapshot save/restore/clear, density) via `messages/announce.ts`. |
+
+### Plan 158 — September 2026 best-practice audit (2026-09-28)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | GOAP research swarm against official sources | Audit only | `plans/158-september-2026-best-practice-audit.md`. 4 parallel research lanes (Next 16/deploy, service worker, Zustand v5/React 19, WCAG 2.2/i18n), each required to cite a primary source. **3 P0**: Vercel builds with pnpm 6 via `installCommand` (cannot read lockfile v9 / `pnpm.overrides`); the service-worker registration deletes the precache it just wrote (regression from Plan 157, verified in Chromium); hydration rejection is silent *and* destroys the envelope it claims to preserve. **3 candidates rejected by browser verification** — a `role="img"` a11y defect that Chrome does not exhibit, a WCAG target-size violation that measured 28px not 22px, and a Zustand typing claim. No code changed. |
+
 ### Plan 156 — Dependency audit remediation: `brace-expansion` (2026-09-28)
 
 | Wave | Goal | Status | Changes |

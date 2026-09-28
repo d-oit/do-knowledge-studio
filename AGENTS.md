@@ -205,11 +205,9 @@ Full procedure, staleness ladder, and the Codacy false-positive playbook:
 Non-obvious toolchain facts. Full catalog with debugging detail:
 `agents-docs/LESSONS.md` (LESSON-001..039) and `lessons.jsonl`.
 
-- **gitleaks-action v3+ requires a paid `GITLEAKS_LICENSE`** — pin v2.x for
-  license-free scanning. A failing license gate masks real scan results.
-- **yamllint enforces `line-length` (120) and `new-line-at-end-of-file` inside
-  `run: |` block scalars and `.github/workflow-templates/`** — pre-push check
-  with `awk 'length > 120'` and `tail -c 1`.
+- **gitleaks-action v3+ needs a paid `GITLEAKS_LICENSE`** — pin v2.x; a failing
+  license gate masks real scan results. yamllint enforces `line-length` (120)
+  and `new-line-at-end-of-file` inside `run: |` blocks.
 - **DeepSource `.deepsource.toml` suppressions do not reliably prevent check
   failures** — use `const fn = () => {}` (never `function`) for module-scope
   helpers and keep exported-function complexity under 6.
@@ -229,12 +227,22 @@ Non-obvious toolchain facts. Full catalog with debugging detail:
 
 ## Skills
 
-- Canonical skills live in `.agents/skills/`; refresh symlinks with
-  `./scripts/setup-skills.sh`.
-- **Load only what the stage needs.** Every always-loaded skill is a tax.
-- Prefer existing skills and `agents-docs/` guidance before inventing a workflow.
-- Add a skill only after a real failure (see `agents-docs/HARNESS.md`).
+Canonical skills live in `.agents/skills/`; refresh symlinks with
+`./scripts/setup-skills.sh`. **Load only what the stage needs** — every
+always-loaded skill is a tax. Prefer existing skills and `agents-docs/` guidance
+over inventing a workflow, and add a skill only after a real failure
+(`agents-docs/HARNESS.md`).
 
 Catalog: `agents-docs/AVAILABLE_SKILLS.md` (regenerate with
-`./scripts/generate-skills-docs.py`). Per-stage skill map:
+`./scripts/generate-skills-docs.py`). Per-stage map:
 `agents-docs/DELIVERY-LIFECYCLE.md`.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
