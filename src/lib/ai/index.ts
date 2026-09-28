@@ -22,6 +22,7 @@ export {
 
 export { getAdapter, sendChat, sendChatStream, fetchOllamaModels } from './providers'
 export { localAdapter, DEFAULT_LOCAL_MODELS, LOCAL_DEFAULT_DEVICE } from './local-adapter'
+export { validateOllamaUrl } from './url-guard'
 export type { LocalModelOption } from './local-adapter'
 export { buildSystemPrompt, buildMessages, buildSystemPromptAsync, buildMessagesAsync } from './context'
 export { useRateLimiter } from './use-rate-limiter'

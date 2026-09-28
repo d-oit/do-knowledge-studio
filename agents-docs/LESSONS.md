@@ -1262,3 +1262,119 @@ broke three `tests/validate-skills.bats` cases — its Quality Gate check passed
   always has history.
 
 **Tags**: #quality-gate #ci #git #fail-closed #bats #shallow-clone
+
+
+## LESSON-037: Autosave plus a validating schema silently discards every
+half-typed value
+
+**Date**: 2026-09-26
+**Component**: AI Harness / settings persistence
+**Severity**: Medium
+
+**What happened**: The AI Harness settings panel autosaves on every state
+change, and `StoredSettingsSchema` rejects a base URL that does not parse.
+Typing a base URL character by character therefore fired a *failing* save on
+most keystrokes (`h`, `ht`, `http:`, `http:/`, `http://`, …). Each partial host
+was rejected, the stored record kept the last good value, and the field
+appeared editable while discarding the edit. One typing session produced 164
+`Failed to save AI settings: Invalid AI settings schema` errors — and the user
+saw no error at all, because the failures were logged and swallowed.
+
+This was pre-existing on the Ollama base URL field; it would have shipped with
+the new Jev field too.
+
+**Why it is easy to miss**:
+
+- The *final* value is valid, so the last save succeeds and the persisted record
+  looks correct when inspected afterwards. Only the intermediate keystrokes
+  fail, and nobody reads the console during typing.
+- A test that sets the whole value in one `fireEvent.change` never reproduces
+  it; the bug only exists in the per-keystroke sequence.
+- The failure mode is a *rejected write*, not a crash, so nothing surfaces in
+  the UI.
+
+**Prevention**:
+
+- Text inputs that autosave and are also schema-validated must keep a local
+  draft and commit on blur (or Enter), not on every change. `BaseUrlInput` in
+  `ai-harness-settings-panel.tsx` is the pattern: validate, then commit the
+  *normalized* value; on rejection leave storage untouched and set
+  `aria-invalid` on the field.
+- When a change touches a persisted schema, drive the real UI: type a value
+  keystroke by keystroke and read the console. A passing unit suite is not
+  evidence that autosave works.
+- Count console errors as a smoke-test assertion, not just as noise. "164
+  errors" was the only signal that the persisted value was at risk.
+
+**Tags**: #ai #settings #persistence #zod #autosave #ssrf #ui
+
+
+## LESSON-038: Verify a vendor integration against the vendor's own docs, not the plan that proposed it
+
+**Date**: 2026-09-26
+**Component**: AI / external API integrations
+**Severity**: High
+
+**What happened**: A Jev (TypeSafe) chat-provider adapter was built, reviewed,
+and shipped to a PR on the strength of a prior plan document. When the vendor
+documentation was finally opened, the entire premise was wrong: Jev is a
+System One *decision* model that returns typed `choice` / `score` / `noul`
+answers and does not generate text or hold a conversation. The adapter shimmed
+a conversation into a `state` string and asked a two-option `choice` question —
+the exact anti-pattern the docs warn about. It would have shown a confidence
+percentage where an answer belongs.
+
+The supporting details in the plan were also unverified and wrong: `von-1.2`
+is not a model, no local Von server is documented, and 402/403 are not error
+codes (the real ones are 401, 422, 429, and 529 Overloaded).
+
+**Root cause**: the plan was treated as a specification instead of a set of
+claims to verify. Every field was traceable to the plan, never to the vendor.
+
+**Prevention**:
+
+- Open the vendor's documentation *before* the first line of adapter code, and
+  treat any plan's API details as unverified claims.
+- When a plan proposes an integration, ask what the vendor says the product
+  *is not*. A capability that needs a shim to fit an existing interface is
+  usually the wrong capability for that interface.
+- Prefer the vendor's own SDK and agent-skill docs over secondary summaries.
+- A green test suite proves the code matches its own assumptions. It cannot
+  prove the assumptions were right; only the primary source can.
+
+**Tags**: #integrations #vendor-api #verification #spec #ai
+
+
+## LESSON-039: Name the tool from Codacy's own API, not from the `nosemgrep` comment
+
+**Date**: 2026-09-26
+**Component**: CI / static analysis
+**Severity**: Medium
+
+**What happened**: A Codacy SSRF finding survived six inline-suppression
+variants and two PRs. I spent the whole effort reasoning about Semgrep, because
+the suppression comment said `nosemgrep` and my config attempt targeted
+`engines.semgrep.disable_rules`. The actual tool was **Opengrep** — obtained
+in one call from `codacy pull-request ... --output json`, which reports
+`toolInfo.name` and a numeric `resultDataId` per issue. The working fix was
+`--ignore-issue <resultDataId> --ignore-reason FalsePositive`, which clears the
+gate immediately and needs no config change.
+
+**Root cause**: I inferred the analysis tool from a suppression comment's
+namespace instead of asking the API that owns the finding. The `rules.lgpl.*`
+namespace is shared, so the comment gave no reliable signal about which engine
+reported it.
+
+**Prevention**:
+
+- Before reasoning about a Codacy finding, run the `codacy` skill's Cloud CLI
+  and read `toolInfo.name` plus `resultDataId`. That is two fields and it ends
+  the guesswork.
+- `.codacy.yml` `disable_rules` did not help here, and AGENTS.md already says
+  config suppressions do not cover new PR code (LESSON-031, plans/112) — read
+  that before reaching for a config edit.
+- The `static-analysis-suppression` decision tree is: fix code, then suppress
+  per-issue, and only then consider config or an admin merge.
+
+**Tags**: #ci #codacy #opengrep #static-analysis #suppression
+

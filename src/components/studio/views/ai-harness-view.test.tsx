@@ -55,6 +55,7 @@ vi.mock('@/lib/studio/ai-settings', () => ({
       ollamaCpuOnly: false,
       allowWebResearch: false,
       ollamaBaseUrl: 'http://localhost:11434',
+      localDevice: 'wasm',
     }),
   ),
   saveAISettings: vi.fn(() => Promise.resolve()),
@@ -73,6 +74,8 @@ vi.mock('@/lib/ai', () => ({
   OPENROUTER_MODELS: [{ slug: 'openai/gpt-4o-mini', display_name: 'GPT-4o Mini' }],
   DEFAULT_LOCAL_MODELS: [{ id: 'onnx-community/Qwen2.5-0.5B-Instruct', displayName: 'Qwen2.5 0.5B Instruct', dtype: 'q4' }],
   LOCAL_PROVIDER_ID: 'local',
+  LOCAL_DEFAULT_DEVICE: 'wasm',
+  validateOllamaUrl: (u: string) => u.replace(/\/+$/, ''),
   OPENROUTER_DEFAULT_TARGETS: [
     { slug: 'openrouter/auto', display_name: 'Auto Router' },
     { slug: 'openai/gpt-4o-mini', display_name: 'GPT-4o Mini' },

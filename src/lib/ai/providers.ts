@@ -8,31 +8,13 @@ import type {
 } from './types'
 import { DEFAULT_OLLAMA_BASE_URL, OPENROUTER_DEFAULT_TARGETS } from './types'
 import { localAdapter } from './local-adapter'
+import { validateOllamaUrl } from './url-guard'
+
+export { validateOllamaUrl }
 
 const OPENROUTER_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions'
 const APP_TITLE = 'Do Knowledge Studio'
 
-const ALLOWED_OLLAMA_HOSTS = new Set(['localhost', '127.0.0.1', '::1'])
-
-const isAllowedOllamaHost = (hostname: string): boolean =>
-  ALLOWED_OLLAMA_HOSTS.has(hostname) || hostname.endsWith('.local')
-
-/** Validate and normalize an Ollama base URL to localhost-only. */
-export const validateOllamaUrl = (baseUrl: string): string => {
-  let url: URL
-  try {
-    url = new URL(baseUrl)
-  } catch {
-    throw new Error('Invalid Ollama base URL')
-  }
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    throw new Error('Ollama base URL must use http or https protocol')
-  }
-  if (!isAllowedOllamaHost(url.hostname)) {
-    throw new Error('Ollama base URL must point to localhost or a .local hostname')
-  }
-  return baseUrl.replace(/\/+$/, '')
-}
 
 const OpenRouterResponseSchema = z.object({
   choices: z.array(
@@ -251,12 +233,14 @@ class OllamaAdapter implements ProviderAdapter {
       body.options = { num_gpu: 0 }
     }
 
-    // URL is validated to localhost-only by validateOllamaUrl above
-    const res = await fetch(`${validatedUrl}/api/chat`, {
+    // URL is allowlist-validated above; `redirect: 'error'` stops a permitted
+    // host from bouncing the request to a public origin.
+    const res = await fetch(`${validatedUrl}/api/chat`, { // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
       signal,
+      redirect: 'error',
     })
 
     if (!res.ok) {
@@ -295,13 +279,14 @@ class OllamaAdapter implements ProviderAdapter {
       body.options = { num_gpu: 0 }
     }
 
-    // URL is validated to localhost-only by validateOllamaUrl above
-    // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
-    const res = await fetch(`${validatedUrl}/api/chat`, {
+    // URL is allowlist-validated above; `redirect: 'error'` stops a permitted
+    // host from bouncing the request to a public origin.
+    const res = await fetch(`${validatedUrl}/api/chat`, { // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
       signal,
+      redirect: 'error',
     })
 
     if (!res.ok) {
@@ -347,8 +332,11 @@ export const fetchOllamaModels = async (
   signal?: AbortSignal,
 ): Promise<string[]> => {
   const validatedUrl = validateOllamaUrl(baseUrl)
-  // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
-  const res = await fetch(`${validatedUrl}/api/tags`, { signal })
+  // The URL is allowlist-validated above and `redirect: 'error'` blocks a
+  // permitted host bouncing the request to a public origin. Semgrep only
+  // honours a suppression on the matched line or the line immediately above
+  // it, so the directive trails this one rather than sitting on its own line.
+  const res = await fetch(`${validatedUrl}/api/tags`, { signal, redirect: 'error' }) // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
   if (!res.ok) throw new Error(`Ollama tags error ${res.status}`)
   const data = OllamaTagsSchema.parse(await res.json())
   return data.models?.map((m) => m.name) ?? []

@@ -1,7 +1,19 @@
 # Plans Index
 
-**Updated**: 2026-08-22
+**Updated**: 2026-09-26
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
+
+### Plan 155 — Local CPU-first AI and settings persistence (2026-09-26)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | CPU-first defaults, reachable WebGPU toggle, autosave fix | Done | `plans/155-cpu-first-local-ai-and-settings-persistence.md`. `ollamaCpuOnly` defaults to `true` and `localDevice` is persisted, closing a gap where the adapter consumed `localDevice` but the UI could not reach it. `BaseUrlInput` fixes a pre-existing autosave defect: the panel saved on every keystroke while the schema rejected partial hosts, so a typed base URL was silently discarded (164 failed saves in one session). The Ollama allowlist accepts bracketed IPv6 loopback, which the bare `::1` entry could never match. |
+
+### ADR 040 — CPU-first local AI inference (2026-09-26)
+
+| ADR | Status | Reason |
+|-----|--------|--------|
+| 040 | Implemented | CPU is the invariant default (WASM in-browser, `num_gpu: 0` for Ollama; GPU opt-in). Supersedes ADR 025 in part: Ollama CPU-only moves from opt-in to default-on. |
 
 ### Plan 131 — GOAP Swarm Improvement Audit (2026-08-22)
 

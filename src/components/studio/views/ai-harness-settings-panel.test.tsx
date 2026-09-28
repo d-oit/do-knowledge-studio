@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
+import * as React from 'react'
 import type { ReactNode } from 'react'
 
 vi.mock('lucide-react', () => {
@@ -28,6 +29,18 @@ vi.mock('@/lib/ai', () => ({
   OPENROUTER_MODELS: [{ slug: 'openai/gpt-4o-mini', display_name: 'GPT-4o Mini' }],
   DEFAULT_LOCAL_MODELS: [{ id: 'onnx-community/Qwen2.5-0.5B-Instruct', displayName: 'Qwen2.5 0.5B Instruct', dtype: 'q4' }],
   LOCAL_PROVIDER_ID: 'local',
+  // The real guard, not a no-op: a stub that accepted any host would let these
+  // tests pass while the shipped code rejected the value.
+  validateOllamaUrl: (u: string) => {
+    const parsed = new URL(u)
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      throw new Error('Ollama base URL must use http or https protocol')
+    }
+    if (!['localhost', '127.0.0.1', '[::1]'].includes(parsed.hostname) && !parsed.hostname.endsWith('.local')) {
+      throw new Error('Ollama base URL must point to localhost or a .local hostname')
+    }
+    return u.replace(/\/+$/, '')
+  },
 }))
 
 vi.mock('@/lib/ai/types', () => ({
@@ -41,12 +54,28 @@ vi.mock('./ai-harness-settings', () => ({
     { id: 'ollama', label: 'Ollama (local)', models: ['llama3'], requiresKey: false },
     { id: 'local', label: 'Local (in-browser)', models: ['onnx-community/Qwen2.5-0.5B-Instruct'], requiresKey: false },
   ],
-  Field: ({ label, children }: { label: string; children?: ReactNode }) => (
-    <div data-testid="field">
-      <span>{label}</span>
-      {children}
-    </div>
-  ),
+  // Mirrors the real Field: a <label htmlFor> plus recursive id injection that
+  // targets native input/select/textarea elements and skips components. The
+  // recursion matches production (which also walks the whole tree); what
+  // matters here is that components are skipped, so the label-association
+  // test cannot pass with the explicit id removed from BaseUrlInput.
+  Field: ({ label, children }: { label: string; children?: ReactNode }) => {
+    const fieldId = `field-${label.toLowerCase().replace(/\s+/g, '-')}`
+    const injectId = (child: React.ReactNode): React.ReactNode => {
+      if (!React.isValidElement(child)) return child
+      const el = child as React.ReactElement<{ id?: string; children?: ReactNode }>
+      if (typeof el.type === 'string' && ['input', 'select', 'textarea'].includes(el.type)) {
+        return React.cloneElement(el, { id: fieldId })
+      }
+      return React.cloneElement(el, { children: React.Children.map(el.props.children, injectId) })
+    }
+    return (
+      <div data-testid="field">
+        <label htmlFor={fieldId}>{label}</label>
+        {React.Children.map(children, injectId)}
+      </div>
+    )
+  },
 }))
 
 vi.mock('../ui/shared-primitives', () => ({
@@ -75,6 +104,8 @@ const defaultProps = {
   setOllamaCpuOnly: vi.fn(),
   ollamaBaseUrl: 'http://localhost:11434',
   setOllamaBaseUrl: vi.fn(),
+  localDevice: 'wasm' as const,
+  setLocalDevice: vi.fn(),
   allowWebResearch: false,
   setAllowWebResearch: vi.fn(),
   customModel: '',
@@ -215,5 +246,99 @@ describe('AiHarnessSettingsPanel', () => {
     )
     expect(screen.getByText('Test Model:')).toBeDefined()
     expect(screen.getByText('A test model for testing.')).toBeDefined()
+  })
+  it('does not commit a half-typed base URL to settings', () => {
+    const setOllamaBaseUrl = vi.fn()
+    render(<AiHarnessSettingsPanel {...defaultProps} provider="ollama" setOllamaBaseUrl={setOllamaBaseUrl} />)
+    const input = screen.getByLabelText('Ollama Base URL')
+
+    // Autosave runs on every keystroke, so a partial host must stay local to
+    // the input rather than reaching the settings writer.
+    fireEvent.change(input, { target: { value: 'htt' } })
+    expect(setOllamaBaseUrl).not.toHaveBeenCalled()
+
+    fireEvent.blur(input)
+    expect(setOllamaBaseUrl).not.toHaveBeenCalled()
+    expect(input.getAttribute('aria-invalid')).toBe('true')
+  })
+
+  it('commits the normalized base URL on blur', () => {
+    const setOllamaBaseUrl = vi.fn()
+    render(<AiHarnessSettingsPanel {...defaultProps} provider="ollama" setOllamaBaseUrl={setOllamaBaseUrl} />)
+    const input = screen.getByLabelText('Ollama Base URL')
+
+    fireEvent.change(input, { target: { value: 'http://localhost:11434/' } })
+    fireEvent.blur(input)
+    expect(setOllamaBaseUrl).toHaveBeenCalledWith('http://localhost:11434')
+  })
+
+  it('associates the base URL label with its input', () => {
+    render(<AiHarnessSettingsPanel {...defaultProps} provider="ollama" />)
+    // The rendered <label for> must point at this exact input's id. Asserting
+    // only that some label has the attribute would pass even if BaseUrlInput
+    // lost its explicit id, because the component carries its own aria-label.
+    const input = document.querySelector('input#field-ollama-base-url')
+    expect(input).not.toBeNull()
+    const label = document.querySelector('label[for="field-ollama-base-url"]')
+    expect(label?.textContent).toBe('Ollama Base URL')
+    expect(label?.getAttribute('for')).toBe(input?.getAttribute('id'))
+  })
+
+  it('keeps an in-progress edit when hydration lands mid-edit', () => {
+    // The panel mounts before loadAISettings() resolves, so a URL typed in
+    // that window must survive the stored value arriving.
+    const { rerender } = render(
+      <AiHarnessSettingsPanel {...defaultProps} provider="ollama" ollamaBaseUrl="http://localhost:11434" />,
+    )
+    fireEvent.change(screen.getByLabelText('Ollama Base URL'), {
+      target: { value: 'http://my-host.local:11434' },
+    })
+
+    rerender(
+      <AiHarnessSettingsPanel {...defaultProps} provider="ollama" ollamaBaseUrl="http://127.0.0.1:11434" />,
+    )
+
+    expect((screen.getByLabelText('Ollama Base URL') as HTMLInputElement).value).toBe(
+      'http://my-host.local:11434',
+    )
+  })
+
+  it('adopts an externally restored value when the field is untouched', () => {
+    const { rerender } = render(
+      <AiHarnessSettingsPanel {...defaultProps} provider="ollama" ollamaBaseUrl="http://localhost:11434" />,
+    )
+
+    rerender(
+      <AiHarnessSettingsPanel {...defaultProps} provider="ollama" ollamaBaseUrl="http://127.0.0.1:11434" />,
+    )
+
+    expect((screen.getByLabelText('Ollama Base URL') as HTMLInputElement).value).toBe(
+      'http://127.0.0.1:11434',
+    )
+  })
+
+  it('describes a rejected base URL to assistive tech', () => {
+    render(<AiHarnessSettingsPanel {...defaultProps} provider="ollama" />)
+    const input = screen.getByLabelText('Ollama Base URL')
+    fireEvent.change(input, { target: { value: 'https://evil.com' } })
+    fireEvent.blur(input)
+
+    const described = input.getAttribute('aria-describedby')
+    expect(described).toBeTruthy()
+    expect(document.getElementById(described as string)?.textContent).toMatch(/localhost/i)
+  })
+
+  it('defaults the local inference device to CPU and allows WebGPU', () => {
+    render(
+      <AiHarnessSettingsPanel
+        {...defaultProps}
+        provider="local"
+        model="onnx-community/Qwen2.5-0.5B-Instruct"
+      />,
+    )
+    const selects = screen.getAllByRole('combobox')
+    const device = selects[selects.length - 1] as HTMLSelectElement
+    expect(device.value).toBe('wasm')
+    expect(Array.from(device.options).map((o) => o.value)).toEqual(['wasm', 'webgpu'])
   })
 })
