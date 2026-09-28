@@ -44,6 +44,8 @@ Local-first knowledge studio built with Next.js 16 / React 19 / Tailwind 4 / sha
 - **Always run code review before merge.** After CI passes and before requesting merge, invoke the `code-review-assistant` skill to perform a structured review of all changed files. Address all P1/P2 findings. No PR merges without a completed review pass.
 - **Never merge with Codacy issues.** If Codacy reports `ACTION_REQUIRED`, `FAILED`, or any new issues on a PR, the PR must not be merged until all issues are resolved or explicitly suppressed with a documented reason. Zero tolerance: no warnings, no failures, no "action required" status.
 
+When Codacy reports new issues on a PR, invoke the `codacy` skill to query findings via `codacy pull-request ... --output json`, identify whether each is a true or false positive using `toolInfo.name` and `resultDataId`, and suppress false positives with `--ignore-issue`. Do not guess the analysis engine from suppression comment syntax — read `toolInfo.name` from the API.
+
 ## Repository Shape
 
 - `src/app` - Next.js app shell, routing, layout (App Router)
@@ -225,8 +227,11 @@ After changing branch protection or rulesets, GitHub may report a PR as `BLOCKED
   | `Variable Assigned to Object Injection Sink` on constant `Record` lookups | Exhaustive typed `switch` (no dynamic indexing) |
   | `Unnecessary conditional, value is always falsy` on falsy checks of TS non-nullable values (`!arr[i]`, `!document.documentElement`) | Index-bounds check (`i >= arr.length`) or presence check (`typeof x === 'undefined'`) — never falsy-check non-nullables |
   | Void-expression arrow shorthand (`onClick={() => setX(!x)}`) | Braces around the statement body |
+  | `user-controlled URLs passed directly to HTTP client libraries` on validated-and-guarded Ollama/local fetch calls | `codacy pull-request ... --ignore-issue <resultDataId> --ignore-reason FalsePositive` via the `codacy` skill Cloud CLI — inline `nosemgrep` and `.codacy.yml` `disable_rules` do not work for Opengrep SARIF findings (LESSON-039) |
 
 Read findings: `gh api repos/<owner>/<repo>/commits/<sha>/check-runs` → Codacy run id → `/check-runs/<id>/annotations`.
+
+For Opengrep false positives that survive inline `nosemgrep` comments, use the `codacy` skill's Cloud CLI: `codacy pull-request gh <owner> <repo> <PR#> --output json` to get `toolInfo.name` and `resultDataId`, then `--ignore-issue <id> --ignore-reason FalsePositive` followed by `--reanalyze`.
 
 ## Deployment (Vercel)
 
