@@ -47,7 +47,7 @@ log_info "Starting process..."
 readonly MAX_LINES_PER_SOURCE_FILE=500     # Scripts, code files
 readonly MAX_LINES_PER_SKILL_MD=250        # SKILL.md files
 readonly MAX_LINES_PER_CONFIG_FILE=250     # Config files
-readonly MAX_LINES_AGENTS_MD=150           # AGENTS.md (AGENTS.md only)
+readonly MAX_LINES_AGENTS_MD=250           # AGENTS.md (enforced by agent-surface.py)
 readonly MAX_CONTEXT_TOKENS=4000           # Context tokens for memory retrieval
 ```
 

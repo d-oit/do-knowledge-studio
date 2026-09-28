@@ -102,56 +102,66 @@ pnpm run test
 
 ## Quality Workflow
 
-Run for any non-trivial change:
-
 ```bash
-pnpm run lint
-pnpm run typecheck
-pnpm run test
-pnpm run build
+pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build
 ```
 
-Also run for UI, editor, graph, mind map, database, search, export, or critical workflow changes:
+- Fast loop: `./scripts/minimal_quality_gate.sh` (lint + typecheck + test).
+- Also run `pnpm run test:e2e` for UI, editor, graph, mind map, search, export,
+  or any critical workflow change — a unit test proves the function, not the app.
+- Before commit: `./scripts/quality_gate.sh`. After CI passes, before merge:
+  the `code-review-assistant` skill, addressing all P1/P2 findings.
+- CI repair: `./scripts/self-fix-loop.sh`.
 
-```bash
-pnpm run test:e2e
+Warnings are errors — a deprecation notice or lockfile conflict is a defect,
+not progress. Full script catalog: `agents-docs/SCRIPTS.md`.
+
+## Delivery Lifecycle
+
+A change is not done when it builds — it is done when it survives production.
+
+```text
+production → failure → reproduce → candidate fix → evaluate
+           → adversarial → shadow → canary → promote | rollback
 ```
 
-Required before commit:
+| Stage | Exit criterion | Tooling |
+|-------|----------------|---------|
+| Reproduce | A test fails for the *stated* reason before any fix | `pnpm test` red |
+| Candidate fix | Green; diff scoped to the defect | `git diff` review |
+| Evaluate | lint + typecheck + test + build clean, zero warnings | `scripts/verify.sh` |
+| Adversarial | Someone tried to break it and failed | `code-review-assistant` |
+| Shadow | New path runs beside the old, emits, changes nothing | flag + recorded comparison |
+| Canary | Narrow slice, real browser, one-command undo | Vercel PR preview |
+| Promote | 100% rollout, then delete the flag | `gh pr merge --auto --squash` |
+| Rollback | Flag off ⇒ old behavior returns immediately | flip and revert |
 
-```bash
-./scripts/quality_gate.sh
-```
+**Never fix a bug you cannot make fail on demand.** Failure is the input, not
+the exception — a production incident is the highest-quality task this repo
+receives.
 
-Required after CI passes, before merge:
+Pick depth by blast radius, not all nine stages every time:
 
-```bash
-# Invoke code-review-assistant skill on the PR
-# Review all changed files for AGENTS.md compliance, security, a11y, performance
-# Address all P1/P2 findings before requesting merge
-```
+| Change | Minimum path |
+|--------|-------------|
+| Docs, comments, dead code | evaluate |
+| Bug fix with a reproducing test | reproduce → evaluate → adversarial |
+| New component / view | evaluate → adversarial → canary |
+| Persistence, hydration, undo/redo, sync | evaluate → adversarial → shadow → canary |
+| Schema migration, deps, anything touching the store | full loop from production |
 
-Useful fast path:
+**Data-loss bugs start at production.** Never ship a persistence change that
+was not driven against a real corpus in a real browser.
 
-```bash
-./scripts/minimal_quality_gate.sh
-```
+This repo is local-first with **no** feature-flag library, **no** error
+telemetry, and a single global Vercel deployment. A flag is a store field or
+`localStorage` read, default-off. Shadow means both paths reachable, compared
+on the same input, result recorded in `plans/` — skip the stage for a pure
+refactor rather than faking one. Never introduce machinery that needs a server
+to work offline.
 
-Useful validation helpers:
-
-```bash
-./scripts/validate-package-manager.sh
-./scripts/validate-git-hooks.sh
-./scripts/verify-deps.sh
-./scripts/verify.sh
-./scripts/docs-sync.sh
-```
-
-If CI fails after pushing, use the existing repair workflow:
-
-```bash
-./scripts/self-fix-loop.sh
-```
+Stage mechanics, harness guardrails, and the per-stage skill map:
+`agents-docs/DELIVERY-LIFECYCLE.md`.
 
 ## Testing Expectations
 
@@ -173,249 +183,58 @@ If CI fails after pushing, use the existing repair workflow:
 
 ## Git Workflow
 
-Start from an up-to-date branch:
+- Branch from up to date, never commit to `main`, use conventional commits.
+- Code review (`code-review-assistant`) is mandatory after CI passes; address
+  all P1/P2 findings before requesting merge.
+- `Codacy Static Code Analysis` is the only ruleset-required check on `main` and
+  has a zero-tolerance rule. A **missing** check is a transient delay, not a
+  defect — diagnose via `commits/{sha}/check-runs`, then nudge with an
+  empty-commit push. Never merge with it failing.
+- Unresolved review threads block merges, **including outdated ones**. Resolve
+  every thread via GraphQL `resolveReviewThread`.
+- `required_linear_history` is set: always `--squash`, never a merge commit.
+- Never use `gh pr merge --admin` without explicit human approval.
+- `BLOCKED` with all-green `gh pr checks` is usually staleness, not a real
+  failure — `pr-merge-state-diagnoser.yml` automates that diagnosis.
 
-```bash
-git fetch origin
-git pull --rebase
-git checkout -b feat/<short-name>
-```
-
-Never commit directly to `main`.
-
-Use conventional commits:
-
-```bash
-git commit -m "feat(scope): short description"
-```
-
-After CI passes on a PR, always run a code review before merge:
-
-```bash
-# Invoke code-review-assistant skill on the PR
-# Review must cover: AGENTS.md compliance, security, a11y, performance, test coverage
-# Address all P1/P2 findings before merge
-```
-
-If hooks are needed locally:
-
-```bash
-./scripts/install-hooks.sh
-./scripts/validate-git-hooks.sh
-```
-
-Do not finish with failing lint, typecheck, tests, build, or quality gate output.
-
-### GitHub merge-state staleness
-
-After changing branch protection or rulesets, GitHub may report a PR as `BLOCKED` for minutes-to-hours even when every gate is satisfied (see `plans/098-audit-github-merge-state-staleness.md`). Do not treat `BLOCKED` as a real blocker before verifying against the rule endpoints (`gh api repos/<owner>/<repo>/rules/branches/<ref>` and `rulesets/<id>`), not `mergeStateStatus` alone.
-
-1. Confirm the ruleset-required checks (currently `Codacy Static Code Analysis`) are green on the head commit, review threads are resolved, and the configured approvals requirement is met.
-2. Re-arm a protected auto-merge: `gh pr merge <PR> --auto --squash --delete-branch`.
-3. If still `BLOCKED`, nudge GitHub with an empty-commit push, then close/reopen as last resorts.
-4. Never use `--admin` to bypass protections without explicit user approval.
-5. `required_linear_history` makes plain merge commits invalid — always squash or rebase on this repo.
-
-### Codacy merge gate
-
-`Codacy Static Code Analysis` is the only ruleset-required status check on `main` (plans/098) and the zero-tolerance rule above applies to every PR. Two non-obvious behaviors (full playbook: `plans/123-codacy-merge-gate-playbook-2026-08-14.md`, LESSON-031, `codacy` skill):
-
-- **A missing check is a transient delay, not a defect.** Codacy can fail to post on a PR head for a while, leaving the PR `BLOCKED` with every other check green (verified 2026-08-14 on PR #678). Diagnose via the source of truth — `gh api repos/<owner>/<repo>/commits/<sha>/check-runs` (Codacy absent) — then nudge with an empty-commit push; Codacy appears and analyzes every subsequent push normally. Do not reconfigure the integration for this.
-- **Known false-positive patterns get code-level fixes** (`.codacy.yml` suppressions do NOT cover new PR code — see plans/112):
-  | Pattern | Fix |
-  |---|---|
-  | `Variable Assigned to Object Injection Sink` on constant `Record` lookups | Exhaustive typed `switch` (no dynamic indexing) |
-  | `Unnecessary conditional, value is always falsy` on falsy checks of TS non-nullable values (`!arr[i]`, `!document.documentElement`) | Index-bounds check (`i >= arr.length`) or presence check (`typeof x === 'undefined'`) — never falsy-check non-nullables |
-  | Void-expression arrow shorthand (`onClick={() => setX(!x)}`) | Braces around the statement body |
-  | `user-controlled URLs passed directly to HTTP client libraries` on validated-and-guarded Ollama/local fetch calls | `codacy pull-request ... --ignore-issue <resultDataId> --ignore-reason FalsePositive` via the `codacy` skill Cloud CLI — inline `nosemgrep` and `.codacy.yml` `disable_rules` do not work for Opengrep SARIF findings (LESSON-039) |
-
-Read findings: `gh api repos/<owner>/<repo>/commits/<sha>/check-runs` → Codacy run id → `/check-runs/<id>/annotations`.
-
-For Opengrep false positives that survive inline `nosemgrep` comments, use the `codacy` skill's Cloud CLI: `codacy pull-request gh <owner> <repo> <PR#> --output json` to get `toolInfo.name` and `resultDataId`, then `--ignore-issue <id> --ignore-reason FalsePositive` followed by `--reanalyze`.
-
-## Deployment (Vercel)
-
-**Critical**: This project uses Vercel for production deployment. Breaking the build breaks the live site.
-
-### Requirements
-
-- **Node.js ≥ 20** — enforced via `package.json` `engines.node` and `.nvmrc`
-- **pnpm** — Vercel uses `packageManager` field to install correct version
-- **Build must pass** — `pnpm run build` runs on every push to `main`
-
-### Configuration Files
-
-| File | Purpose | Do NOT delete |
-|------|---------|---------------|
-| `package.json` | `engines.node >= 20` tells Vercel which Node version | `engines` field |
-| `vercel.json` | Explicit build/install commands for Vercel | entire file |
-| `.nvmrc` | Node version for local dev and CI | entire file |
-
-### Preventing Deployment Failures
-
-1. **Always run `pnpm run build` locally** before pushing to `main`
-2. **Never remove `engines` field** from `package.json` — Vercel needs it
-3. **Never remove `vercel.json`** — Vercel needs explicit build config
-4. **Never change `build` script** without verifying `vercel.json` matches
-5. **If adding new deps**, run `pnpm install` to update `pnpm-lock.yaml`
-6. **If upgrading Next.js**, check Node.js version requirements
-
-### Diagnosing Vercel Failures
-
-```bash
-# Check Vercel deployment status
-gh pr checks <PR#> | grep -i vercel
-
-# Check production deployment
-gh api repos/d-oit/do-knowledge-studio/deployments --jq '.[] | select(.environment == "Production")'
-
-# Verify build passes locally
-pnpm run build
-```
-
-### Common Vercel Failure Causes
-
-| Cause | Symptom | Fix |
-|-------|---------|-----|
-| Node.js version too old | Build fails with syntax errors | Ensure `engines.node >= 20` in package.json |
-| Missing `vercel.json` | Vercel uses wrong build command | Add vercel.json with explicit config |
-| `pnpm-lock.yaml` out of date | Install fails | Run `pnpm install` and commit lockfile |
-| TypeScript errors | Build fails | Run `pnpm run typecheck` before pushing |
-| Missing dependencies | Import errors | Run `pnpm install` and commit changes |
-| Major dependency bump (breaking API) | Type errors in build only | Run `./scripts/verify-deps.sh` after any dependabot merge |
-| TypeScript major bump (deprecations) | TSconfig option deprecated | Add `"ignoreDeprecations": "6.0"` to tsconfig.base.json |
-
-### Dependency Upgrade Rules
-
-When merging dependabot PRs or manually bumping dependencies:
-
-1. **Always run `./scripts/verify-deps.sh`** after any dependency version change.
-2. **Major version bumps** (semver X.0.0) require checking the changelog for breaking API changes — do not auto-merge.
-3. **TypeScript major bumps** may deprecate tsconfig options — check `pnpm run typecheck` output for deprecation warnings treated as errors.
-4. **UI library major bumps** (shadcn primitives, react-resizable-panels, radix) may rename exports — check `pnpm run build` for type errors.
-5. **After merging any dependabot PR**, immediately run the full quality workflow including `pnpm run build` and push a fix if needed.
+Full procedure, staleness ladder, and the Codacy false-positive playbook:
+`agents-docs/GIT-WORKFLOW.md`. Lessons: `agents-docs/LESSONS.md`.
 
 ## Learnings (session-distilled)
 
-- **gitleaks-action v3+ requires a paid `GITLEAKS_LICENSE` secret** — pin
-  v2.x (e.g. v2.3.9) for license-free scanning. A failing license gate
-  masks real scan results; re-run the scan after unblocking and extend
-  `.gitleaks.toml` allowlists (full-history scans surface deleted test
-  files — allowlist by path pattern).
-- **yamllint applies `line-length` (120) and `new-line-at-end-of-file`
-  inside `run: |` block scalars and `.github/workflow-templates/`
-  files** — pre-push check: `awk 'length > 120'` on all
-  `.yml`/`.yaml`, verify trailing newline via `tail -c 1`.
-- **Branch rule `required_review_thread_resolution` blocks merges even
-  with all checks green** — resolve OwlWatch/DeepSource threads via
-  GraphQL `resolveReviewThread` before merging; they are merge gates,
-  not noise. Check threads via GraphQL `pullRequest.reviewThreads` or
-  `pulls/<n>/comments` — issue comments and `reviewDecision` do NOT
-  reveal them, and resolving flips `BLOCKED` → `CLEAN` instantly
-  (LESSON-026/030). **Outdated threads block too**: `isOutdated: true`
-  threads still count toward the gate while `isResolved: false`, and
-  the staleness ladder (plans/098) can fail on PR #692 even after the
-  empty-commit nudge — resolve *every* thread regardless of the
-  outdated flag (verified 2026-08-16, PR #692).
-- **DeepSource `.deepsource.toml` suppressions do not reliably prevent
-  check failures** — new module-scope helpers trip JS-0067 (use
-  `const fn = () => {}`, never `function`) and inline branches can push
-  exported functions over the JS-R1005 complexity threshold; fix at
-  code level (extract helpers, keep complexity < 6) before pushing.
-- **A BLOCKED merge state with all-green `gh pr checks` may hide an
-  in-flight check run on the head commit** — before declaring staleness,
-  diff `commits/{sha}/check-runs` (the real source of truth), then the
-  staleness ladder (ruleset verify, threads, nudge, close/reopen) and
-  `--admin` only with explicit approval. The
-  `pr-merge-state-diagnoser.yml` workflow automates this diagnosis.
-- **Codacy (the sole required status check) can be entirely MISSING
-  from a head — a transient delay, not a broken integration** —
-  diagnose BLOCKED-with-all-green via `commits/{sha}/check-runs`;
-  nudge with an empty-commit push and it analyzes every later push.
-  Its known false-positive patterns (`detect-object-injection` on
-  constant lookups, "always falsy" on TS non-nullables,
-  void-expression arrows) are fixed at code level (exhaustive
-  switches, bounds/presence checks, braces) — `.codacy.yml`
-  suppressions do not cover new PR code (LESSON-031, plans/123,
-  plans/112).
-- **GitNexus/DeepSource re-post stale positional findings as NEW unresolved threads on every push** — the same fixed finding reappears with a fresh thread id (observed 4× on PR #758), and `required_review_thread_resolution` turns each re-post into a merge blocker. Verify the working tree is fixed (locals confirm), reply with evidence, resolve via GraphQL `resolveReviewThread`, and stop pushing until CI demands it. Long-term fix: switch both integrations to check-summary-only reporting (LESSON-034).
-- See `agents-docs/LESSONS.md` (LESSON-024..034) and
-  `plans/116-ci-workflow-learnings-2026-08-11.md` for full detail.
+Non-obvious toolchain facts. Full catalog with debugging detail:
+`agents-docs/LESSONS.md` (LESSON-001..039) and `lessons.jsonl`.
+
+- **gitleaks-action v3+ requires a paid `GITLEAKS_LICENSE`** — pin v2.x for
+  license-free scanning. A failing license gate masks real scan results.
+- **yamllint enforces `line-length` (120) and `new-line-at-end-of-file` inside
+  `run: |` block scalars and `.github/workflow-templates/`** — pre-push check
+  with `awk 'length > 120'` and `tail -c 1`.
+- **DeepSource `.deepsource.toml` suppressions do not reliably prevent check
+  failures** — use `const fn = () => {}` (never `function`) for module-scope
+  helpers and keep exported-function complexity under 6.
+- **Codacy and DeepSource re-post stale positional findings as NEW unresolved
+  threads on every push** (observed 4× on PR #758), and
+  `required_review_thread_resolution` turns each re-post into a merge blocker.
+  Fix the working tree, reply with evidence, resolve the thread, then STOP
+  pushing until CI demands it. Long-term fix: check-summary-only reporting
+  (LESSON-034).
+- **Vitest typecheck is experimental** and source-error gating is off
+  (`ignoreSourceErrors: true`) — a green typecheck does not cover `*.test.ts`
+  source errors (LESSON-035, tracked in `plans/131` G9).
+- **Grep for a helper before adding one, and treat a passing test as
+  evidence.** A "fix" that duplicates existing logic regresses a suite that
+  already pinned the behavior; `git diff` afterwards reveals a pure-regression
+  "fix" (LESSON-040).
 
 ## Skills
 
-- Canonical skills live in `.agents/skills/`.
-- Refresh symlinks with `./scripts/setup-skills.sh`.
-- Load only the skills needed for the task to limit context usage.
-- Prefer existing skills and existing `agents-docs/` guidance before inventing a new workflow.
+- Canonical skills live in `.agents/skills/`; refresh symlinks with
+  `./scripts/setup-skills.sh`.
+- **Load only what the stage needs.** Every always-loaded skill is a tax.
+- Prefer existing skills and `agents-docs/` guidance before inventing a workflow.
+- Add a skill only after a real failure (see `agents-docs/HARNESS.md`).
 
-### Available Skills
-
-| Skill | Description | Category |
-|-------|-------------|----------|
-| `accessibility-auditor` | Audit web applications for WCAG 2.2 compliance, screen reade | Security |
-| `agent-browser` | Browser automation CLI for AI agents. Use when the user need | workflow |
-| `agent-coordination` | Coordinate multiple agents for software development across a | Coordination |
-| `agents-md` | Create AGENTS.md files with production-ready best practices. | General |
-| `anti-ai-slop` | Avoid generic AI aesthetic in UI/UX design and copy | General |
-| `api-design-first` | Design and document RESTful APIs using design-first principl | API Development |
-| `architecture-diagram` | Generate or update a project architecture SVG diagram by sca | General |
-| `atomic-commit` | Atomic git workflow - validates, commits, pushes, creates PR | General |
-| `cicd-pipeline` | Design and implement CI/CD pipelines with GitHub Actions, Gi | DevOps |
-| `cloudflare-worker-api` | > | workflow |
-| `codacy` | Use Codacy static analysis CLIs to query PR analysis, triage | Quality |
-| `code-quality` | Review and improve code quality across any programming langu | Quality |
-| `code-review-assistant` | Automated code review with PR analysis, change summaries, an | General |
-| `codeberg-api` | >- | API Development |
-| `database-devops` | Database design, migration, and DevOps automation with safet | DevOps |
-| `database-schema-migrations` | > | workflow |
-| `do-web-doc-resolver` | Python resolver for URLs and queries into compact, LLM-ready | Documentation |
-| `docs-hook` | Lightweight git hook integration for updating agents-docs wi | Documentation |
-| `document-rendering-and-locators` | > | workflow |
-| `dogfood` | Systematically explore and test a web application to find bu | quality |
-| `git-github-workflow` | Unified atomic git workflow with GitHub integration - commit | General |
-| `github-readme` | Create human-focused GitHub README.md files with 2026 best p | Documentation |
-| `github-workflow` | Complete GitHub workflow automation - push, create branch/PR | General |
-| `goap-agent` | Invoke for complex multi-step tasks requiring intelligent pl | Coordination |
-| `impeccable` | Design, redesign, shape, critique, audit, polish, clarify, distill, harden, optimize, adapt, animate, colorize frontend interfaces. Covers UX review, visual hierarchy, typography, spacing, layout, color, motion, responsive behavior, theming, and anti-patterns.
-| General |
-| `intent-classifier` | Classify user intents and route to appropriate skills, comma | Coordination |
-| `iterative-refinement` | Execute iterative refinement workflows with validation loops | General |
-| `jules` | > | General |
-| `jules-implement` | > | General |
-| `learn` | Extract non-obvious session learnings into scoped AGENTS.md  | knowledge-management |
-| `local-chat-policy` | Guidelines for ensuring chat functionality prioritizes local | General |
-| `memory-context` | Retrieve semantically relevant past learnings and analysis o | General |
-| `migration-refactoring` | Automate complex code migrations and refactorings with safet | Migration |
-| `parallel-execution` | Execute multiple independent tasks simultaneously using para | Coordination |
-| `privacy-first` | > | Security |
-| `pwa-offline-sync` | > | workflow |
-| `reader-ui-ux` | > | workflow |
-| `secure-invite-and-access` | > | workflow |
-| `security-code-auditor` | Perform security audits on code to identify vulnerabilities, | Security |
-| `self-fix-loop` | Self-learning fix loop - commit, push, monitor CI, auto-fix  | General |
-| `shell-script-quality` | Lint and test shell scripts using ShellCheck and BATS. Use w | Quality |
-| `skill-creator` | Create new skills, modify and improve existing skills, and m | Meta |
-| `skill-evaluator` | Reusable skill for evaluating other skills with structure ch | Meta |
-| `static-analysis-suppression` | Suppress false-positive Codacy/DeepSource/ESLint blockers on PRs with code-level, config-level, or admin-merge fixes. Follows decision tree: fix code before suppressing config before admin override. | Quality |
-| `stitch-design` | > | General |
-| `task-decomposition` | Break down complex tasks into atomic, actionable goals with  | Coordination |
-| `test-runner` | Execute tests, analyze results, and diagnose failures across | Quality |
-| `testdata-builders` | > | quality |
-| `testing-strategy` | Design comprehensive testing strategies with modern techniqu | Quality |
-| `triz-analysis` | Run a systematic TRIZ contradiction audit against a codebase | analysis |
-| `triz-solver` | Systematic problem-solving using TRIZ (Theory of Inventive P | innovation-problem-solving |
-| `turso-db` | Use this skill for Turso (LibSQL/Limbo) database development | DevOps |
-| `ui-ux-optimize` | > | UI/UX |
-| `validation-checklist` | Maintain high data quality and schema adherence within the k | Quality |
-| `web-search-researcher` | Research topics using web search to find accurate, current i | Research |
-
-<!-- BEGIN:nextjs-agent-rules -->
-
-# This is NOT the Next.js you know
-
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
-
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
-
-<!-- END:nextjs-agent-rules -->
+Catalog: `agents-docs/AVAILABLE_SKILLS.md` (regenerate with
+`./scripts/generate-skills-docs.py`). Per-stage skill map:
+`agents-docs/DELIVERY-LIFECYCLE.md`.

@@ -18,8 +18,19 @@ readonly MAX_LINES_PER_SKILL_MD=250
 # Maximum lines per configuration file
 readonly MAX_LINES_PER_CONFIG_FILE=250
 
-# Maximum lines for AGENTS.md (progressive disclosure)
-readonly MAX_LINES_AGENTS_MD=150
+# Maximum lines for AGENTS.md (progressive disclosure).
+#
+# Raised from 150 after the 2026-09-28 restructure. 150 predated the delivery
+# lifecycle, the merge-gate rules, and the current Hard Rules set, and was
+# never enforced by any script or CI job — an unenforced limit is worse than
+# no limit, because it reads as a passing check. The restructure cut the file
+# from 499 to ~235 lines by moving the skills table, Vercel deploy rules, git
+# procedure, and delivery mechanics into agents-docs/. The residue is dense,
+# one-rule-per-line content that cannot be compressed further without deleting
+# rules, so the ceiling is set just above the real size and IS enforced
+# (scripts/agent-surface.py validate). Revisit only if a genuine reduction
+# appears — never by moving content back in.
+readonly MAX_LINES_AGENTS_MD=250
 
 # Maximum context tokens for semantic memory retrieval
 readonly MAX_CONTEXT_TOKENS=4000

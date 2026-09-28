@@ -2,7 +2,15 @@
 
 **Updated**: 2026-09-28
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
+### Plan 157 — Codebase gap remediation: dead features, undo integrity, PWA, live announcements (2026-09-28)
 
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | MindMap & Graph feature completion | Done | `plans/157-codebase-gap-and-feature-remediation.md`. Mind map "Compact" now drives real density tokens (`mindmap-density.ts`) instead of dead state; 44px targets preserved. Graph snapshots gained a validated read/restore/clear path plus viewport state (`graph-snapshot.ts`) — "Save snapshot" was write-only (D4.1, D4.2). |
+| W2 | AI harness lifecycle | Done | `useAiHarnessChat` aborts the in-flight provider stream on unmount. |
+| W3 | Store undo integrity + LOC decomposition | Done | History snapshots carry claims alongside entities, so undo after `deleteEntity` no longer destroys the entity's claims; claim CRUD participates in history; dangling `selectedEntityId`/`editingEntityId` are cleared on restore (D1.6, D1.22). `store.ts` 610 → 189 LOC via `store-types.ts` + `slices/*`. |
+| W4 | 2026 PWA installability | Done | Raster `icon-192`/`icon-512`/maskable PNGs from `scripts/generate-pwa-icons.py`; manifest gains `id`/`orientation`/`categories`; service worker registers with `updateViaCache: 'none'`, hourly re-checks, visibility/online re-checks, and full teardown. |
+| W5 | Screen-reader live announcements | Done | `useAnnouncer` degrades to a no-op without a provider; 9 mutations now announce (view switch, save/create, delete, import success/failure, reset, snapshot save/restore/clear, density) via `messages/announce.ts`. |
 ### Plan 156 — Dependency audit remediation: `brace-expansion` (2026-09-28)
 
 | Wave | Goal | Status | Changes |
@@ -25,11 +33,11 @@
 
 | Wave | Goal | Status | Changes |
 |------|------|--------|---------|
-| W1 | G7 gate honesty + G1 persistence contract | Proposed | Fix inert CI/hooks gates, honest coverage baselines, lint governance; migrate-version threading, validate-every-hydration, history rebase |
-| W2 | G2 undo integrity + G3 dead-code/dep pruning | Proposed | Claims-in-history; remove ~31 dead primitives and ~26 deps; README/.env.example truth |
-| W3 | G4 bundle/startup + G5 view consolidation | Proposed | Lazy sync/export chunks; shared-primitives toolkit adoption; three views under LOC ceiling |
-| W4 | G6 sync bridge completion | Proposed | Wire bidirectional bridge, persistent tombstones, provenance-preserving merge per ADR 027 |
-| W5 | G8 library hardening + G9 hygiene | Proposed | DOMPurify/AppError wiring, retry discipline, i18n tokenizer, backlog P2s |
+| W1 | G7 gate honesty + G1 persistence contract | Done | Shipped: `mergeHydratedState` validates on every load (not just version mismatches), rebase-on-hydrate, `HydrationRejectedError` preserves the payload on disk, honest coverage thresholds (75/78/84/85) with test files excluded, `.githooks/` committed + `core.hooksPath` wired via the `prepare` script. |
+| W2 | G2 undo integrity + G3 dead-code/dep pruning | Partial | Undo integrity done in Plan 157 W3: history carries claims, claim CRUD participates, dangling selection/edit ids are cleared (D1.6/D1.22). **Not done**: the ~31 dead primitives and ~26 deps were never pruned — `EmptyState`/`FieldLabel`/`ToolbarBtn` in `ui/shared-primitives.tsx` still have zero production consumers while views define their own local copies. |
+| W3 | G4 bundle/startup + G5 view consolidation | Partial | **Not done**: zero `next/dynamic` call sites (sync and export chunks still load eagerly), and the shared `ToolbarBtn` in `shared-primitives.tsx` still has no production consumers. `chat-view.tsx` fell to 126 LOC on its own; `graph-view.tsx` (494) and `mindmap-view.tsx` (490) remain just under the ceiling. |
+| W4 | G6 sync bridge completion | Done | `startBidirectionalSync` is now called from `app-shell.tsx:130` and the unsubscribe is returned. Tombstone registry extracted to `cross-tab-tombstones.ts`. |
+| W5 | G8 library hardening + G9 hygiene | Partial | Done: DOMPurify wired in `lib/security.ts`, `verify-deps.sh` runs in CI on lockfile changes, markdown link sanitization + `noopener noreferrer`. **Not done**: vitest typecheck still runs with `ignoreSourceErrors: true` against ~73 legacy `*.test.ts` errors, so source-error gating is inert (D5.3). |
 
 ### Plan 129 — React Compiler ESLint Rules (2026-08-17)
 

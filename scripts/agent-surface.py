@@ -13,6 +13,7 @@ Implements ADR 029 validation requirements:
 """
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -249,7 +250,7 @@ def validate_broken_links(repo_root: Path) -> list[str]:
 
 
 def validate_agents_md(repo_root: Path) -> list[str]:
-    """Validate AGENTS.md exists and has key sections."""
+    """Validate AGENTS.md exists, has key sections, and honors the line cap."""
     errors = []
     agents_md = repo_root / "AGENTS.md"
     if not agents_md.exists():
@@ -261,7 +262,36 @@ def validate_agents_md(repo_root: Path) -> list[str]:
     for section in required:
         if section not in content:
             errors.append(f"AGENTS.md missing section: {section}")
+
+    # Progressive disclosure is only real if the cap is checked. The limit
+    # lives in .agents/config.sh so scripts and this validator cannot drift;
+    # an unenforced limit reads as a passing check while the file grows.
+    max_lines = read_agents_md_line_limit(repo_root)
+    if max_lines is not None:
+        line_count = len(content.splitlines())
+        if line_count > max_lines:
+            errors.append(
+                f"AGENTS.md is {line_count} lines, over the {max_lines}-line "
+                "limit (MAX_LINES_AGENTS_MD in .agents/config.sh). Move detail "
+                "into agents-docs/ and link to it — do not raise the limit to "
+                "make a growing file pass."
+            )
     return errors
+
+
+def read_agents_md_line_limit(repo_root: Path) -> int | None:
+    """Reads MAX_LINES_AGENTS_MD from .agents/config.sh, or None if absent."""
+    config = repo_root / ".agents" / "config.sh"
+    if not config.exists():
+        return None
+    pattern = re.compile(r"^\s*readonly\s+MAX_LINES_AGENTS_MD\s*=\s*(\d+)\s*$")
+    for line in config.read_text().splitlines():
+        match = pattern.match(line)
+        if match:
+            return int(match.group(1))
+    return None
+
+
 
 
 def sync_managed_surfaces(repo_root: Path, manifest: dict) -> list[str]:
