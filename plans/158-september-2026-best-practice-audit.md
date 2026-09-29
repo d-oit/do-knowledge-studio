@@ -291,7 +291,8 @@ spec citation. Neither survived a five-minute browser check.
 | P0-3 hydration | **Fixed** | New `hydration-quarantine.ts` preserves a refused payload under a key the store never writes. A `QuarantineBanner` surfaces it. Test proves the bytes survive a subsequent `saveEntity`. |
 | P1-3 referrer policy | **Fixed** | Collapsed to the header (`no-referrer`); the conflicting `metadata.referrer` is gone. Verified in-browser. |
 | P1-4 focus obscured | **Fixed** | The audit's prescribed remedy was wrong — see below. |
-| P1-1, P2-* | Open | See §5. |
+| P1-1 build warning | **Fixed** | `tsconfig.build.json` + `typescript.tsconfigPath`. See below. |
+| P2-* | Open | See §5. |
 
 ### P1-4: the prescribed fix did not work
 
@@ -311,6 +312,39 @@ change: **0 of 19** content controls entirely hidden, down from 1.
 The audit's *diagnosis* — a real SC 2.4.11 failure — was right; its *remedy*
 was wrong. Recorded because a well-sourced fix that does not survive contact
 with the layout is an easy error to repeat.
+
+### P1-1: removing the build warning without giving up type safety
+
+`experimental.useTypeScriptCli: false` existed to stop the build's typecheck
+from failing on the repo's 94 intentionally-loose test sources. Removing it
+naively would surface all 94 and break the build.
+
+The flag was the wrong instrument for two reasons beyond the warning banner:
+Next's own upgrade guide says the compiler-API path it selects is exactly what
+breaks when TypeScript 7 drops that API, and `verify-typescript-setup.js`
+throws on build if the API is ever absent. So the flag was on borrowed time.
+
+The fix keeps the **CLI** checker (the future-proof one) and narrows its scope
+with `typescript.tsconfigPath` pointing at a new `tsconfig.build.json` that
+excludes test sources. Measured:
+
+| | Result |
+|---|---|
+| Type errors in the repo | 94, **all** in test files |
+| Type errors under `tsconfig.app.json` | 0 |
+| `Experiments (use with caution)` banner | gone |
+| Build still typechecks app code | verified by injecting a deliberate `TS2322` — the build caught it |
+
+The audit's caveat that `composite: true` conflicts with the CLI checker's
+`--noEmit` turned out to be over-cautious: `runTypeCheckCli.js` reads
+`composite` to decide whether to pass `--tsBuildInfoFile`, and explicitly
+overrides `--emitDeclarationOnly`. A dedicated config without `composite` is
+still the cleaner shape — it keeps build-typecheck and `pnpm typecheck` from
+drifting — but the conflict was not real.
+
+Three older plans (142, 143, 144) recorded this notice as "pre-existing and
+deliberate". It was tolerated rather than justified, and the repo's own
+zero-warning rule makes it a defect.
 
 ### Two zustand constraints worth recording
 

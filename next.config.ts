@@ -25,12 +25,23 @@ const nextConfig: NextConfig = {
   // React Compiler (stable in Next.js 16) auto-memoizes components and hooks,
   // completing the deferred Task 141 rerender audit (see plans/128 and issue #699).
   reactCompiler: true,
-  experimental: {
-    // Next 16.3 flipped the default typechecker from the API (which ignores
-    // `*.test.*`/`__tests__` diagnostics) to the raw CLI `tsc --project`.
-    // The repo keeps test sources intentionally loose (mock casts); restore
-    // the API checker so `next build` typechecks app code, not test mocks.
-    useTypeScriptCli: false,
+  // Typecheck scope for `next build` (Plan 158 P1-1).
+  //
+  // Next 16 flipped the default typechecker to the raw CLI `tsc --project`,
+  // which resolves this config. Previously `experimental.useTypeScriptCli:
+  // false` swapped back to the compiler-API checker so `next build` would
+  // skip the repo's intentionally-loose test sources — but that (a) printed
+  // an "Experiments (use with caution)" banner on every build, which this
+  // repo's zero-warning rule forbids, and (b) opts into the exact path
+  // Next's own upgrade guide says breaks when TypeScript 7 drops the
+  // compiler API.
+  //
+  // Pointing the CLI checker at a config that excludes test sources keeps
+  // app code fully typechecked (the 94 pre-existing errors are all in tests,
+  // which tsconfig.app.json already excluded for `pnpm typecheck`) with no
+  // banner and no dependency on a compiler API that is going away.
+  typescript: {
+    tsconfigPath: "tsconfig.build.json",
   },
   turbopack: {
     root: path.resolve(__dirname),
