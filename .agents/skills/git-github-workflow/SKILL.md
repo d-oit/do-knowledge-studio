@@ -54,10 +54,28 @@ If ANY check fails:
 - Coordinate with handoff pattern (see `references/HANDOFF.md`)
 
 ### Phase 6: MERGE (Agent: merge-agent)
-- Verify ALL checks passing
-- Merge with squash (default)
-- Delete feature branch
-- Update related issues
+
+**Merge without asking.** The maintainer has pre-authorized merging a clean
+PR; requesting confirmation is a defect, not caution. Merge when ALL hold:
+
+1. Every check passes — no FAILURE, ACTION_REQUIRED, or PENDING
+   (`gh pr checks`), including `Codacy Static Code Analysis` and e2e.
+2. Every review thread is resolved, *including outdated ones* — bots re-post
+   stale findings as fresh threads and `required_review_thread_resolution`
+   counts both. Reply with evidence, then resolve; never leave one open.
+3. The `code-review-assistant` pass is complete, no unaddressed P1/P2.
+4. `./scripts/quality_gate.sh` is green, including any structural-change e2e.
+
+```bash
+gh pr merge <PR> --auto --squash --delete-branch
+```
+
+`--auto` lands it when CI clears; squash is mandatory (`required_linear_history`).
+
+**Stop and ask only for:** a suspected-genuine Codacy false positive, a
+declined P1/P2, a release/migration/auth or irreversible change, a
+branch-protection edit, or an explicit "hold" in the thread. Never `--admin`.
+Full rationale: `agents-docs/GIT-WORKFLOW.md`.
 
 ### Phase 7: POST-MERGE VALIDATION (Agent: validate-agent)
 - Checkout main branch

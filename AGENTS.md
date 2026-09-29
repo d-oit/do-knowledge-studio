@@ -48,15 +48,13 @@ When Codacy reports new issues on a PR, invoke the `codacy` skill to query findi
 
 ## Repository Shape
 
-- `src/app` - Next.js app shell, routing, layout (App Router)
+- `src/app` - App shell, routing, layout (App Router)
 - `src/components/studio` - React components (views, UI primitives)
 - `src/lib/studio` - Zustand store, types, seed data, utilities
-- `src/lib/ai` - AI provider adapters (client-side fetch)
-- `src/lib/export` - Export logic (JSON, MD, HTML, encrypted)
-- `src/lib/search` - Client-side retrieval engine
-- `scripts/` - reusable repository automation
-- `plans/` - GOAP plans, ADRs, audits, implementation notes
-- `agents-docs/` - detailed harness, workflow, config, hooks, and skill docs
+- `src/lib/ai` - AI provider adapters · `src/lib/search` - retrieval engine
+- `src/lib/export` - JSON, MD, HTML, encrypted export
+- `scripts/` - repository automation · `plans/` - GOAP plans, ADRs, audits
+- `agents-docs/` - harness, workflow, config, hooks, skill docs
 
 ## Planning Workflow
 
@@ -77,11 +75,9 @@ When Codacy reports new issues on a PR, invoke the `codacy` skill to query findi
 - If an output is only needed during execution, keep it out of the repository.
 - Root-level files must remain intentional project manifests, configs, or primary documentation only.
 
-## Package Manager
-
-Use `pnpm` only.
-
 ## Setup
+
+Use `pnpm` only — never npm or yarn (the lockfile is pnpm v9 format).
 
 ```bash
 pnpm install
@@ -109,8 +105,8 @@ pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build
 - Fast loop: `./scripts/minimal_quality_gate.sh` (lint + typecheck + test).
 - Also run `pnpm run test:e2e` for UI, editor, graph, mind map, search, export,
   or any critical workflow change — a unit test proves the function, not the app.
-- Before commit: `./scripts/quality_gate.sh`. After CI passes, before merge:
-  the `code-review-assistant` skill, addressing all P1/P2 findings.
+- Before commit: `./scripts/quality_gate.sh`. After CI passes: the
+  `code-review-assistant` skill, addressing all P1/P2 findings.
 - CI repair: `./scripts/self-fix-loop.sh`.
 
 Warnings are errors — a deprecation notice or lockfile conflict is a defect,
@@ -125,40 +121,30 @@ production → failure → reproduce → candidate fix → evaluate
            → adversarial → shadow → canary → promote | rollback
 ```
 
+Each stage needs a falsifiable exit criterion: a test that fails for the
+*stated* reason, a green gate, an attempt to break it that failed, a
+comparison recorded in `plans/`. "Looks good" is not a criterion.
+
 | Stage | Exit criterion | Tooling |
 |-------|----------------|---------|
-| Reproduce | A test fails for the *stated* reason before any fix | `pnpm test` red |
-| Candidate fix | Green; diff scoped to the defect | `git diff` review |
+| Reproduce | Test fails for the stated reason before any fix | `pnpm test` red |
 | Evaluate | lint + typecheck + test + build clean, zero warnings | `scripts/verify.sh` |
 | Adversarial | Someone tried to break it and failed | `code-review-assistant` |
 | Shadow | New path runs beside the old, emits, changes nothing | flag + recorded comparison |
 | Canary | Narrow slice, real browser, one-command undo | Vercel PR preview |
 | Promote | 100% rollout, then delete the flag | `gh pr merge --auto --squash` |
-| Rollback | Flag off ⇒ old behavior returns immediately | flip and revert |
 
-**Never fix a bug you cannot make fail on demand.** Failure is the input, not
-the exception — a production incident is the highest-quality task this repo
-receives.
+Pick depth by blast radius: docs need only Evaluate; a bug fix runs
+reproduce → evaluate → adversarial; persistence, hydration, undo/redo, and
+sync additionally need shadow and canary. **Data-loss bugs start at
+production** — never ship a persistence change that was not driven against a
+real corpus in a real browser.
 
-Pick depth by blast radius, not all nine stages every time:
-
-| Change | Minimum path |
-|--------|-------------|
-| Docs, comments, dead code | evaluate |
-| Bug fix with a reproducing test | reproduce → evaluate → adversarial |
-| New component / view | evaluate → adversarial → canary |
-| Persistence, hydration, undo/redo, sync | evaluate → adversarial → shadow → canary |
-| Schema migration, deps, anything touching the store | full loop from production |
-
-**Data-loss bugs start at production.** Never ship a persistence change that
-was not driven against a real corpus in a real browser.
-
-This repo is local-first with **no** feature-flag library, **no** error
-telemetry, and a single global Vercel deployment. A flag is a store field or
-`localStorage` read, default-off. Shadow means both paths reachable, compared
-on the same input, result recorded in `plans/` — skip the stage for a pure
-refactor rather than faking one. Never introduce machinery that needs a server
-to work offline.
+This repo is local-first with **no** flag library, **no** error telemetry, and
+a single global Vercel deployment. A flag is a store field or `localStorage`
+read, default-off. Shadow means both paths reachable, compared on the same
+input, recorded in `plans/` — skip it for a pure refactor rather than fake one.
+Never add machinery that needs a server to work offline.
 
 Stage mechanics, harness guardrails, and the per-stage skill map:
 `agents-docs/DELIVERY-LIFECYCLE.md`.
@@ -176,8 +162,7 @@ Stage mechanics, harness guardrails, and the per-stage skill map:
 - Two themes: `light` and `dark` via `data-theme` attribute.
 - Accent color: Saffron (`#9a5c2a` light, `#e5944a` dark).
 - Font: Geist Sans (body) + Newsreader (serif headings).
-- Build mobile-first.
-- Keep interactive targets at least 44x44px.
+- Build mobile-first; keep interactive targets at least 44x44px.
 - Preserve responsive behavior across editor, graph, search, and mind map views.
 - Never hardcode hex values in components — use tokens.
 
@@ -197,6 +182,24 @@ Stage mechanics, harness guardrails, and the per-stage skill map:
 - `BLOCKED` with all-green `gh pr checks` is usually staleness, not a real
   failure — `pr-merge-state-diagnoser.yml` automates that diagnosis.
 
+### Standing merge authorization — do not ask
+
+**When a PR is fully clean, merge it. Do not ask.** The maintainer has
+pre-authorized this; a redundant confirmation prompt is a defect, not caution.
+
+Merge when ALL hold: every check passes (including Codacy and e2e), every
+review thread is resolved (outdated ones count), the `code-review-assistant`
+pass is complete with no unaddressed P1/P2, and the local gate is green. Then
+`gh pr merge <PR> --auto --squash --delete-branch` and report the outcome.
+`--auto` lands it when CI clears, without holding a session open.
+
+Ask ONLY for: a suspected-genuine Codacy false positive, a declined P1/P2, a
+release/migration/auth or otherwise irreversible change, a branch-protection
+edit, or an explicit "hold" in the thread. Never use `--admin` to clear a gate.
+
+Full criteria, rationale, and the worked example:
+`agents-docs/GIT-WORKFLOW.md`.
+
 Full procedure, staleness ladder, and the Codacy false-positive playbook:
 `agents-docs/GIT-WORKFLOW.md`. Lessons: `agents-docs/LESSONS.md`.
 
@@ -207,16 +210,14 @@ Non-obvious toolchain facts. Full catalog with debugging detail:
 
 - **gitleaks-action v3+ needs a paid `GITLEAKS_LICENSE`** — pin v2.x; a failing
   license gate masks real scan results. yamllint enforces `line-length` (120)
-  and `new-line-at-end-of-file` inside `run: |` blocks.
+  and `new-line-at-end-of-file` inside `run: |` blocks (`awk 'length > 120'`).
 - **DeepSource suppressions in `.deepsource.toml` do not reliably prevent check
   failures** — use `const fn = () => {}` (never `function`) for module-scope
   helpers; keep exported-function complexity under 6.
-- **Codacy and DeepSource re-post stale positional findings as NEW unresolved
-  threads on every push** (observed 4× on PR #758), and
-  `required_review_thread_resolution` turns each re-post into a merge blocker.
-  Fix the working tree, reply with evidence, resolve the thread, then STOP
-  pushing until CI demands it. Long-term fix: check-summary-only reporting
-  (LESSON-034).
+- **Codacy/DeepSource re-post stale findings as NEW threads on every push**,
+  and `required_review_thread_resolution` makes each a blocker. Fix the tree,
+  reply with evidence, resolve, then STOP pushing until CI demands it
+  (LESSON-034; full procedure in `agents-docs/GIT-WORKFLOW.md`).
 - **Vitest typecheck is experimental** and `ignoreSourceErrors: true`, so a
   green result does not cover `*.test.ts` source errors (LESSON-035).
 - **Verify before asserting — load the `verify-before-asserting` skill.** Trust
@@ -230,12 +231,12 @@ Non-obvious toolchain facts. Full catalog with debugging detail:
 
 Canonical skills live in `.agents/skills/`; refresh symlinks with
 `./scripts/setup-skills.sh`. **Load only what the stage needs** — every
-always-loaded skill is a tax. Prefer existing skills and `agents-docs/` guidance
-over inventing a workflow, and add a skill only after a real failure
+always-loaded skill is a tax. Prefer existing skills and `agents-docs/`
+guidance over inventing a workflow, and add a skill only after a real failure
 (`agents-docs/HARNESS.md`).
 
 Catalog: `agents-docs/AVAILABLE_SKILLS.md` (regenerate with
-`./scripts/generate-skills-docs.py`). Per-stage map:
+`./scripts/generate-skills-docs.py`); per-stage map:
 `agents-docs/DELIVERY-LIFECYCLE.md`.
 
 <!-- BEGIN:nextjs-agent-rules -->

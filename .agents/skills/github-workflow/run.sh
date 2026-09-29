@@ -611,7 +611,38 @@ phase_merge() {
         warn "No PR to merge"
         return 0
     fi
-    
+
+    # Unresolved review threads block merges on this repo, INCLUDING outdated
+    # ones — `required_review_thread_resolution` counts both, and analysis bots
+    # re-post stale positional findings as fresh threads on every push
+    # (LESSON-034). All-green checks with an open thread is the usual shape of a
+    # "blocked" PR that is not really blocked, so check it explicitly.
+    if [[ "$GITHUB_WORKFLOW_SKIP_THREAD_CHECK" != "1" ]]; then
+        local repo_slug thread_count
+        repo_slug=$(gh repo view --json owner,name --jq '(.owner.login + " " + .name)' 2>/dev/null || echo "")
+        if [[ -n "$repo_slug" ]]; then
+            thread_count=$(gh api graphql \
+                -f query='
+                  query($owner:String!, $name:String!, $pr:Int!) {
+                    repository(owner:$owner, name:$name) {
+                      pullRequest(number:$pr) {
+                        reviewThreads(first:100) { nodes { isResolved } } } } }' \
+                -f owner="${repo_slug% *}" -f name="${repo_slug#* }" -F pr="$PR_NUMBER" \
+                --jq '[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved | not)] | length' \
+                2>/dev/null || echo "unknown")
+
+            if [[ "$thread_count" =~ ^[0-9]+$ ]] && [[ "$thread_count" -gt 0 ]]; then
+                error "PR #$PR_NUMBER has $thread_count unresolved review thread(s); not merging."
+                info "Reply with evidence, resolve via GraphQL resolveReviewThread, then re-run."
+                return 1
+            fi
+            [[ "$thread_count" == "unknown" ]] && \
+                warn "Could not read review threads; verify they are resolved before merging."
+        else
+            warn "Could not resolve the repository slug; verify threads manually."
+        fi
+    fi
+
     if [[ "$DRY_RUN" == true ]]; then
         log "[DRY-RUN] Would merge PR #$PR_NUMBER with method: $MERGE_METHOD"
         return 0
