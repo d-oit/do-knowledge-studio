@@ -219,13 +219,12 @@ Non-obvious toolchain facts. Full catalog with debugging detail:
   (LESSON-034).
 - **Vitest typecheck is experimental** and `ignoreSourceErrors: true`, so a
   green result does not cover `*.test.ts` source errors (LESSON-035).
-- **Grep for a helper before adding one, and treat a passing test as
-  evidence** — a "fix" duplicating existing logic regresses a suite that
-  already pinned it (LESSON-040).
-- **A store slice's default can shadow the seed** — slices return their full
-  key set, so a seed-owned key declared in a slice overwrites it if the seed is
-  spread first. `store.ts` spreads the seed LAST, deliberately. Run
-  end-to-end: 2759 unit tests passed while first load was broken (LESSON-041).
+- **Verify before asserting — load the `verify-before-asserting` skill.** Trust
+  live code over plans, docs, or memory; grep for a helper before adding one
+  (LESSON-040); and **a test you have not seen fail is not evidence** — re-inject
+  the defect, watch it fail, restore it (LESSON-041). `quality_gate.sh` runs E2E
+  when wiring or state ownership changes: 2759 unit tests once passed while the
+  app's first load was broken.
 
 ## Skills
 

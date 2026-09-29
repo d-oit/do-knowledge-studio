@@ -31,6 +31,7 @@ criterion.
 | 1 | Reproduce | A test fails for the *stated* reason before any fix | `pnpm test` red |
 | 2 | Candidate fix | Test green; diff scoped to the defect | `git diff` review |
 | 3 | Evaluate | `lint` + `typecheck` + `test` + `build` all clean | `./scripts/verify.sh` |
+| 3b | Verify | Every claim re-checked against live code; every new test seen failing once | `verify-before-asserting` skill |
 | 4 | Adversarial | Someone tried to break it and failed | `code-review-assistant` |
 | 5 | Shadow | New path runs beside the old one, emits, changes nothing | feature flag (see below) |
 | 6 | Canary | New path serves a small slice with a clean rollback | feature flag + `pnpm run build` |
@@ -62,6 +63,24 @@ permanent test only when it would catch a plausible consumer-visible bug.
 - **No scope creep.** Do not add retries, validation, telemetry, or
   abstractions "while you are in there." That is a separate change.
 - Match the existing pattern. Reuse an abstraction before introducing one.
+
+### The verification gate (before Evaluate)
+
+Unit tests are not enough, and this repo has the scar to prove it. A slice
+default silently overrode the seed state; the chat came up empty on first
+load; **2759 unit tests passed** while the app was broken. Only CI's E2E job
+caught it, and no local gate ran Playwright at all.
+
+`quality_gate.sh` now runs `pnpm run test:e2e` when the diff touches wiring,
+state ownership, or the app entrypoint (`src/lib/studio/{store,hydration,
+seed-state,history-snapshot,hydration-quarantine}.ts`, `src/lib/studio/slices/`,
+`src/app/{layout,page}.tsx`, `app-shell.tsx`, `playwright.config.ts`). It stays
+quiet for ordinary component, test, and doc edits, so it is cheap enough to
+leave on. Override with `FORCE_E2E=true` or `SKIP_E2E=true`.
+
+Before calling anything fixed, load the `verify-before-asserting` skill. Its
+shortest form: **a test you have not seen fail is not evidence** — re-inject
+the defect, watch it fail, restore it.
 
 ### 2 → 3 · Candidate → Evaluate
 

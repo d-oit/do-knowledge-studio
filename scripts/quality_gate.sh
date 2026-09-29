@@ -444,6 +444,39 @@ if [[ " ${DETECTED_LANGUAGES[*]} " =~ " typescript " ]] && [[ "$SCOPE" == "all" 
             else
                 echo -e "${GREEN}  ✓ pnpm test passed${NC}"
             fi
+
+            # End-to-end suite — but only when the change can actually break
+            # composition. Unit tests mount isolated or mocked stores, so a
+            # refactor can leave every one of them green while the app no
+            # longer boots. That is not hypothetical: a slice default
+            # silently overrode the seed state, the chat came up empty, and
+            # only CI's E2E job caught it (LESSON-041).
+            #
+            # Runs when wiring, state ownership, or the app entrypoint changed.
+            # SKIP_E2E=true opts out; FORCE_E2E=true runs it unconditionally.
+            should_run_e2e=false
+            if [ "${FORCE_E2E:-false}" = "true" ]; then
+                should_run_e2e=true
+            elif [ -n "${MERGE_BASE:-}" ]; then
+                # Anchored on BOTH ends: an unanchored tail matched
+            # store-coverage.test.ts as well as store.ts, so editing a unit test
+            # would drag the whole E2E suite into the local loop.
+            STRUCTURAL_RE='^(src/lib/studio/(store|hydration|seed-state|history-snapshot|hydration-quarantine)\.ts|src/lib/studio/slices/.+\.ts|src/app/(layout|page)\.tsx|playwright\.config\.ts|src/components/studio/app-shell\.tsx)$'
+                if git diff --name-only "$MERGE_BASE" -- 2>/dev/null | grep -qE "$STRUCTURAL_RE"; then
+                    should_run_e2e=true
+                fi
+            fi
+
+            if [ "$should_run_e2e" = "true" ] && [ "${SKIP_E2E:-false}" != "true" ]; then
+                echo -e "${BLUE}  Structural change detected — running E2E...${NC}"
+                if ! OUTPUT=$(pnpm run test:e2e 2>&1); then
+                    echo -e "${RED}  ✗ pnpm run test:e2e failed${NC}"
+                    echo "$OUTPUT" >&2
+                    FAILED=1
+                else
+                    echo -e "${GREEN}  ✓ pnpm run test:e2e passed${NC}"
+                fi
+            fi
         fi
     elif command -v npm &> /dev/null; then
         # Fallback to npm - runs same checks via "npm run <script>" syntax
