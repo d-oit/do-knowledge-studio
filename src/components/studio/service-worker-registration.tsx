@@ -60,10 +60,9 @@ export function ServiceWorkerRegistration() {
     const startUpdateChecks = (registration: ServiceWorkerRegistration) => {
       checkForUpdate(registration);
       if (updateTimer !== undefined) return;
-      updateTimer = window.setInterval(
-        () => checkForUpdate(registration),
-        UPDATE_CHECK_INTERVAL_MS,
-      );
+      updateTimer = window.setInterval(() => {
+        checkForUpdate(registration);
+      }, UPDATE_CHECK_INTERVAL_MS);
     };
 
     const onVisibilityChange = () => {
