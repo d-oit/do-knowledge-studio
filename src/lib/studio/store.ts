@@ -1,481 +1,84 @@
 'use client'
 
+/**
+ * Composition root for the studio store (Plan 157 Phase 3).
+ *
+ * The store's *shape* lives in `store-types.ts` and each concern lives in
+ * `./slices/*`, so this module only wires the persist middleware and exports
+ * the derived read hooks. Slices receive `StateCreator<StudioState>` and
+ * compose through the same `set`/`get` pair, so cross-slice calls (a claim
+ * write pushing history) still work without an import cycle.
+ */
 import { useMemo } from 'react'
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import type { Entity, Claim, ViewId, ChatMessage, AnyEntityType } from './types'
-import { seedEntities, seedClaims, seedChat } from './seed-data'
-import { search, resetSearchCache, type SearchResult } from '@/lib/search/retrieval'
-import { searchAsync } from '@/lib/search/search-worker-client'
-import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from './schema'
+import { search } from '@/lib/search/retrieval'
+import type { Entity, Claim } from './types'
 import {
   CURRENT_SCHEMA_VERSION,
   STUDIO_STORAGE_KEY,
-  mergeHydratedState,
+  hydrateWithOutcome,
   migratePersistedState,
   partializePersistedState,
 } from './hydration'
-import { buildRecoverySnapshot, persistRecoverySnapshot } from './recovery-helpers'
+import { quarantinePayload } from './hydration-quarantine'
+import { buildSeedState } from './seed-state'
+import type { StudioState } from './store-types'
+import { createEntitiesSlice } from './slices/entities-slice'
+import { createClaimsSlice } from './slices/claims-slice'
+import { createHistorySlice } from './slices/history-slice'
+import { createChatSlice } from './slices/chat-slice'
+import { createDataSlice } from './slices/data-slice'
+import { createUiSlice } from './slices/ui-slice'
+import { snapshotCorpus } from './history-snapshot'
+
 export { restoreFromRecovery } from './recovery-helpers'
+export { readQuarantine, clearQuarantine, describeQuarantine } from './hydration-quarantine'
+export type { StudioState, ImportOptions } from './store-types'
 
-/** Maximum number of undo history snapshots retained in memory. */
-const MAX_HISTORY = 50
+/** Why the last hydration attempt refused, or null when it succeeded. */
+let lastRejectionReason: string | null = null
 
-/** Abort controller for the in-flight local-chat retrieval (see {@link StudioState.sendMessage}). */
-let chatSendAbort: AbortController | null = null
-
-/** Abort and drop any in-flight chat retrieval. Called by `clearChat`/`resetStore`
- * so a pending send can't append its assistant reply into a cleared/reset
- * conversation (the send is never the active controller afterward, so its
- * completion is dropped in `sendMessage`'s catch). */
-const abortChatSend = (): void => {
-  chatSendAbort?.abort()
-  chatSendAbort = null
-}
-
-/** Optional graph/mindmap metadata attached to an import operation. */
-interface ImportOptions {
-  graph?: ValidatedGraph
-  mindMap?: ValidatedMindMap
-  links?: ValidatedLink[]
-  tags?: ValidatedTag[]
-}
-
-/** Full shape of the Zustand store state and actions. */
-interface StudioState {
-  // Navigation
-  currentView: ViewId
-  setView: (v: ViewId) => void
-  commandOpen: boolean
-  setCommandOpen: (o: boolean) => void
-
-  // Entities
-  entities: Entity[]
-  selectedEntityId: string | null
-  editingEntityId: string | null
-  selectEntity: (id: string | null) => void
-  startEdit: (id: string) => void
-  startNew: () => void
-  saveEntity: (e: Entity) => void
-  commitEntity: (e: Entity) => void
-  /** Atomically commit several entities under a single history snapshot.
-   * Use for reciprocal writes (a save plus its backlinks) so one Undo
-   * restores the whole operation, not just the last write. */
-  commitEntities: (entities: Entity[]) => void
-  finishEditing: () => void
-  navigateToView: (v: ViewId) => void
-  deleteEntity: (id: string) => void
-
-  // History (undo/redo)
-  entityHistory: Entity[][]
-  historyIndex: number
-  pushHistory: () => void
-  undo: () => void
-  redo: () => void
-
-  // Claims
-  claims: Claim[]
-  addClaim: (claim: Omit<Claim, 'id'>) => void
-  updateClaim: (id: string, updates: Partial<Omit<Claim, 'id' | 'entityId'>>) => void
-  deleteClaim: (id: string) => void
-
-  // Library controls
-  searchQuery: string
-  setSearchQuery: (q: string) => void
-  typeFilter: AnyEntityType | 'all'
-  setTypeFilter: (t: AnyEntityType | 'all') => void
-  semanticSearchEnabled: boolean
-  setSemanticSearchEnabled: (enabled: boolean) => void
-  sortBy: 'name' | 'created' | 'updated'
-  setSortBy: (s: 'name' | 'created' | 'updated') => void
-  sortDir: 'asc' | 'desc'
-  setSortDir: (d: 'asc' | 'desc') => void
-
-  // Chat
-  chat: ChatMessage[]
-  chatLoading: boolean
-  sendMessage: (content: string) => Promise<void>
-  clearChat: () => void
-
-  // Right panel
-  rightPanelOpen: boolean
-  setRightPanelOpen: (o: boolean) => void
-
-  // Mobile drawer (visible below lg)
-  mobileDrawerOpen: boolean
-  setMobileDrawerOpen: (o: boolean) => void
-  mobilePanelView: 'nav' | 'search'
-  setMobilePanelView: (v: 'nav' | 'search') => void
-
-  // Import / reset
-  importData: (entities: Entity[], claims: Claim[], options?: ImportOptions) => void
-  importWithRollback: (entities: Entity[], claims: Claim[], options?: ImportOptions) => { success: boolean; error?: string }
-  resetStore: () => void
-
-  // Graph, mind map, links, and tags
-  graph: ValidatedGraph | undefined
-  mindMap: ValidatedMindMap | undefined
-  links: ValidatedLink[] | undefined
-  tags: ValidatedTag[] | undefined
-
-  // Theme handled by next-themes — store tracks UI side effects only
-}
-
-/** Generates a new UUID for entities, claims, and chat messages. */
-const generateId = (): string => crypto.randomUUID()
-
-/** Builds the local assistant chat reply from BM25 results. Shared by the
- * worker-backed async path and the synchronous fallback so both render an
- * identical, deterministic answer (AGENTS.md: local-first, never hang the UI). */
-const buildLocalChatReply = (results: SearchResult[]): ChatMessage => {
-  const cited = results.map((r) => ({
-    entityId: r.entityId ?? r.id,
-    entityName: r.entityName ?? r.name,
-    snippet: r.snippet,
-  }))
-  return {
-    id: generateId(),
-    role: 'assistant',
-    content: results.length
-      ? `Based on ${results.length === 1 ? '1 match' : `${results.length} matches`} in your library, here is what I found. ${results[0].snippet} You can open the cited sources for full detail, or ask me to compare them.`
-      : "I could not find a direct match in your local library. Try rephrasing with keywords that appear in your entity names or descriptions, or capture a new entity first via the Editor.",
-    citations: cited,
-    timestamp: new Date().toISOString(),
+/**
+ * Reads the stored envelope verbatim so it can be preserved in quarantine.
+ * The persist `merge` callback receives already-deserialized data, so the
+ * original bytes have to be fetched separately.
+ */
+const readRawEnvelope = (): string | null => {
+  try {
+    return localStorage.getItem(STUDIO_STORAGE_KEY)
+  } catch (error) {
+    console.error('Failed to read the stored envelope:', error)
+    return null
   }
 }
 
-// The default (seed) state — used on first load and as a fallback when a
-// persisted state is missing fields. Kept here so both the store initializer
-// and `resetStore` reference the same defaults.
-/** Default seed state used on first load and as the reset baseline. */
-const SEED_STATE = {
-  entities: seedEntities,
-  claims: seedClaims,
-  chat: seedChat,
-  chatLoading: false,
-  currentView: 'home' as ViewId,
-  searchQuery: '',
-  typeFilter: 'all' as AnyEntityType | 'all',
-  semanticSearchEnabled: false,
-  sortBy: 'updated' as 'name' | 'created' | 'updated',
-  sortDir: 'desc' as 'asc' | 'desc',
-  rightPanelOpen: true,
-  graph: undefined as ValidatedGraph | undefined,
-  mindMap: undefined as ValidatedMindMap | undefined,
-  links: undefined as ValidatedLink[] | undefined,
-  tags: undefined as ValidatedTag[] | undefined,
+/** Initial state: seed corpus plus a matching single-entry undo baseline. */
+const buildInitialState = () => {
+  const seed = buildSeedState()
+  return {
+    ...seed,
+    entityHistory: [snapshotCorpus(seed.entities, seed.claims)],
+    historyIndex: 0,
+  }
 }
 
 /** Primary Zustand store for the knowledge studio with persistence and undo/redo. */
 export const useStudioStore = create<StudioState>()(
   persist(
     (set, get) => ({
-      ...SEED_STATE,
-
-      entityHistory: [seedEntities],
-      historyIndex: 0,
-
-      setView: (v) => set({ currentView: v }),
-
-      commandOpen: false,
-      setCommandOpen: (o) => set({ commandOpen: o }),
-
-      selectedEntityId: null,
-      editingEntityId: null,
-
-      selectEntity: (id) => set({ selectedEntityId: id }),
-      startEdit: (id) => {
-        const entity = get().entities.find((x) => x.id === id)
-        if (!entity) return
-        set({ editingEntityId: id, currentView: 'editor' })
-      },
-      startNew: () => {
-        set({
-          editingEntityId: null,
-          selectedEntityId: null,
-          currentView: 'editor',
-        })
-      },
-
-      pushHistory: () => {
-        // Appends a snapshot of the CURRENT (post-mutation) entities. Every
-        // mutating action applies its change first and pushes afterwards, so
-        // the stack holds full states and undo/redo restore them verbatim.
-        const { entities, historyIndex, entityHistory } = get()
-        const snapshot = entities.map((e) => ({ ...e }))
-        const trimmed = entityHistory.slice(0, historyIndex + 1)
-        const next = [...trimmed, snapshot]
-        if (next.length > MAX_HISTORY) next.shift()
-        set({
-          entityHistory: next,
-          historyIndex: next.length - 1,
-        })
-      },
-
-      undo: () => {
-        const { entityHistory, historyIndex } = get()
-        if (historyIndex <= 0) return
-        const newIndex = historyIndex - 1
-        const snapshot = entityHistory[newIndex].map((e) => ({ ...e }))
-        set({ entities: snapshot, historyIndex: newIndex })
-      },
-
-      redo: () => {
-        const { entityHistory, historyIndex } = get()
-        if (historyIndex >= entityHistory.length - 1) return
-        const newIndex = historyIndex + 1
-        const snapshot = entityHistory[newIndex].map((e) => ({ ...e }))
-        set({ entities: snapshot, historyIndex: newIndex })
-      },
-      saveEntity: (e) => {
-        set((state) => {
-          const exists = state.entities.some((x) => x.id === e.id)
-          const entities = exists
-            ? state.entities.map((x) => (x.id === e.id ? e : x))
-            : [e, ...state.entities]
-          return {
-            entities,
-            editingEntityId: null,
-            currentView: 'library',
-          }
-        })
-        get().pushHistory()
-      },
-
-      commitEntity: (e) => {
-        set((state) => {
-          const exists = state.entities.some((x) => x.id === e.id)
-          const entities = exists
-            ? state.entities.map((x) => (x.id === e.id ? e : x))
-            : [e, ...state.entities]
-          return { entities }
-        })
-        get().pushHistory()
-      },
-
-      commitEntities: (upserts) => {
-        // Single history step for the whole batch: apply all upserts, then
-        // push once so one undo/redo spans the entire commit.
-        set((state) => {
-          const upsertById = new Map(upserts.map((e) => [e.id, e]))
-          const existingIds = new Set(state.entities.map((x) => x.id))
-          const fresh = upserts.filter((e) => !existingIds.has(e.id))
-          const merged = state.entities.map((x) => upsertById.get(x.id) ?? x)
-          return { entities: [...fresh, ...merged] }
-        })
-        get().pushHistory()
-      },
-
-      finishEditing: () => {
-        set({ editingEntityId: null })
-      },
-
-      navigateToView: (v: ViewId) => {
-        set({ currentView: v })
-      },
-
-      deleteEntity: (id) => {
-        set((state) => ({
-          entities: state.entities
-            .filter((x) => x.id !== id)
-            .map((e) => ({
-              ...e,
-              links: e.links.filter((l) => l.targetId !== id),
-            })),
-          claims: state.claims.filter((c) => c.entityId !== id),
-          selectedEntityId: state.selectedEntityId === id ? null : state.selectedEntityId,
-        }))
-        get().pushHistory()
-      },
-
-      addClaim: (claim) => {
-        const now = new Date().toISOString()
-        const fullClaim: Claim = {
-          ...claim,
-          id: crypto.randomUUID(),
-          createdAt: now,
-          updatedAt: now,
-          version: 1,
-          editHistory: [],
-        }
-        set((state) => ({ claims: [fullClaim, ...state.claims] }))
-      },
-
-      updateClaim: (id, updates) => {
-        set((state) => ({
-          claims: state.claims.map((claim) => {
-            if (claim.id !== id) return claim
-            const now = new Date().toISOString()
-            const historyEntry = updates.statement && updates.statement !== claim.statement
-              ? { statement: claim.statement, editedAt: claim.updatedAt ?? now }
-              : null
-            return {
-              ...claim,
-              ...updates,
-              updatedAt: now,
-              version: (claim.version ?? 1) + 1,
-              editHistory: historyEntry
-                ? [...(claim.editHistory ?? []), historyEntry]
-                : claim.editHistory ?? [],
-            }
-          }),
-        }))
-      },
-
-      deleteClaim: (id) => {
-        set((state) => ({
-          claims: state.claims.filter((claim) => claim.id !== id),
-        }))
-      },
-
-      setSearchQuery: (q) => set({ searchQuery: q }),
-      setTypeFilter: (t) => set({ typeFilter: t }),
-      setSemanticSearchEnabled: (enabled) => set({ semanticSearchEnabled: enabled }),
-      setSortBy: (s) => set({ sortBy: s }),
-      setSortDir: (d) => set({ sortDir: d }),
-
-      sendMessage: (content) => {
-        const userMsg: ChatMessage = {
-          id: generateId(),
-          role: 'user',
-          content,
-          timestamp: new Date().toISOString(),
-        }
-        set((state) => ({ chat: [...state.chat, userMsg], chatLoading: true }))
-
-        // Cancel any in-flight retrieval from a previous send so a newer message
-        // never races a stale search result (AGENTS.md: AbortController for all
-        // async work). The active controller owns state updates; stale ones are
-        // dropped on abort.
-        chatSendAbort?.abort()
-        const controller = new AbortController()
-        chatSendAbort = controller
-
-        const { entities, claims } = get()
-        return searchAsync(entities, claims, content, 5, controller.signal)
-          .then((results) => {
-            if (controller.signal.aborted) return
-            const reply = buildLocalChatReply(results)
-            set((state) => ({ chat: [...state.chat, reply], chatLoading: false }))
-          })
-          .catch((err: unknown) => {
-            // A stale send no longer owns chat state; the active controller owns
-            // the reply and the typing indicator.
-            if (chatSendAbort !== controller) return
-            set({ chatLoading: false })
-            if (err instanceof DOMException && err.name === 'AbortError') return
-
-            // The worker-backed async path failed (worker error, late module
-            // load, etc.). Fall back to the synchronous engine so the local-
-            // first chat still answers instead of hanging on the indicator.
-            let results: SearchResult[] = []
-            try {
-              results = search(entities, claims, content, 5)
-            } catch (fallbackErr) {
-              console.error('Local chat synchronous fallback failed:', fallbackErr)
-            }
-            const reply = buildLocalChatReply(results)
-            set((state) => ({ chat: [...state.chat, reply], chatLoading: false }))
-          })
-      },
-
-      clearChat: () => {
-        abortChatSend()
-        set({ chat: [], chatLoading: false })
-      },
-
-      setRightPanelOpen: (o) => set({ rightPanelOpen: o }),
-
-      mobileDrawerOpen: false,
-      setMobileDrawerOpen: (o) => set({ mobileDrawerOpen: o }),
-      mobilePanelView: 'nav',
-      setMobilePanelView: (v) => set({ mobilePanelView: v }),
-
-      importData: (entities, claims, options) => {
-        // Cancel any pending chat retrieval so it can't answer from the
-        // pre-import corpus, then drop the stale cached search index.
-        abortChatSend()
-        resetSearchCache()
-        set({
-          entities,
-          claims,
-          selectedEntityId: null,
-          editingEntityId: null,
-          currentView: 'library',
-          entityHistory: [entities],
-          historyIndex: 0,
-          graph: options?.graph,
-          mindMap: options?.mindMap,
-          links: options?.links,
-          tags: options?.tags,
-        })
-      },
-
-      importWithRollback: (entities, claims, options) => {
-        // Cancel any pending chat retrieval and drop the cached index before
-        // swapping corpora; on rollback the restored snapshot references force
-        // a clean rebuild on next search.
-        abortChatSend()
-        resetSearchCache()
-        const state = get()
-        const snapshot = buildRecoverySnapshot(state)
-        persistRecoverySnapshot(snapshot)
-        try {
-          set({
-            entities,
-            claims,
-            selectedEntityId: null,
-            editingEntityId: null,
-            currentView: 'library',
-            entityHistory: [entities],
-            historyIndex: 0,
-            graph: options?.graph,
-            mindMap: options?.mindMap,
-            links: options?.links,
-            tags: options?.tags,
-          })
-          return { success: true }
-        } catch (err) {
-          try {
-            set({
-              entities: snapshot.entities,
-              claims: snapshot.claims,
-              entityHistory: snapshot.entityHistory,
-              historyIndex: snapshot.historyIndex,
-              graph: snapshot.graph,
-              mindMap: snapshot.mindMap,
-              links: snapshot.links,
-              tags: snapshot.tags,
-            })
-          } catch {
-            set({
-              ...SEED_STATE,
-              selectedEntityId: null,
-              editingEntityId: null,
-              entityHistory: [seedEntities],
-              historyIndex: 0,
-            })
-          }
-          return {
-            success: false,
-            error: err instanceof Error ? err.message : 'Import failed, state restored.',
-          }
-        }
-      },
-
-      resetStore: () => {
-        // Returning to the seed workspace — release any large cached index and
-        // drop any pending chat retrieval so it can't answer post-reset.
-        abortChatSend()
-        resetSearchCache()
-        set({
-          ...SEED_STATE,
-          selectedEntityId: null,
-          editingEntityId: null,
-          entityHistory: [seedEntities],
-          historyIndex: 0,
-        })
-      },
+      // Slices first, seed last. A slice must not carry initial values for
+      // data fields the seed owns — anything it declares is applied AFTER
+      // and silently overwrites the seed. The chat slice's `chat: []` did
+      // exactly that: the chat was empty on first load and "Clear chat
+      // history" stayed disabled, failing e2e/chat-a11y.spec.ts.
+      ...createUiSlice(set, get),
+      ...createEntitiesSlice(set, get),
+      ...createClaimsSlice(set, get),
+      ...createHistorySlice(set, get),
+      ...createChatSlice(set, get),
+      ...createDataSlice(set, get),
+      ...buildInitialState(),
     }),
     {
       name: STUDIO_STORAGE_KEY,
@@ -487,11 +90,74 @@ export const useStudioStore = create<StudioState>()(
       // hydrated corpus. Ephemeral fields (searchQuery, selection, palette)
       // stay out of localStorage so keystrokes never serialize the corpus.
       partialize: partializePersistedState,
-      migrate: migratePersistedState,
+      // Both hooks report a refusal through a return value rather than a
+      // throw. A throw inside this promise chain lands in zustand's terminal
+      // catch, which skips the branch that sets `hasHydrated` — the store
+      // would then never finish hydrating and the user would see a silently
+      // broken app with no idea their data is at risk. Plan 158 P0-3.
+      // `migrate` must return the BARE migrated state: zustand passes that
+      // value straight into `merge`, so returning a wrapper object here would
+      // hand `merge` a shape the envelope schema rejects.
+      //
+      // On refusal, return the input UNCHANGED so `merge` still sees a
+      // well-formed payload to reject, and quarantine the bytes separately.
+      //
+      // The stored envelope is NOT preserved by this return: zustand treats
+      // any non-Promise value as "migrated" and calls setItem(), and by then
+      // `merge` has already installed seed state, so the live key is
+      // overwritten with the seed corpus. That overwrite is exactly why the
+      // bytes are copied to quarantine FIRST — a separate key the store never
+      // writes. See plans/158 P0-3.
+      migrate: (persisted: unknown, version: number): unknown => {
+        const outcome = migratePersistedState(persisted, version)
+        if (!outcome.ok) {
+          lastRejectionReason = outcome.reason
+          const preserved = quarantinePayload(outcome.reason, readRawEnvelope())
+          if (!preserved) {
+            // Quarantine failed (payload over the size cap, or storage
+            // rejected the write). Returning `persisted` is still the best
+            // available action — it keeps zustand's setItem a no-op — but the
+            // loss must be loud. Without this the user's corpus is replaced
+            // by seed data on the next store write with no signal at all.
+            console.warn(
+              'Studio could not preserve a rejected library payload; the next ' +
+                'store write will replace it. Export your data if this repeats.',
+            )
+          }
+          return persisted
+        }
+        return outcome.state
+      },
       // Contextual wrapper pins zustand's store generic — the bare generic
       // helper leaks its type parameter into persist's inference.
-      merge: (persistedState: unknown, currentState: StudioState) =>
-        mergeHydratedState(persistedState, currentState),
+      merge: (persistedState: unknown, currentState: StudioState) => {
+        // `migrate` refuses (future version, no safe path) by returning the
+        // input unchanged. Accepting it would hydrate a payload written by a
+        // newer build, so treat any refusal as fatal for this attempt and
+        // keep the store on seed data. The bytes are already quarantined by
+        // the migrate hook; the next write can no longer reach them.
+        if (lastRejectionReason !== null) {
+          const reason = lastRejectionReason
+          lastRejectionReason = null
+          console.warn(`Studio hydration refused: ${reason}`)
+          return currentState
+        }
+        const outcome = hydrateWithOutcome(persistedState, currentState)
+        if (!outcome.ok) {
+          // Reachable without any version delta: same-version reloads skip
+          // `migrate` entirely, so validation is the only gate.
+          quarantinePayload(outcome.reason, readRawEnvelope())
+          return currentState
+        }
+        return outcome.state
+      },
+      // The documented channel for reporting a hydration problem, so a
+      // refused payload is visible rather than a silent downgrade to demo data.
+      onRehydrateStorage: () => (_state, error) => {
+        if (error) {
+          console.warn('Studio hydration failed:', error)
+        }
+      },
     },
   ),
 )

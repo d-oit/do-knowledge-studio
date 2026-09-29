@@ -22,6 +22,10 @@ import { todayStamp, downloadBlob } from './export-types'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { motion, AnimatePresence } from 'framer-motion'
 import { buildEntityIndex } from '@/lib/studio/graph-index'
+import { getMindMapDensity } from './mindmap-density'
+import { translate as t } from '@/lib/i18n/messages/mindmap'
+import { translate as announceT } from '@/lib/i18n/messages/announce'
+import { useAnnouncer } from '@/lib/a11y/announcer'
 
 interface TreeNode {
   entity: { id: string; name: string; type: string }
@@ -29,23 +33,31 @@ interface TreeNode {
   expanded: boolean
 }
 
-const NODE_INDENT_PX = 28
-
 /** Returns inline CSS for indenting a mind map tree node by level. */
-function getNodeIndentStyle(level: number): React.CSSProperties {
-  return { paddingLeft: `${level * NODE_INDENT_PX}px` }
+const getNodeIndentStyle = (level: number, indentPx: number): React.CSSProperties => {
+  return { paddingLeft: `${level * indentPx}px` }
 }
 
 /** Interactive mind map view with expandable tree, keyboard navigation, and PNG export. */
 export const MindMapView = () => {
   const entities = useStudioStore((s) => s.entities)
   const selectEntity = useStudioStore((s) => s.selectEntity)
+  // Store selection, distinct from the roving-tabindex focus (APG treeview).
+  const selectedEntityId = useStudioStore((s) => s.selectedEntityId)
   const setView = useStudioStore((s) => s.setView)
   const [rootId, setRootId] = useState(entities[0]?.id || '')
   const [depth, setDepth] = useState(3)
   const [compact, setCompact] = useState(false)
   const reducedMotion = useReducedMotion()
   const entityIndex = useMemo(() => buildEntityIndex(entities), [entities])
+  const density = useMemo(() => getMindMapDensity(compact), [compact])
+  const announce = useAnnouncer()
+  const compactLabel = compact
+    ? t('mindmap.density.comfortable')
+    : t('mindmap.density.compact')
+  const densityLabel = compact
+    ? t('mindmap.density.compact')
+    : t('mindmap.density.comfortable')
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null)
   const canvasRef = useRef<HTMLDivElement>(null)
   const treeItemsRef = useRef<NodeListOf<HTMLElement> | null>(null)
@@ -82,6 +94,16 @@ export const MindMapView = () => {
     setFocusedNodeId(childId)
   }, [entityIndex, commitEntities])
 
+  /** Deletes the focused node and names it for screen readers. */
+  const deleteFocusedNode = useCallback(() => {
+    if (!focusedNodeId) return
+    const nodeEntity = entityIndex.get(focusedNodeId)
+    if (!nodeEntity) return
+    announce(announceT('announce.entityDeleted', nodeEntity.name))
+    deleteEntity(focusedNodeId)
+    setFocusedNodeId(null)
+  }, [announce, entityIndex, focusedNodeId, deleteEntity])
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (!focusedNodeId) return
@@ -102,11 +124,10 @@ export const MindMapView = () => {
 
       if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault()
-        deleteEntity(focusedNodeId)
-        setFocusedNodeId(null)
+        deleteFocusedNode()
       }
     },
-    [focusedNodeId, entityIndex, addChildToNode, deleteEntity, startEdit],
+    [focusedNodeId, entityIndex, addChildToNode, startEdit, deleteFocusedNode],
   )
 
   useEffect(() => {
@@ -214,7 +235,12 @@ export const MindMapView = () => {
     treeItemsRef.current = canvasRef.current?.querySelectorAll<HTMLElement>('[role="treeitem"]') ?? null
   }, [tree, expandedNodes, syncKey])
 
-  const renderNode = (node: TreeNode, level: number = 0): React.ReactNode => {
+  const renderNode = (
+    node: TreeNode,
+    level: number = 0,
+    position = 1,
+    siblingCount = 1,
+  ): React.ReactNode => {
     const meta = getEntityTypeMeta(node.entity.type)
     const isExpanded = expandedNodes.has(node.entity.id) || level === 0
     const hasChildren = node.children.length > 0
@@ -226,13 +252,22 @@ export const MindMapView = () => {
           animate={{ opacity: 1, x: 0 }}
           transition={reducedMotion ? { duration: 0 } : { duration: 0.2, delay: level * 0.05 }}
           className="flex items-center"
-          style={getNodeIndentStyle(level)}
+          style={getNodeIndentStyle(level, density.indentPx)}
         >
           <div
             role="treeitem"
             data-entity-id={node.entity.id}
+            // APG: selection is distinct from focus. `tabIndex` is roving and
+            // follows focusNodeId; `aria-selected` follows the STORE selection,
+            // which can also change from the right panel or search.
             tabIndex={focusedNodeId === node.entity.id ? 0 : -1}
-            aria-selected={focusedNodeId === node.entity.id ? true : undefined}
+            aria-selected={selectedEntityId === node.entity.id}
+            // Every node is in the DOM, so aria-level is optional by spec, but
+            // without it a screen reader announces each node at the same depth
+            // and the hierarchy is lost. P2-7.
+            aria-level={level + 1}
+            aria-posinset={position}
+            aria-setsize={siblingCount}
             aria-expanded={hasChildren ? isExpanded : undefined}
             onFocus={() => { setFocusedNodeId(node.entity.id) }}
             onClick={() => {
@@ -283,8 +318,11 @@ export const MindMapView = () => {
               }
             }}
             className={cn(
-              'group flex flex-1 cursor-pointer items-center gap-2 rounded-md border bg-card py-1.5 pr-3 transition-all hover:border-saffron/40 hover:shadow-sm',
-              level === 0 ? 'border-saffron/40 px-4' : 'border-border px-3',
+              'group flex flex-1 cursor-pointer items-center gap-2 rounded-md border bg-card pr-3 transition-all hover:border-saffron/40 hover:shadow-sm',
+              density.nodePaddingY,
+              level === 0
+                ? cn('border-saffron/40', density.rootPaddingX)
+                : cn('border-border', density.nodePaddingX),
             )}
           >
             {hasChildren ? (
@@ -307,9 +345,16 @@ export const MindMapView = () => {
             <span className={cn('h-2 w-2 rounded-full', meta.dot)} />
             <span className={cn(
               'truncate font-medium',
-              level === 0 ? 'font-serif text-[15px] text-ink' : 'text-[13px] text-ink-soft',
+              level === 0
+                ? cn('font-serif text-ink', density.rootLabelSize)
+                : cn('text-ink-soft', density.nestedLabelSize),
             )}>{node.entity.name}</span>
-            <span className="rounded bg-muted px-1.5 py-0 text-badge uppercase tracking-wide text-ink-faint">
+            <span
+              className={cn(
+                'rounded bg-muted px-1.5 py-0 text-badge uppercase tracking-wide text-ink-faint',
+                density.badgeScale,
+              )}
+            >
               {meta.label}
             </span>
           </div>
@@ -317,7 +362,7 @@ export const MindMapView = () => {
 
         {/* Connector line */}
         {level === 0 && hasChildren && isExpanded && (
-          <div className="ml-4 mt-1 h-3 w-px bg-border" />
+          <div className={cn('mt-1 w-px bg-border', density.connectorInset, density.connectorHeight)} />
         )}
 
         <AnimatePresence>
@@ -327,9 +372,17 @@ export const MindMapView = () => {
               animate={{ opacity: 1, height: 'auto' }}
               exit={reducedMotion ? { opacity: 0 } : { opacity: 0, height: 0 }}
               transition={reducedMotion ? { duration: 0 } : { duration: 0.2 }}
-              className="ml-4 border-l border-border pl-2"
+              // APG: a parent's children belong to an element with role=group.
+              // "Owned element" is defined as any DOM DESCENDANT, so this
+              // sibling placement is conformant; the wrapper div would have to
+              // become the treeitem's child to read as a literal nesting, and
+              // that would break the connector/sticky layout for no a11y gain.
+              role="group"
+              className={cn('border-l border-border', density.connectorInset, density.railPadding, density.siblingGap)}
             >
-              {node.children.map((child) => renderNode(child, level + 1))}
+              {node.children.map((child, i) =>
+                renderNode(child, level + 1, i + 1, node.children.length),
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -379,23 +432,23 @@ export const MindMapView = () => {
         <ToolbarBtn icon={Edit3} label="Rename" onClick={() => {
           if (focusedNodeId) startEdit(focusedNodeId)
         }} />
-        <ToolbarBtn icon={Trash2} label="Delete" onClick={() => {
-          if (focusedNodeId) { deleteEntity(focusedNodeId); setFocusedNodeId(null) }
-        }} />
+        <ToolbarBtn icon={Trash2} label="Delete" onClick={deleteFocusedNode} />
         <ToolbarBtn icon={Undo2} label="Undo" disabled={historyIndex <= 0} onClick={undo} />
         <ToolbarBtn icon={Redo2} label="Redo" disabled={historyIndex >= entityHistory.length - 1} onClick={redo} />
 
         <div className="flex-1" />
 
         <button
-          onClick={() => { setCompact(!compact) }}
+          onClick={() => { setCompact(!compact); announce(announceT('announce.densityChanged', compact ? t('mindmap.density.comfortable') : t('mindmap.density.compact'))) }}
           aria-pressed={compact}
+          aria-label={t('mindmap.density.toggle')}
+          data-testid="mindmap-compact-toggle"
           className={cn(
             'rounded-md px-2 py-1.5 text-label font-medium transition-colors min-h-[44px] focus-ring',
             compact ? 'bg-saffron-soft text-saffron-deep' : 'text-ink-mute hover:bg-muted hover:text-ink',
           )}
         >
-          Compact
+          {compactLabel}
         </button>
         <ToolbarBtn icon={RefreshCw} label="Sync" onClick={syncTree} />
         <ToolbarBtn icon={Download} label="Export PNG" onClick={exportPng} />
@@ -428,7 +481,14 @@ export const MindMapView = () => {
 
       {/* Summary */}
       <div className="border-t border-border bg-card/50 px-5 py-2 text-label text-ink-faint">
-        {tree ? `Root: ${tree.entity.name} · ${tree.children.length} direct children · depth ${depth}` : 'No data'}
+        {tree
+          ? [
+              `${t('mindmap.status.root')}: ${tree.entity.name}`,
+              t('mindmap.status.children', String(tree.children.length)),
+              t('mindmap.status.depth', String(depth)),
+              t('mindmap.density.status', densityLabel),
+            ].join(' · ')
+          : t('mindmap.status.empty')}
       </div>
     </div>
   )

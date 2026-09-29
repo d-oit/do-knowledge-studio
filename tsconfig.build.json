@@ -1,0 +1,27 @@
+{
+  "// ": "Plan 158 P1-1 — tsconfig used by `next build`'s typechecker. Next 16's CLI checker resolves tsconfigPath, so the build can scope its typecheck to app code instead of the whole repo.",
+  "//why": "`useTypeScriptCli: false` suppressed a build warning but switched the build to the compiler-API checker, which Next's own upgrade guide says will break when TypeScript 7 drops that API. Pointing the CLI checker at this config removes the warning WITHOUT giving up the CLI path. The repo's 94 remaining type errors are all in test sources (loose mock casts), so they are excluded here exactly as tsconfig.app.json already excludes them.",
+  "//nonComposite": "composite is intentionally absent. tsconfig.app.json sets it for incremental declaration emit; the build checker passes --noEmit and overrides emitDeclarationOnly, and a dedicated config keeps the two concerns from drifting.",
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "incremental": true,
+    "types": ["vite/client"]
+  },
+  "include": [
+    "src",
+    "package.json",
+    "next-env.d.ts",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/**/*.spec.ts",
+    "src/**/*.spec.tsx",
+    "src/**/__tests__/**",
+    "src/test/setup.ts"
+  ]
+}

@@ -10,6 +10,7 @@ import {
 } from './schema'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from './schema'
 import { useStudioStore } from './store'
+import { reconcileSnapshot, type HistorySnapshot } from './history-snapshot'
 
 /** localStorage key for the recovery snapshot. */
 const RECOVERY_KEY = 'do-knowledge-studio-recovery'
@@ -21,7 +22,7 @@ const MAX_RECOVERY_SIZE_BYTES = 4 * 1024 * 1024
 export interface RecoverySnapshot {
   entities: Entity[]
   claims: Claim[]
-  entityHistory: Entity[][]
+  entityHistory: HistorySnapshot[]
   historyIndex: number
   graph?: ValidatedGraph
   mindMap?: ValidatedMindMap
@@ -33,7 +34,7 @@ export interface RecoverySnapshot {
 export const buildRecoverySnapshot = (state: {
   entities: Entity[]
   claims: Claim[]
-  entityHistory: Entity[][]
+  entityHistory: HistorySnapshot[]
   historyIndex: number
   graph?: ValidatedGraph
   mindMap?: ValidatedMindMap
@@ -69,7 +70,12 @@ const RecoverySnapshotSchema = z.object({
   snapshot: z.object({
     entities: z.array(EntitySchema),
     claims: z.array(ClaimSchema),
-    entityHistory: z.array(z.array(z.object({ id: z.string() }))),
+    entityHistory: z.array(
+      z.object({
+        entities: z.array(EntitySchema),
+        claims: z.array(ClaimSchema),
+      }),
+    ),
     historyIndex: z.number(),
     graph: GraphSchema.optional(),
     mindMap: MindMapSchema.optional(),
@@ -115,15 +121,24 @@ export const readRecoverySnapshot = (): RecoveryReadResult => {
 }
 
 /** Validated snapshot shape extracted from the Zod schema. */
-type ValidatedRecoverySnapshot = z.infer<typeof RecoverySnapshotSchema>['snapshot']
+type ValidatedRecoverySnapshot = Omit<
+  z.infer<typeof RecoverySnapshotSchema>['snapshot'],
+  'entityHistory'
+> & { entityHistory: HistorySnapshot[] }
 
 /** Applies a validated recovery snapshot to the Zustand store. */
 const applyRecoverySnapshot = (snapshot: ValidatedRecoverySnapshot): void => {
+  // A recovered history stack can reference entities that predate a later
+  // prune; reconcile each step so undo can never reintroduce an orphan.
+  const entityHistory = snapshot.entityHistory.map(reconcileSnapshot)
   useStudioStore.setState({
-    entities: snapshot.entities as Entity[],
+    entities: reconcileSnapshot({
+      entities: snapshot.entities as Entity[],
+      claims: snapshot.claims as Claim[],
+    }).entities,
     claims: snapshot.claims as Claim[],
-    entityHistory: snapshot.entityHistory as Entity[][],
-    historyIndex: snapshot.historyIndex,
+    entityHistory,
+    historyIndex: Math.min(snapshot.historyIndex, entityHistory.length - 1),
     graph: snapshot.graph as ValidatedGraph | undefined,
     mindMap: snapshot.mindMap as ValidatedMindMap | undefined,
     links: snapshot.links as ValidatedLink[] | undefined,

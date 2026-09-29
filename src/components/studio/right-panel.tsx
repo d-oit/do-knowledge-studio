@@ -4,6 +4,8 @@ import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
 import { getEntityTypeMeta, type EntityTypeMeta } from '@/lib/studio/entity-types'
 import { search, type SearchResult } from '@/lib/search/retrieval'
 import { buildEntityIndex } from '@/lib/studio/graph-index'
+import { useAnnouncer } from '@/lib/a11y/announcer'
+import { translate as announceT } from '@/lib/i18n/messages/announce'
 import type { Entity } from '@/lib/studio/types'
 import { Search, FileText, ArrowRight } from 'lucide-react'
 import { useCallback, useMemo, useRef, useState } from 'react'
@@ -292,6 +294,7 @@ const InspectorPanel = ({ onClose }: { onClose: () => void }) => {
   const deleteEntity = useStudioStore((s) => s.deleteEntity)
   const selectEntity = useStudioStore((s) => s.selectEntity)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const announce = useAnnouncer()
   const entityIndex = useMemo(() => buildEntityIndex(entities), [entities])
   const entity = (selectedEntityId ? entityIndex.get(selectedEntityId) : undefined) || entities[0]
   const deleteCancelRef = useRef<HTMLButtonElement>(null)
@@ -313,6 +316,9 @@ const InspectorPanel = ({ onClose }: { onClose: () => void }) => {
   const meta = getEntityTypeMeta(entity.type)
 
   const handleDelete = () => {
+    // The panel closes over the deleted entity with no visual trace beyond
+    // the list shrinking, so name the casualty in the live region.
+    announce(announceT('announce.entityDeleted', entity.name))
     deleteEntity(entity.id)
     selectEntity(null)
     setShowDeleteConfirm(false)
@@ -354,7 +360,17 @@ const InspectorPanel = ({ onClose }: { onClose: () => void }) => {
             {/* ConnectionList renders its own <ul>; a wrapper <ul> here would nest
                 lists directly (axe `list` violation), so use a plain <div>. */}
             <div>
-              <ConnectionList links={entity.links} entityIndex={entityIndex} onSelect={selectEntity} />
+              {/* Selection changes are visual-only, so name the new subject in
+                  the live region (WCAG 4.1.3, Plan 158 P2-9). */}
+              <ConnectionList
+                links={entity.links}
+                entityIndex={entityIndex}
+                onSelect={(id) => {
+                  const target = entityIndex.get(id)
+                  selectEntity(id)
+                  if (target) announce(announceT('announce.entitySelected', target.name))
+                }}
+              />
             </div>
           </div>
         )}

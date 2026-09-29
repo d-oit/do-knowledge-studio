@@ -48,6 +48,7 @@ See `agents-docs/AVAILABLE_SKILLS.md`.
 
 | Topic | File |
 |---|---|
+| Delivery lifecycle | `agents-docs/DELIVERY-LIFECYCLE.md` |
 | Skills | `agents-docs/AVAILABLE_SKILLS.md` |
 | Sub-Agents | `agents-docs/SUB-AGENTS.md` |
 | Hooks | `agents-docs/HOOKS.md` |

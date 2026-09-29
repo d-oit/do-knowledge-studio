@@ -26,6 +26,8 @@ import type { ViewId } from '@/lib/studio/types'
 import packageJson from '../../../package.json'
 import { cn } from '@/lib/utils'
 import { translate as t } from '@/lib/i18n/messages/timeline'
+import { translate as announceT } from '@/lib/i18n/messages/announce'
+import { useAnnouncer } from '@/lib/a11y/announcer'
 import { ShortcutsTrigger } from './shortcuts-dialog'
 
 interface NavItem {
@@ -137,11 +139,17 @@ const SidebarNavItem = ({ item, active, onSelect }: SidebarNavItemProps) => {
 const SidebarNav = () => {
   const currentView = useStudioStore((s) => s.currentView)
   const setView = useStudioStore((s) => s.setView)
+  const announce = useAnnouncer()
+  // The view change is visual-only: without a live announcement a screen
+  // reader user gets no signal that navigation actually happened.
   const handleSelect = useCallback(
     (id: ViewId) => {
       setView(id)
+      if (id === currentView) return
+      const item = NAV_GROUPS.flatMap((group) => group.items).find((nav) => nav.id === id)
+      announce(announceT('announce.viewSwitched', item?.label ?? id))
     },
-    [setView],
+    [announce, currentView, setView],
   )
 
   return (

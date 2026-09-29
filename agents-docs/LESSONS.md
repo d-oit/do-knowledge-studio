@@ -1378,3 +1378,96 @@ reported it.
 
 **Tags**: #ci #codacy #opengrep #static-analysis #suppression
 
+
+---
+
+### LESSON-040: Grep for an existing helper before adding one — duplicate escaping broke a passing BATS test
+
+**Date**: 2026-09-28
+**Component**: Build tooling / agent harness / code generators
+**Severity**: Medium
+
+**Issue**: A supposedly broken markdown table row in a generated skills catalog
+was "fixed" by adding `escape_table_cell()` to `generate-skills-docs.py`. The
+quality gate then failed on `escapes pipes in descriptions` — a BATS test that
+had been passing all along.
+
+**Symptoms**: Generator emitted `X \\| Y` (double-escaped) instead of `X \| Y`.
+Test 4 of 9 failed; the other 8 passed.
+
+**Root cause**: Two mistakes compounded. First, `escape_cell()` already existed
+at line 149 and already handled both `|` and newlines — the grep I used to
+locate it searched for the defect, not for existing helpers. Second, escaping
+was applied at both `collect_skills()` (line 166) and in each renderer, so even
+without my helper the value passed through `escape_cell` twice. The new helper
+made a correct pipeline triple-escape.
+
+**Prevention**:
+
+- Before adding a helper, grep for the *name you are about to introduce* and
+  for the *operation* (`replace("|"`), `escape`) across the file and repo. A
+  "fix" that adds a second copy of existing logic is a smell, not a fix.
+- When a test covering exactly your change already passes on `main`, stop and
+  re-derive whether the bug is real. A test suite that pins behavior is
+  evidence, not an obstacle to work around.
+- Escaping/normalization belongs at exactly one layer. If every consumer needs
+  the sanitized value, sanitize once at the boundary and pass it through.
+- Run the full quality gate before committing, not the minimal one. The BATS
+  suite lives in `quality_gate.sh` and found this; `minimal_quality_gate.sh`
+  would have shipped a regression.
+- Diff the fixed file against `HEAD` afterwards. Here `git diff` was empty —
+  proof the "fix" was pure regression, and that the generated-catalog defect
+  had never existed in the first place.
+
+**Tags**: #tooling #bats #quality-gate #duplication #escaping #verification
+
+---
+
+### LESSON-041: A slice default can silently shadow the seed — verify the composition order, not just the pieces
+
+**Date**: 2026-09-29
+**Component**: State management / store decomposition
+**Severity**: High
+
+**Issue**: After decomposing `store.ts` into slices, the chat transcript was
+empty on first load and the "Clear chat history" control was permanently
+disabled. `e2e/chat-a11y.spec.ts` failed with a 30s click timeout on a
+`disabled` button.
+
+**Symptoms**:
+- Locator resolved to `<button disabled ... aria-label="Clear chat history">`
+- Two chat-a11y specs failed; the other two passed
+- No unit test failed — 2759 tests green
+- Console showed an unrelated-looking `Cannot read properties of undefined
+  (reading 'update')` from the service worker, which was a red herring
+
+**Root cause**: The composition root spread seed state first and the slices
+after:
+
+```ts
+{ ...buildInitialState(), ...createChatSlice(set, get), /* ... */ }
+```
+
+`createChatSlice` declares `chat: []` and `chatLoading: false` because
+`StateCreator` must return the full key set. Spread *after* the seed, that
+empty array overwrote the seeded welcome message. Every slice that declares
+a seed-owned key is a live hazard: moving `buildInitialState()` last makes
+the seed authoritative for every field it owns.
+
+**Prevention**:
+
+- When adding a slice, check whether any key it declares is also a key in
+  `buildSeedState()`. If so, the composition order is load-bearing — say so
+  in a comment, as `store.ts` now does.
+- Decomposition refactors need an end-to-end run, not just unit tests. Every
+  unit test here passed because each mounted a mocked or reset store; only
+  Playwright drove the real first-load path.
+- A disabled-control timeout is a state bug, not a flake. Read the resolved
+  element's attributes before assuming a selector problem.
+- When a regression test appears not to fail, verify the injection actually
+  reproduced the bug. Three of my first four re-injections moved
+  `buildInitialState()` to the wrong position and "passed" for that reason;
+  the test was fine and my reproduction was wrong.
+- If a console error names your file, it is evidence, not noise — but
+  correlate it with the actual assertion before chasing it. The service
+  worker error here was unrelated.

@@ -14,6 +14,8 @@ import { buildOkfBundle } from '@/lib/okf/bundle'
 import { parseOkfBundle } from '@/lib/okf/import'
 import { encryptData, buildEncryptedReaderHtml } from '@/lib/export/encrypt'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from '@/lib/studio/schema'
+import { useAnnouncer } from '@/lib/a11y/announcer'
+import { translate as announceT } from '@/lib/i18n/messages/announce'
 
 /**
  * Builds a human-readable summary string of export contents.
@@ -196,6 +198,7 @@ export const useExportHandlers = ({
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [showPass, setShowPass] = useState(false)
+  const announce = useAnnouncer()
 
   /** The export options. */
   const exportOptions: ExportOptions = { graph, mindMap, links, tags }
@@ -381,6 +384,17 @@ export const useExportHandlers = ({
       { graph: importPreview.graph, mindMap: importPreview.mindMap, links: importPreview.links, tags: importPreview.tags },
     )
     if (result.success) {
+      // An import silently replaces the entire library, so the count is the
+      // only way a screen reader user can confirm the scale of the change.
+      announce(
+        announceT(
+          'announce.importSucceeded',
+          String(importPreview.entityCount),
+          importPreview.entityCount === 1 ? 'entity' : 'entities',
+          String(importPreview.claimCount),
+          importPreview.claimCount === 1 ? 'claim' : 'claims',
+        ),
+      )
       /** The summary. */
       const summary = buildExportSummary(
         importPreview.entityCount,
@@ -394,6 +408,9 @@ export const useExportHandlers = ({
         description: `${summary} replaced the current library.`,
       })
     } else {
+      // The failed path is the one that must never be silent: the library
+      // looked replaced for a moment before rolling back.
+      announce(announceT('announce.importFailed'))
       toast.error('Import failed — state restored', { description: result.error })
     }
     setImportPreview(null)
@@ -401,6 +418,7 @@ export const useExportHandlers = ({
 
   /** Restores the store to the demo seed dataset. */
   const handleReset = () => {
+    announce(announceT('announce.storeReset'))
     resetStore()
     toast.success('Restored to demo data', { description: 'All entities and claims have been reset to the seed dataset.' })
   }

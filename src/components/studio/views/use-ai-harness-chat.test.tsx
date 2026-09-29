@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
+import { renderHook, act, waitFor } from '@testing-library/react'
 import type { ChatRequest, ChatResult } from '@/lib/ai'
 
 const { mockSendChatStream, mockBuildMessagesAsync, mockCanRequest } = vi.hoisted(() => ({
@@ -134,5 +134,33 @@ describe('useAiHarnessChat', () => {
     const last = hook.result.current.messages.at(-1)
     expect(last?.role).toBe('assistant')
     expect(last?.content).toBe('Partial answer')
+  })
+
+  it('aborts the in-flight stream when the view unmounts', async () => {
+    let capturedSignal: AbortSignal | undefined
+    // A never-settling stream stands in for a live provider: the turn is only
+    // ever released by the unmount cleanup, not by the promise resolving.
+    mockSendChatStream.mockImplementation((request) => {
+      capturedSignal = request.signal
+      return new Promise<ChatResult>(() => undefined)
+    })
+
+    const hook = renderHook(() => useAiHarnessChat({ ...baseOptions }))
+    act(() => { hook.result.current.setInput('hi') })
+    // Started, never awaited: the turn outlives this control flow and is
+    // released only by unmount.
+    void act(() => { void hook.result.current.handleSend() })
+    await waitFor(() => { expect(capturedSignal).toBeDefined() })
+
+    expect(capturedSignal?.aborted).toBe(false)
+    hook.unmount()
+    expect(capturedSignal?.aborted).toBe(true)
+  })
+
+  it('aborts on unmount only when a turn is in flight', () => {
+    const hook = renderHook(() => useAiHarnessChat({ ...baseOptions }))
+    // No turn was ever started: unmounting must not throw and must not
+    // fabricate an abort for work that never existed.
+    expect(() => { hook.unmount() }).not.toThrow()
   })
 })

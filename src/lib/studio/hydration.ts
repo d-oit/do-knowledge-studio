@@ -18,6 +18,7 @@ import type { Claim, Entity, ChatMessage, ViewId, AnyEntityType } from './types'
 import { validatePersistedState } from './schema'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from './schema'
 import { CURRENT_SCHEMA_VERSION, runMigrations } from './migrations'
+import { snapshotCorpus, type HistorySnapshot } from './history-snapshot'
 
 /** localStorage key holding the studio persistence envelope. */
 export const STUDIO_STORAGE_KEY = 'do-knowledge-studio-store'
@@ -56,7 +57,7 @@ interface PersistedSlice {
 
 /** Fields the hydration merger must understand to keep undo coherent. */
 interface HistoryFields {
-  entityHistory: Entity[][]
+  entityHistory: HistorySnapshot[]
   historyIndex: number
 }
 
@@ -82,9 +83,6 @@ export class HydrationRejectedError extends Error {
     this.name = 'HydrationRejectedError'
   }
 }
-
-/** Shallow-clones entities so snapshots share no mutable references. */
-const cloneEntities = (entities: Entity[]): Entity[] => entities.map((e) => ({ ...e }))
 
 /**
  * Validates an incoming payload from localStorage against the envelope schema.
@@ -112,34 +110,42 @@ export const sanitizeHydration = (persisted: unknown): SanitizeVerdict => {
 
 /**
  * Runs versioned migrations using the envelope version supplied by the
- * persist middleware. On failure returns an empty marker instead of raw
- * input — {@link mergeHydratedState} discards anything failing validation,
- * so the marker never reaches runtime state and the historical leak of
- * unvalidated payloads past migration is closed without depending on
- * middleware throw semantics.
- */
-/**
- * Runs versioned migrations using the envelope version supplied by the
  * persist middleware.
  *
- * Throws {@link HydrationRejectedError} when migrations fail or the payload
- * is newer than this build supports — the middleware's catch path then skips
- * both the state swap and its post-migration rewrite, preserving the user's
- * envelope on disk for recovery (ADR 028 §4).
+ * Returns a {@link MigrationOutcome} rather than throwing. The persist
+ * `migrate` callback sits in the same promise chain as `merge`, so a throw
+ * here has the same consequence: it skips the branch that sets `hasHydrated`
+ * and the rejection becomes invisible. Reporting through the return value
+ * lets the store finish hydrating and tell the user what happened
+ * (Plan 158 P0-3).
  */
-export const migratePersistedState = (persistedState: unknown, version: number): PersistedSlice => {
+export const migratePersistedState = (
+  persistedState: unknown,
+  version: number,
+): MigrationOutcome => {
   // runMigrations operates on a deliberately loose legacy shape (older
-  // envelopes predate the strict slice types). mergeHydratedState validates
+  // envelopes predate the strict slice types). hydrateWithOutcome validates
   // the result against the Zod envelope before anything reaches runtime
   // state, so this boundary assertion cannot smuggle bad data through.
   const migrated = runMigrations(persistedState, version)
   if (!migrated) {
-    throw new HydrationRejectedError(
-      `no safe migration from version ${version}; payload preserved on disk`,
-    )
+    return { ok: false, reason: `no safe migration from version ${version}` }
   }
-  return migrated as PersistedSlice
+  return { ok: true, state: migrated as PersistedSlice }
 }
+
+/**
+ * Result of a migration attempt.
+ *
+ * `ok: true` carries the migrated slice — or, on the refusal path, the input
+ * unchanged. The store returns that unchanged value to zustand deliberately:
+ * zustand treats any non-Promise return from `migrate` as "migrated" and
+ * calls `setItem()`, so echoing the input keeps the bytes on disk identical
+ * instead of replacing them with seed data.
+ */
+export type MigrationOutcome =
+  | { ok: true; state: PersistedSlice | unknown }
+  | { ok: false; reason: string }
 
 /**
  * Picks the durable keys from live state. Ephemeral high-frequency fields
@@ -175,28 +181,61 @@ const normalizeCanvasNulls = (data: Partial<PersistedSlice>): Partial<PersistedS
 }
 
 /**
+ * Throwing wrapper around {@link hydrateWithOutcome}, kept for callers that
+ * expect an exception (and for the tests that pin the rejection contract).
+ *
+ * Do NOT wire this into the persist `merge` callback: a throw there lands in
+ * zustand's terminal catch, which skips the branch that sets `hasHydrated` and
+ * leaves the store un-hydrated for the life of the page. The store uses
+ * `hydrateWithOutcome` plus `onRehydrateStorage` instead.
+ */
+export const mergeHydratedState = <S extends HydratableState>(persisted: unknown, current: S): S => {
+  const outcome = hydrateWithOutcome(persisted, current)
+  if (!outcome.ok) {
+    throw new HydrationRejectedError(outcome.reason)
+  }
+  return outcome.state
+}
+
+/**
  * Single enforcement point for every hydration path (same-version reloads
  * included — zustand only calls `migrate` on version mismatches).
  *
  * Valid payloads replace matching fields and rebase the undo baseline onto
- * the hydrated corpus. Anything else raises {@link HydrationRejectedError}
- * so the middleware aborts before swapping state or rewriting storage —
- * raw input is never merged, and the payload remains available for recovery.
+ * the hydrated corpus. A rejected payload does **not** throw: the persist
+ * `merge` callback has no documented error channel, and a throw lands in
+ * zustand's terminal `.catch`, skipping the branch that sets `hasHydrated` and
+ * leaving the store un-hydrated for the life of the page. The caller receives
+ * a {@link HydrationOutcome} and reports the rejection through
+ * `onRehydrateStorage`, preserving the raw bytes in quarantine so the next
+ * store write cannot destroy them (Plan 158 P0-3).
  */
-export const mergeHydratedState = <S extends HydratableState>(persisted: unknown, current: S): S => {
+export const hydrateWithOutcome = <S extends HydratableState>(
+  persisted: unknown,
+  current: S,
+): HydrationOutcome<S> => {
   const verdict = sanitizeHydration(persisted)
   if (!verdict.ok) {
-    throw new HydrationRejectedError(verdict.reason ?? 'invalid payload')
+    return { ok: false, reason: verdict.reason ?? 'invalid payload' }
   }
   const merged: S = { ...current, ...normalizeCanvasNulls(verdict.data) }
   // The first edit after a reload must undo back to the loaded corpus,
-  // never to the in-memory seed snapshot that initialized history.
+  // never to the in-memory seed snapshot that initialized history. The
+  // baseline carries claims too, so the first undo restores the full corpus.
   return {
-    ...merged,
-    entityHistory: [cloneEntities(merged.entities)],
-    historyIndex: 0,
+    ok: true,
+    state: {
+      ...merged,
+      entityHistory: [snapshotCorpus(merged.entities, merged.claims)],
+      historyIndex: 0,
+    },
   }
 }
+
+/** Result of a hydration attempt: merged state, or the refusal reason. */
+export type HydrationOutcome<S> =
+  | { ok: true; state: S }
+  | { ok: false; reason: string }
 
 /** Current envelope version, re-exported for the persist options wiring. */
 export { CURRENT_SCHEMA_VERSION }

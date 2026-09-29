@@ -47,7 +47,8 @@ Every new non-obvious insight must be recorded in two places:
 ### Format
 
 - 1–3 lines per insight in `AGENTS.md`.
-- Fits within `MAX_LINES_AGENTS_MD=150` constraint.
+- Fits within `MAX_LINES_AGENTS_MD=250` constraint (enforced by
+  `scripts/agent-surface.py validate`; the limit is not aspirational).
 - Bulleted list under a "Learnings" or "Context" section.
 
 ## Reference Files

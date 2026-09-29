@@ -6,6 +6,8 @@ import {
   Layers,
   Focus,
   Camera,
+  History,
+  Trash2,
   RotateCcw,
   RotateCw,
   Download,
@@ -16,7 +18,10 @@ import { ToggleButtonGroup, Divider } from '../ui/shared-primitives'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
-export type LayoutType = 'force' | 'circular' | 'hierarchical'
+import type { GraphLayout } from '@/lib/studio/graph-snapshot'
+
+/** Re-exported for callers that only need the layout union. */
+export type LayoutType = GraphLayout
 
 interface ToolbarBtnProps {
   icon: typeof Focus
@@ -76,6 +81,10 @@ interface GraphToolbarProps {
   focusMode: boolean
   onToggleFocusMode: () => void
   onSaveSnapshot: () => void
+  onRestoreSnapshot: () => void
+  onClearSnapshot: () => void
+  /** Whether a restorable snapshot is currently stored. */
+  hasSnapshot: boolean
   showMore: boolean
   onToggleShowMore: () => void
   canUndo: boolean
@@ -94,6 +103,9 @@ export const GraphToolbar = ({
   focusMode,
   onToggleFocusMode,
   onSaveSnapshot,
+  onRestoreSnapshot,
+  onClearSnapshot,
+  hasSnapshot,
   showMore,
   onToggleShowMore,
   canUndo,
@@ -145,8 +157,22 @@ export const GraphToolbar = ({
       <ToolbarBtn
         icon={Camera}
         label="Save snapshot"
-        help="Save the current layout, selection, and focus mode for later"
+        help="Save the current layout, selection, focus mode, and viewport for later"
         onClick={onSaveSnapshot}
+      />
+      <ToolbarBtn
+        icon={History}
+        label="Restore snapshot"
+        help={hasSnapshot ? 'Return the canvas to the last saved snapshot' : 'No snapshot saved yet'}
+        disabled={!hasSnapshot}
+        onClick={onRestoreSnapshot}
+      />
+      <ToolbarBtn
+        icon={Trash2}
+        label="Clear snapshot"
+        help={hasSnapshot ? 'Discard the saved snapshot' : 'No snapshot saved yet'}
+        disabled={!hasSnapshot}
+        onClick={onClearSnapshot}
       />
 
       <ToolbarBtn

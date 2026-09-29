@@ -6,6 +6,8 @@ import { useStudioStore } from '@/lib/studio/store'
 import { Overlay } from '@/components/studio/ui/shared-primitives'
 import { extractClaimsFromText, hasExtractableClaims, type ParsedClaimDraft } from '@/lib/studio/claim-parser'
 import { translate } from '@/lib/i18n/messages/claims'
+import { translate as announceT } from '@/lib/i18n/messages/announce'
+import { useAnnouncer } from '@/lib/a11y/announcer'
 
 /** Colored badge indicating a claim&apos;s verification status. */
 export function VerificationBadge({ status }: { status: VerificationStatus }) {
@@ -121,6 +123,7 @@ export const ClaimsPanel = ({
   editingEntityId,
   entityContent,
   addClaim,
+  addClaims,
   updateClaim,
   deleteClaim,
 }: {
@@ -131,6 +134,8 @@ export const ClaimsPanel = ({
    * content when omitted (standalone/test usage). */
   entityContent?: string
   addClaim: (claim: Omit<Claim, 'id'>) => void
+  /** Adds several claims under one history step; used by bulk extraction. */
+  addClaims?: (claims: Omit<Claim, 'id'>[]) => void
   updateClaim: (id: string, updates: Partial<Omit<Claim, 'id' | 'entityId'>>) => void
   deleteClaim: (id: string) => void
 }) => {
@@ -143,6 +148,7 @@ export const ClaimsPanel = ({
   const [extractDrafts, setExtractDrafts] = useState<ParsedClaimDraft[] | null>(null)
 
   const entities = useStudioStore((state) => state.entities)
+  const announce = useAnnouncer()
 
   const resetForm = () => {
     setStatement('')
@@ -184,12 +190,16 @@ export const ClaimsPanel = ({
         confidence: confidence / 100,
         source: source.trim() || undefined,
       })
+      // WCAG 4.1.3: the toast is visual-only, so a screen-reader user got no
+      // confirmation that the claim was added (Plan 158 P2-9).
+      announce(announceT('announce.claimAdded', '1'))
     }
     resetForm()
   }
 
   const handleDelete = (id: string) => {
     deleteClaim(id)
+    announce(announceT('announce.claimDeleted'))
     toast.success(translate('claims.deleted'))
   }
   // Prefer the live draft passed by the editor; fall back to the persisted
@@ -224,19 +234,31 @@ export const ClaimsPanel = ({
       (draft) => !existing.has(draftKey(draft.statement, draft.source)),
     )
     const skipped = extractDrafts.length - toAdd.length
-    for (const draft of toAdd) {
-      addClaim({
-        entityId: editingEntityId,
-        statement: draft.statement,
-        source: draft.source,
-        confidence: DEFAULT_CONFIDENCE,
-        verification: 'unverified',
-      })
+    const newClaims = toAdd.map((draft) => ({
+      entityId: editingEntityId,
+      statement: draft.statement,
+      source: draft.source,
+      confidence: DEFAULT_CONFIDENCE,
+      verification: 'unverified' as const,
+    }))
+    // One history step for the whole extraction: a batch of N claims must be
+    // undoable with a single Undo, not N of them.
+    if (newClaims.length > 0) {
+      if (addClaims) {
+        addClaims(newClaims)
+      } else {
+        for (const claim of newClaims) {
+          addClaim(claim)
+        }
+      }
     }
     setExtractDrafts(null)
-    if (toAdd.length > 0) toast.success(translate('claims.added', String(toAdd.length)))
+    if (toAdd.length > 0) {
+      announce(announceT('announce.claimAdded', String(toAdd.length)))
+      toast.success(translate('claims.added', String(toAdd.length)))
+    }
     if (skipped > 0) toast.info(translate('claims.skipped', String(skipped)))
-  }, [claims, extractDrafts, editingEntityId, addClaim])
+  }, [claims, extractDrafts, editingEntityId, addClaim, addClaims, announce])
 
   return (
     <section

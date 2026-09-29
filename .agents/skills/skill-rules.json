@@ -4,11 +4,54 @@
   "description": "Defines trigger rules for automatic skill activation based on keywords, patterns, and file paths.",
   "rules": [
     {
+      "skill": "verify-before-asserting",
+      "triggers": {
+        "keywords": [
+          "should be",
+          "looks correct",
+          "just fixed",
+          "add a test",
+          "regression test",
+          "false positive",
+          "the plan says",
+          "verify",
+          "confirm",
+          "assert",
+          "regression"
+        ],
+        "patterns": [
+          ".*",
+          ".*(fix|bug|regression|verify|assert).*"
+        ],
+        "files": [
+          "src/lib/studio/store.ts",
+          "src/lib/studio/hydration.ts",
+          "src/lib/studio/slices/*.ts",
+          "src/app/layout.tsx"
+        ]
+      },
+      "priority": "high",
+      "autoActivate": true
+    },
+    {
       "skill": "shell-script-quality",
       "triggers": {
-        "keywords": ["shell", "bash", "script", "shellcheck", "bats"],
-        "patterns": ["\\.sh$", "^(#!.*bash)", "^(#!.*sh)"],
-        "files": ["**/*.sh", "scripts/**/*"]
+        "keywords": [
+          "shell",
+          "bash",
+          "script",
+          "shellcheck",
+          "bats"
+        ],
+        "patterns": [
+          "\\.sh$",
+          "^(#!.*bash)",
+          "^(#!.*sh)"
+        ],
+        "files": [
+          "**/*.sh",
+          "scripts/**/*"
+        ]
       },
       "priority": "high",
       "autoActivate": true
@@ -16,8 +59,19 @@
     {
       "skill": "task-decomposition",
       "triggers": {
-        "keywords": ["plan", "decompose", "break down", "steps", "phases", "milestone"],
-        "patterns": ["plan.*", "step.*", "phase.*"],
+        "keywords": [
+          "plan",
+          "decompose",
+          "break down",
+          "steps",
+          "phases",
+          "milestone"
+        ],
+        "patterns": [
+          "plan.*",
+          "step.*",
+          "phase.*"
+        ],
         "files": []
       },
       "priority": "high",
@@ -26,9 +80,25 @@
     {
       "skill": "code-quality",
       "triggers": {
-        "keywords": ["review", "quality", "refactor", "clean code", "best practice"],
-        "patterns": ["review.*", "quality.*", "refactor.*"],
-        "files": ["**/*.rs", "**/*.ts", "**/*.js", "**/*.py", "**/*.go"]
+        "keywords": [
+          "review",
+          "quality",
+          "refactor",
+          "clean code",
+          "best practice"
+        ],
+        "patterns": [
+          "review.*",
+          "quality.*",
+          "refactor.*"
+        ],
+        "files": [
+          "**/*.rs",
+          "**/*.ts",
+          "**/*.js",
+          "**/*.py",
+          "**/*.go"
+        ]
       },
       "priority": "medium",
       "autoActivate": false
@@ -36,9 +106,24 @@
     {
       "skill": "test-runner",
       "triggers": {
-        "keywords": ["test", "spec", "coverage", "unit test", "integration test"],
-        "patterns": ["test.*", "spec.*", ".*_test\\.", ".*\\.test\\."],
-        "files": ["**/tests/**/*", "**/*.test.*", "**/*_test.*"]
+        "keywords": [
+          "test",
+          "spec",
+          "coverage",
+          "unit test",
+          "integration test"
+        ],
+        "patterns": [
+          "test.*",
+          "spec.*",
+          ".*_test\\.",
+          ".*\\.test\\."
+        ],
+        "files": [
+          "**/tests/**/*",
+          "**/*.test.*",
+          "**/*_test.*"
+        ]
       },
       "priority": "high",
       "autoActivate": true
@@ -46,8 +131,16 @@
     {
       "skill": "parallel-execution",
       "triggers": {
-        "keywords": ["parallel", "concurrent", "simultaneous", "batch"],
-        "patterns": ["parallel.*", "concurrent.*"],
+        "keywords": [
+          "parallel",
+          "concurrent",
+          "simultaneous",
+          "batch"
+        ],
+        "patterns": [
+          "parallel.*",
+          "concurrent.*"
+        ],
         "files": []
       },
       "priority": "medium",
@@ -56,8 +149,18 @@
     {
       "skill": "iterative-refinement",
       "triggers": {
-        "keywords": ["iterate", "refine", "improve", "loop", "progressive"],
-        "patterns": ["iterate.*", "refine.*", "improve.*"],
+        "keywords": [
+          "iterate",
+          "refine",
+          "improve",
+          "loop",
+          "progressive"
+        ],
+        "patterns": [
+          "iterate.*",
+          "refine.*",
+          "improve.*"
+        ],
         "files": []
       },
       "priority": "medium",
@@ -66,8 +169,30 @@
     {
       "skill": "ui-ux-optimize",
       "triggers": {
-        "keywords": ["UI", "UX", "design", "interface", "layout", "responsive", "dashboard", "game UI", "navigation", "design tokens", "wireframe", "prototype", "redesign", "mobile design", "web design"],
-        "patterns": ["design.*interface", "UI.*UX", "responsive.*layout", "design.*system", "optimize.*prompt"],
+        "keywords": [
+          "UI",
+          "UX",
+          "design",
+          "interface",
+          "layout",
+          "responsive",
+          "dashboard",
+          "game UI",
+          "navigation",
+          "design tokens",
+          "wireframe",
+          "prototype",
+          "redesign",
+          "mobile design",
+          "web design"
+        ],
+        "patterns": [
+          "design.*interface",
+          "UI.*UX",
+          "responsive.*layout",
+          "design.*system",
+          "optimize.*prompt"
+        ],
         "files": []
       },
       "priority": "high",
@@ -76,9 +201,34 @@
     {
       "skill": "accessibility-auditor",
       "triggers": {
-        "keywords": ["accessibility", "a11y", "WCAG", "screen reader", "keyboard navigation", "color contrast", "ARIA", "Section 508", "ADA compliance", "alt text", "focus order"],
-        "patterns": ["accessibility.*", "a11y.*", "wcag.*", "contrast.*", "aria.*"],
-        "files": ["**/*.html", "**/*.jsx", "**/*.tsx", "**/*.vue", "**/*.css", "**/*.scss"]
+        "keywords": [
+          "accessibility",
+          "a11y",
+          "WCAG",
+          "screen reader",
+          "keyboard navigation",
+          "color contrast",
+          "ARIA",
+          "Section 508",
+          "ADA compliance",
+          "alt text",
+          "focus order"
+        ],
+        "patterns": [
+          "accessibility.*",
+          "a11y.*",
+          "wcag.*",
+          "contrast.*",
+          "aria.*"
+        ],
+        "files": [
+          "**/*.html",
+          "**/*.jsx",
+          "**/*.tsx",
+          "**/*.vue",
+          "**/*.css",
+          "**/*.scss"
+        ]
       },
       "priority": "high",
       "autoActivate": true
@@ -86,8 +236,18 @@
     {
       "skill": "web-search-researcher",
       "triggers": {
-        "keywords": ["search", "research", "find information", "look up", "documentation"],
-        "patterns": ["search.*", "research.*", "find.*"],
+        "keywords": [
+          "search",
+          "research",
+          "find information",
+          "look up",
+          "documentation"
+        ],
+        "patterns": [
+          "search.*",
+          "research.*",
+          "find.*"
+        ],
         "files": []
       },
       "priority": "medium",

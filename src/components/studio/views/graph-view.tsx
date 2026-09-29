@@ -10,10 +10,19 @@ import { translate as entityTypesT } from '@/lib/i18n/messages/entity-types'
 import { todayStamp, downloadBlob } from './export-types'
 import { CircleDot } from 'lucide-react'
 import { useState, useRef, useMemo, useCallback } from 'react'
-import { GraphToolbar, type LayoutType } from './graph-toolbar'
+import { GraphToolbar } from './graph-toolbar'
 import { cn } from '@/lib/utils'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { buildAdjacencyIndex } from '@/lib/studio/graph-index'
+import { useAnnouncer } from '@/lib/a11y/announcer'
+import { translate as announceT } from '@/lib/i18n/messages/announce'
+import {
+  buildGraphSnapshot,
+  clearGraphSnapshot,
+  readGraphSnapshot,
+  saveGraphSnapshot,
+  type GraphLayout,
+} from '@/lib/studio/graph-snapshot'
 
 /** CSS filter applied to focused nodes in focus mode. */
 const FOCUS_MODE_FILTER_STYLE: React.CSSProperties = {
@@ -116,11 +125,16 @@ export const GraphView = () => {
   const redo = useStudioStore((s) => s.redo)
   const entityHistory = useStudioStore((s) => s.entityHistory)
   const historyIndex = useStudioStore((s) => s.historyIndex)
-  const [layout, setLayout] = useState<LayoutType>('force')
+  const [layout, setLayout] = useState<GraphLayout>('force')
   const [focusMode, setFocusMode] = useState(false)
   const [showMore, setShowMore] = useState(false)
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
+  // Whether a restorable snapshot exists. Read once on mount and refreshed
+  // after every save/restore so the toolbar can disable the restore action
+  // without touching storage on every render.
+  const [hasSnapshot, setHasSnapshot] = useState<boolean>(() => readGraphSnapshot() !== null)
+  const announce = useAnnouncer()
 
   // Build adjacency index for O(1) focus-mode neighbor lookups
   const adjacency = useMemo(() => buildAdjacencyIndex(entities), [entities])
@@ -192,7 +206,20 @@ export const GraphView = () => {
   const svgRef = useRef<SVGSVGElement>(null)
   const reducedMotion = useReducedMotion()
 
-  const handleGraphKeyDown = useCallback(
+  /** Lowest zoom the canvas supports; matches the keyboard step's floor. */
+const MIN_ZOOM = 0.3;
+
+/** Highest zoom the canvas supports; matches the keyboard step's ceiling. */
+const MAX_ZOOM = 3;
+
+/** Largest pan offset accepted on restore, in SVG units (5x the canvas). */
+const MAX_PAN = 4000;
+
+/** Constrains a value to an inclusive range. */
+const clamp = (value: number, min: number, max: number): number =>
+  Math.min(Math.max(value, min), max);
+
+const handleGraphKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       const PAN_STEP = 30
       const ZOOM_STEP = 0.15
@@ -216,11 +243,11 @@ export const GraphView = () => {
         case '+':
         case '=':
           e.preventDefault()
-          setZoom((z) => Math.min(z + ZOOM_STEP, 3))
+          setZoom((z) => Math.min(z + ZOOM_STEP, MAX_ZOOM))
           break
         case '-':
           e.preventDefault()
-          setZoom((z) => Math.max(z - ZOOM_STEP, 0.3))
+          setZoom((z) => Math.max(z - ZOOM_STEP, MIN_ZOOM))
           break
         case 'Home':
           e.preventDefault()
@@ -231,6 +258,10 @@ export const GraphView = () => {
         case 'Backspace':
           if (selectedEntityId) {
             e.preventDefault()
+            // Deleting from the canvas removes the node with no other visual
+            // trace, so the live region names what was destroyed.
+            const removed = entities.find((entity) => entity.id === selectedEntityId)
+            if (removed) announce(announceT('announce.entityDeleted', removed.name))
             useStudioStore.getState().deleteEntity(selectedEntityId)
           }
           break
@@ -238,7 +269,7 @@ export const GraphView = () => {
           break
       }
     },
-    [selectedEntityId],
+    [announce, entities, selectedEntityId],
   )
 
   const handleExportPng = useCallback(() => {
@@ -293,18 +324,51 @@ export const GraphView = () => {
   )
 
   const saveSnapshot = useCallback(() => {
-    try {
-      const snapshot = {
-        layout,
-        selectedEntityId,
-        focusMode,
-        timestamp: new Date().toISOString(),
-      }
-      localStorage.setItem('dks-graph-snapshot', JSON.stringify(snapshot))
-    } catch (error) {
-      console.error('Failed to save graph snapshot:', error instanceof Error ? error.message : error)
+    const saved = saveGraphSnapshot(
+      buildGraphSnapshot(
+        { layout, selectedEntityId, focusMode },
+        { panX: panOffset.x, panY: panOffset.y, zoom },
+      ),
+    )
+    if (saved) announce(announceT('announce.snapshotSaved'))
+    setHasSnapshot(saved)
+  }, [announce, layout, selectedEntityId, focusMode, panOffset, zoom])
+
+  /**
+   * Restores the saved canvas state. The selection is only re-applied when it
+   * still names an entity in the current corpus — a snapshot taken before an
+   * import must not leave focus mode pointed at a deleted node.
+   */
+  const restoreSnapshot = useCallback(() => {
+    const snapshot = readGraphSnapshot()
+    if (!snapshot) {
+      setHasSnapshot(false)
+      return
     }
-  }, [layout, selectedEntityId, focusMode])
+    announce(announceT('announce.snapshotRestored'))
+    setLayout(snapshot.layout)
+    setFocusMode(snapshot.focusMode)
+    // A snapshot is user-writable and survives deploys; a pan far outside the
+    // canvas would park the whole graph off-view with no way back except the
+    // Home key. Clamp to a generous multiple of the visible canvas.
+    setPanOffset({
+      x: clamp(snapshot.panX, -MAX_PAN, MAX_PAN),
+      y: clamp(snapshot.panY, -MAX_PAN, MAX_PAN),
+    })
+    // Clamp to the same range the keyboard handler uses. A snapshot is
+    // user-writable and survives deploys, so an out-of-range value would
+    // otherwise produce a degenerate viewBox.
+    setZoom(Math.min(Math.max(snapshot.zoom, MIN_ZOOM), MAX_ZOOM))
+    const stillPresent = entities.some((e) => e.id === snapshot.selectedEntityId)
+    selectEntity(stillPresent ? snapshot.selectedEntityId : null)
+  }, [announce, entities, selectEntity])
+
+  /** Discards the saved snapshot and disables the restore action. */
+  const clearSnapshot = useCallback(() => {
+    announce(announceT('announce.snapshotCleared'))
+    clearGraphSnapshot()
+    setHasSnapshot(false)
+  }, [announce])
 
   return (
     <div className="flex h-full flex-col">
@@ -315,6 +379,9 @@ export const GraphView = () => {
         focusMode={focusMode}
         onToggleFocusMode={() => { setFocusMode(!focusMode) }}
         onSaveSnapshot={saveSnapshot}
+        onRestoreSnapshot={restoreSnapshot}
+        onClearSnapshot={clearSnapshot}
+        hasSnapshot={hasSnapshot}
         showMore={showMore}
         onToggleShowMore={() => { setShowMore(!showMore) }}
         canUndo={historyIndex > 0}

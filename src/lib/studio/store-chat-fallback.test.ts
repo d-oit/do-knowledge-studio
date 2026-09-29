@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { act } from '@testing-library/react'
 import { useStudioStore } from './store'
+import type { Entity } from './types'
 
 vi.mock('@/lib/search/search-worker-client', () => ({
   searchAsync: vi.fn(),
@@ -82,6 +84,53 @@ describe('sendMessage synchronous fallback', () => {
     // A send started before a workspace reset must not append an answer into it.
     expect(useStudioStore.getState().chat).toHaveLength(1)
     expect(useStudioStore.getState().chat[0].content).toContain('Welcome to your local knowledge studio')
+    expect(useStudioStore.getState().chatLoading).toBe(false)
+  })
+})
+
+/**
+ * Regression: aborting a send mid-flight used to leave `chatLoading` stuck at
+ * `true`. `abortChatSend` nulls the controller, so the aborted send's catch
+ * took the `chatSendAbort !== controller` early return and never cleared the
+ * flag — the chat view showed a permanent typing indicator and refused
+ * further sends until the user cleared the chat or reset the store.
+ */
+describe('cancelling a send clears the loading indicator', () => {
+  const entity = (id: string): Entity => ({
+    id, name: id, type: 'note', description: '', content: '', tags: [],
+    createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z', links: [],
+  })
+
+  it('importData clears chatLoading when it aborts an in-flight send', async () => {
+    useStudioStore.setState({ chat: [], chatLoading: false, entities: [entity('a')], claims: [] })
+    void useStudioStore.getState().sendMessage('hello')
+    expect(useStudioStore.getState().chatLoading).toBe(true)
+
+    useStudioStore.getState().importData([entity('b')], [])
+    await act(async () => { await Promise.resolve() })
+
+    expect(useStudioStore.getState().chatLoading).toBe(false)
+  })
+
+  it('importWithRollback clears chatLoading when it aborts an in-flight send', async () => {
+    useStudioStore.setState({ chat: [], chatLoading: false, entities: [entity('a')], claims: [] })
+    void useStudioStore.getState().sendMessage('hello again')
+    expect(useStudioStore.getState().chatLoading).toBe(true)
+
+    useStudioStore.getState().importWithRollback([entity('c')], [])
+    await act(async () => { await Promise.resolve() })
+
+    expect(useStudioStore.getState().chatLoading).toBe(false)
+  })
+
+  it('resetStore clears chatLoading when it aborts an in-flight send', async () => {
+    useStudioStore.setState({ chat: [], chatLoading: false, entities: [entity('a')], claims: [] })
+    void useStudioStore.getState().sendMessage('reset me')
+    expect(useStudioStore.getState().chatLoading).toBe(true)
+
+    useStudioStore.getState().resetStore()
+    await act(async () => { await Promise.resolve() })
+
     expect(useStudioStore.getState().chatLoading).toBe(false)
   })
 })

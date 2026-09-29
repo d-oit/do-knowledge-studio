@@ -1,7 +1,11 @@
 # Workflow Reference
 
 > Detailed workflow procedures referenced by AGENTS.md.
-> Keep procedures here, not in AGENTS.md, to stay within `MAX_LINES_AGENTS_MD=150`.
+> Keep procedures here, not in AGENTS.md, to stay within `MAX_LINES_AGENTS_MD=250`
+> (enforced by `scripts/agent-surface.py validate`).
+>
+> For the end-to-end stage loop (production → reproduce → evaluate → adversarial
+> → shadow → canary → promote/rollback), see `agents-docs/DELIVERY-LIFECYCLE.md`.
 
 ## Pre-Existing Issue Resolution
 

@@ -14,6 +14,8 @@ import { sanitizeUrl } from '@/lib/security'
 import {
   ExternalLink,
 } from 'lucide-react'
+import { useAnnouncer } from '@/lib/a11y/announcer'
+import { translate as announceT } from '@/lib/i18n/messages/announce'
 import { EditorToolbar } from './editor-toolbar'
 import { CursorTracker } from '../remote-cursors'
 import { ClaimsPanel } from './editor-claims-panel'
@@ -157,10 +159,12 @@ export const EditorView = () => {
   const entities = useStudioStore((s) => s.entities)
   const editingEntityId = useStudioStore((s) => s.editingEntityId)
   const commitEntities = useStudioStore((s) => s.commitEntities)
+  const announce = useAnnouncer()
   const finishEditing = useStudioStore((s) => s.finishEditing)
   const navigateToView = useStudioStore((s) => s.navigateToView)
   const claims = useStudioStore((s) => s.claims)
   const addClaim = useStudioStore((s) => s.addClaim)
+  const addClaims = useStudioStore((s) => s.addClaims)
   const updateClaim = useStudioStore((s) => s.updateClaim)
   const deleteClaim = useStudioStore((s) => s.deleteClaim)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -358,6 +362,9 @@ export const EditorView = () => {
     const mentionedIds = new Set(mentions.map((m) => m.entityId))
     const backlinkUpdates = applyMentionBacklinks(entities, entityId, mentionedIds)
     commitEntities([entity, ...backlinkUpdates])
+    // A save either navigates away (mentions present) or stays put, so the
+    // only reliable signal for a screen reader is the write itself.
+    announce(announceT(editing ? 'announce.entitySaved' : 'announce.entityCreated', entity.name))
     // Remove draft on commit
     if (draftIdRef.current) removeDraft(draftIdRef.current)
     // Navigate to the library only when the entity actually mentions someone
@@ -367,7 +374,7 @@ export const EditorView = () => {
       finishEditing()
       navigateToView('library')
     }
-  }, [name, type, description, content, sourceUrl, tags, editing, entities, commitEntities, finishEditing, navigateToView, draftIdRef])
+  }, [name, type, description, content, sourceUrl, tags, editing, entities, commitEntities, finishEditing, navigateToView, draftIdRef, announce])
 
   const handleDiscard = () => {
     if (draftIdRef.current) removeDraft(draftIdRef.current)
@@ -377,7 +384,13 @@ export const EditorView = () => {
   useEditorKeyboardShortcuts({ handleFormat, handleSave })
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-6 lg:px-10 lg:py-8">
+    // pb reserves the height of the sticky status bar (69px measured) so the
+    // last row can always be scrolled clear of it. scroll-padding alone does
+    // NOT fix WCAG 2.2 SC 2.4.11 here: the status bar is a sibling inside the
+    // scrolled content, so at maximum scroll it permanently overlays the last
+    // 69px no matter how the browser positions a focused element (verified in
+    // Chromium — the element was still 100% covered at scrollTop max).
+    <div className="mx-auto max-w-3xl px-6 pb-24 pt-6 lg:px-10 lg:pb-28 lg:pt-8">
       <EditorHeader
         editing={editing}
         name={name}
@@ -516,6 +529,7 @@ export const EditorView = () => {
           editingEntityId={editing.id}
           entityContent={content}
           addClaim={addClaim}
+          addClaims={addClaims}
           updateClaim={updateClaim}
           deleteClaim={deleteClaim}
         />
