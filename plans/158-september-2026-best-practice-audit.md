@@ -362,13 +362,22 @@ Both were found the hard way and are commented at the call site:
 
 ## 5. Still open
 
-1. **P1-1** — `useTypeScriptCli: false` prints a build warning on every build,
-   which the repo's own zero-warning rule forbids. The fix is a
-   `tsconfig.build.json` without `composite` (the CLI checker passes
-   `--noEmit`, which historically conflicts with `composite: true`). Held back
-   deliberately: it is the one interaction in this audit that could not be
-   verified without changing the build, and a build change is not a drive-by.
-2. **P2 set** — `apple-touch-icon`, manifest `screenshots`, precache
-   integration, `themeColor` media array, `poweredByHeader`, mind-map
-   `aria-level`/`aria-selected`, `engines.node` floor, unwired announce keys,
-   cross-tab init ordering, and the dead `useStoreHydrated`.
+Everything below was verified against the current tree, not inferred from when
+the item was written.
+
+1. **P2-2** — manifest `screenshots`, for Chrome's Richer Install bottomsheet.
+   Cosmetic to installability; needs real captures at two form factors, so it
+   does not automate cleanly.
+2. **P2-10** — cross-tab init ordering. `store.ts` attaches the listener via a
+   fire-and-forget dynamic `import()`, so it can subscribe after hydration and
+   broadcast seed state over a recovered corpus. A TOCTOU gap, not React-related.
+3. **P2-11** — `useStoreHydrated` is dead code. Delete it, or wire it against
+   the `onRehydrateStorage` error branch so it can never latch false.
+
+**Closed since the audit was written** (listed here so this section is not
+mistaken for the full remaining scope):
+
+- P1-1 build warning — `tsconfig.build.json` + `typescript.tsconfigPath`.
+- P2-1 apple-touch-icon, P2-4 themeColor, P2-5 poweredByHeader,
+  P2-6/P2-7 mind-map tree ARIA, P2-8 engines floor, P2-9 announce keys.
+- P2-3 precache — generated manifest, verified offline in Chromium (#838).

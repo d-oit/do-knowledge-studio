@@ -469,7 +469,7 @@ if [[ " ${DETECTED_LANGUAGES[*]} " =~ " typescript " ]] && [[ "$SCOPE" == "all" 
             # belongs here, not just the ones that declare state. A schema or
             # migration change can break first load exactly as surely as a
             # slice-ordering change does.
-            STRUCTURAL_RE='^(src/lib/studio/(store|hydration|hydration-quarantine|seed-state|history-snapshot|recovery-helpers|migrations|schema|use-hydrated|indexeddb-backup)\.ts|src/lib/studio/slices/.+\.ts|src/app/(layout|page)\.tsx|playwright\.config\.ts|src/components/studio/app-shell\.tsx)$'
+            STRUCTURAL_RE='^(src/lib/studio/(store|hydration|hydration-quarantine|seed-state|history-snapshot|recovery-helpers|migrations|schema|use-hydrated|indexeddb-backup)\.ts|src/lib/studio/slices/.+\.ts|src/app/layout\.tsx|playwright\.config\.ts|src/components/studio/app-shell\.tsx|src/components/studio/ui/shared-primitives\.tsx|src/components/studio/(sidebar|right-panel|topbar|command-palette|offline-indicator)\.tsx|src/app/(globals\.css|error\.tsx|not-found\.tsx))$'
                 if git diff --name-only "$MERGE_BASE" -- 2>/dev/null | grep -qE "$STRUCTURAL_RE"; then
                     should_run_e2e=true
                 fi
