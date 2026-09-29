@@ -56,6 +56,8 @@ type StoreSnapshot = ReturnType<typeof useStudioStore.getState>
 
 let broadcastChannel: BroadcastChannel | null = null
 let unsubscribeStore: (() => void) | null = null
+/** Teardown for a subscription deferred until hydration finishes. */
+let pendingHydrationUnsubscribe: (() => void) | null = null
 let storageEventListener: ((event: StorageEvent) => void) | null = null
 let isApplyingRemoteUpdate = false
 let fallbackOriginCounter = 0
@@ -414,6 +416,12 @@ export const stopCrossTabSync = (): void => {
     unsubscribeStore()
     unsubscribeStore = null
   }
+  // A deferred subscription must be cancelled too, or it would attach after
+  // teardown and leak a listener that broadcasts into a closed channel.
+  if (pendingHydrationUnsubscribe) {
+    pendingHydrationUnsubscribe()
+    pendingHydrationUnsubscribe = null
+  }
   if (storageEventListener && typeof window !== 'undefined') {
     window.removeEventListener('storage', storageEventListener)
     storageEventListener = null
@@ -442,9 +450,7 @@ export const initCrossTabSync = (): (() => void) => {
   storageEventListener = createStorageEventListener()
   window.addEventListener('storage', storageEventListener)
 
-  // Subscribe to local Zustand store changes. The persisted corpus is diffed
-  // against the previous state so deletions ride along with the snapshot.
-  unsubscribeStore = useStudioStore.subscribe((state, previous) => {
+  const broadcastLocalChanges = (state: StoreSnapshot, previous: StoreSnapshot) => {
     if (isApplyingRemoteUpdate) {
       return
     }
@@ -460,7 +466,28 @@ export const initCrossTabSync = (): (() => void) => {
     recordDeletions('entity', deletedEntityIds, Date.now())
     recordDeletions('claim', deletedClaimIds, Date.now())
     broadcastLocalStoreChange(state, { deletedEntityIds, deletedClaimIds })
-  })
+  }
+
+  // Gate the broadcast subscription on hydration finishing.
+  //
+  // `initCrossTabSync` is reached through a dynamic import, so the listener can
+  // attach AFTER `persist` has already swapped in the stored corpus. The
+  // subscription then diffs the hydrated state against the seed it replaced
+  // and broadcasts the whole recovered library as if the user had just made
+  // that edit — rewriting it in every other tab.
+  //
+  // Waiting for `onFinishHydration` makes the ordering explicit rather than
+  // incidental. Already-hydrated stores attach immediately, so a manual
+  // `rehydrate()` in tests is not silently ignored.
+  const persist = useStudioStore.persist
+  if (persist?.onFinishHydration && !persist.hasHydrated?.()) {
+    pendingHydrationUnsubscribe = persist.onFinishHydration(() => {
+      pendingHydrationUnsubscribe = null
+      unsubscribeStore = useStudioStore.subscribe(broadcastLocalChanges)
+    })
+  } else {
+    unsubscribeStore = useStudioStore.subscribe(broadcastLocalChanges)
+  }
 
   return stopCrossTabSync
 }

@@ -34,6 +34,10 @@ const ALWAYS_INCLUDED = [
   '/icon-192.png',
   '/icon-512.png',
   '/manifest.webmanifest',
+  // Declared in the manifest's `screenshots`, so they must be available
+  // offline for the install prompt to render them.
+  '/screenshot-wide.png',
+  '/screenshot-narrow.png',
 ]
 
 /**

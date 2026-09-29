@@ -293,7 +293,10 @@ spec citation. Neither survived a five-minute browser check.
 | P1-4 focus obscured | **Fixed** | The audit's prescribed remedy was wrong — see below. |
 | P1-1 build warning | **Fixed** | `tsconfig.build.json` + `typescript.tsconfigPath`. See below. |
 | P2-1, P2-4, P2-5, P2-6, P2-7, P2-8, P2-9 | **Fixed** | See below. |
-| P2-2, P2-3, P2-10, P2-11 | Open | See §5. |
+| P2-2 manifest screenshots | **Fixed** | Real captures at both form factors, wired into the manifest and the precache list. |
+| P2-3 precache | **Fixed** | Generated manifest derived from the emitted HTML; verified offline in Chromium (#838). |
+| P2-10 cross-tab ordering | **Fixed** | The broadcast subscription now waits for `onFinishHydration`. |
+| P2-11 dead `useStoreHydrated` | **Fixed** | Deleted — `app-shell.tsx`'s `appReady` already serves the E2E readiness contract, and a second signal could not express the refusal path. |
 
 ### P1-4: the prescribed fix did not work
 
@@ -362,22 +365,17 @@ Both were found the hard way and are commented at the call site:
 
 ## 5. Still open
 
-Everything below was verified against the current tree, not inferred from when
-the item was written.
+**Nothing.** Every item in this audit is closed, verified against the current
+tree rather than inferred from when each was written.
 
-1. **P2-2** — manifest `screenshots`, for Chrome's Richer Install bottomsheet.
-   Cosmetic to installability; needs real captures at two form factors, so it
-   does not automate cleanly.
-2. **P2-10** — cross-tab init ordering. `store.ts` attaches the listener via a
-   fire-and-forget dynamic `import()`, so it can subscribe after hydration and
-   broadcast seed state over a recovered corpus. A TOCTOU gap, not React-related.
-3. **P2-11** — `useStoreHydrated` is dead code. Delete it, or wire it against
-   the `onRehydrateStorage` error branch so it can never latch false.
+| Group | Resolution |
+|-------|------------|
+| P0-1, P0-2, P0-3 | Vercel config, service-worker cache purge, hydration quarantine |
+| P1-1..P1-4 | Build tsconfig, `outputDirectory`, referrer policy, focus obscuring |
+| P2-1..P2-11 | apple-touch-icon, screenshots, precache, themeColor, poweredByHeader, tree ARIA, engines floor, announce keys, cross-tab ordering, dead `useStoreHydrated` |
 
-**Closed since the audit was written** (listed here so this section is not
-mistaken for the full remaining scope):
-
-- P1-1 build warning — `tsconfig.build.json` + `typescript.tsconfigPath`.
-- P2-1 apple-touch-icon, P2-4 themeColor, P2-5 poweredByHeader,
-  P2-6/P2-7 mind-map tree ARIA, P2-8 engines floor, P2-9 announce keys.
-- P2-3 precache — generated manifest, verified offline in Chromium (#838).
+One finding that turned out not to be a finding: Plan 131 W2 tracked "~26
+prunable dependencies" as an estimate rather than a measurement. A scan of all
+63 found only 4 with no import in `src/`, `e2e/`, or `scripts/` — and all four
+are required (`react-dom` and `sharp` are Next 16 peer/optional requirements,
+`tw-animate-css` is imported by `globals.css`). There is nothing to prune.
