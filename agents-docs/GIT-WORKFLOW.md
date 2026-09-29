@@ -63,3 +63,60 @@ After changing branch protection or rulesets, GitHub may report a PR as `BLOCKED
 Read findings: `gh api repos/<owner>/<repo>/commits/<sha>/check-runs` → Codacy run id → `/check-runs/<id>/annotations`.
 
 For Opengrep false positives that survive inline `nosemgrep` comments, use the `codacy` skill's Cloud CLI: `codacy pull-request gh <owner> <repo> <PR#> --output json` to get `toolInfo.name` and `resultDataId`, then `--ignore-issue <id> --ignore-reason FalsePositive` followed by `--reanalyze`.
+
+## Standing merge authorization
+
+**When a PR is fully clean, merge it. Do not ask.** The maintainer has
+pre-authorized this. A redundant confirmation prompt is a defect, not caution:
+it costs a round trip and trains the agent that the gate does not decide.
+
+### The four conditions
+
+1. **Every check passes.** No FAILURE, ACTION_REQUIRED, or PENDING on
+   `gh pr checks`. This includes `Codacy Static Code Analysis` (the only
+   ruleset-required check on `main`) and the e2e job.
+2. **Every review thread is resolved.** Zero unresolved, *including outdated
+   ones* — `required_review_thread_resolution` counts both, and GitNexus and
+   DeepSource re-post stale positional findings as fresh threads on every push
+   (LESSON-034). A finding already fixed in the working tree is replied to
+   with evidence, then resolved. Never left open.
+3. **The `code-review-assistant` pass is complete**, with every P1/P2 finding
+   addressed or explicitly declined with a reason.
+4. **The local gate is green** — `./scripts/quality_gate.sh`, including any
+   structural-change e2e run the diff triggered.
+
+Then:
+
+```bash
+gh pr merge <PR> --auto --squash --delete-branch
+```
+
+`--auto` is correct. It lands the moment CI clears, without holding a session
+open to watch it — which is what a blocked-merge investigation otherwise costs.
+Squash is mandatory: `required_linear_history` rejects a merge commit.
+
+### When to stop and ask
+
+These are deliberate human decisions, not formalities:
+
+- Codacy reports an issue you believe is a **genuine** false positive and you
+  want it reviewed before suppression. (If you have evidence it is a false
+  positive, suppress it, re-run `--reanalyze`, and merge — do not ask.)
+- A P1/P2 review finding is being **declined** rather than fixed.
+- The diff touches a **release**, a **migration**, **auth**, or anything with
+  an irreversible or outward-facing effect.
+- **Branch protection or a ruleset** is being changed to make the merge pass.
+- The maintainer flagged **"hold"** anywhere in the thread.
+
+Never use `gh pr merge --admin` to clear a gate. That approval is never
+standing, and a merge that needed `--admin` was a merge that should not have
+happened.
+
+### Worked example
+
+PR #837 (Plan 157 + 158, 18 commits) reached merge with 22 review threads
+resolved across three GitNexus rounds. The agent replied to each with the
+commit that fixed it or the probe that disproved it, resolved, and merged on
+squash. Six of those findings were real defects the agent had introduced
+itself; none would have been caught by the local unit suite, which was green
+throughout.
