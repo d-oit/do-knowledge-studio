@@ -203,27 +203,29 @@ Full procedure, staleness ladder, and the Codacy false-positive playbook:
 ## Learnings (session-distilled)
 
 Non-obvious toolchain facts. Full catalog with debugging detail:
-`agents-docs/LESSONS.md` (LESSON-001..039) and `lessons.jsonl`.
+`agents-docs/LESSONS.md` (LESSON-001..041) and `lessons.jsonl`.
 
 - **gitleaks-action v3+ needs a paid `GITLEAKS_LICENSE`** — pin v2.x; a failing
   license gate masks real scan results. yamllint enforces `line-length` (120)
   and `new-line-at-end-of-file` inside `run: |` blocks.
-- **DeepSource `.deepsource.toml` suppressions do not reliably prevent check
+- **DeepSource suppressions in `.deepsource.toml` do not reliably prevent check
   failures** — use `const fn = () => {}` (never `function`) for module-scope
-  helpers and keep exported-function complexity under 6.
+  helpers; keep exported-function complexity under 6.
 - **Codacy and DeepSource re-post stale positional findings as NEW unresolved
   threads on every push** (observed 4× on PR #758), and
   `required_review_thread_resolution` turns each re-post into a merge blocker.
   Fix the working tree, reply with evidence, resolve the thread, then STOP
   pushing until CI demands it. Long-term fix: check-summary-only reporting
   (LESSON-034).
-- **Vitest typecheck is experimental** and source-error gating is off
-  (`ignoreSourceErrors: true`) — a green typecheck does not cover `*.test.ts`
-  source errors (LESSON-035, tracked in `plans/131` G9).
+- **Vitest typecheck is experimental** and `ignoreSourceErrors: true`, so a
+  green result does not cover `*.test.ts` source errors (LESSON-035).
 - **Grep for a helper before adding one, and treat a passing test as
-  evidence.** A "fix" that duplicates existing logic regresses a suite that
-  already pinned the behavior; `git diff` afterwards reveals a pure-regression
-  "fix" (LESSON-040).
+  evidence** — a "fix" duplicating existing logic regresses a suite that
+  already pinned it (LESSON-040).
+- **A store slice's default can shadow the seed** — slices return their full
+  key set, so a seed-owned key declared in a slice overwrites it if the seed is
+  spread first. `store.ts` spreads the seed LAST, deliberately. Run
+  end-to-end: 2759 unit tests passed while first load was broken (LESSON-041).
 
 ## Skills
 

@@ -67,13 +67,18 @@ const buildInitialState = () => {
 export const useStudioStore = create<StudioState>()(
   persist(
     (set, get) => ({
-      ...buildInitialState(),
+      // Slices first, seed last. A slice must not carry initial values for
+      // data fields the seed owns — anything it declares is applied AFTER
+      // and silently overwrites the seed. The chat slice's `chat: []` did
+      // exactly that: the chat was empty on first load and "Clear chat
+      // history" stayed disabled, failing e2e/chat-a11y.spec.ts.
       ...createUiSlice(set, get),
       ...createEntitiesSlice(set, get),
       ...createClaimsSlice(set, get),
       ...createHistorySlice(set, get),
       ...createChatSlice(set, get),
       ...createDataSlice(set, get),
+      ...buildInitialState(),
     }),
     {
       name: STUDIO_STORAGE_KEY,

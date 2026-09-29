@@ -9,6 +9,20 @@ import {
 import { resetSearchCache } from '@/lib/search/retrieval'
 import type { Entity, Claim } from './types'
 
+/**
+ * Pristine store state from a FRESH module instance. Capturing at import time
+ * is not enough: this file's helpers mutate the shared store, and a capture
+ * taken before them can still observe a wiped corpus.
+ */
+const loadPristineState = async () => {
+  // A fresh module re-reads localStorage, so the key must be empty or the
+  // previous tests' wiped state is what comes back.
+  localStorage.clear()
+  vi.resetModules()
+  const fresh = await import('./store')
+  return fresh.useStudioStore.getState()
+}
+
 const RECOVERY_KEY = 'do-knowledge-studio-recovery'
 const STORE_KEY = 'do-knowledge-studio-store'
 const originalPersistStorage = useStudioStore.persist.getOptions().storage
@@ -149,6 +163,40 @@ describe('Studio Store branch coverage', () => {
       // Guard: cannot redo past the end
       useStudioStore.getState().redo()
       expect(useStudioStore.getState().historyIndex).toBe(2)
+    })
+  })
+
+  describe('Seed integrity (slice composition order)', () => {
+    /**
+     * The suite's beforeEach wipes the store, so the seed is re-asserted
+     * against the pristine initial state captured at module load.
+     */
+    it('keeps the seeded chat so the transcript is not empty on first load', async () => {
+      const pristine = await loadPristineState()
+      // Regression: the chat slice declared `chat: []` and the store spread
+      // slices AFTER the seed, so the seeded welcome message was overwritten.
+      // Symptoms were an empty transcript and a permanently disabled
+      // "Clear chat history" control, failing e2e/chat-a11y.spec.ts. The
+      // store now spreads slices first and seed last.
+      expect(pristine.chat.length).toBeGreaterThan(0)
+      expect(pristine.chat[0]?.role).toBe('assistant')
+    })
+
+    it('keeps the seeded corpus and an undo baseline that mirrors it', async () => {
+      const pristine = await loadPristineState()
+      expect(pristine.entities.length).toBeGreaterThan(0)
+      expect(pristine.claims.length).toBeGreaterThan(0)
+      expect(pristine.entityHistory).toHaveLength(1)
+      expect(pristine.entityHistory[0].entities).toHaveLength(pristine.entities.length)
+      expect(pristine.entityHistory[0].claims).toHaveLength(pristine.claims.length)
+      expect(pristine.historyIndex).toBe(0)
+    })
+
+    it('does not let a slice default shadow a seeded field', async () => {
+      const pristine = await loadPristineState()
+      // The composition order is the actual contract: any slice that declares
+      // a seed-owned key would silently win if seed were spread first.
+      expect(pristine.chat).not.toEqual([])
     })
   })
 
