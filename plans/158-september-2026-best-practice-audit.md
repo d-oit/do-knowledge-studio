@@ -281,17 +281,59 @@ spec citation. Neither survived a five-minute browser check.
 
 ---
 
-## 4. Recommended order
+## 4. Remediation status
 
-1. **P0-2** — delete the cache purge. Smallest diff, restores the app's core
-   promise, and reverts a regression this repo introduced yesterday.
-2. **P0-1** — delete `installCommand` from `vercel.json`. Also delete
-   `outputDirectory` (P1-2). One-line deploy-correctness fix.
-3. **P0-3** — hydration rejection must be visible and non-destructive. Largest
-   of the three; needs a store flag, a `onRehydrateStorage` handler, and an
-   `export-view.tsx` banner.
-4. **P1-4** — one line of scroll padding for a WCAG 2.2 AA criterion.
-5. **P1-1 / P1-3** — build-warning and referrer-policy contradictions.
-6. **P2 set** — schedule, don't batch.
+| Item | Status | Notes |
+|------|--------|-------|
+| P0-2 cache purge | **Fixed** | `service-worker-registration.tsx` no longer touches the cache or the worker lifecycle. Regression test replays the full `updatefound` → `installed` transition; verified to FAIL when the old code is reinstated. |
+| P0-1 `installCommand` | **Fixed** | Removed. Vercel infers pnpm from `pnpm-lock.yaml`. |
+| P1-2 `outputDirectory` | **Fixed** | Removed in the same change. |
+| P0-3 hydration | **Fixed** | New `hydration-quarantine.ts` preserves a refused payload under a key the store never writes. A `QuarantineBanner` surfaces it. Test proves the bytes survive a subsequent `saveEntity`. |
+| P1-3 referrer policy | **Fixed** | Collapsed to the header (`no-referrer`); the conflicting `metadata.referrer` is gone. Verified in-browser. |
+| P1-4 focus obscured | **Fixed** | The audit's prescribed remedy was wrong — see below. |
+| P1-1, P2-* | Open | See §5. |
 
-Each is independently shippable. None depends on another.
+### P1-4: the prescribed fix did not work
+
+The audit recommended W3C technique C43 (`scroll-padding`) on the app-shell
+scroll container. **Measured, that does not fix it.** The editor status bar is
+`position: sticky; bottom: 0` *inside* the scrolled content, so at maximum
+scroll it permanently overlays the final ~69px. `scroll-padding` only
+influences where the browser positions an element it is actively scrolling
+into view; an element already in view is never scrolled, and one at the end
+of the content cannot be moved at all. Verified: with `scroll-pt-16
+scroll-pb-20` applied, a control was still 100% covered at `scrollTop` max.
+
+The actual fix is bottom padding on the editor's content wrapper (`pb-24` /
+`lg:pb-28`) so the last row can always be scrolled clear. Re-measured after the
+change: **0 of 19** content controls entirely hidden, down from 1.
+
+The audit's *diagnosis* — a real SC 2.4.11 failure — was right; its *remedy*
+was wrong. Recorded because a well-sourced fix that does not survive contact
+with the layout is an easy error to repeat.
+
+### Two zustand constraints worth recording
+
+Both were found the hard way and are commented at the call site:
+
+1. **`migrate` must return the bare state, not a wrapper.** Its return value
+   is passed straight into `merge`, so returning `{ok, state}` hands `merge` a
+   shape the envelope schema rejects — every migration silently fails.
+2. **Zustand treats *any* non-Promise return from `migrate` as "migrated" and
+   calls `setItem()`.** The original `throw` therefore could not preserve
+   anything: the next store write overwrote the envelope regardless. The
+   refusal path returns the input unchanged, which makes the rewrite a no-op,
+   and the bytes are kept in a separate key.
+
+## 5. Still open
+
+1. **P1-1** — `useTypeScriptCli: false` prints a build warning on every build,
+   which the repo's own zero-warning rule forbids. The fix is a
+   `tsconfig.build.json` without `composite` (the CLI checker passes
+   `--noEmit`, which historically conflicts with `composite: true`). Held back
+   deliberately: it is the one interaction in this audit that could not be
+   verified without changing the build, and a build change is not a drive-by.
+2. **P2 set** — `apple-touch-icon`, manifest `screenshots`, precache
+   integration, `themeColor` media array, `poweredByHeader`, mind-map
+   `aria-level`/`aria-selected`, `engines.node` floor, unwired announce keys,
+   cross-tab init ordering, and the dead `useStoreHydrated`.
