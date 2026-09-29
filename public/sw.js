@@ -21,12 +21,38 @@ const STATIC_EXTENSIONS = [
   ".txt",
 ];
 
-const PRECACHE_URLS = [
+// Fallback shell, used only if the generated manifest cannot be fetched.
+// The manifest (written by scripts/generate-precache-manifest.mjs after
+// `next build`) is the real precache list: it is derived from the emitted
+// HTML, so it always matches the Turbopack chunks the app actually needs.
+const PRECACHE_MANIFEST_URL = "/precache-manifest.json";
+const FALLBACK_PRECACHE_URLS = [
   "/",
   "/favicon.svg",
   "/logo.svg",
   "/manifest.webmanifest",
 ];
+
+/** Fetches the generated precache list, falling back on any failure. */
+async function resolvePrecacheUrls() {
+  try {
+    const response = await fetch(PRECACHE_MANIFEST_URL, { cache: "no-store" });
+    if (!response.ok) throw new Error(`manifest ${response.status}`);
+    const manifest = await response.json();
+    if (!Array.isArray(manifest.urls) || manifest.urls.length === 0) {
+      throw new Error("manifest has no urls");
+    }
+    return manifest.urls;
+  } catch (error) {
+    // A partial shell still beats none: the runtime cache-first strategy
+    // backfills chunks as the user browses.
+    console.warn(
+      "[sw] precache manifest unavailable, using fallback list:",
+      error instanceof Error ? error.message : error
+    );
+    return FALLBACK_PRECACHE_URLS;
+  }
+}
 
 function isStaticAsset(url) {
   return STATIC_EXTENSIONS.some((ext) => url.pathname.endsWith(ext));
@@ -48,9 +74,24 @@ function isNavigationRequest(request) {
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches
-      .open(STATIC_CACHE)
-      .then((cache) => cache.addAll(PRECACHE_URLS))
+    resolvePrecacheUrls()
+      // Carry `urls` through the chain: an earlier version opened the cache in
+      // the same callback that received them, so the precache step referenced
+      // an out-of-scope `urls` and the install threw before caching anything.
+      .then((urls) =>
+        caches.open(STATIC_CACHE).then((cache) =>
+          // Each entry is added independently rather than with addAll, which
+          // is atomic: one 404 would reject the whole install and the worker
+          // would never activate, costing the entire precache over one miss.
+          Promise.all(
+            urls.map((url) =>
+              cache.add(new Request(url, { cache: "reload" })).catch((error) => {
+                console.warn("[sw] precache miss", url, error);
+              })
+            )
+          )
+        )
+      )
       .then(() => self.skipWaiting())
   );
 });

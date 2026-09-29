@@ -10,7 +10,7 @@
   "scripts": {
     "prepare": "./scripts/install-hooks.sh",
     "dev": "next dev -p 3000 2>&1 | tee dev.log",
-    "build": "next build",
+    "build": "next build && node scripts/generate-precache-manifest.mjs",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit -p tsconfig.app.json",
