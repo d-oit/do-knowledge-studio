@@ -5,7 +5,7 @@
     "/_next/static/chunks/0b_f3k-_dzx-9.js",
     "/_next/static/chunks/0cz1d0mv5g_q7.js",
     "/_next/static/chunks/0nyy9hkktrzez.js",
-    "/_next/static/chunks/0omf452wb-m4n.js",
+    "/_next/static/chunks/1c55mp_-z35tx.js",
     "/_next/static/chunks/1og3q65pdinan.js",
     "/_next/static/chunks/2q8j_z4si4q6c.js",
     "/_next/static/chunks/3-ny4sdksdaai.js",
@@ -26,6 +26,8 @@
     "/icon-192.png",
     "/icon-512.png",
     "/logo.svg",
-    "/manifest.webmanifest"
+    "/manifest.webmanifest",
+    "/screenshot-narrow.png",
+    "/screenshot-wide.png"
   ]
 }

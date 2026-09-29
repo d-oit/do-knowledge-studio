@@ -79,6 +79,47 @@ describe('cross-tab store coordination', () => {
     })
   })
 
+  it('does not broadcast the hydrated corpus when init runs before hydration finishes', () => {
+    // Regression (Plan 158 P2-10). initCrossTabSync is reached through a
+    // dynamic import, so it can attach AFTER persist swapped the stored
+    // corpus in. Broadcasting then diffs hydrated state against the seed it
+    // replaced and pushes the whole recovered library to every other tab.
+    const posted: unknown[] = []
+    vi.stubGlobal('BroadcastChannel', class {
+      postMessage = (m: unknown) => { posted.push(m) }
+      close = () => undefined
+      addEventListener = () => undefined
+    })
+
+    // Simulate "not yet hydrated": the listener is deferred, so the hydration
+    // set() below must not produce a broadcast.
+    const persist = useStudioStore.persist
+    let capturedFinish: (() => void) | null = null
+    vi.spyOn(persist, 'hasHydrated').mockReturnValue(false)
+    vi.spyOn(persist, 'onFinishHydration').mockImplementation((cb: () => void) => {
+      capturedFinish = cb
+      return () => { capturedFinish = null }
+    })
+
+    initCrossTabSync()
+
+    // The store swaps in a "recovered" corpus while the subscription waits.
+    useStudioStore.setState({
+      entities: [{ ...ENTITY_A, name: 'Recovered' }],
+      claims: [],
+    })
+    expect(posted).toEqual([])
+
+    // Once hydration finishes the subscription attaches and normal
+    // user-driven edits broadcast again.
+    capturedFinish?.()
+    useStudioStore.setState({ claims: [{ ...CLAIM_A, statement: 'after' }] })
+    expect(posted.length).toBeGreaterThan(0)
+
+    vi.spyOn(persist, 'hasHydrated').mockRestore()
+    vi.spyOn(persist, 'onFinishHydration').mockRestore()
+  })
+
   afterEach(() => {
     stopCrossTabSync()
     vi.unstubAllGlobals()
