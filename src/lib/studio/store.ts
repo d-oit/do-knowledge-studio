@@ -107,7 +107,18 @@ export const useStudioStore = create<StudioState>()(
         const outcome = migratePersistedState(persisted, version)
         if (!outcome.ok) {
           lastRejectionReason = outcome.reason
-          quarantinePayload(outcome.reason, readRawEnvelope())
+          const preserved = quarantinePayload(outcome.reason, readRawEnvelope())
+          if (!preserved) {
+            // Quarantine failed (payload over the size cap, or storage
+            // rejected the write). Returning `persisted` is still the best
+            // available action — it keeps zustand's setItem a no-op — but the
+            // loss must be loud. Without this the user's corpus is replaced
+            // by seed data on the next store write with no signal at all.
+            console.warn(
+              'Studio could not preserve a rejected library payload; the next ' +
+                'store write will replace it. Export your data if this repeats.',
+            )
+          }
           return persisted
         }
         return outcome.state

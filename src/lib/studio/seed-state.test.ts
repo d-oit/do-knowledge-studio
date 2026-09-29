@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { SEED_STATE, buildSeedState } from './seed-state'
+import { buildSeedState } from './seed-state'
 import { seedClaims, seedEntities } from './seed-data'
 
 describe('buildSeedState', () => {
@@ -30,10 +30,16 @@ describe('buildSeedState', () => {
     expect(first.claims).not.toBe(second.claims)
   })
 
-  it('exposes the seed baseline read-only for comparisons', () => {
-    expect(SEED_STATE.entities).toBe(seedEntities)
-    expect(SEED_STATE.currentView).toBe('home')
-    expect(SEED_STATE.sortBy).toBe('updated')
-    expect(SEED_STATE.sortDir).toBe('desc')
+  it('returns the same defaults every time', () => {
+    // The seed baseline is no longer exported: `Readonly<T>` is shallow, so an
+    // exported reference to the module-level seed arrays stayed mutable. The
+    // values are asserted through buildSeedState, which always hands out a copy.
+    const a = buildSeedState()
+    const b = buildSeedState()
+    expect(a.currentView).toBe('home')
+    expect(a.sortBy).toBe('updated')
+    expect(a.sortDir).toBe('desc')
+    expect(a.entities).toEqual(seedEntities)
+    expect(a.entities).not.toBe(b.entities)
   })
 })

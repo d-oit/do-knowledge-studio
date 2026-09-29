@@ -390,7 +390,9 @@ export const useExportHandlers = ({
         announceT(
           'announce.importSucceeded',
           String(importPreview.entityCount),
+          importPreview.entityCount === 1 ? 'entity' : 'entities',
           String(importPreview.claimCount),
+          importPreview.claimCount === 1 ? 'claim' : 'claims',
         ),
       )
       /** The summary. */

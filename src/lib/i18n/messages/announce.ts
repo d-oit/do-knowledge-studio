@@ -20,9 +20,11 @@ const messages = {
   'announce.entityDeleted': (name: string) => `Deleted ${name}`,
   /** The active view changed. */
   'announce.viewSwitched': (view: string) => `Switched to ${view}`,
-  /** An import replaced the library. */
-  'announce.importSucceeded': (entities: string, claims: string) =>
-    `Imported ${entities} entities and ${claims} claims`,
+  /** An import replaced the library. Counts are interpolated, so the
+   *  plural form has to be selected at the call site (this layer carries no
+   *  locale, and `Intl.PluralRules` needs one). */
+  'announce.importSucceeded': (entities: string, entityNoun: string, claims: string, claimNoun: string) =>
+    `Imported ${entities} ${entityNoun} and ${claims} ${claimNoun}`,
   /** An import failed and the previous library was restored. */
   'announce.importFailed': 'Import failed, your previous library was restored',
   /** A claim was attached to an entity. */

@@ -63,6 +63,3 @@ export const buildSeedState = (): SeedState => ({
   claims: structuredClone(seedClaims),
   chat: structuredClone(seedChat),
 })
-
-/** The immutable seed baseline, for read-only comparisons in tests. */
-export const SEED_STATE: Readonly<SeedState> = SEED_VALUES

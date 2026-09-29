@@ -81,23 +81,36 @@ def _distance_to_segment(px: float, py: float,
     return ((px - (x1 + t * dx)) ** 2 + (py - (y1 + t * dy)) ** 2) ** 0.5
 
 
+def _shade(x: float, y: float, diamond: list[tuple[float, float]],
+           node: tuple[float, float, float]) -> tuple[int, int, int]:
+    """Flat color of a single sample point."""
+    cx, cy, radius = node
+    if (x - cx) ** 2 + (y - cy) ** 2 <= radius * radius:
+        return SAFFRON
+    if not _inside_polygon(x, y, diamond):
+        return BACKGROUND
+    color = INK
+    for x1, y1, x2, y2, opacity in SPOKES:
+        if _distance_to_segment(x, y, x1, y1, x2, y2) <= SPOKE_WIDTH / 2:
+            color = _blend(color, SAFFRON, opacity)
+    return color
+
+
 def _sample(px: float, py: float, diamond: list[tuple[float, float]],
             node: tuple[float, float, float]) -> tuple[int, int, int]:
-    """Returns the composited color at a point, sampling with 2x2 supersampling."""
-    color = BACKGROUND
-    cx, cy, radius = node
-    for y in (py - 0.25, py + 0.25):
-        for x in (px - 0.25, px + 0.25):
-            sample = BACKGROUND
-            if (x - cx) ** 2 + (y - cy) ** 2 <= radius * radius:
-                sample = SAFFRON
-            elif _inside_polygon(x, y, diamond):
-                sample = INK
-                for x1, y1, x2, y2, opacity in SPOKES:
-                    if _distance_to_segment(x, y, x1, y1, x2, y2) <= SPOKE_WIDTH / 2:
-                        sample = _blend(sample, SAFFRON, opacity)
-            color = _blend(color, sample, 0.25)
-    return color
+    """Composited color at a point, averaged over a 2x2 supersample grid.
+
+    The four samples are AVERAGED, not folded into a running accumulator.
+    Blending each successive sample onto the previous result weights the first
+    sample most heavily and darkens edges toward the background; averaging the
+    flat shades is what 2x2 supersampling actually means.
+    """
+    samples = [
+        _shade(x, y, diamond, node)
+        for y in (py - 0.25, py + 0.25)
+        for x in (px - 0.25, px + 0.25)
+    ]
+    return tuple(round(sum(c[i] for c in samples) / len(samples)) for i in range(3))
 
 
 def render(size: int, inset_scale: float) -> bytes:

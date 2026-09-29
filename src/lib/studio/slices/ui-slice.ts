@@ -1,9 +1,12 @@
 /**
  * Navigation, library controls, and panel visibility (Plan 157 Phase 3).
  *
- * Pure presentation state — none of it is undoable, and none of it is
- * persisted (see `partializePersistedState`, which drops the ephemeral keys
- * so typing never serializes the corpus).
+ * None of this is undoable — history covers the corpus, not the chrome. Some
+ * of it IS persisted: `currentView`, `typeFilter`, `sortBy`, `sortDir`, and
+ * `rightPanelOpen` are in PERSISTED_KEYS, so a reload restores the user's
+ * filters and panel state. What `partializePersistedState` drops is the
+ * genuinely ephemeral set (searchQuery, selection, mobile drawer), so typing
+ * a query never serializes the corpus.
  */
 import type { ViewId, AnyEntityType } from '../types'
 import type { StudioState } from '../store-types'

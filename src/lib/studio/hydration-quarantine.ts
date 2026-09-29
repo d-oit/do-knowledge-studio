@@ -24,8 +24,16 @@ import type { Claim, Entity } from './types'
 /** localStorage key holding an envelope the store refused to hydrate. */
 export const QUARANTINE_KEY = 'do-knowledge-studio-quarantine'
 
-/** Upper bound on the quarantined payload, mirroring the recovery snapshot. */
+/**
+ * Upper bound on the quarantined payload, mirroring the recovery snapshot.
+ * Measured in UTF-8 BYTES, not `String.length` (which counts UTF-16 code
+ * units and under-reports by up to 4x for astral characters — emoji in
+ * entity names would silently blow past a cap declared in "bytes").
+ */
 const MAX_QUARANTINE_BYTES = 4 * 1024 * 1024
+
+/** UTF-8 byte length of a string. */
+const utf8Bytes = (text: string): number => new TextEncoder().encode(text).length
 
 /** A refused payload plus the reason it was refused. */
 export interface QuarantineRecord {
@@ -76,9 +84,10 @@ export const quarantinePayload = (reason: string, raw: string | null): boolean =
     // Nothing to preserve (e.g. first run with no stored payload).
     return true
   }
-  if (raw.length > MAX_QUARANTINE_BYTES) {
+  const size = utf8Bytes(raw)
+  if (size > MAX_QUARANTINE_BYTES) {
     console.warn(
-      `Rejected payload is ${raw.length} bytes, over the ${MAX_QUARANTINE_BYTES}-byte quarantine limit; not preserved.`,
+      `Rejected payload is ${size} bytes, over the ${MAX_QUARANTINE_BYTES}-byte quarantine limit; not preserved.`,
     )
     return false
   }
