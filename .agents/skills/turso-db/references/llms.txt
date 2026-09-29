@@ -1,7 +1,5 @@
 # Turso
 
-## Docs
-
 - [Welcome to Turso](https://docs.turso.tech/introduction.md): The small database to power your big dreams in the age of AI.
 - [Quickstart](https://docs.turso.tech/tursodb/quickstart.md)
 - [Connect to Turso using JavaScript](https://docs.turso.tech/connect/javascript.md)
@@ -94,6 +92,7 @@
 - [Turso + Linode by Akamai](https://docs.turso.tech/features/embedded-replicas/with-akamai.md): Deploy a JavaScript/Rust app using [Turso Cloud embedded replicas](/features/embedded-replicas) to [Akamai](https://www.linode.com/).
 - [Branching](https://docs.turso.tech/features/branching.md)
 - [Point-in-Time Recovery](https://docs.turso.tech/features/point-in-time-recovery.md)
+- [Recover Deleted Databases](https://docs.turso.tech/features/recover-deleted-databases.md): Restore databases and groups for up to five days after deletion.
 - [SQLite Extensions](https://docs.turso.tech/features/sqlite-extensions.md): Learn how to use SQLite extensions with Turso.
 - [Multi-DB Schemas (Deprecated)](https://docs.turso.tech/features/multi-db-schemas.md): Create and share a single schema across multiple databases.
 - [Attach Database (Deprecated)](https://docs.turso.tech/features/attach-database.md): Attach and read data across multiple databases.
@@ -226,6 +225,8 @@
 - [Retrieve Database Usage](https://docs.turso.tech/api-reference/databases/usage.md): Fetch activity usage for a database in a given time period.
 - [Retrieve Database Stats](https://docs.turso.tech/api-reference/databases/stats.md): Fetch the top queries of a database, including the count of rows read and written.
 - [Delete Database](https://docs.turso.tech/api-reference/databases/delete.md): Delete a database belonging to the organization or user.
+- [List Deleted Databases](https://docs.turso.tech/api-reference/databases/list-deleted.md): Returns databases deleted within the last five days, which can still be restored. Requires a paid plan. Available even while recovery is disabled for the organization.
+- [Restore Database](https://docs.turso.tech/api-reference/databases/restore.md): Restore a database deleted within the last five days, exactly as it was at the moment it was deleted. Requires a paid plan, an admin or owner of the organization, and recovery enabled for the organization.
 - [List Database Instances](https://docs.turso.tech/api-reference/databases/list-instances.md): Returns a list of instances of a database. Instances are the individual primary or replica databases in each region defined by the group.
 - [Retrieve Database Instance](https://docs.turso.tech/api-reference/databases/retrieve-instance.md): Return the individual database instance by name.
 - [Generate Database Auth Token](https://docs.turso.tech/api-reference/databases/create-token.md): Generates an authorization token for the specified database.
@@ -236,6 +237,8 @@
 - [Retrieve Group Configuration](https://docs.turso.tech/api-reference/groups/configuration.md): Retrieve an individual group configuration belonging to the organization or user.
 - [Update Group Configuration](https://docs.turso.tech/api-reference/groups/update-configuration.md): Update a group configuration belonging to the organization or user.
 - [Delete Group](https://docs.turso.tech/api-reference/groups/delete.md): Delete a group belonging to the organization or user.
+- [List Deleted Groups](https://docs.turso.tech/api-reference/groups/list-deleted.md): Returns groups deleted within the last five days, including empty groups, which can still be restored. Requires a paid plan and an organization-level token. Available even while recovery is disabled for the organization.
+- [Restore Group](https://docs.turso.tech/api-reference/groups/restore.md): Restore a group deleted within the last five days, along with the member databases that were deleted with it. Requires a paid plan, an admin or owner of the organization, and recovery enabled for the organization. If some databases fail to restore, the group still becomes active: retry the failed da…
 - [Transfer Group](https://docs.turso.tech/api-reference/groups/transfer.md): Transfer a group to another organization that you own or a member of.
 - [Unarchive Group](https://docs.turso.tech/api-reference/groups/unarchive.md): Unarchive a group that has been archived due to inactivity.
 - [Create Group Auth Token](https://docs.turso.tech/api-reference/groups/create-token.md): Generates an authorization token for the specified group.
@@ -283,7 +286,7 @@
 
 ## OpenAPI Specs
 
-- [openapi](https://docs.turso.tech/api-reference/openapi.json)
+- [openapi](/api-reference/openapi.json)
 
 ## Optional
 
