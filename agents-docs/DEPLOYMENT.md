@@ -9,7 +9,7 @@
 
 ### Requirements
 
-- **Node.js ≥ 22.10** — Next 16 hard-asserts `>=20.9.0` in `bin/next`. The
+- **Node.js ≥ 22** — Next 16 hard-asserts `>=20.9.0` in `bin/next`. The
   `engines.node` floor was `">=20"`, which let a Node 20.5 machine satisfy
   `engine-strict` at install time and only then crash the build with a
   confusing message. Now `">=22.10.0"`, matching `.nvmrc` and CI, so the

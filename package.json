@@ -5,7 +5,7 @@
   "type": "module",
   "packageManager": "pnpm@10.30.3",
   "engines": {
-    "node": ">=22.10.0"
+    "node": ">=22.0.0"
   },
   "scripts": {
     "prepare": "./scripts/install-hooks.sh",

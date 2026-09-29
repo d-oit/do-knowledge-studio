@@ -461,7 +461,15 @@ if [[ " ${DETECTED_LANGUAGES[*]} " =~ " typescript " ]] && [[ "$SCOPE" == "all" 
                 # Anchored on BOTH ends: an unanchored tail matched
             # store-coverage.test.ts as well as store.ts, so editing a unit test
             # would drag the whole E2E suite into the local loop.
-            STRUCTURAL_RE='^(src/lib/studio/(store|hydration|seed-state|history-snapshot|hydration-quarantine)\.ts|src/lib/studio/slices/.+\.ts|src/app/(layout|page)\.tsx|playwright\.config\.ts|src/components/studio/app-shell\.tsx)$'
+            # Anchored at BOTH ends: an unanchored tail matched
+            # store-coverage.test.ts as well as store.ts, so a unit-test edit
+            # would drag the whole E2E suite into the local loop.
+            #
+            # Any module that can change what the store ACCEPTS or produces
+            # belongs here, not just the ones that declare state. A schema or
+            # migration change can break first load exactly as surely as a
+            # slice-ordering change does.
+            STRUCTURAL_RE='^(src/lib/studio/(store|hydration|hydration-quarantine|seed-state|history-snapshot|recovery-helpers|migrations|schema|use-hydrated|indexeddb-backup)\.ts|src/lib/studio/slices/.+\.ts|src/app/(layout|page)\.tsx|playwright\.config\.ts|src/components/studio/app-shell\.tsx)$'
                 if git diff --name-only "$MERGE_BASE" -- 2>/dev/null | grep -qE "$STRUCTURAL_RE"; then
                     should_run_e2e=true
                 fi
