@@ -84,7 +84,15 @@ export const createDataSlice: StudioSlice<DataSlice> = (set, get) => ({
           editingEntityId: preImport.editingEntityId,
         })
       } catch {
-        set(seedPatch())
+        // The last-ditch reset can itself throw when the underlying storage is
+        // still failing. Swallow it rather than let it escape `importWithRollback`,
+        // which would reject instead of returning { success: false } — a caller
+        // awaiting this gets a stuck promise and no error to show.
+        try {
+          set(seedPatch())
+        } catch (seedError) {
+          console.error('Studio could not reset after a failed import:', seedError)
+        }
       }
       return {
         success: false,

@@ -99,10 +99,15 @@ export const useStudioStore = create<StudioState>()(
       // value straight into `merge`, so returning a wrapper object here would
       // hand `merge` a shape the envelope schema rejects.
       //
-      // On refusal, return the input UNCHANGED and quarantine the bytes
-      // separately. zustand treats any non-Promise return as "migrated" and
-      // calls setItem(), so echoing the input is what keeps the stored
-      // envelope byte-identical instead of replacing it with seed data.
+      // On refusal, return the input UNCHANGED so `merge` still sees a
+      // well-formed payload to reject, and quarantine the bytes separately.
+      //
+      // The stored envelope is NOT preserved by this return: zustand treats
+      // any non-Promise value as "migrated" and calls setItem(), and by then
+      // `merge` has already installed seed state, so the live key is
+      // overwritten with the seed corpus. That overwrite is exactly why the
+      // bytes are copied to quarantine FIRST — a separate key the store never
+      // writes. See plans/158 P0-3.
       migrate: (persisted: unknown, version: number): unknown => {
         const outcome = migratePersistedState(persisted, version)
         if (!outcome.ok) {

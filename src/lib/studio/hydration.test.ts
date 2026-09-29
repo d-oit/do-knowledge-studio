@@ -252,8 +252,9 @@ describe('mergeHydratedState', () => {
     expect(merged.entities).toEqual(persisted.entities)
     expect(merged.historyIndex).toBe(0)
     expect(merged.entityHistory).toHaveLength(1)
-    // The rebased baseline is a deep copy, not a reference into live state,
-    // and it carries claims so the first undo restores the full corpus.
+    // The rebased baseline holds its own array, not a reference into the
+    // hydrated state, and it carries claims so the first undo restores the
+    // full corpus. (Per-record it is a shallow copy — see snapshotCorpus.)
     expect(merged.entityHistory[0].entities).not.toBe(merged.entities)
     expect(merged.entityHistory[0].entities).toEqual(merged.entities)
     expect(merged.entityHistory[0].entities).not.toBe(merged.entities[0])

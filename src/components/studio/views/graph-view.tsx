@@ -206,7 +206,13 @@ export const GraphView = () => {
   const svgRef = useRef<SVGSVGElement>(null)
   const reducedMotion = useReducedMotion()
 
-  const handleGraphKeyDown = useCallback(
+  /** Lowest zoom the canvas supports; matches the keyboard step's floor. */
+const MIN_ZOOM = 0.3;
+
+/** Highest zoom the canvas supports; matches the keyboard step's ceiling. */
+const MAX_ZOOM = 3;
+
+const handleGraphKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       const PAN_STEP = 30
       const ZOOM_STEP = 0.15
@@ -230,11 +236,11 @@ export const GraphView = () => {
         case '+':
         case '=':
           e.preventDefault()
-          setZoom((z) => Math.min(z + ZOOM_STEP, 3))
+          setZoom((z) => Math.min(z + ZOOM_STEP, MAX_ZOOM))
           break
         case '-':
           e.preventDefault()
-          setZoom((z) => Math.max(z - ZOOM_STEP, 0.3))
+          setZoom((z) => Math.max(z - ZOOM_STEP, MIN_ZOOM))
           break
         case 'Home':
           e.preventDefault()
@@ -336,7 +342,10 @@ export const GraphView = () => {
     setLayout(snapshot.layout)
     setFocusMode(snapshot.focusMode)
     setPanOffset({ x: snapshot.panX, y: snapshot.panY })
-    setZoom(snapshot.zoom)
+    // Clamp to the same range the keyboard handler uses. A snapshot is
+    // user-writable and survives deploys, so an out-of-range value would
+    // otherwise produce a degenerate viewBox.
+    setZoom(Math.min(Math.max(snapshot.zoom, MIN_ZOOM), MAX_ZOOM))
     const stillPresent = entities.some((e) => e.id === snapshot.selectedEntityId)
     selectEntity(stillPresent ? snapshot.selectedEntityId : null)
   }, [announce, entities, selectEntity])

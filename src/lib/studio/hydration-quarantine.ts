@@ -35,6 +35,16 @@ const MAX_QUARANTINE_BYTES = 4 * 1024 * 1024
 /** UTF-8 byte length of a string. */
 const utf8Bytes = (text: string): number => new TextEncoder().encode(text).length
 
+/** Best-effort read of the envelope version, tolerating any malformed input. */
+const readEnvelopeVersion = (raw: string): number | undefined => {
+  try {
+    const version = (JSON.parse(raw) as EnvelopePeek).version
+    return typeof version === 'number' ? version : undefined
+  } catch {
+    return undefined
+  }
+}
+
 /** A refused payload plus the reason it was refused. */
 export interface QuarantineRecord {
   /** ISO timestamp of when the store rejected the payload. */
@@ -94,6 +104,10 @@ export const quarantinePayload = (reason: string, raw: string | null): boolean =
   const record: QuarantineRecord = {
     rejectedAt: new Date().toISOString(),
     reason,
+    // Recording the version turns "your data is wrong" into "your data is from
+    // a newer build than this one understands", which is usually the real
+    // cause and tells the user whether to retry elsewhere.
+    version: readEnvelopeVersion(raw),
     raw,
   }
   try {
