@@ -22,6 +22,10 @@ const cspHeader = `
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // P2-5: do not advertise the framework. This config already curates CSP,
+  // nosniff, and frame-ancestors; the default x-powered-by header was the one
+  // unhardened piece of the response.
+  poweredByHeader: false,
   // React Compiler (stable in Next.js 16) auto-memoizes components and hooks,
   // completing the deferred Task 141 rerender audit (see plans/128 and issue #699).
   reactCompiler: true,

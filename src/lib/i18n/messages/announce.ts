@@ -40,8 +40,6 @@ const messages = {
   'announce.snapshotCleared': 'Snapshot cleared',
   /** The mind map density changed. */
   'announce.densityChanged': (density: string) => `Density set to ${density}`,
-  /** The library was reset to the seed dataset. */
-  'announce.libraryRestored': 'Library restored to demo data',
   /** Entity selection changed in the right panel. */
   'announce.entitySelected': (name: string) => `Selected ${name}`,
   /** Banner heading when a payload was preserved but not loaded. */

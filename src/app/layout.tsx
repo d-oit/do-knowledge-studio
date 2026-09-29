@@ -44,6 +44,10 @@ export const metadata: Metadata = {
   // Plan 158 P1-3.
   icons: {
     icon: "/favicon.svg",
+    // P2-1: iOS ignores manifest icons for the home-screen web clip and
+    // falls back to a page screenshot. icon-192.png is an opaque 192px PNG,
+    // the size web.dev recommends for apple-touch-icon.
+    apple: "/icon-192.png",
   },
   openGraph: {
     title: "DO Knowledge Studio",
@@ -51,14 +55,32 @@ export const metadata: Metadata = {
     type: "website",
   },
   manifest: "/manifest.webmanifest",
-  other: {
-    "apple-mobile-web-app-capable": "yes",
-    "apple-mobile-web-app-status-bar-style": "black-translucent",
+  // Next's typed `appleWebApp` emits the standard `mobile-web-app-capable`
+  // name; the untyped `other` form only produced the legacy Apple-prefixed
+  // key, which non-Apple engines honouring the standard tag never saw.
+  appleWebApp: {
+    capable: true,
+    title: "DKS",
+    statusBarStyle: "black-translucent",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#c77d3a",
+  // P2-4: a single value tinted the browser chrome saffron in both themes,
+  // which reads wrong over the near-black dark background. The array form is
+  // the documented per-scheme override.
+  //
+  // Caveat, stated because it is a real limit: next-themes runs with
+  // enableSystem={false}, so this keys off the OS scheme, not the in-app
+  // toggle. A user who chose light on a dark OS gets the dark tint. Fixing
+  // that properly means updating the meta from the client on toggle.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#c77d3a" },
+    { media: "(prefers-color-scheme: dark)", color: "#14110d" },
+  ],
+  // P2-8: tell the UA which colour scheme is active so scrollbars, form
+  // controls, and default canvas paint correctly in dark mode.
+  colorScheme: "light dark",
 };
 
 /** Root layout that wraps the app with theme, accessibility, and offline providers. */

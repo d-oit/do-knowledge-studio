@@ -6,6 +6,8 @@ import { useStudioStore } from '@/lib/studio/store'
 import { Overlay } from '@/components/studio/ui/shared-primitives'
 import { extractClaimsFromText, hasExtractableClaims, type ParsedClaimDraft } from '@/lib/studio/claim-parser'
 import { translate } from '@/lib/i18n/messages/claims'
+import { translate as announceT } from '@/lib/i18n/messages/announce'
+import { useAnnouncer } from '@/lib/a11y/announcer'
 
 /** Colored badge indicating a claim&apos;s verification status. */
 export function VerificationBadge({ status }: { status: VerificationStatus }) {
@@ -146,6 +148,7 @@ export const ClaimsPanel = ({
   const [extractDrafts, setExtractDrafts] = useState<ParsedClaimDraft[] | null>(null)
 
   const entities = useStudioStore((state) => state.entities)
+  const announce = useAnnouncer()
 
   const resetForm = () => {
     setStatement('')
@@ -187,12 +190,16 @@ export const ClaimsPanel = ({
         confidence: confidence / 100,
         source: source.trim() || undefined,
       })
+      // WCAG 4.1.3: the toast is visual-only, so a screen-reader user got no
+      // confirmation that the claim was added (Plan 158 P2-9).
+      announce(announceT('announce.claimAdded', '1'))
     }
     resetForm()
   }
 
   const handleDelete = (id: string) => {
     deleteClaim(id)
+    announce(announceT('announce.claimDeleted'))
     toast.success(translate('claims.deleted'))
   }
   // Prefer the live draft passed by the editor; fall back to the persisted
@@ -246,9 +253,12 @@ export const ClaimsPanel = ({
       }
     }
     setExtractDrafts(null)
-    if (toAdd.length > 0) toast.success(translate('claims.added', String(toAdd.length)))
+    if (toAdd.length > 0) {
+      announce(announceT('announce.claimAdded', String(toAdd.length)))
+      toast.success(translate('claims.added', String(toAdd.length)))
+    }
     if (skipped > 0) toast.info(translate('claims.skipped', String(skipped)))
-  }, [claims, extractDrafts, editingEntityId, addClaim, addClaims])
+  }, [claims, extractDrafts, editingEntityId, addClaim, addClaims, announce])
 
   return (
     <section

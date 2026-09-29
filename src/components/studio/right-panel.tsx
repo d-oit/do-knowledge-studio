@@ -360,7 +360,17 @@ const InspectorPanel = ({ onClose }: { onClose: () => void }) => {
             {/* ConnectionList renders its own <ul>; a wrapper <ul> here would nest
                 lists directly (axe `list` violation), so use a plain <div>. */}
             <div>
-              <ConnectionList links={entity.links} entityIndex={entityIndex} onSelect={selectEntity} />
+              {/* Selection changes are visual-only, so name the new subject in
+                  the live region (WCAG 4.1.3, Plan 158 P2-9). */}
+              <ConnectionList
+                links={entity.links}
+                entityIndex={entityIndex}
+                onSelect={(id) => {
+                  const target = entityIndex.get(id)
+                  selectEntity(id)
+                  if (target) announce(announceT('announce.entitySelected', target.name))
+                }}
+              />
             </div>
           </div>
         )}

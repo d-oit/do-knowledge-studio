@@ -42,6 +42,8 @@ const getNodeIndentStyle = (level: number, indentPx: number): React.CSSPropertie
 export const MindMapView = () => {
   const entities = useStudioStore((s) => s.entities)
   const selectEntity = useStudioStore((s) => s.selectEntity)
+  // Store selection, distinct from the roving-tabindex focus (APG treeview).
+  const selectedEntityId = useStudioStore((s) => s.selectedEntityId)
   const setView = useStudioStore((s) => s.setView)
   const [rootId, setRootId] = useState(entities[0]?.id || '')
   const [depth, setDepth] = useState(3)
@@ -233,7 +235,12 @@ export const MindMapView = () => {
     treeItemsRef.current = canvasRef.current?.querySelectorAll<HTMLElement>('[role="treeitem"]') ?? null
   }, [tree, expandedNodes, syncKey])
 
-  const renderNode = (node: TreeNode, level: number = 0): React.ReactNode => {
+  const renderNode = (
+    node: TreeNode,
+    level: number = 0,
+    position = 1,
+    siblingCount = 1,
+  ): React.ReactNode => {
     const meta = getEntityTypeMeta(node.entity.type)
     const isExpanded = expandedNodes.has(node.entity.id) || level === 0
     const hasChildren = node.children.length > 0
@@ -250,8 +257,17 @@ export const MindMapView = () => {
           <div
             role="treeitem"
             data-entity-id={node.entity.id}
+            // APG: selection is distinct from focus. `tabIndex` is roving and
+            // follows focusNodeId; `aria-selected` follows the STORE selection,
+            // which can also change from the right panel or search.
             tabIndex={focusedNodeId === node.entity.id ? 0 : -1}
-            aria-selected={focusedNodeId === node.entity.id ? true : undefined}
+            aria-selected={selectedEntityId === node.entity.id}
+            // Every node is in the DOM, so aria-level is optional by spec, but
+            // without it a screen reader announces each node at the same depth
+            // and the hierarchy is lost. P2-7.
+            aria-level={level + 1}
+            aria-posinset={position}
+            aria-setsize={siblingCount}
             aria-expanded={hasChildren ? isExpanded : undefined}
             onFocus={() => { setFocusedNodeId(node.entity.id) }}
             onClick={() => {
@@ -356,9 +372,12 @@ export const MindMapView = () => {
               animate={{ opacity: 1, height: 'auto' }}
               exit={reducedMotion ? { opacity: 0 } : { opacity: 0, height: 0 }}
               transition={reducedMotion ? { duration: 0 } : { duration: 0.2 }}
+              role="group"
               className={cn('border-l border-border', density.connectorInset, density.railPadding, density.siblingGap)}
             >
-              {node.children.map((child) => renderNode(child, level + 1))}
+              {node.children.map((child, i) =>
+                renderNode(child, level + 1, i + 1, node.children.length),
+              )}
             </motion.div>
           )}
         </AnimatePresence>

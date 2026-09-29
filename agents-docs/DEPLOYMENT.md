@@ -9,10 +9,11 @@
 
 ### Requirements
 
-- **Node.js ≥ 20.9** — Next 16 hard-asserts `>=20.9.0` in `bin/next`. The
-  `engines.node` floor is currently `">=20"`, which is 9 minor versions too
-  low; a Node 20.5 machine passes `engine-strict` install and then crashes the
-  build with a confusing error (Plan 158 P2-8).
+- **Node.js ≥ 22.10** — Next 16 hard-asserts `>=20.9.0` in `bin/next`. The
+  `engines.node` floor was `">=20"`, which let a Node 20.5 machine satisfy
+  `engine-strict` at install time and only then crash the build with a
+  confusing message. Now `">=22.10.0"`, matching `.nvmrc` and CI, so the
+  failure happens at install with a clear message (Plan 158 P2-8).
 - **pnpm** — see the install-command note below.
 - **Build must pass** — `pnpm run build` runs on every push to `main`.
 

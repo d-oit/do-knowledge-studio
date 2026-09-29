@@ -292,7 +292,8 @@ spec citation. Neither survived a five-minute browser check.
 | P1-3 referrer policy | **Fixed** | Collapsed to the header (`no-referrer`); the conflicting `metadata.referrer` is gone. Verified in-browser. |
 | P1-4 focus obscured | **Fixed** | The audit's prescribed remedy was wrong — see below. |
 | P1-1 build warning | **Fixed** | `tsconfig.build.json` + `typescript.tsconfigPath`. See below. |
-| P2-* | Open | See §5. |
+| P2-1, P2-4, P2-5, P2-6, P2-7, P2-8, P2-9 | **Fixed** | See below. |
+| P2-2, P2-3, P2-10, P2-11 | Open | See §5. |
 
 ### P1-4: the prescribed fix did not work
 

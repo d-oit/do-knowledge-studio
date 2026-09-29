@@ -8,6 +8,8 @@
  * wiring, not just the hook, is the contract.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { execSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { render, screen, fireEvent, act, cleanup, waitFor } from '@testing-library/react'
 import { Announcer } from '@/lib/a11y/announcer'
 
@@ -250,5 +252,31 @@ describe('live announcements (Plan 157 Phase 5)', () => {
         expect(await spoken()).toBe(`Switched to ${label}`)
       })
     }
+  })
+
+  it('has no unwired announcement keys', () => {
+    // Plan 158 P2-9: four keys were defined but never called, so those
+    // mutations were silent for screen-reader users while the code looked
+    // complete. Asserting the keys EXIST would not catch that — this asserts
+    // the opposite direction: every key has at least one call site.
+    // Exclude the message file itself: it is where keys are DEFINED, so
+    // including it would make every key look wired.
+    const callSites = execSync(
+      "grep -rho 'announce\\.[a-zA-Z]*' src --include=*.tsx --include=*.ts " +
+        "--exclude=announce.ts || true",
+      { encoding: 'utf8' },
+    )
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+
+    const defined = readFileSync('src/lib/i18n/messages/announce.ts', 'utf8')
+      .split('\n')
+      .map((line) => line.match(/'(announce\.[a-zA-Z]+)':/))
+      .filter((m): m is RegExpMatchArray => m !== null)
+      .map((m) => m[1])
+
+    const unwired = defined.filter((key) => !callSites.includes(key))
+    expect(unwired).toEqual([])
   })
 })
