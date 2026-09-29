@@ -43,7 +43,12 @@ const nextConfig: NextConfig = {
           { key: 'Content-Security-Policy', value: cspHeader },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'X-Frame-Options', value: 'DENY' },
-          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          // Single source of truth for the referrer policy. The layout's
+          // `metadata.referrer` used to disagree with this header
+          // ('no-referrer' vs 'strict-origin-when-cross-origin'), so a
+          // maintainer reading either one alone drew the wrong conclusion.
+          // Plan 158 P1-3.
+          { key: 'Referrer-Policy', value: 'no-referrer' },
         ],
       },
     ]);

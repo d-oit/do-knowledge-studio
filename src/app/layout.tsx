@@ -39,7 +39,9 @@ export const metadata: Metadata = {
     "second brain",
   ],
   authors: [{ name: "DO Knowledge Studio" }],
-  referrer: "no-referrer",
+  // Referrer policy is set once, as a header, in next.config.ts. Setting it
+  // here too produced two conflicting policies for one document.
+  // Plan 158 P1-3.
   icons: {
     icon: "/favicon.svg",
   },

@@ -384,7 +384,13 @@ export const EditorView = () => {
   useEditorKeyboardShortcuts({ handleFormat, handleSave })
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-6 lg:px-10 lg:py-8">
+    // pb reserves the height of the sticky status bar (69px measured) so the
+    // last row can always be scrolled clear of it. scroll-padding alone does
+    // NOT fix WCAG 2.2 SC 2.4.11 here: the status bar is a sibling inside the
+    // scrolled content, so at maximum scroll it permanently overlays the last
+    // 69px no matter how the browser positions a focused element (verified in
+    // Chromium — the element was still 100% covered at scrollTop max).
+    <div className="mx-auto max-w-3xl px-6 pb-24 pt-6 lg:px-10 lg:pb-28 lg:pt-8">
       <EditorHeader
         editing={editing}
         name={name}
