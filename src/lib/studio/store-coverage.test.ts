@@ -365,6 +365,31 @@ describe('Studio Store branch coverage', () => {
     })
   })
 
+  describe('commitEntities idempotence', () => {
+    it('does not insert the same new id twice in one batch', () => {
+      useStudioStore.setState({ entities: [], claims: [] })
+      const dup = makeEntity({ id: 'dup', name: 'Dup' })
+
+      useStudioStore.getState().commitEntities([dup, { ...dup }])
+
+      // A repeated new id used to yield [dup, dup] — a duplicate library
+      // entry and an ambiguous deleteEntity target.
+      const ids = useStudioStore.getState().entities.map((e) => e.id)
+      expect(ids).toEqual(['dup'])
+    })
+
+    it('still merges an existing id rather than duplicating it', () => {
+      const existing = makeEntity({ id: 'e-keep', name: 'Before' })
+      useStudioStore.setState({ entities: [existing], claims: [] })
+
+      useStudioStore.getState().commitEntities([makeEntity({ id: 'e-keep', name: 'After' })])
+
+      const entities = useStudioStore.getState().entities
+      expect(entities).toHaveLength(1)
+      expect(entities[0].name).toBe('After')
+    })
+  })
+
   describe('commitEntities', () => {
     it('commits a batch under one history snapshot so a single undo restores all writes', () => {
       const source = makeEntity({ id: 'e-src', name: 'Source' })

@@ -22,13 +22,27 @@ const CHAT_RESULT_LIMIT = 5
 /** Abort controller for the in-flight local-chat retrieval. */
 let chatSendAbort: AbortController | null = null
 
-/** Abort and drop any in-flight chat retrieval. Called by `clearChat`/`resetStore`
- * so a pending send can't append its assistant reply into a cleared/reset
- * conversation (the send is never the active controller afterward, so its
- * completion is dropped in `sendMessage`'s catch). */
-export const abortChatSend = (): void => {
+/**
+ * Abort and drop any in-flight chat retrieval. Called by `clearChat`,
+ * `importData`/`importWithRollback`, and `resetStore` so a pending send can't
+ * append its assistant reply into a conversation that has been replaced.
+ *
+ * `set` is threaded in because clearing the controller is NOT enough: the
+ * aborted send's catch sees `chatSendAbort !== controller` and returns early,
+ * so `chatLoading` would stay `true` forever — the chat view renders a
+ * permanent typing indicator and refuses further sends. Whoever cancels the
+ * request owns clearing the indicator.
+ */
+export const abortChatSend = (
+  get?: () => StudioState,
+  set?: (partial: Partial<StudioState>) => void,
+): void => {
   chatSendAbort?.abort()
   chatSendAbort = null
+  // Only write when the flag is actually set. A redundant `set` here would
+  // trigger a persist write, which is a real cost on every import/reset and
+ // perturbs failure-injection tests that count setItem calls.
+  if (get?.().chatLoading) set?.({ chatLoading: false })
 }
 
 /** Builds the local assistant chat reply from BM25 results. Shared by the
@@ -102,7 +116,7 @@ export const createChatSlice: StudioSlice<ChatSlice> = (set, get) => ({
   },
 
   clearChat: () => {
-    abortChatSend()
+    abortChatSend(get, set)
     set({ chat: [], chatLoading: false })
   },
 })

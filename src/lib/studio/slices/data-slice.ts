@@ -48,7 +48,7 @@ export const createDataSlice: StudioSlice<DataSlice> = (set, get) => ({
   importData: (entities, claims, options) => {
     // Cancel any pending chat retrieval so it can't answer from the
     // pre-import corpus, then drop the stale cached search index.
-    abortChatSend()
+    abortChatSend(get, set)
     resetSearchCache()
     set(corpusPatch(entities, claims, options))
   },
@@ -57,9 +57,10 @@ export const createDataSlice: StudioSlice<DataSlice> = (set, get) => ({
     // Cancel any pending chat retrieval and drop the cached index before
     // swapping corpora; on rollback the restored snapshot references force
     // a clean rebuild on next search.
-    abortChatSend()
+    abortChatSend(get, set)
     resetSearchCache()
-    const snapshot = buildRecoverySnapshot(get())
+    const preImport = get()
+    const snapshot = buildRecoverySnapshot(preImport)
     persistRecoverySnapshot(snapshot)
     try {
       set(corpusPatch(entities, claims, options))
@@ -75,6 +76,12 @@ export const createDataSlice: StudioSlice<DataSlice> = (set, get) => ({
           mindMap: snapshot.mindMap,
           links: snapshot.links,
           tags: snapshot.tags,
+          // A failed import cleared the view and selection; restoring only the
+          // corpus left the user staring at an empty Library with nothing
+          // selected. Put them back where they were.
+          currentView: preImport.currentView,
+          selectedEntityId: preImport.selectedEntityId,
+          editingEntityId: preImport.editingEntityId,
         })
       } catch {
         set(seedPatch())
@@ -89,7 +96,7 @@ export const createDataSlice: StudioSlice<DataSlice> = (set, get) => ({
   resetStore: () => {
     // Returning to the seed workspace — release any large cached index and
     // drop any pending chat retrieval so it can't answer post-reset.
-    abortChatSend()
+    abortChatSend(get, set)
     resetSearchCache()
     set(seedPatch())
   },

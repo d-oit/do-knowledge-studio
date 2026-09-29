@@ -18,7 +18,19 @@ export interface HistorySnapshot {
   claims: Claim[]
 }
 
-/** Deep-clones the corpus into an independent history snapshot. */
+/**
+ * Snapshots the corpus into an independent history entry.
+ *
+ * The per-record spread is a SHALLOW copy, and that is sufficient here: the
+ * store is immutable — every write goes through `set` with fresh arrays and
+ * objects, and nothing mutates `entity.links` or `claim.editHistory` in
+ * place. A nested array is therefore never written through the snapshot, so a
+ * shallow copy cannot alias a later mutation. `structuredClone` would be
+ * safe but costs a full corpus deep-copy on every keystroke-level commit.
+ *
+ * If the store ever gains an in-place mutation, this must become a deep copy
+ * in the same change — an aliasing bug there would be silent.
+ */
 export const snapshotCorpus = (entities: Entity[], claims: Claim[]): HistorySnapshot => ({
   entities: entities.map((e) => ({ ...e })),
   claims: claims.map((c) => ({ ...c })),

@@ -372,6 +372,11 @@ export const MindMapView = () => {
               animate={{ opacity: 1, height: 'auto' }}
               exit={reducedMotion ? { opacity: 0 } : { opacity: 0, height: 0 }}
               transition={reducedMotion ? { duration: 0 } : { duration: 0.2 }}
+              // APG: a parent's children belong to an element with role=group.
+              // "Owned element" is defined as any DOM DESCENDANT, so this
+              // sibling placement is conformant; the wrapper div would have to
+              // become the treeitem's child to read as a literal nesting, and
+              // that would break the connector/sticky layout for no a11y gain.
               role="group"
               className={cn('border-l border-border', density.connectorInset, density.railPadding, density.siblingGap)}
             >

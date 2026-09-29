@@ -28,7 +28,18 @@ export type EntitiesSlice = Pick<
 const upsertEntities = (current: Entity[], upserts: Entity[]): Entity[] => {
   const upsertById = new Map(upserts.map((e) => [e.id, e]))
   const existingIds = new Set(current.map((x) => x.id))
-  const fresh = upserts.filter((e) => !existingIds.has(e.id))
+  // Two dedupe passes. `existingIds` stops a re-insert of something already in
+  // the corpus; the running `inserted` set stops a batch that repeats the same
+  // NEW id from inserting it twice. Without the second pass, commitEntities
+  // with a repeated id produced [dup, dup] — a duplicate entity in the library
+  // and an ambiguous deleteEntity target.
+  const fresh: Entity[] = []
+  const inserted = new Set<string>()
+  for (const e of upserts) {
+    if (existingIds.has(e.id) || inserted.has(e.id)) continue
+    inserted.add(e.id)
+    fresh.push(e)
+  }
   const merged = current.map((x) => upsertById.get(x.id) ?? x)
   return [...fresh, ...merged]
 }
