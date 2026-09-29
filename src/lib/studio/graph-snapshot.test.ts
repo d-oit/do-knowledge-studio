@@ -99,12 +99,26 @@ describe('graph snapshot persistence', () => {
     expect(localStorage.getItem(GRAPH_SNAPSHOT_KEY)).toBeNull()
   })
 
-  it('rejects a non-finite zoom that would break the SVG viewBox', () => {
-    localStorage.setItem(
-      GRAPH_SNAPSHOT_KEY,
-      JSON.stringify({ ...validSnapshot(), zoom: 'big' }),
-    )
-    expect(readGraphSnapshot()).toBeNull()
+  it('rejects a zoom outside the range the canvas can render', () => {
+    // A string was supplied before, which only proved the type check fires;
+    // these are the values that actually reach a corrupt localStorage.
+    for (const zoom of ['big', Number.POSITIVE_INFINITY, 0, -1, 99]) {
+      localStorage.setItem(
+        GRAPH_SNAPSHOT_KEY,
+        JSON.stringify({ ...validSnapshot(), zoom }),
+      )
+      expect(readGraphSnapshot()).toBeNull()
+    }
+  })
+
+  it('accepts a zoom at the boundary of the supported range', () => {
+    for (const zoom of [0.3, 3]) {
+      localStorage.setItem(
+        GRAPH_SNAPSHOT_KEY,
+        JSON.stringify({ ...validSnapshot(), zoom }),
+      )
+      expect(readGraphSnapshot()?.zoom).toBe(zoom)
+    }
   })
 
   it('rejects a zero zoom, which would collapse the viewBox', () => {

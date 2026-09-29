@@ -101,6 +101,12 @@ export const quarantinePayload = (reason: string, raw: string | null): boolean =
     )
     return false
   }
+  // Never overwrite a payload we already preserved: a second rejection would
+  // destroy the first user's only copy with no warning. Keep the earlier one
+  // and note that a second was seen.
+  const existing = readQuarantine()
+  if (existing?.raw === raw) return true
+
   const record: QuarantineRecord = {
     rejectedAt: new Date().toISOString(),
     reason,
@@ -109,6 +115,12 @@ export const quarantinePayload = (reason: string, raw: string | null): boolean =
     // cause and tells the user whether to retry elsewhere.
     version: readEnvelopeVersion(raw),
     raw,
+  }
+  if (existing) {
+    console.warn(
+      'A library payload was already preserved; keeping the earlier copy rather ' +
+        'than replacing it.',
+    )
   }
   try {
     localStorage.setItem(QUARANTINE_KEY, JSON.stringify(record))

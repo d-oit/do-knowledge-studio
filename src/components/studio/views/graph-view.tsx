@@ -212,6 +212,13 @@ const MIN_ZOOM = 0.3;
 /** Highest zoom the canvas supports; matches the keyboard step's ceiling. */
 const MAX_ZOOM = 3;
 
+/** Largest pan offset accepted on restore, in SVG units (5x the canvas). */
+const MAX_PAN = 4000;
+
+/** Constrains a value to an inclusive range. */
+const clamp = (value: number, min: number, max: number): number =>
+  Math.min(Math.max(value, min), max);
+
 const handleGraphKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       const PAN_STEP = 30
@@ -341,7 +348,13 @@ const handleGraphKeyDown = useCallback(
     announce(announceT('announce.snapshotRestored'))
     setLayout(snapshot.layout)
     setFocusMode(snapshot.focusMode)
-    setPanOffset({ x: snapshot.panX, y: snapshot.panY })
+    // A snapshot is user-writable and survives deploys; a pan far outside the
+    // canvas would park the whole graph off-view with no way back except the
+    // Home key. Clamp to a generous multiple of the visible canvas.
+    setPanOffset({
+      x: clamp(snapshot.panX, -MAX_PAN, MAX_PAN),
+      y: clamp(snapshot.panY, -MAX_PAN, MAX_PAN),
+    })
     // Clamp to the same range the keyboard handler uses. A snapshot is
     // user-writable and survives deploys, so an out-of-range value would
     // otherwise produce a degenerate viewBox.

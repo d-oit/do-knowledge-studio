@@ -181,19 +181,13 @@ const normalizeCanvasNulls = (data: Partial<PersistedSlice>): Partial<PersistedS
 }
 
 /**
- * Single enforcement point for every hydration path (same-version reloads
- * included — zustand only calls `migrate` on version mismatches).
+ * Throwing wrapper around {@link hydrateWithOutcome}, kept for callers that
+ * expect an exception (and for the tests that pin the rejection contract).
  *
- * Valid payloads replace matching fields and rebase the undo baseline onto
- * the hydrated corpus.
- *
- * A rejected payload does **not** throw. The persist `merge` callback has no
- * documented error channel, and a throw lands in zustand's terminal `.catch`,
- * which skips the branch that sets `hasHydrated` — leaving the store flagged
- * un-hydrated for the life of the page. The caller receives
- * {@link HydrationOutcome} instead and reports the rejection through
- * `onRehydrateStorage`, preserving the raw bytes in quarantine so the next
- * store write cannot destroy them (Plan 158 P0-3).
+ * Do NOT wire this into the persist `merge` callback: a throw there lands in
+ * zustand's terminal catch, which skips the branch that sets `hasHydrated` and
+ * leaves the store un-hydrated for the life of the page. The store uses
+ * `hydrateWithOutcome` plus `onRehydrateStorage` instead.
  */
 export const mergeHydratedState = <S extends HydratableState>(persisted: unknown, current: S): S => {
   const outcome = hydrateWithOutcome(persisted, current)
@@ -204,8 +198,17 @@ export const mergeHydratedState = <S extends HydratableState>(persisted: unknown
 }
 
 /**
- * Non-throwing hydration: returns either the merged state or the reason the
- * payload was refused, so no caller has to use a throw as control flow.
+ * Single enforcement point for every hydration path (same-version reloads
+ * included — zustand only calls `migrate` on version mismatches).
+ *
+ * Valid payloads replace matching fields and rebase the undo baseline onto
+ * the hydrated corpus. A rejected payload does **not** throw: the persist
+ * `merge` callback has no documented error channel, and a throw lands in
+ * zustand's terminal `.catch`, skipping the branch that sets `hasHydrated` and
+ * leaving the store un-hydrated for the life of the page. The caller receives
+ * a {@link HydrationOutcome} and reports the rejection through
+ * `onRehydrateStorage`, preserving the raw bytes in quarantine so the next
+ * store write cannot destroy them (Plan 158 P0-3).
  */
 export const hydrateWithOutcome = <S extends HydratableState>(
   persisted: unknown,

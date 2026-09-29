@@ -29,8 +29,9 @@ const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
  * - `updateViaCache` plus a `visibilitychange`/`online` re-check so returning
  *   to a backgrounded tab or coming back online picks up a new deploy
  *   immediately instead of after a reload.
- * - Every listener is removed on unmount, and both the interval and the
- *   in-flight update promise are torn down with the component.
+ * - Every listener is removed on unmount, the interval is cleared, and the
+ *   `disposed` flag stops any in-flight or late-resolving update from
+ *   scheduling more work. The update request itself is not cancellable.
  */
 export function ServiceWorkerRegistration() {
   useEffect(() => {

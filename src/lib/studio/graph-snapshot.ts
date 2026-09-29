@@ -47,7 +47,9 @@ const GraphSnapshotSchema = z.object({
   focusMode: z.boolean(),
   panX: z.number().finite(),
   panY: z.number().finite(),
-  zoom: z.number().finite().positive(),
+  // `.positive()` still admits a zoom the canvas cannot render, and this
+  // value is restored verbatim. Bound it to the range the view clamps to.
+  zoom: z.number().finite().min(0.3).max(3),
   timestamp: z.string(),
 })
 
