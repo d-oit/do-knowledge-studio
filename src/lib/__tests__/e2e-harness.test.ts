@@ -14,6 +14,18 @@ import { parse } from 'yaml'
  * tests pin the two properties that made it undiagnosable.
  */
 
+/**
+ * Budget for every test that imports `playwright.config.ts`.
+ *
+ * The FIRST import transforms Playwright's whole config dependency graph
+ * inside Vitest — measured at ~120s on a cold `.vite` cache, versus a few
+ * milliseconds warm. Vitest's 5s default therefore only ever covered the warm
+ * case, and this file failed on a cold CI checkout while passing locally
+ * (plans/159 follow-on F4). The budget is generous because the slow path is a
+ * one-time transform, not a hang.
+ */
+const CONFIG_IMPORT_TIMEOUT_MS = 180_000
+
 /** Load `playwright.config.ts` with `CI` set, since the reporter depends on it. */
 const loadConfig = async (ci: boolean): Promise<PlaywrightConfig> => {
   vi.resetModules()
@@ -45,44 +57,64 @@ afterEach(() => {
 })
 
 describe('Playwright web server readiness', () => {
-  it('waits for a served response, not a bound port', async () => {
-    const config = await loadConfig(false)
+  it(
+    'waits for a served response, not a bound port',
+    async () => {
+      const config = await loadConfig(false)
 
-    // `port` is satisfied the moment `next dev` binds, while it is still
-    // compiling — which is how 149 tests started against a server that could not
-    // answer. `url` waits for an actual HTTP response.
-    expect(config.webServer.url).toBe('http://localhost:3000')
-    expect(config.webServer.port).toBeUndefined()
-    expect(config.webServer.timeout).toBeGreaterThan(60000)
-  })
+      // `port` is satisfied the moment `next dev` binds, while it is still
+      // compiling — which is how 149 tests started against a server that could not
+      // answer. `url` waits for an actual HTTP response.
+      expect(config.webServer.url).toBe('http://localhost:3000')
+      expect(config.webServer.port).toBeUndefined()
+      expect(config.webServer.timeout).toBeGreaterThan(60000)
+    },
+    CONFIG_IMPORT_TIMEOUT_MS,
+  )
 
-  it('pipes the dev server output into the job log', async () => {
-    const config = await loadConfig(false)
+  it(
+    'pipes the dev server output into the job log',
+    async () => {
+      const config = await loadConfig(false)
 
-    // Without this the server is invisible in CI, so a stall cannot be told apart
-    // from a broken test.
-    expect(config.webServer.stdout).toBe('pipe')
-    expect(config.webServer.stderr).toBe('pipe')
-  })
+      // Without this the server is invisible in CI, so a stall cannot be told apart
+      // from a broken test.
+      expect(config.webServer.stdout).toBe('pipe')
+      expect(config.webServer.stderr).toBe('pipe')
+    },
+    CONFIG_IMPORT_TIMEOUT_MS,
+  )
 
-  it('keeps the local server reuse so a running dev server is not restarted', async () => {
-    const config = await loadConfig(false)
-    expect(config.webServer.reuseExistingServer).toBe(true)
-  })
+  it(
+    'keeps the local server reuse so a running dev server is not restarted',
+    async () => {
+      const config = await loadConfig(false)
+      expect(config.webServer.reuseExistingServer).toBe(true)
+    },
+    CONFIG_IMPORT_TIMEOUT_MS,
+  )
 })
 
 describe('Playwright reporters', () => {
-  it('writes the HTML report in CI, where the workflow uploads it', async () => {
-    const config = await loadConfig(true)
+  it(
+    'writes the HTML report in CI, where the workflow uploads it',
+    async () => {
+      const config = await loadConfig(true)
 
-    expect(JSON.stringify(config.reporter)).toContain('html')
-  })
+      expect(JSON.stringify(config.reporter)).toContain('html')
+    },
+    CONFIG_IMPORT_TIMEOUT_MS,
+  )
 
-  it('keeps the console list reporter locally', async () => {
-    const config = await loadConfig(false)
+  it(
+    'keeps the console list reporter locally',
+    async () => {
+      const config = await loadConfig(false)
 
-    expect(config.reporter).toBe('list')
-  })
+      expect(config.reporter).toBe('list')
+    },
+    CONFIG_IMPORT_TIMEOUT_MS,
+  )
 })
 
 describe('E2E failure artifacts', () => {

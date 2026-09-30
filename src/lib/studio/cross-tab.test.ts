@@ -70,7 +70,7 @@ describe('cross-tab store coordination', () => {
     useStudioStore.setState({
       entities: [],
       claims: [],
-      entityHistory: [[]],
+      entityHistory: [{ entities: [], claims: [] }],
       historyIndex: 0,
       graph: undefined,
       mindMap: undefined,
@@ -94,11 +94,16 @@ describe('cross-tab store coordination', () => {
     // Simulate "not yet hydrated": the listener is deferred, so the hydration
     // set() below must not produce a broadcast.
     const persist = useStudioStore.persist
-    let capturedFinish: (() => void) | null = null
+    // Held on an object, not a bare `let`: TypeScript's flow analysis does not
+    // track assignments made inside a callback, so a nullable `let` would be
+    // narrowed to `null` at the call site and read as non-callable.
+    const capturedFinish: { current: (() => void) | null } = { current: null }
     vi.spyOn(persist, 'hasHydrated').mockReturnValue(false)
-    vi.spyOn(persist, 'onFinishHydration').mockImplementation((cb: () => void) => {
-      capturedFinish = cb
-      return () => { capturedFinish = null }
+    // PersistListener receives the finished state; wrap it so the captured
+    // handle stays zero-arg for the `capturedFinish.current?.()` call below.
+    vi.spyOn(persist, 'onFinishHydration').mockImplementation((cb) => {
+      capturedFinish.current = () => { cb(useStudioStore.getState()) }
+      return () => { capturedFinish.current = null }
     })
 
     initCrossTabSync()
@@ -112,7 +117,7 @@ describe('cross-tab store coordination', () => {
 
     // Once hydration finishes the subscription attaches and normal
     // user-driven edits broadcast again.
-    capturedFinish?.()
+    capturedFinish.current?.()
     useStudioStore.setState({ claims: [{ ...CLAIM_A, statement: 'after' }] })
     expect(posted.length).toBeGreaterThan(0)
 

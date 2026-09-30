@@ -19,7 +19,7 @@ function resetStore() {
     commandOpen: false,
     mobileDrawerOpen: false,
     mobilePanelView: 'nav',
-    entityHistory: [[]],
+    entityHistory: [{ entities: [], claims: [] }],
     historyIndex: 0,
   })
 }

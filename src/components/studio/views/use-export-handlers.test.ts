@@ -344,7 +344,7 @@ describe('useExportHandlers', () => {
     ]
     vi.mocked(parseImportFile).mockReturnValue({
       /** Whether the operation succeeded. */
-      success: true, entities: importedEntities, claims: importedClaims, errors: [],
+      success: true, entities: importedEntities, claims: importedClaims,
     })
 
     withStubFileReader('file-content', () => {
@@ -372,7 +372,7 @@ describe('useExportHandlers', () => {
   it('handleFileChange shows error when parse fails', () => {
     vi.mocked(parseImportFile).mockReturnValue({
       /** Whether the operation succeeded. */
-      success: false, entities: [], claims: [],
+      success: false,
       /** The errors. */
       errors: [{ path: 'entities[0]', message: 'Invalid type' }],
     })
@@ -400,7 +400,7 @@ describe('useExportHandlers', () => {
     ]
     vi.mocked(parseImportFile).mockReturnValue({
       /** Whether the operation succeeded. */
-      success: true, entities: importedEntities, claims: [], errors: [],
+      success: true, entities: importedEntities, claims: [],
     })
 
     withStubFileReader('file-content', () => {
@@ -487,7 +487,7 @@ describe('useExportHandlers', () => {
       )
       // The truncated message must stay within the character budget.
       /** The called description. */
-      const description = vi.mocked(toast.warning).mock.calls[0][1]?.description ?? ''
+      const description = String(vi.mocked(toast.warning).mock.calls[0][1]?.description ?? '')
       expect(description.length).toBeLessThanOrEqual(320)
     })
   })

@@ -73,7 +73,7 @@ describe('applyConflictResolution — branch coverage', () => {
       localValue: 'Original',
       remoteValue: 'Remote Name',
       winner: 'local' as const,
-      strategy: 'timestamp' as const,
+      reason: 'timestamp' as const,
     }]
 
     applyConflictResolution(resolutions, conflicts, [entity], [])
@@ -99,7 +99,7 @@ describe('applyConflictResolution — branch coverage', () => {
       localValue: 'Original claim',
       remoteValue: 'Updated claim',
       winner: 'local' as const,
-      strategy: 'timestamp' as const,
+      reason: 'timestamp' as const,
     }]
 
     applyConflictResolution(resolutions, conflicts, [], [claim])
@@ -124,7 +124,7 @@ describe('applyConflictResolution — branch coverage', () => {
       localValue: 'Local Name',
       remoteValue: 'Remote Name',
       winner: 'remote' as const, // would be remote if not overridden
-      strategy: 'timestamp' as const,
+      reason: 'timestamp' as const,
     }]
 
     applyConflictResolution(resolutions, conflicts, [entity], [])
@@ -148,7 +148,7 @@ describe('applyConflictResolution — branch coverage', () => {
       localValue: 'Loser',
       remoteValue: 'Winner',
       winner: 'local' as const, // keep local
-      strategy: 'timestamp' as const,
+      reason: 'timestamp' as const,
     }]
 
     applyConflictResolution(new Map(), conflicts, [entity], [])
@@ -166,7 +166,7 @@ describe('applyConflictResolution — branch coverage', () => {
       localValue: 'Local',
       remoteValue: 'Remote',
       winner: 'remote' as const,
-      strategy: 'timestamp' as const,
+      reason: 'timestamp' as const,
     }]
 
     // Should not throw even though local entity doesn't exist
@@ -198,7 +198,7 @@ describe('applyConflictResolution — branch coverage', () => {
       localValue: 'Old Name',
       remoteValue: 'New Name',
       winner: 'local' as const,
-      strategy: 'timestamp' as const,
+      reason: 'timestamp' as const,
     }]
 
     applyConflictResolution(resolutions, conflicts, [entity], [])

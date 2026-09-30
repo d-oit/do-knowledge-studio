@@ -22,6 +22,11 @@ import {
   partializePersistedState,
 } from './hydration'
 import { quarantinePayload } from './hydration-quarantine'
+import {
+  getGuardedStorage,
+  getHydrationRefusal,
+  recordHydrationRefusal,
+} from './hydration-guard'
 import { buildSeedState } from './seed-state'
 import type { StudioState } from './store-types'
 import { createEntitiesSlice } from './slices/entities-slice'
@@ -33,11 +38,22 @@ import { createUiSlice } from './slices/ui-slice'
 import { snapshotCorpus } from './history-snapshot'
 
 export { restoreFromRecovery } from './recovery-helpers'
-export { readQuarantine, clearQuarantine, describeQuarantine } from './hydration-quarantine'
+export { readQuarantine, describeQuarantine } from './hydration-quarantine'
+export { getHydrationRefusal } from './hydration-guard'
+export type { HydrationRefusal } from './hydration-guard'
 export type { StudioState, ImportOptions } from './store-types'
 
 /** Why the last hydration attempt refused, or null when it succeeded. */
 let lastRejectionReason: string | null = null
+
+/**
+ * Reason recorded when the persist chain rejects instead of returning a
+ * validation verdict — the stored envelope could not be read at all.
+ *
+ * Deliberately a fixed string rather than `error.message`: a browser storage
+ * exception can carry implementation detail, and the UI renders this verbatim.
+ */
+const UNREADABLE_ENVELOPE_REASON = 'the stored library could not be read from browser storage'
 
 /**
  * Reads the stored envelope verbatim so it can be preserved in quarantine.
@@ -50,6 +66,24 @@ const readRawEnvelope = (): string | null => {
   } catch (error) {
     console.error('Failed to read the stored envelope:', error)
     return null
+  }
+}
+
+/**
+ * Whether a validation failure has real data behind it.
+ *
+ * A first run stores nothing, and zustand still hands `merge` an empty
+ * (undefined) payload, which the validator rejects. Blocking persistence then
+ * would make a fresh install permanently read-only with no data at risk —
+ * there is no envelope to protect. A readable envelope, including one that
+ * failed to parse, always counts: unreadable bytes may still be a real
+ * library, and an unreadable store is exactly the case that must fail closed.
+ */
+const hasStoredEnvelope = (): boolean => {
+  try {
+    return localStorage.getItem(STUDIO_STORAGE_KEY) !== null
+  } catch {
+    return true
   }
 }
 
@@ -83,7 +117,7 @@ export const useStudioStore = create<StudioState>()(
     {
       name: STUDIO_STORAGE_KEY,
       version: CURRENT_SCHEMA_VERSION,
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(getGuardedStorage),
       // Hydration pipeline lives in ./hydration — validation runs on EVERY
       // load (not just version mismatches), corrupt payloads are discarded
       // in favor of current state, and undo history is rebased onto the
@@ -103,25 +137,32 @@ export const useStudioStore = create<StudioState>()(
       // well-formed payload to reject, and quarantine the bytes separately.
       //
       // The stored envelope is NOT preserved by this return: zustand treats
-      // any non-Promise value as "migrated" and calls setItem(), and by then
-      // `merge` has already installed seed state, so the live key is
-      // overwritten with the seed corpus. That overwrite is exactly why the
-      // bytes are copied to quarantine FIRST — a separate key the store never
-      // writes. See plans/158 P0-3.
+      // any non-Promise value as "migrated" and calls setItem() as soon as
+      // this callback returns, before `merge` runs. `recordHydrationRefusal`
+      // latches the guarded storage's write block synchronously, BEFORE that
+      // setItem happens, so the refused bytes stay in the live key. The
+      // quarantine copy is a second, downloadable copy the store never
+      // writes. See plans/ADRs/028 and ./hydration-guard.
       migrate: (persisted: unknown, version: number): unknown => {
         const outcome = migratePersistedState(persisted, version)
         if (!outcome.ok) {
           lastRejectionReason = outcome.reason
-          const preserved = quarantinePayload(outcome.reason, readRawEnvelope())
+          const raw = readRawEnvelope()
+          const preserved = quarantinePayload(outcome.reason, raw)
+          // Recorded BEFORE returning: zustand calls setItem synchronously
+          // once this returns, and that write must be dropped. `preserved` is
+          // false whenever no copy of these exact bytes exists — an unreadable
+          // envelope counts, because "nothing was stored" is not a safe copy.
+          recordHydrationRefusal(outcome.reason, raw, preserved)
           if (!preserved) {
-            // Quarantine failed (payload over the size cap, or storage
-            // rejected the write). Returning `persisted` is still the best
-            // available action — it keeps zustand's setItem a no-op — but the
-            // loss must be loud. Without this the user's corpus is replaced
-            // by seed data on the next store write with no signal at all.
+            // Quarantine failed (payload over the size cap, storage rejected
+            // the write, or a different payload already occupies the key).
+            // The loss must be loud, and writes are now blocked so the refused
+            // bytes stay in the live key rather than being replaced by seed.
             console.warn(
-              'Studio could not preserve a rejected library payload; the next ' +
-                'store write will replace it. Export your data if this repeats.',
+              'Studio could not preserve a rejected library payload; persistence ' +
+                'is blocked for this page so the original bytes survive. Edits in ' +
+                'this session will NOT be saved — download the raw copy instead.',
             )
           }
           return persisted
@@ -134,8 +175,9 @@ export const useStudioStore = create<StudioState>()(
         // `migrate` refuses (future version, no safe path) by returning the
         // input unchanged. Accepting it would hydrate a payload written by a
         // newer build, so treat any refusal as fatal for this attempt and
-        // keep the store on seed data. The bytes are already quarantined by
-        // the migrate hook; the next write can no longer reach them.
+        // keep the store on seed data. The migrate hook already recorded the
+        // refusal and blocked persistence before it returned, so reaching
+        // this point means nothing further needs recording here.
         if (lastRejectionReason !== null) {
           const reason = lastRejectionReason
           lastRejectionReason = null
@@ -144,18 +186,49 @@ export const useStudioStore = create<StudioState>()(
         }
         const outcome = hydrateWithOutcome(persistedState, currentState)
         if (!outcome.ok) {
+          // A first run has no envelope, so there is nothing to preserve and
+          // nothing at risk. Treat it as a normal empty load rather than a
+          // refusal, or a fresh install would be permanently read-only.
+          if (!hasStoredEnvelope()) {
+            return currentState
+          }
           // Reachable without any version delta: same-version reloads skip
-          // `migrate` entirely, so validation is the only gate.
-          quarantinePayload(outcome.reason, readRawEnvelope())
+          // `migrate` entirely, so validation is the only gate. This branch
+          // must fail closed on its own — it is the only gate in that case.
+          const raw = readRawEnvelope()
+          const preserved = quarantinePayload(outcome.reason, raw)
+          recordHydrationRefusal(outcome.reason, raw, preserved)
+          if (!preserved) {
+            console.warn(
+              'Studio could not preserve a rejected library payload; persistence ' +
+                'is blocked for this page so the original bytes survive. Edits in ' +
+                'this session will NOT be saved — download the raw copy instead.',
+            )
+          }
           return currentState
         }
         return outcome.state
       },
       // The documented channel for reporting a hydration problem, so a
       // refused payload is visible rather than a silent downgrade to demo data.
+      //
+      // A rejected persist chain is NOT the same failure as a validation
+      // refusal: there is no verdict because the envelope could not be READ at
+      // all (site data blocked, SecurityError, storage unavailable). Without
+      // the guard below that case is fail-OPEN — the store keeps seed state
+      // and the very next `setState` writes it over the unread envelope, which
+      // is the original data-loss bug in a different disguise. Nothing was
+      // readable, so no copy can be offered and `preserved` stays false; the
+      // UI then says the session's edits are not saved.
+      //
+      // Only recorded when no refusal exists yet: a refusal that already ran
+      // made a stronger claim (it preserved bytes), and downgrading it here
+      // would hide a copy that does exist.
       onRehydrateStorage: () => (_state, error) => {
-        if (error) {
-          console.warn('Studio hydration failed:', error)
+        if (!error) return
+        console.warn('Studio hydration failed:', error)
+        if (getHydrationRefusal() === null) {
+          recordHydrationRefusal(UNREADABLE_ENVELOPE_REASON, null, false)
         }
       },
     },
@@ -269,7 +342,21 @@ export const useStats = () => {
 if (typeof window !== 'undefined') {
   // skipcq: JS-0098 -- void is required for Codacy no-floating-promises on fire-and-forget import
   void import('./cross-tab')
-    .then(({ initCrossTabSync }) => initCrossTabSync())
+    .then(({ initCrossTabSync }) => {
+      // A refused hydration leaves a seed workspace that never held the
+      // user's corpus. Broadcasting it would rewrite every other tab's real
+      // library with the demo set, and accepting inbound updates would merge
+      // that seed state into it. Cross-tab sync stays off until a page load
+      // actually validates an envelope.
+      if (getHydrationRefusal() !== null) {
+        console.warn(
+          'Studio cross-tab sync is disabled: your stored library could not be ' +
+            'loaded, so this temporary workspace will not be shared or published.',
+        )
+        return undefined
+      }
+      return initCrossTabSync()
+    })
     .catch((error: unknown) => {
       console.error('Failed to start cross-tab store coordination:', error)
     })

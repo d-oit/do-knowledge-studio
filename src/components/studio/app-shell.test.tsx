@@ -94,6 +94,24 @@ let currentView = 'home'
 let editingEntityId: string | null = null
 
 const mockStartEdit = vi.fn()
+/** Hydration refusal status the mocked guard reports; reset per test. */
+let mockRefusal: { reason: string; raw: string | null; preserved: boolean } | null = null
+const refusalListeners = new Set<() => void>()
+const finishHydrationListeners = new Set<() => void>()
+
+vi.mock('@/lib/studio/hydration-guard', () => ({
+  getHydrationRefusal: () => mockRefusal,
+  subscribeToHydrationRefusal: (listener: () => void) => {
+    refusalListeners.add(listener)
+    return () => {
+      refusalListeners.delete(listener)
+    }
+  },
+}))
+
+vi.mock('@/lib/studio/hydration-quarantine', () => ({
+  readQuarantine: () => null,
+}))
 
 vi.mock('@/lib/studio/store', () => ({
   useStudioStore: Object.assign(
@@ -101,17 +119,29 @@ vi.mock('@/lib/studio/store', () => ({
       selector({ currentView, editingEntityId, startEdit: mockStartEdit }),
     {
       getState: () => ({ startEdit: mockStartEdit }),
+      persist: {
+        onFinishHydration: (listener: () => void) => {
+          finishHydrationListeners.add(listener)
+          return () => {
+            finishHydrationListeners.delete(listener)
+          }
+        },
+      },
     },
   ),
 }))
 
 import { AppShell } from './app-shell'
+import { startBidirectionalSync } from '@/lib/sync/bridge'
 
 describe('AppShell', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     currentView = 'home'
     editingEntityId = null
+    mockRefusal = null
+    refusalListeners.clear()
+    finishHydrationListeners.clear()
   })
 
   it('renders the Sidebar', () => {
@@ -260,5 +290,56 @@ describe('AppShell', () => {
     const root = container.firstElementChild!
     expect(root.className).toContain('flex')
     expect(root.className).toContain('overflow-hidden')
+  })
+
+  it('shows the recovery alert on Home, not just in Export', () => {
+    // The banner used to be mounted only in the lazy Export view, so a user
+    // whose library failed to hydrate saw an ordinary demo Home screen.
+    currentView = 'home'
+    mockRefusal = { reason: 'no safe migration from version 99', raw: null, preserved: false }
+
+    render(<AppShell />)
+
+    expect(screen.getByTestId('quarantine-unpreserved-banner')).toBeDefined()
+  })
+
+  it('replaces SyncView with an unavailable notice while a refusal is live', () => {
+    currentView = 'sync'
+    mockRefusal = { reason: 'no safe migration from version 99', raw: null, preserved: false }
+
+    render(<AppShell />)
+
+    // SyncView can join a room and resolve conflicts against a store that
+    // never held the user's corpus.
+    expect(screen.getByTestId('sync-unavailable')).toBeDefined()
+    expect(screen.queryByTestId('sync-view')).toBeNull()
+  })
+
+  it('does not start the Yjs bridge while a refusal is live', () => {
+    mockRefusal = { reason: 'no safe migration from version 99', raw: null, preserved: false }
+
+    render(<AppShell />)
+
+    expect(startBidirectionalSync).not.toHaveBeenCalled()
+  })
+
+  it('starts the Yjs bridge on a normal hydration', () => {
+    render(<AppShell />)
+
+    expect(startBidirectionalSync).toHaveBeenCalled()
+  })
+
+  it('reacts when a refusal arrives after mount', async () => {
+    render(<AppShell />)
+    expect(screen.queryByTestId('quarantine-unpreserved-banner')).toBeNull()
+
+    await act(async () => {
+      mockRefusal = { reason: 'storage unreadable', raw: null, preserved: false }
+      for (const listener of refusalListeners) listener()
+    })
+
+    // A late refusal must not leave the bridge publishing seed data, and the
+    // warning must appear without a reload.
+    expect(screen.getByTestId('quarantine-unpreserved-banner')).toBeDefined()
   })
 })

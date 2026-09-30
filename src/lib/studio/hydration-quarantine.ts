@@ -57,7 +57,15 @@ export interface QuarantineRecord {
   raw: string
 }
 
-/** Reads the quarantined record, or null when nothing is held. */
+/**
+ * Reads the quarantined record, or null when nothing is held.
+ *
+ * A record that cannot be parsed is reported as absent but LEFT ON DISK. It
+ * may be a hand-restored or half-written copy of a real library, and deleting
+ * it on a parse failure destroys the only remaining evidence. Occupancy is
+ * therefore decided by the key's existence (see {@link quarantinePayload}),
+ * never by whether this read succeeded.
+ */
 export const readQuarantine = (): QuarantineRecord | null => {
   let raw: string | null
   try {
@@ -78,16 +86,37 @@ export const readQuarantine = (): QuarantineRecord | null => {
       return parsed as QuarantineRecord
     }
   } catch {
-    // A hand-mangled entry is unusable; drop it rather than wedge the check.
+    // Fall through to the shared warning below.
   }
-  clearQuarantine()
+  console.warn(
+    `The preserved payload in "${QUARANTINE_KEY}" is not readable as a recovery ` +
+      'record. It has been left untouched in case it is your only copy; nothing ' +
+      'will overwrite it automatically.',
+  )
   return null
 }
 
+/** Whether any bytes at all occupy the quarantine key. */
+const isQuarantineOccupied = (): boolean => {
+  try {
+    return localStorage.getItem(QUARANTINE_KEY) !== null
+  } catch (error) {
+    // Unreadable storage is treated as occupied: we cannot prove the key is
+    // free, and a failed read is never a reason to overwrite someone's data.
+    console.error('Failed to read quarantined payload:', describe(error))
+    return true
+  }
+}
+
 /**
- * Moves a rejected envelope into quarantine. Returns false when storage
- * refused the write, so the caller can fall back to warning in the console
- * rather than pretending the data is safe.
+ * Moves a rejected envelope into quarantine.
+ *
+ * Returns true only when the exact bytes are known to be preserved: already
+ * held, just written, or there was nothing to preserve. False means the caller
+ * holds no copy — storage refused the write, the payload exceeds the size cap,
+ * or a *different* payload already occupies the key. The existing record is
+ * never replaced, so a second rejection cannot destroy an earlier user's only
+ * copy.
  */
 export const quarantinePayload = (reason: string, raw: string | null): boolean => {
   if (raw === null) {
@@ -102,10 +131,19 @@ export const quarantinePayload = (reason: string, raw: string | null): boolean =
     return false
   }
   // Never overwrite a payload we already preserved: a second rejection would
-  // destroy the first user's only copy with no warning. Keep the earlier one
-  // and note that a second was seen.
+  // destroy the first user's only copy with no warning. Identity is decided by
+  // the key's OCCUPANCY, not by whether `readQuarantine` could parse it —
+  // otherwise unparseable bytes are replaced here and the last copy is lost.
   const existing = readQuarantine()
   if (existing?.raw === raw) return true
+  if (existing || isQuarantineOccupied()) {
+    console.warn(
+      'A library payload is already preserved in quarantine; keeping the earlier ' +
+        'copy rather than replacing it. The bytes just refused are still intact in ' +
+        'the store key, which this page will not overwrite.',
+    )
+    return false
+  }
 
   const record: QuarantineRecord = {
     rejectedAt: new Date().toISOString(),
@@ -115,12 +153,6 @@ export const quarantinePayload = (reason: string, raw: string | null): boolean =
     // cause and tells the user whether to retry elsewhere.
     version: readEnvelopeVersion(raw),
     raw,
-  }
-  if (existing) {
-    console.warn(
-      'A library payload was already preserved; keeping the earlier copy rather ' +
-        'than replacing it.',
-    )
   }
   try {
     localStorage.setItem(QUARANTINE_KEY, JSON.stringify(record))

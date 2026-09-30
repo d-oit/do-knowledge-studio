@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { assertNoCriticalAxeViolations, assertNoAxeViolations } from './helpers/a11y';
+import { assertNoAxeViolations } from './helpers/a11y';
 import {
   expectNavigationReachable,
   navClick,
@@ -97,6 +97,12 @@ test.describe('Accessibility', () => {
   });
 });
 
+/**
+ * Documented exception: SVG data-viz nodes cannot be both an image and
+ * keyboard-operable controls without nesting interactive roles.
+ */
+const GRAPH_SVG_NESTED_INTERACTIVE = 'nested-interactive';
+
 test.describe('axe-core automated accessibility', () => {
   // Plan 095: color-contrast token fixes applied (globals.css).
   // All views now use the strict assertion (critical + serious).
@@ -141,14 +147,17 @@ test.describe('axe-core automated accessibility', () => {
     await assertNoAxeViolations(page);
   });
 
-  // Graph page uses SVG <g> elements with role="button" + tabindex="0" for keyboard-accessible
-  // data visualization nodes. Axe-core flags these as nested-interactive (serious) — a known
-  // limitation with no clean SVG equivalent. Using critical-only assertion for this view.
-  test('graph page has no critical axe violations', async ({ page }) => {
+  // Graph nodes are SVG <g role="button" tabindex="0"> inside an <svg role="img">.
+  // axe-core's nested-interactive rule flags the <svg> as nesting focusable controls.
+  // Measured 2026-09-30: the reported target is `svg[viewBox]` itself, and there is no
+  // equivalent that keeps BOTH the accessible image role and keyboard-operable nodes.
+  // This is the ONLY excused rule here — every other critical/serious rule still gates
+  // the page, unlike the previous blanket "critical only" assertion.
+  test('graph page has no unexcused critical or serious axe violations', async ({ page }) => {
     await page.goto('/');
     await navClick(page, /graph/i);
     await page.waitForLoadState('networkidle');
-    await assertNoCriticalAxeViolations(page);
+    await assertNoAxeViolations(page, { allowRules: [GRAPH_SVG_NESTED_INTERACTIVE] });
   });
 
   test('TRIZ page has no critical or serious axe violations', async ({ page }) => {

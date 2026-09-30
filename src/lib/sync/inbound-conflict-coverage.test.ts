@@ -97,7 +97,7 @@ describe('Inbound validation: claims', () => {
 
   it('rejects non-object input', () => {
     expect(validateInboundClaim(null).success).toBe(false)
-    expect(validateInboundClaim().success).toBe(false)
+    expect(validateInboundClaim(undefined).success).toBe(false)
   })
 })
 

@@ -12,8 +12,6 @@ import { EncryptExportDialog } from './encrypt-export-dialog'
 import { ResetConfirmDialog } from './reset-confirm-dialog'
 import { ImportPreviewDialog } from './import-preview-dialog'
 import { translate } from '@/lib/i18n/messages/export'
-import { readQuarantine, type QuarantineRecord } from '@/lib/studio/hydration-quarantine'
-import { QuarantineBanner } from './quarantine-banner'
 
 /** Export and import view with format grid, dropzone, backup tips, and dialogs. */
 export const ExportView = () => {
@@ -28,9 +26,6 @@ export const ExportView = () => {
   const setView = useStudioStore((s) => s.setView)
 
   const [showResetConfirm, setShowResetConfirm] = useState(false)
-  // A payload the store refused to hydrate is preserved here; the banner is
-  // the only way the user learns it exists (Plan 158 P0-3).
-  const [quarantine, setQuarantine] = useState<QuarantineRecord | null>(null)
   const [importPreview, setImportPreview] = useState<ImportPreview | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const resetCancelRef = useRef<HTMLButtonElement>(null)
@@ -75,11 +70,6 @@ export const ExportView = () => {
   }, [showResetConfirm])
 
   useEffect(() => {
-    // Read once on mount; the banner owns dismissal from there on.
-    setQuarantine(readQuarantine())
-  }, [])
-
-  useEffect(() => {
     if (!importPreview) return
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setImportPreview(null)
@@ -90,8 +80,6 @@ export const ExportView = () => {
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-6 lg:px-10 lg:py-8">
-      {quarantine && <QuarantineBanner record={quarantine} />}
-
       <ExportFormatGrid
         entities={entities}
         setView={setView}
