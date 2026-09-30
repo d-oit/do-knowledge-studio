@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { PersistedEnvelopeSchema } from './schema'
 import { CURRENT_SCHEMA_VERSION } from './migrations'
 import { STUDIO_STORAGE_KEY, PERSISTED_KEYS } from './hydration'
-import { readQuarantine } from './hydration-quarantine'
+import { QUARANTINE_KEY, readQuarantine } from './hydration-quarantine'
 
 /**
  * Composed persistence round-trip tests (Plan 131 G1).
@@ -138,6 +138,239 @@ describe('persistence round-trip', () => {
 
     expect(readQuarantine()?.raw).toBe(before)
     expect(readQuarantine()?.raw).not.toBeNull()
+  })
+
+  it('leaves the rejected envelope in the live key and blocks further writes', async () => {
+    // The user-facing promise: a refused library is never overwritten by seed
+    // data, and the app keeps working on a temporary workspace that is
+    // visibly marked as not persisted.
+    const raw = writeEnvelope(validEnvelope(), CURRENT_SCHEMA_VERSION + 5)
+
+    const { useStudioStore, getHydrationRefusal } = await freshStore()
+    await useStudioStore.persist.rehydrate()
+
+    const refusal = getHydrationRefusal()
+    expect(refusal).not.toBeNull()
+    expect(refusal?.preserved).toBe(true)
+    expect(refusal?.raw).toBe(raw)
+    // The live key is byte-for-byte the refused envelope: zustand's implicit
+    // post-migrate setItem is skipped, not merely outrun.
+    expect(localStorage.getItem(STUDIO_STORAGE_KEY)).toBe(raw)
+  })
+
+  it('does not let a post-refusal store write touch the refused envelope', async () => {
+    const raw = writeEnvelope(validEnvelope(), CURRENT_SCHEMA_VERSION + 5)
+    const { useStudioStore, getHydrationRefusal } = await freshStore()
+    await useStudioStore.persist.rehydrate()
+
+    // The workspace stays usable…
+    useStudioStore.getState().saveEntity({
+      id: 'edited-after-refusal',
+      name: 'Temporary workspace edit',
+      type: 'note',
+      description: '',
+      content: '',
+      tags: [],
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      links: [],
+    })
+    expect(
+      useStudioStore.getState().entities.some((e) => e.id === 'edited-after-refusal'),
+    ).toBe(true)
+
+    // …but the write is dropped, so the refused bytes survive verbatim in
+    // BOTH the live key and quarantine.
+    expect(localStorage.getItem(STUDIO_STORAGE_KEY)).toBe(raw)
+    expect(readQuarantine()?.raw).toBe(raw)
+    expect(getHydrationRefusal()?.preserved).toBe(true)
+  })
+
+  it('blocks writes when quarantine itself fails, and says the copy is unsafe', async () => {
+    const raw = writeEnvelope(validEnvelope(), CURRENT_SCHEMA_VERSION + 5)
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+    // Quota exhaustion: the rejected bytes cannot be copied aside.
+    const real = window.localStorage
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => real.getItem(key),
+      removeItem: (key: string) => real.removeItem(key),
+      setItem: (key: string, value: string) => {
+        if (key === QUARANTINE_KEY) {
+          const quota = new Error('quota')
+          quota.name = 'QuotaExceededError'
+          throw quota
+        }
+        real.setItem(key, value)
+      },
+    })
+
+    try {
+      const { useStudioStore, getHydrationRefusal } = await freshStore()
+      await useStudioStore.persist.rehydrate()
+
+      // No copy exists anywhere, so the app must not silently accept writes:
+      // `preserved: false` is what drives the "your edits are not saved" UI.
+      expect(getHydrationRefusal()?.preserved).toBe(false)
+      expect(readQuarantine()).toBeNull()
+
+      useStudioStore.getState().saveEntity({
+        id: 'edit-with-no-safe-copy',
+        name: 'Unsaved edit',
+        type: 'note',
+        description: '',
+        content: '',
+        tags: [],
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        links: [],
+      })
+
+      // The original envelope is still intact even though no backup exists.
+      expect(localStorage.getItem(STUDIO_STORAGE_KEY)).toBe(raw)
+      expect(error).toHaveBeenCalled()
+    } finally {
+      vi.stubGlobal('localStorage', real)
+    }
+  })
+
+  it('fails closed when the stored envelope cannot be read at all', async () => {
+    // Site data blocked / SecurityError: the bytes are there, but every read
+    // throws, so zustand's hydrate chain rejects instead of handing `merge` a
+    // payload. Seed state must not then be written over an envelope nothing
+    // managed to inspect — that is fail-OPEN, the original data-loss bug in a
+    // different disguise.
+    writeEnvelope(validEnvelope(), CURRENT_SCHEMA_VERSION)
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+    const real = window.localStorage
+    const setItem = vi.fn()
+    vi.stubGlobal('localStorage', {
+      getItem: () => {
+        throw new Error('SecurityError')
+      },
+      setItem,
+      removeItem: () => undefined,
+    })
+
+    try {
+      const { useStudioStore, getHydrationRefusal } = await freshStore()
+      await useStudioStore.persist.rehydrate()
+
+      const refusal = getHydrationRefusal()
+      expect(refusal).not.toBeNull()
+      // No bytes were readable, so there is no copy to offer and the UI must
+      // say this session's edits are not being saved.
+      expect(refusal?.preserved).toBe(false)
+      expect(refusal?.raw).toBeNull()
+
+      useStudioStore.getState().saveEntity({
+        id: 'edit-behind-unreadable-storage',
+        name: 'Unsaved edit',
+        type: 'note',
+        description: '',
+        content: '',
+        tags: [],
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        links: [],
+      })
+
+      // The guard drops the write before storage is even touched.
+      expect(setItem).not.toHaveBeenCalled()
+    } finally {
+      vi.stubGlobal('localStorage', real)
+    }
+  })
+
+  it('keeps an older distinct quarantined payload and blocks writes', async () => {
+    const olderRaw = writeEnvelope(
+      validEnvelope({ entities: [{ ...USER_ENTITY, id: 'older-library-entity' }] }),
+      CURRENT_SCHEMA_VERSION + 3,
+    )
+    const olderRecord = JSON.stringify({
+      rejectedAt: '2026-01-01T00:00:00.000Z',
+      reason: 'older refusal',
+      version: CURRENT_SCHEMA_VERSION + 3,
+      raw: olderRaw,
+    })
+    localStorage.setItem(QUARANTINE_KEY, olderRecord)
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+    const currentRaw = writeEnvelope(validEnvelope(), CURRENT_SCHEMA_VERSION + 5)
+    const { useStudioStore, getHydrationRefusal } = await freshStore()
+    await useStudioStore.persist.rehydrate()
+
+    // Neither record is destroyed: the older preserved copy stays, and the
+    // current refused bytes stay in the live key because writes are blocked.
+    expect(localStorage.getItem(QUARANTINE_KEY)).toBe(olderRecord)
+    expect(localStorage.getItem(STUDIO_STORAGE_KEY)).toBe(currentRaw)
+    expect(getHydrationRefusal()?.preserved).toBe(false)
+
+    useStudioStore.getState().saveEntity({
+      id: 'edit-behind-older-quarantine',
+      name: 'Unsaved edit',
+      type: 'note',
+      description: '',
+      content: '',
+      tags: [],
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      links: [],
+    })
+
+    expect(localStorage.getItem(QUARANTINE_KEY)).toBe(olderRecord)
+    expect(localStorage.getItem(STUDIO_STORAGE_KEY)).toBe(currentRaw)
+  })
+
+  it('blocks writes for a same-version malformed envelope, which skips migrate', async () => {
+    // Same-version reloads never reach `migrate`, so the `merge` refusal
+    // branch is the only gate and must fail closed on its own.
+    const raw = writeEnvelope(validEnvelope({ entities: 'not-an-array' }), CURRENT_SCHEMA_VERSION)
+
+    const { useStudioStore, getHydrationRefusal } = await freshStore()
+    await useStudioStore.persist.rehydrate()
+
+    expect(getHydrationRefusal()?.preserved).toBe(true)
+    expect(localStorage.getItem(STUDIO_STORAGE_KEY)).toBe(raw)
+    expect(readQuarantine()?.raw).toBe(raw)
+
+    useStudioStore.getState().saveEntity({
+      id: 'edit-after-merge-refusal',
+      name: 'Unsaved edit',
+      type: 'note',
+      description: '',
+      content: '',
+      tags: [],
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      links: [],
+    })
+
+    expect(localStorage.getItem(STUDIO_STORAGE_KEY)).toBe(raw)
+  })
+
+  it('reports no refusal and persists normally after a valid hydrate', async () => {
+    writeEnvelope(validEnvelope(), CURRENT_SCHEMA_VERSION)
+
+    const { useStudioStore, getHydrationRefusal } = await freshStore()
+    await useStudioStore.persist.rehydrate()
+
+    // The happy path must be untouched: no refusal status and a real write.
+    expect(getHydrationRefusal()).toBeNull()
+    useStudioStore.getState().saveEntity({
+      id: 'normal-write',
+      name: 'Normal edit',
+      type: 'note',
+      description: '',
+      content: '',
+      tags: [],
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      links: [],
+    })
+    expect(localStorage.getItem(STUDIO_STORAGE_KEY)).toContain('normal-write')
   })
 
   it('migrates legacy v1 envelopes lacking preference keys', async () => {

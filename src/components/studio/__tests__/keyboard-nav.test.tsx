@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest'
-import type { ReactNode } from 'react'
+import type { ElementType, ReactNode } from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 
 // ---------------------------------------------------------------------------
@@ -36,7 +36,7 @@ vi.mock('framer-motion', () => {
       children?: ReactNode
       [key: string]: unknown
     }) {
-      const Tag = tag as keyof JSX.IntrinsicElements
+      const Tag = tag as ElementType
       return <Tag {...(props as Record<string, unknown>)}>{children}</Tag>
     }
   return {
@@ -99,20 +99,42 @@ const storeState: Record<string, unknown> = {
   ...storeFns,
 }
 
-vi.mock('@/lib/studio/store', () => ({
-  useStudioStore: (selector?: (s: Record<string, unknown>) => unknown) => {
+// This mock has no persist middleware, so the recovery alerts' hydration
+// subscription needs a no-op stand-in.
+const noopUnsubscribe = () => undefined
+
+vi.mock('@/lib/studio/hydration-guard', () => ({
+  getHydrationRefusal: () => null,
+  subscribeToHydrationRefusal: () => noopUnsubscribe,
+}))
+
+vi.mock('@/lib/studio/hydration-quarantine', () => ({
+  readQuarantine: () => null,
+}))
+
+vi.mock('@/lib/studio/store', () => {
+  const useStudioStore = (selector?: (s: Record<string, unknown>) => unknown) => {
     if (typeof selector === 'function') return selector(storeState)
     return storeState
-  },
-  useFilteredEntities: () => [],
-  useStats: () => ({
-    total: 0,
-    claims: 0,
-    verified: 0,
-    byType: {},
-    recent: [],
-  }),
-}))
+  }
+  // AppShell's recovery alerts subscribe to hydration completion, which the
+  // persist middleware provides; this mock has none.
+  Object.assign(useStudioStore, {
+    getState: () => storeState,
+    persist: { onFinishHydration: () => noopUnsubscribe },
+  })
+  return {
+    useStudioStore,
+    useFilteredEntities: () => [],
+    useStats: () => ({
+      total: 0,
+      claims: 0,
+      verified: 0,
+      byType: {},
+      recent: [],
+    }),
+  }
+})
 
 // Import components AFTER mocks
 

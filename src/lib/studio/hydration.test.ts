@@ -264,7 +264,7 @@ describe('mergeHydratedState', () => {
   it('throws HydrationRejectedError on invalid persisted payload during merge', () => {
     const currentSeedState = {
       ...createValidPersistedSlice(),
-      entityHistory: [[]],
+      entityHistory: [{ entities: [], claims: [] }],
       historyIndex: 0,
     }
 

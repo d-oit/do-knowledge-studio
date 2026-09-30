@@ -5,8 +5,8 @@ import { isSpeechRecognitionSupported, createSpeechRecognition } from './speech'
 
 describe('isSpeechRecognitionSupported — branch coverage', () => {
   beforeEach(() => {
-    delete (window as Record<string, unknown>)['SpeechRecognition']
-    delete (window as Record<string, unknown>)['webkitSpeechRecognition']
+    delete (window as unknown as Record<string, unknown>)['SpeechRecognition']
+    delete (window as unknown as Record<string, unknown>)['webkitSpeechRecognition']
   })
 
   it('returns true when SpeechRecognition exists', () => {
@@ -59,7 +59,7 @@ describe('createSpeechRecognition — branch coverage', () => {
   })
 
   afterEach(() => {
-    delete (window as Record<string, unknown>)['SpeechRecognition']
+    delete (window as unknown as Record<string, unknown>)['SpeechRecognition']
   })
 
   it('creates recognition with default options', () => {
@@ -164,15 +164,15 @@ describe('createSpeechRecognition — branch coverage', () => {
   })
 
   it('returns null when not supported', () => {
-    delete (window as Record<string, unknown>)['SpeechRecognition']
-    delete (window as Record<string, unknown>)['webkitSpeechRecognition']
+    delete (window as unknown as Record<string, unknown>)['SpeechRecognition']
+    delete (window as unknown as Record<string, unknown>)['webkitSpeechRecognition']
 
     const result = createSpeechRecognition(vi.fn(), vi.fn())
     expect(result).toBeNull()
   })
 
   it('uses webkitSpeechRecognition when SpeechRecognition is not available', () => {
-    delete (window as Record<string, unknown>)['SpeechRecognition']
+    delete (window as unknown as Record<string, unknown>)['SpeechRecognition']
     function MockWebkitSpeechRecognition() {
       return mockRecognition
     }

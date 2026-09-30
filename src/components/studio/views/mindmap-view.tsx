@@ -18,7 +18,8 @@ import {
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { cn } from '@/lib/utils'
 import { Divider } from '../ui/shared-primitives'
-import { todayStamp, downloadBlob } from './export-types'
+import { todayStamp } from './export-types'
+import { exportElementAsPng } from './mindmap-export'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { motion, AnimatePresence } from 'framer-motion'
 import { buildEntityIndex } from '@/lib/studio/graph-index'
@@ -143,43 +144,7 @@ export const MindMapView = () => {
     const el = canvasRef.current
     if (!el) return
     try {
-      const rect = el.getBoundingClientRect()
-      const svgNS = 'http://www.w3.org/2000/svg'
-      const svg = document.createElementNS(svgNS, 'svg')
-      svg.setAttribute('width', String(rect.width))
-      svg.setAttribute('height', String(rect.height))
-      const fo = document.createElementNS(svgNS, 'foreignObject')
-      fo.setAttribute('width', '100%')
-      fo.setAttribute('height', '100%')
-      const nodeCopy = el.cloneNode(true) as HTMLElement
-      const computedBg = getComputedStyle(el).backgroundColor
-      nodeCopy.style.width = `${rect.width}px`
-      nodeCopy.style.height = `${rect.height}px`
-      nodeCopy.style.background = computedBg || '#faf8f3'
-      fo.appendChild(nodeCopy)
-      svg.appendChild(fo)
-      const serializer = new XMLSerializer()
-      const svgStr = serializer.serializeToString(svg)
-      const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' })
-      const url = URL.createObjectURL(blob)
-      const img = new Image()
-      img.onload = () => {
-        const canvas = document.createElement('canvas')
-        canvas.width = rect.width * 2
-        canvas.height = rect.height * 2
-        const ctx = canvas.getContext('2d')
-        if (ctx) {
-          ctx.scale(2, 2)
-          ctx.drawImage(img, 0, 0)
-          canvas.toBlob((pngBlob) => {
-            if (pngBlob) {
-              downloadBlob(`mindmap-${todayStamp()}.png`, pngBlob)
-            }
-          })
-        }
-        URL.revokeObjectURL(url)
-      }
-      img.src = url
+      exportElementAsPng(el, `mindmap-${todayStamp()}.png`)
     } catch (error) {
       console.error('Failed to export mind map as PNG:', error instanceof Error ? error.message : error)
     }
