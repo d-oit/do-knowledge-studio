@@ -11,8 +11,8 @@ const sampleEntities: Entity[] = [
     description: 'Systematic innovation principles',
     content: 'Contradiction matrix and separation principles',
     tags: ['triz', 'engineering'],
-    createdAt: '2026-09-01T00:00:00.000Z',
-    updatedAt: '2026-09-01T00:00:00.000Z',
+    created: '2026-09-01T00:00:00.000Z',
+    updated: '2026-09-01T00:00:00.000Z',
     links: [{ targetId: 'ent-b', relation: 'relates to' }],
   },
   {
@@ -22,8 +22,8 @@ const sampleEntities: Entity[] = [
     description: 'Table of 39 parameters and 40 principles',
     content: 'Mapped parameters and inventive principles',
     tags: ['matrix'],
-    createdAt: '2026-09-01T00:00:00.000Z',
-    updatedAt: '2026-09-01T00:00:00.000Z',
+    created: '2026-09-01T00:00:00.000Z',
+    updated: '2026-09-01T00:00:00.000Z',
     links: [],
   },
 ]
@@ -33,9 +33,8 @@ const sampleClaims: Claim[] = [
     id: 'clm-1',
     entityId: 'ent-a',
     statement: 'Technical contradictions can be resolved without compromise.',
-    confidence: 0.9,
-    verification: 'verified',
-    createdAt: '2026-09-01T00:00:00.000Z',
+    confidence: 'confirmed',
+    created: '2026-09-01T00:00:00.000Z',
   },
 ]
 

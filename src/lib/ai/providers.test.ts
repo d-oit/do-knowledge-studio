@@ -96,7 +96,7 @@ describe('Ollama no API key requirement', () => {
     globalThis.fetch = vi.fn().mockResolvedValueOnce({
       ok: true,
       json: () => ({ message: { content: 'hi from ollama' } }),
-    } as unknown as Response)
+    } as Response)
 
     const adapter = getAdapter('ollama')
     const result = await adapter.send({
@@ -234,7 +234,7 @@ describe('fetchOllamaModels', () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
       json: () => ({ models: [{ name: 'llama3' }, { name: 'mistral' }] }),
-    } as unknown as Response)
+    } as Response)
 
     const models = await fetchOllamaModels('http://localhost:11434')
     expect(models).toEqual(['llama3', 'mistral'])
@@ -244,7 +244,7 @@ describe('fetchOllamaModels', () => {
     const mockFetch = vi.fn().mockResolvedValueOnce({
       ok: true,
       json: () => ({ models: [] }),
-    } as unknown as Response)
+    } as Response)
     globalThis.fetch = mockFetch
 
     await fetchOllamaModels('http://localhost:11434')
@@ -259,7 +259,7 @@ describe('fetchOllamaModels', () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
       json: () => ({}),
-    } as unknown as Response)
+    } as Response)
 
     const models = await fetchOllamaModels('http://localhost:11434')
     expect(models).toEqual([])
@@ -269,7 +269,7 @@ describe('fetchOllamaModels', () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
       json: () => ({ models: [] }),
-    } as unknown as Response)
+    } as Response)
 
     const models = await fetchOllamaModels('http://localhost:11434')
     expect(models).toEqual([])
@@ -279,7 +279,7 @@ describe('fetchOllamaModels', () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: false,
       status: 500,
-    } as unknown as Response)
+    } as Response)
 
     await expect(fetchOllamaModels('http://localhost:11434')).rejects.toThrow(
       'Ollama tags error 500',
@@ -290,7 +290,7 @@ describe('fetchOllamaModels', () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: false,
       status: 404,
-    } as unknown as Response)
+    } as Response)
 
     await expect(fetchOllamaModels('http://localhost:11434')).rejects.toThrow(
       'Ollama tags error 404',
@@ -327,7 +327,7 @@ describe('sendChat', () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
       json: () => ({ choices: [{ message: { content: 'Hello!' } }] }),
-    } as unknown as Response)
+    } as Response)
 
     const result = await sendChat({
       provider: 'openrouter',
@@ -369,7 +369,7 @@ describe('sendChatStream', () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
       body: stream,
-    } as unknown as Response)
+    } as Response)
 
     const onChunk = vi.fn()
     const result = await sendChatStream(
@@ -406,7 +406,7 @@ describe('OpenRouterAdapter integration', () => {
       json: () => ({
         choices: [{ message: { content: 'Hello from Auto Router!' } }],
       }),
-    } as unknown as Response)
+    } as Response)
 
     const adapter = getAdapter('openrouter')
     const result = await adapter.send({
@@ -438,7 +438,7 @@ describe('OpenRouterAdapter integration', () => {
       json: () => ({
         choices: [{ message: { content: 'Hello from Free Router!' } }],
       }),
-    } as unknown as Response)
+    } as Response)
 
     const adapter = getAdapter('openrouter')
     const result = await adapter.send({
@@ -464,7 +464,7 @@ describe('OpenRouterAdapter integration', () => {
       json: () => ({
         choices: [{ message: { content: 'Hello from Fusion Router!' } }],
       }),
-    } as unknown as Response)
+    } as Response)
 
     const adapter = getAdapter('openrouter')
     const result = await adapter.send({
@@ -490,7 +490,7 @@ describe('OpenRouterAdapter integration', () => {
       json: () => ({
         choices: [{ message: { content: 'Hello from GPT-4o Mini!' } }],
       }),
-    } as unknown as Response)
+    } as Response)
 
     const adapter = getAdapter('openrouter')
     const result = await adapter.send({
@@ -516,7 +516,7 @@ describe('OpenRouterAdapter integration', () => {
       json: () => ({
         choices: [{ message: { content: 'Hello from Target object!' } }],
       }),
-    } as unknown as Response)
+    } as Response)
 
     const target = OPENROUTER_ROUTERS[0] // openrouter/auto
 
@@ -544,7 +544,7 @@ describe('OpenRouterAdapter integration', () => {
       json: () => ({
         choices: [{ message: { content: 'Hello from Pareto Router!' } }],
       }),
-    } as unknown as Response)
+    } as Response)
 
     const adapter = getAdapter('openrouter')
     const result = await adapter.send({
@@ -570,7 +570,7 @@ describe('OpenRouterAdapter integration', () => {
       json: () => ({
         choices: [{ message: { content: 'Hello from Body Builder!' } }],
       }),
-    } as unknown as Response)
+    } as Response)
 
     const adapter = getAdapter('openrouter')
     const result = await adapter.send({
@@ -596,7 +596,7 @@ describe('OpenRouterAdapter integration', () => {
       json: () => ({
         choices: [{ message: { content: 'Params test' } }],
       }),
-    } as unknown as Response)
+    } as Response)
 
     const customTarget = {
       kind: 'router' as const,
@@ -632,7 +632,7 @@ describe('OpenRouterAdapter integration', () => {
       ok: false,
       status: 500,
       text: () => Promise.resolve('Internal Server Error fallback failure'),
-    } as unknown as Response)
+    } as Response)
 
     const adapter = getAdapter('openrouter')
     await expect(
@@ -651,7 +651,7 @@ describe('OpenRouterAdapter integration', () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
       json: () => ({ choices: [] }),
-    } as unknown as Response)
+    } as Response)
 
     const adapter = getAdapter('openrouter')
     await expect(
@@ -682,14 +682,12 @@ describe('OllamaAdapter integration', () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
       json: () => ({ message: { content: 'Hello from Ollama!' } }),
-    } as unknown as Response)
+    } as Response)
 
     const adapter = getAdapter('ollama')
     const result = await adapter.send({
       provider: 'ollama',
       model: 'llama3',
-      // Ollama needs no key, but ChatRequest requires the field.
-      apiKey: '',
       messages: [{ role: 'user', content: 'hello' }],
     })
 
@@ -712,14 +710,12 @@ describe('OllamaAdapter integration', () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
       json: () => ({ message: { content: 'custom url response' } }),
-    } as unknown as Response)
+    } as Response)
 
     const adapter = getAdapter('ollama')
     const result = await adapter.send({
       provider: 'ollama',
       model: 'llama3',
-      // Ollama needs no key, but ChatRequest requires the field.
-      apiKey: '',
       messages: [{ role: 'user', content: 'hello' }],
       ollamaBaseUrl: 'http://localhost:8080',
     })
@@ -735,14 +731,12 @@ describe('OllamaAdapter integration', () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
       json: () => ({ message: { content: 'CPU response' } }),
-    } as unknown as Response)
+    } as Response)
 
     const adapter = getAdapter('ollama')
     await adapter.send({
       provider: 'ollama',
       model: 'llama3',
-      // Ollama needs no key, but ChatRequest requires the field.
-      apiKey: '',
       messages: [{ role: 'user', content: 'hello' }],
       ollamaCpuOnly: true,
     })
@@ -759,15 +753,13 @@ describe('OllamaAdapter integration', () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
       json: () => ({}),
-    } as unknown as Response)
+    } as Response)
 
     const adapter = getAdapter('ollama')
     await expect(
       adapter.send({
         provider: 'ollama',
         model: 'llama3',
-        // Ollama needs no key, but ChatRequest requires the field.
-        apiKey: '',
         messages: [{ role: 'user', content: 'hello' }],
       }),
     ).rejects.toThrow('Ollama returned an empty response')
@@ -778,15 +770,13 @@ describe('OllamaAdapter integration', () => {
       ok: false,
       status: 503,
       text: () => Promise.resolve('Service Unavailable'),
-    } as unknown as Response)
+    } as Response)
 
     const adapter = getAdapter('ollama')
     await expect(
       adapter.send({
         provider: 'ollama',
         model: 'llama3',
-        // Ollama needs no key, but ChatRequest requires the field.
-        apiKey: '',
         messages: [{ role: 'user', content: 'hello' }],
       }),
     ).rejects.toThrow('Ollama error 503')
@@ -798,8 +788,6 @@ describe('OllamaAdapter integration', () => {
       adapter.send({
         provider: 'ollama',
         model: 'llama3',
-        // Ollama needs no key, but ChatRequest requires the field.
-        apiKey: '',
         messages: [{ role: 'user', content: 'hello' }],
         ollamaBaseUrl: 'ftp://invalid',
       }),
@@ -812,8 +800,6 @@ describe('OllamaAdapter integration', () => {
       adapter.send({
         provider: 'ollama',
         model: 'llama3',
-        // Ollama needs no key, but ChatRequest requires the field.
-        apiKey: '',
         messages: [{ role: 'user', content: 'hello' }],
         ollamaBaseUrl: 'http://example.com:11434',
       }),
@@ -850,7 +836,7 @@ describe('OllamaAdapter sendStream', () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
       body: stream,
-    } as unknown as Response)
+    } as Response)
 
     const onChunk = vi.fn()
     const adapter = getAdapter('ollama')
@@ -858,8 +844,6 @@ describe('OllamaAdapter sendStream', () => {
       {
         provider: 'ollama',
         model: 'llama3',
-        // Ollama needs no key, but ChatRequest requires the field.
-        apiKey: '',
         messages: [{ role: 'user', content: 'hello' }],
       },
       onChunk,
@@ -879,7 +863,7 @@ describe('OllamaAdapter sendStream', () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
       body: stream,
-    } as unknown as Response)
+    } as Response)
 
     const adapter = getAdapter('ollama')
     await expect(
@@ -887,8 +871,6 @@ describe('OllamaAdapter sendStream', () => {
         {
           provider: 'ollama',
           model: 'llama3',
-          // Ollama needs no key, but ChatRequest requires the field.
-          apiKey: '',
           messages: [{ role: 'user', content: 'hello' }],
         },
         vi.fn(),
@@ -931,7 +913,7 @@ describe('OpenRouterAdapter sendStream', () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
       body: stream,
-    } as unknown as Response)
+    } as Response)
 
     const onChunk = vi.fn()
     const adapter = getAdapter('openrouter')
@@ -959,7 +941,7 @@ describe('OpenRouterAdapter sendStream', () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
       body: stream,
-    } as unknown as Response)
+    } as Response)
 
     const adapter = getAdapter('openrouter')
     await expect(
@@ -980,7 +962,7 @@ describe('OpenRouterAdapter sendStream', () => {
       ok: false,
       status: 401,
       text: () => Promise.resolve('Unauthorized'),
-    } as unknown as Response)
+    } as Response)
 
     const adapter = getAdapter('openrouter')
     await expect(

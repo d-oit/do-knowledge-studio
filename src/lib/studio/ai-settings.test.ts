@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { getProviderEndpoint, loadAISettings, saveAISettings, isSessionOnlyCredential, getSessionOnlyMessage, resetIDBConnection } from './ai-settings'
-import type { AISettings } from './ai-settings'
 
 // ── In-memory IndexedDB mock ─────────────────────────────────────────
 // Uses a shared Map so that multiple openDB() calls within the same test
@@ -134,7 +133,7 @@ describe('ai-settings encryption and persistence', () => {
   })
 
   it('encrypts API key when saving and decrypts when loading', async () => {
-    const settings: AISettings = {
+    const settings = {
       provider: 'openrouter' as const,
       model: 'openrouter/free',
       apiKey: 'test-api-key-123456789',
@@ -142,7 +141,6 @@ describe('ai-settings encryption and persistence', () => {
       ollamaCpuOnly: false,
       allowWebResearch: false,
       ollamaBaseUrl: 'http://localhost:11434',
-      localDevice: 'wasm',
     }
 
     await saveAISettings(settings)
@@ -155,7 +153,7 @@ describe('ai-settings encryption and persistence', () => {
   it('ensures that the key used is non-extractable in memory', async () => {
     const importKeySpy = vi.spyOn(crypto.subtle, 'importKey')
 
-    const settings: AISettings = {
+    const settings = {
       provider: 'openrouter' as const,
       model: 'openrouter/free',
       apiKey: 'another-secure-key',
@@ -163,7 +161,6 @@ describe('ai-settings encryption and persistence', () => {
       ollamaCpuOnly: false,
       allowWebResearch: false,
       ollamaBaseUrl: 'http://localhost:11434',
-      localDevice: 'wasm',
     }
 
     await saveAISettings(settings)
@@ -219,7 +216,7 @@ describe('ai-settings encryption and persistence', () => {
   })
 
   it('handles empty API key', async () => {
-    const settings: AISettings = {
+    const settings = {
       provider: 'openrouter' as const,
       model: 'openrouter/free',
       apiKey: '',
@@ -227,7 +224,6 @@ describe('ai-settings encryption and persistence', () => {
       ollamaCpuOnly: false,
       allowWebResearch: false,
       ollamaBaseUrl: 'http://localhost:11434',
-      localDevice: 'wasm',
     }
 
     await saveAISettings(settings)
@@ -246,7 +242,7 @@ describe('ai-settings encryption and persistence', () => {
   })
 
   it('preserves all settings fields', async () => {
-    const settings: AISettings = {
+    const settings = {
       provider: 'ollama' as const,
       model: 'llama3',
       apiKey: '',
@@ -254,7 +250,6 @@ describe('ai-settings encryption and persistence', () => {
       ollamaCpuOnly: true,
       allowWebResearch: true,
       ollamaBaseUrl: 'http://localhost:11434',
-      localDevice: 'wasm',
     }
 
     await saveAISettings(settings)
@@ -282,7 +277,7 @@ describe('ai-settings encryption and persistence', () => {
   })
 
   it('persists and loads the in-browser local provider round-trip', async () => {
-    const settings: AISettings = {
+    const settings = {
       provider: 'local' as const,
       model: 'onnx-community/Qwen2.5-0.5B-Instruct',
       apiKey: '',
@@ -290,7 +285,6 @@ describe('ai-settings encryption and persistence', () => {
       ollamaCpuOnly: false,
       allowWebResearch: false,
       ollamaBaseUrl: 'http://localhost:11434',
-      localDevice: 'wasm',
     }
 
     await saveAISettings(settings)
@@ -341,7 +335,7 @@ describe('ai-settings encryption and persistence', () => {
   })
 
   it('persists encryptedApiKey to IndexedDB, not plain apiKey', async () => {
-    const settings: AISettings = {
+    const settings = {
       provider: 'openrouter' as const,
       model: 'openrouter/free',
       apiKey: 'secret-key-abc',
@@ -349,7 +343,6 @@ describe('ai-settings encryption and persistence', () => {
       ollamaCpuOnly: false,
       allowWebResearch: false,
       ollamaBaseUrl: 'http://localhost:11434',
-      localDevice: 'wasm',
     }
 
     await saveAISettings(settings)

@@ -334,7 +334,7 @@ describe('GitHub Actions Workflows', () => {
     })
 
     it('should have all jobs with explicit timeouts', () => {
-      const jobs = workflow.jobs as Record<string, Record<string, unknown>>
+      const jobs = workflow.jobs
       for (const [name, job] of Object.entries(jobs)) {
         expect(job['timeout-minutes'], `job ${name}`).toBeDefined()
       }
@@ -587,7 +587,7 @@ describe('GitHub Actions Workflows', () => {
         (step.name ?? '').toLowerCase().includes('bats')
       )
       expect(installStep).toBeDefined()
-      expect(installStep?.run).toContain('apt-get install -y bats')
+      expect(installStep.run).toContain('apt-get install -y bats')
     })
   })
 

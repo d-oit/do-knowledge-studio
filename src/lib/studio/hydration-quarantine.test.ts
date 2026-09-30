@@ -108,63 +108,15 @@ describe('hydration quarantine', () => {
     )
   })
 
-  it('leaves an unparseable entry on disk rather than deleting a possible last copy', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+  it('drops an entry that cannot be parsed instead of wedging every read', () => {
     localStorage.setItem(QUARANTINE_KEY, 'not json at all')
-
     expect(readQuarantine()).toBeNull()
-    // The bytes may be a hand-saved or half-written copy of a real library.
-    // Deleting them on a parse failure destroys the only remaining evidence
-    // that anything was ever preserved.
-    expect(localStorage.getItem(QUARANTINE_KEY)).toBe('not json at all')
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining(QUARANTINE_KEY))
+    expect(localStorage.getItem(QUARANTINE_KEY)).toBeNull()
   })
 
-  it('leaves an entry missing the preserved bytes on disk', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+  it('drops an entry missing the preserved bytes', () => {
     localStorage.setItem(QUARANTINE_KEY, JSON.stringify({ reason: 'x' }))
-
     expect(readQuarantine()).toBeNull()
-    expect(localStorage.getItem(QUARANTINE_KEY)).toBe(JSON.stringify({ reason: 'x' }))
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining(QUARANTINE_KEY))
-  })
-
-  it('treats the same payload as already preserved', () => {
-    expect(quarantinePayload('first refusal', ENVELOPE)).toBe(true)
-    const after = localStorage.getItem(QUARANTINE_KEY)
-
-    // A second rejection of the SAME bytes is not a new payload, so it
-    // succeeds without rewriting the record (and without losing the original
-    // rejection timestamp).
-    expect(quarantinePayload('second refusal', ENVELOPE)).toBe(true)
-    expect(localStorage.getItem(QUARANTINE_KEY)).toBe(after)
-    expect(readQuarantine()?.reason).toBe('first refusal')
-  })
-
-  it('refuses to overwrite a different payload already in quarantine', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
-    const OLDER = JSON.stringify({ state: { entities: [{ id: 'older' }], claims: [] }, version: 98 })
-    expect(quarantinePayload('older refusal', OLDER)).toBe(true)
-    const stored = localStorage.getItem(QUARANTINE_KEY)
-
-    // The older record is somebody's only copy. A newer rejection must not
-    // destroy it just because it happened later in wall-clock time.
-    expect(quarantinePayload('newer refusal', ENVELOPE)).toBe(false)
-    expect(localStorage.getItem(QUARANTINE_KEY)).toBe(stored)
-    expect(readQuarantine()?.raw).toBe(OLDER)
-    expect(warn).toHaveBeenCalled()
-  })
-
-  it('refuses to write over unparseable bytes already in quarantine', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
-    localStorage.setItem(QUARANTINE_KEY, 'not json at all')
-
-    // readQuarantine() cannot parse it, so occupancy must be decided by the
-    // key's existence rather than by a successful parse — otherwise the
-    // unreadable bytes are silently replaced here.
-    expect(quarantinePayload('bad shape', ENVELOPE)).toBe(false)
-    expect(localStorage.getItem(QUARANTINE_KEY)).toBe('not json at all')
-    expect(warn).toHaveBeenCalled()
   })
 
   it('clears the entry', () => {

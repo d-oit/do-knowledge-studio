@@ -144,7 +144,7 @@ export const migratePersistedState = (
  * instead of replacing them with seed data.
  */
 export type MigrationOutcome =
-  | { ok: true; state: PersistedSlice }
+  | { ok: true; state: PersistedSlice | unknown }
   | { ok: false; reason: string }
 
 /**

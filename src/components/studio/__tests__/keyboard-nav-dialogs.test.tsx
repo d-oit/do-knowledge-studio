@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { ElementType, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 
 // ---------------------------------------------------------------------------
@@ -36,7 +36,7 @@ vi.mock('framer-motion', () => {
       children?: ReactNode
       [key: string]: unknown
     }) {
-      const Tag = tag as ElementType
+      const Tag = tag as keyof JSX.IntrinsicElements
       return <Tag {...(props as Record<string, unknown>)}>{children}</Tag>
     }
   return {

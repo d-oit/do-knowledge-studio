@@ -1,25 +1,7 @@
 # Plans Index
 
-**Updated**: 2026-09-30
+**Updated**: 2026-09-28
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
-
-### Plan 159 — Rejected-library recovery visibility and fail-closed persistence (2026-09-29)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Make a refused hydration visible, not silent | Done | `plans/159-rejected-library-recovery-visibility-and-fail-closed.md`. The recovery alert moved out of the lazy Export view into `app-shell.tsx` (`RecoveryAlerts`), so a refused library shows on Home; SSR-safe (state filled in an effect) and refreshed on `onFinishHydration`. `QuarantineBanner` gained `preserved` / `unpreserved` states; the close icon no longer calls `clearQuarantine` (one click used to delete the only copy) and the copy no longer claims the raw envelope is re-importable. |
-| W2 | Fail closed for the rest of the page session | Done | New `src/lib/studio/hydration-guard.ts` latches a page-scoped status consulted by the guarded persist storage, `cross-tab.ts`, and the shell's Yjs/Sync gates. The live store key is never written after a refusal; quarantine occupancy is decided by key existence (never by a successful parse), so a second rejection cannot destroy an earlier copy; the Yjs bridge does not start and `SyncView` is replaced by `SyncUnavailable`. |
-| W2 | Close the rejected-chain fail-open path (gap analysis) | Done | `onRehydrateStorage` now records a refusal when the persist chain **rejects** (storage reads throw: site-data blocked / `SecurityError`), which previously only logged — seed state's next `setState` overwrote an envelope nothing managed to read. Makes the `preserved: false, raw: null` UI reachable end-to-end. `store-persist.test.ts` case verified failing without the fix, passing with it. |
-| W3 | Module boundary + docs | Done | Pure corpus-merge helpers moved to `src/lib/studio/cross-tab-merge.ts`, taking `cross-tab.ts` from 531 → 423 LOC (over the 500-LOC limit only after the guards landed). ADR 028 §4a accepted; plan registered here. Gates: lint, typecheck, **2779 unit tests** (1 skipped), build, e2e — zero warnings. |
-| W5 | Clear the PR #842 static-analysis gate (2026-09-30) | Done | Codacy flagged 2 new issues on the PR. **Real, fixed**: `ESLint8_@typescript-eslint_no-confusing-void-expression` at `quarantine-banner.tsx:162` — the arrow shorthand returning `setHidden`'s void result now has braces (`c3c7e31`). **False positive, suppressed**: `ESLint8_xss_no-mixed-html` at `mindmap-export.ts:31` — the rule (`eslint-plugin-xss` `no-mixed-html`, default `htmlVariableRules /html/i`) fires on a cloned DOM node appended via `appendChild`, with no HTML string sink; the same line pre-existed at `mindmap-view.tsx:154` and is already declared an FP in `.codacy.yml:50`, so the PR is `+1/-1` for that rule. Suppressed with `--ignore-issue 131544792851 --ignore-reason FalsePositive` and the evidence on the PR. Config finding (not changed — suppression config is off-limits without approval): the `.codacy.yml` disables for `ESLint8_xss_no-mixed-html` / `ESLint9_xss_no-mixed-html` are inert (≥4 live repo issues under that pattern id), and `exclude_paths` lists `.mimicode/**` where the directory is `.mimocode/**`. |
-| W4 | Burn down the Plan 159 follow-ons (2026-09-30) | Done (all 4) | `e2e-harness.test.ts` config-import budget raised to 180s (`CONFIG_IMPORT_TIMEOUT_MS`); new `dependency-audit` job in `security-scan.yml` runs `pnpm audit --audit-level=high`, which immediately caught **4 high** advisories and closed all 13 (`undici` → 7.30.0, `brace-expansion` 5.x → 5.0.12; now 0 at every severity); view splits bring `editor-view` 549→482, `mindmap-view` 521→486, `graph-view` 520→428 LOC via `editor-preview.tsx`, `editor-advanced-fields.tsx`, `mindmap-export.ts`, `graph-elements.tsx`; all **94** `*.test.ts` type errors cleared and `vitest.config.ts` `ignoreSourceErrors` set to `false` (gating proven by injecting a type error, which failed the run). Verification: recovery-warning spec **36/36**; full e2e **636 passed / 4 skipped / 0 failed** across chromium/mobile/tablet/desktop-xl; 2779 unit tests; lint, typecheck, build clean; local Codacy engines 0 issues; the PR-scoped Cloud check was then run on PR #842 and cleared (see W5). |
-
-### ADR 028 — Validated and recoverable local data boundaries (2026-09-29)
-
-| ADR | Status | Reason |
-|-----|--------|--------|
-| 028 | Implemented (§4a added) | §4a makes the decision operational: a refused hydration fails closed for the page session across the storage writer, the quarantine record, and cross-tab/Yjs traffic. Dismissal is non-destructive; the refusal status — not the presence of a quarantine record — is the single source of truth for "this workspace is temporary". |
-
 ### Plan 157 — Codebase gap remediation: dead features, undo integrity, PWA, live announcements (2026-09-28)
 
 | Wave | Goal | Status | Changes |

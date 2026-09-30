@@ -32,16 +32,13 @@ vi.mock('@/lib/errors', () => {
       this.userMessage = userMessage
     }
   }
-  // Minimal ErrorCode stand-in: the component only reads `userMessage`, but
-  // `AppError`'s first parameter is typed as the real enum.
-  const ErrorCode = { UNKNOWN: 'UNKNOWN' }
-  return { AppError, ErrorCode }
+  return { AppError }
 })
 
 // Import AFTER mocks
 import { ErrorBoundary } from '@/components/studio/error-boundary'
 import { ViewErrorBoundary } from '@/components/studio/view-error-boundary'
-import { AppError, ErrorCode } from '@/lib/errors'
+import { AppError } from '@/lib/errors'
 
 // ---------------------------------------------------------------------------
 // Test helper — component that throws on first render
@@ -63,10 +60,10 @@ const ConditionalThrow = ({
 }
 
 const ThrowAppError = ({
-  message = ErrorCode.UNKNOWN,
+  message = 'Internal error',
   userMessage = 'Something went wrong. Please try again.',
 }: {
-  message?: ErrorCode
+  message?: string
   userMessage?: string
 }) => {
   throw new AppError(message, userMessage)

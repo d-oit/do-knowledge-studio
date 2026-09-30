@@ -3,9 +3,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 const mockAwareness = {
   clientID: 1,
   setLocalStateField: vi.fn(),
-  // Returning `unknown` keeps `mockReturnValue({ presence: … })` assignable;
-  // a literal `null` return would narrow the mock's parameter to `null`.
-  getLocalState: vi.fn((): unknown => null),
+  getLocalState: vi.fn(() => null),
   getStates: vi.fn(() => new Map()),
   on: vi.fn(),
   off: vi.fn(),
@@ -40,7 +38,7 @@ function resetAwareness(): void {
   mockAwareness.getStates.mockReset().mockReturnValue(new Map())
   mockAwareness.on.mockReset()
   mockAwareness.off.mockReset()
-  vi.mocked(getAwareness).mockReturnValue(mockAwareness as unknown as ReturnType<typeof getAwareness>)
+  vi.mocked(getAwareness).mockReturnValue(mockAwareness)
 }
 
 function makeCursor(overrides: Partial<RemoteCursor> = {}): RemoteCursor {

@@ -122,7 +122,6 @@
       "postcss": "^8.5.23",
       "sharp": "^0.35.4",
       "brace-expansion@<1.1.18": "1.1.21",
-    "brace-expansion@>=5": "^5.0.12",
       "defu": "^6.1.5",
       "picomatch": "^4.0.4",
       "browserslist": "^4.28.7",
@@ -133,7 +132,7 @@
       "prismjs": "^1.30.0",
       "diff": "^5.2.2",
       "dompurify": "^3.4.13",
-      "undici": "^7.29.1",
+      "undici": "^7.29.0",
       "nanoid@3": "3.3.18"
     },
     "ignoredBuiltDependencies": [

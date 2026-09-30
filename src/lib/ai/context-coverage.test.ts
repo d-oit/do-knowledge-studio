@@ -72,8 +72,8 @@ describe('AI context coverage', () => {
 
   it('buildMessages includes chat history', () => {
     const history: ChatMessage[] = [
-      { role: 'user', content: 'Previous question' },
-      { role: 'assistant', content: 'Previous answer' },
+      { id: '1', role: 'user', content: 'Previous question', timestamp: '2026-01-01T00:00:00Z' },
+      { id: '2', role: 'assistant', content: 'Previous answer', timestamp: '2026-01-01T00:00:01Z' },
     ]
     const messages = buildMessages(history, 'New question', [makeEntity()], [], true)
     expect(messages.length).toBeGreaterThanOrEqual(4)

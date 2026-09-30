@@ -23,15 +23,11 @@
 
 import { useStudioStore } from './store'
 import { STUDIO_STORAGE_KEY, sanitizeHydration, partializePersistedState } from './hydration'
+import { mergeEntities, mergeClaims } from '../sync/merge'
 import { recordDeletions, getDeletions, resetDeletions } from './cross-tab-tombstones'
-import { jsonChanged, mergeCorpus, removedIds, type CorpusMerge } from './cross-tab-merge'
+import type { Entity, Claim } from './types'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from './schema'
 import { snapshotCorpus } from './history-snapshot'
-import { isSyncBlocked } from './hydration-guard'
-
-// `initCrossTabSync` is not called under a refusal (see store.ts), but a manual
-// `rehydrate()` can refuse *after* these listeners were attached, so the
-// guards below cannot assume the subscriptions were never created.
 
 /** BroadcastChannel name for cross-tab store synchronization. */
 export const STUDIO_CROSS_TAB_CHANNEL = 'do-knowledge-studio-crosstab'
@@ -91,6 +87,106 @@ const generateTabOriginId = (): string => {
 
 /** Unique identifier generated per tab window instance to prevent self-echoes. */
 export const TAB_ORIGIN_ID = generateTabOriginId()
+
+/** Structural equality for persisted arrays (objects compare by serialized value). */
+const arraysEqual = (left: readonly unknown[], right: readonly unknown[]): boolean =>
+  left.length === right.length && JSON.stringify(left) === JSON.stringify(right)
+
+/** Structural inequality for a single optional persisted field.
+ * `null` is the explicit "cleared" sentinel used by broadcasts; `undefined`
+ * means the sender omitted the field (no update). */
+const jsonChanged = <T,>(local: T | undefined, remote: T | null | undefined): boolean => {
+  if (remote === undefined) return false
+  const localJson = local === undefined ? null : JSON.stringify(local)
+  const remoteJson = remote === null ? null : JSON.stringify(remote)
+  return localJson !== remoteJson
+}
+
+/** Ids of items present in `previous` but absent in `next` (the local deletions). */
+const removedIds = <T extends { id: string }>(previous: readonly T[], next: readonly T[]): string[] => {
+  const nextIds = new Set(next.map((item) => item.id))
+  const removed: string[] = []
+  for (const item of previous) {
+    if (!nextIds.has(item.id)) {
+      removed.push(item.id)
+    }
+  }
+  return removed
+}
+
+/** Whether an item was last written after the given delete-broadcast time. */
+const updatedAfter = (item: { updatedAt?: string; createdAt?: string }, timestamp: number): boolean => {
+  const lastWrite = item.updatedAt ?? item.createdAt
+  if (!lastWrite) return false
+  const parsed = Date.parse(lastWrite)
+  return !Number.isNaN(parsed) && parsed > timestamp
+}
+
+/** Drops items a deletion map says were removed, unless re-created after the tombstone. */
+const withoutRemoteDeletes = <T extends { id: string; updatedAt?: string; createdAt?: string }>(
+  items: readonly T[],
+  deletedById: ReadonlyMap<string, number>,
+): T[] => {
+  if (deletedById.size === 0) {
+    return [...items]
+  }
+  return items.filter((item) => {
+    const deletedAt = deletedById.get(item.id)
+    return deletedAt === undefined || updatedAfter(item, deletedAt)
+  })
+}
+
+/** Outcome of a corpus merge: merged lists plus per-list change flags. */
+interface CorpusMerge {
+  entities: Entity[]
+  claims: Claim[]
+  entitiesChanged: boolean
+  claimsChanged: boolean
+}
+
+/** Field-level merge of the remote corpus against local state, deletions applied. */
+const mergeCorpus = (
+  currentEntities: readonly Entity[],
+  currentClaims: readonly Claim[],
+  remoteEntities: readonly Entity[],
+  remoteClaims: readonly Claim[],
+  deletedEntities: ReadonlyMap<string, number>,
+  deletedClaims: ReadonlyMap<string, number>,
+): CorpusMerge => {
+  // Deletions apply to both sides: local items the maps tombstone are dropped,
+  // and remote items from a stale snapshot that were already deleted (unless
+  // re-created after the tombstone) must not re-enter through the merge union.
+  const localEntities = withoutRemoteDeletes(currentEntities, deletedEntities)
+  const localClaims = withoutRemoteDeletes(currentClaims, deletedClaims)
+  const remoteSurvivors = withoutRemoteDeletes(remoteEntities, deletedEntities)
+  const remoteClaimSurvivors = withoutRemoteDeletes(remoteClaims, deletedClaims)
+  const mergedEntities = mergeEntities([...localEntities], [...remoteSurvivors]).merged
+  const mergedClaims = mergeClaims([...localClaims], [...remoteClaimSurvivors]).merged
+
+  const deletedEntitySet = new Set(deletedEntities.keys())
+  const survivingEntityIds = new Set(mergedEntities.map((entity) => entity.id))
+  // Preserve the no-dangling-claims invariant that deleteEntity enforces
+  // locally (ADR 028): a claim whose entity was removed by the same remote
+  // deletion — and is absent from both merge sides — cannot survive, or the
+  // receiving tab ends up with an entityId that no longer exists anywhere.
+  const survivingClaims = mergedClaims.filter(
+    (claim) => !deletedEntitySet.has(claim.entityId) || survivingEntityIds.has(claim.entityId),
+  )
+  // Local deleteEntity also strips links that target the removed entity from
+  // every surviving entity; mirror that so remote deletions cannot leave a
+  // link pointing at a now-gone entity.
+  const goneEntityIds = new Set([...deletedEntitySet].filter((id) => !survivingEntityIds.has(id)))
+  const entitiesWithCleanLinks = mergedEntities.map((entity) => {
+    const keptLinks = entity.links.filter((link) => !goneEntityIds.has(link.targetId))
+    return keptLinks.length === entity.links.length ? entity : { ...entity, links: keptLinks }
+  })
+  return {
+    entities: entitiesWithCleanLinks,
+    claims: survivingClaims,
+    entitiesChanged: !arraysEqual(currentEntities, entitiesWithCleanLinks),
+    claimsChanged: !arraysEqual(currentClaims, survivingClaims),
+  }
+}
 
 /** Whether any optional canvas field in the remote envelope differs from local. */
 const canvasFieldsChanged = (current: StoreSnapshot, remote: RemoteCanvasFields): boolean =>
@@ -172,22 +268,17 @@ const buildStatePatch = (
   return patch
 }
 
-/**
- * Applies a validated remote slice; returns whether the store was updated.
- *
- * This is the single choke point for every inbound corpus, so the refusal
- * guard lives here rather than in each caller: a refused-hydration tab must
- * not merge a peer's real library into its temporary seed workspace.
- */
+/** Applies a validated remote slice; returns whether the store was updated. */
 const applyRemoteMessage = (
   payload: unknown,
   origin: string | undefined,
   deletedEntities: ReadonlyMap<string, number>,
   deletedClaims: ReadonlyMap<string, number>,
 ): boolean => {
-  if (origin === TAB_ORIGIN_ID || isSyncBlocked()) {
+  if (origin === TAB_ORIGIN_ID) {
     return false
   }
+
   const verdict = sanitizeHydration(payload)
   if (!verdict.ok) {
     return false
@@ -216,24 +307,16 @@ const applyRemoteMessage = (
   }
 }
 
-/**
- * Processes a validated incoming remote slice and merges it into the local store.
- * The refusal guard lives in {@link applyRemoteMessage}, the single choke point
- * every inbound corpus passes through.
- */
+/** Processes a validated incoming remote slice and merges it into the local store. */
 export const applyRemoteEnvelope = (payload: unknown, origin?: string): boolean =>
   applyRemoteMessage(payload, origin, getDeletions('entity'), getDeletions('claim'))
 
-/**
- * Broadcasts the current persisted slice plus locally-deleted ids to other tabs.
- * Guarded here, not at the subscribe site, because a manual `rehydrate()` can
- * refuse long after that subscription was attached.
- */
+/** Broadcasts the current persisted slice plus locally-deleted ids to other tabs. */
 const broadcastLocalStoreChange = (
   state: StoreSnapshot,
   deleted: { deletedEntityIds: readonly string[]; deletedClaimIds: readonly string[] },
 ): void => {
-  if (isSyncBlocked() || isApplyingRemoteUpdate || broadcastChannel === null) {
+  if (isApplyingRemoteUpdate || broadcastChannel === null) {
     return
   }
 
@@ -274,10 +357,6 @@ const handleChannelMessage = (message: CrossTabMessage): void => {
   if (payload === undefined) {
     return
   }
-  // Deletions are recorded BEFORE the refusal guard in `applyRemoteMessage`.
-  // The tombstone registry is session bookkeeping about what a peer deleted;
-  // a refused-hydration tab still has to track it, or a stale item could
-  // reappear in a later merge.
   recordMessageDeletions(message)
   // The aggregated registry (not just this message's lists) guards later
   // snapshots from stale tabs that still hold previously deleted items.
@@ -372,10 +451,7 @@ export const initCrossTabSync = (): (() => void) => {
   window.addEventListener('storage', storageEventListener)
 
   const broadcastLocalChanges = (state: StoreSnapshot, previous: StoreSnapshot) => {
-    // A seed workspace must not be published, and its diffs must not enter the
-    // tombstone registry either. Re-checked per change because a manual
-    // rehydrate can refuse after this attached.
-    if (isSyncBlocked() || isApplyingRemoteUpdate) {
+    if (isApplyingRemoteUpdate) {
       return
     }
     if (

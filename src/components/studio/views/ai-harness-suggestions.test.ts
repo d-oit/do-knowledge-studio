@@ -19,7 +19,6 @@ const makeClaim = (overrides: Partial<Claim> = {}): Claim => ({
   id: 'claim-1',
   entityId: 'ent-1',
   statement: 'Something is true.',
-  confidence: 0.8,
   verification: 'unverified',
   createdAt: '2025-01-01T00:00:00Z',
   updatedAt: '2025-01-01T00:00:00Z',
