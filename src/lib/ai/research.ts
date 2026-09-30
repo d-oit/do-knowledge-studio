@@ -196,23 +196,33 @@ export interface ResearchResult {
   error?: string
 }
 
+/**
+ * Validates a user-supplied research target and returns the Jina Reader
+ * request URL for it.
+ *
+ * The target must be HTTP(S) and must not resolve to a private or reserved
+ * host, and it is percent-encoded so it cannot introduce a different host.
+ * Keeping the guard and the URL construction together means the value handed
+ * to the network sink is the validated result, never the raw input.
+ */
+const buildReaderRequestUrl = (target: string): string => {
+  const parsed = new URL(target)
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new Error(`Blocked URL scheme: ${parsed.protocol}`)
+  }
+  if (isPrivateIP(parsed.hostname)) {
+    throw new Error(`Blocked private/reserved IP or local domain: ${parsed.hostname}`)
+  }
+  return `${JINA_READER_ENDPOINT}${encodeURIComponent(target)}`
+}
+
 /** Fetch URL content via Jina Reader, returning markdown with SSRF protection. */
 export const fetchUrlContent = async (
   url: string,
   signal?: AbortSignal,
 ): Promise<ResearchResult> => {
   try {
-    const parsed = new URL(url)
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      throw new Error(`Blocked URL scheme: ${parsed.protocol}`)
-    }
-    if (isPrivateIP(parsed.hostname)) {
-      throw new Error(`Blocked private/reserved IP or local domain: ${parsed.hostname}`)
-    }
-
-    const encodedUrl = encodeURIComponent(url)
-    // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf — scheme + isPrivateIP guarded above
-    const res = await fetch(`${JINA_READER_ENDPOINT}${encodedUrl}`, {
+    const res = await fetch(buildReaderRequestUrl(url), {
       headers: {
         Accept: 'text/markdown',
       },

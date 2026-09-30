@@ -138,17 +138,19 @@ export function runMigrations(persistedState: unknown, fromVersion?: number): Pe
       return null
     }
 
-    let currentVersion = Math.max(1, detectedVersion)
+    const currentVersion = Math.max(1, detectedVersion)
 
-    // Run each migration until reaching the current version
-    while (currentVersion < CURRENT_SCHEMA_VERSION) {
-      const migrationIndex = currentVersion - 1
-      if (migrationIndex < 0 || migrationIndex >= MIGRATIONS.length) {
-        console.warn(`No migration found for version ${currentVersion} → ${currentVersion + 1}`)
-        return null
-      }
-      state = MIGRATIONS[migrationIndex](state)
-      currentVersion += 1
+    // Run every migration from the detected version onward. The pending steps
+    // are iterated as values — never indexed by a version number derived from
+    // persisted data — so the dispatch is a plain call, not dynamic member
+    // dispatch (Semgrep `unsafe-dynamic-method`).
+    const pendingMigrations = MIGRATIONS.slice(currentVersion - 1)
+    if (pendingMigrations.length !== CURRENT_SCHEMA_VERSION - currentVersion) {
+      console.warn(`No migration found for version ${currentVersion} → ${currentVersion + 1}`)
+      return null
+    }
+    for (const migration of pendingMigrations) {
+      state = migration(state)
     }
 
     return state

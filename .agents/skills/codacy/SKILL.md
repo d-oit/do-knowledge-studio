@@ -172,7 +172,6 @@ The Analysis CLI may show "0 issues" even when the Cloud CLI reports many — al
 | Analysis CLI install fails | Missing Python/Ruby/Java runtime | Use only JS/TS tools locally; skip auto-install |
 | `.codacy.yml` disable_rules not taking effect | Using `ESLint8_` prefix instead of `ESLint9_` | Use `ESLint9_<rule-id>` format for ESLint 9+ |
 | `.codacy/codacy.config.json` references `eslint.config.js` | Stale reference | Change to `eslint.config.mjs` |
-| `.mimicode/` exclude not working | Typo — actual dir is `.mimocode/` | Fix to `.mimocode/**` in `.codacy.yml` |
 
 ## Codacy 2026 Configuration
 
@@ -184,7 +183,6 @@ exclude_paths:
   - "dist/**"
   - "node_modules/**"
   - "coverage/**"
-  - ".mimocode/**"
   - ".agents/**"
   - "**/__tests__/**"
   - "**/*.test.*"

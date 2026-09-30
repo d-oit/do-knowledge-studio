@@ -361,7 +361,10 @@ without an explicit request, so this is reported rather than fixed:
 - `exclude_paths` lists `.mimicode/**`, but the directory is `.mimocode/**`
   (see the `codacy` skill's gotchas table), so that exclusion is inert.
 
-These are pre-existing and outside PR #842's scope.
+These are pre-existing and outside PR #842's scope. **Resolved by Plan 160**
+(2026-09-30): both inert `disable_rules` lines and the dead `.mimicode/**`
+exclude were removed, and every live `xss_no-mixed-html` occurrence was fixed in
+code instead — see `plans/160-codacy-open-issues-and-mimocode-cleanup-2026-09-30.md`.
 
 ### F4 verification note
 

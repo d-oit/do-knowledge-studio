@@ -98,6 +98,13 @@ const useShortcutsOpen = (): [boolean, (v: boolean) => void] => {
   return [open, setOpen]
 }
 
+/**
+ * Narrows an event target to its `HTMLElement` view, or `null` when the target
+ * is not a DOM element (e.g. `document` or `window`).
+ */
+const asHtmlElement = (target: EventTarget | null): HTMLElement | null =>
+  target instanceof HTMLElement ? target : null
+
 /** Keyboard shortcuts dialog with filterable grouped list and G-key navigation indicator. */
 // skipcq: JS-0415, JS-R1005 — ShortcutsDialog JSX nesting and medium complexity are intentional for grouped shortcut layout
 export const ShortcutsDialog = (): React.JSX.Element => {
@@ -152,11 +159,11 @@ export const ShortcutsDialog = (): React.JSX.Element => {
 
   React.useEffect(() => {
     const isTypingTarget = (el: EventTarget | null): boolean => {
-      if (!(el instanceof HTMLElement)) return false
-      const tag = el.tagName.toLowerCase()
+      const target = asHtmlElement(el)
+      if (!target) return false
+      const tag = target.tagName.toLowerCase()
       if (tag === 'input' || tag === 'textarea' || tag === 'select') return true
-      if (el.isContentEditable) return true
-      return false
+      return target.isContentEditable
     }
 
     const handler = (e: KeyboardEvent) => {

@@ -10,7 +10,6 @@ exclude_patterns = [
   "dist/",
   "node_modules/",
   "coverage/",
-  ".mimocode/",
   ".agents/",
   "plans/",
   "scripts/",
