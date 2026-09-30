@@ -215,4 +215,13 @@ describe('placeGraphNodes', () => {
     // library of this size must therefore widen the canvas, not crowd it.
     expect(tooClose).toEqual([])
   })
+
+  it('places 150 unseeded graph nodes rapidly under 50ms', () => {
+    const entities = Array.from({ length: 150 }, (_, i) => makeEntity(`bench-${i}`))
+    const start = performance.now()
+    const nodes = placeGraphNodes(entities, seedGraph.nodes)
+    const elapsed = performance.now() - start
+    expect(nodes).toHaveLength(150)
+    expect(elapsed).toBeLessThan(50)
+  })
 })

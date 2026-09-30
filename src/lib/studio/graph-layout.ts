@@ -130,12 +130,40 @@ export const baseNodePosition = (
   y: band.yMin + seededRandom(`${id}:y`) * (band.yMax - band.yMin),
 })
 
+/** Fast check whether (x, y) is at least `minDistance` away from all placed nodes with early exit. */
+const hasClearance = (
+  x: number,
+  y: number,
+  placed: readonly NodePosition[],
+  minDistance: number,
+): boolean => {
+  // Add a small epsilon (1e-9) to minDistanceSq so sub-ulp floating point
+  // rounding in dx*dx+dy*dy matches Math.hypot(dx, dy) >= minDistance.
+  const minDistanceSq = minDistance * minDistance + 1e-9
+  for (const node of placed) {
+    const dx = node.x - x
+    const dy = node.y - y
+    if (dx * dx + dy * dy < minDistanceSq) {
+      return false
+    }
+  }
+  return true
+}
+
 /** Smallest distance from (x, y) to any placed node; Infinity when none are placed. */
-const clearance = (x: number, y: number, placed: readonly NodePosition[]): number =>
-  placed.reduce(
-    (min, node) => Math.min(min, Math.hypot(node.x - x, node.y - y)),
-    Number.POSITIVE_INFINITY,
-  )
+const clearance = (x: number, y: number, placed: readonly NodePosition[]): number => {
+  if (placed.length === 0) return Number.POSITIVE_INFINITY
+  let minSq = Number.POSITIVE_INFINITY
+  for (const node of placed) {
+    const dx = node.x - x
+    const dy = node.y - y
+    const distSq = dx * dx + dy * dy
+    if (distSq < minSq) {
+      minSq = distSq
+    }
+  }
+  return Math.sqrt(minSq)
+}
 
 /** The `attempt`-th probe point around `base`, clamped into `band`. */
 const probePosition = (base: NodePosition, attempt: number, band: PlacementBand): NodePosition => {
@@ -159,7 +187,7 @@ const probeForClearance = (
 ): NodePosition | null => {
   for (let attempt = 1; attempt <= PLACEMENT_ATTEMPTS; attempt += 1) {
     const candidate = probePosition(base, attempt, band)
-    if (clearance(candidate.x, candidate.y, placed) >= minDistance) return candidate
+    if (hasClearance(candidate.x, candidate.y, placed, minDistance)) return candidate
   }
   return null
 }
@@ -178,14 +206,15 @@ export const resolveNodePosition = (
   band: PlacementBand = BASE_PLACEMENT_BAND,
 ): NodePosition => {
   const base = baseNodePosition(id, band)
+  if (hasClearance(base.x, base.y, placed, PREFERRED_NODE_DISTANCE_PX)) return base
+
   let best = base
   let bestClearance = clearance(base.x, base.y, placed)
-  if (bestClearance >= PREFERRED_NODE_DISTANCE_PX) return best
 
   for (let attempt = 1; attempt <= PLACEMENT_ATTEMPTS; attempt += 1) {
     const candidate = probePosition(base, attempt, band)
+    if (hasClearance(candidate.x, candidate.y, placed, PREFERRED_NODE_DISTANCE_PX)) return candidate
     const candidateClearance = clearance(candidate.x, candidate.y, placed)
-    if (candidateClearance >= PREFERRED_NODE_DISTANCE_PX) return candidate
     if (candidateClearance > bestClearance) {
       best = candidate
       bestClearance = candidateClearance
