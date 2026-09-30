@@ -159,7 +159,11 @@ const PreservedBanner = ({ record }: { record: QuarantineRecord }) => {
       </p>
       <p className="mt-1 font-mono text-[11px] text-ink-faint">{record.reason}</p>
       <div className="mt-2 flex justify-start">
-        <HideForSessionButton onHide={() => setHidden(true)} />
+        <HideForSessionButton
+          onHide={() => {
+            setHidden(true)
+          }}
+        />
       </div>
     </AlertShell>
   )
