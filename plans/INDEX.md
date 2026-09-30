@@ -3,6 +3,15 @@
 **Updated**: 2026-09-30
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
+### Plan 161 — Offline first-use navigation for lazy views, then a stable framework refresh (2026-09-30)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Reproduce the missing offline behavior on a production build | Done | `plans/161-offline-lazy-view-precache-and-framework-refresh-2026-09-30.md`. `playwright.config.ts` gained `PLAYWRIGHT_PRODUCTION=1` (serves `pnpm run start`, refuses to reuse a port occupant, gates the new spec out of the dev run and out of every non-Chromium project) plus the `test:e2e:offline` script. New `e2e/offline-views.spec.ts` installs the worker, closes the online page, clears the browser HTTP cache over CDP, then goes offline and navigates each view **for the first time**. Pre-fix: 6/6 failed with `"<View> failed to load"`. The first version of the spec passed AI Harness and Sync against the *error fallback* because the topbar renders `<h1>{view name}</h1>`; every assertion is now scoped to `main`. |
+| W2 | Precache the emitted code, not just the boot document | Done | `generate-precache-manifest.mjs` now unions the document's URLs with every `.js`/`.mjs`/`.css` under `.next/static/chunks` and fonts/images under `.next/static/media`, and fails closed when a directory or the JS inventory is missing. 61 URLs (21 document, 36 chunks, 17 media); 0 of 36 on-disk chunks unprecached; WASM/model weights/source maps excluded (~4 MiB). `public/sw.js` `STATIC_CACHE` → `dks-static-v3`, because a manifest-only change never reinstalls an existing worker. Fix re-verified by removing the chunk contribution (manifest back to 17 chunks → Graph fails again) and restoring it. |
+| W3 | Refresh the framework/runtime pair in its own diff | Done | `next`/`eslint-config-next` → 16.3.7, `react`/`react-dom` → 19.3.0, `@types/react`/`@types/react-dom` → 19.3.0. TypeScript held at 6.0.3 (typescript-eslint supports `<6.1.0`; TS 7 is a separate side-by-side migration). Lockfile diff: 6 specifiers changed, only `next`/`eslint-config-next`/`react`/`react-dom`/`scheduler` re-resolved, all overrides and peer rules retained. |
+| W4 | Verify | Done | Gates: 180 files / **2790 tests** green, vitest typecheck 0 errors, zero warnings. Production E2E across all four projects: **642 passed, 4 skipped, 0 failed**. Real-browser smoke on a fresh profile (note CRUD → offline; Graph/Mind Map/TRIZ/Export/JSON download; mobile 390×844) and an upgrade-lifecycle smoke on a retained pre-change profile (`dks-static-v2` → `dks-static-v3`, old cache deleted, survives a browser restart, all six views render offline). ADR 041 records the scope, the identity rule and the rejected alternatives. |
+
 ### Plan 160 — Fix every open Codacy issue in code; delete `.mimocode/` (2026-09-30)
 
 | Wave | Goal | Status | Changes |
