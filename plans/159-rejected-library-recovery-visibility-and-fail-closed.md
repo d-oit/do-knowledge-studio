@@ -309,6 +309,60 @@ hiding.
   `graph-elements.test.tsx` (5 cases: line geometry, label only when selected,
   either-endpoint highlighting, perpendicular offset, focus filter).
 
+## PR-stage static-analysis triage (2026-09-30)
+
+PR **#842** (`fix/plan-159-recovery-visibility-and-fail-closed`). Codacy's PR
+analysis reported 2 new issues. Both were triaged against the rule source rather
+than from the message text.
+
+| # | Pattern id | Location | Verdict | Action |
+|---|-----------|----------|---------|--------|
+| 1 | `ESLint8_@typescript-eslint_no-confusing-void-expression` | `quarantine-banner.tsx:162` | True positive | Fixed in code (`c3c7e31`) |
+| 2 | `ESLint8_xss_no-mixed-html` | `mindmap-export.ts:31` | False positive | Suppressed via `--ignore-issue` |
+
+### Issue 1 — real, fixed
+
+`onHide={() => setHidden(true)}` returns the (void) result of `setHidden` from an
+arrow shorthand. Braces around the call preserve behaviour exactly. Verified:
+`lint`, `typecheck`, `quarantine-banner.test.tsx` (7), and
+`e2e/recovery-warning.spec.ts` (9/9 chromium, including the 44px hide-target
+case) all pass. The finding is absent from the re-analysed PR.
+
+### Issue 2 — false positive, suppressed
+
+Suppressed as `FalsePositive` (`resultDataId 131544792851`) with the reasoning
+recorded on the PR. Evidence, in order of strength:
+
+1. **Same rule + same line pre-existed.** The identical statement lived at
+   `mindmap-view.tsx:154` and is itself a live repo issue
+   (`resultDataId 131515264026`). This PR *relocates* the line as part of the F6
+   split; the analysis shows `+1 / -1` for the rule.
+2. **The rule is already declared an FP by the maintainer** — `.codacy.yml:38`
+   (ESLint9) and `.codacy.yml:50` (ESLint8).
+3. **The heuristic cannot be satisfied honestly.** Read from the rule source
+   (`eslint-plugin-xss@0.1.12` `no-mixed-html`): a variable is only "HTML" if its
+   name matches `htmlVariableRules`, default `['html/i']`. Renaming a cloned DOM
+   node to contain `html` would placate the rule by lying about the value.
+4. **No HTML sink exists.** `element.cloneNode(true)` is a DOM node passed to
+   `appendChild`; the only stringification is `XMLSerializer` →
+   `image/svg+xml` `Blob` → `Image.src` — it is never assigned to `innerHTML` or
+   any HTML string context.
+
+### Config finding — needs maintainer approval, deliberately not changed
+
+`.codacy.yml` is a suppression config, which the repo rules place off-limits
+without an explicit request, so this is reported rather than fixed:
+
+- The `disable_rules` entries for `ESLint8_xss_no-mixed-html` and
+  `ESLint9_xss_no-mixed-html` are **not in effect** — at least 4 live repo issues
+  carry that pattern id (`use-export-handlers.ts:294,297`,
+  `shortcuts-dialog.tsx:153`, `mindmap-view.tsx:154`). PR-level `--ignore-issue`
+  is the mechanism that actually works; the config file is the one that does not.
+- `exclude_paths` lists `.mimicode/**`, but the directory is `.mimocode/**`
+  (see the `codacy` skill's gotchas table), so that exclusion is inert.
+
+These are pre-existing and outside PR #842's scope.
+
 ### F4 verification note
 
 The cold-cache slow path (~120s) did **not** reproduce locally even after
