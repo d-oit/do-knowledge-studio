@@ -71,6 +71,47 @@ path. Unknown future versions or unrecoverable corruption do not enter the
 store. The application offers reset and raw-export options without logging
 personal content.
 
+### 4a. A refused hydration fails closed for the rest of the page session
+
+Decision 4 makes a refused payload non-fatal, but "non-fatal" is not
+"safe". The store stays on seed state, and three writers could still destroy
+or misrepresent the data the refusal exists to protect. The refusal therefore
+latches a page-scoped guard, set **synchronously before** the refusing
+callback returns:
+
+1. **The live store key is not written.** Zustand calls `setItem` implicitly
+   whenever `migrate` returns a value, and again on every later `setState`, so
+   a seed write lands on the refused envelope. The persist `storage` is a
+   wrapper that drops `setItem(STUDIO_STORAGE_KEY, …)` and nothing else:
+   reads, removes, and other keys (quarantine included) pass through, so a
+   later recovery attempt can still run.
+2. **The quarantine record is never overwritten.** An identical payload is
+   idempotent success; a *different* payload, or bytes that exist but cannot be
+   parsed, keep the key occupied and make the call return `false`. Occupancy is
+   decided by key existence, not by a successful parse.
+3. **Cross-tab and Yjs traffic is disabled.** Gating only the localStorage
+   writer would still let a seed workspace broadcast to healthy tabs or accept
+   inbound peer updates, so `cross-tab.ts` and the shell's bridge gate consult
+   the same status.
+
+Two honesty rules follow from this:
+
+- `preserved: true` means the exact refused bytes are known to be held. When it
+  is false — an unreadable envelope, a payload over the size cap, storage
+  refusing the write, or a different record already quarantined — the app says
+  edits are **not** saved, and offers no way to hide that message.
+- The refusal status, not the presence of a quarantine record, is the single
+  source of truth for "is this workspace temporary". An old preserved copy from
+  a previous session must not make today's seed workspace look authoritative.
+
+A first run with no stored envelope is **not** a refusal: zustand still hands
+`merge` an empty payload, and blocking there would make a fresh install
+permanently read-only with nothing at risk.
+
+Dismissal is non-destructive. Hiding a warning is React state; deleting a
+preserved copy is not a UI affordance. `clearQuarantine()` remains available for
+deliberate maintenance and has no dismissal caller.
+
 ### 5. Referential integrity is part of validation
 
 - Claims must reference an imported/existing entity according to import mode.
@@ -132,3 +173,14 @@ personal content.
 - Unknown future and corrupt persisted versions present recovery choices.
 - Entity deletion removes dependent claims and incoming/outgoing links in one
   undoable transaction.
+- A refused envelope leaves the live store key byte-for-byte unchanged, and a
+  subsequent `setState` does not alter it.
+- When no copy could be preserved, the UI states that edits are not saved and
+  offers no hide control; when the bytes are unreadable, it says so instead of
+  implying a safe copy exists.
+- A second rejection with a different payload leaves the earlier record and the
+  currently refused bytes both intact.
+- An edit in a refused tab does not reach another tab or the Yjs document; the
+  Sync view is unavailable. A normal hydrate retains both.
+- Hiding the warning leaves `QUARANTINE_KEY` unchanged, and a reload reveals
+  the warning again.

@@ -292,6 +292,8 @@ describe('SearchWorkerClient', () => {
 
     const outcome = await SearchWorkerClient.searchSemantic(testEntities, testClaims, 'segmentation', 5)
     expect(outcome.source).toBe('lexical')
+    // Narrow the union: only the lexical fallback carries a `reason`.
+    if (outcome.source !== 'lexical') throw new Error('expected a lexical fallback outcome')
     expect(outcome.reason).toContain('model offline')
     expect(outcome.results.length).toBeGreaterThan(0)
   })

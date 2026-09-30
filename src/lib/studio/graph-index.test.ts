@@ -11,7 +11,6 @@ const makeEntity = (overrides: Partial<Entity> = {}): Entity => ({
   tags: [],
   sourceUrl: '',
   links: [],
-  claims: [],
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
   ...overrides,

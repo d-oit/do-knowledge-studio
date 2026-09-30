@@ -8,12 +8,6 @@ import {
 } from '@/lib/studio/types'
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { toast } from 'sonner'
-import Markdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import { sanitizeUrl } from '@/lib/security'
-import {
-  ExternalLink,
-} from 'lucide-react'
 import { useAnnouncer } from '@/lib/a11y/announcer'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
 import { EditorToolbar } from './editor-toolbar'
@@ -37,7 +31,6 @@ import {
   getMentionTrigger,
   insertMentionToken,
   mergeMentionLinks,
-  MENTION_SCHEME,
   type MentionTrigger,
 } from '@/lib/editor/mention'
 
@@ -53,17 +46,12 @@ import {
   EditorModeSelector,
   EditorStatusBar,
 } from '../editor-hooks'
-
-/** Preserve the reserved dks:// mention protocol (sanitizeUrl strips non-standard schemes). */
-const mentionAwareUrlTransform = (url: string): string =>
-  url.startsWith(MENTION_SCHEME) ? url : sanitizeUrl(url)
+import { EditorAdvancedFields } from './editor-advanced-fields'
+import { EditorPreview } from './editor-preview'
 
 const SERIF_FONT_STYLE: React.CSSProperties = {
   fontFamily: 'var(--font-newsreader), Georgia, serif',
 } as const
-
-const ADVANCED_METADATA_TITLE = 'Metadata & source'
-const ADVANCED_METADATA_DESCRIPTION = 'Optional context that helps you find and revisit this note later. Tags stay visible above for quick editing.'
 
 const restoreSelection = (textarea: HTMLTextAreaElement, start: number, end: number) => {
   textarea.focus()
@@ -417,33 +405,7 @@ export const EditorView = () => {
       />
 
       {showAdvanced && (
-        <div
-          className="mb-4 space-y-3 rounded-lg border border-dashed border-border bg-muted/30 p-4"
-          role="group"
-          aria-labelledby="advanced-fields-heading"
-        >
-          <div>
-            <h3 id="advanced-fields-heading" className="font-serif text-[15px] font-semibold text-ink">
-              {ADVANCED_METADATA_TITLE}
-            </h3>
-            <p className="mt-1 text-label leading-relaxed text-ink-mute">
-              {ADVANCED_METADATA_DESCRIPTION}
-            </p>
-          </div>
-          <div>
-            <label htmlFor="source-url" className="mb-1 flex items-center gap-1.5 text-label font-semibold uppercase tracking-wide text-ink-faint">
-              <ExternalLink className="h-3 w-3" />
-              Source URL
-            </label>
-            <input
-              id="source-url"
-              value={sourceUrl}
-              onChange={(e) => { setSourceUrl(e.target.value) }}
-              placeholder="https://…"
-              className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
-            />
-          </div>
-        </div>
+        <EditorAdvancedFields sourceUrl={sourceUrl} onSourceUrlChange={setSourceUrl} />
       )}
 
       <EditorModeSelector editMode={editMode} onEditModeChange={setEditMode} />
@@ -490,36 +452,7 @@ export const EditorView = () => {
             />
           </div>
         )}
-        {(editMode === 'preview' || editMode === 'split') && (
-          <div className="prose prose-sm dark:prose-invert max-w-none min-h-[420px] rounded-lg border border-border bg-background p-4">
-            <Markdown
-              urlTransform={mentionAwareUrlTransform}
-              remarkPlugins={[remarkGfm]}
-              components={{
-                a: ({ href, children }) => {
-                  // Mention tokens render as styled chips (no navigation);
-                  // anything else stays a normal external link.
-                  if (href?.startsWith(MENTION_SCHEME)) {
-                    const entityId = href.slice(MENTION_SCHEME.length)
-                    return (
-                      <span
-                        data-mention-id={entityId}
-                        className="mx-0.5 rounded-full bg-saffron-soft px-2 py-0.5 font-medium text-saffron-deep no-underline"
-                      >
-                        {children}
-                      </span>
-                    )
-                  }
-                  const safeHref = typeof href === 'string' && href ? sanitizeUrl(href) : ''
-                  if (!safeHref) return <span>{children}</span>
-                  return <a href={safeHref} target="_blank" rel="noopener noreferrer">{children}</a>
-                },
-              }}
-            >
-              {content || '_Nothing to preview._'}
-            </Markdown>
-          </div>
-        )}
+        {(editMode === 'preview' || editMode === 'split') && <EditorPreview content={content} />}
         </div>
       </CursorTracker>
 

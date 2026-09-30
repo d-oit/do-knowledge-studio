@@ -90,7 +90,7 @@ describe('Bridge coverage: subscribeToYjs', () => {
   it('registers inbound callbacks', () => {
     const onEntities = vi.fn()
     const onClaims = vi.fn()
-    const unsub = subscribeToYjs({ onEntities, onClaims })
+    const unsub = subscribeToYjs(onEntities, onClaims)
     expect(typeof unsub).toBe('function')
     unsub()
   })
@@ -188,7 +188,7 @@ describe('Bridge coverage: applyRemoteUpdate', () => {
 
   it('skips invalid remote claims', () => {
     const remote = [{ id: '', entityId: '', statement: '', confidence: 2, verification: 'invalid' as const }]
-    const result = applyRemoteUpdate([], remote as Claim[], [], [])
+    const result = applyRemoteUpdate([], remote as unknown as Claim[], [], [])
     expect(result.claims).toHaveLength(0)
   })
 
@@ -216,7 +216,7 @@ describe('Bridge coverage: destroyBridge', () => {
     const yjsSpy = vi.spyOn(console, 'error').mockImplementation((msg: string) => {
       if (typeof msg === 'string' && msg.includes('[yjs]')) return
     })
-    subscribeToYjs({ onEntities: vi.fn(), onClaims: vi.fn() })
+    subscribeToYjs(vi.fn(), vi.fn())
     destroyBridge()
     // Should not throw after destroy
     expect(true).toBe(true)

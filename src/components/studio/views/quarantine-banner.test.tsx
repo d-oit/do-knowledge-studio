@@ -46,6 +46,14 @@ const record = (): QuarantineRecord => ({
   raw: PRESERVED,
 })
 
+/** Renders the preserved state, the only one a normal quarantine produces. */
+const renderPreserved = () =>
+  render(
+    <Announcer>
+      <QuarantineBanner kind="preserved" record={record()} />
+    </Announcer>,
+  )
+
 describe('QuarantineBanner', () => {
   beforeEach(() => {
     localStorage.clear()
@@ -61,11 +69,7 @@ describe('QuarantineBanner', () => {
   })
 
   it('announces itself as an alert and names what was preserved', () => {
-    render(
-      <Announcer>
-        <QuarantineBanner record={record()} />
-      </Announcer>,
-    )
+    renderPreserved()
 
     const alert = screen.getByRole('alert')
     expect(alert).toBeDefined()
@@ -74,15 +78,22 @@ describe('QuarantineBanner', () => {
     expect(alert.textContent).toContain('no safe migration from version 99')
   })
 
+  it('does not promise the raw copy can be re-imported', () => {
+    renderPreserved()
+
+    // The download is the persistence envelope, not the flat export schema,
+    // so Import would reject it. Promising otherwise sends users into a
+    // guaranteed failure.
+    const body = screen.getByRole('alert').textContent ?? ''
+    expect(body).not.toMatch(/re-import it here/i)
+    expect(body).toMatch(/not an importable library/i)
+  })
+
   it('is reachable by keyboard at the 44px target floor', () => {
-    render(
-      <Announcer>
-        <QuarantineBanner record={record()} />
-      </Announcer>,
-    )
+    renderPreserved()
 
     const download = screen.getByRole('button', { name: /download copy/i })
-    const dismiss = screen.getByRole('button', { name: /discard/i })
+    const dismiss = screen.getByRole('button', { name: /hide .*this page session/i })
     expect(download.className).toContain('min-h-[44px]')
     expect(dismiss.className).toContain('min-h-[44px]')
     expect(dismiss.className).toContain('min-w-[44px]')
@@ -90,11 +101,7 @@ describe('QuarantineBanner', () => {
 
   it('downloads the preserved bytes on request', () => {
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
-    render(
-      <Announcer>
-        <QuarantineBanner record={record()} />
-      </Announcer>,
-    )
+    renderPreserved()
 
     fireEvent.click(screen.getByRole('button', { name: /download copy/i }))
 
@@ -102,21 +109,44 @@ describe('QuarantineBanner', () => {
     expect(click).toHaveBeenCalled()
   })
 
-  it('discards the preserved copy and stops rendering the banner', () => {
+  it('hides the banner for the session without deleting the preserved copy', () => {
     quarantinePayload('no safe migration from version 99', PRESERVED)
     expect(readQuarantine()?.raw).toBe(PRESERVED)
 
-    render(
-      <Announcer>
-        <QuarantineBanner record={record()} />
-      </Announcer>,
-    )
-    fireEvent.click(screen.getByRole('button', { name: /discard/i }))
+    renderPreserved()
+    fireEvent.click(screen.getByRole('button', { name: /hide .*this page session/i }))
 
     expect(screen.queryByTestId('quarantine-banner')).toBeNull()
-    // The bytes are gone too — a dismissed banner must not leave a payload
-    // behind that implies an available recovery that no longer exists.
-    expect(readQuarantine()).toBeNull()
-    expect(localStorage.getItem(QUARANTINE_KEY)).toBeNull()
+    // The bytes MUST survive: this used to call clearQuarantine(), so a single
+    // click destroyed the only copy of a user's library.
+    expect(readQuarantine()?.raw).toBe(PRESERVED)
+    expect(localStorage.getItem(QUARANTINE_KEY)).not.toBeNull()
+  })
+
+  it('warns that edits are not saved when no copy was preserved', () => {
+    render(
+      <Announcer>
+        <QuarantineBanner kind="unpreserved" reason="storage quota exceeded" raw={PRESERVED} />
+      </Announcer>,
+    )
+
+    const alert = screen.getByRole('alert')
+    expect(alert.textContent).toMatch(/nothing you change now will be saved/i)
+    // The refused bytes are still downloadable even without a quarantine copy.
+    expect(screen.getByRole('button', { name: /download copy/i })).toBeDefined()
+  })
+
+  it('offers no hide control and no download when the bytes are unreadable', () => {
+    render(
+      <Announcer>
+        <QuarantineBanner kind="unpreserved" reason="storage unreadable" raw={null} />
+      </Announcer>,
+    )
+
+    const alert = screen.getByRole('alert')
+    expect(alert.textContent).toMatch(/cannot read the original bytes/i)
+    // Hiding "your work is not being saved" would hide the only warning.
+    expect(screen.queryByRole('button', { name: /hide/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /download copy/i })).toBeNull()
   })
 })

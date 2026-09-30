@@ -9,7 +9,6 @@ const makeEntity = (overrides: Partial<Entity> = {}): Entity => ({
   description: 'A test entity for unit testing',
   content: '',
   tags: ['test'],
-  claims: [],
   links: [],
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
