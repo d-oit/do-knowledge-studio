@@ -130,28 +130,12 @@ export const baseNodePosition = (
   y: band.yMin + seededRandom(`${id}:y`) * (band.yMax - band.yMin),
 })
 
-/** Fast check whether (x, y) is at least `minDistance` away from all placed nodes with early exit. */
-const hasClearance = (
+/** Smallest squared distance from (x, y) to any placed node; Infinity when none are placed. */
+export const minClearanceSq = (
   x: number,
   y: number,
   placed: readonly NodePosition[],
-  minDistance: number,
-): boolean => {
-  // Add a small epsilon (1e-9) to minDistanceSq so sub-ulp floating point
-  // rounding in dx*dx+dy*dy matches Math.hypot(dx, dy) >= minDistance.
-  const minDistanceSq = minDistance * minDistance + 1e-9
-  for (const node of placed) {
-    const dx = node.x - x
-    const dy = node.y - y
-    if (dx * dx + dy * dy < minDistanceSq) {
-      return false
-    }
-  }
-  return true
-}
-
-/** Smallest distance from (x, y) to any placed node; Infinity when none are placed. */
-const clearance = (x: number, y: number, placed: readonly NodePosition[]): number => {
+): number => {
   if (placed.length === 0) return Number.POSITIVE_INFINITY
   let minSq = Number.POSITIVE_INFINITY
   for (const node of placed) {
@@ -162,8 +146,16 @@ const clearance = (x: number, y: number, placed: readonly NodePosition[]): numbe
       minSq = distSq
     }
   }
-  return Math.sqrt(minSq)
+  return minSq
 }
+
+/** Check whether (x, y) is at least `minDistance` away from all placed nodes. */
+export const hasClearance = (
+  x: number,
+  y: number,
+  placed: readonly NodePosition[],
+  minDistance: number,
+): boolean => minClearanceSq(x, y, placed) >= minDistance * minDistance
 
 /** The `attempt`-th probe point around `base`, clamped into `band`. */
 const probePosition = (base: NodePosition, attempt: number, band: PlacementBand): NodePosition => {
@@ -173,23 +165,6 @@ const probePosition = (base: NodePosition, attempt: number, band: PlacementBand)
     x: clamp(base.x + radius * Math.cos(angle), band.xMin, band.xMax),
     y: clamp(base.y + radius * Math.sin(angle), band.yMin, band.yMax),
   }
-}
-
-/**
- * First probe point that keeps `minDistance` from every placed node, or null when
- * none of the probed candidates does.
- */
-const probeForClearance = (
-  base: NodePosition,
-  placed: readonly NodePosition[],
-  minDistance: number,
-  band: PlacementBand,
-): NodePosition | null => {
-  for (let attempt = 1; attempt <= PLACEMENT_ATTEMPTS; attempt += 1) {
-    const candidate = probePosition(base, attempt, band)
-    if (hasClearance(candidate.x, candidate.y, placed, minDistance)) return candidate
-  }
-  return null
 }
 
 /**
@@ -206,22 +181,32 @@ export const resolveNodePosition = (
   band: PlacementBand = BASE_PLACEMENT_BAND,
 ): NodePosition => {
   const base = baseNodePosition(id, band)
-  if (hasClearance(base.x, base.y, placed, PREFERRED_NODE_DISTANCE_PX)) return base
-
+  const preferredDistSq = PREFERRED_NODE_DISTANCE_PX * PREFERRED_NODE_DISTANCE_PX
   let best = base
-  let bestClearance = clearance(base.x, base.y, placed)
+  let bestClearanceSq = minClearanceSq(base.x, base.y, placed)
 
+  if (bestClearanceSq >= preferredDistSq) return best
+
+  // First pass: try to find a probe candidate that clears preferred spacing.
+  // Track the candidate with the highest squared clearance as a fallback.
   for (let attempt = 1; attempt <= PLACEMENT_ATTEMPTS; attempt += 1) {
     const candidate = probePosition(base, attempt, band)
-    if (hasClearance(candidate.x, candidate.y, placed, PREFERRED_NODE_DISTANCE_PX)) return candidate
-    const candidateClearance = clearance(candidate.x, candidate.y, placed)
-    if (candidateClearance > bestClearance) {
+    const candidateClearanceSq = minClearanceSq(candidate.x, candidate.y, placed)
+    if (candidateClearanceSq >= preferredDistSq) return candidate
+    if (candidateClearanceSq > bestClearanceSq) {
       best = candidate
-      bestClearance = candidateClearance
+      bestClearanceSq = candidateClearanceSq
     }
   }
 
-  return probeForClearance(base, placed, CLICK_SAFE_NODE_DISTANCE_PX, band) ?? best
+  // Second pass: if no probe achieved preferred spacing, check if any probe meets click-safe spacing.
+  const clickSafeDistSq = CLICK_SAFE_NODE_DISTANCE_PX * CLICK_SAFE_NODE_DISTANCE_PX
+  for (let attempt = 1; attempt <= PLACEMENT_ATTEMPTS; attempt += 1) {
+    const candidate = probePosition(base, attempt, band)
+    if (minClearanceSq(candidate.x, candidate.y, placed) >= clickSafeDistSq) return candidate
+  }
+
+  return best
 }
 
 const byEntityId = (a: Entity, b: Entity): number => a.id.localeCompare(b.id)

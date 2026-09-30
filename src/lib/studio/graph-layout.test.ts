@@ -3,6 +3,8 @@ import {
   BASE_BAND_CAPACITY,
   BASE_PLACEMENT_BAND,
   baseNodePosition,
+  hasClearance,
+  minClearanceSq,
   placeGraphNodes,
   placementBand,
   resolveNodePosition,
@@ -32,6 +34,29 @@ const makeEntity = (id: string, overrides: Partial<Entity> = {}): Entity => ({
 
 const distance = (a: { x: number; y: number }, b: { x: number; y: number }): number =>
   Math.hypot(a.x - b.x, a.y - b.y)
+
+describe('hasClearance boundary contract', () => {
+  it('returns false when distance is strictly below threshold', () => {
+    const placed = [{ x: 100, y: 100 }]
+    // Candidate at x=199, y=100 (distance = 99 < 100)
+    expect(hasClearance(199, 100, placed, 100)).toBe(false)
+    expect(minClearanceSq(199, 100, placed)).toBe(99 * 99)
+  })
+
+  it('returns true when distance is exactly equal to threshold', () => {
+    const placed = [{ x: 100, y: 100 }]
+    // Candidate at x=200, y=100 (distance = 100 == 100)
+    expect(hasClearance(200, 100, placed, 100)).toBe(true)
+    expect(minClearanceSq(200, 100, placed)).toBe(100 * 100)
+  })
+
+  it('returns true when distance is strictly above threshold', () => {
+    const placed = [{ x: 100, y: 100 }]
+    // Candidate at x=201, y=100 (distance = 101 > 100)
+    expect(hasClearance(201, 100, placed, 100)).toBe(true)
+    expect(minClearanceSq(201, 100, placed)).toBe(101 * 101)
+  })
+})
 
 describe('seededRandom', () => {
   it('is deterministic and stays in [0, 1)', () => {
@@ -69,7 +94,7 @@ describe('resolveNodePosition', () => {
     const base = baseNodePosition('e-new')
     const resolved = resolveNodePosition('e-new', [base])
     expect(resolved).not.toEqual(base)
-    expect(distance(resolved, base)).toBeGreaterThanOrEqual(PREFERRED_NODE_DISTANCE_PX)
+    expect(distance(resolved, base)).toBeGreaterThanOrEqual(PREFERRED_NODE_DISTANCE_PX - 1e-9)
   })
 
   it('clears every placed node, including a seed label that would cover its dot', () => {
