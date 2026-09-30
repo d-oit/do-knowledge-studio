@@ -1,4 +1,4 @@
-const STATIC_CACHE = "dks-static-v2";
+const STATIC_CACHE = "dks-static-v3";
 const API_CACHE = "dks-api-v2";
 
 const STATIC_EXTENSIONS = [
@@ -24,7 +24,8 @@ const STATIC_EXTENSIONS = [
 // Fallback shell, used only if the generated manifest cannot be fetched.
 // The manifest (written by scripts/generate-precache-manifest.mjs after
 // `next build`) is the real precache list: it is derived from the emitted
-// HTML, so it always matches the Turbopack chunks the app actually needs.
+// HTML plus the emitted chunk/media inventories, so it always matches the
+// code and hashed asset names the app actually requests.
 const PRECACHE_MANIFEST_URL = "/precache-manifest.json";
 const FALLBACK_PRECACHE_URLS = [
   "/",
