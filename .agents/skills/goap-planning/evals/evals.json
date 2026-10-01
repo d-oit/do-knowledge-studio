@@ -1,0 +1,52 @@
+{
+  "skill_name": "goap-agent",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I need to add OAuth2 authentication to my web app. It touches the frontend, backend, database, and tests. How should I plan this?",
+      "expected_output": "The agent applies the GOAP planning cycle: ANALYZE (complex, cross-domain) → DECOMPOSE (frontend, backend, DB, tests as sub-goals) → STRATEGIZE (hybrid or sequential due to dependencies) → COORDINATE (assign agents) → EXECUTE with quality gates.",
+      "files": [],
+      "assertions": [
+        "The agent follows the GOAP planning cycle (analyze, decompose, strategize)",
+        "The agent identifies sub-goals with priorities and dependencies",
+        "The agent selects an appropriate strategy (sequential or hybrid)",
+        "The agent includes quality gates"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Fix all 15 failing tests in our test suite",
+      "expected_output": "The agent decomposes into: run tests to identify failures → group by module → fix in parallel or sequentially → verify. Uses task-decomposition and selects appropriate agents.",
+      "files": [],
+      "assertions": [
+        "The agent first runs tests to identify specific failures",
+        "The agent groups or prioritizes the failures",
+        "The agent assigns appropriate agents (debugger, test-runner)",
+        "The agent includes a verification step"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Our API response time went from 200ms to 2 seconds after the last deploy. Investigate and fix.",
+      "expected_output": "The agent applies GOAP: ANALYZE (performance regression) → investigate in parallel (profiler, recent code changes, benchmarks) → diagnose → fix → verify. Uses swarm for investigation.",
+      "files": [],
+      "assertions": [
+        "The agent uses parallel investigation from multiple angles",
+        "The agent maps agents to investigation tasks",
+        "The agent includes a verification step after fix"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "I want to migrate from REST to GraphQL. This is a big project.",
+      "expected_output": "The agent applies GOAP for complex tasks: decompose into phases (schema design, resolvers, client migration, testing, deprecation), select hybrid strategy, define quality gates between phases.",
+      "files": [],
+      "assertions": [
+        "The agent identifies this as a complex multi-step task",
+        "The agent decomposes into logical phases or sub-goals",
+        "The agent defines quality gates between phases",
+        "The agent selects hybrid or phased strategy"
+      ]
+    }
+  ]
+}
