@@ -88,6 +88,7 @@
 | `pwa-offline-sync` | Design Cache Storage + IndexedDB strategy and sync queue. Activate for service worker, cache, or offline bug investigation. Generic pattern for any offline-first application. |
 | `reader-ui-ux` | Build localized, accessible reader/admin UI with responsive layouts, telemetry, and state management. Activate for React screens or UX polish. Generic pattern for any document reader application. |
 | `secure-invite-and-access` | Implement access control, authentication, and authorization patterns. Activate for auth endpoints, permission management, session/token logic, or signed URL generation. Generic template adaptable to any project's auth needs. |
+| `verify-before-asserting` | Mandatory verification discipline before claiming, changing, or shipping anything. Use when about to state a fact about the code, declare a bug fixed, add a regression test, dismiss a review finding, or act on a plan, ticket, or prior session's notes. Triggers include "the bug is", "should be", "just fixed", "add a test", "looks correct", "this is a false positive", "the plan says", or any change to module structure. |
 
 ## Usage
 

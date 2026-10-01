@@ -14,6 +14,7 @@ Implements ADR 029 validation requirements:
 
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -339,6 +340,30 @@ def sync_managed_surfaces(repo_root: Path, manifest: dict) -> list[str]:
     return errors
 
 
+def validate_skills_catalog_freshness(repo_root: Path) -> list[str]:
+    """Fail when the generated skill catalogs drift from .agents/skills/ on disk.
+
+    The catalogs (agents-docs/AVAILABLE_SKILLS.md, .agents/skills/README.md)
+    are the discovery layer for skills; AGENTS.md points agents at skills
+    through them. Regeneration is cheap, so drift is a gate failure, not a
+    warning — see HAR-1 (verify-before-asserting invisible to discovery).
+    """
+    script = repo_root / "scripts" / "generate-skills-docs.py"
+    if not script.is_file():
+        return [f"Skill docs generator missing: {script}"]
+    result = subprocess.run(
+        [sys.executable, str(script), "--root", str(repo_root), "--check"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode == 0:
+        return []
+    detail = (result.stderr or result.stdout).strip().splitlines()
+    suffix = f": {detail[0]}" if detail else ""
+    return [f"Skill catalogs are stale — run ./scripts/setup-skills.sh{suffix}"]
+
+
 def main() -> int:
     if len(sys.argv) < 2:
         print("Usage: agent-surface.py <validate|sync>")
@@ -358,6 +383,7 @@ def main() -> int:
         errors.extend(validate_duplicate_names(repo_root))
         errors.extend(validate_broken_links(repo_root))
         errors.extend(validate_agents_md(repo_root))
+        errors.extend(validate_skills_catalog_freshness(repo_root))
 
         if errors:
             for e in errors:
