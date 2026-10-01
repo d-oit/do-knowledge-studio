@@ -38,70 +38,71 @@ problem is **coverage and drift, not competence**:
    skill AGENTS.md commands agents to load; HARNESS.md teaches a repealed 150-line ceiling;
    a Windows `Zone.Identifier` file is tracked in git; `.mimocode/` points at another repo.
 
-## Issue map
+## Issue map (filed 2026-10-01, #844–#887)
 
 ### P1 — fix first
 | Issue | Finding |
 |---|---|
-| Dark-mode saffron contrast (`--saffron-foreground` token) | UX-1 |
-| AI harness custom model slug never sent | HAR-10 |
-| AI harness suggestion chips cannot send (+ mocked test) | HAR-11 |
-| Stale saffron in DESIGN-SYSTEM.md + `themeColor` ghost hex | TOK-1, TOK-2 |
+| #845 Dark-mode saffron contrast (`--saffron-foreground` token) | UX-1 |
+| #844 AI harness custom model slug never sent | HAR-10 |
+| #846 AI harness suggestion chips cannot send (+ mocked test) | HAR-11 |
+| #847 Stale saffron in DESIGN-SYSTEM.md + `themeColor` ghost hex | TOK-1, TOK-2 |
+| #876 Skill catalogs omit verify-before-asserting + freshness gate | HAR-1 |
 
 ### Design tokens
 | Issue | Finding |
 |---|---|
-| Entity-type colors bypass bespoke tokens | TOK-8 |
-| conflict-ui amber palette → semantic tokens | TOK-8 adj. |
-| Dark-mode elevation: tokenize shadows | TOK-6 |
-| Delete dead CSS utilities/tokens; wire header tokens | TOK-5, TOK-7, TOK-14, UX-15 |
-| TS hex clusters → shared color module | TOK-9 |
-| Type scale: missing steps + 244 arbitrary sizes | TOK-4 |
-| `--spacing-touch` token for 109 literals | TOK-13 |
-| sidebar.tsx `hsl(var())` invalid color | TOK-11 |
-| `@utility` conversion + `.font-serif` cleanup | TOK-12 |
-| Theming/radius doc drift | TOK-3, TOK-10 |
+| #851 Entity-type colors bypass bespoke tokens | TOK-8 |
+| #849 conflict-ui amber palette → semantic warning tokens | TOK-8 adj. |
+| #850 Dark-mode elevation: tokenize shadows | TOK-6 |
+| #848 Delete dead CSS utilities/tokens; wire header tokens | TOK-5, TOK-7, TOK-14, UX-15 |
+| #853 TS hex clusters → shared color module | TOK-9 |
+| #855 Type scale: missing steps + 244 arbitrary sizes | TOK-4 |
+| #852 `--spacing-touch` token for 109 literals | TOK-13 |
+| #854 sidebar.tsx `hsl(var())` invalid color | TOK-11 |
+| #858 `@utility` conversion + `.font-serif` cleanup | TOK-12 |
+| #857 Theming/radius doc drift | TOK-3, TOK-10 |
 
 ### UI/UX & a11y
 | Issue | Finding |
 |---|---|
-| Duplicate `<h1>` on 4 views | UX-2 |
-| Editor live region floods per keystroke | UX-3 |
-| Mobile drawer touch targets < 44px | UX-4 |
-| Shared ConfirmDialog; confirm Clear chat / Discard | UX-5 |
-| Destructive hovers missing `dark:` variants | UX-6 |
-| Library `<tr role="link">` semantics | UX-7 |
-| Consolidate nav labels into i18n module | UX-8 |
-| Deduplicate SearchPanel/SearchTab | UX-9 |
-| Mind map Ctrl+Tab shortcut unreachable | UX-10 |
-| Drawer tablist half-APG | UX-11 |
-| Right panel width constant | UX-12 |
-| Shared Intl date/time formatters | UX-13 |
-| z-index scale + graph magic numbers | UX-14 |
-| View chrome consistency + empty-state CTAs | UX-16 |
-| Platform-aware ⌘K hint | new |
-| System theme option + themeColor sync | new |
+| #859 Duplicate `<h1>` on 4 views | UX-2 |
+| #856 Editor live region floods per keystroke | UX-3 |
+| #862 Mobile drawer touch targets < 44px | UX-4 |
+| #863 Shared ConfirmDialog; confirm Clear chat / Discard | UX-5 |
+| #860 Destructive hovers missing `dark:` variants | UX-6 |
+| #861 Library `<tr role="link">` semantics | UX-7 |
+| #865 Consolidate nav labels into i18n module | UX-8 |
+| #864 Deduplicate SearchPanel/SearchTab | UX-9 |
+| #866 Mind map Ctrl+Tab shortcut unreachable | UX-10 |
+| #867 Drawer tablist half-APG | UX-11 |
+| #868 Right panel width constant | UX-12 |
+| #871 Shared Intl date/time formatters | UX-13 |
+| #869 z-index scale + graph magic numbers | UX-14 |
+| #870 View chrome consistency + empty-state CTAs | UX-16 |
+| #872 Platform-aware ⌘K hint | new |
+| #874 Static "Offline ready" badge vs real banner | new |
+| #873 System theme option + themeColor sync | new |
 
 ### Harness (repo)
 | Issue | Finding |
 |---|---|
-| Skill catalogs stale + freshness gate | HAR-1 |
-| HARNESS.md stale ceiling + agent table | HAR-2, HAR-6 |
-| agents-docs/AGENTS.md registry drift | HAR-3 |
-| Untrack OS junk + runtime state | HAR-4 |
-| .mimocode orphan config | HAR-5 |
-| SCRIPTS.md orphans + dead SKIP_CLIPPY | HAR-7 |
-| skill-rules.json `.*` decoy | HAR-8 |
-| goap-agent naming collision | HAR-9 |
+| #875 HARNESS.md stale ceiling + agent table | HAR-2, HAR-6 |
+| #877 agents-docs/AGENTS.md registry drift | HAR-3 |
+| #881 Untrack OS junk + runtime state | HAR-4 |
+| #879 .mimocode orphan config | HAR-5 |
+| #880 SCRIPTS.md orphans + dead SKIP_CLIPPY | HAR-7 |
+| #878 skill-rules.json `.*` decoy | HAR-8 |
+| #882 goap-agent naming collision | HAR-9 |
 
 ### Harness (in-app AI)
 | Issue | Finding |
 |---|---|
-| Streaming remount per token (React keys) | HAR-12 |
-| aria-live floods during streaming | HAR-13 |
-| Request timeout + Stop button | HAR-14 |
-| Model/endpoint defaults dedupe | HAR-15 |
-| Friendly provider error mapping | HAR-16 |
+| #883 Streaming remount per token (React keys) | HAR-12 |
+| #887 aria-live floods during streaming | HAR-13 |
+| #885 Request timeout + Stop button | HAR-14 |
+| #886 Model/endpoint defaults dedupe | HAR-15 |
+| #884 Friendly provider error mapping | HAR-16 |
 
 ## Out of scope / follow-ups
 
