@@ -53,6 +53,10 @@ const useAIHarnessViewState = () => {
   const needsProviderSetup = activeProvider.requiresKey && !apiKey
   const suggestions = buildContextSuggestions(entities, claims, selectedEntityId)
 
+  // The custom engine slug must reach the send pipeline, not just the
+  // display: computed here so useAiHarnessChat requests what the UI shows.
+  const effectiveModel = customModel.trim() || model
+
   const {
     messages,
     input,
@@ -62,7 +66,7 @@ const useAIHarnessViewState = () => {
     handleSend,
   } = useAiHarnessChat({
     provider,
-    model,
+    model: effectiveModel,
     apiKey,
     augment,
     allowWebResearch,
@@ -116,7 +120,6 @@ const useAIHarnessViewState = () => {
     }
   }, [ollamaBaseUrl])
 
-  const effectiveModel = customModel.trim() || model
   const selectedEngineTarget = provider === 'openrouter'
     ? OPENROUTER_DEFAULT_TARGETS.find((t) => t.slug === effectiveModel) ?? null
     : null
