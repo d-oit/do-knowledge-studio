@@ -29,6 +29,7 @@ import { translate as t } from '@/lib/i18n/messages/timeline'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
 import { useAnnouncer } from '@/lib/a11y/announcer'
 import { ShortcutsTrigger } from './shortcuts-dialog'
+import { COMMAND_PALETTE_SHORTCUT_LABEL } from '@/lib/studio/platform'
 
 interface NavItem {
   id: ViewId
@@ -213,7 +214,7 @@ export const Sidebar = () => {
           <Search className="h-3.5 w-3.5" />
           <span className="flex-1">Search…</span>
           <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-caption text-ink-faint">
-            ⌘K
+            {COMMAND_PALETTE_SHORTCUT_LABEL}
           </kbd>
         </button>
       </div>      {/* Nav groups */}

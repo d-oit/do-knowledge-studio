@@ -5,6 +5,7 @@ import type { ViewId } from '@/lib/studio/types'
 import { translate as timelineT } from '@/lib/i18n/messages/timeline'
 import { Menu, Plus, Search, X } from 'lucide-react'
 import type { KeyboardEvent } from 'react'
+import { COMMAND_PALETTE_SHORTCUT_LABEL } from '@/lib/studio/platform'
 
 /** View title metadata keyed by ViewId (bounded Map retrieval — no dynamic indexing). */
 const VIEW_TITLES: ReadonlyMap<ViewId, { title: string; subtitle: string }> = new Map([
@@ -124,7 +125,7 @@ export const Topbar = () => {
           aria-label="Open command palette"
           className="absolute right-1.5 top-1/2 flex min-h-[44px] min-w-[44px] items-center justify-center -translate-y-1/2 rounded border border-border bg-muted px-1.5 font-mono text-caption text-ink-faint transition-colors hover:bg-muted/70 hover:text-ink-soft focus-ring overflow-hidden"
         >
-          ⌘K
+          {COMMAND_PALETTE_SHORTCUT_LABEL}
         </button>
       </div>
 
