@@ -1,6 +1,25 @@
 # Plan 160 — UI/UX, Design-Token & Harness Roast (2026-10-01)
 
-Status: audit complete, findings filed as GitHub issues.
+Status: audit complete, findings filed as GitHub issues (#844–#887).
+Scope note (2026-10-01): "harness" = the coding-workflow harness (agents-docs,
+.agents, scripts, hooks) — NOT the in-app AI Harness product feature. In-app
+AI harness issues (#883–#887, #884–#886) remain filed as verified defects but
+are outside the requested scope.
+
+## Implementation progress (branch cline/1h6wfzk7)
+
+| Commit | Issue | Notes |
+|---|---|---|
+| d2ec25b | #846 | suggestion chips: handleSend(overrideInput); fail-first test rewritten against the real hook |
+| 95bd9e5 | #844 | custom slug reaches provider: effectiveModel computed before the hook; view test drove full flow (red: openrouter/free → green: openai/gpt-5) |
+| eb70e66 | #845 | --saffron-foreground token (light #fff / dark #14110d) at all 6 bg-saffron text sites |
+| 62adedd | #847 | DESIGN-SYSTEM saffron table + button recipe + layout themeColor match globals.css |
+| 9024a28 | #876 | catalogs regenerated (57 skills, verify-before-asserting visible); --check gate in agent-surface validate; BATS coverage |
+| 73f7ecd, 9c7b7f8 | #882 | skill renamed goap-agent → goap-planning; sub-agents keep goap-agent |
+| 6cedaa8 | #875, #877, #880 | HARNESS ceiling+agent table, registry ownership/rows, SCRIPTS catalog |
+| 6bdaba7 | #878 | skill-rules.json ".*" pattern removed; advisory _note |
+| e967afc | #881 | Zone.Identifier/.orig/.jules untracked + gitignored |
+| 99b69d2 | #879 | .mimocode/ deleted (foreign config) |
 Scope: `src/app/globals.css`, `src/components/studio/**`, `src/lib/**` (visual layer),
 `DESIGN.md`, `DESIGN-SYSTEM.md`, `agents-docs/`, `.agents/`, `.github/`, root agent configs,
 and the in-app AI harness (`src/components/studio/views/ai-harness-*`, `src/lib/ai/`).
