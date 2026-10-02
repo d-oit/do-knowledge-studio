@@ -414,6 +414,38 @@ describe('ShortcutsDialog — branch coverage', () => {
       // Verify overlay remains unchanged
       expect(_overlayOpen).toBe(false)
     })
+
+    // The dialog's open flag lives in module scope, so a preceding test can
+    // leave it open. Close it first or these guards would pass vacuously.
+    const renderClosedDialog = () => {
+      renderDialog()
+      pressKey('Escape')
+      expect(_overlayOpen).toBe(false)
+    }
+
+    it('ignores ? typed into a text input', () => {
+      renderClosedDialog()
+      const input = document.createElement('input')
+      document.body.append(input)
+      try {
+        fireEvent.keyDown(input, { key: '?', code: 'Slash', shiftKey: true })
+        expect(_overlayOpen).toBe(false)
+      } finally {
+        input.remove()
+      }
+    })
+
+    it('ignores the G sequence typed into a textarea', () => {
+      renderClosedDialog()
+      const textarea = document.createElement('textarea')
+      document.body.append(textarea)
+      try {
+        fireEvent.keyDown(textarea, { key: 'g', code: 'KeyG' })
+        expect(screen.queryByText('Press a key…')).toBeNull()
+      } finally {
+        textarea.remove()
+      }
+    })
   })
 
   // ── Tip text ─────────────────────────────────────────────────────────

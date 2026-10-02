@@ -41,7 +41,6 @@ PR blocked by static analysis check?
 **2026 Key Changes:**
 - Codacy: Use `eslint-9` (NOT `eslint-8`) in `.codacy.yml`
 - DeepSource: Use `[[analyzers.meta.issue_patterns]]` (NOT `[analyzers.meta.checks]`)
-- Both tools: Fix `.mimocode/` typo (NOT `.mimicode/`) in exclude paths
 
 ## Workflow
 

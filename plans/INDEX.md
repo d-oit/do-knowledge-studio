@@ -3,6 +3,13 @@
 **Updated**: 2026-09-30
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
+### Plan 160 — Fix every open Codacy issue in code; delete `.mimocode/` (2026-09-30)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Delete the foreign agent-tool directory | Done | `.mimocode/` (mimocode config, CI-watch command, two unrelated plan files, a Windows `:Zone.Identifier` artifact) removed with `git rm -r`; nothing referenced it. `.mimocode/` dropped from `.deepsource.toml` `exclude_patterns`; the dead `.mimicode/**` typo path and the two inert `xss_no-mixed-html` `disable_rules` removed from `.codacy.yml`; the stale `.mimicode` gotchas deleted from the `codacy` and `static-analysis-suppression` skills. |
+| W2 | Fix all five open Codacy findings in code, not by suppression | Done | `plans/160-codacy-open-issues-and-mimocode-cleanup-2026-09-30.md`. A repo-wide `codacy issues` query showed the Plan 159 `.codacy.yml` `disable_rules` for `ESLint8/9_xss_no-mixed-html` were **inert** (5 issues still open). Fixed in code: `use-export-handlers.ts` `const html` → `readerDocument` clears both xss findings (`html` was infecting the `downloadFile` call); `shortcuts-dialog.tsx` extracts a module-scope `asHtmlElement` type guard (the plugin treats `HTMLElement` as an HTML value, so the predicate was reported as returning HTML); `migrations.ts` replaces the computed-member call `MIGRATIONS[i](state)` with a validated local invocation; `research.ts` repairs a malformed `nosemgrep` directive (rule id followed by prose) so its existing scheme/private-IP guard actually applies. Two failing-first tests added for the refactored typing-target guard (verified by re-injecting the defect). Gates: lint, typecheck, **2788 unit tests**, build — zero warnings. |
+
 ### Plan 159 — Rejected-library recovery visibility and fail-closed persistence (2026-09-29)
 
 | Wave | Goal | Status | Changes |
