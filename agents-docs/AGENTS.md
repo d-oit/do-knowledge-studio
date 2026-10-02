@@ -1,7 +1,10 @@
 # Agents Registry
 
-> Auto-generated registry of all sub-agents in this repository.
-> Last updated: 2026-05-19 10:39 UTC
+> Manually maintained registry of all sub-agents in this repository (no generator
+> exists for the agents table — only the skills tables are generated, via
+> `scripts/generate-skills-docs.py`). Keep rows in sync with `.claude/agents/`
+> and `.opencode/agents/` when adding or removing agents.
+> Last updated: 2026-10-01
 
 This file provides a centralized discovery mechanism for all available sub-agents.
 Agents are organized by CLI tool and purpose.
@@ -16,7 +19,9 @@ Agents are organized by CLI tool and purpose.
 | `analysis-swarm` | Claude Code | Multi-persona code analysis orchestrator using RYAN (methodi | Read, Glob, Grep, Bash |
 | `goap-agent` | Claude Code | Invoke for complex multi-step tasks requiring intelligent pl | Task, Read, Glob, Grep, TodoWrite |
 | `loop-agent` | Claude Code | Execute workflow agents iteratively for refinement and progr | Task, Read, TodoWrite, Glob, Grep |
-| `skill-creator` | OpenCode | Create new opencode agents with proper format, YAML frontmat |  |
+| `create-agent` | OpenCode | Create new opencode agents with proper format, YAML frontmat |  |
+| `analysis-swarm` | OpenCode | Multi-persona code analysis orchestrator. |  |
+| `goap-agent` | OpenCode | Goal-oriented action planning for complex multi-step tasks. |  |
 | `git-worktree-manager` | OpenCode | Manage git worktrees for efficient multi-branch development. |  |
 | `github-action-editor` | OpenCode | Edit and create GitHub Actions workflows and composite actio |  |
 
@@ -51,7 +56,7 @@ See [`AVAILABLE_SKILLS.md`](AVAILABLE_SKILLS.md) for authoring guide.
 | `git-github-workflow` | `.agents/skills/git-github-workflow` | Unified atomic git workflow with GitHub integration - commit |
 | `github-readme` | `.agents/skills/github-readme` | Create human-focused GitHub README.md files with 2026 best p |
 | `github-workflow` | `.agents/skills/github-workflow` | Complete GitHub workflow automation - push, create branch/PR |
-| `goap-agent` | `.agents/skills/goap-agent` | Invoke for complex multi-step tasks requiring intelligent pl |
+| `goap-planning` | `.agents/skills/goap-planning` | Invoke for complex multi-step tasks requiring intelligent pl |
 | `intent-classifier` | `.agents/skills/intent-classifier` | Classify user intents and route to appropriate skills, comma |
 | `iterative-refinement` | `.agents/skills/iterative-refinement` | Execute iterative refinement workflows with validation loops |
 | `jules-implement` | `.agents/skills/jules-implement` | Repository-aware implementation agent that handles delta-bas |
