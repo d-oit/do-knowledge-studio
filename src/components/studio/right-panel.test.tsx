@@ -353,4 +353,12 @@ describe('RightPanel', () => {
     const statusRegion = screen.getByRole('status', { hidden: true })
     expect(statusRegion.textContent).toBe('0 search results found')
   })
+
+  it('does not announce search result count for whitespace-only searchQuery', () => {
+    rightPanelOpen = true
+    searchQuery = '   '
+    render(<RightPanel />)
+    const statusRegion = screen.getByRole('status', { hidden: true })
+    expect(statusRegion.textContent).toBe('')
+  })
 })

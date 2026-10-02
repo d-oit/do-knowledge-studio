@@ -254,7 +254,7 @@ const SearchPanel = ({
       </div>
 
       <div className="sr-only" role="status" aria-live="polite">
-        {searchQuery ? `${results.length} search ${results.length === 1 ? 'result' : 'results'} found` : ''}
+        {searchQuery.trim() ? `${results.length} search ${results.length === 1 ? 'result' : 'results'} found` : ''}
       </div>
 
       <div className="flex-1 overflow-y-auto p-3" aria-live="polite" aria-atomic="false">
