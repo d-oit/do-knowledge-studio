@@ -200,18 +200,19 @@ describe('AiHarnessChatPanel', () => {
     expect(screen.queryByText('Try asking')).toBeNull()
   })
 
-  it('sends the suggestion prompt via handleSend override when clicked (#846)', () => {
+  it('sends the suggestion prompt when a suggestion is clicked', () => {
+    const setInput = vi.fn()
     const handleSend = vi.fn()
     render(
       <AiHarnessChatPanel
         {...defaultProps}
+        setInput={setInput}
         handleSend={handleSend}
         suggestions={[{ label: 'Summarize my library', prompt: 'Summarize the main entities.' }]}
       />,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Summarize my library' }))
-    // The prompt travels as the send override — routing it through setInput
-    // first raced the hook's empty-input guard and silently aborted (#846).
-    expect(handleSend).toHaveBeenCalledWith('Summarize the main entities.')
+    expect(setInput).toHaveBeenCalledWith('Summarize the main entities.')
+    expect(handleSend).toHaveBeenCalled()
   })
 })

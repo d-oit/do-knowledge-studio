@@ -20,7 +20,7 @@
           "regression"
         ],
         "patterns": [
-          ".*(should be|just fixed|the plan says|false positive|regression).*",
+          ".*",
           ".*(fix|bug|regression|verify|assert).*"
         ],
         "files": [
@@ -258,6 +258,5 @@
     "maxSkillsPerTask": 3,
     "cooldownPeriod": 300,
     "requireUserConfirmation": false
-  },
-  "_note": "Advisory only — no installed hook consumes this file yet (.claude/hooks/ ships *.example files only). Patterns guide manual skill selection and scripts/generate-skills-docs.py."
+  }
 }

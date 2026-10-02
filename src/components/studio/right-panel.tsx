@@ -257,7 +257,7 @@ const SearchPanel = ({
         {searchQuery.trim() ? `${results.length} search ${results.length === 1 ? 'result' : 'results'} found` : ''}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3" aria-live="polite" aria-atomic="false">
+      <div className="flex-1 overflow-y-auto p-3">
         {results.length === 0 ? (
           <SearchEmptyState query={searchQuery} onCreate={onCreateEntity} />
         ) : mode === 'ranked' ? (

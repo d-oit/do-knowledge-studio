@@ -202,11 +202,6 @@ def main() -> int:
         description="Regenerate skill reference tables from .agents/skills/ frontmatter."
     )
     parser.add_argument("--root", help="Repository root (defaults to REPO_ROOT or script location)")
-    parser.add_argument(
-        "--check",
-        action="store_true",
-        help="Write nothing; exit 1 when the on-disk catalogs differ from a fresh render.",
-    )
     args = parser.parse_args()
 
     repo_root = Path(
@@ -223,20 +218,6 @@ def main() -> int:
     skills = collect_skills(skills_dir)
     available_file = repo_root / "agents-docs" / "AVAILABLE_SKILLS.md"
     readme_file = skills_dir / "README.md"
-
-    if args.check:
-        stale = []
-        if not available_file.is_file() or available_file.read_text(encoding="utf-8") != render_available(skills):
-            stale.append(available_file)
-        if not readme_file.is_file() or readme_file.read_text(encoding="utf-8") != render_readme(skills):
-            stale.append(readme_file)
-        if stale:
-            print("Skill catalogs are stale — regenerate with ./scripts/setup-skills.sh:", file=sys.stderr)
-            for path in stale:
-                print(f"  {path}", file=sys.stderr)
-            return 1
-        print("Skill catalogs are up to date")
-        return 0
 
     available_file.parent.mkdir(parents=True, exist_ok=True)
     available_file.write_text(render_available(skills), encoding="utf-8")

@@ -94,8 +94,3 @@ research/
 # Download deliverables
 download/
 .mimocode/.cron-lock
-
-# Agent-tool runtime state and OS junk (plan 160, #881)
-.jules/
-*.orig
-*:Zone.Identifier

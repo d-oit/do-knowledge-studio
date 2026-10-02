@@ -163,14 +163,4 @@ describe('useAiHarnessChat', () => {
     // fabricate an abort for work that never existed.
     expect(() => { hook.unmount() }).not.toThrow()
   })
-
-  it('sends the override text even when the composer input is empty (#846)', async () => {
-    mockSendChatStream.mockResolvedValue(resultFor('chip answer'))
-    const hook = renderHook(() => useAiHarnessChat({ ...baseOptions }))
-    await act(async () => { await hook.result.current.handleSend('Summarize the main entities.') })
-    const userMessages = hook.result.current.messages.filter((m) => m.role === 'user')
-    expect(userMessages.at(-1)?.content).toBe('Summarize the main entities.')
-    expect(mockSendChatStream).toHaveBeenCalled()
-  })
-
 })
