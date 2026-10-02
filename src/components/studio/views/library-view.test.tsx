@@ -352,10 +352,12 @@ describe('LibraryView', () => {
     expect(screen.getByText('Beta Note')).toBeDefined()
   })
 
-  it('uses the wider layout when the right panel is closed', () => {
+  it('keeps a stable container width regardless of right-panel state (#868)', () => {
+    // The max-width used to flap between max-w-5xl and max-w-6xl with the
+    // panel, re-wrapping content on every toggle; flex absorbs the panel now.
     currentRightPanelOpen = false
     const { container, rerender } = render(<LibraryView />)
-    expect(container.firstElementChild).toHaveClass('max-w-6xl')
+    expect(container.firstElementChild).toHaveClass('max-w-5xl')
 
     currentRightPanelOpen = true
     rerender(<LibraryView />)

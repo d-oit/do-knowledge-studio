@@ -33,7 +33,7 @@ const TrizBranding = () => (
     </div>
     <div>
       <div className="flex items-center gap-2">
-        <h1 className="font-serif text-2xl font-semibold text-ink">{translate('triz.branding.title')}</h1>
+        <h2 className="font-serif text-2xl font-semibold text-ink">{translate('triz.branding.title')}</h2>
         <span className="rounded-full border border-dashed border-saffron/50 px-2 py-0 text-badge font-semibold uppercase tracking-wide text-saffron-deep">
           {translate('triz.branding.lab')}
         </span>

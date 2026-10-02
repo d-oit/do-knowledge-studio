@@ -240,11 +240,11 @@ describe('MobileDrawer', () => {
     expect(screen.getByText('Ranked')).toBeDefined()
   })
 
-  it('shows Offline ready badge in search tab footer', () => {
+  it('does not show a static offline badge in the search tab footer (#874)', () => {
     mobileDrawerOpen = true
     mobilePanelView = 'search'
     render(<MobileDrawer />)
-    expect(screen.getByText(/Offline ready/)).toBeDefined()
+    expect(screen.queryByText(/Offline ready/)).toBeNull()
   })
 
   it('shows entity count in footer', () => {

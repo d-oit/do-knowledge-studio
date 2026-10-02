@@ -160,9 +160,11 @@ describe('Topbar', () => {
     expect(mockSetMobileDrawerOpen).toHaveBeenCalledWith(true)
   })
 
-  it('renders Offline ready badge', () => {
+  it('does not render a static offline badge (#874)', () => {
+    // The pill was static marketing that contradicted the real OfflineIndicator
+    // banner; the topbar must not show status-looking chrome with no state.
     render(<Topbar />)
-    expect(screen.getByText('Offline ready')).toBeDefined()
+    expect(screen.queryByText('Offline ready')).toBeNull()
   })
 
   it('uses correct aria-label for library filter', () => {

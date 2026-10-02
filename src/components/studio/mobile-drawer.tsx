@@ -284,11 +284,9 @@ const SearchTab = ({ onSelect }: { onSelect: () => void }) => {
       </div>
 
       <div className="border-t border-sidebar-border px-3 py-2.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-label font-medium text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-400">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            {translate('drawer.offlineReady')}
-          </div>
+        {/* Static "offline ready" pill removed (#874): it contradicted the
+            real OfflineIndicator banner. The entity count stays. */}
+        <div className="flex items-center justify-end">
           <span className="text-label text-ink-faint">
             {translate('drawer.entityCount', String(entities.length))}
           </span>

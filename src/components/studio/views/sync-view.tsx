@@ -151,7 +151,7 @@ const SyncHeader = ({ reducedMotion }: { reducedMotion: boolean }) => (
     <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-sage to-emerald-600 text-white shadow-sm">
       <Wifi className="h-6 w-6" />
     </div>
-    <div className="flex-1">          <h1 className="font-serif text-2xl font-semibold text-ink">{t('sync.title')}</h1>
+    <div className="flex-1">          <h2 className="font-serif text-2xl font-semibold text-ink">{t('sync.title')}</h2>
           <p className="text-[13px] text-ink-mute">
             {t('sync.subtitle')}
           </p>

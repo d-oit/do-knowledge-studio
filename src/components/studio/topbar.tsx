@@ -1,6 +1,7 @@
 'use client'
 
 import { useStudioStore } from '@/lib/studio/store'
+import { formatShortcut } from '@/lib/studio/platform'
 import type { ViewId } from '@/lib/studio/types'
 import { translate as timelineT } from '@/lib/i18n/messages/timeline'
 import { Menu, Plus, Search, X } from 'lucide-react'
@@ -124,14 +125,8 @@ export const Topbar = () => {
           aria-label="Open command palette"
           className="absolute right-1.5 top-1/2 flex min-h-[44px] min-w-[44px] items-center justify-center -translate-y-1/2 rounded border border-border bg-muted px-1.5 font-mono text-caption text-ink-faint transition-colors hover:bg-muted/70 hover:text-ink-soft focus-ring overflow-hidden"
         >
-          ⌘K
+          {formatShortcut('⌘K')}
         </button>
-      </div>
-
-      {/* Offline-ready badge — hidden on mobile (< 768px) */}
-      <div className="hidden flex-shrink-0 items-center gap-1.5 rounded-full border border-saffron/30 bg-saffron-soft px-2.5 py-1 text-label font-medium text-saffron-deep md:flex">
-        <span className="h-1.5 w-1.5 rounded-full bg-saffron" />
-        Offline ready
       </div>
 
       {/* New entity button — icon-only on mobile, "New" on md–lg, "New entity" on wide (≥ 1100px) */}

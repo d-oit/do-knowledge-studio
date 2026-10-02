@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { RELEASES_BASE_URL } from '@/lib/studio/constants'
+import { formatShortcut } from '@/lib/studio/platform'
 import { useStudioStore } from '@/lib/studio/store'
 import type { ViewId } from '@/lib/studio/types'
 import packageJson from '../../../package.json'
@@ -213,7 +214,7 @@ export const Sidebar = () => {
           <Search className="h-3.5 w-3.5" />
           <span className="flex-1">Search…</span>
           <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-caption text-ink-faint">
-            ⌘K
+            {formatShortcut('⌘K')}
           </kbd>
         </button>
       </div>      {/* Nav groups */}

@@ -138,7 +138,7 @@ export const TimelineView = () => {
   return (
     <div className="mx-auto max-w-5xl px-6 py-8 lg:px-10 lg:py-12">
       <header className="mb-8">
-        <h1 className="font-serif text-2xl font-semibold text-ink">{translate('timeline.title')}</h1>
+        <h2 className="font-serif text-2xl font-semibold text-ink">{translate('timeline.title')}</h2>
         <p className="mt-1 text-[13px] text-ink-mute">{translate('timeline.subtitle')}</p>
       </header>
 

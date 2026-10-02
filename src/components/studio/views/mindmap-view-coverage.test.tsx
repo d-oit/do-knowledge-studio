@@ -254,11 +254,11 @@ describe('MindMapView branch coverage', () => {
     expect(mockDeleteEntity).toHaveBeenCalledWith('ent-1')
   })
 
-  it('adds child via global Ctrl+Tab keyboard shortcut', () => {
+  it('adds child via global Ctrl+Enter keyboard shortcut (#866)', () => {
     render(<MindMapView />)
     const canvas = screen.getByRole('tree', { name: 'Knowledge mind map' }).parentElement as HTMLElement
     fireEvent.focus(screen.getByText('Root Entity').closest('[role="treeitem"]') as HTMLElement)
-    fireEvent.keyDown(canvas, { key: 'Tab', ctrlKey: true })
+    fireEvent.keyDown(canvas, { key: 'Enter', ctrlKey: true })
     expect(mockCommitEntities).toHaveBeenCalledTimes(1)
     expect(mockCommitEntities.mock.calls[0][0]).toHaveLength(2)
   })
