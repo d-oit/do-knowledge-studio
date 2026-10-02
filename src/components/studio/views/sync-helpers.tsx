@@ -48,7 +48,7 @@ const StatusBadge = ({ status }: { status: SyncStatus }) => {
   }
   if (status === 'error') {
     return (
-      <span className="flex items-center gap-1.5 text-[12px] font-medium text-red-500">
+      <span className="flex items-center gap-1.5 text-[12px] font-medium text-destructive">
         <WifiOff className="h-3 w-3" />
         Error
       </span>
@@ -240,7 +240,7 @@ const ConnectedControls = ({
         </button>
         <button
           onClick={onLeave}
-          className="flex items-center gap-1.5 rounded-md border border-red-200 bg-background px-3 py-2 text-[12px] font-medium text-red-600 transition-colors hover:bg-red-50 focus-ring min-h-[44px]"
+          className="flex items-center gap-1.5 rounded-md border border-destructive/30 bg-background px-3 py-2 text-[12px] font-medium text-destructive transition-colors hover:bg-destructive/10 focus-ring min-h-[44px]"
         >
           <Trash2 className="h-3.5 w-3.5" />
           Leave

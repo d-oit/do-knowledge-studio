@@ -181,7 +181,7 @@ const AIHarnessHeader = ({
     </div>
     <div className="flex-1">
       <div className="mb-1 flex items-center gap-2">
-        <h1 className="font-serif text-2xl font-semibold text-ink">{AI_HARNESS_TITLE}</h1>
+        <h2 className="font-serif text-2xl font-semibold text-ink">{AI_HARNESS_TITLE}</h2>
         <span className="rounded-full border border-dashed border-saffron/50 px-2 py-0 text-badge font-semibold uppercase tracking-wide text-saffron-deep">
           {LAB_LABEL}
         </span>

@@ -14,6 +14,9 @@ import { Overlay } from '@/components/studio/ui/shared-primitives'
 import { CitationsPanel } from './right-panel-citations'
 import { PanelCloseButton } from './right-panel-close-button'
 
+/** Shared width for every right-panel aside — one value, no per-view reflow (#868). */
+const PANEL_WIDTH_CLASS = 'w-[320px]' as const
+
 /**
  * Dedupes an entity's links for rendering: the persisted schema permits
  * repeated `{ targetId, relation }` objects (imports/legacy data), which
@@ -194,7 +197,7 @@ const SearchPanel = ({
   const results = mode === 'ranked' ? rankedResults : filtered
 
   return (
-    <aside className="hidden h-full w-[320px] shrink-0 flex-col border-l border-border bg-background wide:flex">
+    <aside className={`hidden h-full ${PANEL_WIDTH_CLASS} shrink-0 flex-col border-l border-border bg-background wide:flex`}>
       <div className="border-b border-border px-4 py-3">
         <div className="mb-2 flex items-center justify-between">
           <h2 className="font-serif text-[14px] font-semibold text-ink">Search</h2>
@@ -324,7 +327,7 @@ const InspectorPanel = ({ onClose }: { onClose: () => void }) => {
 
   if (!entity) {
     return (
-      <aside className="hidden h-full w-[320px] shrink-0 flex-col border-l border-border bg-background wide:flex">
+      <aside className={`hidden h-full ${PANEL_WIDTH_CLASS} shrink-0 flex-col border-l border-border bg-background wide:flex`}>
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <h2 className="font-serif text-[14px] font-semibold text-ink">Inspector</h2>
           <PanelCloseButton onClose={onClose} />
@@ -348,7 +351,7 @@ const InspectorPanel = ({ onClose }: { onClose: () => void }) => {
   }
 
   return (
-    <aside className="hidden h-full w-[340px] shrink-0 flex-col border-l border-border bg-background wide:flex">
+    <aside className={`hidden h-full ${PANEL_WIDTH_CLASS} shrink-0 flex-col border-l border-border bg-background wide:flex`}>
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <h2 className="font-serif text-[14px] font-semibold text-ink">Inspector</h2>
         <PanelCloseButton onClose={onClose} />

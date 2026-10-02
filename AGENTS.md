@@ -159,7 +159,7 @@ Stage mechanics, harness guardrails, and the per-stage skill map:
 ## UI / UX Guardrails
 
 - Use design tokens from `src/app/globals.css` `@theme` block (source of truth).
-- Two themes: `light` and `dark` via `data-theme` attribute.
+- Two themes: `light` and `dark` via the `.dark` class on `<html>` (next-themes `attribute="class"`).
 - Accent color: Saffron (`#9a5c2a` light, `#e5944a` dark).
 - Font: Geist Sans (body) + Newsreader (serif headings).
 - Build mobile-first; keep interactive targets at least 44x44px.

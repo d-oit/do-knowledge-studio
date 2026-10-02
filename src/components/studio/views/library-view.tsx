@@ -159,7 +159,6 @@ export const LibraryView = () => {
   const startNew = useStudioStore((s) => s.startNew)
   const searchQuery = useStudioStore((s) => s.searchQuery)
   const setSearchQuery = useStudioStore((s) => s.setSearchQuery)
-  const rightPanelOpen = useStudioStore((s) => s.rightPanelOpen)
   const semanticMode = useStudioStore((s) => s.semanticSearchEnabled)
   const setSemanticMode = useStudioStore((s) => s.setSemanticSearchEnabled)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
@@ -247,7 +246,7 @@ export const LibraryView = () => {
   )
 
   return (
-    <div className={cn('mx-auto px-6 py-6 lg:px-10 lg:py-8', rightPanelOpen ? 'max-w-5xl' : 'max-w-6xl')}>
+    <div className={'mx-auto max-w-5xl px-6 py-6 lg:px-10 lg:py-8'}>
       {/* Controls */}
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px]">
