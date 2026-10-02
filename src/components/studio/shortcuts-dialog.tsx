@@ -9,7 +9,7 @@ import { Overlay } from '@/components/studio/ui/shared-primitives'
 import { cn } from '@/lib/utils'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { translate } from '@/lib/i18n/messages/shortcuts'
-import { formatShortcut } from '@/lib/studio/platform'
+import { useIsMacPlatform, formatShortcut } from '@/lib/studio/use-platform-shortcut'
 
 interface ShortcutRow {
   keys: string
@@ -109,6 +109,7 @@ const asHtmlElement = (target: EventTarget | null): HTMLElement | null =>
 // skipcq: JS-0415, JS-R1005 — ShortcutsDialog JSX nesting and medium complexity are intentional for grouped shortcut layout
 export const ShortcutsDialog = (): React.JSX.Element => {
   const [open, setOpen] = useShortcutsOpen()
+  const isMacPlatform = useIsMacPlatform()
   const currentView = useStudioStore((s) => s.currentView)
   const commandOpen = useStudioStore((s) => s.commandOpen)
   const mobileDrawerOpen = useStudioStore((s) => s.mobileDrawerOpen)
@@ -344,9 +345,9 @@ export const ShortcutsDialog = (): React.JSX.Element => {
                         <span className="text-body-sm text-ink-soft">{row.action}</span>
                         <kbd
                           className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-label text-ink-soft whitespace-nowrap"
-                          aria-label={formatShortcut(row.keys)}
+                          aria-label={formatShortcut(row.keys, isMacPlatform)}
                         >
-                          {formatShortcut(row.keys)}
+                          {formatShortcut(row.keys, isMacPlatform)}
                         </kbd>
                       </li>
                     ))}

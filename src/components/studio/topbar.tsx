@@ -1,7 +1,7 @@
 'use client'
 
 import { useStudioStore } from '@/lib/studio/store'
-import { formatShortcut } from '@/lib/studio/platform'
+import { useIsMacPlatform, formatShortcut } from '@/lib/studio/use-platform-shortcut'
 import type { ViewId } from '@/lib/studio/types'
 import { translate as timelineT } from '@/lib/i18n/messages/timeline'
 import { Menu, Plus, Search, X } from 'lucide-react'
@@ -28,6 +28,7 @@ const getViewMeta = (view: ViewId): { title: string; subtitle: string } =>
 
 /** Top header bar with view title, inline search, offline badge, and new entity button. */
 export const Topbar = () => {
+  const isMacPlatform = useIsMacPlatform()
   const currentView = useStudioStore((s) => s.currentView)
   const searchQuery = useStudioStore((s) => s.searchQuery)
   const startNew = useStudioStore((s) => s.startNew)
@@ -125,7 +126,7 @@ export const Topbar = () => {
           aria-label="Open command palette"
           className="absolute right-1.5 top-1/2 flex min-h-[44px] min-w-[44px] items-center justify-center -translate-y-1/2 rounded border border-border bg-muted px-1.5 font-mono text-caption text-ink-faint transition-colors hover:bg-muted/70 hover:text-ink-soft focus-ring overflow-hidden"
         >
-          {formatShortcut('⌘K')}
+          {formatShortcut('⌘K', isMacPlatform)}
         </button>
       </div>
 
