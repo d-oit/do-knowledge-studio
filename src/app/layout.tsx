@@ -68,14 +68,16 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   // P2-4: a single value tinted the browser chrome saffron in both themes,
   // which reads wrong over the near-black dark background. The array form is
-  // the documented per-scheme override.
+  // the documented per-scheme override. The light value must track the live
+  // accent: globals.css :root --saffron (#9a5c2a) — it previously copied the
+  // stale DESIGN-SYSTEM.md value (#c77d3a); dark matches .dark --background.
   //
   // Caveat, stated because it is a real limit: next-themes runs with
   // enableSystem={false}, so this keys off the OS scheme, not the in-app
   // toggle. A user who chose light on a dark OS gets the dark tint. Fixing
   // that properly means updating the meta from the client on toggle.
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#c77d3a" },
+    { media: "(prefers-color-scheme: light)", color: "#9a5c2a" },
     { media: "(prefers-color-scheme: dark)", color: "#14110d" },
   ],
   // P2-8: tell the UA which colour scheme is active so scrollbars, form
