@@ -55,7 +55,7 @@
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
     "docx": "^9.7.1",
-    "dompurify": "^3.4.13",
+    "dompurify": "^3.4.16",
     "fflate": "^0.8.3",
     "framer-motion": "^13.1.1",
     "jspdf": "^4.2.1",
@@ -132,7 +132,7 @@
       "effect": "^3.20.0",
       "prismjs": "^1.30.0",
       "diff": "^5.2.2",
-      "dompurify": "^3.4.13",
+      "dompurify": "^3.4.16",
       "undici": "^7.29.1",
       "nanoid@3": "3.3.18"
     },
