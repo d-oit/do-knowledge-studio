@@ -88,8 +88,12 @@ export const useAiHarnessChat = ({
     }
   }, [])
 
-  const handleSend = useCallback(async () => {
-    if (!input.trim()) return
+  const handleSend = useCallback(async (overrideInput?: string) => {
+    // Suggestion chips send explicitly via overrideInput (their click precedes
+    // the setInput re-render); the composer sends its own state. Resolving the
+    // text once keeps the guard, the user bubble, and the request identical.
+    const text = (overrideInput ?? input).trim()
+    if (!text) return
     if (requiresKey && !apiKey) {
       toast.error('Set an API key in settings to send messages.')
       return
@@ -105,7 +109,7 @@ export const useAiHarnessChat = ({
       return
     }
 
-    const userMsg: ChatMessage = { role: 'user', content: input }
+    const userMsg: ChatMessage = { role: 'user', content: text }
     setMessages((m) => [...m, userMsg])
     setInput('')
     setIsLoading(true)
@@ -119,7 +123,7 @@ export const useAiHarnessChat = ({
       let researchResults: import('@/lib/ai/research').ResearchResult[] | undefined
 
       if (allowWebResearch) {
-        const urls = extractUrls(input)
+        const urls = extractUrls(text)
         if (urls.length > 0) {
           toast.info(`Fetching ${urls.length} URL(s)…`)
           researchResults = await fetchUrls(urls, controller.signal)
@@ -132,7 +136,7 @@ export const useAiHarnessChat = ({
 
       const apiMessages = await buildMessagesAsync(
         messages.filter((m) => m.role !== 'system'),
-        input,
+        text,
         entities,
         claims,
         augment,

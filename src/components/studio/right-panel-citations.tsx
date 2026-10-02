@@ -54,7 +54,7 @@ export const CitationsPanel = ({ chat, entities, onClose }: CitationsPanelProps)
                 className="rounded-md border border-border bg-muted/30 p-3"
               >
                 <div className="mb-1 flex items-center gap-2">
-                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-saffron text-badge font-bold text-white">
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-saffron text-badge font-bold text-saffron-foreground">
                     {index + 1}
                   </span>
                   <span className="text-[12px] font-medium text-ink">{citation.entityName}</span>
