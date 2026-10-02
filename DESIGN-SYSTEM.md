@@ -64,11 +64,12 @@ mappings in `@theme inline`.
 | `--secondary`          | `#f1ede4`   | `#25201a`  | `bg-secondary`              | Secondary buttons, subtle surface                    |
 | `--accent`             | `#f5e8d5`   | `#2a2018`  | `bg-accent`                 | Saffron-tinted background for active nav, selection  |
 | `--accent-foreground`  | `#6a3d12`   | `#e5944a`  | `text-accent-foreground`    | Text on accent surface                               |
-| `--saffron`            | `#c77d3a`   | `#e5944a`  | `text-saffron bg-saffron`   | Primary brand accent — use sparingly for CTAs        |
+| `--saffron`            | `#9a5c2a`   | `#e5944a`  | `text-saffron bg-saffron`   | Primary brand accent — use sparingly for CTAs        |
 | `--saffron-soft`       | `#f5e8d5`   | `#2a2018`  | `bg-saffron-soft`           | Soft saffron background (active nav, hover chips)    |
-| `--saffron-deep`       | `#8a4f1c`   | `#f5b074`  | `text-saffron-deep`         | Deep saffron text on soft backgrounds                |
-| `--saffron-hover`      | `#b36a2e`   | `#d4824a`  | `hover:bg-saffron-hover`    | Saffron button hover state                           |
-| `--saffron-active`     | `#8a4f1c`   | `#b36a2e`  | `active:bg-saffron-active`  | Saffron button pressed/active state                  |
+| `--saffron-deep`       | `#6a4a1c`   | `#f5b074`  | `text-saffron-deep`         | Deep saffron text on soft backgrounds                |
+| `--saffron-hover`      | `#8a5024`   | `#d4824a`  | `hover:bg-saffron-hover`    | Saffron button hover state                           |
+| `--saffron-active`     | `#6a4a1c`   | `#b36a2e`  | `active:bg-saffron-active`  | Saffron button pressed/active state                  |
+| `--saffron-foreground` | `#ffffff`   | `#14110d`  | `text-saffron-foreground`   | Text/icons on `bg-saffron` (flips per theme)         |
 
 ### 2.3 Supporting entity-type palette
 
@@ -79,7 +80,7 @@ same family.
 | Token     | Light value | Dark value | Entity type | Tailwind classes (from `ENTITY_TYPE_META`)                          |
 |-----------|-------------|------------|-------------|---------------------------------------------------------------------|
 | `--sky`   | `#6b8aa8`   | `#8eaac7`  | note        | `bg-sky-100 dark:bg-sky-950/40`, `text-sky-700 dark:text-sky-300`   |
-| `--saffron` | `#c77d3a` | `#e5944a`  | concept     | `bg-amber-100 dark:bg-amber-950/40`, `text-amber-700 dark:text-amber-300` |
+| `--saffron` | `#9a5c2a` | `#e5944a`  | concept     | `bg-amber-100 dark:bg-amber-950/40`, `text-amber-700 dark:text-amber-300` |
 | `--clay`  | `#b8593a`   | `#d4795a`  | person      | `bg-rose-100 dark:bg-rose-950/40`, `text-rose-700 dark:text-rose-300` |
 | `--sage`  | `#587465`   | `#84a597`  | project     | `bg-emerald-100 dark:bg-emerald-950/40`, `text-emerald-700 dark:text-emerald-300` |
 
@@ -94,14 +95,14 @@ same family.
 |-----------------|-------------|------------|----------------------------------------------------|
 | `--border`      | `#e5e1d8`   | `#2b2620`  | Dividers, card borders, default button borders     |
 | `--input`       | `#e5e1d8`   | `#2b2620`  | Input borders (alias of border)                    |
-| `--ring`        | `#c77d3a`   | `#e5944a`  | Focus ring color (saffron)                         |
+| `--ring`        | `#9a5c2a`   | `#e5944a`  | Focus ring color (saffron)                         |
 | `--destructive` | `#b91c1c`   | `#ef4444`  | Destructive actions (delete, remove)               |
 
 ### 2.5 Chart palette
 
 | Token       | Light     | Dark      | Default role                    |
 |-------------|-----------|-----------|---------------------------------|
-| `--chart-1` | `#c77d3a` | `#e5944a` | Saffron (primary series)        |
+| `--chart-1` | `#9a5c2a` | `#e5944a` | Saffron (primary series)        |
 | `--chart-2` | `#5c7b6e` | `#84a597` | Sage                            |
 | `--chart-3` | `#6b8aa8` | `#8eaac7` | Sky                             |
 | `--chart-4` | `#b8593a` | `#d4795a` | Clay                            |
@@ -288,7 +289,7 @@ metadata uses `text-[11px] text-ink-faint`.
 | Variant   | Classes                                                                                        | When to use                              |
 |-----------|------------------------------------------------------------------------------------------------|------------------------------------------|
 | Primary   | `bg-primary text-primary-foreground shadow-sm hover:opacity-90 focus-ring`                     | Single most important action on a screen |
-| Saffron   | `bg-saffron text-white hover:bg-saffron-hover active:bg-saffron-active focus-ring`             | Brand-forward CTAs (sparingly)           |
+| Saffron   | `bg-saffron text-saffron-foreground hover:bg-saffron-hover active:bg-saffron-active focus-ring`             | Brand-forward CTAs (sparingly)           |
 | Secondary | `border border-border bg-background text-ink-soft hover:border-saffron/40 hover:text-ink focus-ring` | Cancel, secondary actions           |
 | Ghost     | `text-ink-mute hover:bg-muted hover:text-ink focus-ring`                                       | Inline actions in toolbars               |
 | Destructive | `border border-border text-ink-soft hover:border-red-300 hover:text-red-600 focus-ring`       | Delete, remove                           |

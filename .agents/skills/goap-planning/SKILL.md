@@ -1,5 +1,5 @@
 ---
-name: goap-agent
+name: goap-planning
 description: Invoke for complex multi-step tasks requiring intelligent planning and multi-agent coordination. Use when tasks need decomposition, dependency mapping, parallel/sequential/swarm/iterative execution strategies, or coordination of multiple specialized agents with quality gates.
 ---
 

@@ -70,6 +70,7 @@
   --color-saffron-deep: var(--saffron-deep);
   --color-saffron-hover: var(--saffron-hover);
   --color-saffron-active: var(--saffron-active);
+  --color-saffron-foreground: var(--saffron-foreground);
   --color-surface-sunken: var(--surface-sunken);
   --color-sage: var(--sage);
   --color-clay: var(--clay);
@@ -124,6 +125,7 @@
   --saffron-deep: #6a4a1c;
   --saffron-hover: #8a5024;        /* darker saffron for hover */
   --saffron-active: #6a4a1c;       /* deeper still for active/pressed */
+  --saffron-foreground: #ffffff;    /* text/icons on bg-saffron (flips in dark) */
 
   /* Supporting palette */
   --sage: #587465;          /* WCAG AA: 4.83:1 on background — was #5c7b6e (4.38:1, failed 11px text) */
@@ -185,6 +187,7 @@
   --saffron-deep: #f5b074;
   --saffron-hover: #d4824a;
   --saffron-active: #b36a2e;
+  --saffron-foreground: #14110d;    /* dark saffron is light orange: ink text, not white */
 
   --sage: #84a597;
   --clay: #d4795a;

@@ -80,7 +80,7 @@ const TabSwitcher = ({
           className={cn(
             'rounded-md px-3 py-1.5 text-[12px] font-semibold transition-colors focus-ring',
             view === 'nav'
-              ? 'bg-saffron text-white shadow-sm'
+              ? 'bg-saffron text-saffron-foreground shadow-sm'
               : 'text-ink-mute hover:text-ink',
           )}
         >
@@ -93,7 +93,7 @@ const TabSwitcher = ({
           className={cn(
             'rounded-md px-3 py-1.5 text-[12px] font-semibold transition-colors focus-ring',
             view === 'search'
-              ? 'bg-saffron text-white shadow-sm'
+              ? 'bg-saffron text-saffron-foreground shadow-sm'
               : 'text-ink-mute hover:text-ink',
           )}
         >

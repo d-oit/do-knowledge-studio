@@ -379,7 +379,7 @@ export const LibraryView = () => {
             aria-hidden="true"
           />
           {hasAdvancedFilters && (
-            <span className="ml-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-saffron px-1 text-badge font-bold text-white">
+            <span className="ml-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-saffron px-1 text-badge font-bold text-saffron-foreground">
               {Number(hasDescriptionOnly) + (tagQuery.trim() ? 1 : 0)}
             </span>
           )}
