@@ -121,3 +121,30 @@ EOF
   [ "$status" -eq 1 ]
   [[ "$output" == *"Skills directory not found"* ]]
 }
+
+@test "--check passes when catalogs are fresh" {
+  run python3 "$SCRIPT" --root "$WORK"
+  [ "$status" -eq 0 ]
+  run python3 "$SCRIPT" --root "$WORK" --check
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"up to date"* ]]
+}
+
+@test "--check fails when catalogs drift and writes nothing" {
+  run python3 "$SCRIPT" --root "$WORK"
+  [ "$status" -eq 0 ]
+  mkdir -p "$WORK/.agents/skills/new-skill"
+  cat > "$WORK/.agents/skills/new-skill/SKILL.md" <<'EOF'
+---
+name: new-skill
+description: A skill added after the catalogs were generated.
+---
+EOF
+  before=$(cat "$WORK/agents-docs/AVAILABLE_SKILLS.md")
+  run python3 "$SCRIPT" --root "$WORK" --check
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"stale"* ]]
+  # check mode must not modify the catalogs
+  [ "$(cat "$WORK/agents-docs/AVAILABLE_SKILLS.md")" = "$before" ]
+}
+
