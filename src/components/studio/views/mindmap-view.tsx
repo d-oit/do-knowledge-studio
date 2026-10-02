@@ -111,7 +111,7 @@ export const MindMapView = () => {
       const nodeEntity = entityIndex.get(focusedNodeId)
       if (!nodeEntity) return
 
-      if (e.key === 'Tab' && (e.ctrlKey || e.metaKey)) {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault()
         addChildToNode(focusedNodeId)
         return
@@ -421,7 +421,7 @@ export const MindMapView = () => {
 
       {/* Hint */}
       <div className="border-b border-border bg-muted/30 px-5 py-1.5 text-label text-ink-faint">
-        <kbd className="rounded border border-border bg-background px-1 font-mono">Ctrl+Tab</kbd> add child ·{' '}
+        <kbd className="rounded border border-border bg-background px-1 font-mono">Ctrl+Enter</kbd> add child ·{' '}
         <kbd className="rounded border border-border bg-background px-1 font-mono">F2</kbd> rename ·{' '}
         <kbd className="rounded border border-border bg-background px-1 font-mono">Del</kbd> delete
       </div>

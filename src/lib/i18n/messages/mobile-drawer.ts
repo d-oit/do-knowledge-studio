@@ -38,7 +38,6 @@ const messages = {
   /** Accessible label of the search results list. */
   'drawer.search.resultsAriaLabel': 'Search results',
   /** Offline-readiness badge. */
-  'drawer.offlineReady': 'Offline ready',
   /** Entity count footer; count interpolated. */
   'drawer.entityCount': (count: string) => `${count} entities`,
   /** Theme toggle label when switching to light. */

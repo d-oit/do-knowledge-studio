@@ -273,15 +273,15 @@ pill
 
 2px
 
-4px
-
 6px
+
+8px
 
 10px
 
-12px
-
 14px
+
+16px
 
 999px
 
@@ -577,11 +577,11 @@ Paper-raised background, warm border, 10px radius, soft shadow. Hover: lifted sh
 - **Ghost**: transparent, ink-mute text, for toolbars
 - **Saffron**: saffron fill, white text, brand CTAs (sparingly)
 
-All buttons: 6px radius, 12px font, 44px minimum touch target.
+All buttons: 8px radius (`rounded-md`), 12px font, 44px minimum touch target.
 
 ### Inputs
 
-Paper background, warm border, 6px radius. Focus: saffron border with saffron ring. Placeholder in ink-faint.
+Paper background, warm border, 8px radius (`rounded-md`). Focus: saffron border with saffron ring. Placeholder in ink-faint.
 
 ### Chips and Badges
 

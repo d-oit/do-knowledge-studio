@@ -286,7 +286,7 @@ export const EditorStatusBar = ({
       {editing && (
         <button
           onClick={onDiscard}
-          className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-red-50 hover:text-red-600 focus-ring min-h-[44px]"
+          className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-destructive/10 hover:text-destructive focus-ring min-h-[44px]"
         >
           {DISCARD_CHANGES_TEXT}
         </button>
