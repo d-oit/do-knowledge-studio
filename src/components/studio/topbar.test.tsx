@@ -154,9 +154,11 @@ describe('Topbar', () => {
   })
 
   it('renders the platform-aware command palette label from the hydration-safe hook', () => {
-    // jsdom's platform is not macOS, so the chip must show the Ctrl+ form. If
-    // the component went back to a module-scope navigator.platform read, this
-    // would flip to ⌘K and mismatch the SSR HTML on macOS again (#872).
+    // jsdom's platform is not macOS, so the chip must show the Ctrl+ form.
+    // NOTE: this test alone cannot detect a module-scope navigator.platform
+    // regression (a direct read also yields Ctrl+K in jsdom) — that invariant
+    // is pinned by the renderToString SSR case in
+    // src/lib/studio/use-platform-shortcut.test.tsx.
     render(<Topbar />)
     expect(screen.getByRole('button', { name: 'Open command palette' }).textContent).toBe('Ctrl+K')
   })
