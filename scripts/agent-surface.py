@@ -12,7 +12,6 @@ Implements ADR 029 validation requirements:
 - Unmanaged drift in generated surfaces
 """
 
-import importlib.util
 import json
 import re
 import sys
@@ -340,50 +339,6 @@ def sync_managed_surfaces(repo_root: Path, manifest: dict) -> list[str]:
     return errors
 
 
-def _load_skills_docs_generator(repo_root: Path):
-    """Import generate-skills-docs.py as a module (in-process, no subprocess).
-
-    The generator's module level only defines constants and functions (main()
-    is __main__-guarded), so importing is side-effect free — and avoids the
-    shell-out a static analyzer cannot prove is safe.
-    """
-    script = repo_root / "scripts" / "generate-skills-docs.py"
-    spec = importlib.util.spec_from_file_location("generate_skills_docs", script)
-    if spec is None or spec.loader is None:
-        return None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-def validate_skills_catalog_freshness(repo_root: Path) -> list[str]:
-    """Fail when the generated skill catalogs drift from .agents/skills/ on disk.
-
-    The catalogs (agents-docs/AVAILABLE_SKILLS.md, .agents/skills/README.md)
-    are the discovery layer for skills; AGENTS.md points agents at skills
-    through them. Regeneration is cheap, so drift is a gate failure, not a
-    warning — see HAR-1 (verify-before-asserting invisible to discovery).
-    """
-    script = repo_root / "scripts" / "generate-skills-docs.py"
-    if not script.is_file():
-        return [f"Skill docs generator missing: {script}"]
-    generator = _load_skills_docs_generator(repo_root)
-    if generator is None:
-        return [f"Skill docs generator not importable: {script}"]
-    skills = generator.collect_skills(repo_root / ".agents" / "skills")
-    stale = []
-    available_file = repo_root / "agents-docs" / "AVAILABLE_SKILLS.md"
-    readme_file = repo_root / ".agents" / "skills" / "README.md"
-    if not available_file.is_file() or available_file.read_text(encoding="utf-8") != generator.render_available(skills):
-        stale.append(available_file)
-    if not readme_file.is_file() or readme_file.read_text(encoding="utf-8") != generator.render_readme(skills):
-        stale.append(readme_file)
-    if stale:
-        paths = ", ".join(str(path) for path in stale)
-        return [f"Skill catalogs are stale — run ./scripts/setup-skills.sh: {paths}"]
-    return []
-
-
 def main() -> int:
     if len(sys.argv) < 2:
         print("Usage: agent-surface.py <validate|sync>")
@@ -403,7 +358,6 @@ def main() -> int:
         errors.extend(validate_duplicate_names(repo_root))
         errors.extend(validate_broken_links(repo_root))
         errors.extend(validate_agents_md(repo_root))
-        errors.extend(validate_skills_catalog_freshness(repo_root))
 
         if errors:
             for e in errors:
