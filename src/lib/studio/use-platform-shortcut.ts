@@ -18,7 +18,10 @@ import { useSyncExternalStore } from 'react'
  * platform of a tab does not change at runtime).
  */
 
-const getSnapshot = (): boolean => navigator.platform ? /mac|iphone|ipad|ipod/i.test(navigator.platform) : false
+const getSnapshot = (): boolean =>
+  typeof navigator !== 'undefined' && navigator.platform
+    ? /mac|iphone|ipad|ipod/i.test(navigator.platform)
+    : false
 
 const getServerSnapshot = (): boolean => false
 

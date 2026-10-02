@@ -1,4 +1,5 @@
 import { renderHook } from '@testing-library/react'
+import { renderToString } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { formatShortcut, useIsMacPlatform } from './use-platform-shortcut'
 
@@ -31,9 +32,21 @@ describe('useIsMacPlatform', () => {
     expect(renderHook(() => useIsMacPlatform()).result.current).toBe(false)
   })
 
-  it('matches the client snapshot instead of trusting navigator.platform', () => {
-    // jsdom's navigator.platform is 'Win32'-ish on CI (never Mac).
-    const { result } = renderHook(() => useIsMacPlatform())
-    expect(result.current).toBe(false)
+  it('renders the non-mac server snapshot in SSR HTML even with a mac navigator', () => {
+    // The hydration invariant: the server snapshot is false regardless of the
+    // runtime platform, so SSR HTML and the hydration pass agree and the real
+    // platform is corrected right after hydration. This test fails for the
+    // pre-fix shapes — a module-scope `navigator.platform` read, and the
+    // subtler `useState(() => read navigator)` — and passes only when the
+    // server snapshot is the constant non-mac value; a client-only renderHook
+    // case cannot distinguish those implementations.
+    vi.stubGlobal('navigator', { ...globalThis.navigator, platform: 'MacIntel' })
+    const Probe = () => {
+      const isMac = useIsMacPlatform()
+      return <kbd>{formatShortcut('⌘K', isMac)}</kbd>
+    }
+    const html = renderToString(<Probe />)
+    expect(html).toContain('Ctrl+K')
+    expect(html).not.toContain('⌘')
   })
 })
