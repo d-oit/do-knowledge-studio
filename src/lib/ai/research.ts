@@ -200,10 +200,12 @@ export interface ResearchResult {
  * Validates a user-supplied research target and returns the Jina Reader
  * request URL for it.
  *
- * The target must be HTTP(S) and must not resolve to a private or reserved
- * host, and it is percent-encoded so it cannot introduce a different host.
- * Keeping the guard and the URL construction together means the value handed
- * to the network sink is the validated result, never the raw input.
+ * The target must be HTTP(S) and must not *name* a private or reserved host —
+ * `isPrivateIP` inspects the literal hostname and performs no DNS lookup — and
+ * it is percent-encoded so it cannot introduce a different host. Keeping the
+ * guard and the URL construction together means the value handed to the
+ * network sink is the validated result, never the raw input; the request
+ * itself always goes to the fixed Jina Reader endpoint.
  */
 const buildReaderRequestUrl = (target: string): string => {
   const parsed = new URL(target)
