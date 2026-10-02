@@ -317,9 +317,48 @@ describe('RightPanel', () => {
     expect(screen.queryByText(/Your library is empty/)).toBeNull()
   })
 
-  it('renders search input with aria-label', () => {
+  it('renders search input with aria-label, type="search", and title', () => {
     rightPanelOpen = true
     render(<RightPanel />)
-    expect(screen.getByLabelText('Search knowledge base')).toBeDefined()
+    const input = screen.getByLabelText('Search knowledge base') as HTMLInputElement
+    expect(input).toBeDefined()
+    expect(input.type).toBe('search')
+    expect(input.getAttribute('title')).toBe('Search knowledge base')
+  })
+
+  it('renders clear search button when searchQuery is non-empty and resets query on click', () => {
+    rightPanelOpen = true
+    searchQuery = 'test'
+    render(<RightPanel />)
+    const clearButton = screen.getByLabelText('Clear panel search')
+    expect(clearButton).toBeDefined()
+    expect(clearButton.getAttribute('title')).toBe('Clear panel search')
+    fireEvent.click(clearButton)
+    expect(mockSetSearchQuery).toHaveBeenCalledWith('')
+  })
+
+  it('clears searchQuery when Escape key is pressed in search input', () => {
+    rightPanelOpen = true
+    searchQuery = 'test query'
+    render(<RightPanel />)
+    const input = screen.getByLabelText('Search knowledge base')
+    fireEvent.keyDown(input, { key: 'Escape' })
+    expect(mockSetSearchQuery).toHaveBeenCalledWith('')
+  })
+
+  it('announces search result count in live status region when searchQuery is active', () => {
+    rightPanelOpen = true
+    searchQuery = 'test'
+    render(<RightPanel />)
+    const statusRegion = screen.getByRole('status', { hidden: true })
+    expect(statusRegion.textContent).toBe('0 search results found')
+  })
+
+  it('does not announce search result count for whitespace-only searchQuery', () => {
+    rightPanelOpen = true
+    searchQuery = '   '
+    render(<RightPanel />)
+    const statusRegion = screen.getByRole('status', { hidden: true })
+    expect(statusRegion.textContent).toBe('')
   })
 })

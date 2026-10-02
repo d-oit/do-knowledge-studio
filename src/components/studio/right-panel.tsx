@@ -7,7 +7,7 @@ import { buildEntityIndex } from '@/lib/studio/graph-index'
 import { useAnnouncer } from '@/lib/a11y/announcer'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
 import type { Entity } from '@/lib/studio/types'
-import { Search, FileText, ArrowRight } from 'lucide-react'
+import { Search, FileText, ArrowRight, X } from 'lucide-react'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Overlay } from '@/components/studio/ui/shared-primitives'
@@ -203,12 +203,31 @@ const SearchPanel = ({
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-faint" />
           <input
+            type="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape' && searchQuery) {
+                e.preventDefault()
+                setSearchQuery('')
+              }
+            }}
             placeholder="Search knowledge base…"
+            title="Search knowledge base"
             aria-label="Search knowledge base"
-            className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-3 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+            className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-10 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
           />
+          {searchQuery ? (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              aria-label="Clear panel search"
+              title="Clear panel search"
+              className="absolute right-1 top-1/2 flex min-h-[44px] min-w-[44px] -translate-y-1/2 items-center justify-center rounded text-ink-faint transition-colors hover:bg-muted hover:text-ink focus-ring"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          ) : null}
         </div>
         <div className="mt-2 flex items-center gap-1 rounded-md bg-muted p-0.5 text-label">
           <button
@@ -234,7 +253,11 @@ const SearchPanel = ({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3" aria-live="polite" aria-atomic="false">
+      <div className="sr-only" role="status" aria-live="polite">
+        {searchQuery.trim() ? `${results.length} search ${results.length === 1 ? 'result' : 'results'} found` : ''}
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-3">
         {results.length === 0 ? (
           <SearchEmptyState query={searchQuery} onCreate={onCreateEntity} />
         ) : mode === 'ranked' ? (
