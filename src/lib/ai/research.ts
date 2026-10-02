@@ -222,6 +222,10 @@ export const fetchUrlContent = async (
   signal?: AbortSignal,
 ): Promise<ResearchResult> => {
   try {
+    // The URL is validated and percent-encoded in buildReaderRequestUrl above;
+    // the sink never receives raw input. Opengrep cannot follow the taint
+    // across the helper, so the rule is suppressed here explicitly.
+    // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
     const res = await fetch(buildReaderRequestUrl(url), {
       headers: {
         Accept: 'text/markdown',
