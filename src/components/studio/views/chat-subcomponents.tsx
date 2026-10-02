@@ -185,7 +185,7 @@ export const CitationDisclosure = ({
               }}
               className="flex w-full gap-2 rounded-md bg-background/60 p-2 text-left text-label transition-colors hover:bg-muted focus-ring min-h-[44px]"
             >
-              <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-saffron text-badge font-bold text-white">
+              <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-saffron text-badge font-bold text-saffron-foreground">
                 {i + 1}
               </span>
               <div className="min-w-0 flex-1">

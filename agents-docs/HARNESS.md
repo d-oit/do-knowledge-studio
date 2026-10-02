@@ -16,7 +16,7 @@ Throw away what does not help - more config is not always better.
 
 ## AGENTS.md Guidelines
 
-- Keep under ~150 lines; human-written (never auto-generated - LLM-generated files hurt quality)
+- Keep within `MAX_LINES_AGENTS_MD` (currently 250, enforced by `scripts/agent-surface.py validate`; see `.agents/config.sh`); human-written (never auto-generated - LLM-generated files hurt quality)
 - Concise and universally applicable - every instruction costs tokens
 - Use progressive disclosure: detailed docs in `agents-docs/`, not the root file
 
@@ -43,6 +43,11 @@ See `agents-docs/AVAILABLE_SKILLS.md`.
 | Gemini CLI | `.gemini/skills/` (symlinks) | - |
 | OpenCode | `.agents/skills/` (direct) | `.opencode/agents/` |
 | Qwen Code | `.qwen/skills/` (symlinks) | - |
+| Cursor | `.cursor/skills/` (symlink) | - |
+| Windsurf | `.windsurf/skills/` (symlink) | - |
+| Jules | managed via manifest (`symlink_strategy: none`) | - |
+
+> Machine-readable source of truth: `.agents/manifest.json` — update both when adding a tool.
 
 ## Further Reading
 

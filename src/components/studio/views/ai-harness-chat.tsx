@@ -15,7 +15,7 @@ interface ChatPanelProps {
   isLoading: boolean
   input: string
   setInput: (v: string) => void
-  handleSend: () => void | Promise<void>
+  handleSend: (overrideInput?: string) => void | Promise<void>
   reducedMotion: boolean
   augment: boolean
   effectiveModel: string
@@ -25,16 +25,6 @@ interface ChatPanelProps {
 
 /** Label text for the prompt suggestions section. */
 const SUGGESTIONS_LABEL = 'Try asking'
-
-/** Sets input text and triggers send for a prompt suggestion. */
-const sendSuggestion = async (
-  setInput: (v: string) => void,
-  handleSend: () => void | Promise<void>,
-  prompt: string,
-) => {
-  setInput(prompt)
-  await handleSend()
-}
 
 /** Single chat message row with avatar and bubble styling. */
 const ChatMessageRow = ({ message, reducedMotion }: { message: ChatMessage; reducedMotion: boolean }) => (
@@ -119,7 +109,7 @@ const ChatComposer = ({
 }: {
   input: string
   setInput: (v: string) => void
-  handleSend: () => void | Promise<void>
+  handleSend: (overrideInput?: string) => void | Promise<void>
   isLoading: boolean
   cooldownMs: number
   augment: boolean
@@ -196,7 +186,7 @@ export const AiHarnessChatPanel = ({
       {showSuggestions && (
         <ChatSuggestionChips
           suggestions={suggestions}
-          onSend={async (prompt) => { await sendSuggestion(setInput, handleSend, prompt) }}
+          onSend={async (prompt) => { await handleSend(prompt) }}
         />
       )}
 

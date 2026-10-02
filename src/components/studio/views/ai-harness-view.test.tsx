@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act } from 'react'
 import type { ReactNode } from 'react'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
 vi.mock('framer-motion', () => ({
   motion: {
@@ -69,6 +69,7 @@ vi.mock('@/lib/ai', () => ({
   sendChatStream: vi.fn(),
   fetchOllamaModels: vi.fn(() => Promise.resolve([])),
   buildMessages: vi.fn(() => []),
+  buildMessagesAsync: vi.fn(() => Promise.resolve([{ role: 'user', content: 'hello' }])),
   useRateLimiter: () => ({ canRequest: () => ({ allowed: true, count: 0, limit: 10 }) }),
   OPENROUTER_ROUTERS: [{ slug: 'openrouter/auto', display_name: 'Auto Router' }],
   OPENROUTER_MODELS: [{ slug: 'openai/gpt-4o-mini', display_name: 'GPT-4o Mini' }],
@@ -217,4 +218,25 @@ describe('AIHarnessView', () => {
     await act(() => { screen.getByText('Show settings').click() })
     expect(screen.getByText(/Connected/)).toBeDefined()
   })
+
+  it('sends the custom engine slug to the provider (#844)', async () => {
+    const { sendChatStream } = await import('@/lib/ai')
+    const mockSend = vi.mocked(sendChatStream)
+    mockSend.mockResolvedValue({ content: 'ok', provider: 'openrouter', model: 'openai/gpt-5' })
+
+    await act(async () => { render(<AIHarnessView />); await Promise.resolve() })
+    await act(() => { screen.getByText('Show settings').click() })
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('sk-or-\u2026'), { target: { value: 'sk-or-test-key' } })
+      fireEvent.change(screen.getByLabelText('Custom engine or model slug'), { target: { value: 'openai/gpt-5' } })
+      fireEvent.change(screen.getByPlaceholderText(/Ask the AI agent/), { target: { value: 'hello' } })
+      await Promise.resolve()
+    })
+    await act(async () => { screen.getByLabelText('Send').click(); await Promise.resolve() })
+
+    await waitFor(() => { expect(mockSend).toHaveBeenCalled() })
+
+    expect(mockSend.mock.calls[0][0].model).toBe('openai/gpt-5')
+  })
+
 })
