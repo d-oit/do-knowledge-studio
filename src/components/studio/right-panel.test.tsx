@@ -330,9 +330,9 @@ describe('RightPanel', () => {
     rightPanelOpen = true
     searchQuery = 'test'
     render(<RightPanel />)
-    const clearButton = screen.getByLabelText('Clear search')
+    const clearButton = screen.getByLabelText('Clear panel search')
     expect(clearButton).toBeDefined()
-    expect(clearButton.getAttribute('title')).toBe('Clear search')
+    expect(clearButton.getAttribute('title')).toBe('Clear panel search')
     fireEvent.click(clearButton)
     expect(mockSetSearchQuery).toHaveBeenCalledWith('')
   })

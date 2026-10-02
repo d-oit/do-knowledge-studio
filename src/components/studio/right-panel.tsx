@@ -221,8 +221,8 @@ const SearchPanel = ({
             <button
               type="button"
               onClick={() => setSearchQuery('')}
-              aria-label="Clear search"
-              title="Clear search"
+              aria-label="Clear panel search"
+              title="Clear panel search"
               className="absolute right-1 top-1/2 flex min-h-[44px] min-w-[44px] -translate-y-1/2 items-center justify-center rounded text-ink-faint transition-colors hover:bg-muted hover:text-ink focus-ring"
             >
               <X className="h-3.5 w-3.5" />
