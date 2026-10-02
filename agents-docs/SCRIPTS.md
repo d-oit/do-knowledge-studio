@@ -34,7 +34,9 @@
 | `docs-sync.sh` | Check documentation consistency (AGENTS.md, agents-docs/, skills) | `./scripts/docs-sync.sh` |
 | `audit-vite-env.sh` | Audit environment-variable secret exposure in client bundles | `./scripts/audit-vite-env.sh` |
 | `agent-surface.py` | Validate ADR 029 agent surfaces (symlinks, canonical skills) | `python3 scripts/agent-surface.py` |
-| `generate-skills-docs.py` | Regenerate skill tables (AVAILABLE_SKILLS.md, skills README) | `python3 scripts/generate-skills-docs.py` |
+| `generate-skills-docs.py` | Regenerate skill tables (AVAILABLE_SKILLS.md, skills README); `--check` fails on drift | `python3 scripts/generate-skills-docs.py` |
+| `generate-precache-manifest.mjs` | Appended to `next build`; regenerates the service-worker precache manifest | runs via `pnpm run build` |
+| `generate-pwa-icons.py` | Manual: re-raster PWA icons from the logo SVG | `python3 scripts/generate-pwa-icons.py` |
 
 ## Shared Library
 
@@ -50,7 +52,6 @@
 |----------|---------|-------------|
 | `SKIP_TESTS` | `false` | Skip BATS test execution |
 | `SKIP_LINT` | `false` | Skip linting checks |
-| `SKIP_CLIPPY` | `false` | Skip clippy lint checks |
 | `SKIP_GLOBAL_HOOKS_CHECK` | `false` | Skip git hooks validation |
 | `FORCE_COLOR` | auto | Force color output on/off |
 
