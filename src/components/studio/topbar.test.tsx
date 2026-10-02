@@ -153,6 +153,14 @@ describe('Topbar', () => {
     expect(screen.getByLabelText('Search knowledge base')).toBeDefined()
   })
 
+  it('renders the platform-aware command palette label from the hydration-safe hook', () => {
+    // jsdom's platform is not macOS, so the chip must show the Ctrl+ form. If
+    // the component went back to a module-scope navigator.platform read, this
+    // would flip to ⌘K and mismatch the SSR HTML on macOS again (#872).
+    render(<Topbar />)
+    expect(screen.getByRole('button', { name: 'Open command palette' }).textContent).toBe('Ctrl+K')
+  })
+
   it('opens mobile drawer on search tab on search click', () => {
     render(<Topbar />)
     fireEvent.click(screen.getByLabelText('Search knowledge base'))
