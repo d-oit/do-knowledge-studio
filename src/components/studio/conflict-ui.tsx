@@ -37,28 +37,28 @@ export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps)
   if (conflicts.length === 0) return null
 
   return (
-    <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
-      <div className="flex items-center gap-2 border-b border-amber-200 px-4 py-3 dark:border-amber-800">
-        <AlertTriangle className="h-4 w-4 text-amber-600" />
-        <span className="text-[13px] font-medium text-amber-800 dark:text-amber-200">
+    <div className="rounded-lg border border-warning-border bg-warning-soft">
+      <div className="flex items-center gap-2 border-b border-warning-border px-4 py-3">
+        <AlertTriangle className="h-4 w-4 text-warning" />
+        <span className="text-[13px] font-medium text-warning-foreground">
           {conflicts.length} conflict{conflicts.length > 1 ? 's' : ''} detected
         </span>
         <div className="flex-1" />
         <button
           onClick={() => { handleResolveAll('local') }}
-          className="rounded px-2 py-1 text-[11px] font-medium text-amber-700 transition-colors hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-900 min-h-[44px] focus-ring"
+          className="rounded px-2 py-1 text-[11px] font-medium text-warning transition-colors hover:bg-warning/10 min-h-[44px] focus-ring"
         >
           Keep all local
         </button>
         <button
           onClick={() => { handleResolveAll('remote') }}
-          className="rounded px-2 py-1 text-[11px] font-medium text-amber-700 transition-colors hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-900 min-h-[44px] focus-ring"
+          className="rounded px-2 py-1 text-[11px] font-medium text-warning transition-colors hover:bg-warning/10 min-h-[44px] focus-ring"
         >
           Keep all remote
         </button>
       </div>
 
-      <div className="max-h-[300px] divide-y divide-amber-200 overflow-y-auto dark:divide-amber-800">
+      <div className="max-h-[300px] divide-y divide-warning-border overflow-y-auto">
         {conflicts.map((conflict) => {
           const key = `${conflict.entityId}:${conflict.field}`
           const resolution = resolutions.get(key) ?? conflict.winner
@@ -69,7 +69,7 @@ export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps)
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => { setExpandedId(isExpanded ? null : key) }}
-                  className="flex min-h-[44px] items-center gap-1.5 text-[12px] font-medium text-amber-800 dark:text-amber-200 focus-ring"
+                  className="flex min-h-[44px] items-center gap-1.5 text-[12px] font-medium text-warning-foreground focus-ring"
                 >
                   {isExpanded ? (
                     <ChevronUp className="h-3 w-3" />
@@ -77,7 +77,7 @@ export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps)
                     <ChevronDown className="h-3 w-3" />
                   )}
                   <span className="font-mono">{conflict.entityType}</span>
-                  <span className="text-amber-600">·</span>
+                  <span className="text-warning">·</span>
                   <span>{conflict.field}</span>
                 </button>
                 <div className="flex-1" />
@@ -87,8 +87,8 @@ export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps)
                     className={cn(
                       'rounded px-2 py-0.5 text-[11px] font-medium transition-colors min-h-[44px] focus-ring',
                       resolution === 'local'
-                        ? 'bg-amber-600 text-white'
-                        : 'text-amber-700 hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-900',
+                        ? 'bg-warning text-warning-on'
+                        : 'text-warning hover:bg-warning/10',
                     )}
                   >
                     Local
@@ -98,8 +98,8 @@ export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps)
                     className={cn(
                       'rounded px-2 py-0.5 text-[11px] font-medium transition-colors min-h-[44px] focus-ring',
                       resolution === 'remote'
-                        ? 'bg-amber-600 text-white'
-                        : 'text-amber-700 hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-900',
+                        ? 'bg-warning text-warning-on'
+                        : 'text-warning hover:bg-warning/10',
                     )}
                   >
                     Remote
@@ -138,7 +138,7 @@ export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps)
         })}
       </div>
 
-      <div className="flex items-center justify-end gap-2 border-t border-amber-200 px-4 py-3 dark:border-amber-800">
+      <div className="flex items-center justify-end gap-2 border-t border-warning-border px-4 py-3">
         <button
           onClick={onDismiss}
           className="flex min-h-[44px] items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
