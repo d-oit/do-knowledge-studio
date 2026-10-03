@@ -236,6 +236,20 @@ export const parseOkfBundle = (files: Map<string, string>): OkfImportResult => {
   const result: OkfImportResult = { entities: [], claims: [], errors: [] }
 
   for (const [path, content] of files) {
+    // §2: paths are bundle-relative. Drive-rooted, absolute, or root-backslash
+    // names are not bundle-relative data — rejecting them here (with the path
+    // named) keeps entity ids derivable (id = path minus .md) inside the
+    // bundle namespace. A drive-rooted name would otherwise mint ids like
+    // "C:/Windows/evil" and a "\foo.md" entry the id "\foo" (both surfaced by
+    // #899's sanitizer review; the zip-layer sanitizer handles Zip Slip only
+    // and cannot enforce this contract — it normalizes before calling us, but
+    // the exported parser accepts direct maps too). This runs FIRST so rooted
+    // forms of reserved names ("/index.md", "C:/log.md") are rejected rather
+    // than silently consumed by the reserved branches below.
+    if (/^[A-Za-z]:[\\/]/.test(path) || /^[\\/]/.test(path)) {
+      result.errors.push(`${path}: not a bundle-relative path (drive-rooted, absolute, or root-backslash names are invalid per §2)`)
+      continue
+    }
     if (/(^|\/)index\.md$/.test(path)) {
       /** The declared bundle version. */
       const declared = parseIndexVersion(content)

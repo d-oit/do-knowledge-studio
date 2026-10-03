@@ -166,3 +166,79 @@ Body text.
     expect(result.errors).toHaveLength(0)
   })
 })
+describe('OKF Bundle Import — §2 bundle-relative path contract', () => {
+  /** Builds a minimal valid bundle with one extra file at `path`. */
+  const bundleWith = (path: string): Map<string, string> => {
+    const filesMap = new Map<string, string>()
+    filesMap.set('index.md', '---\nokf_version: "0.2"\n---\n# Knowledge Bundle')
+    filesMap.set('log.md', '# Directory Update Log')
+    filesMap.set(path, '---\ntitle: T\ntype: concept\n---\nbody')
+    return filesMap
+  }
+
+  it('rejects drive-rooted entries and names the path (ids must stay bundle-relative)', () => {
+    const result = parseOkfBundle(bundleWith('C:/Windows/evil.md'))
+    expect(result.entities).toHaveLength(0)
+    expect(result.errors).toHaveLength(1)
+    expect(result.errors[0]).toContain('C:/Windows/evil.md')
+    expect(result.errors[0]).toContain('not a bundle-relative path')
+  })
+
+  it('rejects absolute entries (leading slash)', () => {
+    const result = parseOkfBundle(bundleWith('/etc/passwd.md'))
+    expect(result.entities).toHaveLength(0)
+    expect(result.errors[0]).toContain('not a bundle-relative path')
+  })
+
+  it('rejects backslash drive-rooted entries', () => {
+    const result = parseOkfBundle(bundleWith('C:\\Windows\\evil.md'))
+    expect(result.entities).toHaveLength(0)
+    expect(result.errors[0]).toContain('not a bundle-relative path')
+  })
+
+  it('still accepts normal bundle-relative entries next to rejected ones', () => {
+    const filesMap = bundleWith('C:/Windows/evil.md')
+    filesMap.set('concepts/legit.md', '---\ntitle: Legit\ntype: concept\n---\nbody')
+    const result = parseOkfBundle(filesMap)
+    expect(result.entities.map((e) => e.id)).toEqual(['concepts/legit'])
+    expect(result.errors).toHaveLength(1)
+  })
+})
+
+describe('OKF Bundle Import — §2 edge: backslash-rooted names', () => {
+  it('rejects root-backslash entries ("\\foo.md" would mint the id "\\foo")', () => {
+    const filesMap = new Map<string, string>()
+    filesMap.set('index.md', '---\nokf_version: "0.2"\n---\n# Knowledge Bundle')
+    filesMap.set('log.md', '# Directory Update Log')
+    filesMap.set('\\foo.md', '---\ntitle: T\ntype: concept\n---\nbody')
+    const result = parseOkfBundle(filesMap)
+    expect(result.entities).toHaveLength(0)
+    expect(result.errors[0]).toContain('\\foo.md')
+    expect(result.errors[0]).toContain('not a bundle-relative path')
+  })
+})
+
+describe('OKF Bundle Import — §2 edge: rooted forms of reserved names', () => {
+  it('rejects "/log.md" and "C:/log.md" instead of silently consuming them as reserved', () => {
+    for (const path of ['/log.md', 'C:/log.md', '\\log.md']) {
+      const filesMap = new Map<string, string>()
+      filesMap.set('index.md', '---\nokf_version: "0.2"\n---\n# Knowledge Bundle')
+      filesMap.set(path, '# log')
+      const result = parseOkfBundle(filesMap)
+      expect(result.errors, `path: ${path}`).toHaveLength(1)
+      expect(result.errors[0]).toContain('not a bundle-relative path')
+    }
+  })
+})
+
+describe('OKF Bundle Import — §2 edge: rooted forms of index.md', () => {
+  it('rejects "/index.md" and "C:/index.md" instead of consuming them as the reserved index', () => {
+    for (const path of ['/index.md', 'C:/index.md', '\\index.md']) {
+      const filesMap = new Map<string, string>()
+      filesMap.set(path, '---\nokf_version: "0.2"\n---\n# index')
+      const result = parseOkfBundle(filesMap)
+      expect(result.errors, `path: ${path}`).toHaveLength(1)
+      expect(result.errors[0]).toContain('not a bundle-relative path')
+    }
+  })
+})
