@@ -54,7 +54,6 @@
   --color-card: var(--card);
 
   /* Studio-specific semantic colors */
-  --color-paper: var(--paper);
   --color-paper-raised: var(--paper-raised);
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
@@ -84,7 +83,6 @@
 
   /* Surfaces */
   --background: #faf8f3;          /* warm paper */
-  --paper: #faf8f3;
   --paper-raised: #ffffff;
   --surface-sunken: #f1ede4;        /* inset / recessed surfaces */
   --foreground: #1a1814;          /* deep warm ink */
@@ -142,7 +140,6 @@
 
 .dark {
   --background: #14110d;
-  --paper: #14110d;
   --paper-raised: #1c1814;
   --surface-sunken: #1a1612;
   --foreground: #f2eee5;
