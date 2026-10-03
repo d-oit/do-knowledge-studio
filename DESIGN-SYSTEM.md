@@ -34,7 +34,7 @@ uncoated stock and still make sense.
 ## 2. Color system
 
 All tokens are defined in `:root` and overridden in `.dark`. Tailwind utility
-classes (`bg-paper`, `text-ink`, `border-saffron`, etc.) are generated from the
+classes (`text-ink`, `border-saffron`, etc.) are generated from the
 mappings in `@theme inline`.
 
 ### 2.1 Surfaces and ink
@@ -42,7 +42,6 @@ mappings in `@theme inline`.
 | Token               | Light value | Dark value | Tailwind class          | Usage                                                |
 |---------------------|-------------|------------|-------------------------|------------------------------------------------------|
 | `--background`      | `#faf8f3`   | `#14110d`  | `bg-background`         | App background, warm paper                           |
-| `--paper`           | `#faf8f3`   | `#14110d`  | `bg-paper`              | Alias for background, used in editorial contexts     |
 | `--paper-raised`    | `#ffffff`   | `#1c1814`  | `bg-paper-raised`       | Cards, popovers, raised surfaces                     |
 | `--surface-sunken`  | `#f1ede4`   | `#1a1612`  | `bg-surface-sunken`     | Inset / recessed panels, code blocks, wells          |
 | `--card`            | `#ffffff`   | `#1c1814`  | `bg-card`               | shadcn/ui cards                                      |
