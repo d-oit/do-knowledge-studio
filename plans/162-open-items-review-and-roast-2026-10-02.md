@@ -193,14 +193,22 @@ figure included a deleted scratch file.
 (AGENTS 500-line ceiling). The `sanitizeZipPath` suite moved to
 `use-export-handlers-sanitize.test.ts`; the hook suite is restored
 byte-identical to its pre-#899 state (verified empty diff vs `0d67ac1~1`).
-The suite also pins the root-normalizing behavior, including the known gap
-below. GitNexus review surfaced a real contract gap, recorded here as a
-follow-up: **a drive-rooted zip entry survives as `C:/Windows/evil.md`, and
-`buildEntity` derives the entity id `C:/Windows/evil`, violating the
-bundle-relative path contract (`okf/types.ts` §2)**. Zip Slip rejection is the
-sanitizer's job and works; bundle-relative validation belongs in
-`parseOkfBundle`/§2 — reject drive-rooted and absolute names there, with a
-test.
+The suite also pins the root-normalizing behavior, including the gap that was
+found and then closed. GitNexus review surfaced a real contract gap:
+**a drive-rooted zip entry survived as `C:/Windows/evil.md`, and `buildEntity`
+derived the entity id `C:/Windows/evil`, violating the bundle-relative path
+contract (`okf/types.ts` §2)**. Zip Slip rejection is the sanitizer's job;
+bundle-relative validation belongs in `parseOkfBundle`/§2.
+
+**Gap closed by #903 (merged `6fa11a5`)**: `parseOkfBundle` now rejects
+drive-rooted, absolute, and root-backslash entry names as a non-fatal §2
+error (the guard runs before the reserved-name branches, so rooted forms of
+`index.md`/`log.md` are rejected too — three GitNexus review cycles caught
+each placement gap). Red-check: with the guard reverted, the id
+`C:/Windows/evil` is minted and the rejection tests fail; with it, 14/14
+pass in `import.test.ts`. The sanitizer still preserves the string verbatim
+(its contract is Zip Slip only) — the layered split is documented in
+`use-export-handlers-sanitize.test.ts`.
 
 ## Swarm roster (11 agents)
 
