@@ -55,6 +55,11 @@
 
   /* Studio-specific semantic colors */
   --color-paper-raised: var(--paper-raised);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-border: var(--warning-border);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-on: var(--warning-on);
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
   --color-ink-mute: var(--ink-mute);
@@ -90,6 +95,10 @@
   --ink-soft: #3a3530;
   --ink-mute: #5c5852;           /* WCAG AA: 6.1:1 on muted, 6.7:1 on background */
   --ink-faint: #5c5852;          /* unified with ink-mute — was #6a6660 (borderline) */
+  /* Elevation + canvas — per-theme so dark surfaces get real depth (#850) */
+  --shadow-soft: 0 1px 2px rgb(26 24 20 / 0.04), 0 1px 3px rgb(26 24 20 / 0.06);
+  --shadow-lifted: 0 4px 12px rgb(26 24 20 / 0.08), 0 2px 4px rgb(26 24 20 / 0.04);
+  --canvas-dot: var(--ink-faint);
 
   --card: #ffffff;
   --card-foreground: #1a1814;
@@ -117,6 +126,12 @@
 
   /* Supporting palette */
   --sage: #587465;          /* WCAG AA: 4.83:1 on background — was #5c7b6e (4.38:1, failed 11px text) */
+  /* Warning ramp — semantic amber, distinct from saffron (#849) */
+  --warning: #b45309;            /* amber-700, AA text on paper */
+  --warning-soft: #fef3e2;       /* warning surface */
+  --warning-border: #ecd9b8;
+  --warning-foreground: #7c3d06; /* AA text on --warning-soft */
+  --warning-on: #ffffff;         /* text/icons on bg-warning */
   --clay: #b8593a;
   --sky: #6b8aa8;
 
@@ -147,6 +162,10 @@
   --ink-soft: #d4cec0;
   --ink-mute: #a09a8e;           /* WCAG AA: 5.8:1 on muted, 7.0:1 on background */
   --ink-faint: #a09a8e;          /* unified with ink-mute — was #827d72 (failed 4.5:1) */
+  /* Near-black ink on a near-black surface needs higher alpha to read (#850) */
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.4), 0 1px 3px rgb(0 0 0 / 0.5);
+  --shadow-lifted: 0 4px 12px rgb(0 0 0 / 0.5), 0 2px 4px rgb(0 0 0 / 0.4);
+  --canvas-dot: rgb(255 255 255 / 0.06);
 
   --card: #1c1814;
   --card-foreground: #f2eee5;
@@ -170,6 +189,11 @@
   --saffron-foreground: #14110d;    /* dark saffron is light orange: ink text, not white */
 
   --sage: #84a597;
+  --warning: #e0a04a;
+  --warning-soft: #2a2114;
+  --warning-border: #4a3a22;
+  --warning-foreground: #eec27f;
+  --warning-on: #14110d;
   --clay: #d4795a;
   --sky: #8eaac7;
 
@@ -263,14 +287,10 @@
 
   /* Elevation shadows — warm-tinted, low-spread */
   .shadow-soft {
-    box-shadow:
-      0 1px 2px rgba(26, 24, 20, 0.04),
-      0 1px 3px rgba(26, 24, 20, 0.06);
+    box-shadow: var(--shadow-soft);
   }
   .shadow-lifted {
-    box-shadow:
-      0 4px 12px rgba(26, 24, 20, 0.08),
-      0 2px 4px rgba(26, 24, 20, 0.04);
+    box-shadow: var(--shadow-lifted);
   }
 
   /* Subtle paper grain — only on light surfaces */
@@ -296,13 +316,10 @@
   /* Animated dotted grid background for canvas views */
   .canvas-grid {
     background-color: var(--background);
-    background-image: radial-gradient(circle, var(--ink-faint) 1px, transparent 1px);
+    background-image: radial-gradient(circle, var(--canvas-dot) 1px, transparent 1px);
     background-size: 24px 24px;
     background-position: -1px -1px;
     opacity: 1;
-  }
-  .dark .canvas-grid {
-    background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
   }
 
   /* Frosted glass panel */
@@ -318,7 +335,7 @@
   }
   .hover-lift:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(26, 24, 20, 0.08), 0 2px 4px rgba(26, 24, 20, 0.04);
+    box-shadow: var(--shadow-lifted);
   }
 
   /* Micro-interaction: button press feedback */
