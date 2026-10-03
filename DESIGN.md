@@ -18,8 +18,6 @@ ink-faint
 saffron
 saffron-soft
 saffron-deep
-saffron-hover
-saffron-active
 sky
 clay
 sage
