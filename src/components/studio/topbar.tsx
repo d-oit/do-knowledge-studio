@@ -62,8 +62,7 @@ export const Topbar = () => {
 
   return (
     <header
-      className="flex h-16 shrink-0 items-center gap-2 border-b border-border bg-background/80 px-3 backdrop-blur-sm sm:gap-3 sm:px-5"
-      style={{ height: 'var(--header-height, 4rem)' }}
+      className="flex h-[var(--header-height)] shrink-0 items-center gap-2 border-b border-border bg-[var(--header-bg)] px-3 backdrop-blur-sm sm:gap-3 sm:px-5"
     >
       {/* Mobile menu + search triggers — visible only below lg (matches the
           desktop Sidebar's `hidden lg:flex`). The menu opens the drawer on

@@ -86,7 +86,7 @@ same family.
 
 > Note: the dot/badge utilities use Tailwind's stock sky/amber/rose/emerald
 > palettes for legibility, while the underlying `--sky` / `--saffron` / `--clay`
-> / `--sage` tokens drive graph edges, chart series, and accent ramps so that
+> / `--sage` tokens drive graph edges and accent ramps so that
 > the entity-type "identity" reads consistently.
 
 ### 2.4 Borders, inputs, focus, destructive
@@ -97,16 +97,6 @@ same family.
 | `--input`       | `#e5e1d8`   | `#2b2620`  | Input borders (alias of border)                    |
 | `--ring`        | `#9a5c2a`   | `#e5944a`  | Focus ring color (saffron)                         |
 | `--destructive` | `#b91c1c`   | `#ef4444`  | Destructive actions (delete, remove)               |
-
-### 2.5 Chart palette
-
-| Token       | Light     | Dark      | Default role                    |
-|-------------|-----------|-----------|---------------------------------|
-| `--chart-1` | `#9a5c2a` | `#e5944a` | Saffron (primary series)        |
-| `--chart-2` | `#5c7b6e` | `#84a597` | Sage                            |
-| `--chart-3` | `#6b8aa8` | `#8eaac7` | Sky                             |
-| `--chart-4` | `#b8593a` | `#d4795a` | Clay                            |
-| `--chart-5` | `#8a6d9c` | `#b395d1` | Plum (categorical fifth)        |
 
 ### 2.6 Layout tokens
 
@@ -156,7 +146,6 @@ depending on density).
 | `.font-serif`  | Newsreader with stylistic sets `ss01`, `ss02` enabled     |
 | `.text-balance`| `text-wrap: balance` — for headings up to ~3 lines        |
 | `.text-pretty` | `text-wrap: pretty` — for body paragraphs                 |
-| `.ink-rule`    | Adds a 1.75rem saffron underline beneath a heading        |
 | `.truncate-2`  | Two-line clamp with ellipsis                              |
 | `.truncate-3`  | Three-line clamp with ellipsis                            |
 
