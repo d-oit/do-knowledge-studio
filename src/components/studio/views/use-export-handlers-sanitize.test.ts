@@ -41,14 +41,14 @@ describe('sanitizeZipPath', () => {
     expect(sanitizeZipPath('/etc/passwd')).toBe('etc/passwd')
   })
 
-  it('does not validate the bundle-relative contract — drive-rooted names survive with a documented gap', () => {
-    // KNOWN GAP, not endorsement: a drive-rooted entry survives as
-    // "C:/Windows/evil.md"; buildEntity would derive the entity id
-    // "C:/Windows/evil", violating the bundle-relative contract in
-    // okf/types.ts. The sanitizer's contract is Zip Slip only (traversal to
-    // outside the extraction root) — sanitizeZipPath never writes to disk and
-    // the id is data, not a path. Rejection belongs in parseOkfBundle/§2
-    // validation, tracked as a follow-up in plans/162.
+  it('preserves drive-rooted names verbatim — the §2 contract is enforced downstream (#903)', () => {
+    // Layered validation: the sanitizer's contract is Zip Slip only (traversal
+    // outside the extraction root), so it preserves the string verbatim — the
+    // id is data, not a path, and nothing here writes to disk. The
+    // bundle-relative contract (okf/types.ts §2) is enforced by
+    // parseOkfBundle, which since #903 rejects drive-rooted, absolute, and
+    // root-backslash names as a §2 error before any entity is built — so a
+    // drive-rooted entry can no longer mint ids like "C:/Windows/evil".
     expect(sanitizeZipPath('C:/Windows/evil.md')).toBe('C:/Windows/evil.md')
   })
 })
