@@ -44,6 +44,30 @@ const buildExportSummary = (
   return parts.join(' · ')
 }
 
+/**
+ * Sanitizes a zip entry path to prevent Zip Slip / path traversal vulnerabilities.
+ * Normalizes separators, strips optional root prefix, and rejects path traversal (`..` or `.`).
+ * @param path - Raw entry path from zip archive.
+ * @returns Clean relative path, or null if the path contains traversal sequences or is invalid.
+ */
+export const sanitizeZipPath = (path: string): string | null => {
+  if (!path || typeof path !== 'string') return null
+  const normalized = path.replace(/\\/g, '/').replace(/^\/+/, '')
+  const stripped = normalized.replace(/^okf-bundle\//, '')
+  const segments = stripped.split('/')
+  const safeSegments: string[] = []
+  for (const seg of segments) {
+    if (seg === '..' || seg === '.') return null
+    // Leading-slash roots ('//etc/passwd' → 'etc/passwd') and doubled
+    // separators ('concepts//x.md') collapse to empty segments; an entry that
+    // is *entirely* separators has no usable filename, so treat it as invalid
+    // rather than resurrecting a hidden path.
+    if (seg !== '') safeSegments.push(seg)
+  }
+  if (safeSegments.length === 0) return null
+  return safeSegments.join('/')
+}
+
 /** Maximum characters shown for joined import errors in toasts. */
 const MAX_ERROR_CHARS = 240
 
@@ -140,8 +164,9 @@ const handleOkfZipImport = (
       /** The files map. */
       const filesMap = new Map<string, string>()
       for (const [p, data] of Object.entries(entries)) {
-        if (p.endsWith('.md')) {
-          filesMap.set(p.replace(/^okf-bundle\//, ''), strFromU8(data))
+        const safePath = sanitizeZipPath(p)
+        if (safePath && safePath.endsWith('.md')) {
+          filesMap.set(safePath, strFromU8(data))
         }
       }
       /** The root index. */

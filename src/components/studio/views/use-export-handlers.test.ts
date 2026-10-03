@@ -40,7 +40,7 @@ vi.mock('fflate', () => ({
   strFromU8: vi.fn((d: Uint8Array) => new TextDecoder().decode(d)),
 }))
 
-import { useExportHandlers } from './use-export-handlers'
+import { useExportHandlers, sanitizeZipPath } from './use-export-handlers'
 import { toast } from 'sonner'
 import { downloadFile, downloadBlob } from './export-types'
 import { buildPdfExport, buildDocxExport } from './export-documents'
@@ -156,6 +156,35 @@ const renderUseExportHandlers = (overrides: Partial<Parameters<typeof useExportH
   const result = renderHook(() => useExportHandlers(params))
   return { ...result, params }
 }
+
+describe('sanitizeZipPath', () => {
+  it('allows safe relative paths', () => {
+    expect(sanitizeZipPath('concepts/foo.md')).toBe('concepts/foo.md')
+    expect(sanitizeZipPath('okf-bundle/concepts/foo.md')).toBe('concepts/foo.md')
+    expect(sanitizeZipPath('index.md')).toBe('index.md')
+    expect(sanitizeZipPath('okf-bundle/index.md')).toBe('index.md')
+  })
+
+  it('normalizes backslashes to slashes', () => {
+    expect(sanitizeZipPath('concepts\\foo.md')).toBe('concepts/foo.md')
+    expect(sanitizeZipPath('okf-bundle\\concepts\\foo.md')).toBe('concepts/foo.md')
+  })
+
+  it('blocks path traversal via .. or . segments', () => {
+    expect(sanitizeZipPath('../etc/passwd')).toBeNull()
+    expect(sanitizeZipPath('../../secret.md')).toBeNull()
+    expect(sanitizeZipPath('concepts/../secret.md')).toBeNull()
+    expect(sanitizeZipPath('concepts/./foo.md')).toBeNull()
+    expect(sanitizeZipPath('..\\..\\win.ini')).toBeNull()
+  })
+
+  it('returns null for empty or invalid paths', () => {
+    expect(sanitizeZipPath('')).toBeNull()
+    expect(sanitizeZipPath('/')).toBeNull()
+    expect(sanitizeZipPath('okf-bundle/')).toBeNull()
+    expect(sanitizeZipPath(null as unknown as string)).toBeNull()
+  })
+})
 
 describe('useExportHandlers', () => {
   beforeEach(() => {
