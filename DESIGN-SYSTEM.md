@@ -67,8 +67,6 @@ mappings in `@theme inline`.
 | `--saffron`            | `#9a5c2a`   | `#e5944a`  | `text-saffron bg-saffron`   | Primary brand accent — use sparingly for CTAs        |
 | `--saffron-soft`       | `#f5e8d5`   | `#2a2018`  | `bg-saffron-soft`           | Soft saffron background (active nav, hover chips)    |
 | `--saffron-deep`       | `#6a4a1c`   | `#f5b074`  | `text-saffron-deep`         | Deep saffron text on soft backgrounds                |
-| `--saffron-hover`      | `#8a5024`   | `#d4824a`  | `hover:bg-saffron-hover`    | Saffron button hover state                           |
-| `--saffron-active`     | `#6a4a1c`   | `#b36a2e`  | `active:bg-saffron-active`  | Saffron button pressed/active state                  |
 | `--saffron-foreground` | `#ffffff`   | `#14110d`  | `text-saffron-foreground`   | Text/icons on `bg-saffron` (flips per theme)         |
 
 ### 2.3 Supporting entity-type palette
@@ -100,20 +98,14 @@ same family.
 
 ### 2.5 Chart palette
 
-| Token       | Light     | Dark      | Default role                    |
-|-------------|-----------|-----------|---------------------------------|
-| `--chart-1` | `#9a5c2a` | `#e5944a` | Saffron (primary series)        |
-| `--chart-2` | `#5c7b6e` | `#84a597` | Sage                            |
-| `--chart-3` | `#6b8aa8` | `#8eaac7` | Sky                             |
-| `--chart-4` | `#b8593a` | `#d4795a` | Clay                            |
-| `--chart-5` | `#8a6d9c` | `#b395d1` | Plum (categorical fifth)        |
+Removed (Plan 162 #848): `--chart-1..5` had zero consumers. Reintroduce as semantic `@theme` tokens when a chart actually ships, with the palette defined next to its consumer.
+
 
 ### 2.6 Layout tokens
 
 | Token                | Value                                                                | Usage                                  |
 |----------------------|----------------------------------------------------------------------|----------------------------------------|
 | `--header-height`    | `4rem` (64px)                                                        | Topbar height                          |
-| `--header-bg`        | `color-mix(in oklab, var(--background) 85%, transparent)`            | Frosted topbar background              |
 | `--focus-ring-offset`| `2px`                                                                | Outline offset for `.focus-ring`       |
 | `--radius`           | `0.625rem` (10px)                                                    | Base radius                            |
 
@@ -289,7 +281,7 @@ metadata uses `text-[11px] text-ink-faint`.
 | Variant   | Classes                                                                                        | When to use                              |
 |-----------|------------------------------------------------------------------------------------------------|------------------------------------------|
 | Primary   | `bg-primary text-primary-foreground shadow-sm hover:opacity-90 focus-ring`                     | Single most important action on a screen |
-| Saffron   | `bg-saffron text-saffron-foreground hover:bg-saffron-hover active:bg-saffron-active focus-ring`             | Brand-forward CTAs (sparingly)           |
+| Saffron   | `bg-saffron text-saffron-foreground focus-ring`                                                              | Brand-forward CTAs (sparingly)           |
 | Secondary | `border border-border bg-background text-ink-soft hover:border-saffron/40 hover:text-ink focus-ring` | Cancel, secondary actions           |
 | Ghost     | `text-ink-mute hover:bg-muted hover:text-ink focus-ring`                                       | Inline actions in toolbars               |
 | Destructive | `border border-border text-ink-soft hover:border-red-300 hover:text-red-600 focus-ring`       | Delete, remove                           |
