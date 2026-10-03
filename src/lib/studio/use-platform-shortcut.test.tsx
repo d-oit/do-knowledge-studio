@@ -33,13 +33,15 @@ describe('useIsMacPlatform', () => {
   })
 
   it('renders the non-mac server snapshot in SSR HTML even with a mac navigator', () => {
-    // The hydration invariant: the server snapshot is false regardless of the
-    // runtime platform, so SSR HTML and the hydration pass agree and the real
-    // platform is corrected right after hydration. This test fails for the
-    // pre-fix shapes — a module-scope `navigator.platform` read, and the
-    // subtler `useState(() => read navigator)` — and passes only when the
-    // server snapshot is the constant non-mac value; a client-only renderHook
-    // case cannot distinguish those implementations.
+    // Pins the server-snapshot contract only: the SSR HTML derives from the
+    // constant non-mac getServerSnapshot regardless of the runtime platform.
+    // It rejects render-time direct reads — a wrong getServerSnapshot, or the
+    // subtler `useState(() => read navigator)` (verified by reinjection).
+    // An import-time module-scope const is NOT caught here: the module was
+    // imported with jsdom's non-mac platform, so a captured constant would
+    // also render the non-mac label and pass. That shape is pinned by the
+    // lazy-re-read test below; a client-only renderHook case cannot
+    // distinguish any of these implementations.
     vi.stubGlobal('navigator', { ...globalThis.navigator, platform: 'MacIntel' })
     const Probe = () => {
       const isMac = useIsMacPlatform()
@@ -48,5 +50,18 @@ describe('useIsMacPlatform', () => {
     const html = renderToString(<Probe />)
     expect(html).toContain('Ctrl+K')
     expect(html).not.toContain('⌘')
+  })
+
+  it('re-reads the platform lazily after import (a captured #891-style const would not)', () => {
+    // Discriminates lazy platform reads from values captured at import time.
+    // The static import of this module ran with jsdom's real (non-mac)
+    // platform; a module-scope const captured then (the #891 shape) stays
+    // false forever, while the real hook's getSnapshot re-reads
+    // `navigator.platform` at every call — so stubbing macOS after import
+    // must flip the result to true. A client render is required:
+    // renderToString consults the constant getServerSnapshot and would mask
+    // the captured client value either way.
+    vi.stubGlobal('navigator', { ...globalThis.navigator, platform: 'MacIntel' })
+    expect(renderHook(() => useIsMacPlatform()).result.current).toBe(true)
   })
 })
