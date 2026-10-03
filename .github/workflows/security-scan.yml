@@ -185,7 +185,12 @@ jobs:
       # failure output but must not gate a PR on an unpatched transitive
       # advisory the project cannot change.
       - name: Audit lockfile for high/critical advisories
-        run: pnpm audit --audit-level=high
+        # CVE-2026-93687 (GHSA-vfj7-8cjw-p6xm, braces stack-exhaustion DoS) is
+        # HIGH with NO patched release (<0.0.0, disclosed 2026-10-03) and is a
+        # transitive dep of eslint-config-next -> fast-glob -> micromatch.
+        # Ignored by CVE until upstream ships a fix; every other high/critical
+        # advisory still fails this job.
+        run: pnpm audit --audit-level=high --ignore CVE-2026-93687
 
   # ============================================================================
   # INFRASTRUCTURE AS CODE SCAN

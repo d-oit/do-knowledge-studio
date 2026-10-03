@@ -33,13 +33,14 @@ describe('useIsMacPlatform', () => {
   })
 
   it('renders the non-mac server snapshot in SSR HTML even with a mac navigator', () => {
-    // Pins the server-snapshot contract: the SSR HTML derives from the
-    // constant non-mac getServerSnapshot regardless of the runtime platform,
-    // so SSR HTML and the hydration pass agree. This fails for render-time
-    // direct reads — the module-scope `navigator.platform` read from #891, and
-    // the subtler `useState(() => read navigator)` — and passes only when the
-    // server snapshot is that constant. The next test pins the import-time
-    // evaluation order separately; a client-only renderHook case cannot
+    // Pins the server-snapshot contract only: the SSR HTML derives from the
+    // constant non-mac getServerSnapshot regardless of the runtime platform.
+    // It rejects render-time direct reads — a wrong getServerSnapshot, or the
+    // subtler `useState(() => read navigator)` (verified by reinjection).
+    // An import-time module-scope const is NOT caught here: the module was
+    // imported with jsdom's non-mac platform, so a captured constant would
+    // also render the non-mac label and pass. That shape is pinned by the
+    // lazy-re-read test below; a client-only renderHook case cannot
     // distinguish any of these implementations.
     vi.stubGlobal('navigator', { ...globalThis.navigator, platform: 'MacIntel' })
     const Probe = () => {
@@ -51,26 +52,16 @@ describe('useIsMacPlatform', () => {
     expect(html).not.toContain('⌘')
   })
 
-  it('yields the non-mac label when the module evaluates with a mac navigator before stubbing', async () => {
-    // Pins the import-time shape (#891's original regression): a
-    // module-scope `navigator.platform` read evaluates at import, before any
-    // `vi.stubGlobal` in this file can apply. Static import cannot test that
-    // boundary — the hoisted import already captured the value — so this test
-    // re-imports the module AFTER stubbing the global, simulating the browser
-    // evaluation order that produced the #891 mismatch (exempted dynamic
-    // import: module-loading-boundary test).
+  it('re-reads the platform lazily after import (a captured #891-style const would not)', () => {
+    // Discriminates lazy platform reads from values captured at import time.
+    // The static import of this module ran with jsdom's real (non-mac)
+    // platform; a module-scope const captured then (the #891 shape) stays
+    // false forever, while the real hook's getSnapshot re-reads
+    // `navigator.platform` at every call — so stubbing macOS after import
+    // must flip the result to true. A client render is required:
+    // renderToString consults the constant getServerSnapshot and would mask
+    // the captured client value either way.
     vi.stubGlobal('navigator', { ...globalThis.navigator, platform: 'MacIntel' })
-    vi.resetModules()
-    const { useIsMacPlatform: useIsMacFresh } = await import('./use-platform-shortcut')
-    const Probe = () => {
-      const isMac = useIsMacFresh()
-      return <kbd>{formatShortcut('⌘K', isMac)}</kbd>
-    }
-    const html = renderToString(<Probe />)
-    expect(html).toContain('Ctrl+K')
-    expect(html).not.toContain('⌘')
-    // The hook module was re-imported with a stubbed global; drop it so later
-    // suites in this file import the pristine module with the real registry.
-    vi.resetModules()
+    expect(renderHook(() => useIsMacPlatform()).result.current).toBe(true)
   })
 })
