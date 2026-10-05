@@ -1,18 +1,18 @@
 'use client'
 
-import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
-import { getEntityTypeMeta, type EntityTypeMeta } from '@/lib/studio/entity-types'
-import { search, type SearchResult } from '@/lib/search/retrieval'
+import { useStudioStore } from '@/lib/studio/store'
+import { getEntityTypeMeta } from '@/lib/studio/entity-types'
 import { buildEntityIndex } from '@/lib/studio/graph-index'
 import { useAnnouncer } from '@/lib/a11y/announcer'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
 import type { Entity } from '@/lib/studio/types'
-import { Search, FileText, ArrowRight, X } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Overlay } from '@/components/studio/ui/shared-primitives'
 import { CitationsPanel } from './right-panel-citations'
 import { PanelCloseButton } from './right-panel-close-button'
+import { EntitySearchPanel } from './entity-search-panel'
 
 /** Shared width for every right-panel aside — one value, no per-view reflow (#868). */
 const PANEL_WIDTH_CLASS = 'w-[320px]' as const
@@ -37,143 +37,6 @@ const dedupeLinks = (links: Entity['links']): Entity['links'] => {
   return out
 }
 
-/** Resolves a ranked row's click target and type metadata. */
-const resolveRankedRowMeta = (
-  result: SearchResult,
-  entityIndex: Map<string, Entity>,
-): { targetId: string | undefined; meta: EntityTypeMeta | undefined } => {
-  const targetId = result.type === 'entity' ? result.id : result.entityId
-  const resolvedEntity = targetId ? entityIndex.get(targetId) : undefined
-  return { targetId, meta: resolvedEntity ? getEntityTypeMeta(resolvedEntity.type) : undefined }
-}
-
-/** Type dot + label badge for a ranked row (extracted for complexity). */
-const RankedRowMetaBadge = ({ meta }: { meta: EntityTypeMeta | undefined }) => {
-  if (!meta) return null
-  return (
-    <>
-      <span className={cn('h-1.5 w-1.5 rounded-full', meta.dot)} />
-      <span className="rounded px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-ink-faint">
-        {meta.label}
-      </span>
-    </>
-  )
-}
-
-/**
- * Single ranked search result row. Extracted from the SearchPanel map
- * callback so the render body stays within the complexity ceiling.
- */
-const RankedResultRow = ({
-  result,
-  entityIndex,
-  onStartEdit,
-}: {
-  result: SearchResult
-  entityIndex: Map<string, Entity>
-  onStartEdit: (id: string) => void
-}) => {
-  const { targetId, meta } = resolveRankedRowMeta(result, entityIndex)
-  return (
-    <li key={result.id}>
-      <button
-        onClick={() => { if (targetId) onStartEdit(targetId) }}
-        className="group block w-full min-h-[44px] rounded-md border border-transparent p-2.5 text-left transition-colors hover:border-border hover:bg-muted/50 focus-ring"
-        aria-label={`${result.name} — score ${result.score.toFixed(2)}`}
-      >
-        <div className="mb-1 flex items-center gap-2">
-          <RankedRowMetaBadge meta={meta} />
-          <span className="ml-auto text-caption tabular-nums text-ink-faint">
-            {result.score.toFixed(1)}
-          </span>
-        </div>
-        <div className="truncate text-[13px] font-medium text-ink">{result.name}</div>
-        <p className="mt-0.5 line-clamp-2 text-label leading-snug text-ink-mute">
-          {result.snippet}
-        </p>
-      </button>
-    </li>
-  )
-}
-
-/** Search panel with keyword/ranked mode toggle and entity results. */
-/** Ranked result rows for SearchPanel. */
-const RankedResultList = ({
-  results,
-  entityIndex,
-  onStartEdit,
-}: {
-  results: SearchResult[]
-  entityIndex: Map<string, Entity>
-  onStartEdit: (id: string) => void
-}) => (
-  <ul className="space-y-1.5" role="list" aria-label="Ranked search results">
-    {results.map((r) => (
-      <RankedResultRow key={r.id} result={r} entityIndex={entityIndex} onStartEdit={onStartEdit} />
-    ))}
-  </ul>
-)
-
-/** Keyword result rows for SearchPanel. */
-const KeywordResultList = ({
-  entities,
-  onStartEdit,
-}: {
-  entities: Entity[]
-  onStartEdit: (id: string) => void
-}) => (
-  <ul className="space-y-1.5" role="list" aria-label="Keyword search results">
-    {entities.slice(0, 20).map((e) => {
-      const meta = getEntityTypeMeta(e.type)
-      return (
-        <li key={e.id}>
-          <button
-            onClick={() => {
-              onStartEdit(e.id)
-            }}
-            className="group block w-full min-h-[44px] rounded-md border border-transparent p-2.5 text-left transition-colors hover:border-border hover:bg-muted/50 focus-ring"
-          >
-            <div className="mb-1 flex items-center gap-2">
-              <span className={cn('h-1.5 w-1.5 rounded-full', meta.dot)} />
-              <span className="rounded px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-ink-faint">
-                {meta.label}
-              </span>
-            </div>
-            <div className="truncate text-[13px] font-medium text-ink">{e.name}</div>
-            <p className="mt-0.5 line-clamp-2 text-label leading-snug text-ink-mute">
-              {e.description}
-            </p>
-          </button>
-        </li>
-      )
-    })}
-  </ul>
-)
-
-/** Empty state for SearchPanel (prompts for a query or offers to create an entity). */
-const SearchEmptyState = ({
-  query,
-  onCreate,
-}: {
-  query: string
-  onCreate?: (name: string) => void
-}) => (
-  <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-    <FileText className="h-8 w-8 text-ink-faint/50" />
-    <p className="text-[12px] text-ink-mute">
-      {query ? 'No matches found.' : 'Your library is empty.'}
-    </p>
-    {query && onCreate && (
-      <button
-        onClick={() => { onCreate(query) }}
-        className="mt-2 rounded-md border border-saffron/30 bg-saffron-soft px-3 py-1.5 text-[12px] font-medium text-saffron-deep transition-colors hover:bg-saffron/10 focus-ring min-h-[44px]"
-      >
-        Create &quot;{query}&quot; as new entity
-      </button>
-    )}
-  </div>
-)
-
 const SearchPanel = ({
   onCreateEntity,
   onClose,
@@ -181,101 +44,15 @@ const SearchPanel = ({
   onCreateEntity?: (name: string) => void
   onClose: () => void
 }) => {
-  const searchQuery = useStudioStore((s) => s.searchQuery)
-  const setSearchQuery = useStudioStore((s) => s.setSearchQuery)
-  const entities = useStudioStore((s) => s.entities)
-  const claims = useStudioStore((s) => s.claims)
-  const startEdit = useStudioStore((s) => s.startEdit)
-  const [mode, setMode] = useState<'keyword' | 'ranked'>('keyword')
-  const filtered = useFilteredEntities()
-  const entityIndex = useMemo(() => buildEntityIndex(entities), [entities])
-  const rankedResults = useMemo(
-    () => (mode === 'ranked' ? search(entities, claims, searchQuery) : []),
-    [mode, entities, claims, searchQuery],
-  )
-
-  const results = mode === 'ranked' ? rankedResults : filtered
-
   return (
     <aside className={`hidden h-full ${PANEL_WIDTH_CLASS} shrink-0 flex-col border-l border-border bg-background wide:flex`}>
       <div className="border-b border-border px-4 py-3">
-        <div className="mb-2 flex items-center justify-between">
+        <div className="flex items-center justify-between">
           <h2 className="font-serif text-[14px] font-semibold text-ink">Search</h2>
           <PanelCloseButton onClose={onClose} />
         </div>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-faint" />
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape' && searchQuery) {
-                e.preventDefault()
-                setSearchQuery('')
-              }
-            }}
-            placeholder="Search knowledge base…"
-            title="Search knowledge base"
-            aria-label="Search knowledge base"
-            className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-10 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
-          />
-          {searchQuery ? (
-            <button
-              type="button"
-              onClick={() => setSearchQuery('')}
-              aria-label="Clear panel search"
-              title="Clear panel search"
-              className="absolute right-1 top-1/2 flex min-h-[44px] min-w-[44px] -translate-y-1/2 items-center justify-center rounded text-ink-faint transition-colors hover:bg-muted hover:text-ink focus-ring"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          ) : null}
-        </div>
-        <div className="mt-2 flex items-center gap-1 rounded-md bg-muted p-0.5 text-label">
-          <button
-            onClick={() => { setMode('keyword') }}
-            aria-pressed={mode === 'keyword'}
-            className={cn(
-              'flex-1 rounded px-2 py-1 font-medium transition-colors focus-ring min-h-[44px]',
-              mode === 'keyword' ? 'bg-background text-ink shadow-sm' : 'text-ink-mute',
-            )}
-          >
-            Keyword
-          </button>
-          <button
-            onClick={() => { setMode('ranked') }}
-            aria-pressed={mode === 'ranked'}
-            className={cn(
-              'flex-1 rounded px-2 py-1 font-medium transition-colors focus-ring min-h-[44px]',
-              mode === 'ranked' ? 'bg-background text-ink shadow-sm' : 'text-ink-mute',
-            )}
-          >
-            Ranked
-          </button>
-        </div>
       </div>
-
-      <div className="sr-only" role="status" aria-live="polite">
-        {searchQuery.trim() ? `${results.length} search ${results.length === 1 ? 'result' : 'results'} found` : ''}
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-3">
-        {results.length === 0 ? (
-          <SearchEmptyState query={searchQuery} onCreate={onCreateEntity} />
-        ) : mode === 'ranked' ? (
-          <RankedResultList results={rankedResults} entityIndex={entityIndex} onStartEdit={startEdit} />
-        ) : (
-          <KeywordResultList entities={filtered} onStartEdit={startEdit} />
-        )}
-      </div>
-
-      <div className="border-t border-border px-4 py-2.5">
-        <div className="flex items-center gap-1.5 text-label text-ink-faint">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-          Local search · {entities.length} entities
-        </div>
-      </div>
+      <EntitySearchPanel density="panel" onCreateEntity={onCreateEntity} />
     </aside>
   )
 }
