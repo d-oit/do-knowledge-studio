@@ -55,9 +55,48 @@ guard (`:55-65`), while `importWithRollback` still returns `{ success: true }`
 from `src/lib/studio/slices/data-slice.ts:63-67`. The UI therefore reports import
 success without saying whether a durable pre-import backup exists.
 
-Status: `Not implemented — source-confirmed`. This is a missing reachability
-path and a missing outcome report. It is **not** a reproduced data-loss incident
-— no corpus was imported, restarted, or restored in this audit.
+Status: `Not implemented — source-confirmed`, **now with a production
+reproduction** (2026-10-05, Chromium, dev build; throwaway spec, since removed).
+
+**Reproduced — the silent-skip case.** Imported a ~5 MB single-entity corpus
+over the seed corpus. Observed:
+
+| Observation | Value |
+|---|---|
+| UI after import | `Imported 1 entity and 0 claims` / `1 entities · 0 claims replaced the current library.` |
+| Entity names after import | `["Oversized Sentinel"]` — corpus A gone |
+| `do-knowledge-studio-recovery` after import | **19,704 bytes, timestamp unchanged from the previous import** |
+| Console warning about the skipped write | **none** |
+| Any "backup skipped" / "too large" / "no backup" UI | **none** |
+
+The oversized write was skipped exactly as `MAX_RECOVERY_SIZE_BYTES` (4 MiB)
+implies, yet the stored snapshot was left holding the *previous* corpus's data
+— a stale backup that would restore the wrong state if a restore UI existed —
+and the user was told the import succeeded. Nothing in the UI says the
+pre-import backup for *this* import was not written.
+
+**Correction to an earlier reading.** A first probe reported
+`RECOVERY_BYTES 0`; that was my error — it read the key
+`dks-recovery-snapshot`, but the real key is `do-knowledge-studio-recovery`
+(`recovery-helpers.ts:16`). With the correct key, an **ordinary** import does
+persist a ~19.7 KB snapshot. So "import never backs up" is **false**; the
+reproduced defect is narrower and more specific:
+
+1. **No restore affordance.** `RESTORE_UI_COUNT 0` across the whole Export view,
+   for both a normal and an oversized import. The snapshot exists and nothing can
+   consume it.
+2. **A skipped backup is indistinguishable from a successful one.** Same success
+   toast either way; no warning, and no signal that the snapshot is stale.
+
+This is a missing reachability path plus a missing outcome report — **not** a
+reproduced data-loss incident. Nothing was lost that the user could not already
+recover by exporting first, and no restore was attempted because no UI exists.
+The later acceptance criteria stand; the restart-and-restore leg remains
+unproven and must be demonstrated by the implementation, not inferred here.
+
+Reproduced-against acceptance detail for the later implementation: a restore
+affordance must be reachable without leaving the view the import happened in,
+and the stale-snapshot case above must not be presented as a valid backup.
 
 Separately, `src/lib/studio/indexeddb-backup.ts` exports
 `saveIndexedDBSnapshot` / `loadIndexedDBSnapshot` / `clearIndexedDBSnapshots`
