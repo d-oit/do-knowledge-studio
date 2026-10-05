@@ -207,3 +207,20 @@ Additional gates:
 - Firefox project addition (WebKit covers cross-engine risk first).
 - Full i18n extraction of user-facing strings (locale constants were
   noted during the audit).
+
+## Current-state reconciliation (2026-10-05)
+
+Added by [Plan 162](162-roadmap-progress-and-next-work-2026-10-05.md). This plan
+stays **PROPOSED** — nothing below is adopted or rejected by this note.
+
+| Action | Status 2026-10-05 | Evidence |
+|---|---|---|
+| A23 — hash-sync module mapping `#/view` to `currentView` with popstate handling, hash-wins-on-load, invalid-to-home | **Not implemented — source-confirmed** | No `location.hash`, `history.pushState`, `popstate`, or `hashchange` integration under `src/` or `e2e/` |
+| A24 — E2E deep-link and Back/Forward traversal spec across viewports | **Not implemented — source-confirmed** | No deep-link spec exists under `e2e/`; it would fail against the A23 gap |
+| Every other action in this plan | **Not reassessed** | This refresh gathered no evidence about the global error handling, structured logging, or visual-regression actions. No status is inferred for them either way |
+
+The accepted design for A23/A24 is unchanged in
+[ADR 037](ADRs/037-url-addressable-view-state.md), which is **Proposed — not
+implemented**. Sequencing for A23/A24 as feature F2 is in
+[Plan 162](162-roadmap-progress-and-next-work-2026-10-05.md); it ranks behind
+recovery/integrity work and ahead of gesture work.

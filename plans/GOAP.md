@@ -5,6 +5,17 @@
 **Source**: GitHub issue analysis (#168–#221) + plans/ gap analysis  
 **Method**: Goal-Oriented Action Planning with dependency-driven action chains
 
+> **Historical ledger — not a current validation report.** This is the
+> 2026-05 goal ledger. Its action chains and prerequisites reference the retired
+> **Vite, SQLite/OPFS, Orama, and CLI** architecture (superseded by ADR 018:
+> Next.js + Zustand + localStorage + BM25). Checked criteria below describe what
+> was true in that era and must not be read as evidence about the current
+> codebase. The goal history is preserved as written.
+>
+> For the current architecture see [ARCHITECTURE.md](./ARCHITECTURE.md); for the
+> current open work and its priority order see
+> [162-roadmap-progress-and-next-work-2026-10-05.md](./162-roadmap-progress-and-next-work-2026-10-05.md).
+
 ## Goal Hierarchy
 
 ```
