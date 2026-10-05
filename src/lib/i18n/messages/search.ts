@@ -25,6 +25,31 @@ const messages = {
   /** Accessible text describing the semantic toggle when it is turned off. */
   'search.semanticOffDescription':
     'Search by meaning is disabled. Results use exact keyword matching.',
+  /** Label for keyword search mode toggle. */
+  'search.keywordMode': 'Keyword',
+  /** Label for ranked search mode toggle. */
+  'search.rankedMode': 'Ranked',
+  /** Search input placeholder. */
+  'search.placeholder': 'Search knowledge base…',
+  /** Accessible label of the search input. */
+  'search.ariaLabel': 'Search knowledge base',
+  /** Clear search input button label. */
+  'search.clearAriaLabel': 'Clear panel search',
+  /** Search empty state when a query is present. */
+  'search.empty': 'No matches found.',
+  /** Search empty state when the library has no entities. */
+  'search.libraryEmpty': 'Your library is empty.',
+  /** Button text to create a new entity from query in empty state. */
+  'search.createEntity': (query: string) => `Create "${query}" as new entity`,
+  /** Footer summary of local search entity count. */
+  'search.localSearchCount': (count: string) => `Local search · ${count} entities`,
+  /** Accessible label of ranked search results list. */
+  'search.rankedResultsAriaLabel': 'Ranked search results',
+  /** Accessible label of keyword search results list. */
+  'search.keywordResultsAriaLabel': 'Keyword search results',
+  /** Search results status announcement. */
+  'search.resultsCount': (count: string) =>
+    `${count} search ${Number(count) === 1 ? 'result' : 'results'} found`,
 } as const
 
 /** Typed `translate` helper bound to the search message scope. */
