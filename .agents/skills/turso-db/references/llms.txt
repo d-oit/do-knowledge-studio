@@ -293,3 +293,6 @@
 - [Turso Homepage](https://turso.tech)
 - [Discord](https://tur.so/discord)
 - [GitHub](https://github.com/tursodatabase/turso)
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.
