@@ -307,7 +307,7 @@ re-exercised at runtime.
 | Six `React.lazy` view boundaries | `Implemented — source-confirmed` | `src/components/studio/app-shell.tsx:30-35` |
 | Test-source type gating | `Implemented — source-confirmed` | `vitest.config.ts:29` `ignoreSourceErrors: false` |
 | Semantic search, `okf`, encrypted reader export | `Implemented — source-confirmed` | `vector-store.ts:220-247,350`; `export-types.ts:12`; `use-export-handlers.ts:282-304` |
-| Recovery reachability + backup outcome | `Partial` — **first implementation priority** | `recovery-helpers.ts:150-165` has no production caller |
+| Recovery reachability + backup outcome | `Partial` — **first implementation priority**, now reproduced | `restoreFromRecovery` (`recovery-helpers.ts:150-165`) has no production caller. Reproduced 2026-10-05 in Chromium: an oversized (>4 MiB) pre-import backup is silently skipped — success toast shown, no warning, stale snapshot left behind — and no restore affordance exists anywhere (`RESTORE_UI_COUNT 0`). An ordinary import *does* persist a snapshot, so the narrower defect is reachability plus a truthful outcome report |
 | Deletion/export optional-field integrity | `Partial` — investigation pending | `slices/entities-slice.ts:94-105` |
 | Sync join/rejoin (conflicts, persistence re-init) | `Partial` | `sync-view.tsx:267-321`; `sync/doc.ts:37-43,75-84` |
 | Heavy-leaf deferral (editor→Yjs, PDF/DOCX/fflate) | `Partial` | `app-shell.tsx:13`; `use-export-handlers.ts:11-12` |
@@ -320,6 +320,7 @@ re-exercised at runtime.
 ### Ordered next work
 
 1. **Recovery reachability and backup outcome** (first implementation priority).
+   Gap reproduced 2026-10-05; evidence in [Plan 162](162-roadmap-progress-and-next-work-2026-10-05.md) #1.
 2. **Deletion/export integrity investigation**.
 3. **Sync join/rejoin completion**, then Plan 161's recorded follow-ons (dev search worker, first-mount reduced motion, workflow warnings).
 4. **Skills and documentation maintenance** — independent of product changes.
@@ -350,7 +351,6 @@ Session notes: GitHub's mergeability cache reported stale `BLOCKED` after the le
 |------|-----|-------------|
 | A11y E2E suite | #539–#543 | Strict axe assertions, color-contrast fixes, graph a11y fix |
 | UI smoke tests | #540 | 9 shadcn primitive tests (782 additions) |
-| Plan reconciliation | #544, #547–#549 | 7 plans reconciled, Status: DONE lines added |
 | Release policy | #545 | Never create release without explicit human instruction |
 | Version reconciliation | #546 | VERSION file, package.json, MIGRATION.md → 0.1.0 |
 | Historical annotations | #548 | 9 superseded plans annotated with Historical Notes |
