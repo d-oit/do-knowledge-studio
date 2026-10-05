@@ -19,7 +19,9 @@ vi.mock('@/lib/studio/entity-types', () => ({
   }),
 }))
 
-const searchMock = vi.fn(() => [])
+import type { SearchResult } from '@/lib/search/retrieval'
+
+const searchMock = vi.fn((): SearchResult[] => [])
 vi.mock('@/lib/search/retrieval', () => ({
   search: (...args: unknown[]) => searchMock(...(args as [])),
 }))
