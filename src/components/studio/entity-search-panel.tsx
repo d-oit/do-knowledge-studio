@@ -184,7 +184,7 @@ export const EntitySearchPanel = ({
   const filtered = useFilteredEntities()
   const entityIndex = useMemo(() => buildEntityIndex(entities), [entities])
   const rankedResults = useMemo(
-    () => (mode === 'ranked' ? search(entities, claims, searchQuery) : []),
+    () => (mode === 'ranked' ? search(entities, claims, searchQuery, 20) : []),
     [mode, entities, claims, searchQuery],
   )
 
