@@ -184,11 +184,11 @@ export const EntitySearchPanel = ({
   const filtered = useFilteredEntities()
   const entityIndex = useMemo(() => buildEntityIndex(entities), [entities])
   const rankedResults = useMemo(
-    () => (mode === 'ranked' ? search(entities, claims, searchQuery, 20) : []),
+    () => (mode === 'ranked' && searchQuery.trim() ? search(entities, claims, searchQuery, 20) : []),
     [mode, entities, claims, searchQuery],
   )
 
-  const results = mode === 'ranked' ? rankedResults : filtered
+  const results = mode === 'ranked' && searchQuery.trim() ? rankedResults : filtered
 
   const horizontalPadding = density === 'panel' ? 'px-4' : 'px-3'
 
@@ -259,7 +259,7 @@ export const EntitySearchPanel = ({
       <div className="flex-1 overflow-y-auto p-3">
         {results.length === 0 ? (
           <SearchEmptyState query={searchQuery} onCreate={onCreateEntity} />
-        ) : mode === 'ranked' ? (
+        ) : mode === 'ranked' && searchQuery.trim() ? (
           <RankedResultList
             results={rankedResults}
             entityIndex={entityIndex}
