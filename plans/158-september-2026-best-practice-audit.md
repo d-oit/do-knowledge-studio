@@ -7,8 +7,8 @@ confined to one domain, each required to cite a primary source
 developer.chrome.com). Every finding below was then **independently re-verified
 against the running app** before being ranked. Three candidates were rejected
 by that verification — see §4.
-**Status**: Audit complete; P0-1, P0-2, P0-3 and P1-2 remediated in the
-commits that follow. P1/P2 remain open.
+**Status**: Complete — all audit items remediated; subsequent offline lazy-view
+coverage recorded in Plan 161.
 
 ## Scope and method
 
@@ -294,7 +294,7 @@ spec citation. Neither survived a five-minute browser check.
 | P1-1 build warning | **Fixed** | `tsconfig.build.json` + `typescript.tsconfigPath`. See below. |
 | P2-1, P2-4, P2-5, P2-6, P2-7, P2-8, P2-9 | **Fixed** | See below. |
 | P2-2 manifest screenshots | **Fixed** | Real captures at both form factors, wired into the manifest and the precache list. |
-| P2-3 precache | **Fixed** | Generated manifest derived from the emitted HTML; verified offline in Chromium (#838). |
+| P2-3 precache | **Fixed — later superseded** | The fix recorded here derived the precache list from the emitted boot HTML only, which is the measurement this row describes and which is preserved as history. Plan 161 later replaced it with a generated union of the document URLs plus every emitted `.js`/`.mjs`/`.css` chunk and media asset, and recorded offline coverage of the six `React.lazy` views. The historical measurement above is not rewritten; Plan 161 holds the current inventory. |
 | P2-10 cross-tab ordering | **Fixed** | The broadcast subscription now waits for `onFinishHydration`. |
 | P2-11 dead `useStoreHydrated` | **Fixed** | Deleted — `app-shell.tsx`'s `appReady` already serves the E2E readiness contract, and a second signal could not express the refusal path. |
 
