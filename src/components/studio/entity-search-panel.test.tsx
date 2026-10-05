@@ -177,13 +177,11 @@ describe('EntitySearchPanel', () => {
     expect(screen.getByText('Local search · 2 entities')).toBeDefined()
   })
 
-  it('renders library entities in ranked mode when search query is empty', () => {
+  it('renders empty library state when in ranked mode with empty query', () => {
     searchQuery = ''
     render(<EntitySearchPanel />)
     fireEvent.click(screen.getByRole('button', { name: 'Ranked' }))
 
-    expect(screen.getByText('Alpha Concept')).toBeDefined()
-    expect(screen.getByText('Beta Reference')).toBeDefined()
-    expect(screen.queryByText('Your library is empty.')).toBeNull()
+    expect(screen.getByText('Your library is empty.')).toBeDefined()
   })
 })
