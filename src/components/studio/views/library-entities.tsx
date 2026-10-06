@@ -9,12 +9,10 @@ import { getEntityTypeMeta } from '@/lib/studio/entity-types'
 import { EntityIcon } from '../entity-type-icon'
 import { cn } from '@/lib/utils'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
-
-/** Module-scope date formatter for library timestamps (shared by grid and list). */
-const dateFormatter = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' })
+import { shortDate } from '@/lib/studio/format'
 
 /** Formats an ISO timestamp as a short date (e.g. "Jun 15"). */
-const formatDate = (iso: string): string => dateFormatter.format(new Date(iso))
+const formatDate = (iso: string): string => shortDate.format(new Date(iso))
 
 /** Above this entity count the list/grid switches to windowed rendering (plans/122). */
 const VIRTUALIZE_THRESHOLD = 64
