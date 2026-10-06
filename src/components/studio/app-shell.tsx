@@ -260,7 +260,7 @@ export const AppShell = () => {
     >
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[1000] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:ring-2 focus:ring-saffron focus:ring-offset-2 focus:ring-offset-background"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-skiplink focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:ring-2 focus:ring-saffron focus:ring-offset-2 focus:ring-offset-background"
       >
         Skip to main content
       </a>
