@@ -206,7 +206,7 @@ export const Overlay = ({
     <div
       onClick={handleBackdropClick}
       className={cn(
-        'fixed inset-0 z-[800] bg-ink/30 backdrop-blur-sm animate-in fade-in duration-150',
+        'fixed inset-0 z-overlay bg-ink/30 backdrop-blur-sm animate-in fade-in duration-150',
         getBackdropClasses(variant),
       )}
     >

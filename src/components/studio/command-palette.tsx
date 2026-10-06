@@ -20,6 +20,13 @@ import { Overlay } from '@/components/studio/ui/shared-primitives'
 import type { ViewId } from '@/lib/studio/types'
 import { getEntityTypeMeta } from '@/lib/studio/entity-types'
 import { translate } from '@/lib/i18n/messages/palette'
+import { cn } from '@/lib/utils'
+
+/** Standard top margin class for the command palette overlay dialog. */
+export const COMMAND_PALETTE_TOP_MARGIN_CLASS = 'mt-[12vh]'
+
+/** Standard width class for the command palette overlay dialog. */
+export const COMMAND_PALETTE_WIDTH_CLASS = 'w-[640px]'
 
 interface CmdItem {
   id: string
@@ -130,7 +137,17 @@ export const CommandPalette = ({ onEntitySelect }: CommandPaletteProps) => {
   if (!commandOpen) return null
 
   return (
-    <Overlay open={commandOpen} onClose={close} aria-label={translate('palette.ariaLabel')} variant="center" className="mt-[12vh] w-[640px] max-w-[92vw] overflow-hidden rounded-xl border border-border bg-popover shadow-2xl">
+    <Overlay
+      open={commandOpen}
+      onClose={close}
+      aria-label={translate('palette.ariaLabel')}
+      variant="center"
+      className={cn(
+        COMMAND_PALETTE_TOP_MARGIN_CLASS,
+        COMMAND_PALETTE_WIDTH_CLASS,
+        'max-w-[92vw] overflow-hidden rounded-xl border border-border bg-popover shadow-2xl',
+      )}
+    >
       <CommandPrimitive
         loop
         label={translate('palette.ariaLabel')}
