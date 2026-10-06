@@ -176,6 +176,9 @@ const SidebarNav = () => {
   )
 }
 
+/** Sidebar width geometry constant. */
+export const SIDEBAR_WIDTH_CLASS = 'w-[248px]'
+
 /** Sidebar with brand, search trigger, navigation, and footer controls. */
 export const Sidebar = () => {
   const isMacPlatform = useIsMacPlatform()
@@ -185,7 +188,12 @@ export const Sidebar = () => {
   const { theme, setTheme } = useTheme()
 
   return (
-    <aside className="hidden h-full w-[248px] shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground lg:flex">
+    <aside
+      className={cn(
+        'hidden h-full shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground lg:flex',
+        SIDEBAR_WIDTH_CLASS,
+      )}
+    >
       {/* Brand */}
       <div className="flex items-center gap-2.5 px-5 pt-5 pb-4">
         <img src="/logo.svg" alt="" className="h-9 w-9" />

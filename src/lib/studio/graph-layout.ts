@@ -204,6 +204,26 @@ const byEntityId = (a: Entity, b: Entity): number => a.id.localeCompare(b.id)
  * are placed in grows with their count, so a large library spreads out instead of
  * crowding into sub-click-safe gaps (see `placementBand`).
  */
+/**
+ * Computes circular layout node positions centered at (canvas.width / 2, canvas.height / 2)
+ * with radius derived from Math.min(cx, cy) * radiusFactor.
+ */
+export const computeCircularLayout = (
+  nodes: readonly GraphNode[],
+  canvas: { width: number; height: number },
+  radiusFactor = 0.7,
+): GraphNode[] => {
+  if (nodes.length === 0) return []
+  const cx = canvas.width / 2
+  const cy = canvas.height / 2
+  const r = Math.min(cx, cy) * radiusFactor
+  return nodes.map((n, i) => ({
+    ...n,
+    x: cx + r * Math.cos((2 * Math.PI * i) / nodes.length),
+    y: cy + r * Math.sin((2 * Math.PI * i) / nodes.length),
+  }))
+}
+
 export const placeGraphNodes = (
   entities: readonly Entity[],
   seedNodes: readonly GraphNode[],

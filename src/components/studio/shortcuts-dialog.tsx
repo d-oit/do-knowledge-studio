@@ -374,7 +374,7 @@ export const ShortcutsDialog = (): React.JSX.Element => {
             exit={{ opacity: 0, y: 8 }}
             transition={reducedMotion ? { duration: 0 } : { duration: 0.15 }}
             className={cn(
-              'fixed bottom-4 left-4 z-[700] flex items-center gap-2 rounded-full border border-saffron/40 bg-popover px-3 py-1.5 shadow-lifted',
+              'fixed bottom-4 left-4 z-shortcuts flex items-center gap-2 rounded-full border border-saffron/40 bg-popover px-3 py-1.5 shadow-lifted',
             )}
             aria-live="polite"
           >
