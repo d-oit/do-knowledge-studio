@@ -7,6 +7,7 @@ import { buildEntityIndex } from '@/lib/studio/graph-index'
 import { useAnnouncer } from '@/lib/a11y/announcer'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
 import type { Entity } from '@/lib/studio/types'
+import { fullDate } from '@/lib/studio/format'
 import { Search, FileText, ArrowRight, X } from 'lucide-react'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -402,7 +403,7 @@ const InspectorPanel = ({ onClose }: { onClose: () => void }) => {
         )}
 
         <div className="mt-5 border-t border-border pt-3 text-label text-ink-faint">
-          Updated {new Date(entity.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          Updated {fullDate.format(new Date(entity.updatedAt))}
         </div>
       </div>
 
