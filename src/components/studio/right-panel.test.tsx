@@ -179,7 +179,10 @@ describe('RightPanel', () => {
   it('closes SearchPanel via its close button', () => {
     rightPanelOpen = true
     render(<RightPanel />)
-    fireEvent.click(screen.getByRole('button', { name: 'Close panel' }))
+    const closeBtn = screen.getByRole('button', { name: 'Close panel' })
+    expect(closeBtn.getAttribute('title')).toBe('Close panel')
+    expect(closeBtn.getAttribute('aria-label')).toBe('Close panel')
+    fireEvent.click(closeBtn)
     expect(mockSetRightPanelOpen).toHaveBeenCalledWith(false)
   })
 
