@@ -26,6 +26,12 @@ import {
   type HydrationRefusal,
 } from '@/lib/studio/hydration-guard'
 import { QuarantineBanner } from './views/quarantine-banner'
+import { RecoveryBanner } from './views/recovery-banner'
+import {
+  describeRecoverySnapshot,
+  subscribeToRecoveryAvailability,
+  type RecoverySnapshotSummary,
+} from '@/lib/studio/recovery-helpers'
 
 const GraphView = lazy(() => import('./views/graph-view').then((m) => ({ default: m.GraphView })))
 const MindMapView = lazy(() => import('./views/mindmap-view').then((m) => ({ default: m.MindMapView })))
@@ -192,22 +198,43 @@ const useHydrationRefusal = (): HydrationRefusal | null => {
  */
 const RecoveryAlerts = ({ refusal }: { refusal: HydrationRefusal | null }) => {
   const [record, setRecord] = useState<QuarantineRecord | null>(null)
+  const [snapshot, setSnapshot] = useState<RecoverySnapshotSummary | null>(null)
 
   const refreshRecord = useCallback(() => {
     setRecord(readQuarantine())
   }, [])
 
+  const refreshSnapshot = useCallback(() => {
+    setSnapshot(describeRecoverySnapshot())
+  }, [])
+
   useEffect(() => {
     refreshRecord()
+    refreshSnapshot()
     // A late or manual rehydrate can refuse after mount, so the quarantine
-    // record is re-read on hydration completion rather than captured once.
-    return useStudioStore.persist.onFinishHydration(refreshRecord)
-  }, [refreshRecord])
+    // record is re-read on hydration completion rather than captured once. The
+    // pre-import snapshot is refreshed on the same signal so an import that
+    // lands before hydration finishes still offers its restore.
+    return useStudioStore.persist.onFinishHydration(() => {
+      refreshRecord()
+      refreshSnapshot()
+    })
+  }, [refreshRecord, refreshSnapshot])
 
-  if (record === null && refusal === null) return null
+  // A snapshot is written inside a store action, long after this component
+  // mounted, so the initial read alone would never learn that an import just
+  // made one available.
+  useEffect(() => subscribeToRecoveryAvailability(refreshSnapshot), [refreshSnapshot])
+
+  if (record === null && refusal === null && snapshot === null) return null
 
   return (
     <div className="mx-auto max-w-5xl px-6 pt-6 lg:px-10">
+      {/* Deliberately withheld while a refusal blocks writes: a restore here
+          would swap the corpus in memory, be dropped on the way to storage, and
+          consume the snapshot — the user would be told the library came back and
+          then lose it on reload. */}
+      {refusal === null && snapshot && <RecoveryBanner summary={snapshot} />}
       {record && <QuarantineBanner kind="preserved" record={record} />}
       {refusal?.preserved === false && (
         <QuarantineBanner kind="unpreserved" reason={refusal.reason} raw={refusal.raw} />

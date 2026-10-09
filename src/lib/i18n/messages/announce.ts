@@ -68,6 +68,22 @@ const messages = {
   'announce.preservedLibraryDownloaded': 'Preserved library downloaded',
   /** Toast when the download fails. */
   'announce.preservedLibraryFailed': 'Could not download the preserved copy',
+  /** Heading when a pre-import snapshot is waiting to be restored. */
+  'announce.restoreTitle': 'A previous library is ready to restore',
+  /** Body naming what the snapshot holds. The snapshot is the corpus that
+   *  existed *before* the most recent import, so restoring replaces what is
+   *  loaded now — that is stated rather than implied. */
+  'announce.restoreBody': (summary: string) =>
+    `We kept a copy of ${summary} from before your last import. Restoring replaces your current library.`,
+  /** Banner action that applies the snapshot. */
+  'announce.restoreAction': 'Restore it',
+  /** Banner action that hides the offer for this page session. It never
+   *  deletes the snapshot, so a reload brings the offer back. */
+  'announce.restoreDismiss': 'Hide for this page session',
+  /** Spoken confirmation after a successful restore. */
+  'announce.restoreSucceeded': 'Previous library restored',
+  /** Toast when a restore fails. */
+  'announce.restoreFailed': 'Could not restore the previous library',
 } as const
 
 /** Typed `translate` helper bound to the announcement message scope. */

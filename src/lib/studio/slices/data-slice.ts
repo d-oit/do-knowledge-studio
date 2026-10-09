@@ -60,11 +60,20 @@ export const createDataSlice: StudioSlice<DataSlice> = (set, get) => ({
     abortChatSend(get, set)
     resetSearchCache()
     const preImport = get()
+    /** The snapshot. */
     const snapshot = buildRecoverySnapshot(preImport)
-    persistRecoverySnapshot(snapshot)
+    /** The outcome. */
+    const backup = persistRecoverySnapshot(snapshot)
     try {
       set(corpusPatch(entities, claims, options))
-      return { success: true }
+      // The import replaced the corpus the snapshot protects. Reporting
+      // `success` alone would tell the user they are safe when no backup of the
+      // corpus they just left exists.
+      return {
+        success: true,
+        backupPersisted: backup.persisted,
+        ...(backup.persisted ? {} : { backupFailure: backup.reason }),
+      }
     } catch (err) {
       try {
         set({
