@@ -42,21 +42,26 @@ E2E) stay dated and attributed. They are **not** re-asserted as current.
 These are future-work records. **This plan does not authorize changing any of the
 implementations below**; it records them so they stop being lost between plans.
 
-### 1. Recovery reachability and backup outcome — first implementation priority
+### 1. Recovery reachability and backup outcome — IMPLEMENTED 2026-10-05
 
-`restoreFromRecovery` (`src/lib/studio/recovery-helpers.ts:150-165`) has no
-production caller. The only references outside its own module are the store
-re-export (`src/lib/studio/store.ts:40`) and two test suites
-(`store-coverage.test.ts`, `store-graph.test.ts`). Imports and tests are not UI
-callers.
+**Status: `Implemented — source-confirmed`, verified in a real browser on all
+four viewport projects.** The problem statement below is preserved as the
+original record; the resolution section follows it.
 
-`persistRecoverySnapshot` returns `void` and **skips** the write above the size
-guard (`:55-65`), while `importWithRollback` still returns `{ success: true }`
-from `src/lib/studio/slices/data-slice.ts:63-67`. The UI therefore reports import
-success without saying whether a durable pre-import backup exists.
+#### Original problem statement (source-confirmed 2026-10-05)
 
-Status: `Not implemented — source-confirmed`, **now with a production
-reproduction** (2026-10-05, Chromium, dev build; throwaway spec, since removed).
+`restoreFromRecovery` (`src/lib/studio/recovery-helpers.ts`) had no production
+caller. The only references outside its own module were the store re-export
+(`src/lib/studio/store.ts:40`) and two test suites (`store-coverage.test.ts`,
+`store-graph.test.ts`). Imports and tests are not UI callers.
+
+`persistRecoverySnapshot` returned `void` and **skipped** the write above the size
+guard, while `importWithRollback` still returned `{ success: true }`
+(`src/lib/studio/slices/data-slice.ts`). The UI therefore reported import success
+without saying whether a durable pre-import backup existed.
+
+Status at the time of the audit: `Not implemented — source-confirmed`, with the
+production reproduction above.
 
 **Reproduced — the silent-skip case.** Imported a ~5 MB single-entity corpus
 over the seed corpus. Observed:
@@ -94,21 +99,49 @@ recover by exporting first, and no restore was attempted because no UI exists.
 The later acceptance criteria stand; the restart-and-restore leg remains
 unproven and must be demonstrated by the implementation, not inferred here.
 
-Reproduced-against acceptance detail for the later implementation: a restore
-affordance must be reachable without leaving the view the import happened in,
-and the stale-snapshot case above must not be presented as a valid backup.
+#### Resolution (2026-10-05)
 
-Separately, `src/lib/studio/indexeddb-backup.ts` exports
-`saveIndexedDBSnapshot` / `loadIndexedDBSnapshot` / `clearIndexedDBSnapshots`
-whose only caller is `indexeddb-backup.test.ts`. Tiered backup is **not**
-operational, and this plan does not select a storage migration.
+All three previously-open acceptance criteria are met, and two additional
+data-loss paths found during review are guarded:
 
-Later acceptance:
+| Criterion | How it is met |
+|---|---|
+| Import B over A, restart, explicitly restore A | `RecoveryBanner` mounts in `RecoveryAlerts` above the view router, so the offer is reachable from **any** view, not just Export. Restoring puts corpus A back and consumes the snapshot. |
+| An oversized or storage-refused backup produces truthful UI | `persistRecoverySnapshot` returns `RecoveryPersistResult`; the import shows `toast.warning` ("Imported — but no backup was kept") instead of a false green success. |
+| Quarantine and pre-import recovery stay separate | The new banner is a distinct component and storage key from `QuarantineBanner`; the two render side by side when both apply. |
 
-- Import corpus B over corpus A, restart the app, explicitly restore A.
-- An oversized or storage-refused backup produces truthful UI and never claims a
-  durable backup exists.
-- Quarantine recovery (Plan 159) and pre-import recovery stay separate surfaces.
+Files: `recovery-helpers.ts` (outcome type, availability signal,
+`describeRecoverySnapshot`, non-throwing `readRecoverySnapshot`),
+`store-types.ts` (`ImportOutcome`), `slices/data-slice.ts` (threads the outcome),
+`views/recovery-banner.tsx` (new), `app-shell.tsx` (mount + subscription),
+`use-export-handlers.ts` (truthful toast), `i18n/messages/announce.ts`.
+
+Two further defects were found and fixed while building this, both of which the
+new banner would otherwise have made reachable:
+
+1. **A refused backup destroyed the surviving one.** The first implementation
+   called `clearRecoverySnapshot()` in the `storage-unavailable` branch. But
+   `localStorage.removeItem` still succeeds when `setItem` is refused by a full
+   quota, so it deleted the only copy of the corpus being replaced. Only the
+   `too-large` branch clears now; a stale-but-real backup survives, and the read
+   path re-validates it against the schema and TTL every time.
+2. **Restore could delete the backup without saving.** `restoreFromRecovery`
+   cleared the snapshot in a catch that also covered `applyRecoverySnapshot`,
+   whose `setState` persists and can throw on quota *after* the in-memory swap —
+   and it offered restore even in a hydration-refused session where every write
+   is dropped. It now refuses while `isSyncBlocked()`, clears only after a
+   confirmed-successful apply, and never on a failure path.
+
+**Evidence.** `recovery-backup-outcome.test.ts` (13 unit tests) and
+`e2e/recovery-restore.spec.ts` (3 tests × 4 viewport projects). Every new test
+was checked against the unfixed code first: 6 fail without the outcome fix, 4
+fail without the restore-safety fix, and all 3 E2E cases fail without the
+banner. Full gate on the final tree: 181 files / **2804 tests**, 0 type errors,
+build clean, **660 E2E passed / 4 skipped / 0 failed**.
+
+**Deliberately not done.** `indexeddb-backup.ts` is untouched and still has no
+production caller. Tiered backup remains **not operational**, and no storage
+migration is selected here.
 
 ### 2. Deletion / export integrity investigation
 
@@ -258,20 +291,23 @@ but appears in **neither** generated catalog (0 matches in each). S1 is its fix.
 
 1. **Reconcile records** — this document plus the `plans/` edits made alongside
    it. Complete.
-2. **Recovery reachability + backup outcome**, then **deletion/export
-   integrity** — first implementation priority; both touch data safety, so per
-   the delivery lifecycle they start at production: reproduce, then fix.
-3. **Sync join/rejoin completion**, then the three **Plan 161 recorded
+2. ~~**Recovery reachability + backup outcome**~~ — **implemented and
+   browser-verified 2026-10-05** (see #1 above).
+3. **Deletion/export integrity** — now the first open implementation item; it
+   touches data safety, so per the delivery lifecycle it starts at production:
+   reproduce against an imported corpus, then fix.
+4. **Sync join/rejoin completion**, then the three **Plan 161 recorded
    follow-ons** (dev search worker, first-mount reduced motion, workflow
    warnings).
-4. **Skills and docs maintenance** — independent of product changes; S1, S2, D1,
-   D2, D3 can run in any order and do not block steps 2–3.
-5. **F1 AI request control** — first new feature.
-6. **F2 deep links**, then **F3 gestures**.
-7. **Unscheduled** — revision comparison, Synthesis Inbox, Visual Query Builder.
+5. **Skills and docs maintenance** — independent of product changes; S1, S2, D1,
+   D2, D3 can run in any order and do not block steps 3–4.
+6. **F1 AI request control** — first new feature.
+7. **F2 deep links**, then **F3 gestures**.
+8. **Unscheduled** — revision comparison, Synthesis Inbox, Visual Query Builder.
 
-Every row above stays open when this documentation task completes. Completing
-this plan means the records are truthful, not that the backlog is empty.
+Step 2 is the one item this plan actually implemented. Every other row stays
+open; completing this plan means the records are truthful, not that the backlog
+is empty.
 
 ---
 

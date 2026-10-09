@@ -9,6 +9,7 @@
 import type { Claim, Entity, ViewId, ChatMessage, AnyEntityType } from './types'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from './schema'
 import type { HistorySnapshot } from './history-snapshot'
+import type { RecoveryPersistFailure } from './recovery-helpers'
 
 /** Optional graph/mindmap metadata attached to an import operation. */
 export interface ImportOptions {
@@ -89,7 +90,7 @@ export interface StudioState {
 
   // Import / reset
   importData: (entities: Entity[], claims: Claim[], options?: ImportOptions) => void
-  importWithRollback: (entities: Entity[], claims: Claim[], options?: ImportOptions) => { success: boolean; error?: string }
+  importWithRollback: (entities: Entity[], claims: Claim[], options?: ImportOptions) => ImportOutcome
   resetStore: () => void
 
   // Graph, mind map, links, and tags
@@ -100,3 +101,15 @@ export interface StudioState {
 
   // Theme handled by next-themes — store tracks UI side effects only
 }
+
+/**
+ * Outcome of an import-with-rollback.
+ *
+ * `backupPersisted` is separate from `success` on purpose: the import can
+ * succeed while leaving the user with no way back to the corpus it replaced.
+ * Callers must not report a clean import when it is `false`.
+ */
+export type ImportOutcome =
+  | { success: true; backupPersisted: boolean; backupFailure?: RecoveryPersistFailure }
+  | { success: false; error: string }
+
