@@ -173,9 +173,9 @@ export const AiHarnessChatPanel = ({
   return (
     <div className="flex h-[520px] flex-col rounded-lg border border-border bg-card">
       <div className="flex-1 space-y-4 overflow-y-auto p-4" aria-live="polite" aria-atomic="false">
-        {messages.map((m) => (
+        {messages.map((m, index) => (
           <ChatMessageRow
-            key={`${m.role}:${m.content}`}
+            key={m.id ?? `${index}-${m.role}`}
             message={m}
             reducedMotion={reducedMotion}
           />

@@ -8,6 +8,7 @@ import type { Entity, Claim } from '@/lib/studio/types'
 import type { AIProvider } from '@/lib/studio/ai-settings'
 
 const INITIAL_ASSISTANT_MESSAGE: ChatMessage = {
+  id: 'init-assistant',
   role: 'assistant',
   content:
     'AI agent ready to assist with knowledge synthesis. Ask me anything about your local knowledge base.',
@@ -42,7 +43,8 @@ const withTrailingAssistantMessage = (
   content: string,
 ): ChatMessage[] => {
   const updated = [...messages]
-  updated[updated.length - 1] = { role: 'assistant', content }
+  const last = updated[updated.length - 1]
+  updated[updated.length - 1] = { ...last, role: 'assistant', content }
   return updated
 }
 
@@ -103,13 +105,13 @@ export const useAiHarnessChat = ({
     if (!decision.allowed) {
       setMessages((m) => [
         ...m,
-        { role: 'assistant', content: RATE_LIMIT_MESSAGE },
+        { id: crypto.randomUUID(), role: 'assistant', content: RATE_LIMIT_MESSAGE },
       ])
       setCooldownMs(decision.retryAfterMs ?? 5000)
       return
     }
 
-    const userMsg: ChatMessage = { role: 'user', content: text }
+    const userMsg: ChatMessage = { id: crypto.randomUUID(), role: 'user', content: text }
     setMessages((m) => [...m, userMsg])
     setInput('')
     setIsLoading(true)
@@ -157,7 +159,7 @@ export const useAiHarnessChat = ({
           return
         }
         assistantBubbleStarted = true
-        setMessages((m) => [...m, { role: 'assistant', content }])
+        setMessages((m) => [...m, { id: crypto.randomUUID(), role: 'assistant', content }])
       }
 
       const result = await sendChatStream(
@@ -193,7 +195,7 @@ export const useAiHarnessChat = ({
       const msg = err instanceof Error ? err.message : 'Unknown error'
       setMessages((m) => [
         ...m,
-        { role: 'assistant', content: `[Error] ${msg}\n\nCheck your provider settings and try again.` },
+        { id: crypto.randomUUID(), role: 'assistant', content: `[Error] ${msg}\n\nCheck your provider settings and try again.` },
       ])
     } finally {
       setIsLoading(false)
