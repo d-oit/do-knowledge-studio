@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect, useRef } from 'react'
 import { Bot, User, Send, Sparkles, Lightbulb } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
@@ -170,9 +171,26 @@ export const AiHarnessChatPanel = ({
   suggestions = [],
 }: ChatPanelProps) => {
   const showSuggestions = suggestions.length > 0 && messages.length <= 1 && !isLoading && input.trim() === ''
+  const prevLoadingRef = useRef(isLoading)
+  const [lastTurnFinished, setLastTurnFinished] = useState(false)
+
+  useEffect(() => {
+    if (prevLoadingRef.current && !isLoading) {
+      setLastTurnFinished(true)
+    } else if (isLoading) {
+      setLastTurnFinished(false)
+    }
+    prevLoadingRef.current = isLoading
+  }, [isLoading])
+
   return (
     <div className="flex h-[520px] flex-col rounded-lg border border-border bg-card">
-      <div className="flex-1 space-y-4 overflow-y-auto p-4" aria-live="polite" aria-atomic="false">
+      <div
+        className="flex-1 space-y-4 overflow-y-auto p-4"
+        role="log"
+        aria-live="off"
+        aria-label="AI chat transcript"
+      >
         {messages.map((m) => (
           <ChatMessageRow
             key={`${m.role}:${m.content}`}
@@ -182,6 +200,10 @@ export const AiHarnessChatPanel = ({
         ))}
         {isLoading && <ChatTypingIndicator />}
       </div>
+
+      <span role="status" aria-live="polite" className="sr-only">
+        {lastTurnFinished ? 'Response complete' : ''}
+      </span>
 
       {showSuggestions && (
         <ChatSuggestionChips
