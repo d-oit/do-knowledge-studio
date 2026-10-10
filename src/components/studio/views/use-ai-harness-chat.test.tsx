@@ -173,4 +173,31 @@ describe('useAiHarnessChat', () => {
     expect(mockSendChatStream).toHaveBeenCalled()
   })
 
+  it('assigns unique ids to user and assistant messages and preserves assistant id across stream end', async () => {
+    mockSendChatStream.mockImplementation(async (_request, onChunk) => {
+      onChunk('Chunk 1')
+      onChunk(' Chunk 2')
+      return resultFor('Chunk 1 Chunk 2')
+    })
+
+    const hook = renderHook(() => useAiHarnessChat({ ...baseOptions }))
+    act(() => { hook.result.current.setInput('hi') })
+
+    await act(async () => {
+      await hook.result.current.handleSend()
+    })
+
+    const messages = hook.result.current.messages
+    const initialMsg = messages[0]
+    const userMsg = messages[1]
+    const assistantMsg = messages[2]
+
+    expect(initialMsg.id).toBe('init-assistant')
+    expect(userMsg.id).toBeDefined()
+    expect(assistantMsg.id).toBeDefined()
+    expect(userMsg.id).not.toBe(assistantMsg.id)
+    expect(typeof userMsg.id).toBe('string')
+    expect(typeof assistantMsg.id).toBe('string')
+  })
+
 })

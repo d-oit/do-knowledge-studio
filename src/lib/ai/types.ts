@@ -3,6 +3,7 @@ export type ProviderId = 'openrouter' | 'ollama' | 'local'
 
 /** Chat message with role and content for AI conversation. */
 export interface ChatMessage {
+  id?: string
   role: 'system' | 'user' | 'assistant'
   content: string
 }
