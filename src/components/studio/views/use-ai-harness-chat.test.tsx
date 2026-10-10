@@ -164,6 +164,51 @@ describe('useAiHarnessChat', () => {
     expect(() => { hook.unmount() }).not.toThrow()
   })
 
+  it('aborts stream when stop is called and re-enables composer', async () => {
+    let capturedSignal: AbortSignal | undefined
+    mockSendChatStream.mockImplementation((request) => {
+      capturedSignal = request.signal
+      return new Promise<ChatResult>((_resolve, reject) => {
+        if (request.signal?.aborted) {
+          reject(new DOMException('Aborted', 'AbortError'))
+          return
+        }
+        request.signal?.addEventListener('abort', () => {
+          reject(new DOMException('Aborted', 'AbortError'))
+        })
+      })
+    })
+
+    const hook = renderHook(() => useAiHarnessChat({ ...baseOptions }))
+    act(() => { hook.result.current.setInput('hi') })
+    void act(() => { void hook.result.current.handleSend() })
+    await waitFor(() => { expect(capturedSignal).toBeDefined() })
+
+    expect(hook.result.current.isLoading).toBe(true)
+    expect(capturedSignal?.aborted).toBe(false)
+
+    act(() => { hook.result.current.stop() })
+
+    await waitFor(() => { expect(hook.result.current.isLoading).toBe(false) })
+    expect(capturedSignal?.aborted).toBe(true)
+  })
+
+  it('surfaces a friendly error message when request times out', async () => {
+    mockSendChatStream.mockImplementation(async () => {
+      // Simulate timeout signal abort
+      const timeoutErr = new DOMException('The operation timed out.', 'TimeoutError')
+      throw timeoutErr
+    })
+
+    const hook = await sendMessage('hi')
+
+    const last = hook.result.current.messages.at(-1)
+    expect(last?.role).toBe('assistant')
+    expect(last?.content).toBe(
+      '[Error] Request timed out after 2 minutes. The provider took too long to respond.',
+    )
+  })
+
   it('sends the override text even when the composer input is empty (#846)', async () => {
     mockSendChatStream.mockResolvedValue(resultFor('chip answer'))
     const hook = renderHook(() => useAiHarnessChat({ ...baseOptions }))
