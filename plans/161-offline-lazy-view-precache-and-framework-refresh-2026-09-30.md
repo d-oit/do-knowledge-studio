@@ -128,10 +128,10 @@ Every row below was run in this session against a real production build.
 | Real browser, fresh profile | Chromium with a dedicated `--user-data-dir`: worker installed from scratch → `dks-static-v3` with **61** entries. Created note `Offline refresh proof` in Editor, then cleared the HTTP cache (`Network.clearBrowserCache`), went offline in a new document: Home/offline badge, Library card, Graph (9 nodes incl. the marker), Mind Map, TRIZ (h1 + parameter panels), Export JSON download (12,319 bytes, 9 entities, marker id `82bb5020-…`). Mobile 390×844: drawer navigation, Library, and Graph all render offline |
 | Upgrade lifecycle | Retained pre-change profile: on-disk `index.txt` held **`dks-static-v2`** (45 entries) and no v3. Launching the final build online → new worker installed, activated, `clients.claim()`ed, `activate` deleted `dks-static-v2` → **`dks-static-v3` with 61 entries**. Hard-killed the browser, relaunched the same profile on disk → still v3/61. Offline with the HTTP cache cleared and disabled, all six views rendered first-use (graph label `Knowledge graph with 8 entities and 12 connections`; Sync showed `Disconnected`, `Connection`, `Sync History`) |
 
-### Follow-on discovered (pre-existing, not fixed here)
+### Follow-on 1 — reduced-motion hydration mismatch (fixed)
 
-Under `prefers-reduced-motion: reduce`, Home logs a React hydration mismatch for
-every framer-motion element in `home-view.tsx`:
+Under `prefers-reduced-motion: reduce`, Home logged a React hydration mismatch
+for every framer-motion element in `home-view.tsx`:
 
 ```
 <motion.section initial={false} animate={{opacity:1}} transition={{duration:0}}>
@@ -140,29 +140,97 @@ every framer-motion element in `home-view.tsx`:
 -   style={{opacity:"0"}}
 ```
 
-`initial={reducedMotion ? false : { width: 0 }}` makes the client's first render
-apply the `animate` targets, while SSR can only emit the pre-animation values.
-The no-preference path is unaffected, which is why a normal browser session never
-sees it.
+Mechanism: `useReducedMotion` read `matchMedia` **synchronously on the client's
+first render** while the server answered `false`. ~25 call sites branch
+`initial={reducedMotion ? false : {...}}` on that answer, so the hydration pass
+rendered different styles than the HTML it was given.
 
-Measured A/B, same spec, same machine:
+Measured A/B (same spec, same machine) ruled out the framework refresh as the
+cause: **8** warnings on Next 16.3.6 / React 19.2.8 and **8** on 16.3.7 / 19.3.0.
 
-| Dependencies | Warnings from `touch-targets.spec.ts --project=chromium` |
+Fix: the hook is now `useSyncExternalStore(subscribe, getSnapshot,
+getServerSnapshot = () => false)`. Hydration uses the server answer, so the first
+client render matches the server; the real preference re-reads immediately
+afterwards. `getSnapshot`/`getServerSnapshot` stay at module scope because
+`useSyncExternalStore` needs a stable callback identity. This is the same rule
+plans/149 §4 established for the hydration-refusal status: a client-only signal
+must never decide what the first render outputs.
+
+Evidence:
+
+| Claim | Measurement |
 |---|---|
-| Next 16.3.6 / React 19.2.8 (pre-refresh) | 8 (one per test) |
-| Next 16.3.7 / React 19.3.0 (this change) | 8 |
+| The defect is caught | New `e2e/hydration-mismatch.spec.ts` failed on the old hook with `hydration errors: …` and passes now, on all four projects |
+| The class is closed, not one instance | `e2e/touch-targets.spec.ts` (which sets `reducedMotion: 'reduce'` for its whole context) went from **8** logged mismatches in `dev.log` to **0**; 42 tests across `touch-targets`, `accessibility`, `contrast`, `zoom-reflow` stayed green |
+| Unit behaviour is unchanged | 180 files / 2790 tests green, including the hook's own suite; every `vi.mock('@/lib/studio/use-reduced-motion')` call site keeps working |
 
-Identical counts, so the framework refresh did not introduce it; the refreshed
-versions do not fix it either. Reproduction:
-`pnpm exec playwright test e2e/touch-targets.spec.ts --project=chromium` with
-`dev.log` watched — that spec sets `contextOptions: { reducedMotion: 'reduce' }`,
-and `zoom-reflow.spec.ts` / `accessibility.spec.ts` trigger the same path via
-`page.emulateMedia`.
+**Residual, deliberate:** during the hydration pass the preference is unknowable
+by construction, so a reduce user's *first* mount runs its tween with the
+default duration instead of `0`. Measured on the production build: the Home
+section goes 0.04 → 0.19 → 0.68 → 1.0 over ~450ms on first paint. Every later
+mount (`duration: 0`) still skips the animation, and nothing freezes mid-fade
+(the failure mode the old synchronous read was added to prevent). Pinning a
+server-identical first render *and* zero first-mount motion would need
+`initial={false}` while the preference is unknown at all ~25 sites — a visible
+change for no-preference users, so it is recorded here rather than taken
+silently.
 
-Not fixed in this plan: it is an unrelated UI change (the fix is to give the
-motion elements server-resolvable initial values, or to gate them on a
-post-hydration flag), and the plan scoped UI work out. Tracked here as the
-follow-up the repo's warning policy requires.
+### Follow-on 2 — the offline banner covered the topbar controls (fixed)
+
+The banner is `fixed top-0 z-50` while the topbar is in normal flow, so the
+banner's band sat over the topbar's own hit points. Measured with
+`document.elementFromPoint` at every configured viewport:
+
+| Viewport | Banner height | Obstructed controls |
+|---|---|---|
+| 1920×1080 | 36px | quick filter, command palette, New entity |
+| 1280×800 | 36px | quick filter, command palette, New entity |
+| 390×844 | 56px (wraps) | menu trigger, search trigger, New entity |
+
+While offline — the moment a local-first app most needs to work — its primary
+controls could not be clicked at all, and on mobile the navigation drawer was
+unreachable.
+
+Fix: `OfflineIndicator` publishes its **measured** `offsetHeight` as
+`--offline-banner-height` (ResizeObserver, so a wrapped or zoomed banner is
+still exact) and `AppShell` reserves that much `paddingTop`. Unset on the
+server, so both renders agree at `0px`.
+
+Evidence: the new `Offline banner` test in `e2e/accessibility.spec.ts` failed on
+the old layout with `topbar controls hidden behind the offline banner: Search,
+Open command palette, New entity` and passes on all four projects now. Two
+false-pass traps were found and closed by running it *before* trusting it:
+`toBeVisible()` is satisfied while the banner is still sliding in from above the
+viewport, and the reservation lands one frame after the banner mounts — probing
+early reported an empty obstruction list and the test passed **3 of 6** mobile
+runs on the unfixed layout. It now pins `reducedMotion: 'reduce'` (no slide) and
+polls for the reservation itself, failing with `only 0px of 56px reserved`.
+Re-verified by deleting the shell's `paddingTop` (grep-confirmed) → both
+chromium and mobile fail with that message; restored → 36/36 green across the
+four projects at `--repeat-each=3`.
+
+### Known-but-separate (not this plan's scope)
+
+Development runs log `Search worker encountered unhandled error: … importScripts
+… /_next/static/chunks/src_lib_search_search-worker_ts_*.js failed to load`. It is
+a dev-mode bundling artefact of the search worker (the chunk is named after the
+TypeScript source), it predates this work — the plan's own scope note records it
+as a separate observed build artefact, and no search file is touched here — and
+production is unaffected: the emitted worker chunk is precached and every
+`semantic-search` case passes in the production suite.
+
+### Pre-existing CI-lint nits (documented, untouched)
+
+Found while validating the workflow change; both predate this plan and neither
+fails a job (`yamllint` exits 0 on warnings, `actionlint` runs with
+`continue-on-error: true`):
+
+- `.github/workflows/security-scan.yml:114` — `comments-indentation` warning.
+- `.github/workflows/ci-and-labels.yml` — actionlint `SC2002` (useless `cat`)
+  in a `run:` block; verified present in `HEAD` before this change.
+
+Not fixed here: unrelated files, and each is a one-line edit that belongs in its
+own scoped change.
 
 ### Notes for the next reader
 
@@ -180,10 +248,17 @@ follow-up the repo's warning policy requires.
   content (`waitForText('TRIZ Contradiction Matrix')` matched a seeded entity,
   `main h2` matched the right panel's `Search`). The committed spec avoids this
   class entirely by asserting role-scoped locators inside `main`.
-- Wiring `test:e2e:offline` into CI is deliberately **not** part of this change:
-  it needs a production build, and the plan scoped CI untouched. ADR 041 records
-  the trigger for adding it (any change to the worker, the manifest scope, or
-  boot wiring).
+- The production offline suite **is** wired into CI now:
+  `.github/workflows/ci-and-labels.yml` gained an `offline` paths filter
+  (`public/sw.js`, `public/precache-manifest.json`,
+  `scripts/generate-precache-manifest.mjs`, `src/app/layout.tsx`,
+  `app-shell.tsx`, `offline-indicator.tsx`,
+  `service-worker-registration.tsx`, `e2e/offline-views.spec.ts`,
+  `playwright.config.ts`, `package.json`, `pnpm-lock.yaml`), the `e2e-tests` job
+  now also gates on it, and a `Production offline suite` step runs
+  `pnpm run build && pnpm run test:e2e:offline` after the dev-server suite. It is
+  placed **before** the artifact-upload step so a failure there still uploads its
+  traces. Nightly and manual runs force the filter on, like the other outputs.
 
 ## Critical files
 
