@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { toast } from 'sonner'
 import { sendChatStream, buildMessagesAsync, useRateLimiter } from '@/lib/ai'
+import { translate } from '@/lib/i18n/messages/ai'
 import type { ChatMessage } from '@/lib/ai'
 import type { Entity, Claim } from '@/lib/studio/types'
 import type { AIProvider } from '@/lib/studio/ai-settings'
@@ -190,10 +191,18 @@ export const useAiHarnessChat = ({
       // whatever already streamed and adds nothing: the bubble only exists once
       // content does, so an aborted turn never leaves an empty bubble behind.
       if (err instanceof DOMException && err.name === 'AbortError') return
-      const msg = err instanceof Error ? err.message : 'Unknown error'
+      console.error('AI harness send failed:', err)
+      const raw = err instanceof Error ? err.message : ''
+      const friendly = /error 401|Unauthorized/i.test(raw)
+        ? translate('ai.chat.error.unauthorized')
+        : /error 429/i.test(raw)
+          ? translate('ai.chat.error.rateLimited')
+          : /Failed to fetch|NetworkError/i.test(raw)
+            ? translate('ai.chat.error.network')
+            : translate('ai.chat.error.unexpected')
       setMessages((m) => [
         ...m,
-        { role: 'assistant', content: `[Error] ${msg}\n\nCheck your provider settings and try again.` },
+        { role: 'assistant', content: `[Error] ${friendly}\n\nCheck your provider settings and try again.` },
       ])
     } finally {
       setIsLoading(false)
