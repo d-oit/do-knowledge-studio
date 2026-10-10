@@ -17,8 +17,11 @@ const isProductionRun = process.env.PLAYWRIGHT_PRODUCTION === '1';
  * Excluded from the default (development) run and from every non-Chromium
  * project — the offline navigation contract is asserted through Chromium's
  * CDP cache control and browser-context offline mode, which WebKit and the
- * emulated mobile devices do not provide. Mobile viewport behavior of the same
- * views is covered by the production Chromium smoke run instead.
+ * emulated mobile devices do not provide. Stated plainly, because an earlier
+ * version of this comment claimed otherwise: the production offline suite
+ * runs the `chromium` (desktop-viewport) project only, so mobile-viewport
+ * behavior of the offline views is NOT covered there — the dev-server
+ * `mobile` project exercises the views, but never the offline contract.
  */
 const PRODUCTION_ONLY_SPECS = ['**/offline-views.spec.ts'];
 

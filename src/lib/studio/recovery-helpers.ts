@@ -71,7 +71,16 @@ const availabilitySubscribers = new Set<() => void>()
 
 /** Notifies every subscriber that the restorable-snapshot state may have changed. */
 const notifyAvailability = (): void => {
-  for (const subscriber of availabilitySubscribers) subscriber()
+  for (const subscriber of availabilitySubscribers) {
+    try {
+      subscriber()
+    } catch (err) {
+      // A misbehaving subscriber must not abort the write path that outlives
+      // it, and must never be reported back up as a storage failure (GitNexus
+      // on PR #925): the write already happened; this is a listener bug.
+      console.error('Recovery availability subscriber threw', err)
+    }
+  }
 }
 
 /**
@@ -85,7 +94,7 @@ export const subscribeToRecoveryAvailability = (listener: () => void): (() => vo
   return () => { availabilitySubscribers.delete(listener) }
 }
 /** Why a recovery snapshot could not be written. */
-export type RecoveryPersistFailure = 'too-large' | 'storage-unavailable'
+export type RecoveryPersistFailure = 'too-large' | 'storage-unavailable' | 'unserializable'
 
 /**
  * Outcome of persisting a pre-import recovery snapshot.
@@ -117,6 +126,10 @@ export type RecoveryPersistResult =
    corpus that is about to be replaced. It is left untouched: a stale-but-real
    backup beats no backup, and the banner never claims otherwise because the
    snapshot it describes is checked against the schema and TTL on every read.
+ * - `unserializable`: `JSON.stringify` threw (circular state) — our bug, not
+   storage's and not a size question. It gets its own reason so the import
+   toast never tells the user their library was “too large” when nothing was
+   ever measured (GitNexus on PR #925).
  *
  * `console.warn` stays because these paths are hard to reach from a UI test.
  */
@@ -127,10 +140,13 @@ export const persistRecoverySnapshot = (snapshot: RecoverySnapshot): RecoveryPer
   } catch {
     // An unserializable snapshot (circular state) is our bug, not storage's.
     console.warn('Failed to serialize recovery snapshot')
-    return { persisted: false, reason: 'too-large' }
+    return { persisted: false, reason: 'unserializable' }
   }
 
-  if (serialized.length > MAX_RECOVERY_SIZE_BYTES) {
+  // The guard is against *bytes on disk*, not UTF-16 code units: Unicode-heavy
+  // content can double the byte count relative to `.length`, which would let
+  // an oversized snapshot past a code-unit check (GitNexus on PR #925).
+  if (new TextEncoder().encode(serialized).length > MAX_RECOVERY_SIZE_BYTES) {
     console.warn('Recovery snapshot exceeds size limit, skipping persistence')
     clearRecoverySnapshot()
     return { persisted: false, reason: 'too-large' }
@@ -138,13 +154,16 @@ export const persistRecoverySnapshot = (snapshot: RecoverySnapshot): RecoveryPer
 
   try {
     localStorage.setItem(RECOVERY_KEY, serialized)
-    notifyAvailability()
-    return { persisted: true }
   } catch {
     console.warn('Failed to persist recovery snapshot')
     // Deliberately does NOT clear: see the note above.
     return { persisted: false, reason: 'storage-unavailable' }
   }
+  // Outside the write's try: a throwing subscriber is a listener bug and is
+  // contained per-subscriber by `notifyAvailability`, so it can neither be
+  // misreported as a storage failure nor abort the caller (GitNexus on PR #925).
+  notifyAvailability()
+  return { persisted: true }
 }
 
 /** Zod schema for validating persisted recovery snapshot structure. */
@@ -177,10 +196,11 @@ type RecoveryReadResult =
 const clearRecoverySnapshot = (): void => {
   try {
     localStorage.removeItem(RECOVERY_KEY)
-    notifyAvailability()
   } catch {
     console.warn('Failed to clear corrupt recovery snapshot')
+    return
   }
+  notifyAvailability()
 }
 
 /**

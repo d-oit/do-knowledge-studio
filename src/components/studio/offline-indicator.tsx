@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { WifiOff } from "lucide-react";
 import { useReducedMotion } from "@/lib/studio/use-reduced-motion";
@@ -50,35 +50,41 @@ export function OfflineIndicator() {
   // The height is measured rather than assumed: it wraps to two lines on a
   // narrow viewport and changes with text zoom, and a wrong constant would
   // reintroduce the obstruction at exactly one viewport.
+  //
+  // The reservation is deliberately NOT dropped in this effect's cleanup: when
+  // the connection returns, `AnimatePresence` keeps the banner mounted for its
+  // exit animation, and removing the padding while the banner is still visible
+  // would slide the topbar back under it for the duration of the exit (GitNexus
+  // on PR #925). `onExitComplete` is the single place the reservation ends.
   useEffect(() => {
-    const root = document.documentElement;
     const banner = bannerRef.current;
-    if (!isOffline || banner === null) {
-      root.style.removeProperty(BANNER_HEIGHT_VARIABLE);
-      return;
-    }
+    if (!isOffline || banner === null) return;
 
     const publishHeight = () => {
-      root.style.setProperty(BANNER_HEIGHT_VARIABLE, `${banner.offsetHeight}px`);
+      document.documentElement.style.setProperty(
+        BANNER_HEIGHT_VARIABLE,
+        `${banner.offsetHeight}px`,
+      );
     };
     publishHeight();
 
     // jsdom (unit tests) has no ResizeObserver; the height is still published
     // once above, and the browser suites cover the live-resize behavior.
-    if (typeof ResizeObserver === "undefined") {
-      return () => { root.style.removeProperty(BANNER_HEIGHT_VARIABLE); };
-    }
+    if (typeof ResizeObserver === "undefined") return;
 
     const observer = new ResizeObserver(publishHeight);
     observer.observe(banner);
-    return () => {
-      observer.disconnect();
-      root.style.removeProperty(BANNER_HEIGHT_VARIABLE);
-    };
+    return () => { observer.disconnect(); };
   }, [isOffline]);
 
+  // Ends the reservation once the banner has actually left the layout — after
+  // the exit animation, or immediately when reduced motion removed it.
+  const clearReservedHeight = useCallback(() => {
+    document.documentElement.style.removeProperty(BANNER_HEIGHT_VARIABLE);
+  }, []);
+
   return (
-    <AnimatePresence>
+    <AnimatePresence onExitComplete={clearReservedHeight}>
       {isOffline && (
         <motion.div
           ref={bannerRef}

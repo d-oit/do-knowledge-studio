@@ -12,6 +12,7 @@ import {
   describeRecoverySnapshot,
   persistRecoverySnapshot,
   restoreFromRecovery,
+  subscribeToRecoveryAvailability,
   type RecoverySnapshot,
 } from './recovery-helpers'
 import { useStudioStore } from './store'
@@ -67,11 +68,23 @@ const scopedSpies: MockInstance[] = []
 
 /** Simulates the browser refusing to store the recovery snapshot. */
 const refuseRecoveryWrite = (): void => {
-  scopedSpies.push(
-    vi.spyOn(localStorage, 'setItem').mockImplementation((key: string) => {
-      if (key === RECOVERY_KEY) throw new Error('QuotaExceededError')
-    }),
-  )
+  // Keep every other key (Zustand's persistence, for example) writing to the
+  // real store: a mock that swallows unrelated writes turns later assertions
+  // into fiction (GitNexus on PR #925). jsdom's localStorage is a proxy that
+  // re-dispatches through the instance property at call time, so delegating to
+  // a captured "original" recurses into this very mock — the mock steps aside
+  // for non-recovery keys instead, then reinstalls itself.
+  const impl = (key: string, value: string): void => {
+    if (key === RECOVERY_KEY) throw new Error('QuotaExceededError')
+    spy.mockRestore()
+    try {
+      localStorage.setItem(key, value)
+    } finally {
+      spy.mockImplementation(impl)
+    }
+  }
+  const spy = vi.spyOn(localStorage, 'setItem').mockImplementation(impl)
+  scopedSpies.push(spy)
 }
 
 /** Simulates storage refusing every write. */
@@ -120,6 +133,53 @@ describe('persistRecoverySnapshot', () => {
 
     expect(result).toEqual({ persisted: false, reason: 'too-large' })
     expect(localStorage.getItem(RECOVERY_KEY)).toBeNull()
+  })
+
+  it('measures the size guard in bytes, not UTF-16 code units', () => {
+    // 3M non-ASCII characters are 3M UTF-16 code units (under the 4 MiB
+    // code-unit reading of the guard) but 6M UTF-8 bytes (over it). The
+    // snapshot must be refused — a code-unit check would wave it through and
+    // the write would then fail in storage anyway, without the protective
+    // clear (GitNexus on PR #925).
+    const unicodeHeavy = 'é'.repeat(3_000_000)
+    const result = persistRecoverySnapshot(smallSnapshot('a', unicodeHeavy))
+
+    expect(result).toEqual({ persisted: false, reason: 'too-large' })
+    expect(localStorage.getItem(RECOVERY_KEY)).toBeNull()
+  })
+
+  it('reports serialization failure as its own reason, not as oversized', () => {
+    // Circular state makes JSON.stringify throw before anything is measured.
+    // Calling that 'too-large' told users their library was too big when no
+    // size was ever known (GitNexus on PR #925).
+    const circular = smallSnapshot('a', 'A')
+    ;(circular as unknown as { self: unknown }).self = circular
+
+    const result = persistRecoverySnapshot(circular)
+
+    expect(result).toEqual({ persisted: false, reason: 'unserializable' })
+    expect(localStorage.getItem(RECOVERY_KEY)).toBeNull()
+  })
+
+  it('contains a throwing availability subscriber and still reports success', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const unsubscribe = subscribeToRecoveryAvailability(() => {
+      throw new Error('listener bug')
+    })
+    try {
+      const result = persistRecoverySnapshot(smallSnapshot('a', 'A'))
+
+      // The write happened; a listener bug must neither abort the caller nor
+      // be relabelled a storage failure (GitNexus on PR #925).
+      expect(result).toEqual({ persisted: true })
+      expect(localStorage.getItem(RECOVERY_KEY)).not.toBeNull()
+      expect(consoleError).toHaveBeenCalledWith(
+        'Recovery availability subscriber threw',
+        expect.any(Error),
+      )
+    } finally {
+      unsubscribe()
+    }
   })
 
   it('clears a stale snapshot when the write is skipped', () => {
@@ -250,17 +310,28 @@ describe('restoreFromRecovery safety', () => {
   it('keeps the snapshot when applying it fails, so a retry stays possible', () => {
     persistRecoverySnapshot(smallSnapshot('a', 'A'))
 
-    // Applying swaps the store in memory then persists; a full quota can throw
+    // Applying swaps the store in memory then persists; a full quota throws
     // after the swap. The backup is the only way back, so it must survive.
+    // The mock calls through before throwing: throwing up front would never
+    // change the store and would not exercise the documented failure — the
+    // one where the corpus is already swapped when the write is refused
+    // (GitNexus on PR #925).
+    const originalSetState = useStudioStore.setState.bind(useStudioStore)
     scopedSpies.push(
-      vi.spyOn(useStudioStore, 'setState').mockImplementation(() => {
-        throw new Error('QuotaExceededError')
-      }),
+      vi.spyOn(useStudioStore, 'setState').mockImplementation(
+        (partial: Parameters<typeof useStudioStore.setState>[0]) => {
+          originalSetState(partial)
+          throw new Error('QuotaExceededError')
+        },
+      ),
     )
 
     const result = restoreFromRecovery()
 
     expect(result.success).toBe(false)
+    // The swap did land (that is what makes this the hard case) …
+    expect(useStudioStore.getState().entities).toHaveLength(1)
+    // … and the only copy of the replaced corpus is still restorable.
     expect(localStorage.getItem(RECOVERY_KEY)).not.toBeNull()
   })
 })

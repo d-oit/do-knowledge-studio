@@ -268,4 +268,45 @@ test.describe('Offline banner', () => {
       `topbar controls hidden behind the offline banner: ${obstructed.join(', ')}`,
     ).toEqual([]);
   });
+
+  test('releases the reserved space once the banner has exited', async ({ page, context }) => {
+    await page.goto('/');
+    await waitForAppReady(page);
+
+    await context.setOffline(true);
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const shell = document.querySelector('[data-app-ready="true"]');
+            return shell === null
+              ? 'no shell'
+              : Number.parseFloat(getComputedStyle(shell).paddingTop) > 0
+                ? 'reserved'
+                : 'not reserved';
+          }),
+        { timeout: 5000 },
+      )
+      .toBe('reserved');
+
+    await context.setOffline(false);
+
+    // The reservation must outlive the banner's exit animation and then
+    // disappear: dropping it while the banner is still leaving would slide
+    // the topbar under it for the duration of the exit, and keeping it would
+    // leave a permanent gap (GitNexus on PR #925).
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const shell = document.querySelector('[data-app-ready="true"]');
+            return shell === null
+              ? -1
+              : Number.parseFloat(getComputedStyle(shell).paddingTop);
+          }),
+        { timeout: 5000 },
+      )
+      .toBe(0);
+    await expect(page.locator('[role="status"]').filter({ hasText: /offline/i })).toHaveCount(0);
+  });
 });
