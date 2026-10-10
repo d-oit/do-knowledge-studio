@@ -111,9 +111,9 @@ jobs:
           ignore-unfixed: true
           trivyignores: '.trivyignore'
           hide-progress: true
-        # Trivy notices output can trigger exit 1 even with 0 actionable
-        # vulnerabilities. The SARIF upload to GitHub code-scanning is the
-        # source of truth — humans review the Security tab.
+      # Trivy notices output can trigger exit 1 even with 0 actionable
+      # vulnerabilities. The SARIF upload to GitHub code-scanning is the
+      # source of truth — humans review the Security tab.
 
       - name: Upload Trivy SARIF
         if: always()

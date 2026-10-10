@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { WifiOff } from "lucide-react";
 import { useReducedMotion } from "@/lib/studio/use-reduced-motion";
@@ -14,10 +14,22 @@ const ANIMATION_VARIANTS = {
 
 const ANIMATION_TRANSITION = { duration: 0.3, ease: "easeInOut" } as const;
 
+/**
+ * Custom property the app shell reads to reserve this banner's height.
+ *
+ * The banner is `fixed`, so it displaces nothing on its own: the topbar sits in
+ * normal flow under it and its controls stop receiving clicks. Measured before
+ * this existed, at every configured viewport — the quick filter, the
+ * command-palette trigger, New entity, and on mobile the menu and search
+ * triggers, all resolved `document.elementFromPoint` to the banner (plans/161).
+ */
+const BANNER_HEIGHT_VARIABLE = "--offline-banner-height";
+
 /** Animated banner that appears when the browser goes offline. */
 export function OfflineIndicator() {
   const [isOffline, setIsOffline] = useState(false);
   const reducedMotion = useReducedMotion();
+  const bannerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setIsOffline(!navigator.onLine);
@@ -34,10 +46,48 @@ export function OfflineIndicator() {
     };
   }, []);
 
+  // Reserve the space the banner occupies so it never covers the topbar.
+  // The height is measured rather than assumed: it wraps to two lines on a
+  // narrow viewport and changes with text zoom, and a wrong constant would
+  // reintroduce the obstruction at exactly one viewport.
+  //
+  // The reservation is deliberately NOT dropped in this effect's cleanup: when
+  // the connection returns, `AnimatePresence` keeps the banner mounted for its
+  // exit animation, and removing the padding while the banner is still visible
+  // would slide the topbar back under it for the duration of the exit (GitNexus
+  // on PR #925). `onExitComplete` is the single place the reservation ends.
+  useEffect(() => {
+    const banner = bannerRef.current;
+    if (!isOffline || banner === null) return;
+
+    const publishHeight = () => {
+      document.documentElement.style.setProperty(
+        BANNER_HEIGHT_VARIABLE,
+        `${banner.offsetHeight}px`,
+      );
+    };
+    publishHeight();
+
+    // jsdom (unit tests) has no ResizeObserver; the height is still published
+    // once above, and the browser suites cover the live-resize behavior.
+    if (typeof ResizeObserver === "undefined") return;
+
+    const observer = new ResizeObserver(publishHeight);
+    observer.observe(banner);
+    return () => { observer.disconnect(); };
+  }, [isOffline]);
+
+  // Ends the reservation once the banner has actually left the layout — after
+  // the exit animation, or immediately when reduced motion removed it.
+  const clearReservedHeight = useCallback(() => {
+    document.documentElement.style.removeProperty(BANNER_HEIGHT_VARIABLE);
+  }, []);
+
   return (
-    <AnimatePresence>
+    <AnimatePresence onExitComplete={clearReservedHeight}>
       {isOffline && (
         <motion.div
+          ref={bannerRef}
           role="status"
           aria-live="polite"
           initial={reducedMotion ? "visible" : "hidden"}

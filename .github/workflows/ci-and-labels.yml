@@ -41,6 +41,7 @@ jobs:
       frontend: ${{ steps.forced.outputs.frontend || steps.filter.outputs.frontend || steps.default.outputs.frontend }}
       tooling: ${{ steps.forced.outputs.tooling || steps.filter.outputs.tooling || steps.default.outputs.tooling }}
       any_code: ${{ steps.forced.outputs.any_code || steps.filter.outputs.any_code || steps.default.outputs.any_code }}
+      offline: ${{ steps.forced.outputs.offline || steps.filter.outputs.offline || steps.default.outputs.offline }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -62,6 +63,22 @@ jobs:
               - 'tsconfig.json'
             any_code:
               - '!(**.md|docs/**)'
+            # Paths whose change can break a first-use offline navigation, and
+            # nothing else. Kept separate from `frontend` so the production
+            # offline suite (build + Chromium) runs where it can find the
+            # defect, instead of on every UI edit (plans/161, ADR 041).
+            offline:
+              - 'public/sw.js'
+              - 'public/precache-manifest.json'
+              - 'scripts/generate-precache-manifest.mjs'
+              - 'src/app/layout.tsx'
+              - 'src/components/studio/app-shell.tsx'
+              - 'src/components/studio/offline-indicator.tsx'
+              - 'src/components/studio/service-worker-registration.tsx'
+              - 'e2e/offline-views.spec.ts'
+              - 'playwright.config.ts'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
       - name: Treat every path as changed on scheduled and manual runs
         id: forced
         # A nightly or a manual dispatch is a full sweep by definition: there is no
@@ -76,6 +93,7 @@ jobs:
             echo "frontend=true"
             echo "tooling=true"
             echo "any_code=true"
+            echo "offline=true"
           } >> "$GITHUB_OUTPUT"
       - name: Default outputs on diff API failure
         id: default
@@ -84,10 +102,12 @@ jobs:
           frontend="${{ steps.filter.outputs.frontend || 'true' }}"
           tooling="${{ steps.filter.outputs.tooling || 'true' }}"
           any_code="${{ steps.filter.outputs.any_code || 'true' }}"
+          offline="${{ steps.filter.outputs.offline || 'true' }}"
           {
             echo "frontend=$frontend"
             echo "tooling=$tooling"
             echo "any_code=$any_code"
+            echo "offline=$offline"
           } >> "$GITHUB_OUTPUT"
 
   quality-gate:
@@ -157,7 +177,8 @@ jobs:
     if: >-
       (github.event_name == 'schedule' && github.ref == 'refs/heads/main') ||
       github.event_name == 'workflow_dispatch' ||
-      needs.changes.outputs.frontend == 'true'
+      needs.changes.outputs.frontend == 'true' ||
+      needs.changes.outputs.offline == 'true'
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -201,6 +222,17 @@ jobs:
           else
             pnpm run test:e2e --project=chromium
           fi
+      - name: Production offline suite
+        # The precache manifest and the worker's cache identity are build
+        # artefacts, so this suite only means something against `pnpm run start`.
+        # It runs after the dev-server suite has exited rather than replacing it:
+        # the dev run covers the app, this one covers the offline contract.
+        # Gated on the `offline` filter so unrelated UI edits don't pay for a
+        # production build (plans/161, ADR 041).
+        if: needs.changes.outputs.offline == 'true'
+        run: |
+          pnpm run build
+          pnpm run test:e2e:offline
       - name: Upload Playwright artifacts
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
@@ -308,7 +340,7 @@ jobs:
       - name: Generate coverage badge
         if: github.ref == 'refs/heads/main'
         run: |
-          COVERAGE=$(cat coverage/coverage-summary.json | jq '.total.lines.pct')
+          COVERAGE=$(jq '.total.lines.pct' coverage/coverage-summary.json)
           echo "Lines coverage: ${COVERAGE}%"
       - name: Upload coverage artifact
         if: always()

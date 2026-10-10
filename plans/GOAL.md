@@ -3,19 +3,19 @@
 Build a local-first, structured knowledge engine that empowers users to capture, connect, and synthesize information without relying on cloud-based LLMs.
 
 ## Core Values
-- **Local Sovereignty**: User data is stored in Zustand + localStorage and never leaves the device.
+- **Local Sovereignty**: the core product is local-first — user data is stored in Zustand + localStorage and never leaves the device **unless the user opts into a remote feature**. Selecting a remote AI provider (OpenRouter), enabling web research, or joining a P2P sync room does transmit data off-device. "Never leaves the device" is therefore not an unconditional guarantee; it is the default posture for core functionality.
 - **Structural Depth**: Moving beyond flat text to Entities, Claims, and relational Links.
 - **Visual Intelligence**: Multiple perspectives on the same data (Graph, Mind Map, Chat).
 - **Offline First**: Zero latency, zero dependency on external APIs for core functionality.
 - **Security First**: All user content is sanitized before export; API keys are session-only.
 
-## Current Architecture (as of 2026-07-27)
+## Current Architecture (refreshed 2026-10-05)
 - Next.js 16 / React 19 / Tailwind 4 / shadcn / Zustand
-- Persistence: Zustand + localStorage (validated with Zod schemas)
-- Search: BM25 keyword ranking (not semantic/vector)
-- AI: OpenRouter and Ollama providers via AI Harness
+- Persistence: Zustand + localStorage (validated with Zod schemas), fail-closed on a refused hydration (ADR 028, Plan 159)
+- Search: **BM25 keyword ranking plus a real semantic mode** (`src/lib/search/vector-store.ts`) that falls back to lexical on embedding failure
+- AI: OpenRouter and Ollama providers via AI Harness, plus a **CPU-first in-browser local provider** (transformers.js/ONNX WASM, WebGPU opt-in — ADR 040, Plan 155)
 - Sync: Yjs/WebRTC infrastructure (opt-in, bidirectional sync bridge per ADR 027)
-- Export: JSON, Markdown, HTML, PDF, DOCX, Encrypted HTML
+- Export: JSON, Markdown, HTML, PDF, DOCX, encrypted self-contained HTML reader, and the **`okf` bundle format** (ADR 031)
 
 ## 2026 Goals (from GitHub Issue Analysis)
 1. **Zero Security Vulnerabilities** — XSS fixes in export paths, session-only API keys ✓
@@ -28,7 +28,41 @@ Build a local-first, structured knowledge engine that empowers users to capture,
 8. **Data Integrity** — Zod validation at all boundaries (Plan 072) ✓
 9. **Honest Product Surface** — Accurate labels, no false-success controls (Plan 072) ✓
 
+
 ## Remaining Work
+
+Refreshed 2026-10-05 by [Plan 162](162-roadmap-progress-and-next-work-2026-10-05.md),
+which is the authoritative open-work list. In order:
+
+1. **Recovery reachability and backup outcome** — `restoreFromRecovery` has no
+   production caller and import success is reported without a durable backup.
+   First implementation priority.
+2. **Deletion/export integrity investigation** — entity deletion does not touch
+   optional graph/mind-map/link/tag fields.
+3. **Sync join/rejoin completion** — join-time conflicts are not surfaced and
+   Leave→Join does not re-initialize persistence.
+4. **Remaining heavy-leaf deferral** — editor→Yjs static chain; PDF/DOCX/fflate
+   inside the lazy Export subtree.
+5. **Plan 161 recorded follow-ons** — dev search worker chunk failure, first-mount
+   reduced-motion tween, workflow linter warnings.
+6. **Skills and documentation maintenance** — generated skill catalogs,
+   `agent-surface.py` doc truth, `SCRIPTS.md` drift, nonexistent `SKIP_LINKS`,
+   README claims.
+7. **New features**, in order: AI request control → URL deep links (ADR 037) →
+   pointer/touch graph and mind-map interaction.
+8. **Unscheduled candidates** — graph revision comparison, Synthesis Inbox,
+   Visual Query Builder.
+
+### Coverage: configured floors vs measured history
+
+These are different things and are kept separate:
+
+- **Configured floors** (`vitest.config.ts:49-53`, current): branches 75, functions
+  78, lines 84, statements 85. These are thresholds the gate enforces.
+- **Measured coverage figures** in the historical list below are **records from
+  the sessions named**, not live metrics. Nothing was measured by this refresh.
+
+### Historical completed milestones (2026-07 records)
 
 - Coverage target 55% — DONE (current: 57% lines)
 - Full accessibility audit — DONE. E2E suite added in Plan 093 (keyboard, zoom, reflow, touch targets). Color-contrast violations fixed in Plan 095 (58+ serious violations resolved via CSS token adjustments). Strict axe-core assertions now applied to all 10 views.

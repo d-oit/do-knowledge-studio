@@ -11,6 +11,7 @@ import {
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from './schema'
 import { useStudioStore } from './store'
 import { reconcileSnapshot, type HistorySnapshot } from './history-snapshot'
+import { isSyncBlocked } from './hydration-guard'
 
 /** localStorage key for the recovery snapshot. */
 const RECOVERY_KEY = 'do-knowledge-studio-recovery'
@@ -51,18 +52,118 @@ export const buildRecoverySnapshot = (state: {
   tags: state.tags ? structuredClone(state.tags) : undefined,
 })
 
-/** Persists a recovery snapshot to localStorage with size and TTL guards. */
-export const persistRecoverySnapshot = (snapshot: RecoverySnapshot): void => {
-  try {
-    const serialized = JSON.stringify({ snapshot, timestamp: Date.now(), ttl: RECOVERY_TTL_MS })
-    if (serialized.length > MAX_RECOVERY_SIZE_BYTES) {
-      console.warn('Recovery snapshot exceeds size limit, skipping persistence')
-    } else {
-      localStorage.setItem(RECOVERY_KEY, serialized)
+
+/* ------------------------------------------------------------------------- *
+ * Availability signal
+ *
+ * The snapshot is written by `persistRecoverySnapshot`, which runs inside a
+ * store action — long after the shell mounted. A banner that only reads the
+ * snapshot on mount therefore never learns that a backup just became
+ * available, which is precisely the moment it matters. Subscribers are
+ * notified on write and on consume so the offer appears immediately after an
+ * import and disappears the moment it is taken.
+ *
+ * Declared above its callers: these are `const` arrows, so they are in the
+ * temporal dead zone until evaluated.
+ * ------------------------------------------------------------------------- */
+
+const availabilitySubscribers = new Set<() => void>()
+
+/** Notifies every subscriber that the restorable-snapshot state may have changed. */
+const notifyAvailability = (): void => {
+  for (const subscriber of availabilitySubscribers) {
+    try {
+      subscriber()
+    } catch (err) {
+      // A misbehaving subscriber must not abort the write path that outlives
+      // it, and must never be reported back up as a storage failure (GitNexus
+      // on PR #925): the write already happened; this is a listener bug.
+      console.error('Recovery availability subscriber threw', err)
     }
+  }
+}
+
+/**
+ * Subscribes to changes in whether a restorable snapshot exists.
+ *
+ * Returns an unsubscribe function. Intentionally holds no store import, so
+ * `store.ts` and `slices/*` can call the notifier without an import cycle.
+ */
+export const subscribeToRecoveryAvailability = (listener: () => void): (() => void) => {
+  availabilitySubscribers.add(listener)
+  return () => { availabilitySubscribers.delete(listener) }
+}
+/** Why a recovery snapshot could not be written. */
+export type RecoveryPersistFailure = 'too-large' | 'storage-unavailable' | 'unserializable'
+
+/**
+ * Outcome of persisting a pre-import recovery snapshot.
+ *
+ * `persisted: false` is a real outcome, not an internal detail: the caller is
+ * about to destroy the corpus the snapshot was meant to protect, so it must be
+ * able to tell the user that no safety net exists rather than reporting a clean
+ * import.
+ */
+export type RecoveryPersistResult =
+  | { persisted: true }
+  | { persisted: false; reason: RecoveryPersistFailure }
+
+/**
+ * Persists a recovery snapshot to localStorage with size and TTL guards.
+ *
+ * Returns whether the write actually happened. A skipped or refused write is
+ * reported, never silently swallowed.
+ *
+ * The two failure modes are deliberately NOT treated alike:
+ *
+ * - `too-large`: the write was refused by *our* size guard while storage is
+   healthy. Any snapshot still present describes a corpus the user replaced one
+   import ago, so it is cleared — leaving it would let a later restore hand back
+   stale data as if it were current.
+ * - `storage-unavailable`: storage itself is refusing writes (quota, blocked
+   site data). `localStorage.removeItem` still succeeds in that state, so
+   clearing here would **destroy the previous snapshot** — the only copy of the
+   corpus that is about to be replaced. It is left untouched: a stale-but-real
+   backup beats no backup, and the banner never claims otherwise because the
+   snapshot it describes is checked against the schema and TTL on every read.
+ * - `unserializable`: `JSON.stringify` threw (circular state) — our bug, not
+   storage's and not a size question. It gets its own reason so the import
+   toast never tells the user their library was “too large” when nothing was
+   ever measured (GitNexus on PR #925).
+ *
+ * `console.warn` stays because these paths are hard to reach from a UI test.
+ */
+export const persistRecoverySnapshot = (snapshot: RecoverySnapshot): RecoveryPersistResult => {
+  let serialized: string
+  try {
+    serialized = JSON.stringify({ snapshot, timestamp: Date.now(), ttl: RECOVERY_TTL_MS })
+  } catch {
+    // An unserializable snapshot (circular state) is our bug, not storage's.
+    console.warn('Failed to serialize recovery snapshot')
+    return { persisted: false, reason: 'unserializable' }
+  }
+
+  // The guard is against *bytes on disk*, not UTF-16 code units: Unicode-heavy
+  // content can double the byte count relative to `.length`, which would let
+  // an oversized snapshot past a code-unit check (GitNexus on PR #925).
+  if (new TextEncoder().encode(serialized).length > MAX_RECOVERY_SIZE_BYTES) {
+    console.warn('Recovery snapshot exceeds size limit, skipping persistence')
+    clearRecoverySnapshot()
+    return { persisted: false, reason: 'too-large' }
+  }
+
+  try {
+    localStorage.setItem(RECOVERY_KEY, serialized)
   } catch {
     console.warn('Failed to persist recovery snapshot')
+    // Deliberately does NOT clear: see the note above.
+    return { persisted: false, reason: 'storage-unavailable' }
   }
+  // Outside the write's try: a throwing subscriber is a listener bug and is
+  // contained per-subscriber by `notifyAvailability`, so it can neither be
+  // misreported as a storage failure nor abort the caller (GitNexus on PR #925).
+  notifyAvailability()
+  return { persisted: true }
 }
 
 /** Zod schema for validating persisted recovery snapshot structure. */
@@ -97,15 +198,43 @@ const clearRecoverySnapshot = (): void => {
     localStorage.removeItem(RECOVERY_KEY)
   } catch {
     console.warn('Failed to clear corrupt recovery snapshot')
+    return
   }
+  notifyAvailability()
 }
 
-/** Reads and validates the recovery snapshot from localStorage, returning it if valid. */
+/**
+ * Reads and validates the recovery snapshot from localStorage, returning it if
+ * valid.
+ *
+ * Never throws. The two ways it can fail are kept apart on purpose, because
+ * only one of them justifies destroying the stored bytes:
+ *
+ * - storage unreadable (blocked site data, `SecurityError`): the snapshot is
+ *   not known to be bad, so it is left alone and the real cause is surfaced.
+ * - bytes present but unparseable or schema-invalid: genuinely useless, so it
+ *   is cleared rather than left to fail every future attempt.
+ */
 export const readRecoverySnapshot = (): RecoveryReadResult => {
-  const raw = localStorage.getItem(RECOVERY_KEY)
+  let raw: string | null
+  try {
+    raw = localStorage.getItem(RECOVERY_KEY)
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : 'Recovery snapshot storage is unavailable.',
+    }
+  }
   if (!raw) return { ok: false, error: 'No recovery snapshot found.' }
 
-  const parsed: unknown = JSON.parse(raw)
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    clearRecoverySnapshot()
+    return { ok: false, error: 'Recovery snapshot is corrupted.' }
+  }
+
   const result = RecoverySnapshotSchema.safeParse(parsed)
   if (!result.success) {
     clearRecoverySnapshot()
@@ -146,21 +275,72 @@ const applyRecoverySnapshot = (snapshot: ValidatedRecoverySnapshot): void => {
   })
 }
 
-/** Restores store state from the recovery snapshot and clears it afterward. */
+/**
+ * Restores store state from the recovery snapshot and clears it afterward.
+ *
+ * Clearing is the point of no return: the snapshot is the only copy of the
+ * corpus the import replaced. So it happens ONLY after the restore is known to
+ * have landed, and never on a failure path — a user who is told the restore
+ * failed must still be able to retry.
+ */
 export const restoreFromRecovery = (): { success: boolean; error?: string } => {
-  try {
-    const result = readRecoverySnapshot()
-    if (!result.ok) return { success: false, error: result.error }
-    applyRecoverySnapshot(result.data.snapshot)
-    clearRecoverySnapshot()
-    return { success: true }
-  } catch (err) {
-    // A readable but corrupt snapshot (e.g., unparseable JSON) would otherwise
-    // linger forever — clear it so the next restore attempt starts fresh.
-    clearRecoverySnapshot()
+  // A refused hydration latches the persist writer off for the rest of the page
+  // session (ADR 028), so the swap below would be dropped on the way to storage
+  // while `clearRecoverySnapshot` deleted the only copy — the user would be told
+  // the library came back, then lose it on reload. Refuse instead. The UI also
+  // hides the offer in this state; this guard covers any other caller.
+  if (isSyncBlocked()) {
     return {
       success: false,
-      error: err instanceof Error ? err.message : 'Failed to restore recovery snapshot.',
+      error: 'This workspace is not saving, so the backup cannot be restored safely. Reload first.',
     }
   }
+
+  // `readRecoverySnapshot` never throws: it distinguishes unreadable storage
+  // (do not clear) from unusable bytes (already cleared), and reports both.
+  const result = readRecoverySnapshot()
+  if (!result.ok) return { success: false, error: result.error }
+
+  try {
+    applyRecoverySnapshot(result.data.snapshot)
+  } catch (err) {
+    // Applying swaps the corpus in memory and then persists it, so this can
+    // throw on a full quota with the store already changed. Do NOT clear: the
+    // backup is the only way back, and a retry has to stay possible.
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'Failed to apply the recovery snapshot.',
+    }
+  }
+
+  clearRecoverySnapshot()
+  return { success: true }
 }
+
+/** Human-readable summary of a restorable pre-import snapshot. */
+export type RecoverySnapshotSummary = {
+  entityCount: number
+  claimCount: number
+}
+
+/**
+ * Describes the pre-import snapshot without applying it.
+ *
+ * Used by the restore banner to decide whether it has anything to offer. It
+ * shares `readRecoverySnapshot` so an expired or corrupt snapshot is discarded
+ * exactly as it would be on a real restore — otherwise the banner would
+ * advertise a backup that the restore path would then refuse.
+ */
+export const describeRecoverySnapshot = (): RecoverySnapshotSummary | null => {
+  // `readRecoverySnapshot` is contractually non-throwing, which matters here:
+  // this runs from an effect in the app shell, where a throw would take the
+  // whole workspace down over an unrelated leftover backup. The contract is
+  // pinned by a test rather than a redundant try/catch.
+  const result = readRecoverySnapshot()
+  if (!result.ok) return null
+  return {
+    entityCount: result.data.snapshot.entities.length,
+    claimCount: result.data.snapshot.claims.length,
+  }
+}
+

@@ -597,3 +597,38 @@ before merge.
   targets, theme-token/responsive/motion UX debt.
 - `biome.json` modification (D6.12) — awaiting explicit maintainer
   instruction.
+
+## Current-state reconciliation (2026-10-05)
+
+Added by [Plan 162](162-roadmap-progress-and-next-work-2026-10-05.md). The D1–D6
+finding catalog and the G1–G9 proposals **above are preserved unchanged** — they
+are the 2026-08-22 observations this plan was written from. This section records
+what source inspection can confirm today, and nothing else.
+
+Rules this section follows:
+
+- A row is closed only when a named, specific behavior is source-confirmed or
+  dated-verified. **No wave is bulk-closed.**
+- Findings this refresh did not evaluate stay `Not reassessed` rather than being
+  moved to Done or Open.
+- No runtime, test, build, CI, or browser evidence is claimed here.
+
+| Audit item | Status 2026-10-05 | Evidence | Where tracked |
+|---|---|---|---|
+| D1.6 / D1.22 — claim-aware history, dangling selection cleared on restore | **Closed** | `plans/157-codebase-gap-and-feature-remediation.md` W3; history snapshots carry claims, claim CRUD participates in history | Plan 157 |
+| D4.1 / D4.2 — graph snapshot was write-only; canvas restore and density | **Closed for the canvas bookmark** | `src/lib/studio/graph-snapshot.ts` validated read/restore/clear plus viewport state; `mindmap-density.ts` drives real density tokens | Plan 157 W1 |
+| Graph **revision comparison / diff** (Plan 04 §4.4) | **Not implemented — source-confirmed** | No revision or diff symbols in `src/`; the canvas bookmark is not a corpus revision history | Plan 162, `Candidate — not scheduled` |
+| P0-3 / D1.x — hydration rejection silent and destructive | **Closed** | `src/lib/studio/hydration-guard.ts`, `hydration-quarantine.ts`, `RecoveryAlerts` in `app-shell.tsx`; ADR 028 §4a | Plan 159 |
+| D5.3 — vitest typecheck `ignoreSourceErrors: true` leaves source-error gating inert | **Closed** | `vitest.config.ts:29` is now `false`; all 94 `*.test.ts` type errors cleared | Plan 159 F7 |
+| D2 — no lazy view boundaries, sync/export chunks eager | **Six `React.lazy` boundaries delivered**; offline coverage recorded | `src/components/studio/app-shell.tsx:30-35`. Offline coverage of those boundaries is Plan 161's dated 2026-09-30 result, not rerun here | Plan 161 |
+| D2 — heavy-leaf deferral (Editor→Yjs, PDF/DOCX/fflate inside the lazy Export subtree) | **Partial** | `app-shell.tsx:13` → `editor-view.tsx:14` → `remote-cursors.tsx:5` → `use-cursors.ts:4-11` → `cursors.ts:1` → `doc.ts:1-3`; `use-export-handlers.ts:11-12` → `export-documents.ts:2-11` + `fflate` | Plan 162 #4 |
+| D1.12 — recovery path unreachable; rollback success reported without a durable backup | **Closed 2026-10-05** | `restoreFromRecovery` now has a production caller (`RecoveryBanner`, reachable from every view); `persistRecoverySnapshot` returns a `RecoveryPersistResult` and the import warns instead of claiming a clean swap. The two failure modes are no longer conflated: a refused write keeps the surviving snapshot, while an over-guard snapshot clears the stale one. Restore refuses while `isSyncBlocked()` and never clears on a failure path. Verified in a real browser on all four viewport projects plus 13 unit tests | Plan 162 #1 |
+| D1.x — entity deletion and optional graph/mind-map/link/tag fields | **Partial** | `slices/entities-slice.ts:94-105` prunes entity, inbound links, claims, selection; not canvas sets | Plan 162 #2 |
+| D1.9b / G6 — tombstone resurrection across a leave/join cycle | **Partial**; durability **Not reassessed** | `sync-view.tsx:267-288` ignores join-time `mergeIntoYjs` conflicts unlike Resync (`:310-321`); Leave calls `destroy()` (`:298-308`) and Join does not re-run `initPersistence` (`doc.ts:37-43` vs `:75-84`). Two peers were not driven | Plan 162 #3 |
+| D3.5 / D3.6 / G8 — provider failure taxonomy, retry/backoff/timeout, user-facing request control | **Not implemented — source-confirmed** | `ai-harness-chat.tsx:130-152` disables Send during loading with no Stop control; `use-ai-harness-chat.ts:184-195` surfaces raw `err.message` | Plan 162 F1 |
+| D3.4 — DOMPurify wired into export/import (recorded here previously as done) | **Helpers exist; production integration not demonstrated** | `src/lib/security.ts:19,38` defines `sanitizeHtml`/`sanitizeText`; references outside the module are tests only. A status correction, not a vulnerability finding | `plans/INDEX.md` W5 |
+| G3 / D6 — dependency prune | **Not reassessed**; no deletion selected | The ~26-dependency figure was an estimate, not a measured prune list. A full 63-dependency scan found 4 with no `src/`/`e2e/`/`scripts/` import, all required. This refresh selects no deletion | Plan 162, `Not reassessed` |
+| ADR 037 / Plan 130 A23–A24 — URL deep links | **Not implemented — source-confirmed** | No `location.hash`, `pushState`, `popstate`, or `hashchange` integration in `src/` or `e2e/`; ADR 037 remains Proposed | Plan 162 F2 |
+| Plan 04 §4.5 — mobile gestures for graph and mind map | **Not implemented — source-confirmed** | `graph-view.tsx:130-180` is keyboard-only (arrows, `+`/`-`, Home); no `onTouch*`/`onPointerDown` handler in `graph-view.tsx` or `mindmap-view.tsx` | Plan 162 F3 |
+| Plan 161 recorded follow-ons — dev search worker, first-mount reduced motion, workflow lint warnings | **Recorded follow-on — runtime not rechecked** | `search-worker-client.ts:69-77,131-132`; `use-reduced-motion.ts:21,44-45` + `home-view.tsx:169-173,309-314`; `security-scan.yml:114-116`; `ci-and-labels.yml:343` | Plan 162 #5 |
+| Every other D1–D6 finding and G1–G9 proposal not named above | **Not reassessed** | Out of scope for a documentation reconciliation; no evidence gathered either way | — |

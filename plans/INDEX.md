@@ -1,7 +1,32 @@
 # Plans Index
 
-**Updated**: 2026-09-30
+**Updated**: 2026-10-05
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
+
+
+### Plan 162 — Roadmap progress and next work (2026-10-05)
+
+| Category | Status | Summary |
+|------|--------|---------|
+| Current implementation progress | Reconciled | `plans/162-roadmap-progress-and-next-work-2026-10-05.md`. CPU-first local inference, claim-aware undo, canvas restore, mind-map density, hydration refusal/quarantine, six `React.lazy` view boundaries, test-source gating, semantic search, `okf` and encrypted-reader export all recorded `Implemented — source-confirmed` against live anchors. |
+| Missing implementation | Reconciled | Five recorded gaps: recovery reachability + backup outcome (first priority), deletion/export integrity investigation, sync join/rejoin completion, remaining heavy-leaf deferral, and Plan 161's three recorded follow-ons. |
+| New feature priorities | Ranked | F1 AI request control, F2 URL deep links, F3 pointer/touch graph and mind-map interaction. Revision comparison, Synthesis Inbox, Visual Query Builder are `Candidate — not scheduled`. |
+| Skills maintenance | 3 open records | Catalog regeneration (never hand-edited), `agent-surface.py` doc truth, Cursor/Windsurf strategy mismatch. No new skill proposed. |
+| Documentation maintenance | 3 open records | `SCRIPTS.md` drift, nonexistent `SKIP_LINKS` flag, README claims. |
+
+Current CI, deployment, open-issue counts, installed versions, and measured
+coverage are **not checked in this audit**. Plan 161's test totals stay dated
+2026-09-30 records.
+
+### Plan 161 — Offline first-use navigation for lazy views, then a stable framework refresh (2026-09-30)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Reproduce the missing offline behavior on a production build | Done | `plans/161-offline-lazy-view-precache-and-framework-refresh-2026-09-30.md`. `playwright.config.ts` gained `PLAYWRIGHT_PRODUCTION=1` (serves `pnpm run start`, refuses to reuse a port occupant, gates the new spec out of the dev run and out of every non-Chromium project) plus the `test:e2e:offline` script. New `e2e/offline-views.spec.ts` installs the worker, closes the online page, clears the browser HTTP cache over CDP, then goes offline and navigates each view **for the first time**. Pre-fix: 6/6 failed with `"<View> failed to load"`. The first version of the spec passed AI Harness and Sync against the *error fallback* because the topbar renders `<h1>{view name}</h1>`; every assertion is now scoped to `main`. |
+| W2 | Precache the emitted code, not just the boot document | Done | `generate-precache-manifest.mjs` now unions the document's URLs with every `.js`/`.mjs`/`.css` under `.next/static/chunks` and fonts/images under `.next/static/media`, and fails closed when a directory or the JS inventory is missing. 61 URLs (21 document, 36 chunks, 17 media); 0 of 36 on-disk chunks unprecached; WASM/model weights/source maps excluded (~4 MiB). `public/sw.js` `STATIC_CACHE` → `dks-static-v3`, because a manifest-only change never reinstalls an existing worker. Fix re-verified by removing the chunk contribution (manifest back to 17 chunks → Graph fails again) and restoring it. |
+| W3 | Refresh the framework/runtime pair in its own diff | Done | `next`/`eslint-config-next` → 16.3.7, `react`/`react-dom` → 19.3.0, `@types/react`/`@types/react-dom` → 19.3.0. TypeScript held at 6.0.3 (typescript-eslint supports `<6.1.0`; TS 7 is a separate side-by-side migration). Lockfile diff: 6 specifiers changed, only `next`/`eslint-config-next`/`react`/`react-dom`/`scheduler` re-resolved, all overrides and peer rules retained. |
+| W4 | Verify | Done | Gates: 180 files / **2790 tests** green, vitest typecheck 0 errors, zero warnings. Production E2E across all four projects: **642 passed, 4 skipped, 0 failed**. Real-browser smoke on a fresh profile (note CRUD → offline; Graph/Mind Map/TRIZ/Export/JSON download; mobile 390×844) and an upgrade-lifecycle smoke on a retained pre-change profile (`dks-static-v2` → `dks-static-v3`, old cache deleted, survives a browser restart, all six views render offline). ADR 041 records the scope, the identity rule and the rejected alternatives. |
+| W5 | Clear the two findings the smoke and the review turned up | Done | **Reduced-motion hydration mismatch**: `useReducedMotion` read `matchMedia` on the client's first render while the server answered `false`, so ~25 `initial={reducedMotion ? false : …}` sites hydrated against mismatched markup. A/B ruled out the framework refresh (8 warnings on both dependency sets). The hook is now `useSyncExternalStore(..., getServerSnapshot = () => false)`; new `e2e/hydration-mismatch.spec.ts` failed before and passes after on all four projects, and `dev.log` mismatch count for `touch-targets` went 8 → 0. Residual recorded: a reduce user's first mount fades for ~450ms; later mounts still skip motion. **Offline banner covered the topbar**: `elementFromPoint` at 1920/1280/390 showed the quick filter, command palette, New entity, and on mobile the menu and search triggers all resolving to the banner, so the primary controls were dead while offline. `OfflineIndicator` now publishes its measured height as `--offline-banner-height` and `AppShell` reserves it; the new `Offline banner` test in `accessibility.spec.ts` failed on the old layout and passes on all four projects. **CI**: `offline` paths filter + `Production offline suite` step in `e2e-tests`. Two pre-existing CI-lint nits documented as separate follow-ups. |
 
 ### Plan 160 — Fix every open Codacy issue in code; delete `.mimocode/` (2026-09-30)
 
@@ -41,7 +66,7 @@
 
 | Wave | Goal | Status | Changes |
 |------|------|--------|---------|
-| W1 | GOAP research swarm against official sources | Done | `plans/158-september-2026-best-practice-audit.md`. 4 parallel research lanes (Next 16/deploy, service worker, Zustand v5/React 19, WCAG 2.2/i18n), each required to cite a primary source. **3 P0**: Vercel builds with pnpm 6 via `installCommand` (cannot read lockfile v9 / `pnpm.overrides`); the service-worker registration deletes the precache it just wrote (regression from Plan 157, verified in Chromium); hydration rejection is silent *and* destroys the envelope it claims to preserve. **3 candidates rejected by browser verification** — a `role="img"` a11y defect that Chrome does not exhibit, a WCAG target-size violation that measured 28px not 22px, and a Zustand typing claim. P0-1/P0-2/P0-3 + P1-2 remediated: Vercel config trimmed to framework+buildCommand, the inverted service-worker cache purge deleted (a Plan 157 regression, now covered by a test that fails when reinstated), and refused hydration payloads are quarantined under a key the store never writes and surfaced via a recovery banner. P1-3 (duplicate referrer policy) and P1-4 (WCAG 2.2 SC 2.4.11) also fixed — P1-4's prescribed `scroll-padding` remedy was measured and rejected in favour of bottom padding on the editor wrapper. P1-1 also fixed — a dedicated `tsconfig.build.json` lets `next build`'s CLI typechecker skip test sources without the `useTypeScriptCli` experiment, so the build is warning-free and no longer depends on the compiler API TypeScript 7 will drop. P2-1/4/5/6/7/8/9 also fixed: apple-touch-icon + typed appleWebApp, per-scheme themeColor, poweredByHeader off, mind-map tree ARIA (level/posinset/setsize/group + selection decoupled from focus), engines.node raised to >=22.10.0, and three dead announce keys wired (fourth deleted as a duplicate) behind a guard test. P2-2/3/10/11 remain. |
+| W1 | GOAP research swarm against official sources | Done | `plans/158-september-2026-best-practice-audit.md`. 4 parallel research lanes (Next 16/deploy, service worker, Zustand v5/React 19, WCAG 2.2/i18n), each required to cite a primary source. **3 P0**: Vercel builds with pnpm 6 via `installCommand` (cannot read lockfile v9 / `pnpm.overrides`); the service-worker registration deletes the precache it just wrote (regression from Plan 157, verified in Chromium); hydration rejection is silent *and* destroys the envelope it claims to preserve. **3 candidates rejected by browser verification** — a `role="img"` a11y defect that Chrome does not exhibit, a WCAG target-size violation that measured 28px not 22px, and a Zustand typing claim. **All P0, P1, and P2 items are remediated** (the earlier "P2-2/3/10/11 remain" tail is stale; the plan's own §4/§5 closure table records P2-10 and P2-11 Fixed). P0-1/P0-2/P0-3 + P1-2 remediated in the editor wrapper change. P1-1 also fixed — a dedicated `tsconfig.build.json` lets `next build`'s CLI typechecker skip test sources without the `useTypeScriptCli` experiment, so the build is warning-free and no longer depends on the compiler API TypeScript 7 will drop. P2-1/4/5/6/7/8/9 also fixed: apple-touch-icon + typed appleWebApp, per-scheme themeColor, poweredByHeader off, mind-map tree ARIA (level/posinset/setsize/group + selection decoupled from focus), engines.node raised to >=22.10.0, and three dead announce keys wired (fourth deleted as a duplicate) behind a guard test. **The audit and its remediation are complete.** The precache finding (P2-3) was fixed here against the emitted boot HTML only; Plan 161 later superseded that hand-listed approach with a generated chunk+media inventory and recorded offline coverage of the lazy views. |
 
 ### Plan 156 — Dependency audit remediation: `brace-expansion` (2026-09-28)
 
@@ -66,10 +91,10 @@
 | Wave | Goal | Status | Changes |
 |------|------|--------|---------|
 | W1 | G7 gate honesty + G1 persistence contract | Done | Shipped: `mergeHydratedState` validates on every load (not just version mismatches), rebase-on-hydrate, `HydrationRejectedError` preserves the payload on disk, honest coverage thresholds (75/78/84/85) with test files excluded, `.githooks/` committed + `core.hooksPath` wired via the `prepare` script. |
-| W2 | G2 undo integrity + G3 dead-code/dep pruning | Partial | Undo integrity done in Plan 157 W3: history carries claims, claim CRUD participates, dangling selection/edit ids are cleared (D1.6/D1.22). Dead primitives pruned in #838: `Button`, `FieldLabel`, `SelectInput`, `ToolbarBtn`, and `EmptyState` had zero production importers and were shadowed by local duplicates — `ui/shared-primitives.tsx` went 317 → 131 lines. **Closed, nothing to prune.** The ~26-dependency prune was estimated, not measured. A scan of all 63 deps found only 4 with no import in `src/`, `e2e/`, or `scripts/` — and all four are required: `react-dom` and `sharp` are Next 16 peer/optional requirements, `tw-animate-css` is imported by `globals.css`. |
-| W3 | G4 bundle/startup + G5 view consolidation | Partial | **Not done**: zero `next/dynamic` call sites, so the sync and export chunks still load eagerly — this is the remaining half of W3. The shared `ToolbarBtn` dead-export problem is closed (#838). `chat-view.tsx` fell to 126 LOC on its own; `graph-view.tsx` (494) and `mindmap-view.tsx` (490) remain just under the ceiling. |
-| W4 | G6 sync bridge completion | Done | `startBidirectionalSync` is now called from `app-shell.tsx:130` and the unsubscribe is returned. Tombstone registry extracted to `cross-tab-tombstones.ts`. |
-| W5 | G8 library hardening + G9 hygiene | Partial | Done: DOMPurify wired in `lib/security.ts`, `verify-deps.sh` runs in CI on lockfile changes, markdown link sanitization + `noopener noreferrer`. **Not done**: vitest typecheck still runs with `ignoreSourceErrors: true` against ~73 legacy `*.test.ts` errors, so source-error gating is inert (D5.3). |
+| W2 | G2 undo integrity + G3 dead-code/dep pruning | Partial | Undo integrity closed in Plan 157 W3: history carries claims, claim CRUD participates in history, dangling selection/edit ids are cleared on restore (D1.6/D1.22). Specific dead primitives pruned in #838: `Button`, `FieldLabel`, `SelectInput`, `ToolbarBtn`, `EmptyState` had zero production importers and were shadowed by local duplicates — `ui/shared-primitives.tsx` went 317 → 131 lines. **The earlier "Closed, nothing to prune" conclusion is withdrawn**: the ~26-dependency prune was an estimate, not a measured prune list. A scan of all 63 dependencies found only 4 with no import in `src/`, `e2e/`, or `scripts/`, and all four are required (`react-dom`/`sharp` are Next 16 peer/optional requirements; `tw-animate-css` is imported by `globals.css`). **No dependency deletion is selected by this audit** — a prune decision needs its own measured list. |
+| W3 | G4 bundle/startup + G5 view consolidation | Partial | Six **`React.lazy`** view boundaries are delivered — `src/components/studio/app-shell.tsx:30-35` (Graph, MindMap, AIHarness, Triz, Export, Sync) — superseding the earlier "zero `next/dynamic` call sites, so the sync and export chunks still load eagerly" claim. The shared `ToolbarBtn` dead-export problem is closed (#838); `chat-view.tsx` fell to 126 LOC on its own. **Residuals, source-confirmed on 2026-10-05 and not runtime-rechecked** (Plan 162 #4): `app-shell.tsx:13` still statically imports `EditorView`, which reaches `yjs`/`y-indexeddb`/`y-webrtc` through `remote-cursors.tsx:5` → `use-cursors.ts:4-11` → `cursors.ts:1` → `doc.ts:1-3`; and inside the lazy Export subtree `use-export-handlers.ts:11-12` statically imports the `jspdf`/`docx` builders (`export-documents.ts:2-11`) plus `fflate`. The Export **view** is lazy and must not be described as eager. |
+| W4 | G6 sync bridge completion | Partial | Bridge wiring delivered: `startBidirectionalSync` is called from `app-shell.tsx` and the unsubscribe is returned; tombstone registry extracted to `cross-tab-tombstones.ts`. **Still open** (Plan 162 #3): `sync-view.tsx:267-288` reads `mergeIntoYjs` on join without surfacing `result.conflicts` (unlike Resync at `:310-321`), and Leave→Join does not re-run `initPersistence` (`doc.ts:37-43` vs `destroy()` at `:75-84`). ADR 027 behavior is therefore **not** complete merely because the bridge is called. Tombstone durability across sessions: not reassessed. |
+| W5 | G8 library hardening + G9 hygiene | Partial | Done: `verify-deps.sh` runs in CI on lockfile changes, markdown link sanitization + `noopener noreferrer`. Sanitizer helpers **exist** (`src/lib/security.ts:19,38` — `sanitizeHtml`/`sanitizeText`) but their references are definitions and tests only: **production integration is not demonstrated**, so the earlier "DOMPurify wired in `lib/security.ts`" phrasing is corrected here. This is a status correction, not a vulnerability finding. Source-error gating **is** restored: `vitest.config.ts:29` sets `ignoreSourceErrors: false` (Plan 159 F7 cleared all 94 `*.test.ts` type errors). Broader G8 recovery/provider work remains — recovery reachability is `Partial` (Plan 162 #1) and AI provider request control is absent (Plan 162 F1). |
 
 ### Plan 129 — React Compiler ESLint Rules (2026-08-17)
 
@@ -268,6 +293,46 @@
 
 ## Current Status
 
+### Current source-confirmed summary (2026-10-05)
+
+Reconciled by [Plan 162](162-roadmap-progress-and-next-work-2026-10-05.md) from
+source inspection only. Statuses use Plan 162's vocabulary; nothing below was
+re-exercised at runtime.
+
+| Area | Status | Anchor |
+|---|---|---|
+| CPU-first local AI inference | `Implemented — source-confirmed` | `src/lib/ai/local-adapter.ts:12-32,247-278` |
+| Claim-aware undo + canvas restore + mind-map density | `Implemented — source-confirmed` | Plans 157 W1/W3 |
+| Hydration refusal / quarantine | `Implemented — source-confirmed` | Plan 159, ADR 028 |
+| Six `React.lazy` view boundaries | `Implemented — source-confirmed` | `src/components/studio/app-shell.tsx:30-35` |
+| Test-source type gating | `Implemented — source-confirmed` | `vitest.config.ts:29` `ignoreSourceErrors: false` |
+| Semantic search, `okf`, encrypted reader export | `Implemented — source-confirmed` | `vector-store.ts:220-247,350`; `export-types.ts:12`; `use-export-handlers.ts:282-304` |
+| Recovery reachability + backup outcome | `Implemented — source-confirmed`, browser-verified on all four viewport projects | `restoreFromRecovery` now has a production caller: `RecoveryBanner` (mounted in `RecoveryAlerts`, reachable from any view) offers the pre-import snapshot with non-destructive dismissal. `persistRecoverySnapshot` returns a `RecoveryPersistResult` and the import warns ("no backup was kept") instead of claiming a clean swap. Two review-found data-loss paths are guarded: a refused write no longer deletes the surviving snapshot, and restore refuses while `isSyncBlocked()` rather than consuming the backup without saving. Tests: `recovery-backup-outcome.test.ts`, `e2e/recovery-restore.spec.ts`, each verified failing without its fix |
+| Deletion/export optional-field integrity | `Partial` — investigation pending | `slices/entities-slice.ts:94-105` |
+| Sync join/rejoin (conflicts, persistence re-init) | `Partial` | `sync-view.tsx:267-321`; `sync/doc.ts:37-43,75-84` |
+| Heavy-leaf deferral (editor→Yjs, PDF/DOCX/fflate) | `Partial` | `app-shell.tsx:13`; `use-export-handlers.ts:11-12` |
+| AI request control (Stop button, bounded errors) | `Not implemented — source-confirmed` | `ai-harness-chat.tsx:130-152` |
+| URL deep links / browser history | `Not implemented — source-confirmed` | No hash/popstate integration in `src/` or `e2e/`; ADR 037 stays Proposed |
+| Touch/gesture graph + mind-map control | `Not implemented — source-confirmed` | `graph-view.tsx:130-180` is keyboard-only |
+| Skills catalog, manifest-doc truth, script/README drift | Open records | Plan 162 Skills + Documentation maintenance |
+| CI, deployment, open issues, installed versions, measured coverage | `Not checked in this audit` | Deliberately not queried |
+
+### Ordered next work
+
+1. ~~**Recovery reachability and backup outcome**~~ — **done 2026-10-05**; see
+   [Plan 162](162-roadmap-progress-and-next-work-2026-10-05.md) #1.
+2. **Deletion/export integrity investigation** — now the first open item.
+3. **Sync join/rejoin completion**, then Plan 161's recorded follow-ons (dev search worker, first-mount reduced motion, workflow warnings).
+4. **Skills and documentation maintenance** — independent of product changes.
+5. **New features**, in order: AI request control → URL deep links → pointer/touch interaction.
+6. **Unscheduled candidates**: graph revision comparison, Synthesis Inbox, Visual Query Builder.
+
+### Historical session summaries
+
+The blocks below are historical records. Their test counts, coverage figures,
+open-PR/issue counts, and PR numbers describe the sessions named in them, not
+the current repository state.
+
 ### Session Summary (2026-08-01 — 5 PRs merged)
 
 | Area | PRs | Key Changes |
@@ -286,7 +351,6 @@ Session notes: GitHub's mergeability cache reported stale `BLOCKED` after the le
 |------|-----|-------------|
 | A11y E2E suite | #539–#543 | Strict axe assertions, color-contrast fixes, graph a11y fix |
 | UI smoke tests | #540 | 9 shadcn primitive tests (782 additions) |
-| Plan reconciliation | #544, #547–#549 | 7 plans reconciled, Status: DONE lines added |
 | Release policy | #545 | Never create release without explicit human instruction |
 | Version reconciliation | #546 | VERSION file, package.json, MIGRATION.md → 0.1.0 |
 | Historical annotations | #548 | 9 superseded plans annotated with Historical Notes |

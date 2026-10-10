@@ -48,7 +48,7 @@
 
 ## Phase 6: Intelligence (Complete - 2026-06)
 - [x] Streaming AI chat with LLM provider integration (OpenRouter, Ollama)
-- [x] BM25 keyword search with ranked results [renamed from "semantic search" in Plan 072]
+- [x] BM25 keyword search with ranked results — **historical label decision**: this line was renamed from "semantic search" in Plan 072 when only BM25 existed. That label decision is now **superseded**: a real semantic mode shipped in `src/lib/search/vector-store.ts` (embedding-backed, with lexical fallback), so "semantic search" describes shipped behavior and BM25 is the lexical fallback.
 - [x] Entity auto-hydration from external sources (Jina AI reader)
 - [x] Claim provenance and verification tracking
 - [x] Entity-aware AI tools (list, query, link)
@@ -97,3 +97,27 @@
 - [x] INDEX.md: update metrics and session history
 - [x] LOC remediation: split triz-data.ts (743→4 files)
 - [x] LOC remediation: extract ai-harness-settings.tsx (563→under500)
+
+---
+
+## Current progress (2026-10-05)
+
+Added by [Plan 162](162-roadmap-progress-and-next-work-2026-10-05.md). The dated
+phases above are preserved as written. This section records what shipped after
+them, each with its successor plan. **No Phase 11 is claimed** — no phase was
+defined or completed for this work.
+
+| Capability | Status | Successor plan |
+|---|---|---|
+| Semantic search (embedding-backed vector store with lexical fallback) | `Implemented — source-confirmed` | Phase 6 label decision superseded; `src/lib/search/vector-store.ts` |
+| CPU-first in-browser local AI provider (WASM, WebGPU opt-in) | `Implemented — source-confirmed` | [155](155-cpu-first-local-ai-and-settings-persistence.md), ADR 040 |
+| Claim-aware undo (history carries claims; dangling selection cleared) | `Implemented — source-confirmed` | [157](157-codebase-gap-and-feature-remediation.md) W3 |
+| Hydration refusal protection and quarantine (fail closed) | `Implemented — source-confirmed` | [159](159-rejected-library-recovery-visibility-and-fail-closed.md), ADR 028 |
+| Test-source type gating (`ignoreSourceErrors: false`) | `Implemented — source-confirmed` | [159](159-rejected-library-recovery-visibility-and-fail-closed.md) F7 |
+| Six `React.lazy` view boundaries, offline-capable | `Implemented — source-confirmed`; offline coverage is Plan 161's dated 2026-09-30 result | [161](161-offline-lazy-view-precache-and-framework-refresh-2026-09-30.md), ADR 041 |
+| Encrypted self-contained HTML reader, `okf` export format | `Implemented — source-confirmed` | Plan 110 / ADR 021 / ADR 031 |
+
+Open work, in priority order — recovery reachability, deletion/export integrity,
+sync join/rejoin, heavy-leaf deferral, recorded follow-ons, skills/docs
+maintenance, then the ranked new features — is tracked in
+[162-roadmap-progress-and-next-work-2026-10-05.md](162-roadmap-progress-and-next-work-2026-10-05.md).
