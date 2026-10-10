@@ -121,9 +121,15 @@ export const useAiHarnessChat = ({
     abortRef.current = controller
 
     const timeoutSignal = AbortSignal.timeout(REQUEST_TIMEOUT_MS)
-    const signal = AbortSignal.any
-      ? AbortSignal.any([controller.signal, timeoutSignal])
-      : controller.signal
+    // `AbortSignal.any` is a 2024-baseline API, so it is feature-detected the
+    // same way this codebase detects `crypto.randomUUID`. A bare truthy check
+    // on the statically-declared method reads as always-truthy to the
+    // type-aware linter (Codacy #131548904676 on PR #923); the typeof guard
+    // keeps the fallback honest on engines that predate it.
+    const signal =
+      typeof AbortSignal.any === 'function'
+        ? AbortSignal.any([controller.signal, timeoutSignal])
+        : controller.signal
 
     try {
       const { extractUrls, fetchUrls } = await import('@/lib/ai/research')
