@@ -14,7 +14,7 @@ vi.mock('lucide-react', () => {
   const Icon = ({ className }: { className?: string }) => (
     <span data-testid="icon" className={className} />
   )
-  return { Bot: Icon, User: Icon, Send: Icon, Sparkles: Icon, Lightbulb: Icon }
+  return { Bot: Icon, User: Icon, Send: Icon, Square: Icon, Sparkles: Icon, Lightbulb: Icon }
 })
 
 vi.mock('@/lib/utils', () => ({
@@ -88,10 +88,14 @@ describe('AiHarnessChatPanel', () => {
     expect(sendBtn).not.toBeDisabled()
   })
 
-  it('disables send button when loading', () => {
-    render(<AiHarnessChatPanel {...defaultProps} input="Hello" isLoading />)
-    const sendBtn = screen.getByLabelText('Send')
-    expect(sendBtn).toBeDisabled()
+  it('renders Stop button when loading and clicking calls onStop', () => {
+    const onStop = vi.fn()
+    render(<AiHarnessChatPanel {...defaultProps} input="Hello" isLoading onStop={onStop} />)
+    const stopBtn = screen.getByLabelText('Stop generating')
+    expect(stopBtn).toBeDefined()
+    fireEvent.click(stopBtn)
+    expect(onStop).toHaveBeenCalled()
+    expect(screen.queryByLabelText('Send')).toBeNull()
   })
 
   it('disables textarea when loading', () => {

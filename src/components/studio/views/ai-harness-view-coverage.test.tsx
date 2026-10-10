@@ -80,6 +80,7 @@ vi.mock('lucide-react', () => {
     Bot: Icon,
     User: Icon,
     Send: Icon,
+    Square: Icon,
     Settings: Icon,
     Database: Icon,
     Key: Icon,
