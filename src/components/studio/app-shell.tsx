@@ -281,8 +281,13 @@ export const AppShell = () => {
   )
 
   return (
+    // `paddingTop` reserves the fixed offline banner's measured height
+    // (`--offline-banner-height`, published by OfflineIndicator). Without it the
+    // banner covers the topbar and its controls stop taking clicks while
+    // offline. Unset on the server, so both renders agree at 0px.
     <div
       className="flex h-dvh w-full overflow-hidden bg-background text-foreground"
+      style={{ paddingTop: 'var(--offline-banner-height, 0px)' }}
       data-app-ready={appReady ? 'true' : undefined}
     >
       <a
