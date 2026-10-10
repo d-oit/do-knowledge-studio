@@ -429,7 +429,9 @@ export const useExportHandlers = ({
           description:
             result.backupFailure === 'too-large'
               ? 'Your previous library was too large for this browser to keep as a recovery copy, so it cannot be restored from here. Export a JSON backup before your next import.'
-              : 'This browser refused to store a recovery copy, so your previous library cannot be restored from here. Export a JSON backup before your next import.',
+              : result.backupFailure === 'unserializable'
+                ? 'Your previous library could not be captured as a recovery copy (an internal serialization error), so it cannot be restored from here. Export a JSON backup before your next import.'
+                : 'This browser refused to store a recovery copy, so your previous library cannot be restored from here. Export a JSON backup before your next import.',
         })
       } else {
         toast.success('Import complete', {
