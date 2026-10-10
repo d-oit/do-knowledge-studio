@@ -126,6 +126,14 @@ describe('sanitizeUrl', () => {
     expect(sanitizeUrl('vbscript:msgbox(1)')).toBe('')
   })
 
+  it('strips control characters and blocks obfuscated javascript: URLs', () => {
+    expect(sanitizeUrl('\x01javascript:alert(1)')).toBe('')
+    expect(sanitizeUrl('java\tscript:alert(1)')).toBe('')
+    expect(sanitizeUrl('java\nscript:alert(1)')).toBe('')
+    expect(sanitizeUrl('java\rscript:alert(1)')).toBe('')
+    expect(sanitizeUrl('   https://example.com/path\x07   ')).toBe('https://example.com/path')
+  })
+
   it('blocks malformed and non-string inputs', () => {
     expect(sanitizeUrl('')).toBe('')
     expect(sanitizeUrl('   ')).toBe('')
