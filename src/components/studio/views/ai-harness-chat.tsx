@@ -1,6 +1,6 @@
 'use client'
 
-import { Bot, User, Send, Sparkles, Lightbulb } from 'lucide-react'
+import { Bot, User, Send, Square, Sparkles, Lightbulb } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import type { ChatMessage } from '@/lib/ai'
@@ -16,6 +16,7 @@ interface ChatPanelProps {
   input: string
   setInput: (v: string) => void
   handleSend: (overrideInput?: string) => void | Promise<void>
+  onStop?: () => void
   reducedMotion: boolean
   augment: boolean
   effectiveModel: string
@@ -102,6 +103,7 @@ const ChatComposer = ({
   input,
   setInput,
   handleSend,
+  onStop,
   isLoading,
   cooldownMs,
   augment,
@@ -110,6 +112,7 @@ const ChatComposer = ({
   input: string
   setInput: (v: string) => void
   handleSend: (overrideInput?: string) => void | Promise<void>
+  onStop?: () => void
   isLoading: boolean
   cooldownMs: number
   augment: boolean
@@ -121,7 +124,7 @@ const ChatComposer = ({
         value={input}
         onChange={(e) => { setInput(e.target.value) }}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
+          if (e.key === 'Enter' && !e.shiftKey && !isLoading) {
             e.preventDefault()
             void handleSend()
           }
@@ -132,14 +135,28 @@ const ChatComposer = ({
         aria-label="AI agent message"
         className="max-h-24 flex-1 resize-none bg-transparent px-2 py-1 text-[13px] text-ink placeholder:text-ink-faint focus:outline-none disabled:opacity-50"
       />
-      <button
-        onClick={() => { void handleSend() }}
-        disabled={!input.trim() || isLoading || cooldownMs > 0}
-        className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:opacity-40 press-scale focus-ring"
-        aria-label="Send"
-      >
-        <Send className="h-3.5 w-3.5" />
-      </button>
+      {isLoading ? (
+        <button
+          type="button"
+          onClick={onStop}
+          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md bg-destructive text-destructive-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+          aria-label="Stop generating"
+          title="Stop generating"
+        >
+          <Square className="h-3.5 w-3.5 fill-current" />
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => { void handleSend() }}
+          disabled={!input.trim() || cooldownMs > 0}
+          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:opacity-40 press-scale focus-ring"
+          aria-label="Send"
+          title="Send"
+        >
+          <Send className="h-3.5 w-3.5" />
+        </button>
+      )}
     </div>
     {cooldownMs > 0 && (
       <p className="mt-1 text-center text-[11px] text-amber-600">
@@ -163,6 +180,7 @@ export const AiHarnessChatPanel = ({
   input,
   setInput,
   handleSend,
+  onStop,
   reducedMotion,
   augment,
   effectiveModel,
@@ -194,6 +212,7 @@ export const AiHarnessChatPanel = ({
         input={input}
         setInput={setInput}
         handleSend={handleSend}
+        onStop={onStop}
         isLoading={isLoading}
         cooldownMs={cooldownMs}
         augment={augment}

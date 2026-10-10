@@ -16,6 +16,8 @@ const INITIAL_ASSISTANT_MESSAGE: ChatMessage = {
 const RATE_LIMIT_MESSAGE =
   'I\u2019m being rate-limited \u2014 please slow down and try again in a few seconds.'
 
+const REQUEST_TIMEOUT_MS = 120_000
+
 export interface UseAiHarnessChatOptions {
   provider: AIProvider
   model: string
@@ -118,6 +120,17 @@ export const useAiHarnessChat = ({
     const controller = new AbortController()
     abortRef.current = controller
 
+    const timeoutSignal = AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+    // `AbortSignal.any` is a 2024-baseline API, so it is feature-detected the
+    // same way this codebase detects `crypto.randomUUID`. A bare truthy check
+    // on the statically-declared method reads as always-truthy to the
+    // type-aware linter (Codacy #131548904676 on PR #923); the typeof guard
+    // keeps the fallback honest on engines that predate it.
+    const signal =
+      typeof AbortSignal.any === 'function'
+        ? AbortSignal.any([controller.signal, timeoutSignal])
+        : controller.signal
+
     try {
       const { extractUrls, fetchUrls } = await import('@/lib/ai/research')
       let researchResults: import('@/lib/ai/research').ResearchResult[] | undefined
@@ -126,7 +139,7 @@ export const useAiHarnessChat = ({
         const urls = extractUrls(text)
         if (urls.length > 0) {
           toast.info(`Fetching ${urls.length} URL(s)…`)
-          researchResults = await fetchUrls(urls, controller.signal)
+          researchResults = await fetchUrls(urls, signal)
           const failed = researchResults.filter((r) => !r.success)
           if (failed.length > 0) {
             toast.warning(`Failed to fetch ${failed.length} URL(s)`)
@@ -142,7 +155,7 @@ export const useAiHarnessChat = ({
         augment,
         researchResults,
         undefined,
-        controller.signal,
+        signal,
       )
 
       // The assistant bubble is created with its first content, never as an
@@ -166,7 +179,7 @@ export const useAiHarnessChat = ({
           model,
           apiKey,
           messages: apiMessages,
-          signal: controller.signal,
+          signal,
           ollamaCpuOnly,
           ollamaBaseUrl,
           localDevice,
@@ -186,6 +199,22 @@ export const useAiHarnessChat = ({
         upsertAssistantBubble(result.content)
       }
     } catch (err) {
+      const isTimeout =
+        timeoutSignal.aborted ||
+        (err instanceof DOMException && err.name === 'TimeoutError')
+
+      if (isTimeout) {
+        setMessages((m) => [
+          ...m,
+          {
+            role: 'assistant',
+            content:
+              '[Error] Request timed out after 2 minutes. The provider took too long to respond.',
+          },
+        ])
+        return
+      }
+
       // Aborting (the turn was superseded, or generation was stopped) keeps
       // whatever already streamed and adds nothing: the bubble only exists once
       // content does, so an aborted turn never leaves an empty bubble behind.
@@ -215,5 +244,9 @@ export const useAiHarnessChat = ({
     messages,
   ])
 
-  return { messages, setMessages, input, setInput, isLoading, cooldownMs, handleSend }
+  const stop = useCallback(() => {
+    abortRef.current?.abort()
+  }, [])
+
+  return { messages, setMessages, input, setInput, isLoading, cooldownMs, handleSend, stop }
 }
