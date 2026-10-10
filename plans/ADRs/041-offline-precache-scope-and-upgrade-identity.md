@@ -95,8 +95,13 @@ required only where build output is the subject under test.
   fully offline with a bundled model, that is a separate, explicitly sized
   decision.
 - `pnpm run test:e2e` still means the fast loop; `test:e2e:offline` (and
-  `PLAYWRIGHT_PRODUCTION=1 test:e2e`) mean the production loop. CI gains a
-  production suite only when a change touches worker, manifest, or boot wiring.
+  `PLAYWRIGHT_PRODUCTION=1 test:e2e`) mean the production loop. CI runs the
+  production loop behind an `offline` paths filter — the worker, the manifest and
+  its generator, the boot wiring (`layout.tsx`, `app-shell.tsx`,
+  `offline-indicator.tsx`, `service-worker-registration.tsx`), the spec itself,
+  `playwright.config.ts`, and the dependency files that decide chunking. The
+  `e2e-tests` job also gates on that filter, because a generator-only change is
+  `tooling`, not `frontend`, and would otherwise never reach the job.
 
 ## Alternatives rejected
 
