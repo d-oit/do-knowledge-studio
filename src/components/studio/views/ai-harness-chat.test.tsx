@@ -269,4 +269,25 @@ describe('AiHarnessChatPanel', () => {
     expect(screen.getByText('Hello').dataset.probe).toBe('first-bubble')
     expect(screen.getByText('Hello there').dataset.probe).toBe('second-bubble')
   })
+
+  it('renders transcript container as role="log" with aria-live="off"', () => {
+    render(<AiHarnessChatPanel {...defaultProps} />)
+    const logRegion = screen.getByRole('log', { name: 'AI chat transcript' })
+    expect(logRegion).toBeDefined()
+    expect(logRegion.getAttribute('aria-live')).toBe('off')
+  })
+
+  it('announces response completion only after response finishes streaming', () => {
+    const { rerender } = render(<AiHarnessChatPanel {...defaultProps} isLoading={false} />)
+    const statusRegion = screen.getByRole('status')
+    expect(statusRegion.textContent).toBe('')
+
+    // Start streaming turn
+    rerender(<AiHarnessChatPanel {...defaultProps} isLoading={true} />)
+    expect(statusRegion.textContent).toBe('')
+
+    // Finish streaming turn
+    rerender(<AiHarnessChatPanel {...defaultProps} isLoading={false} />)
+    expect(statusRegion.textContent).toBe('Response complete')
+  })
 })
