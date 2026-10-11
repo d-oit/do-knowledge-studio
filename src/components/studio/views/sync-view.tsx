@@ -202,7 +202,7 @@ const SyncHistoryCard = ({ events }: { events: SyncEvent[] }) => (
             <span className={cn('h-2 w-2 shrink-0 rounded-full', eventDotClass(event.type))} />
             <span className="flex-1 text-[13px] text-ink">{event.message}</span>
             <span className="text-caption text-ink-faint">
-              {new Date(event.timestamp).toLocaleTimeString()}
+              {new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(new Date(event.timestamp))}
             </span>
           </div>
         ))}
