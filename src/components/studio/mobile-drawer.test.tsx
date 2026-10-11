@@ -172,25 +172,29 @@ describe('MobileDrawer', () => {
     expect(mockSetMobileDrawerOpen).toHaveBeenCalledWith(false)
   })
 
-  it('renders tab switcher with Navigate and Search tabs', () => {
+  it('renders switcher with Navigate and Search toggle buttons', () => {
     mobileDrawerOpen = true
     render(<MobileDrawer />)
-    expect(screen.getByText('Navigate')).toBeDefined()
-    expect(screen.getByText('Search')).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Navigate' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Search' })).toBeDefined()
   })
 
-  it('tab switcher has tablist role', () => {
+  it('switcher has group role with accessible label and no tab/tablist roles', () => {
     mobileDrawerOpen = true
     render(<MobileDrawer />)
-    expect(screen.getByRole('tablist', { name: 'Drawer view' })).toBeDefined()
+    expect(screen.getByRole('group', { name: 'Drawer view' })).toBeDefined()
+    expect(screen.queryByRole('tablist')).toBeNull()
+    expect(screen.queryByRole('tab')).toBeNull()
   })
 
-  it('Navigate tab is selected by default', () => {
+  it('Navigate button is pressed by default', () => {
     mobileDrawerOpen = true
     mobilePanelView = 'nav'
     render(<MobileDrawer />)
-    const navTab = screen.getByText('Navigate')
-    expect(navTab).toHaveAttribute('aria-selected', 'true')
+    const navBtn = screen.getByRole('button', { name: 'Navigate' })
+    const searchBtn = screen.getByRole('button', { name: 'Search' })
+    expect(navBtn).toHaveAttribute('aria-pressed', 'true')
+    expect(searchBtn).toHaveAttribute('aria-pressed', 'false')
   })
 
   it('switches to Search tab on click', () => {
