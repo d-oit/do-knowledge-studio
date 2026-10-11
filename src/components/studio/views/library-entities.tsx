@@ -302,11 +302,19 @@ const EntityTableHeader = () => (
 )
 
 /** Name cell for an entity table row (icon + truncated name/description). */
-const EntityNameCell = ({ entity }: { entity: Entity }) => {
+const EntityNameCell = ({ entity, onOpen }: { entity: Entity; onOpen: () => void }) => {
   const meta = getEntityTypeMeta(entity.type)
   return (
     <td className="px-4 py-3">
-      <div className="flex items-center gap-2.5">
+      <button
+        type="button"
+        onClick={(ev) => {
+          ev.stopPropagation()
+          onOpen()
+        }}
+        aria-label={`Open ${entity.name}`}
+        className="flex w-full min-h-[44px] items-center gap-2.5 rounded text-left focus-ring"
+      >
         <div className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded', meta.bg, meta.text)}>
           <EntityIcon type={entity.type} className="h-3.5 w-3.5" />
         </div>
@@ -316,7 +324,7 @@ const EntityNameCell = ({ entity }: { entity: Entity }) => {
           </div>
           <div className="truncate text-label text-ink-mute">{entity.description}</div>
         </div>
-      </div>
+      </button>
     </td>
   )
 }
@@ -334,19 +342,11 @@ const TableRow = ({
   measure?: (node: HTMLTableRowElement | null) => void
 }) => {
   const meta = getEntityTypeMeta(entity.type)
+  const openEntity = () => { startEdit(entity.id) }
   return (
     <tr
       key={entity.id}
-      onClick={() => { startEdit(entity.id) }}
-      onKeyDown={(ev) => {
-        if (ev.key === 'Enter' || ev.key === ' ') {
-          ev.preventDefault()
-          startEdit(entity.id)
-        }
-      }}
-      tabIndex={0}
-      role="link"
-      aria-label={`Open ${entity.name}`}
+      onClick={openEntity}
       data-index={vi?.index}
       ref={measure}
       style={
@@ -360,9 +360,9 @@ const TableRow = ({
             }
           : undefined
       }
-      className="group cursor-pointer border-b border-border last:border-0 transition-colors hover:bg-muted/30 focus-ring"
+      className="group cursor-pointer border-b border-border last:border-0 transition-colors hover:bg-muted/30"
     >
-      <EntityNameCell entity={entity} />
+      <EntityNameCell entity={entity} onOpen={openEntity} />
       <td className="hidden px-4 py-3 sm:table-cell">
         <span className={cn('rounded-full px-2 py-0.5 text-caption font-medium', meta.bg, meta.text)}>
           {meta.label}

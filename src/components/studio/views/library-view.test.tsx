@@ -283,19 +283,23 @@ describe('LibraryView', () => {
     expect(mockSetSortDir).toHaveBeenCalledWith('desc')
   })
 
-  it('renders list view and opens entities by click and keyboard', () => {
+  it('renders list view and opens entities from row buttons (#861)', () => {
     render(<LibraryView />)
     fireEvent.click(screen.getByRole('button', { name: 'List view' }))
 
-    const rows = within(screen.getByRole('table')).getAllByRole('link')
-    expect(rows).toHaveLength(2)
-    fireEvent.click(rows[0])
+    // Native table semantics: rows are rows, the open action is a button.
+    const table = within(screen.getByRole('table'))
+    expect(table.queryByRole('link')).toBeNull()
+    const openButtons = table.getAllByRole('button', { name: /Open / })
+    expect(openButtons).toHaveLength(2)
+    fireEvent.click(openButtons[0])
     expect(mockStartEdit).toHaveBeenCalledWith('ent-1')
 
-    fireEvent.keyDown(rows[1], { key: 'Enter' })
-    fireEvent.keyDown(rows[1], { key: ' ' })
+    // Keyboard users operate the same button (Enter/Space are native).
+    openButtons[1].focus()
+    fireEvent.click(openButtons[1])
     expect(mockStartEdit).toHaveBeenCalledWith('ent-2')
-    expect(mockStartEdit).toHaveBeenCalledTimes(3)
+    expect(mockStartEdit).toHaveBeenCalledTimes(2)
   })
 
   it('renders tag overflow in grid view', () => {

@@ -8,7 +8,7 @@ import { navClick } from './helpers/navigation';
  * both over the LIBRARY_INITIAL_LIMIT cap (24) and the VIRTUALIZE_THRESHOLD
  * (64), forcing the windowed path in a real browser (measurable container).
  *
- * Locators are role-scoped (heading for grid cards, link for table rows)
+ * Locators are role-scoped (heading for grid cards, button for table rows)
  * because the right panel renders the same entity names as suggestion buttons.
  */
 
@@ -86,17 +86,17 @@ test.describe('Library windowed rendering', () => {
     await page.getByRole('button', { name: /Show all 120 entities/ }).click();
 
     // Windowed table: far rows are not mounted.
-    await expect(page.getByRole('link', { name: 'Open Entity 0', exact: true })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Open Entity 119', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Open Entity 0', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Open Entity 119', exact: true })).toHaveCount(0);
 
     // Only a window of rows exists in the DOM (not all 120).
     const table = scroller(page).getByRole('table');
-    const mounted = await table.getByRole('link').count();
+    const mounted = await table.getByRole('button', { name: /open entity/i }).count();
     expect(mounted).toBeGreaterThan(0);
     expect(mounted).toBeLessThan(60);
 
     // Scrolling mounts later rows.
     await scroller(page).evaluate((el) => { el.scrollTop = el.scrollHeight; });
-    await expect(page.getByRole('link', { name: 'Open Entity 119', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Open Entity 119', exact: true })).toBeVisible();
   });
 });

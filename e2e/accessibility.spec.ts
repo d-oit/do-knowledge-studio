@@ -44,14 +44,17 @@ test.describe('Accessibility', () => {
     await expect(viewGroup).toBeVisible();
   });
 
-  test('library entity links have accessible names', async ({ page }) => {
+  test('library entity open buttons have accessible names', async ({ page }) => {
     await navClick(page, /library/i);
 
-    const entityLinks = page.getByRole('link', { name: /open /i });
-    const count = await entityLinks.count();
+    // Table rows expose native table semantics (#861); the open action is a
+    // real button in the name cell, matching the grid-card pattern.
+    const entityButtons = page.getByRole('button', { name: /open /i });
+    const count = await entityButtons.count();
     if (count > 0) {
-      await expect(entityLinks.first()).toHaveAttribute('aria-label', /open /i);
+      await expect(entityButtons.first()).toHaveAttribute('aria-label', /open /i);
     }
+    await expect(page.getByRole('table')).toBeVisible();
   });
 
   test('editor has proper radiogroup for mode selection', async ({ page }) => {
