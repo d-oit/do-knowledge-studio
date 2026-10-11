@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { ReactNode } from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { HomeView } from './home-view'
+import { longDate } from '@/lib/studio/format'
 
 vi.mock('framer-motion', () => {
   const div = ({ children, initial: _i, animate: _a, transition: _t, ...props }: { children?: ReactNode; [key: string]: unknown }) => (
@@ -98,11 +99,7 @@ describe('HomeView', () => {
 
   it('renders today date in greeting row', () => {
     render(<HomeView />)
-    const dateText = new Intl.DateTimeFormat('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-    }).format(new Date())
+    const dateText = longDate.format(new Date())
     expect(screen.getByText(dateText)).toBeDefined()
   })
 

@@ -3,6 +3,7 @@ import {
   BASE_BAND_CAPACITY,
   BASE_PLACEMENT_BAND,
   baseNodePosition,
+  computeCircularLayout,
   placeGraphNodes,
   placementBand,
   resolveNodePosition,
@@ -129,6 +130,41 @@ describe('placementBand', () => {
     expect(placementBand(20)).toEqual(placementBand(20))
     expect(placementBand(20).xMin).toBe(BASE_PLACEMENT_BAND.xMin)
     expect(placementBand(20).yMin).toBe(BASE_PLACEMENT_BAND.yMin)
+  })
+})
+
+describe('computeCircularLayout', () => {
+  it('returns empty array when given no nodes', () => {
+    expect(computeCircularLayout([], { width: 800, height: 560 })).toEqual([])
+  })
+
+  it('centers nodes on the canvas center for any canvas size', () => {
+    const testNodes: GraphNode[] = [
+      { id: '1', label: 'N1', type: 'concept', x: 0, y: 0 },
+      { id: '2', label: 'N2', type: 'concept', x: 0, y: 0 },
+      { id: '3', label: 'N3', type: 'concept', x: 0, y: 0 },
+      { id: '4', label: 'N4', type: 'concept', x: 0, y: 0 },
+    ]
+
+    const canvas = { width: 1000, height: 600 }
+    const circular = computeCircularLayout(testNodes, canvas)
+
+    const expectedCx = 1000 / 2
+    const expectedCy = 600 / 2
+    const expectedR = Math.min(expectedCx, expectedCy) * 0.7
+
+    // Average position of nodes on a full circle should equal (cx, cy)
+    const avgX = circular.reduce((sum, n) => sum + n.x, 0) / circular.length
+    const avgY = circular.reduce((sum, n) => sum + n.y, 0) / circular.length
+
+    expect(avgX).toBeCloseTo(expectedCx, 5)
+    expect(avgY).toBeCloseTo(expectedCy, 5)
+
+    // Distance of each node from center should equal expectedR
+    for (const node of circular) {
+      const dist = Math.hypot(node.x - expectedCx, node.y - expectedCy)
+      expect(dist).toBeCloseTo(expectedR, 5)
+    }
   })
 })
 

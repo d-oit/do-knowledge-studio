@@ -13,6 +13,19 @@
   --breakpoint-sm: 40rem;
   --breakpoint-lg: 64rem;
   --breakpoint-wide: 68.75rem;
+
+  /* Z-index scale tokens:
+     z-1         - Navigation menu indicator (z-1)
+     z-toast     - Toast notifications viewport (z-100)
+     z-shortcuts - Keyboard shortcut indicator pill (z-700)
+     z-overlay   - Modal dialogs, command palette & backdrop overlays (z-800)
+     z-skiplink  - Skip to main content focus link (z-1000)
+  */
+  --z-index-1: 1;
+  --z-index-toast: 100;
+  --z-index-shortcuts: 700;
+  --z-index-overlay: 800;
+  --z-index-skiplink: 1000;
 }
 
 /* =========================================================

@@ -2,7 +2,7 @@
 
 import { useStudioStore } from '@/lib/studio/store'
 import { seedGraph } from '@/lib/studio/seed-data'
-import { placeGraphNodes } from '@/lib/studio/graph-layout'
+import { placeGraphNodes, computeCircularLayout } from '@/lib/studio/graph-layout'
 import { canvasSize, canvasViewBox } from '@/lib/studio/graph-viewport'
 import { getEntityTypeDefs, getEntityTypeMeta } from '@/lib/studio/entity-types'
 import { translate as entityTypesT } from '@/lib/i18n/messages/entity-types'
@@ -23,6 +23,10 @@ import {
   type GraphLayout,
 } from '@/lib/studio/graph-snapshot'
 import { FOCUS_MODE_FILTER_STYLE, GraphEdgeElement } from './graph-elements'
+import { truncateGraphemes } from '@/lib/text'
+
+/** Maximum character/grapheme count for node labels before truncation. */
+export const GRAPH_LABEL_MAX = 24
 
 /** Interactive knowledge graph view with force, circular, and hierarchical layouts. */
 export const GraphView = () => {
@@ -68,12 +72,8 @@ export const GraphView = () => {
   // Apply layout transforms
   const positioned = useMemo(() => {
     if (layout === 'circular') {
-      const cx = 400, cy = 280, r = 200
-      return nodes.map((n, i) => ({
-        ...n,
-        x: cx + r * Math.cos((2 * Math.PI * i) / nodes.length),
-        y: cy + r * Math.sin((2 * Math.PI * i) / nodes.length),
-      }))
+      const baseCanvas = canvasSize(nodes)
+      return computeCircularLayout(nodes, baseCanvas)
     }
     if (layout === 'hierarchical') {
       const cols = Math.ceil(Math.sqrt(nodes.length))
@@ -384,7 +384,7 @@ const handleGraphKeyDown = useCallback(
                         isSelected ? 'fill-ink' : 'fill-ink-soft',
                       )}
                     >
-                      {n.label.length > 24 ? `${n.label.slice(0, 22)}…` : n.label}
+                      {truncateGraphemes(n.label, GRAPH_LABEL_MAX)}
                     </text>
                   </g>
                 </g>
