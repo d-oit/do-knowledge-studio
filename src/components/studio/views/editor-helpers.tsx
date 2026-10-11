@@ -33,7 +33,7 @@ export const EditorHeader = ({
         </span>
         {editing && (
           <span className="text-label text-ink-faint">
-            Edited {new Date(editing.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+            Edited {new Date(editing.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           </span>
         )}
       </div>
