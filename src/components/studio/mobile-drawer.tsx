@@ -1,18 +1,16 @@
 'use client'
 
-import { useEffect, useRef, useState, type RefObject } from 'react'
+import { useEffect, useRef, type RefObject } from 'react'
 import { Overlay } from '@/components/studio/ui/shared-primitives'
-import { X, Search, Sun, Moon, FileText } from 'lucide-react'
+import { X, Sun, Moon } from 'lucide-react'
 import packageJson from '../../../package.json'
 import { useTheme } from 'next-themes'
 import { RELEASES_BASE_URL } from '@/lib/studio/constants'
-import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
-import type { Entity } from '@/lib/studio/types'
-import { getEntityTypeMeta } from '@/lib/studio/entity-types'
+import { useStudioStore } from '@/lib/studio/store'
 import { NAV_GROUPS } from './sidebar'
 import { cn } from '@/lib/utils'
-import { search, type SearchResult } from '@/lib/search/retrieval'
 import { translate } from '@/lib/i18n/messages/mobile-drawer'
+import { EntitySearchPanel } from './entity-search-panel'
 
 
 /* ---------------------------------- Header --------------------------------- */
@@ -171,129 +169,9 @@ const NavTab = ({ onNavigate }: { onNavigate: () => void }) => {
 
 /* ------------------------------- Search tab -------------------------------- */
 
-/** Search tab with keyword/ranked toggle and entity results list. */
-/** Resolves ranked hits back to entities in rank order (drops unresolvable ids). */
-const rankedToEntities = (results: SearchResult[], entities: Entity[]): Entity[] => {
-  const byId = new Map(entities.map((e) => [e.id, e]))
-  const out: Entity[] = []
-  for (const r of results) {
-    const entity = byId.get(r.entityId ?? r.id)
-    if (entity !== undefined) out.push(entity)
-  }
-  return out
-}
-
+/** Search tab wrapping the shared EntitySearchPanel. */
 const SearchTab = ({ onSelect }: { onSelect: () => void }) => {
-  const searchQuery = useStudioStore((s) => s.searchQuery)
-  const setSearchQuery = useStudioStore((s) => s.setSearchQuery)
-  const entities = useStudioStore((s) => s.entities)
-  const claims = useStudioStore((s) => s.claims)
-  const startEdit = useStudioStore((s) => s.startEdit)
-  const filtered = useFilteredEntities()
-  const [mode, setMode] = useState<'keyword' | 'ranked'>('keyword')
-
-  const rankedResults = mode === 'ranked' && searchQuery.trim()
-    ? search(entities, claims, searchQuery, 20)
-    : []
-
-  const displayEntities = mode === 'ranked' && searchQuery.trim()
-    ? rankedToEntities(rankedResults, entities).slice(0, 20)
-    : filtered
-
-  // Empty-state copy follows the desktop SearchPanel exactly
-  const emptyCopy = searchQuery ? translate('drawer.search.empty') : translate('drawer.search.libraryEmpty')
-
-  return (
-    <div className="flex h-full flex-col">
-      <div className="border-b border-sidebar-border px-3 pb-3">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-faint" />
-          <input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={translate('drawer.search.placeholder')}
-            aria-label={translate('drawer.search.ariaLabel')}
-            className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-3 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/30"
-          />
-        </div>
-        <div className="mt-2 flex items-center gap-1 rounded-md bg-muted p-0.5 text-label">
-          <button
-            onClick={() => { setMode('keyword') }}
-            aria-pressed={mode === 'keyword'}
-            className={cn(
-              'flex-1 rounded px-2 py-1 font-medium transition-colors focus-ring',
-              mode === 'keyword'
-                ? 'bg-background text-ink shadow-sm'
-                : 'text-ink-mute',
-            )}
-          >
-            Keyword
-          </button>
-          <button
-            onClick={() => { setMode('ranked') }}
-            aria-pressed={mode === 'ranked'}
-            className={cn(
-              'flex-1 rounded px-2 py-1 font-medium transition-colors focus-ring',
-              mode === 'ranked'
-                ? 'bg-background text-ink shadow-sm'
-                : 'text-ink-mute',
-            )}
-          >
-            Ranked
-          </button>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-3">
-        {displayEntities.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-            <FileText className="h-8 w-8 text-ink-faint/50" />
-            <p className="text-[12px] text-ink-mute">{emptyCopy}</p>
-          </div>
-        ) : (
-          <ul className="space-y-1.5" role="list" aria-label={translate('drawer.search.resultsAriaLabel')}>
-            {displayEntities.map((e) => {
-              const meta = getEntityTypeMeta(e.type)
-              return (
-                <li key={e.id}>
-                  <button
-                    onClick={() => {
-                      startEdit(e.id)
-                      onSelect()
-                    }}
-                    className="group block w-full rounded-md border border-transparent p-2.5 text-left transition-colors hover:border-border hover:bg-muted/50 focus-ring"
-                  >
-                    <div className="mb-1 flex items-center gap-2">
-                      <span className={cn('h-1.5 w-1.5 rounded-full', meta.dot)} />
-                      <span className="rounded px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-ink-faint">
-                        {meta.label}
-                      </span>
-                    </div>
-                    <div className="truncate text-[13px] font-medium text-ink">
-                      {e.name}
-                    </div>
-                    <p className="mt-0.5 line-clamp-2 text-label leading-snug text-ink-mute">
-                      {e.description}
-                    </p>
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </div>
-
-      <div className="border-t border-sidebar-border px-3 py-2.5">
-        {/* Static "offline ready" pill removed (#874): it contradicted the
-            real OfflineIndicator banner. The entity count stays. */}
-        <div className="flex items-center justify-end">
-          <span className="text-label text-ink-faint">
-            {translate('drawer.entityCount', String(entities.length))}
-          </span>
-        </div>
-      </div>
-    </div>
-  )
+  return <EntitySearchPanel density="drawer" onSelect={onSelect} />
 }
 
 /* --------------------------------- Footer ---------------------------------- */

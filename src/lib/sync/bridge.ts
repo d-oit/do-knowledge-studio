@@ -230,29 +230,26 @@ export function applyConflictResolution(
   const sync = getSyncDoc()
   const doc = getDoc()
 
-  const localEntityMap = new Map(localEntities.map((e) => [e.id, e]))
-  const localClaimMap = new Map(localClaims.map((c) => [c.id, c]))
-
   const entityUpdates = collectUpdates<Entity>(
     conflicts.filter((c) => c.entityType === 'entity'),
     resolutions,
-    localEntityMap,
+    localEntities,
   )
   const claimUpdates = collectUpdates<Claim>(
     conflicts.filter((c) => c.entityType === 'claim'),
     resolutions,
-    localClaimMap,
+    localClaims,
   )
 
   doc.transact(() => {
     for (const [id, updates] of entityUpdates) {
-      const local = localEntityMap.get(id)
+      const local = localEntities.find((e) => e.id === id)
       if (local) {
         sync.entities.set(id, entityToYMap({ ...local, ...updates, updatedAt: new Date().toISOString() }))
       }
     }
     for (const [id, updates] of claimUpdates) {
-      const local = localClaimMap.get(id)
+      const local = localClaims.find((c) => c.id === id)
       if (local) {
         sync.claims.set(id, claimToYMap({ ...local, ...updates }))
       }
@@ -260,17 +257,16 @@ export function applyConflictResolution(
   }, ORIGIN_OUTBOUND)
 }
 
-/** Collect field-level conflict update overrides into a Map indexed by ID. */
-const collectUpdates = <T extends Entity | Claim>(
+function collectUpdates<T extends Entity | Claim>(
   conflicts: import('./merge').FieldConflict[],
   resolutions: Map<string, 'local' | 'remote'>,
-  localMap: Map<string, T>,
-): Map<string, T> => {
+  locals: T[],
+): Map<string, T> {
   const updates = new Map<string, T>()
   for (const conflict of conflicts) {
     const key = `${conflict.entityId}:${conflict.field}`
     if ((resolutions.get(key) ?? conflict.winner) === 'local') continue
-    const local = localMap.get(conflict.entityId)
+    const local = locals.find((item) => item.id === conflict.entityId)
     if (!local) continue
     const existing = updates.get(conflict.entityId) ?? { ...local }
     const field = conflict.field as keyof T
