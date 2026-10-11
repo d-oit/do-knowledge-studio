@@ -5,7 +5,6 @@ import { X, Plus, Tag } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { AnyEntityType } from '@/lib/studio/types'
 import { getEntityTypeMeta } from '@/lib/studio/entity-types'
-import { shortDate } from '@/lib/studio/format'
 import { TypeSelector } from './type-selector'
 
 /** Entity editor header with type badge, name input, and description. */
@@ -34,7 +33,7 @@ export const EditorHeader = ({
         </span>
         {editing && (
           <span className="text-label text-ink-faint">
-            Edited {shortDate.format(new Date(editing.updatedAt))}
+            Edited {new Date(editing.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           </span>
         )}
       </div>

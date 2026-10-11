@@ -9,10 +9,6 @@ import { TextInput } from '../ui/shared-primitives'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { filterParams } from './triz-view-utils'
 import { translate } from '@/lib/i18n/messages/triz'
-import { truncateGraphemes } from '@/lib/text'
-
-/** Maximum character/grapheme count for TRIZ row labels before truncation. */
-export const TRIZ_LABEL_MAX = 12
 
 type FilteredParameter = ReturnType<typeof filterParams>[number]
 
@@ -92,7 +88,7 @@ const MatrixRow = ({
       title={rowLabel}
     >
       <span className="mr-1 font-mono text-caption">{rowIndex + 1}</span>
-      {truncateGraphemes(rowLabel, TRIZ_LABEL_MAX)}
+      {rowLabel.length > 12 ? `${rowLabel.slice(0, 12)}…` : rowLabel}
     </td>
     {filtered.map(({ index: colIndex, label: colLabel }) => {
       const key = `${rowIndex}-${colIndex}`
