@@ -13,6 +13,7 @@ import {
   Download,
   Sun,
   Moon,
+  Monitor,
   Search,
   PanelRight,
   PanelRightClose,
@@ -28,6 +29,7 @@ import packageJson from '../../../package.json'
 import { cn } from '@/lib/utils'
 import { translate as t } from '@/lib/i18n/messages/timeline'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
+import { translate as themeT } from '@/lib/i18n/messages/theme'
 import { useAnnouncer } from '@/lib/a11y/announcer'
 import { ShortcutsTrigger } from './shortcuts-dialog'
 
@@ -184,6 +186,42 @@ export const Sidebar = () => {
   const setRightPanelOpen = useStudioStore((s) => s.setRightPanelOpen)
   const { theme, setTheme } = useTheme()
 
+  const currentTheme = theme ?? 'system'
+
+  const handleThemeToggle = () => {
+    if (currentTheme === 'light') {
+      setTheme('dark')
+    } else if (currentTheme === 'dark') {
+      setTheme('system')
+    } else {
+      setTheme('light')
+    }
+  }
+
+  const getThemeMeta = () => {
+    if (currentTheme === 'light') {
+      return {
+        icon: Sun,
+        label: themeT('theme.light'),
+        ariaLabel: themeT('theme.switchToDark'),
+      }
+    }
+    if (currentTheme === 'dark') {
+      return {
+        icon: Moon,
+        label: themeT('theme.dark'),
+        ariaLabel: themeT('theme.switchToSystem'),
+      }
+    }
+    return {
+      icon: Monitor,
+      label: themeT('theme.system'),
+      ariaLabel: themeT('theme.switchToLight'),
+    }
+  }
+
+  const { icon: ThemeIcon, label: themeLabel, ariaLabel: themeAriaLabel } = getThemeMeta()
+
   return (
     <aside className="hidden h-full w-[248px] shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground lg:flex">
       {/* Brand */}
@@ -218,27 +256,20 @@ export const Sidebar = () => {
             {formatShortcut('⌘K', isMacPlatform)}
           </kbd>
         </button>
-      </div>      {/* Nav groups */}
+      </div>
+
+      {/* Nav groups */}
       <SidebarNav />
 
       {/* Footer */}
       <div className="flex items-center gap-1 border-t border-border px-3 py-2.5">
         <button
-          onClick={() => { setTheme(theme === 'dark' ? 'light' : 'dark') }}
+          onClick={handleThemeToggle}
           className="flex items-center gap-2 rounded-md px-2.5 min-h-[44px] text-[12px] font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
-          aria-label="Toggle theme"
+          aria-label={themeAriaLabel}
         >
-          {theme === 'dark' ? (
-            <>
-              <Sun className="h-4 w-4" />
-              <span>Light</span>
-            </>
-          ) : (
-            <>
-              <Moon className="h-4 w-4" />
-              <span>Dark</span>
-            </>
-          )}
+          <ThemeIcon className="h-4 w-4" />
+          <span>{themeLabel}</span>
         </button>
         <ShortcutsTrigger
           className={cn(

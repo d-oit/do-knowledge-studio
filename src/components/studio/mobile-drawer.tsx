@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, type RefObject } from 'react'
 import { Overlay } from '@/components/studio/ui/shared-primitives'
-import { X, Sun, Moon } from 'lucide-react'
+import { X, Sun, Moon, Monitor } from 'lucide-react'
 import packageJson from '../../../package.json'
 import { useTheme } from 'next-themes'
 import { RELEASES_BASE_URL } from '@/lib/studio/constants'
@@ -178,32 +178,53 @@ const SearchTab = ({ onSelect }: { onSelect: () => void }) => {
 const DrawerFooter = () => {
   const { theme, setTheme } = useTheme()
   const entities = useStudioStore((s) => s.entities)
-  // The drawer is only opened via a client tap, so by the time it mounts the
-  // theme has already hydrated — no need for a `mounted` gate. The label
-  // simply defaults to "Dark" (the Light action) while `theme` is undefined
-  // on the very first paint, which never reaches the user here.
-  const isDark = theme === 'dark'
-  const toggle = () => setTheme(isDark ? 'light' : 'dark')
+
+  const currentTheme = theme ?? 'system'
+
+  const handleThemeToggle = () => {
+    if (currentTheme === 'light') {
+      setTheme('dark')
+    } else if (currentTheme === 'dark') {
+      setTheme('system')
+    } else {
+      setTheme('light')
+    }
+  }
+
+  const getThemeMeta = () => {
+    if (currentTheme === 'light') {
+      return {
+        icon: Sun,
+        label: translate('drawer.theme.light'),
+        ariaLabel: translate('drawer.theme.darkAria'),
+      }
+    }
+    if (currentTheme === 'dark') {
+      return {
+        icon: Moon,
+        label: translate('drawer.theme.dark'),
+        ariaLabel: translate('drawer.theme.systemAria'),
+      }
+    }
+    return {
+      icon: Monitor,
+      label: translate('drawer.theme.system'),
+      ariaLabel: translate('drawer.theme.lightAria'),
+    }
+  }
+
+  const { icon: ThemeIcon, label: themeLabel, ariaLabel: themeAriaLabel } = getThemeMeta()
 
   return (
     <div className="border-t border-sidebar-border px-3 py-2.5">
       <div className="flex items-center gap-2">
         <button
-          onClick={toggle}
-          aria-label={isDark ? translate('drawer.theme.lightAria') : translate('drawer.theme.darkAria')}
+          onClick={handleThemeToggle}
+          aria-label={themeAriaLabel}
           className="flex flex-1 items-center gap-2 rounded-md px-2.5 py-1.5 text-[12px] font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
         >
-          {isDark ? (
-            <>
-              <Sun className="h-4 w-4" />
-              <span>{translate('drawer.theme.light')}</span>
-            </>
-          ) : (
-            <>
-              <Moon className="h-4 w-4" />
-              <span>{translate('drawer.theme.dark')}</span>
-            </>
-          )}
+          <ThemeIcon className="h-4 w-4" />
+          <span>{themeLabel}</span>
         </button>
       </div>
       <div className="mt-2 flex items-center gap-1.5 px-2.5 text-label text-ink-faint">

@@ -44,10 +44,14 @@ const messages = {
   'drawer.theme.lightAria': 'Switch to light theme',
   /** Theme toggle label when switching to dark. */
   'drawer.theme.darkAria': 'Switch to dark theme',
+  /** Theme toggle label when switching to system theme. */
+  'drawer.theme.systemAria': 'Switch to system theme',
   /** Light theme action label. */
   'drawer.theme.light': 'Light',
   /** Dark theme action label. */
   'drawer.theme.dark': 'Dark',
+  /** System theme action label. */
+  'drawer.theme.system': 'System',
   /** Footer local-search summary; count interpolated. */
   'drawer.footer.localSearch': (count: string) => `Local search · ${count} entities`,
 } as const
