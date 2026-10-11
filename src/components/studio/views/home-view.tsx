@@ -17,7 +17,24 @@ import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { EntityIcon } from '../entity-type-icon'
-import { longDate, shortDate, relativeTime } from '@/lib/studio/format'
+
+/** Locale for date/time formatting — extract to config when i18n lands. */
+const LOCALE = 'en-US'
+
+const dateFormatter = new Intl.DateTimeFormat(LOCALE, {
+  weekday: 'long',
+  month: 'long',
+  day: 'numeric',
+})
+
+const shortDateFormatter = new Intl.DateTimeFormat(LOCALE, {
+  month: 'short',
+  day: 'numeric',
+})
+
+const relativeTimeFormatter = new Intl.RelativeTimeFormat(LOCALE, {
+  numeric: 'auto',
+})
 
 const RELATIVE_DIVISIONS: [number, Intl.RelativeTimeFormatUnit][] = [
   [60, 'second'],
@@ -37,11 +54,11 @@ const formatRelativeTime = (dateStr: string): string => {
   let duration = diffSeconds
   for (const [amount, unit] of RELATIVE_DIVISIONS) {
     if (Math.abs(duration) < amount) {
-      return relativeTime.format(Math.round(duration), unit)
+      return relativeTimeFormatter.format(Math.round(duration), unit)
     }
     duration /= amount
   }
-  return shortDate.format(new Date(dateStr))
+  return shortDateFormatter.format(new Date(dateStr))
 }
 
 const RECENT_LIMIT = 6
@@ -155,7 +172,7 @@ export const HomeView = () => {
     ? { initial: false as const, animate: { opacity: 1 }, transition: { duration: 0 } }
     : { initial: { opacity: 0 } as const, animate: { opacity: 1 }, transition: { duration: 0.35 } }
 
-  const today = useMemo(() => longDate.format(new Date()), [])
+  const today = useMemo(() => dateFormatter.format(new Date()), [])
 
   const recentEntities = useMemo(
     () =>

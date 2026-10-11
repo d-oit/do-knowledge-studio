@@ -9,7 +9,6 @@ import { sanitizeUrl } from '@/lib/security'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ChatMessage } from '@/lib/studio/types'
-import { timeOfDay } from '@/lib/studio/format'
 
 /** Predefined prompt suggestions shown in the chat welcome screen. */
 export const SUGGESTIONS = [
@@ -80,7 +79,7 @@ export const TypingIndicator = ({ reducedMotion }: { reducedMotion?: boolean }) 
 
 /** Formats an ISO timestamp into a localized time string. */
 export const formatTime = (timestamp: string): string =>
-  timeOfDay.format(new Date(timestamp))
+  new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(new Date(timestamp))
 
 /** Properties for the WelcomePanel component. */
 export interface WelcomePanelProps {

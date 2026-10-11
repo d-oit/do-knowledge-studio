@@ -70,11 +70,10 @@ export const sanitizeUrl = (
     return ''
   }
 
-  // Strip ASCII control characters (including tabs and newlines) and trim leading/trailing whitespace
-  const cleaned = url.replace(/[\x00-\x1F\x7F]+/g, '').trim()
-  if (isRelativeUrl(cleaned)) {
-    return cleaned
+  const trimmed = url.trim()
+  if (isRelativeUrl(trimmed)) {
+    return trimmed
   }
 
-  return isAllowedProtocol(cleaned, allowedProtocols) ? cleaned : ''
+  return isAllowedProtocol(trimmed, allowedProtocols) ? trimmed : ''
 }
