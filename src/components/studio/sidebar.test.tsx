@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 
-
 vi.mock('lucide-react', () => {
   const Icon = ({ className }: { className?: string }) => (
     <span data-testid="icon" className={className} />
@@ -18,6 +17,7 @@ vi.mock('lucide-react', () => {
     Download: Icon,
     Sun: Icon,
     Moon: Icon,
+    Monitor: Icon,
     Search: Icon,
     CalendarDays: Icon,
     PanelRight: Icon,
@@ -30,9 +30,10 @@ const mockSetTheme = vi.fn()
 const mockSetView = vi.fn()
 const mockSetCommandOpen = vi.fn()
 const mockSetRightPanelOpen = vi.fn()
+let mockTheme = 'light'
 
 vi.mock('next-themes', () => ({
-  useTheme: () => ({ theme: 'light', setTheme: mockSetTheme }),
+  useTheme: () => ({ theme: mockTheme, setTheme: mockSetTheme }),
 }))
 
 vi.mock('@/lib/utils', () => ({
@@ -68,6 +69,7 @@ describe('Sidebar', () => {
     vi.clearAllMocks()
     currentView = 'home'
     rightPanelOpen = false
+    mockTheme = 'light'
   })
 
   it('renders the Knowledge Studio brand', () => {
@@ -146,18 +148,46 @@ describe('Sidebar', () => {
 
   it('renders theme toggle button', () => {
     render(<Sidebar />)
-    expect(screen.getByLabelText('Toggle theme')).toBeDefined()
+    expect(screen.getByLabelText('Switch to dark theme')).toBeDefined()
   })
 
   it('theme toggle calls setTheme with dark when currently light', () => {
+    mockTheme = 'light'
     render(<Sidebar />)
-    fireEvent.click(screen.getByLabelText('Toggle theme'))
+    fireEvent.click(screen.getByLabelText('Switch to dark theme'))
     expect(mockSetTheme).toHaveBeenCalledWith('dark')
   })
 
-  it('shows Moon icon when theme is light', () => {
+  it('theme toggle calls setTheme with system when currently dark', () => {
+    mockTheme = 'dark'
+    render(<Sidebar />)
+    fireEvent.click(screen.getByLabelText('Switch to system theme'))
+    expect(mockSetTheme).toHaveBeenCalledWith('system')
+  })
+
+  it('theme toggle calls setTheme with light when currently system', () => {
+    mockTheme = 'system'
+    render(<Sidebar />)
+    fireEvent.click(screen.getByLabelText('Switch to light theme'))
+    expect(mockSetTheme).toHaveBeenCalledWith('light')
+  })
+
+  it('shows Sun icon and Light label when theme is light', () => {
+    mockTheme = 'light'
+    render(<Sidebar />)
+    expect(screen.getByText('Light')).toBeDefined()
+  })
+
+  it('shows Moon icon and Dark label when theme is dark', () => {
+    mockTheme = 'dark'
     render(<Sidebar />)
     expect(screen.getByText('Dark')).toBeDefined()
+  })
+
+  it('shows Monitor icon and System label when theme is system', () => {
+    mockTheme = 'system'
+    render(<Sidebar />)
+    expect(screen.getByText('System')).toBeDefined()
   })
 
   it('shows right panel toggle button', () => {
