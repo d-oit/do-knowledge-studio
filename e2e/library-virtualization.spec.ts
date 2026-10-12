@@ -99,4 +99,19 @@ test.describe('Library windowed rendering', () => {
     await scroller(page).evaluate((el) => { el.scrollTop = el.scrollHeight; });
     await expect(page.getByRole('button', { name: 'Open Entity 119', exact: true })).toBeVisible();
   });
+
+  for (const key of ['Enter', ' '] as const) {
+    test(`list row opens the entity with the ${key === ' ' ? 'Space' : key} key`, async ({ page }) => {
+      await page.getByRole('button', { name: 'List view' }).click();
+      await page.getByRole('button', { name: /Show all 120 entities/ }).click();
+
+      const openButton = page.getByRole('button', { name: 'Open Entity 0', exact: true });
+      await openButton.focus();
+      // Native button activation — the row's onKeyDown handlers were removed in
+      // #861, so this passes only if Enter/Space ride the platform behaviour.
+      await page.keyboard.press(key);
+
+      await expect(page.getByLabel('Entity name')).toHaveValue('Entity 0');
+    });
+  }
 });

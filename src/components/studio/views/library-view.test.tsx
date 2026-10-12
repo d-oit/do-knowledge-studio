@@ -292,14 +292,22 @@ describe('LibraryView', () => {
     expect(table.queryByRole('link')).toBeNull()
     const openButtons = table.getAllByRole('button', { name: /Open / })
     expect(openButtons).toHaveLength(2)
-    fireEvent.click(openButtons[0])
-    expect(mockStartEdit).toHaveBeenCalledWith('ent-1')
 
-    // Keyboard users operate the same button (Enter/Space are native).
-    openButtons[1].focus()
+    // jsdom never synthesises the click a real browser fires from Enter/Space,
+    // so pin what makes keyboard activation true: a native <button type="button">
+    // left in the tab order. A div-with-tabIndex/role regression fails here.
+    // (Real-browser keyboard activation: e2e/library-virtualization.spec.ts.)
+    for (const button of openButtons) {
+      expect(button.tagName).toBe('BUTTON')
+      expect(button.getAttribute('type')).toBe('button')
+      expect(button.getAttribute('tabindex')).not.toBe('-1')
+    }
+
     fireEvent.click(openButtons[1])
+    // stopPropagation on the button keeps the row's mouse affordance from
+    // firing a second startEdit for the same click.
+    expect(mockStartEdit).toHaveBeenCalledTimes(1)
     expect(mockStartEdit).toHaveBeenCalledWith('ent-2')
-    expect(mockStartEdit).toHaveBeenCalledTimes(2)
   })
 
   it('renders tag overflow in grid view', () => {
