@@ -1,4 +1,10 @@
 {
   "framework": "nextjs",
-  "buildCommand": "pnpm run build"
+  "buildCommand": "pnpm run build",
+  "ignoreCommand": "bash scripts/vercel-ignore-build.sh",
+  "git": {
+    "deploymentEnabled": {
+      "dependabot/**": false
+    }
+  }
 }

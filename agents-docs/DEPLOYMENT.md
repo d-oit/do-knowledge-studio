@@ -20,7 +20,7 @@
 ### Install command — do not add one
 
 `vercel.json` deliberately sets **no** `installCommand`. Per
-https://vercel.com/docs/package-managers, an override makes Vercel use the
+<https://vercel.com/docs/package-managers>, an override makes Vercel use the
 *oldest* version of the named package manager in the build image — for pnpm
 that is **v6**, which cannot read this repo's `lockfileVersion: '9.0'` or its
 `pnpm.overrides`. With no override, Vercel infers pnpm from `pnpm-lock.yaml`
@@ -85,3 +85,38 @@ When merging dependabot PRs or manually bumping dependencies:
 3. **TypeScript major bumps** may deprecate tsconfig options — check `pnpm run typecheck` output for deprecation warnings treated as errors.
 4. **UI library major bumps** (shadcn primitives, react-resizable-panels, radix) may rename exports — check `pnpm run build` for type errors.
 5. **After merging any dependabot PR**, immediately run the full quality workflow including `pnpm run build` and push a fix if needed.
+
+## Deployment quota — the reason every deploy failed from 2026-10-03
+
+The Vercel bot's "Resource is limited" comment is a quota error, not a build
+error. Official limits (`https://vercel.com/docs/limits`, *Deployments Created
+per Day*): **Hobby = 100 deployments per 24 h, scoped to the account owner** —
+production shares the budget with previews, and the error name in the API
+response is `api-deployments-free-per-day`.
+
+That is what happened here: one day produced 104 deployments, and **every**
+deployment after `2026-10-03T11:16Z` failed — previews and production alike — so
+the live site silently stopped advancing while CI stayed green (the Vercel check
+is not ruleset-required, so a red ✗ blocked nothing).
+
+### What this repository does about it
+
+| Lever | Effect | Where |
+| --- | --- | --- |
+| `ignoreCommand` | Exit 1 builds, exit 0 **skips** the deployment (official contract: `vercel.json` → `ignoreCommand`) | `scripts/vercel-ignore-build.sh` — skips a push whose changed paths are all `plans/`, `agents-docs/`, `docs/`, `e2e/`, `.agents/`, `.github/` or markdown |
+| `git.deploymentEnabled` | No deployment is *created* for matching branches | `vercel.json` — `dependabot/**` off; dependency bumps gain nothing from a preview and were the highest-volume class |
+
+`scripts/` is deliberately **not** skippable: `scripts/generate-precache-manifest.mjs`
+runs inside `pnpm run build` and writes `public/precache-manifest.json`, which the
+deployed client fetches. A push touching only `scripts/` must therefore build.
+Covered by `tests/vercel-ignore-build.bats`.
+
+Unknown state builds: Vercel clones with `--depth=10`, so if the previous commit
+is not in the clone the script cannot diff and must not guess.
+
+### Operating rule
+
+**One push = one deployment.** A force-push counts again. Batch pushes per PR
+rather than pushing every step; a day of push-per-fix exhausts the account's
+budget and takes production down with it. Behaviour is the remaining risk here —
+the config reduces demand, it does not create quota.
