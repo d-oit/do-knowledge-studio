@@ -44,14 +44,19 @@ test.describe('Accessibility', () => {
     await expect(viewGroup).toBeVisible();
   });
 
-  test('library entity links have accessible names', async ({ page }) => {
+  test('library entity open buttons have accessible names', async ({ page }) => {
     await navClick(page, /library/i);
 
-    const entityLinks = page.getByRole('link', { name: /open /i });
-    const count = await entityLinks.count();
-    if (count > 0) {
-      await expect(entityLinks.first()).toHaveAttribute('aria-label', /open /i);
-    }
+    // Table rows expose native table semantics (#861); the open action is a
+    // real button in the name cell, matching the grid-card pattern. The
+    // default view is grid, so switch explicitly — a fresh profile carries
+    // no stored view-mode preference (caught by CI, which starts clean).
+    await page.getByRole('button', { name: 'List view' }).click();
+
+    const entityButtons = page.getByRole('button', { name: /open /i });
+    await expect(entityButtons.first()).toBeVisible();
+    await expect(entityButtons.first()).toHaveAttribute('aria-label', /open /i);
+    await expect(page.getByRole('table')).toBeVisible();
   });
 
   test('editor has proper radiogroup for mode selection', async ({ page }) => {
