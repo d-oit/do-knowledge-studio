@@ -1,19 +1,44 @@
 'use client'
 
-import { ThemeProvider as NextThemesProvider } from 'next-themes'
+import { useEffect } from 'react'
+import { ThemeProvider as NextThemesProvider, useTheme } from 'next-themes'
 import { type ThemeProviderProps } from 'next-themes'
 
-/** App-level theme provider wrapping next-themes with persisted light/dark toggle. */
-export function StudioThemeProvider({ children, ...props }: ThemeProviderProps) {
+/** Theme color helper updating meta theme-color to match resolvedTheme. */
+const ThemeColorSync = () => {
+  const { resolvedTheme } = useTheme()
+
+  useEffect(() => {
+    const metas = document.querySelectorAll('meta[name="theme-color"]')
+    const targetColor = resolvedTheme === 'dark' ? '#14110d' : '#9a5c2a'
+
+    if (metas.length > 0) {
+      metas.forEach((meta) => {
+        meta.setAttribute('content', targetColor)
+      })
+    } else {
+      const meta = document.createElement('meta')
+      meta.setAttribute('name', 'theme-color')
+      meta.setAttribute('content', targetColor)
+      document.head.appendChild(meta)
+    }
+  }, [resolvedTheme])
+
+  return null
+}
+
+/** App-level theme provider wrapping next-themes with persisted light/dark/system toggle. */
+export const StudioThemeProvider = ({ children, ...props }: ThemeProviderProps) => {
   return (
     <NextThemesProvider
       attribute="class"
-      defaultTheme="light"
-      enableSystem={false}
+      defaultTheme="system"
+      enableSystem
       disableTransitionOnChange={false}
       storageKey="do-knowledge-studio-theme"
       {...props}
     >
+      <ThemeColorSync />
       {children}
     </NextThemesProvider>
   )

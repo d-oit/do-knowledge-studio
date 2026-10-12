@@ -72,10 +72,9 @@ export const viewport: Viewport = {
   // accent: globals.css :root --saffron (#9a5c2a) — it previously copied the
   // stale DESIGN-SYSTEM.md value (#c77d3a); dark matches .dark --background.
   //
-  // Caveat, stated because it is a real limit: next-themes runs with
-  // enableSystem={false}, so this keys off the OS scheme, not the in-app
-  // toggle. A user who chose light on a dark OS gets the dark tint. Fixing
-  // that properly means updating the meta from the client on toggle.
+  // Initial fallback viewport theme-colors for SSR. On the client,
+  // ThemeColorSync inside StudioThemeProvider dynamically updates meta[name="theme-color"]
+  // based on resolvedTheme so themeColor always tracks the active theme.
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#9a5c2a" },
     { media: "(prefers-color-scheme: dark)", color: "#14110d" },
