@@ -46,7 +46,7 @@ const DrawerHeader = ({
         ref={closeBtnRef}
         onClick={onClose}
         aria-label={translate('drawer.close')}
-        className="-mr-1 flex min-h-[44px] min-w-[44px] flex-shrink-0 items-center justify-center rounded-md text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
+        className="-mr-1 flex min-h-touch min-w-touch flex-shrink-0 items-center justify-center rounded-md text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
       >
         <X className="h-4 w-4" />
       </button>
@@ -75,7 +75,7 @@ const TabSwitcher = ({
           aria-pressed={view === 'nav'}
           onClick={() => { setView('nav') }}
           className={cn(
-            'flex min-h-[44px] items-center justify-center rounded-md px-3 py-1.5 text-label-lg font-semibold transition-colors focus-ring',
+            'flex min-h-touch items-center justify-center rounded-md px-3 py-1.5 text-label-lg font-semibold transition-colors focus-ring',
             view === 'nav'
               ? 'bg-saffron text-saffron-foreground shadow-sm'
               : 'text-ink-mute hover:text-ink',
@@ -87,7 +87,7 @@ const TabSwitcher = ({
           aria-pressed={view === 'search'}
           onClick={() => { setView('search') }}
           className={cn(
-            'flex min-h-[44px] items-center justify-center rounded-md px-3 py-1.5 text-label-lg font-semibold transition-colors focus-ring',
+            'flex min-h-touch items-center justify-center rounded-md px-3 py-1.5 text-label-lg font-semibold transition-colors focus-ring',
             view === 'search'
               ? 'bg-saffron text-saffron-foreground shadow-sm'
               : 'text-ink-mute hover:text-ink',
@@ -129,7 +129,7 @@ const NavTab = ({ onNavigate }: { onNavigate: () => void }) => {
                     onClick={() => { handleSelect(item.id) }}
                     aria-current={active ? 'page' : undefined}
                     className={cn(
-                      'group flex min-h-[44px] w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-body font-medium transition-all focus-ring',
+                      'group flex min-h-touch w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-body font-medium transition-all focus-ring',
                       active
                         ? 'bg-saffron-soft text-saffron-deep'
                         : 'text-ink-soft hover:bg-sidebar-accent hover:text-ink',
@@ -224,7 +224,7 @@ const DrawerFooter = () => {
           // visible label — see the sidebar's note; the drawer renders the same
           // control with the same string pair.
           aria-label={`${themeLabel} — ${themeAriaLabel}`}
-          className="flex min-h-[44px] flex-1 items-center gap-2 rounded-md px-2.5 py-1.5 text-label-lg font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
+          className="flex min-h-touch flex-1 items-center gap-2 rounded-md px-2.5 py-1.5 text-label-lg font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
         >
           <ThemeIcon className="h-4 w-4" />
           <span>{themeLabel}</span>

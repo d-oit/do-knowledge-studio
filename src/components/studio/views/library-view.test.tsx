@@ -244,7 +244,7 @@ describe('LibraryView', () => {
     render(<LibraryView />)
     const input = screen.getByLabelText('Search library')
     expect(input).toBeDefined()
-    expect(input.className).toContain('min-h-[44px]')
+    expect(input.className).toContain('min-h-touch')
   })
 
   it('control buttons expose matching tooltips', () => {
