@@ -2,8 +2,10 @@
  * Library view i18n messages (#870).
  *
  * User-facing strings for the library view: its hero header and the two empty
- * states (no entities at all, or filters that matched nothing). The filter and
- * semantic-search labels live in their own scopes (`search`, `entity-types`).
+ * states (no entities at all, or filters that matched nothing). The
+ * semantic-search toggle's labels live in the `search` scope; the view's own
+ * filter options are still declared as constants in `library-view.tsx` and are
+ * not part of any message scope yet.
  */
 import { makeT } from '@/lib/i18n/t'
 
