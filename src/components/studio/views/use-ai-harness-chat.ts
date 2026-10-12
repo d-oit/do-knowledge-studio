@@ -16,6 +16,41 @@ const INITIAL_ASSISTANT_MESSAGE: ChatMessage = {
 const RATE_LIMIT_MESSAGE =
   'I\u2019m being rate-limited \u2014 please slow down and try again in a few seconds.'
 
+const REQUEST_TIMEOUT_MS = 120_000
+
+/** Abort reason for a turn the provider left hanging (mirrors `AbortSignal.timeout`). */
+const TIMEOUT_ABORT_REASON = 'Request timed out'
+
+/** Transcript copy for an abandoned turn. */
+const REQUEST_TIMEOUT_MESSAGE =
+  '[Error] Request timed out after 2 minutes. The provider took too long to respond.'
+
+/**
+ * Arms `controller` to abort after `ms`, using the same reason
+ * `AbortSignal.timeout` uses.
+ *
+ * Deliberately built on `setTimeout` + `AbortController` rather than
+ * `AbortSignal.any([controller.signal, AbortSignal.timeout(ms)])`: on an engine
+ * that lacks `AbortSignal.any` that composition drops the timeout entirely, so
+ * a provider that accepts the request and then goes silent would hang the turn
+ * forever with only Stop as an escape (GitNexus on PR #923). This version has
+ * no newer-than-ES2020 API to detect.
+ *
+ * Returns the timeout reader the catch block reports from, plus the clear
+ * function `finally` must call so a settled turn never aborts a later one.
+ */
+const armRequestTimeout = (controller: AbortController, ms: number) => {
+  let didTimeOut = false
+  const timeoutId = setTimeout(() => {
+    didTimeOut = true
+    controller.abort(new DOMException(TIMEOUT_ABORT_REASON, 'TimeoutError'))
+  }, ms)
+  return {
+    didTimeOut: () => didTimeOut,
+    clear: () => { clearTimeout(timeoutId) },
+  }
+}
+
 export interface UseAiHarnessChatOptions {
   provider: AIProvider
   model: string
@@ -118,6 +153,8 @@ export const useAiHarnessChat = ({
     const controller = new AbortController()
     abortRef.current = controller
 
+    const requestTimeout = armRequestTimeout(controller, REQUEST_TIMEOUT_MS)
+
     try {
       const { extractUrls, fetchUrls } = await import('@/lib/ai/research')
       let researchResults: import('@/lib/ai/research').ResearchResult[] | undefined
@@ -186,6 +223,11 @@ export const useAiHarnessChat = ({
         upsertAssistantBubble(result.content)
       }
     } catch (err) {
+      if (requestTimeout.didTimeOut()) {
+        setMessages((m) => [...m, { role: 'assistant', content: REQUEST_TIMEOUT_MESSAGE }])
+        return
+      }
+
       // Aborting (the turn was superseded, or generation was stopped) keeps
       // whatever already streamed and adds nothing: the bubble only exists once
       // content does, so an aborted turn never leaves an empty bubble behind.
@@ -196,6 +238,7 @@ export const useAiHarnessChat = ({
         { role: 'assistant', content: `[Error] ${msg}\n\nCheck your provider settings and try again.` },
       ])
     } finally {
+      requestTimeout.clear()
       setIsLoading(false)
     }
   }, [
@@ -215,5 +258,9 @@ export const useAiHarnessChat = ({
     messages,
   ])
 
-  return { messages, setMessages, input, setInput, isLoading, cooldownMs, handleSend }
+  const stop = useCallback(() => {
+    abortRef.current?.abort()
+  }, [])
+
+  return { messages, setMessages, input, setInput, isLoading, cooldownMs, handleSend, stop }
 }
