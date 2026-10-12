@@ -167,6 +167,19 @@ jobs:
 ## Quality Checklist
 
 - [ ] All new code has corresponding tests
+- [ ] **Every test this PR adds or strengthens was observed to FAIL with the defect
+      present** — a test you have not seen fail is not evidence (LESSON-041). This
+      includes e2e tests: an assertion that two facts hold is not the same as an
+      assertion that they hold *in the claimed order*.
+- [ ] **The head is not a stale base.** `git merge-base --is-ancestor origin/main
+      <sha>` must be true and `git diff origin/main <sha> --stat` must show no
+      unexplained deletions. Automation re-runs have twice arrived with trees that
+      would have reverted `main` (LESSON-043).
+- [ ] **Dependency ranges moved forward, if `package.json` changed.** A range can
+      move *backwards* in a merge with nothing failing; `git log -S '"pkg": "^X.Y.Z"'
+      origin/main -- package.json` proves the direction (LESSON-044).
+- [ ] **Changed public types/functions have their call sites verified, not assumed**
+      — `grep` them, and let the typechecker confirm the rest.
 - [ ] No hardcoded secrets or credentials
 - [ ] Security-sensitive code properly reviewed
 - [ ] Documentation updated for API changes
