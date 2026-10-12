@@ -132,7 +132,7 @@ const CompactStat = ({
   return (
     <button
       onClick={onClick}
-      className="group flex min-h-[44px] items-center gap-2 transition-opacity hover:opacity-80 focus-ring"
+      className="group flex min-h-touch items-center gap-2 transition-opacity hover:opacity-80 focus-ring"
     >
       <Icon className="h-4 w-4 text-ink-faint group-hover:text-saffron" />
       <span className="font-mono text-body-lg font-semibold text-ink">{value}</span>
@@ -198,14 +198,14 @@ export const HomeView = () => {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={startNew}
-            className="flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 text-body-sm font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+            className="flex min-h-touch items-center gap-1.5 rounded-md bg-primary px-4 text-body-sm font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
           >
             <FileText className="h-4 w-4" />
             New entity
           </button>
           <button
             onClick={() => setView('chat')}
-            className="flex min-h-[44px] items-center gap-1.5 rounded-md border border-border bg-background px-4 text-body-sm font-medium text-ink-soft transition-colors hover:border-saffron/40 hover:text-ink focus-ring"
+            className="flex min-h-touch items-center gap-1.5 rounded-md border border-border bg-background px-4 text-body-sm font-medium text-ink-soft transition-colors hover:border-saffron/40 hover:text-ink focus-ring"
           >
             <Sparkles className="h-4 w-4 text-saffron" />
             Ask your library
@@ -220,7 +220,7 @@ export const HomeView = () => {
           {entities.length > 0 && (
             <button
               onClick={() => setView('library')}
-              className="flex min-h-[44px] items-center gap-1 text-label-lg font-medium text-saffron-deep transition-colors hover:text-saffron focus-ring"
+              className="flex min-h-touch items-center gap-1 text-label-lg font-medium text-saffron-deep transition-colors hover:text-saffron focus-ring"
             >
               View all
               <ArrowUpRight className="h-3 w-3" />

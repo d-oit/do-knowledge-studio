@@ -98,7 +98,7 @@ const ClaimRow = ({
       <button
         type="button"
         onClick={() => { onEdit(claim) }}
-        className="flex min-h-[44px] items-center gap-1 rounded-md px-2 py-1 text-label font-medium text-ink-faint transition-colors hover:bg-muted hover:text-ink focus-ring"
+        className="flex min-h-touch items-center gap-1 rounded-md px-2 py-1 text-label font-medium text-ink-faint transition-colors hover:bg-muted hover:text-ink focus-ring"
         aria-label={translate('claims.editLabel')}
       >
         <Pencil className="h-3 w-3" />
@@ -107,7 +107,7 @@ const ClaimRow = ({
       <button
         type="button"
         onClick={() => { onDelete(claim.id) }}
-        className="flex min-h-[44px] items-center gap-1 rounded-md px-2 py-1 text-label font-medium text-ink-faint transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40 focus-ring"
+        className="flex min-h-touch items-center gap-1 rounded-md px-2 py-1 text-label font-medium text-ink-faint transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40 focus-ring"
         aria-label={translate('claims.deleteLabel')}
       >
         <Trash2 className="h-3 w-3" />
@@ -278,7 +278,7 @@ export const ClaimsPanel = ({
             <button
               type="button"
               onClick={openExtractDialog}
-              className="flex min-h-[44px] items-center gap-1 rounded-md border border-border px-2.5 py-1 text-label font-medium text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
+              className="flex min-h-touch items-center gap-1 rounded-md border border-border px-2.5 py-1 text-label font-medium text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
             >
               <Wand2 className="h-3.5 w-3.5 text-saffron" />
               {translate('claims.extract')}
@@ -288,7 +288,7 @@ export const ClaimsPanel = ({
             <button
               type="button"
               onClick={() => { setShowForm(true) }}
-              className="flex min-h-[44px] items-center gap-1 rounded-md border border-dashed border-saffron/50 px-2.5 py-1 text-label font-medium text-saffron-deep transition-colors hover:bg-saffron-soft focus-ring"
+              className="flex min-h-touch items-center gap-1 rounded-md border border-dashed border-saffron/50 px-2.5 py-1 text-label font-medium text-saffron-deep transition-colors hover:bg-saffron-soft focus-ring"
             >
               <Plus className="h-3 w-3" />
               {translate('claims.add')}
@@ -374,7 +374,7 @@ export const ClaimsPanel = ({
             <button
               type="button"
               onClick={resetForm}
-              className="rounded-md border border-border px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-colors hover:bg-muted focus-ring min-h-[44px]"
+              className="rounded-md border border-border px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-colors hover:bg-muted focus-ring min-h-touch"
             >
               {translate('claims.cancel')}
             </button>
@@ -382,7 +382,7 @@ export const ClaimsPanel = ({
               type="button"
               onClick={handleSave}
               disabled={!statement.trim()}
-              className="flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-label-lg font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 press-scale focus-ring"
+              className="flex min-h-touch items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-label-lg font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 press-scale focus-ring"
             >
               <Save className="h-3.5 w-3.5" />
               {editingId ? translate('claims.update') : translate('claims.save')}
@@ -410,7 +410,7 @@ export const ClaimsPanel = ({
               type="button"
               onClick={closeExtractDialog}
               aria-label={translate('claims.close')}
-              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-muted hover:text-ink focus-ring"
+              className="flex min-h-touch min-w-touch items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-muted hover:text-ink focus-ring"
             >
               <X className="h-4 w-4" />
             </button>
@@ -439,14 +439,14 @@ export const ClaimsPanel = ({
             <button
               type="button"
               onClick={closeExtractDialog}
-              className="min-h-[44px] rounded-md border border-border px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
+              className="min-h-touch rounded-md border border-border px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
             >
               {translate('claims.cancel')}
             </button>
             <button
               type="button"
               onClick={handleExtractConfirm}
-              className="flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-label-lg font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+              className="flex min-h-touch items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-label-lg font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
             >
               {translate('claims.confirm', String(extractDrafts?.length ?? 0))}
             </button>

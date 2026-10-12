@@ -236,7 +236,7 @@ export const EditorModeSelector = ({ editMode, onEditModeChange }: EditorModeSel
           tabIndex={editMode === mode ? 0 : -1}
           aria-checked={editMode === mode}
           onClick={() => { onEditModeChange(mode) }}
-          className={`rounded px-2.5 min-h-[44px] min-w-[44px] text-label font-medium transition-colors focus-ring ${editMode === mode ? 'bg-muted text-ink' : 'text-ink-mute hover:bg-muted/50'}`}
+          className={`rounded px-2.5 min-h-touch min-w-touch text-label font-medium transition-colors focus-ring ${editMode === mode ? 'bg-muted text-ink' : 'text-ink-mute hover:bg-muted/50'}`}
         >
           {mode.charAt(0).toUpperCase() + mode.slice(1)}
         </button>
@@ -286,7 +286,7 @@ export const EditorStatusBar = ({
       {editing && (
         <button
           onClick={onDiscard}
-          className="rounded-md border border-border px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-colors hover:bg-destructive/10 hover:text-destructive focus-ring min-h-[44px]"
+          className="rounded-md border border-border px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-colors hover:bg-destructive/10 hover:text-destructive focus-ring min-h-touch"
         >
           {DISCARD_CHANGES_TEXT}
         </button>
@@ -294,7 +294,7 @@ export const EditorStatusBar = ({
       <button
         onClick={onSave}
         disabled={!nameValid}
-        className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-label-lg font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 press-scale focus-ring min-h-[44px]"
+        className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-label-lg font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 press-scale focus-ring min-h-touch"
       >
         <Save className="h-3.5 w-3.5" />
         {editing ? COMMIT_CHANGES_TEXT : SAVE_TO_LIBRARY_TEXT}

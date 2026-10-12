@@ -195,7 +195,7 @@ export const EditorMentionPicker = memo(function EditorMentionPicker({
                 onMouseEnter={() => { onHighlight(index) }}
                 onClick={() => { onSelect(entity) }}
                 className={cn(
-                  'flex min-h-[44px] cursor-pointer items-center gap-2 rounded-md px-3 text-body-sm transition-colors',
+                  'flex min-h-touch cursor-pointer items-center gap-2 rounded-md px-3 text-body-sm transition-colors',
                   highlighted ? 'bg-saffron-soft text-saffron-deep' : 'text-ink-soft',
                 )}
               >

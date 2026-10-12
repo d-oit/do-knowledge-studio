@@ -87,12 +87,12 @@ describe('EntitySearchPanel', () => {
     expect(input.placeholder).toBe('Search knowledge base…')
   })
 
-  it('renders mode toggle buttons with min-h-[44px]', () => {
+  it('renders mode toggle buttons at the touch-target size', () => {
     render(<EntitySearchPanel />)
     const keywordBtn = screen.getByRole('button', { name: 'Keyword' })
     const rankedBtn = screen.getByRole('button', { name: 'Ranked' })
-    expect(keywordBtn.className).toContain('min-h-[44px]')
-    expect(rankedBtn.className).toContain('min-h-[44px]')
+    expect(keywordBtn.className).toContain('min-h-touch')
+    expect(rankedBtn.className).toContain('min-h-touch')
   })
 
   it('switches between keyword and ranked modes', () => {
@@ -112,7 +112,7 @@ describe('EntitySearchPanel', () => {
     render(<EntitySearchPanel onSelect={mockOnSelect} />)
     const alphaBtn = screen.getByText('Alpha Concept').closest('button')
     expect(alphaBtn).not.toBeNull()
-    expect(alphaBtn?.className).toContain('min-h-[44px]')
+    expect(alphaBtn?.className).toContain('min-h-touch')
 
     fireEvent.click(alphaBtn!)
     expect(mockStartEdit).toHaveBeenCalledWith('ent-1')
@@ -132,7 +132,7 @@ describe('EntitySearchPanel', () => {
     expect(screen.getByText('0.9')).toBeDefined()
 
     const resultRow = screen.getByLabelText(/score 0.95/)
-    expect(resultRow.className).toContain('min-h-[44px]')
+    expect(resultRow.className).toContain('min-h-touch')
 
     fireEvent.click(resultRow)
     expect(mockStartEdit).toHaveBeenCalledWith('ent-1')
@@ -144,7 +144,7 @@ describe('EntitySearchPanel', () => {
     render(<EntitySearchPanel />)
 
     const clearBtn = screen.getByLabelText('Clear panel search')
-    expect(clearBtn.className).toContain('min-h-[44px]')
+    expect(clearBtn.className).toContain('min-h-touch')
     fireEvent.click(clearBtn)
     expect(mockSetSearchQuery).toHaveBeenCalledWith('')
 
@@ -159,7 +159,7 @@ describe('EntitySearchPanel', () => {
 
     expect(screen.getByText('No matches found.')).toBeDefined()
     const createBtn = screen.getByRole('button', { name: 'Create "nomatch" as new entity' })
-    expect(createBtn.className).toContain('min-h-[44px]')
+    expect(createBtn.className).toContain('min-h-touch')
 
     fireEvent.click(createBtn)
     expect(mockOnCreateEntity).toHaveBeenCalledWith('nomatch')

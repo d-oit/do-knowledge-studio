@@ -62,7 +62,7 @@ const expectSuggestionChipContract = (renderChips: (onSend: (query: string) => v
       expect(chip.tagName).toBe('BUTTON')
       expect(chip).not.toBeDisabled()
       expect(chip.tabIndex).toBe(0)
-      expect(chip.className).toContain('min-h-[44px]')
+      expect(chip.className).toContain('min-h-touch')
     })
   })
 }

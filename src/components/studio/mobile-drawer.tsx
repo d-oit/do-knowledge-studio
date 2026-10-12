@@ -37,7 +37,7 @@ const DrawerHeader = ({
           target="_blank"
           rel="noreferrer"
           aria-label={translate('drawer.releaseAriaLabel', packageJson.version)}
-          className="inline-flex min-h-[44px] items-center text-caption uppercase tracking-[0.14em] text-ink-faint transition-colors hover:text-saffron focus-ring"
+          className="inline-flex min-h-touch items-center text-caption uppercase tracking-[0.14em] text-ink-faint transition-colors hover:text-saffron focus-ring"
         >
           {translate('drawer.releaseBadge', packageJson.version)}
         </a>

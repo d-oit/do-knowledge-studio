@@ -25,7 +25,7 @@ export const SemanticSearchToggle = memo(function SemanticSearchToggle({
   return (
     <label
       className={cn(
-        'flex min-h-[44px] cursor-pointer select-none items-center gap-2 rounded-md border border-border bg-background px-3 text-label-lg font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-within:ring-1 focus-within:ring-saffron/30',
+        'flex min-h-touch cursor-pointer select-none items-center gap-2 rounded-md border border-border bg-background px-3 text-label-lg font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-within:ring-1 focus-within:ring-saffron/30',
         className,
       )}
       title={translate('search.semanticToggleHint')}

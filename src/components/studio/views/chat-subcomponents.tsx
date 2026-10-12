@@ -124,7 +124,7 @@ export const WelcomePanel = ({ reducedMotion, onSend }: WelcomePanelProps) => (
           onClick={() => {
             onSend(s.query)
           }}
-          className="rounded-full border border-border bg-background px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-all hover:border-saffron/40 hover:text-ink press-scale focus-ring min-h-[44px]"
+          className="rounded-full border border-border bg-background px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-all hover:border-saffron/40 hover:text-ink press-scale focus-ring min-h-touch"
         >
           {s.label}
         </button>
@@ -163,7 +163,7 @@ export const CitationDisclosure = ({
         }
       }}
       aria-expanded={expanded}
-      className="flex w-full items-center gap-1.5 text-label font-semibold text-saffron-deep min-h-[44px]"
+      className="flex w-full items-center gap-1.5 text-label font-semibold text-saffron-deep min-h-touch"
     >
       <Quote className="h-3 w-3" />
       Used {citations.length} local {citations.length === 1 ? 'item' : 'items'}
@@ -184,7 +184,7 @@ export const CitationDisclosure = ({
               onClick={() => {
                 onCitationClick(c.entityId)
               }}
-              className="flex w-full gap-2 rounded-md bg-background/60 p-2 text-left text-label transition-colors hover:bg-muted focus-ring min-h-[44px]"
+              className="flex w-full gap-2 rounded-md bg-background/60 p-2 text-left text-label transition-colors hover:bg-muted focus-ring min-h-touch"
             >
               <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-saffron text-badge font-bold text-saffron-foreground">
                 {i + 1}
@@ -331,7 +331,7 @@ export const SuggestionsBar = ({ onSend }: SuggestionsBarProps) => (
           onClick={() => {
             onSend(s.query)
           }}
-          className="rounded-full border border-border bg-background px-3 py-1 text-label-lg font-medium text-ink-soft transition-all hover:border-saffron/40 hover:text-ink press-scale focus-ring min-h-[44px]"
+          className="rounded-full border border-border bg-background px-3 py-1 text-label-lg font-medium text-ink-soft transition-all hover:border-saffron/40 hover:text-ink press-scale focus-ring min-h-touch"
         >
           {s.label}
         </button>
@@ -395,7 +395,7 @@ export const InputBar = ({
           <button
             onClick={onSend}
             disabled={!input.trim() || chatLoading}
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 press-scale focus-ring"
+            className="flex min-h-touch min-w-touch items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 press-scale focus-ring"
             aria-label="Send message"
             title="Send message"
           >
@@ -426,7 +426,7 @@ export const InputBar = ({
             disabled={!canClear}
             aria-label="Clear chat history"
             title="Clear chat history"
-            className="flex min-h-[44px] min-w-[44px] items-center gap-1 transition-colors hover:text-red-500 disabled:opacity-30 disabled:hover:text-red-500 focus-ring"
+            className="flex min-h-touch min-w-touch items-center gap-1 transition-colors hover:text-red-500 disabled:opacity-30 disabled:hover:text-red-500 focus-ring"
           >
             <Trash2 className="h-3 w-3" />
             {CLEAR_CHAT_LABEL}

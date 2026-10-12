@@ -94,9 +94,9 @@ describe('QuarantineBanner', () => {
 
     const download = screen.getByRole('button', { name: /download copy/i })
     const dismiss = screen.getByRole('button', { name: /hide .*this page session/i })
-    expect(download.className).toContain('min-h-[44px]')
-    expect(dismiss.className).toContain('min-h-[44px]')
-    expect(dismiss.className).toContain('min-w-[44px]')
+    expect(download.className).toContain('min-h-touch')
+    expect(dismiss.className).toContain('min-h-touch')
+    expect(dismiss.className).toContain('min-w-touch')
   })
 
   it('downloads the preserved bytes on request', () => {
