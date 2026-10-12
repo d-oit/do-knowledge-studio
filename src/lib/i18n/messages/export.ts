@@ -85,6 +85,20 @@ const messages = {
   'export.reset.cancel': 'Cancel',
   /** Destructive reset action. */
   'export.reset.confirm': 'Reset everything',
+  /** Import toasts. The success copy reports the summary the caller computed. */
+  'export.import.successTitle': 'Import complete',
+  'export.import.successBody': (summary: string) => `${summary} replaced the current library.`,
+  /** Refused-backup title: the import landed, so this is a warning, not an error. */
+  'export.import.noBackupTitle': 'Imported — but no backup was kept',
+  /** Refused-backup reasons; the storage refusal is the fallback. */
+  'export.import.noBackupTooLarge':
+    'Your previous library was too large for this browser to keep as a recovery copy, so it cannot be restored from here. Export a JSON backup before your next import.',
+  'export.import.noBackupUnserializable':
+    'Your previous library could not be captured as a recovery copy (an internal serialization error), so it cannot be restored from here. Export a JSON backup before your next import.',
+  'export.import.noBackupStorageUnavailable':
+    'This browser refused to store a recovery copy, so your previous library cannot be restored from here. Export a JSON backup before your next import.',
+  /** The import threw and the store rolled back. */
+  'export.import.failedTitle': 'Import failed — state restored',
 } as const
 
 /** Typed `translate` helper bound to the export view message scope. */
