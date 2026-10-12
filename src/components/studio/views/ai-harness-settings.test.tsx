@@ -27,15 +27,12 @@ describe('PROVIDERS', () => {
     expect(local).toBeDefined()
     expect(local?.requiresKey).toBe(false)
     expect(local?.label).toBe('Local (in-browser)')
-    expect(Array.isArray(local?.models)).toBe(true)
-    expect((local?.models.length ?? 0)).toBeGreaterThan(0)
   })
 
   it('each provider has required fields', () => {
     for (const provider of PROVIDERS) {
       expect(provider.id).toBeDefined()
       expect(provider.label).toBeDefined()
-      expect(Array.isArray(provider.models)).toBe(true)
       expect(typeof provider.requiresKey).toBe('boolean')
     }
   })

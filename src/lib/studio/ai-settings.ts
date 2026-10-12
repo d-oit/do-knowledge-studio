@@ -1,4 +1,5 @@
 import type { ProviderId } from '@/lib/ai/types'
+import { DEFAULT_MODEL, DEFAULT_OLLAMA_BASE_URL } from '@/lib/ai/types'
 import { AppError, ErrorCode } from '@/lib/errors'
 import { StoredSettingsSchema, type ValidatedStoredSettings } from '@/lib/studio/schema'
 
@@ -32,12 +33,12 @@ export type StoredSettings = ValidatedStoredSettings
 /** Default AI settings applied on first load. */
 const DEFAULT_SETTINGS: AISettings = {
   provider: 'openrouter',
-  model: 'openrouter/free',
+  model: DEFAULT_MODEL.openrouter,
   apiKey: '',
   augmentWithLocal: true,
   ollamaCpuOnly: true,
   allowWebResearch: false,
-  ollamaBaseUrl: 'http://localhost:11434',
+  ollamaBaseUrl: DEFAULT_OLLAMA_BASE_URL,
   localDevice: 'wasm',
 }
 
@@ -128,7 +129,7 @@ const LEGACY_OPENROUTER_MODELS = new Set(['gpt-4o', 'gpt-4o-mini', 'gpt-3.5-turb
 /** Maps legacy OpenRouter model names to current targets. */
 const migrateOpenRouterModel = (storedModel: string): string => {
   if (LEGACY_OPENROUTER_MODELS.has(storedModel)) {
-    return 'openrouter/free'
+    return DEFAULT_MODEL.openrouter
   }
   if (storedModel.startsWith('claude-')) {
     return `anthropic/${storedModel}`
@@ -335,18 +336,4 @@ export function isSessionOnlyCredential(): boolean {
 /** User-facing message explaining session-only credential storage. */
 export function getSessionOnlyMessage(): string {
   return 'API key is encrypted and stored locally. The encryption key is session-only — it will be cleared when you close the tab.'
-}
-
-/** Return the API endpoint URL for a given provider. */
-export const getProviderEndpoint = (provider: AIProvider): string => {
-  switch (provider) {
-    case 'openrouter':
-      return 'https://openrouter.ai/api/v1/chat/completions'
-    case 'ollama':
-      return 'http://localhost:11434/api/chat'
-    case 'local':
-      return ''
-    default:
-      return ''
-  }
 }
