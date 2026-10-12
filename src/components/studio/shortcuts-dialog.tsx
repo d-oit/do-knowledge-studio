@@ -279,7 +279,7 @@ export const ShortcutsDialog = (): React.JSX.Element => {
             ref={closeBtnRef}
             onClick={() => { setOpen(false) }}
             aria-label={translate('shortcuts.close')}
-            className="rounded-md p-1.5 text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
           >
             <X className="h-4 w-4" />
           </button>
@@ -310,7 +310,7 @@ export const ShortcutsDialog = (): React.JSX.Element => {
                 }}
                 aria-label={translate('shortcuts.clearFilter')}
                 title={translate('shortcuts.clearFilter')}
-                className="absolute right-1.5 top-1/2 size-9 -translate-y-1/2 inline-flex items-center justify-center rounded text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
+                className="absolute right-1.5 top-1/2 min-h-[44px] min-w-[44px] -translate-y-1/2 inline-flex items-center justify-center rounded text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
