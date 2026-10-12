@@ -9,7 +9,7 @@ import { ExportFormatGrid } from './export-format-grid'
 import { ImportDropzone } from './import-dropzone'
 import { BackupTips } from './backup-tips'
 import { EncryptExportDialog } from './encrypt-export-dialog'
-import { ResetConfirmDialog } from './reset-confirm-dialog'
+import { ConfirmDialog } from '@/components/studio/ui/shared-primitives'
 import { ImportPreviewDialog } from './import-preview-dialog'
 import { translate } from '@/lib/i18n/messages/export'
 import { cn } from '@/lib/utils'
@@ -30,7 +30,6 @@ export const ExportView = () => {
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [importPreview, setImportPreview] = useState<ImportPreview | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
-  const resetCancelRef = useRef<HTMLButtonElement>(null)
 
   const {
     handleExport,
@@ -59,17 +58,6 @@ export const ExportView = () => {
     setImportPreview,
     fileInputRef,
   })
-
-  useEffect(() => {
-    if (!showResetConfirm) return
-    resetCancelRef.current?.focus()
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setShowResetConfirm(false)
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => { window.removeEventListener('keydown', handleKeyDown) }
-  }, [showResetConfirm])
 
   useEffect(() => {
     if (!importPreview) return
@@ -123,11 +111,18 @@ export const ExportView = () => {
         handleExport={handleExport}
       />
 
-      <ResetConfirmDialog
-        showResetConfirm={showResetConfirm}
-        setShowResetConfirm={setShowResetConfirm}
-        handleReset={handleReset}
-        resetCancelRef={resetCancelRef}
+      <ConfirmDialog
+        open={showResetConfirm}
+        onConfirm={() => {
+          handleReset()
+          setShowResetConfirm(false)
+        }}
+        onCancel={() => { setShowResetConfirm(false) }}
+        title={translate('export.reset.title')}
+        body={translate('export.reset.body')}
+        confirmLabel={translate('export.reset.confirm')}
+        cancelLabel={translate('export.reset.cancel')}
+        destructive
       />
 
       <ImportPreviewDialog

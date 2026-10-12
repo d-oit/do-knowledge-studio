@@ -76,14 +76,11 @@ const messages = {
   /** Submit action for the encrypted export. */
   'export.encrypt.submit': 'Encrypt & export',
 
-  /** Accessible name of the reset confirmation dialog. */
-  'export.reset.ariaLabel': 'Confirm reset',
   /** Reset confirmation heading. */
   'export.reset.title': 'Reset to demo data?',
-  /** Reset confirmation subtitle. */
-  'export.reset.subtitle': 'This will delete all your entities and claims.',
-  /** Reset confirmation body. */
-  'export.reset.body': 'This action cannot be undone. Export your data first if you want to keep it.',
+  /** Reset confirmation body: what is lost, that it cannot be undone, and the advice to export first. */
+  'export.reset.body':
+    'This will delete all your entities and claims. This action cannot be undone. Export your data first if you want to keep it.',
   /** Reset dialog dismiss action. */
   'export.reset.cancel': 'Cancel',
   /** Destructive reset action. */

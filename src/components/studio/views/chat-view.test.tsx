@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act } from 'react'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 
 vi.mock('framer-motion', async () => (await import('@/test/chat-mocks')).framerMotionMock)
 vi.mock('lucide-react', async () => (await import('@/test/chat-mocks')).lucideIconsMock)
@@ -121,7 +121,7 @@ describe('ChatView', () => {
     expect(clearBtn).toHaveProperty('disabled', true)
   })
 
-  it('clear button calls clearChat when clicked with messages', () => {
+  it('clear button clears the transcript after the confirmation is accepted', () => {
     currentChat = [
       {
         id: 'msg-1',
@@ -131,8 +131,9 @@ describe('ChatView', () => {
       },
     ]
     render(<ChatView />)
-    const clearBtn = screen.getByText('Clear').closest('button')!
-    clearBtn.click()
+    fireEvent.click(screen.getByText('Clear').closest('button')!)
+    const dialog = screen.getByRole('dialog', { name: 'Clear chat history?' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Clear chat' }))
     expect(mockClearChat).toHaveBeenCalled()
   })
 
@@ -186,6 +187,30 @@ describe('ChatView', () => {
     render(<ChatView />)
     const clearBtn = screen.getByRole('button', { name: 'Clear chat history' })
     expect(clearBtn).toHaveAttribute('title', 'Clear chat history')
+  })
+
+  it('asks for confirmation before clearing the transcript', () => {
+    currentChat = [
+      { id: 'msg-1', role: 'user', content: 'Hello there', timestamp: new Date().toISOString() },
+    ]
+    render(<ChatView />)
+    fireEvent.click(screen.getByRole('button', { name: 'Clear chat history' }))
+    expect(screen.getByRole('dialog', { name: 'Clear chat history?' })).toBeDefined()
+    expect(mockClearChat).not.toHaveBeenCalled()
+    expect(screen.getByText('Hello there')).toBeDefined()
+  })
+
+  it('keeps the transcript when the clear confirmation is cancelled', () => {
+    currentChat = [
+      { id: 'msg-1', role: 'user', content: 'Hello there', timestamp: new Date().toISOString() },
+    ]
+    render(<ChatView />)
+    fireEvent.click(screen.getByRole('button', { name: 'Clear chat history' }))
+    const dialog = screen.getByRole('dialog', { name: 'Clear chat history?' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+    expect(mockClearChat).not.toHaveBeenCalled()
+    expect(screen.getByText('Hello there')).toBeDefined()
+    expect(screen.queryByRole('dialog')).toBeNull()
   })
 
   it('assistant messages render via Markdown', () => {

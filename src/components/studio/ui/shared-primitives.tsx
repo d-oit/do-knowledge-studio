@@ -1,7 +1,10 @@
 import { forwardRef } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
-export { Overlay } from './overlay'
+import { translate as confirmT } from '@/lib/i18n/messages/confirm'
+import { Overlay } from './overlay'
+
+export { Overlay }
 
 /**
  * Minimum hit area for an interactive control (44x44px, from the
@@ -267,3 +270,67 @@ export function ViewEmptyState({
     </div>
   )
 }
+// ConfirmDialog — shared confirmation for destructive actions (#863)
+// ---------------------------------------------------------------------------
+
+interface ConfirmDialogProps {
+  /** Whether the dialog is shown; nothing renders while false. */
+  open: boolean
+  /** Runs the confirmed action. */
+  onConfirm: () => void
+  /** Dismisses the dialog (Cancel button, Escape, or backdrop click). */
+  onCancel: () => void
+  /** Dialog heading; doubles as the dialog's accessible name. */
+  title: string
+  /** Explanatory copy under the heading. */
+  body: string
+  /** Label of the confirming action. */
+  confirmLabel: string
+  /** Label of the dismissing action; defaults to the shared Cancel copy. */
+  cancelLabel?: string
+  /** Marks the confirming action as destructive (red styling). */
+  destructive?: boolean
+}
+
+/**
+ * Confirmation dialog for irreversible actions, e.g. clearing a chat or
+ * discarding a draft (#863). Built on {@link Overlay}, so Escape and backdrop
+ * clicks cancel, focus moves into the dialog on open (the Cancel button, which
+ * is the first focusable element — the safe default for a destructive action)
+ * and returns to the trigger on close. All copy arrives already translated.
+ */
+export const ConfirmDialog = ({
+  open,
+  onConfirm,
+  onCancel,
+  title,
+  body,
+  confirmLabel,
+  cancelLabel,
+  destructive = false,
+}: ConfirmDialogProps) => (
+  <Overlay open={open} onClose={onCancel} aria-label={title}>
+    <div className="w-[360px] max-w-[92vw] rounded-xl border border-border bg-popover p-5 shadow-2xl">
+      <h3 className="mb-2 font-serif text-body font-semibold text-ink">{title}</h3>
+      <p className="mb-4 text-label-lg leading-relaxed text-ink-mute">{body}</p>
+      <div className="flex justify-end gap-2">
+        <button
+          onClick={onCancel}
+          className="rounded-md border border-border px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-colors hover:bg-muted focus-ring min-h-touch"
+        >
+          {cancelLabel ?? confirmT('confirm.cancel')}
+        </button>
+        <button
+          onClick={onConfirm}
+          className={
+            destructive
+              ? 'rounded-md bg-red-600 px-4 py-1.5 text-label-lg font-semibold text-white transition-colors hover:bg-red-700 focus-ring min-h-touch'
+              : 'rounded-md bg-primary px-4 py-1.5 text-label-lg font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring min-h-touch'
+          }
+        >
+          {confirmLabel}
+        </button>
+      </div>
+    </div>
+  </Overlay>
+)

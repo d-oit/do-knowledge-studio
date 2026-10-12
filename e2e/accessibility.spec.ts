@@ -82,7 +82,7 @@ test.describe('Accessibility', () => {
     const resetBtn = page.getByRole('button', { name: /reset/i });
     if (await resetBtn.isVisible()) {
       await resetBtn.click();
-      const dialog = page.getByRole('dialog', { name: /confirm reset/i });
+      const dialog = page.getByRole('dialog', { name: /reset to demo data/i });
       await expect(dialog).toBeVisible();
       await page.keyboard.press('Escape');
     }

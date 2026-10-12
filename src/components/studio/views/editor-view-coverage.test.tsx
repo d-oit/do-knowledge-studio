@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { ReactNode } from 'react'
-import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, cleanup, waitFor, within } from '@testing-library/react'
 
 vi.mock('framer-motion', () => ({
   motion: {
@@ -254,7 +254,31 @@ describe('EditorView branch coverage', () => {
     render(<EditorView />)
     const discardBtn = screen.getByText('Discard changes')
     fireEvent.click(discardBtn)
+    const dialog = screen.getByRole('dialog', { name: 'Discard changes?' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Discard' }))
     expect(mockFinishEditing).toHaveBeenCalled()
+  })
+
+  it('asks for confirmation before discarding and keeps the draft until confirmed', () => {
+    currentEditingEntityId = 'ent-1'
+    render(<EditorView />)
+    fireEvent.click(screen.getByText('Discard changes'))
+    expect(screen.getByRole('dialog', { name: 'Discard changes?' })).toBeDefined()
+    expect(mockFinishEditing).not.toHaveBeenCalled()
+    expect(editor.removeDraft).not.toHaveBeenCalled()
+    expect(screen.getByText('Discard changes')).toBeDefined()
+  })
+
+  it('keeps the draft when the discard confirmation is cancelled', () => {
+    currentEditingEntityId = 'ent-1'
+    render(<EditorView />)
+    fireEvent.click(screen.getByText('Discard changes'))
+    const dialog = screen.getByRole('dialog', { name: 'Discard changes?' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(mockFinishEditing).not.toHaveBeenCalled()
+    expect(editor.removeDraft).not.toHaveBeenCalled()
+    expect(screen.getByText('Discard changes')).toBeDefined()
   })
 
   it('applies bold formatting via toolbar button', () => {
@@ -333,6 +357,7 @@ describe('EditorView branch coverage', () => {
     render(<EditorView />)
     const discardBtn = screen.getByText('Discard changes')
     fireEvent.click(discardBtn)
+    fireEvent.click(screen.getByRole('button', { name: 'Discard' }))
     expect(editor.removeDraft).toHaveBeenCalled()
   })
 
