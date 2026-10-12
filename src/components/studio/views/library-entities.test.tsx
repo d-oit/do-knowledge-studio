@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest'
 import type { ReactNode } from 'react'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import type { Entity } from '@/lib/studio/types'
 
 vi.mock('framer-motion', () => ({
@@ -158,8 +158,30 @@ describe('EntityTable', () => {
 
   it('renders all rows eagerly when the container is not measurable (jsdom)', () => {
     render(<EntityTable entities={makeEntities(2)} startEdit={vi.fn()} />)
-    const rows = screen.getAllByRole('link')
-    expect(rows).toHaveLength(2)
+    const rows = screen.getAllByRole('row')
+    // Header row + 2 body rows; the open action lives on a real button (#861).
+    expect(rows).toHaveLength(3)
+    expect(screen.getAllByRole('button', { name: /Open Entity/ })).toHaveLength(2)
+  })
+
+  it('exposes native table semantics instead of link rows (#861)', () => {
+    render(<EntityTable entities={makeEntities(1)} startEdit={vi.fn()} />)
+    expect(screen.queryByRole('link')).toBeNull()
+    // Cell content is exposed to screen readers — no aria-label override.
+    const row = screen.getByRole('row', { name: /Entity 0/ })
+    expect(row).toBeDefined()
+    expect(row.hasAttribute('aria-label')).toBe(false)
+  })
+
+  it('opens the entity from the name-cell button and from a row click', () => {
+    const startEdit = vi.fn()
+    render(<EntityTable entities={makeEntities(1)} startEdit={startEdit} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Open Entity 0' }))
+    expect(startEdit).toHaveBeenCalledTimes(1)
+    expect(startEdit).toHaveBeenCalledWith('ent-0')
+    // The row click stays as a mouse affordance.
+    fireEvent.click(screen.getByRole('row', { name: /Entity 0/ }))
+    expect(startEdit).toHaveBeenCalledTimes(2)
   })
 
   it('renders only windowed rows with absolute positioning when virtualized', () => {
@@ -173,7 +195,9 @@ describe('EntityTable', () => {
 
     const { container } = render(<EntityTable entities={entities} startEdit={vi.fn()} />)
 
-    const rows = screen.getAllByRole('link')
+    const allRows = screen.getAllByRole('row')
+    // Header row is not windowed; body rows carry the virtual index.
+    const rows = allRows.filter((r) => (r as HTMLElement).dataset.index !== undefined)
     expect(rows).toHaveLength(2)
     expect(rows[0].dataset.index).toBe('10')
     expect(rows[1].dataset.index).toBe('11')

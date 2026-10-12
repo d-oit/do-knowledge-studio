@@ -1,7 +1,15 @@
 # Plans Index
 
-**Updated**: 2026-09-30
+**Updated**: 2026-10-11
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
+
+### Plan 116 — Open-PR / open-issue sweep, roast, and merge order (2026-10-11)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Inventory 9 open PRs + 19 pure issues; roast each | Done | `plans/116-pr-issue-sweep-roast-merge-order-2026-10-11.md`. No-impact close verdict: **nothing** — all PRs carry behavior/alerts/tests, all 19 issues reproduce on `main`. |
+| W2 | Implement missing tasks with zero PR overlap | Done | #861 (table `role="link"` → native semantics + name-cell button) and #873 (system theme: `enableSystem`, `defaultTheme="system"`, sidebar System button). Gates: lint + typecheck clean, **2838 unit tests** green. e2e specs updated, await CI (no browsers in sandbox). |
+| W3 | Merge order + followups | Ready | Order: #922 → #924 → #920 → #923 → #928 → #927 → #926 → #910 (rebase) → #925 (Codacy HIGHs first) → Plan 116 branch. Followup drafts (no GitHub write access here): #926 i18n string, #928 optional-id note, drawer theme parity, 12 issue owners. No merges performed — CI still in flight on all 9 PRs. |
 
 ### Plan 160 — Fix every open Codacy issue in code; delete `.mimocode/` (2026-09-30)
 
