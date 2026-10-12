@@ -26,11 +26,13 @@ vi.mock('lucide-react', () => {
   const Icon = ({ className }: { className?: string }) => (
     <span data-testid="icon" className={className} />
   )
-  return { X: Icon, Search: Icon, Sun: Icon, Moon: Icon, FileText: Icon }
+  return { X: Icon, Search: Icon, Sun: Icon, Moon: Icon, Monitor: Icon, FileText: Icon }
 })
 
+let mockTheme = 'light'
+
 vi.mock('next-themes', () => ({
-  useTheme: () => ({ theme: 'light', setTheme: mockSetTheme }),
+  useTheme: () => ({ theme: mockTheme, setTheme: mockSetTheme }),
 }))
 
 vi.mock('@/lib/utils', () => ({
@@ -127,6 +129,7 @@ describe('MobileDrawer', () => {
     mobilePanelView = 'nav'
     currentView = 'home'
     searchQuery = ''
+    mockTheme = 'light'
   })
 
   it('renders nothing when closed', () => {
@@ -263,11 +266,28 @@ describe('MobileDrawer', () => {
     expect(screen.getByLabelText('Switch to dark theme')).toBeDefined()
   })
 
-  it('theme toggle switches to dark', () => {
+  it('theme toggle switches from light to dark', () => {
     mobileDrawerOpen = true
+    mockTheme = 'light'
     render(<MobileDrawer />)
     fireEvent.click(screen.getByLabelText('Switch to dark theme'))
     expect(mockSetTheme).toHaveBeenCalledWith('dark')
+  })
+
+  it('theme toggle switches from dark to system', () => {
+    mobileDrawerOpen = true
+    mockTheme = 'dark'
+    render(<MobileDrawer />)
+    fireEvent.click(screen.getByLabelText('Switch to system theme'))
+    expect(mockSetTheme).toHaveBeenCalledWith('system')
+  })
+
+  it('theme toggle switches from system to light', () => {
+    mobileDrawerOpen = true
+    mockTheme = 'system'
+    render(<MobileDrawer />)
+    fireEvent.click(screen.getByLabelText('Switch to light theme'))
+    expect(mockSetTheme).toHaveBeenCalledWith('light')
   })
 
   it('shows local search indicator in footer', () => {
