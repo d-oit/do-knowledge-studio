@@ -20,6 +20,10 @@ const messages = {
   'announce.entityDeleted': (name: string) => `Deleted ${name}`,
   /** The active view changed. */
   'announce.viewSwitched': (view: string) => `Switched to ${view}`,
+  /** Accessible name of the chat transcript log region. */
+  'announce.chatTranscript': 'AI chat transcript',
+  /** Announced when an AI turn ends in a provider failure. */
+  'announce.aiResponseFailed': 'Response failed',
   /** An import replaced the library. Counts are interpolated, so the
    *  plural form has to be selected at the call site (this layer carries no
    *  locale, and `Intl.PluralRules` needs one). */
@@ -68,6 +72,10 @@ const messages = {
   'announce.preservedLibraryDownloaded': 'Preserved library downloaded',
   /** Toast when the download fails. */
   'announce.preservedLibraryFailed': 'Could not download the preserved copy',
+  /** Spoken once the AI harness finished a turn it can call successful: the
+   *  transcript itself is `aria-live="off"`, so a streamed answer is silent
+   *  unless this says it landed. Never spoken for a failed or stopped turn. */
+  'announce.aiResponseComplete': 'Response complete',
 } as const
 
 /** Typed `translate` helper bound to the announcement message scope. */

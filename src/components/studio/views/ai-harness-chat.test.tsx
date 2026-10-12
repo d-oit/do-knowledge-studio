@@ -1,6 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { StrictMode, act } from 'react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
+
+const { mockSendChatStream, mockBuildMessagesAsync } = vi.hoisted(() => ({
+  mockSendChatStream: vi.fn<(request: ChatRequest, onChunk: (chunk: string) => void) => Promise<ChatResult>>(),
+  mockBuildMessagesAsync: vi.fn(),
+}))
+
+vi.mock('@/lib/ai', () => ({
+  sendChatStream: mockSendChatStream,
+  buildMessagesAsync: mockBuildMessagesAsync,
+  useRateLimiter: () => ({ canRequest: () => ({ allowed: true, count: 1, limit: 10 }) }),
+}))
+
+vi.mock('sonner', () => ({
+  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
+}))
 
 vi.mock('framer-motion', () => ({
   motion: {
@@ -22,7 +38,8 @@ vi.mock('@/lib/utils', () => ({
 }))
 
 import { AiHarnessChatPanel } from './ai-harness-chat'
-import type { ChatMessage } from '@/lib/ai'
+import { useAiHarnessChat, type UseAiHarnessChatOptions } from './use-ai-harness-chat'
+import type { ChatMessage, ChatRequest, ChatResult } from '@/lib/ai'
 
 const defaultProps = {
   messages: [
@@ -268,5 +285,204 @@ describe('AiHarnessChatPanel', () => {
 
     expect(screen.getByText('Hello').dataset.probe).toBe('first-bubble')
     expect(screen.getByText('Hello there').dataset.probe).toBe('second-bubble')
+  })
+
+  it('renders transcript container as role="log" with aria-live="off"', () => {
+    render(<AiHarnessChatPanel {...defaultProps} />)
+    const logRegion = screen.getByRole('log', { name: 'AI chat transcript' })
+    expect(logRegion).toBeDefined()
+    expect(logRegion.getAttribute('aria-live')).toBe('off')
+  })
+
+  it('announces a turn once the completion counter advances', () => {
+    const { rerender } = render(<AiHarnessChatPanel {...defaultProps} completedTurns={0} />)
+    const statusRegion = screen.getByRole('status')
+    expect(statusRegion.textContent).toBe('')
+
+    // Turn in flight: nothing to announce yet.
+    rerender(<AiHarnessChatPanel {...defaultProps} isLoading completedTurns={0} />)
+    expect(statusRegion.textContent).toBe('')
+
+    // Turn finished with the hook reporting one completed turn.
+    rerender(<AiHarnessChatPanel {...defaultProps} completedTurns={1} />)
+    expect(statusRegion.textContent).toBe('Response complete')
+
+    // Re-rendering with the same counter (as StrictMode's double-invoked
+    // effect does) must not speak the turn a second time.
+    rerender(<AiHarnessChatPanel {...defaultProps} completedTurns={1} />)
+    expect(statusRegion.textContent).toBe('Response complete')
+  })
+
+  it('stays silent when a turn fails at the provider', () => {
+    // A rejected turn appends an `[Error] …` bubble and leaves the counter
+    // alone, so all the panel sees is isLoading dropping again.
+    const { rerender } = render(<AiHarnessChatPanel {...defaultProps} completedTurns={0} />)
+    const statusRegion = screen.getByRole('status')
+
+    rerender(<AiHarnessChatPanel {...defaultProps} isLoading completedTurns={0} />)
+    rerender(<AiHarnessChatPanel {...defaultProps} isLoading={false} completedTurns={0} />)
+
+    expect(statusRegion.textContent).toBe('')
+  })
+
+  it('announces a failed turn through the alert region', () => {
+    // The transcript is `aria-live="off"`, so a provider failure would otherwise
+    // be silent for screen readers: the error bubble is appended but never
+    // spoken (review on #926).
+    const { rerender } = render(<AiHarnessChatPanel {...defaultProps} failedTurns={0} />)
+    expect(screen.getByRole('alert').textContent).toBe('')
+
+    rerender(<AiHarnessChatPanel {...defaultProps} failedTurns={1} />)
+    expect(screen.getByRole('alert').textContent).toBe('Response failed')
+
+    // Idempotent per turn: an unchanged counter (a re-render, or StrictMode
+    // re-running the effect) must not speak the failure twice.
+    rerender(<AiHarnessChatPanel {...defaultProps} failedTurns={1} />)
+    expect(screen.getByRole('alert').textContent).toBe('Response failed')
+  })
+
+  it('does not announce a failure when the turn merely aborted', () => {
+    const { rerender } = render(<AiHarnessChatPanel {...defaultProps} isLoading failedTurns={0} />)
+    // An abort never advances the counter, so the region stays empty.
+    rerender(<AiHarnessChatPanel {...defaultProps} failedTurns={0} />)
+    expect(screen.getByRole('alert').textContent).toBe('')
+  })
+
+  it('stays silent when the user stops a turn', () => {
+    // Stop aborts the stream: the hook returns early, adds nothing, and the
+    // counter stays put.
+    const { rerender } = render(<AiHarnessChatPanel {...defaultProps} completedTurns={2} />)
+    const statusRegion = screen.getByRole('status')
+
+    rerender(<AiHarnessChatPanel {...defaultProps} isLoading completedTurns={2} />)
+    rerender(<AiHarnessChatPanel {...defaultProps} isLoading={false} completedTurns={2} />)
+
+    expect(statusRegion.textContent).toBe('')
+  })
+
+  it('clears the announcement between turns so the next completion speaks', () => {
+    const { rerender } = render(<AiHarnessChatPanel {...defaultProps} completedTurns={1} />)
+    const statusRegion = screen.getByRole('status')
+    rerender(<AiHarnessChatPanel {...defaultProps} completedTurns={2} />)
+    expect(statusRegion.textContent).toBe('Response complete')
+
+    // A live region whose text never changes is not re-announced, so the next
+    // turn has to empty it before it can speak again.
+    rerender(<AiHarnessChatPanel {...defaultProps} isLoading completedTurns={2} />)
+    expect(statusRegion.textContent).toBe('')
+
+    rerender(<AiHarnessChatPanel {...defaultProps} completedTurns={3} />)
+    expect(statusRegion.textContent).toBe('Response complete')
+  })
+
+  it('does not announce a turn that completed before the panel mounted', () => {
+    render(<AiHarnessChatPanel {...defaultProps} completedTurns={4} />)
+    expect(screen.getByRole('status').textContent).toBe('')
+  })
+})
+
+/** Baseline hook options for the session harness; tests only drive the provider. */
+const chatOptions: UseAiHarnessChatOptions = {
+  provider: 'local',
+  model: 'onnx-community/Qwen2.5-0.5B-Instruct',
+  apiKey: '',
+  augment: false,
+  allowWebResearch: false,
+  ollamaCpuOnly: false,
+  ollamaBaseUrl: 'http://localhost:11434',
+  localDevice: 'wasm',
+  entities: [],
+  claims: [],
+  requiresKey: false,
+}
+
+/** The panel wired to the real hook, so announcements follow real turn outcomes. */
+const ChatPanelWithSession = () => {
+  const chat = useAiHarnessChat({ ...chatOptions })
+  return (
+    <div>
+      <button type="button" onClick={() => { void chat.handleSend('hello') }}>send</button>
+      <AiHarnessChatPanel
+        messages={chat.messages}
+        isLoading={chat.isLoading}
+        completedTurns={chat.completedTurns}
+        failedTurns={chat.failedTurns}
+        input={chat.input}
+        setInput={chat.setInput}
+        handleSend={chat.handleSend}
+        onStop={chat.stop}
+        reducedMotion={false}
+        augment={false}
+        effectiveModel="local/qwen"
+      />
+    </div>
+  )
+}
+
+describe('AiHarnessChatPanel completion announcements', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockBuildMessagesAsync.mockResolvedValue([{ role: 'user', content: 'hello' }])
+  })
+
+  it('announces a successful streamed turn, exactly once', async () => {
+    mockSendChatStream.mockImplementation(async (_request, onChunk) => {
+      onChunk('Hello')
+      onChunk(' world')
+      return { content: 'Hello world', provider: 'local', model: chatOptions.model }
+    })
+    // StrictMode double-invokes effects; the announcement must still land once.
+    const { rerender } = render(<StrictMode><ChatPanelWithSession /></StrictMode>)
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'send' }))
+    })
+
+    await waitFor(() => {
+      expect(screen.getByRole('status').textContent).toBe('Response complete')
+    })
+    // One region, one message: the completion is spoken once, not per token.
+    expect(screen.getAllByRole('status')).toHaveLength(1)
+
+    // An unchanged counter (a re-render, or StrictMode re-running the effect)
+    // must not clear and re-announce the same turn.
+    rerender(<StrictMode><ChatPanelWithSession /></StrictMode>)
+    expect(screen.getByRole('status').textContent).toBe('Response complete')
+  })
+
+  it('does not announce a turn the provider rejected', async () => {
+    mockSendChatStream.mockRejectedValue(new Error('provider exploded'))
+    render(<ChatPanelWithSession />)
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'send' }))
+    })
+
+    // The error bubble is the turn's terminal state — assert after it lands so
+    // the silent-status check cannot pass before the turn settles.
+    await waitFor(() => {
+      // The mapped copy from #927: a provider failure never dumps raw text.
+      expect(screen.getByText(/\[Error\] The provider returned an unexpected error\./)).toBeDefined()
+    })
+    expect(screen.getByRole('status').textContent).toBe('')
+  })
+
+  it('does not announce a turn the user stopped', async () => {
+    // Stop, and a turn superseded by the next send, both surface as an
+    // AbortError: the hook returns early and adds nothing to the transcript.
+    mockSendChatStream.mockRejectedValue(new DOMException('Aborted', 'AbortError'))
+    render(<ChatPanelWithSession />)
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'send' }))
+    })
+
+    // The composer re-enabling is the turn's terminal state — assert after it
+    // so the silent-status check cannot pass before the turn settles.
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/Ask the AI agent/)).not.toBeDisabled()
+    })
+    expect(screen.queryByText(/\[Error\]/)).toBeNull()
+    expect(screen.getByRole('status').textContent).toBe('')
   })
 })

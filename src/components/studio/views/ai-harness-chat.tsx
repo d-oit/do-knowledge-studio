@@ -1,8 +1,10 @@
 'use client'
 
+import { useState, useEffect, useRef } from 'react'
 import { Bot, User, Send, Square, Sparkles, Lightbulb } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
+import { translate as announceT } from '@/lib/i18n/messages/announce'
 import type { ChatMessage } from '@/lib/ai'
 
 interface PromptSuggestion {
@@ -13,6 +15,13 @@ interface PromptSuggestion {
 interface ChatPanelProps {
   messages: ChatMessage[]
   isLoading: boolean
+  /**
+   * Count of turns the session finished successfully (from
+   * `useAiHarnessChat`). This — not `isLoading` — drives the completion
+   * announcement, because a failed or stopped turn also clears `isLoading`.
+   */
+  completedTurns?: number
+  failedTurns?: number
   input: string
   setInput: (v: string) => void
   handleSend: (overrideInput?: string) => void | Promise<void>
@@ -177,6 +186,8 @@ const ChatComposer = ({
 export const AiHarnessChatPanel = ({
   messages,
   isLoading,
+  completedTurns = 0,
+  failedTurns = 0,
   input,
   setInput,
   handleSend,
@@ -188,9 +199,49 @@ export const AiHarnessChatPanel = ({
   suggestions = [],
 }: ChatPanelProps) => {
   const showSuggestions = suggestions.length > 0 && messages.length <= 1 && !isLoading && input.trim() === ''
+  const [announceCompletion, setAnnounceCompletion] = useState(false)
+  const [announceFailure, setAnnounceFailure] = useState(false)
+  // Last counter value already spoken; initialised from the incoming value so
+  // a panel that mounts mid-conversation does not re-announce an old turn.
+  const announcedTurnsRef = useRef(completedTurns)
+  const announcedFailuresRef = useRef(failedTurns)
+
+  // A live region only re-speaks when its text changes, so each turn starts by
+  // clearing the previous completion message.
+  useEffect(() => {
+    if (!isLoading) return
+    setAnnounceCompletion(false)
+    setAnnounceFailure(false)
+  }, [isLoading])
+
+  // Guarding on the last spoken value keeps this idempotent: StrictMode
+  // double-invokes effects, and re-running with an unchanged counter must not
+  // announce the same turn twice.
+  useEffect(() => {
+    if (completedTurns === announcedTurnsRef.current) return
+    announcedTurnsRef.current = completedTurns
+    setAnnounceCompletion(true)
+  }, [completedTurns])
+
+  // Failures need their own announcement: the transcript is `aria-live="off"`,
+  // so the `[Error] …` bubble it appends is silent, and a screen-reader user
+  // would hear nothing at all about a failed turn (review on #926). `role`
+  // "alert" rather than a second polite region because a provider failure is
+  // the one outcome worth interrupting for.
+  useEffect(() => {
+    if (failedTurns === announcedFailuresRef.current) return
+    announcedFailuresRef.current = failedTurns
+    setAnnounceFailure(true)
+  }, [failedTurns])
+
   return (
     <div className="flex h-[520px] flex-col rounded-lg border border-border bg-card">
-      <div className="flex-1 space-y-4 overflow-y-auto p-4" aria-live="polite" aria-atomic="false">
+      <div
+        className="flex-1 space-y-4 overflow-y-auto p-4"
+        role="log"
+        aria-live="off"
+        aria-label={announceT('announce.chatTranscript')}
+      >
         {messages.map((m, index) => (
           <ChatMessageRow
             key={m.id ?? `${index}-${m.role}`}
@@ -200,6 +251,14 @@ export const AiHarnessChatPanel = ({
         ))}
         {isLoading && <ChatTypingIndicator />}
       </div>
+
+      <span role="status" aria-live="polite" className="sr-only">
+        {announceCompletion ? announceT('announce.aiResponseComplete') : ''}
+      </span>
+
+      <span role="alert" className="sr-only">
+        {announceFailure ? announceT('announce.aiResponseFailed') : ''}
+      </span>
 
       {showSuggestions && (
         <ChatSuggestionChips

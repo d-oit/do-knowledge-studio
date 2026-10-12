@@ -82,8 +82,9 @@ const withTrailingAssistantMessage = (
 
 /**
  * Owns the AI Harness chat session: message history, input, loading state,
- * rate limiting, and the streaming send pipeline. Kept outside the view
- * component so the view stays small and the send flow is unit-testable.
+ * rate limiting, the completion signal, and the streaming send pipeline. Kept
+ * outside the view component so the view stays small and the send flow is
+ * unit-testable.
  */
 export const useAiHarnessChat = ({
   provider,
@@ -102,6 +103,12 @@ export const useAiHarnessChat = ({
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [cooldownMs, setCooldownMs] = useState(0)
+  // Bumped once per turn that genuinely completed (assistant content produced,
+  // no abort, no provider error). `isLoading` alone cannot carry this signal:
+  // it also drops when a turn fails or is stopped, so a consumer keyed on it
+  // would announce those turns as successful.
+  const [completedTurns, setCompletedTurns] = useState(0)
+  const [failedTurns, setFailedTurns] = useState(0)
   const abortRef = useRef<AbortController | null>(null)
   const { canRequest } = useRateLimiter()
 
@@ -221,6 +228,14 @@ export const useAiHarnessChat = ({
       if (streamedContent === '' && result.content !== '') {
         upsertAssistantBubble(result.content)
       }
+
+      // Reached only by a turn that settled normally, so this is the success
+      // signal: a provider failure lands in the catch below and an abort
+      // returns from it, and a turn that produced no assistant content is not
+      // an answer worth announcing either.
+      if (streamedContent !== '' || result.content !== '') {
+        setCompletedTurns((turns) => turns + 1)
+      }
     } catch (err) {
       if (requestTimeout.didTimeOut()) {
         setMessages((m) => [
@@ -231,6 +246,13 @@ export const useAiHarnessChat = ({
             content: `[Error] ${translate('ai.chat.error.timeout')}\n\n${translate('ai.chat.error.hint')}`,
           },
         ])
+        // This branch never reaches the success signal below, which requires the
+        // awaited result — so without this the quiet transcript would say nothing
+        // at all about a failed turn. A partial bubble may already exist (chunks
+        // are forwarded as they stream, and the reader can fail mid-stream), so
+        // "failed" here means the turn did not complete, not that it produced no
+        // content (review on #926).
+        setFailedTurns((turns) => turns + 1)
         return
       }
 
@@ -251,6 +273,7 @@ export const useAiHarnessChat = ({
         ...m,
         { id: crypto.randomUUID(), role: 'assistant', content: `[Error] ${friendly}\n\n${translate('ai.chat.error.hint')}` },
       ])
+      setFailedTurns((turns) => turns + 1)
     } finally {
       requestTimeout.clear()
       setIsLoading(false)
@@ -276,5 +299,16 @@ export const useAiHarnessChat = ({
     abortRef.current?.abort()
   }, [])
 
-  return { messages, setMessages, input, setInput, isLoading, cooldownMs, handleSend, stop }
+  return {
+    messages,
+    setMessages,
+    input,
+    setInput,
+    isLoading,
+    completedTurns,
+    failedTurns,
+    cooldownMs,
+    handleSend,
+    stop,
+  }
 }
