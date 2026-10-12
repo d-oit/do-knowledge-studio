@@ -60,6 +60,21 @@ describe('ConfirmDialog', () => {
     expect(within(dialog).getByText(defaultProps.body)).toBeDefined()
   })
 
+  it('names itself by the heading and describes itself by the body', () => {
+    // A dialog labelled only with `aria-label` announced the question and never
+    // the warning the user is confirming (review on #939). Both attributes must
+    // resolve to the rendered elements.
+    render(<ConfirmDialog {...defaultProps} />)
+
+    const dialog = screen.getByRole('dialog')
+    const labelledBy = dialog.getAttribute('aria-labelledby')
+    const describedBy = dialog.getAttribute('aria-describedby')
+    expect(labelledBy).not.toBeNull()
+    expect(describedBy).not.toBeNull()
+    expect(document.getElementById(labelledBy ?? '')?.textContent).toBe(defaultProps.title)
+    expect(document.getElementById(describedBy ?? '')?.textContent).toBe(defaultProps.body)
+  })
+
   it('runs the action from the confirming button only', () => {
     render(<ConfirmDialog {...defaultProps} />)
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }))

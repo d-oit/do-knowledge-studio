@@ -1,4 +1,4 @@
-import { forwardRef } from 'react'
+import { forwardRef, useId } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { translate as confirmT } from '@/lib/i18n/messages/confirm'
@@ -298,6 +298,11 @@ interface ConfirmDialogProps {
  * clicks cancel, focus moves into the dialog on open (the Cancel button, which
  * is the first focusable element — the safe default for a destructive action)
  * and returns to the trigger on close. All copy arrives already translated.
+ *
+ * Its accessible name is the visible heading and its accessible *description* is
+ * the body: with `aria-label` alone a screen reader announced the question and
+ * never the warning the user is confirming (review on #939). The ids come from
+ * `useId`, so two dialogs mounted at once cannot collide.
  */
 export const ConfirmDialog = ({
   open,
@@ -308,11 +313,19 @@ export const ConfirmDialog = ({
   confirmLabel,
   cancelLabel,
   destructive = false,
-}: ConfirmDialogProps) => (
-  <Overlay open={open} onClose={onCancel} aria-label={title}>
+}: ConfirmDialogProps) => {
+  const titleId = useId()
+  const bodyId = useId()
+  return (
+  <Overlay
+    open={open}
+    onClose={onCancel}
+    aria-labelledby={titleId}
+    aria-describedby={bodyId}
+  >
     <div className="w-[360px] max-w-[92vw] rounded-xl border border-border bg-popover p-5 shadow-2xl">
-      <h3 className="mb-2 font-serif text-body font-semibold text-ink">{title}</h3>
-      <p className="mb-4 text-label-lg leading-relaxed text-ink-mute">{body}</p>
+      <h3 id={titleId} className="mb-2 font-serif text-body font-semibold text-ink">{title}</h3>
+      <p id={bodyId} className="mb-4 text-label-lg leading-relaxed text-ink-mute">{body}</p>
       <div className="flex justify-end gap-2">
         <button
           onClick={onCancel}
@@ -333,4 +346,5 @@ export const ConfirmDialog = ({
       </div>
     </div>
   </Overlay>
-)
+  )
+}
