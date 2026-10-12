@@ -108,19 +108,20 @@ describe('exportElementAsPng', () => {
     // reads a misspelled custom property, which is the failure mode this test
     // exists to catch (review on #938).
     const requestedProperties: string[] = []
-    vi.mocked(window.getComputedStyle).mockImplementation(
-      () =>
-        ({
-          backgroundColor: NO_BACKGROUND,
-          getPropertyValue: (property: string) => {
-            requestedProperties.push(property)
-            if (property !== '--background') {
-              throw new Error(`unexpected custom property read: ${property}`)
-            }
-            return PAPER_FROM_TOKEN
-          },
-        }) as unknown as CSSStyleDeclaration,
-    )
+    const queriedElements: Element[] = []
+    vi.mocked(window.getComputedStyle).mockImplementation((element: Element) => {
+      queriedElements.push(element)
+      return {
+        backgroundColor: NO_BACKGROUND,
+        getPropertyValue: (property: string) => {
+          requestedProperties.push(property)
+          if (property !== '--background') {
+            throw new Error(`unexpected custom property read: ${property}`)
+          }
+          return PAPER_FROM_TOKEN
+        },
+      } as unknown as CSSStyleDeclaration
+    })
     const element = document.createElement('div')
     const clone = document.createElement('div')
     vi.spyOn(element, 'cloneNode').mockReturnValue(clone as unknown as Node)
@@ -128,9 +129,16 @@ describe('exportElementAsPng', () => {
     exportElementAsPng(element, FILENAME)
 
     expect(clone.style.background).toBe(PAPER_FROM_TOKEN)
-    // The token the view reads is part of the contract: `--background` is the
-    // paper colour in both themes (see `PAPER_TOKEN` in mindmap-export.ts).
+    // Both halves of the contract are pinned: *which* custom property the view
+    // reads (`--background` is the paper colour in both themes — see
+    // `PAPER_TOKEN`) and *where* it reads it. The token lives on the root
+    // element, so a mock that answers for any element would hide a regression
+    // that queried the wrong one (review on #938).
     expect(requestedProperties).toEqual(['--background'])
+    // The export also computes styles for the element it rasterizes, so the
+    // root must be *one* of the queried targets — asserting exact equality
+    // would pin the unrelated call count instead of the token's home.
+    expect(queriedElements).toContain(document.documentElement)
   })
 
   it('sizes the clone to the element box so the raster matches the canvas', () => {

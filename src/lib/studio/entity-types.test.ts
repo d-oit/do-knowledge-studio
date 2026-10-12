@@ -133,7 +133,13 @@ describe('getEntityTypeMeta', () => {
   })
 
   it('built-in meta uses bespoke tokens, never stock-palette classes', () => {
-    const stockPalette = /\b(amber|rose|emerald|sky|zinc|violet)-\d{2,3}\b/
+    // Any Tailwind colour scale shipped with the framework carries a numeric
+    // step (`bg-blue-500`, `text-zinc-700`). Enumerating six hues let any other
+    // one through — `bg-blue-500` satisfied the old guard while being exactly
+    // the stock palette this asserts against (review on #938). No bespoke token
+    // class in ENTITY_TYPE_META has a numeric suffix, so the broader pattern
+    // cannot report a false positive.
+    const stockPalette = /\b[a-z]+-\d{2,3}\b/
     for (const id of ['note', 'concept', 'person', 'project'] as const) {
       const meta = getEntityTypeMeta(id)
       for (const cls of [meta.bg, meta.text, meta.dot]) {
