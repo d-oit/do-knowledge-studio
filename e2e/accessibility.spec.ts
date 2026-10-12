@@ -48,12 +48,14 @@ test.describe('Accessibility', () => {
     await navClick(page, /library/i);
 
     // Table rows expose native table semantics (#861); the open action is a
-    // real button in the name cell, matching the grid-card pattern.
+    // real button in the name cell, matching the grid-card pattern. The
+    // default view is grid, so switch explicitly — a fresh profile carries
+    // no stored view-mode preference (caught by CI, which starts clean).
+    await page.getByRole('button', { name: 'List view' }).click();
+
     const entityButtons = page.getByRole('button', { name: /open /i });
-    const count = await entityButtons.count();
-    if (count > 0) {
-      await expect(entityButtons.first()).toHaveAttribute('aria-label', /open /i);
-    }
+    await expect(entityButtons.first()).toBeVisible();
+    await expect(entityButtons.first()).toHaveAttribute('aria-label', /open /i);
     await expect(page.getByRole('table')).toBeVisible();
   });
 
