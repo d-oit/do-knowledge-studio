@@ -164,6 +164,108 @@ describe('useAiHarnessChat', () => {
     expect(() => { hook.unmount() }).not.toThrow()
   })
 
+  it('aborts stream when stop is called and re-enables composer', async () => {
+    let capturedSignal: AbortSignal | undefined
+    mockSendChatStream.mockImplementation((request) => {
+      capturedSignal = request.signal
+      return new Promise<ChatResult>((_resolve, reject) => {
+        if (request.signal?.aborted) {
+          reject(new DOMException('Aborted', 'AbortError'))
+          return
+        }
+        request.signal?.addEventListener('abort', () => {
+          reject(new DOMException('Aborted', 'AbortError'))
+        })
+      })
+    })
+
+    const hook = renderHook(() => useAiHarnessChat({ ...baseOptions }))
+    act(() => { hook.result.current.setInput('hi') })
+    void act(() => { void hook.result.current.handleSend() })
+    await waitFor(() => { expect(capturedSignal).toBeDefined() })
+
+    expect(hook.result.current.isLoading).toBe(true)
+    expect(capturedSignal?.aborted).toBe(false)
+
+    act(() => { hook.result.current.stop() })
+
+    await waitFor(() => { expect(hook.result.current.isLoading).toBe(false) })
+    expect(capturedSignal?.aborted).toBe(true)
+  })
+
+  it('times out a silent provider, with no AbortSignal.any/timeout to lean on', async () => {
+    // The timeout must not depend on `AbortSignal.any` (or `timeout`): those are
+    // 2022/2024-baseline APIs, and on an engine missing them the previous
+    // `any([signal, timeout])` composition dropped the timeout entirely, so a
+    // provider that accepts and then goes silent hung the turn forever
+    // (GitNexus on PR #923). Delete both before the request and prove it still
+    // times out.
+    const abortSignalStatics = AbortSignal as unknown as Record<string, unknown>
+    const anyBackup = abortSignalStatics.any
+    const timeoutBackup = abortSignalStatics.timeout
+    delete abortSignalStatics.any
+    delete abortSignalStatics.timeout
+
+    let capturedSignal: AbortSignal | undefined
+    mockSendChatStream.mockImplementation((request) => {
+      capturedSignal = request.signal
+      const { promise, reject } = Promise.withResolvers<ChatResult>()
+      request.signal?.addEventListener('abort', () => {
+        reject(request.signal?.reason ?? new DOMException('Aborted', 'AbortError'))
+      })
+      return promise
+    })
+
+    const hook = renderHook(() => useAiHarnessChat({ ...baseOptions }))
+    act(() => { hook.result.current.setInput('hi') })
+
+    vi.useFakeTimers()
+    try {
+      let turn: Promise<void> | undefined
+      await act(async () => {
+        turn = hook.result.current.handleSend()
+        // Mirrors the hook's REQUEST_TIMEOUT_MS contract, which the user-facing
+        // copy pins at two minutes.
+        await vi.advanceTimersByTimeAsync(120_000)
+      })
+      await act(async () => { await turn })
+    } finally {
+      vi.useRealTimers()
+      abortSignalStatics.any = anyBackup
+      abortSignalStatics.timeout = timeoutBackup
+    }
+
+    expect(capturedSignal?.aborted).toBe(true)
+    const last = hook.result.current.messages.at(-1)
+    expect(last?.role).toBe('assistant')
+    expect(last?.content).toBe(
+      '[Error] Request timed out after 2 minutes. The provider took too long to respond.',
+    )
+    expect(hook.result.current.isLoading).toBe(false)
+  })
+
+  it('does not report a user-cancelled turn as a timeout', async () => {
+    mockSendChatStream.mockImplementation((request) => {
+      const { promise, reject } = Promise.withResolvers<ChatResult>()
+      request.signal?.addEventListener('abort', () => {
+        reject(request.signal?.reason ?? new DOMException('Aborted', 'AbortError'))
+      })
+      return promise
+    })
+
+    const hook = renderHook(() => useAiHarnessChat({ ...baseOptions }))
+    act(() => { hook.result.current.setInput('hi') })
+    let turn: Promise<void> | undefined
+    await act(async () => { turn = hook.result.current.handleSend() })
+
+    act(() => { hook.result.current.stop() })
+    await act(async () => { await turn })
+
+    // An aborted turn keeps whatever streamed and adds nothing: no bubble, and
+    // specifically no timeout copy.
+    expect(hook.result.current.messages.map((m) => m.content).join('\n')).not.toContain('timed out')
+  })
+
   it('sends the override text even when the composer input is empty (#846)', async () => {
     mockSendChatStream.mockResolvedValue(resultFor('chip answer'))
     const hook = renderHook(() => useAiHarnessChat({ ...baseOptions }))

@@ -308,6 +308,40 @@ describe('fetchOllamaModels', () => {
       'must use http or https',
     )
   })
+
+  it('times a wedged daemon out without leaning on AbortSignal.timeout (#923)', async () => {
+    // The probe must not call AbortSignal.timeout: the chat turn's own timeout
+    // avoids those newer signal APIs because supported engines may lack them,
+    // and a bare call would throw before the probe could start (GitNexus on
+    // PR #923). Delete both before probing.
+    const abortSignalStatics = AbortSignal as unknown as Record<string, unknown>
+    const anyBackup = abortSignalStatics.any
+    const timeoutBackup = abortSignalStatics.timeout
+    delete abortSignalStatics.any
+    delete abortSignalStatics.timeout
+
+    vi.useFakeTimers()
+    try {
+      // A daemon that accepts the connection and never answers; real fetch
+      // rejects with the signal's abort reason, so the stub does too.
+      vi.mocked(globalThis.fetch).mockImplementation((_input, init) => {
+        const { promise, reject } = Promise.withResolvers<Response>()
+        init?.signal?.addEventListener('abort', () => {
+          reject(init.signal?.reason ?? new DOMException('Aborted', 'AbortError'))
+        })
+        return promise
+      })
+
+      const probe = fetchOllamaModels('http://localhost:11434')
+      const rejection = expect(probe).rejects.toThrow('Ollama model list request timed out')
+      await vi.advanceTimersByTimeAsync(10_000)
+      await rejection
+    } finally {
+      vi.useRealTimers()
+      abortSignalStatics.any = anyBackup
+      abortSignalStatics.timeout = timeoutBackup
+    }
+  })
 })
 
 // ─── sendChat (integration) ─────────────────────────────────────────────────
