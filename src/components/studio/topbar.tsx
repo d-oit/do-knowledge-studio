@@ -3,28 +3,35 @@
 import { useStudioStore } from '@/lib/studio/store'
 import { useIsMacPlatform, formatShortcut } from '@/lib/studio/use-platform-shortcut'
 import type { ViewId } from '@/lib/studio/types'
+import { translate as navT } from '@/lib/i18n/messages/nav'
 import { translate as timelineT } from '@/lib/i18n/messages/timeline'
 import { Menu, Plus, Search, X } from 'lucide-react'
 import type { KeyboardEvent } from 'react'
 
+/** Home metadata, reused as the fallback for unknown view ids. */
+const HOME_META: { title: string; subtitle: string } = {
+  title: navT('nav.home.title'),
+  subtitle: navT('nav.home.subtitle'),
+}
+
 /** View title metadata keyed by ViewId (bounded Map retrieval — no dynamic indexing). */
 const VIEW_TITLES: ReadonlyMap<ViewId, { title: string; subtitle: string }> = new Map([
-  ['home', { title: 'Studio', subtitle: 'Your knowledge base at a glance' }],
-  ['editor', { title: 'Editor', subtitle: 'Capture a thought, claim, or note' }],
-  ['library', { title: 'Library', subtitle: 'Browse and filter your entities' }],
-  ['graph', { title: 'Graph', subtitle: 'Visualize relationships' }],
-  ['mindmap', { title: 'Mind Map', subtitle: 'Hierarchical exploration' }],
-  ['chat', { title: 'Chat', subtitle: 'Ask your library' }],
-  ['ai', { title: 'AI Harness', subtitle: 'Configure and chat with LLMs' }],
-  ['triz', { title: 'TRIZ Matrix', subtitle: 'Solve inventive contradictions' }],
-  ['export', { title: 'Export', subtitle: 'Backup and share your knowledge' }],
-  ['sync', { title: 'Sync', subtitle: 'Connect devices and sync peer-to-peer' }],
+  ['home', HOME_META],
+  ['editor', { title: navT('nav.editor.title'), subtitle: navT('nav.editor.subtitle') }],
+  ['library', { title: navT('nav.library.title'), subtitle: navT('nav.library.subtitle') }],
+  ['graph', { title: navT('nav.graph.title'), subtitle: navT('nav.graph.subtitle') }],
+  ['mindmap', { title: navT('nav.mindmap.title'), subtitle: navT('nav.mindmap.subtitle') }],
+  ['chat', { title: navT('nav.chat.title'), subtitle: navT('nav.chat.subtitle') }],
+  ['ai', { title: navT('nav.ai.title'), subtitle: navT('nav.ai.subtitle') }],
+  ['triz', { title: navT('nav.triz.title'), subtitle: navT('nav.triz.subtitle') }],
+  ['export', { title: navT('nav.export.title'), subtitle: navT('nav.export.subtitle') }],
+  ['sync', { title: navT('nav.sync.title'), subtitle: navT('nav.sync.subtitle') }],
   ['timeline', { title: timelineT('timeline.title'), subtitle: timelineT('timeline.subtitle') }],
 ])
 
 /** Bounded lookup; falls back to the home title for unknown view ids. */
 const getViewMeta = (view: ViewId): { title: string; subtitle: string } =>
-  VIEW_TITLES.get(view) ?? { title: 'Studio', subtitle: 'Your knowledge base at a glance' }
+  VIEW_TITLES.get(view) ?? HOME_META
 
 /** Top header bar with view title, inline search, offline badge, and new entity button. */
 export const Topbar = () => {

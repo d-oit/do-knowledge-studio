@@ -18,7 +18,8 @@ import { ErrorBoundary } from './error-boundary'
 import { ViewErrorBoundary } from './view-error-boundary'
 import { Skeleton } from './ui/skeleton'
 import { startBidirectionalSync } from '@/lib/sync/bridge'
-import { translate } from '@/lib/i18n/messages/timeline'
+import { translate as navT } from '@/lib/i18n/messages/nav'
+import { translate as timelineT } from '@/lib/i18n/messages/timeline'
 import { readQuarantine, type QuarantineRecord } from '@/lib/studio/hydration-quarantine'
 import {
   getHydrationRefusal,
@@ -59,17 +60,17 @@ function ViewLoader() {
  * sink), while staying a single table instead of a per-view switch.
  */
 const VIEW_NAMES = new Map<ViewId, string>([
-  ['home', 'Home'],
-  ['editor', 'Editor'],
-  ['library', 'Library'],
-  ['timeline', translate('timeline.nav.label')],
-  ['graph', 'Graph'],
-  ['mindmap', 'Mind Map'],
-  ['chat', 'Chat'],
-  ['ai', 'AI Harness'],
-  ['triz', 'TRIZ Matrix'],
-  ['export', 'Export'],
-  ['sync', 'Sync'],
+  ['home', navT('nav.home.label')],
+  ['editor', navT('nav.editor.label')],
+  ['library', navT('nav.library.label')],
+  ['timeline', timelineT('timeline.nav.label')],
+  ['graph', navT('nav.graph.label')],
+  ['mindmap', navT('nav.mindmap.label')],
+  ['chat', navT('nav.chat.label')],
+  ['ai', navT('nav.ai.label')],
+  ['triz', navT('nav.triz.label')],
+  ['export', navT('nav.export.label')],
+  ['sync', navT('nav.sync.label')],
 ])
 
 /** Returns a human-readable display name for a given view ID. */
