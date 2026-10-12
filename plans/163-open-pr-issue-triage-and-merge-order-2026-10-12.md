@@ -35,8 +35,13 @@ comment was posted.** §8 gives the exact commands for the maintainer.
 | Per-PR correctness | `pnpm exec vitest run <that PR's test files>` on the PR ref | 920: 33 ✓ · 923: 61 ✓ · 926: 26 ✓ · 927: 23 ✓ · 928: 36 ✓ · 929: 54 ✓ · 930: 47 ✓ |
 | Dep PRs | `pnpm install --frozen-lockfile` + resolved-version read | 922 → `sharp@0.35.5`; 924 → `source-map-js@1.2.2` (both exist on npm; `smj` override is what moves it) |
 | Merge compatibility | `git merge-tree --write-tree` pairwise, then 9 real sequential merges | 4 conflicting pairs; all resolved |
-| Integrated tree | `eslint .`, `tsc --noEmit`, `vitest run` | lint 0 · typecheck 0 · see §4 for the one failure found |
-| Advisories | `pnpm audit` on both `main`'s and #925's package.json+lockfile pairs | `main`: next SSRF + sharp + source-map-js + braces (all HIGH). #925: same minus `next` |
+| Integrated tree — lint | `eslint .` | **0 warnings, 0 errors** |
+| Integrated tree — types | `tsc --noEmit -p tsconfig.app.json` | **0 errors** (after the §4 fix; the first merged state failed — see §4.2) |
+| Integrated tree — unit tests | `vitest run` | Every changed area verified: the nine PRs' own files (all pass, counts in §1 row above) plus the merged-state re-runs after each conflict resolution. **A single full-suite run (`pnpm run test`, 182 files) could not be completed in this environment**: `vitest.config.ts` pins `maxWorkers: 2` and the VM has 2 vCPU, so a run outlives the 5-minute command cap and detached runs are reaped. Treat the full suite as **not run here** — CI is the authority. |
+| Integrated tree — build | `next build && generate-precache-manifest.mjs` | **Not completed here** (same 5-minute/2-vCPU limit; `next build` alone exceeded it twice). CI's Build job is green on all nine PRs, but the *merged* tree's build is unverified in this pass. |
+| Advisories — `main` | `pnpm audit` on `main`'s package.json+lockfile pair | 4 HIGH: `next` SSRF, `sharp` (librsvg CVE), `source-map-js` DoS, `braces` |
+| Advisories — #925 | same, on #925's pair | 3 HIGH: `sharp`, `source-map-js`, `braces` (no `next`) |
+| Advisories — integrated tree | `pnpm audit` on the integration branch | **1 HIGH**, the CI-ignored unpatched `braces` CVE-2026-93687. The repo's own gate command `pnpm audit --audit-level=high --ignore CVE-2026-93687` → **passes**. Cleared: `next` (restored bump, §5), `sharp` (#922), `source-map-js` (#924). |
 | Issue validity | targeted greps against the working tree for each of the 18 claims | all 12 non-PR issues still reproducible (§7) |
 
 Not run: `pnpm run test:e2e` (Playwright browsers are not installed here) and the
