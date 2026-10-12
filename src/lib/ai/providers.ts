@@ -326,18 +326,40 @@ export const sendChatStream = (
   return adapter.sendStream(request, onChunk)
 }
 
-/** Fetch the list of model names available on a local Ollama instance. */
+/**
+ * Budget for the local Ollama tags probe. A wedged daemon must not hang the
+ * settings panel, so every probe is bounded rather than left to the network
+ * stack's default patience.
+ */
+const OLLAMA_TAGS_TIMEOUT_MS = 10_000
+
+/**
+ * Lists the models a local Ollama daemon advertises.
+ *
+ * The timeout is armed with `setTimeout` + `AbortController` rather than
+ * `AbortSignal.timeout` on purpose: the chat turn's own timeout avoids those
+ * newer signal APIs because supported engines may lack them, and a bare
+ * `AbortSignal.timeout` call would throw before the probe could even start
+ * (GitNexus on PR #923).
+ */
 export const fetchOllamaModels = async (
   baseUrl: string = DEFAULT_OLLAMA_BASE_URL,
-  signal?: AbortSignal,
 ): Promise<string[]> => {
   const validatedUrl = validateOllamaUrl(baseUrl)
-  // The URL is allowlist-validated above and `redirect: 'error'` blocks a
-  // permitted host bouncing the request to a public origin. Semgrep only
-  // honours a suppression on the matched line or the line immediately above
-  // it, so the directive trails this one rather than sitting on its own line.
-  const res = await fetch(`${validatedUrl}/api/tags`, { signal, redirect: 'error' }) // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
-  if (!res.ok) throw new Error(`Ollama tags error ${res.status}`)
-  const data = OllamaTagsSchema.parse(await res.json())
-  return data.models?.map((m) => m.name) ?? []
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => {
+    controller.abort(new DOMException('Ollama model list request timed out', 'TimeoutError'))
+  }, OLLAMA_TAGS_TIMEOUT_MS)
+  try {
+    // The URL is allowlist-validated above and `redirect: 'error'` blocks a
+    // permitted host bouncing the request to a public origin. Semgrep only
+    // honours a suppression on the matched line or the line immediately above
+    // it, so the directive trails this one rather than sitting on its own line.
+    const res = await fetch(`${validatedUrl}/api/tags`, { signal: controller.signal, redirect: 'error' }) // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
+    if (!res.ok) throw new Error(`Ollama tags error ${res.status}`)
+    const data = OllamaTagsSchema.parse(await res.json())
+    return data.models?.map((m) => m.name) ?? []
+  } finally {
+    clearTimeout(timeoutId)
+  }
 }

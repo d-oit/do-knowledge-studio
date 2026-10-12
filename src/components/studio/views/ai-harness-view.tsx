@@ -64,6 +64,7 @@ const useAIHarnessViewState = () => {
     isLoading,
     cooldownMs,
     handleSend,
+    stop,
   } = useAiHarnessChat({
     provider,
     model: effectiveModel,
@@ -159,6 +160,7 @@ const useAIHarnessViewState = () => {
     isLoading,
     cooldownMs,
     handleSend,
+    stop,
     effectiveModel,
     selectedEngineTarget,
   }
@@ -243,6 +245,7 @@ export const AIHarnessView = () => {
     isLoading,
     cooldownMs,
     handleSend,
+    stop,
     effectiveModel,
     selectedEngineTarget,
   } = useAIHarnessViewState()
@@ -303,6 +306,7 @@ export const AIHarnessView = () => {
             input={input}
             setInput={setInput}
             handleSend={handleSend}
+            onStop={stop}
             reducedMotion={reducedMotion}
             augment={augment}
             effectiveModel={effectiveModel}
