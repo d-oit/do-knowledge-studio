@@ -21,6 +21,12 @@ const messages = {
   'ai.local.error.loadFailed': (model: string, reason: string) =>
     `The offline model "${model}" could not be loaded. The first use downloads it from the Hugging Face Hub (needs a network connection once); afterwards it runs fully offline. If you were offline, connect once to download the model, then retry. Reason: ${reason}`,
   'ai.local.error.empty': 'The local model returned an empty response.',
+  'ai.chat.error.unauthorized': 'Your API key was rejected — check it in settings.',
+  'ai.chat.error.rateLimited': 'The provider is rate-limiting requests — wait and retry.',
+  'ai.chat.error.network': 'Cannot reach the provider — check your connection or provider settings.',
+  'ai.chat.error.timeout': 'The provider took too long to respond (2 minute limit).',
+  'ai.chat.error.unexpected': 'The provider returned an unexpected error.',
+  'ai.chat.error.hint': 'Check your provider settings and try again.',
 } as const
 
 export const translate = makeT(messages)
