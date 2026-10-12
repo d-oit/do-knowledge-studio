@@ -28,6 +28,7 @@ import {
 import { cn } from '@/lib/utils'
 import { EntityGrid, EntityTable } from './library-entities'
 import { translate as libraryT } from '@/lib/i18n/messages/library'
+import { translate as navT } from '@/lib/i18n/messages/nav'
 
 /** Entity type filter options including the "all" sentinel. */
 const FILTERS: { id: EntityType | 'all'; label: string }[] = [
@@ -233,7 +234,7 @@ export const LibraryView = () => {
     <div className={cn(VIEW_CONTAINER_CLASS, 'max-w-5xl')}>
       <ViewHeader
         icon={LayoutGrid}
-        title={libraryT('library.title')}
+        title={navT('nav.library.title')}
         subtitle={libraryT('library.subtitle')}
       />
 

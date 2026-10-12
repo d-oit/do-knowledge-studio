@@ -32,6 +32,7 @@ import type { FieldConflict } from '@/lib/sync/merge'
 import { PresenceList } from '../presence-indicator'
 import { usePresence } from '@/lib/sync/use-presence'
 import { translate as t } from '@/lib/i18n/messages/sync'
+import { translate as navT } from '@/lib/i18n/messages/nav'
 
 type SyncStatus = 'disconnected' | 'connecting' | 'connected' | 'error'
 type PairingMode = 'none' | 'display' | 'scan'
@@ -148,7 +149,7 @@ const SyncHeader = ({ reducedMotion }: { reducedMotion: boolean }) => (
     animate={{ opacity: 1, y: 0 }}
     transition={reducedMotion ? { duration: 0 } : undefined}
   >
-    <ViewHeader icon={Wifi} title={t('sync.title')} subtitle={t('sync.subtitle')} />
+    <ViewHeader icon={Wifi} title={navT('nav.sync.title')} subtitle={t('sync.subtitle')} />
   </motion.div>
 )
 

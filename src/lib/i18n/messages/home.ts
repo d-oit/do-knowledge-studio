@@ -8,13 +8,6 @@
 import { makeT } from '@/lib/i18n/t'
 
 const messages = {
-  /**
-   * Hero header title of the home dashboard.
-   *
-   * Matches `nav.home.title` (the topbar's name for this view) so the shell and
-   * the view cannot disagree about what the current screen is called.
-   */
-  'home.title': 'Studio',
   /** Hero header subtitle of the home dashboard. */
   'home.subtitle': 'Your studio at a glance — recent work, counts, and where to go next.',
   /** Empty state headline shown in the recent-work section. */

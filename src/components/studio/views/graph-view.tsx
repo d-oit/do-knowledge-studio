@@ -16,6 +16,7 @@ import { buildAdjacencyIndex } from '@/lib/studio/graph-index'
 import { useAnnouncer } from '@/lib/a11y/announcer'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
 import { translate as graphT } from '@/lib/i18n/messages/graph'
+import { translate as navT } from '@/lib/i18n/messages/nav'
 import { ViewEmptyState, ViewHeader, VIEW_CONTAINER_CLASS } from '../ui/shared-primitives'
 import {
   buildGraphSnapshot,
@@ -283,7 +284,7 @@ const handleGraphKeyDown = useCallback(
 
   return (
     <div className={cn('flex h-full flex-col', VIEW_CONTAINER_CLASS)}>
-      <ViewHeader icon={GitFork} title={graphT('graph.title')} subtitle={graphT('graph.subtitle')} />
+      <ViewHeader icon={GitFork} title={navT('nav.graph.title')} subtitle={graphT('graph.subtitle')} />
 
       {/* Toolbar — extracted to GraphToolbar */}
       <GraphToolbar
