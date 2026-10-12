@@ -105,6 +105,15 @@ const refuseReads = (): void => {
   )
 }
 
+/** Simulates storage refusing the snapshot removal. */
+const refuseClear = (): void => {
+  scopedSpies.push(
+    vi.spyOn(localStorage, 'removeItem').mockImplementation(() => {
+      throw new Error('SecurityError')
+    }),
+  )
+}
+
 /** Restores every scoped spy, e.g. to assert on real storage mid-test. */
 const restoreScopedSpies = (): void => {
   for (const spy of scopedSpies.splice(0)) spy.mockRestore()
@@ -325,6 +334,34 @@ describe('restoreFromRecovery safety', () => {
     // after the user frees space or re-allows site data — must still find it.
     restoreScopedSpies()
     expect(localStorage.getItem(RECOVERY_KEY)).not.toBeNull()
+  })
+
+  it('reports that a successful restore really cleared the snapshot', () => {
+    persistRecoverySnapshot(smallSnapshot('a', 'A'))
+
+    const result = restoreFromRecovery()
+
+    expect(result).toEqual({ success: true, snapshotCleared: true })
+    expect(localStorage.getItem(RECOVERY_KEY)).toBeNull()
+  })
+
+  it('reports an un-cleared snapshot when the removal is refused after the restore lands', () => {
+    // The restore applies in memory, then storage refuses the removal. The
+    // corpus is back but the backup survives, so `describeRecoverySnapshot`
+    // will offer it again on the next load — a second restore could then
+    // overwrite the corpus the user just restored, plus any edits since.
+    // Reporting `{ success: true }` alone would hide that (GitNexus on PR #925).
+    persistRecoverySnapshot(smallSnapshot('a', 'A'))
+    refuseClear()
+
+    const result = restoreFromRecovery()
+
+    expect(result).toEqual({ success: true, snapshotCleared: false })
+    // The swap did land …
+    expect(useStudioStore.getState().entities).toHaveLength(1)
+    // … and the refusal is what leaves the offer alive for a later load.
+    restoreScopedSpies()
+    expect(describeRecoverySnapshot()).toEqual({ entityCount: 1, claimCount: 0 })
   })
 
   it('keeps the snapshot when applying it fails, so a retry stays possible', () => {

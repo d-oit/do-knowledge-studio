@@ -683,7 +683,7 @@ describe('Studio Store branch coverage', () => {
     it('restores state and clears the key on success', () => {
       localStorage.setItem(RECOVERY_KEY, JSON.stringify(validPayload()))
       const result = restoreFromRecovery()
-      expect(result).toEqual({ success: true })
+      expect(result).toEqual({ success: true, snapshotCleared: true })
       const { entities } = useStudioStore.getState()
       expect(entities).toHaveLength(1)
       expect(entities[0].id).toBe('rec-1')

@@ -291,6 +291,20 @@ const applyRecoverySnapshot = (snapshot: ValidatedRecoverySnapshot): void => {
 }
 
 /**
+ * Outcome of restoring the pre-import snapshot.
+ *
+ * A successful restore also reports whether the snapshot was really cleared.
+ * `false` means storage refused the removal, so the backup survives and
+ * `describeRecoverySnapshot` will offer it again on the next load — a second
+ * restore could then overwrite the corpus the user just restored, plus any
+ * edits since. Callers that promise the snapshot no longer exists must branch
+ * on `snapshotCleared` rather than assume the success means it.
+ */
+export type RestoreFromRecoveryResult =
+  | { success: true; snapshotCleared: boolean }
+  | { success: false; error: string }
+
+/**
  * Restores store state from the recovery snapshot and clears it afterward.
  *
  * Clearing is the point of no return: the snapshot is the only copy of the
@@ -298,7 +312,7 @@ const applyRecoverySnapshot = (snapshot: ValidatedRecoverySnapshot): void => {
  * have landed, and never on a failure path — a user who is told the restore
  * failed must still be able to retry.
  */
-export const restoreFromRecovery = (): { success: boolean; error?: string } => {
+export const restoreFromRecovery = (): RestoreFromRecoveryResult => {
   // A refused hydration latches the persist writer off for the rest of the page
   // session (ADR 028), so the swap below would be dropped on the way to storage
   // while `clearRecoverySnapshot` deleted the only copy — the user would be told
@@ -328,8 +342,11 @@ export const restoreFromRecovery = (): { success: boolean; error?: string } => {
     }
   }
 
-  clearRecoverySnapshot()
-  return { success: true }
+  // The restore landed, but the removal may still be refused. Report whether
+  // the key is really gone so a caller cannot promise a safety net that is
+  // still there (see `clearRecoverySnapshot`).
+  const snapshotCleared = clearRecoverySnapshot()
+  return { success: true, snapshotCleared }
 }
 
 /** Human-readable summary of a restorable pre-import snapshot. */

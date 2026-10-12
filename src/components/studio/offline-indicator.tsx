@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { WifiOff } from "lucide-react";
 import { useReducedMotion } from "@/lib/studio/use-reduced-motion";
+import { useIsomorphicLayoutEffect } from "@/lib/use-isomorphic-layout-effect";
 import { translate } from "@/lib/i18n/messages/presence";
 
 const ANIMATION_VARIANTS = {
@@ -51,12 +52,20 @@ export function OfflineIndicator() {
   // narrow viewport and changes with text zoom, and a wrong constant would
   // reintroduce the obstruction at exactly one viewport.
   //
+  // A LAYOUT effect, not a passive one: the shell reserves this via
+  // `paddingTop: var(--offline-banner-height, 0px)`, and a passive effect lands
+  // after paint. Under `initial="visible"` (reduced motion) the banner is
+  // already at rest on the mounting paint, so the passive version left that
+  // first frame with 0px reserved and the topbar under the banner. Publishing
+  // before paint closes the gap. The server has no layout to read, so the
+  // isomorphic alias falls back to `useEffect` there.
+  //
   // The reservation is deliberately NOT dropped in this effect's cleanup: when
   // the connection returns, `AnimatePresence` keeps the banner mounted for its
   // exit animation, and removing the padding while the banner is still visible
   // would slide the topbar back under it for the duration of the exit (GitNexus
   // on PR #925). `onExitComplete` is the single place the reservation ends.
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const banner = bannerRef.current;
     if (!isOffline || banner === null) return;
 

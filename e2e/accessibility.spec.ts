@@ -225,12 +225,13 @@ test.describe('Offline banner', () => {
 
     await context.setOffline(true);
 
-    // The banner mounts (already at its resting position under reduced motion)
-    // one frame before the shell reserves its height, so probing immediately
-    // reported an empty obstruction list even on the broken layout: measured,
-    // this test passed 3 of 6 mobile runs before it waited. Poll the
-    // precondition — and report it, so a failure says "only 0px of 56px
-    // reserved" instead of an inscrutable timeout.
+    // The banner mounts and the shell reserves its height in the SAME paint
+    // (OfflineIndicator publishes `--offline-banner-height` from a layout
+    // effect), so under reduced motion the reservation is already in place when
+    // the banner first appears. The poll is kept as a precondition/diagnostic
+    // rather than to paper over a frame gap: it reports "only 0px of 56px
+    // reserved" instead of an inscrutable geometric failure if the reservation
+    // ever regresses, and it also covers the non-reduced-motion slide-in.
     await expect
       .poll(
         () =>
