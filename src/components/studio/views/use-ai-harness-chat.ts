@@ -6,6 +6,7 @@ import { sendChatStream, buildMessagesAsync, useRateLimiter } from '@/lib/ai'
 import type { ChatMessage } from '@/lib/ai'
 import type { Entity, Claim } from '@/lib/studio/types'
 import type { AIProvider } from '@/lib/studio/ai-settings'
+import { translate as tAi } from '@/lib/i18n/messages/ai'
 
 const INITIAL_ASSISTANT_MESSAGE: ChatMessage = {
   role: 'assistant',
@@ -190,10 +191,20 @@ export const useAiHarnessChat = ({
       // whatever already streamed and adds nothing: the bubble only exists once
       // content does, so an aborted turn never leaves an empty bubble behind.
       if (err instanceof DOMException && err.name === 'AbortError') return
-      const msg = err instanceof Error ? err.message : 'Unknown error'
+      // The raw error (which can carry provider JSON bodies) belongs in the
+      // diagnostic log; the transcript only ever gets friendly copy (#884).
+      console.error('AI harness send failed:', err)
+      const raw = err instanceof Error ? err.message : ''
+      const friendly = /error 401|Unauthorized/i.test(raw)
+        ? tAi('ai.harness.error.unauthorized')
+        : /error 429/i.test(raw)
+          ? tAi('ai.harness.error.rateLimit')
+          : /Failed to fetch|NetworkError/i.test(raw)
+            ? tAi('ai.harness.error.network')
+            : tAi('ai.harness.error.unexpected')
       setMessages((m) => [
         ...m,
-        { role: 'assistant', content: `[Error] ${msg}\n\nCheck your provider settings and try again.` },
+        { role: 'assistant', content: `[Error] ${friendly}\n\n${tAi('ai.harness.error.hint')}` },
       ])
     } finally {
       setIsLoading(false)

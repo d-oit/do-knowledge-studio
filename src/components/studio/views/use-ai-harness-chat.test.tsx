@@ -92,14 +92,60 @@ describe('useAiHarnessChat', () => {
     expect(assistantMessages.at(-1)?.content).toBe('streamed')
   })
 
-  it('surfaces a provider failure as an error message', async () => {
+  it('maps an unrecognized provider failure to the generic friendly copy', async () => {
     mockSendChatStream.mockRejectedValue(new Error('provider exploded'))
 
     const hook = await sendMessage('hi')
 
     const last = hook.result.current.messages.at(-1)
     expect(last?.role).toBe('assistant')
-    expect(last?.content).toContain('[Error] provider exploded')
+    // Raw provider text must not leak into the transcript (plan 160 / #884).
+    expect(last?.content).toContain('[Error] The provider returned an unexpected error.')
+    expect(last?.content).not.toContain('provider exploded')
+  })
+
+  it('maps a 401 / rejected API key to the auth friendly copy', async () => {
+    mockSendChatStream.mockRejectedValue(
+      new Error('OpenRouter error 401: {"error":{"message":"Invalid API key","code":401}}'),
+    )
+
+    const hook = await sendMessage('hi')
+
+    const last = hook.result.current.messages.at(-1)
+    expect(last?.content).toContain('Your API key was rejected')
+    // Raw JSON body never reaches the bubble.
+    expect(last?.content).not.toContain('Invalid API key')
+    expect(last?.content).not.toContain('{')
+  })
+
+  it('maps a 429 rate-limit to the wait-and-retry friendly copy', async () => {
+    mockSendChatStream.mockRejectedValue(new Error('OpenRouter error 429: rate limited'))
+
+    const hook = await sendMessage('hi')
+
+    const last = hook.result.current.messages.at(-1)
+    expect(last?.content).toContain('The provider is rate-limiting requests')
+    expect(last?.content).not.toContain('429')
+  })
+
+  it('maps a network failure to the connection friendly copy', async () => {
+    mockSendChatStream.mockRejectedValue(new Error('Failed to fetch'))
+
+    const hook = await sendMessage('hi')
+
+    const last = hook.result.current.messages.at(-1)
+    expect(last?.content).toContain('Cannot reach the provider')
+  })
+
+  it('logs the raw provider error via console.error for diagnostics', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    try {
+      mockSendChatStream.mockRejectedValue(new Error('OpenRouter error 401: raw body'))
+      await sendMessage('hi')
+      expect(spy).toHaveBeenCalledWith('AI harness send failed:', expect.anything())
+    } finally {
+      spy.mockRestore()
+    }
   })
 
   it('leaves no empty assistant bubble behind when the provider fails', async () => {

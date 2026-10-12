@@ -250,6 +250,7 @@ describe('AIHarnessView branch coverage', () => {
   })
 
   it('adds error message when sendChatStream throws', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     aiMocks.mockSendChatStream.mockRejectedValue(new Error('boom'))
     await act(async () => {
       render(<AIHarnessView />)
@@ -259,7 +260,9 @@ describe('AIHarnessView branch coverage', () => {
     fireEvent.change(keyInput, { target: { value: 'test-key' } })
     await sendMessage('Hello')
     await waitFor(() => {
-      expect(screen.getByText(/\[Error\] boom/)).toBeDefined()
+      // Raw provider text must not reach the transcript (#884) — only friendly copy.
+      expect(screen.getByText(/The provider returned an unexpected error\./)).toBeDefined()
+      expect(errorSpy).toHaveBeenCalledWith('AI harness send failed:', expect.anything())
     })
   })
 
