@@ -103,8 +103,23 @@ describe('exportElementAsPng', () => {
 
   it('reads the paper token from the document when one is available', () => {
     const PAPER_FROM_TOKEN = 'rgb(12, 34, 56)'
+    // Ask for a *named* property and refuse anything else: a mock that returns
+    // the paper colour for any argument passes even when the production code
+    // reads a misspelled custom property, which is the failure mode this test
+    // exists to catch (review on #938).
+    const requestedProperties: string[] = []
     vi.mocked(window.getComputedStyle).mockImplementation(
-      () => ({ backgroundColor: NO_BACKGROUND, getPropertyValue: () => PAPER_FROM_TOKEN }) as unknown as CSSStyleDeclaration,
+      () =>
+        ({
+          backgroundColor: NO_BACKGROUND,
+          getPropertyValue: (property: string) => {
+            requestedProperties.push(property)
+            if (property !== '--background') {
+              throw new Error(`unexpected custom property read: ${property}`)
+            }
+            return PAPER_FROM_TOKEN
+          },
+        }) as unknown as CSSStyleDeclaration,
     )
     const element = document.createElement('div')
     const clone = document.createElement('div')
@@ -113,6 +128,9 @@ describe('exportElementAsPng', () => {
     exportElementAsPng(element, FILENAME)
 
     expect(clone.style.background).toBe(PAPER_FROM_TOKEN)
+    // The token the view reads is part of the contract: `--background` is the
+    // paper colour in both themes (see `PAPER_TOKEN` in mindmap-export.ts).
+    expect(requestedProperties).toEqual(['--background'])
   })
 
   it('sizes the clone to the element box so the raster matches the canvas', () => {

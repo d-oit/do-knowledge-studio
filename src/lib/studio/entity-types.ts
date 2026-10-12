@@ -108,7 +108,7 @@ const builtinTypeDefs: EntityTypeDef[] = (Object.keys(ENTITY_TYPE_META) as Entit
  *   label: 'Roadmap',
  *   color: 'saffron',
  *   bg: 'bg-saffron/15',
- *   text: 'text-saffron',
+ *   text: 'text-saffron-deep',
  *   dot: 'bg-saffron',
  *   icon: Map,
  * })

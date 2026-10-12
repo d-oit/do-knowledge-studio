@@ -76,7 +76,7 @@ same family.
 
 | Token     | Light value | Dark value | Entity type | Classes from `ENTITY_TYPE_META` |
 |-----------|-------------|------------|-------------|---------------------------------|
-| `--sky`   | `#6b8aa8`   | `#8eaac7`  | note        | `bg-sky/15 text-sky-deep`, `bg-sky` dot |
+| `--sky` / `--sky-deep` | `#6b8aa8` / `#2b4d6b` | `#8eaac7` / `#b7d2ea` | note | `bg-sky/15 text-sky-deep`, `bg-sky` dot |
 | `--saffron` / `--saffron-deep` | `#9a5c2a` / `#6a4a1c` | `#e5944a` / `#f5b074` | concept | `bg-saffron/15 text-saffron-deep`, `bg-saffron` dot |
 | `--clay` / `--clay-deep` | `#b8593a` / `#8a3320` | `#d4795a` / `#f0b8a4` | person | `bg-clay/15 text-clay-deep`, `bg-clay` dot |
 | `--sage` / `--sage-deep` | `#587465` / `#2f5b4a` | `#84a597` / `#a9d0bc` | project | `bg-sage/15 text-sage-deep`, `bg-sage` dot |
