@@ -115,7 +115,7 @@ const VIEW_ELEMENTS = new Map<ViewId, React.ReactNode>([
 const SyncUnavailable = () => (
   <div role="status" data-testid="sync-unavailable" className="mx-auto max-w-5xl px-6 py-6 lg:px-10 lg:py-8">
     <h2 className="font-serif text-lg font-semibold text-ink">Sync is unavailable</h2>
-    <p className="mt-2 text-[13px] text-ink-soft">
+    <p className="mt-2 text-body-sm text-ink-soft">
       Your library could not be loaded, so this session is working on temporary data. Syncing
       would publish that temporary library and overwrite the real one in your other tabs. Sync
       returns by itself once this page loads a library it can read.
@@ -283,7 +283,7 @@ export const AppShell = () => {
           </div>
           <RightPanel />
         </main>
-        <footer role="contentinfo" className="border-t border-border px-5 py-2 text-[11px] text-ink-faint">
+        <footer role="contentinfo" className="border-t border-border px-5 py-2 text-label text-ink-faint">
           Knowledge Studio — local-first knowledge engine
         </footer>
       </div>

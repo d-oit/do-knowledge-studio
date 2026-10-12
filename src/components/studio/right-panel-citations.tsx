@@ -33,7 +33,7 @@ export const CitationsPanel = ({ chat, entities, onClose }: CitationsPanelProps)
       <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
         <div className="flex items-center gap-2">
           <Quote className="h-3.5 w-3.5 text-saffron" />
-          <h2 className="font-serif text-[14px] font-semibold text-ink">Cited sources</h2>
+          <h2 className="font-serif text-body font-semibold text-ink">Cited sources</h2>
         </div>
         <PanelCloseButton onClose={onClose} />
       </div>
@@ -42,7 +42,7 @@ export const CitationsPanel = ({ chat, entities, onClose }: CitationsPanelProps)
         {citations.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-12 text-center">
             <Sparkles className="h-8 w-8 text-ink-faint/40" />
-            <p className="px-6 text-[12px] text-ink-mute">
+            <p className="px-6 text-label-lg text-ink-mute">
               When the assistant cites your library, the sources appear here for verification.
             </p>
           </div>
@@ -57,7 +57,7 @@ export const CitationsPanel = ({ chat, entities, onClose }: CitationsPanelProps)
                   <span className="flex h-4 w-4 items-center justify-center rounded-full bg-saffron text-badge font-bold text-saffron-foreground">
                     {index + 1}
                   </span>
-                  <span className="text-[12px] font-medium text-ink">{citation.entityName}</span>
+                  <span className="text-label-lg font-medium text-ink">{citation.entityName}</span>
                 </div>
                 <p className="text-label leading-snug text-ink-mute">{citation.snippet}</p>
               </li>

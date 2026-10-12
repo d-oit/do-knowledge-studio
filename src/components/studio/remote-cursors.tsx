@@ -52,7 +52,7 @@ function CursorOverlay({ cursor }: { cursor: RemoteCursor }) {
       </svg>
       {/* Name label */}
       <div
-        className="absolute left-4 top-4 whitespace-nowrap rounded px-1.5 py-0.5 text-[10px] font-medium text-white shadow-sm"
+        className="absolute left-4 top-4 whitespace-nowrap rounded px-1.5 py-0.5 text-caption font-medium text-white shadow-sm"
         style={{ backgroundColor: cursor.color }}
       >
         {cursor.name}

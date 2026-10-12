@@ -95,15 +95,16 @@ describe('ShortcutsDialog', () => {
 
     const filterInput = screen.getByLabelText('Filter shortcuts') as HTMLInputElement
     expect(filterInput.type).toBe('search')
+    expect(filterInput.className).toContain('min-h-[44px]')
     expect(filterInput.value).toBe('')
     expect(filterInput.className).toContain('pr-3')
-    expect(filterInput.className).not.toContain('pr-11')
+    expect(filterInput.className).not.toContain('pr-13')
     expect(screen.queryByLabelText('Clear filter search')).toBeNull()
 
     // Type filter text
     fireEvent.change(filterInput, { target: { value: 'Bold' } })
     expect(filterInput.value).toBe('Bold')
-    expect(filterInput.className).toContain('pr-11')
+    expect(filterInput.className).toContain('pr-13')
     expect(screen.getByRole('status').textContent).toBe('1 shortcut found')
 
     // Clear button should now be visible
@@ -115,7 +116,7 @@ describe('ShortcutsDialog', () => {
     fireEvent.click(clearBtn)
     expect(filterInput.value).toBe('')
     expect(filterInput.className).toContain('pr-3')
-    expect(filterInput.className).not.toContain('pr-11')
+    expect(filterInput.className).not.toContain('pr-13')
     expect(screen.queryByLabelText('Clear filter search')).toBeNull()
 
     // Clearing should restore focus to the filter input.

@@ -43,13 +43,13 @@ export const AiHarnessProviderSetup = ({ onOpenSettings }: AiHarnessProviderSetu
           <KeyRound className="h-4 w-4" aria-hidden="true" />
         </div>
         <div>
-          <h2 id="provider-setup-title" className="font-serif text-[15px] font-semibold text-ink">
+          <h2 id="provider-setup-title" className="font-serif text-body-lg font-semibold text-ink">
             {PROVIDER_SETUP_TITLE}
           </h2>
-          <p className="mt-1 text-[13px] leading-relaxed text-ink-mute">
+          <p className="mt-1 text-body-sm leading-relaxed text-ink-mute">
             {PROVIDER_SETUP_DESCRIPTION}
           </p>
-          <p className="mt-2 text-[12px] leading-relaxed text-ink-mute">
+          <p className="mt-2 text-label-lg leading-relaxed text-ink-mute">
             {PROVIDER_SETUP_CONTEXT_NOTE}
           </p>
           <ProviderSetupBadges />

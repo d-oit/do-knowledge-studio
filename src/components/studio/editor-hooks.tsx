@@ -286,7 +286,7 @@ export const EditorStatusBar = ({
       {editing && (
         <button
           onClick={onDiscard}
-          className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-destructive/10 hover:text-destructive focus-ring min-h-[44px]"
+          className="rounded-md border border-border px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-colors hover:bg-destructive/10 hover:text-destructive focus-ring min-h-[44px]"
         >
           {DISCARD_CHANGES_TEXT}
         </button>
@@ -294,7 +294,7 @@ export const EditorStatusBar = ({
       <button
         onClick={onSave}
         disabled={!nameValid}
-        className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 press-scale focus-ring min-h-[44px]"
+        className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-label-lg font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 press-scale focus-ring min-h-[44px]"
       >
         <Save className="h-3.5 w-3.5" />
         {editing ? COMMIT_CHANGES_TEXT : SAVE_TO_LIBRARY_TEXT}

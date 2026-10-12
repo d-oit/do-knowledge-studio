@@ -72,7 +72,7 @@ const TimelineRow = memo(function TimelineRow({
       >
         <RowIcon entityType={entityType} meta={meta} />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[13px] font-medium text-ink group-hover:text-saffron-deep">
+          <span className="block truncate text-body-sm font-medium text-ink group-hover:text-saffron-deep">
             {item.label}
           </span>
         </span>
@@ -142,7 +142,7 @@ export const TimelineView = () => {
               <ol className="space-y-3">
                 {group.days.map((day) => (
                   <li key={day.day.toISOString()}>
-                    <h3 className="mb-1.5 text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+                    <h3 className="mb-1.5 text-label-lg font-semibold uppercase tracking-[0.14em] text-ink-faint">
                       {format(day.day, translate('timeline.dayFormat'))}
                     </h3>
                     <ol className="space-y-1.5">

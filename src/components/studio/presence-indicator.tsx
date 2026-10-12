@@ -20,7 +20,7 @@ export function PresenceIndicator({ className }: PresenceIndicatorProps) {
         {peers.slice(0, 5).map((peer) => (
           <div
             key={peer.deviceId}
-            className="flex h-5 w-5 items-center justify-center rounded-full border border-background text-[8px] font-bold text-white"
+            className="flex h-5 w-5 items-center justify-center rounded-full border border-background text-badge font-bold text-white"
             style={{ backgroundColor: peer.color }}
             title={peer.name}
           >
@@ -28,12 +28,12 @@ export function PresenceIndicator({ className }: PresenceIndicatorProps) {
           </div>
         ))}
         {peers.length > 5 && (
-          <div className="flex h-5 w-5 items-center justify-center rounded-full border border-background bg-muted text-[8px] font-bold text-ink-faint">
+          <div className="flex h-5 w-5 items-center justify-center rounded-full border border-background bg-muted text-badge font-bold text-ink-faint">
             +{peers.length - 5}
           </div>
         )}
       </div>
-      <span className="text-[11px] text-ink-faint">
+      <span className="text-label text-ink-faint">
         {translate('presence.online', String(peerCount))}
       </span>
     </div>
@@ -65,9 +65,9 @@ function PresenceRow({
   isLocal?: boolean
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-md px-2 py-1.5 text-[12px]">
+    <div className="flex items-center gap-2 rounded-md px-2 py-1.5 text-label-lg">
       <div
-        className="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold text-white"
+        className="flex h-6 w-6 items-center justify-center rounded-full text-caption font-bold text-white"
         style={{ backgroundColor: presence.color }}
       >
         {presence.name.charAt(0).toUpperCase()}
@@ -77,7 +77,7 @@ function PresenceRow({
           {presence.name}
           {isLocal && <span className="ml-1 text-ink-faint">{translate('presence.you')}</span>}
         </div>
-        <div className="text-[11px] text-ink-faint">
+        <div className="text-label text-ink-faint">
           {presence.currentView}
         </div>
       </div>

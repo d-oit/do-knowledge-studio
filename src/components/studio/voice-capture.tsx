@@ -111,7 +111,7 @@ export function VoiceCapture({ onEntityCreated, className }: VoiceCaptureProps) 
           )}
         </button>
         {isListening && interimTranscript && (
-          <span className="max-w-[300px] truncate text-[13px] text-ink-faint italic">
+          <span className="max-w-[300px] truncate text-body-sm text-ink-faint italic">
             {interimTranscript}
           </span>
         )}
@@ -119,7 +119,7 @@ export function VoiceCapture({ onEntityCreated, className }: VoiceCaptureProps) 
 
       {pendingIntent && !isListening && (
         <div className="rounded-lg border border-border bg-card p-3">
-          <div className="mb-2 text-[12px] font-medium text-ink">
+          <div className="mb-2 text-label-lg font-medium text-ink">
             {formatIntentSummary(pendingIntent)}
           </div>
 
@@ -130,14 +130,14 @@ export function VoiceCapture({ onEntityCreated, className }: VoiceCaptureProps) 
                 value={editName}
                 onChange={(e) => { setEditName(e.target.value) }}
                 placeholder="Entity name"
-                className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+                className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-body-sm text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
               />
               <textarea
                 value={editDescription}
                 onChange={(e) => { setEditDescription(e.target.value) }}
                 placeholder="Description (optional)"
                 rows={2}
-                className="w-full resize-none rounded-md border border-border bg-background px-2 py-1.5 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+                className="w-full resize-none rounded-md border border-border bg-background px-2 py-1.5 text-body-sm text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
               />
             </div>
           )}
@@ -145,14 +145,14 @@ export function VoiceCapture({ onEntityCreated, className }: VoiceCaptureProps) 
           <div className="mt-2 flex gap-2">
             <button
               onClick={handleConfirm}
-              className="flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground transition-all hover:opacity-90 press-scale focus-ring"
+              className="flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-label-lg font-medium text-primary-foreground transition-all hover:opacity-90 press-scale focus-ring"
             >
               <Check className="h-3.5 w-3.5" />
               Confirm
             </button>
             <button
               onClick={handleDismiss}
-              className="flex items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
+              className="flex items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
             >
               <X className="h-3.5 w-3.5" />
               Dismiss
@@ -162,7 +162,7 @@ export function VoiceCapture({ onEntityCreated, className }: VoiceCaptureProps) 
       )}
 
       {error && (
-        <p className="text-[12px] text-red-500">{error}</p>
+        <p className="text-label-lg text-red-500">{error}</p>
       )}
     </div>
   )
