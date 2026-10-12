@@ -301,3 +301,25 @@ describe('LocalAdapter sendStream', () => {
     ).rejects.toMatchObject({ name: 'AbortError' })
   })
 })
+describe('LocalAdapter payload shape', () => {
+  it('never hands the UI-only message id to the model (#928)', async () => {
+    const generator = makeGenerator()
+    resolveWith(generator)
+
+    await localAdapter.send(
+      baseRequest({
+        messages: [
+          { id: 'init-assistant', role: 'assistant', content: 'ready' },
+          { id: 'u-1', role: 'user', content: 'hello' },
+        ],
+      }),
+    )
+
+    const handedMessages = generator.mock.calls[0][0]
+    expect(handedMessages).toEqual([
+      { role: 'assistant', content: 'ready' },
+      { role: 'user', content: 'hello' },
+    ])
+    expect(handedMessages[0]).not.toHaveProperty('id')
+  })
+})

@@ -8,6 +8,7 @@ import type {
 } from './types'
 import { DEFAULT_OLLAMA_BASE_URL, OPENROUTER_DEFAULT_TARGETS } from './types'
 import { localAdapter } from './local-adapter'
+import { toProviderMessages } from './provider-messages'
 import { validateOllamaUrl } from './url-guard'
 
 export { validateOllamaUrl }
@@ -141,7 +142,10 @@ class OpenRouterAdapter implements ProviderAdapter {
     const target = resolveOpenRouterTarget(model)
     const modelSlug = target.slug
 
-    const body: Record<string, unknown> = { model: modelSlug, messages }
+    const body: Record<string, unknown> = {
+      model: modelSlug,
+      messages: toProviderMessages(messages),
+    }
     if (target.default_params) {
       Object.assign(body, target.default_params)
     }
@@ -179,7 +183,11 @@ class OpenRouterAdapter implements ProviderAdapter {
     const target = resolveOpenRouterTarget(model)
     const modelSlug = target.slug
 
-    const body: Record<string, unknown> = { model: modelSlug, messages, stream: true }
+    const body: Record<string, unknown> = {
+      model: modelSlug,
+      messages: toProviderMessages(messages),
+      stream: true,
+    }
     if (target.default_params) {
       Object.assign(body, target.default_params)
     }
@@ -225,7 +233,7 @@ class OllamaAdapter implements ProviderAdapter {
 
     const body: Record<string, unknown> = {
       model: modelSlug,
-      messages,
+      messages: toProviderMessages(messages),
       stream: false,
     }
 
@@ -271,7 +279,7 @@ class OllamaAdapter implements ProviderAdapter {
 
     const body: Record<string, unknown> = {
       model: modelSlug,
-      messages,
+      messages: toProviderMessages(messages),
       stream: true,
     }
 

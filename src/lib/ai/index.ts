@@ -21,6 +21,8 @@ export {
 } from './types'
 
 export { getAdapter, sendChat, sendChatStream, fetchOllamaModels } from './providers'
+export { toProviderMessages } from './provider-messages'
+export type { ProviderMessage } from './provider-messages'
 export { localAdapter, DEFAULT_LOCAL_MODELS, LOCAL_DEFAULT_DEVICE } from './local-adapter'
 export { validateOllamaUrl } from './url-guard'
 export type { LocalModelOption } from './local-adapter'

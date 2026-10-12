@@ -275,7 +275,7 @@ describe('useAiHarnessChat', () => {
     expect(mockSendChatStream).toHaveBeenCalled()
   })
 
-  it('assigns unique ids to user and assistant messages and preserves assistant id across stream end', async () => {
+  it('assigns unique ids to user and assistant messages', async () => {
     mockSendChatStream.mockImplementation(async (_request, onChunk) => {
       onChunk('Chunk 1')
       onChunk(' Chunk 2')
@@ -302,4 +302,40 @@ describe('useAiHarnessChat', () => {
     expect(typeof assistantMsg.id).toBe('string')
   })
 
+  it('keeps the assistant id stable while the bubble is updated in place mid-stream (#928)', async () => {
+    const { promise: firstDeltaSeen, resolve: markFirstDelta } = Promise.withResolvers<void>()
+    const { promise: resumeStream, resolve: resume } = Promise.withResolvers<void>()
+
+    mockSendChatStream.mockImplementation(async (_request, onChunk) => {
+      onChunk('Chunk 1')
+      markFirstDelta()
+      await resumeStream
+      onChunk(' Chunk 2')
+      return resultFor('Chunk 1 Chunk 2')
+    })
+
+    const hook = renderHook(() => useAiHarnessChat({ ...baseOptions }))
+    act(() => { hook.result.current.setInput('hi') })
+    let pending: Promise<void> = Promise.resolve()
+    act(() => { pending = hook.result.current.handleSend() })
+
+    // Held open mid-stream: the turn has emitted one delta but not finished.
+    await act(async () => { await firstDeltaSeen })
+    await waitFor(() => { expect(hook.result.current.messages).toHaveLength(3) })
+
+    const midStreamAssistant = hook.result.current.messages.at(-1)
+    expect(midStreamAssistant?.role).toBe('assistant')
+    expect(midStreamAssistant?.content).toBe('Chunk 1')
+    const midStreamId = midStreamAssistant?.id
+    expect(midStreamId).toBeDefined()
+
+    act(() => { resume() })
+    await act(async () => { await pending })
+
+    const finalAssistant = hook.result.current.messages.at(-1)
+    expect(finalAssistant?.content).toBe('Chunk 1 Chunk 2')
+    // Same message object identity chain: the second delta updated the bubble
+    // in place rather than replacing it with a fresh id-less message.
+    expect(finalAssistant?.id).toBe(midStreamId)
+  })
 })

@@ -229,4 +229,44 @@ describe('AiHarnessChatPanel', () => {
     const elements = screen.getAllByText('Hello')
     expect(elements.length).toBe(3)
   })
+
+  it('keeps the assistant bubble mounted when streamed content changes (#928)', () => {
+    const transcript = (content: string): ChatMessage[] => [
+      { id: 'u-1', role: 'user', content: 'hi' },
+      { id: 'a-1', role: 'assistant', content },
+    ]
+    const { rerender } = render(
+      <AiHarnessChatPanel {...defaultProps} messages={transcript('Chunk 1')} />,
+    )
+
+    // A content-keyed `key` remounts the row on every delta, discarding this
+    // marker (and the DOM node) along with it.
+    const bubble = screen.getByText('Chunk 1')
+    bubble.dataset.probe = 'streamed-bubble'
+
+    rerender(<AiHarnessChatPanel {...defaultProps} messages={transcript('Chunk 1 Chunk 2')} />)
+
+    const updated = screen.getByText('Chunk 1 Chunk 2')
+    expect(updated.dataset.probe).toBe('streamed-bubble')
+    expect(updated).toBe(bubble)
+  })
+
+  it('keeps duplicate-content bubbles distinct when a later one updates (#928)', () => {
+    const transcript = (second: string): ChatMessage[] => [
+      { id: 'u-1', role: 'user', content: 'Hello' },
+      { id: 'u-2', role: 'user', content: second },
+    ]
+    const { rerender } = render(
+      <AiHarnessChatPanel {...defaultProps} messages={transcript('Hello')} />,
+    )
+
+    const [first, second] = screen.getAllByText('Hello')
+    first.dataset.probe = 'first-bubble'
+    second.dataset.probe = 'second-bubble'
+
+    rerender(<AiHarnessChatPanel {...defaultProps} messages={transcript('Hello there')} />)
+
+    expect(screen.getByText('Hello').dataset.probe).toBe('first-bubble')
+    expect(screen.getByText('Hello there').dataset.probe).toBe('second-bubble')
+  })
 })
