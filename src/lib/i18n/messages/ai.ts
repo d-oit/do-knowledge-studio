@@ -23,7 +23,7 @@ const messages = {
   'ai.local.error.empty': 'The local model returned an empty response.',
   'ai.chat.error.unauthorized': 'Your API key was rejected — check it in settings.',
   'ai.chat.error.rateLimited': 'The provider is rate-limiting requests — wait and retry.',
-  'ai.chat.error.network': 'Cannot reach the provider — check your connection or Ollama URL.',
+  'ai.chat.error.network': 'Cannot reach the provider — check your connection or provider settings.',
   'ai.chat.error.timeout': 'The provider took too long to respond (2 minute limit).',
   'ai.chat.error.unexpected': 'The provider returned an unexpected error.',
   'ai.chat.error.hint': 'Check your provider settings and try again.',

@@ -129,7 +129,7 @@ describe('useAiHarnessChat', () => {
 
     const last = hook.result.current.messages.at(-1)
     expect(last?.role).toBe('assistant')
-    expect(last?.content).toContain('[Error] Cannot reach the provider — check your connection or Ollama URL.')
+    expect(last?.content).toContain('[Error] Cannot reach the provider — check your connection or provider settings.')
     consoleSpy.mockRestore()
   })
 
