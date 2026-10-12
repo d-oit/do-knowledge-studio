@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act } from 'react'
 import type { ReactNode } from 'react'
+import type * as SharedPrimitives from '../ui/shared-primitives'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import type { ChatResult } from '@/lib/ai'
 
@@ -93,8 +94,8 @@ vi.mock('@/lib/ai/types', () => ({
 
 vi.mock('./ai-harness-settings', () => ({
   PROVIDERS: [
-    { id: 'openrouter', label: 'OpenRouter', models: ['openrouter/free'], requiresKey: true },
-    { id: 'ollama', label: 'Ollama (local)', models: ['llama3'], requiresKey: false },
+    { id: 'openrouter', label: 'OpenRouter', requiresKey: true },
+    { id: 'ollama', label: 'Ollama (local)', requiresKey: false },
   ],
   Field: ({ label, children }: { label: string; children?: ReactNode }) => (
     <div data-testid="field">
@@ -104,11 +105,16 @@ vi.mock('./ai-harness-settings', () => ({
   ),
 }))
 
-vi.mock('../ui/shared-primitives', () => ({
-  SwitchToggle: ({ label }: { label: string }) => (
-    <label data-testid="switch-toggle">{label}</label>
-  ),
-}))
+vi.mock('../ui/shared-primitives', async () => {
+  // Keep the real view chrome (the hero header holds the settings toggle).
+  const actual = await vi.importActual<typeof SharedPrimitives>('../ui/shared-primitives')
+  return {
+    ...actual,
+    SwitchToggle: ({ label }: { label: string }) => (
+      <label data-testid="switch-toggle">{label}</label>
+    ),
+  }
+})
 
 const mockEntities = [
   {

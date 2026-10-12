@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test';
-import { navClick } from './helpers/navigation';
+import { navClick, viewHeading } from './helpers/navigation';
 
 test.describe('Search and filter', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await navClick(page, /library/i);
-    await expect(page.getByRole('heading', { name: /library/i })).toBeVisible();
+    await expect(viewHeading(page, /library/i)).toBeVisible();
   });
 
   test('search input is visible and focusable', async ({ page }) => {
@@ -18,7 +18,7 @@ test.describe('Search and filter', () => {
   test('typing in search filters entities', async ({ page }) => {
     const searchInput = page.getByRole('searchbox', { name: /search library/i });
     await searchInput.fill('test');
-    await expect(page.getByRole('heading', { name: /library/i })).toBeVisible();
+    await expect(viewHeading(page, /library/i)).toBeVisible();
   });
 
   test('clear search button appears when text is entered', async ({ page }) => {

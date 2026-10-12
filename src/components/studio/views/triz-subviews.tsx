@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
-import { ToggleButtonGroup } from '../ui/shared-primitives'
+import { ToggleButtonGroup, ViewHeader } from '../ui/shared-primitives'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { ParamPicker } from './triz-helpers'
 import { filterParams } from './triz-view-utils'
@@ -25,25 +25,6 @@ interface TrizHeaderProps {
   hasSelection: boolean
   onReset: () => void
 }
-
-const TrizBranding = () => (
-  <div className="mb-2 flex items-center gap-2">
-    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-saffron to-clay text-white shadow-sm">
-      <Grid3X3 className="h-5 w-5" />
-    </div>
-    <div>
-      <div className="flex items-center gap-2">
-        <h2 className="font-serif text-2xl font-semibold text-ink">{translate('triz.branding.title')}</h2>
-        <span className="rounded-full border border-dashed border-saffron/50 px-2 py-0 text-badge font-semibold uppercase tracking-wide text-saffron-deep">
-          {translate('triz.branding.lab')}
-        </span>
-      </div>
-      <p className="text-[12px] text-ink-mute">
-        {translate('triz.branding.subtitle')}
-      </p>
-    </div>
-  </div>
-)
 
 interface TrizHeaderControlsProps {
   view: TrizViewId
@@ -62,7 +43,7 @@ const TrizHeaderControls = ({
 }: TrizHeaderControlsProps) => {
   const toggleClasses = (active: boolean) =>
     cn(
-      'rounded px-2.5 py-1 text-[12px] font-medium transition-colors focus-ring min-h-[44px]',
+      'rounded px-2.5 py-1 text-label-lg font-medium transition-colors focus-ring min-h-[44px]',
       active ? 'bg-primary text-primary-foreground shadow-sm' : 'text-ink-mute hover:text-ink',
     )
   return (
@@ -122,7 +103,17 @@ export const TrizHeader = (props: TrizHeaderProps) => {
       transition={reducedMotion ? { duration: 0 } : undefined}
       className="mb-6"
     >
-      <TrizBranding />
+      <ViewHeader
+        icon={Grid3X3}
+        title={translate('triz.branding.title')}
+        subtitle={translate('triz.branding.subtitle')}
+        badge={
+          <span className="rounded-full border border-dashed border-saffron/50 px-2 py-0 text-badge font-semibold uppercase tracking-wide text-saffron-deep">
+            {translate('triz.branding.lab')}
+          </span>
+        }
+        className="mb-2"
+      />
       <TrizHeaderControls {...props} />
     </motion.div>
   )

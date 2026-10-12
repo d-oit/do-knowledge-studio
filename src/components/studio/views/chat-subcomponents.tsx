@@ -7,6 +7,7 @@ import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { sanitizeUrl } from '@/lib/security'
 import { cn } from '@/lib/utils'
+import { VIEW_GUTTER_CLASS } from '../ui/shared-primitives'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ChatMessage } from '@/lib/studio/types'
 
@@ -99,12 +100,12 @@ export const WelcomePanel = ({ reducedMotion, onSend }: WelcomePanelProps) => (
       <MessageSquare className="h-8 w-8" />
     </div>
     <h2 className="mb-2 font-serif text-lg font-semibold text-ink">Ask your library</h2>
-    <p className="mb-4 max-w-sm text-[14px] text-ink-mute">{CHAT_WELCOME_DESCRIPTION}</p>
+    <p className="mb-4 max-w-sm text-body text-ink-mute">{CHAT_WELCOME_DESCRIPTION}</p>
     <div className="mb-6 max-w-md text-left">
       <p className="mb-2 text-label font-semibold uppercase tracking-wide text-ink-faint">
         {CHAT_CAPABILITIES_LABEL}
       </p>
-      <ul className="space-y-1.5 text-[13px] text-ink-mute">
+      <ul className="space-y-1.5 text-body-sm text-ink-mute">
         {CHAT_CAPABILITIES.map((capability) => (
           <li key={capability} className="flex gap-2">
             <span aria-hidden="true" className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-saffron" />
@@ -123,7 +124,7 @@ export const WelcomePanel = ({ reducedMotion, onSend }: WelcomePanelProps) => (
           onClick={() => {
             onSend(s.query)
           }}
-          className="rounded-full border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-all hover:border-saffron/40 hover:text-ink press-scale focus-ring min-h-[44px]"
+          className="rounded-full border border-border bg-background px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-all hover:border-saffron/40 hover:text-ink press-scale focus-ring min-h-[44px]"
         >
           {s.label}
         </button>
@@ -244,7 +245,7 @@ export const MessageList = ({
         <div className={cn('max-w-[80%] space-y-1.5', m.role === 'user' && 'items-end')}>
           <div
             className={cn(
-              'rounded-2xl px-4 py-3 text-[14px] leading-relaxed',
+              'rounded-2xl px-4 py-3 text-body leading-relaxed',
               m.role === 'user'
                 ? 'bg-primary text-primary-foreground rounded-tr-sm'
                 : 'bg-card border border-border text-ink rounded-tl-sm',
@@ -318,7 +319,7 @@ export interface SuggestionsBarProps {
 
 /** Quick prompt chips shown between the message list and the input. */
 export const SuggestionsBar = ({ onSend }: SuggestionsBarProps) => (
-  <div className="border-t border-border bg-muted/20 px-5 py-3 lg:px-10">
+  <div className={cn('border-t border-border bg-muted/20 py-3', VIEW_GUTTER_CLASS)}>
     <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-2">
       <span className="flex items-center gap-1 text-label font-medium text-ink-faint">
         <Sparkles className="h-3 w-3" />
@@ -330,7 +331,7 @@ export const SuggestionsBar = ({ onSend }: SuggestionsBarProps) => (
           onClick={() => {
             onSend(s.query)
           }}
-          className="rounded-full border border-border bg-background px-3 py-1 text-[12px] font-medium text-ink-soft transition-all hover:border-saffron/40 hover:text-ink press-scale focus-ring min-h-[44px]"
+          className="rounded-full border border-border bg-background px-3 py-1 text-label-lg font-medium text-ink-soft transition-all hover:border-saffron/40 hover:text-ink press-scale focus-ring min-h-[44px]"
         >
           {s.label}
         </button>
@@ -368,7 +369,7 @@ export const InputBar = ({
   }
 
   return (
-    <div className="border-t border-border bg-background px-5 py-4 lg:px-10">
+    <div className={cn('border-t border-border bg-background py-4', VIEW_GUTTER_CLASS)}>
       <div className="mx-auto max-w-3xl">
         <div className="flex items-end gap-2 rounded-xl border border-border bg-card p-2 shadow-sm transition-colors focus-within:border-saffron/50">
           <textarea
@@ -383,7 +384,7 @@ export const InputBar = ({
             maxLength={MAX_INPUT_LENGTH}
             disabled={chatLoading}
             aria-label="Chat message"
-            className="max-h-32 flex-1 resize-none bg-transparent px-2 py-1.5 text-[14px] text-ink placeholder:text-ink-faint focus:outline-none disabled:opacity-50"
+            className="max-h-32 flex-1 resize-none bg-transparent px-2 py-1.5 text-body text-ink placeholder:text-ink-faint focus:outline-none disabled:opacity-50"
           />
           <VoiceInput
             onTranscript={(text) => {

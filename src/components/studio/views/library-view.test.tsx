@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { ReactNode } from 'react'
+import type * as SharedPrimitives from '../ui/shared-primitives'
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
 
 vi.mock('framer-motion', () => ({
@@ -64,11 +65,16 @@ vi.mock('@/lib/studio/use-reduced-motion', () => ({
   useReducedMotion: () => false,
 }))
 
-vi.mock('../ui/shared-primitives', () => ({
-  ToggleButtonGroup: ({ children }: { children?: ReactNode; label?: string }) => (
-    <div data-testid="toggle-group">{children}</div>
-  ),
-}))
+vi.mock('../ui/shared-primitives', async () => {
+  // Keep the real view chrome so the library empty states render their actions.
+  const actual = await vi.importActual<typeof SharedPrimitives>('../ui/shared-primitives')
+  return {
+    ...actual,
+    ToggleButtonGroup: ({ children }: { children?: ReactNode; label?: string }) => (
+      <div data-testid="toggle-group">{children}</div>
+    ),
+  }
+})
 
 const mockSetTypeFilter = vi.fn()
 const mockSetSortBy = vi.fn()
@@ -236,7 +242,9 @@ describe('LibraryView', () => {
 
   it('search input has correct aria-label', () => {
     render(<LibraryView />)
-    expect(screen.getByLabelText('Search library')).toBeDefined()
+    const input = screen.getByLabelText('Search library')
+    expect(input).toBeDefined()
+    expect(input.className).toContain('min-h-[44px]')
   })
 
   it('control buttons expose matching tooltips', () => {

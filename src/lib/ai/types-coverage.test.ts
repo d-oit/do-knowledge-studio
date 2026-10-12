@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
   PROVIDER_LABELS,
-  OPENROUTER_DEFAULT_MODELS,
   OLLAMA_DEFAULT_MODELS,
   DEFAULT_MODEL,
   DEFAULT_OLLAMA_BASE_URL,
@@ -29,11 +28,6 @@ describe('AI types: constants', () => {
 
   it('LOCAL_PROVIDER_ID is the local provider id', () => {
     expect(LOCAL_PROVIDER_ID).toBe('local')
-  })
-
-  it('OPENROUTER_DEFAULT_MODELS is a non-empty array', () => {
-    expect(Array.isArray(OPENROUTER_DEFAULT_MODELS)).toBe(true)
-    expect(OPENROUTER_DEFAULT_MODELS.length).toBeGreaterThan(0)
   })
 
   it('OLLAMA_DEFAULT_MODELS is a non-empty array', () => {
@@ -77,13 +71,6 @@ describe('AI types: constants', () => {
       expect(target).toHaveProperty('kind')
       expect(target).toHaveProperty('slug')
       expect(target).toHaveProperty('display_name')
-    }
-  })
-
-  it('OPENROUTER_DEFAULT_MODELS are strings', () => {
-    for (const model of OPENROUTER_DEFAULT_MODELS) {
-      expect(typeof model).toBe('string')
-      expect(model.length).toBeGreaterThan(0)
     }
   })
 

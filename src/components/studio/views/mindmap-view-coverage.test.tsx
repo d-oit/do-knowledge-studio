@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { ReactNode } from 'react'
+import type * as SharedPrimitives from '../ui/shared-primitives'
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react'
 
 vi.mock('framer-motion', () => ({
@@ -38,9 +39,14 @@ vi.mock('@/lib/utils', () => ({
   cn: (...args: (string | undefined | false | null)[]) => args.filter(Boolean).join(' '),
 }))
 
-vi.mock('../ui/shared-primitives', () => ({
-  Divider: () => <hr data-testid="divider" />,
-}))
+vi.mock('../ui/shared-primitives', async () => {
+  // Keep the real view chrome so the empty state renders its create action.
+  const actual = await vi.importActual<typeof SharedPrimitives>('../ui/shared-primitives')
+  return {
+    ...actual,
+    Divider: () => <hr data-testid="divider" />,
+  }
+})
 
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
@@ -56,6 +62,7 @@ const mockSetView = vi.fn()
 const mockCommitEntities = vi.fn()
 const mockDeleteEntity = vi.fn()
 const mockStartEdit = vi.fn()
+const mockStartNew = vi.fn()
 const mockUndo = vi.fn()
 const mockRedo = vi.fn()
 
@@ -116,6 +123,7 @@ vi.mock('@/lib/studio/store', () => ({
       commitEntities: mockCommitEntities,
       deleteEntity: mockDeleteEntity,
       startEdit: mockStartEdit,
+      startNew: mockStartNew,
       undo: mockUndo,
       redo: mockRedo,
       entityHistory: currentEntityHistory,
@@ -368,7 +376,7 @@ describe('MindMapView branch coverage', () => {
       const toggle = screen.getByTestId('mindmap-compact-toggle')
       expect(toggle.getAttribute('aria-pressed')).toBe('false')
       expect(nodeRowClass('Child Entity')).toContain('px-3')
-      expect(labelClass('Child Entity')).toContain('text-[13px]')
+      expect(labelClass('Child Entity')).toContain('text-body-sm')
       expect(screen.getByText(/Comfortable/)).toBeDefined()
     })
 
@@ -381,8 +389,8 @@ describe('MindMapView branch coverage', () => {
       // Padding and type scale both tighten — the toggle is not decorative.
       expect(nodeRowClass('Child Entity')).toContain('px-2.5')
       expect(nodeRowClass('Child Entity')).toContain('py-1')
-      expect(labelClass('Child Entity')).toContain('text-[12px]')
-      expect(labelClass('Root Entity')).toContain('text-[13px]')
+      expect(labelClass('Child Entity')).toContain('text-label-lg')
+      expect(labelClass('Root Entity')).toContain('text-body-sm')
       // The per-level indent shrinks from 28px to 18px, so level 1 moves left.
       const childRow = screen.getByText('Child Entity').closest('.relative')
         ?.firstElementChild as HTMLElement

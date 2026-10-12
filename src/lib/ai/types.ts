@@ -3,6 +3,7 @@ export type ProviderId = 'openrouter' | 'ollama' | 'local'
 
 /** Chat message with role and content for AI conversation. */
 export interface ChatMessage {
+  id?: string
   role: 'system' | 'user' | 'assistant'
   content: string
 }
@@ -127,14 +128,6 @@ export const PROVIDER_LABELS: Record<ProviderId, string> = {
   ollama: 'Ollama (local)',
   local: 'Local (in-browser)',
 }
-
-/** Default model slugs for the OpenRouter provider. */
-export const OPENROUTER_DEFAULT_MODELS = [
-  'openrouter/free',
-  'openai/gpt-4o-mini',
-  'anthropic/claude-sonnet-4',
-  'meta-llama/llama-3.3-70b-instruct:free',
-]
 
 /**
  * Default model slugs for the local Ollama provider.

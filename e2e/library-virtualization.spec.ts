@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { navClick } from './helpers/navigation';
+import { navClick, viewHeading } from './helpers/navigation';
 
 /**
  * Library windowed-rendering spec (plans/122 W3).
@@ -58,7 +58,7 @@ test.describe('Library windowed rendering', () => {
     );
     await page.goto('/');
     await navClick(page, /library/i);
-    await expect(page.getByRole('heading', { name: /library/i })).toBeVisible();
+    await expect(viewHeading(page, /library/i)).toBeVisible();
   });
 
   test('grid caps at 24 then windows the expanded list', async ({ page }) => {

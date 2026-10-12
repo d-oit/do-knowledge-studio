@@ -72,3 +72,19 @@ export const expectNavigationReachable = async (page: Page): Promise<void> => {
     await expect(page.getByRole('button', { name: /open menu/i })).toBeVisible();
   }
 };
+
+/**
+ * The current view's own heading, scoped to the view content.
+ *
+ * Since the view-chrome work (Plan 163 / #870) every page-shaped view renders a
+ * hero heading, while the shell's topbar owns the view's `h1` — so the two
+ * headings carry the same name and a bare
+ * `page.getByRole('heading', { name: /library/i })` matches both, failing
+ * Playwright's strict mode. Assert the *view's* heading with this instead; use
+ * the topbar's `h1` only when the shell chrome is what is under test.
+ *
+ * The shell is the only owner of `h1`, and the hero is an `h2` inside
+ * `<main id="main-content">`; `DESIGN-SYSTEM.md` §11 records that policy.
+ */
+export const viewHeading = (page: Page, name: string | RegExp) =>
+  page.locator('#main-content').getByRole('heading', { name });

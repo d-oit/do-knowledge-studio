@@ -48,7 +48,7 @@ const SearchPanel = ({
     <aside className={`hidden h-full ${PANEL_WIDTH_CLASS} shrink-0 flex-col border-l border-border bg-background wide:flex`}>
       <div className="border-b border-border px-4 py-3">
         <div className="flex items-center justify-between">
-          <h2 className="font-serif text-[14px] font-semibold text-ink">Search</h2>
+          <h2 className="font-serif text-body font-semibold text-ink">Search</h2>
           <PanelCloseButton onClose={onClose} />
         </div>
       </div>
@@ -78,7 +78,7 @@ const ConnectionList = ({
             onClick={() => {
               onSelect(target.id)
             }}
-            className="flex w-full min-h-[44px] items-center gap-2 rounded-md p-1.5 text-left text-[12px] text-ink-soft transition-colors hover:bg-muted focus-ring"
+            className="flex w-full min-h-[44px] items-center gap-2 rounded-md p-1.5 text-left text-label-lg text-ink-soft transition-colors hover:bg-muted focus-ring"
           >
             <ArrowRight className="h-3 w-3 shrink-0 text-ink-faint" />
             <span className="flex-1 truncate">{target.name}</span>
@@ -106,10 +106,10 @@ const InspectorPanel = ({ onClose }: { onClose: () => void }) => {
     return (
       <aside className={`hidden h-full ${PANEL_WIDTH_CLASS} shrink-0 flex-col border-l border-border bg-background wide:flex`}>
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <h2 className="font-serif text-[14px] font-semibold text-ink">Inspector</h2>
+          <h2 className="font-serif text-body font-semibold text-ink">Inspector</h2>
           <PanelCloseButton onClose={onClose} />
         </div>
-        <div className="flex h-full flex-1 items-center justify-center p-6 text-center text-[12px] text-ink-mute">
+        <div className="flex h-full flex-1 items-center justify-center p-6 text-center text-label-lg text-ink-mute">
           Select a node to inspect.
         </div>
       </aside>
@@ -130,7 +130,7 @@ const InspectorPanel = ({ onClose }: { onClose: () => void }) => {
   return (
     <aside className={`hidden h-full ${PANEL_WIDTH_CLASS} shrink-0 flex-col border-l border-border bg-background wide:flex`}>
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
-        <h2 className="font-serif text-[14px] font-semibold text-ink">Inspector</h2>
+        <h2 className="font-serif text-body font-semibold text-ink">Inspector</h2>
         <PanelCloseButton onClose={onClose} />
       </div>
 
@@ -142,7 +142,7 @@ const InspectorPanel = ({ onClose }: { onClose: () => void }) => {
           </span>
         </div>
         <h3 className="font-serif text-lg font-semibold leading-tight text-ink">{entity.name}</h3>
-        <p className="mt-2 text-[12px] leading-relaxed text-ink-mute">{entity.description}</p>
+        <p className="mt-2 text-label-lg leading-relaxed text-ink-mute">{entity.description}</p>
 
         <div className="mt-4 flex flex-wrap gap-1.5">
           {entity.tags.map((t) => (
@@ -186,13 +186,13 @@ const InspectorPanel = ({ onClose }: { onClose: () => void }) => {
       <div className="flex gap-2 border-t border-border p-3">
         <button
           onClick={() => startEdit(entity.id)}
-          className="flex-1 rounded-md bg-primary px-3 py-1.5 text-[12px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 press-scale focus-ring min-h-[44px]"
+          className="flex-1 rounded-md bg-primary px-3 py-1.5 text-label-lg font-semibold text-primary-foreground transition-opacity hover:opacity-90 press-scale focus-ring min-h-[44px]"
         >
           Edit
         </button>
         <button
           onClick={() => { setShowDeleteConfirm(true) }}
-          className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:border-red-300 hover:text-red-600 focus-ring min-h-[44px]"
+          className="rounded-md border border-border px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-colors hover:border-red-300 hover:text-red-600 focus-ring min-h-[44px]"
         >
           Delete
         </button>
@@ -206,21 +206,21 @@ const InspectorPanel = ({ onClose }: { onClose: () => void }) => {
           initialFocusRef={deleteCancelRef}
         >
           <div className="w-[340px] rounded-xl border border-border bg-popover p-5 shadow-2xl">
-            <h3 className="mb-2 font-serif text-[14px] font-semibold text-ink">Delete entity?</h3>
-            <p className="mb-4 text-[12px] text-ink-mute">
+            <h3 className="mb-2 font-serif text-body font-semibold text-ink">Delete entity?</h3>
+            <p className="mb-4 text-label-lg text-ink-mute">
               &quot;{entity.name}&quot; will be permanently deleted. This cannot be undone.
             </p>
             <div className="flex justify-end gap-2">
               <button
                 ref={deleteCancelRef}
                 onClick={() => { setShowDeleteConfirm(false) }}
-                className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring min-h-[44px]"
+                className="rounded-md border border-border px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-colors hover:bg-muted focus-ring min-h-[44px]"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDelete}
-                className="rounded-md bg-red-600 px-3 py-1.5 text-[12px] font-semibold text-white transition-colors hover:bg-red-700 focus-ring min-h-[44px]"
+                className="rounded-md bg-red-600 px-3 py-1.5 text-label-lg font-semibold text-white transition-colors hover:bg-red-700 focus-ring min-h-[44px]"
               >
                 Delete
               </button>

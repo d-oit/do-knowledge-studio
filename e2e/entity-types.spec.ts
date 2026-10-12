@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test';
-import { navClick } from './helpers/navigation';
+import { navClick, viewHeading } from './helpers/navigation';
 
 test.describe('Entity types', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await navClick(page, /library/i);
-    await expect(page.getByRole('heading', { name: /library/i })).toBeVisible();
+    await expect(viewHeading(page, /library/i)).toBeVisible();
   });
 
   test('library exposes the built-in entity type filters', async ({ page }) => {

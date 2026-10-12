@@ -27,6 +27,7 @@ import {
   type PeerInfo,
 } from '@/lib/sync/discovery'
 import { ConflictUI } from '../conflict-ui'
+import { ViewHeader, VIEW_CONTAINER_CLASS } from '../ui/shared-primitives'
 import type { FieldConflict } from '@/lib/sync/merge'
 import { PresenceList } from '../presence-indicator'
 import { usePresence } from '@/lib/sync/use-presence'
@@ -146,16 +147,8 @@ const SyncHeader = ({ reducedMotion }: { reducedMotion: boolean }) => (
     initial={reducedMotion ? false : { opacity: 0, y: 6 }}
     animate={{ opacity: 1, y: 0 }}
     transition={reducedMotion ? { duration: 0 } : undefined}
-    className="mb-6 flex items-start gap-4"
   >
-    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-sage to-emerald-600 text-white shadow-sm">
-      <Wifi className="h-6 w-6" />
-    </div>
-    <div className="flex-1">          <h2 className="font-serif text-2xl font-semibold text-ink">{t('sync.title')}</h2>
-          <p className="text-[13px] text-ink-mute">
-            {t('sync.subtitle')}
-          </p>
-    </div>
+    <ViewHeader icon={Wifi} title={t('sync.title')} subtitle={t('sync.subtitle')} />
   </motion.div>
 )
 
@@ -186,12 +179,12 @@ const ConflictSection = ({
 
 /** Chronological list of sync events. */
 const SyncHistoryCard = ({ events }: { events: SyncEvent[] }) => (
-  <div className="rounded-lg border border-border bg-card p-5">      <h2 className="mb-3 font-serif text-[15px] font-semibold text-ink">
+  <div className="rounded-lg border border-border bg-card p-5">      <h2 className="mb-3 font-serif text-body-lg font-semibold text-ink">
         <History className="mr-1.5 inline h-4 w-4" />
         {t('sync.history.title')}
       </h2>
       {events.length === 0 ? (
-        <p className="text-[13px] text-ink-faint">{t('sync.history.empty')}</p>
+        <p className="text-body-sm text-ink-faint">{t('sync.history.empty')}</p>
     ) : (
       <div className="space-y-2">
         {events.map((event) => (
@@ -200,7 +193,7 @@ const SyncHistoryCard = ({ events }: { events: SyncEvent[] }) => (
             className="flex items-center gap-3 rounded-md bg-muted/30 px-3 py-2"
           >
             <span className={cn('h-2 w-2 shrink-0 rounded-full', eventDotClass(event.type))} />
-            <span className="flex-1 text-[13px] text-ink">{event.message}</span>
+            <span className="flex-1 text-body-sm text-ink">{event.message}</span>
             <span className="text-caption text-ink-faint">
               {new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(new Date(event.timestamp))}
             </span>
@@ -215,7 +208,7 @@ const SyncHistoryCard = ({ events }: { events: SyncEvent[] }) => (
 const OnlineUsersCard = ({ visible }: { visible: boolean }) => {
   if (!visible) return null
   return (
-    <div className="mt-6 rounded-lg border border-border bg-card p-5">        <h2 className="mb-3 font-serif text-[15px] font-semibold text-ink">
+    <div className="mt-6 rounded-lg border border-border bg-card p-5">        <h2 className="mb-3 font-serif text-body-lg font-semibold text-ink">
           <Users className="mr-1.5 inline h-4 w-4" />
           {t('sync.onlineUsers')}
         </h2>
@@ -339,7 +332,7 @@ export const SyncView = () => {
   }, [])
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-6 lg:px-10 lg:py-8">
+    <div className={cn(VIEW_CONTAINER_CLASS, 'max-w-3xl')}>
       <SyncHeader reducedMotion={reducedMotion} />
 
       <SyncStatusCard

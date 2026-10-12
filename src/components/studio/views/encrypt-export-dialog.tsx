@@ -54,7 +54,7 @@ export const EncryptExportDialog = memo(function EncryptExportDialog({
             <FileLock className="h-4 w-4" />
           </div>
           <div>
-            <h3 className="font-serif text-[15px] font-semibold text-ink">{translate('export.encrypt.title')}</h3>
+            <h3 className="font-serif text-body-lg font-semibold text-ink">{translate('export.encrypt.title')}</h3>
             <p className="text-label text-ink-faint">
               {translate('export.encrypt.subtitle')}
             </p>
@@ -75,7 +75,7 @@ export const EncryptExportDialog = memo(function EncryptExportDialog({
                 placeholder={translate('export.encrypt.passwordPlaceholder')}
                 aria-invalid={Boolean(password && confirm && password !== confirm)}
                 aria-describedby={password && confirm && password !== confirm ? 'password-mismatch-error' : undefined}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 pr-16 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+                className="w-full rounded-md border border-border bg-background px-3 py-2 pr-16 text-body-sm text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
               />
               <button
                 onClick={() => { setShowPass(!showPass) }}
@@ -98,7 +98,7 @@ export const EncryptExportDialog = memo(function EncryptExportDialog({
               placeholder={translate('export.encrypt.confirmPlaceholder')}
               aria-invalid={Boolean(password && confirm && password !== confirm)}
               aria-describedby={password && confirm && password !== confirm ? 'password-mismatch-error' : undefined}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-body-sm text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
             />
           </div>
           {password && confirm && password !== confirm && (
@@ -109,14 +109,14 @@ export const EncryptExportDialog = memo(function EncryptExportDialog({
         <div className="mt-5 flex justify-end gap-2">
           <button
             onClick={() => { setShowPassword(false) }}
-            className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
+            className="rounded-md border border-border px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
           >
             {translate('export.encrypt.cancel')}
           </button>
           <button
             onClick={() => { handleExport('encrypted').catch(() => undefined) }}
             disabled={!password || password !== confirm}
-            className="rounded-md bg-primary px-4 py-1.5 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:opacity-40 press-scale focus-ring"
+            className="rounded-md bg-primary px-4 py-1.5 text-label-lg font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:opacity-40 press-scale focus-ring"
           >
             {translate('export.encrypt.submit')}
           </button>

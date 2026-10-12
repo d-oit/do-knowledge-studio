@@ -47,6 +47,8 @@ import {
   EditorStatusBar,
 } from '../editor-hooks'
 import { EditorAdvancedFields } from './editor-advanced-fields'
+import { cn } from '@/lib/utils'
+import { VIEW_CONTAINER_CLASS } from '../ui/shared-primitives'
 import { EditorPreview } from './editor-preview'
 
 const SERIF_FONT_STYLE: React.CSSProperties = {
@@ -378,7 +380,7 @@ export const EditorView = () => {
     // scrolled content, so at maximum scroll it permanently overlays the last
     // 69px no matter how the browser positions a focused element (verified in
     // Chromium — the element was still 100% covered at scrollTop max).
-    <div className="mx-auto max-w-3xl px-6 pb-24 pt-6 lg:px-10 lg:pb-28 lg:pt-8">
+    <div className={cn(VIEW_CONTAINER_CLASS, 'max-w-3xl pb-24 lg:pb-28')}>
       <EditorHeader
         editing={editing}
         name={name}
@@ -428,7 +430,7 @@ export const EditorView = () => {
                 if (mentionTrigger.active) dismissMention(mentionTrigger.start)
               }}
               placeholder="Start writing. Use markdown for headings, lists, and emphasis…"
-              className={`min-h-[420px] w-full resize-none bg-transparent font-serif text-[16px] leading-[1.75] text-ink placeholder:text-ink-faint/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-saffron/40 focus-visible:ring-inset ${editMode === 'split' ? 'rounded-lg border border-border p-4' : ''}`}
+              className={`min-h-[420px] w-full resize-none bg-transparent font-serif text-base leading-[1.75] text-ink placeholder:text-ink-faint/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-saffron/40 focus-visible:ring-inset ${editMode === 'split' ? 'rounded-lg border border-border p-4' : ''}`}
               style={SERIF_FONT_STYLE}
               aria-label="Editor content"
               role="combobox"

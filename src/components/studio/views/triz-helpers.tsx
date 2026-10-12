@@ -35,7 +35,7 @@ export const ParamPicker = ({
       <div className="mb-3">
         <div className="flex items-center gap-2">
           <span className={cn('h-2 w-2 rounded-full', accents.dot)} />
-          <h2 className="font-serif text-[15px] font-semibold text-ink">{title}</h2>
+          <h2 className="font-serif text-body-lg font-semibold text-ink">{title}</h2>
         </div>
         <p className="mt-0.5 text-label text-ink-faint">{subtitle}</p>
       </div>
@@ -61,7 +61,7 @@ export const ParamPicker = ({
               disabled={isDisabled}
               onClick={() => { onSelect(index) }}
               className={cn(
-                'flex min-h-[44px] w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[12px] transition-colors focus-ring',
+                'flex min-h-[44px] w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-label-lg transition-colors focus-ring',
                 isSelected
                   ? cn(accents.bg, accents.text, 'font-semibold')
                   : isDisabled
@@ -98,7 +98,7 @@ export const ContradictionChip = ({ n, label, accent }: { n: number; label: stri
       <span className="flex h-6 w-6 items-center justify-center rounded bg-paper-raised font-mono text-label font-bold text-ink">
         {n}
       </span>
-      <span className="text-[13px] font-semibold">{label}</span>
+      <span className="text-body-sm font-semibold">{label}</span>
     </div>
   )
 }

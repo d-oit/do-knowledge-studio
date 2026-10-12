@@ -32,6 +32,16 @@ const messages = {
   'mindmap.toolbar.exportPng': 'Export PNG',
   /** Tooltip of a disabled undo/redo button; action label interpolated. */
   'mindmap.toolbar.disabledHint': (label: string) => `${label} (nothing to undo/redo)`,
+  /** Hero header title of the mind map view (matches `nav.mindmap.title`). */
+  'mindmap.title': 'Mind Map',
+  /** Hero header subtitle of the mind map view. */
+  'mindmap.subtitle': 'Branch any entity out into a tree, then edit it in place.',
+  /** Empty state headline shown when there is no tree to draw. */
+  'mindmap.empty.title': 'Nothing to map yet',
+  /** Empty state body explaining how a tree grows (moved out of the view, #870). */
+  'mindmap.empty.body': 'Add entities with links to build a mind map.',
+  /** Empty state action that opens a blank entity in the editor. */
+  'mindmap.empty.action': 'Create entity',
   /** Density toggle label while the tree is in its comfortable spacing. */
   'mindmap.density.comfortable': 'Comfortable',
   /** Density toggle label while the tree is in its compact spacing. */

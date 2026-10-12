@@ -9,6 +9,7 @@ import { FORMATS, COLOR_MAP } from './export-types'
 import type { ExportFormatId } from './export-types'
 import type { Entity, ViewId } from '@/lib/studio/types'
 import { translate } from '@/lib/i18n/messages/export'
+import { ViewEmptyState, ViewHeader } from '../ui/shared-primitives'
 
 interface ExportFormatGridProps {
   entities: Entity[]
@@ -33,25 +34,22 @@ export const ExportFormatGrid = memo(({
       transition={reducedMotion ? { duration: 0 } : undefined}
       className="mb-8"
     >
-      <div className="mb-4">
-        <h2 className="font-serif text-lg font-semibold text-ink">{translate('export.grid.title')}</h2>
-        <p className="mt-1 text-[13px] text-ink-mute">
-          {translate('export.grid.subtitle')}
-        </p>
-      </div>
+      <ViewHeader
+        icon={Download}
+        title={translate('export.grid.title')}
+        subtitle={translate('export.grid.subtitle')}
+        className="mb-4"
+      />
 
       {entities.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-border bg-card/50 p-8 text-center">
-          <Download aria-hidden="true" className="mx-auto mb-3 h-8 w-8 text-ink-faint/40" />
-          <p className="text-[13px] text-ink-mute">{translate('export.grid.empty')}</p>
-          <button
-            onClick={() => { setView('editor') }}
-            className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
-          >
-            <FileText className="h-3.5 w-3.5" />
-            {translate('export.grid.createEntity')}
-          </button>
-        </div>
+        <ViewEmptyState
+          icon={Download}
+          title={translate('export.empty.title')}
+          body={translate('export.empty.body')}
+          actionLabel={translate('export.grid.createEntity')}
+          actionIcon={FileText}
+          onAction={() => { setView('editor') }}
+        />
       ) : (
       <div className="stagger-children grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {FORMATS.map((f, i) => {
@@ -96,12 +94,12 @@ export const ExportFormatGrid = memo(({
                 )}
               </div>
               <h3 className={cn(
-                'mb-1 font-serif text-[15px] font-semibold',
+                'mb-1 font-serif text-body-lg font-semibold',
                 isAvailable ? 'text-ink group-hover:text-saffron-deep' : 'text-ink-mute',
               )}>
                 {f.name}
               </h3>
-              <p className="flex-1 text-[12px] leading-relaxed text-ink-mute">
+              <p className="flex-1 text-label-lg leading-relaxed text-ink-mute">
                 {f.description}
               </p>
               {isAvailable ? (

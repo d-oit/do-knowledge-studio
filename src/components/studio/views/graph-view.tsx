@@ -7,7 +7,7 @@ import { canvasSize, canvasViewBox } from '@/lib/studio/graph-viewport'
 import { getEntityTypeDefs, getEntityTypeMeta } from '@/lib/studio/entity-types'
 import { translate as entityTypesT } from '@/lib/i18n/messages/entity-types'
 import { todayStamp, downloadBlob } from './export-types'
-import { CircleDot } from 'lucide-react'
+import { CircleDot, GitFork, Plus } from 'lucide-react'
 import { useState, useRef, useMemo, useCallback } from 'react'
 import { GraphToolbar } from './graph-toolbar'
 import { cn } from '@/lib/utils'
@@ -15,6 +15,8 @@ import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { buildAdjacencyIndex } from '@/lib/studio/graph-index'
 import { useAnnouncer } from '@/lib/a11y/announcer'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
+import { translate as graphT } from '@/lib/i18n/messages/graph'
+import { ViewEmptyState, ViewHeader, VIEW_CONTAINER_CLASS } from '../ui/shared-primitives'
 import {
   buildGraphSnapshot,
   clearGraphSnapshot,
@@ -29,6 +31,7 @@ export const GraphView = () => {
   const entities = useStudioStore((s) => s.entities)
   const selectedEntityId = useStudioStore((s) => s.selectedEntityId)
   const selectEntity = useStudioStore((s) => s.selectEntity)
+  const startNew = useStudioStore((s) => s.startNew)
   const undo = useStudioStore((s) => s.undo)
   const redo = useStudioStore((s) => s.redo)
   const entityHistory = useStudioStore((s) => s.entityHistory)
@@ -279,7 +282,9 @@ const handleGraphKeyDown = useCallback(
   }, [announce])
 
   return (
-    <div className="flex h-full flex-col">
+    <div className={cn('flex h-full flex-col', VIEW_CONTAINER_CLASS)}>
+      <ViewHeader icon={GitFork} title={graphT('graph.title')} subtitle={graphT('graph.subtitle')} />
+
       {/* Toolbar — extracted to GraphToolbar */}
       <GraphToolbar
         layout={layout}
@@ -393,13 +398,18 @@ const handleGraphKeyDown = useCallback(
           </g>
         </svg>
 
-        {/* Empty overlay */}
+        {/* Empty overlay — the canvas is a dead end without a create action. */}
         {nodes.length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
-              <CircleDot aria-hidden="true" className="mx-auto mb-2 h-8 w-8 text-ink-faint/40" />
-              <p className="text-[13px] text-ink-mute">No entities to graph yet.</p>
-            </div>
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <ViewEmptyState
+              icon={CircleDot}
+              title={graphT('graph.empty.title')}
+              body={graphT('graph.empty.body')}
+              actionLabel={graphT('graph.empty.action')}
+              actionIcon={Plus}
+              onAction={startNew}
+              className="pointer-events-auto max-w-md bg-card/95"
+            />
           </div>
         )}
 

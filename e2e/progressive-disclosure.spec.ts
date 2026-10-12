@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { navClick } from './helpers/navigation';
+import { navClick, viewHeading } from './helpers/navigation';
 
 /**
  * Progressive disclosure E2E coverage — runs on every viewport project
@@ -13,7 +13,7 @@ test.describe('Progressive disclosure surfaces', () => {
 
   test('library: advanced filters are collapsed by default and expand on demand', async ({ page }) => {
     await navClick(page, /library/i);
-    await expect(page.getByRole('heading', { name: /library/i })).toBeVisible();
+    await expect(viewHeading(page, /library/i)).toBeVisible();
 
     const toggle = page.getByRole('button', { name: /Advanced filters/i });
     await expect(toggle).toBeVisible();
@@ -63,7 +63,7 @@ test.describe('Progressive disclosure surfaces', () => {
 
   test('ai harness: contextual suggestions appear before the first message', async ({ page }) => {
     await navClick(page, /ai harness/i);
-    await expect(page.getByRole('heading', { name: 'AI Harness' })).toBeVisible();
+    await expect(viewHeading(page, 'AI Harness')).toBeVisible();
 
     // Context-based suggestions appear (seed entities exist)
     const suggestions = page.getByRole('button', { name: /Summarize my library|Find connections|How does this work/i });

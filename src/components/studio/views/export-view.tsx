@@ -12,6 +12,8 @@ import { EncryptExportDialog } from './encrypt-export-dialog'
 import { ResetConfirmDialog } from './reset-confirm-dialog'
 import { ImportPreviewDialog } from './import-preview-dialog'
 import { translate } from '@/lib/i18n/messages/export'
+import { cn } from '@/lib/utils'
+import { VIEW_CONTAINER_CLASS } from '../ui/shared-primitives'
 
 /** Export and import view with format grid, dropzone, backup tips, and dialogs. */
 export const ExportView = () => {
@@ -79,7 +81,7 @@ export const ExportView = () => {
   }, [importPreview])
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-6 lg:px-10 lg:py-8">
+    <div className={cn(VIEW_CONTAINER_CLASS, 'max-w-5xl')}>
       <ExportFormatGrid
         entities={entities}
         setView={setView}
@@ -101,7 +103,7 @@ export const ExportView = () => {
         </p>
         <button
           onClick={() => { setShowResetConfirm(true) }}
-          className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:border-red-300 hover:text-red-600 focus-ring"
+          className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-colors hover:border-red-300 hover:text-red-600 focus-ring"
           title={translate('export.view.resetTitle')}
         >
           <RotateCcw className="h-3.5 w-3.5" />

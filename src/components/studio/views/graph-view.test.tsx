@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { ReactNode } from 'react'
+import type * as SharedPrimitives from '../ui/shared-primitives'
 import { render, screen, fireEvent } from '@testing-library/react'
 
 vi.mock('lucide-react', () => {
@@ -10,6 +11,7 @@ vi.mock('lucide-react', () => {
     CircleDot: I,
     Circle: I,
     GitFork: I,
+    Plus: I,
     Layers: I,
     Focus: I,
     Camera: I,
@@ -36,12 +38,18 @@ vi.mock('@/lib/utils', () => ({
   cn: (...args: (string | undefined | false | null)[]) => args.filter(Boolean).join(' '),
 }))
 
-vi.mock('../ui/shared-primitives', () => ({
-  ToggleButtonGroup: ({ children, label }: { children?: ReactNode; label?: string }) => (
-    <div data-testid="toggle-button-group" aria-label={label}>{children}</div>
-  ),
-  Divider: () => <hr data-testid="divider" />,
-}))
+vi.mock('../ui/shared-primitives', async () => {
+  // Keep the real view chrome (container, hero header, empty state): the empty
+  // state's create action is part of what these tests assert.
+  const actual = await vi.importActual<typeof SharedPrimitives>('../ui/shared-primitives')
+  return {
+    ...actual,
+    ToggleButtonGroup: ({ children, label }: { children?: ReactNode; label?: string }) => (
+      <div data-testid="toggle-button-group" aria-label={label}>{children}</div>
+    ),
+    Divider: () => <hr data-testid="divider" />,
+  }
+})
 
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
@@ -52,6 +60,7 @@ const mocks = vi.hoisted(() => ({
   undo: vi.fn(),
   redo: vi.fn(),
   deleteEntity: vi.fn(),
+  startNew: vi.fn(),
 }))
 
 const mockEntities = [
@@ -100,6 +109,7 @@ vi.mock('@/lib/studio/store', () => ({
         entities: currentEntities,
         selectedEntityId: currentSelectedEntityId,
         selectEntity: mocks.selectEntity,
+        startNew: mocks.startNew,
         undo: mocks.undo,
         redo: mocks.redo,
         deleteEntity: mocks.deleteEntity,
@@ -168,7 +178,14 @@ describe('GraphView', () => {
   it('handles empty entity list with overlay', () => {
     currentEntities = []
     render(<GraphView />)
-    expect(screen.getByText('No entities to graph yet.')).toBeDefined()
+    expect(screen.getByText('Nothing to graph yet')).toBeDefined()
+  })
+
+  it('empty state create action starts a new entity', () => {
+    currentEntities = []
+    render(<GraphView />)
+    fireEvent.click(screen.getByRole('button', { name: 'Create entity' }))
+    expect(mocks.startNew).toHaveBeenCalledOnce()
   })
 
   it('renders graph toolbar', () => {

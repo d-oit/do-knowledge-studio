@@ -3,7 +3,7 @@
 import { useState, useCallback, useMemo } from 'react'
 import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
 import { type EntityType } from '@/lib/studio/types'
-import { ToggleButtonGroup } from '../ui/shared-primitives'
+import { ToggleButtonGroup, ViewEmptyState, ViewHeader, VIEW_CONTAINER_CLASS } from '../ui/shared-primitives'
 import { Checkbox } from '@/components/ui/checkbox'
 import { SemanticSearchToggle } from './semantic-search-toggle'
 import {
@@ -27,6 +27,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { EntityGrid, EntityTable } from './library-entities'
+import { translate as libraryT } from '@/lib/i18n/messages/library'
 
 /** Entity type filter options including the "all" sentinel. */
 const FILTERS: { id: EntityType | 'all'; label: string }[] = [
@@ -68,42 +69,25 @@ const LibraryEmptyState = ({
 }) => {
   if (!hasEntities) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 py-20 text-center">
-        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-saffron-soft">
-          <FileText className="h-6 w-6 text-saffron" />
-        </div>
-        <h3 className="font-serif text-lg font-semibold text-ink">No entities yet</h3>
-        <p className="mt-1 max-w-sm text-[13px] text-ink-mute">
-          Capture your first thought, concept, person, or project. Everything you save stays local
-          and offline-ready.
-        </p>
-        <button
-          onClick={onStartNew}
-          className="mt-4 flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 text-[13px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
-        >
-          <Plus className="h-4 w-4" />
-          Create your first entity
-        </button>
-      </div>
+      <ViewEmptyState
+        icon={FileText}
+        title={libraryT('library.empty.title')}
+        body={libraryT('library.empty.body')}
+        actionLabel={libraryT('library.empty.action')}
+        actionIcon={Plus}
+        onAction={onStartNew}
+      />
     )
   }
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 py-20 text-center">
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
-        <Search className="h-6 w-6 text-ink-faint" />
-      </div>
-      <h3 className="font-serif text-lg font-semibold text-ink">No matches found</h3>
-      <p className="mt-1 max-w-sm text-[13px] text-ink-mute">
-        Try adjusting your search terms or filters to find what you&apos;re looking for.
-      </p>
-      <button
-        onClick={onClearFilters}
-        className="mt-4 flex min-h-[44px] items-center gap-1.5 rounded-md bg-secondary px-4 text-[13px] font-semibold text-ink transition-all hover:opacity-90 press-scale focus-ring"
-      >
-        <X className="h-4 w-4" />
-        Clear all filters
-      </button>
-    </div>
+    <ViewEmptyState
+      icon={Search}
+      title={libraryT('library.noMatches.title')}
+      body={libraryT('library.noMatches.body')}
+      actionLabel={libraryT('library.noMatches.action')}
+      actionIcon={X}
+      onAction={onClearFilters}
+    />
   )
 }
 
@@ -136,7 +120,7 @@ const LibraryFooter = ({
     {isCapped && (
       <button
         onClick={onToggleShowAll}
-        className="flex min-h-[44px] items-center gap-1 rounded-md border border-border bg-background px-3 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 hover:text-ink focus-ring"
+        className="flex min-h-[44px] items-center gap-1 rounded-md border border-border bg-background px-3 text-label-lg font-medium text-ink-soft transition-colors hover:border-saffron/40 hover:text-ink focus-ring"
         aria-expanded={showAll}
       >
         {showAll ? SHOW_FEWER_LABEL : showAllLabel(totalCount)}
@@ -246,7 +230,13 @@ export const LibraryView = () => {
   )
 
   return (
-    <div className={'mx-auto max-w-5xl px-6 py-6 lg:px-10 lg:py-8'}>
+    <div className={cn(VIEW_CONTAINER_CLASS, 'max-w-5xl')}>
+      <ViewHeader
+        icon={LayoutGrid}
+        title={libraryT('library.title')}
+        subtitle={libraryT('library.subtitle')}
+      />
+
       {/* Controls */}
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px]">
@@ -257,7 +247,7 @@ export const LibraryView = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Filter by name, description, or tag…"
             aria-label="Search library"
-            className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-10 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+            className="w-full min-h-[44px] rounded-md border border-border bg-background py-2 pl-9 pr-14 text-body-sm text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
           />
           {searchQuery && (
             <button
@@ -284,7 +274,7 @@ export const LibraryView = () => {
               onClick={() => setTypeFilter(f.id)}
               aria-pressed={typeFilter === f.id}
               className={cn(
-                'rounded min-h-[44px] min-w-[44px] px-2.5 text-[12px] font-medium transition-colors focus-ring',
+                'rounded min-h-[44px] min-w-[44px] px-2.5 text-label-lg font-medium transition-colors focus-ring',
                 typeFilter === f.id
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'text-ink-mute hover:text-ink',
@@ -324,7 +314,7 @@ export const LibraryView = () => {
 
         <button
           onClick={() => setSortDir(sortDir === 'asc' ? 'desc' : 'asc')}
-          className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded-md border border-border bg-background px-2.5 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
+          className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded-md border border-border bg-background px-2.5 text-label-lg font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
           aria-label={sortDir === 'asc' ? 'Sort ascending' : 'Sort descending'}
           title={sortDir === 'asc' ? 'Sort ascending' : 'Sort descending'}
         >
@@ -335,7 +325,7 @@ export const LibraryView = () => {
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as 'name' | 'created' | 'updated')}
           aria-label="Sort by"
-          className="rounded-md border border-border bg-background px-2.5 py-2 text-[12px] font-medium text-ink-soft transition-colors focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+          className="rounded-md border border-border bg-background px-2.5 py-2 text-label-lg font-medium text-ink-soft transition-colors focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
         >
           <option value="updated">Sort: Updated</option>
           <option value="created">Sort: Created</option>
@@ -344,7 +334,7 @@ export const LibraryView = () => {
 
         <button
           onClick={startNew}
-          className="flex min-h-[44px] items-center gap-1 rounded-md bg-primary px-3 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+          className="flex min-h-[44px] items-center gap-1 rounded-md bg-primary px-3 text-label-lg font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
         >
           <Plus className="h-3.5 w-3.5" />
           New
@@ -365,7 +355,7 @@ export const LibraryView = () => {
           aria-expanded={advancedOpen}
           aria-controls="library-advanced-filters"
           className={cn(
-            'flex min-h-[44px] items-center gap-1.5 rounded-md border px-3 text-[12px] font-medium transition-colors focus-ring',
+            'flex min-h-[44px] items-center gap-1.5 rounded-md border px-3 text-label-lg font-medium transition-colors focus-ring',
             hasAdvancedFilters
               ? 'border-saffron/40 bg-saffron-soft/40 text-saffron-deep'
               : 'border-border bg-background text-ink-soft hover:border-saffron/40',
@@ -403,14 +393,14 @@ export const LibraryView = () => {
                 value={tagQuery}
                 onChange={(e) => { setTagQuery(e.target.value) }}
                 placeholder={TAG_FILTER_PLACEHOLDER}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-label-lg text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
               />
             </div>
 
             <div className="flex min-h-[44px] items-center">
               <label
                 htmlFor="library-desc-only"
-                className="flex min-h-[44px] cursor-pointer items-center gap-2 rounded-md border border-border bg-background px-3 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
+                className="flex min-h-[44px] cursor-pointer items-center gap-2 rounded-md border border-border bg-background px-3 text-label-lg font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
               >
                 <Checkbox
                   id="library-desc-only"
@@ -424,7 +414,7 @@ export const LibraryView = () => {
             {hasAdvancedFilters && (
               <button
                 onClick={clearAdvancedFilters}
-                className="flex min-h-[44px] items-center gap-1 rounded-md px-2 text-[12px] font-medium text-ink-faint transition-colors hover:text-ink focus-ring"
+                className="flex min-h-[44px] items-center gap-1 rounded-md px-2 text-label-lg font-medium text-ink-faint transition-colors hover:text-ink focus-ring"
               >
                 <X className="h-3 w-3" aria-hidden="true" />
                 {CLEAR_ADVANCED_LABEL}

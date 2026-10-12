@@ -83,6 +83,7 @@ describe('EntitySearchPanel', () => {
     const input = screen.getByLabelText('Search knowledge base') as HTMLInputElement
     expect(input).toBeDefined()
     expect(input.type).toBe('search')
+    expect(input.className).toContain('min-h-[44px]')
     expect(input.placeholder).toBe('Search knowledge base…')
   })
 

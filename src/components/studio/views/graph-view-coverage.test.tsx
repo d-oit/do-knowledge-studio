@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { ReactNode } from 'react'
+import type * as SharedPrimitives from '../ui/shared-primitives'
 import { render, screen, fireEvent, cleanup } from '@testing-library/react'
 
 vi.mock('lucide-react', () => {
@@ -10,6 +11,7 @@ vi.mock('lucide-react', () => {
     CircleDot: I,
     Circle: I,
     GitFork: I,
+    Plus: I,
     Layers: I,
     Focus: I,
     Camera: I,
@@ -36,18 +38,24 @@ vi.mock('@/lib/utils', () => ({
   cn: (...args: (string | undefined | false | null)[]) => args.filter(Boolean).join(' '),
 }))
 
-vi.mock('../ui/shared-primitives', () => ({
-  ToggleButtonGroup: ({ children, label }: { children?: ReactNode; label?: string }) => (
-    <div data-testid="toggle-button-group" aria-label={label}>{children}</div>
-  ),
-  Divider: () => <hr data-testid="divider" />,
-}))
+vi.mock('../ui/shared-primitives', async () => {
+  // Keep the real view chrome: the empty state's create action is exercised here.
+  const actual = await vi.importActual<typeof SharedPrimitives>('../ui/shared-primitives')
+  return {
+    ...actual,
+    ToggleButtonGroup: ({ children, label }: { children?: ReactNode; label?: string }) => (
+      <div data-testid="toggle-button-group" aria-label={label}>{children}</div>
+    ),
+    Divider: () => <hr data-testid="divider" />,
+  }
+})
 
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }))
 
 const mockSelectEntity = vi.fn()
+const mockStartNew = vi.fn()
 const mockUndo = vi.fn()
 const mockRedo = vi.fn()
 
@@ -98,6 +106,7 @@ vi.mock('@/lib/studio/store', () => ({
       entities: currentEntities,
       selectedEntityId: currentSelectedEntityId,
       selectEntity: mockSelectEntity,
+      startNew: mockStartNew,
       undo: mockUndo,
       redo: mockRedo,
       entityHistory: currentEntityHistory,
@@ -126,7 +135,7 @@ describe('GraphView branch coverage', () => {
   it('renders empty state when no entities', () => {
     currentEntities = []
     render(<GraphView />)
-    expect(screen.getByText('No entities to graph yet.')).toBeDefined()
+    expect(screen.getByText('Nothing to graph yet')).toBeDefined()
   })
 
   it('switches to circular layout when button clicked', () => {
@@ -453,6 +462,6 @@ describe('GraphView branch coverage', () => {
   it('renders no edges for empty entity list', () => {
     currentEntities = []
     render(<GraphView />)
-    expect(screen.getByText('No entities to graph yet.')).toBeDefined()
+    expect(screen.getByText('Nothing to graph yet')).toBeDefined()
   })
 })
