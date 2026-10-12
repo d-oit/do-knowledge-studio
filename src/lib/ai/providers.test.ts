@@ -6,7 +6,7 @@ import {
   fetchOllamaModels,
   validateOllamaUrl,
 } from './providers'
-import { OPENROUTER_ROUTERS } from './types'
+import { OPENROUTER_ROUTERS, type ChatMessage } from './types'
 
 // ─── getAdapter ─────────────────────────────────────────────────────────────
 
@@ -1028,5 +1028,128 @@ describe('OpenRouterAdapter sendStream', () => {
         vi.fn(),
       ),
     ).rejects.toThrow('OpenRouter error 401')
+  })
+})
+
+// ─── provider payload shape: UI-only fields must not ship (#928) ─────────────
+
+describe('provider payloads carry only protocol fields', () => {
+  const originalFetch = globalThis.fetch
+
+  beforeEach(() => {
+    globalThis.fetch = vi.fn()
+  })
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch
+  })
+
+  /** History exactly as the chat hook builds it: app-internal `id` included. */
+  const historyWithIds: ChatMessage[] = [
+    { id: 'init-assistant', role: 'assistant', content: 'ready' },
+    { id: 'u-1', role: 'user', content: 'hello' },
+  ]
+
+  const expectedMessages = [
+    { role: 'assistant', content: 'ready' },
+    { role: 'user', content: 'hello' },
+  ]
+
+  /** Parses the JSON request body of the nth fetch call (the real object). */
+  const requestBody = (callIndex: number): { messages: Record<string, unknown>[] } => {
+    const init = vi.mocked(globalThis.fetch).mock.calls[callIndex][1] as RequestInit
+    return JSON.parse(String(init.body)) as { messages: Record<string, unknown>[] }
+  }
+
+  /** A Response whose body streams the given raw SSE/NDJSON frames. */
+  const streamingResponse = (frames: string[]): Response => {
+    const encoder = new TextEncoder()
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        for (const frame of frames) controller.enqueue(encoder.encode(frame))
+        controller.close()
+      },
+    })
+    return { ok: true, body: stream } as unknown as Response
+  }
+
+  it('OpenRouter send() drops the UI id', async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
+      ok: true,
+      json: () => ({ choices: [{ message: { content: 'hi' } }] }),
+    } as unknown as Response)
+
+    await getAdapter('openrouter').send({
+      provider: 'openrouter',
+      model: 'openrouter/auto',
+      apiKey: 'test-key',
+      messages: historyWithIds,
+    })
+
+    const body = requestBody(0)
+    expect(body.messages).toEqual(expectedMessages)
+    expect(body.messages[0]).not.toHaveProperty('id')
+    expect(body.messages[1]).not.toHaveProperty('id')
+  })
+
+  it('OpenRouter sendStream() drops the UI id', async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      streamingResponse(['data: {"choices":[{"delta":{"content":"hi"}}]}\n']),
+    )
+
+    await getAdapter('openrouter').sendStream(
+      {
+        provider: 'openrouter',
+        model: 'openrouter/auto',
+        apiKey: 'test-key',
+        messages: historyWithIds,
+      },
+      vi.fn(),
+    )
+
+    const body = requestBody(0)
+    expect(body.messages).toEqual(expectedMessages)
+    expect(body.messages[0]).not.toHaveProperty('id')
+    expect(body.messages[1]).not.toHaveProperty('id')
+  })
+
+  it('Ollama send() drops the UI id', async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
+      ok: true,
+      json: () => ({ message: { content: 'hi' } }),
+    } as unknown as Response)
+
+    await getAdapter('ollama').send({
+      provider: 'ollama',
+      model: 'llama3',
+      apiKey: '',
+      messages: historyWithIds,
+    })
+
+    const body = requestBody(0)
+    expect(body.messages).toEqual(expectedMessages)
+    expect(body.messages[0]).not.toHaveProperty('id')
+    expect(body.messages[1]).not.toHaveProperty('id')
+  })
+
+  it('Ollama sendStream() drops the UI id', async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      streamingResponse(['{"message":{"content":"hi"}}\n']),
+    )
+
+    await getAdapter('ollama').sendStream(
+      {
+        provider: 'ollama',
+        model: 'llama3',
+        apiKey: '',
+        messages: historyWithIds,
+      },
+      vi.fn(),
+    )
+
+    const body = requestBody(0)
+    expect(body.messages).toEqual(expectedMessages)
+    expect(body.messages[0]).not.toHaveProperty('id')
+    expect(body.messages[1]).not.toHaveProperty('id')
   })
 })
