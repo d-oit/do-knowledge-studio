@@ -214,4 +214,15 @@ describe('AiHarnessChatPanel', () => {
     // first raced the hook's empty-input guard and silently aborted (#846).
     expect(handleSend).toHaveBeenCalledWith('Summarize the main entities.')
   })
+
+  it('renders duplicate content messages independently without key collisions', () => {
+    const messages: ChatMessage[] = [
+      { id: '1', role: 'user', content: 'Hello' },
+      { id: '2', role: 'assistant', content: 'Hello' },
+      { id: '3', role: 'user', content: 'Hello' },
+    ]
+    render(<AiHarnessChatPanel {...defaultProps} messages={messages} />)
+    const elements = screen.getAllByText('Hello')
+    expect(elements.length).toBe(3)
+  })
 })
