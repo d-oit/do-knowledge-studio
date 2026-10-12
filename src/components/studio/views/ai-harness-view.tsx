@@ -64,6 +64,7 @@ const useAIHarnessViewState = () => {
     isLoading,
     cooldownMs,
     handleSend,
+    stop,
   } = useAiHarnessChat({
     provider,
     model: effectiveModel,
@@ -111,7 +112,7 @@ const useAIHarnessViewState = () => {
 
   const handleRefreshOllamaModels = useCallback(async () => {
     try {
-      const models = await fetchOllamaModels(ollamaBaseUrl)
+      const models = await fetchOllamaModels(ollamaBaseUrl, AbortSignal.timeout(10_000))
       setOllamaModels(models.length > 0 ? models : OLLAMA_DEFAULT_MODELS)
       toast.success(`Found ${models.length} Ollama models`)
     } catch (err) {
@@ -159,6 +160,7 @@ const useAIHarnessViewState = () => {
     isLoading,
     cooldownMs,
     handleSend,
+    stop,
     effectiveModel,
     selectedEngineTarget,
   }
@@ -303,6 +305,7 @@ export const AIHarnessView = () => {
             input={input}
             setInput={setInput}
             handleSend={handleSend}
+            onStop={stop}
             reducedMotion={reducedMotion}
             augment={augment}
             effectiveModel={effectiveModel}
