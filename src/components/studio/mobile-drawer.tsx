@@ -67,13 +67,12 @@ const TabSwitcher = ({
   return (
     <div className="px-3 pt-3">
       <div
-        role="tablist"
+        role="group"
         aria-label={translate('drawer.tabsAriaLabel')}
         className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1"
       >
         <button
-          role="tab"
-          aria-selected={view === 'nav'}
+          aria-pressed={view === 'nav'}
           onClick={() => { setView('nav') }}
           className={cn(
             'rounded-md px-3 py-1.5 text-[12px] font-semibold transition-colors focus-ring',
@@ -85,8 +84,7 @@ const TabSwitcher = ({
           {translate('drawer.tab.navigate')}
         </button>
         <button
-          role="tab"
-          aria-selected={view === 'search'}
+          aria-pressed={view === 'search'}
           onClick={() => { setView('search') }}
           className={cn(
             'rounded-md px-3 py-1.5 text-[12px] font-semibold transition-colors focus-ring',

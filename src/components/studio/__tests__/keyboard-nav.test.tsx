@@ -388,10 +388,10 @@ describe('MobileDrawer keyboard navigation', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 
-  it('renders Navigate and Search tabs', () => {
+  it('renders Navigate and Search toggle buttons', () => {
     render(<MobileDrawer />)
-    expect(screen.getByRole('tab', { name: 'Navigate' })).toBeDefined()
-    expect(screen.getByRole('tab', { name: 'Search' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Navigate' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Search' })).toBeDefined()
   })
 
   it('has proper aria-modal on the dialog', () => {
