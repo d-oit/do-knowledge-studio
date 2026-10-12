@@ -2,7 +2,27 @@
 
 **Priority**: P0 (Complete)  
 **Estimated Total Effort**: 20-30 hours  
-**Status**: ✅ COMPLETE (2026-06-25)  
+**Status**: Historical roadmap — partially implemented in the current architecture; reconciled 2026-10-05  
+**Historical note**: the SQL / Orama / TipTap / Sigma.js / MindElixir paths and
+actions described below describe the 2026-06 architecture. They are **historical
+records, not current implementation instructions** — the app is now Next.js +
+Zustand + localStorage with BM25, `React.lazy` views, and a canvas-based graph
+and mind map. For what is actually true today, see
+[162-roadmap-progress-and-next-work-2026-10-05.md](162-roadmap-progress-and-next-work-2026-10-05.md).
+
+### Current status (reconciled 2026-10-05, source-confirmed)
+
+| Item from this roadmap | Status today | Evidence |
+|---|---|---|
+| 4.1 AI Harness with streaming | `Implemented — source-confirmed` | `src/lib/ai/local-adapter.ts:12-32,247-278`; harness chat under `src/components/studio/views/` |
+| AI Harness with **Orama** context | Historical | Orama was removed (ADR 018); context augmentation is now BM25 retrieval, plus a real semantic mode |
+| 4.x Claims source/status | `Implemented — source-confirmed` | Claim source and verification fields exist in `src/lib/studio/types.ts` / `schema.ts` |
+| Verified-only graph filtering | **Not demonstrated** | No verified-only filter path was located in the graph view; `Not reassessed` as a product requirement |
+| Semantic search mode | `Implemented — source-confirmed` | `src/lib/search/vector-store.ts:220-247,350`, with lexical fallback on embedding failure |
+| Graph canvas snapshot save/restore | `Implemented — source-confirmed` | `src/lib/studio/graph-snapshot.ts` validated read/restore/clear plus viewport state (Plan 157) |
+| Graph snapshot **comparison / revision diff** | `Not implemented — source-confirmed` | No revision or diff symbols in `src/`; the bookmark stores one canvas, not a revision history |
+| Mobile gestures (graph, mind map) | `Not implemented — source-confirmed` | `graph-view.tsx:130-180` is keyboard-only; no `onTouch*`/`onPointerDown` handler |
+
 **Sources**: Swarm analysis - new feature suggestions, LLM provider system  
 **Implementation Plans**: [041-ai-harness-implementation.md](041-ai-harness-implementation.md), [Claim Provenance (this session)]
 
@@ -111,9 +131,9 @@
 ---
 
 ## Completion Criteria
-- [x] AI Harness is fully functional with streaming + Orama context
+- [x] AI Harness is fully functional with streaming + local retrieval context — historical criterion; the "Orama" wording is superseded (Orama was removed in ADR 018; context augmentation is BM25 retrieval plus a real semantic mode)
 - [x] Claims support source/verification tracking
 - [x] Semantic search mode available and working
-- [x] Graph snapshots can be saved/compared/reverted
-- [x] Mobile gestures work for graph and mind map
-- [x] All quality gates pass: `npm test`, `npm run lint`, `npm run typecheck`
+- [ ] Graph snapshots can be saved/compared/reverted — **split by this reconciliation**: save/restore is `Implemented — source-confirmed`; **comparison is not implemented**. Tracked by [162](162-roadmap-progress-and-next-work-2026-10-05.md) as `Candidate — not scheduled`
+- [ ] Mobile gestures work for graph and mind map — **not implemented** (source-confirmed 2026-10-05). Tracked by [162](162-roadmap-progress-and-next-work-2026-10-05.md) as feature F3, pending a gesture spec
+- [x] All quality gates pass — **historical**: this row records the 2026-06-25 `npm test` / `npm run lint` / `npm run typecheck` run. The project now uses `pnpm` and `scripts/quality_gate.sh`, and that gate was **not re-run** by this reconciliation

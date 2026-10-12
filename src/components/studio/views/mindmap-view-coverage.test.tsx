@@ -418,9 +418,9 @@ describe('MindMapView branch coverage', () => {
       fireEvent.click(screen.getByTestId('mindmap-compact-toggle'))
 
       // Compact reclaims chrome space, never touch-target size.
-      expect(screen.getByTestId('mindmap-compact-toggle').className).toContain('min-h-[44px]')
-      expect(screen.getByLabelText('Expand').className).toContain('min-h-[44px]')
-      expect(screen.getByLabelText('Expand').className).toContain('min-w-[44px]')
+      expect(screen.getByTestId('mindmap-compact-toggle').className).toContain('min-h-touch')
+      expect(screen.getByLabelText('Expand').className).toContain('min-h-touch')
+      expect(screen.getByLabelText('Expand').className).toContain('min-w-touch')
     })
   })
 

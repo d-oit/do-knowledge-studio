@@ -276,3 +276,73 @@ measurements for the `@utility` conversion, the geometry probes for the
 clear-filter gutters, and the first-paint MutationObserver probe for the banner
 reservation. Where a probe could not be run (no browser available in a lane, no
 Vercel credentials), this document says so instead of asserting a pass.
+
+## 7. Close-out — what landed, and what is deliberately left
+
+### 7.1 Merges
+
+Everything the sweep opened or adopted is in `origin/main`. The merge commits,
+in order:
+
+| PR | What it landed |
+|----|----------------|
+| #920 | tooltip title on the right-panel close button |
+| #931 | #861 — native table semantics, a real button for the open action, plus real-browser Enter/Space proof |
+| #923 | #885 — request timeout armed with `setTimeout` (engine-independent) and Stop bound to the turn |
+| #933 | hygiene: `node_modules` symlink ignore, the fleet-wide `afterEach` import |
+| #934 | the four dependency ranges #910 had downgraded |
+| #935 | #865 — one navigation message module |
+| #924 | source-map-js override (Dependabot alert #75) |
+| #936 | #870 — container constant, `ViewHeader`, empty states with a real CTA |
+| #929 | system theme + `theme-color` sync |
+| #937 | #886 — one source for model/endpoint defaults |
+| #928 | #883 — stable message ids, stripped at every provider boundary |
+| #927 | #884 — friendly provider errors, raw text logged only |
+| #941 | WCAG 2.5.3 for the theme toggles (#929's P1, caught by review after merge) |
+| #940 | this plan, `LESSON-042..045`, the compacted `plans/INDEX.md`, two skill updates |
+| #943 | the 25-failure post-merge e2e regression (`viewHeading` scope) |
+| #942 | #862/#855 — 44px touch targets with a real measurement, the type-scale migration |
+| #926 | #887 — announce completion and failure, never both for one turn |
+| #938 | #851/#852/#853/#858 — `--spacing-touch`, `@utility`, one palette per palette |
+| #939 | #863/#856 — shared `ConfirmDialog`, quiet editor counters |
+| #944 | the quality-gate conflict-marker check |
+
+**All seventeen issues in §0 are closed**, each by the PR credited above.
+
+### 7.2 Findings the final sweeps turned up (fixed, not deferred)
+
+- **`/manifest.webmanifest` was precached but not served offline** — the worker's
+  extension list lacked `.webmanifest`, so an installed PWA lost its manifest
+  exactly when it needed it. The parity test now derives extensions from the
+  generator's explicit URL list too.
+- **The mind-map export's paper fallback was inert in a real browser** — a
+  transparent element reports the *truthy* `rgba(0, 0, 0, 0)`, so
+  `computedBackground || resolvePaperBackground()` never reached the fallback.
+  jsdom reports `''`, which is why the test looked like it covered it; the spec
+  now uses the browser's value.
+- **A resize during the banner's exit left a stale reserved height** — the
+  observer was tied to `isOffline` rather than to the element's lifetime;
+  measurement moved into a ref callback.
+- **The confirm dialog announced its question but not its warning** — `Overlay`
+  gained `aria-describedby`, and the dialog now labels itself by the heading and
+  describes itself by the body.
+
+### 7.3 Follow-ups carried forward (not fixed here)
+
+1. **`Overlay` focus restoration when the trigger has unmounted** (found on
+   #939, declined there): after an action removes the element that had focus, the
+   restore targets a disconnected node and focus falls to `<body>`. The
+   right-panel delete dialog has the same shape today, so the fix belongs to
+   `Overlay`'s contract rather than to one dialog — recorded here so it is fixed
+   once, for every overlay.
+2. **First-load hydration mismatch** in `home-view.tsx`: a `motion.div` animates
+   its width to a store-derived percentage while the server renders `0px`, so
+   React discards and regenerates that subtree. Seen in the console during the
+   #943 verification run; unrelated to the reduced-motion case #925 fixes.
+3. **No-downgrade guard** and **stale-base guard** for CI (§6.4).
+4. **Vercel preview deployments** fail on most branches (never ruleset-required);
+   the correlation with this session's push volume suggests a quota.
+5. **Thread churn**: GitNexus re-posts findings on every push, so a queue of
+   twelve PRs needed a sweep after each push — and a branch whose remote head was
+   replaced by a stale-base automation commit produced fourteen findings about
+   files it did not touch. Both are worth a harness rule; §6 notes the symptoms.

@@ -34,7 +34,7 @@ const MatrixCell = ({
 }: MatrixCellProps) => {
   const cellLabel = translate('triz.matrix.cellAria', rowLabel, colLabel)
   const cellClasses = cn(
-    'min-h-[44px] min-w-[44px] px-1 py-1 text-center',
+    'min-h-touch min-w-touch px-1 py-1 text-center',
     isHighlighted
       ? 'bg-saffron-soft font-bold text-saffron-deep'
       : 'bg-muted/50 text-ink-mute hover:bg-saffron-soft/50',
@@ -51,7 +51,7 @@ const MatrixCell = ({
           ●
         </button>
       ) : (
-        <span className="inline-block min-h-[44px] min-w-[44px] px-1 py-1 text-center text-ink-faint/30">
+        <span className="inline-block min-h-touch min-w-touch px-1 py-1 text-center text-ink-faint/30">
           ·
         </span>
       )}

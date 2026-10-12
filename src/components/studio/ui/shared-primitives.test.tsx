@@ -287,7 +287,10 @@ describe('ViewEmptyState', () => {
     expect(screen.getByRole('heading', { level: 3, name: 'Nothing to graph yet' })).toBeDefined()
     expect(screen.getByText('Create your first entity')).toBeDefined()
     const action = screen.getByRole('button', { name: 'Create entity' })
-    expect(action.className).toContain('min-h-[44px]')
+    // The 44px floor is a token now (`--spacing-touch: 2.75rem` in globals.css),
+    // so the class name is the closest a jsdom test gets to the requirement; the
+    // real 44px measurement lives in e2e/touch-targets.spec.ts.
+    expect(action.className).toContain('min-h-touch')
   })
 
   it('runs the create action when it is activated', () => {

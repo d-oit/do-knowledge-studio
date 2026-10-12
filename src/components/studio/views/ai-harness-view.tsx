@@ -63,6 +63,8 @@ const useAIHarnessViewState = () => {
     input,
     setInput,
     isLoading,
+    completedTurns,
+    failedTurns,
     cooldownMs,
     handleSend,
     stop,
@@ -159,6 +161,8 @@ const useAIHarnessViewState = () => {
     input,
     setInput,
     isLoading,
+    completedTurns,
+    failedTurns,
     cooldownMs,
     handleSend,
     stop,
@@ -194,7 +198,7 @@ const AIHarnessHeader = ({
         <button
           onClick={onToggleSettings}
           className={cn(
-            'flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-label-lg font-medium transition-colors hover:border-saffron/40 focus-ring min-h-[44px]',
+            'flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-label-lg font-medium transition-colors hover:border-saffron/40 focus-ring min-h-touch',
             showSettings && 'border-saffron/40 text-saffron-deep',
           )}
         >
@@ -241,6 +245,8 @@ export const AIHarnessView = () => {
     input,
     setInput,
     isLoading,
+    completedTurns,
+    failedTurns,
     cooldownMs,
     handleSend,
     stop,
@@ -301,6 +307,8 @@ export const AIHarnessView = () => {
           <AiHarnessChatPanel
             messages={messages}
             isLoading={isLoading}
+            completedTurns={completedTurns}
+            failedTurns={failedTurns}
             input={input}
             setInput={setInput}
             handleSend={handleSend}

@@ -75,10 +75,10 @@ const EntityTypeDefSchema = z.object({
 
 /** Neutral fallback styling for unregistered/unknown type strings. */
 const NEUTRAL_META: Omit<EntityTypeMeta, 'label' | 'icon'> = {
-  color: 'neutral',
-  bg: 'bg-zinc-100 dark:bg-zinc-950/40',
-  text: 'text-zinc-700 dark:text-zinc-300',
-  dot: 'bg-zinc-400',
+  color: 'muted',
+  bg: 'bg-muted',
+  text: 'text-ink-soft',
+  dot: 'bg-ink-mute',
 }
 
 /**
@@ -106,10 +106,10 @@ const builtinTypeDefs: EntityTypeDef[] = (Object.keys(ENTITY_TYPE_META) as Entit
  * registerEntityType({
  *   id: 'roadmap',
  *   label: 'Roadmap',
- *   color: 'violet',
- *   bg: 'bg-violet-100 dark:bg-violet-950/40',
- *   text: 'text-violet-700 dark:text-violet-300',
- *   dot: 'bg-violet-500',
+ *   color: 'saffron',
+ *   bg: 'bg-saffron/15',
+ *   text: 'text-saffron-deep',
+ *   dot: 'bg-saffron',
  *   icon: Map,
  * })
  */
@@ -136,8 +136,8 @@ export const getEntityTypeDefs = (): EntityTypeDef[] => [
 
 /**
  * Resolves visual metadata for any type string, never throwing:
- * custom registry → built-in meta → neutral default (label falls back to the
- * raw type string, so unknown types stay readable).
+ * custom registry → built-in meta → warm muted default (label falls back to
+ * the raw type string, so unknown types stay readable).
  */
 export const getEntityTypeMeta = (type: string): EntityTypeMeta => {
   const custom = customTypeDefs.get(type)

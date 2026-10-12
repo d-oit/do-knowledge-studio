@@ -1,6 +1,15 @@
-const STATIC_CACHE = "dks-static-v2";
+const STATIC_CACHE = "dks-static-v3";
 const API_CACHE = "dks-api-v2";
 
+/**
+ * Extensions served cache-first.
+ *
+ * Must cover every extension `scripts/generate-precache-manifest.mjs` can put in
+ * the manifest (`MEDIA_EXTENSIONS` + the code extensions): a URL that is
+ * precached but not matched here falls through to the network and is missing
+ * offline — the exact failure the manifest exists to prevent (`.avif` was
+ * precached-but-unserved until this list gained it).
+ */
 const STATIC_EXTENSIONS = [
   ".js",
   ".mjs",
@@ -10,6 +19,7 @@ const STATIC_EXTENSIONS = [
   ".jpg",
   ".jpeg",
   ".webp",
+  ".avif",
   ".gif",
   ".ico",
   ".woff",
@@ -18,13 +28,15 @@ const STATIC_EXTENSIONS = [
   ".eot",
   ".otf",
   ".json",
+  ".webmanifest",
   ".txt",
 ];
 
 // Fallback shell, used only if the generated manifest cannot be fetched.
 // The manifest (written by scripts/generate-precache-manifest.mjs after
 // `next build`) is the real precache list: it is derived from the emitted
-// HTML, so it always matches the Turbopack chunks the app actually needs.
+// HTML plus the emitted chunk/media inventories, so it always matches the
+// code and hashed asset names the app actually requests.
 const PRECACHE_MANIFEST_URL = "/precache-manifest.json";
 const FALLBACK_PRECACHE_URLS = [
   "/",

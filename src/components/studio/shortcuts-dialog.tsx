@@ -279,7 +279,7 @@ export const ShortcutsDialog = (): React.JSX.Element => {
             ref={closeBtnRef}
             onClick={() => { setOpen(false) }}
             aria-label={translate('shortcuts.close')}
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
+            className="flex min-h-touch min-w-touch items-center justify-center rounded-md text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
           >
             <X className="h-4 w-4" />
           </button>
@@ -296,7 +296,7 @@ export const ShortcutsDialog = (): React.JSX.Element => {
               onChange={(e) => { setFilter(e.target.value); }}
               placeholder={translate('shortcuts.filterPlaceholder')}
               className={cn(
-                'w-full min-h-[44px] rounded-md border border-border bg-background py-1.5 pl-8 text-body-sm text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30',
+                'w-full min-h-touch rounded-md border border-border bg-background py-1.5 pl-8 text-body-sm text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30',
                 // pr-13 (52px) clears the clear button's full extent: 44px box
                 // + 6px right-1.5 inset = 50px, else its hit area overruns the
                 // input's content box.
@@ -313,7 +313,7 @@ export const ShortcutsDialog = (): React.JSX.Element => {
                 }}
                 aria-label={translate('shortcuts.clearFilter')}
                 title={translate('shortcuts.clearFilter')}
-                className="absolute right-1.5 top-1/2 min-h-[44px] min-w-[44px] -translate-y-1/2 inline-flex items-center justify-center rounded text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
+                className="absolute right-1.5 top-1/2 min-h-touch min-w-touch -translate-y-1/2 inline-flex items-center justify-center rounded text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
               >
                 <X className="h-3.5 w-3.5" />
               </button>

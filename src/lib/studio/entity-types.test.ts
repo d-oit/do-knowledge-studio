@@ -132,13 +132,35 @@ describe('getEntityTypeMeta', () => {
     }
   })
 
+  it('built-in meta uses bespoke tokens, never stock-palette classes', () => {
+    // Any Tailwind colour scale shipped with the framework carries a numeric
+    // step (`bg-blue-500`, `text-zinc-700`). Enumerating six hues let any other
+    // one through — `bg-blue-500` satisfied the old guard while being exactly
+    // the stock palette this asserts against (review on #938). No bespoke token
+    // class in ENTITY_TYPE_META has a numeric suffix, so the broader pattern
+    // cannot report a false positive.
+    // Stock scales with a numeric step (`bg-blue-500`) *and* the digit-less
+    // ones (`bg-black`, `text-white`) — neither exists in ENTITY_TYPE_META, so
+    // the pattern cannot false-positive (review on #938).
+    const stockPalette = /\b[a-z]+-(\d{2,3}|black|white)\b/
+    for (const id of ['note', 'concept', 'person', 'project'] as const) {
+      const meta = getEntityTypeMeta(id)
+      for (const cls of [meta.bg, meta.text, meta.dot]) {
+        expect(cls).not.toMatch(stockPalette)
+      }
+      expect(meta.dot.startsWith('bg-')).toBe(true)
+      expect(meta.text.startsWith('text-')).toBe(true)
+      expect(meta.text.endsWith('-deep')).toBe(true)
+    }
+  })
+
   it('falls back to a neutral default for unknown types without throwing', () => {
     const meta = getEntityTypeMeta('foreign-type')
     expect(meta.label).toBe('foreign-type')
-    expect(meta.color).toBe('neutral')
-    expect(meta.dot).toContain('zinc')
-    expect(meta.bg).toContain('zinc')
-    expect(meta.text).toContain('zinc')
+    expect(meta.color).toBe('muted')
+    expect(meta.dot).toBe('bg-ink-mute')
+    expect(meta.bg).toBe('bg-muted')
+    expect(meta.text).toBe('text-ink-soft')
     // Icon resolution is the renderer's job (EntityIcon falls back to a neutral icon).
     expect(meta.icon).toBeUndefined()
   })

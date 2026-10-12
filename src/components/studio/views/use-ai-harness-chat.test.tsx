@@ -183,6 +183,131 @@ describe('useAiHarnessChat', () => {
     expect(last?.content).toBe('Partial answer')
   })
 
+  it('counts a successful turn that streamed content', async () => {
+    mockSendChatStream.mockImplementation(async (_request, onChunk) => {
+      onChunk('Hello')
+      return resultFor('Hello')
+    })
+
+    const hook = await sendMessage('hi')
+
+    expect(hook.result.current.completedTurns).toBe(1)
+  })
+
+  it('counts a successful turn that only answered on the result', async () => {
+    mockSendChatStream.mockResolvedValue(resultFor('A fallback answer'))
+
+    const hook = await sendMessage('hi')
+
+    expect(hook.result.current.completedTurns).toBe(1)
+  })
+
+  it('does not count a provider failure as a completed turn', async () => {
+    mockSendChatStream.mockRejectedValue(new Error('provider exploded'))
+
+    const hook = await sendMessage('hi')
+
+    // The turn ended, but with an `[Error] …` bubble: nothing completed here.
+    expect(hook.result.current.completedTurns).toBe(0)
+  })
+
+  it('counts a provider failure as a failed turn for the failure announcement', async () => {
+    mockSendChatStream.mockRejectedValue(new Error('provider exploded'))
+
+    const hook = await sendMessage('hi')
+
+    // #926 review: the transcript is `aria-live="off"`, so a failed turn must be
+    // reported through its own signal or it is never spoken at all.
+    expect(hook.result.current.failedTurns).toBe(1)
+    expect(hook.result.current.completedTurns).toBe(0)
+  })
+
+  it('counts a timed-out turn as failed', async () => {
+    // The timeout branch reports through `failedTurns` too: it appends a bubble
+    // and returns before the success signal.
+    const abortSignalStatics = AbortSignal as unknown as Record<string, unknown>
+    const anyBackup = abortSignalStatics.any
+    const timeoutBackup = abortSignalStatics.timeout
+    delete abortSignalStatics.any
+    delete abortSignalStatics.timeout
+
+    mockSendChatStream.mockImplementation((request) => {
+      const { promise, reject } = Promise.withResolvers<ChatResult>()
+      request.signal?.addEventListener('abort', () => {
+        reject(request.signal?.reason ?? new DOMException('Aborted', 'AbortError'))
+      })
+      return promise
+    })
+
+    const hook = renderHook(() => useAiHarnessChat({ ...baseOptions }))
+    act(() => { hook.result.current.setInput('hi') })
+
+    vi.useFakeTimers()
+    try {
+      let turn: Promise<void> | undefined
+      await act(async () => {
+        turn = hook.result.current.handleSend()
+        await vi.advanceTimersByTimeAsync(120_000)
+      })
+      await act(async () => { await turn })
+    } finally {
+      vi.useRealTimers()
+      abortSignalStatics.any = anyBackup
+      abortSignalStatics.timeout = timeoutBackup
+    }
+
+    expect(hook.result.current.failedTurns).toBe(1)
+    expect(hook.result.current.completedTurns).toBe(0)
+  })
+
+  it('does not count an aborted turn as failed', async () => {
+    mockSendChatStream.mockRejectedValue(new DOMException('Aborted', 'AbortError'))
+
+    const hook = await sendMessage('hi')
+
+    // A stopped turn is neither a completion nor a failure: announcing either
+    // would be telling the user something untrue.
+    expect(hook.result.current.failedTurns).toBe(0)
+    expect(hook.result.current.completedTurns).toBe(0)
+  })
+
+  it('does not count a turn aborted before any delta as completed', async () => {
+    mockSendChatStream.mockRejectedValue(new DOMException('Aborted', 'AbortError'))
+
+    const hook = await sendMessage('hi')
+
+    expect(hook.result.current.completedTurns).toBe(0)
+  })
+
+  it('does not count a turn stopped mid-stream as completed', async () => {
+    mockSendChatStream.mockImplementation(async (_request, onChunk) => {
+      onChunk('Partial answer')
+      throw new DOMException('Aborted', 'AbortError')
+    })
+
+    const hook = await sendMessage('hi')
+
+    expect(hook.result.current.completedTurns).toBe(0)
+  })
+
+  it('does not count a turn that produced no assistant content', async () => {
+    mockSendChatStream.mockResolvedValue(resultFor(''))
+
+    const hook = await sendMessage('hi')
+
+    expect(hook.result.current.completedTurns).toBe(0)
+  })
+
+  it('counts each completed turn separately', async () => {
+    mockSendChatStream.mockResolvedValue(resultFor('answer'))
+    const hook = renderHook(() => useAiHarnessChat({ ...baseOptions }))
+
+    await act(async () => { await hook.result.current.handleSend('first') })
+    await act(async () => { await hook.result.current.handleSend('second') })
+
+    expect(hook.result.current.completedTurns).toBe(2)
+  })
+
   it('aborts the in-flight stream when the view unmounts', async () => {
     let capturedSignal: AbortSignal | undefined
     // A never-settling stream stands in for a live provider: the turn is only

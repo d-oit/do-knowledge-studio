@@ -46,13 +46,13 @@ export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps)
         <div className="flex-1" />
         <button
           onClick={() => { handleResolveAll('local') }}
-          className="rounded px-2 py-1 text-label font-medium text-warning transition-colors hover:bg-warning/10 min-h-[44px] focus-ring"
+          className="rounded px-2 py-1 text-label font-medium text-warning transition-colors hover:bg-warning/10 min-h-touch focus-ring"
         >
           Keep all local
         </button>
         <button
           onClick={() => { handleResolveAll('remote') }}
-          className="rounded px-2 py-1 text-label font-medium text-warning transition-colors hover:bg-warning/10 min-h-[44px] focus-ring"
+          className="rounded px-2 py-1 text-label font-medium text-warning transition-colors hover:bg-warning/10 min-h-touch focus-ring"
         >
           Keep all remote
         </button>
@@ -69,7 +69,7 @@ export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps)
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => { setExpandedId(isExpanded ? null : key) }}
-                  className="flex min-h-[44px] items-center gap-1.5 text-label-lg font-medium text-warning-foreground focus-ring"
+                  className="flex min-h-touch items-center gap-1.5 text-label-lg font-medium text-warning-foreground focus-ring"
                 >
                   {isExpanded ? (
                     <ChevronUp className="h-3 w-3" />
@@ -85,7 +85,7 @@ export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps)
                   <button
                     onClick={() => { handleResolution(key, 'local') }}
                     className={cn(
-                      'rounded px-2 py-0.5 text-label font-medium transition-colors min-h-[44px] focus-ring',
+                      'rounded px-2 py-0.5 text-label font-medium transition-colors min-h-touch focus-ring',
                       resolution === 'local'
                         ? 'bg-warning text-warning-on'
                         : 'text-warning hover:bg-warning/10',
@@ -96,7 +96,7 @@ export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps)
                   <button
                     onClick={() => { handleResolution(key, 'remote') }}
                     className={cn(
-                      'rounded px-2 py-0.5 text-label font-medium transition-colors min-h-[44px] focus-ring',
+                      'rounded px-2 py-0.5 text-label font-medium transition-colors min-h-touch focus-ring',
                       resolution === 'remote'
                         ? 'bg-warning text-warning-on'
                         : 'text-warning hover:bg-warning/10',
@@ -141,14 +141,14 @@ export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps)
       <div className="flex items-center justify-end gap-2 border-t border-warning-border px-4 py-3">
         <button
           onClick={onDismiss}
-          className="flex min-h-[44px] items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
+          className="flex min-h-touch items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
         >
           <X className="h-3.5 w-3.5" />
           Dismiss
         </button>
         <button
           onClick={handleConfirm}
-          className="flex min-h-[44px] items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-label-lg font-medium text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+          className="flex min-h-touch items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-label-lg font-medium text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
         >
           <Check className="h-3.5 w-3.5" />
           Apply resolutions

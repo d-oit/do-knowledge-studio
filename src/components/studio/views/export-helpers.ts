@@ -1,6 +1,7 @@
 import type { Entity, Claim } from '@/lib/studio/types'
 import { validateImportPayload } from '@/lib/studio/schema'
 import { escapeHtml, sanitizeUrl } from '@/lib/security'
+import { EXPORT_COLORS, tint } from '@/lib/export/export-theme'
 import { buildClaimsByEntityId, type ExportOptions, type ImportResult } from './export-types'
 
 /**
@@ -135,23 +136,23 @@ export const buildHtmlExport = (entities: Entity[], claims: Claim[]): string => 
   <title>DO Knowledge Studio export</title>
   <style>
     :root { color-scheme: light dark; }
-    body { font: 16px/1.6 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 760px; margin: 0 auto; padding: 2rem; color: #1a1814; background: #faf8f3; }
+    body { font: 16px/1.6 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 760px; margin: 0 auto; padding: 2rem; color: ${EXPORT_COLORS.ink}; background: ${EXPORT_COLORS.paper}; }
     h1 { font-family: Georgia, serif; }
-    article { border-top: 1px solid #e5e1d8; padding: 1.5rem 0; }
+    article { border-top: 1px solid ${EXPORT_COLORS.border}; padding: 1.5rem 0; }
     article header h2 { font-family: Georgia, serif; margin: 0.4rem 0; font-size: 1.4rem; }
-    .type { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; background: #f5e8d5; color: #8a4f1c; }
-    .type.note { background: #e0eaf2; color: #2b4d6b; }
-    .type.concept { background: #f5e8d5; color: #8a4f1c; }
-    .type.person { background: #f3dcd2; color: #8a3320; }
-    .type.project { background: #dce8df; color: #2f5b4a; }
-    .desc { color: #6b6760; }
-    .content { white-space: pre-wrap; word-wrap: break-word; background: #f1ede4; padding: 0.75rem 1rem; border-radius: 6px; }
+    .type { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; background: ${tint(EXPORT_COLORS.saffron)}; color: ${EXPORT_COLORS.saffronDeep}; }
+    .type.note { background: ${tint(EXPORT_COLORS.sky)}; color: ${EXPORT_COLORS.skyDeep}; }
+    .type.concept { background: ${tint(EXPORT_COLORS.saffron)}; color: ${EXPORT_COLORS.saffronDeep}; }
+    .type.person { background: ${tint(EXPORT_COLORS.clay)}; color: ${EXPORT_COLORS.clayDeep}; }
+    .type.project { background: ${tint(EXPORT_COLORS.sage)}; color: ${EXPORT_COLORS.sageDeep}; }
+    .desc { color: ${EXPORT_COLORS.inkMute}; }
+    .content { white-space: pre-wrap; word-wrap: break-word; background: ${EXPORT_COLORS.paperSunken}; padding: 0.75rem 1rem; border-radius: 6px; }
     .claims { padding-left: 1.2rem; }
     .claims .v { font-size: 10px; padding: 1px 6px; border-radius: 4px; margin-right: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
-    .claims .v.verified { background: #d4ead4; color: #1f6b1f; }
-    .claims .v.disputed { background: #f5e3c8; color: #8a4f1c; }
-    .claims .v.unverified { background: #e5e1d8; color: #6b6760; }
-    .meta { color: #9c978d; font-size: 12px; }
+    .claims .v.verified { background: ${tint(EXPORT_COLORS.verified)}; color: ${EXPORT_COLORS.verified}; }
+    .claims .v.disputed { background: ${tint(EXPORT_COLORS.disputed)}; color: ${EXPORT_COLORS.disputed}; }
+    .claims .v.unverified { background: ${EXPORT_COLORS.border}; color: ${EXPORT_COLORS.unverified}; }
+    .meta { color: ${EXPORT_COLORS.inkMute}; font-size: 12px; }
   </style>
 </head>
 <body>

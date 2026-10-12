@@ -20,6 +20,10 @@ const messages = {
   'announce.entityDeleted': (name: string) => `Deleted ${name}`,
   /** The active view changed. */
   'announce.viewSwitched': (view: string) => `Switched to ${view}`,
+  /** Accessible name of the chat transcript log region. */
+  'announce.chatTranscript': 'AI chat transcript',
+  /** Announced when an AI turn ends in a provider failure. */
+  'announce.aiResponseFailed': 'Response failed',
   /** An import replaced the library. Counts are interpolated, so the
    *  plural form has to be selected at the call site (this layer carries no
    *  locale, and `Intl.PluralRules` needs one). */
@@ -68,6 +72,37 @@ const messages = {
   'announce.preservedLibraryDownloaded': 'Preserved library downloaded',
   /** Toast when the download fails. */
   'announce.preservedLibraryFailed': 'Could not download the preserved copy',
+  /** Spoken once the AI harness finished a turn it can call successful: the
+   *  transcript itself is `aria-live="off"`, so a streamed answer is silent
+   *  unless this says it landed. Never spoken for a failed or stopped turn. */
+  'announce.aiResponseComplete': 'Response complete',
+  /** Heading when a pre-import snapshot is waiting to be restored. */
+  'announce.restoreTitle': 'A previous library is ready to restore',
+  /** Body naming what the snapshot holds. It is the corpus that existed before
+   *  an *earlier* import — not necessarily the most recent one: when an import's
+   *  own backup write is refused, the previous snapshot stays and is offered
+   *  instead (see `persistRecoverySnapshot`) — so restoring replaces whatever is
+   *  loaded now. That is stated rather than implied. */
+  'announce.restoreBody': (summary: string) =>
+    `We kept a copy of ${summary} from an earlier import. Restoring replaces your current library.`,
+  /** Banner action that applies the snapshot. */
+  'announce.restoreAction': 'Restore it',
+  /** Banner action that hides the offer for this page session. It never
+   *  deletes the snapshot, so a reload brings the offer back. */
+  'announce.restoreDismiss': 'Hide for this page session',
+  /** Spoken confirmation after a successful restore. */
+  'announce.restoreSucceeded': 'Previous library restored',
+  /**
+   * Spoken when the restore landed but storage refused to drop the snapshot, so
+   * the restore offer will come back after a reload.
+   */
+  'announce.restoreSucceededSnapshotKept':
+    'Previous library restored. The backup could not be removed, so the restore offer will return after a reload.',
+  /** Toast description for the same case; says what to do about it. */
+  'announce.restoreSnapshotKeptHint':
+    'This browser would not delete the recovery copy, so the restore offer will come back after a reload. Dismissing it is safe; restoring again would replace the library with that older copy.',
+  /** Toast when a restore fails. */
+  'announce.restoreFailed': 'Could not restore the previous library',
 } as const
 
 /** Typed `translate` helper bound to the announcement message scope. */

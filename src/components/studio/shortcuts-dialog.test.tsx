@@ -95,7 +95,7 @@ describe('ShortcutsDialog', () => {
 
     const filterInput = screen.getByLabelText('Filter shortcuts') as HTMLInputElement
     expect(filterInput.type).toBe('search')
-    expect(filterInput.className).toContain('min-h-[44px]')
+    expect(filterInput.className).toContain('min-h-touch')
     expect(filterInput.value).toBe('')
     expect(filterInput.className).toContain('pr-3')
     expect(filterInput.className).not.toContain('pr-13')

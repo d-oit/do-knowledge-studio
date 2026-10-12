@@ -43,7 +43,7 @@ const TrizHeaderControls = ({
 }: TrizHeaderControlsProps) => {
   const toggleClasses = (active: boolean) =>
     cn(
-      'rounded px-2.5 py-1 text-label-lg font-medium transition-colors focus-ring min-h-[44px]',
+      'rounded px-2.5 py-1 text-label-lg font-medium transition-colors focus-ring min-h-touch',
       active ? 'bg-primary text-primary-foreground shadow-sm' : 'text-ink-mute hover:text-ink',
     )
   return (
@@ -83,7 +83,7 @@ const TrizHeaderControls = ({
         <button
           type="button"
           onClick={onReset}
-          className="ml-auto flex min-h-[44px] items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1.5 text-label font-medium text-ink-soft transition-colors hover:text-ink focus-ring"
+          className="ml-auto flex min-h-touch items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1.5 text-label font-medium text-ink-soft transition-colors hover:text-ink focus-ring"
         >
           <RotateCcw className="h-3 w-3" />
           {translate('triz.reset')}

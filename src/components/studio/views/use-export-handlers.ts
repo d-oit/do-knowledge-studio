@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import packageJson from '../../../../package.json'
 import type { Entity, Claim } from '@/lib/studio/types'
+import type { ImportOutcome } from '@/lib/studio/store-types'
 import type { LibraryPayload, ImportPreview, ExportFormatId, ExportOptions } from './export-types'
 import { todayStamp, downloadFile, downloadBlob } from './export-types'
 import {
@@ -89,18 +90,10 @@ const joinErrorMessages = (errors: string[]): string => {
   return `${cut > 0 ? prefix.slice(0, cut) : prefix}…`
 }
 
-/** Outcome of an import-with-rollback store operation. */
-interface ImportRollbackResult {
-  /** Whether the operation succeeded. */
-  success: boolean
-  /** Optional error message when the operation failed. */
-  error?: string
-}
-
 /** Inputs consumed by the export/import handlers hook. */
 interface UseExportHandlersParams extends LibraryPayload {
   /** Store action that commits an import with rollback on failure. */
-  importWithRollback: (entities: Entity[], claims: Claim[], options?: ExportOptions) => ImportRollbackResult
+  importWithRollback: (entities: Entity[], claims: Claim[], options?: ExportOptions) => ImportOutcome
   /** Store action that restores the demo dataset. */
   resetStore: () => void
   /** Currently staged import preview (or null). */
@@ -428,9 +421,23 @@ export const useExportHandlers = ({
         importPreview.links,
         importPreview.tags,
       )
-      toast.success('Import complete', {
-        description: `${summary} replaced the current library.`,
-      })
+      // The import succeeded either way, but a missing backup changes what that
+      // success means: there is no way back to the corpus that was replaced.
+      // The same green toast in both cases would be a false claim.
+      if (result.backupPersisted === false) {
+        toast.warning('Imported — but no backup was kept', {
+          description:
+            result.backupFailure === 'too-large'
+              ? 'Your previous library was too large for this browser to keep as a recovery copy, so it cannot be restored from here. Export a JSON backup before your next import.'
+              : result.backupFailure === 'unserializable'
+                ? 'Your previous library could not be captured as a recovery copy (an internal serialization error), so it cannot be restored from here. Export a JSON backup before your next import.'
+                : 'This browser refused to store a recovery copy, so your previous library cannot be restored from here. Export a JSON backup before your next import.',
+        })
+      } else {
+        toast.success('Import complete', {
+          description: `${summary} replaced the current library.`,
+        })
+      }
     } else {
       // The failed path is the one that must never be silent: the library
       // looked replaced for a moment before rolling back.
