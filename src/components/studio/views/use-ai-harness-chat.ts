@@ -214,7 +214,7 @@ export const useAiHarnessChat = ({
           {
             id: crypto.randomUUID(),
             role: 'assistant',
-            content: `[Error] ${translate('ai.chat.error.timeout', REQUEST_TIMEOUT_MINUTES)}`,
+            content: `[Error] ${translate('ai.chat.error.timeout', String(REQUEST_TIMEOUT_MINUTES))}`,
           },
         ])
         return

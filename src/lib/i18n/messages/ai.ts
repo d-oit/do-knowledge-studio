@@ -25,7 +25,7 @@ const messages = {
   'ai.chat.error.rateLimited': 'The provider is rate-limiting requests — wait and retry.',
   'ai.chat.error.network': 'Cannot reach the provider — check your connection or Ollama URL.',
   'ai.chat.error.unexpected': 'The provider returned an unexpected error.',
-  'ai.chat.error.timeout': (minutes: number) =>
+  'ai.chat.error.timeout': (minutes: string) =>
     `Request timed out after ${minutes} minutes. The provider took too long to respond.`,
 } as const
 
