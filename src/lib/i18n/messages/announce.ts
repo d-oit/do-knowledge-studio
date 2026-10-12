@@ -20,6 +20,8 @@ const messages = {
   'announce.entityDeleted': (name: string) => `Deleted ${name}`,
   /** The active view changed. */
   'announce.viewSwitched': (view: string) => `Switched to ${view}`,
+  /** Accessible name of the chat transcript log region. */
+  'announce.chatTranscript': 'AI chat transcript',
   /** An import replaced the library. Counts are interpolated, so the
    *  plural form has to be selected at the call site (this layer carries no
    *  locale, and `Intl.PluralRules` needs one). */

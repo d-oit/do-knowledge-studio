@@ -223,7 +223,7 @@ export const AiHarnessChatPanel = ({
         className="flex-1 space-y-4 overflow-y-auto p-4"
         role="log"
         aria-live="off"
-        aria-label="AI chat transcript"
+        aria-label={announceT('announce.chatTranscript')}
       >
         {messages.map((m, index) => (
           <ChatMessageRow

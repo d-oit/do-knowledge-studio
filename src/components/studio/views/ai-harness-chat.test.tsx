@@ -386,6 +386,7 @@ const ChatPanelWithSession = () => {
         input={chat.input}
         setInput={chat.setInput}
         handleSend={chat.handleSend}
+        onStop={chat.stop}
         reducedMotion={false}
         augment={false}
         effectiveModel="local/qwen"
