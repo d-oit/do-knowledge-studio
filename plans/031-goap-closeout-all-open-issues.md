@@ -66,11 +66,11 @@ All 30 open issues in `d-oit/do-knowledge-studio` have been implemented across 5
 - `evals/evals.json` — 10 eval test cases with assertions, tested against real CLI
 - Registered via `setup-skills.sh` and added to skills README
 - Symlinked across all agent platforms (Claude, Gemini, Qwen, Cursor, Windsurf)
-- GitHub issue: https://github.com/d-o-hub/github-template-ai-agents/issues/370
+- GitHub issue: <https://github.com/d-o-hub/github-template-ai-agents/issues/370>
 
 ## Branch & PR
 - Branch: `feat/goap-implement-all-open-issues-2026-05-26`
-- PR: https://github.com/d-oit/do-knowledge-studio/pull/209
+- PR: <https://github.com/d-oit/do-knowledge-studio/pull/209>
 - Status: Open, all checks passing after fixes
 - CI blockers resolved: Unit Tests ✅, commitlint ✅, all 86 Codacy issues fixed/suppressed
 - Remaining: Codacy human review to accept false positive suppressions

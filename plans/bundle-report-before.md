@@ -26,6 +26,6 @@ Tool: Vite/Rollup visualizer
 ## Recommendations
 
 1. Ensure all feature islands use `React.lazy()` + `Suspense` ✅ (already done)
-2. Defer non-critical startup work behind `requestIdleCallback` 
+2. Defer non-critical startup work behind `requestIdleCallback`
 3. Monitor main chunk size growth over time
 4. Consider dynamic import of heavy lucide icon imports

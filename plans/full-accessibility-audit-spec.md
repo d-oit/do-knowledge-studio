@@ -14,7 +14,6 @@ commits:
 > **Status**: DONE — All 11 tasks completed in Plans 093-096 (2026-07-29).
 > Strict axe-core assertions (critical + serious) apply to all 10 views (9 strict, 1 graph page with documented SVG exception). Touch targets verified at 44x44px. Keyboard navigation tested. Color-contrast token fixes applied. This spec is retained for historical context only.
 
-
 # Full Accessibility Audit
 
 ## Report

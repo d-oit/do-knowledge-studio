@@ -154,7 +154,6 @@ Test content is built from `String.fromCharCode` constants (`NEWLINE`, `TAB`,
 double-escaped `\n`/`\t` literals in the test sources, which made several cases
 pass on single-line content. The counts above are from the corrected sources.
 
-
 ## 4. ADR check
 
 No ADR needed. §1 makes an existing contract hold (only *link-creating* tokens

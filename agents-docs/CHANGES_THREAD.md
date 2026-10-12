@@ -83,7 +83,7 @@ All new skills have symlinks for:
 
 ### **accessibility-auditor** Skill (NEW - High Impact)
 
-**Why Created**: 
+**Why Created**:
 - Legally required (WCAG compliance mandated by ADA, Section 508, EN 301 549)
 - Completely missing from existing skills
 - Complements anti-ai-slop (design) with functional accessibility
@@ -123,7 +123,7 @@ All new skills have symlinks for:
 
 **Purpose**: Atomic commit, push, and PR workflow with full CI verification
 
-**Philosophy**: 
+**Philosophy**:
 - Zero warnings tolerance
 - All or nothing (atomic)
 - Automatic rollback on failure
@@ -371,6 +371,6 @@ scripts/
 
 ## All Changes Are Now Permanent in Main ✅
 
-**Repository**: https://github.com/d-oit/do-knowledge-studio  
+**Repository**: <https://github.com/d-oit/do-knowledge-studio>  
 **Branch**: main  
 **Status**: Production Ready 🚀

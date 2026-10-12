@@ -171,7 +171,7 @@ cat .agents/skills/<skill>/evals/evals.json | jq empty
 **Symptom**: `shellcheck failed` with specific error codes
 
 **Solution**:
-- Look up error code: https://github.com/koalaman/shellcheck/wiki/
+- Look up error code: <https://github.com/koalaman/shellcheck/wiki/>
 - Common fixes:
   - SC2086: Quote variables
   - SC2002: Don't use cat unnecessarily

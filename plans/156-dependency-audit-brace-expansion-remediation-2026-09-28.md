@@ -90,7 +90,7 @@ current evidence, not a recurring one.
 
 - Path: `nextjs_tailwind_shadcn_ts` → `@huggingface/transformers@4.2.0` → `onnxruntime-node@1.24.3`
   → `global-agent@3.0.0` → `boolean@3.2.0` (also via `roarr@2.15.4`).
-- Registry reason: *"Package no longer supported. Contact Support at https://www.npmjs.com/support"*.
+- Registry reason: *"Package no longer supported. Contact Support at <https://www.npmjs.com/support>"*.
 - `3.2.0` is the **final published version** of `boolean`; there is no patched release to move to.
 - Evidence it predates this work: `boolean@3.2.0`, `global-agent@3.0.0`, and
   `@huggingface/transformers@4.2.0` are all present in the pre-change lockfile, and the

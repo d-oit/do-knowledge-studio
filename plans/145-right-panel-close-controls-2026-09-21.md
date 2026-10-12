@@ -80,4 +80,3 @@ the breakpoint if the project list changes. Verified across all four projects:
 | `desktop-xl` | 1920×1080 | passed |
 | `tablet` | 834×1194 | skipped |
 | `mobile` | 390×844 | skipped |
-

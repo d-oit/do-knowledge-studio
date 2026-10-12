@@ -55,7 +55,7 @@
 ### Agent 1: Deep Researcher (Research Gatherer)
 
 **Focus**: Comprehensive web research and documentation analysis
-**Strategy**: 
+**Strategy**:
 - Use `free` profile for broad coverage
 - Batch process with max 5 parallel
 - Target 50+ sources per topic

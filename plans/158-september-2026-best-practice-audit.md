@@ -38,7 +38,7 @@ manager** in the build image — for pnpm, that is v6.
 > the oldest version of the specified package manager available in the build
 > container. For example, if you specify `pnpm install` as your override install
 > command, Vercel will use pnpm 6."
-> — https://vercel.com/docs/package-managers
+> — <https://vercel.com/docs/package-managers>
 
 Three things then compound:
 
