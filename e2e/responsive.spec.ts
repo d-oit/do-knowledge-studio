@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { waitForAppReady } from './helpers/navigation';
+import { viewHeading, waitForAppReady } from './helpers/navigation';
 
 test.describe('Responsive behavior', () => {
   test('desktop: sidebar is visible', async ({ page }) => {
@@ -82,7 +82,7 @@ test.describe('Responsive behavior', () => {
     const nav = page.getByRole('navigation', { name: /main navigation/i });
     await nav.getByRole('button', { name: /library/i }).first().click();
 
-    await expect(page.getByRole('heading', { name: /library/i })).toBeVisible();
+    await expect(viewHeading(page, /library/i)).toBeVisible();
     // At lg+ the grid renders 3 columns; at 1920px all columns must be laid out
     const grid = page.locator('.grid');
     await expect(grid.first()).toBeVisible();

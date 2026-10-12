@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { navClick } from './helpers/navigation';
+import { navClick, viewHeading } from './helpers/navigation';
 
 const SEMANTIC_FALLBACK_ASSERTION_TIMEOUT_MS = 10_000;
 const SEMANTIC_FALLBACK_TEST_TIMEOUT_MS = 15_000;
@@ -32,7 +32,7 @@ test.describe('Semantic search toggle', () => {
     );
     await page.goto('/');
     await navClick(page, /library/i);
-    await expect(page.getByRole('heading', { name: /library/i })).toBeVisible();
+    await expect(viewHeading(page, /library/i)).toBeVisible();
   });
 
   test('renders an accessible semantic search toggle', async ({ page }) => {
