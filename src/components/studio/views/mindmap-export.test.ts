@@ -8,7 +8,12 @@ vi.mock('./export-types', () => ({ downloadBlob: vi.fn() }))
 const FILENAME = 'mindmap-test.png'
 
 /** What `getComputedStyle` reports when nothing paints a background. */
-const NO_BACKGROUND = ''
+/**
+ * What a real browser reports for a transparent element. jsdom reports `''`,
+ * which is why the fallback used to look covered in tests while the browser
+ * short-circuited it (review on #938).
+ */
+const NO_BACKGROUND = 'rgba(0, 0, 0, 0)'
 
 /** Fallback painted behind the clone (mirrors the module's constant). */
 const EXPECTED_FALLBACK_BACKGROUND = '#faf8f3'

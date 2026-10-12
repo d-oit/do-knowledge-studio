@@ -139,7 +139,10 @@ describe('getEntityTypeMeta', () => {
     // the stock palette this asserts against (review on #938). No bespoke token
     // class in ENTITY_TYPE_META has a numeric suffix, so the broader pattern
     // cannot report a false positive.
-    const stockPalette = /\b[a-z]+-\d{2,3}\b/
+    // Stock scales with a numeric step (`bg-blue-500`) *and* the digit-less
+    // ones (`bg-black`, `text-white`) — neither exists in ENTITY_TYPE_META, so
+    // the pattern cannot false-positive (review on #938).
+    const stockPalette = /\b[a-z]+-(\d{2,3}|black|white)\b/
     for (const id of ['note', 'concept', 'person', 'project'] as const) {
       const meta = getEntityTypeMeta(id)
       for (const cls of [meta.bg, meta.text, meta.dot]) {

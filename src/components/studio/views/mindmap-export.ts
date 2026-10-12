@@ -57,9 +57,15 @@ export const exportElementAsPng = (element: HTMLElement, filename: string): void
   foreignObject.setAttribute('height', '100%')
   const nodeCopy = element.cloneNode(true) as HTMLElement
   const computedBackground = getComputedStyle(element).backgroundColor
+  // A transparent element reports the *truthy* string `rgba(0, 0, 0, 0)` in a
+  // real browser (jsdom reports `''`), so a bare `||` would keep that value and
+  // the raster would come out with no background at all — the token fallback
+  // this file documents would never run outside tests (review on #938).
+  const hasOwnBackground =
+    computedBackground !== '' && computedBackground !== 'rgba(0, 0, 0, 0)'
   nodeCopy.style.width = `${rect.width}px`
   nodeCopy.style.height = `${rect.height}px`
-  nodeCopy.style.background = computedBackground || resolvePaperBackground()
+  nodeCopy.style.background = hasOwnBackground ? computedBackground : resolvePaperBackground()
   foreignObject.appendChild(nodeCopy)
   svg.appendChild(foreignObject)
   const serializer = new XMLSerializer()
