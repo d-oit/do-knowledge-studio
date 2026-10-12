@@ -86,33 +86,6 @@ const TimelineRow = memo(function TimelineRow({
   )
 })
 
-<<<<<<< HEAD
-=======
-/** Empty-state placeholder shown when nothing exists to plot on the timeline. */
-const EmptyState = ({ onCreate }: { onCreate: () => void }) => {
-  return (
-    <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-border bg-card/50 px-6 py-16 text-center">
-      <CalendarDays className="h-10 w-10 text-ink-faint" />
-      <div>
-        <h2 className="font-serif text-lg font-semibold text-ink">
-          {translate('timeline.empty.title')}
-        </h2>
-        <p className="mx-auto mt-1 max-w-sm text-[13px] text-ink-mute">
-          {translate('timeline.empty.body')}
-        </p>
-      </div>
-      <button
-        onClick={onCreate}
-        className="flex min-h-touch items-center gap-1.5 rounded-md bg-primary px-4 text-[13px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
-      >
-        <FileText className="h-4 w-4" />
-        {translate('timeline.empty.action')}
-      </button>
-    </div>
-  )
-}
-
->>>>>>> 99b67bd (feat(tokens): add --spacing-touch floor and migrate 44px targets (#852))
 /**
  * Temporal view (N2): entities and claims grouped into month bands with day
  * bands, newest first. Clicking a marker opens the owning entity in the
