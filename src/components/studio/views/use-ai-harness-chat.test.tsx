@@ -183,6 +183,71 @@ describe('useAiHarnessChat', () => {
     expect(last?.content).toBe('Partial answer')
   })
 
+  it('counts a successful turn that streamed content', async () => {
+    mockSendChatStream.mockImplementation(async (_request, onChunk) => {
+      onChunk('Hello')
+      return resultFor('Hello')
+    })
+
+    const hook = await sendMessage('hi')
+
+    expect(hook.result.current.completedTurns).toBe(1)
+  })
+
+  it('counts a successful turn that only answered on the result', async () => {
+    mockSendChatStream.mockResolvedValue(resultFor('A fallback answer'))
+
+    const hook = await sendMessage('hi')
+
+    expect(hook.result.current.completedTurns).toBe(1)
+  })
+
+  it('does not count a provider failure as a completed turn', async () => {
+    mockSendChatStream.mockRejectedValue(new Error('provider exploded'))
+
+    const hook = await sendMessage('hi')
+
+    // The turn ended, but with an `[Error] …` bubble: nothing completed here.
+    expect(hook.result.current.completedTurns).toBe(0)
+  })
+
+  it('does not count a turn aborted before any delta as completed', async () => {
+    mockSendChatStream.mockRejectedValue(new DOMException('Aborted', 'AbortError'))
+
+    const hook = await sendMessage('hi')
+
+    expect(hook.result.current.completedTurns).toBe(0)
+  })
+
+  it('does not count a turn stopped mid-stream as completed', async () => {
+    mockSendChatStream.mockImplementation(async (_request, onChunk) => {
+      onChunk('Partial answer')
+      throw new DOMException('Aborted', 'AbortError')
+    })
+
+    const hook = await sendMessage('hi')
+
+    expect(hook.result.current.completedTurns).toBe(0)
+  })
+
+  it('does not count a turn that produced no assistant content', async () => {
+    mockSendChatStream.mockResolvedValue(resultFor(''))
+
+    const hook = await sendMessage('hi')
+
+    expect(hook.result.current.completedTurns).toBe(0)
+  })
+
+  it('counts each completed turn separately', async () => {
+    mockSendChatStream.mockResolvedValue(resultFor('answer'))
+    const hook = renderHook(() => useAiHarnessChat({ ...baseOptions }))
+
+    await act(async () => { await hook.result.current.handleSend('first') })
+    await act(async () => { await hook.result.current.handleSend('second') })
+
+    expect(hook.result.current.completedTurns).toBe(2)
+  })
+
   it('aborts the in-flight stream when the view unmounts', async () => {
     let capturedSignal: AbortSignal | undefined
     // A never-settling stream stands in for a live provider: the turn is only

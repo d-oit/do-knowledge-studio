@@ -68,6 +68,10 @@ const messages = {
   'announce.preservedLibraryDownloaded': 'Preserved library downloaded',
   /** Toast when the download fails. */
   'announce.preservedLibraryFailed': 'Could not download the preserved copy',
+  /** Spoken once the AI harness finished a turn it can call successful: the
+   *  transcript itself is `aria-live="off"`, so a streamed answer is silent
+   *  unless this says it landed. Never spoken for a failed or stopped turn. */
+  'announce.aiResponseComplete': 'Response complete',
 } as const
 
 /** Typed `translate` helper bound to the announcement message scope. */

@@ -63,6 +63,7 @@ const useAIHarnessViewState = () => {
     input,
     setInput,
     isLoading,
+    completedTurns,
     cooldownMs,
     handleSend,
     stop,
@@ -159,6 +160,7 @@ const useAIHarnessViewState = () => {
     input,
     setInput,
     isLoading,
+    completedTurns,
     cooldownMs,
     handleSend,
     stop,
@@ -241,6 +243,7 @@ export const AIHarnessView = () => {
     input,
     setInput,
     isLoading,
+    completedTurns,
     cooldownMs,
     handleSend,
     stop,
@@ -301,6 +304,7 @@ export const AIHarnessView = () => {
           <AiHarnessChatPanel
             messages={messages}
             isLoading={isLoading}
+            completedTurns={completedTurns}
             input={input}
             setInput={setInput}
             handleSend={handleSend}

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Bot, User, Send, Square, Sparkles, Lightbulb } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
+import { translate as announceT } from '@/lib/i18n/messages/announce'
 import type { ChatMessage } from '@/lib/ai'
 
 interface PromptSuggestion {
@@ -14,6 +15,12 @@ interface PromptSuggestion {
 interface ChatPanelProps {
   messages: ChatMessage[]
   isLoading: boolean
+  /**
+   * Count of turns the session finished successfully (from
+   * `useAiHarnessChat`). This — not `isLoading` — drives the completion
+   * announcement, because a failed or stopped turn also clears `isLoading`.
+   */
+  completedTurns?: number
   input: string
   setInput: (v: string) => void
   handleSend: (overrideInput?: string) => void | Promise<void>
@@ -178,6 +185,7 @@ const ChatComposer = ({
 export const AiHarnessChatPanel = ({
   messages,
   isLoading,
+  completedTurns = 0,
   input,
   setInput,
   handleSend,
@@ -189,17 +197,25 @@ export const AiHarnessChatPanel = ({
   suggestions = [],
 }: ChatPanelProps) => {
   const showSuggestions = suggestions.length > 0 && messages.length <= 1 && !isLoading && input.trim() === ''
-  const prevLoadingRef = useRef(isLoading)
-  const [lastTurnFinished, setLastTurnFinished] = useState(false)
+  const [announceCompletion, setAnnounceCompletion] = useState(false)
+  // Last counter value already spoken; initialised from the incoming value so
+  // a panel that mounts mid-conversation does not re-announce an old turn.
+  const announcedTurnsRef = useRef(completedTurns)
 
+  // A live region only re-speaks when its text changes, so each turn starts by
+  // clearing the previous completion message.
   useEffect(() => {
-    if (prevLoadingRef.current && !isLoading) {
-      setLastTurnFinished(true)
-    } else if (isLoading) {
-      setLastTurnFinished(false)
-    }
-    prevLoadingRef.current = isLoading
+    if (isLoading) setAnnounceCompletion(false)
   }, [isLoading])
+
+  // Guarding on the last spoken value keeps this idempotent: StrictMode
+  // double-invokes effects, and re-running with an unchanged counter must not
+  // announce the same turn twice.
+  useEffect(() => {
+    if (completedTurns === announcedTurnsRef.current) return
+    announcedTurnsRef.current = completedTurns
+    setAnnounceCompletion(true)
+  }, [completedTurns])
 
   return (
     <div className="flex h-[520px] flex-col rounded-lg border border-border bg-card">
@@ -220,7 +236,7 @@ export const AiHarnessChatPanel = ({
       </div>
 
       <span role="status" aria-live="polite" className="sr-only">
-        {lastTurnFinished ? 'Response complete' : ''}
+        {announceCompletion ? announceT('announce.aiResponseComplete') : ''}
       </span>
 
       {showSuggestions && (
