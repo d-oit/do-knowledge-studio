@@ -41,6 +41,19 @@ describe('precache manifest ↔ service worker parity', () => {
     expect(media.filter((ext) => !served.includes(ext))).toEqual([])
   })
 
+  it('serves cache-first every code extension the generator inventories', () => {
+    const generator = read(join('scripts', 'generate-precache-manifest.mjs'))
+    const worker = read(join('public', 'sw.js'))
+
+    const served = extensionsIn(worker, 'STATIC_EXTENSIONS')
+    const code = extensionsIn(generator, 'CODE_EXTENSIONS')
+
+    expect(code.length).toBeGreaterThan(0)
+    // The chunk inventory is a third source: a `.css` dropped from the worker's
+    // list would leave every stylesheet precached and unserved offline.
+    expect(code.filter((ext) => !served.includes(ext))).toEqual([])
+  })
+
   it('serves cache-first every extension the always-included URLs use', () => {
     const generator = read(join('scripts', 'generate-precache-manifest.mjs'))
     const worker = read(join('public', 'sw.js'))
