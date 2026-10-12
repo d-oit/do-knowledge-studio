@@ -286,7 +286,7 @@ describe('useAiHarnessChat', () => {
     const last = hook.result.current.messages.at(-1)
     expect(last?.role).toBe('assistant')
     expect(last?.content).toBe(
-      '[Error] Request timed out after 2 minutes. The provider took too long to respond.',
+      '[Error] The provider took too long to respond (2 minute limit).\n\nCheck your provider settings and try again.',
     )
     expect(hook.result.current.isLoading).toBe(false)
   })

@@ -23,9 +23,6 @@ const REQUEST_TIMEOUT_MS = 120_000
 /** Abort reason for a turn the provider left hanging (mirrors `AbortSignal.timeout`). */
 const TIMEOUT_ABORT_REASON = 'Request timed out'
 
-/** Transcript copy for an abandoned turn. */
-const REQUEST_TIMEOUT_MESSAGE = translate('ai.chat.error.timeout')
-
 /**
  * Arms `controller` to abort after `ms`, using the same reason
  * `AbortSignal.timeout` uses.
@@ -228,7 +225,11 @@ export const useAiHarnessChat = ({
       if (requestTimeout.didTimeOut()) {
         setMessages((m) => [
           ...m,
-          { id: crypto.randomUUID(), role: 'assistant', content: REQUEST_TIMEOUT_MESSAGE },
+          {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: `[Error] ${translate('ai.chat.error.timeout')}\n\n${translate('ai.chat.error.hint')}`,
+          },
         ])
         return
       }
