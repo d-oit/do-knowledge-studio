@@ -18,8 +18,6 @@ const messages = {
   'theme.switchToDark': 'Switch to dark theme',
   /** Accessible label for theme button when switching to system. */
   'theme.switchToSystem': 'Switch to system theme',
-  /** Accessible label for theme button showing current theme and action. */
-  'theme.toggleAria': (current: string) => `Toggle theme (current: ${current})`,
 } as const
 
 /** Typed `translate` helper bound to the theme message scope. */

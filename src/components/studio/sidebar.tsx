@@ -267,7 +267,12 @@ export const Sidebar = () => {
         <button
           onClick={handleThemeToggle}
           className="flex items-center gap-2 rounded-md px-2.5 min-h-[44px] text-label-lg font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
-          aria-label={themeAriaLabel}
+          // WCAG 2.5.3 (Label in Name, Level A): the accessible name must
+          // contain the visible label, or voice control cannot target the
+          // button by the text it shows. The action alone ("Switch to dark
+          // theme") never contains the visible state label ("Light"), so the
+          // two are composed here.
+          aria-label={`${themeLabel} — ${themeAriaLabel}`}
         >
           <ThemeIcon className="h-4 w-4" />
           <span>{themeLabel}</span>
