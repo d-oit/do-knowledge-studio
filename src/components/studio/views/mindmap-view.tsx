@@ -358,11 +358,11 @@ export const MindMapView = () => {
   return (
     <div className="flex h-full flex-col">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-border bg-card/50 px-5 py-2.5" role="toolbar" aria-label="Mind map controls">
+      <div className="flex flex-wrap items-center gap-2 border-b border-border bg-card/50 px-5 py-2.5" role="toolbar" aria-label={t('mindmap.toolbar.ariaLabel')}>
         <select
           value={rootId}
           onChange={(e) => { setRootId(e.target.value) }}
-          aria-label="Root entity"
+          aria-label={t('mindmap.toolbar.rootLabel')}
           className="rounded-md border border-border bg-background px-2.5 py-1.5 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30 min-h-[44px]"
         >
           {entities.map((e) => (
@@ -376,14 +376,14 @@ export const MindMapView = () => {
 
         <div className="flex items-center gap-1.5">
           <Sliders className="h-3 w-3 text-ink-faint" />
-          <span className="text-label text-ink-mute">Depth</span>
+          <span className="text-label text-ink-mute">{t('mindmap.toolbar.depthLabel')}</span>
           <input
             type="range"
             min={1}
             max={5}
             value={depth}
             onChange={(e) => { setDepth(Number(e.target.value)) }}
-            aria-label="Tree depth"
+            aria-label={t('mindmap.toolbar.depthAriaLabel')}
             className="w-20 accent-saffron min-h-[44px]"
           />
           <span className="font-mono text-label text-ink">{depth}</span>
@@ -391,15 +391,15 @@ export const MindMapView = () => {
 
         <Divider />
 
-        <ToolbarBtn icon={Plus} label="Add child" onClick={() => {
+        <ToolbarBtn icon={Plus} label={t('mindmap.toolbar.addChild')} onClick={() => {
           if (focusedNodeId) addChildToNode(focusedNodeId)
         }} />
-        <ToolbarBtn icon={Edit3} label="Rename" onClick={() => {
+        <ToolbarBtn icon={Edit3} label={t('mindmap.toolbar.rename')} onClick={() => {
           if (focusedNodeId) startEdit(focusedNodeId)
         }} />
-        <ToolbarBtn icon={Trash2} label="Delete" onClick={deleteFocusedNode} />
-        <ToolbarBtn icon={Undo2} label="Undo" disabled={historyIndex <= 0} onClick={undo} />
-        <ToolbarBtn icon={Redo2} label="Redo" disabled={historyIndex >= entityHistory.length - 1} onClick={redo} />
+        <ToolbarBtn icon={Trash2} label={t('mindmap.toolbar.delete')} onClick={deleteFocusedNode} />
+        <ToolbarBtn icon={Undo2} label={t('mindmap.toolbar.undo')} disabled={historyIndex <= 0} onClick={undo} />
+        <ToolbarBtn icon={Redo2} label={t('mindmap.toolbar.redo')} disabled={historyIndex >= entityHistory.length - 1} onClick={redo} />
 
         <div className="flex-1" />
 
@@ -415,8 +415,8 @@ export const MindMapView = () => {
         >
           {compactLabel}
         </button>
-        <ToolbarBtn icon={RefreshCw} label="Sync" onClick={syncTree} />
-        <ToolbarBtn icon={Download} label="Export PNG" onClick={exportPng} />
+        <ToolbarBtn icon={RefreshCw} label={t('mindmap.toolbar.sync')} onClick={syncTree} />
+        <ToolbarBtn icon={Download} label={t('mindmap.toolbar.exportPng')} onClick={exportPng} />
       </div>
 
       {/* Hint */}
@@ -475,7 +475,7 @@ function ToolbarBtn({
     <button
       onClick={onClick}
       disabled={disabled}
-      title={disabled ? `${label} (nothing to undo/redo)` : label}
+      title={disabled ? t('mindmap.toolbar.disabledHint', label) : label}
       aria-label={label}
       className="flex items-center gap-1 rounded-md px-2 py-1.5 text-label font-medium text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink-mute min-h-[44px]"
     >
