@@ -31,7 +31,7 @@ comment was posted.** §8 gives the exact commands for the maintainer.
 
 | Check | How | Result |
 |---|---|---|
-| Per-PR CI conclusion | check-runs API, cached per PR | 9 green; #930 had 2 runs still in progress (Quality Gate, Unit Tests); #925 red |
+| Per-PR CI conclusion | check-runs API, per PR | **9 fully green** (#930's last two jobs — Quality Gate, Unit Tests — cleared, re-checked); **#925 red** (code-scanning + Codacy) |
 | Per-PR correctness | `pnpm exec vitest run <that PR's test files>` on the PR ref | 920: 33 ✓ · 923: 61 ✓ · 926: 26 ✓ · 927: 23 ✓ · 928: 36 ✓ · 929: 54 ✓ · 930: 47 ✓ |
 | Dep PRs | `pnpm install --frozen-lockfile` + resolved-version read | 922 → `sharp@0.35.5`; 924 → `source-map-js@1.2.2` (both exist on npm; `smj` override is what moves it) |
 | Merge compatibility | `git merge-tree --write-tree` pairwise, then 9 real sequential merges | 4 conflicting pairs; all resolved |
@@ -222,9 +222,9 @@ gh pr merge 925 --squash --delete-branch       # BLOCKED — see §6
 Before merging, each branch must be updated with `main` (the AI-harness four conflict
 with each other, and #929/#925 conflict with #910's refactor — see §3.3).
 
-Branch produced by this pass, for inspection or use:
-`integration/land-open-prs` (9 PRs merged, 4 conflicts resolved, 2 semantic defects
-fixed, 4 reverted dependency bumps restored; lint 0 / typecheck 0).
+Branch produced by this pass, for inspection or use: **`integration/land-open-prs`**, pushed
+to `origin` (9 PRs merged, 4 conflicts resolved, 2 semantic defects fixed, 4 reverted
+dependency bumps restored; lint 0 / typecheck 0; 3 of 4 HIGH advisories cleared).
 
 ## 9. Follow-up issue drafts (not filed — no write access)
 
