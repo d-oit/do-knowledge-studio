@@ -61,7 +61,7 @@ export const ParamPicker = ({
               disabled={isDisabled}
               onClick={() => { onSelect(index) }}
               className={cn(
-                'flex min-h-[44px] w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-label-lg transition-colors focus-ring',
+                'flex min-h-touch w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-label-lg transition-colors focus-ring',
                 isSelected
                   ? cn(accents.bg, accents.text, 'font-semibold')
                   : isDisabled

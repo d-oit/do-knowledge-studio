@@ -11,8 +11,13 @@ export interface UserPresence {
   lastActive: number
 }
 
-/** Pool of colors assigned to connected peers. */
-const PRESENCE_COLORS = [
+/**
+ * Pool of colours assigned to connected peers, in assignment order.
+ *
+ * A single palette shared by presence labels and remote cursors so a peer is
+ * the same colour in both places. Exported for `./cursors`.
+ */
+export const PRESENCE_COLORS = [
   '#ef4444', '#f97316', '#eab308', '#22c55e',
   '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899',
   '#14b8a6', '#f43f5e', '#a855f7', '#0ea5e9',

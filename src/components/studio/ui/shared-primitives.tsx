@@ -3,6 +3,13 @@ import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 export { Overlay } from './overlay'
 
+/**
+ * Minimum hit area for an interactive control (44x44px, from the
+ * `--spacing-touch` token). WCAG 2.5.5 / AGENTS.md touch-target floor — apply
+ * to icon-only buttons rather than re-declaring the raw `44px` size.
+ */
+export const TOUCH_TARGET_CLASS = 'min-h-touch min-w-touch' as const
+
 // ---------------------------------------------------------------------------
 // TextInput
 // ---------------------------------------------------------------------------
@@ -107,7 +114,7 @@ export function SwitchToggle({
       </div>
       <button
         onClick={onToggle}
-        className="relative flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md"
+        className="relative flex min-h-touch min-w-touch items-center justify-center rounded-md"
         role="switch"
         aria-checked={checked}
         aria-label={label}
@@ -252,7 +259,7 @@ export function ViewEmptyState({
       <button
         type="button"
         onClick={onAction}
-        className="mt-4 flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 text-body-sm font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+        className="mt-4 flex min-h-touch items-center gap-1.5 rounded-md bg-primary px-4 text-body-sm font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
       >
         {ActionIcon ? <ActionIcon aria-hidden="true" className="h-4 w-4" /> : null}
         {actionLabel}

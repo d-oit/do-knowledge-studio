@@ -84,7 +84,7 @@ describe('EditorMentionPicker', () => {
   it('keeps option rows at 44px hit targets', () => {
     renderPicker()
     for (const option of screen.getAllByRole('option')) {
-      expect(option.className).toContain('min-h-[44px]')
+      expect(option.className).toContain('min-h-touch')
     }
   })
 

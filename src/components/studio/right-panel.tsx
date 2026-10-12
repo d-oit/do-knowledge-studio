@@ -78,7 +78,7 @@ const ConnectionList = ({
             onClick={() => {
               onSelect(target.id)
             }}
-            className="flex w-full min-h-[44px] items-center gap-2 rounded-md p-1.5 text-left text-label-lg text-ink-soft transition-colors hover:bg-muted focus-ring"
+            className="flex w-full min-h-touch items-center gap-2 rounded-md p-1.5 text-left text-label-lg text-ink-soft transition-colors hover:bg-muted focus-ring"
           >
             <ArrowRight className="h-3 w-3 shrink-0 text-ink-faint" />
             <span className="flex-1 truncate">{target.name}</span>
@@ -186,13 +186,13 @@ const InspectorPanel = ({ onClose }: { onClose: () => void }) => {
       <div className="flex gap-2 border-t border-border p-3">
         <button
           onClick={() => startEdit(entity.id)}
-          className="flex-1 rounded-md bg-primary px-3 py-1.5 text-label-lg font-semibold text-primary-foreground transition-opacity hover:opacity-90 press-scale focus-ring min-h-[44px]"
+          className="flex-1 rounded-md bg-primary px-3 py-1.5 text-label-lg font-semibold text-primary-foreground transition-opacity hover:opacity-90 press-scale focus-ring min-h-touch"
         >
           Edit
         </button>
         <button
           onClick={() => { setShowDeleteConfirm(true) }}
-          className="rounded-md border border-border px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-colors hover:border-red-300 hover:text-red-600 focus-ring min-h-[44px]"
+          className="rounded-md border border-border px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-colors hover:border-red-300 hover:text-red-600 focus-ring min-h-touch"
         >
           Delete
         </button>
@@ -214,13 +214,13 @@ const InspectorPanel = ({ onClose }: { onClose: () => void }) => {
               <button
                 ref={deleteCancelRef}
                 onClick={() => { setShowDeleteConfirm(false) }}
-                className="rounded-md border border-border px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-colors hover:bg-muted focus-ring min-h-[44px]"
+                className="rounded-md border border-border px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-colors hover:bg-muted focus-ring min-h-touch"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDelete}
-                className="rounded-md bg-red-600 px-3 py-1.5 text-label-lg font-semibold text-white transition-colors hover:bg-red-700 focus-ring min-h-[44px]"
+                className="rounded-md bg-red-600 px-3 py-1.5 text-label-lg font-semibold text-white transition-colors hover:bg-red-700 focus-ring min-h-touch"
               >
                 Delete
               </button>

@@ -1,3 +1,5 @@
+import { EXPORT_COLORS } from './export-theme'
+
 /** PBKDF2 iteration count for key derivation. */
 const PBKDF2_ITERATIONS = 600000
 /** Salt length in bytes for PBKDF2. */
@@ -143,14 +145,14 @@ export const buildEncryptedReaderHtml = (cipherPayload: string): string => {
   <title>DO Knowledge Studio — encrypted reader</title>
   <style>
     :root { color-scheme: light dark; }
-    body { font: 16px/1.6 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 760px; margin: 0 auto; padding: 2rem; color: #1a1814; background: #faf8f3; }
+    body { font: 16px/1.6 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 760px; margin: 0 auto; padding: 2rem; color: ${EXPORT_COLORS.ink}; background: ${EXPORT_COLORS.paper}; }
     h1 { font-family: Georgia, serif; }
-    label { display: block; margin: 1rem 0 0.4rem; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #6b6760; }
-    input { width: 100%; padding: 0.5rem 0.75rem; font: inherit; border: 1px solid #e5e1d8; border-radius: 6px; box-sizing: border-box; }
-    button { margin-top: 1rem; padding: 0.5rem 1rem; font: inherit; font-weight: 600; background: #1a1814; color: #faf8f3; border: 0; border-radius: 6px; cursor: pointer; }
-    pre { white-space: pre-wrap; word-wrap: break-word; background: #f1ede4; padding: 0.75rem 1rem; border-radius: 6px; max-height: 60vh; overflow-y: auto; }
-    .err { color: #b91c1c; margin-top: 0.5rem; font-size: 12px; }
-    .info { color: #6b6760; font-size: 12px; margin-top: 1rem; }
+    label { display: block; margin: 1rem 0 0.4rem; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: ${EXPORT_COLORS.inkMute}; }
+    input { width: 100%; padding: 0.5rem 0.75rem; font: inherit; border: 1px solid ${EXPORT_COLORS.border}; border-radius: 6px; box-sizing: border-box; }
+    button { margin-top: 1rem; padding: 0.5rem 1rem; font: inherit; font-weight: 600; background: ${EXPORT_COLORS.primary}; color: ${EXPORT_COLORS.primaryForeground}; border: 0; border-radius: 6px; cursor: pointer; }
+    pre { white-space: pre-wrap; word-wrap: break-word; background: ${EXPORT_COLORS.paperSunken}; padding: 0.75rem 1rem; border-radius: 6px; max-height: 60vh; overflow-y: auto; }
+    .err { color: ${EXPORT_COLORS.destructive}; margin-top: 0.5rem; font-size: 12px; }
+    .info { color: ${EXPORT_COLORS.inkMute}; font-size: 12px; margin-top: 1rem; }
   </style>
 </head>
 <body>

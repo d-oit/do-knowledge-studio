@@ -313,7 +313,7 @@ const EntityNameCell = ({ entity, onOpen }: { entity: Entity; onOpen: () => void
           onOpen()
         }}
         aria-label={`Open ${entity.name}`}
-        className="flex w-full min-h-[44px] items-center gap-2.5 rounded text-left focus-ring"
+        className="flex w-full min-h-touch items-center gap-2.5 rounded text-left focus-ring"
       >
         <div className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded', meta.bg, meta.text)}>
           <EntityIcon type={entity.type} className="h-3.5 w-3.5" />
