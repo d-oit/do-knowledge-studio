@@ -127,7 +127,7 @@ const SidebarNavItem = ({ item, active, onSelect }: SidebarNavItemProps) => {
         onClick={() => { onSelect(item.id) }}
         aria-current={active ? 'page' : undefined}
         className={cn(
-          'group flex w-full items-center gap-2.5 rounded-md px-2.5 min-h-[44px] text-body-sm font-medium transition-all press-scale focus-ring',
+          'group flex w-full items-center gap-2.5 rounded-md px-2.5 min-h-touch text-body-sm font-medium transition-all press-scale focus-ring',
           buttonStateClass,
         )}
       >
@@ -237,7 +237,7 @@ export const Sidebar = () => {
             target="_blank"
             rel="noreferrer"
             aria-label={`Knowledge Studio v${packageJson.version} release page`}
-            className="inline-flex min-h-[44px] items-center text-caption uppercase tracking-[0.14em] text-ink-faint transition-colors hover:text-saffron focus-ring"
+            className="inline-flex min-h-touch items-center text-caption uppercase tracking-[0.14em] text-ink-faint transition-colors hover:text-saffron focus-ring"
           >
             Local-first · v{packageJson.version}
           </a>
@@ -248,7 +248,7 @@ export const Sidebar = () => {
       <div className="px-3 pb-3">
         <button
           onClick={() => { setCommandOpen(true) }}
-          className="group flex w-full items-center gap-2 rounded-lg border border-border bg-background/50 px-3 py-2 text-left text-body-sm text-ink-mute transition-colors hover:border-saffron/40 hover:text-ink-soft focus-ring min-h-[44px]"
+          className="group flex w-full items-center gap-2 rounded-lg border border-border bg-background/50 px-3 py-2 text-left text-body-sm text-ink-mute transition-colors hover:border-saffron/40 hover:text-ink-soft focus-ring min-h-touch"
           aria-label="Open command palette"
         >
           <Search className="h-3.5 w-3.5" />
@@ -266,7 +266,7 @@ export const Sidebar = () => {
       <div className="flex items-center gap-1 border-t border-border px-3 py-2.5">
         <button
           onClick={handleThemeToggle}
-          className="flex items-center gap-2 rounded-md px-2.5 min-h-[44px] text-label-lg font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
+          className="flex items-center gap-2 rounded-md px-2.5 min-h-touch text-label-lg font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
           // WCAG 2.5.3 (Label in Name, Level A): the accessible name must
           // contain the visible label, or voice control cannot target the
           // button by the text it shows. The action alone ("Switch to dark
@@ -279,13 +279,13 @@ export const Sidebar = () => {
         </button>
         <ShortcutsTrigger
           className={cn(
-            'flex items-center gap-1.5 rounded-md px-2.5 min-h-[44px] text-label-lg font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring',
+            'flex items-center gap-1.5 rounded-md px-2.5 min-h-touch text-label-lg font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring',
           )}
         />
         <div className="flex-1" />
         <button
           onClick={() => { setRightPanelOpen(!rightPanelOpen) }}
-          className="rounded-md p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
+          className="rounded-md p-1.5 min-h-touch min-w-touch flex items-center justify-center text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
           aria-label={rightPanelOpen ? 'Hide panel' : 'Show panel'}
           title={rightPanelOpen ? 'Hide right panel' : 'Show right panel'}
         >

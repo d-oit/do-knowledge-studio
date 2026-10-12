@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import type { ReactNode } from 'react'
 
 vi.mock('lucide-react', () => {
   const Icon = ({ className }: { className?: string }) => (
@@ -22,23 +21,6 @@ vi.mock('@/lib/studio/types', () => ({
 
 vi.mock('@/lib/search/retrieval', () => ({
   search: vi.fn(() => []),
-}))
-
-vi.mock('@/components/studio/ui/shared-primitives', () => ({
-  Overlay: ({ children, open, onClose, 'aria-label': ariaLabel }: {
-    children: ReactNode
-    open: boolean
-    onClose: () => void
-    'aria-label'?: string
-    initialFocusRef?: React.RefObject<HTMLElement | null>
-  }) =>
-    open ? (
-      <div data-testid="overlay-backdrop" onClick={onClose}>
-        <div data-testid="overlay" role="dialog" aria-label={ariaLabel} onClick={(e) => { e.stopPropagation() }}>
-          {children}
-        </div>
-      </div>
-    ) : null,
 }))
 
 const mockStartNew = vi.fn()

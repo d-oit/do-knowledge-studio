@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react'
-import type { ReactNode } from 'react'
 
 // Hoisted so the vi.mock factories (hoisted above imports) can reference these safely.
 const storeState = vi.hoisted(() => {
@@ -77,30 +76,29 @@ vi.mock('@/lib/search/retrieval', () => ({
 }))
 
 vi.mock('@/components/studio/ui/shared-primitives', () => ({
-  Overlay: ({
-    children,
+  ConfirmDialog: ({
     open,
-    onClose,
-    'aria-label': ariaLabel,
+    onConfirm,
+    onCancel,
+    title,
+    body,
+    confirmLabel,
+    cancelLabel,
   }: {
-    children: ReactNode
     open: boolean
-    onClose: () => void
-    'aria-label'?: string
-    initialFocusRef?: React.RefObject<HTMLElement | null>
+    onConfirm: () => void
+    onCancel: () => void
+    title: string
+    body: string
+    confirmLabel: string
+    cancelLabel?: string
   }) =>
     open ? (
-      <div data-testid="overlay-backdrop" onClick={onClose}>
-        <div
-          data-testid="overlay"
-          role="dialog"
-          aria-label={ariaLabel}
-          onClick={(e) => {
-            e.stopPropagation()
-          }}
-        >
-          {children}
-        </div>
+      <div role="dialog" aria-label={title}>
+        <h3>{title}</h3>
+        <p>{body}</p>
+        <button onClick={onCancel}>{cancelLabel ?? 'Cancel'}</button>
+        <button onClick={onConfirm}>{confirmLabel}</button>
       </div>
     ) : null,
 }))
@@ -248,7 +246,7 @@ describe('RightPanel branch coverage', () => {
     it('confirm delete calls deleteEntity and closes dialog', () => {
       openGraphView()
       fireEvent.click(screen.getByText('Delete'))
-      const dialog = screen.getByRole('dialog', { name: 'Confirm delete' })
+      const dialog = screen.getByRole('dialog', { name: 'Delete entity?' })
       fireEvent.click(within(dialog).getByText('Delete'))
       expect(storeState.deleteEntity).toHaveBeenCalledWith('ent-1')
       expect(storeState.selectEntity).toHaveBeenCalledWith(null)

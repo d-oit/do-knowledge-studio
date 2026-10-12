@@ -12,6 +12,7 @@ interface OverlayProps {
   'aria-label'?: string
   /** ID of the element that labels the dialog */
   'aria-labelledby'?: string
+  'aria-describedby'?: string
   /** Visual variant */
   variant?: OverlayVariant
   /** Whether clicking the backdrop closes the dialog */
@@ -167,6 +168,7 @@ export const Overlay = ({
   onClose,
   'aria-label': ariaLabel,
   'aria-labelledby': ariaLabelledBy,
+  'aria-describedby': ariaDescribedBy,
   variant = 'center',
   closeOnBackdrop = true,
   closeOnEscape = true,
@@ -216,6 +218,7 @@ export const Overlay = ({
         aria-modal="true"
         aria-label={ariaLabel}
         aria-labelledby={ariaLabelledBy}
+        aria-describedby={ariaDescribedBy}
         tabIndex={-1}
         onKeyDown={handleKeyDown}
         className={cn(

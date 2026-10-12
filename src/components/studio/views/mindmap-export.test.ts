@@ -8,7 +8,12 @@ vi.mock('./export-types', () => ({ downloadBlob: vi.fn() }))
 const FILENAME = 'mindmap-test.png'
 
 /** What `getComputedStyle` reports when nothing paints a background. */
-const NO_BACKGROUND = ''
+/**
+ * What a real browser reports for a transparent element. jsdom reports `''`,
+ * which is why the fallback used to look covered in tests while the browser
+ * short-circuited it (review on #938).
+ */
+const NO_BACKGROUND = 'rgba(0, 0, 0, 0)'
 
 /** Fallback painted behind the clone (mirrors the module's constant). */
 const EXPECTED_FALLBACK_BACKGROUND = '#faf8f3'
@@ -86,7 +91,9 @@ describe('exportElementAsPng', () => {
     const element = document.createElement('div')
     const clone = document.createElement('div')
     // jsdom reports an empty computed background for every element, so this is
-    // also the path a real unstyled container takes.
+    // also the path a real unstyled container takes. `getComputedStyle` is
+    // mocked to report no custom properties either, which is what SSR and a
+    // document without the app stylesheet look like.
     const cloneSpy = vi.spyOn(element, 'cloneNode').mockReturnValue(clone as unknown as Node)
 
     exportElementAsPng(element, FILENAME)
@@ -97,6 +104,46 @@ describe('exportElementAsPng', () => {
     const probe = document.createElement('div')
     probe.style.background = EXPECTED_FALLBACK_BACKGROUND
     expect(clone.style.background).toBe(probe.style.background)
+  })
+
+  it('reads the paper token from the document when one is available', () => {
+    const PAPER_FROM_TOKEN = 'rgb(12, 34, 56)'
+    // Ask for a *named* property and refuse anything else: a mock that returns
+    // the paper colour for any argument passes even when the production code
+    // reads a misspelled custom property, which is the failure mode this test
+    // exists to catch (review on #938).
+    const requestedProperties: string[] = []
+    const queriedElements: Element[] = []
+    vi.mocked(window.getComputedStyle).mockImplementation((element: Element) => {
+      queriedElements.push(element)
+      return {
+        backgroundColor: NO_BACKGROUND,
+        getPropertyValue: (property: string) => {
+          requestedProperties.push(property)
+          if (property !== '--background') {
+            throw new Error(`unexpected custom property read: ${property}`)
+          }
+          return PAPER_FROM_TOKEN
+        },
+      } as unknown as CSSStyleDeclaration
+    })
+    const element = document.createElement('div')
+    const clone = document.createElement('div')
+    vi.spyOn(element, 'cloneNode').mockReturnValue(clone as unknown as Node)
+
+    exportElementAsPng(element, FILENAME)
+
+    expect(clone.style.background).toBe(PAPER_FROM_TOKEN)
+    // Both halves of the contract are pinned: *which* custom property the view
+    // reads (`--background` is the paper colour in both themes — see
+    // `PAPER_TOKEN`) and *where* it reads it. The token lives on the root
+    // element, so a mock that answers for any element would hide a regression
+    // that queried the wrong one (review on #938).
+    expect(requestedProperties).toEqual(['--background'])
+    // The export also computes styles for the element it rasterizes, so the
+    // root must be *one* of the queried targets — asserting exact equality
+    // would pin the unrelated call count instead of the token's home.
+    expect(queriedElements).toContain(document.documentElement)
   })
 
   it('sizes the clone to the element box so the raster matches the canvas', () => {

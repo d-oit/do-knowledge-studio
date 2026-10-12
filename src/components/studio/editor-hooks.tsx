@@ -236,7 +236,7 @@ export const EditorModeSelector = ({ editMode, onEditModeChange }: EditorModeSel
           tabIndex={editMode === mode ? 0 : -1}
           aria-checked={editMode === mode}
           onClick={() => { onEditModeChange(mode) }}
-          className={`rounded px-2.5 min-h-[44px] min-w-[44px] text-label font-medium transition-colors focus-ring ${editMode === mode ? 'bg-muted text-ink' : 'text-ink-mute hover:bg-muted/50'}`}
+          className={`rounded px-2.5 min-h-touch min-w-touch text-label font-medium transition-colors focus-ring ${editMode === mode ? 'bg-muted text-ink' : 'text-ink-mute hover:bg-muted/50'}`}
         >
           {mode.charAt(0).toUpperCase() + mode.slice(1)}
         </button>
@@ -259,34 +259,40 @@ export const EditorStatusBar = ({
   nameValid,
 }: EditorStatusBarProps) => (
   <div className="sticky bottom-0 -mx-6 mt-6 flex items-center justify-between border-t border-border bg-background/90 px-6 py-3 backdrop-blur-sm lg:-mx-10 lg:px-10">
-    <div className="flex items-center gap-3 text-label text-ink-faint" aria-live="polite" aria-atomic="true">
+    <div className="flex items-center gap-3 text-label text-ink-faint">
       <span>{wordCount} {WORDS_LABEL}</span>
-      <span>&middot;</span>
+      <span aria-hidden="true">&middot;</span>
       <span>{charCount} {CHARS_LABEL}</span>
-      {isDirty && (
-        <>
-          <span>&middot;</span>
-          <span className="text-saffron-deep">{UNSAVED_CHANGES_TEXT}</span>
-        </>
-      )}
-      {draftStatus === 'saved' && !isDirty && (
-        <>
-          <span>&middot;</span>
-          <span className="text-sage">{DRAFT_SAVED_TEXT}</span>
-        </>
-      )}
-      {draftStatus === 'error' && (
-        <>
-          <span>&middot;</span>
-          <span className="text-destructive">{DRAFT_ERROR_TEXT}</span>
-        </>
-      )}
+      {/* Live region for status transitions only (#856): the counters above are
+          deliberately outside it, so a screen reader hears "Draft saved" /
+          "Unsaved changes" / "Could not save draft" when the status changes
+          rather than the whole bar on every keystroke. */}
+      <span role="status" aria-live="polite" aria-atomic="true" className="flex items-center gap-3">
+        {isDirty && (
+          <>
+            <span aria-hidden="true">&middot;</span>
+            <span className="text-saffron-deep">{UNSAVED_CHANGES_TEXT}</span>
+          </>
+        )}
+        {draftStatus === 'saved' && !isDirty && (
+          <>
+            <span aria-hidden="true">&middot;</span>
+            <span className="text-sage">{DRAFT_SAVED_TEXT}</span>
+          </>
+        )}
+        {draftStatus === 'error' && (
+          <>
+            <span aria-hidden="true">&middot;</span>
+            <span className="text-destructive">{DRAFT_ERROR_TEXT}</span>
+          </>
+        )}
+      </span>
     </div>
     <div className="flex items-center gap-2">
       {editing && (
         <button
           onClick={onDiscard}
-          className="rounded-md border border-border px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-colors hover:bg-destructive/10 hover:text-destructive focus-ring min-h-[44px]"
+          className="rounded-md border border-border px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-colors hover:bg-destructive/10 hover:text-destructive focus-ring min-h-touch"
         >
           {DISCARD_CHANGES_TEXT}
         </button>
@@ -294,7 +300,7 @@ export const EditorStatusBar = ({
       <button
         onClick={onSave}
         disabled={!nameValid}
-        className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-label-lg font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 press-scale focus-ring min-h-[44px]"
+        className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-label-lg font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 press-scale focus-ring min-h-touch"
       >
         <Save className="h-3.5 w-3.5" />
         {editing ? COMMIT_CHANGES_TEXT : SAVE_TO_LIBRARY_TEXT}

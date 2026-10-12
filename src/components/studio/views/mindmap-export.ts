@@ -1,3 +1,4 @@
+import { EXPORT_COLORS } from '@/lib/export/export-theme'
 import { downloadBlob } from './export-types'
 
 /** XML namespace for the wrapper SVG the cloned DOM is embedded in. */
@@ -6,8 +7,34 @@ const SVG_NS = 'http://www.w3.org/2000/svg'
 /** Raster scale of the exported PNG (2x the CSS pixel box). */
 const EXPORT_SCALE = 2
 
-/** Background painted behind the clone when the element has no computed color. */
-const FALLBACK_BACKGROUND = '#faf8f3'
+/**
+ * Background painted behind the clone when the element has no computed color.
+ *
+ * The live value is read from the `--background` token at export time (see
+ * {@link resolvePaperBackground}); this constant is the documented SSR /
+ * no-DOM fallback, mirroring `--background` in `src/app/globals.css`.
+ */
+const FALLBACK_BACKGROUND = EXPORT_COLORS.paper
+
+/**
+ * CSS custom property holding the paper colour (`--background` in
+ * `src/app/globals.css`). Read from the live document at export time so a
+ * re-themed `<html>` (class swap, user override) is honoured; a standalone
+ * SVG/PNG has no access to the app's variables, so the value is inlined into
+ * the clone.
+ */
+const PAPER_TOKEN = '--background'
+
+/** Resolves the paper background, falling back to {@link FALLBACK_BACKGROUND}
+ *  in SSR / non-DOM contexts where `document` or the token is unavailable. */
+const resolvePaperBackground = (): string => {
+  if (typeof document === 'undefined') return FALLBACK_BACKGROUND
+  const styles = getComputedStyle(document.documentElement)
+  const token = typeof styles.getPropertyValue === 'function'
+    ? styles.getPropertyValue(PAPER_TOKEN).trim()
+    : ''
+  return token || FALLBACK_BACKGROUND
+}
 
 /**
  * Renders an element's subtree to a PNG download.
@@ -30,9 +57,15 @@ export const exportElementAsPng = (element: HTMLElement, filename: string): void
   foreignObject.setAttribute('height', '100%')
   const nodeCopy = element.cloneNode(true) as HTMLElement
   const computedBackground = getComputedStyle(element).backgroundColor
+  // A transparent element reports the *truthy* string `rgba(0, 0, 0, 0)` in a
+  // real browser (jsdom reports `''`), so a bare `||` would keep that value and
+  // the raster would come out with no background at all — the token fallback
+  // this file documents would never run outside tests (review on #938).
+  const hasOwnBackground =
+    computedBackground !== '' && computedBackground !== 'rgba(0, 0, 0, 0)'
   nodeCopy.style.width = `${rect.width}px`
   nodeCopy.style.height = `${rect.height}px`
-  nodeCopy.style.background = computedBackground || FALLBACK_BACKGROUND
+  nodeCopy.style.background = hasOwnBackground ? computedBackground : resolvePaperBackground()
   foreignObject.appendChild(nodeCopy)
   svg.appendChild(foreignObject)
   const serializer = new XMLSerializer()

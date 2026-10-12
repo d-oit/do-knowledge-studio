@@ -75,7 +75,7 @@ const PairingButtons = ({
       <button
         onClick={() => { onPairingModeChange(pairingMode === 'display' ? 'none' : 'display') }}
         className={cn(
-          'flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-label-lg font-medium transition-colors focus-ring min-h-[44px]',
+          'flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-label-lg font-medium transition-colors focus-ring min-h-touch',
           pairingMode === 'display'
             ? 'border-saffron bg-saffron/10 text-saffron-deep'
             : 'border-border bg-background text-ink-soft hover:border-saffron/40',
@@ -87,7 +87,7 @@ const PairingButtons = ({
       <button
         onClick={() => { onPairingModeChange(pairingMode === 'scan' ? 'none' : 'scan') }}
         className={cn(
-          'flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-label-lg font-medium transition-colors focus-ring min-h-[44px]',
+          'flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-label-lg font-medium transition-colors focus-ring min-h-touch',
           pairingMode === 'scan'
             ? 'border-saffron bg-saffron/10 text-saffron-deep'
             : 'border-border bg-background text-ink-soft hover:border-saffron/40',
@@ -211,7 +211,7 @@ const ConnectedControls = ({
           <button
             onClick={() => { onPairingModeChange(pairingMode === 'display' ? 'none' : 'display') }}
             className={cn(
-              'flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md transition-colors focus-ring',
+              'flex min-h-touch min-w-touch items-center justify-center rounded-md transition-colors focus-ring',
               pairingMode === 'display'
                 ? 'bg-saffron/20 text-saffron-deep'
                 : 'text-ink-faint hover:bg-border hover:text-ink',
@@ -222,7 +222,7 @@ const ConnectedControls = ({
           </button>
           <button
             onClick={onCopyRoomId}
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-border hover:text-ink focus-ring"
+            className="flex min-h-touch min-w-touch items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-border hover:text-ink focus-ring"
             aria-label="Copy room ID"
           >
             {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
@@ -233,14 +233,14 @@ const ConnectedControls = ({
       <div className="flex gap-2">
         <button
           onClick={onResync}
-          className="flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-label-lg font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring min-h-[44px]"
+          className="flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-label-lg font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring min-h-touch"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           Re-sync
         </button>
         <button
           onClick={onLeave}
-          className="flex items-center gap-1.5 rounded-md border border-destructive/30 bg-background px-3 py-2 text-label-lg font-medium text-destructive transition-colors hover:bg-destructive/10 focus-ring min-h-[44px]"
+          className="flex items-center gap-1.5 rounded-md border border-destructive/30 bg-background px-3 py-2 text-label-lg font-medium text-destructive transition-colors hover:bg-destructive/10 focus-ring min-h-touch"
         >
           <Trash2 className="h-3.5 w-3.5" />
           Leave
@@ -304,7 +304,7 @@ const DisconnectedPanel = ({
           />
           <button
             onClick={onJoin}
-            className="rounded-md bg-primary px-4 py-2 text-label-lg font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring min-h-[44px]"
+            className="rounded-md bg-primary px-4 py-2 text-label-lg font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring min-h-touch"
           >
             Join
           </button>
@@ -323,7 +323,7 @@ const DisconnectedPanel = ({
           onKeyDown={(e) => { if (e.key === 'Enter') onJoin() }}
           aria-describedby="sync-room-password-help"
           placeholder={ROOM_PASSWORD_STRINGS.placeholder}
-          className="w-full min-h-[44px] rounded-md border border-border bg-background px-3 py-2 text-body-sm text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+          className="w-full min-h-touch rounded-md border border-border bg-background px-3 py-2 text-body-sm text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
         />
         <p id="sync-room-password-help" className="mt-1.5 text-caption text-ink-faint">
           {ROOM_PASSWORD_STRINGS.help}

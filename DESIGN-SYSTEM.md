@@ -74,17 +74,20 @@ Each entity type has a dedicated hue that propagates across the Library, Graph,
 Mind Map, and right panel. Dots, badges, and selection tints all draw from the
 same family.
 
-| Token     | Light value | Dark value | Entity type | Tailwind classes (from `ENTITY_TYPE_META`)                          |
-|-----------|-------------|------------|-------------|---------------------------------------------------------------------|
-| `--sky`   | `#6b8aa8`   | `#8eaac7`  | note        | `bg-sky-100 dark:bg-sky-950/40`, `text-sky-700 dark:text-sky-300`   |
-| `--saffron` | `#9a5c2a` | `#e5944a`  | concept     | `bg-amber-100 dark:bg-amber-950/40`, `text-amber-700 dark:text-amber-300` |
-| `--clay`  | `#b8593a`   | `#d4795a`  | person      | `bg-rose-100 dark:bg-rose-950/40`, `text-rose-700 dark:text-rose-300` |
-| `--sage`  | `#587465`   | `#84a597`  | project     | `bg-emerald-100 dark:bg-emerald-950/40`, `text-emerald-700 dark:text-emerald-300` |
+| Token     | Light value | Dark value | Entity type | Classes from `ENTITY_TYPE_META` |
+|-----------|-------------|------------|-------------|---------------------------------|
+| `--sky` / `--sky-deep` | `#6b8aa8` / `#2b4d6b` | `#8eaac7` / `#b7d2ea` | note | `bg-sky/15 text-sky-deep`, `bg-sky` dot |
+| `--saffron` / `--saffron-deep` | `#9a5c2a` / `#6a4a1c` | `#e5944a` / `#f5b074` | concept | `bg-saffron/15 text-saffron-deep`, `bg-saffron` dot |
+| `--clay` / `--clay-deep` | `#b8593a` / `#8a3320` | `#d4795a` / `#f0b8a4` | person | `bg-clay/15 text-clay-deep`, `bg-clay` dot |
+| `--sage` / `--sage-deep` | `#587465` / `#2f5b4a` | `#84a597` / `#a9d0bc` | project | `bg-sage/15 text-sage-deep`, `bg-sage` dot |
 
-> Note: the dot/badge utilities use Tailwind's stock sky/amber/rose/emerald
-> palettes for legibility, while the underlying `--sky` / `--saffron` / `--clay`
-> / `--sage` tokens drive graph edges, chart series, and accent ramps so that
-> the entity-type "identity" reads consistently.
+Each entity type is one token pair: the base hue for the dot/fill, and a
+`*-deep` tier for the label on the `/15` tint. Because the tokens themselves
+flip in `.dark`, a single class set works in both themes — no `dark:` overrides.
+The opacity modifier compiles to `color-mix()` in Tailwind v4. The `-deep` tier
+is the AA-text tier (≥4.5:1 on the tint in both themes) and mirrors the older
+`--saffron-deep`; `--ink-soft` on `bg-muted` is the neutral fallback for
+unregistered types.
 
 ### 2.4 Borders, inputs, focus, destructive
 
@@ -104,9 +107,9 @@ same family.
 
 | Token             | Light                                                          | Dark                                             | Used by                    |
 |-------------------|----------------------------------------------------------------|--------------------------------------------------|----------------------------|
-| `--shadow-soft`   | `0 1px 2px rgb(26 24 20/.04), 0 1px 3px rgb(26 24 20/.06)`      | `0 1px 2px rgb(0 0 0/.4), 0 1px 3px rgb(0 0 0/.5)` | `.shadow-soft`             |
-| `--shadow-lifted` | `0 4px 12px rgb(26 24 20/.08), 0 2px 4px rgb(26 24 20/.04)`      | `0 4px 12px rgb(0 0 0/.5), 0 2px 4px rgb(0 0 0/.4)` | `.shadow-lifted`, `.hover-lift` |
-| `--canvas-dot`    | `var(--ink-faint)`                                             | `rgb(255 255 255 / .06)`                        | `.canvas-grid`             |
+| `--shadow-soft`   | `0 1px 2px rgb(26 24 20/.04), 0 1px 3px rgb(26 24 20/.06)`      | `0 1px 2px rgb(0 0 0/.4), 0 1px 3px rgb(0 0 0/.5)` | `shadow-soft`             |
+| `--shadow-lifted` | `0 4px 12px rgb(26 24 20/.08), 0 2px 4px rgb(26 24 20/.04)`      | `0 4px 12px rgb(0 0 0/.5), 0 2px 4px rgb(0 0 0/.4)` | `shadow-lifted`, `hover-lift` |
+| `--canvas-dot`    | `var(--ink-faint)`                                             | `rgb(255 255 255 / .06)`                        | `canvas-grid`             |
 
 Near-black ink on a near-black dark surface is invisible at 4–8% alpha, so the dark
 theme raises the shadow alpha rather than tinting the color. The utilities reference
@@ -169,14 +172,19 @@ former `text-[8px]` presence labels to `text-badge` (9px), and the lone
 
 ### 3.2 Typographic utilities
 
-| Class          | Effect                                                    |
+Custom utilities are declared with Tailwind v4's `@utility` directive in
+`src/app/globals.css` (not a pre-v4 `@layer utilities` block), so they compose
+with variants (`hover:`, `dark:`, `md:`, …).
+
+| Utility        | Effect                                                    |
 |----------------|-----------------------------------------------------------|
-| `.font-serif`  | Newsreader with stylistic sets `ss01`, `ss02` enabled     |
-| `.text-balance`| `text-wrap: balance` — for headings up to ~3 lines        |
-| `.text-pretty` | `text-wrap: pretty` — for body paragraphs                 |
-| `.ink-rule`    | Adds a 1.75rem saffron underline beneath a heading        |
-| `.truncate-2`  | Two-line clamp with ellipsis                              |
-| `.truncate-3`  | Three-line clamp with ellipsis                            |
+| `font-serif`   | Newsreader; generated from `@theme inline --font-serif`    |
+| `text-badge`   | 9px / 1.3 — badges, micro labels                          |
+| `text-caption` | 10px / 1.4 — timestamps, counters                         |
+| `text-label`   | 11px / 1.4 — toolbar labels, metadata                     |
+
+`h1`–`h3` and the generated `font-serif` utility also carry
+`font-feature-settings: "ss01", "ss02"` from a `@layer base` rule.
 
 ---
 
@@ -200,6 +208,16 @@ allowed only for kbd chips and dot indicators.
 
 Page padding: `px-4 sm:px-6 lg:px-8` for most views. Topbar uses `px-3 sm:px-5`.
 
+### 4.1 Touch-target token (`--spacing-touch`)
+
+`src/app/globals.css` declares `--spacing-touch: 2.75rem` (44px) in the plain
+`@theme` block. Because it lives in the `--spacing-*` namespace, Tailwind v4
+generates the full sizing family from it (`min-h-touch`, `min-w-touch`,
+`size-touch`, `p-touch`, …), so the interactive floor is one token rather than
+a literal `44px` repeated per component. Prefer the utility over raw `44px`;
+the exported `TOUCH_TARGET_CLASS` (`'min-h-touch min-w-touch'`) in
+`src/components/studio/ui/shared-primitives.tsx` is the shared shorthand.
+
 ---
 
 ## 5. Radius scale
@@ -220,16 +238,21 @@ calc(). Pill-shaped elements use `rounded-full`.
 
 ## 6. Shadows
 
-Two warm-tinted elevation utilities. Use `.shadow-soft` for resting cards and
-inputs; use `.shadow-lifted` for hover, popovers, and the command palette.
+Two warm-tinted elevation utilities. Use `shadow-soft` for resting cards and
+inputs; use `shadow-lifted` for hover, popovers, and the command palette.
 Avoid `shadow-2xl` outside of modals — the system prefers restraint.
+Both are `@utility` declarations, so they also work as variants
+(`hover:shadow-lifted`, `dark:shadow-soft`).
 
-| Class            | Value                                                                 |
-|------------------|-----------------------------------------------------------------------|
-| `.shadow-soft`   | `0 1px 2px rgba(26,24,20,0.04), 0 1px 3px rgba(26,24,20,0.06)`        |
-| `.shadow-lifted` | `0 4px 12px rgba(26,24,20,0.08), 0 2px 4px rgba(26,24,20,0.04)`       |
-| `shadow-sm`      | Tailwind default — used on the primary button only                    |
-| `shadow-2xl`     | Tailwind default — reserved for command palette and modals            |
+| Utility         | Value                                                                 |
+|-----------------|-----------------------------------------------------------------------|
+| `shadow-soft`   | `0 1px 2px rgba(26,24,20,0.04), 0 1px 3px rgba(26,24,20,0.06)`        |
+| `shadow-lifted` | `0 4px 12px rgba(26,24,20,0.08), 0 2px 4px rgba(26,24,20,0.04)`       |
+| `shadow-sm`     | Tailwind default — used on the primary button only                    |
+| `shadow-2xl`    | Tailwind default — reserved for command palette and modals            |
+
+Both custom utilities read `--shadow-soft` / `--shadow-lifted`, which are
+per-theme (see §2.5b), so the same class gives real depth in dark mode too.
 
 ---
 
@@ -402,9 +425,12 @@ screen. The right panel is hidden below `lg` (`hidden lg:flex`).
    `globals.css` disables the html theme transition and clamps all
    animation/transition durations to 0.01ms. Framer Motion animations should
    also check `useReducedMotion()` before running.
-3. **Touch targets.** Interactive icons in toolbars and panels use `p-2`
-   (16px), giving a 32px target. Primary actions in dense rows use `py-1.5`
-   with adequate surrounding padding to approach the 44px minimum.
+3. **Touch targets.** Interactive controls use the 44px floor token:
+   `min-h-touch` / `min-w-touch` / `size-touch` (`--spacing-touch: 2.75rem`,
+   WCAG 2.5.5). Icon-only buttons do not rely on padding alone; apply
+   `min-h-touch min-w-touch` (or `size-touch` for a square control), or the
+   exported `TOUCH_TARGET_CLASS` from
+   `src/components/studio/ui/shared-primitives.tsx`.
 4. **Semantic HTML.** Use `<header>`, `<nav aria-label="Main navigation">`,
    `<main>`, `<aside>`, `<button>` (not `<div onClick>`). The topbar `<h1>` is
    the page title and updates with `currentView`.

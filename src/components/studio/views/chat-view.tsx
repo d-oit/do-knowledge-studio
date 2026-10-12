@@ -4,7 +4,8 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useStudioStore } from '@/lib/studio/store'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { cn } from '@/lib/utils'
-import { VIEW_CONTAINER_CLASS } from '../ui/shared-primitives'
+import { VIEW_CONTAINER_CLASS, ConfirmDialog } from '../ui/shared-primitives'
+import { translate as confirmT } from '@/lib/i18n/messages/confirm'
 import {
   WelcomePanel,
   MessageList,
@@ -38,6 +39,7 @@ export const ChatView = () => {
   const reducedMotion = useReducedMotion()
   const [input, setInput] = useState('')
   const [showCitations, setShowCitations] = useState<string | null>(null)
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -78,8 +80,13 @@ export const ChatView = () => {
 
   const handleClear = () => {
     if (chat.length === 0) return
+    setShowClearConfirm(true)
+  }
+
+  const confirmClear = () => {
     clearChat()
     setShowCitations(null)
+    setShowClearConfirm(false)
   }
 
   return (
@@ -122,6 +129,16 @@ export const ChatView = () => {
         onClear={handleClear}
         canClear={chat.length > 0}
         inputRef={inputRef}
+      />
+
+      <ConfirmDialog
+        open={showClearConfirm}
+        onConfirm={confirmClear}
+        onCancel={() => { setShowClearConfirm(false) }}
+        title={confirmT('confirm.clearChat.title')}
+        body={confirmT('confirm.clearChat.body')}
+        confirmLabel={confirmT('confirm.clearChat.confirm')}
+        destructive
       />
     </div>
   )

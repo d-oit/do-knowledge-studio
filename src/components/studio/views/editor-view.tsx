@@ -10,6 +10,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent a
 import { toast } from 'sonner'
 import { useAnnouncer } from '@/lib/a11y/announcer'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
+import { translate as confirmT } from '@/lib/i18n/messages/confirm'
+import { ConfirmDialog } from '@/components/studio/ui/shared-primitives'
 import { EditorToolbar } from './editor-toolbar'
 import { CursorTracker } from '../remote-cursors'
 import { ClaimsPanel } from './editor-claims-panel'
@@ -177,6 +179,7 @@ export const EditorView = () => {
   const [tags, setTags] = useState<string[]>(editing?.tags || [])
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [showTypeMenu, setShowTypeMenu] = useState(false)
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
   const [editMode, setEditMode] = useState<'edit' | 'preview' | 'split'>('edit')
   // Caret position driving the @mention trigger (updated on change/click/keys).
   const [caret, setCaret] = useState(0)
@@ -366,9 +369,10 @@ export const EditorView = () => {
     }
   }, [name, type, description, content, sourceUrl, tags, editing, entities, commitEntities, finishEditing, navigateToView, draftIdRef, announce])
 
-  const handleDiscard = () => {
+  const discardDraft = () => {
     if (draftIdRef.current) removeDraft(draftIdRef.current)
     finishEditing()
+    setShowDiscardConfirm(false)
   }
 
   useEditorKeyboardShortcuts({ handleFormat, handleSave })
@@ -476,9 +480,19 @@ export const EditorView = () => {
         isDirty={isDirty}
         draftStatus={draftStatus}
         editing={editing}
-        onDiscard={handleDiscard}
+        onDiscard={() => { setShowDiscardConfirm(true) }}
         onSave={handleSave}
         nameValid={name.trim().length > 0}
+      />
+
+      <ConfirmDialog
+        open={showDiscardConfirm}
+        onConfirm={discardDraft}
+        onCancel={() => { setShowDiscardConfirm(false) }}
+        title={confirmT('confirm.discardDraft.title')}
+        body={confirmT('confirm.discardDraft.body')}
+        confirmLabel={confirmT('confirm.discardDraft.confirm')}
+        destructive
       />
     </div>
   )

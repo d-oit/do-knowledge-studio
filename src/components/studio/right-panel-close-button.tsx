@@ -11,7 +11,7 @@ export const PanelCloseButton = ({
 }) => (
   <button
     onClick={onClose}
-    className="flex min-h-[44px] min-w-[44px] items-center justify-center text-ink-faint transition-colors hover:text-ink focus-ring"
+    className="flex min-h-touch min-w-touch items-center justify-center text-ink-faint transition-colors hover:text-ink focus-ring"
     title={title}
     aria-label={CLOSE_PANEL_LABEL}
   >

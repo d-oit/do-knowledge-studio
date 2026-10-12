@@ -294,7 +294,7 @@ export const MindMapView = () => {
             {hasChildren ? (
               <button
                 onClick={(e) => { e.stopPropagation(); toggleNode(node.entity.id) }}
-                className="mr-1 min-h-[44px] min-w-[44px] rounded p-0.5 text-ink-faint transition-colors hover:text-ink focus-ring"
+                className="mr-1 min-h-touch min-w-touch rounded p-0.5 text-ink-faint transition-colors hover:text-ink focus-ring"
                 aria-label={isExpanded ? 'Collapse' : 'Expand'}
                 tabIndex={-1}
               >
@@ -370,7 +370,7 @@ export const MindMapView = () => {
           value={rootId}
           onChange={(e) => { setRootId(e.target.value) }}
           aria-label={t('mindmap.toolbar.rootLabel')}
-          className="rounded-md border border-border bg-background px-2.5 py-1.5 text-label-lg font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30 min-h-[44px]"
+          className="rounded-md border border-border bg-background px-2.5 py-1.5 text-label-lg font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30 min-h-touch"
         >
           {entities.map((e) => (
             <option key={e.id} value={e.id}>
@@ -391,7 +391,7 @@ export const MindMapView = () => {
             value={depth}
             onChange={(e) => { setDepth(Number(e.target.value)) }}
             aria-label={t('mindmap.toolbar.depthAriaLabel')}
-            className="w-20 accent-saffron min-h-[44px]"
+            className="w-20 accent-saffron min-h-touch"
           />
           <span className="font-mono text-label text-ink">{depth}</span>
         </div>
@@ -416,7 +416,7 @@ export const MindMapView = () => {
           aria-label={t('mindmap.density.toggle')}
           data-testid="mindmap-compact-toggle"
           className={cn(
-            'rounded-md px-2 py-1.5 text-label font-medium transition-colors min-h-[44px] focus-ring',
+            'rounded-md px-2 py-1.5 text-label font-medium transition-colors min-h-touch focus-ring',
             compact ? 'bg-saffron-soft text-saffron-deep' : 'text-ink-mute hover:bg-muted hover:text-ink',
           )}
         >
@@ -487,7 +487,7 @@ function ToolbarBtn({
       disabled={disabled}
       title={disabled ? t('mindmap.toolbar.disabledHint', label) : label}
       aria-label={label}
-      className="flex items-center gap-1 rounded-md px-2 py-1.5 text-label font-medium text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink-mute min-h-[44px]"
+      className="flex items-center gap-1 rounded-md px-2 py-1.5 text-label font-medium text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink-mute min-h-touch"
     >
       <Icon className="h-3.5 w-3.5" />
       <span className="hidden md:inline">{label}</span>
