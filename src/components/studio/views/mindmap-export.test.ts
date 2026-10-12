@@ -86,7 +86,9 @@ describe('exportElementAsPng', () => {
     const element = document.createElement('div')
     const clone = document.createElement('div')
     // jsdom reports an empty computed background for every element, so this is
-    // also the path a real unstyled container takes.
+    // also the path a real unstyled container takes. `getComputedStyle` is
+    // mocked to report no custom properties either, which is what SSR and a
+    // document without the app stylesheet look like.
     const cloneSpy = vi.spyOn(element, 'cloneNode').mockReturnValue(clone as unknown as Node)
 
     exportElementAsPng(element, FILENAME)
@@ -97,6 +99,20 @@ describe('exportElementAsPng', () => {
     const probe = document.createElement('div')
     probe.style.background = EXPECTED_FALLBACK_BACKGROUND
     expect(clone.style.background).toBe(probe.style.background)
+  })
+
+  it('reads the paper token from the document when one is available', () => {
+    const PAPER_FROM_TOKEN = 'rgb(12, 34, 56)'
+    vi.mocked(window.getComputedStyle).mockImplementation(
+      () => ({ backgroundColor: NO_BACKGROUND, getPropertyValue: () => PAPER_FROM_TOKEN }) as unknown as CSSStyleDeclaration,
+    )
+    const element = document.createElement('div')
+    const clone = document.createElement('div')
+    vi.spyOn(element, 'cloneNode').mockReturnValue(clone as unknown as Node)
+
+    exportElementAsPng(element, FILENAME)
+
+    expect(clone.style.background).toBe(PAPER_FROM_TOKEN)
   })
 
   it('sizes the clone to the element box so the raster matches the canvas', () => {
