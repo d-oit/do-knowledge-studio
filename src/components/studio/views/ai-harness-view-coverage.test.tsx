@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act } from 'react'
 import type { ReactNode } from 'react'
+import type * as SharedPrimitives from '../ui/shared-primitives'
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react'
 
 // Hoisted so vi.mock factories (hoisted above imports) can reference these mocks.
@@ -156,25 +157,30 @@ vi.mock('./ai-harness-settings', () => ({
   ),
 }))
 
-vi.mock('../ui/shared-primitives', () => ({
-  SwitchToggle: ({
-    label,
-    checked,
-    onToggle,
-  }: {
-    label: string
-    checked?: boolean
-    onToggle?: () => void
-  }) => (
-    <button
-      data-testid="switch-toggle"
-      data-checked={String(Boolean(checked))}
-      onClick={() => onToggle?.()}
-    >
-      {label}
-    </button>
-  ),
-}))
+vi.mock('../ui/shared-primitives', async () => {
+  // Keep the real view chrome (the hero header holds the settings toggle).
+  const actual = await vi.importActual<typeof SharedPrimitives>('../ui/shared-primitives')
+  return {
+    ...actual,
+    SwitchToggle: ({
+      label,
+      checked,
+      onToggle,
+    }: {
+      label: string
+      checked?: boolean
+      onToggle?: () => void
+    }) => (
+      <button
+        data-testid="switch-toggle"
+        data-checked={String(Boolean(checked))}
+        onClick={() => onToggle?.()}
+      >
+        {label}
+      </button>
+    ),
+  }
+})
 
 vi.mock('@/lib/studio/store', () => ({
   useStudioStore: (selector: (s: Record<string, unknown>) => unknown) =>

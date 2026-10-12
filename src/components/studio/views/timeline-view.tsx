@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import type { AnyEntityType } from '@/lib/studio/types'
 import { translate } from '@/lib/i18n/messages/timeline'
 import { EntityIcon } from '../entity-type-icon'
+import { ViewEmptyState, ViewHeader, VIEW_CONTAINER_CLASS } from '../ui/shared-primitives'
 import { buildTimelineGroups, type TimelineGroup, type TimelineItem } from './timeline-helpers'
 
 /** Total number of markers inside a month band, used for the count badge. */
@@ -85,30 +86,6 @@ const TimelineRow = memo(function TimelineRow({
   )
 })
 
-/** Empty-state placeholder shown when nothing exists to plot on the timeline. */
-const EmptyState = ({ onCreate }: { onCreate: () => void }) => {
-  return (
-    <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-border bg-card/50 px-6 py-16 text-center">
-      <CalendarDays className="h-10 w-10 text-ink-faint" />
-      <div>
-        <h2 className="font-serif text-lg font-semibold text-ink">
-          {translate('timeline.empty.title')}
-        </h2>
-        <p className="mx-auto mt-1 max-w-sm text-[13px] text-ink-mute">
-          {translate('timeline.empty.body')}
-        </p>
-      </div>
-      <button
-        onClick={onCreate}
-        className="flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 text-[13px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
-      >
-        <FileText className="h-4 w-4" />
-        {translate('timeline.empty.action')}
-      </button>
-    </div>
-  )
-}
-
 /**
  * Temporal view (N2): entities and claims grouped into month bands with day
  * bands, newest first. Clicking a marker opens the owning entity in the
@@ -136,14 +113,22 @@ export const TimelineView = () => {
   )
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-8 lg:px-10 lg:py-12">
-      <header className="mb-8">
-        <h2 className="font-serif text-2xl font-semibold text-ink">{translate('timeline.title')}</h2>
-        <p className="mt-1 text-[13px] text-ink-mute">{translate('timeline.subtitle')}</p>
-      </header>
+    <div className={cn(VIEW_CONTAINER_CLASS, 'max-w-5xl')}>
+      <ViewHeader
+        icon={CalendarDays}
+        title={translate('timeline.title')}
+        subtitle={translate('timeline.subtitle')}
+      />
 
       {groups.length === 0 ? (
-        <EmptyState onCreate={startNew} />
+        <ViewEmptyState
+          icon={CalendarDays}
+          title={translate('timeline.empty.title')}
+          body={translate('timeline.empty.body')}
+          actionLabel={translate('timeline.empty.action')}
+          actionIcon={FileText}
+          onAction={startNew}
+        />
       ) : (
         <ol className="relative space-y-8 border-l border-border pl-5">
           {groups.map((group) => (

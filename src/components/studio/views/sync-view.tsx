@@ -27,6 +27,7 @@ import {
   type PeerInfo,
 } from '@/lib/sync/discovery'
 import { ConflictUI } from '../conflict-ui'
+import { ViewHeader, VIEW_CONTAINER_CLASS } from '../ui/shared-primitives'
 import type { FieldConflict } from '@/lib/sync/merge'
 import { PresenceList } from '../presence-indicator'
 import { usePresence } from '@/lib/sync/use-presence'
@@ -146,16 +147,8 @@ const SyncHeader = ({ reducedMotion }: { reducedMotion: boolean }) => (
     initial={reducedMotion ? false : { opacity: 0, y: 6 }}
     animate={{ opacity: 1, y: 0 }}
     transition={reducedMotion ? { duration: 0 } : undefined}
-    className="mb-6 flex items-start gap-4"
   >
-    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-sage to-emerald-600 text-white shadow-sm">
-      <Wifi className="h-6 w-6" />
-    </div>
-    <div className="flex-1">          <h2 className="font-serif text-2xl font-semibold text-ink">{t('sync.title')}</h2>
-          <p className="text-[13px] text-ink-mute">
-            {t('sync.subtitle')}
-          </p>
-    </div>
+    <ViewHeader icon={Wifi} title={t('sync.title')} subtitle={t('sync.subtitle')} />
   </motion.div>
 )
 
@@ -339,7 +332,7 @@ export const SyncView = () => {
   }, [])
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-6 lg:px-10 lg:py-8">
+    <div className={cn(VIEW_CONTAINER_CLASS, 'max-w-3xl')}>
       <SyncHeader reducedMotion={reducedMotion} />
 
       <SyncStatusCard

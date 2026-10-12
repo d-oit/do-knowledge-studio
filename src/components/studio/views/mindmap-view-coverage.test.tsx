@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { ReactNode } from 'react'
+import type * as SharedPrimitives from '../ui/shared-primitives'
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react'
 
 vi.mock('framer-motion', () => ({
@@ -38,9 +39,14 @@ vi.mock('@/lib/utils', () => ({
   cn: (...args: (string | undefined | false | null)[]) => args.filter(Boolean).join(' '),
 }))
 
-vi.mock('../ui/shared-primitives', () => ({
-  Divider: () => <hr data-testid="divider" />,
-}))
+vi.mock('../ui/shared-primitives', async () => {
+  // Keep the real view chrome so the empty state renders its create action.
+  const actual = await vi.importActual<typeof SharedPrimitives>('../ui/shared-primitives')
+  return {
+    ...actual,
+    Divider: () => <hr data-testid="divider" />,
+  }
+})
 
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
@@ -56,6 +62,7 @@ const mockSetView = vi.fn()
 const mockCommitEntities = vi.fn()
 const mockDeleteEntity = vi.fn()
 const mockStartEdit = vi.fn()
+const mockStartNew = vi.fn()
 const mockUndo = vi.fn()
 const mockRedo = vi.fn()
 
@@ -116,6 +123,7 @@ vi.mock('@/lib/studio/store', () => ({
       commitEntities: mockCommitEntities,
       deleteEntity: mockDeleteEntity,
       startEdit: mockStartEdit,
+      startNew: mockStartNew,
       undo: mockUndo,
       redo: mockRedo,
       entityHistory: currentEntityHistory,

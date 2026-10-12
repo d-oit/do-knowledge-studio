@@ -47,6 +47,8 @@ import {
   EditorStatusBar,
 } from '../editor-hooks'
 import { EditorAdvancedFields } from './editor-advanced-fields'
+import { cn } from '@/lib/utils'
+import { VIEW_CONTAINER_CLASS } from '../ui/shared-primitives'
 import { EditorPreview } from './editor-preview'
 
 const SERIF_FONT_STYLE: React.CSSProperties = {
@@ -378,7 +380,7 @@ export const EditorView = () => {
     // scrolled content, so at maximum scroll it permanently overlays the last
     // 69px no matter how the browser positions a focused element (verified in
     // Chromium — the element was still 100% covered at scrollTop max).
-    <div className="mx-auto max-w-3xl px-6 pb-24 pt-6 lg:px-10 lg:pb-28 lg:pt-8">
+    <div className={cn(VIEW_CONTAINER_CLASS, 'max-w-3xl pb-24 lg:pb-28')}>
       <EditorHeader
         editing={editing}
         name={name}

@@ -331,7 +331,10 @@ the default Sonner styling but inherit the Geist Sans font. Use semantic types
 
 ### 8.9 Empty states
 
-A centered column with a faint Lucide icon (`text-ink-faint/50`, `h-8 w-8`), a
+View-level empty states use the shared `ViewEmptyState` (§11.3): a dashed card,
+a tinted icon circle, an `h3` headline, a one-line hint, and a primary CTA with
+a `min-h-[44px]` touch target. Panel-scoped states (e.g. the entity search
+panel) stay compact: a faint Lucide icon (`text-ink-faint/50`, `h-8 w-8`), a
 short headline (`text-[14px] font-medium text-ink`), and a one-line hint
 (`text-[12px] text-ink-mute`). Primary CTAs in empty states use the Saffron or
 Primary button variant.
@@ -410,7 +413,84 @@ screen. The right panel is hidden below `lg` (`hidden lg:flex`).
 
 ---
 
-## 11. References
+## 11. View chrome (#870)
+
+Every view renders the same chrome: one body container, one hero header, one
+empty state. All three live in
+`src/components/studio/ui/shared-primitives.tsx`. Never re-declare them inside a
+view — three padding scales and four header layouts is exactly the drift this
+section exists to prevent.
+
+### 11.1 Body container
+
+`VIEW_CONTAINER_CLASS` is the only view body wrapper:
+
+```
+VIEW_GUTTER_CLASS    = 'px-6 lg:px-10'
+VIEW_CONTAINER_CLASS = cn('mx-auto py-6 lg:py-8', VIEW_GUTTER_CLASS)
+```
+
+A view appends its own width cap (or its own flex behaviour) with `cn()`:
+
+| View(s)                       | Body class                                                              |
+|-------------------------------|-------------------------------------------------------------------------|
+| home, library, timeline, export, ai | `cn(VIEW_CONTAINER_CLASS, 'max-w-5xl')`                          |
+| sync, editor                  | `cn(VIEW_CONTAINER_CLASS, 'max-w-3xl')`; editor also `pb-24 lg:pb-28` so the sticky status bar cannot cover the last row |
+| triz                          | `cn(VIEW_CONTAINER_CLASS, 'max-w-6xl')`                                 |
+| graph, mindmap                | `cn('flex h-full flex-col', VIEW_CONTAINER_CLASS)`                      |
+| chat                          | `cn('flex-1 overflow-y-auto', VIEW_CONTAINER_CLASS)` on the scroll region |
+
+An ad-hoc `px-6 py-6 lg:px-10 lg:py-8` string in a view is a regression. Chrome
+rows that must line up with the body reuse `VIEW_GUTTER_CLASS` (the chat
+composer and suggestions bar) or bleed into it with the matching negative
+margin (`-mx-6 lg:-mx-10`, the editor toolbar and status bar).
+
+### 11.2 Hero header — the policy
+
+The shell owns the only `h1`: `topbar.tsx` renders `VIEW_TITLES[currentView]`.
+Inside the body, **every view renders exactly one `<ViewHeader>` (`h2`)**, and
+exactly two views are exempt:
+
+| View                                                                    | In-view header | Why |
+|-------------------------------------------------------------------------|----------------|-----|
+| home, library, timeline, export, ai, triz, sync, graph, mindmap           | `ViewHeader`   | Page identity: icon tile, title, optional subtitle/badge/action |
+| chat                                                                    | none           | Conversation column — the composer and suggestion bar are its chrome, and a hero would push the transcript down |
+| editor                                                                  | none           | Single-entity writing surface — the entity name field is its header, and its sticky toolbar/status bar bleed into the gutter |
+
+`ViewHeader` takes `{ icon, title, subtitle?, badge?, action?, className? }`:
+pass translated strings (the primitive never hardcodes copy) and pass an
+`action` for the trailing control (the AI harness settings toggle) or a `badge`
+for a marker chip (the "Lab" chips). The icon tile keeps one treatment
+everywhere — `h-12 w-12`, `rounded-xl`, `bg-gradient-to-br from-saffron to-clay`;
+per-view tints (the sync view's old sage tile) are the drift this section
+forbids. A view that animates its header wraps `<ViewHeader>` in its own
+`motion.div` instead of forking the layout. The `h2` is deliberate: it keeps
+exactly one `h1` per page and lets content sections and empty states sit `h3`
+under it.
+
+Adding a view? It gets a `ViewHeader` unless it is a conversation or writing
+surface; both exemptions above are exhaustive.
+
+### 11.3 Empty state
+
+`ViewEmptyState` is the single view-level empty state (dashed card, tinted icon
+circle, `h3` headline, body, primary CTA with a 44px target). It is the library
+view's original empty state, extracted, and it is used by library (both the
+"no entities" and "no matches" variants), home, timeline, export, graph, and
+mindmap.
+
+- A view-level empty state always carries an action. Use the store's `startNew`
+  so the button opens a blank entity in the editor; `export` routes to the
+  editor with `setView('editor')` because it creates nothing itself.
+- Canvas views (`graph`, `mindmap`) render it inside the canvas overlay/scroll
+  region with `pointer-events-none` on the wrapper and `pointer-events-auto` on
+  the card, so the canvas keeps its own input.
+- Panel-scoped states (the entity search panel) are not view chrome and keep
+  their compact inline markup.
+
+---
+
+## 12. References
 
 - Tokens: `src/app/globals.css`
 - Topbar (header): `src/components/studio/topbar.tsx`

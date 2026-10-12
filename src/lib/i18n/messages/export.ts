@@ -21,8 +21,11 @@ const messages = {
   /** Export view subtitle. */
   'export.grid.subtitle':
     'Your data is local. Export it whenever you want — for backup, sharing, or migration.',
-  /** Empty state shown when there are no entities to export. */
-  'export.grid.empty': 'No entities to export yet. Create some content first.',
+  /** Empty state headline when there are no entities to export. */
+  'export.empty.title': 'No entities to export yet',
+  /** Empty state body explaining where exports get their content. */
+  'export.empty.body':
+    'Exports are built from the entities saved in this browser — create one and it will show up here.',
   /** Button that navigates to the editor when the library is empty. */
   'export.grid.createEntity': 'Create entity',
   /** Hover action label on an available format card. */

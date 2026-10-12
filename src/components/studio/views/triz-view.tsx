@@ -11,6 +11,8 @@ import {
 import { TrizMatrixView } from './triz-matrix-view'
 import { TrizResultsView } from './triz-results-view'
 import { translate } from '@/lib/i18n/messages/triz'
+import { cn } from '@/lib/utils'
+import { VIEW_CONTAINER_CLASS } from '../ui/shared-primitives'
 
 /** TRIZ contradiction matrix view for picking parameters and viewing suggested inventive principles. */
 export const TrizView = () => {
@@ -100,7 +102,7 @@ export const TrizView = () => {
   )
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-6 lg:px-10 lg:py-8">
+    <div className={cn(VIEW_CONTAINER_CLASS, 'max-w-6xl')}>
       <TrizHeader
         view={view}
         onViewChange={setView}
