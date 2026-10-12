@@ -6,6 +6,7 @@ import { StudioThemeProvider } from "@/components/studio/theme-provider";
 import { ServiceWorkerRegistration } from "@/components/studio/service-worker-registration";
 import { OfflineIndicator } from "@/components/studio/offline-indicator";
 import { Announcer } from "@/lib/a11y/announcer";
+import { THEME_COLOR_DARK, THEME_COLOR_LIGHT } from "@/lib/studio/theme-colors";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -76,8 +77,8 @@ export const viewport: Viewport = {
   // ThemeColorSync inside StudioThemeProvider dynamically updates meta[name="theme-color"]
   // based on resolvedTheme so themeColor always tracks the active theme.
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#9a5c2a" },
-    { media: "(prefers-color-scheme: dark)", color: "#14110d" },
+    { media: "(prefers-color-scheme: light)", color: THEME_COLOR_LIGHT },
+    { media: "(prefers-color-scheme: dark)", color: THEME_COLOR_DARK },
   ],
   // P2-8: tell the UA which colour scheme is active so scrollbars, form
   // controls, and default canvas paint correctly in dark mode.

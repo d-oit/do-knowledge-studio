@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { ThemeProvider as NextThemesProvider, useTheme } from 'next-themes'
 import { type ThemeProviderProps } from 'next-themes'
+import { THEME_COLOR_DARK, THEME_COLOR_LIGHT } from '@/lib/studio/theme-colors'
 
 /** Theme color helper updating meta theme-color to match resolvedTheme. */
 const ThemeColorSync = () => {
@@ -10,7 +11,7 @@ const ThemeColorSync = () => {
 
   useEffect(() => {
     const metas = document.querySelectorAll('meta[name="theme-color"]')
-    const targetColor = resolvedTheme === 'dark' ? '#14110d' : '#9a5c2a'
+    const targetColor = resolvedTheme === 'dark' ? THEME_COLOR_DARK : THEME_COLOR_LIGHT
 
     if (metas.length > 0) {
       metas.forEach((meta) => {

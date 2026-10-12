@@ -220,7 +220,10 @@ const DrawerFooter = () => {
       <div className="flex items-center gap-2">
         <button
           onClick={handleThemeToggle}
-          aria-label={themeAriaLabel}
+          // WCAG 2.5.3 (Label in Name): the accessible name must contain the
+          // visible label — see the sidebar's note; the drawer renders the same
+          // control with the same string pair.
+          aria-label={`${themeLabel} — ${themeAriaLabel}`}
           className="flex min-h-[44px] flex-1 items-center gap-2 rounded-md px-2.5 py-1.5 text-label-lg font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
         >
           <ThemeIcon className="h-4 w-4" />
