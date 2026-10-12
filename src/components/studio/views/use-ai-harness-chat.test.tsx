@@ -92,17 +92,63 @@ describe('useAiHarnessChat', () => {
     expect(assistantMessages.at(-1)?.content).toBe('streamed')
   })
 
-  it('surfaces a provider failure as an error message', async () => {
-    mockSendChatStream.mockRejectedValue(new Error('provider exploded'))
+  it('maps HTTP 401 / unauthorized errors to friendly copy and logs raw error', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const err = new Error('OpenRouter error 401: {"error":{"message":"Invalid API key","code":401}}')
+    mockSendChatStream.mockRejectedValue(err)
 
     const hook = await sendMessage('hi')
 
     const last = hook.result.current.messages.at(-1)
     expect(last?.role).toBe('assistant')
-    expect(last?.content).toContain('[Error] provider exploded')
+    expect(last?.content).toContain('[Error] Your API key was rejected — check it in settings.')
+    expect(last?.content).not.toContain('{"error":')
+    expect(consoleSpy).toHaveBeenCalledWith('AI harness send failed:', err)
+    consoleSpy.mockRestore()
+  })
+
+  it('maps HTTP 429 rate limit errors to friendly copy', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const err = new Error('Ollama error 429: Rate limit exceeded')
+    mockSendChatStream.mockRejectedValue(err)
+
+    const hook = await sendMessage('hi')
+
+    const last = hook.result.current.messages.at(-1)
+    expect(last?.role).toBe('assistant')
+    expect(last?.content).toContain('[Error] The provider is rate-limiting requests — wait and retry.')
+    consoleSpy.mockRestore()
+  })
+
+  it('maps network errors to friendly copy', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const err = new TypeError('Failed to fetch')
+    mockSendChatStream.mockRejectedValue(err)
+
+    const hook = await sendMessage('hi')
+
+    const last = hook.result.current.messages.at(-1)
+    expect(last?.role).toBe('assistant')
+    expect(last?.content).toContain('[Error] Cannot reach the provider — check your connection or Ollama URL.')
+    consoleSpy.mockRestore()
+  })
+
+  it('maps unexpected provider errors to friendly copy', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const err = new Error('provider exploded')
+    mockSendChatStream.mockRejectedValue(err)
+
+    const hook = await sendMessage('hi')
+
+    const last = hook.result.current.messages.at(-1)
+    expect(last?.role).toBe('assistant')
+    expect(last?.content).toContain('[Error] The provider returned an unexpected error.')
+    expect(last?.content).not.toContain('provider exploded')
+    consoleSpy.mockRestore()
   })
 
   it('leaves no empty assistant bubble behind when the provider fails', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     mockSendChatStream.mockRejectedValue(new Error('provider exploded'))
 
     const hook = await sendMessage('hi')
@@ -111,6 +157,7 @@ describe('useAiHarnessChat', () => {
       (m) => m.role === 'assistant' && m.content.trim() === '',
     )
     expect(empty).toEqual([])
+    consoleSpy.mockRestore()
   })
 
   it('leaves no assistant bubble when the turn is aborted before any delta', async () => {
