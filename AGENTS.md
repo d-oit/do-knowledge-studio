@@ -125,15 +125,7 @@ Each stage needs a falsifiable exit criterion: a test that fails for the
 *stated* reason, a green gate, an attempt to break it that failed, a
 comparison recorded in `plans/`. "Looks good" is not a criterion.
 
-| Stage | Exit criterion | Tooling |
-|-------|----------------|---------|
-| Reproduce | Test fails for the stated reason before any fix | `pnpm test` red |
-| Evaluate | lint + typecheck + test + build clean, zero warnings | `scripts/verify.sh` |
-| Adversarial | Someone tried to break it and failed | `code-review-assistant` |
-| Shadow | New path runs beside the old, emits, changes nothing | flag + recorded comparison |
-| Canary | Narrow slice, real browser, one-command undo | Vercel PR preview |
-| Promote | 100% rollout, then delete the flag | `gh pr merge --auto --squash` |
-
+Stage-by-stage exit criteria and tooling: `agents-docs/DELIVERY-LIFECYCLE.md`.
 Pick depth by blast radius: docs need only Evaluate; a bug fix runs
 reproduce → evaluate → adversarial; persistence, hydration, undo/redo, and
 sync additionally need shadow and canary. **Data-loss bugs start at
@@ -205,46 +197,31 @@ Full procedure, staleness ladder, and the Codacy false-positive playbook:
 
 ## Learnings (session-distilled)
 
-Non-obvious toolchain facts. Full catalog with debugging detail:
-`agents-docs/LESSONS.md` (LESSON-001..045) and `lessons.jsonl`.
+Non-obvious toolchain facts; full detail in `agents-docs/LESSONS.md`
+(LESSON-001..045) and `lessons.jsonl`.
 
-- **gitleaks-action v3+ needs a paid `GITLEAKS_LICENSE`** — pin v2.x; a failing
-  license gate masks real scan results. yamllint enforces `line-length` (120)
-  and `new-line-at-end-of-file` inside `run: |` blocks (`awk 'length > 120'`).
-- **DeepSource suppressions in `.deepsource.toml` do not reliably prevent check
-  failures** — use `const fn = () => {}` (never `function`) for module-scope
-  helpers; keep exported-function complexity under 6.
-- **Codacy/DeepSource re-post stale findings as NEW threads on every push**,
-  and `required_review_thread_resolution` makes each a blocker. Fix the tree,
-  reply with evidence, resolve, then STOP pushing until CI demands it
-  (LESSON-034; full procedure in `agents-docs/GIT-WORKFLOW.md`).
-- **Vitest typecheck is experimental** and `ignoreSourceErrors: true`, so a
-  green result does not cover `*.test.ts` source errors (LESSON-035).
-- **Verify before asserting — load the `verify-before-asserting` skill.** Trust
-  live code over plans, docs, or memory; grep for a helper before adding one
-  (LESSON-040); and **a test you have not seen fail is not evidence** — re-inject
-  the defect, watch it fail, restore it (LESSON-041). `quality_gate.sh` runs E2E
-  when wiring or state ownership changes: 2759 unit tests once passed while the
-  app's first load was broken.
-- **A worktree's symlinked `node_modules` is staged by `git add -A`** (the
-  trailing slash in `node_modules/` makes the ignore rule directory-only), and
-  `HUSKY=0` does **not** skip this repo's gate — hooks come from
-  `core.hooksPath=.githooks`. Prefer `git add -u` + explicit paths; commit
-  before any rebase or `reset --hard`, or uncommitted fixes are re-typed from
-  memory (LESSON-042).
-- **Bless a head before merging it**: `git merge-base --is-ancestor origin/main
-  <sha>` and `git diff origin/main <sha> --stat` must show no unexplained
-  deletions. Automation branches built on a stale base have arrived twice with
-  trees that would have reverted `main` (LESSON-043).
-- **A dependency range can move backwards in a merge and nothing fails** —
-  check every `package.json` range against `main` on any PR that touches it, and
-  use `git log -S '<"pkg": "^X.Y.Z">'` to prove which commit moved it
-  (LESSON-044). Regenerate lockfiles from current `main`, never a stale copy.
-- **Do not feature-detect a pair of APIs to implement one behaviour.** An
-  `AbortSignal.any` fallback once dropped a request timeout silently; arm
-  timeouts with `setTimeout` + `AbortController` instead. And destructure
-  callbacks in client components — a bare `stop` compiles fine because
-  `window.stop` has the same signature (LESSON-045).
+- **gitleaks-action v3+ needs a paid licence** (pin v2.x); yamllint enforces
+  `line-length` 120 and a trailing newline inside `run: |` blocks.
+- **DeepSource `.deepsource.toml` suppressions do not reliably fail-proof a
+  check** — use `const fn = () => {}` for module-scope helpers, exported
+  complexity under 6.
+- **A test you have not seen fail is not evidence** (LESSON-041): re-inject the
+  defect, watch it fail, restore it. Codacy/DeepSource re-post stale findings as
+  NEW blocking threads — fix, reply with evidence, resolve, stop pushing
+  (LESSON-034). Vitest typecheck is experimental and misses `*.test.ts` source
+  errors (LESSON-035).
+- **Worktrees/workflow:** `git add -A` stages a symlinked `node_modules` (the
+  ignore rule needs the bare form, not only `node_modules/`) and `HUSKY=0` does
+  not skip `.githooks`; commit before any rebase or `reset --hard` (LESSON-042).
+  Bless a head before merging — `merge-base --is-ancestor origin/main <sha>` plus
+  no unexplained deletions — since stale-base automation branches arrive with
+  `main`-reverting trees (LESSON-043). Dependency ranges can move *backwards* with
+  nothing failing: check `package.json` against `main`, prove direction with
+  `git log -S` (LESSON-044).
+- **Feature-detecting two APIs to implement one behaviour hides a missing
+  feature** — an `AbortSignal.any` fallback silently dropped a timeout; arm
+  timeouts with `setTimeout` + `AbortController`. Destructure callbacks: a bare
+  `stop` binds `window.stop` and still type-checks (LESSON-045).
 
 ## Skills
 
