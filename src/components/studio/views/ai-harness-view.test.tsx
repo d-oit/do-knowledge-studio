@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act } from 'react'
 import type { ReactNode } from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import type { ChatResult } from '@/lib/ai'
 
 vi.mock('framer-motion', () => ({
   motion: {
@@ -238,6 +239,44 @@ describe('AIHarnessView', () => {
     await waitFor(() => { expect(mockSend).toHaveBeenCalled() })
 
     expect(mockSend.mock.calls[0][0].model).toBe('openai/gpt-5')
+  })
+
+  it('Stop aborts the in-flight turn (#923)', async () => {
+    const { sendChatStream } = await import('@/lib/ai')
+    const mockSend = vi.mocked(sendChatStream)
+    let capturedSignal: AbortSignal | undefined
+    mockSend.mockImplementation((request) => {
+      capturedSignal = request.signal
+      // A provider that accepted the request and then went silent.
+      const { promise, reject } = Promise.withResolvers<ChatResult>()
+      request.signal?.addEventListener('abort', () => {
+        reject(request.signal?.reason ?? new DOMException('Aborted', 'AbortError'))
+      })
+      return promise
+    })
+
+    await act(async () => { render(<AIHarnessView />); await Promise.resolve() })
+    await act(() => { screen.getByText('Show settings').click() })
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('sk-or-\u2026'), { target: { value: 'sk-or-test-key' } })
+      fireEvent.change(screen.getByPlaceholderText(/Ask the AI agent/), { target: { value: 'hello' } })
+      await Promise.resolve()
+    })
+    await act(async () => { screen.getByLabelText('Send').click(); await Promise.resolve() })
+
+    await waitFor(() => { expect(capturedSignal).toBeDefined() })
+    expect(capturedSignal?.aborted).toBe(false)
+
+    // A stray `window.stop` (what an unbound bare `stop` resolves to in a client
+    // component) leaves the request running, so this only passes when the hook's
+    // own abort callback is wired through.
+    await act(async () => {
+      screen.getByLabelText('Stop generating').click()
+      await Promise.resolve()
+    })
+
+    await waitFor(() => { expect(capturedSignal?.aborted).toBe(true) })
+    await waitFor(() => { expect(screen.getByLabelText('Send')).toBeDefined() })
   })
 
 })

@@ -245,6 +245,7 @@ export const AIHarnessView = () => {
     isLoading,
     cooldownMs,
     handleSend,
+    stop,
     effectiveModel,
     selectedEngineTarget,
   } = useAIHarnessViewState()
