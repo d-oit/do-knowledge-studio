@@ -3,6 +3,18 @@
 **Updated**: 2026-10-12
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
+### Plan 165 — Implement open-issue batch 2: tokens, nav i18n, destructive-action gates (2026-10-12)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Nav labels in one module (#865) | Done | `plans/165-implement-open-issue-batch-2-2026-10-12.md`. New `messages/nav.ts` + `lib/studio/view-meta.ts`; `VIEW_NAMES` / `VIEW_TITLES` / `NAV_GROUPS` consume it and the mind-map toolbar labels moved into `mindmap.ts`. |
+| W2 | `--spacing-touch` token (#852) | Done | `--spacing-touch: 2.75rem` in `@theme` + `TOUCH_TARGET_CLASS`. All **163** non-test `[44px]` literals migrated to `min-h-touch` / `min-w-touch` / `w-touch` / `h-touch`; `grep -c '44px' src/` (non-test) is now **0**. |
+| W3 | Drawer/shortcuts targets ≥44px (#862) | Done | Drawer close, tab buttons, nav items, theme toggle and the shortcuts-dialog close/clear controls now meet the floor. |
+| W4 | Gate the last two destructive deletes (#863 follow-up) | Done | Graph canvas Delete/Backspace and the mind-map delete now open the shared `ConfirmDialog`; delete copy moved to a shared `messages/entity-delete.ts` (the one-copy `inspector.ts` is deleted). |
+| W5 | Entity colors use the bespoke tokens (#851) | Done | `ENTITY_TYPE_META` renders `--sky/--clay/--sage/--saffron`; `NEUTRAL_META` uses ink/muted instead of `zinc-*`; export `COLOR_MAP` and TRIZ accents aligned. |
+| W6 | Hex clusters → one module (#853) | Done | New `src/lib/colors.ts` holds the peer palette, the standalone-export palette and the PNG fallback; four modules consume it. |
+| W7 | `@layer utilities` → `@utility` (#858) | Done | Custom utilities converted to `@utility`; the type scale became `@theme` `--text-*` tokens; the redundant `.font-serif` is gone (feature settings via `--font-serif--font-feature-settings`). |
+| W8 | Gates | Partial | lint **0 warnings**, typecheck **0 errors**, studio **75 files / 1173 tests**, ui+hooks+integration+app **65 / 963**, AI/search/export/editor/a11y **27 / 461**, sync+i18n **16 / 209** — all green. CSS verified by compiling `globals.css` with the project's `@tailwindcss/postcss`. `pnpm run build` and `next dev` are still OOM-killed here (3.9 GB / 2 vCPU) — CI's Build job is the authority; no browser/preview check was possible. **#855 deferred**: the arbitrary `text-[Npx]` swap changes line-heights and needs visual review. |
 ### Plan 164 — Implement the highest-value open issues (2026-10-12)
 
 | Wave | Goal | Status | Changes |
