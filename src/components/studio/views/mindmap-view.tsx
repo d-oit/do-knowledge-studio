@@ -25,6 +25,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { buildEntityIndex } from '@/lib/studio/graph-index'
 import { getMindMapDensity } from './mindmap-density'
 import { translate as t } from '@/lib/i18n/messages/mindmap'
+import { translate as navT } from '@/lib/i18n/messages/nav'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
 import { useAnnouncer } from '@/lib/a11y/announcer'
 
@@ -360,7 +361,7 @@ export const MindMapView = () => {
     <div className={cn('flex h-full flex-col', VIEW_CONTAINER_CLASS)}>
       <ViewHeader
         icon={BrainCircuit}
-        title={t('mindmap.title')}
+        title={navT('nav.mindmap.title')}
         subtitle={t('mindmap.subtitle')}
       />
 

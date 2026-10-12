@@ -8,8 +8,6 @@
 import { makeT } from '@/lib/i18n/t'
 
 const messages = {
-  /** Hero header title of the graph view. */
-  'graph.title': 'Graph',
   /** Hero header subtitle of the graph view. */
   'graph.subtitle': 'See how your entities connect, and reshape the layout around them.',
   /** Empty state headline when the library holds no entities to draw. */

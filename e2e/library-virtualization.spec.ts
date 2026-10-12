@@ -112,6 +112,11 @@ test.describe('Library windowed rendering', () => {
       // the test honest about keyboard reachability.
       expect(await openButton.evaluate((el) => (el as HTMLElement).tabIndex)).toBeGreaterThanOrEqual(0);
       await openButton.focus();
+      // Assert focus before pressing: if it landed elsewhere, Space would scroll
+      // the page instead, and the test would fail later for the wrong reason
+      // (a timeout on the editor assertion rather than "the button never got
+      // focus").
+      await expect(openButton).toBeFocused();
       // Native button activation — the row's onKeyDown handlers were removed in
       // #861, so this passes only if Enter/Space ride the platform behaviour.
       await page.keyboard.press(key);

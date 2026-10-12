@@ -20,6 +20,7 @@ import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { EntityIcon } from '../entity-type-icon'
 import { ViewEmptyState, ViewHeader, VIEW_CONTAINER_CLASS } from '../ui/shared-primitives'
 import { translate as homeT } from '@/lib/i18n/messages/home'
+import { translate as navT } from '@/lib/i18n/messages/nav'
 
 const LOCALE = 'en-US'
 
@@ -185,7 +186,7 @@ export const HomeView = () => {
 
   return (
     <div className={cn(VIEW_CONTAINER_CLASS, 'max-w-5xl')}>
-      <ViewHeader icon={LayoutDashboard} title={homeT('home.title')} subtitle={homeT('home.subtitle')} />
+      <ViewHeader icon={LayoutDashboard} title={navT('nav.home.title')} subtitle={homeT('home.subtitle')} />
 
       {/* 1. Compact greeting row */}
       <motion.section

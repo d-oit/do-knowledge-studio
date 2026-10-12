@@ -8,8 +8,6 @@
 import { makeT } from '@/lib/i18n/t'
 
 const messages = {
-  /** Sync view heading. */
-  'sync.title': 'Sync',
   /** Sync view subtitle. */
   'sync.subtitle': 'Connect devices and sync your knowledge base peer-to-peer.',
   /** Sync history panel heading. */

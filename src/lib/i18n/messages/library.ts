@@ -10,8 +10,6 @@
 import { makeT } from '@/lib/i18n/t'
 
 const messages = {
-  /** Hero header title of the library view. */
-  'library.title': 'Library',
   /** Hero header subtitle of the library view. */
   'library.subtitle': 'Everything you have captured — searchable and filterable offline.',
   /** Empty state headline when the library holds no entities. */
