@@ -18,7 +18,9 @@ const INITIAL_ASSISTANT_MESSAGE: ChatMessage = {
 const RATE_LIMIT_MESSAGE =
   'I\u2019m being rate-limited \u2014 please slow down and try again in a few seconds.'
 
+const MS_PER_MINUTE = 60_000
 const REQUEST_TIMEOUT_MS = 120_000
+const REQUEST_TIMEOUT_MINUTES = REQUEST_TIMEOUT_MS / MS_PER_MINUTE
 
 export interface UseAiHarnessChatOptions {
   provider: AIProvider
@@ -210,9 +212,9 @@ export const useAiHarnessChat = ({
         setMessages((m) => [
           ...m,
           {
+            id: crypto.randomUUID(),
             role: 'assistant',
-            content:
-              '[Error] Request timed out after 2 minutes. The provider took too long to respond.',
+            content: `[Error] ${translate('ai.chat.error.timeout', REQUEST_TIMEOUT_MINUTES)}`,
           },
         ])
         return
