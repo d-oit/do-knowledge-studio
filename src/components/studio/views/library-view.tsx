@@ -3,7 +3,7 @@
 import { useState, useCallback, useMemo } from 'react'
 import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
 import { type EntityType } from '@/lib/studio/types'
-import { ToggleButtonGroup } from '../ui/shared-primitives'
+import { ToggleButtonGroup, ViewEmptyState, ViewHeader, VIEW_CONTAINER_CLASS } from '../ui/shared-primitives'
 import { Checkbox } from '@/components/ui/checkbox'
 import { SemanticSearchToggle } from './semantic-search-toggle'
 import {
@@ -27,6 +27,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { EntityGrid, EntityTable } from './library-entities'
+import { translate as libraryT } from '@/lib/i18n/messages/library'
 
 /** Entity type filter options including the "all" sentinel. */
 const FILTERS: { id: EntityType | 'all'; label: string }[] = [
@@ -68,42 +69,25 @@ const LibraryEmptyState = ({
 }) => {
   if (!hasEntities) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 py-20 text-center">
-        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-saffron-soft">
-          <FileText className="h-6 w-6 text-saffron" />
-        </div>
-        <h3 className="font-serif text-lg font-semibold text-ink">No entities yet</h3>
-        <p className="mt-1 max-w-sm text-[13px] text-ink-mute">
-          Capture your first thought, concept, person, or project. Everything you save stays local
-          and offline-ready.
-        </p>
-        <button
-          onClick={onStartNew}
-          className="mt-4 flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 text-[13px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
-        >
-          <Plus className="h-4 w-4" />
-          Create your first entity
-        </button>
-      </div>
+      <ViewEmptyState
+        icon={FileText}
+        title={libraryT('library.empty.title')}
+        body={libraryT('library.empty.body')}
+        actionLabel={libraryT('library.empty.action')}
+        actionIcon={Plus}
+        onAction={onStartNew}
+      />
     )
   }
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 py-20 text-center">
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
-        <Search className="h-6 w-6 text-ink-faint" />
-      </div>
-      <h3 className="font-serif text-lg font-semibold text-ink">No matches found</h3>
-      <p className="mt-1 max-w-sm text-[13px] text-ink-mute">
-        Try adjusting your search terms or filters to find what you&apos;re looking for.
-      </p>
-      <button
-        onClick={onClearFilters}
-        className="mt-4 flex min-h-[44px] items-center gap-1.5 rounded-md bg-secondary px-4 text-[13px] font-semibold text-ink transition-all hover:opacity-90 press-scale focus-ring"
-      >
-        <X className="h-4 w-4" />
-        Clear all filters
-      </button>
-    </div>
+    <ViewEmptyState
+      icon={Search}
+      title={libraryT('library.noMatches.title')}
+      body={libraryT('library.noMatches.body')}
+      actionLabel={libraryT('library.noMatches.action')}
+      actionIcon={X}
+      onAction={onClearFilters}
+    />
   )
 }
 
@@ -246,7 +230,13 @@ export const LibraryView = () => {
   )
 
   return (
-    <div className={'mx-auto max-w-5xl px-6 py-6 lg:px-10 lg:py-8'}>
+    <div className={cn(VIEW_CONTAINER_CLASS, 'max-w-5xl')}>
+      <ViewHeader
+        icon={LayoutGrid}
+        title={libraryT('library.title')}
+        subtitle={libraryT('library.subtitle')}
+      />
+
       {/* Controls */}
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px]">

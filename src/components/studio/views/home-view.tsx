@@ -12,11 +12,14 @@ import {
   Quote,
   Clock,
   Sparkles,
+  LayoutDashboard,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { EntityIcon } from '../entity-type-icon'
+import { ViewEmptyState, ViewHeader, VIEW_CONTAINER_CLASS } from '../ui/shared-primitives'
+import { translate as homeT } from '@/lib/i18n/messages/home'
 
 const LOCALE = 'en-US'
 
@@ -114,25 +117,6 @@ const RecentItem = ({ entity, onOpen }: { entity: Entity; onOpen: () => void }) 
   )
 }
 
-/** Empty-state placeholder prompting the user to create their first entity. */
-const EmptyState = ({ onCreate }: { onCreate: () => void }) => {
-  return (
-    <div className="rounded-lg border border-dashed border-border bg-card/50 p-8 text-center">
-      <FileText aria-hidden="true" className="mx-auto mb-3 h-8 w-8 text-ink-faint/40" />
-      <p className="text-[13px] text-ink-mute">
-        No entities yet. Create your first one to get started.
-      </p>
-      <button
-        onClick={onCreate}
-        className="mt-3 inline-flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
-      >
-        <FileText className="h-3.5 w-3.5" />
-        Create entity
-      </button>
-    </div>
-  )
-}
-
 /** Compact stat card showing a numeric value with an icon and label. */
 const CompactStat = ({
   label,
@@ -200,7 +184,9 @@ export const HomeView = () => {
   )
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-8 lg:px-10 lg:py-12">
+    <div className={cn(VIEW_CONTAINER_CLASS, 'max-w-5xl')}>
+      <ViewHeader icon={LayoutDashboard} title={homeT('home.title')} subtitle={homeT('home.subtitle')} />
+
       {/* 1. Compact greeting row */}
       <motion.section
         {...fadeAnim}
@@ -243,7 +229,14 @@ export const HomeView = () => {
         </div>
 
         {recentEntities.length === 0 ? (
-          <EmptyState onCreate={startNew} />
+          <ViewEmptyState
+            icon={FileText}
+            title={homeT('home.empty.title')}
+            body={homeT('home.empty.body')}
+            actionLabel={homeT('home.empty.action')}
+            actionIcon={FileText}
+            onAction={startNew}
+          />
         ) : (
           <ul className="divide-y divide-border rounded-lg border border-border bg-card">
             {recentEntities.map((entity) => (

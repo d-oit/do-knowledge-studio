@@ -17,6 +17,7 @@ import { AiHarnessProviderSetup } from './ai-harness-provider-setup'
 import { PROVIDERS } from './ai-harness-settings'
 import { useAiHarnessChat } from './use-ai-harness-chat'
 import { buildContextSuggestions } from './ai-harness-suggestions'
+import { ViewHeader, VIEW_CONTAINER_CLASS } from '../ui/shared-primitives'
 
 /** Accessible label for the AI Harness page heading. */
 const AI_HARNESS_TITLE = 'AI Harness'
@@ -179,32 +180,29 @@ const AIHarnessHeader = ({
   <motion.div
     initial={reducedMotion ? false : { opacity: 0, y: 6 }}
     animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-    className="mb-6 flex items-start gap-4"
   >
-    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-saffron to-clay text-white shadow-sm">
-      <FlaskConical className="h-6 w-6" />
-    </div>
-    <div className="flex-1">
-      <div className="mb-1 flex items-center gap-2">
-        <h2 className="font-serif text-2xl font-semibold text-ink">{AI_HARNESS_TITLE}</h2>
+    <ViewHeader
+      icon={FlaskConical}
+      title={AI_HARNESS_TITLE}
+      subtitle={AI_HARNESS_DESCRIPTION}
+      badge={
         <span className="rounded-full border border-dashed border-saffron/50 px-2 py-0 text-badge font-semibold uppercase tracking-wide text-saffron-deep">
           {LAB_LABEL}
         </span>
-      </div>
-      <p className="text-[13px] text-ink-mute">
-        {AI_HARNESS_DESCRIPTION}
-      </p>
-    </div>
-    <button
-      onClick={onToggleSettings}
-      className={cn(
-        'flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium transition-colors hover:border-saffron/40 focus-ring min-h-[44px]',
-        showSettings && 'border-saffron/40 text-saffron-deep',
-      )}
-    >
-      <Settings className="h-3.5 w-3.5" />
-      {showSettings ? HIDE_SETTINGS_LABEL : SHOW_SETTINGS_LABEL}
-    </button>
+      }
+      action={
+        <button
+          onClick={onToggleSettings}
+          className={cn(
+            'flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium transition-colors hover:border-saffron/40 focus-ring min-h-[44px]',
+            showSettings && 'border-saffron/40 text-saffron-deep',
+          )}
+        >
+          <Settings className="h-3.5 w-3.5" aria-hidden="true" />
+          {showSettings ? HIDE_SETTINGS_LABEL : SHOW_SETTINGS_LABEL}
+        </button>
+      }
+    />
   </motion.div>
 )
 
@@ -251,7 +249,7 @@ export const AIHarnessView = () => {
   } = useAIHarnessViewState()
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-6 lg:px-10 lg:py-8">
+    <div className={cn(VIEW_CONTAINER_CLASS, 'max-w-5xl')}>
       <AIHarnessHeader
         showSettings={showSettings}
         onToggleSettings={() => { setShowSettings(!showSettings) }}

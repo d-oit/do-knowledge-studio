@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { cn } from '@/lib/utils'
-import { Divider } from '../ui/shared-primitives'
+import { Divider, ViewEmptyState, ViewHeader, VIEW_CONTAINER_CLASS } from '../ui/shared-primitives'
 import { todayStamp } from './export-types'
 import { exportElementAsPng } from './mindmap-export'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
@@ -46,6 +46,7 @@ export const MindMapView = () => {
   // Store selection, distinct from the roving-tabindex focus (APG treeview).
   const selectedEntityId = useStudioStore((s) => s.selectedEntityId)
   const setView = useStudioStore((s) => s.setView)
+  const startNew = useStudioStore((s) => s.startNew)
   const [rootId, setRootId] = useState(entities[0]?.id || '')
   const [depth, setDepth] = useState(3)
   const [compact, setCompact] = useState(false)
@@ -356,7 +357,13 @@ export const MindMapView = () => {
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className={cn('flex h-full flex-col', VIEW_CONTAINER_CLASS)}>
+      <ViewHeader
+        icon={BrainCircuit}
+        title={t('mindmap.title')}
+        subtitle={t('mindmap.subtitle')}
+      />
+
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2 border-b border-border bg-card/50 px-5 py-2.5" role="toolbar" aria-label={t('mindmap.toolbar.ariaLabel')}>
         <select
@@ -434,12 +441,15 @@ export const MindMapView = () => {
           </div>
         ) : (
           <div className="flex h-full items-center justify-center">
-            <div className="text-center">
-              <BrainCircuit className="mx-auto mb-2 h-10 w-10 text-ink-faint/40" />
-              <p className="text-[13px] text-ink-mute">
-                Add entities with links to build a mind map.
-              </p>
-            </div>
+            <ViewEmptyState
+              icon={Plus}
+              title={t('mindmap.empty.title')}
+              body={t('mindmap.empty.body')}
+              actionLabel={t('mindmap.empty.action')}
+              actionIcon={Plus}
+              onAction={startNew}
+              className="max-w-md"
+            />
           </div>
         )}
       </div>

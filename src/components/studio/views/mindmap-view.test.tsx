@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { ReactNode } from 'react'
-import { render, screen } from '@testing-library/react'
+import type * as SharedPrimitives from '../ui/shared-primitives'
+import { render, screen, fireEvent } from '@testing-library/react'
 
 vi.mock('framer-motion', () => ({
   motion: {
@@ -43,9 +44,14 @@ vi.mock('@/lib/utils', () => ({
   cn: (...args: (string | undefined | false | null)[]) => args.filter(Boolean).join(' '),
 }))
 
-vi.mock('../ui/shared-primitives', () => ({
-  Divider: () => <hr data-testid="divider" />,
-}))
+vi.mock('../ui/shared-primitives', async () => {
+  // Keep the real view chrome: the empty state's create action is exercised here.
+  const actual = await vi.importActual<typeof SharedPrimitives>('../ui/shared-primitives')
+  return {
+    ...actual,
+    Divider: () => <hr data-testid="divider" />,
+  }
+})
 
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
@@ -55,6 +61,7 @@ const mockSelectEntity = vi.fn()
 const mockSetView = vi.fn()
 const mockCommitEntities = vi.fn()
 const mockDeleteEntity = vi.fn()
+const mockStartNew = vi.fn()
 const mockStartEdit = vi.fn()
 const mockUndo = vi.fn()
 const mockRedo = vi.fn()
@@ -95,6 +102,7 @@ vi.mock('@/lib/studio/store', () => ({
       commitEntities: mockCommitEntities,
       deleteEntity: mockDeleteEntity,
       startEdit: mockStartEdit,
+      startNew: mockStartNew,
       undo: mockUndo,
       redo: mockRedo,
       entityHistory: [[]],
@@ -164,6 +172,13 @@ describe('MindMapView', () => {
     render(<MindMapView />)
     expect(screen.getByText(/Add entities with links to build a mind map/)).toBeDefined()
     expect(screen.getByText('No data')).toBeDefined()
+  })
+
+  it('empty state create action starts a new entity', () => {
+    currentEntities = []
+    render(<MindMapView />)
+    fireEvent.click(screen.getByRole('button', { name: 'Create entity' }))
+    expect(mockStartNew).toHaveBeenCalledOnce()
   })
 
   it('renders tree items for entities', () => {

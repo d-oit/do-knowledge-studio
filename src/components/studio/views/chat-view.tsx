@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useStudioStore } from '@/lib/studio/store'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
+import { cn } from '@/lib/utils'
+import { VIEW_CONTAINER_CLASS } from '../ui/shared-primitives'
 import {
   WelcomePanel,
   MessageList,
@@ -83,7 +85,7 @@ export const ChatView = () => {
   return (
     <div className="flex h-full flex-col">
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-5 py-6 lg:px-10">
+      <div className={cn('flex-1 overflow-y-auto', VIEW_CONTAINER_CLASS)}>
         <div className="mx-auto max-w-3xl space-y-5">
           {chat.length === 0 && !chatLoading ? (
             <WelcomePanel reducedMotion={reducedMotion} onSend={handleSend} />
