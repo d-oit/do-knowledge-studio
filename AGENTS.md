@@ -206,7 +206,7 @@ Full procedure, staleness ladder, and the Codacy false-positive playbook:
 ## Learnings (session-distilled)
 
 Non-obvious toolchain facts. Full catalog with debugging detail:
-`agents-docs/LESSONS.md` (LESSON-001..041) and `lessons.jsonl`.
+`agents-docs/LESSONS.md` (LESSON-001..045) and `lessons.jsonl`.
 
 - **gitleaks-action v3+ needs a paid `GITLEAKS_LICENSE`** — pin v2.x; a failing
   license gate masks real scan results. yamllint enforces `line-length` (120)
@@ -226,6 +226,25 @@ Non-obvious toolchain facts. Full catalog with debugging detail:
   the defect, watch it fail, restore it (LESSON-041). `quality_gate.sh` runs E2E
   when wiring or state ownership changes: 2759 unit tests once passed while the
   app's first load was broken.
+- **A worktree's symlinked `node_modules` is staged by `git add -A`** (the
+  trailing slash in `node_modules/` makes the ignore rule directory-only), and
+  `HUSKY=0` does **not** skip this repo's gate — hooks come from
+  `core.hooksPath=.githooks`. Prefer `git add -u` + explicit paths; commit
+  before any rebase or `reset --hard`, or uncommitted fixes are re-typed from
+  memory (LESSON-042).
+- **Bless a head before merging it**: `git merge-base --is-ancestor origin/main
+  <sha>` and `git diff origin/main <sha> --stat` must show no unexplained
+  deletions. Automation branches built on a stale base have arrived twice with
+  trees that would have reverted `main` (LESSON-043).
+- **A dependency range can move backwards in a merge and nothing fails** —
+  check every `package.json` range against `main` on any PR that touches it, and
+  use `git log -S '<"pkg": "^X.Y.Z">'` to prove which commit moved it
+  (LESSON-044). Regenerate lockfiles from current `main`, never a stale copy.
+- **Do not feature-detect a pair of APIs to implement one behaviour.** An
+  `AbortSignal.any` fallback once dropped a request timeout silently; arm
+  timeouts with `setTimeout` + `AbortController` instead. And destructure
+  callbacks in client components — a bare `stop` compiles fine because
+  `window.stop` has the same signature (LESSON-045).
 
 ## Skills
 
