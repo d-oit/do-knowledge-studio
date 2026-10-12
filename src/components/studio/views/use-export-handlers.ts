@@ -17,6 +17,16 @@ import { encryptData, buildEncryptedReaderHtml } from '@/lib/export/encrypt'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from '@/lib/studio/schema'
 import { useAnnouncer } from '@/lib/a11y/announcer'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
+import { translate as exportT } from '@/lib/i18n/messages/export'
+import type { RecoveryPersistFailure } from '@/lib/studio/recovery-helpers'
+
+/** Refused-backup copy per reason, read from the export message scope. */
+const NO_BACKUP_COPY: Record<RecoveryPersistFailure, string> = {
+  'too-large': exportT('export.import.noBackupTooLarge'),
+  unserializable: exportT('export.import.noBackupUnserializable'),
+  'storage-unavailable': exportT('export.import.noBackupStorageUnavailable'),
+}
+
 
 /**
  * Builds a human-readable summary string of export contents.
@@ -425,24 +435,22 @@ export const useExportHandlers = ({
       // success means: there is no way back to the corpus that was replaced.
       // The same green toast in both cases would be a false claim.
       if (result.backupPersisted === false) {
-        toast.warning('Imported — but no backup was kept', {
-          description:
-            result.backupFailure === 'too-large'
-              ? 'Your previous library was too large for this browser to keep as a recovery copy, so it cannot be restored from here. Export a JSON backup before your next import.'
-              : result.backupFailure === 'unserializable'
-                ? 'Your previous library could not be captured as a recovery copy (an internal serialization error), so it cannot be restored from here. Export a JSON backup before your next import.'
-                : 'This browser refused to store a recovery copy, so your previous library cannot be restored from here. Export a JSON backup before your next import.',
+        toast.warning(exportT('export.import.noBackupTitle'), {
+          // A map keyed by the reason, not a ternary chain: the copy lives in the
+          // message scope (#i18n rule) and an unknown reason falls back to the
+          // storage refusal, which is what a refused write means.
+          description: NO_BACKUP_COPY[result.backupFailure ?? 'storage-unavailable'],
         })
       } else {
-        toast.success('Import complete', {
-          description: `${summary} replaced the current library.`,
+        toast.success(exportT('export.import.successTitle'), {
+          description: exportT('export.import.successBody', summary),
         })
       }
     } else {
       // The failed path is the one that must never be silent: the library
       // looked replaced for a moment before rolling back.
       announce(announceT('announce.importFailed'))
-      toast.error('Import failed — state restored', { description: result.error })
+      toast.error(exportT('export.import.failedTitle'), { description: result.error })
     }
     setImportPreview(null)
   }
