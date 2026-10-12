@@ -10,7 +10,6 @@ import { DayButton, DayPicker, getDefaultClassNames } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
-import { fullDate } from "@/lib/studio/format"
 
 /** A date picker calendar component built on react-day-picker. */
 function Calendar({
@@ -193,7 +192,7 @@ function CalendarDayButton({
       ref={ref}
       variant="ghost"
       size="icon"
-      data-day={fullDate.format(day.date)}
+      data-day={day.date.toLocaleDateString()}
       data-selected-single={
         modifiers.selected &&
         !modifiers.range_start &&
