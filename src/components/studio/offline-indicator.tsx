@@ -1,10 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { WifiOff } from "lucide-react";
 import { useReducedMotion } from "@/lib/studio/use-reduced-motion";
-import { useIsomorphicLayoutEffect } from "@/lib/use-isomorphic-layout-effect";
 import { translate } from "@/lib/i18n/messages/presence";
 
 const ANIMATION_VARIANTS = {
@@ -30,7 +29,6 @@ const BANNER_HEIGHT_VARIABLE = "--offline-banner-height";
 export function OfflineIndicator() {
   const [isOffline, setIsOffline] = useState(false);
   const reducedMotion = useReducedMotion();
-  const bannerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setIsOffline(!navigator.onLine);
@@ -52,27 +50,26 @@ export function OfflineIndicator() {
   // narrow viewport and changes with text zoom, and a wrong constant would
   // reintroduce the obstruction at exactly one viewport.
   //
-  // A LAYOUT effect, not a passive one: the shell reserves this via
-  // `paddingTop: var(--offline-banner-height, 0px)`, and a passive effect lands
-  // after paint. Under `initial="visible"` (reduced motion) the banner is
-  // already at rest on the mounting paint, so the passive version left that
-  // first frame with 0px reserved and the topbar under the banner. Publishing
-  // before paint closes the gap. The server has no layout to read, so the
-  // isomorphic alias falls back to `useEffect` there.
+  // Measured in a ref callback, not in an effect keyed on `isOffline`:
   //
-  // The reservation is deliberately NOT dropped in this effect's cleanup: when
-  // the connection returns, `AnimatePresence` keeps the banner mounted for its
-  // exit animation, and removing the padding while the banner is still visible
-  // would slide the topbar back under it for the duration of the exit (GitNexus
-  // on PR #925). `onExitComplete` is the single place the reservation ends.
-  useIsomorphicLayoutEffect(() => {
-    const banner = bannerRef.current;
-    if (!isOffline || banner === null) return;
+  //  * refs run in the commit phase, before paint, so the reservation lands on
+  //    the same paint as the banner — an effect lands a frame later, which
+  //    `plans/161` recorded as the reason a probe passed 3 of 6 mobile runs;
+  //  * the callback's cleanup runs when the element leaves the DOM, i.e. after
+  //    `AnimatePresence` finishes the exit animation. An effect keyed on
+  //    `isOffline` disconnects the observer as soon as the connection returns,
+  //    so a viewport resize during the exit that re-wraps the banner would
+  //    leave a stale reserved height (review on PR #925).
+  //
+  // The reservation is still NOT dropped on unmount: `onExitComplete` below is
+  // the single place it ends, so the padding outlives the exit animation.
+  const attachBanner = useCallback((node: HTMLDivElement | null) => {
+    if (node === null) return;
 
     const publishHeight = () => {
       document.documentElement.style.setProperty(
         BANNER_HEIGHT_VARIABLE,
-        `${banner.offsetHeight}px`,
+        `${node.offsetHeight}px`,
       );
     };
     publishHeight();
@@ -82,9 +79,9 @@ export function OfflineIndicator() {
     if (typeof ResizeObserver === "undefined") return;
 
     const observer = new ResizeObserver(publishHeight);
-    observer.observe(banner);
+    observer.observe(node);
     return () => { observer.disconnect(); };
-  }, [isOffline]);
+  }, []);
 
   // Ends the reservation once the banner has actually left the layout — after
   // the exit animation, or immediately when reduced motion removed it.
@@ -96,7 +93,7 @@ export function OfflineIndicator() {
     <AnimatePresence onExitComplete={clearReservedHeight}>
       {isOffline && (
         <motion.div
-          ref={bannerRef}
+          ref={attachBanner}
           role="status"
           aria-live="polite"
           initial={reducedMotion ? "visible" : "hidden"}

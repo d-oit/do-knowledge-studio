@@ -40,4 +40,21 @@ describe('precache manifest ↔ service worker parity', () => {
     // is downloaded at install time and unreachable while offline.
     expect(media.filter((ext) => !served.includes(ext))).toEqual([])
   })
+
+  it('serves cache-first every extension the always-included URLs use', () => {
+    const generator = read(join('scripts', 'generate-precache-manifest.mjs'))
+    const worker = read(join('public', 'sw.js'))
+
+    const served = extensionsIn(worker, 'STATIC_EXTENSIONS')
+    // The generator's explicit list is URLs, not extensions: the static files
+    // the app shell needs regardless of the bundle. `manifest.webmanifest` came
+    // from here and was precached-but-unserved until this test existed.
+    const urls = (generator.match(/ALWAYS_INCLUDED\s*=\s*\[([\s\S]*?)\]/) ?? [])[1] ?? ''
+    const extensions = [...urls.matchAll(/["']\/(?:[\w./-]*\/)?[\w.-]*\.([\w]+)["']/g)].map(
+      (entry) => entry[1],
+    )
+
+    expect(extensions.length).toBeGreaterThan(0)
+    expect(extensions.filter((ext) => !served.includes(ext))).toEqual([])
+  })
 })

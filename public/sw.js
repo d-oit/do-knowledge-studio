@@ -28,6 +28,7 @@ const STATIC_EXTENSIONS = [
   ".eot",
   ".otf",
   ".json",
+  ".webmanifest",
   ".txt",
 ];
 
