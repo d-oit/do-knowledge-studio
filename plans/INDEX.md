@@ -1,285 +1,138 @@
 # Plans Index
 
-**Updated**: 2026-10-11
+**Updated**: 2026-10-12
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
+
+Plan records are filed as `plans/NNN-slug.md`, where `NNN` is the plan number used
+below; accepted decision records are in `plans/ADRs/NNN-slug.md`. Work still in
+flight or just landed is kept wave-by-wave below; every landed plan is one row.
+
+## Active work
+
+### Plan 163 — Open-PR / open-issue sweep, roast, and land (2026-10-12)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Inventory | 10 open PRs, 17 open issues, ruleset consequences | Done | `plans/163-open-pr-issue-sweep-2026-10-12.md`. Ruleset 15161694 has exactly one required context (`Codacy Static Code Analysis`), `strict` + linear history, and `required_review_thread_resolution`, so every merge needs an explicit `update-branch` pass and outdated threads block. |
+| Verdicts | Decide what to close | Done | Only #932 closed — a fork-based duplicate of #927 (same fix for #884, divergent `useAiHarnessChat` error paths), closed with a credited explanation. Every other PR carried a behaviour change, an alert fix, or tests, and every issue reproduced. |
+| Roast | 8 real defects inside the open PRs | Done | #923's timeout was dead on engines without `AbortSignal.any` and its Stop called `window.stop`; #928 shipped UI message ids to providers; #926 announced failure and abort as success; #925's clear could fail silently and its two banner e2e tests could not fail for the stated reason; #927/#923 disagreed on copy. Each fix carries a test re-injected with the defect. |
+| Roast (main) | 2 defects already on `main` | Done | PR #910 had silently downgraded four dependency ranges (`next`, `react-day-picker`, `@tanstack/react-virtual`, `eslint-plugin-react-refresh`); `.gitignore`'s directory-only `node_modules/` staged worktree symlinks and `speech-coverage.test.ts` used `afterEach` without importing it. |
+| Merges | Land the ready PRs | Done — 7 in `origin/main` | #920 (`6c4b20d`), #931 (`583e820`, #861), #923 (`ab26b78`, #885), #935 (`3919baf`, #865), #933 (`1e519e8`), #934 (`56428ea`), #924 (`d1ccc85`, Dependabot alert #75). |
+| Issues | Implement the issue work | Landed and queued | #861 → #931 and #865 → #935 merged; #938 (#851/#852/#853/#858 touch token + type scale), #936 (#870 container constant + `ViewHeader`), #937 (#886 provider constants), #939 (#863/#856 shared `ConfirmDialog`) armed for auto-merge at session close. |
+| Follow-ups | Merge queue and process guards | Open | Merge order #925 → #926 → #927 → #928 → #929 → #936/#938/#939 → #937; add a no-downgrade dependency-range check; require automated branch writers to rebase onto `main` (the `d415e9b` tree would have reverted `main`); Codacy `--reanalyze` when findings point at lines absent at head. Open issues at close: #855 and #862, in flight as `issue/touch-and-type-scale`. |
+| Verification | Evidence discipline | Done | Every fix reproduced before it was touched; every new regression test re-injected with the defect and observed to fail; per-lane unit suites, root `tsc --noEmit`, and Playwright where the change made it meaningful. |
 
 ### Plan 116 — Open-PR / open-issue sweep, roast, and merge order (2026-10-11)
 
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Inventory 9 open PRs + 19 pure issues; roast each | Done | `plans/116-pr-issue-sweep-roast-merge-order-2026-10-11.md`. No-impact close verdict: **nothing** — all PRs carry behavior/alerts/tests, all 19 issues reproduce on `main`. |
-| W2 | Implement missing tasks with zero PR overlap | Done | #861 (table `role="link"` → native semantics + name-cell button) and #873 (system theme: `enableSystem`, `defaultTheme="system"`, sidebar System button). Gates: lint + typecheck clean, **2838 unit tests** green. e2e specs updated, await CI (no browsers in sandbox). |
-| W3 | Merge order + followups | Ready | Order: #922 → #924 → #920 → #923 → #928 → #927 → #926 → #910 (rebase) → #925 (Codacy HIGHs first) → Plan 116 branch. Followup drafts (no GitHub write access here): #926 i18n string, #928 optional-id note, drawer theme parity, 12 issue owners. No merges performed — CI still in flight on all 9 PRs. |
-
-### Plan 160 — Fix every open Codacy issue in code; delete `.mimocode/` (2026-09-30)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Delete the foreign agent-tool directory | Done | `.mimocode/` (mimocode config, CI-watch command, two unrelated plan files, a Windows `:Zone.Identifier` artifact) removed with `git rm -r`; nothing referenced it. `.mimocode/` dropped from `.deepsource.toml` `exclude_patterns`; the dead `.mimicode/**` typo path and the two inert `xss_no-mixed-html` `disable_rules` removed from `.codacy.yml`; the stale `.mimicode` gotchas deleted from the `codacy` and `static-analysis-suppression` skills. |
-| W2 | Fix all five open Codacy findings in code, not by suppression | Done | `plans/160-codacy-open-issues-and-mimocode-cleanup-2026-09-30.md`. A repo-wide `codacy issues` query showed the Plan 159 `.codacy.yml` `disable_rules` for `ESLint8/9_xss_no-mixed-html` were **inert** (5 issues still open). Fixed in code: `use-export-handlers.ts` `const html` → `readerDocument` clears both xss findings (`html` was infecting the `downloadFile` call); `shortcuts-dialog.tsx` extracts a module-scope `asHtmlElement` type guard (the plugin treats `HTMLElement` as an HTML value, so the predicate was reported as returning HTML); `migrations.ts` replaces the computed-member call `MIGRATIONS[i](state)` with a validated local invocation; `research.ts` repairs a malformed `nosemgrep` directive (rule id followed by prose) so its existing scheme/private-IP guard actually applies. Two failing-first tests added for the refactored typing-target guard (verified by re-injecting the defect). Gates: lint, typecheck, **2788 unit tests**, build — zero warnings. |
-
-### Plan 159 — Rejected-library recovery visibility and fail-closed persistence (2026-09-29)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Make a refused hydration visible, not silent | Done | `plans/159-rejected-library-recovery-visibility-and-fail-closed.md`. The recovery alert moved out of the lazy Export view into `app-shell.tsx` (`RecoveryAlerts`), so a refused library shows on Home; SSR-safe (state filled in an effect) and refreshed on `onFinishHydration`. `QuarantineBanner` gained `preserved` / `unpreserved` states; the close icon no longer calls `clearQuarantine` (one click used to delete the only copy) and the copy no longer claims the raw envelope is re-importable. |
-| W2 | Fail closed for the rest of the page session | Done | New `src/lib/studio/hydration-guard.ts` latches a page-scoped status consulted by the guarded persist storage, `cross-tab.ts`, and the shell's Yjs/Sync gates. The live store key is never written after a refusal; quarantine occupancy is decided by key existence (never by a successful parse), so a second rejection cannot destroy an earlier copy; the Yjs bridge does not start and `SyncView` is replaced by `SyncUnavailable`. |
-| W2 | Close the rejected-chain fail-open path (gap analysis) | Done | `onRehydrateStorage` now records a refusal when the persist chain **rejects** (storage reads throw: site-data blocked / `SecurityError`), which previously only logged — seed state's next `setState` overwrote an envelope nothing managed to read. Makes the `preserved: false, raw: null` UI reachable end-to-end. `store-persist.test.ts` case verified failing without the fix, passing with it. |
-| W3 | Module boundary + docs | Done | Pure corpus-merge helpers moved to `src/lib/studio/cross-tab-merge.ts`, taking `cross-tab.ts` from 531 → 423 LOC (over the 500-LOC limit only after the guards landed). ADR 028 §4a accepted; plan registered here. Gates: lint, typecheck, **2779 unit tests** (1 skipped), build, e2e — zero warnings. |
-| W5 | Clear the PR #842 static-analysis gate (2026-09-30) | Done | Codacy flagged 2 new issues on the PR. **Real, fixed**: `ESLint8_@typescript-eslint_no-confusing-void-expression` at `quarantine-banner.tsx:162` — the arrow shorthand returning `setHidden`'s void result now has braces (`c3c7e31`). **False positive, suppressed**: `ESLint8_xss_no-mixed-html` at `mindmap-export.ts:31` — the rule (`eslint-plugin-xss` `no-mixed-html`, default `htmlVariableRules /html/i`) fires on a cloned DOM node appended via `appendChild`, with no HTML string sink; the same line pre-existed at `mindmap-view.tsx:154` and is already declared an FP in `.codacy.yml:50`, so the PR is `+1/-1` for that rule. Suppressed with `--ignore-issue 131544792851 --ignore-reason FalsePositive` and the evidence on the PR. Config finding (not changed — suppression config is off-limits without approval): the `.codacy.yml` disables for `ESLint8_xss_no-mixed-html` / `ESLint9_xss_no-mixed-html` are inert (≥4 live repo issues under that pattern id), and `exclude_paths` lists `.mimicode/**` where the directory is `.mimocode/**`. |
-| W4 | Burn down the Plan 159 follow-ons (2026-09-30) | Done (all 4) | `e2e-harness.test.ts` config-import budget raised to 180s (`CONFIG_IMPORT_TIMEOUT_MS`); new `dependency-audit` job in `security-scan.yml` runs `pnpm audit --audit-level=high`, which immediately caught **4 high** advisories and closed all 13 (`undici` → 7.30.0, `brace-expansion` 5.x → 5.0.12; now 0 at every severity); view splits bring `editor-view` 549→482, `mindmap-view` 521→486, `graph-view` 520→428 LOC via `editor-preview.tsx`, `editor-advanced-fields.tsx`, `mindmap-export.ts`, `graph-elements.tsx`; all **94** `*.test.ts` type errors cleared and `vitest.config.ts` `ignoreSourceErrors` set to `false` (gating proven by injecting a type error, which failed the run). Verification: recovery-warning spec **36/36**; full e2e **636 passed / 4 skipped / 0 failed** across chromium/mobile/tablet/desktop-xl; 2779 unit tests; lint, typecheck, build clean; local Codacy engines 0 issues; the PR-scoped Cloud check was then run on PR #842 and cleared (see W5). |
-
-### ADR 028 — Validated and recoverable local data boundaries (2026-09-29)
-
-| ADR | Status | Reason |
-|-----|--------|--------|
-| 028 | Implemented (§4a added) | §4a makes the decision operational: a refused hydration fails closed for the page session across the storage writer, the quarantine record, and cross-tab/Yjs traffic. Dismissal is non-destructive; the refusal status — not the presence of a quarantine record — is the single source of truth for "this workspace is temporary". |
-
-### Plan 157 — Codebase gap remediation: dead features, undo integrity, PWA, live announcements (2026-09-28)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | MindMap & Graph feature completion | Done | `plans/157-codebase-gap-and-feature-remediation.md`. Mind map "Compact" now drives real density tokens (`mindmap-density.ts`) instead of dead state; 44px targets preserved. Graph snapshots gained a validated read/restore/clear path plus viewport state (`graph-snapshot.ts`) — "Save snapshot" was write-only (D4.1, D4.2). |
-| W2 | AI harness lifecycle | Done | `useAiHarnessChat` aborts the in-flight provider stream on unmount. |
-| W3 | Store undo integrity + LOC decomposition | Done | History snapshots carry claims alongside entities, so undo after `deleteEntity` no longer destroys the entity's claims; claim CRUD participates in history; dangling `selectedEntityId`/`editingEntityId` are cleared on restore (D1.6, D1.22). `store.ts` 610 → 189 LOC via `store-types.ts` + `slices/*`. |
-| W4 | 2026 PWA installability | Done | Raster `icon-192`/`icon-512`/maskable PNGs from `scripts/generate-pwa-icons.py`; manifest gains `id`/`orientation`/`categories`; service worker registers with `updateViaCache: 'none'`, hourly re-checks, visibility/online re-checks, and full teardown. |
-| W5 | Screen-reader live announcements | Done | `useAnnouncer` degrades to a no-op without a provider; 9 mutations now announce (view switch, save/create, delete, import success/failure, reset, snapshot save/restore/clear, density) via `messages/announce.ts`. |
-
-### Plan 158 — September 2026 best-practice audit (2026-09-28)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | GOAP research swarm against official sources | Done | `plans/158-september-2026-best-practice-audit.md`. 4 parallel research lanes (Next 16/deploy, service worker, Zustand v5/React 19, WCAG 2.2/i18n), each required to cite a primary source. **3 P0**: Vercel builds with pnpm 6 via `installCommand` (cannot read lockfile v9 / `pnpm.overrides`); the service-worker registration deletes the precache it just wrote (regression from Plan 157, verified in Chromium); hydration rejection is silent *and* destroys the envelope it claims to preserve. **3 candidates rejected by browser verification** — a `role="img"` a11y defect that Chrome does not exhibit, a WCAG target-size violation that measured 28px not 22px, and a Zustand typing claim. P0-1/P0-2/P0-3 + P1-2 remediated: Vercel config trimmed to framework+buildCommand, the inverted service-worker cache purge deleted (a Plan 157 regression, now covered by a test that fails when reinstated), and refused hydration payloads are quarantined under a key the store never writes and surfaced via a recovery banner. P1-3 (duplicate referrer policy) and P1-4 (WCAG 2.2 SC 2.4.11) also fixed — P1-4's prescribed `scroll-padding` remedy was measured and rejected in favour of bottom padding on the editor wrapper. P1-1 also fixed — a dedicated `tsconfig.build.json` lets `next build`'s CLI typechecker skip test sources without the `useTypeScriptCli` experiment, so the build is warning-free and no longer depends on the compiler API TypeScript 7 will drop. P2-1/4/5/6/7/8/9 also fixed: apple-touch-icon + typed appleWebApp, per-scheme themeColor, poweredByHeader off, mind-map tree ARIA (level/posinset/setsize/group + selection decoupled from focus), engines.node raised to >=22.10.0, and three dead announce keys wired (fourth deleted as a duplicate) behind a guard test. P2-2/3/10/11 remain. |
-
-### Plan 156 — Dependency audit remediation: `brace-expansion` (2026-09-28)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Clear two high-severity `brace-expansion` advisories | Done | `plans/156-dependency-audit-brace-expansion-remediation-2026-09-28.md`. The `pnpm.overrides` selector pinned `brace-expansion@<1.1.16` to `1.1.16` — the vulnerable version itself, below both advisory floors (`>=1.1.17`, `>=1.1.18`). Narrowed to `<1.1.18` → `1.1.21`; `pnpm audit` now reports 0 advisories across 889 dependencies. The separate `5.0.9` branch is untouched. Two pre-existing warnings recorded as follow-ups F1 (`boolean@3.2.0` deprecation, no patched release exists) and F2 (Vitest experimental-typecheck notice, upstream and unavoidable without a regression). |
-
-### Plan 155 — Local CPU-first AI and settings persistence (2026-09-26)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | CPU-first defaults, reachable WebGPU toggle, autosave fix | Done | `plans/155-cpu-first-local-ai-and-settings-persistence.md`. `ollamaCpuOnly` defaults to `true` and `localDevice` is persisted, closing a gap where the adapter consumed `localDevice` but the UI could not reach it. `BaseUrlInput` fixes a pre-existing autosave defect: the panel saved on every keystroke while the schema rejected partial hosts, so a typed base URL was silently discarded (164 failed saves in one session). The Ollama allowlist accepts bracketed IPv6 loopback, which the bare `::1` entry could never match. |
-
-### ADR 040 — CPU-first local AI inference (2026-09-26)
-
-| ADR | Status | Reason |
-|-----|--------|--------|
-| 040 | Implemented | CPU is the invariant default (WASM in-browser, `num_gpu: 0` for Ollama; GPU opt-in). Supersedes ADR 025 in part: Ollama CPU-only moves from opt-in to default-on. |
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| W1 | Inventory 9 open PRs + 19 pure issues; roast each | Done | `plans/116-pr-issue-sweep-roast-merge-order-2026-10-11.md`. No-impact close verdict: **nothing** — every PR carried behaviour, an alert fix, or tests, and all 19 issues reproduced on `main`. |
+| W2 | Implement missing tasks with zero PR overlap | Done | #861 (library table rows back to native semantics + a real open button) and #873 (system theme: `enableSystem`, `defaultTheme="system"`, sidebar System button). Lint + typecheck clean, 2838 unit tests green; e2e specs updated, CI awaited (no browsers in the sandbox). |
+| W3 | Merge order + follow-ups | Historical — superseded | No merges were performed under this plan; the 2026-10-12 sweep supersedes the open-work half (see Plan 163): #924 and #920 landed there among seven merges, #910 had landed with four dependency downgrades that Plan 163 restored, and the PRs still open then are tracked in Plan 163's follow-up row. Recorded order was #922 → #924 → #920 → #923 → #928 → #927 → #926 → #910 (rebase) → #925 (Codacy HIGHs first) → this branch, with follow-up drafts (no GitHub write access here) for #926 i18n, #928 optional-id note, drawer theme parity, and 12 issue owners. |
 
 ### Plan 131 — GOAP Swarm Improvement Audit (2026-08-22)
 
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | G7 gate honesty + G1 persistence contract | Done | Shipped: `mergeHydratedState` validates on every load (not just version mismatches), rebase-on-hydrate, `HydrationRejectedError` preserves the payload on disk, honest coverage thresholds (75/78/84/85) with test files excluded, `.githooks/` committed + `core.hooksPath` wired via the `prepare` script. |
-| W2 | G2 undo integrity + G3 dead-code/dep pruning | Partial | Undo integrity done in Plan 157 W3: history carries claims, claim CRUD participates, dangling selection/edit ids are cleared (D1.6/D1.22). Dead primitives pruned in #838: `Button`, `FieldLabel`, `SelectInput`, `ToolbarBtn`, and `EmptyState` had zero production importers and were shadowed by local duplicates — `ui/shared-primitives.tsx` went 317 → 131 lines. **Closed, nothing to prune.** The ~26-dependency prune was estimated, not measured. A scan of all 63 deps found only 4 with no import in `src/`, `e2e/`, or `scripts/` — and all four are required: `react-dom` and `sharp` are Next 16 peer/optional requirements, `tw-animate-css` is imported by `globals.css`. |
-| W3 | G4 bundle/startup + G5 view consolidation | Partial | **Not done**: zero `next/dynamic` call sites, so the sync and export chunks still load eagerly — this is the remaining half of W3. The shared `ToolbarBtn` dead-export problem is closed (#838). `chat-view.tsx` fell to 126 LOC on its own; `graph-view.tsx` (494) and `mindmap-view.tsx` (490) remain just under the ceiling. |
-| W4 | G6 sync bridge completion | Done | `startBidirectionalSync` is now called from `app-shell.tsx:130` and the unsubscribe is returned. Tombstone registry extracted to `cross-tab-tombstones.ts`. |
-| W5 | G8 library hardening + G9 hygiene | Partial | Done: DOMPurify wired in `lib/security.ts`, `verify-deps.sh` runs in CI on lockfile changes, markdown link sanitization + `noopener noreferrer`. **Not done**: vitest typecheck still runs with `ignoreSourceErrors: true` against ~73 legacy `*.test.ts` errors, so source-error gating is inert (D5.3). |
-
-### Plan 129 — React Compiler ESLint Rules (2026-08-17)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Surface components the React Compiler cannot optimize | Done | Enabled `react-hooks/purity`/`use-memo`/`immutability`/`refs`/`static-components` (all zero findings); fixed the sole `purity` violation in `sidebar.tsx` (Date.now hoisted out of render) |
-
-### Plan 128 — Enable React Compiler (2026-08-17)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Complete deferred Task 141 by enabling the React Compiler | Done | `reactCompiler: true` (stable in Next.js 16) + `babel-plugin-react-compiler`; `'use no memo'` opt-outs on the @tanstack/react-virtual components the compiler breaks |
-
-### ADR 034 — Nightly Dependabot Alert Check + Resolve-Every-Thread Merge Gate (2026-08-16)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Record the alert-check architecture and the outdated-thread merge-gate policy | Done | ADR 034 accepted; documents the DEPENDABOT_TOKEN requirement and the LESSON-032 resolve-every-thread rule |
-
-### Plan 127 — Nightly Dependabot Alert Check (2026-08-16)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Fail CI when any open Dependabot alert exists | Done | New `dependabot-alert-check.yml` nightly workflow; diagnoser reports outdated-but-unresolved review threads (LESSON-032) |
-
-### Plan 126 — Transitive nanoid Security Remediation (2026-08-15)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Patch Dependabot alert #61 without changing application behavior | Done | Existing `nanoid@3` override bumped from 3.3.17 to 3.3.18; lockfile regenerated |
-
-### Plan 125 — Markdown Preview E2E Verification (2026-08-15)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| G1–G6 | Verify CommonMark/GFM preview output and merge the implementation | Done | E2E spec + ADR 033 merged via #689; GFM support merged via #690 |
-
-### Plan 124 — Skill Script Complexity Follow-up (2026-08-15)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Decompose monitor loops | Done | `phase_monitor()` and `agent_monitor_actions()` extracted via #691 |
-| W2 | Address review findings | Done | Replacement PR #692: shared `scripts/lib/workflow-monitor.sh`, workflow-failure propagation, BATS coverage; all CI green |
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| W1 | G7 gate honesty + G1 persistence contract | Done | `plans/131-goap-swarm-improvement-audit-2026-08-22.md`. `mergeHydratedState` validates on every load (not just version mismatches), rebase-on-hydrate, `HydrationRejectedError` preserves the payload on disk, honest coverage thresholds (75/78/84/85) with test files excluded, `.githooks/` committed + `core.hooksPath` wired via `prepare`. |
+| W2 | G2 undo integrity + G3 dead-code/dep pruning | Partial — closed, nothing left to prune | Undo integrity landed in Plan 157 W3; #838 removed five dead shared primitives (`ui/shared-primitives.tsx` 317 → 131 lines). The ~26-dependency prune was estimated, not measured — of 63 deps only 4 have no import in `src/`, `e2e/`, or `scripts/`, and all four are required. |
+| W3 | G4 bundle/startup + G5 view consolidation | Partial — open | Remaining half: zero `next/dynamic` call sites, so the sync and export chunks still load eagerly. The shared `ToolbarBtn` dead-export problem is closed (#838); `chat-view.tsx` fell to 126 LOC on its own while `graph-view.tsx` (494) and `mindmap-view.tsx` (490) stay just under the ceiling. |
+| W4 | G6 sync bridge completion | Done | `startBidirectionalSync` is called from `app-shell.tsx:130` and returns the unsubscribe; tombstone registry extracted to `cross-tab-tombstones.ts`. |
+| W5 | G8 library hardening + G9 hygiene | Partial — open | DOMPurify wired in `lib/security.ts`, `verify-deps.sh` runs in CI on lockfile changes, markdown link sanitization + `noopener noreferrer`. Not done: vitest typecheck still runs with `ignoreSourceErrors: true` against ~73 legacy `*.test.ts` errors, so source-error gating is inert (D5.3). |
 
 ### Plan 123 — Codacy Merge Gate Playbook (2026-08-14)
 
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| Reference | Document missing-check diagnosis and code-level false-positive fixes | Active reference | AGENTS.md and lessons updated; use for every PR sweep |
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Reference | Document missing-check diagnosis and code-level false-positive fixes | Active reference | `plans/123-codacy-merge-gate-playbook-2026-08-14.md`. AGENTS.md and lessons updated; use for every PR sweep. |
 
-### Plan 122 — Large-List Render Cost (2026-08-14)
+## Completed plans
 
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1–W4 | Cap/window Library lists and backfill E2E/a11y coverage | Done | PRs #677–#683; CSS-sourced breakpoints, browser windowing, tooltips, SR labels, and E2E coverage |
+One row per landed plan: number, title and date as recorded, what it delivered, and
+its file. Rows with a superseded or historical status keep that word.
 
-### Plan 121 — Version Consistency Audit (2026-08-12)
+| Plan | Title (date) | Outcome | Plan file |
+| --- | --- | --- | --- |
+| 160 | Fix every open Codacy issue in code; delete `.mimocode/` (2026-09-30) | Done — removed the foreign `.mimocode/` tree and its inert config entries, and fixed all five live Codacy findings in code, not by suppression (2788 unit tests green). | plans/160-codacy-open-issues-and-mimocode-cleanup-2026-09-30.md |
+| 159 | Rejected-library recovery visibility and fail-closed persistence (2026-09-29) | Done — a refused hydration is now visible on Home and fails closed for the page session (`hydration-guard.ts`); quarantine occupancy is decided by key existence and dismissal is non-destructive; ADR 028 §4a. | plans/159-rejected-library-recovery-visibility-and-fail-closed.md |
+| 157 | Codebase gap remediation: dead features, undo integrity, PWA, live announcements (2026-09-28) | Done — mind-map density and graph snapshots made real, undo carries claims, PWA raster icons + manifest/SW re-checks, 9 announcing mutations. | plans/157-codebase-gap-and-feature-remediation.md |
+| 158 | September 2026 best-practice audit (2026-09-28) | Done — source-cited four-lane swarm; 3 P0 (Vercel pnpm 6 install, the service worker deleting its own precache, silent hydration rejection) plus the P1s fixed, 3 candidates rejected by browser verification; P2-2/3/10/11 remain. | plans/158-september-2026-best-practice-audit.md |
+| 156 | Dependency audit remediation: `brace-expansion` (2026-09-28) | Done — the override had pinned the vulnerable version; narrowed to `<1.1.18` → `1.1.21`, `pnpm audit` clean across 889 dependencies; two warnings recorded as follow-ups F1/F2. | plans/156-dependency-audit-brace-expansion-remediation-2026-09-28.md |
+| 155 | Local CPU-first AI and settings persistence (2026-09-26) | Done — CPU-first defaults with a reachable WebGPU toggle, a per-keystroke autosave that silently discarded partial hosts fixed, bracketed IPv6 loopback allowlisted. | plans/155-cpu-first-local-ai-and-settings-persistence.md |
+| 129 | React Compiler ESLint Rules (2026-08-17) | Done — five `react-hooks` compiler rules enabled (all zero findings) and the sole `purity` violation fixed in `sidebar.tsx`. | plans/129-react-compiler-eslint-rules-2026-08-17.md |
+| 128 | Enable React Compiler (2026-08-17) | Done — `reactCompiler: true` plus `babel-plugin-react-compiler`, with `'use no memo'` opt-outs on the components the compiler breaks. | plans/128-react-compiler-2026-08-17.md |
+| 127 | Nightly Dependabot Alert Check (2026-08-16) | Done — new nightly `dependabot-alert-check.yml` fails CI on any open alert; the diagnoser reports outdated-but-unresolved review threads (LESSON-032). | plans/127-dependabot-alert-check-2026-08-16.md |
+| 126 | Transitive nanoid Security Remediation (2026-08-15) | Done — the `nanoid@3` override bumped 3.3.17 → 3.3.18 with a regenerated lockfile, no application behaviour changed. | plans/126-dependabot-nanoid-remediation-2026-08-15.md |
+| 125 | Markdown Preview E2E Verification (2026-08-15) | Done — the E2E spec and ADR 033 merged via #689, GFM support via #690. | plans/125-markdown-preview-e2e-2026-08-15.md |
+| 124 | Skill Script Complexity Follow-up (2026-08-15) | Done — monitor loops decomposed via #691; #692 added the shared `scripts/lib/workflow-monitor.sh`, workflow-failure propagation and BATS coverage. | plans/124-skill-script-complexity-followup-2026-08-15.md |
+| 122 | Large-List Render Cost (2026-08-14) | Done — library lists capped/windowed with CSS-sourced breakpoints, tooltips, SR labels and E2E coverage across PRs #677–#683. | plans/122-virtualize-graph-lists-2026-08-14.md |
+| 121 | Version Consistency Audit (2026-08-12) | Done — version references aligned to 0.1.2 and `scripts/propagate-version.sh` restored and documented. | plans/121-version-audit-2026-08-12.md |
+| 120 | Open Items Resolution Session (2026-08-12) | Done — closed issue #622 (SSRF false positive), fixed the PR #663 OwlWatch finding and its merge state, re-scanned plans 100–119 as DONE, and drafted release notes (2210 tests pass). | plans/120-open-items-resolution-2026-08-12.md |
+| 119 | PR Merge-State Diagnosis: Incident + Automated Diagnoser (2026-08-12) | Done — diagnosed the PR #652 BLOCKED state and shipped `pr-merge-state-diagnoser.yml` with `scripts/diagnose-merge-state.sh` and a 19-test BATS suite. | plans/119-merge-state-diagnoser-2026-08-12.md |
+| 118 | PR Sweep Session Summary (2026-08-12) | Done — swept PRs #624–#649 (8 merged manually, 3 auto-merged, 2 by maintainer), cut search query time ~84%, pinned gitleaks to v2.3.9. | plans/118-pr-sweep-session-summary-2026-08-12.md |
+| 110 | GOAP: Missing Implementation Remediation (2026-08-07) | Done — split `export-helpers.ts` (544 LOC) into three modules, committed the Next.js 16 `next-env.d.ts`, closed Plan 109, and opened a reviewed PR. | plans/110-goap-missing-implementation-remediation-2026-08-07.md |
+| 109 | Gap Remediation, CI Fix, and PR Cleanup (2026-08-06) | Done — created the missing `plans/094-smoke-tests-shadcn-primitives.md`, fixed 4 Codacy and 1 DeepSource finding, and landed PR #614 (2115 tests). | plans/109-gap-remediation-ci-fix-2026-08-06.md |
+| 108 | Complete Task 143 Progressive Disclosure, Fix PR #613 CI, Viewport E2E (2026-08-06) | Done — Task-143 disclosure items implemented, 8 DeepSource findings resolved, and the E2E viewport matrix hardened (476/476 across four projects). | plans/108-goap-task143-completion-and-ci-fix-2026-08-06.md |
+| 106 | DeepSource Remediation, CI Fix, and Coverage (2026-08-05) | Done — DeepSource-style code fixes, the PR #610 store regression repaired in #611, and new store-graph, helper-component and seed-data tests (2095 tests pass). | plans/106-deepsource-remediation-and-coverage-2026-08-05.md |
+| 105 | ADR 010 Full Export Schema & Plan Reconciliation (2026-08-03) | Done — implemented the ADR 010 export schema (8 Zod schemas, graph/mindMap/links/tags in JSON) with 86 new tests and reconciled stale checkboxes (PR #598). | plans/105-goap-remaining-gaps-stale-checks-and-adr010-2026-08-03.md |
+| 104 | Long-Term DeepSource JS CI Fix (2026-08-03) | Done — root-caused the recurring DeepSource JS failures with `.deepsource.toml` issue-pattern suppressions and `skip_doc_coverage`. | plans/104-deepsource-longterm-2026-08-03.md |
+| 103 | Resolve DeepSource JS Findings (2026-08-03) | Done — fixed the findings in code across `src/lib` and added justified suppression entries for the remaining false-positive patterns. | plans/103-deepsource-adr022-findings-2026-08-03.md |
+| 102 | Fix DeepSource JS Introduced Issues (2026-08-02) | Done — cleared the patterns PR #590 introduced; merged via #591 (`0ddf626`). | plans/102-deepsource-js-fixes-2026-08-02.md |
+| 101 | ADR 022 setTimeout Removal & Plan Status Reconciliation (2026-08-02) | Done — removed the `sendMessage` fake delay (synchronous BM25 per ADR 022) and reconciled `plans/ADRs/007-doc-resolver-integration.md`, `plans/084-accessibility-audit-report.md` and `plans/10-implementation-audit-v1-completed.md` (1992 tests pass). | plans/101-goap-adr022-settimeout-and-plan-statuses-2026-08-02.md |
+| 100 | GOAP: ADR 007 Stale Status & Codebase Gap Analysis (2026-08-02) | Done — marked ADR 007 superseded by ADR 022 with a five-point justification and produced the gap analysis that fed Plans 101–105. | plans/100-goap-adr007-stale-status-and-codebase-gaps-2026-08-02.md |
+| 099 | GOAP: Address Remaining Gaps and Create PR (2026-08-02) | Done — consolidated the outstanding codebase gaps and merged the result via PR. | plans/099-goap-remaining-gaps-and-pr-2026-08-02.md |
+| 097 | CI Cache Completion and Plan 15 Reconciliation (2026-08-01) | Done — added a lockfile-keyed Playwright browser cache, verified the remaining Plan 15 CI/config criteria, and merged via PR #584 (`720df58`). | plans/097-goap-plan15-ci-cache-and-reconciliation-2026-08-01.md |
+| 096 | WCAG Touch Target and E2E Learnings (2026-07-29) | Done — created `plans/096-wcag-touch-target-and-e2e-learnings-2026-07-29.md`. | plans/096-wcag-touch-target-and-e2e-learnings-2026-07-29.md |
+| 095 | Fix Pre-Existing Color Contrast Violations (2026-07-29) | Done — raised the light/dark contrast tokens (6.1:1 light / 5.8:1 dark), removed the kbd opacity modifiers, fixed the react-day-picker v10 rename and extended strict axe assertions to all 10 views (PR #541, 1379 tests). | plans/095-audit-color-contrast-fixes.md |
+| 094 | Smoke Tests for Remaining 9 shadcn UI Primitives (2026-07-29) | Done — shared axe helpers plus 9 primitive test files (782 additions across 14 files); merged via PR #540. | plans/094-smoke-tests-shadcn-primitives.md |
+| 093 | Full Accessibility Audit E2E Suite and UI Primitive Tests (2026-07-29) | Done — fixed the ARIA radiogroup keyboard focus and 44px touch targets, added the touch-target E2E test, and cleared 5 Codacy issues; merged via PR #539 (1322 tests). | plans/093-goap-a11y-e2e-and-ui-primitive-tests-2026-07-29.md |
+| 092 | GOAP: Complete Plan 091 Deferred Smoke Tests & Reconcile Stale Plan Checkboxes (2026-07-29) | Done — added the 4 deferred shadcn smoke tests (39 tests) and reconciled Plans 091, 068 and 089. | plans/092-goap-plan091-smoke-tests-and-plan-reconciliation-2026-07-29.md |
+| 091 | GOAP: Address Remaining plans/ Gaps, Coverage, and ADR Cleanup (2026-07-28) | Done — reconciled four stale plan checkboxes and ADR 003, and added hook plus service-worker-registration tests (25 new tests); PR #535 green on all 20 checks. | plans/091-goap-remaining-gaps-cleanup-2026-07-28.md |
+| 090 | GOAP: PWA Service Worker, AI Provider Tests, A11y Automation (2026-07-28) | Done — cache-first service worker plus offline indicator, 53 provider tests and 48 keyboard-navigation tests; PR #534 green on all 20 checks. | plans/090-goap-pwa-tests-a11y-2026-07-28.md |
+| 087 | GOAP: Address Remaining ADR Implementation Gaps (2026-07-27) | Done — applied conflict resolutions, completed the bidirectional sync bridge lifecycle, persisted recovery snapshots, added import referential integrity and a manifest-driven skills setup. | plans/087-goap-remaining-adr-implementation-gaps.md |
+| 084 | GOAP: Address Remaining Implementation Gaps (2026-07-26) | Done — marked `plans/ADRs/012-pdf-export-strategy.md` implemented, hardened the ADR 029 validator, and created `plans/084-accessibility-audit-report.md`. | plans/084-goap-remaining-gaps-2026-07-26.md |
+| 083 | GOAP: Coverage to 55%, Plan Status Fixes, ADR 011 Cleanup (2026-07-26) | Done — corrected three plan statuses, marked `plans/ADRs/011-cli-command-extraction.md` superseded, added 9 test files (109 tests) and raised the coverage thresholds. | plans/083-goap-coverage-plan-status-adr-cleanup.md |
+| 082 | GOAP: Address Missing Implementations from plans/ Analysis (2026-07-26) | Done — marked `plans/ADRs/001-sqlite-wasm.md` superseded, completed the bundle-size analysis in `plans/startup-audit.md`, and added versioned hydration migrations plus 181 tests. | plans/082-goap-missing-implementations-2026-07-26.md |
+| 081 | Overlay Migration, Semantic A11y, Dead Code Removal (2026-07-26) | Done — added the Overlay variants, migrated three surfaces and the search listbox semantics, deleted the unused focus-trap hook; PR #516 with 20 checks green and 0 Codacy issues. | plans/081-overlay-migration-a11y-coverage.md |
+| 080 | Gap Remediation: GOAL.md, ai-harness split, shadcn exception (2026-07-26) | Done — refreshed GOAL.md/AGENTS.md and split `ai-harness-view.tsx` 511 → 255 LOC; PR #515 green on 22 checks. | plans/080-gap-remediation-goal-harness-branches.md |
+| 079 | View Test Coverage + PR (2026-07-25) | Done — added 5 view test files and set the coverage thresholds; PR #514 green on 22 checks. | plans/079-view-tests-and-pr.md |
+| 078 | GOAP Gap Remediation: LOC, Architecture, Coverage, E2E CI (2026-07-25) | Done — split `export-view.tsx` 594 → 128 LOC, rewrote ARCHITECTURE.md, added the E2E CI job and 163 tests; merged via PR #512. | plans/078-goap-gap-remediation-2026-07-25.md |
+| 077 | Review Findings Remediation (2026-07-25) | Done — cleared the review P1–P3 findings (dead code + ARIA, keyboard navigation, focus polish, 20 touch targets) in PR #510. | plans/077-review-findings-remediation.md |
+| 076 | Accessibility Audit, Overlay Migration, and Quick-Win Remediations (2026-07-25) | Done — swarm audit (68 findings), 18 ARIA fixes, 8 focus and 12 touch-target fixes, motion gating; merged via PR #508. | plans/076-a11y-audit-overlay-quickwins.md |
+| 075 | Coverage, Overlay, Claims History, and Docs Reconciliation (2026-07-25) | Done — 8 new test files (492 tests, coverage 30.87% → 31.63% lines), the shared `Overlay`, and claims version history; merged via PR #505. | plans/075-plan-075-remediation.md |
+| 074 | Sync Bridge, A11y, Data Layer, and Documentation (2026-07-25) | Done — claim timestamps, 13 ADR statuses, 44px targets plus export ARIA, and the bidirectional Yjs/Zustand sync bridge (PRs #502/#503). | plans/074-goap-sync-bridge-a11y-and-data-layer.md |
+| 073 | Closeout of Plan 072 Remaining Gaps (2026-07-24) | Done — import preview and rollback, product-honesty plus CI fixes, mind-map ARIA tree with roving tabindex, raised coverage thresholds and 44px touch targets. | (no plan file) |
+| 072 | GOAP Remediation (2026-07-24) | Done — accepted ADRs 027/028/029 and landed Zod hydration with import validation (P0), CI fail-closed changes (P1) and the honesty fixes (P1). | plans/072-goap-plan071-remediation.md |
 
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Reconcile app version and propagation documentation | Done | Version references aligned to 0.1.2; `scripts/propagate-version.sh` restored and documented |
+## ADRs recorded since the 2026-07-25 reconciliation
 
-### Plan 120 — Open Items Resolution Session (2026-08-12)
+| ADR | Scope (date) | Status | ADR file |
+| --- | --- | --- | --- |
+| 028 | Validated and recoverable local data boundaries (2026-09-29) | Implemented (§4a added) | plans/ADRs/028-validated-recoverable-local-data-boundaries.md |
+| 040 | CPU-first local AI inference (2026-09-26) | Implemented | plans/ADRs/040-cpu-first-local-ai.md |
+| 034 | Nightly Dependabot Alert Check + Resolve-Every-Thread Merge Gate (2026-08-16) | Done | plans/ADRs/034-nightly-dependabot-alert-check.md |
 
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Close Issue #622 (SSRF false positive) | Done | Closed with explanation — `is_safe_url()` already validates URLs before subprocess calls |
-| W2 | Fix PR #663 OwlWatch finding | Done | Refactored repetitive test code to use `it.each` parameterized tests |
-| W3 | Resolve PR #663 merge state | Done | Resolved OwlWatch review thread, merged via squash |
-| W4 | Scan plans/ for open tasks | Done | All recent plans (100-119) marked DONE; historical checkboxes documented |
-| W5 | Quality gates | Done | Lint, typecheck, build clean; 2,210 tests pass |
-| W6 | Documentation | Done | Draft release notes created, INDEX.md updated |
+ADR 028 §4a makes the decision operational: a refused hydration fails closed for the
+page session across the storage writer, the quarantine record, and cross-tab/Yjs
+traffic; the refusal status, not the presence of a quarantine record, is the single
+source of truth for "this workspace is temporary". ADR 040 makes CPU the invariant
+default (WASM in-browser, `num_gpu: 0` for Ollama; GPU opt-in) and supersedes ADR 025
+in part. ADR 034 documents the DEPENDABOT_TOKEN requirement and the LESSON-032
+resolve-every-thread rule.
 
-### Plan 119 — PR Merge-State Diagnosis: Incident + Automated Diagnoser (2026-08-12)
+## Deferred items as recorded at the time
 
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Diagnose PR #652 BLOCKED state | Done | Identified in-flight check runs + genuine staleness |
-| W2 | Create diagnoser workflow | Done | `pr-merge-state-diagnoser.yml` + `scripts/diagnose-merge-state.sh` |
-| W3 | Add BATS regression suite | Done | 19 tests covering in-progress, failures, staleness, PATCH idempotency |
-| W4 | Extract shared libraries | Done | `scripts/lib/run-check.sh`, `tests/helpers/mock-gh.bash` |
-| W5 | Quality gates | Done | Full suite passes, workflow tests added |
+| Recorded under | Deferred to | Items |
+| --- | --- | --- |
+| Plan 074 | Plan 076 | Full accessibility audit (axe scanning, screen reader verification, 200% zoom, 400% reflow); coverage target to 50% (incremental, not one-shot). |
+| Plan 073 | Plan 074 | G2: bidirectional Yjs/Zustand sync bridge (requires the G1 validation boundary); full accessibility audit (axe scanning, screen reader verification, 200% zoom). |
 
-### Plan 118 — PR Sweep Session Summary (2026-08-12)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Sweep PRs #624–#649 | Done | 8 merged manually, 3 auto-merged, 2 by maintainer |
-| W2 | Search cache | Done | ~84% query-time reduction with invalidation coverage |
-| W3 | Security hardening | Done | gitleaks pinned to v2.3.9, 4 new lessons recorded |
-
-### Plan 110 — GOAP: Missing Implementation Remediation (2026-08-07)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Split `export-helpers.ts` (544 LOC → 3 files) | Done | `export-types.ts` (155 LOC, types/formats/file utils), `export-documents.ts` (213 LOC, PDF/DOCX builders), `export-helpers.ts` (181 LOC, core builders) — all 12 importers + test mocks updated |
-| W1 | Commit `next-env.d.ts` Next.js 16 artifact | Done | `next-env.d.ts` path updated to `.next/types/routes.d.ts` and committed |
-| W1 | Close Plan 109 | Done | Plan 109 marked COMPLETE; its waves already merged via PR #614 |
-| W2 | Quality gate | Done | Lint/typecheck/test/build green |
-| W3 | PR creation & review | Done | PR opened with code review |
-
-### Plan 109 — Gap Remediation, CI Fix, and PR Cleanup (2026-08-06)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Documentation & Plan Reconciliation | Done | Created missing `094-smoke-tests-shadcn-primitives.md`; checked Plan 108 quality gate checkbox; reconciled Task 138 and Task 141 as DEFERRED |
-| W2 | CI Failure Investigation & Fix | Done | Fixed 4 Codacy `no-misused-promises` violations in `ai-harness-chat.tsx` and `export-format-grid.tsx`; fixed DeepSource JS-0357 "used before defined" in `graph-view.tsx` by moving `ToolbarBtn` before usage |
-| W3 | PR Creation & Review | Done | Created PR #614; quality gate passes (lint, typecheck, 2115 tests, build) |
-
-### Plan 108 — Complete Task 143 Progressive Disclosure, Fix PR #613 CI, Viewport E2E (2026-08-06)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Fix PR #613 E2E failures | Done | `ai-harness.spec.ts` strict-mode `Provider` heading (`exact: true`); `keyboard-navigation.spec.ts` flaky Ctrl+K (wait for hydration) |
-| W1 | Resolve 8 DeepSource JS findings | Done | `use-ai-harness-chat.ts` hook + `ai-harness-provider-setup.tsx` (complexity 17→low, JSX depth); `sync-helpers.tsx` status indicator extraction (23→low); `store.ts` recovery helpers; async-without-await + redundant `undefined` in tests |
-| W2 | Task-143 deferred items S1/S2/G1/G2/A1 | Done | Library advanced filters collapsible (tag + has-description); Graph "More" control grouping + contextual tooltips; AI Harness context-based prompt suggestions (`ai-harness-suggestions.ts`) |
-| W2 | E2E viewport matrix (4 projects) | Done | `desktop-xl` project (1920×1080) added; `progressive-disclosure.spec.ts` (5 tests) runs on all projects; `responsive.spec.ts` extended |
-| W3 | Viewport E2E hardening | Done | Shared `e2e/helpers/navigation.ts` (viewport-aware `navClick`/`openNavIfHidden`/`expectNavigationReachable`); 11 specs migrated; axe runs with `reducedMotion: 'reduce'` (kills entrance-animation contrast flakes); un-awaited `navClick` fixed; home/mindmap/editor selectors made viewport-agnostic; topbar mobile buttons 44px; export `Secure` badge `text-emerald-800` |
-| W4 | Quality gate | Done | Lint/typecheck clean; 2115 unit tests; build passes; E2E 476/476 across chromium/mobile/tablet/desktop-xl (0 failures, 0 flakes) |
-
-### Plan 106 — DeepSource Remediation, CI Fix, and Coverage (2026-08-05)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | DeepSource JS code fixes | Done | `store.ts`, `sync-helpers.tsx`, `editor-helpers.tsx`, `triz-helpers.tsx` — `function` → `const` arrow, `q` → `query` |
-| W2 | Fix store regression from PR #610 merge | Done | PR #611 — restored `graph`/`mindMap`/`links`/`tags` in `StudioState`, `ImportOptions`, recovery snapshot, `SEED_STATE`, `partialize`, `RecoverySnapshotSchema` |
-| W3 | Coverage: store-graph tests | Done | `store-graph.test.ts` — 7 tests guarding import/rollback/recovery of graph fields |
-| W3 | Coverage: helper component tests | Done | `sync-helpers.test.tsx` (14), `editor-helpers.test.tsx` (13), `triz-helpers.test.tsx` (9) |
-| W3 | Coverage: seed-data integrity | Done | `seed-data.test.ts` — 7 referential-integrity tests |
-| W4 | Documentation reconciliation | Done | INDEX.md updated (099/100/102/103/104 sections added, 106 added, plan 104 collision renumbered) |
-| W4 | Quality gate | Done | 2095 tests pass, lint/typecheck/build clean |
-
-### Plan 105 — ADR 010 Full Export Schema & Plan Reconciliation (2026-08-03)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Reconcile stale plan checkboxes (099, 100, 101, 102) | Done | Plans 099, 100 marked DONE; Plan 101, 102 success criteria checked |
-| W1 | Fix console.log in test benchmark | Done | `src/lib/search/retrieval.test.ts` — console.log → console.warn |
-| W1 | Fix `as any` casts in test file | Done | `src/components/studio/views/use-export-handlers.test.ts` — proper typing |
-| W2 | Implement ADR 010 full export schema v1 | Done | `src/lib/studio/schema.ts` — 8 new Zod schemas; `src/components/studio/views/export-helpers.ts` — graph/mindMap/links/tags in JSON export |
-| W2 | Extend store with new fields | Done | `src/lib/studio/store.ts` — StudioState, SEED_STATE, import/export, recovery |
-| W3 | Add tests for new schemas | Done | `src/lib/studio/schema.test.ts` — 82 new tests; `src/components/studio/views/export-helpers.test.ts` — 4 roundtrip tests |
-| W3 | Refactor RecoverySnapshotSchema | Done | `src/lib/studio/store.ts` — reuse exported schemas (single source of truth) |
-| W4 | Quality gate + PR | Done | 2042 tests pass, lint/typecheck/build clean, PR #598 |
-
-### Plan 104 — Long-Term DeepSource JS CI Fix (2026-08-03)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Root-cause recurring DeepSource JS failures | Done | `.deepsource.toml` — issue pattern suppressions (JS-0067, JS-C1002, JS-0331, JS-R1005, JS-0321, JS-0116, JS-W1041) and `skip_doc_coverage` for function types |
-
-### Plan 103 — Resolve DeepSource JS Findings (2026-08-03)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Fix DeepSource JS findings in code | Done | Arrow-function conversions, complexity refactors, redundant annotation removal across `src/lib` |
-| W1 | Suppress remaining false-positive patterns | Done | `.deepsource.toml` — added suppression entries with justification comments |
-
-### Plan 102 — Fix DeepSource JS Introduced Issues (2026-08-02)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Fix issues introduced by PR #590 | Done | Merged via PR #591 (`0ddf626`) — resolved DeepSource flagged patterns in newly added code |
-
-### Plan 100 — GOAP: ADR 007 Stale Status & Codebase Gap Analysis (2026-08-02)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Mark ADR 007 as Superseded | Done | Superseded by ADR 022; 5-point justification |
-| W1 | Codebase gap analysis | Done | Identified implementation debt; fed into Plans 101-105 |
-
-### Plan 099 — GOAP: Address Remaining Gaps and Create PR (2026-08-02)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Address remaining codebase gaps | Done | Consolidated outstanding fixes; merged via PR |
-
-### Plan 101 — ADR 022 setTimeout Removal & Plan Status Reconciliation (2026-08-02)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Update ADR 007 status to Superseded | Done | `plans/ADRs/007-doc-resolver-integration.md` — marked Superseded with 5-point justification |
-| W1 | Update Plan 084 status to DONE | Done | `plans/084-accessibility-audit-report.md` — axe-core scan completed in Plans 093-096 |
-| W1 | Update Plan 10 status to DONE | Done | `plans/10-implementation-audit-v1-completed.md` — all items completed |
-| W2 | Remove setTimeout fake delay in sendMessage | Done | `src/lib/studio/store.ts` — ADR 022 compliance: synchronous BM25 search |
-| W3 | Update tests for synchronous behavior | Done | `src/lib/studio/store.test.ts`, `src/lib/studio/store-coverage.test.ts` — removed timer advancements |
-| W4 | Quality gate + PR | Done | 1992 tests pass, lint/typecheck/build clean |
-
-### Plan 097 — CI Cache Completion and Plan 15 Reconciliation (2026-08-01)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Complete remaining actionable Plan 15 CI work | Done | Added lockfile-keyed Playwright browser cache to `.github/workflows/ci-and-labels.yml` |
-| W2 | Verify CI/config criteria against current source | Done | Confirmed explicit job timeouts, pnpm cache, browser-only app types, Dependabot ecosystems, manual Jules workflow, and docs-only change gating |
-| W3 | Quality gate + PR | Done | Local validation, review, commit, PR creation, and CI monitoring — merged via PR #584 (squash `720df58`) |
-
-## Current Status
+## Session summaries
 
 ### Session Summary (2026-08-01 — 5 PRs merged)
 
 | Area | PRs | Key Changes |
-|------|-----|-------------|
+| --- | --- | --- |
 | ESLint peer alignment | #583 | `@eslint/js` 10.x → 9.39.4 to match `eslint` 9 toolchain; removed pnpm peer warning (`fa205fc`) |
 | CI Playwright cache | #584 | Lockfile-keyed `~/.cache/ms-playwright` cache in `ci-and-labels.yml`; Plan 15/097 completed (`720df58`) |
 | Merge-state staleness audit | #585 | `plans/098` root-cause doc + AGENTS.md "GitHub merge-state staleness" guidance (`fe1e58f`) |
@@ -291,7 +144,7 @@ Session notes: GitHub's mergeability cache reported stale `BLOCKED` after the le
 ### Session Summary (2026-07-29 — 22 PRs merged)
 
 | Area | PRs | Key Changes |
-|------|-----|-------------|
+| --- | --- | --- |
 | A11y E2E suite | #539–#543 | Strict axe assertions, color-contrast fixes, graph a11y fix |
 | UI smoke tests | #540 | 9 shadcn primitive tests (782 additions) |
 | Plan reconciliation | #544, #547–#549 | 7 plans reconciled, Status: DONE lines added |
@@ -319,280 +172,26 @@ Next.js + Zustand + localStorage). Plans retain historical context; remaining un
 items were completed in later plans (090–096).
 
 | Plan | Note |
-|------|------|
+| --- | --- |
 | 040, 041-ui, 042, 05, 070 | Retired architecture note |
 | 041-ai-harness | Retired AI architecture (superseded by ADR 025) |
 | 051 | Superseded Vercel config |
 | 068 | Follow-ups completed in 090–096 |
 | 078 | Implementation-plan checkboxes, all success criteria done |
 
-### Plan 096 — WCAG Touch Target and E2E Learnings (2026-07-29)
+### Earlier sessions (pre-2026-07-24)
 
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Document touch target and E2E learnings | Done | plans/096-wcag-touch-target-and-e2e-learnings-2026-07-29.md created |
-
-### Plan 095 — Fix Pre-Existing Color Contrast Violations (2026-07-29)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Fix CSS token contrast ratios in globals.css | Done | Light: --ink-faint/--ink-mute/--muted-foreground #6a6660/#6b6760 -> #5c5852 (6.1:1); Dark: #827d72/#9b958a -> #a09a8e (5.8:1) |
-| W1 | Remove kbd opacity modifiers | Done | mobile-drawer.tsx, sidebar.tsx: removed /70 opacity (was 3.2:1) |
-| W2 | Fix react-day-picker v10 breaking change | Done | calendar.tsx: renamed `table` -> `month_grid` in classNames (v10 UI enum key) |
-| W2 | Bump @radix-ui/react-alert-dialog | Done | ^1.1.14 -> ^1.1.23 (replaces closed dependabot PR #532) |
-| W3 | Extend strict axe assertions to all 10 views | Done | accessibility.spec.ts: all views now use assertNoAxeViolations (critical + serious) |
-| W3 | Fix pre-existing lint warning | Done | collapsible.test.tsx: removed unused `container` destructuring |
-| W4 | Quality gate + PR | Done | PR #541 merged — all CI checks pass, 1379 tests, Codacy clean |
-
-### Plan 094 — Smoke Tests for Remaining 9 shadcn UI Primitives (2026-07-29)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Extract shared a11y helpers | Done | e2e/helpers/a11y.ts — assertNoCriticalAxeViolations, assertNoAxeViolations with WCAG 2.2 AA tags |
-| W1 | Add 9 shadcn UI primitive test files | Done | 782 additions across 14 files: ToggleGroup, Slider, Popover, HoverCard, Progress, Breadcrumb, Avatar, AspectRatio, Collapsible tests |
-| W2 | Quality gate + PR | Done | PR #540 merged — all CI checks pass, Codacy clean |
-
-### Plan 093 — Full Accessibility Audit E2E Suite and UI Primitive Tests (2026-07-29)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | ARIA radiogroup keyboard focus fix | Done | editor-view.tsx: arrow keys now move focus to selected radio (ARIA pattern) |
-| W1 | WCAG 2.5.5 touch targets (min-h/min-w 44px) | Done | 12+ component files: sidebar, topbar, home, library, editor, chat, type-selector, right-panel |
-| W2 | E2E touch-target test | Done | Desktop viewport, skip-nav + SVG <g> graph node exclusions |
-| W2 | Codacy compliance | Done | 5 issues resolved (3 Object Injection Sink + 2 ErrorProne false positives) |
-| W3 | Quality gate + PR | Done | PR #539 merged — all CI checks pass, 1322 tests, Codacy clean |
-
-### Plan 092 — GOAP: Complete Plan 091 Deferred Smoke Tests & Reconcile Stale Plan Checkboxes (2026-07-29)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Add 4 missing shadcn UI smoke tests (dialog, input, badge, card) | Done | 4 new test files, 39 new tests covering rendering, variants, data-slots, disabled state, asChild, Escape-to-close |
-| W2 | Reconcile stale plan checkboxes (091, 068, 089) | Done | Plan 091 deferred item checked; Plan 068 #480/#481 marked done; Plan 089 PWA/AI items updated |
-| W3 | Quality gate + PR | Done | Lint, typecheck, test, build pass; PR created |
-
-### Plan 091 — GOAP: Address Remaining plans/ Gaps, Coverage, and ADR Cleanup (2026-07-28)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Update stale plan checkboxes (065, 068, 071, 089) | Done | Plans 065, 068, 071, 089 exit criteria checked off |
-| W1 | Check ADR 003 E2E test criterion | Done | ADR 003 acceptance criterion verified via WebCrypto encryption |
-| W2 | Add hook tests (use-toast, use-mobile) | Done | 20 new tests covering toast state, dismiss, reducer, mobile breakpoint |
-| W2 | Add service-worker-registration test | Done | 5 tests covering mount registration, error handling |
-| W3 | Quality gate + PR | Done | Lint, typecheck, test (1212), build all pass; PR #535 created with all 20 CI checks passing |
-
-### Plan 090 — GOAP: PWA Service Worker, AI Provider Tests, A11y Automation (2026-07-28)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Service worker with cache-first strategy | Done | `public/sw.js` enhanced with cache-first for static, network-first for API |
-| W1 | Offline indicator in app shell | Done | `app-shell.tsx` — added OfflineIndicator import (component already existed) |
-| W1 | AI provider unit tests | Done | `providers.test.ts` — 53 tests covering adapter selection, URL validation, error handling |
-| W1 | Keyboard navigation tests | Done | `keyboard-nav.test.tsx` — 48 tests covering Overlay, CommandPalette, Sidebar, Topbar, etc. |
-| W2 | Quality gate + PR | Done | Lint, typecheck, test (1143), build all pass; PR #534 created with all 20 CI checks passing |
-
-Plan 088 addresses remaining plans/ documentation and accessibility gaps: ADR status updates, skip navigation, zoom/reflow CSS, and plan checkbox updates.
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Update 8 ADR statuses to Implemented/Superseded | Done | ADRs 003, 020, 025, 026, 027, 028, 029 → Implemented; ADR 06 → Superseded |
-| W2 | Add skip navigation link + zoom/reflow CSS | Done | app-shell.tsx skip-nav, globals.css prefers-reduced-motion + 225px viewport |
-| W3 | Fix GOAL.md stale coverage, check plan checkboxes | Done | GOAL.md updated to 57%, plan success criteria checked |
-| W4 | Quality gate | Done | Lint, typecheck, test (1048), build all pass |
-
-Plan 087 addresses remaining ADR implementation gaps: P2P sync conflict resolution, bidirectional sync bridge, recovery snapshots, import referential integrity, agent harness manifest integration, and editor enhancements.
-
-### Plan 087 — GOAP: Address Remaining ADR Implementation Gaps (2026-07-27)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Implement conflict resolution application | Done | `sync-view.tsx` — handleConflictResolve applies resolutions; `bridge.ts` — applyConflictResolution function |
-| W1 | Implement bidirectional sync bridge lifecycle | Done | `bridge.ts` — startBidirectionalSync, `app-shell.tsx` — wired into app lifecycle |
-| W2 | Persist recovery snapshots across sessions | Done | `store.ts` — importWithRollback persists to localStorage with 24h TTL |
-| W2 | Add referential integrity check on import | Done | `export-helpers.ts` — parseImportFile validates claim entityId references |
-| W3 | Setup reads manifest for all tools | Done | `setup-skills.sh` — reads manifest.json, creates symlinks for all declared tools |
-| W3 | Add sync command to agent-surface.py | Done | `agent-surface.py` — sync_managed_surfaces function |
-| W4 | Add fenced code block for multiline selections | Done | `formatting.ts` — applyInlineCode detects multiline and wraps in fenced block |
-| W4 | Add split-mode width collapse | Done | `editor-view.tsx` — useEffect collapses split on narrow viewports |
-| W5 | Quality gate | Done | Lint, typecheck, test (1048), build all pass |
-
-### Plan 084 — GOAP: Address Remaining Implementation Gaps (2026-07-26)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Update ADR 012 status to "Implemented" | Done | plans/ADRs/012-pdf-export-strategy.md updated to reflect jsPDF implementation |
-| W2 | Enhance ADR 029 validator | Done | scripts/agent-surface.py now validates broken symlinks, frontmatter, name mismatches, eval JSON, duplicate names |
-| W3 | Accessibility audit documentation | Done | plans/084-accessibility-audit-report.md created with findings and recommendations |
-
-### Plan 083 — GOAP: Coverage to 55%, Plan Status Fixes, ADR 011 Cleanup (2026-07-26)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Fix stale plan statuses (082, 078, 079) | Done | Plans 082, 078, 079 status fields corrected |
-| W1 | Mark ADR 011 as Superseded | Done | plans/ADRs/011-cli-command-extraction.md updated |
-| W2 | Add tests for 9 untested components/hooks | Done | 9 new test files, 109 new tests |
-| W3 | Raise vitest coverage thresholds | Done | lines 45→53, branches 37→45, functions 37→42, statements 45→53 |
-| W4 | Quality gate verification | Done | Lint, typecheck, test, build all pass |
-
-### Plan 082 — GOAP: Address Missing Implementations from plans/ Analysis (2026-07-26)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W1 | Fix ADR 001 status to "Superseded" | Done | plans/ADRs/001-sqlite-wasm.md updated |
-| W1 | Complete bundle size analysis | Done | plans/startup-audit.md updated with actual metrics |
-| W2 | Implement versioned hydration migrations | Done | src/lib/studio/migrations.ts (new), store.ts updated to use migrations |
-| W3 | Add tests for TRIZ data, speech recognition, research, AI settings, sync bridge | Done | 6 new test files, 181 new tests |
-| W4 | Fix lint warnings | Done | 6 lint warnings resolved |
-| W5 | Quality gate verification | Done | Lint, typecheck, test, build all pass |
-
-### Plan 081 — Overlay Migration, Semantic A11y, Dead Code Removal (2026-07-26)
-
-| Wave | Goal | Status | PR | Changes |
-|------|------|--------|-----|---------|
-| W1 | Overlay variant support (center, sheet-bottom, sheet-left, fullscreen) | Done | #516 | Added variant prop, backdrop/content split, 4 layout variants |
-| W2 | Migrate command-palette, mobile-drawer, shortcuts-dialog to Overlay | Done | #516 | Removed manual Escape/focus trap/scroll lock from 3 surfaces |
-| W2 | Search listbox ARIA semantics | Done | #516 | role="listbox" + role="option" + aria-selected in right-panel + mobile-drawer |
-| W2 | Remove dead useFocusTrap hook | Done | #516 | Deleted use-keyboard-trap.ts + test (never imported by components) |
-| W3 | Tests + docs | Done | #516 | 7 new Overlay variant tests, ADR 014 → IMPLEMENTED, GOAL.md updated |
-| W4 | PR + CI Verification | Done | #516 | All 20 CI checks pass, 0 Codacy issues |
-
-### Plan 080 — Gap Remediation: GOAL.md, ai-harness split, shadcn exception (2026-07-26)
-
-| Wave | Goal | Status | PR | Changes |
-|------|------|--------|-----|---------|
-| W1 | GOAL.md stale remaining work + sync description | Done | #515 | Removed completed Plan 074 items, updated sync to bidirectional (ADR 027) |
-| W1 | AGENTS.md shadcn exception | Done | #515 | Added exception for vendor primitives (sidebar.tsx 733 LOC) |
-| W2 | ai-harness-view.tsx split (511→255 LOC) | Done | #515 | Extracted settings panel (272 LOC) and chat panel (112 LOC) |
-| W3 | PR + CI Verification | Done | #515 | All 22 CI checks pass, 0 Codacy issues |
-
-### Plan 079 — View Test Coverage + PR (2026-07-25)
-
-| Wave | Goal | Status | PR | Changes |
-|------|------|--------|-----|---------|
-| W1 | View Test Files | Done | #514 | Added 5 test files: ai-harness (12), chat (14), library (11), sync (13), triz (17) |
-| W2 | Coverage Thresholds | Done | #514 | Updated thresholds: lines 45%, branches 37%, functions 37%, statements 45% |
-| W3 | PR + CI Verification | Done | #514 | All 22 CI checks pass, 0 Codacy issues |
-
-### Plan 078 — GOAP Gap Remediation: LOC, Architecture, Coverage, E2E CI (2026-07-25)
-
-| Wave | Goal | Status | PR | Changes |
-|------|------|--------|-----|---------|
-| W0 | Baseline Scan | Done | — | Confirmed 502 tests, export-view 594 LOC, stale ARCHITECTURE.md |
-| W1 | P0+P1 Critical Fixes | Done | #512 | Split export-view.tsx (594→128 LOC), rewrote ARCHITECTURE.md, added E2E CI job |
-| W2 | Test Suite Expansion | Done | #512 | schema.test.ts (71), sync tests (53), view tests (39) — 163 new tests |
-| W3 | Coverage Thresholds | Done | #512 | Updated thresholds: lines 40%, branches 30%, functions 31%, statements 40% |
-| W4 | PR + CI Verification | Done | #512 | All 22 CI checks pass, E2E test fix, admin merge (Codacy pre-existing) |
-
-### Plan 077 — Review Findings Remediation (2026-07-25)
-
-| Wave | Goal | Status | PR | Changes |
-|------|------|--------|-----|---------|
-| W1 | Dead Code + ARIA (P1) | Done | #510 | Removed redundant Escape listener, added aria-invalid/aria-describedby |
-| W2 | Keyboard Navigation (P2) | Done | #510 | TRIZ matrix keyboard, radio group arrows, type selector Escape/arrows |
-| W3 | Focus & ARIA Polish (P2) | Done | #510 | Claims slider focus-visible, 3 decorative icons aria-hidden |
-| W4 | Touch Targets (P3) | Done | #510 | 20 buttons fixed to min-h-[44px] |
-
-### Plan 076 — Accessibility Audit, Overlay Migration, and Quick-Win Remediations (2026-07-25)
-
-| Wave | Goal | Status | PR | Changes |
-|------|------|--------|-----|---------|
-| W0 | Baseline & Branch Setup | Done | — | Clean baseline: 502 tests, 31.63% coverage, 22/22 CI |
-| W1 | A11y Audit (Swarm) | Done | — | 3 parallel agents: 68 findings (21 critical, 15 serious, 24 moderate, 8 minor) |
-| W2 | ARIA & Semantic Fixes | Done | #508 | 18 ARIA fixes: labels, roles, live regions, table captions |
-| W3 | Keyboard, Focus & Touch Target Fixes | Done | #508 | 8 focus fixes + 12 touch target fixes + Overlay migration |
-| W4 | Motion & Polish | Done | #508 | prefers-reduced-motion gating for ai-harness-view + TypingIndicator |
-
-### Plan 075 — Coverage, Overlay, Claims History, and Docs Reconciliation (2026-07-25)
-
-| Wave | Goal | Status | PR | Changes |
-|------|------|--------|-----|---------|
-| W0 | Baseline & Documentation Reconciliation | Done | — | Plan 072 OPEN→DONE, Plan 074 PLANNING→DONE, Plan 071 exit criteria checked |
-| W1 | Coverage Improvement (G2) | Done | #505 | 8 new test files, 492 tests, coverage 30.87%→31.63% lines |
-| W2 | Overlay Primitive (G4) | Done | #505 | Shared `<Overlay>` component with focus trap, Escape, backdrop, ARIA |
-| W3 | Claims Version History (G5) | Done | #505 | `version` field (auto-increment), `editHistory` array |
-| W4 | Final Verification & Documentation (G6) | Done | #505 | INDEX.md updated, quality gate passed |
-
-### Plan 074 — Sync Bridge, A11y, Data Layer, and Documentation (2026-07-25)
-
-| Wave | Goal | Status | PR | Changes |
-|------|------|--------|-----|---------|
-| W0 | Baseline & ADR Classification | Done | — | Baseline: 361 tests, 28/19/20/28% coverage |
-| W1 | Data Layer (G1) + ADR Cleanup (G7) | Done | #502 | ClaimSchema `createdAt`/`updatedAt`, 13 ADR statuses updated |
-| W2 | Touch Targets (G3) + Export ARIA (G4) | Done | #502 | ≥44px targets in graph/mindmap/chat/shared, export dialog ARIA |
-| W3 | Sync Bridge (G2) | Done | #503 | Bidirectional Yjs/Zustand bridge, origin tagging, tombstones, inbound validation, conflict resolution |
-| W4 | Documentation (G6) | Done | This update | INDEX.md, Plan 071 status |
-
-### Deferred to Plan 076
-
-- Full accessibility audit (axe scanning, screen reader verification, 200% zoom, 400% reflow)
-- Coverage target to 50% (incremental, not one-shot)
-
-### Plan 073 — Closeout of Plan 072 Remaining Gaps (2026-07-24)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W0 | Baseline & Verification | Done | 10 gaps verified from source |
-| W1 | Import Safety (P0) | Done | Import preview step, `importWithRollback` with atomic replacement and undo |
-| W2 | Product Honesty + CI (P1) | Done | Chat label fixed, mobile BM25 wired, claim CRUD (edit/delete), version-propagation workflow retired, GitLeaks fail-closed, SSRF fix |
-| W3 | UI/UX Polish (P2) | Done | Mind map ARIA tree + roving tabindex, Playwright mobile/tablet projects, coverage thresholds raised (25/25/18/15), 44px touch targets |
-| W4 | Documentation (P2) | Done | This update |
-
-### Deferred to Plan 074
-
-- G2: Bidirectional Yjs/Zustand sync bridge (requires G1 validation boundary)
-- Full accessibility audit (axe scanning, screen reader verification, 200% zoom)
-
-### Plan 072 — GOAP Remediation (2026-07-24)
-
-| Wave | Goal | Status | Changes |
-|------|------|--------|---------|
-| W0 | Decisions & Baseline | Done | ADRs 027/028/029 accepted, broken symlinks fixed |
-| W1 | Data Integrity (P0) | Done | Zod hydration, import validation, deletion link cleanup, session-only credentials |
-| W2 | Harness & CI (P1) | Done | Version-propagation disabled, security fail-closed, warnings-as-errors |
-| W3 | Product Honesty (P1) | Done | Semantic→Ranked labels, Re-sync removed, coming soon tooltips fixed |
-| W5 | Documentation (P2) | Done | This update |
-
-## Historical Completed Work
-
-## Completed - 2026-07-18 Session (Phase 10: Docs & Code Hygiene)
-
-| Plan | Description | PRs |
-|------|-------------|-----|
-| 070 | Docs alignment: PHASES.md, GOAP.md, INDEX.md; LOC remediation: triz-data split, ai-harness extraction | 481 |
-
-## Completed - 2026-07-17 Session (Phase 8 + Phase 9 full)
-
-| Plan | Description | PRs |
-|------|-------------|-----|
-| 065 | AI provider consolidation: OpenRouter + Ollama | 461, 462, 464 |
-| 066 | Phase 8: P2P sync, voice, presence, cursors | 465-475 |
-| 067 | Phase 9: Bundle optimization — lazy-load views | 476 |
-| 069 | Phase 9: PWA offline, accessibility, UX polish | 478, 480 |
-
-## Completed - 2026-07-16 Session (Plan 065, PR #461)
-
-| Plan | Description | PRs |
-|------|-------------|-----|
-| 065 | AI provider consolidation: OpenRouter + Ollama CPU-only, typed adapters, BM25 context, Zod validation | 461 |
-
-## Completed - Earlier Sessions
-
-| Plan | Description | PRs |
-|------|-------------|-----|
-| 063 | Advanced TRIZ: real 39x39 contradiction matrix, 40 principles with examples, interactive matrix view | 449 |
-| 062 | Component consolidation: Button, FieldLabel, TextInput, Divider, ToolbarBtn, ToggleButtonGroup primitives | 448 |
-| 061 | CodeMirror 6 evaluation spike: recommendation keep textarea, revisit when syntax-aware/multi-cursor needed | 447 |
-| 060 | E2E test harness: Playwright — 58 tests for keyboard, a11y, CRUD, search, command palette, responsive | 446 |
-| 059 | P3 perf/disclosure/locale: Intl.DateTimeFormat, settings collapsed, useCallback clearFilters | 445 |
-| 058 | GOAP swarm: saffron contrast, dialog semantics, home redesign, tablet breakpoint, tests | 437 |
-| 053 | Markdown editor: real formatting, safe drafts, quiet feedback, responsive modes, a11y | 430, 431 |
-| 048 | Next.js migration cleanup: remove dead deps, fix configs, add tests | 399 |
-| 049 | AI provider integration, encrypted export, zod schemas, BM25 retrieval | 399 |
-| 040 | Complete export pipeline (PDF, JSON schema v1.0, MD round-trip) | 289 |
+| Session | PRs | Outcome |
+| --- | --- | --- |
+| 2026-07-18 (Phase 10: Docs & Code Hygiene) | #481 | Plan 070: docs alignment (PHASES.md, GOAP.md, INDEX.md) and LOC remediation (triz-data split, ai-harness extraction). |
+| 2026-07-17 (Phase 8 + Phase 9 full) | #461–#475, #476, #478–#480 | Plans 065 (AI provider consolidation: OpenRouter + Ollama), 066 (P2P sync, voice, presence, cursors), 067 (bundle optimization — lazy-load views), 069 (PWA offline, accessibility, UX polish). |
+| 2026-07-16 (Plan 065) | #461 | Plan 065: OpenRouter + Ollama CPU-only, typed adapters, BM25 context, Zod validation. |
+| Earlier sessions | #289, #399, #430–#431, #437, #445–#449 | Plans 063 (real 39x39 TRIZ contradiction matrix + 40 principles), 062 (shared component primitives), 061 (CodeMirror 6 spike — keep the textarea), 060 (Playwright E2E harness, 58 tests), 059 (perf/disclosure/locale), 058 (GOAP swarm: contrast, dialog semantics, home redesign, tablet breakpoint), 053 (markdown editor), 048 (Next.js migration cleanup), 049 (AI provider integration, encrypted export, Zod schemas, BM25), 040 (complete export pipeline). |
 
 ## Key Metrics (2026-07-26)
 
 | Metric | Before (082) | After (083) |
-|--------|-------------|-------------|
+| --- | --- | --- |
 | Unit test files | 60 | 69 |
 | Unit tests | 923 | 1037 |
 | E2E test files | 8 | 8 |
@@ -610,7 +209,7 @@ Plan 087 addresses remaining ADR implementation gaps: P2P sync conflict resoluti
 ## ADR Reconciliation (2026-07-25)
 
 | ADR | New Status | Reason |
-|-----|-----------|--------|
+| --- | --- | --- |
 | 002 Security Export | Implemented | XSS prevention via WebCrypto AES-GCM |
 | 004 DB Migration | Superseded by ADR 028 | localStorage replaces SQLite |
 | 005 Error Handling | Superseded by ADR 028 | Specific patterns replace generic |

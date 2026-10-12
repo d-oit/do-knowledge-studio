@@ -1471,3 +1471,161 @@ the seed authoritative for every field it owns.
 - If a console error names your file, it is evidence, not noise — but
   correlate it with the actual assertion before chasing it. The service
   worker error here was unrelated.
+
+---
+
+### LESSON-042: A symlinked `node_modules` is staged by `git add -A`, and `HUSKY=0` does not bypass `.githooks`
+
+**Date**: 2026-10-12
+**Component**: Git / worktrees / hooks
+**Severity**: Medium
+
+**Issue**: A PR branch shipped a `node_modules` symlink (mode `120000`) in its
+commit. It was caught only when a force-push was already being prepared, and
+the same blanket stage habit was about to run in eight more worktrees.
+
+**Symptoms**:
+- `git ls-tree -r --name-only <branch> | grep '^node_modules$'` returns a hit
+- The file is a symlink to the main checkout, not a directory
+- `git status` in the worktree shows `?? node_modules` even though `.gitignore`
+  is unchanged
+
+**Root cause**: `.gitignore` contained only `node_modules/`. A **trailing slash
+makes the pattern directory-only**, and a symlink is not a directory — so the
+ignore rule never matched the one shape a worktree actually produces.
+
+Two related traps in the same session:
+
+- `HUSKY=0` does **not** skip this repo's hooks: it installs `core.hooksPath`
+  to `.githooks`, and Husky's bypass env var is unrelated. Every commit runs
+  `scripts/minimal_quality_gate.sh` (~3 minutes) whether or not `HUSKY=0` is
+  set; the only real bypass is `git -c core.hooksPath=/dev/null commit`.
+- A `git add -A` in such a worktree stages the symlink *and* any build output
+  the same way.
+
+**Prevention**:
+- Keep both forms in `.gitignore`: `node_modules/` **and** `node_modules`.
+- In worktrees, prefer `git add -u` plus explicit paths over `git add -A`.
+- After a commit in a worktree, `git ls-tree -r --name-only HEAD | grep -c
+  '^node_modules$'` must be `0`.
+- Do not use `HUSKY=0` expecting speed; if the gate must be skipped for a
+  docs-only commit, say so and use `-c core.hooksPath=/dev/null`, then rely on
+  CI for verification.
+
+**Tags**: #git #worktree #gitignore #hooks #hygiene
+
+---
+
+### LESSON-043: A pushed head can be built on a stale base and silently revert `main` — bless it before you merge
+
+**Date**: 2026-10-12
+**Component**: Review / automation branches
+**Severity**: High
+
+**Issue**: A PR's head commit was re-pushed by an automation run whose tree had
+been built from an older `main`. Relative to `main` it **deleted** a file that
+had landed after the merge base (`entity-search-panel.tsx`, from #910) and
+resurrected several pre-refactor files. Merging it would have reverted `main`.
+It also generated nine extra review threads pointing at files that are not in
+the PR at all.
+
+**Symptoms**:
+- Fourteen unresolved threads, most naming files absent from the PR's own diff
+- `git diff origin/main <head> --stat` shows large deletions that the PR
+  description never mentions
+- `git log --oneline <head>` shows a commit whose parent is your own reviewed
+  commit, yet its content disagrees with the branch
+
+**Root cause**: The automation rebased/regenerated its tree from a stale copy of
+the default branch and then pushed over the current head. Nothing in CI checks
+whether a head *removes* things `main` gained after the merge base.
+
+**Prevention**:
+- Before trusting any head: `git merge-base --is-ancestor origin/main <sha>`
+  must be true, **and** `git diff origin/main <sha> --stat` must contain no
+  unexplained deletions.
+- When it fails, do not rebase the bad commit — it has no relation to your
+  reviewed work. Force-push back to the last blessed commit and say why in the
+  PR thread.
+- Recovery is cheap only if your fixes are **committed**. In this session
+  uncommitted fixes were discarded by a `git reset --hard` while re-basing;
+  commit before any rebase or reset, or the fixes are re-typed from memory.
+- Findings that point at files outside the PR diff are stale-tree artifacts:
+  reply with that evidence and resolve, rather than "fixing" phantom code.
+
+**Tags**: #git #review #automation #revert #worktree #verification
+
+---
+
+### LESSON-044: Dependency ranges can move backwards in a merge — `git log -S` proves the direction
+
+**Date**: 2026-10-12
+**Component**: Dependencies / review
+**Severity**: High
+
+**Issue**: `main` shipped for two days with four dependencies **downgraded**:
+`next` `^16.3.8`→`^16.3.6` (reverting dependabot's own bump), `react-day-picker`,
+`@tanstack/react-virtual`, and `eslint-plugin-react-refresh`. The change arrived
+as a side effect of a UI PR regenerating `package.json`/`pnpm-lock.yaml` from a
+stale base.
+
+**Symptoms**:
+- Two Dependabot jobs red on unrelated PRs (`security_update_not_possible` on
+  an alert whose fix was already in the lockfile)
+- A dependency upgrade PR conflicting with `main` in `pnpm-lock.yaml`
+- Nothing red on the PR that caused it — `pnpm install` succeeds either way
+
+**Root cause**: `pnpm install` reconciles *to the manifest*, and the manifest
+had been rewritten from an older commit. A semver range moving down is not a
+merge conflict, so neither git nor pnpm objects.
+
+**Prevention**:
+- When a PR touches `package.json`, diff the ranges against `main` and treat any
+  decrease as a defect to explain, not noise: `git show <sha> -- package.json`.
+- `git log -S '"pkg": "^X.Y.Z"' origin/main -- package.json` identifies **which**
+  commit changed a range and in which direction — it settled this case in
+  seconds.
+- Re-generate a lockfile from the current `main` (`git checkout origin/main --
+  pnpm-lock.yaml && pnpm install --lockfile-only`), never from a stale branch
+  copy.
+- If the framework version moved, regenerate committed build-derived artifacts
+  too (`public/precache-manifest.json` embeds emitted chunk URLs).
+
+**Tags**: #deps #lockfile #review #regression #pinning
+
+---
+
+### LESSON-045: `AbortSignal.any` fallbacks and bare `stop` identifiers are invisible to the type checker
+
+**Date**: 2026-10-12
+**Component**: AI harness / browser APIs
+**Severity**: Medium
+
+**Issue**: Two defects in the same feature survived a green unit suite and a
+green CI run: a request timeout that silently did nothing on some engines, and a
+"Stop" button that called `window.stop` instead of aborting the request.
+
+**Symptoms**:
+- `AbortSignal.timeout` existed and `AbortSignal.any` did not: the fallback
+  passed only `controller.signal`, so the turn could hang forever
+- `onStop={stop}` compiled and type-checked because `Window.stop` is `() => void`
+  — the same signature as the hook's callback
+
+**Root cause**:
+1. Composing signals with a **fallback** turned "this API is missing" into
+   "this feature is missing", with no error and no test coverage of that branch.
+2. Passing a bare identifier that *also exists as a browser global* defers the
+   mistake to the type checker, which cannot help because the shapes match.
+
+**Prevention**:
+- Do not feature-detect a *pair* of APIs to implement one behaviour. Arm the
+  behaviour with `setTimeout` + `AbortController` (ES2017-era, no detection
+  needed, one code path) and pass the controller's own signal.
+- A "Stop/cancel/close" callback that is not destructured from its source is a
+  trap in `'use client'` components: always destructure it (`const { stop } =
+  useHook()`), and prove the wiring with a test that asserts the **in-flight
+  request is aborted**, not that a handler was called.
+- When a fix claims a compatibility fallback, test the fallback: delete the
+  newer APIs (`delete AbortSignal.any`) inside the test before driving the path.
+
+**Tags**: #react #browser-api #abort #timeout #types #verification
