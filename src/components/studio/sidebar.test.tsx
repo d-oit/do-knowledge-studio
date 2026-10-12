@@ -148,27 +148,48 @@ describe('Sidebar', () => {
 
   it('renders theme toggle button', () => {
     render(<Sidebar />)
-    expect(screen.getByLabelText('Switch to dark theme')).toBeDefined()
+    expect(screen.getByRole('button', { name: /Switch to dark theme/ })).toBeDefined()
+  })
+
+  it('names the theme toggle after the label it shows (WCAG 2.5.3, Label in Name)', () => {
+    // The button renders the *current* theme as its visible text while its
+    // accessible name announces the action. Level A requires the name to
+    // contain the visible label, or voice control cannot target the control by
+    // the text it displays — the two strings alone ("Light" vs "Switch to dark
+    // theme") never overlap.
+    for (const [theme, visible] of [
+      ['light', 'Light'],
+      ['dark', 'Dark'],
+      ['system', 'System'],
+    ] as const) {
+      mockTheme = theme
+      const { unmount } = render(<Sidebar />)
+      const toggle = screen.getByRole('button', { name: new RegExp(`Switch to .* theme`) })
+      expect(toggle.textContent).toBe(visible)
+      const accessibleName = toggle.getAttribute('aria-label') ?? ''
+      expect(accessibleName).toContain(visible)
+      unmount()
+    }
   })
 
   it('theme toggle calls setTheme with dark when currently light', () => {
     mockTheme = 'light'
     render(<Sidebar />)
-    fireEvent.click(screen.getByLabelText('Switch to dark theme'))
+    fireEvent.click(screen.getByRole('button', { name: /Switch to dark theme/ }))
     expect(mockSetTheme).toHaveBeenCalledWith('dark')
   })
 
   it('theme toggle calls setTheme with system when currently dark', () => {
     mockTheme = 'dark'
     render(<Sidebar />)
-    fireEvent.click(screen.getByLabelText('Switch to system theme'))
+    fireEvent.click(screen.getByRole('button', { name: /Switch to system theme/ }))
     expect(mockSetTheme).toHaveBeenCalledWith('system')
   })
 
   it('theme toggle calls setTheme with light when currently system', () => {
     mockTheme = 'system'
     render(<Sidebar />)
-    fireEvent.click(screen.getByLabelText('Switch to light theme'))
+    fireEvent.click(screen.getByRole('button', { name: /Switch to light theme/ }))
     expect(mockSetTheme).toHaveBeenCalledWith('light')
   })
 

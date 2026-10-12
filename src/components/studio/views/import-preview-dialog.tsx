@@ -42,17 +42,17 @@ export const ImportPreviewDialog = memo(function ImportPreviewDialog({
             <Eye className="h-4 w-4" />
           </div>
           <div>
-            <h3 className="font-serif text-[15px] font-semibold text-ink">{translate('import.title')}</h3>
-            <p className="text-[12px] text-ink-mute">{translate('import.subtitle')}</p>
+            <h3 className="font-serif text-body-lg font-semibold text-ink">{translate('import.title')}</h3>
+            <p className="text-label-lg text-ink-mute">{translate('import.subtitle')}</p>
           </div>
         </div>
 
         <div className="mb-4 space-y-2 rounded-lg border border-border bg-background p-3">
-          <div className="flex items-center justify-between text-[13px]">
+          <div className="flex items-center justify-between text-body-sm">
             <span className="text-ink-mute">{translate('import.entities')}</span>
             <span className="font-semibold text-ink">{importPreview.entityCount}</span>
           </div>
-          <div className="flex items-center justify-between text-[13px]">
+          <div className="flex items-center justify-between text-body-sm">
             <span className="text-ink-mute">{translate('import.claims')}</span>
             <span className="font-semibold text-ink">{importPreview.claimCount}</span>
           </div>
@@ -66,20 +66,20 @@ export const ImportPreviewDialog = memo(function ImportPreviewDialog({
           )}
         </div>
 
-        <p className="mb-4 text-[12px] text-ink-mute">
+        <p className="mb-4 text-label-lg text-ink-mute">
           {translate('import.body')}
         </p>
 
         <div className="flex justify-end gap-2">
           <button
             onClick={() => { setImportPreview(null) }}
-            className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
+            className="rounded-md border border-border px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
           >
             {translate('import.cancel')}
           </button>
           <button
             onClick={handleConfirmImport}
-            className="rounded-md bg-primary px-4 py-1.5 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+            className="rounded-md bg-primary px-4 py-1.5 text-label-lg font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
           >
             {translate('import.confirm')}
           </button>

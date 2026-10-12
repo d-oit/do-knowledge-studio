@@ -124,7 +124,7 @@ const MatrixTable = ({
   matrixHighlight,
   onSelectCell,
 }: MatrixTableProps) => (
-  <table className="w-full text-[10px]">
+  <table className="w-full text-caption">
     <caption className="sr-only">{translate('triz.matrix.caption')}</caption>
     <thead>
       <tr>
@@ -190,12 +190,12 @@ export const TrizMatrixView = ({
       <div className="mb-4 rounded-lg border border-border bg-card p-4">
         <div className="mb-3 flex items-center gap-2">
           <Eye className="h-4 w-4 text-saffron" />
-          <h2 className="font-serif text-[15px] font-semibold text-ink">{translate('triz.matrix.title')}</h2>
+          <h2 className="font-serif text-body-lg font-semibold text-ink">{translate('triz.matrix.title')}</h2>
           <span className="text-caption text-ink-faint">
             {translate('triz.matrix.dimensions', String(TRIZ_PARAMETERS.length), String(TRIZ_PRINCIPLES.length))}
           </span>
         </div>
-        <p className="mb-3 text-[12px] text-ink-mute">
+        <p className="mb-3 text-label-lg text-ink-mute">
           {translate('triz.matrix.hint')}
         </p>
         <TextInput

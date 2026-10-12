@@ -35,13 +35,13 @@ const useTranscriptEffects = (
 /** Live interim transcript while listening. */
 const InterimTranscript = ({ text }: { text: string }) =>
   text ? (
-    <span className="max-w-[200px] truncate text-[12px] text-ink-faint italic">{text}</span>
+    <span className="max-w-[200px] truncate text-label-lg text-ink-faint italic">{text}</span>
   ) : null
 
 /** Parsed-intent preview chip (shown after a finished utterance). */
 const IntentPreview = ({ intent }: { intent: Intent | null }) =>
   intent ? (
-    <span className="flex items-center gap-1 text-[11px] text-saffron-deep">
+    <span className="flex items-center gap-1 text-label text-saffron-deep">
       <Sparkles className="h-3 w-3" />
       {formatIntentSummary(intent)}
     </span>

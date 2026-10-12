@@ -40,19 +40,19 @@ export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps)
     <div className="rounded-lg border border-warning-border bg-warning-soft">
       <div className="flex items-center gap-2 border-b border-warning-border px-4 py-3">
         <AlertTriangle className="h-4 w-4 text-warning" />
-        <span className="text-[13px] font-medium text-warning-foreground">
+        <span className="text-body-sm font-medium text-warning-foreground">
           {conflicts.length} conflict{conflicts.length > 1 ? 's' : ''} detected
         </span>
         <div className="flex-1" />
         <button
           onClick={() => { handleResolveAll('local') }}
-          className="rounded px-2 py-1 text-[11px] font-medium text-warning transition-colors hover:bg-warning/10 min-h-[44px] focus-ring"
+          className="rounded px-2 py-1 text-label font-medium text-warning transition-colors hover:bg-warning/10 min-h-[44px] focus-ring"
         >
           Keep all local
         </button>
         <button
           onClick={() => { handleResolveAll('remote') }}
-          className="rounded px-2 py-1 text-[11px] font-medium text-warning transition-colors hover:bg-warning/10 min-h-[44px] focus-ring"
+          className="rounded px-2 py-1 text-label font-medium text-warning transition-colors hover:bg-warning/10 min-h-[44px] focus-ring"
         >
           Keep all remote
         </button>
@@ -69,7 +69,7 @@ export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps)
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => { setExpandedId(isExpanded ? null : key) }}
-                  className="flex min-h-[44px] items-center gap-1.5 text-[12px] font-medium text-warning-foreground focus-ring"
+                  className="flex min-h-[44px] items-center gap-1.5 text-label-lg font-medium text-warning-foreground focus-ring"
                 >
                   {isExpanded ? (
                     <ChevronUp className="h-3 w-3" />
@@ -85,7 +85,7 @@ export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps)
                   <button
                     onClick={() => { handleResolution(key, 'local') }}
                     className={cn(
-                      'rounded px-2 py-0.5 text-[11px] font-medium transition-colors min-h-[44px] focus-ring',
+                      'rounded px-2 py-0.5 text-label font-medium transition-colors min-h-[44px] focus-ring',
                       resolution === 'local'
                         ? 'bg-warning text-warning-on'
                         : 'text-warning hover:bg-warning/10',
@@ -96,7 +96,7 @@ export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps)
                   <button
                     onClick={() => { handleResolution(key, 'remote') }}
                     className={cn(
-                      'rounded px-2 py-0.5 text-[11px] font-medium transition-colors min-h-[44px] focus-ring',
+                      'rounded px-2 py-0.5 text-label font-medium transition-colors min-h-[44px] focus-ring',
                       resolution === 'remote'
                         ? 'bg-warning text-warning-on'
                         : 'text-warning hover:bg-warning/10',
@@ -110,18 +110,18 @@ export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps)
               {isExpanded && (
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   <div className="rounded border border-border bg-background p-2">
-                    <div className="mb-1 text-[10px] font-medium uppercase tracking-wide text-ink-faint">
+                    <div className="mb-1 text-caption font-medium uppercase tracking-wide text-ink-faint">
                       Local
                     </div>
-                    <div className="text-[12px] text-ink break-words">
+                    <div className="text-label-lg text-ink break-words">
                       {formatValue(conflict.localValue)}
                     </div>
                   </div>
                   <div className="rounded border border-border bg-background p-2">
-                    <div className="mb-1 text-[10px] font-medium uppercase tracking-wide text-ink-faint">
+                    <div className="mb-1 text-caption font-medium uppercase tracking-wide text-ink-faint">
                       Remote
                     </div>
-                    <div className="text-[12px] text-ink break-words">
+                    <div className="text-label-lg text-ink break-words">
                       {formatValue(conflict.remoteValue)}
                     </div>
                   </div>
@@ -129,7 +129,7 @@ export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps)
               )}
 
               {isExpanded && (
-                <div className="mt-1.5 text-[11px] text-ink-faint">
+                <div className="mt-1.5 text-label text-ink-faint">
                   {conflict.reason}
                 </div>
               )}
@@ -141,14 +141,14 @@ export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps)
       <div className="flex items-center justify-end gap-2 border-t border-warning-border px-4 py-3">
         <button
           onClick={onDismiss}
-          className="flex min-h-[44px] items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
+          className="flex min-h-[44px] items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
         >
           <X className="h-3.5 w-3.5" />
           Dismiss
         </button>
         <button
           onClick={handleConfirm}
-          className="flex min-h-[44px] items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+          className="flex min-h-[44px] items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-label-lg font-medium text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
         >
           <Check className="h-3.5 w-3.5" />
           Apply resolutions

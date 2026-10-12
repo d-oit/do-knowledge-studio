@@ -110,7 +110,7 @@ const AlertShell = ({
     <div className="flex gap-3">
       <AlertTriangle aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-saffron-deep" />
       <div>
-        <h2 id={`${id}-title`} className="font-serif text-[15px] font-semibold text-ink">
+        <h2 id={`${id}-title`} className="font-serif text-body-lg font-semibold text-ink">
           {title}
         </h2>
         {children}
@@ -154,10 +154,10 @@ const PreservedBanner = ({ record }: { record: QuarantineRecord }) => {
       title={t('announce.quarantineTitle')}
       actions={<RawBackupButton raw={record.raw} />}
     >
-      <p className="mt-1 text-[13px] text-ink-soft">
+      <p className="mt-1 text-body-sm text-ink-soft">
         {t('announce.quarantineBody', describeQuarantine(record))}
       </p>
-      <p className="mt-1 font-mono text-[11px] text-ink-faint">{record.reason}</p>
+      <p className="mt-1 font-mono text-label text-ink-faint">{record.reason}</p>
       <div className="mt-2 flex justify-start">
         <HideForSessionButton
           onHide={() => {
@@ -178,12 +178,12 @@ const UnpreservedBanner = ({ reason, raw }: { reason: string; raw: string | null
     title={t('announce.quarantineUnpreservedTitle')}
     actions={raw === null ? undefined : <RawBackupButton raw={raw} />}
   >
-    <p className="mt-1 text-[13px] text-ink-soft">
+    <p className="mt-1 text-body-sm text-ink-soft">
       {raw === null
         ? t('announce.quarantineUnpreservedBodyUnreadable')
         : t('announce.quarantineUnpreservedBody')}
     </p>
-    <p className="mt-1 font-mono text-[11px] text-ink-faint">{reason}</p>
+    <p className="mt-1 font-mono text-label text-ink-faint">{reason}</p>
   </AlertShell>
 )
 

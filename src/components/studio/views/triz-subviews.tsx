@@ -43,7 +43,7 @@ const TrizHeaderControls = ({
 }: TrizHeaderControlsProps) => {
   const toggleClasses = (active: boolean) =>
     cn(
-      'rounded px-2.5 py-1 text-[12px] font-medium transition-colors focus-ring min-h-[44px]',
+      'rounded px-2.5 py-1 text-label-lg font-medium transition-colors focus-ring min-h-[44px]',
       active ? 'bg-primary text-primary-foreground shadow-sm' : 'text-ink-mute hover:text-ink',
     )
   return (

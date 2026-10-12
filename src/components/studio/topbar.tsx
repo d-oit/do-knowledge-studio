@@ -95,7 +95,7 @@ export const Topbar = () => {
         <h1 className="truncate font-serif text-base font-semibold leading-tight tracking-tight text-ink sm:text-xl">
           {meta.title}
         </h1>
-        <p className="hidden truncate text-[12px] text-ink-mute sm:block">
+        <p className="hidden truncate text-label-lg text-ink-mute sm:block">
           {meta.subtitle}
         </p>
       </div>
@@ -113,7 +113,7 @@ export const Topbar = () => {
           onKeyDown={handleSearchKeyDown}
           placeholder={placeholder}
           aria-label={inputAriaLabel}
-          className="min-h-[44px] w-full rounded-md border border-border bg-background pl-9 pr-20 text-[13px] text-ink placeholder:text-ink-faint transition-colors focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/40"
+          className="min-h-[44px] w-full rounded-md border border-border bg-background pl-9 pr-20 text-body-sm text-ink placeholder:text-ink-faint transition-colors focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/40"
         />
         {searchQuery ? (
           <button
@@ -140,7 +140,7 @@ export const Topbar = () => {
       <button
         onClick={startNew}
         aria-label="New entity"
-        className="flex flex-shrink-0 min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-2.5 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring sm:px-3"
+        className="flex flex-shrink-0 min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-2.5 text-label-lg font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring sm:px-3"
       >
         <Plus className="h-3.5 w-3.5" />
         <span className="hidden sm:inline wide:hidden">New</span>

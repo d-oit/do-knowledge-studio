@@ -370,7 +370,7 @@ export const MindMapView = () => {
           value={rootId}
           onChange={(e) => { setRootId(e.target.value) }}
           aria-label={t('mindmap.toolbar.rootLabel')}
-          className="rounded-md border border-border bg-background px-2.5 py-1.5 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30 min-h-[44px]"
+          className="rounded-md border border-border bg-background px-2.5 py-1.5 text-label-lg font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30 min-h-[44px]"
         >
           {entities.map((e) => (
             <option key={e.id} value={e.id}>

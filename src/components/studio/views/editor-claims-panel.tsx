@@ -60,7 +60,7 @@ const ClaimRow = ({
     className="rounded-md border border-border bg-background p-3 shadow-soft"
     style={{ borderLeft: '3px solid var(--saffron)' }}
   >
-    <p className="font-serif text-[14px] italic leading-relaxed text-ink">
+    <p className="font-serif text-body italic leading-relaxed text-ink">
       &ldquo;{claim.statement}&rdquo;
     </p>
 
@@ -268,7 +268,7 @@ export const ClaimsPanel = ({
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <ShieldCheck className="h-4 w-4 text-saffron" />
-          <h3 className="font-serif text-[15px] font-semibold text-ink">{translate('claims.title')}</h3>
+          <h3 className="font-serif text-body-lg font-semibold text-ink">{translate('claims.title')}</h3>
           <span className="rounded-full bg-muted px-2 py-0 text-caption font-semibold text-ink-mute">
             {translate('claims.count', String(claims.length))}
           </span>
@@ -298,7 +298,7 @@ export const ClaimsPanel = ({
       </div>
 
       {claims.length === 0 && !showForm && (
-        <p className="text-[12px] leading-relaxed text-ink-mute">
+        <p className="text-label-lg leading-relaxed text-ink-mute">
           {translate('claims.empty')}
         </p>
       )}
@@ -320,7 +320,7 @@ export const ClaimsPanel = ({
             onChange={(e) => { setStatement(e.target.value) }}
             placeholder={translate('claims.statementPlaceholder')}
             rows={3}
-            className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-[13px] leading-relaxed text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/30"
+            className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-body-sm leading-relaxed text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/30"
           />
 
           <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -332,7 +332,7 @@ export const ClaimsPanel = ({
                 id="claim-verification"
                 value={verification}
                 onChange={(e) => { setVerification(e.target.value as VerificationStatus) }}
-                className="w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-[12px] text-ink focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/30"
+                className="w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-label-lg text-ink focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/30"
               >
                 <option value="unverified">{translate('claims.unverified')}</option>
                 <option value="verified">{translate('claims.verified')}</option>
@@ -366,7 +366,7 @@ export const ClaimsPanel = ({
               value={source}
               onChange={(e) => { setSource(e.target.value) }}
               placeholder={translate('claims.sourcePlaceholder')}
-              className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-[12px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/30"
+              className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-label-lg text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/30"
             />
           </div>
 
@@ -374,7 +374,7 @@ export const ClaimsPanel = ({
             <button
               type="button"
               onClick={resetForm}
-              className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring min-h-[44px]"
+              className="rounded-md border border-border px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-colors hover:bg-muted focus-ring min-h-[44px]"
             >
               {translate('claims.cancel')}
             </button>
@@ -382,7 +382,7 @@ export const ClaimsPanel = ({
               type="button"
               onClick={handleSave}
               disabled={!statement.trim()}
-              className="flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 press-scale focus-ring"
+              className="flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-label-lg font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 press-scale focus-ring"
             >
               <Save className="h-3.5 w-3.5" />
               {editingId ? translate('claims.update') : translate('claims.save')}
@@ -399,10 +399,10 @@ export const ClaimsPanel = ({
         <div className="rounded-xl border border-border bg-popover p-5 shadow-2xl">
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
-              <h3 className="font-serif text-[15px] font-semibold text-ink">
+              <h3 className="font-serif text-body-lg font-semibold text-ink">
                 {translate('claims.extractTitle')}
               </h3>
-              <p className="mt-1 text-[12px] leading-relaxed text-ink-mute">
+              <p className="mt-1 text-label-lg leading-relaxed text-ink-mute">
                 {translate('claims.extractBody')}
               </p>
             </div>
@@ -422,7 +422,7 @@ export const ClaimsPanel = ({
                 key={draftKey(draft.statement, draft.source)}
                 className="rounded-md border border-border bg-background p-3"
               >
-                <p className="font-serif text-[13px] italic leading-relaxed text-ink">
+                <p className="font-serif text-body-sm italic leading-relaxed text-ink">
                   &ldquo;{draft.statement}&rdquo;
                 </p>
                 <p className="mt-1 text-caption text-ink-faint">
@@ -439,14 +439,14 @@ export const ClaimsPanel = ({
             <button
               type="button"
               onClick={closeExtractDialog}
-              className="min-h-[44px] rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
+              className="min-h-[44px] rounded-md border border-border px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
             >
               {translate('claims.cancel')}
             </button>
             <button
               type="button"
               onClick={handleExtractConfirm}
-              className="flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+              className="flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-label-lg font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
             >
               {translate('claims.confirm', String(extractDrafts?.length ?? 0))}
             </button>

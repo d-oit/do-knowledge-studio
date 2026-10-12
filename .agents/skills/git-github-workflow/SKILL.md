@@ -77,6 +77,33 @@ declined P1/P2, a release/migration/auth or irreversible change, a
 branch-protection edit, or an explicit "hold" in the thread. Never `--admin`.
 Full rationale: `agents-docs/GIT-WORKFLOW.md`.
 
+### Phase 6.5: MANY OPEN PRs — THE MERGE QUEUE
+
+With `strict_required_status_checks_policy` on `main`, **every merge makes every
+other PR stale**, and GitHub's auto-merge does *not* update a behind branch — it
+simply waits. Draining a queue therefore needs an explicit nudge per PR:
+
+```bash
+# Only when that PR's checks have settled, or you cancel a running CI job.
+gh api -X PUT repos/<owner>/<repo>/pulls/<N>/update-branch
+```
+
+Rules that keep this from becoming a treadmill:
+
+- **Arm `--auto` first, then queue.** An armed PR lands the moment it is green
+  *and* current, so the only work left is the nudge.
+- **Nudge only idle PRs.** Updating a branch whose checks are mid-flight cancels
+  the run and re-queues it.
+- **Clear every review thread before the final push**, not after: bots re-post
+  stale findings on each push, so a push *after* you resolved everything recreates
+  blockers. Push, resolve, then let auto-merge land it without further pushes.
+- `mergeStateStatus: BLOCKED` with `mergeable: MERGEABLE` and no unresolved
+  threads is either the strict up-to-date rule or GitHub's stale merge-state
+  cache; an `update-branch` distinguishes them (a 422 means already current).
+- A **preview deployment** failure (Vercel and similar) is not a ruleset-required
+  check. Do not treat it as a merge blocker, but do not ignore a run of them
+  either — look for a quota or config cause before assuming flakiness.
+
 ### Phase 7: POST-MERGE VALIDATION (Agent: validate-agent)
 - Checkout main branch
 - Verify ALL files present

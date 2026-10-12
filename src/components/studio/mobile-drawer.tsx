@@ -29,7 +29,7 @@ const DrawerHeader = ({
         <span className="font-serif text-lg font-semibold leading-none">D</span>
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate font-serif text-[15px] font-semibold leading-tight tracking-tight">
+        <span className="truncate font-serif text-body-lg font-semibold leading-tight tracking-tight">
           {translate('drawer.brand')}
         </span>
         <a
@@ -46,7 +46,7 @@ const DrawerHeader = ({
         ref={closeBtnRef}
         onClick={onClose}
         aria-label={translate('drawer.close')}
-        className="-mr-1 flex-shrink-0 rounded-md p-2 text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
+        className="-mr-1 flex min-h-[44px] min-w-[44px] flex-shrink-0 items-center justify-center rounded-md text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
       >
         <X className="h-4 w-4" />
       </button>
@@ -75,7 +75,7 @@ const TabSwitcher = ({
           aria-pressed={view === 'nav'}
           onClick={() => { setView('nav') }}
           className={cn(
-            'rounded-md px-3 py-1.5 text-[12px] font-semibold transition-colors focus-ring',
+            'flex min-h-[44px] items-center justify-center rounded-md px-3 py-1.5 text-label-lg font-semibold transition-colors focus-ring',
             view === 'nav'
               ? 'bg-saffron text-saffron-foreground shadow-sm'
               : 'text-ink-mute hover:text-ink',
@@ -87,7 +87,7 @@ const TabSwitcher = ({
           aria-pressed={view === 'search'}
           onClick={() => { setView('search') }}
           className={cn(
-            'rounded-md px-3 py-1.5 text-[12px] font-semibold transition-colors focus-ring',
+            'flex min-h-[44px] items-center justify-center rounded-md px-3 py-1.5 text-label-lg font-semibold transition-colors focus-ring',
             view === 'search'
               ? 'bg-saffron text-saffron-foreground shadow-sm'
               : 'text-ink-mute hover:text-ink',
@@ -129,7 +129,7 @@ const NavTab = ({ onNavigate }: { onNavigate: () => void }) => {
                     onClick={() => { handleSelect(item.id) }}
                     aria-current={active ? 'page' : undefined}
                     className={cn(
-                      'group flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-[14px] font-medium transition-all focus-ring',
+                      'group flex min-h-[44px] w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-body font-medium transition-all focus-ring',
                       active
                         ? 'bg-saffron-soft text-saffron-deep'
                         : 'text-ink-soft hover:bg-sidebar-accent hover:text-ink',
@@ -220,8 +220,11 @@ const DrawerFooter = () => {
       <div className="flex items-center gap-2">
         <button
           onClick={handleThemeToggle}
-          aria-label={themeAriaLabel}
-          className="flex flex-1 items-center gap-2 rounded-md px-2.5 py-1.5 text-[12px] font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
+          // WCAG 2.5.3 (Label in Name): the accessible name must contain the
+          // visible label — see the sidebar's note; the drawer renders the same
+          // control with the same string pair.
+          aria-label={`${themeLabel} — ${themeAriaLabel}`}
+          className="flex min-h-[44px] flex-1 items-center gap-2 rounded-md px-2.5 py-1.5 text-label-lg font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
         >
           <ThemeIcon className="h-4 w-4" />
           <span>{themeLabel}</span>

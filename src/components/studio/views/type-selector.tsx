@@ -74,7 +74,7 @@ export const TypeSelector = ({
         aria-haspopup="listbox"
         aria-expanded={showMenu}
         aria-label={entityTypesT('entity-types.selectorLabel', meta.label)}
-        className="flex min-h-[44px] items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
+        className="flex min-h-[44px] items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-label-lg font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
       >
         <EntityIcon type={type} className={cn('h-3.5 w-3.5', meta.text)} />
         {entityTypesT('entity-types.typePrefix', meta.label)}
@@ -106,7 +106,7 @@ export const TypeSelector = ({
                 tabIndex={def.id === type ? 0 : -1}
                 onClick={() => { onSelect(def.id) }}
                 className={cn(
-                  'flex w-full items-center gap-2 rounded px-2 py-1.5 text-[12px] transition-colors hover:bg-muted focus-ring',
+                  'flex w-full items-center gap-2 rounded px-2 py-1.5 text-label-lg transition-colors hover:bg-muted focus-ring',
                   def.id === type ? 'font-semibold text-ink' : 'text-ink-soft',
                 )}
               >
