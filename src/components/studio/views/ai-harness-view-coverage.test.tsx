@@ -146,8 +146,8 @@ vi.mock('@/lib/ai/research', () => ({
 
 vi.mock('./ai-harness-settings', () => ({
   PROVIDERS: [
-    { id: 'openrouter', label: 'OpenRouter', models: ['openrouter/free'], requiresKey: true },
-    { id: 'ollama', label: 'Ollama (local)', models: ['llama3'], requiresKey: false },
+    { id: 'openrouter', label: 'OpenRouter', requiresKey: true },
+    { id: 'ollama', label: 'Ollama (local)', requiresKey: false },
   ],
   Field: ({ label, children }: { label: string; children?: ReactNode }) => (
     <div data-testid="field">

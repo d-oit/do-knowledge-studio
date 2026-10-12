@@ -129,14 +129,6 @@ export const PROVIDER_LABELS: Record<ProviderId, string> = {
   local: 'Local (in-browser)',
 }
 
-/** Default model slugs for the OpenRouter provider. */
-export const OPENROUTER_DEFAULT_MODELS = [
-  'openrouter/free',
-  'openai/gpt-4o-mini',
-  'anthropic/claude-sonnet-4',
-  'meta-llama/llama-3.3-70b-instruct:free',
-]
-
 /**
  * Default model slugs for the local Ollama provider.
  *
