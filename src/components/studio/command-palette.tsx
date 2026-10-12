@@ -143,14 +143,14 @@ export const CommandPalette = ({ onEntitySelect }: CommandPaletteProps) => {
             placeholder={translate('palette.inputPlaceholder')}
             value={query}
             onValueChange={setQuery}
-            className="flex-1 bg-transparent text-[14px] text-ink placeholder:text-ink-faint focus:outline-none"
+            className="flex-1 bg-transparent text-body text-ink placeholder:text-ink-faint focus:outline-none"
           />
           <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-caption text-ink-faint">
             ESC
           </kbd>
         </div>
         <CommandPrimitive.List className="max-h-[420px] overflow-y-auto p-2">
-          <CommandPrimitive.Empty className="px-3 py-6 text-center text-[13px] text-ink-mute">
+          <CommandPrimitive.Empty className="px-3 py-6 text-center text-body-sm text-ink-mute">
             {translate('palette.empty')}
           </CommandPrimitive.Empty>
           {[...grouped].map(([group, items]) =>
@@ -167,7 +167,7 @@ export const CommandPalette = ({ onEntitySelect }: CommandPaletteProps) => {
                       key={item.id}
                       value={item.id + item.label}
                       onSelect={item.onSelect}
-                      className="group flex cursor-pointer items-center gap-3 rounded-md px-2.5 py-2 text-[13px] text-ink-soft data-[selected=true]:bg-saffron-soft data-[selected=true]:text-saffron-deep"
+                      className="group flex cursor-pointer items-center gap-3 rounded-md px-2.5 py-2 text-body-sm text-ink-soft data-[selected=true]:bg-saffron-soft data-[selected=true]:text-saffron-deep"
                     >
                       <Icon className="h-4 w-4 text-ink-faint data-[selected=true]:text-saffron" />
                       <span className="flex-1 font-medium">{item.label}</span>

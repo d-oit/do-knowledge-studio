@@ -103,7 +103,7 @@ export const ExportView = () => {
         </p>
         <button
           onClick={() => { setShowResetConfirm(true) }}
-          className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:border-red-300 hover:text-red-600 focus-ring"
+          className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-colors hover:border-red-300 hover:text-red-600 focus-ring"
           title={translate('export.view.resetTitle')}
         >
           <RotateCcw className="h-3.5 w-3.5" />

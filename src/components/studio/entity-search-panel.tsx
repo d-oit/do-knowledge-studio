@@ -70,7 +70,7 @@ const RankedResultRow = ({
             {result.score.toFixed(1)}
           </span>
         </div>
-        <div className="truncate text-[13px] font-medium text-ink">{result.name}</div>
+        <div className="truncate text-body-sm font-medium text-ink">{result.name}</div>
         <p className="mt-0.5 line-clamp-2 text-label leading-snug text-ink-mute">
           {result.snippet}
         </p>
@@ -132,7 +132,7 @@ const KeywordResultList = ({
                 {meta.label}
               </span>
             </div>
-            <div className="truncate text-[13px] font-medium text-ink">{e.name}</div>
+            <div className="truncate text-body-sm font-medium text-ink">{e.name}</div>
             <p className="mt-0.5 line-clamp-2 text-label leading-snug text-ink-mute">
               {e.description}
             </p>
@@ -153,7 +153,7 @@ const SearchEmptyState = ({
 }) => (
   <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
     <FileText className="h-8 w-8 text-ink-faint/50" />
-    <p className="text-[12px] text-ink-mute">
+    <p className="text-label-lg text-ink-mute">
       {query ? translate('search.empty') : translate('search.libraryEmpty')}
     </p>
     {query && onCreate && (
@@ -161,7 +161,7 @@ const SearchEmptyState = ({
         onClick={() => {
           onCreate(query)
         }}
-        className="mt-2 flex min-h-[44px] items-center justify-center rounded-md border border-saffron/30 bg-saffron-soft px-3 py-1.5 text-[12px] font-medium text-saffron-deep transition-colors hover:bg-saffron/10 focus-ring"
+        className="mt-2 flex min-h-[44px] items-center justify-center rounded-md border border-saffron/30 bg-saffron-soft px-3 py-1.5 text-label-lg font-medium text-saffron-deep transition-colors hover:bg-saffron/10 focus-ring"
       >
         {translate('search.createEntity', query)}
       </button>
@@ -210,7 +210,7 @@ export const EntitySearchPanel = ({
             placeholder={translate('search.placeholder')}
             title={translate('search.ariaLabel')}
             aria-label={translate('search.ariaLabel')}
-            className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-10 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+            className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-10 text-body-sm text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
           />
           {searchQuery ? (
             <button

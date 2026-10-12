@@ -44,18 +44,18 @@ export const ResetConfirmDialog = memo(function ResetConfirmDialog({
             <RotateCcw className="h-4 w-4" />
           </div>
           <div>
-            <h3 className="font-serif text-[15px] font-semibold text-ink">{translate('export.reset.title')}</h3>
-            <p className="text-[12px] text-ink-mute">{translate('export.reset.subtitle')}</p>
+            <h3 className="font-serif text-body-lg font-semibold text-ink">{translate('export.reset.title')}</h3>
+            <p className="text-label-lg text-ink-mute">{translate('export.reset.subtitle')}</p>
           </div>
         </div>
-        <p className="mb-4 text-[13px] text-ink-soft">
+        <p className="mb-4 text-body-sm text-ink-soft">
           {translate('export.reset.body')}
         </p>
         <div className="flex justify-end gap-2">
           <button
             ref={resetCancelRef}
             onClick={() => { setShowResetConfirm(false) }}
-            className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
+            className="rounded-md border border-border px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-colors hover:bg-muted focus-ring"
           >
             {translate('export.reset.cancel')}
           </button>
@@ -64,7 +64,7 @@ export const ResetConfirmDialog = memo(function ResetConfirmDialog({
               handleReset()
               setShowResetConfirm(false)
             }}
-            className="rounded-md bg-red-600 px-4 py-1.5 text-[12px] font-semibold text-white shadow-sm transition-all hover:bg-red-700 focus-ring"
+            className="rounded-md bg-red-600 px-4 py-1.5 text-label-lg font-semibold text-white shadow-sm transition-all hover:bg-red-700 focus-ring"
           >
             {translate('export.reset.confirm')}
           </button>

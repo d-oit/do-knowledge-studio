@@ -128,7 +128,7 @@ const BaseUrlInput = ({
         aria-label={label}
         aria-invalid={invalid}
         aria-describedby={invalid ? errorId : undefined}
-        className="w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-mono text-ink-soft placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30 aria-invalid:border-destructive"
+        className="w-full rounded-md border border-border bg-background px-3 py-2 text-label-lg font-mono text-ink-soft placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30 aria-invalid:border-destructive"
       />
       {invalid && (
         <p id={errorId} role="alert" className="mt-1.5 text-caption text-destructive">
@@ -216,7 +216,7 @@ const EngineSelect = ({
     <select
       value={model}
       onChange={(e) => { setModel(e.target.value); setCustomModel('') }}
-      className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+      className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2 text-label-lg font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
     >
       <EngineOptions provider={provider} ollamaModels={ollamaModels} />
     </select>
@@ -266,11 +266,11 @@ export const AiHarnessSettingsPanel = ({
   return (
     <aside>
       <div className="rounded-lg border border-border bg-card p-4">
-        <h2 className="mb-4 font-serif text-[15px] font-semibold text-ink">Provider</h2>
+        <h2 className="mb-4 font-serif text-body-lg font-semibold text-ink">Provider</h2>
 
         <div className="space-y-3">
           <Field label="Connect Local Database" icon={Database}>
-            <div className="flex w-full items-center rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft">
+            <div className="flex w-full items-center rounded-md border border-border bg-background px-3 py-2 text-label-lg font-medium text-ink-soft">
               <span className="flex items-center gap-2">
                 <Check className="h-3.5 w-3.5 text-emerald-500" />
                 Connected · {entityCount} entities
@@ -288,7 +288,7 @@ export const AiHarnessSettingsPanel = ({
                 setModel(getDefaultModelForProvider(val as AIProvider))
                 setCustomModel('')
               }}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-label-lg font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
             >
               {PROVIDERS.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -313,16 +313,16 @@ export const AiHarnessSettingsPanel = ({
               onChange={(e) => { setCustomModel(e.target.value) }}
               placeholder="Or type a custom engine or model slug"
               aria-label="Custom engine or model slug"
-              className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-mono text-ink-soft placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+              className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2 text-label-lg font-mono text-ink-soft placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
             />
             {selectedEngineTarget?.description && (
-              <div className="mt-2 rounded border border-border bg-muted/30 p-2 text-[11px] leading-relaxed text-ink-mute">
+              <div className="mt-2 rounded border border-border bg-muted/30 p-2 text-label leading-relaxed text-ink-mute">
                 <strong className="text-ink-soft">{selectedEngineTarget.display_name}: </strong>
                 {selectedEngineTarget.description}
               </div>
             )}
             {provider === LOCAL_PROVIDER_ID && (
-              <div className="mt-2 rounded border border-border bg-muted/30 p-2 text-[11px] leading-relaxed text-ink-mute">
+              <div className="mt-2 rounded border border-border bg-muted/30 p-2 text-label leading-relaxed text-ink-mute">
                 {tAi('ai.settings.local.downloadHint')}
               </div>
             )}
@@ -337,7 +337,7 @@ export const AiHarnessSettingsPanel = ({
                   if (val !== 'wasm' && val !== 'webgpu') return
                   setLocalDevice(val)
                 }}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-label-lg font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
               >
                 <option value="wasm">{tAi('ai.settings.local.device.cpu')}</option>
                 <option value="webgpu">{tAi('ai.settings.local.device.gpu')}</option>
@@ -356,7 +356,7 @@ export const AiHarnessSettingsPanel = ({
                   value={apiKey}
                   onChange={(e) => { setApiKey(e.target.value) }}
                   placeholder="sk-or-…"
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 pr-16 text-[12px] font-mono text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 pr-16 text-label-lg font-mono text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
                 />
                 <button
                   onClick={() => { setShowKey(!showKey) }}

@@ -376,7 +376,7 @@ describe('MindMapView branch coverage', () => {
       const toggle = screen.getByTestId('mindmap-compact-toggle')
       expect(toggle.getAttribute('aria-pressed')).toBe('false')
       expect(nodeRowClass('Child Entity')).toContain('px-3')
-      expect(labelClass('Child Entity')).toContain('text-[13px]')
+      expect(labelClass('Child Entity')).toContain('text-body-sm')
       expect(screen.getByText(/Comfortable/)).toBeDefined()
     })
 
@@ -389,8 +389,8 @@ describe('MindMapView branch coverage', () => {
       // Padding and type scale both tighten — the toggle is not decorative.
       expect(nodeRowClass('Child Entity')).toContain('px-2.5')
       expect(nodeRowClass('Child Entity')).toContain('py-1')
-      expect(labelClass('Child Entity')).toContain('text-[12px]')
-      expect(labelClass('Root Entity')).toContain('text-[13px]')
+      expect(labelClass('Child Entity')).toContain('text-label-lg')
+      expect(labelClass('Root Entity')).toContain('text-body-sm')
       // The per-level indent shrinks from 28px to 18px, so level 1 moves left.
       const childRow = screen.getByText('Child Entity').closest('.relative')
         ?.firstElementChild as HTMLElement

@@ -52,7 +52,7 @@ export const EditorHeader = ({
         onChange={(e) => { onDescriptionChange(e.target.value) }}
         placeholder="A short description (optional)…"
         rows={2}
-        className="mt-2 w-full resize-none bg-transparent text-[14px] leading-relaxed text-ink-mute placeholder:text-ink-faint/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-saffron/40 focus-visible:ring-inset"
+        className="mt-2 w-full resize-none bg-transparent text-body leading-relaxed text-ink-mute placeholder:text-ink-faint/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-saffron/40 focus-visible:ring-inset"
       />
     </div>
   )

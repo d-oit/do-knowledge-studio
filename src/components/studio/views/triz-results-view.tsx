@@ -32,7 +32,7 @@ const PrincipleCard = ({
       className="group flex flex-col rounded-lg border border-border bg-card p-4 transition-all hover:border-saffron/30 hover:shadow-sm hover-lift"
     >
       <div className="mb-2 flex items-start justify-between">
-        <div className="flex h-9 w-9 items-center justify-center rounded-md bg-gradient-to-br from-saffron to-clay font-serif text-[14px] font-bold text-white shadow-sm">
+        <div className="flex h-9 w-9 items-center justify-center rounded-md bg-gradient-to-br from-saffron to-clay font-serif text-body font-bold text-white shadow-sm">
           #{id}
         </div>
         <button
@@ -48,14 +48,14 @@ const PrincipleCard = ({
           )}
         </button>
       </div>
-      <h3 className="mb-1.5 font-serif text-[15px] font-semibold leading-tight text-ink">
+      <h3 className="mb-1.5 font-serif text-body-lg font-semibold leading-tight text-ink">
         {name}
       </h3>
-      <p className="mb-2 flex-1 text-[12px] leading-relaxed text-ink-mute">{description}</p>
+      <p className="mb-2 flex-1 text-label-lg leading-relaxed text-ink-mute">{description}</p>
       {examples.length > 0 && (
         <div className="mt-auto border-t border-border pt-2">
           <p className="mb-1 text-caption font-semibold uppercase tracking-wide text-ink-faint">{translate('triz.results.examples')}</p>
-          <ul className="list-inside list-disc space-y-0.5 text-[11px] text-ink-mute">
+          <ul className="list-inside list-disc space-y-0.5 text-label text-ink-mute">
             {examples.slice(0, 3).map((example) => (
               <li key={example}>{example}</li>
             ))}
@@ -77,7 +77,7 @@ const ResultsSummaryDescription = ({
   worsening,
   hasSuggestions,
 }: ResultsSummaryProps) => (
-  <p className="mt-3 text-[13px] leading-relaxed text-ink-mute">
+  <p className="mt-3 text-body-sm leading-relaxed text-ink-mute">
     {translate('triz.results.summaryPrefix')}<strong className="text-ink-soft">{TRIZ_PARAMETERS.at(improving)?.toLowerCase() ?? ''}</strong>
     {translate('triz.results.summaryMiddle')}<strong className="text-ink-soft">{TRIZ_PARAMETERS.at(worsening)?.toLowerCase() ?? ''}</strong>
     {translate('triz.results.summarySuffix')}
@@ -154,7 +154,7 @@ const ResultsActions = ({ onReset, onChangeParams }: ResultsActionsProps) => (
     <button
       type="button"
       onClick={onReset}
-      className="flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+      className="flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-label-lg font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
     >
       <RotateCcw className="h-3.5 w-3.5" />
       {translate('triz.results.tryAnother')}
@@ -162,7 +162,7 @@ const ResultsActions = ({ onReset, onChangeParams }: ResultsActionsProps) => (
     <button
       type="button"
       onClick={onChangeParams}
-      className="flex min-h-[44px] items-center gap-1.5 rounded-md border border-border bg-background px-4 py-2 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
+      className="flex min-h-[44px] items-center gap-1.5 rounded-md border border-border bg-background px-4 py-2 text-label-lg font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
     >
       {translate('triz.results.changeParams')}
     </button>

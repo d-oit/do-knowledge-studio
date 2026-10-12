@@ -29,7 +29,7 @@ export const EditorAdvancedFields = ({
     aria-labelledby="advanced-fields-heading"
   >
     <div>
-      <h3 id="advanced-fields-heading" className="font-serif text-[15px] font-semibold text-ink">
+      <h3 id="advanced-fields-heading" className="font-serif text-body-lg font-semibold text-ink">
         {ADVANCED_METADATA_TITLE}
       </h3>
       <p className="mt-1 text-label leading-relaxed text-ink-mute">
@@ -51,7 +51,7 @@ export const EditorAdvancedFields = ({
           onSourceUrlChange(e.target.value)
         }}
         placeholder="https://…"
-        className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+        className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-body-sm text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
       />
     </div>
   </div>

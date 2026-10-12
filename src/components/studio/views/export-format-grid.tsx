@@ -94,12 +94,12 @@ export const ExportFormatGrid = memo(({
                 )}
               </div>
               <h3 className={cn(
-                'mb-1 font-serif text-[15px] font-semibold',
+                'mb-1 font-serif text-body-lg font-semibold',
                 isAvailable ? 'text-ink group-hover:text-saffron-deep' : 'text-ink-mute',
               )}>
                 {f.name}
               </h3>
-              <p className="flex-1 text-[12px] leading-relaxed text-ink-mute">
+              <p className="flex-1 text-label-lg leading-relaxed text-ink-mute">
                 {f.description}
               </p>
               {isAvailable ? (

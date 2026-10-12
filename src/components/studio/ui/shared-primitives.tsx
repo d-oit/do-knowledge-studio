@@ -19,7 +19,7 @@ export const TextInput = forwardRef<
     <input
       ref={ref}
       className={cn(
-        'w-full rounded-md border border-border bg-background px-3 py-2 text-[13px] text-ink',
+        'w-full rounded-md border border-border bg-background px-3 py-2 text-body-sm text-ink',
         'placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30',
         mono && 'font-mono',
         className,
@@ -101,7 +101,7 @@ export function SwitchToggle({
       <div className="flex items-center gap-2">
         <Icon className="h-3.5 w-3.5 text-saffron" />
         <div>
-          <div className="text-[12px] font-medium text-ink">{label}</div>
+          <div className="text-label-lg font-medium text-ink">{label}</div>
           <div className="text-caption text-ink-faint">{description}</div>
         </div>
       </div>
@@ -195,7 +195,7 @@ export function ViewHeader({
           <h2 className="font-serif text-2xl font-semibold text-ink">{title}</h2>
           {badge}
         </div>
-        {subtitle ? <p className="mt-1 text-[13px] text-ink-mute">{subtitle}</p> : null}
+        {subtitle ? <p className="mt-1 text-body-sm text-ink-mute">{subtitle}</p> : null}
       </div>
       {action}
     </header>
@@ -248,11 +248,11 @@ export function ViewEmptyState({
         <Icon aria-hidden="true" className="h-6 w-6 text-saffron" />
       </div>
       <h3 className="font-serif text-lg font-semibold text-ink">{title}</h3>
-      <p className="mx-auto mt-1 max-w-sm text-[13px] text-ink-mute">{body}</p>
+      <p className="mx-auto mt-1 max-w-sm text-body-sm text-ink-mute">{body}</p>
       <button
         type="button"
         onClick={onAction}
-        className="mt-4 flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 text-[13px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+        className="mt-4 flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 text-body-sm font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
       >
         {ActionIcon ? <ActionIcon aria-hidden="true" className="h-4 w-4" /> : null}
         {actionLabel}

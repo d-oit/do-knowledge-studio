@@ -179,10 +179,10 @@ const GridCard = ({
           {meta.label}
         </span>
       </div>
-      <h3 className="mb-1.5 font-serif text-[15px] font-semibold leading-snug text-ink group-hover:text-saffron-deep">
+      <h3 className="mb-1.5 font-serif text-body-lg font-semibold leading-snug text-ink group-hover:text-saffron-deep">
         {entity.name}
       </h3>
-      <p className="line-clamp-3 flex-1 text-[12px] leading-relaxed text-ink-mute">
+      <p className="line-clamp-3 flex-1 text-label-lg leading-relaxed text-ink-mute">
         {entity.description}
       </p>
       <div className="mt-3 flex items-center justify-between border-t border-border pt-2.5">
@@ -319,7 +319,7 @@ const EntityNameCell = ({ entity, onOpen }: { entity: Entity; onOpen: () => void
           <EntityIcon type={entity.type} className="h-3.5 w-3.5" />
         </div>
         <div className="min-w-0">
-          <div className="truncate text-[13px] font-semibold text-ink group-hover:text-saffron-deep">
+          <div className="truncate text-body-sm font-semibold text-ink group-hover:text-saffron-deep">
             {entity.name}
           </div>
           <div className="truncate text-label text-ink-mute">{entity.description}</div>

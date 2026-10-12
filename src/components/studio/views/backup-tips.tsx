@@ -14,7 +14,7 @@ export const BackupTips = memo(function BackupTips() {
           {translate('export.backupTips.title')}
         </span>
       </div>
-      <ul className="space-y-1 text-[12px] leading-relaxed text-ink-soft">
+      <ul className="space-y-1 text-label-lg leading-relaxed text-ink-soft">
         <li className="flex items-start gap-1.5">
           <Check className="mt-0.5 h-3 w-3 shrink-0 text-emerald-500" />
           {translate('export.backupTips.json')}

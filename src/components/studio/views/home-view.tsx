@@ -70,7 +70,7 @@ const RECENT_LIMIT = 6
 const RecentItemBody = ({ entity, meta }: { entity: Entity; meta: EntityTypeMeta }) => (
   <div className="min-w-0 flex-1">
     <div className="flex items-center gap-2">
-      <span className="truncate text-[14px] font-semibold text-ink group-hover:text-saffron-deep">
+      <span className="truncate text-body font-semibold text-ink group-hover:text-saffron-deep">
         {entity.name}
       </span>
       <span
@@ -83,7 +83,7 @@ const RecentItemBody = ({ entity, meta }: { entity: Entity; meta: EntityTypeMeta
         {meta.label}
       </span>
     </div>
-    <p className="truncate text-[12px] text-ink-mute">
+    <p className="truncate text-label-lg text-ink-mute">
       {entity.description}
     </p>
   </div>
@@ -135,7 +135,7 @@ const CompactStat = ({
       className="group flex min-h-[44px] items-center gap-2 transition-opacity hover:opacity-80 focus-ring"
     >
       <Icon className="h-4 w-4 text-ink-faint group-hover:text-saffron" />
-      <span className="font-mono text-[15px] font-semibold text-ink">{value}</span>
+      <span className="font-mono text-body-lg font-semibold text-ink">{value}</span>
       <span className="text-label uppercase tracking-wide text-ink-faint">{label}</span>
     </button>
   )
@@ -192,20 +192,20 @@ export const HomeView = () => {
         {...fadeAnim}
         className="mb-8 flex flex-wrap items-center justify-between gap-3"
       >
-        <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-saffron-deep">
+        <p className="text-label-lg font-semibold uppercase tracking-[0.18em] text-saffron-deep">
           {today}
         </p>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={startNew}
-            className="flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 text-[13px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+            className="flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 text-body-sm font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
           >
             <FileText className="h-4 w-4" />
             New entity
           </button>
           <button
             onClick={() => setView('chat')}
-            className="flex min-h-[44px] items-center gap-1.5 rounded-md border border-border bg-background px-4 text-[13px] font-medium text-ink-soft transition-colors hover:border-saffron/40 hover:text-ink focus-ring"
+            className="flex min-h-[44px] items-center gap-1.5 rounded-md border border-border bg-background px-4 text-body-sm font-medium text-ink-soft transition-colors hover:border-saffron/40 hover:text-ink focus-ring"
           >
             <Sparkles className="h-4 w-4 text-saffron" />
             Ask your library
@@ -220,7 +220,7 @@ export const HomeView = () => {
           {entities.length > 0 && (
             <button
               onClick={() => setView('library')}
-              className="flex min-h-[44px] items-center gap-1 text-[12px] font-medium text-saffron-deep transition-colors hover:text-saffron focus-ring"
+              className="flex min-h-[44px] items-center gap-1 text-label-lg font-medium text-saffron-deep transition-colors hover:text-saffron focus-ring"
             >
               View all
               <ArrowUpRight className="h-3 w-3" />
@@ -289,7 +289,7 @@ export const HomeView = () => {
                 const pct = stats.total > 0 ? (count / stats.total) * 100 : 0
                 return (
                   <div key={type}>
-                    <div className="mb-1 flex items-center justify-between text-[12px]">
+                    <div className="mb-1 flex items-center justify-between text-label-lg">
                       <div className="flex items-center gap-1.5">
                         <span className={cn('h-2 w-2 rounded-full', meta.dot)} />
                         <span className="font-medium text-ink-soft">{meta.label}</span>
@@ -324,7 +324,7 @@ export const HomeView = () => {
             Tip
           </span>
         </div>
-        <p className="text-[12px] leading-relaxed text-ink-soft">
+        <p className="text-label-lg leading-relaxed text-ink-soft">
           Use{' '}
           <kbd className="rounded border border-border bg-background px-1 font-mono text-caption">
             &#x2318;K

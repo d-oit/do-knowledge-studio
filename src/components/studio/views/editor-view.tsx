@@ -430,7 +430,7 @@ export const EditorView = () => {
                 if (mentionTrigger.active) dismissMention(mentionTrigger.start)
               }}
               placeholder="Start writing. Use markdown for headings, lists, and emphasis…"
-              className={`min-h-[420px] w-full resize-none bg-transparent font-serif text-[16px] leading-[1.75] text-ink placeholder:text-ink-faint/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-saffron/40 focus-visible:ring-inset ${editMode === 'split' ? 'rounded-lg border border-border p-4' : ''}`}
+              className={`min-h-[420px] w-full resize-none bg-transparent font-serif text-base leading-[1.75] text-ink placeholder:text-ink-faint/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-saffron/40 focus-visible:ring-inset ${editMode === 'split' ? 'rounded-lg border border-border p-4' : ''}`}
               style={SERIF_FONT_STYLE}
               aria-label="Editor content"
               role="combobox"

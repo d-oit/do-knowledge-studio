@@ -271,7 +271,7 @@ export const ShortcutsDialog = (): React.JSX.Element => {
         <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
           <div className="flex items-center gap-2">
             <Keyboard className="h-4 w-4 text-saffron" />
-            <h2 className="font-serif text-[15px] font-semibold text-ink">
+            <h2 className="font-serif text-body-lg font-semibold text-ink">
               {translate('shortcuts.title')}
             </h2>
           </div>

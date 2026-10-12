@@ -27,7 +27,7 @@ export const QRDisplay = ({ roomId }: { roomId: string }) => {
         />
       </div>
       <div className="flex items-center gap-2">
-        <span className="font-mono text-[13px] text-ink">{roomId}</span>
+        <span className="font-mono text-body-sm text-ink">{roomId}</span>
         <button
           onClick={handleCopy}
           className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-border hover:text-ink focus-ring"
@@ -161,11 +161,11 @@ export const QRScanner = ({ onScan }: { onScan: (roomId: string) => void }) => {
           className="flex h-48 w-48 flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/30 transition-colors hover:border-saffron/40 hover:bg-muted/50"
         >
           <Camera className="h-8 w-8 text-ink-faint" />
-          <span className="text-[12px] text-ink-faint">{translate('qr.tapToScan')}</span>
+          <span className="text-label-lg text-ink-faint">{translate('qr.tapToScan')}</span>
         </button>
       )}
       {error && (
-        <p className="text-center text-[12px] text-red-500">{error}</p>
+        <p className="text-center text-label-lg text-red-500">{error}</p>
       )}
       {!isActive && (
         <p className="text-center text-caption text-ink-faint">

@@ -127,7 +127,7 @@ const SidebarNavItem = ({ item, active, onSelect }: SidebarNavItemProps) => {
         onClick={() => { onSelect(item.id) }}
         aria-current={active ? 'page' : undefined}
         className={cn(
-          'group flex w-full items-center gap-2.5 rounded-md px-2.5 min-h-[44px] text-[13px] font-medium transition-all press-scale focus-ring',
+          'group flex w-full items-center gap-2.5 rounded-md px-2.5 min-h-[44px] text-body-sm font-medium transition-all press-scale focus-ring',
           buttonStateClass,
         )}
       >
@@ -229,7 +229,7 @@ export const Sidebar = () => {
       <div className="flex items-center gap-2.5 px-5 pt-5 pb-4">
         <img src="/logo.svg" alt="" className="h-9 w-9" />
         <div className="flex flex-col">
-          <span className="font-serif text-[15px] font-semibold leading-tight tracking-tight">
+          <span className="font-serif text-body-lg font-semibold leading-tight tracking-tight">
             Knowledge Studio
           </span>
           <a
@@ -248,7 +248,7 @@ export const Sidebar = () => {
       <div className="px-3 pb-3">
         <button
           onClick={() => { setCommandOpen(true) }}
-          className="group flex w-full items-center gap-2 rounded-lg border border-border bg-background/50 px-3 py-2 text-left text-[13px] text-ink-mute transition-colors hover:border-saffron/40 hover:text-ink-soft focus-ring min-h-[44px]"
+          className="group flex w-full items-center gap-2 rounded-lg border border-border bg-background/50 px-3 py-2 text-left text-body-sm text-ink-mute transition-colors hover:border-saffron/40 hover:text-ink-soft focus-ring min-h-[44px]"
           aria-label="Open command palette"
         >
           <Search className="h-3.5 w-3.5" />
@@ -266,7 +266,7 @@ export const Sidebar = () => {
       <div className="flex items-center gap-1 border-t border-border px-3 py-2.5">
         <button
           onClick={handleThemeToggle}
-          className="flex items-center gap-2 rounded-md px-2.5 min-h-[44px] text-[12px] font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
+          className="flex items-center gap-2 rounded-md px-2.5 min-h-[44px] text-label-lg font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
           aria-label={themeAriaLabel}
         >
           <ThemeIcon className="h-4 w-4" />
@@ -274,7 +274,7 @@ export const Sidebar = () => {
         </button>
         <ShortcutsTrigger
           className={cn(
-            'flex items-center gap-1.5 rounded-md px-2.5 min-h-[44px] text-[12px] font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring',
+            'flex items-center gap-1.5 rounded-md px-2.5 min-h-[44px] text-label-lg font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring',
           )}
         />
         <div className="flex-1" />

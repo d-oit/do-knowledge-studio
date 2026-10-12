@@ -32,7 +32,7 @@ export const generateRoomId = (): string => {
 const StatusBadge = ({ status }: { status: SyncStatus }) => {
   if (status === 'connected') {
     return (
-      <span className="flex items-center gap-1.5 text-[12px] font-medium text-emerald-600">
+      <span className="flex items-center gap-1.5 text-label-lg font-medium text-emerald-600">
         <span className="h-2 w-2 rounded-full bg-emerald-500" />
         Connected
       </span>
@@ -40,7 +40,7 @@ const StatusBadge = ({ status }: { status: SyncStatus }) => {
   }
   if (status === 'connecting') {
     return (
-      <span className="flex items-center gap-1.5 text-[12px] font-medium text-saffron">
+      <span className="flex items-center gap-1.5 text-label-lg font-medium text-saffron">
         <Loader2 className="h-3 w-3 animate-spin" />
         Connecting
       </span>
@@ -48,14 +48,14 @@ const StatusBadge = ({ status }: { status: SyncStatus }) => {
   }
   if (status === 'error') {
     return (
-      <span className="flex items-center gap-1.5 text-[12px] font-medium text-destructive">
+      <span className="flex items-center gap-1.5 text-label-lg font-medium text-destructive">
         <WifiOff className="h-3 w-3" />
         Error
       </span>
     )
   }
   return (
-    <span className="flex items-center gap-1.5 text-[12px] font-medium text-ink-faint">
+    <span className="flex items-center gap-1.5 text-label-lg font-medium text-ink-faint">
       <WifiOff className="h-3 w-3" />
       Disconnected
     </span>
@@ -75,7 +75,7 @@ const PairingButtons = ({
       <button
         onClick={() => { onPairingModeChange(pairingMode === 'display' ? 'none' : 'display') }}
         className={cn(
-          'flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-[12px] font-medium transition-colors focus-ring min-h-[44px]',
+          'flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-label-lg font-medium transition-colors focus-ring min-h-[44px]',
           pairingMode === 'display'
             ? 'border-saffron bg-saffron/10 text-saffron-deep'
             : 'border-border bg-background text-ink-soft hover:border-saffron/40',
@@ -87,7 +87,7 @@ const PairingButtons = ({
       <button
         onClick={() => { onPairingModeChange(pairingMode === 'scan' ? 'none' : 'scan') }}
         className={cn(
-          'flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-[12px] font-medium transition-colors focus-ring min-h-[44px]',
+          'flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-label-lg font-medium transition-colors focus-ring min-h-[44px]',
           pairingMode === 'scan'
             ? 'border-saffron bg-saffron/10 text-saffron-deep'
             : 'border-border bg-background text-ink-soft hover:border-saffron/40',
@@ -141,16 +141,16 @@ const SyncStatsGrid = ({
   return (
     <div className="grid grid-cols-3 gap-3">
       <div className="rounded-md bg-muted/50 px-3 py-2 text-center">
-        <div className="text-[12px] text-ink-faint">Peers</div>
-        <div className="font-mono text-[15px] font-semibold text-ink">{peerCount}</div>
+        <div className="text-label-lg text-ink-faint">Peers</div>
+        <div className="font-mono text-body-lg font-semibold text-ink">{peerCount}</div>
       </div>
       <div className="rounded-md bg-muted/50 px-3 py-2 text-center">
-        <div className="text-[12px] text-ink-faint">Entities</div>
-        <div data-testid="synced-entities" className="font-mono text-[15px] font-semibold text-ink">{syncedEntities}</div>
+        <div className="text-label-lg text-ink-faint">Entities</div>
+        <div data-testid="synced-entities" className="font-mono text-body-lg font-semibold text-ink">{syncedEntities}</div>
       </div>
       <div className="rounded-md bg-muted/50 px-3 py-2 text-center">
-        <div className="text-[12px] text-ink-faint">Claims</div>
-        <div data-testid="synced-claims" className="font-mono text-[15px] font-semibold text-ink">{syncedClaims}</div>
+        <div className="text-label-lg text-ink-faint">Claims</div>
+        <div data-testid="synced-claims" className="font-mono text-body-lg font-semibold text-ink">{syncedClaims}</div>
       </div>
     </div>
   )
@@ -161,7 +161,7 @@ const PeerList = ({ peers }: { peers: PeerInfo[] }) => {
   if (peers.length === 0) return null
   return (
     <div className="rounded-md bg-muted/30 px-3 py-2">
-      <div className="mb-1.5 flex items-center gap-1.5 text-[12px] font-medium text-ink">
+      <div className="mb-1.5 flex items-center gap-1.5 text-label-lg font-medium text-ink">
         <Radio className="h-3 w-3 text-emerald-500" />
         Local Network Peers
       </div>
@@ -169,7 +169,7 @@ const PeerList = ({ peers }: { peers: PeerInfo[] }) => {
         {peers.map((peer) => (
           <div
             key={peer.deviceId}
-            className="flex items-center justify-between text-[12px]"
+            className="flex items-center justify-between text-label-lg"
           >
             <span className="text-ink-soft">{peer.deviceName}</span>
             <span className="text-caption text-ink-faint">
@@ -204,8 +204,8 @@ const ConnectedControls = ({
     <div className="space-y-3">
       <div className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2">
         <div>
-          <div className="text-[12px] font-medium text-ink">Room</div>
-          <div className="font-mono text-[13px] text-ink-soft">{roomId}</div>
+          <div className="text-label-lg font-medium text-ink">Room</div>
+          <div className="font-mono text-body-sm text-ink-soft">{roomId}</div>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -233,14 +233,14 @@ const ConnectedControls = ({
       <div className="flex gap-2">
         <button
           onClick={onResync}
-          className="flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring min-h-[44px]"
+          className="flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-label-lg font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring min-h-[44px]"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           Re-sync
         </button>
         <button
           onClick={onLeave}
-          className="flex items-center gap-1.5 rounded-md border border-destructive/30 bg-background px-3 py-2 text-[12px] font-medium text-destructive transition-colors hover:bg-destructive/10 focus-ring min-h-[44px]"
+          className="flex items-center gap-1.5 rounded-md border border-destructive/30 bg-background px-3 py-2 text-label-lg font-medium text-destructive transition-colors hover:bg-destructive/10 focus-ring min-h-[44px]"
         >
           <Trash2 className="h-3.5 w-3.5" />
           Leave
@@ -300,11 +300,11 @@ const DisconnectedPanel = ({
             onChange={(e) => { onInputChange(e.target.value) }}
             onKeyDown={(e) => { if (e.key === 'Enter') onJoin() }}
             placeholder="Enter room ID or leave empty to create"
-            className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+            className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-body-sm text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
           />
           <button
             onClick={onJoin}
-            className="rounded-md bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring min-h-[44px]"
+            className="rounded-md bg-primary px-4 py-2 text-label-lg font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring min-h-[44px]"
           >
             Join
           </button>
@@ -323,7 +323,7 @@ const DisconnectedPanel = ({
           onKeyDown={(e) => { if (e.key === 'Enter') onJoin() }}
           aria-describedby="sync-room-password-help"
           placeholder={ROOM_PASSWORD_STRINGS.placeholder}
-          className="w-full min-h-[44px] rounded-md border border-border bg-background px-3 py-2 text-[13px] text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+          className="w-full min-h-[44px] rounded-md border border-border bg-background px-3 py-2 text-body-sm text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
         />
         <p id="sync-room-password-help" className="mt-1.5 text-caption text-ink-faint">
           {ROOM_PASSWORD_STRINGS.help}
@@ -385,7 +385,7 @@ export const SyncStatusCard = ({
   return (
     <div className="mb-6 rounded-lg border border-border bg-card p-5">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="font-serif text-[15px] font-semibold text-ink">Connection</h2>
+        <h2 className="font-serif text-body-lg font-semibold text-ink">Connection</h2>
         <div className="flex items-center gap-2" aria-live="polite">
           <StatusBadge status={status} />
         </div>

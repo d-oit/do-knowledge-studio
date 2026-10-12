@@ -141,21 +141,29 @@ as CSS variables (`--font-geist-sans`, `--font-newsreader`, `--font-geist-mono`)
 ### 3.1 Type scale
 
 The scale is editorial — small jumps, generous leading on serif headings, tight
-tracking on display sizes. Body copy default is 14px (`text-[13px]` to `text-sm`
-depending on density).
+tracking on display sizes. Body copy default is 14px (`text-body`; dense UI
+falls back to `text-body-sm` at 13px).
 
-| Class                  | Size     | Usage                                              |
-|------------------------|----------|----------------------------------------------------|
-| `text-[10px]`          | 10px     | Kbd hints, micro-labels, eyebrow text              |
-| `text-[11px]`          | 11px     | Badges, status chips, sidebar footer text          |
-| `text-[12px]`          | 12px     | Subtitles, button labels, secondary metadata       |
-| `text-[13px]`          | 13px     | Body copy in dense UI (lists, nav, panels)         |
-| `text-[14px]`          | 14px     | Body copy default, command palette input           |
-| `text-[15px]`          | 15px     | Brand wordmark, prominent list items               |
-| `text-base`            | 16px     | Editor body, large form labels                     |
-| `text-lg`              | 18px     | Card titles, inspector entity name                 |
-| `text-xl`              | 20px     | Topbar page title (desktop)                        |
-| `text-2xl` – `text-4xl`| 24–36px  | Dashboard stats, empty-state headlines             |
+Every size used in the app has a named utility, defined in the `@layer utilities`
+block of `src/app/globals.css`. Arbitrary `text-[Npx]` values are not allowed —
+add a step to the scale first (issue #855). Two decisions worth recording: the
+floor was raised by mapping the former `text-[8px]` presence labels to
+`text-badge` (9px), and the lone `text-[16px]` editor body maps to Tailwind's
+exact `text-base`.
+
+| Class           | Size    | Usage                                              |
+|-----------------|---------|----------------------------------------------------|
+| `text-badge`    | 9px     | Badges, micro-labels, presence labels              |
+| `text-caption`  | 10px    | Kbd hints, counters, timestamps, eyebrow text      |
+| `text-label`    | 11px    | Toolbar labels, status chips, sidebar footer       |
+| `text-label-lg` | 12px    | Subtitles, button labels, secondary metadata       |
+| `text-body-sm`  | 13px    | Body copy in dense UI (lists, nav, panels)         |
+| `text-body`     | 14px    | Body copy default, command palette input           |
+| `text-body-lg`  | 15px    | Brand wordmark, prominent list items               |
+| `text-base`     | 16px    | Editor body, large form labels                     |
+| `text-lg`       | 18px    | Card titles, inspector entity name                 |
+| `text-xl`       | 20px    | Topbar page title (desktop)                        |
+| `text-2xl` – `text-4xl` | 24–36px | Dashboard stats, empty-state headlines     |
 
 ### 3.2 Typographic utilities
 
