@@ -1,6 +1,15 @@
 const STATIC_CACHE = "dks-static-v3";
 const API_CACHE = "dks-api-v2";
 
+/**
+ * Extensions served cache-first.
+ *
+ * Must cover every extension `scripts/generate-precache-manifest.mjs` can put in
+ * the manifest (`MEDIA_EXTENSIONS` + the code extensions): a URL that is
+ * precached but not matched here falls through to the network and is missing
+ * offline — the exact failure the manifest exists to prevent (`.avif` was
+ * precached-but-unserved until this list gained it).
+ */
 const STATIC_EXTENSIONS = [
   ".js",
   ".mjs",
@@ -10,6 +19,7 @@ const STATIC_EXTENSIONS = [
   ".jpg",
   ".jpeg",
   ".webp",
+  ".avif",
   ".gif",
   ".ico",
   ".woff",
