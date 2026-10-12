@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type * as SharedPrimitives from '../ui/shared-primitives'
 import { render, screen, fireEvent } from '@testing-library/react'
 
 vi.mock('@/lib/studio/use-reduced-motion', () => ({
@@ -75,14 +76,19 @@ vi.mock('@/lib/utils', () => ({
   cn: (...args: (string | undefined | false | null)[]) => args.filter(Boolean).join(' '),
 }))
 
-vi.mock('../ui/shared-primitives', () => ({
-  TextInput: ({ placeholder, value, onChange, className }: { placeholder?: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; className?: string }) => (
-    <input data-testid="text-input" placeholder={placeholder} value={value} onChange={onChange} className={className} />
-  ),
-  ToggleButtonGroup: ({ children }: { label?: string; children?: React.ReactNode }) => (
-    <div data-testid="toggle-group">{children}</div>
-  ),
-}))
+vi.mock('../ui/shared-primitives', async () => {
+  // Keep the real view chrome (the hero header carries the TRIZ branding).
+  const actual = await vi.importActual<typeof SharedPrimitives>('../ui/shared-primitives')
+  return {
+    ...actual,
+    TextInput: ({ placeholder, value, onChange, className }: { placeholder?: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; className?: string }) => (
+      <input data-testid="text-input" placeholder={placeholder} value={value} onChange={onChange} className={className} />
+    ),
+    ToggleButtonGroup: ({ children }: { label?: string; children?: React.ReactNode }) => (
+      <div data-testid="toggle-group">{children}</div>
+    ),
+  }
+})
 
 vi.mock('@/lib/studio/store', () => ({
   useStudioStore: (selector: (s: Record<string, unknown>) => unknown) =>

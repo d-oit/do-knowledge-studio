@@ -1,6 +1,13 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { Skeleton, Overlay } from './shared-primitives'
+import {
+  Skeleton,
+  Overlay,
+  ViewEmptyState,
+  ViewHeader,
+  VIEW_CONTAINER_CLASS,
+} from './shared-primitives'
+import { FileText } from 'lucide-react'
 import { createRef } from 'react'
 
 describe('Skeleton', () => {
@@ -226,6 +233,76 @@ describe('Overlay', () => {
     expect(document.activeElement).toBe(first)
     fireEvent.keyDown(first, { key: 'Tab', shiftKey: true })
     expect(document.activeElement).toBe(last)
+  })
+})
+
+describe('VIEW_CONTAINER_CLASS', () => {
+  it('carries the shared gutter and vertical rhythm', () => {
+    expect(VIEW_CONTAINER_CLASS).toContain('px-6')
+    expect(VIEW_CONTAINER_CLASS).toContain('lg:px-10')
+    expect(VIEW_CONTAINER_CLASS).toContain('py-6')
+    expect(VIEW_CONTAINER_CLASS).toContain('lg:py-8')
+    expect(VIEW_CONTAINER_CLASS).toContain('mx-auto')
+  })
+})
+
+describe('ViewHeader', () => {
+  it('renders the view identity as an h2 — the shell owns the h1', () => {
+    render(<ViewHeader icon={FileText} title="Library" subtitle="Everything you captured" />)
+    expect(screen.getByRole('heading', { level: 2, name: 'Library' })).toBeDefined()
+    expect(screen.queryByRole('heading', { level: 1 })).toBeNull()
+    expect(screen.getByText('Everything you captured')).toBeDefined()
+  })
+
+  it('renders the badge and action slots', () => {
+    render(
+      <ViewHeader
+        icon={FileText}
+        title="AI Harness"
+        badge={<span>Lab</span>}
+        action={<button>Show settings</button>}
+      />,
+    )
+    expect(screen.getByText('Lab')).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Show settings' })).toBeDefined()
+  })
+
+  it('omits the subtitle paragraph when none is given', () => {
+    const { container } = render(<ViewHeader icon={FileText} title="Graph" />)
+    expect(container.querySelectorAll('header p')).toHaveLength(0)
+  })
+})
+
+describe('ViewEmptyState', () => {
+  it('renders the headline, body, and a 44px primary action', () => {
+    render(
+      <ViewEmptyState
+        icon={FileText}
+        title="Nothing to graph yet"
+        body="Create your first entity"
+        actionLabel="Create entity"
+        onAction={() => undefined}
+      />,
+    )
+    expect(screen.getByRole('heading', { level: 3, name: 'Nothing to graph yet' })).toBeDefined()
+    expect(screen.getByText('Create your first entity')).toBeDefined()
+    const action = screen.getByRole('button', { name: 'Create entity' })
+    expect(action.className).toContain('min-h-[44px]')
+  })
+
+  it('runs the create action when it is activated', () => {
+    const onAction = vi.fn()
+    render(
+      <ViewEmptyState
+        icon={FileText}
+        title="Nothing to map yet"
+        body="Add entities with links"
+        actionLabel="Create entity"
+        onAction={onAction}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Create entity' }))
+    expect(onAction).toHaveBeenCalledOnce()
   })
 })
 

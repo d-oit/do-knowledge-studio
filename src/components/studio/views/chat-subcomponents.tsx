@@ -7,6 +7,7 @@ import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { sanitizeUrl } from '@/lib/security'
 import { cn } from '@/lib/utils'
+import { VIEW_GUTTER_CLASS } from '../ui/shared-primitives'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ChatMessage } from '@/lib/studio/types'
 
@@ -318,7 +319,7 @@ export interface SuggestionsBarProps {
 
 /** Quick prompt chips shown between the message list and the input. */
 export const SuggestionsBar = ({ onSend }: SuggestionsBarProps) => (
-  <div className="border-t border-border bg-muted/20 px-5 py-3 lg:px-10">
+  <div className={cn('border-t border-border bg-muted/20 py-3', VIEW_GUTTER_CLASS)}>
     <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-2">
       <span className="flex items-center gap-1 text-label font-medium text-ink-faint">
         <Sparkles className="h-3 w-3" />
@@ -368,7 +369,7 @@ export const InputBar = ({
   }
 
   return (
-    <div className="border-t border-border bg-background px-5 py-4 lg:px-10">
+    <div className={cn('border-t border-border bg-background py-4', VIEW_GUTTER_CLASS)}>
       <div className="mx-auto max-w-3xl">
         <div className="flex items-end gap-2 rounded-xl border border-border bg-card p-2 shadow-sm transition-colors focus-within:border-saffron/50">
           <textarea
