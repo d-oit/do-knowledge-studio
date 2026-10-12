@@ -296,20 +296,30 @@ test.describe('Offline banner exit', () => {
     await waitForAppReady(page);
 
     await context.setOffline(true);
+    // Wait for the banner to be *in view*, not merely mounted: with motion
+    // enabled it enters from `y: -100%`, so a recorder started as soon as the
+    // reservation appears would sample a banner that is still above the
+    // viewport, record `banner-gone` before the online transition, and then
+    // accept a premature release during the real exit (GitNexus on PR #925).
     await expect
       .poll(
         () =>
           page.evaluate(() => {
             const shell = document.querySelector('[data-app-ready="true"]');
-            return shell === null
-              ? 'no shell'
-              : Number.parseFloat(getComputedStyle(shell).paddingTop) > 0
-                ? 'reserved'
-                : 'not reserved';
+            const banner = [...document.querySelectorAll('[role="status"]')].find(
+              (node) => /offline/i.test(node.textContent ?? '') && node.className.includes('fixed'),
+            );
+            if (shell === null) return 'no shell';
+            if (banner === undefined) return 'no banner';
+            const rect = banner.getBoundingClientRect();
+            const reserved = Number.parseFloat(getComputedStyle(shell).paddingTop);
+            if (reserved <= 0) return 'not reserved';
+            if (rect.bottom <= 0 || rect.height === 0) return 'banner still entering';
+            return 'in view and reserved';
           }),
         { timeout: 5000 },
       )
-      .toBe('reserved');
+      .toBe('in view and reserved');
 
     // Record the ORDER of the two events from inside the page, at frame
     // resolution. The claim is causal — the reservation must outlive the

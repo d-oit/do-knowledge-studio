@@ -70,21 +70,34 @@ const scopedSpies: MockInstance[] = []
 const refuseRecoveryWrite = (): void => {
   // Keep every other key (Zustand's persistence, for example) writing to the
   // real store: a mock that swallows unrelated writes turns later assertions
-  // into fiction (GitNexus on PR #925). jsdom's localStorage is a proxy that
-  // re-dispatches through the instance property at call time, so delegating to
-  // a captured "original" recurses into this very mock — the mock steps aside
-  // for non-recovery keys instead, then reinstalls itself.
+  // into fiction (GitNexus on PR #925).
+  //
+  // Delegation cannot go through a captured original or the prototype: jsdom
+  // re-dispatches the call through the instance property, so either route
+  // recurses into this spy. The write therefore happens with the spy stepped
+  // aside — and because `mockRestore()` *removes* the spy, the refusal has to be
+  // reinstalled afterwards with a fresh `vi.spyOn`. Re-implementing the restored
+  // spy would only mutate a detached function, which silently let every recovery
+  // write after the first non-recovery one succeed (GitNexus on PR #925).
+  let live: ReturnType<typeof vi.spyOn> | null = null
+
+  const install = (): void => {
+    live = vi.spyOn(localStorage, 'setItem').mockImplementation(impl)
+    scopedSpies.push(live)
+  }
+
   const impl = (key: string, value: string): void => {
     if (key === RECOVERY_KEY) throw new Error('QuotaExceededError')
-    spy.mockRestore()
+    live?.mockRestore()
+    live = null
     try {
       localStorage.setItem(key, value)
     } finally {
-      spy.mockImplementation(impl)
+      install()
     }
   }
-  const spy = vi.spyOn(localStorage, 'setItem').mockImplementation(impl)
-  scopedSpies.push(spy)
+
+  install()
 }
 
 /** Simulates storage refusing every write. */

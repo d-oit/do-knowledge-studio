@@ -53,8 +53,19 @@ export const RecoveryBanner = ({ summary }: { summary: RecoverySnapshotSummary }
     /** The result. */
     const result = restoreFromRecovery()
     if (result.success) {
-      announce(t('announce.restoreSucceeded'))
-      toast.success(t('announce.restoreSucceeded'))
+      if (result.snapshotCleared) {
+        announce(t('announce.restoreSucceeded'))
+        toast.success(t('announce.restoreSucceeded'))
+      } else {
+        // The swap landed but storage kept the snapshot, so the offer returns
+        // after a reload and a second restore would replace the library with
+        // that older copy. Reporting a plain success here is exactly the false
+        // claim the typed result exists to prevent (GitNexus on PR #925).
+        announce(t('announce.restoreSucceededSnapshotKept'))
+        toast.warning(t('announce.restoreSucceededSnapshotKept'), {
+          description: t('announce.restoreSnapshotKeptHint'),
+        })
+      }
       setHidden(true)
     } else {
       announce(t('announce.restoreFailed'))

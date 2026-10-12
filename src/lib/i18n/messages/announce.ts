@@ -90,6 +90,15 @@ const messages = {
   'announce.restoreDismiss': 'Hide for this page session',
   /** Spoken confirmation after a successful restore. */
   'announce.restoreSucceeded': 'Previous library restored',
+  /**
+   * Spoken when the restore landed but storage refused to drop the snapshot, so
+   * the restore offer will come back after a reload.
+   */
+  'announce.restoreSucceededSnapshotKept':
+    'Previous library restored. The backup could not be removed, so the restore offer will return after a reload.',
+  /** Toast description for the same case; says what to do about it. */
+  'announce.restoreSnapshotKeptHint':
+    'This browser would not delete the recovery copy, so the restore offer will come back after a reload. Dismissing it is safe; restoring again would replace the library with that older copy.',
   /** Toast when a restore fails. */
   'announce.restoreFailed': 'Could not restore the previous library',
 } as const
