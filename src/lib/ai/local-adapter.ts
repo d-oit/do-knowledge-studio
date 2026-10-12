@@ -1,4 +1,5 @@
 import type { ChatRequest, ChatResult, ProviderAdapter, ProviderId } from './types'
+import { toProviderMessages } from './provider-messages'
 import { translate } from '@/lib/i18n/messages/ai'
 
 // The transformers.js package is deliberately absent from the static import
@@ -256,7 +257,11 @@ class LocalAdapter implements ProviderAdapter {
       loadTransformersRuntime(model, device, dtype),
       request.signal,
     )
-    const content = await runGeneration(runtime, request.messages, request.signal)
+    const content = await runGeneration(
+      runtime,
+      toProviderMessages(request.messages),
+      request.signal,
+    )
     return { content, provider: this.id, model }
   }
 
@@ -269,7 +274,12 @@ class LocalAdapter implements ProviderAdapter {
       loadTransformersRuntime(model, device, dtype),
       request.signal,
     )
-    const content = await runGeneration(runtime, request.messages, request.signal, onChunk)
+    const content = await runGeneration(
+      runtime,
+      toProviderMessages(request.messages),
+      request.signal,
+      onChunk,
+    )
     return { content, provider: this.id, model }
   }
 }
