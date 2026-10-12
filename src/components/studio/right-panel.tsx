@@ -7,9 +7,10 @@ import { useAnnouncer } from '@/lib/a11y/announcer'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
 import type { Entity } from '@/lib/studio/types'
 import { ArrowRight } from 'lucide-react'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { cn } from '@/lib/utils'
-import { Overlay } from '@/components/studio/ui/shared-primitives'
+import { ConfirmDialog } from '@/components/studio/ui/shared-primitives'
+import { translate as confirmT } from '@/lib/i18n/messages/confirm'
 import { CitationsPanel } from './right-panel-citations'
 import { PanelCloseButton } from './right-panel-close-button'
 import { EntitySearchPanel } from './entity-search-panel'
@@ -100,7 +101,6 @@ const InspectorPanel = ({ onClose }: { onClose: () => void }) => {
   const announce = useAnnouncer()
   const entityIndex = useMemo(() => buildEntityIndex(entities), [entities])
   const entity = (selectedEntityId ? entityIndex.get(selectedEntityId) : undefined) || entities[0]
-  const deleteCancelRef = useRef<HTMLButtonElement>(null)
 
   if (!entity) {
     return (
@@ -198,36 +198,15 @@ const InspectorPanel = ({ onClose }: { onClose: () => void }) => {
         </button>
       </div>
 
-      {showDeleteConfirm && (
-        <Overlay
-          open={showDeleteConfirm}
-          onClose={() => { setShowDeleteConfirm(false) }}
-          aria-label="Confirm delete"
-          initialFocusRef={deleteCancelRef}
-        >
-          <div className="w-[340px] rounded-xl border border-border bg-popover p-5 shadow-2xl">
-            <h3 className="mb-2 font-serif text-body font-semibold text-ink">Delete entity?</h3>
-            <p className="mb-4 text-label-lg text-ink-mute">
-              &quot;{entity.name}&quot; will be permanently deleted. This cannot be undone.
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                ref={deleteCancelRef}
-                onClick={() => { setShowDeleteConfirm(false) }}
-                className="rounded-md border border-border px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-colors hover:bg-muted focus-ring min-h-touch"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                className="rounded-md bg-red-600 px-3 py-1.5 text-label-lg font-semibold text-white transition-colors hover:bg-red-700 focus-ring min-h-touch"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </Overlay>
-      )}
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onConfirm={handleDelete}
+        onCancel={() => { setShowDeleteConfirm(false) }}
+        title={confirmT('confirm.deleteEntity.title')}
+        body={confirmT('confirm.deleteEntity.body', entity.name)}
+        confirmLabel={confirmT('confirm.deleteEntity.confirm')}
+        destructive
+      />
     </aside>
   )
 }

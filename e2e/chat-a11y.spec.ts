@@ -1,5 +1,15 @@
 import { test, expect } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { navClick } from './helpers/navigation';
+
+/** Clearing the transcript is destructive, so it goes through the shared ConfirmDialog (#863). */
+const clearChatHistory = async (page: Page) => {
+  await page.getByRole('button', { name: 'Clear chat history' }).click();
+  await page
+    .getByRole('dialog', { name: 'Clear chat history?' })
+    .getByRole('button', { name: 'Clear chat' })
+    .click();
+};
 
 test.describe('Chat accessibility', () => {
   test.beforeEach(async ({ page }) => {
@@ -10,7 +20,7 @@ test.describe('Chat accessibility', () => {
   test('chat bubbles announce sender roles to screen readers', async ({ page }) => {
     // The store seeds a welcome assistant message; clear it so the assertions
     // below see exactly the one user and one assistant message this test sends.
-    await page.getByRole('button', { name: 'Clear chat history' }).click();
+    await clearChatHistory(page);
 
     const textarea = page.getByPlaceholder('Ask about your library, or request a synthesis…');
     await textarea.fill('What is in my library?');
@@ -39,7 +49,7 @@ test.describe('Chat accessibility', () => {
   });
 
   test('citation toggle expands local sources with aria-expanded', async ({ page }) => {
-    await page.getByRole('button', { name: 'Clear chat history' }).click();
+    await clearChatHistory(page);
 
     const textarea = page.getByPlaceholder('Ask about your library, or request a synthesis…');
     await textarea.fill('What is in my library?');

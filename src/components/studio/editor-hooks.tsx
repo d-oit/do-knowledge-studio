@@ -259,28 +259,34 @@ export const EditorStatusBar = ({
   nameValid,
 }: EditorStatusBarProps) => (
   <div className="sticky bottom-0 -mx-6 mt-6 flex items-center justify-between border-t border-border bg-background/90 px-6 py-3 backdrop-blur-sm lg:-mx-10 lg:px-10">
-    <div className="flex items-center gap-3 text-label text-ink-faint" aria-live="polite" aria-atomic="true">
+    <div className="flex items-center gap-3 text-label text-ink-faint">
       <span>{wordCount} {WORDS_LABEL}</span>
-      <span>&middot;</span>
+      <span aria-hidden="true">&middot;</span>
       <span>{charCount} {CHARS_LABEL}</span>
-      {isDirty && (
-        <>
-          <span>&middot;</span>
-          <span className="text-saffron-deep">{UNSAVED_CHANGES_TEXT}</span>
-        </>
-      )}
-      {draftStatus === 'saved' && !isDirty && (
-        <>
-          <span>&middot;</span>
-          <span className="text-sage">{DRAFT_SAVED_TEXT}</span>
-        </>
-      )}
-      {draftStatus === 'error' && (
-        <>
-          <span>&middot;</span>
-          <span className="text-destructive">{DRAFT_ERROR_TEXT}</span>
-        </>
-      )}
+      {/* Live region for status transitions only (#856): the counters above are
+          deliberately outside it, so a screen reader hears "Draft saved" /
+          "Unsaved changes" / "Could not save draft" when the status changes
+          rather than the whole bar on every keystroke. */}
+      <span role="status" aria-live="polite" aria-atomic="true" className="flex items-center gap-3">
+        {isDirty && (
+          <>
+            <span aria-hidden="true">&middot;</span>
+            <span className="text-saffron-deep">{UNSAVED_CHANGES_TEXT}</span>
+          </>
+        )}
+        {draftStatus === 'saved' && !isDirty && (
+          <>
+            <span aria-hidden="true">&middot;</span>
+            <span className="text-sage">{DRAFT_SAVED_TEXT}</span>
+          </>
+        )}
+        {draftStatus === 'error' && (
+          <>
+            <span aria-hidden="true">&middot;</span>
+            <span className="text-destructive">{DRAFT_ERROR_TEXT}</span>
+          </>
+        )}
+      </span>
     </div>
     <div className="flex items-center gap-2">
       {editing && (

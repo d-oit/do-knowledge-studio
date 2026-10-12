@@ -75,10 +75,22 @@ vi.mock('./encrypt-export-dialog', () => ({
   ),
 }))
 
-vi.mock('./reset-confirm-dialog', () => ({
-  ResetConfirmDialog: ({ showResetConfirm, setShowResetConfirm, handleReset }: { showResetConfirm?: boolean; setShowResetConfirm?: (v: boolean) => void; handleReset?: () => void }) => (
-    <div data-testid="reset-dialog" data-show={String(showResetConfirm)} onClick={() => { setShowResetConfirm?.(false); handleReset?.() }}>
-      Confirm reset
+vi.mock('@/components/studio/ui/shared-primitives', async (importOriginal) => ({
+  // Spread the real module so every other export (VIEW_CONTAINER_CLASS and any
+  // primitive added later) keeps working; only the dialog is stubbed.
+  ...(await importOriginal<typeof import('@/components/studio/ui/shared-primitives')>()),
+  ConfirmDialog: ({ open, onConfirm, onCancel, title, confirmLabel, cancelLabel }: {
+    open?: boolean
+    onConfirm?: () => void
+    onCancel?: () => void
+    title?: string
+    confirmLabel?: string
+    cancelLabel?: string
+  }) => (
+    <div data-testid="confirm-dialog" data-show={String(open)}>
+      <span>{title}</span>
+      <button onClick={() => { onConfirm?.() }}>{confirmLabel}</button>
+      <button onClick={() => { onCancel?.() }}>{cancelLabel}</button>
     </div>
   ),
 }))
@@ -184,23 +196,23 @@ describe('ExportView branch coverage', () => {
   it('opens reset confirm dialog when reset button is clicked', () => {
     render(<ExportView />)
     fireEvent.click(screen.getByText('Reset to demo data'))
-    expect(screen.getByTestId('reset-dialog')).toHaveAttribute('data-show', 'true')
+    expect(screen.getByTestId('confirm-dialog')).toHaveAttribute('data-show', 'true')
   })
 
-  it('closes reset confirm dialog on Escape', async () => {
+  it('closes reset confirm dialog when cancelled', async () => {
     render(<ExportView />)
     fireEvent.click(screen.getByText('Reset to demo data'))
-    expect(screen.getByTestId('reset-dialog')).toHaveAttribute('data-show', 'true')
-    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(screen.getByTestId('confirm-dialog')).toHaveAttribute('data-show', 'true')
+    fireEvent.click(screen.getByText('Cancel'))
     await waitFor(() => {
-      expect(screen.getByTestId('reset-dialog')).toHaveAttribute('data-show', 'false')
+      expect(screen.getByTestId('confirm-dialog')).toHaveAttribute('data-show', 'false')
     })
   })
 
   it('calls handleReset when reset dialog confirms', () => {
     render(<ExportView />)
     fireEvent.click(screen.getByText('Reset to demo data'))
-    fireEvent.click(screen.getByTestId('reset-dialog'))
+    fireEvent.click(screen.getByText('Reset everything'))
     expect(mockHandleReset).toHaveBeenCalled()
   })
 
