@@ -217,6 +217,34 @@ describe('EditorView', () => {
     expect(screen.getByText(/chars/)).toBeDefined()
   })
 
+  it('keeps the word and char counters outside every live region (#856)', () => {
+    currentEditingEntityId = 'ent-1'
+    render(<EditorView />)
+    const statusRegion = screen.getByRole('status')
+    expect(statusRegion).toHaveAttribute('aria-live', 'polite')
+    // The counters must not live inside the status region, or a screen reader
+    // re-reads "N words · M characters" on every keystroke.
+    expect(statusRegion.textContent).not.toMatch(/words|chars/)
+    expect(screen.getByText(/\d+ words$/).closest('[aria-live]')).toBeNull()
+    expect(screen.getByText(/\d+ chars$/).closest('[aria-live]')).toBeNull()
+  })
+
+  it('does not touch the status live region on every keystroke (#856)', () => {
+    currentEditingEntityId = 'ent-1'
+    render(<EditorView />)
+    const statusRegion = screen.getByRole('status')
+    const contentArea = screen.getByLabelText('Editor content')
+
+    fireEvent.change(contentArea, { target: { value: 'First edit' } })
+    const afterFirstEdit = statusRegion.textContent
+    expect(screen.getByText('2 words')).toBeDefined()
+
+    fireEvent.change(contentArea, { target: { value: 'First edit plus more' } })
+    expect(screen.getByText('4 words')).toBeDefined()
+    // Counters moved; the announced status did not.
+    expect(statusRegion.textContent).toBe(afterFirstEdit)
+  })
+
   it('shows type selector', () => {
     render(<EditorView />)
     expect(screen.getByTestId('type-selector')).toBeDefined()
