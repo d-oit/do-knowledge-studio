@@ -114,7 +114,7 @@ export type RecoveryPersistResult =
  * Returns whether the write actually happened. A skipped or refused write is
  * reported, never silently swallowed.
  *
- * The two failure modes are deliberately NOT treated alike:
+ * The failure modes are deliberately NOT treated alike:
  *
  * - `too-large`: the write was refused by *our* size guard while storage is
    healthy. Any snapshot still present describes a corpus the user replaced one
@@ -126,10 +126,14 @@ export type RecoveryPersistResult =
    corpus that is about to be replaced. It is left untouched: a stale-but-real
    backup beats no backup, and the banner never claims otherwise because the
    snapshot it describes is checked against the schema and TTL on every read.
+   A *refused* clear in either of the other two paths is reported as this
+   reason, because that is the true statement about what is now on disk.
  * - `unserializable`: `JSON.stringify` threw (circular state) — our bug, not
    storage's and not a size question. It gets its own reason so the import
    toast never tells the user their library was “too large” when nothing was
-   ever measured (GitNexus on PR #925).
+   ever measured (GitNexus on PR #925). It clears, for the same reason
+   `too-large` does: the snapshot left behind describes the corpus the import
+   replaces.
  *
  * `console.warn` stays because these paths are hard to reach from a UI test.
  */
@@ -139,8 +143,14 @@ export const persistRecoverySnapshot = (snapshot: RecoverySnapshot): RecoveryPer
     serialized = JSON.stringify({ snapshot, timestamp: Date.now(), ttl: RECOVERY_TTL_MS })
   } catch {
     // An unserializable snapshot (circular state) is our bug, not storage's.
+    // The snapshot still on disk describes a corpus the import is about to
+    // replace, and the import proceeds regardless, so it must not stay
+    // restorable — the same reasoning as the oversized branch below, including
+    // the refused-clear case (GitNexus on PR #925).
     console.warn('Failed to serialize recovery snapshot')
-    return { persisted: false, reason: 'unserializable' }
+    return clearRecoverySnapshot()
+      ? { persisted: false, reason: 'unserializable' }
+      : { persisted: false, reason: 'storage-unavailable' }
   }
 
   // The guard is against *bytes on disk*, not UTF-16 code units: Unicode-heavy

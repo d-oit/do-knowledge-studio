@@ -181,6 +181,9 @@ describe('persistRecoverySnapshot', () => {
     // Circular state makes JSON.stringify throw before anything is measured.
     // Calling that 'too-large' told users their library was too big when no
     // size was ever known (GitNexus on PR #925).
+    // A stale snapshot is seeded first: the import proceeds either way, so what
+    // must not survive is the previous corpus's snapshot.
+    localStorage.setItem(RECOVERY_KEY, 'stale-previous-corpus')
     const circular = smallSnapshot('a', 'A')
     ;(circular as unknown as { self: unknown }).self = circular
 
@@ -188,6 +191,23 @@ describe('persistRecoverySnapshot', () => {
 
     expect(result).toEqual({ persisted: false, reason: 'unserializable' })
     expect(localStorage.getItem(RECOVERY_KEY)).toBeNull()
+  })
+
+  it('reports a refused clear of an unserializable import as a storage refusal', () => {
+    localStorage.setItem(RECOVERY_KEY, 'stale-previous-corpus')
+    scopedSpies.push(
+      vi.spyOn(localStorage, 'removeItem').mockImplementation(() => {
+        throw new Error('SecurityError')
+      }),
+    )
+    const circular = smallSnapshot('a', 'A')
+    ;(circular as unknown as { self: unknown }).self = circular
+
+    const result = persistRecoverySnapshot(circular)
+
+    expect(result).toEqual({ persisted: false, reason: 'storage-unavailable' })
+    restoreScopedSpies()
+    expect(localStorage.getItem(RECOVERY_KEY)).toBe('stale-previous-corpus')
   })
 
   it('contains a throwing availability subscriber and still reports success', () => {

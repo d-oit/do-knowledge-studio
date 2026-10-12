@@ -1,4 +1,4 @@
-import { mkdtemp, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test, expect, type Page } from '@playwright/test';
@@ -50,12 +50,22 @@ const importJson = async (page: Page, fixture: string): Promise<void> => {
   await page.getByRole('button', { name: 'Confirm import', exact: true }).click();
 };
 
+/**
+ * Temp directories holding import fixtures.
+ *
+ * Each run (and each retry) writes its own fixture; without this the OS temp
+ * directory accumulates one directory per test run (GitNexus on PR #925). The
+ * block below removes them once its tests finish.
+ */
+const fixtureDirs: string[] = []
+
 /** Builds an export-shaped JSON fixture in a temp dir and returns its path. */
 const writeFixture = async (
   name: string,
   entity: { id: string; name: string; content?: string },
 ): Promise<string> => {
   const dir = await mkdtemp(join(tmpdir(), 'dks-recovery-'));
+  fixtureDirs.push(dir);
   const path = join(dir, `${name}.json`);
   const base = {
     id: entity.id,
@@ -116,6 +126,10 @@ const seedLargeCorpusA = async (page: Page): Promise<string[]> => {
 };
 
 test.describe('pre-import backup and restore', () => {
+  test.afterAll(async () => {
+    await Promise.all(fixtureDirs.map((dir) => rm(dir, { recursive: true, force: true })));
+    fixtureDirs.length = 0;
+  });
   test('a normal import leaves a restore offer that brings the old library back', async ({ page }) => {
     await page.goto('/');
     await waitForAppReady(page);
