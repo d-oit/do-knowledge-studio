@@ -461,7 +461,8 @@ describe('AiHarnessChatPanel completion announcements', () => {
     // The error bubble is the turn's terminal state — assert after it lands so
     // the silent-status check cannot pass before the turn settles.
     await waitFor(() => {
-      expect(screen.getByText(/\[Error\] provider exploded/)).toBeDefined()
+      // The mapped copy from #927: a provider failure never dumps raw text.
+      expect(screen.getByText(/\[Error\] The provider returned an unexpected error\./)).toBeDefined()
     })
     expect(screen.getByRole('status').textContent).toBe('')
   })
