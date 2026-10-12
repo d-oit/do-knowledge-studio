@@ -1,7 +1,18 @@
 # Plans Index
 
-**Updated**: 2026-09-30
+**Updated**: 2026-10-12
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
+
+### Plan 164 — Implement the highest-value open issues (2026-10-12)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Confirmation before destructive actions (#863) | Done | `plans/164-implement-open-issue-batch-1-2026-10-12.md`. New shared `ui/confirm-dialog.tsx` on top of the existing `Overlay`; `Clear chat history` and `Discard changes` now gate on it, and both one-off dialogs (the inspector's inline one and `views/reset-confirm-dialog.tsx`) are deleted in its favour. Cancel takes initial focus; new copy lives in `messages/chat.ts` / `messages/editor.ts` / `messages/inspector.ts`, the reset dialog reuses `messages/export.ts`. |
+| W2 | Library table semantics (#861) | Done | Row keeps `<tr>` semantics; the open control is a real `<button>` in the name cell with a stretched `::before` (`inset-0` against the positioned row) so the whole row still clicks. `role="link"`, `tabIndex` and the hand-rolled Enter/Space handler are gone from the `<tr>` — they had removed the description, type, tags and date from the accessibility tree. |
+| W3 | Stop narrating every keystroke (#856) | Done | Counters and the "Unsaved changes" flag moved out of the live region; only the persistence outcome (saved / error) stays in a persistent `role="status"` region, so a writing session no longer announces the word count on every character. |
+| W4 | Single source for AI defaults (#886) | Done | `ai-settings.ts` (including the legacy-model migration) and `ai-harness-view.tsx` consume `DEFAULT_MODEL.openrouter` / `DEFAULT_OLLAMA_BASE_URL`; the drifted `OPENROUTER_DEFAULT_MODELS` list, the dead `ProviderOption.models` field and the duplicate `getProviderEndpoint` helper are deleted. `grep "openrouter/free" src/` now returns only the constant plus test fixtures. |
+| W5 | Keep the 500-LOC rule | Done | The first draft pushed `views/editor-view.tsx` to 509 LOC; the discard confirmation moved into `EditorStatusBar` (which owns the button), bringing it back to 484 and keeping the gate with the control that triggers it. |
+| W6 | Gates | Partial | lint **0 warnings**, typecheck **0 errors**, new `confirm-dialog.test.tsx` **7 passed**, `src/components/studio` **75 files / 1171 tests**, AI + schema + app + editor/a11y shards **42 files / 641 tests** — all green. `pnpm run build` **could not complete here**: `next build`'s workers are OOM-killed by the memory cgroup (3.9 GB / 2 vCPU), so CI's Build job is the authority; e2e was not run (no Playwright browsers) but its three affected specs were updated. |
 
 ### Plan 160 — Fix every open Codacy issue in code; delete `.mimocode/` (2026-09-30)
 
