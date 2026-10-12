@@ -277,6 +277,19 @@ test.describe('Offline banner', () => {
     ).toEqual([]);
   });
 
+});
+
+/**
+ * The reservation's ORDERING claim needs the exit animation to exist: under the
+ * reduced-motion override above, the banner unmounts in the same frame the
+ * reservation drops, so a regression that releases early has no window to be
+ * caught in (measured: a defect injected into `offline-indicator.tsx` passed the
+ * reduced-motion version of this test). This block therefore runs with motion
+ * enabled and records the two events from inside the page.
+ */
+test.describe('Offline banner exit', () => {
+  test.use({ reducedMotion: 'no-preference' });
+
   test('releases the reserved space once the banner has exited', async ({ page, context }) => {
     await page.goto('/');
     await waitForAppReady(page);
@@ -297,46 +310,72 @@ test.describe('Offline banner', () => {
       )
       .toBe('reserved');
 
+    // Record the ORDER of the two events from inside the page, at frame
+    // resolution. The claim is causal — the reservation must outlive the
+    // banner's exit — and neither a poll loop from the test process nor a
+    // reduced-motion run can see it: the exit is a few frames long, so a
+    // regression that drops the reservation the moment the browser goes online
+    // slips between samples (measured: exactly that defect passed the previous
+    // version of this test).
+    //
+    // The recorder runs inside the page and resolves once it has seen both
+    // events, so no state crosses the boundary except the ordered list.
+    const recording = page.evaluate(async () => {
+      // "Gone" is a geometry question, not a DOM-presence one: during the exit
+      // animation the banner is still mounted while sliding off the top of the
+      // viewport, and a reservation dropped at that point covers nothing. The
+      // contract is that the topbar is never left under a *visible* banner, so
+      // the marker fires once the banner's bottom edge has left the viewport.
+      const bannerOnScreen = () =>
+        [...document.querySelectorAll('[role="status"]')].some((node) => {
+          if (!/offline/i.test(node.textContent ?? '') || !node.className.includes('fixed')) {
+            return false;
+          }
+          return node.getBoundingClientRect().bottom > 0;
+        });
+      const reservedPx = () => {
+        const shell = document.querySelector('[data-app-ready="true"]');
+        return shell === null ? 0 : Number.parseFloat(getComputedStyle(shell).paddingTop);
+      };
+
+      const recorded: string[] = [];
+      await new Promise<void>((resolve) => {
+        let settled = false;
+        const finish = (marker?: string) => {
+          if (settled) return;
+          settled = true;
+          if (marker !== undefined) recorded.push(marker);
+          resolve();
+        };
+        const tick = () => {
+          if (!bannerOnScreen() && !recorded.includes('banner-gone')) recorded.push('banner-gone');
+          if (reservedPx() === 0 && !recorded.includes('unreserved')) recorded.push('unreserved');
+          if (recorded.includes('banner-gone') && recorded.includes('unreserved')) {
+            finish();
+            return;
+          }
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+        setTimeout(() => { finish('timeout'); }, 5000);
+      });
+      return recorded;
+    });
+
     await context.setOffline(false);
 
-    // The reservation must outlive the banner's exit animation and then
-    // disappear: dropping it while the banner is still leaving would slide
-    // the topbar under it for the duration of the exit, and keeping it would
-    // leave a permanent gap.
-    //
-    // Sampling the two facts in ONE evaluation is what makes this prove the
-    // ORDERING: two independent waits (padding reaches 0, then banner
-    // disappears) both succeed even when the reservation is dropped the
-    // instant the browser goes online, while the banner is still animating
-    // out (GitNexus on PR #925). Each sample below is atomic, and any sample
-    // taken while the banner is still on screen must still show the
-    // reservation.
-    const samples: string[] = [];
-    await expect
-      .poll(
-        async () => {
-          const observed = await page.evaluate(() => {
-            const shell = document.querySelector('[data-app-ready="true"]');
-            if (shell === null) return 'no shell';
-            const reserved = Number.parseFloat(getComputedStyle(shell).paddingTop);
-            const banner = [...document.querySelectorAll('[role="status"]')].find(
-              (node) => /offline/i.test(node.textContent ?? '') && node.className.includes('fixed'),
-            );
-            if (banner === undefined) {
-              return reserved === 0 ? 'released' : 'releasing';
-            }
-            return reserved > 0 ? 'held' : `dropped-early (${reserved}px)`;
-          });
-          samples.push(observed);
-          return observed;
-        },
-        { timeout: 5000 },
-      )
-      .toBe('released');
+    const order = await recording;
+    const bannerGoneAt = order.indexOf('banner-gone');
+    const unreservedAt = order.indexOf('unreserved');
 
+    expect(bannerGoneAt, `the banner never left the layout: ${order.join(' -> ')}`).toBeGreaterThanOrEqual(0);
+    expect(unreservedAt, `never released the reservation: ${order.join(' -> ')}`).toBeGreaterThanOrEqual(0);
+    // The reservation may end in the same frame the banner leaves, but never
+    // before it: releasing first slides the topbar back under a banner that is
+    // still animating out.
     expect(
-      samples.filter((state) => state.startsWith('dropped-early')),
-      `reservation released while the banner was still on screen: ${samples.join(', ')}`,
-    ).toEqual([]);
+      unreservedAt,
+      `reservation released before the banner left the layout: ${order.join(' -> ')}`,
+    ).toBeGreaterThanOrEqual(bannerGoneAt);
   });
 });
