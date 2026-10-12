@@ -78,11 +78,13 @@ const messages = {
   'announce.aiResponseComplete': 'Response complete',
   /** Heading when a pre-import snapshot is waiting to be restored. */
   'announce.restoreTitle': 'A previous library is ready to restore',
-  /** Body naming what the snapshot holds. The snapshot is the corpus that
-   *  existed *before* the most recent import, so restoring replaces what is
-   *  loaded now — that is stated rather than implied. */
+  /** Body naming what the snapshot holds. It is the corpus that existed before
+   *  an *earlier* import — not necessarily the most recent one: when an import's
+   *  own backup write is refused, the previous snapshot stays and is offered
+   *  instead (see `persistRecoverySnapshot`) — so restoring replaces whatever is
+   *  loaded now. That is stated rather than implied. */
   'announce.restoreBody': (summary: string) =>
-    `We kept a copy of ${summary} from before your last import. Restoring replaces your current library.`,
+    `We kept a copy of ${summary} from an earlier import. Restoring replaces your current library.`,
   /** Banner action that applies the snapshot. */
   'announce.restoreAction': 'Restore it',
   /** Banner action that hides the offer for this page session. It never

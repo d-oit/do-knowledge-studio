@@ -183,8 +183,22 @@ describe('persistRecoverySnapshot', () => {
     // snapshot must be refused — a code-unit check would wave it through and
     // the write would then fail in storage anyway, without the protective
     // clear (GitNexus on PR #925).
+    // The string appears ONCE (entities only, no history copy): 3M UTF-16 code
+    // units stay under the 4 MiB code-unit reading, while 6M UTF-8 bytes exceed
+    // it. Duplicating it through `smallSnapshot` put the code-unit length over
+    // the guard as well, so the old check would have refused it too and the test
+    // proved nothing about the unit being measured (review on #925).
     const unicodeHeavy = 'é'.repeat(3_000_000)
-    const result = persistRecoverySnapshot(smallSnapshot('a', unicodeHeavy))
+    const result = persistRecoverySnapshot({
+      entities: [makeEntity('a', unicodeHeavy)],
+      claims: [],
+      entityHistory: [],
+      historyIndex: 0,
+      graph: undefined,
+      mindMap: undefined,
+      links: undefined,
+      tags: undefined,
+    })
 
     expect(result).toEqual({ persisted: false, reason: 'too-large' })
     expect(localStorage.getItem(RECOVERY_KEY)).toBeNull()
