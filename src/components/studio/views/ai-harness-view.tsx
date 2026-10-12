@@ -112,7 +112,7 @@ const useAIHarnessViewState = () => {
 
   const handleRefreshOllamaModels = useCallback(async () => {
     try {
-      const models = await fetchOllamaModels(ollamaBaseUrl, AbortSignal.timeout(10_000))
+      const models = await fetchOllamaModels(ollamaBaseUrl)
       setOllamaModels(models.length > 0 ? models : OLLAMA_DEFAULT_MODELS)
       toast.success(`Found ${models.length} Ollama models`)
     } catch (err) {
