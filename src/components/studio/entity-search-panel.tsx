@@ -210,7 +210,7 @@ export const EntitySearchPanel = ({
             placeholder={translate('search.placeholder')}
             title={translate('search.ariaLabel')}
             aria-label={translate('search.ariaLabel')}
-            className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-10 text-body-sm text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+            className="w-full min-h-[44px] rounded-md border border-border bg-background py-2 pl-9 pr-12 text-body-sm text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
           />
           {searchQuery ? (
             <button

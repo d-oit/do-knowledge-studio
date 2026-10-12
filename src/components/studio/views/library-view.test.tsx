@@ -242,7 +242,9 @@ describe('LibraryView', () => {
 
   it('search input has correct aria-label', () => {
     render(<LibraryView />)
-    expect(screen.getByLabelText('Search library')).toBeDefined()
+    const input = screen.getByLabelText('Search library')
+    expect(input).toBeDefined()
+    expect(input.className).toContain('min-h-[44px]')
   })
 
   it('control buttons expose matching tooltips', () => {

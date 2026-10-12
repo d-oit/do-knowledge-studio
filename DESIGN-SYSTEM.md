@@ -144,12 +144,14 @@ The scale is editorial — small jumps, generous leading on serif headings, tigh
 tracking on display sizes. Body copy default is 14px (`text-body`; dense UI
 falls back to `text-body-sm` at 13px).
 
-Every size used in the app has a named utility, defined in the `@layer utilities`
-block of `src/app/globals.css`. Arbitrary `text-[Npx]` values are not allowed —
-add a step to the scale first (issue #855). Two decisions worth recording: the
-floor was raised by mapping the former `text-[8px]` presence labels to
-`text-badge` (9px), and the lone `text-[16px]` editor body maps to Tailwind's
-exact `text-base`.
+Every size used in the app has a named utility, defined with Tailwind's
+`@utility` at-rule at the end of `src/app/globals.css` (not as raw classes in
+`@layer utilities` — those are emitted after the generated utilities, so their
+`line-height` would silently override any explicit `leading-*`). Arbitrary
+`text-[Npx]` values are not allowed — add a step to the scale first (issue
+#855). Two decisions worth recording: the floor was raised by mapping the
+former `text-[8px]` presence labels to `text-badge` (9px), and the lone
+`text-[16px]` editor body maps to Tailwind's exact `text-base`.
 
 | Class           | Size    | Usage                                              |
 |-----------------|---------|----------------------------------------------------|

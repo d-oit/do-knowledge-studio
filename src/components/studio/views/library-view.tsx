@@ -247,7 +247,7 @@ export const LibraryView = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Filter by name, description, or tag…"
             aria-label="Search library"
-            className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-10 text-body-sm text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
+            className="w-full min-h-[44px] rounded-md border border-border bg-background py-2 pl-9 pr-14 text-body-sm text-ink placeholder:text-ink-faint focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30"
           />
           {searchQuery && (
             <button

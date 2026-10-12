@@ -16,7 +16,7 @@ const MIN_TOUCH_TARGET = 44;
  */
 const collectTouchTargetViolations = (args: { min: number; rootSelector?: string }) => {
   const { min, rootSelector } = args;
-  const selectors = 'button, a[href], input[type="checkbox"], input[type="radio"], [role="button"]';
+  const selectors = 'button, a[href], input[type="checkbox"], input[type="radio"], input[type="search"], [role="button"]';
 
   // True when the element is actually rendered and visible. Elements with zero
   // size, `display:none`, `visibility:hidden`, or `opacity:0` are not targets.
