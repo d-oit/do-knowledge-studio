@@ -186,3 +186,93 @@ Each item was reproduced before being touched; each fix carries a test that was
 - No claim in this document rests on a plan, a PR description, or memory: the
   merge commits are in `origin/main`, the threads were resolved with the evidence
   posted, and the two `main` regressions above carry their own reproduction.
+
+## 6. Addendum — the second half of the session
+
+Section 1 above is the opening inventory. This is what the queue actually took,
+recorded because the shape of the work changed: the sweep became a merge-queue
+drain with a review pass that kept finding things.
+
+### 6.1 New PRs opened by this session (beyond the initial ten)
+
+| PR | Why it exists | Status |
+|----|---------------|--------|
+| #933 | `.gitignore` ignored only `node_modules/` (directory-only), so a worktree's symlinked `node_modules` was staged; `speech-coverage.test.ts` called `afterEach` without importing it, the lone error in the repository-root `tsc` run | merged |
+| #934 | #910 had silently **downgraded four dependency ranges** (see §6.3) | merged |
+| #935 | #865 — one nav message module | merged |
+| #936 | #870 — view chrome, empty states, header policy | merged |
+| #937 | #886 — model/endpoint defaults | merged |
+| #938 | #851/#852/#853/#858 — token system | in queue at close |
+| #939 | #863/#856 — shared `ConfirmDialog`, quiet editor counters | in queue at close |
+| #940 | this plan, `LESSON-042..045`, the compacted index, two skill updates | in queue at close |
+| #941 | WCAG 2.5.3 fix for the theme toggles (#929 shipped a P1 that review caught **after** it merged) | in queue at close |
+| #942 | #862/#855 — touch targets and the type-scale migration | in queue at close |
+| #943 | the post-merge e2e regression below | in queue at close |
+
+### 6.2 The regression the batch produced, and how it was found
+
+After the chrome PR merged, a **full Chromium run against `main`** — not per-PR,
+against the merged state — failed **25 tests**. One cause: every page-shaped view
+now renders a hero heading (#870) while the shell topbar owns the same view's
+`h1`, so `page.getByRole('heading', { name: /library/i })` matched two elements
+and Playwright's strict mode failed. Eleven specs were written that way, most of
+them about a *different* view than the one the chrome PR touched.
+
+It was invisible to CI because each PR's e2e job runs against that PR's own tree.
+**The lesson is the one this repo already learned once (LESSON-041): a green
+per-PR suite is not a green `main`** — a batch of merges needs one full-suite run
+against the result. Fixed in #943 by introducing `viewHeading()` in
+`e2e/helpers/navigation.ts`, which scopes the query to `#main-content` — the
+convention `DESIGN-SYSTEM.md` §11 already states (the shell owns the only `h1`).
+Verified: the same suite goes **25 failed / 137 passed → 162 passed, 0 failed**.
+
+Also observed while measuring, and **not** fixed here: a hydration mismatch
+warning on first load, from a framer-motion progress bar animating to a
+client-computed width (`style="width: 12.5%"`) while the server rendered `0px`.
+It does not fail any test; it is recorded in §6.4.
+
+### 6.3 Two more defects found on `main` (not in any PR)
+
+1. **Four dependency ranges had been downgraded by #910**: `next` `^16.3.8` →
+   `^16.3.6` (reverting dependabot #914), `react-day-picker`, `@tanstack/react-virtual`
+   and `eslint-plugin-react-refresh`. `git log -S` proved the direction; nothing in
+   CI notices a range moving backwards. Restored in #934 with a real
+   `pnpm run build` on the restored tree and a regenerated precache manifest.
+2. **An automation re-run on #923's branch had rebuilt its tree on a stale base**:
+   relative to `main` it deleted `entity-search-panel.tsx` (reverting #910) and
+   resurrected pre-#911 files. Merging it would have reverted `main`. Dropped in
+   favour of a force-push to the reviewed parent. Nine of that PR's fourteen
+   review threads were findings against that phantom tree.
+
+### 6.4 Follow-ups (carried forward)
+
+1. **Hydration mismatch on first load** — a progress bar's width animates from the
+   server's `0px` to a client-computed percentage (seen in the console during the
+   #943 verification run, in an AI-harness spec's page). Not covered by the
+   existing `hydration-mismatch.spec.ts` (which covers the reduced-motion case
+   #925 fixes). Deserves the same A/B treatment: `useSyncExternalStore` or a
+   server-known initial width.
+2. **No-downgrade guard** (§6.3.1) — CI still cannot see a dependency range moving
+   backwards.
+3. **Stale-base guard** (§6.3.2) — a check that fails a PR whose diff *deletes*
+   files `main` gained after the merge base would surface that class in seconds.
+4. **Vercel preview deployments fail on most branches** (not ruleset-required, so
+   never a merge blocker). The correlation with this session's push volume
+   (~25 pushes in a day, one or two deployments each) suggests a quota rather than
+   a config fault; worth one look before treating it as normal.
+5. **Codacy's analysis snapshot can lag the head commit** — the three findings on
+   #925 cited `scripts/generate-precache-manifest.mjs` lines that no longer exist
+   at head. Re-analysis was requested and the findings suppressed as build-script
+   false positives with the reasoning posted on the PR, per `GIT-WORKFLOW.md`.
+6. **Remaining open issues:** none unimplemented — all seventeen in §0 are either
+   fixed by a merged PR (#861, #865, #873, #883, #884, #885, #887) or by one in the
+   queue (#851, #852, #853, #855, #856, #858, #862, #863, #870, #886).
+
+### 6.5 What "done" meant here
+
+Every claim in this plan was produced by running something: the suites, the
+merged-state e2e, the browser probes for the offline banner, the compiled-CSS
+measurements for the `@utility` conversion, the geometry probes for the
+clear-filter gutters, and the first-paint MutationObserver probe for the banner
+reservation. Where a probe could not be run (no browser available in a lane, no
+Vercel credentials), this document says so instead of asserting a pass.
