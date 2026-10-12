@@ -173,9 +173,9 @@ export const FORMATS: ExportFormat[] = [
 /** Tailwind color classes for each export format color key. */
 export const COLOR_MAP: Record<ExportColorKey, string> = {
   saffron: 'bg-saffron-soft text-saffron-deep',
-  sky: 'bg-sky-100 text-sky-600 dark:bg-sky-950/40 dark:text-sky-300',
-  sage: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300',
-  clay: 'bg-rose-100 text-clay dark:bg-rose-950/40 dark:text-rose-300',
+  sky: 'bg-sky/15 text-sky',
+  sage: 'bg-sage/15 text-sage',
+  clay: 'bg-clay/15 text-clay',
 }
 
 /** Returns today's date formatted as YYYY-MM-DD for export filenames. */

@@ -28,7 +28,7 @@ export const ParamPicker = ({
 }) => {
   const accents = accent === 'saffron'
     ? { dot: 'bg-saffron', text: 'text-saffron-deep', bg: 'bg-saffron-soft' }
-    : { dot: 'bg-clay', text: 'text-clay', bg: 'bg-rose-100 dark:bg-rose-950/40' }
+    : { dot: 'bg-clay', text: 'text-clay', bg: 'bg-clay/15' }
 
   return (
     <div className="rounded-lg border border-border bg-card p-4">
@@ -61,7 +61,7 @@ export const ParamPicker = ({
               disabled={isDisabled}
               onClick={() => { onSelect(index) }}
               className={cn(
-                'flex min-h-[44px] w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[12px] transition-colors focus-ring',
+                'flex min-h-touch w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[12px] transition-colors focus-ring',
                 isSelected
                   ? cn(accents.bg, accents.text, 'font-semibold')
                   : isDisabled
@@ -92,7 +92,7 @@ export const ParamPicker = ({
 export const ContradictionChip = ({ n, label, accent }: { n: number; label: string; accent: 'saffron' | 'clay' }) => {
   const accents = accent === 'saffron'
     ? 'bg-saffron-soft text-saffron-deep border-saffron/30'
-    : 'bg-rose-100 text-clay border-clay/30 dark:bg-rose-950/40 dark:text-rose-300'
+    : 'bg-clay/15 text-clay border-clay/30'
   return (
     <div className={cn('flex items-center gap-2 rounded-lg border px-3 py-2', accents)}>
       <span className="flex h-6 w-6 items-center justify-center rounded bg-paper-raised font-mono text-label font-bold text-ink">

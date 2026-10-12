@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { ReactNode } from 'react'
-import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, cleanup, within } from '@testing-library/react'
 
 vi.mock('framer-motion', () => ({
   motion: {
@@ -16,6 +16,7 @@ vi.mock('lucide-react', () => {
     <span data-testid="icon" className={className} />
   )
   return {
+    AlertTriangle: I,
     BrainCircuit: I,
     Plus: I,
     Trash2: I,
@@ -247,11 +248,25 @@ describe('MindMapView branch coverage', () => {
     expect(mockStartEdit).toHaveBeenCalledWith('ent-1')
   })
 
-  it('deletes focused node when delete button is clicked', () => {
+  it('confirms then deletes the focused node when the delete button is clicked (#863)', () => {
     render(<MindMapView />)
     fireEvent.focus(screen.getByText('Root Entity').closest('[role="treeitem"]') as HTMLElement)
     fireEvent.click(screen.getByLabelText('Delete'))
+    // Gated: the toolbar action must not destroy the subtree until confirmed.
+    expect(mockDeleteEntity).not.toHaveBeenCalled()
+    const dialog = screen.getByRole('dialog', { name: 'Confirm delete' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }))
     expect(mockDeleteEntity).toHaveBeenCalledWith('ent-1')
+  })
+
+  it('does not delete when the delete confirmation is cancelled (#863)', () => {
+    render(<MindMapView />)
+    fireEvent.focus(screen.getByText('Root Entity').closest('[role="treeitem"]') as HTMLElement)
+    fireEvent.click(screen.getByLabelText('Delete'))
+    const dialog = screen.getByRole('dialog', { name: 'Confirm delete' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+    expect(screen.queryByRole('dialog', { name: 'Confirm delete' })).toBeNull()
+    expect(mockDeleteEntity).not.toHaveBeenCalled()
   })
 
   it('adds child via global Ctrl+Enter keyboard shortcut (#866)', () => {
@@ -271,19 +286,25 @@ describe('MindMapView branch coverage', () => {
     expect(mockStartEdit).toHaveBeenCalledWith('ent-1')
   })
 
-  it('deletes focused node via global Delete keyboard shortcut', () => {
+  it('confirms via global Delete keyboard shortcut then deletes (#863)', () => {
     render(<MindMapView />)
     const canvas = screen.getByRole('tree', { name: 'Knowledge mind map' }).parentElement as HTMLElement
     fireEvent.focus(screen.getByText('Root Entity').closest('[role="treeitem"]') as HTMLElement)
     fireEvent.keyDown(canvas, { key: 'Delete' })
+    expect(mockDeleteEntity).not.toHaveBeenCalled()
+    const dialog = screen.getByRole('dialog', { name: 'Confirm delete' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }))
     expect(mockDeleteEntity).toHaveBeenCalledWith('ent-1')
   })
 
-  it('deletes focused node via global Backspace keyboard shortcut', () => {
+  it('confirms via global Backspace keyboard shortcut then deletes (#863)', () => {
     render(<MindMapView />)
     const canvas = screen.getByRole('tree', { name: 'Knowledge mind map' }).parentElement as HTMLElement
     fireEvent.focus(screen.getByText('Root Entity').closest('[role="treeitem"]') as HTMLElement)
     fireEvent.keyDown(canvas, { key: 'Backspace' })
+    expect(mockDeleteEntity).not.toHaveBeenCalled()
+    const dialog = screen.getByRole('dialog', { name: 'Confirm delete' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }))
     expect(mockDeleteEntity).toHaveBeenCalledWith('ent-1')
   })
 
@@ -410,9 +431,9 @@ describe('MindMapView branch coverage', () => {
       fireEvent.click(screen.getByTestId('mindmap-compact-toggle'))
 
       // Compact reclaims chrome space, never touch-target size.
-      expect(screen.getByTestId('mindmap-compact-toggle').className).toContain('min-h-[44px]')
-      expect(screen.getByLabelText('Expand').className).toContain('min-h-[44px]')
-      expect(screen.getByLabelText('Expand').className).toContain('min-w-[44px]')
+      expect(screen.getByTestId('mindmap-compact-toggle').className).toContain('min-h-touch')
+      expect(screen.getByLabelText('Expand').className).toContain('min-h-touch')
+      expect(screen.getByLabelText('Expand').className).toContain('min-w-touch')
     })
   })
 

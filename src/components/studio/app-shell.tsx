@@ -2,6 +2,7 @@
 
 import { useStudioStore } from '@/lib/studio/store'
 import type { ViewId } from '@/lib/studio/types'
+import { getViewMeta } from '@/lib/studio/view-meta'
 import React, { Suspense, lazy, useCallback, useEffect, useState } from 'react'
 import { Sidebar } from './sidebar'
 import { Topbar } from './topbar'
@@ -18,7 +19,6 @@ import { ErrorBoundary } from './error-boundary'
 import { ViewErrorBoundary } from './view-error-boundary'
 import { Skeleton } from './ui/skeleton'
 import { startBidirectionalSync } from '@/lib/sync/bridge'
-import { translate } from '@/lib/i18n/messages/timeline'
 import { readQuarantine, type QuarantineRecord } from '@/lib/studio/hydration-quarantine'
 import {
   getHydrationRefusal,
@@ -53,27 +53,8 @@ function ViewLoader() {
   )
 }
 
-/**
- * View id → display name. Held in a Map so the lookup is a method call rather
- * than dynamic property access on an object (static-analysis object-injection
- * sink), while staying a single table instead of a per-view switch.
- */
-const VIEW_NAMES = new Map<ViewId, string>([
-  ['home', 'Home'],
-  ['editor', 'Editor'],
-  ['library', 'Library'],
-  ['timeline', translate('timeline.nav.label')],
-  ['graph', 'Graph'],
-  ['mindmap', 'Mind Map'],
-  ['chat', 'Chat'],
-  ['ai', 'AI Harness'],
-  ['triz', 'TRIZ Matrix'],
-  ['export', 'Export'],
-  ['sync', 'Sync'],
-])
-
-/** Returns a human-readable display name for a given view ID. */
-const getViewName = (view: ViewId): string => VIEW_NAMES.get(view) ?? ''
+/** Returns a human-readable display name for a given view ID (#865). */
+const getViewName = (view: ViewId): string => getViewMeta(view).label
 
 /** Pairs a view id with its element for the router's lookup table. */
 const viewEntry = (id: ViewId, element: React.ReactNode): [ViewId, React.ReactNode] => [

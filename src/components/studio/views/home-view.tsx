@@ -125,7 +125,7 @@ const EmptyState = ({ onCreate }: { onCreate: () => void }) => {
       </p>
       <button
         onClick={onCreate}
-        className="mt-3 inline-flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+        className="mt-3 inline-flex min-h-touch items-center gap-1.5 rounded-md bg-primary px-4 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
       >
         <FileText className="h-3.5 w-3.5" />
         Create entity
@@ -149,7 +149,7 @@ const CompactStat = ({
   return (
     <button
       onClick={onClick}
-      className="group flex min-h-[44px] items-center gap-2 transition-opacity hover:opacity-80 focus-ring"
+      className="group flex min-h-touch items-center gap-2 transition-opacity hover:opacity-80 focus-ring"
     >
       <Icon className="h-4 w-4 text-ink-faint group-hover:text-saffron" />
       <span className="font-mono text-[15px] font-semibold text-ink">{value}</span>
@@ -213,14 +213,14 @@ export const HomeView = () => {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={startNew}
-            className="flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 text-[13px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+            className="flex min-h-touch items-center gap-1.5 rounded-md bg-primary px-4 text-[13px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
           >
             <FileText className="h-4 w-4" />
             New entity
           </button>
           <button
             onClick={() => setView('chat')}
-            className="flex min-h-[44px] items-center gap-1.5 rounded-md border border-border bg-background px-4 text-[13px] font-medium text-ink-soft transition-colors hover:border-saffron/40 hover:text-ink focus-ring"
+            className="flex min-h-touch items-center gap-1.5 rounded-md border border-border bg-background px-4 text-[13px] font-medium text-ink-soft transition-colors hover:border-saffron/40 hover:text-ink focus-ring"
           >
             <Sparkles className="h-4 w-4 text-saffron" />
             Ask your library
@@ -235,7 +235,7 @@ export const HomeView = () => {
           {entities.length > 0 && (
             <button
               onClick={() => setView('library')}
-              className="flex min-h-[44px] items-center gap-1 text-[12px] font-medium text-saffron-deep transition-colors hover:text-saffron focus-ring"
+              className="flex min-h-touch items-center gap-1 text-[12px] font-medium text-saffron-deep transition-colors hover:text-saffron focus-ring"
             >
               View all
               <ArrowUpRight className="h-3 w-3" />

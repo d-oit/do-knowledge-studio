@@ -223,7 +223,7 @@ const EngineSelect = ({
     {provider === 'ollama' && (
       <button
         onClick={() => { void handleRefreshOllamaModels() }}
-        className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-md border border-border bg-background text-ink-faint transition-colors hover:border-saffron/40 hover:text-saffron focus-ring"
+        className="flex h-touch w-touch shrink-0 items-center justify-center rounded-md border border-border bg-background text-ink-faint transition-colors hover:border-saffron/40 hover:text-saffron focus-ring"
         aria-label="Refresh Ollama models"
       >
         <RefreshCw className="h-3.5 w-3.5" />
@@ -360,7 +360,7 @@ export const AiHarnessSettingsPanel = ({
                 />
                 <button
                   onClick={() => { setShowKey(!showKey) }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] flex items-center justify-center text-caption font-medium text-ink-faint hover:text-ink focus-ring"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 min-h-touch min-w-touch flex items-center justify-center text-caption font-medium text-ink-faint hover:text-ink focus-ring"
                   aria-label={showKey ? 'Hide API key' : 'Show API key'}
                 >
                   {showKey ? 'Hide' : 'Show'}

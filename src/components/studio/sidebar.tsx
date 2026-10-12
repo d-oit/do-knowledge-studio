@@ -23,10 +23,11 @@ import { useTheme } from 'next-themes'
 import { RELEASES_BASE_URL } from '@/lib/studio/constants'
 import { useIsMacPlatform, formatShortcut } from '@/lib/studio/use-platform-shortcut'
 import { useStudioStore } from '@/lib/studio/store'
+import { VIEW_META } from '@/lib/studio/view-meta'
 import type { ViewId } from '@/lib/studio/types'
 import packageJson from '../../../package.json'
 import { cn } from '@/lib/utils'
-import { translate as t } from '@/lib/i18n/messages/timeline'
+import { translate as navT } from '@/lib/i18n/messages/nav'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
 import { useAnnouncer } from '@/lib/a11y/announcer'
 import { ShortcutsTrigger } from './shortcuts-dialog'
@@ -39,43 +40,46 @@ interface NavItem {
   experimental?: boolean
 }
 
+/** Resolves the display label for a view id from the shared metadata table (#865). */
+const viewLabel = (id: ViewId): string => VIEW_META.get(id)?.label ?? id
+
 /** Navigation groups defining the sidebar menu structure with labels, icons, and keyboard shortcuts. */
 export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
-    label: 'Overview',
+    label: navT('nav.group.overview'),
     items: [
-      { id: 'home', label: 'Home', icon: Home, shortcut: 'G H' },
-      { id: 'timeline', label: t('timeline.nav.label'), icon: CalendarDays },
+      { id: 'home', label: viewLabel('home'), icon: Home, shortcut: 'G H' },
+      { id: 'timeline', label: viewLabel('timeline'), icon: CalendarDays },
     ],
   },
   {
-    label: 'Capture',
-    items: [{ id: 'editor', label: 'Editor', icon: FileText, shortcut: 'G E' }],
+    label: navT('nav.group.capture'),
+    items: [{ id: 'editor', label: viewLabel('editor'), icon: FileText, shortcut: 'G E' }],
   },
   {
-    label: 'Explore',
+    label: navT('nav.group.explore'),
     items: [
-      { id: 'library', label: 'Library', icon: Library, shortcut: 'G L' },
-      { id: 'graph', label: 'Graph', icon: GitBranch, shortcut: 'G G' },
-      { id: 'mindmap', label: 'Mind Map', icon: BrainCircuit, shortcut: 'G M' },
+      { id: 'library', label: viewLabel('library'), icon: Library, shortcut: 'G L' },
+      { id: 'graph', label: viewLabel('graph'), icon: GitBranch, shortcut: 'G G' },
+      { id: 'mindmap', label: viewLabel('mindmap'), icon: BrainCircuit, shortcut: 'G M' },
     ],
   },
   {
-    label: 'Ask',
-    items: [{ id: 'chat', label: 'Chat', icon: MessageSquare, shortcut: 'G C' }],
+    label: navT('nav.group.ask'),
+    items: [{ id: 'chat', label: viewLabel('chat'), icon: MessageSquare, shortcut: 'G C' }],
   },
   {
-    label: 'Lab',
+    label: navT('nav.group.lab'),
     items: [
-      { id: 'ai', label: 'AI Harness', icon: FlaskConical, shortcut: 'G A', experimental: true },
-      { id: 'triz', label: 'TRIZ Matrix', icon: Grid3X3, shortcut: 'G T', experimental: true },
+      { id: 'ai', label: viewLabel('ai'), icon: FlaskConical, shortcut: 'G A', experimental: true },
+      { id: 'triz', label: viewLabel('triz'), icon: Grid3X3, shortcut: 'G T', experimental: true },
     ],
   },
   {
-    label: 'Data',
+    label: navT('nav.group.data'),
     items: [
-      { id: 'sync', label: 'Sync', icon: Wifi, shortcut: 'G S' },
-      { id: 'export', label: 'Export', icon: Download, shortcut: 'G X' },
+      { id: 'sync', label: viewLabel('sync'), icon: Wifi, shortcut: 'G S' },
+      { id: 'export', label: viewLabel('export'), icon: Download, shortcut: 'G X' },
     ],
   },
 ]
@@ -124,7 +128,7 @@ const SidebarNavItem = ({ item, active, onSelect }: SidebarNavItemProps) => {
         onClick={() => { onSelect(item.id) }}
         aria-current={active ? 'page' : undefined}
         className={cn(
-          'group flex w-full items-center gap-2.5 rounded-md px-2.5 min-h-[44px] text-[13px] font-medium transition-all press-scale focus-ring',
+          'group flex w-full items-center gap-2.5 rounded-md px-2.5 min-h-touch text-[13px] font-medium transition-all press-scale focus-ring',
           buttonStateClass,
         )}
       >
@@ -198,7 +202,7 @@ export const Sidebar = () => {
             target="_blank"
             rel="noreferrer"
             aria-label={`Knowledge Studio v${packageJson.version} release page`}
-            className="inline-flex min-h-[44px] items-center text-caption uppercase tracking-[0.14em] text-ink-faint transition-colors hover:text-saffron focus-ring"
+            className="inline-flex min-h-touch items-center text-caption uppercase tracking-[0.14em] text-ink-faint transition-colors hover:text-saffron focus-ring"
           >
             Local-first · v{packageJson.version}
           </a>
@@ -209,7 +213,7 @@ export const Sidebar = () => {
       <div className="px-3 pb-3">
         <button
           onClick={() => { setCommandOpen(true) }}
-          className="group flex w-full items-center gap-2 rounded-lg border border-border bg-background/50 px-3 py-2 text-left text-[13px] text-ink-mute transition-colors hover:border-saffron/40 hover:text-ink-soft focus-ring min-h-[44px]"
+          className="group flex w-full items-center gap-2 rounded-lg border border-border bg-background/50 px-3 py-2 text-left text-[13px] text-ink-mute transition-colors hover:border-saffron/40 hover:text-ink-soft focus-ring min-h-touch"
           aria-label="Open command palette"
         >
           <Search className="h-3.5 w-3.5" />
@@ -225,7 +229,7 @@ export const Sidebar = () => {
       <div className="flex items-center gap-1 border-t border-border px-3 py-2.5">
         <button
           onClick={() => { setTheme(theme === 'dark' ? 'light' : 'dark') }}
-          className="flex items-center gap-2 rounded-md px-2.5 min-h-[44px] text-[12px] font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
+          className="flex items-center gap-2 rounded-md px-2.5 min-h-touch text-[12px] font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
           aria-label="Toggle theme"
         >
           {theme === 'dark' ? (
@@ -242,13 +246,13 @@ export const Sidebar = () => {
         </button>
         <ShortcutsTrigger
           className={cn(
-            'flex items-center gap-1.5 rounded-md px-2.5 min-h-[44px] text-[12px] font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring',
+            'flex items-center gap-1.5 rounded-md px-2.5 min-h-touch text-[12px] font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring',
           )}
         />
         <div className="flex-1" />
         <button
           onClick={() => { setRightPanelOpen(!rightPanelOpen) }}
-          className="rounded-md p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
+          className="rounded-md p-1.5 min-h-touch min-w-touch flex items-center justify-center text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
           aria-label={rightPanelOpen ? 'Hide panel' : 'Show panel'}
           title={rightPanelOpen ? 'Hide right panel' : 'Show right panel'}
         >

@@ -24,6 +24,27 @@ const messages = {
   'mindmap.status.children': (count: string) => `${count} direct children`,
   /** Status bar segment naming the rendered tree depth. */
   'mindmap.status.depth': (depth: string) => `depth ${depth}`,
+  /** Toolbar button label: add a child node to the focused node (#865). */
+  'mindmap.toolbar.addChild': 'Add child',
+  /** Toolbar button label: rename the focused node (#865). */
+  'mindmap.toolbar.rename': 'Rename',
+  /** Toolbar button label: delete the focused node (#865). */
+  'mindmap.toolbar.delete': 'Delete',
+  /** Toolbar button label: undo the last tree edit (#865). */
+  'mindmap.toolbar.undo': 'Undo',
+  /** Toolbar button label: redo the last undone tree edit (#865). */
+  'mindmap.toolbar.redo': 'Redo',
+  /** Toolbar button label: rebuild the tree from current links (#865). */
+  'mindmap.toolbar.sync': 'Sync',
+  /** Toolbar button label: export the tree as a PNG (#865). */
+  'mindmap.toolbar.exportPng': 'Export PNG',
+  /** Node toggle label while the subtree is expanded (#865). */
+  'mindmap.toolbar.collapse': 'Collapse',
+  /** Node toggle label while the subtree is collapsed (#865). */
+  'mindmap.toolbar.expand': 'Expand',
+  /** Tooltip for a disabled undo/redo button, naming the action (#865). */
+  'mindmap.toolbar.nothingToUndoRedo': (label: string) =>
+    `${label} (nothing to undo/redo)`,
 } as const
 
 /** Typed `translate` helper bound to the mind map message scope. */

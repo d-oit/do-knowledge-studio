@@ -61,7 +61,7 @@ const RankedResultRow = ({
             onSelect?.(targetId)
           }
         }}
-        className="group block w-full min-h-[44px] rounded-md border border-transparent p-2.5 text-left transition-colors hover:border-border hover:bg-muted/50 focus-ring"
+        className="group block w-full min-h-touch rounded-md border border-transparent p-2.5 text-left transition-colors hover:border-border hover:bg-muted/50 focus-ring"
         aria-label={`${result.name} — score ${result.score.toFixed(2)}`}
       >
         <div className="mb-1 flex items-center gap-2">
@@ -124,7 +124,7 @@ const KeywordResultList = ({
               onStartEdit(e.id)
               onSelect?.(e.id)
             }}
-            className="group block w-full min-h-[44px] rounded-md border border-transparent p-2.5 text-left transition-colors hover:border-border hover:bg-muted/50 focus-ring"
+            className="group block w-full min-h-touch rounded-md border border-transparent p-2.5 text-left transition-colors hover:border-border hover:bg-muted/50 focus-ring"
           >
             <div className="mb-1 flex items-center gap-2">
               <span className={cn('h-1.5 w-1.5 rounded-full', meta.dot)} />
@@ -161,7 +161,7 @@ const SearchEmptyState = ({
         onClick={() => {
           onCreate(query)
         }}
-        className="mt-2 flex min-h-[44px] items-center justify-center rounded-md border border-saffron/30 bg-saffron-soft px-3 py-1.5 text-[12px] font-medium text-saffron-deep transition-colors hover:bg-saffron/10 focus-ring"
+        className="mt-2 flex min-h-touch items-center justify-center rounded-md border border-saffron/30 bg-saffron-soft px-3 py-1.5 text-[12px] font-medium text-saffron-deep transition-colors hover:bg-saffron/10 focus-ring"
       >
         {translate('search.createEntity', query)}
       </button>
@@ -218,7 +218,7 @@ export const EntitySearchPanel = ({
               onClick={() => setSearchQuery('')}
               aria-label={translate('search.clearAriaLabel')}
               title={translate('search.clearAriaLabel')}
-              className="absolute right-1 top-1/2 flex min-h-[44px] min-w-[44px] -translate-y-1/2 items-center justify-center rounded text-ink-faint transition-colors hover:bg-muted hover:text-ink focus-ring"
+              className="absolute right-1 top-1/2 flex min-h-touch min-w-touch -translate-y-1/2 items-center justify-center rounded text-ink-faint transition-colors hover:bg-muted hover:text-ink focus-ring"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -231,7 +231,7 @@ export const EntitySearchPanel = ({
             }}
             aria-pressed={mode === 'keyword'}
             className={cn(
-              'flex flex-1 min-h-[44px] items-center justify-center rounded px-2 py-1 font-medium transition-colors focus-ring',
+              'flex flex-1 min-h-touch items-center justify-center rounded px-2 py-1 font-medium transition-colors focus-ring',
               mode === 'keyword' ? 'bg-background text-ink shadow-sm' : 'text-ink-mute',
             )}
           >
@@ -243,7 +243,7 @@ export const EntitySearchPanel = ({
             }}
             aria-pressed={mode === 'ranked'}
             className={cn(
-              'flex flex-1 min-h-[44px] items-center justify-center rounded px-2 py-1 font-medium transition-colors focus-ring',
+              'flex flex-1 min-h-touch items-center justify-center rounded px-2 py-1 font-medium transition-colors focus-ring',
               mode === 'ranked' ? 'bg-background text-ink shadow-sm' : 'text-ink-mute',
             )}
           >

@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import type { ReactNode } from 'react'
 
 vi.mock('@/components/studio/ui/shared-primitives', () => ({
+  TOUCH_TARGET_CLASS: 'min-h-touch min-w-touch',
   Overlay: ({ children, open, onClose, 'aria-label': ariaLabel }: {
     children: ReactNode
     open: boolean

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, type RefObject } from 'react'
-import { Overlay } from '@/components/studio/ui/shared-primitives'
+import { Overlay, TOUCH_TARGET_CLASS } from '@/components/studio/ui/shared-primitives'
 import { X, Sun, Moon } from 'lucide-react'
 import packageJson from '../../../package.json'
 import { useTheme } from 'next-themes'
@@ -37,7 +37,7 @@ const DrawerHeader = ({
           target="_blank"
           rel="noreferrer"
           aria-label={translate('drawer.releaseAriaLabel', packageJson.version)}
-          className="inline-flex min-h-[44px] items-center text-caption uppercase tracking-[0.14em] text-ink-faint transition-colors hover:text-saffron focus-ring"
+          className="inline-flex min-h-touch items-center text-caption uppercase tracking-[0.14em] text-ink-faint transition-colors hover:text-saffron focus-ring"
         >
           {translate('drawer.releaseBadge', packageJson.version)}
         </a>
@@ -46,7 +46,10 @@ const DrawerHeader = ({
         ref={closeBtnRef}
         onClick={onClose}
         aria-label={translate('drawer.close')}
-        className="-mr-1 flex-shrink-0 rounded-md p-2 text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
+        className={cn(
+          '-mr-1 flex flex-shrink-0 items-center justify-center rounded-md text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring',
+          TOUCH_TARGET_CLASS,
+        )}
       >
         <X className="h-4 w-4" />
       </button>
@@ -76,7 +79,7 @@ const TabSwitcher = ({
           aria-selected={view === 'nav'}
           onClick={() => { setView('nav') }}
           className={cn(
-            'rounded-md px-3 py-1.5 text-[12px] font-semibold transition-colors focus-ring',
+            'flex items-center justify-center rounded-md px-3 py-1.5 text-[12px] font-semibold transition-colors focus-ring min-h-touch',
             view === 'nav'
               ? 'bg-saffron text-saffron-foreground shadow-sm'
               : 'text-ink-mute hover:text-ink',
@@ -89,7 +92,7 @@ const TabSwitcher = ({
           aria-selected={view === 'search'}
           onClick={() => { setView('search') }}
           className={cn(
-            'rounded-md px-3 py-1.5 text-[12px] font-semibold transition-colors focus-ring',
+            'flex items-center justify-center rounded-md px-3 py-1.5 text-[12px] font-semibold transition-colors focus-ring min-h-touch',
             view === 'search'
               ? 'bg-saffron text-saffron-foreground shadow-sm'
               : 'text-ink-mute hover:text-ink',
@@ -131,7 +134,7 @@ const NavTab = ({ onNavigate }: { onNavigate: () => void }) => {
                     onClick={() => { handleSelect(item.id) }}
                     aria-current={active ? 'page' : undefined}
                     className={cn(
-                      'group flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-[14px] font-medium transition-all focus-ring',
+                      'group flex min-h-touch w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-[14px] font-medium transition-all focus-ring',
                       active
                         ? 'bg-saffron-soft text-saffron-deep'
                         : 'text-ink-soft hover:bg-sidebar-accent hover:text-ink',
@@ -193,7 +196,7 @@ const DrawerFooter = () => {
         <button
           onClick={toggle}
           aria-label={isDark ? translate('drawer.theme.lightAria') : translate('drawer.theme.darkAria')}
-          className="flex flex-1 items-center gap-2 rounded-md px-2.5 py-1.5 text-[12px] font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
+          className="flex min-h-touch flex-1 items-center gap-2 rounded-md px-2.5 py-1.5 text-[12px] font-medium text-ink-mute transition-colors hover:bg-sidebar-accent hover:text-ink focus-ring"
         >
           {isDark ? (
             <>

@@ -79,7 +79,7 @@ export const EncryptExportDialog = memo(function EncryptExportDialog({
               />
               <button
                 onClick={() => { setShowPass(!showPass) }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] flex items-center justify-center text-caption font-medium text-ink-faint hover:text-ink focus-ring"
+                className="absolute right-2 top-1/2 -translate-y-1/2 min-h-touch min-w-touch flex items-center justify-center text-caption font-medium text-ink-faint hover:text-ink focus-ring"
                 aria-label={showPass ? translate('export.encrypt.hidePassword') : translate('export.encrypt.showPassword')}
               >
                 {showPass ? translate('export.encrypt.hide') : translate('export.encrypt.show')}

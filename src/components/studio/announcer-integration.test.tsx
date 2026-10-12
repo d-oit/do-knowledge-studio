@@ -10,7 +10,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { execSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
-import { render, screen, fireEvent, act, cleanup, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, act, cleanup, waitFor, within } from '@testing-library/react'
 import { Announcer } from '@/lib/a11y/announcer'
 
 vi.mock('lucide-react', () => {
@@ -38,6 +38,7 @@ vi.mock('lucide-react', () => {
     FileArchive: Icon,
     FileLock: Icon,
     BrainCircuit: Icon,
+    AlertTriangle: Icon,
     Plus: Icon,
     Trash2: Icon,
     Edit3: Icon,
@@ -224,6 +225,12 @@ describe('live announcements (Plan 157 Phase 5)', () => {
       row?.focus()
     })
     await act(async () => { fireEvent.click(screen.getByLabelText('Delete')) })
+
+    // The toolbar delete is gated behind the confirmation dialog (#863).
+    const dialog = screen.getByRole('dialog', { name: 'Confirm delete' })
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }))
+    })
 
     expect(mockDeleteEntity).toHaveBeenCalledWith('e-root')
     await waitFor(async () => {

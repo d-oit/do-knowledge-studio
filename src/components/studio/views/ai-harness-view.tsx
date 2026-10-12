@@ -196,7 +196,7 @@ const AIHarnessHeader = ({
     <button
       onClick={onToggleSettings}
       className={cn(
-        'flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium transition-colors hover:border-saffron/40 focus-ring min-h-[44px]',
+        'flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-[12px] font-medium transition-colors hover:border-saffron/40 focus-ring min-h-touch',
         showSettings && 'border-saffron/40 text-saffron-deep',
       )}
     >

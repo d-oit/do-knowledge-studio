@@ -29,7 +29,7 @@ function ToolbarButton({
       title={label}
       aria-label={label}
       onClick={onClick}
-      className="flex h-[44px] w-[44px] items-center justify-center rounded text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
+      className="flex h-touch w-touch items-center justify-center rounded text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
     >
       <Icon className="h-4 w-4" />
     </button>
@@ -73,7 +73,7 @@ export function EditorToolbar({
           type="button"
           onClick={onToggleAdvanced}
           aria-expanded={showAdvanced}
-          className={`flex min-h-[44px] items-center gap-1 rounded-md px-2 py-1 text-label font-medium transition-colors hover:bg-muted focus-ring ${
+          className={`flex min-h-touch items-center gap-1 rounded-md px-2 py-1 text-label font-medium transition-colors hover:bg-muted focus-ring ${
             showAdvanced ? 'text-ink' : 'text-ink-mute'
           }`}
         >

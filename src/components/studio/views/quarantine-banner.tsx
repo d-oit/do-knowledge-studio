@@ -63,9 +63,9 @@ const useRawBackup = (raw: string) => {
   }, [announce, raw])
 }
 
-/** Shared action styling: 44px floor and a visible keyboard focus ring. */
+/** Shared action styling: --spacing-touch floor and a visible keyboard focus ring. */
 const ACTION_CLASS = cn(
-  'flex min-h-[44px] items-center gap-1.5 rounded-md px-3 py-1.5',
+  'flex min-h-touch items-center gap-1.5 rounded-md px-3 py-1.5',
   'text-label font-medium text-saffron-deep transition-colors',
   'hover:bg-saffron-soft focus-ring',
 )
@@ -134,7 +134,7 @@ const HideForSessionButton = ({ onHide }: { onHide: () => void }) => (
     onClick={onHide}
     aria-label={t('announce.quarantineDismiss')}
     className={cn(
-      'flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md',
+      'flex min-h-touch min-w-touch items-center justify-center rounded-md',
       'text-ink-faint transition-colors hover:bg-muted hover:text-ink focus-ring',
     )}
   >

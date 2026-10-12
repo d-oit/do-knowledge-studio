@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Keyboard, Search } from 'lucide-react'
 import { useStudioStore } from '@/lib/studio/store'
 import type { ViewId } from '@/lib/studio/types'
-import { Overlay } from '@/components/studio/ui/shared-primitives'
+import { Overlay, TOUCH_TARGET_CLASS } from '@/components/studio/ui/shared-primitives'
 import { cn } from '@/lib/utils'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { translate } from '@/lib/i18n/messages/shortcuts'
@@ -279,7 +279,7 @@ export const ShortcutsDialog = (): React.JSX.Element => {
             ref={closeBtnRef}
             onClick={() => { setOpen(false) }}
             aria-label={translate('shortcuts.close')}
-            className="rounded-md p-1.5 text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
+            className={cn('flex items-center justify-center rounded-md text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring', TOUCH_TARGET_CLASS)}
           >
             <X className="h-4 w-4" />
           </button>
@@ -310,7 +310,7 @@ export const ShortcutsDialog = (): React.JSX.Element => {
                 }}
                 aria-label={translate('shortcuts.clearFilter')}
                 title={translate('shortcuts.clearFilter')}
-                className="absolute right-1.5 top-1/2 size-9 -translate-y-1/2 inline-flex items-center justify-center rounded text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
+                className="absolute right-1.5 top-1/2 size-touch -translate-y-1/2 inline-flex items-center justify-center rounded text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring"
               >
                 <X className="h-3.5 w-3.5" />
               </button>

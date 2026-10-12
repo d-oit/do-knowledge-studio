@@ -1,3 +1,4 @@
+import { CANVAS_FALLBACK_BACKGROUND } from '@/lib/colors'
 import { downloadBlob } from './export-types'
 
 /** XML namespace for the wrapper SVG the cloned DOM is embedded in. */
@@ -5,9 +6,6 @@ const SVG_NS = 'http://www.w3.org/2000/svg'
 
 /** Raster scale of the exported PNG (2x the CSS pixel box). */
 const EXPORT_SCALE = 2
-
-/** Background painted behind the clone when the element has no computed color. */
-const FALLBACK_BACKGROUND = '#faf8f3'
 
 /**
  * Renders an element's subtree to a PNG download.
@@ -32,7 +30,7 @@ export const exportElementAsPng = (element: HTMLElement, filename: string): void
   const computedBackground = getComputedStyle(element).backgroundColor
   nodeCopy.style.width = `${rect.width}px`
   nodeCopy.style.height = `${rect.height}px`
-  nodeCopy.style.background = computedBackground || FALLBACK_BACKGROUND
+  nodeCopy.style.background = computedBackground || CANVAS_FALLBACK_BACKGROUND
   foreignObject.appendChild(nodeCopy)
   svg.appendChild(foreignObject)
   const serializer = new XMLSerializer()

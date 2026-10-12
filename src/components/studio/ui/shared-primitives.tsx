@@ -3,6 +3,13 @@ import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 export { Overlay } from './overlay'
 
+/**
+ * Minimum size class for any interactive control (WCAG 2.5.5 / AGENTS.md
+ * target floor). Backed by the `--spacing-touch` token, so the floor is
+ * defined once in `globals.css` rather than repeated as a magic number (#852).
+ */
+export const TOUCH_TARGET_CLASS = 'min-h-touch min-w-touch' as const
+
 // ---------------------------------------------------------------------------
 // TextInput
 // ---------------------------------------------------------------------------
@@ -107,7 +114,7 @@ export function SwitchToggle({
       </div>
       <button
         onClick={onToggle}
-        className="relative flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md"
+        className="relative flex min-h-touch min-w-touch items-center justify-center rounded-md"
         role="switch"
         aria-checked={checked}
         aria-label={label}

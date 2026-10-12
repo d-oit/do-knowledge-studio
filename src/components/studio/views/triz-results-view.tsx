@@ -38,7 +38,7 @@ const PrincipleCard = ({
         <button
           type="button"
           onClick={() => { onCopy(`${name}: ${description}`, id) }}
-          className="rounded-md p-1.5 text-ink-faint transition-colors hover:bg-muted hover:text-ink focus-ring min-h-[44px] min-w-[44px] flex items-center justify-center"
+          className="rounded-md p-1.5 text-ink-faint transition-colors hover:bg-muted hover:text-ink focus-ring min-h-touch min-w-touch flex items-center justify-center"
           aria-label={translate('triz.results.copyAria')}
         >
           {copied === id ? (
@@ -154,7 +154,7 @@ const ResultsActions = ({ onReset, onChangeParams }: ResultsActionsProps) => (
     <button
       type="button"
       onClick={onReset}
-      className="flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+      className="flex min-h-touch items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
     >
       <RotateCcw className="h-3.5 w-3.5" />
       {translate('triz.results.tryAnother')}
@@ -162,7 +162,7 @@ const ResultsActions = ({ onReset, onChangeParams }: ResultsActionsProps) => (
     <button
       type="button"
       onClick={onChangeParams}
-      className="flex min-h-[44px] items-center gap-1.5 rounded-md border border-border bg-background px-4 py-2 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
+      className="flex min-h-touch items-center gap-1.5 rounded-md border border-border bg-background px-4 py-2 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
     >
       {translate('triz.results.changeParams')}
     </button>

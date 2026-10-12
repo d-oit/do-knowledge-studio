@@ -76,9 +76,9 @@ const EntityTypeDefSchema = z.object({
 /** Neutral fallback styling for unregistered/unknown type strings. */
 const NEUTRAL_META: Omit<EntityTypeMeta, 'label' | 'icon'> = {
   color: 'neutral',
-  bg: 'bg-zinc-100 dark:bg-zinc-950/40',
-  text: 'text-zinc-700 dark:text-zinc-300',
-  dot: 'bg-zinc-400',
+  bg: 'bg-muted',
+  text: 'text-ink-mute',
+  dot: 'bg-ink-faint',
 }
 
 /**

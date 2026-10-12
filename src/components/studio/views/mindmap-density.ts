@@ -6,7 +6,7 @@
  * toolbar, the node renderer, and the type scale cannot drift apart.
  *
  * Compact reclaims space from chrome only — padding, indent, branch gaps,
- * and type size. Interactive targets keep their 44px floor (AGENTS.md UI
+ * and type size. Interactive targets keep their --spacing-touch floor (AGENTS.md UI
  * guardrails / WCAG 2.5.8), so the toggle is a density control, never an
  * accessibility setting.
  */

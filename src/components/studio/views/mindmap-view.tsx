@@ -27,6 +27,7 @@ import { getMindMapDensity } from './mindmap-density'
 import { translate as t } from '@/lib/i18n/messages/mindmap'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
 import { useAnnouncer } from '@/lib/a11y/announcer'
+import { useEntityDeleteConfirmation } from '@/components/studio/entity-delete-dialog'
 
 interface TreeNode {
   entity: { id: string; name: string; type: string }
@@ -95,15 +96,23 @@ export const MindMapView = () => {
     setFocusedNodeId(childId)
   }, [entityIndex, commitEntities])
 
-  /** Deletes the focused node and names it for screen readers. */
-  const deleteFocusedNode = useCallback(() => {
-    if (!focusedNodeId) return
-    const nodeEntity = entityIndex.get(focusedNodeId)
-    if (!nodeEntity) return
-    announce(announceT('announce.entityDeleted', nodeEntity.name))
-    deleteEntity(focusedNodeId)
+  /** Deletes the confirmed node and names it for screen readers. */
+  const confirmDeleteNode = useCallback((id: string) => {
+    const node = entityIndex.get(id)
+    if (node) announce(announceT('announce.entityDeleted', node.name))
+    deleteEntity(id)
     setFocusedNodeId(null)
-  }, [announce, entityIndex, focusedNodeId, deleteEntity])
+  }, [announce, deleteEntity, entityIndex])
+
+  const { requestDelete, dialog: deleteDialog } = useEntityDeleteConfirmation({
+    resolveName: (id) => entityIndex.get(id)?.name,
+    onConfirm: confirmDeleteNode,
+  })
+
+  // Gated: the hook only opens for an id that still resolves (#863).
+  const deleteFocusedNode = useCallback(() => {
+    if (focusedNodeId) requestDelete(focusedNodeId)
+  }, [focusedNodeId, requestDelete])
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -293,8 +302,8 @@ export const MindMapView = () => {
             {hasChildren ? (
               <button
                 onClick={(e) => { e.stopPropagation(); toggleNode(node.entity.id) }}
-                className="mr-1 min-h-[44px] min-w-[44px] rounded p-0.5 text-ink-faint transition-colors hover:text-ink focus-ring"
-                aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                className="mr-1 min-h-touch min-w-touch rounded p-0.5 text-ink-faint transition-colors hover:text-ink focus-ring"
+                aria-label={isExpanded ? t('mindmap.toolbar.collapse') : t('mindmap.toolbar.expand')}
                 tabIndex={-1}
               >
                 {isExpanded ? (
@@ -363,7 +372,7 @@ export const MindMapView = () => {
           value={rootId}
           onChange={(e) => { setRootId(e.target.value) }}
           aria-label="Root entity"
-          className="rounded-md border border-border bg-background px-2.5 py-1.5 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30 min-h-[44px]"
+          className="rounded-md border border-border bg-background px-2.5 py-1.5 text-[12px] font-medium text-ink-soft focus:border-saffron focus:outline-none focus:ring-1 focus:ring-saffron/30 min-h-touch"
         >
           {entities.map((e) => (
             <option key={e.id} value={e.id}>
@@ -384,22 +393,22 @@ export const MindMapView = () => {
             value={depth}
             onChange={(e) => { setDepth(Number(e.target.value)) }}
             aria-label="Tree depth"
-            className="w-20 accent-saffron min-h-[44px]"
+            className="w-20 accent-saffron min-h-touch"
           />
           <span className="font-mono text-label text-ink">{depth}</span>
         </div>
 
         <Divider />
 
-        <ToolbarBtn icon={Plus} label="Add child" onClick={() => {
+        <ToolbarBtn icon={Plus} label={t('mindmap.toolbar.addChild')} onClick={() => {
           if (focusedNodeId) addChildToNode(focusedNodeId)
         }} />
-        <ToolbarBtn icon={Edit3} label="Rename" onClick={() => {
+        <ToolbarBtn icon={Edit3} label={t('mindmap.toolbar.rename')} onClick={() => {
           if (focusedNodeId) startEdit(focusedNodeId)
         }} />
-        <ToolbarBtn icon={Trash2} label="Delete" onClick={deleteFocusedNode} />
-        <ToolbarBtn icon={Undo2} label="Undo" disabled={historyIndex <= 0} onClick={undo} />
-        <ToolbarBtn icon={Redo2} label="Redo" disabled={historyIndex >= entityHistory.length - 1} onClick={redo} />
+        <ToolbarBtn icon={Trash2} label={t('mindmap.toolbar.delete')} onClick={deleteFocusedNode} />
+        <ToolbarBtn icon={Undo2} label={t('mindmap.toolbar.undo')} disabled={historyIndex <= 0} onClick={undo} />
+        <ToolbarBtn icon={Redo2} label={t('mindmap.toolbar.redo')} disabled={historyIndex >= entityHistory.length - 1} onClick={redo} />
 
         <div className="flex-1" />
 
@@ -409,14 +418,14 @@ export const MindMapView = () => {
           aria-label={t('mindmap.density.toggle')}
           data-testid="mindmap-compact-toggle"
           className={cn(
-            'rounded-md px-2 py-1.5 text-label font-medium transition-colors min-h-[44px] focus-ring',
+            'rounded-md px-2 py-1.5 text-label font-medium transition-colors min-h-touch focus-ring',
             compact ? 'bg-saffron-soft text-saffron-deep' : 'text-ink-mute hover:bg-muted hover:text-ink',
           )}
         >
           {compactLabel}
         </button>
-        <ToolbarBtn icon={RefreshCw} label="Sync" onClick={syncTree} />
-        <ToolbarBtn icon={Download} label="Export PNG" onClick={exportPng} />
+        <ToolbarBtn icon={RefreshCw} label={t('mindmap.toolbar.sync')} onClick={syncTree} />
+        <ToolbarBtn icon={Download} label={t('mindmap.toolbar.exportPng')} onClick={exportPng} />
       </div>
 
       {/* Hint */}
@@ -455,6 +464,8 @@ export const MindMapView = () => {
             ].join(' · ')
           : t('mindmap.status.empty')}
       </div>
+
+      {deleteDialog}
     </div>
   )
 }
@@ -475,9 +486,9 @@ function ToolbarBtn({
     <button
       onClick={onClick}
       disabled={disabled}
-      title={disabled ? `${label} (nothing to undo/redo)` : label}
+      title={disabled ? t('mindmap.toolbar.nothingToUndoRedo', label) : label}
       aria-label={label}
-      className="flex items-center gap-1 rounded-md px-2 py-1.5 text-label font-medium text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink-mute min-h-[44px]"
+      className="flex items-center gap-1 rounded-md px-2 py-1.5 text-label font-medium text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink-mute min-h-touch"
     >
       <Icon className="h-3.5 w-3.5" />
       <span className="hidden md:inline">{label}</span>

@@ -100,7 +100,7 @@ const EmptyState = ({ onCreate }: { onCreate: () => void }) => {
       </div>
       <button
         onClick={onCreate}
-        className="flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 text-[13px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+        className="flex min-h-touch items-center gap-1.5 rounded-md bg-primary px-4 text-[13px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
       >
         <FileText className="h-4 w-4" />
         {translate('timeline.empty.action')}

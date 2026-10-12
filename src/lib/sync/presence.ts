@@ -1,3 +1,4 @@
+import { PEER_COLORS } from '@/lib/colors'
 import { getAwareness } from './doc'
 import { getDeviceId, getDeviceName } from './discovery'
 
@@ -11,17 +12,11 @@ export interface UserPresence {
   lastActive: number
 }
 
-/** Pool of colors assigned to connected peers. */
-const PRESENCE_COLORS = [
-  '#ef4444', '#f97316', '#eab308', '#22c55e',
-  '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899',
-  '#14b8a6', '#f43f5e', '#a855f7', '#0ea5e9',
-]
-
 let colorIndex = 0
 
+/** Returns the next presence color from the shared peer palette (#853). */
 function getNextColor(): string {
-  const color = PRESENCE_COLORS[colorIndex % PRESENCE_COLORS.length]
+  const color = PEER_COLORS[colorIndex % PEER_COLORS.length]
   colorIndex++
   return color
 }

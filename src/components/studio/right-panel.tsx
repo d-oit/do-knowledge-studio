@@ -6,11 +6,10 @@ import { buildEntityIndex } from '@/lib/studio/graph-index'
 import { useAnnouncer } from '@/lib/a11y/announcer'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
 import type { Entity } from '@/lib/studio/types'
-import { AlertTriangle, ArrowRight } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { cn } from '@/lib/utils'
-import { ConfirmDialog } from '@/components/studio/ui/confirm-dialog'
-import { translate as inspectorT } from '@/lib/i18n/messages/inspector'
+import { EntityDeleteDialog } from './entity-delete-dialog'
 import { CitationsPanel } from './right-panel-citations'
 import { PanelCloseButton } from './right-panel-close-button'
 import { EntitySearchPanel } from './entity-search-panel'
@@ -79,7 +78,7 @@ const ConnectionList = ({
             onClick={() => {
               onSelect(target.id)
             }}
-            className="flex w-full min-h-[44px] items-center gap-2 rounded-md p-1.5 text-left text-[12px] text-ink-soft transition-colors hover:bg-muted focus-ring"
+            className="flex w-full min-h-touch items-center gap-2 rounded-md p-1.5 text-left text-[12px] text-ink-soft transition-colors hover:bg-muted focus-ring"
           >
             <ArrowRight className="h-3 w-3 shrink-0 text-ink-faint" />
             <span className="flex-1 truncate">{target.name}</span>
@@ -188,29 +187,23 @@ const InspectorPanel = ({ onClose }: { onClose: () => void }) => {
       <div className="flex gap-2 border-t border-border p-3">
         <button
           onClick={() => startEdit(entity.id)}
-          className="flex-1 rounded-md bg-primary px-3 py-1.5 text-[12px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 press-scale focus-ring min-h-[44px]"
+          className="flex-1 rounded-md bg-primary px-3 py-1.5 text-[12px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 press-scale focus-ring min-h-touch"
         >
           Edit
         </button>
         <button
           onClick={() => { setShowDeleteConfirm(true) }}
-          className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:border-red-300 hover:text-red-600 focus-ring min-h-[44px]"
+          className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:border-red-300 hover:text-red-600 focus-ring min-h-touch"
         >
           Delete
         </button>
       </div>
 
-      <ConfirmDialog
+      <EntityDeleteDialog
         open={showDeleteConfirm}
-        ariaLabel={inspectorT('inspector.delete.ariaLabel')}
-        title={inspectorT('inspector.delete.title')}
-        subtitle={inspectorT('inspector.delete.subtitle')}
-        body={inspectorT('inspector.delete.body', entity.name)}
-        cancelLabel={inspectorT('inspector.delete.cancel')}
-        confirmLabel={inspectorT('inspector.delete.confirm')}
+        entityName={entity.name}
         onCancel={handleDeleteCancel}
         onConfirm={handleDelete}
-        icon={AlertTriangle}
       />
     </aside>
   )

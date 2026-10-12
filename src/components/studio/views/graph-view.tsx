@@ -15,6 +15,7 @@ import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { buildAdjacencyIndex } from '@/lib/studio/graph-index'
 import { useAnnouncer } from '@/lib/a11y/announcer'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
+import { useEntityDeleteConfirmation } from '@/components/studio/entity-delete-dialog'
 import {
   buildGraphSnapshot,
   clearGraphSnapshot,
@@ -36,6 +37,7 @@ export const GraphView = () => {
   const [layout, setLayout] = useState<GraphLayout>('force')
   const [focusMode, setFocusMode] = useState(false)
   const [showMore, setShowMore] = useState(false)
+  const deleteEntity = useStudioStore((s) => s.deleteEntity)
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
   // Whether a restorable snapshot exists. Read once on mount and refreshed
@@ -43,6 +45,19 @@ export const GraphView = () => {
   // without touching storage on every render.
   const [hasSnapshot, setHasSnapshot] = useState<boolean>(() => readGraphSnapshot() !== null)
   const announce = useAnnouncer()
+
+  /** Deletes the entity the user confirmed, announcing what was destroyed. */
+  const confirmDeleteEntity = useCallback((id: string) => {
+    const entity = entities.find((candidate) => candidate.id === id)
+    if (entity) announce(announceT('announce.entityDeleted', entity.name))
+    deleteEntity(id)
+  }, [announce, deleteEntity, entities])
+
+  const { requestDelete: requestDeleteEntity, dialog: deleteDialog } = useEntityDeleteConfirmation({
+    resolveName: (id) => entities.find((entity) => entity.id === id)?.name,
+    onConfirm: confirmDeleteEntity,
+  })
+
 
   // Build adjacency index for O(1) focus-mode neighbor lookups
   const adjacency = useMemo(() => buildAdjacencyIndex(entities), [entities])
@@ -166,18 +181,16 @@ const handleGraphKeyDown = useCallback(
         case 'Backspace':
           if (selectedEntityId) {
             e.preventDefault()
-            // Deleting from the canvas removes the node with no other visual
-            // trace, so the live region names what was destroyed.
-            const removed = entities.find((entity) => entity.id === selectedEntityId)
-            if (removed) announce(announceT('announce.entityDeleted', removed.name))
-            useStudioStore.getState().deleteEntity(selectedEntityId)
+            // Gate behind the shared confirmation dialog (#863): the canvas has
+            // no undo, so the key must not destroy an entity on its own.
+            requestDeleteEntity(selectedEntityId)
           }
           break
         default:
           break
       }
     },
-    [announce, entities, selectedEntityId],
+    [requestDeleteEntity, selectedEntityId],
   )
 
   const handleExportPng = useCallback(() => {
@@ -423,6 +436,8 @@ const handleGraphKeyDown = useCallback(
         </div>
 
       </div>
+
+      {deleteDialog}
     </div>
   )
 }

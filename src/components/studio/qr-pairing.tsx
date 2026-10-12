@@ -30,7 +30,7 @@ export const QRDisplay = ({ roomId }: { roomId: string }) => {
         <span className="font-mono text-[13px] text-ink">{roomId}</span>
         <button
           onClick={handleCopy}
-          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-border hover:text-ink focus-ring"
+          className="flex min-h-touch min-w-touch items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-border hover:text-ink focus-ring"
           aria-label={translate('qr.copyRoomId')}
         >
           {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
@@ -148,7 +148,7 @@ export const QRScanner = ({ onScan }: { onScan: (roomId: string) => void }) => {
         <canvas ref={canvasRef} className="hidden" />
         <button
           onClick={stopCamera}
-          className="absolute right-1 top-1 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-black/50 text-white transition-colors hover:bg-black/70 focus-ring"
+          className="absolute right-1 top-1 flex min-h-touch min-w-touch items-center justify-center rounded-full bg-black/50 text-white transition-colors hover:bg-black/70 focus-ring"
           aria-label={translate('qr.stopCamera')}
         >
           <X className="h-3.5 w-3.5" />

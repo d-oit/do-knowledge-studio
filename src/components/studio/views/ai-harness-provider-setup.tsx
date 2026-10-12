@@ -56,7 +56,7 @@ export const AiHarnessProviderSetup = ({ onOpenSettings }: AiHarnessProviderSetu
           <button
             type="button"
             onClick={onOpenSettings}
-            className="mt-3 min-h-[44px] rounded-md bg-primary px-3 py-1.5 text-label font-semibold text-primary-foreground transition-opacity hover:opacity-90 focus-ring"
+            className="mt-3 min-h-touch rounded-md bg-primary px-3 py-1.5 text-label font-semibold text-primary-foreground transition-opacity hover:opacity-90 focus-ring"
           >
             {OPEN_PROVIDER_SETTINGS_LABEL}
           </button>

@@ -13,6 +13,24 @@
   --breakpoint-sm: 40rem;
   --breakpoint-lg: 64rem;
   --breakpoint-wide: 68.75rem;
+  /* WCAG 2.5.5 / AGENTS.md target floor — 44px. Tailwind's spacing namespace
+     turns this into `min-h-touch`, `min-w-touch` and `size-touch`, so the
+     accessibility floor is a named token rather than a repeated magic number
+     that a single digit typo (34px) could silently regress (#852). */
+  --spacing-touch: 2.75rem;
+  /* Type scale — semantic font sizes (#855 TOK-4). These were hand-rolled
+     `.text-*` classes in the old `@layer utilities` block; as theme tokens
+     they emit real utilities that compose with variants and carry their own
+     line-height, so the arbitrary `text-[Npx]` escape hatch can migrate onto
+     them (#858 TOK-12). */
+  --text-badge: 9px;
+  --text-badge--line-height: 1.3;
+  --text-caption: 10px;
+  --text-caption--line-height: 1.4;
+  --text-label: 11px;
+  --text-label--line-height: 1.4;
+  --text-body-sm: 13px;
+  --text-body-sm--line-height: 1.5;
 }
 
 /* =========================================================
@@ -24,6 +42,10 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-serif: var(--font-newsreader);
+  /* The custom `.font-serif` utility is gone (#858 TOK-12) — Tailwind
+     generates `font-serif` from the token above; the feature settings
+     ride along via the documented modifier. */
+  --font-serif--font-feature-settings: "ss01", "ss02";
   --font-mono: var(--font-geist-mono);
 
   --color-sidebar-ring: var(--sidebar-ring);
@@ -277,116 +299,84 @@
   }
 }
 
-@layer utilities {
-  .font-serif {
-    font-family: var(--font-serif), "Newsreader", Georgia, serif;
-    font-feature-settings: "ss01", "ss02";
-  }
+/* ── Motion keyframes ──────────────────────────────────────────
+   Declared at the top level: Tailwind v4 `@utility` bodies must not host
+   `@keyframes`, so the animation names stay global. */
+@keyframes stagger-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@keyframes page-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
-  /* Multi-line truncation helpers */
-
-  /* Elevation shadows — warm-tinted, low-spread */
-  .shadow-soft {
-    box-shadow: var(--shadow-soft);
-  }
-  .shadow-lifted {
-    box-shadow: var(--shadow-lifted);
-  }
-
-  /* Subtle paper grain — only on light surfaces */
-
-  /* Ink-line decoration under headings */
-
-  /* Double-ring focus indicator: outer offset + inner color for visibility on any background */
-  .focus-ring:focus-visible {
+/* ── Custom utilities (`@utility`, Tailwind v4) ─────────────────
+   `@utility` registers these in the utilities layer exactly like the
+   built-in utilities, so they work with variants (`hover:`, `sm:`) and can
+   be overridden by later utility classes. The pre-v4 `@layer utilities`
+   block did neither (#858 TOK-12). */
+@utility shadow-soft {
+  box-shadow: var(--shadow-soft);
+}
+@utility shadow-lifted {
+  box-shadow: var(--shadow-lifted);
+}
+@utility focus-ring {
+  &:focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: var(--focus-ring-offset, 2px);
     border-radius: var(--radius-sm);
   }
-  .focus-ring:focus:not(:focus-visible) {
+  &:focus:not(:focus-visible) {
     outline: none;
   }
-
-  /* Global focus-visible indicator for all focusable elements */
-  .focus-visible-global:focus-visible {
+}
+@utility focus-visible-global {
+  &:focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
   }
-
-  /* Animated dotted grid background for canvas views */
-  .canvas-grid {
-    background-color: var(--background);
-    background-image: radial-gradient(circle, var(--canvas-dot) 1px, transparent 1px);
-    background-size: 24px 24px;
-    background-position: -1px -1px;
-    opacity: 1;
-  }
-
-  /* Frosted glass panel */
-
-  /* ── Motion utilities ─────────────────────────────────────── */
-
-  /* Easing curves — natural deceleration, no bounce */
-
-  /* Micro-interaction: subtle hover lift */
-  .hover-lift {
-    transition: transform 150ms cubic-bezier(0.25, 1, 0.5, 1),
-                box-shadow 150ms cubic-bezier(0.25, 1, 0.5, 1);
-  }
-  .hover-lift:hover {
+}
+@utility canvas-grid {
+  background-color: var(--background);
+  background-image: radial-gradient(circle, var(--canvas-dot) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: -1px -1px;
+  opacity: 1;
+}
+@utility hover-lift {
+  transition: transform 150ms cubic-bezier(0.25, 1, 0.5, 1),
+              box-shadow 150ms cubic-bezier(0.25, 1, 0.5, 1);
+  &:hover {
     transform: translateY(-1px);
     box-shadow: var(--shadow-lifted);
   }
-
-  /* Micro-interaction: button press feedback */
-  .press-scale {
-    transition: transform 100ms cubic-bezier(0.25, 1, 0.5, 1);
-  }
-  .press-scale:active {
+}
+@utility press-scale {
+  transition: transform 100ms cubic-bezier(0.25, 1, 0.5, 1);
+  &:active {
     transform: scale(0.97);
   }
-
-  /* Stagger children — use with style="--i: 0" on each child */
-  .stagger-children > * {
+}
+@utility stagger-children {
+  & > * {
     animation: stagger-fade-in 300ms cubic-bezier(0.25, 1, 0.5, 1) both;
     animation-delay: calc(var(--i, 0) * 50ms);
   }
-  @keyframes stagger-fade-in {
-    from { opacity: 0; transform: translateY(4px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  /* Expand/collapse — for accordion-style content */
-
-  /* Skeleton loading shimmer */
-  .skeleton {
-    background: linear-gradient(
-      90deg,
-      var(--muted) 25%,
-      var(--surface-sunken) 50%,
-      var(--muted) 75%
-    );
-    background-size: 200% 100%;
-    animation: skeleton-shimmer 1.5s ease-in-out infinite;
-    border-radius: var(--radius-sm);
-  }
-  @keyframes skeleton-shimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
-  }
-
-  /* Page transition crossfade */
-  @keyframes page-fade-in {
-    from { opacity: 0; transform: translateY(4px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  /* ── Type scale utilities ──────────────────────────────────────── */
-  /* Semantic sizes replacing arbitrary text-[Npx] values.           */
-  /* Source: visual-validation-checklist.md typography audit.         */
-
-  .text-badge    { font-size: 9px;  line-height: 1.3; }  /* badges, micro labels */
-  .text-caption  { font-size: 10px; line-height: 1.4; }  /* timestamps, counters */
-  .text-label    { font-size: 11px; line-height: 1.4; }  /* toolbar labels, metadata */
-  .text-body-sm  { font-size: 13px; line-height: 1.5; }  /* small body text, descriptions */
+}
+@utility skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--muted) 25%,
+    var(--surface-sunken) 50%,
+    var(--muted) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-sm);
 }

@@ -7,6 +7,7 @@ vi.mock('lucide-react', () => {
     <span data-testid="icon" className={className} />
   )
   return {
+    AlertTriangle: I,
     CircleDot: I,
     Circle: I,
     GitFork: I,

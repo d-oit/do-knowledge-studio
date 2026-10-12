@@ -1,12 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { ReactNode } from 'react'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 
 vi.mock('lucide-react', () => {
   const I = ({ className }: { className?: string }) => (
     <span data-testid="icon" className={className} />
   )
   return {
+    AlertTriangle: I,
     CircleDot: I,
     Circle: I,
     GitFork: I,
@@ -221,12 +222,27 @@ describe('GraphView', () => {
     expect(resetViewBox).not.toBe(pannedViewBox)
   })
 
-  it('Delete key calls deleteEntity when entity is selected', () => {
+  it('Delete key opens the confirmation and deletes on confirm (#863)', () => {
     currentSelectedEntityId = 'ent-1'
     render(<GraphView />)
     const container = screen.getByRole('application', { name: /graph canvas/i })
     fireEvent.keyDown(container, { key: 'Delete' })
+    // The key must not destroy the node on its own — the canvas has no undo.
+    expect(mocks.deleteEntity).not.toHaveBeenCalled()
+    const dialog = screen.getByRole('dialog', { name: 'Confirm delete' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }))
     expect(mocks.deleteEntity).toHaveBeenCalledWith('ent-1')
+  })
+
+  it('Delete key does not delete when the confirmation is cancelled (#863)', () => {
+    currentSelectedEntityId = 'ent-1'
+    render(<GraphView />)
+    const container = screen.getByRole('application', { name: /graph canvas/i })
+    fireEvent.keyDown(container, { key: 'Delete' })
+    const dialog = screen.getByRole('dialog', { name: 'Confirm delete' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+    expect(screen.queryByRole('dialog', { name: 'Confirm delete' })).toBeNull()
+    expect(mocks.deleteEntity).not.toHaveBeenCalled()
   })
 
   it('Delete key does nothing when no entity is selected', () => {

@@ -88,7 +88,7 @@ const ChatSuggestionChips = ({
           key={s.label}
           type="button"
           onClick={() => { void onSend(s.prompt) }}
-          className="rounded-full border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-ink-soft transition-all hover:border-saffron/40 hover:text-ink press-scale focus-ring min-h-[44px]"
+          className="rounded-full border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-ink-soft transition-all hover:border-saffron/40 hover:text-ink press-scale focus-ring min-h-touch"
         >
           {s.label}
         </button>
@@ -135,7 +135,7 @@ const ChatComposer = ({
       <button
         onClick={() => { void handleSend() }}
         disabled={!input.trim() || isLoading || cooldownMs > 0}
-        className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:opacity-40 press-scale focus-ring"
+        className="flex min-h-touch min-w-touch items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:opacity-40 press-scale focus-ring"
         aria-label="Send"
       >
         <Send className="h-3.5 w-3.5" />

@@ -135,10 +135,11 @@ describe('getEntityTypeMeta', () => {
   it('falls back to a neutral default for unknown types without throwing', () => {
     const meta = getEntityTypeMeta('foreign-type')
     expect(meta.label).toBe('foreign-type')
+    // Neutral fallback uses the ink/muted tokens, not an entity hue (#851).
     expect(meta.color).toBe('neutral')
-    expect(meta.dot).toContain('zinc')
-    expect(meta.bg).toContain('zinc')
-    expect(meta.text).toContain('zinc')
+    expect(meta.dot).toBe('bg-ink-faint')
+    expect(meta.bg).toBe('bg-muted')
+    expect(meta.text).toBe('text-ink-mute')
     // Icon resolution is the renderer's job (EntityIcon falls back to a neutral icon).
     expect(meta.icon).toBeUndefined()
   })

@@ -11,9 +11,9 @@ const PANEL_WIDTH_CLASS = 'w-[380px] max-w-[92vw]' as const
 
 /** Cancel is the safe default, so it takes initial focus in every dialog. */
 const CANCEL_BUTTON_CLASS =
-  'rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring min-h-[44px]'
+  'rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring min-h-touch'
 const CONFIRM_BUTTON_CLASS =
-  'rounded-md bg-red-600 px-4 py-1.5 text-[12px] font-semibold text-white shadow-sm transition-all hover:bg-red-700 focus-ring min-h-[44px]'
+  'rounded-md bg-red-600 px-4 py-1.5 text-[12px] font-semibold text-white shadow-sm transition-all hover:bg-red-700 focus-ring min-h-touch'
 
 interface ConfirmDialogProps {
   open: boolean

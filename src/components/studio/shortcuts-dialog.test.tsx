@@ -27,6 +27,7 @@ vi.mock('@/lib/studio/use-reduced-motion', () => ({
 }))
 
 vi.mock('@/components/studio/ui/shared-primitives', () => ({
+  TOUCH_TARGET_CLASS: 'min-h-touch min-w-touch',
   Overlay: ({ children, open, 'aria-label': ariaLabel }: {
     children: ReactNode
     open: boolean

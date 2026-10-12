@@ -79,7 +79,7 @@ const LibraryEmptyState = ({
         </p>
         <button
           onClick={onStartNew}
-          className="mt-4 flex min-h-[44px] items-center gap-1.5 rounded-md bg-primary px-4 text-[13px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+          className="mt-4 flex min-h-touch items-center gap-1.5 rounded-md bg-primary px-4 text-[13px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
         >
           <Plus className="h-4 w-4" />
           Create your first entity
@@ -98,7 +98,7 @@ const LibraryEmptyState = ({
       </p>
       <button
         onClick={onClearFilters}
-        className="mt-4 flex min-h-[44px] items-center gap-1.5 rounded-md bg-secondary px-4 text-[13px] font-semibold text-ink transition-all hover:opacity-90 press-scale focus-ring"
+        className="mt-4 flex min-h-touch items-center gap-1.5 rounded-md bg-secondary px-4 text-[13px] font-semibold text-ink transition-all hover:opacity-90 press-scale focus-ring"
       >
         <X className="h-4 w-4" />
         Clear all filters
@@ -136,7 +136,7 @@ const LibraryFooter = ({
     {isCapped && (
       <button
         onClick={onToggleShowAll}
-        className="flex min-h-[44px] items-center gap-1 rounded-md border border-border bg-background px-3 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 hover:text-ink focus-ring"
+        className="flex min-h-touch items-center gap-1 rounded-md border border-border bg-background px-3 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 hover:text-ink focus-ring"
         aria-expanded={showAll}
       >
         {showAll ? SHOW_FEWER_LABEL : showAllLabel(totalCount)}
@@ -262,7 +262,7 @@ export const LibraryView = () => {
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 min-h-[44px] min-w-[44px] -translate-y-1/2 flex items-center justify-center text-ink-faint hover:text-ink focus-ring rounded"
+              className="absolute right-3 top-1/2 min-h-touch min-w-touch -translate-y-1/2 flex items-center justify-center text-ink-faint hover:text-ink focus-ring rounded"
               aria-label="Clear search"
               title="Clear search"
             >
@@ -284,7 +284,7 @@ export const LibraryView = () => {
               onClick={() => setTypeFilter(f.id)}
               aria-pressed={typeFilter === f.id}
               className={cn(
-                'rounded min-h-[44px] min-w-[44px] px-2.5 text-[12px] font-medium transition-colors focus-ring',
+                'rounded min-h-touch min-w-touch px-2.5 text-[12px] font-medium transition-colors focus-ring',
                 typeFilter === f.id
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'text-ink-mute hover:text-ink',
@@ -299,7 +299,7 @@ export const LibraryView = () => {
           <button
             onClick={() => { setViewMode('grid') }}
             className={cn(
-              'rounded min-h-[44px] min-w-[44px] flex items-center justify-center p-1.5 transition-colors focus-ring',
+              'rounded min-h-touch min-w-touch flex items-center justify-center p-1.5 transition-colors focus-ring',
               viewMode === 'grid' ? 'bg-muted text-ink' : 'text-ink-faint hover:text-ink',
             )}
             aria-label="Grid view"
@@ -311,7 +311,7 @@ export const LibraryView = () => {
           <button
             onClick={() => { setViewMode('list') }}
             className={cn(
-              'rounded min-h-[44px] min-w-[44px] flex items-center justify-center p-1.5 transition-colors focus-ring',
+              'rounded min-h-touch min-w-touch flex items-center justify-center p-1.5 transition-colors focus-ring',
               viewMode === 'list' ? 'bg-muted text-ink' : 'text-ink-faint hover:text-ink',
             )}
             aria-label="List view"
@@ -324,7 +324,7 @@ export const LibraryView = () => {
 
         <button
           onClick={() => setSortDir(sortDir === 'asc' ? 'desc' : 'asc')}
-          className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded-md border border-border bg-background px-2.5 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
+          className="flex min-h-touch min-w-touch items-center justify-center gap-1 rounded-md border border-border bg-background px-2.5 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
           aria-label={sortDir === 'asc' ? 'Sort ascending' : 'Sort descending'}
           title={sortDir === 'asc' ? 'Sort ascending' : 'Sort descending'}
         >
@@ -344,7 +344,7 @@ export const LibraryView = () => {
 
         <button
           onClick={startNew}
-          className="flex min-h-[44px] items-center gap-1 rounded-md bg-primary px-3 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+          className="flex min-h-touch items-center gap-1 rounded-md bg-primary px-3 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
         >
           <Plus className="h-3.5 w-3.5" />
           New
@@ -365,7 +365,7 @@ export const LibraryView = () => {
           aria-expanded={advancedOpen}
           aria-controls="library-advanced-filters"
           className={cn(
-            'flex min-h-[44px] items-center gap-1.5 rounded-md border px-3 text-[12px] font-medium transition-colors focus-ring',
+            'flex min-h-touch items-center gap-1.5 rounded-md border px-3 text-[12px] font-medium transition-colors focus-ring',
             hasAdvancedFilters
               ? 'border-saffron/40 bg-saffron-soft/40 text-saffron-deep'
               : 'border-border bg-background text-ink-soft hover:border-saffron/40',
@@ -407,10 +407,10 @@ export const LibraryView = () => {
               />
             </div>
 
-            <div className="flex min-h-[44px] items-center">
+            <div className="flex min-h-touch items-center">
               <label
                 htmlFor="library-desc-only"
-                className="flex min-h-[44px] cursor-pointer items-center gap-2 rounded-md border border-border bg-background px-3 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
+                className="flex min-h-touch cursor-pointer items-center gap-2 rounded-md border border-border bg-background px-3 text-[12px] font-medium text-ink-soft transition-colors hover:border-saffron/40 focus-ring"
               >
                 <Checkbox
                   id="library-desc-only"
@@ -424,7 +424,7 @@ export const LibraryView = () => {
             {hasAdvancedFilters && (
               <button
                 onClick={clearAdvancedFilters}
-                className="flex min-h-[44px] items-center gap-1 rounded-md px-2 text-[12px] font-medium text-ink-faint transition-colors hover:text-ink focus-ring"
+                className="flex min-h-touch items-center gap-1 rounded-md px-2 text-[12px] font-medium text-ink-faint transition-colors hover:text-ink focus-ring"
               >
                 <X className="h-3 w-3" aria-hidden="true" />
                 {CLEAR_ADVANCED_LABEL}

@@ -1,3 +1,4 @@
+import { PEER_COLORS } from '@/lib/colors'
 import { getAwareness } from './doc'
 import { getDeviceId, getDeviceName } from './discovery'
 
@@ -25,16 +26,11 @@ export interface RemoteCursor {
   lastUpdate: number
 }
 
-/** Color palette for cursor indicators. */
-const CURSOR_COLORS = [
-  '#ef4444', '#f97316', '#eab308', '#22c55e',
-  '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899',
-]
-
 let colorIndex = 0
 
+/** Returns the next cursor color from the shared peer palette (#853). */
 function getNextColor(): string {
-  const color = CURSOR_COLORS[colorIndex % CURSOR_COLORS.length]
+  const color = PEER_COLORS[colorIndex % PEER_COLORS.length]
   colorIndex++
   return color
 }
