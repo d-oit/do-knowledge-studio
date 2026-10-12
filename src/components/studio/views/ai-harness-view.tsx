@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 import { loadAISettings, saveAISettings, type AIProvider } from '@/lib/studio/ai-settings'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { fetchOllamaModels, OPENROUTER_DEFAULT_TARGETS } from '@/lib/ai'
-import { OLLAMA_DEFAULT_MODELS, DEFAULT_OLLAMA_BASE_URL } from '@/lib/ai/types'
+import { OLLAMA_DEFAULT_MODELS, DEFAULT_OLLAMA_BASE_URL, DEFAULT_MODEL } from '@/lib/ai/types'
 import { LOCAL_DEFAULT_DEVICE } from '@/lib/ai'
 import { AiHarnessSettingsPanel } from './ai-harness-settings-panel'
 import { AiHarnessChatPanel } from './ai-harness-chat'
@@ -36,7 +36,7 @@ const useAIHarnessViewState = () => {
   const selectedEntityId = useStudioStore((s) => s.selectedEntityId)
   const reducedMotion = useReducedMotion()
   const [provider, setProvider] = useState<AIProvider>('openrouter')
-  const [model, setModel] = useState('openrouter/free')
+  const [model, setModel] = useState(DEFAULT_MODEL.openrouter)
   const [apiKey, setApiKey] = useState('')
   const [showKey, setShowKey] = useState(false)
   const [augment, setAugment] = useState(true)

@@ -50,9 +50,9 @@ vi.mock('@/lib/ai/types', () => ({
 
 vi.mock('./ai-harness-settings', () => ({
   PROVIDERS: [
-    { id: 'openrouter', label: 'OpenRouter', models: ['openrouter/free'], requiresKey: true },
-    { id: 'ollama', label: 'Ollama (local)', models: ['llama3'], requiresKey: false },
-    { id: 'local', label: 'Local (in-browser)', models: ['onnx-community/Qwen2.5-0.5B-Instruct'], requiresKey: false },
+    { id: 'openrouter', label: 'OpenRouter', requiresKey: true },
+    { id: 'ollama', label: 'Ollama (local)', requiresKey: false },
+    { id: 'local', label: 'Local (in-browser)', requiresKey: false },
   ],
   // Mirrors the real Field: a <label htmlFor> plus recursive id injection that
   // targets native input/select/textarea elements and skips components. The
