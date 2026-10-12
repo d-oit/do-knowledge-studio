@@ -1,10 +1,5 @@
 import { test, expect } from '@playwright/test';
-import {
-  expectNavigationReachable,
-  navClick,
-  openNavIfHidden,
-  waitForAppReady,
-} from './helpers/navigation';
+import { expectNavigationReachable, navClick, openNavIfHidden, viewHeading, waitForAppReady } from './helpers/navigation';
 
 test.describe('Keyboard navigation', () => {
   test.beforeEach(async ({ page }) => {
@@ -46,12 +41,12 @@ test.describe('Keyboard navigation', () => {
     await libraryBtn.focus();
     await page.keyboard.press('Enter');
 
-    await expect(page.getByRole('heading', { name: /library/i })).toBeVisible();
+    await expect(viewHeading(page, /library/i)).toBeVisible();
   });
 
   test('Arrow keys navigate within filter button groups', async ({ page }) => {
     await navClick(page, /library/i);
-    await expect(page.getByRole('heading', { name: /library/i })).toBeVisible();
+    await expect(viewHeading(page, /library/i)).toBeVisible();
 
     const filterGroup = page.getByRole('group', { name: /filter by type/i });
     await expect(filterGroup).toBeVisible();

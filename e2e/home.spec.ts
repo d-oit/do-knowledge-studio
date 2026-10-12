@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { expectNavigationReachable, navClick, openNavIfHidden } from './helpers/navigation';
+import { expectNavigationReachable, navClick, openNavIfHidden, viewHeading } from './helpers/navigation';
 
 test.describe('Home page', () => {
   test.beforeEach(async ({ page }) => {
@@ -22,7 +22,7 @@ test.describe('Home page', () => {
 
   test('can navigate to library view', async ({ page }) => {
     await navClick(page, /library/i);
-    await expect(page.getByRole('heading', { name: /library/i })).toBeVisible();
+    await expect(viewHeading(page, /library/i)).toBeVisible();
   });
 
   test('can navigate to graph view', async ({ page }) => {
@@ -35,7 +35,7 @@ test.describe('Home page', () => {
 
   test('can navigate to mindmap view', async ({ page }) => {
     await navClick(page, /mind\s?map/i);
-    await expect(page.getByRole('heading', { name: /mind map/i })).toBeVisible();
+    await expect(viewHeading(page, /mind map/i)).toBeVisible();
     // Mindmap renders an SVG canvas inside the main content area
     const canvas = page.locator('#main-content svg, #main-content canvas').first();
     await expect(canvas).toBeVisible();
@@ -49,7 +49,7 @@ test.describe('Home page', () => {
 
   test('can navigate to export view', async ({ page }) => {
     await navClick(page, /export/i);
-    await expect(page.getByRole('heading', { name: 'Export', exact: true })).toBeVisible();
+    await expect(viewHeading(page, 'Export')).toBeVisible();
   });
 
   test('sidebar shows all navigation groups', async ({ page }) => {

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { navClick } from './helpers/navigation';
+import { navClick, viewHeading } from './helpers/navigation';
 
 test.describe('AI Harness view', () => {
   test.beforeEach(async ({ page }) => {
@@ -8,13 +8,13 @@ test.describe('AI Harness view', () => {
   });
 
   test('navigates to AI Harness and shows heading', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: 'AI Harness' })).toBeVisible();
+    await expect(viewHeading(page, 'AI Harness')).toBeVisible();
   });
 
   test('shows Lab badge', async ({ page }) => {
     // Scope to the AI Harness heading's parent to avoid matching sidebar Lab badges
     await expect(
-      page.getByRole('heading', { name: 'AI Harness' }).locator('..').getByText('Lab', { exact: true }),
+      viewHeading(page, 'AI Harness').locator('..').getByText('Lab', { exact: true }),
     ).toBeVisible();
   });
 
