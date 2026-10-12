@@ -1,7 +1,18 @@
 # Plans Index
 
-**Updated**: 2026-09-30
+**Updated**: 2026-10-12
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
+
+### Plan 163 — Open PR + issue triage, roast, and verified merge order (2026-10-12)
+
+| Wave | Goal | Status | Changes |
+|------|------|--------|---------|
+| W1 | Review and roast every open PR and issue | Done | `plans/163-open-pr-issue-triage-and-merge-order-2026-10-12.md`. All 10 open PRs (#920, #922–#930) reviewed from their real diffs and each PR's own test files run locally (920: 33, 923: 61, 926: 26, 927: 23, 928: 36, 929: 54, 930: 47 — all pass); 18 open issues each re-verified against the tree by grep. Nine PRs are landable, #925 is red. |
+| W2 | Prove the merge instead of assuming it | Done | Pairwise `git merge-tree` then nine real sequential merges on `integration/land-open-prs`. **4 real conflicts**, all resolved: #929×#930 (lucide import — union of what is referenced), #924×#922 (package.json overrides — union), #926×#928 (transcript `<div>`: keep #926's `role="log"`/`aria-live="off"` **and** #928's stable key; both test blocks kept), #927×#928 (`setMessages` line — **semantic**: #927 deleted the `msg` local #928's line referenced). |
+| W3 | Fix what only the merged tree could reveal | Done | #923's timeout bubble bypassed #927's i18n *and* #928's ids with a hardcoded string restating "2 minutes" beside `REQUEST_TIMEOUT_MS`; now `ai.chat.error.timeout` + `String(REQUEST_TIMEOUT_MS / MS_PER_MINUTE)` + `crypto.randomUUID()`. First attempt failed `typecheck` (`MessageEntry` accepts only `string` args) — fixed to the repo's `translate('key', String(n))` convention. |
+| W4 | Root-cause the advisory noise on `main` | Done | New finding: PR **#910** silently rolled back four dependency bumps (`next ^16.3.8→^16.3.6`, `react-day-picker`, `@tanstack/react-virtual`, `eslint-plugin-react-refresh`), which is why `main`'s `next` **HIGH** SSRF advisory is still live while its lockfile looks self-consistent. Restored on the integration branch (evidence: #925 carries the same four specifiers with green Build/Unit/E2E). |
+| W5 | Classify for close/merge | Done | **No PR and no issue qualifies as "close: no impact"** — all 12 non-PR issues reproduce today. #867/#873/#883/#884/#885/#887 close *on merge* of #930/#929/#928/#927/#923/#926. Suggested order for the remaining 12: #863 (data loss) → #861/#856 → #865/#886 → the token sweep (#851/#852/#853/#855/#858, together, not piecemeal — #852 grew 109→161 in 11 days). |
+| W6 | Blocked actions (documented, not executed) | Blocked | This environment has **no GitHub write access** (`GET /user` → 401, no `gh`, 60/h unauthenticated limit exhausted): no PR merged, no issue closed or created, no comment posted. Verified merge order, the `gh pr merge --squash` loop, and 7 ready-to-file follow-up issues are in §8/§9 of the plan. #925 must not be merged: code-scanning reports 1 new HIGH alert and Codacy 3 new issues (0 max.) on a 38-file PR mixing four concerns. |
 
 ### Plan 160 — Fix every open Codacy issue in code; delete `.mimocode/` (2026-09-30)
 
