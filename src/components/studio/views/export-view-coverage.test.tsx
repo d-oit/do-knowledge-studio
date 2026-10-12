@@ -75,7 +75,10 @@ vi.mock('./encrypt-export-dialog', () => ({
   ),
 }))
 
-vi.mock('@/components/studio/ui/shared-primitives', () => ({
+vi.mock('@/components/studio/ui/shared-primitives', async (importOriginal) => ({
+  // Spread the real module so every other export (VIEW_CONTAINER_CLASS and any
+  // primitive added later) keeps working; only the dialog is stubbed.
+  ...(await importOriginal<typeof import('@/components/studio/ui/shared-primitives')>()),
   ConfirmDialog: ({ open, onConfirm, onCancel, title, confirmLabel, cancelLabel }: {
     open?: boolean
     onConfirm?: () => void

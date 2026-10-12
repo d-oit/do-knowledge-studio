@@ -9,11 +9,13 @@ import { ExportFormatGrid } from './export-format-grid'
 import { ImportDropzone } from './import-dropzone'
 import { BackupTips } from './backup-tips'
 import { EncryptExportDialog } from './encrypt-export-dialog'
-import { ConfirmDialog } from '@/components/studio/ui/shared-primitives'
+import {
+  ConfirmDialog,
+  VIEW_CONTAINER_CLASS,
+} from '@/components/studio/ui/shared-primitives'
 import { ImportPreviewDialog } from './import-preview-dialog'
 import { translate } from '@/lib/i18n/messages/export'
 import { cn } from '@/lib/utils'
-import { VIEW_CONTAINER_CLASS } from '../ui/shared-primitives'
 
 /** Export and import view with format grid, dropzone, backup tips, and dialogs. */
 export const ExportView = () => {
