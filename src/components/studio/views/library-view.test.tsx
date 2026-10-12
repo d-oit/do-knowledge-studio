@@ -295,12 +295,13 @@ describe('LibraryView', () => {
 
     // jsdom never synthesises the click a real browser fires from Enter/Space,
     // so pin what makes keyboard activation true: a native <button type="button">
-    // left in the tab order. A div-with-tabIndex/role regression fails here.
-    // (Real-browser keyboard activation: e2e/library-virtualization.spec.ts.)
+    // that is still in the sequential tab order. Any negative tabindex (-1, -2,
+    // …) takes it out again, so the check is "non-negative", not "not -1".
+    // (Real-browser keyboard activation + tabIndex: e2e/library-virtualization.spec.ts.)
     for (const button of openButtons) {
       expect(button.tagName).toBe('BUTTON')
       expect(button.getAttribute('type')).toBe('button')
-      expect(button.getAttribute('tabindex')).not.toBe('-1')
+      expect(Number(button.getAttribute('tabindex') ?? 0)).toBeGreaterThanOrEqual(0)
     }
 
     fireEvent.click(openButtons[1])

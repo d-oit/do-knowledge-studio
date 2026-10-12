@@ -106,6 +106,11 @@ test.describe('Library windowed rendering', () => {
       await page.getByRole('button', { name: /Show all 120 entities/ }).click();
 
       const openButton = page.getByRole('button', { name: 'Open Entity 0', exact: true });
+      // The DOM's own answer to "is this in the sequential tab order": native
+      // focusability minus any negative tabindex (-1, -2, …). `focus()` below
+      // would succeed even for a `tabindex="-1"` button, so this is what keeps
+      // the test honest about keyboard reachability.
+      expect(await openButton.evaluate((el) => (el as HTMLElement).tabIndex)).toBeGreaterThanOrEqual(0);
       await openButton.focus();
       // Native button activation — the row's onKeyDown handlers were removed in
       // #861, so this passes only if Enter/Space ride the platform behaviour.
