@@ -2,8 +2,12 @@
 
 ## Status
 
-Proposed — implemented via Plan 130
-(`plans/130-goap-uiux-testpyramid-errorhandling-2026-08-22.md`).
+Proposed — not implemented; tracked by Plan 130 A23/A24 and
+[Plan 162](../162-roadmap-progress-and-next-work-2026-10-05.md).
+
+Verified 2026-10-05: no `location.hash`, `history.pushState`, `popstate`, or
+`hashchange` integration exists under `src/` or `e2e/`. The decision below is
+unchanged and remains the accepted design whenever this work is scheduled.
 
 ## Context
 

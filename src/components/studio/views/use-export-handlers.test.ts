@@ -41,6 +41,7 @@ vi.mock('fflate', () => ({
 }))
 
 import { useExportHandlers } from './use-export-handlers'
+import type { ImportOutcome } from '@/lib/studio/store-types'
 import { toast } from 'sonner'
 import { downloadFile, downloadBlob } from './export-types'
 import { buildPdfExport, buildDocxExport } from './export-documents'
@@ -142,7 +143,7 @@ const renderUseExportHandlers = (overrides: Partial<Parameters<typeof useExportH
     entities: mockEntities,
     /** The library claims being processed. */
     claims: mockClaims,
-    importWithRollback: vi.fn(() => ({ success: true })),
+    importWithRollback: vi.fn((): ImportOutcome => ({ success: true, backupPersisted: true })),
     /** Store action that restores the demo dataset. */
     resetStore: vi.fn(),
     importPreview: null,
@@ -285,7 +286,7 @@ describe('useExportHandlers', () => {
 
   it('handleConfirmImport calls importWithRollback with preview data', () => {
     /** Store action that commits an import with rollback on failure. */
-    const importWithRollback = vi.fn(() => ({ success: true }))
+    const importWithRollback = vi.fn((): ImportOutcome => ({ success: true, backupPersisted: true }))
     /** Callback that stages the parsed import preview. */
     const setImportPreview = vi.fn()
     /** The preview. */
@@ -301,7 +302,7 @@ describe('useExportHandlers', () => {
 
   it('handleConfirmImport shows error when rollback fails', () => {
     /** Store action that commits an import with rollback on failure. */
-    const importWithRollback = vi.fn(() => ({ success: false, error: 'bad data' }))
+    const importWithRollback = vi.fn((): ImportOutcome => ({ success: false, error: 'bad data' }))
     /** Callback that stages the parsed import preview. */
     const setImportPreview = vi.fn()
     /** The preview. */
@@ -312,6 +313,33 @@ describe('useExportHandlers', () => {
     act(() => { result.current.handleConfirmImport() })
     expect(toast.error).toHaveBeenCalledWith('Import failed — state restored', { description: 'bad data' })
     expect(setImportPreview).toHaveBeenCalledWith(null)
+  })
+
+  it('handleConfirmImport warns instead of claiming a clean import when no backup was kept', () => {
+    /** Store action reporting a successful import with no restorable backup. */
+    const importWithRollback = vi.fn(
+      (): ImportOutcome => ({
+        success: true,
+        backupPersisted: false,
+        backupFailure: 'too-large',
+      }),
+    )
+    /** Callback that stages the parsed import preview. */
+    const setImportPreview = vi.fn()
+    /** The preview. */
+    const preview = makeImportPreview()
+    const { result } = renderUseExportHandlers({
+      importPreview: preview, setImportPreview, importWithRollback,
+    })
+    act(() => { result.current.handleConfirmImport() })
+
+    expect(toast.warning).toHaveBeenCalledWith(
+      'Imported — but no backup was kept',
+      { description: expect.stringContaining('too large') },
+    )
+    // The green toast must not also fire: it would claim the user had a way
+    // back when they do not.
+    expect(toast.success).not.toHaveBeenCalledWith('Import complete', expect.anything())
   })
 
   it('handleConfirmImport returns early when no importPreview', () => {
