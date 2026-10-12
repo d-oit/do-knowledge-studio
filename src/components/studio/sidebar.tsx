@@ -26,6 +26,7 @@ import { useStudioStore } from '@/lib/studio/store'
 import type { ViewId } from '@/lib/studio/types'
 import packageJson from '../../../package.json'
 import { cn } from '@/lib/utils'
+import { translate as navT } from '@/lib/i18n/messages/nav'
 import { translate as t } from '@/lib/i18n/messages/timeline'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
 import { useAnnouncer } from '@/lib/a11y/announcer'
@@ -42,40 +43,40 @@ interface NavItem {
 /** Navigation groups defining the sidebar menu structure with labels, icons, and keyboard shortcuts. */
 export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
-    label: 'Overview',
+    label: navT('nav.group.overview'),
     items: [
-      { id: 'home', label: 'Home', icon: Home, shortcut: 'G H' },
+      { id: 'home', label: navT('nav.home.label'), icon: Home, shortcut: 'G H' },
       { id: 'timeline', label: t('timeline.nav.label'), icon: CalendarDays },
     ],
   },
   {
-    label: 'Capture',
-    items: [{ id: 'editor', label: 'Editor', icon: FileText, shortcut: 'G E' }],
+    label: navT('nav.group.capture'),
+    items: [{ id: 'editor', label: navT('nav.editor.label'), icon: FileText, shortcut: 'G E' }],
   },
   {
-    label: 'Explore',
+    label: navT('nav.group.explore'),
     items: [
-      { id: 'library', label: 'Library', icon: Library, shortcut: 'G L' },
-      { id: 'graph', label: 'Graph', icon: GitBranch, shortcut: 'G G' },
-      { id: 'mindmap', label: 'Mind Map', icon: BrainCircuit, shortcut: 'G M' },
+      { id: 'library', label: navT('nav.library.label'), icon: Library, shortcut: 'G L' },
+      { id: 'graph', label: navT('nav.graph.label'), icon: GitBranch, shortcut: 'G G' },
+      { id: 'mindmap', label: navT('nav.mindmap.label'), icon: BrainCircuit, shortcut: 'G M' },
     ],
   },
   {
-    label: 'Ask',
-    items: [{ id: 'chat', label: 'Chat', icon: MessageSquare, shortcut: 'G C' }],
+    label: navT('nav.group.ask'),
+    items: [{ id: 'chat', label: navT('nav.chat.label'), icon: MessageSquare, shortcut: 'G C' }],
   },
   {
-    label: 'Lab',
+    label: navT('nav.group.lab'),
     items: [
-      { id: 'ai', label: 'AI Harness', icon: FlaskConical, shortcut: 'G A', experimental: true },
-      { id: 'triz', label: 'TRIZ Matrix', icon: Grid3X3, shortcut: 'G T', experimental: true },
+      { id: 'ai', label: navT('nav.ai.label'), icon: FlaskConical, shortcut: 'G A', experimental: true },
+      { id: 'triz', label: navT('nav.triz.label'), icon: Grid3X3, shortcut: 'G T', experimental: true },
     ],
   },
   {
-    label: 'Data',
+    label: navT('nav.group.data'),
     items: [
-      { id: 'sync', label: 'Sync', icon: Wifi, shortcut: 'G S' },
-      { id: 'export', label: 'Export', icon: Download, shortcut: 'G X' },
+      { id: 'sync', label: navT('nav.sync.label'), icon: Wifi, shortcut: 'G S' },
+      { id: 'export', label: navT('nav.export.label'), icon: Download, shortcut: 'G X' },
     ],
   },
 ]

@@ -18,7 +18,6 @@ import { motion } from 'framer-motion'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { EntityIcon } from '../entity-type-icon'
 
-/** Locale for date/time formatting — extract to config when i18n lands. */
 const LOCALE = 'en-US'
 
 const dateFormatter = new Intl.DateTimeFormat(LOCALE, {
