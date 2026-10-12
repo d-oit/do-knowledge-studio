@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { navClick, openNavIfHidden } from './helpers/navigation';
+import { navClick, openNavIfHidden, viewHeading } from './helpers/navigation';
 
 /**
  * Inject CSS to set the root font-size to the given percentage.
@@ -119,6 +119,6 @@ test.describe('Zoom and reflow — WCAG 1.4.4 (200%) and 1.4.10 (400% reflow)', 
 
     // Navigate to library to prove the sidebar works at 200% zoom
     await nav.getByRole('button', { name: /library/i }).first().click();
-    await expect(page.getByRole('heading', { name: /library/i })).toBeVisible();
+    await expect(viewHeading(page, /library/i)).toBeVisible();
   });
 });

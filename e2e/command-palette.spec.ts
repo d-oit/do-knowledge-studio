@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { waitForAppReady } from './helpers/navigation';
+import { viewHeading, waitForAppReady } from './helpers/navigation';
 
 test.describe('Command palette', () => {
   test.beforeEach(async ({ page }) => {
@@ -56,7 +56,7 @@ test.describe('Command palette', () => {
     if (await libraryItem.isVisible()) {
       await libraryItem.click();
       await expect(dialog).toBeHidden();
-      await expect(page.getByRole('heading', { name: /library/i })).toBeVisible();
+      await expect(viewHeading(page, /library/i)).toBeVisible();
     }
   });
 
