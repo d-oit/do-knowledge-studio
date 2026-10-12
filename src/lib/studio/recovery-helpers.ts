@@ -148,8 +148,15 @@ export const persistRecoverySnapshot = (snapshot: RecoverySnapshot): RecoveryPer
   // an oversized snapshot past a code-unit check (GitNexus on PR #925).
   if (new TextEncoder().encode(serialized).length > MAX_RECOVERY_SIZE_BYTES) {
     console.warn('Recovery snapshot exceeds size limit, skipping persistence')
-    clearRecoverySnapshot()
-    return { persisted: false, reason: 'too-large' }
+    // Clearing the snapshot that is about to be replaced is what keeps a later
+    // restore from handing back the previous corpus. If storage refuses the
+    // removal the stale copy survives, so the outcome reports a storage refusal
+    // rather than 'too-large' — the user-facing copy for that reason
+    // ("this browser refused…") is the one that is actually true, and the
+    // 'too-large' copy promises the previous library is gone.
+    return clearRecoverySnapshot()
+      ? { persisted: false, reason: 'too-large' }
+      : { persisted: false, reason: 'storage-unavailable' }
   }
 
   try {
@@ -192,15 +199,23 @@ type RecoveryReadResult =
   | { ok: true; data: z.infer<typeof RecoverySnapshotSchema> }
   | { ok: false; error: string }
 
-/** Removes the recovery snapshot from localStorage. */
-const clearRecoverySnapshot = (): void => {
+/**
+ * Removes the recovery snapshot from localStorage.
+ *
+ * Returns whether the key is definitely gone. Callers that promise the snapshot
+ * no longer exists must branch on this: a refused removal leaves the previous
+ * corpus restorable, and reporting that as "cleared" would be a false statement
+ * about the user's safety net (GitNexus on PR #925).
+ */
+const clearRecoverySnapshot = (): boolean => {
   try {
     localStorage.removeItem(RECOVERY_KEY)
   } catch {
     console.warn('Failed to clear corrupt recovery snapshot')
-    return
+    return false
   }
   notifyAvailability()
+  return true
 }
 
 /**

@@ -240,9 +240,12 @@ test.describe('Offline banner', () => {
             );
             if (banner === undefined) return 'no banner';
             const bannerRect = banner.getBoundingClientRect();
-            if (Math.round(bannerRect.bottom) > Math.round(bannerRect.height)) {
-              return 'banner still sliding in';
-            }
+            // The banner is `fixed top-0`, so at rest its top is 0. While it
+            // slides in from above, top is NEGATIVE (bottom < height) — which a
+            // bottom-only check treated as "at rest", letting the geometric
+            // probe below run against a half-entered banner (GitNexus on
+            // PR #925).
+            if (Math.abs(bannerRect.top) > 0.5) return 'banner still sliding in';
             const shell = document.querySelector('[data-app-ready="true"]');
             const reserved = shell ? Number.parseFloat(getComputedStyle(shell).paddingTop) : 0;
             return reserved >= bannerRect.height - 0.5
@@ -299,19 +302,41 @@ test.describe('Offline banner', () => {
     // The reservation must outlive the banner's exit animation and then
     // disappear: dropping it while the banner is still leaving would slide
     // the topbar under it for the duration of the exit, and keeping it would
-    // leave a permanent gap (GitNexus on PR #925).
+    // leave a permanent gap.
+    //
+    // Sampling the two facts in ONE evaluation is what makes this prove the
+    // ORDERING: two independent waits (padding reaches 0, then banner
+    // disappears) both succeed even when the reservation is dropped the
+    // instant the browser goes online, while the banner is still animating
+    // out (GitNexus on PR #925). Each sample below is atomic, and any sample
+    // taken while the banner is still on screen must still show the
+    // reservation.
+    const samples: string[] = [];
     await expect
       .poll(
-        () =>
-          page.evaluate(() => {
+        async () => {
+          const observed = await page.evaluate(() => {
             const shell = document.querySelector('[data-app-ready="true"]');
-            return shell === null
-              ? -1
-              : Number.parseFloat(getComputedStyle(shell).paddingTop);
-          }),
+            if (shell === null) return 'no shell';
+            const reserved = Number.parseFloat(getComputedStyle(shell).paddingTop);
+            const banner = [...document.querySelectorAll('[role="status"]')].find(
+              (node) => /offline/i.test(node.textContent ?? '') && node.className.includes('fixed'),
+            );
+            if (banner === undefined) {
+              return reserved === 0 ? 'released' : 'releasing';
+            }
+            return reserved > 0 ? 'held' : `dropped-early (${reserved}px)`;
+          });
+          samples.push(observed);
+          return observed;
+        },
         { timeout: 5000 },
       )
-      .toBe(0);
-    await expect(page.locator('[role="status"]').filter({ hasText: /offline/i })).toHaveCount(0);
+      .toBe('released');
+
+    expect(
+      samples.filter((state) => state.startsWith('dropped-early')),
+      `reservation released while the banner was still on screen: ${samples.join(', ')}`,
+    ).toEqual([]);
   });
 });

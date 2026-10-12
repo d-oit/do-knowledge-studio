@@ -135,6 +135,26 @@ describe('persistRecoverySnapshot', () => {
     expect(localStorage.getItem(RECOVERY_KEY)).toBeNull()
   })
 
+  it('reports a refused clear as a storage refusal, not as oversized', () => {
+    // The oversized path clears the snapshot so a later restore cannot hand
+    // back the previous corpus. Storage can refuse that removal; the outcome
+    // must then say so instead of claiming the previous library is gone
+    // (GitNexus on PR #925).
+    localStorage.setItem(RECOVERY_KEY, 'stale-previous-corpus')
+    scopedSpies.push(
+      vi.spyOn(localStorage, 'removeItem').mockImplementation(() => {
+        throw new Error('SecurityError')
+      }),
+    )
+
+    const result = persistRecoverySnapshot(oversizedSnapshot())
+
+    expect(result).toEqual({ persisted: false, reason: 'storage-unavailable' })
+    // Documented policy for hostile storage: the stale-but-real copy survives.
+    restoreScopedSpies()
+    expect(localStorage.getItem(RECOVERY_KEY)).toBe('stale-previous-corpus')
+  })
+
   it('measures the size guard in bytes, not UTF-16 code units', () => {
     // 3M non-ASCII characters are 3M UTF-16 code units (under the 4 MiB
     // code-unit reading of the guard) but 6M UTF-8 bytes (over it). The
