@@ -249,6 +249,22 @@ if [[ "$SCOPE" == "all" || "$SCOPE" == "tooling" || "${HAS_TOOLING:-false}" == "
     echo ""
 fi
 
+# --- Always: no committed merge-conflict markers ---
+# A rebase resolution can leave markers *inside* a committed file: git reports
+# the rebase as successful, and the failure surfaces three layers down as a
+# vitest "Transform failed" with no hint of the cause. Detecting it here costs
+# milliseconds (Plan 163).
+echo -e "${BLUE}Checking for committed merge-conflict markers...${NC}"
+CONFLICT_MARKERS=$(git grep -nE '^(<<<<<<< |>>>>>>> )' -- . ':(exclude)*.md' ':(exclude)*.lock' ':(exclude)pnpm-lock.yaml' 2>/dev/null || true)
+if [ -n "$CONFLICT_MARKERS" ]; then
+    echo -e "${RED}  ✗ merge-conflict markers committed:${NC}"
+    printf '%s\n' "$CONFLICT_MARKERS" | head -20
+    FAILED=1
+else
+    echo -e "${GREEN}  ✓ no conflict markers in tracked source${NC}"
+fi
+echo ""
+
 # --- Always: validate package manager configuration ---
 if [[ "$SCOPE" == "all" || "$SCOPE" == "tooling" || "${HAS_TOOLING:-false}" == "true" ]]; then
     echo -e "${BLUE}Validating package manager configuration...${NC}"
