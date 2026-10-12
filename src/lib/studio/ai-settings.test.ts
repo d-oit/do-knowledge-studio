@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { getProviderEndpoint, loadAISettings, saveAISettings, isSessionOnlyCredential, getSessionOnlyMessage, resetIDBConnection } from './ai-settings'
+import { loadAISettings, saveAISettings, isSessionOnlyCredential, getSessionOnlyMessage, resetIDBConnection } from './ai-settings'
 import type { AISettings } from './ai-settings'
 
 // ── In-memory IndexedDB mock ─────────────────────────────────────────
@@ -76,19 +76,6 @@ function installMockIDB() {
   vi.stubGlobal('indexedDB', mockIDB)
   return mockIDB
 }
-
-describe('getProviderEndpoint', () => {
-  it('returns OpenRouter endpoint', () => {
-    expect(getProviderEndpoint('openrouter')).toBe('https://openrouter.ai/api/v1/chat/completions')
-  })
-
-  it('returns Ollama endpoint', () => {
-    expect(getProviderEndpoint('ollama')).toBe('http://localhost:11434/api/chat')
-  })
-  it('returns empty endpoint for the in-browser local provider', () => {
-    expect(getProviderEndpoint('local')).toBe('')
-  })
-})
 
 describe('isSessionOnlyCredential', () => {
   it('returns true', () => {

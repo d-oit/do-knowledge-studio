@@ -3,33 +3,21 @@
 import * as React from 'react'
 import type { LucideIcon } from 'lucide-react'
 import type { AIProvider } from '@/lib/studio/ai-settings'
-import {
-  PROVIDER_LABELS,
-  OPENROUTER_DEFAULT_MODELS,
-  OLLAMA_DEFAULT_MODELS,
-  DEFAULT_LOCAL_MODELS,
-  LOCAL_PROVIDER_ID,
-} from '@/lib/ai'
+import { PROVIDER_LABELS, LOCAL_PROVIDER_ID } from '@/lib/ai'
 import { translate as tAi } from '@/lib/i18n/messages/ai'
 
 /** Configuration entry for a supported AI provider. */
 export interface ProviderOption {
   id: AIProvider
   label: string
-  models: string[]
   requiresKey: boolean
 }
 
-/** List of all supported AI providers with their default models and key requirements. */
+/** Supported AI providers, their labels, and key requirements. */
 export const PROVIDERS: ProviderOption[] = [
-  { id: 'openrouter', label: PROVIDER_LABELS.openrouter, models: OPENROUTER_DEFAULT_MODELS, requiresKey: true },
-  { id: 'ollama', label: PROVIDER_LABELS.ollama, models: OLLAMA_DEFAULT_MODELS, requiresKey: false },
-  {
-    id: LOCAL_PROVIDER_ID,
-    label: tAi('ai.settings.provider.local.label'),
-    models: DEFAULT_LOCAL_MODELS.map((m) => m.id),
-    requiresKey: false,
-  },
+  { id: 'openrouter', label: PROVIDER_LABELS.openrouter, requiresKey: true },
+  { id: 'ollama', label: PROVIDER_LABELS.ollama, requiresKey: false },
+  { id: LOCAL_PROVIDER_ID, label: tAi('ai.settings.provider.local.label'), requiresKey: false },
 ]
 
 
