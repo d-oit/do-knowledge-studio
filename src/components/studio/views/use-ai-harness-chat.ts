@@ -246,9 +246,12 @@ export const useAiHarnessChat = ({
             content: `[Error] ${translate('ai.chat.error.timeout')}\n\n${translate('ai.chat.error.hint')}`,
           },
         ])
-        // A failed turn has no assistant content and never reaches the success
-        // signal below, so without this the quiet transcript would say nothing
-        // at all about a provider failure (review on #926).
+        // This branch never reaches the success signal below, which requires the
+        // awaited result — so without this the quiet transcript would say nothing
+        // at all about a failed turn. A partial bubble may already exist (chunks
+        // are forwarded as they stream, and the reader can fail mid-stream), so
+        // "failed" here means the turn did not complete, not that it produced no
+        // content (review on #926).
         setFailedTurns((turns) => turns + 1)
         return
       }
