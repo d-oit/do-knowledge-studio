@@ -75,10 +75,12 @@ vi.mock('./encrypt-export-dialog', () => ({
   ),
 }))
 
-vi.mock('./reset-confirm-dialog', () => ({
-  ResetConfirmDialog: ({ showResetConfirm, setShowResetConfirm, handleReset }: { showResetConfirm?: boolean; setShowResetConfirm?: (v: boolean) => void; handleReset?: () => void }) => (
-    <div data-testid="reset-dialog" data-show={String(showResetConfirm)} onClick={() => { setShowResetConfirm?.(false); handleReset?.() }}>
+vi.mock('@/components/studio/ui/confirm-dialog', () => ({
+  ConfirmDialog: ({ open, onCancel, onConfirm }: { open?: boolean; onCancel?: () => void; onConfirm?: () => void }) => (
+    <div data-testid="reset-dialog" data-show={String(open)}>
       Confirm reset
+      <button data-testid="reset-cancel" onClick={() => { onCancel?.() }}>Cancel reset</button>
+      <button data-testid="reset-confirm" onClick={() => { onConfirm?.() }}>Reset everything</button>
     </div>
   ),
 }))
@@ -187,21 +189,23 @@ describe('ExportView branch coverage', () => {
     expect(screen.getByTestId('reset-dialog')).toHaveAttribute('data-show', 'true')
   })
 
-  it('closes reset confirm dialog on Escape', async () => {
+  it('closes the reset dialog without resetting when cancelled', async () => {
     render(<ExportView />)
     fireEvent.click(screen.getByText('Reset to demo data'))
     expect(screen.getByTestId('reset-dialog')).toHaveAttribute('data-show', 'true')
-    fireEvent.keyDown(window, { key: 'Escape' })
+    fireEvent.click(screen.getByTestId('reset-cancel'))
     await waitFor(() => {
       expect(screen.getByTestId('reset-dialog')).toHaveAttribute('data-show', 'false')
     })
+    expect(mockHandleReset).not.toHaveBeenCalled()
   })
 
   it('calls handleReset when reset dialog confirms', () => {
     render(<ExportView />)
     fireEvent.click(screen.getByText('Reset to demo data'))
-    fireEvent.click(screen.getByTestId('reset-dialog'))
+    fireEvent.click(screen.getByTestId('reset-confirm'))
     expect(mockHandleReset).toHaveBeenCalled()
+    expect(screen.getByTestId('reset-dialog')).toHaveAttribute('data-show', 'false')
   })
 
   it('renders all sections', () => {

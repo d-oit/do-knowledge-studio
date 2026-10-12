@@ -9,7 +9,7 @@ import { ExportFormatGrid } from './export-format-grid'
 import { ImportDropzone } from './import-dropzone'
 import { BackupTips } from './backup-tips'
 import { EncryptExportDialog } from './encrypt-export-dialog'
-import { ResetConfirmDialog } from './reset-confirm-dialog'
+import { ConfirmDialog } from '@/components/studio/ui/confirm-dialog'
 import { ImportPreviewDialog } from './import-preview-dialog'
 import { translate } from '@/lib/i18n/messages/export'
 
@@ -28,7 +28,6 @@ export const ExportView = () => {
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [importPreview, setImportPreview] = useState<ImportPreview | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
-  const resetCancelRef = useRef<HTMLButtonElement>(null)
 
   const {
     handleExport,
@@ -59,17 +58,6 @@ export const ExportView = () => {
   })
 
   useEffect(() => {
-    if (!showResetConfirm) return
-    resetCancelRef.current?.focus()
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setShowResetConfirm(false)
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => { window.removeEventListener('keydown', handleKeyDown) }
-  }, [showResetConfirm])
-
-  useEffect(() => {
     if (!importPreview) return
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setImportPreview(null)
@@ -77,6 +65,13 @@ export const ExportView = () => {
     window.addEventListener('keydown', handleKeyDown)
     return () => { window.removeEventListener('keydown', handleKeyDown) }
   }, [importPreview])
+
+  const handleResetCancel = () => { setShowResetConfirm(false) }
+
+  const handleResetConfirm = () => {
+    handleReset()
+    setShowResetConfirm(false)
+  }
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-6 lg:px-10 lg:py-8">
@@ -121,11 +116,17 @@ export const ExportView = () => {
         handleExport={handleExport}
       />
 
-      <ResetConfirmDialog
-        showResetConfirm={showResetConfirm}
-        setShowResetConfirm={setShowResetConfirm}
-        handleReset={handleReset}
-        resetCancelRef={resetCancelRef}
+      <ConfirmDialog
+        open={showResetConfirm}
+        ariaLabel={translate('export.reset.ariaLabel')}
+        title={translate('export.reset.title')}
+        subtitle={translate('export.reset.subtitle')}
+        body={translate('export.reset.body')}
+        cancelLabel={translate('export.reset.cancel')}
+        confirmLabel={translate('export.reset.confirm')}
+        onCancel={handleResetCancel}
+        onConfirm={handleResetConfirm}
+        icon={RotateCcw}
       />
 
       <ImportPreviewDialog

@@ -6,10 +6,11 @@ import { buildEntityIndex } from '@/lib/studio/graph-index'
 import { useAnnouncer } from '@/lib/a11y/announcer'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
 import type { Entity } from '@/lib/studio/types'
-import { ArrowRight } from 'lucide-react'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { AlertTriangle, ArrowRight } from 'lucide-react'
+import { useCallback, useMemo, useState } from 'react'
 import { cn } from '@/lib/utils'
-import { Overlay } from '@/components/studio/ui/shared-primitives'
+import { ConfirmDialog } from '@/components/studio/ui/confirm-dialog'
+import { translate as inspectorT } from '@/lib/i18n/messages/inspector'
 import { CitationsPanel } from './right-panel-citations'
 import { PanelCloseButton } from './right-panel-close-button'
 import { EntitySearchPanel } from './entity-search-panel'
@@ -100,7 +101,6 @@ const InspectorPanel = ({ onClose }: { onClose: () => void }) => {
   const announce = useAnnouncer()
   const entityIndex = useMemo(() => buildEntityIndex(entities), [entities])
   const entity = (selectedEntityId ? entityIndex.get(selectedEntityId) : undefined) || entities[0]
-  const deleteCancelRef = useRef<HTMLButtonElement>(null)
 
   if (!entity) {
     return (
@@ -117,6 +117,8 @@ const InspectorPanel = ({ onClose }: { onClose: () => void }) => {
   }
 
   const meta = getEntityTypeMeta(entity.type)
+
+  const handleDeleteCancel = () => { setShowDeleteConfirm(false) }
 
   const handleDelete = () => {
     // The panel closes over the deleted entity with no visual trace beyond
@@ -198,36 +200,18 @@ const InspectorPanel = ({ onClose }: { onClose: () => void }) => {
         </button>
       </div>
 
-      {showDeleteConfirm && (
-        <Overlay
-          open={showDeleteConfirm}
-          onClose={() => { setShowDeleteConfirm(false) }}
-          aria-label="Confirm delete"
-          initialFocusRef={deleteCancelRef}
-        >
-          <div className="w-[340px] rounded-xl border border-border bg-popover p-5 shadow-2xl">
-            <h3 className="mb-2 font-serif text-[14px] font-semibold text-ink">Delete entity?</h3>
-            <p className="mb-4 text-[12px] text-ink-mute">
-              &quot;{entity.name}&quot; will be permanently deleted. This cannot be undone.
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                ref={deleteCancelRef}
-                onClick={() => { setShowDeleteConfirm(false) }}
-                className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-muted focus-ring min-h-[44px]"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                className="rounded-md bg-red-600 px-3 py-1.5 text-[12px] font-semibold text-white transition-colors hover:bg-red-700 focus-ring min-h-[44px]"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </Overlay>
-      )}
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        ariaLabel={inspectorT('inspector.delete.ariaLabel')}
+        title={inspectorT('inspector.delete.title')}
+        subtitle={inspectorT('inspector.delete.subtitle')}
+        body={inspectorT('inspector.delete.body', entity.name)}
+        cancelLabel={inspectorT('inspector.delete.cancel')}
+        confirmLabel={inspectorT('inspector.delete.confirm')}
+        onCancel={handleDeleteCancel}
+        onConfirm={handleDelete}
+        icon={AlertTriangle}
+      />
     </aside>
   )
 }

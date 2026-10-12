@@ -1,7 +1,9 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Save } from 'lucide-react'
+import { AlertTriangle, Save } from 'lucide-react'
+import { ConfirmDialog } from '@/components/studio/ui/confirm-dialog'
+import { translate as editorT } from '@/lib/i18n/messages/editor'
 import type { AnyEntityType, Entity } from '@/lib/studio/types'
 import {
   generateDraftId,
@@ -32,7 +34,7 @@ const UNSAVED_CHANGES_TEXT = 'Unsaved changes'
 const DRAFT_SAVED_TEXT = 'Draft saved'
 /** Error text shown when draft persistence fails. */
 const DRAFT_ERROR_TEXT = 'Could not save draft'
-/** Button label to discard unsaved draft changes. */
+/** Button label to discard unsaved draft changes (also the confirm action). */
 const DISCARD_CHANGES_TEXT = 'Discard changes'
 /** Button label to save edits to an existing entity. */
 const COMMIT_CHANGES_TEXT = 'Commit changes'
@@ -247,7 +249,13 @@ export const EditorModeSelector = ({ editMode, onEditModeChange }: EditorModeSel
 
 // --- Component: EditorStatusBar ---
 
-/** Sticky bottom bar showing word count, draft status, and save/discard actions. */
+/**
+ * Sticky bottom bar showing word count, draft status, and save/discard actions.
+ *
+ * Discarding deletes the autosaved draft with no undo, so the bar owns the
+ * confirmation gate: the button opens the shared `ConfirmDialog` and
+ * `onDiscard` only runs once the user accepts (#863).
+ */
 export const EditorStatusBar = ({
   wordCount,
   charCount,
@@ -257,48 +265,81 @@ export const EditorStatusBar = ({
   onDiscard,
   onSave,
   nameValid,
-}: EditorStatusBarProps) => (
-  <div className="sticky bottom-0 -mx-6 mt-6 flex items-center justify-between border-t border-border bg-background/90 px-6 py-3 backdrop-blur-sm lg:-mx-10 lg:px-10">
-    <div className="flex items-center gap-3 text-label text-ink-faint" aria-live="polite" aria-atomic="true">
-      <span>{wordCount} {WORDS_LABEL}</span>
-      <span>&middot;</span>
-      <span>{charCount} {CHARS_LABEL}</span>
-      {isDirty && (
-        <>
+}: EditorStatusBarProps) => {
+  const [confirmingDiscard, setConfirmingDiscard] = useState(false)
+
+  const requestDiscard = useCallback(() => { setConfirmingDiscard(true) }, [])
+  const cancelDiscard = useCallback(() => { setConfirmingDiscard(false) }, [])
+  const confirmDiscard = useCallback(() => {
+    setConfirmingDiscard(false)
+    onDiscard()
+  }, [onDiscard])
+
+  return (
+    <>
+      <div className="sticky bottom-0 -mx-6 mt-6 flex items-center justify-between border-t border-border bg-background/90 px-6 py-3 backdrop-blur-sm lg:-mx-10 lg:px-10">
+        <div className="flex items-center gap-3 text-label text-ink-faint">
+          {/* Counters stay OUT of the live region: they change on every keystroke
+              and would drown out the persistence status (issue #856). */}
+          <span>{wordCount} {WORDS_LABEL}</span>
           <span>&middot;</span>
-          <span className="text-saffron-deep">{UNSAVED_CHANGES_TEXT}</span>
-        </>
-      )}
-      {draftStatus === 'saved' && !isDirty && (
-        <>
-          <span>&middot;</span>
-          <span className="text-sage">{DRAFT_SAVED_TEXT}</span>
-        </>
-      )}
-      {draftStatus === 'error' && (
-        <>
-          <span>&middot;</span>
-          <span className="text-destructive">{DRAFT_ERROR_TEXT}</span>
-        </>
-      )}
-    </div>
-    <div className="flex items-center gap-2">
-      {editing && (
-        <button
-          onClick={onDiscard}
-          className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-destructive/10 hover:text-destructive focus-ring min-h-[44px]"
-        >
-          {DISCARD_CHANGES_TEXT}
-        </button>
-      )}
-      <button
-        onClick={onSave}
-        disabled={!nameValid}
-        className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 press-scale focus-ring min-h-[44px]"
-      >
-        <Save className="h-3.5 w-3.5" />
-        {editing ? COMMIT_CHANGES_TEXT : SAVE_TO_LIBRARY_TEXT}
-      </button>
-    </div>
-  </div>
-)
+          <span>{charCount} {CHARS_LABEL}</span>
+          {isDirty && (
+            <>
+              <span>&middot;</span>
+              <span className="text-saffron-deep">{UNSAVED_CHANGES_TEXT}</span>
+            </>
+          )}
+          {/* Only the persistence outcome is announced. The region is always
+              rendered (even when empty) so assistive tech has a stable node to
+              observe before the first save completes. */}
+          <span role="status" aria-live="polite" aria-atomic="true" className="flex items-center gap-3">
+            {draftStatus === 'saved' && !isDirty && (
+              <>
+                <span>&middot;</span>
+                <span className="text-sage">{DRAFT_SAVED_TEXT}</span>
+              </>
+            )}
+            {draftStatus === 'error' && (
+              <>
+                <span>&middot;</span>
+                <span className="text-destructive">{DRAFT_ERROR_TEXT}</span>
+              </>
+            )}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          {editing && (
+            <button
+              onClick={requestDiscard}
+              className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:bg-destructive/10 hover:text-destructive focus-ring min-h-[44px]"
+            >
+              {DISCARD_CHANGES_TEXT}
+            </button>
+          )}
+          <button
+            onClick={onSave}
+            disabled={!nameValid}
+            className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-[12px] font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 press-scale focus-ring min-h-[44px]"
+          >
+            <Save className="h-3.5 w-3.5" />
+            {editing ? COMMIT_CHANGES_TEXT : SAVE_TO_LIBRARY_TEXT}
+          </button>
+        </div>
+      </div>
+
+      <ConfirmDialog
+        open={confirmingDiscard}
+        ariaLabel={editorT('editor.discard.ariaLabel')}
+        title={editorT('editor.discard.title')}
+        subtitle={editorT('editor.discard.subtitle')}
+        body={editorT('editor.discard.body')}
+        cancelLabel={editorT('editor.discard.cancel')}
+        confirmLabel={DISCARD_CHANGES_TEXT}
+        onCancel={cancelDiscard}
+        onConfirm={confirmDiscard}
+        icon={AlertTriangle}
+      />
+    </>
+  )
+}

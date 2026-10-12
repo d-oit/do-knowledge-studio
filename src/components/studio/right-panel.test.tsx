@@ -6,8 +6,21 @@ vi.mock('lucide-react', () => {
   const Icon = ({ className }: { className?: string }) => (
     <span data-testid="icon" className={className} />
   )
-  return { Search: Icon, X: Icon, Sparkles: Icon, FileText: Icon, Quote: Icon, ArrowRight: Icon }
+  return { Search: Icon, X: Icon, Sparkles: Icon, FileText: Icon, Quote: Icon, ArrowRight: Icon, AlertTriangle: Icon }
 })
+
+vi.mock('framer-motion', () => ({
+  motion: {
+    div: ({ children, initial: _i, animate: _a, transition: _t, ...props }: { children?: ReactNode; [key: string]: unknown }) => (
+      <div {...(props as React.HTMLAttributes<HTMLDivElement>)}>{children}</div>
+    ),
+  },
+  AnimatePresence: ({ children }: { children?: ReactNode }) => children,
+}))
+
+vi.mock('@/lib/studio/use-reduced-motion', () => ({
+  useReducedMotion: () => false,
+}))
 
 vi.mock('@/lib/utils', () => ({
   cn: (...args: (string | undefined | false | null)[]) => args.filter(Boolean).join(' '),

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { ReactNode } from 'react'
-import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, cleanup, waitFor, within } from '@testing-library/react'
 
 vi.mock('framer-motion', () => ({
   motion: {
@@ -32,6 +32,7 @@ vi.mock('lucide-react', () => {
     Link2: Icon,
     ChevronDown: Icon,
     Mic: Icon,
+    AlertTriangle: Icon,
   }
 })
 
@@ -249,12 +250,27 @@ describe('EditorView branch coverage', () => {
     ])
   })
 
-  it('discards changes when discard is clicked for existing entity', () => {
+  it('discards changes only after the confirmation is accepted', () => {
     currentEditingEntityId = 'ent-1'
     render(<EditorView />)
-    const discardBtn = screen.getByText('Discard changes')
-    fireEvent.click(discardBtn)
-    expect(mockFinishEditing).toHaveBeenCalled()
+    fireEvent.click(screen.getByText('Discard changes'))
+    // No destructive write before confirmation (#863).
+    expect(mockFinishEditing).not.toHaveBeenCalled()
+
+    const dialog = screen.getByRole('dialog', { name: 'Confirm discard changes' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Discard changes' }))
+    expect(mockFinishEditing).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps editing when the discard confirmation is cancelled', () => {
+    currentEditingEntityId = 'ent-1'
+    render(<EditorView />)
+    fireEvent.click(screen.getByText('Discard changes'))
+    const dialog = screen.getByRole('dialog', { name: 'Confirm discard changes' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+    expect(mockFinishEditing).not.toHaveBeenCalled()
+    expect(editor.removeDraft).not.toHaveBeenCalled()
+    expect(screen.queryByRole('dialog')).toBeNull()
   })
 
   it('applies bold formatting via toolbar button', () => {
@@ -307,6 +323,29 @@ describe('EditorView branch coverage', () => {
     })
   })
 
+  it('keeps counters and the unsaved flag out of the live region', () => {
+    currentEditingEntityId = 'ent-1'
+    render(<EditorView />)
+    // Counters change on every keystroke; inside a live region a screen reader
+    // narrates each one (issue #856).
+    expect(screen.getByText(/words$/).closest('[aria-live]')).toBeNull()
+    expect(screen.getByText(/chars$/).closest('[aria-live]')).toBeNull()
+
+    fireEvent.change(screen.getByLabelText('Editor content'), { target: { value: 'Changed content' } })
+    expect(screen.getByText('Unsaved changes').closest('[aria-live]')).toBeNull()
+  })
+
+  it('announces the persistence status through a polite live region', async () => {
+    currentEditingEntityId = 'ent-1'
+    render(<EditorView />)
+    const status = screen.getByRole('status')
+    expect(status).toHaveAttribute('aria-live', 'polite')
+    expect(status).toHaveAttribute('aria-atomic', 'true')
+    await waitFor(() => {
+      expect(within(status).getByText('Draft saved')).toBeDefined()
+    })
+  })
+
   it('does not show claims panel when creating new entity', () => {
     currentEditingEntityId = null
     render(<EditorView />)
@@ -331,8 +370,9 @@ describe('EditorView branch coverage', () => {
   it('removes draft on discard', () => {
     currentEditingEntityId = 'ent-1'
     render(<EditorView />)
-    const discardBtn = screen.getByText('Discard changes')
-    fireEvent.click(discardBtn)
+    fireEvent.click(screen.getByText('Discard changes'))
+    const dialog = screen.getByRole('dialog', { name: 'Confirm discard changes' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Discard changes' }))
     expect(editor.removeDraft).toHaveBeenCalled()
   })
 

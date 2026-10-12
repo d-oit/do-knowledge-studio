@@ -105,7 +105,7 @@ describe('ChatView branch coverage', () => {
 
   it('returns early from clear when chat is empty', () => {
     render(<ChatView />)
-    const clearBtn = screen.getByText('Clear').closest('button')!
+    const clearBtn = screen.getByRole('button', { name: 'Clear chat history' })
     clearBtn.click()
     expect(storeState.clearChat).not.toHaveBeenCalled()
   })

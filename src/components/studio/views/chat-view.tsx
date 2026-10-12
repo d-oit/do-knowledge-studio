@@ -1,8 +1,11 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { Trash2 } from 'lucide-react'
 import { useStudioStore } from '@/lib/studio/store'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
+import { ConfirmDialog } from '@/components/studio/ui/confirm-dialog'
+import { translate as chatT } from '@/lib/i18n/messages/chat'
 import {
   WelcomePanel,
   MessageList,
@@ -10,6 +13,7 @@ import {
   InputBar,
   TypingIndicator,
   CitationDisclosure,
+  CLEAR_CHAT_LABEL,
 } from './chat-subcomponents'
 
 // Re-export subcomponents for full backwards compatibility with tests and consumers
@@ -36,6 +40,7 @@ export const ChatView = () => {
   const reducedMotion = useReducedMotion()
   const [input, setInput] = useState('')
   const [showCitations, setShowCitations] = useState<string | null>(null)
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -74,11 +79,20 @@ export const ChatView = () => {
     setView('editor')
   }
 
+  // Clearing a conversation is irreversible (no undo), so the button only
+  // opens the confirmation; the destructive write happens on confirm (#863).
   const handleClear = () => {
     if (chat.length === 0) return
+    setShowClearConfirm(true)
+  }
+
+  const handleClearCancel = useCallback(() => { setShowClearConfirm(false) }, [])
+
+  const handleClearConfirm = useCallback(() => {
     clearChat()
     setShowCitations(null)
-  }
+    setShowClearConfirm(false)
+  }, [clearChat])
 
   return (
     <div className="flex h-full flex-col">
@@ -120,6 +134,19 @@ export const ChatView = () => {
         onClear={handleClear}
         canClear={chat.length > 0}
         inputRef={inputRef}
+      />
+
+      <ConfirmDialog
+        open={showClearConfirm}
+        ariaLabel={chatT('chat.clear.ariaLabel')}
+        title={chatT('chat.clear.title')}
+        subtitle={chatT('chat.clear.subtitle')}
+        body={chatT('chat.clear.body')}
+        cancelLabel={chatT('chat.clear.cancel')}
+        confirmLabel={CLEAR_CHAT_LABEL}
+        onCancel={handleClearCancel}
+        onConfirm={handleClearConfirm}
+        icon={Trash2}
       />
     </div>
   )

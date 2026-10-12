@@ -364,10 +364,12 @@ export const EditorView = () => {
     }
   }, [name, type, description, content, sourceUrl, tags, editing, entities, commitEntities, finishEditing, navigateToView, draftIdRef, announce])
 
-  const handleDiscard = () => {
+  // Destructive (no undo), so `EditorStatusBar` gates it behind a confirmation
+  // and only calls this once the user accepts (#863).
+  const handleDiscard = useCallback(() => {
     if (draftIdRef.current) removeDraft(draftIdRef.current)
     finishEditing()
-  }
+  }, [draftIdRef, finishEditing])
 
   useEditorKeyboardShortcuts({ handleFormat, handleSave })
 

@@ -301,8 +301,16 @@ const EntityTableHeader = () => (
   </thead>
 )
 
-/** Name cell for an entity table row (icon + truncated name/description). */
-const EntityNameCell = ({ entity }: { entity: Entity }) => {
+/**
+ * Name cell for an entity table row (icon + truncated name/description).
+ *
+ * The name is a real `<button>` whose `::before` is stretched over the whole
+ * row (`inset-0` against the positioned `<tr>`), so the entire row stays
+ * clickable while the row keeps its table semantics — `role="link"` on a `<tr>`
+ * demoted the table to noise and hid every other cell from screen readers
+ * (issue #861). Enter/Space activation comes free with a native button.
+ */
+const EntityNameCell = ({ entity, startEdit }: { entity: Entity; startEdit: (id: string) => void }) => {
   const meta = getEntityTypeMeta(entity.type)
   return (
     <td className="px-4 py-3">
@@ -311,9 +319,14 @@ const EntityNameCell = ({ entity }: { entity: Entity }) => {
           <EntityIcon type={entity.type} className="h-3.5 w-3.5" />
         </div>
         <div className="min-w-0">
-          <div className="truncate text-[13px] font-semibold text-ink group-hover:text-saffron-deep">
+          <button
+            type="button"
+            onClick={() => { startEdit(entity.id) }}
+            aria-label={`Open ${entity.name}`}
+            className="block w-full truncate text-left text-[13px] font-semibold text-ink before:absolute before:inset-0 before:content-[''] group-hover:text-saffron-deep focus-ring"
+          >
             {entity.name}
-          </div>
+          </button>
           <div className="truncate text-label text-ink-mute">{entity.description}</div>
         </div>
       </div>
@@ -337,16 +350,6 @@ const TableRow = ({
   return (
     <tr
       key={entity.id}
-      onClick={() => { startEdit(entity.id) }}
-      onKeyDown={(ev) => {
-        if (ev.key === 'Enter' || ev.key === ' ') {
-          ev.preventDefault()
-          startEdit(entity.id)
-        }
-      }}
-      tabIndex={0}
-      role="link"
-      aria-label={`Open ${entity.name}`}
       data-index={vi?.index}
       ref={measure}
       style={
@@ -360,9 +363,9 @@ const TableRow = ({
             }
           : undefined
       }
-      className="group cursor-pointer border-b border-border last:border-0 transition-colors hover:bg-muted/30 focus-ring"
+      className="group relative cursor-pointer border-b border-border last:border-0 transition-colors hover:bg-muted/30"
     >
-      <EntityNameCell entity={entity} />
+      <EntityNameCell entity={entity} startEdit={startEdit} />
       <td className="hidden px-4 py-3 sm:table-cell">
         <span className={cn('rounded-full px-2 py-0.5 text-caption font-medium', meta.bg, meta.text)}>
           {meta.label}

@@ -158,8 +158,9 @@ describe('EntityTable', () => {
 
   it('renders all rows eagerly when the container is not measurable (jsdom)', () => {
     render(<EntityTable entities={makeEntities(2)} startEdit={vi.fn()} />)
-    const rows = screen.getAllByRole('link')
-    expect(rows).toHaveLength(2)
+    // Rows keep their table semantics; the row's name is a real button (#861).
+    expect(screen.getAllByRole('button', { name: /^Open / })).toHaveLength(2)
+    expect(screen.queryAllByRole('link')).toHaveLength(0)
   })
 
   it('renders only windowed rows with absolute positioning when virtualized', () => {
@@ -173,14 +174,14 @@ describe('EntityTable', () => {
 
     const { container } = render(<EntityTable entities={entities} startEdit={vi.fn()} />)
 
-    const rows = screen.getAllByRole('link')
+    const rows = Array.from(container.querySelectorAll<HTMLTableRowElement>('tbody tr'))
     expect(rows).toHaveLength(2)
     expect(rows[0].dataset.index).toBe('10')
     expect(rows[1].dataset.index).toBe('11')
     expect(screen.queryByText('Entity 0')).toBeNull()
 
     // Windowed rows are absolutely positioned by their virtual offset.
-    expect((rows[0] as HTMLElement).style.transform).toBe('translateY(560px)')
+    expect(rows[0].style.transform).toBe('translateY(560px)')
 
     // The tbody acts as the spacer for the full virtual height.
     const tbody = container.querySelector('tbody')

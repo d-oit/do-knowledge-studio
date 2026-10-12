@@ -283,19 +283,25 @@ describe('LibraryView', () => {
     expect(mockSetSortDir).toHaveBeenCalledWith('desc')
   })
 
-  it('renders list view and opens entities by click and keyboard', () => {
+  it('renders list view and opens entities through the row button', () => {
     render(<LibraryView />)
     fireEvent.click(screen.getByRole('button', { name: 'List view' }))
 
-    const rows = within(screen.getByRole('table')).getAllByRole('link')
-    expect(rows).toHaveLength(2)
-    fireEvent.click(rows[0])
-    expect(mockStartEdit).toHaveBeenCalledWith('ent-1')
+    const table = within(screen.getByRole('table'))
+    const openButtons = table.getAllByRole('button', { name: /^Open / })
+    expect(openButtons).toHaveLength(2)
+    expect(openButtons[0]).toHaveAttribute('aria-label', 'Open Alpha Concept')
 
-    fireEvent.keyDown(rows[1], { key: 'Enter' })
-    fireEvent.keyDown(rows[1], { key: ' ' })
+    // The whole row stays clickable via the button's stretched pseudo-element.
+    fireEvent.click(openButtons[0])
+    expect(mockStartEdit).toHaveBeenCalledWith('ent-1')
+    fireEvent.click(openButtons[1])
     expect(mockStartEdit).toHaveBeenCalledWith('ent-2')
-    expect(mockStartEdit).toHaveBeenCalledTimes(3)
+    expect(mockStartEdit).toHaveBeenCalledTimes(2)
+
+    // Table semantics are restored: rows are rows, not links (#861). Enter/Space
+    // activation is native <button> behavior, so jsdom cannot synthesize it.
+    expect(table.queryAllByRole('link')).toHaveLength(0)
   })
 
   it('renders tag overflow in grid view', () => {

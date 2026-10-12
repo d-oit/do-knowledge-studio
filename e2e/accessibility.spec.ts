@@ -44,13 +44,15 @@ test.describe('Accessibility', () => {
     await expect(viewGroup).toBeVisible();
   });
 
-  test('library entity links have accessible names', async ({ page }) => {
+  test('library entity rows expose an accessible open control', async ({ page }) => {
     await navClick(page, /library/i);
 
-    const entityLinks = page.getByRole('link', { name: /open /i });
-    const count = await entityLinks.count();
+    // The row itself is a plain <tr> (table semantics intact); the open
+    // control is the stretched button inside the name cell (#861).
+    const openButtons = page.getByRole('button', { name: /open /i });
+    const count = await openButtons.count();
     if (count > 0) {
-      await expect(entityLinks.first()).toHaveAttribute('aria-label', /open /i);
+      await expect(openButtons.first()).toHaveAttribute('aria-label', /open /i);
     }
   });
 

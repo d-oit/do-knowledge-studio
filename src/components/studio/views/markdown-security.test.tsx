@@ -25,6 +25,7 @@ vi.mock('lucide-react', () => {
     Quote: Icon,
     ChevronDown: Icon,
     MessageSquare: Icon,
+    AlertTriangle: Icon,
     ExternalLink: Icon,
     Tag: Icon,
     Save: Icon,
