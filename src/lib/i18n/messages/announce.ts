@@ -22,6 +22,8 @@ const messages = {
   'announce.viewSwitched': (view: string) => `Switched to ${view}`,
   /** Accessible name of the chat transcript log region. */
   'announce.chatTranscript': 'AI chat transcript',
+  /** Announced when an AI turn ends in a provider failure. */
+  'announce.aiResponseFailed': 'Response failed',
   /** An import replaced the library. Counts are interpolated, so the
    *  plural form has to be selected at the call site (this layer carries no
    *  locale, and `Intl.PluralRules` needs one). */

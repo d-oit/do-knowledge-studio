@@ -325,6 +325,29 @@ describe('AiHarnessChatPanel', () => {
     expect(statusRegion.textContent).toBe('')
   })
 
+  it('announces a failed turn through the alert region', () => {
+    // The transcript is `aria-live="off"`, so a provider failure would otherwise
+    // be silent for screen readers: the error bubble is appended but never
+    // spoken (review on #926).
+    const { rerender } = render(<AiHarnessChatPanel {...defaultProps} failedTurns={0} />)
+    expect(screen.getByRole('alert').textContent).toBe('')
+
+    rerender(<AiHarnessChatPanel {...defaultProps} failedTurns={1} />)
+    expect(screen.getByRole('alert').textContent).toBe('Response failed')
+
+    // Idempotent per turn: an unchanged counter (a re-render, or StrictMode
+    // re-running the effect) must not speak the failure twice.
+    rerender(<AiHarnessChatPanel {...defaultProps} failedTurns={1} />)
+    expect(screen.getByRole('alert').textContent).toBe('Response failed')
+  })
+
+  it('does not announce a failure when the turn merely aborted', () => {
+    const { rerender } = render(<AiHarnessChatPanel {...defaultProps} isLoading failedTurns={0} />)
+    // An abort never advances the counter, so the region stays empty.
+    rerender(<AiHarnessChatPanel {...defaultProps} failedTurns={0} />)
+    expect(screen.getByRole('alert').textContent).toBe('')
+  })
+
   it('stays silent when the user stops a turn', () => {
     // Stop aborts the stream: the hook returns early, adds nothing, and the
     // counter stays put.
@@ -383,6 +406,7 @@ const ChatPanelWithSession = () => {
         messages={chat.messages}
         isLoading={chat.isLoading}
         completedTurns={chat.completedTurns}
+        failedTurns={chat.failedTurns}
         input={chat.input}
         setInput={chat.setInput}
         handleSend={chat.handleSend}

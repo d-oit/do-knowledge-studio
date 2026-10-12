@@ -108,6 +108,7 @@ export const useAiHarnessChat = ({
   // it also drops when a turn fails or is stopped, so a consumer keyed on it
   // would announce those turns as successful.
   const [completedTurns, setCompletedTurns] = useState(0)
+  const [failedTurns, setFailedTurns] = useState(0)
   const abortRef = useRef<AbortController | null>(null)
   const { canRequest } = useRateLimiter()
 
@@ -245,6 +246,10 @@ export const useAiHarnessChat = ({
             content: `[Error] ${translate('ai.chat.error.timeout')}\n\n${translate('ai.chat.error.hint')}`,
           },
         ])
+        // A failed turn has no assistant content and never reaches the success
+        // signal below, so without this the quiet transcript would say nothing
+        // at all about a provider failure (review on #926).
+        setFailedTurns((turns) => turns + 1)
         return
       }
 
@@ -265,6 +270,7 @@ export const useAiHarnessChat = ({
         ...m,
         { id: crypto.randomUUID(), role: 'assistant', content: `[Error] ${friendly}\n\n${translate('ai.chat.error.hint')}` },
       ])
+      setFailedTurns((turns) => turns + 1)
     } finally {
       requestTimeout.clear()
       setIsLoading(false)
@@ -297,6 +303,7 @@ export const useAiHarnessChat = ({
     setInput,
     isLoading,
     completedTurns,
+    failedTurns,
     cooldownMs,
     handleSend,
     stop,
