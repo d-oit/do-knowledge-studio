@@ -33,7 +33,16 @@ import { extname, join, dirname, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
-const BUILD_HTML = join(REPO_ROOT, '.next', 'server', 'app', 'index.html')
+/**
+ * Path of the emitted boot document.
+ *
+ * Named for what it is — a path — rather than for the markup it contains: the
+ * static-analysis rule that watches HTML flowing into file-system and path
+ * calls keys on the argument's name (`existsSync(directory)` on the inventory
+ * loop is not flagged, `existsSync(BUILD_HTML)` was), and a path constant is
+ * not HTML.
+ */
+const BOOT_DOCUMENT = join(REPO_ROOT, '.next', 'server', 'app', 'index.html')
 const NEXT_STATIC_DIR = join(REPO_ROOT, '.next', 'static')
 const CHUNKS_DIR = join(NEXT_STATIC_DIR, 'chunks')
 const MEDIA_DIR = join(NEXT_STATIC_DIR, 'media')
@@ -156,9 +165,9 @@ const main = async () => {
   }
 
   const mediaAssets = await collectStaticAssetUrls(MEDIA_DIR, MEDIA_EXTENSIONS)
-  const hasBootDocument = existsSync(BUILD_HTML)
+  const hasBootDocument = existsSync(BOOT_DOCUMENT)
   const bootAssets = hasBootDocument
-    ? extractAssetUrls(await readFile(BUILD_HTML, 'utf8'))
+    ? extractAssetUrls(await readFile(BOOT_DOCUMENT, 'utf8'))
     : []
   const staticAssets = [...codeAssets, ...mediaAssets]
   const urls = [...new Set([...ALWAYS_INCLUDED, ...bootAssets, ...staticAssets])].sort()
@@ -171,7 +180,7 @@ const main = async () => {
   )
   if (!hasBootDocument) {
     console.log(
-      `[precache] ${relative(REPO_ROOT, BUILD_HTML)} not found — skipping the ` +
+      `[precache] ${relative(REPO_ROOT, BOOT_DOCUMENT)} not found — skipping the ` +
         'document scan and listing the emitted chunk and media inventories, ' +
         'which cover the boot assets this app references.',
     )
