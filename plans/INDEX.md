@@ -16,6 +16,12 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 | Reconcile | Re-verify recorded open items against source and runtime | Done | F1 (AI request control) is implemented (#923/#926/#927; 54 harness tests pass); Plan 161's dev search-worker error and both workflow-linter warnings no longer reproduce; first-mount reduced motion remains open; Plan 131's eager-chunk and source-error items are closed. |
 | Audit | Find new improvement and missing-implementation candidates | Done | Typography classes inert (no `@tailwindcss/typography`; PR #951 open and conflicting), unused `indexeddb-backup.ts`, F3 gesture spec, Cursor/Windsurf manifest semantics, markdownlint gate wiring, plan/ADR number collisions. See `plans/166-codebase-improvement-audit-2026-10-13.md`. |
 
+### Plan 167 — Precache manifest without the boot document (2026-10-13)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Fix | Stop rejecting builds that complete without `.next/server/app/index.html` | In review | The boot-document scan is best-effort while both static inventories stay mandatory; [ADR 041](ADRs/041-offline-precache-scope-and-upgrade-identity.md) §2 amended. A new suite (4 cases) covers the Vercel layout; the manifest is byte-identical on the real build. `plans/167-precache-manifest-without-boot-document-2026-10-13.md`. |
+
 ### Plan 165 — Backlog remediation and PR integrity guards (2026-10-13)
 
 | Wave | Goal | Status | Outcome |
