@@ -105,3 +105,17 @@ Conclusion: the repository side of the failure is fixed and verified; the
 remaining cause is only visible in the provider log. Followup: read that log and,
 if the failure is outside `generate-precache-manifest.mjs`, treat it as a
 platform/framework issue rather than a manifest one.
+
+### Follow-up result (same evening)
+
+A **fresh** deployment of the fixed branch (`85c3f2f`, after the typography
+regression guards landed) failed the same way (`dpl_7eL3MVy8knrFDjfswXEwiZKHgnFy`),
+so the failure is deterministic rather than a transient build-machine problem.
+Local verification of that commit: production build clean, generator suite 4/4,
+offline e2e 6/6, markdown-preview e2e 9/9 (including a new assertion that fails
+when `@plugin` is removed), unit suite 195/195 files.
+
+Two environment hypotheses were tested and ruled out locally: the build passes
+under Node 24 (the open-ended `engines` range lets the provider pick a major the
+repo does not test) and under the standalone output mode. The provider log
+remains the only source of the real cause.
