@@ -16,6 +16,13 @@
  * reject its dynamic import (plans/161). Inventories are read from the build
  * directory, never hardcoded, so renamed hashes cannot silently fall out.
  *
+ * The document scan is best-effort: a build that completes without leaving
+ * `.next/server/app/index.html` (observed on Vercel) still gets a manifest from
+ * the inventories, which cover every asset such a document references — the
+ * chunks and media are the same files. Failing the deployment there would
+ * reject a manifest that is already complete. The inventories themselves stay
+ * mandatory: without them the script refuses to write anything.
+ *
  * Runs after `next build`. Output: `public/precache-manifest.json`, fetched
  * by the worker at install time.
  */
@@ -120,15 +127,9 @@ const collectStaticAssetUrls = async (directory, extensions) => {
 }
 
 const main = async () => {
-  if (!existsSync(BUILD_HTML)) {
-    console.error(
-      `[precache] ${BUILD_HTML} not found. Run \`pnpm run build\` first — the ` +
-        'precache list is derived from the real build output.',
-    )
-    process.exitCode = 1
-    return
-  }
-
+  // The inventories are the hard requirement: they are what makes the manifest
+  // able to satisfy a lazy view import offline. Check them before anything else
+  // so a run against no build at all fails with the message that says so.
   for (const directory of [CHUNKS_DIR, MEDIA_DIR]) {
     if (!existsSync(directory)) {
       console.error(
@@ -140,8 +141,6 @@ const main = async () => {
     }
   }
 
-  const html = await readFile(BUILD_HTML, 'utf8')
-  const bootAssets = extractAssetUrls(html)
   const codeAssets = await collectStaticAssetUrls(CHUNKS_DIR, CODE_EXTENSIONS)
 
   // A build whose chunk directory holds no JavaScript is not a build this
@@ -157,6 +156,10 @@ const main = async () => {
   }
 
   const mediaAssets = await collectStaticAssetUrls(MEDIA_DIR, MEDIA_EXTENSIONS)
+  const hasBootDocument = existsSync(BUILD_HTML)
+  const bootAssets = hasBootDocument
+    ? extractAssetUrls(await readFile(BUILD_HTML, 'utf8'))
+    : []
   const staticAssets = [...codeAssets, ...mediaAssets]
   const urls = [...new Set([...ALWAYS_INCLUDED, ...bootAssets, ...staticAssets])].sort()
 
@@ -166,6 +169,13 @@ const main = async () => {
       `(${bootAssets.length} from the document, ${codeAssets.length} chunks, ` +
       `${mediaAssets.length} media)`,
   )
+  if (!hasBootDocument) {
+    console.log(
+      `[precache] ${relative(REPO_ROOT, BUILD_HTML)} not found — skipping the ` +
+        'document scan and listing the emitted chunk and media inventories, ' +
+        'which cover the boot assets this app references.',
+    )
+  }
 }
 
 await main()
