@@ -1,6 +1,14 @@
 # 051 — Vercel Deployment Fix & Prevention (2026-07-09)
 
 > **Historical Note**: The Vercel deployment configuration described here was superseded by the current CI/CD pipeline (2026-07). Remaining unchecked items were completed in later plans (090–096). Retained for historical context only.
+>
+> **Recurrence (2026-10-13)**: the *symptom* came back for a different reason — a
+> silent deployment failure kept the production site on an old build. This time the
+> cause was the Hobby plan's owner-scoped cap of 100 deployments per 24 h, shared
+> with previews, and the fix is in Plan 164 (`ignoreCommand` + `git.deploymentEnabled`
+> in `vercel.json`). The durable lesson is in both plans: *check deployment health
+> before believing a merge reached users* — the `Vercel` check is not
+> ruleset-required, so a red ✗ blocks nothing and hides a stale production.
 
 ## Problem
 
