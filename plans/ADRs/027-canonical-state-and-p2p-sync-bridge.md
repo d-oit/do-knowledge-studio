@@ -2,7 +2,7 @@
 
 **Date**: 2026-07-19  
 **Status**: Implemented  
-**Related**: ADR 018, ADR 026, Plan 071  
+**Related**: ADR 018, ADR 026, Plan 071, Plan 165
 **Supersedes**: ADR 026 statements that make Yjs primary or Zustand read-only
 
 ## Context
@@ -136,3 +136,15 @@ document. Transport connection alone is not sufficient.
 - Manual conflict selection produces the selected field values on both peers.
 - Disconnect/reconnect does not duplicate observers or operations.
 - Reload restores canonical state and reconnects the replica without data loss.
+
+## Implementation addendum — 2026-10-13
+
+Plan 165 Step 2 corrected the room-exit lifecycle. `leaveRoom()` destroys only
+the active WebRTC provider; it preserves the shared Yjs document and its
+IndexedDB persistence. The app-shell-owned bidirectional bridge remains active
+while the user is outside a room, and a later `joinRoom()` reuses that document.
+Full `destroy()` remains the teardown path for tests and host shutdown. Initial
+join now surfaces conflicts returned by the canonical merge.
+
+The lifecycle regression is covered by `src/lib/sync/doc-rejoin.test.ts` and
+`src/components/studio/views/sync-view-coverage.test.tsx`.

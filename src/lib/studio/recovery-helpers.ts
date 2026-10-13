@@ -9,6 +9,7 @@ import {
   TagSchema,
 } from './schema'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from './schema'
+import { pruneDanglingCanvasRefs } from './canvas-refs'
 import { useStudioStore } from './store'
 import { reconcileSnapshot, type HistorySnapshot } from './history-snapshot'
 import { isSyncBlocked } from './hydration-guard'
@@ -192,6 +193,13 @@ const RecoverySnapshotSchema = z.object({
       z.object({
         entities: z.array(EntitySchema),
         claims: z.array(ClaimSchema),
+        canvas: z
+          .object({
+            graph: GraphSchema.optional(),
+            mindMap: MindMapSchema.optional(),
+            links: z.array(LinkSchema).optional(),
+          })
+          .optional(),
       }),
     ),
     historyIndex: z.number(),
@@ -282,8 +290,16 @@ type ValidatedRecoverySnapshot = Omit<
 
 /** Applies a validated recovery snapshot to the Zustand store. */
 const applyRecoverySnapshot = (snapshot: ValidatedRecoverySnapshot): void => {
-  // A recovered history stack can reference entities that predate a later
-  // prune; reconcile each step so undo can never reintroduce an orphan.
+  // Reconcile the current canvas as well as each undo step: older recovery
+  // snapshots may contain edges or links whose entities were already removed.
+  const canvas = pruneDanglingCanvasRefs(
+    {
+      graph: snapshot.graph as ValidatedGraph | undefined,
+      mindMap: snapshot.mindMap as ValidatedMindMap | undefined,
+      links: snapshot.links as ValidatedLink[] | undefined,
+    },
+    new Set((snapshot.entities as Entity[]).map((entity) => entity.id)),
+  )
   const entityHistory = snapshot.entityHistory.map(reconcileSnapshot)
   useStudioStore.setState({
     entities: reconcileSnapshot({
@@ -293,9 +309,9 @@ const applyRecoverySnapshot = (snapshot: ValidatedRecoverySnapshot): void => {
     claims: snapshot.claims as Claim[],
     entityHistory,
     historyIndex: Math.min(snapshot.historyIndex, entityHistory.length - 1),
-    graph: snapshot.graph as ValidatedGraph | undefined,
-    mindMap: snapshot.mindMap as ValidatedMindMap | undefined,
-    links: snapshot.links as ValidatedLink[] | undefined,
+    graph: canvas.graph,
+    mindMap: canvas.mindMap,
+    links: canvas.links,
     tags: snapshot.tags as ValidatedTag[] | undefined,
   })
 }

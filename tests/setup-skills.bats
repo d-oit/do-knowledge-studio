@@ -25,6 +25,7 @@ write_manifest() {
   if [ -z "$content" ]; then
     content='{
       "version": "1.0.0",
+      "canonical_skills": ".agents/skills",
       "tools": {
         "cursor": {
           "directory": ".cursor",
@@ -65,7 +66,28 @@ run_setup() {
   # Verify symlink targets (relative to .cursor/)
   local target
   target=$(readlink "$WORK/.cursor/skills")
-  [[ "$target" == *"agents/skills"* ]]
+  [ "$target" = "../.agents/skills" ]
+  target=$(readlink "$WORK/.windsurf/skills")
+  [ "$target" = "../.agents/skills" ]
+}
+
+@test "uses canonical_skills from manifest for relative symlink targets" {
+  mkdir -p "$WORK/shared/skills"
+  local manifest='{
+    "version": "1.0.0",
+    "canonical_skills": "shared/skills",
+    "tools": {
+      "cursor": {
+        "directory": ".cursor",
+        "skills_directory": ".cursor/skills",
+        "symlink_strategy": "directory"
+      }
+    }
+  }'
+  write_manifest "$WORK" "$manifest"
+  run_setup "$WORK"
+  [ "$status" -eq 0 ]
+  [ "$(readlink "$WORK/.cursor/skills")" = "../shared/skills" ]
 }
 
 @test "creates parent directories for tool directories" {
@@ -128,7 +150,7 @@ run_setup() {
   [ -L "$WORK/.cursor/skills" ]
   local target
   target=$(readlink "$WORK/.cursor/skills")
-  [[ "$target" == *"agents/skills"* ]]
+  [ "$target" = "../.agents/skills" ]
 }
 
 @test "skips tools with symlink_strategy=none" {

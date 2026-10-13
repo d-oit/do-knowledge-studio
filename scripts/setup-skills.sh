@@ -22,17 +22,25 @@ fi
 # Parse manifest with node (available in Node.js projects)
 TOOLS=$(node -e "
 const fs = require('fs');
-const manifestPath = process.argv[1];
+const path = require('path');
+const repoRoot = process.argv[1];
+const manifestPath = process.argv[2];
 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+const canonicalSkills = manifest.canonical_skills || '.agents/skills';
 const tools = manifest.tools || {};
 for (const [name, config] of Object.entries(tools)) {
   if (config.symlink_strategy === 'none') continue;
-  console.log(name + '|' + (config.directory || '') + '|' + (config.skills_directory || ''));
+  const toolDir = config.directory || '';
+  const skillsDir = config.skills_directory || '';
+  if (!toolDir || !skillsDir) continue;
+  const linkParent = path.dirname(path.resolve(repoRoot, skillsDir));
+  const target = path.relative(linkParent, path.resolve(repoRoot, canonicalSkills));
+  console.log([name, toolDir, skillsDir, target].join('|'));
 }
-" -- "$MANIFEST")
+" -- "$REPO_ROOT" "$MANIFEST")
 
-while IFS='|' read -r tool_name tool_dir skills_dir; do
-  if [ -z "$tool_name" ] || [ -z "$tool_dir" ] || [ -z "$skills_dir" ]; then
+while IFS='|' read -r tool_name tool_dir skills_dir skills_target; do
+  if [ -z "$tool_name" ] || [ -z "$tool_dir" ] || [ -z "$skills_dir" ] || [ -z "$skills_target" ]; then
     continue
   fi
 
@@ -48,8 +56,8 @@ while IFS='|' read -r tool_name tool_dir skills_dir; do
   elif [ -e "$FULL_SKILLS_DIR" ]; then
     echo "Warning: $FULL_SKILLS_DIR exists and is not a symlink. Skipping."
   else
-    ln -s "../agents/skills" "$FULL_SKILLS_DIR"
-    echo "Created symlink: $FULL_SKILLS_DIR -> ../agents/skills"
+    ln -s "$skills_target" "$FULL_SKILLS_DIR"
+    echo "Created symlink: $FULL_SKILLS_DIR -> $skills_target"
   fi
 done <<< "$TOOLS"
 

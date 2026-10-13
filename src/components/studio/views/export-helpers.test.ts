@@ -39,17 +39,17 @@ const SAMPLE_CLAIMS: Claim[] = [
 ]
 
 const SAMPLE_GRAPH: ValidatedGraph = {
-  nodes: [{ id: 'n1', label: 'Node 1', type: 'note', x: 0, y: 0 }],
-  edges: [{ id: 'ge1', source: 'n1', target: 'n1', relation: 'self' }],
+  nodes: [{ id: 'e1', label: 'Node 1', type: 'note', x: 0, y: 0 }],
+  edges: [{ id: 'ge1', source: 'e1', target: 'e1', relation: 'self' }],
 }
 
 const SAMPLE_MIND_MAP: ValidatedMindMap = {
-  nodes: [{ id: 'mn1', label: 'Root', type: 'concept' }],
+  nodes: [{ id: 'e1', label: 'Root', type: 'concept' }],
   edges: [],
 }
 
 const SAMPLE_LINKS: ValidatedLink[] = [
-  { id: 'l1', sourceId: 'e1', targetId: 'e2', type: 'related', createdAt: '2026-01-01T00:00:00.000Z' },
+  { id: 'l1', sourceId: 'e1', targetId: 'e1', type: 'related', createdAt: '2026-01-01T00:00:00.000Z' },
 ]
 
 const SAMPLE_TAGS: ValidatedTag[] = [
@@ -147,6 +147,30 @@ describe('buildJsonExport', () => {
     expect(parsed.mindMap).toEqual(SAMPLE_MIND_MAP)
     expect(parsed.links).toEqual(SAMPLE_LINKS)
     expect(parsed.tags).toEqual(SAMPLE_TAGS)
+  })
+  it('prunes dangling graph edges and links before JSON export', () => {
+    const graph: ValidatedGraph = {
+      nodes: [
+        { id: 'e1', label: 'Node 1', type: 'note', x: 0, y: 0 },
+        { id: 'e2', label: 'Node 2', type: 'concept', x: 1, y: 1 },
+      ],
+      edges: [
+        { id: 'keep', source: 'e1', target: 'e1', relation: 'self' },
+        { id: 'drop', source: 'e1', target: 'e2', relation: 'dangling' },
+      ],
+    }
+    const links: ValidatedLink[] = [
+      { id: 'keep', sourceId: 'e1', targetId: 'e1', type: 'self', createdAt: '2026-01-01T00:00:00.000Z' },
+      { id: 'drop', sourceId: 'e1', targetId: 'e2', type: 'dangling', createdAt: '2026-01-01T00:00:00.000Z' },
+    ]
+
+    const payload = JSON.parse(buildJsonExport(SAMPLE_ENTITIES, [], { graph, links })) as {
+      graph: ValidatedGraph
+      links: ValidatedLink[]
+    }
+
+    expect(payload.graph.edges.map((edge) => edge.id)).toEqual(['keep'])
+    expect(payload.links.map((link) => link.id)).toEqual(['keep'])
   })
 
   it('omits graph, mindMap, links, and tags when not provided', () => {

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import type { CanvasSnapshot } from './canvas-refs'
 import { reconcileSnapshot, resolveDanglingId, snapshotCorpus } from './history-snapshot'
 import type { Claim, Entity } from './types'
 
@@ -25,7 +26,7 @@ const claim = (id: string, entityId: string): Claim => ({
 describe('snapshotCorpus', () => {
   it('copies each entity so later mutation cannot reach into the snapshot', () => {
     const live = [entity('a')]
-    const { entities } = snapshotCorpus(live, [])
+    const { entities } = snapshotCorpus(live, [], {})
 
     live[0].name = 'mutated after snapshot'
     live.push(entity('b'))
@@ -36,11 +37,18 @@ describe('snapshotCorpus', () => {
 
   it('copies claims for the same reason', () => {
     const liveClaims = [claim('c1', 'a')]
-    const { claims } = snapshotCorpus([entity('a')], liveClaims)
+    const { claims } = snapshotCorpus([entity('a')], liveClaims, {})
 
     liveClaims[0].statement = 'mutated'
 
     expect(claims[0].statement).toBe('Claim c1')
+  })
+  it('stores canvas by reference instead of copying it per history step', () => {
+    const canvas: CanvasSnapshot = { links: [] }
+
+    const snapshot = snapshotCorpus([entity('a')], [], canvas)
+
+    expect(snapshot.canvas).toBe(canvas)
   })
 })
 
@@ -88,6 +96,31 @@ describe('reconcileSnapshot', () => {
     const { claims } = reconcileSnapshot(snapshot)
 
     expect(claims.map((c) => c.id)).toEqual(['c1'])
+  })
+  it('prunes dangling canvas references against the snapshot entities', () => {
+    const canvas: CanvasSnapshot = {
+      graph: {
+        nodes: [{ id: 'a', label: 'A', type: 'note', x: 0, y: 0 }],
+        edges: [{ id: 'g1', source: 'a', target: 'missing', relation: 'relates' }],
+      },
+      links: [{ id: 'l1', sourceId: 'a', targetId: 'missing', type: 'relates', createdAt: '2026-01-01T00:00:00.000Z' }],
+    }
+    const snapshot = snapshotCorpus([entity('a')], [], canvas)
+
+    const reconciled = reconcileSnapshot(snapshot)
+
+    expect(reconciled.canvas?.graph?.nodes).toEqual(canvas.graph?.nodes)
+    expect(reconciled.canvas?.graph?.edges).toEqual([])
+    expect(reconciled.canvas?.links).toEqual([])
+  })
+
+  it('keeps the canvas field absent for older history snapshots', () => {
+    const snapshot = { entities: [entity('a')], claims: [] }
+
+    const reconciled = reconcileSnapshot(snapshot)
+
+    expect(reconciled.canvas).toBeUndefined()
+    expect('canvas' in reconciled).toBe(false)
   })
 
   it('never mutates the input snapshot', () => {

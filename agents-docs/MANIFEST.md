@@ -24,7 +24,7 @@ The `manifest.json` file describes all AI agent tools supported by this reposito
       "docs": [
         "TOOL.md"
       ],
-      "symlink_strategy": "relative | none"
+      "symlink_strategy": "relative | directory | none"
     }
   }
 }
@@ -39,19 +39,24 @@ The `manifest.json` file describes all AI agent tools supported by this reposito
   - `directory`: The root directory for tool-specific configuration.
   - `skills_directory`: (Optional) Where skills should be symlinked.
   - `docs`: (Optional) Tool-specific documentation files.
-  - `symlink_strategy`: How to handle skills. `relative` creates symlinks from `skills_directory` back to `canonical_skills`.
+  - `symlink_strategy`: `relative`, `directory`, or `none`. `none` skips the
+    skills link; `sync` creates a relative directory symlink for other values.
 
 ## Management Script
 
-Use `scripts/agent-surface.py` to manage the agent surface based on the manifest.
+Use `scripts/agent-surface.py` for manifest-managed surfaces:
 
-- `sync`: Creates directories and symlinks as defined in the manifest.
-- `validate`: Ensures the repository state matches the manifest (no missing symlinks or directories).
-- `generate-docs`: Updates `AGENTS.md` and ensures tool-specific documentation starts with `@AGENTS.md`.
+- `sync`: Creates missing tool directories and skill links; reports existing
+  path or link mismatches rather than replacing them.
+- `validate`: Checks skill symlinks, canonical skill metadata, evaluations,
+  skill-local links, `AGENTS.md` requirements, and generated catalog freshness.
+
+`scripts/setup-skills.sh` creates links from the manifest and runs
+`scripts/generate-skills-docs.py`, which updates `agents-docs/AVAILABLE_SKILLS.md`
+and `.agents/skills/README.md`.
 
 ## Adding a New Tool
 
-1. Update `.agents/manifest.json` with the new tool definition.
-2. Run `./scripts/agent-surface.py sync` to scaffold directories.
-3. Run `./scripts/agent-surface.py generate-docs` to create tool-specific documentation.
-4. Verify everything with `./scripts/agent-surface.py validate`.
+1. Update `.agents/manifest.json` with the tool directory, optional skills directory, docs, and link strategy.
+2. Run `./scripts/setup-skills.sh` to create missing links and refresh skill catalogs.
+3. Run `./scripts/validate-skills.sh` to validate the agent-facing surfaces.

@@ -17,7 +17,7 @@ import { ChatView } from './views/chat-view'
 import { ErrorBoundary } from './error-boundary'
 import { ViewErrorBoundary } from './view-error-boundary'
 import { Skeleton } from './ui/skeleton'
-import { startBidirectionalSync } from '@/lib/sync/bridge'
+import { startViewHashSync } from '@/lib/studio/view-hash-sync'
 import { translate as navT } from '@/lib/i18n/messages/nav'
 import { translate as timelineT } from '@/lib/i18n/messages/timeline'
 import { readQuarantine, type QuarantineRecord } from '@/lib/studio/hydration-quarantine'
@@ -251,18 +251,37 @@ export const AppShell = () => {
   const [appReady, setAppReady] = useState(false)
   const refusal = useHydrationRefusal()
 
-  // The Yjs bridge must not run on a refused hydrate. It would merge inbound
-  // peer updates into a seed workspace and publish that seed corpus outward,
-  // so the real library gets replaced by demo data in the shared document.
+  useEffect(() => {
+    if (getHydrationRefusal() !== null) return
+    return startViewHashSync()
+  }, [refusal])
+
+  // The Yjs bridge must not start when hydration has been refused. It would
+  // merge inbound peer updates into a seed workspace and publish that seed
+  // corpus outward, replacing the real library in the shared document.
   //
   // The gate reads the LIVE status rather than `refusal` from render state:
   // the hook starts at null (so SSR markup matches) and fills in from an
-  // effect, which is too late for this effect on the first pass. The effect
-  // still re-runs when the status changes, so a refusal arriving after mount
-  // tears the bridge down through its own cleanup.
+  // effect. Re-running this effect on status changes prevents a pending import
+  // from starting the bridge or stops a bridge that has already started.
   useEffect(() => {
     if (getHydrationRefusal() !== null) return
-    return startBidirectionalSync()
+
+    let active = true
+    let stopBridge = (): void => {}
+    void import('@/lib/sync/bridge')
+      .then(({ startBidirectionalSync }) => {
+        if (!active || getHydrationRefusal() !== null) return
+        stopBridge = startBidirectionalSync()
+      })
+      .catch((error: unknown) => {
+        console.error('[AppShell] Could not load the Yjs bridge:', error)
+      })
+
+    return () => {
+      active = false
+      stopBridge()
+    }
   }, [refusal])
 
   // Readiness hook for the E2E `waitForAppReady` helper. React flushes child

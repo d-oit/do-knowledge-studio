@@ -30,10 +30,11 @@ const restoreHistoryIndex = (
   const { entityHistory, selectedEntityId, editingEntityId } = state
   const target = entityHistory[index]
   if (!target) return {}
-  const { entities, claims } = reconcileSnapshot(target)
+  const { entities, claims, canvas } = reconcileSnapshot(target)
   return {
     entities,
     claims,
+    ...(canvas ? { graph: canvas.graph, mindMap: canvas.mindMap, links: canvas.links } : {}),
     historyIndex: index,
     selectedEntityId: resolveDanglingId(selectedEntityId, entities),
     editingEntityId: resolveDanglingId(editingEntityId, entities),
@@ -46,9 +47,9 @@ export const createHistorySlice: StudioSlice<HistorySlice> = (set, get) => ({
   historyIndex: -1,
 
   pushHistory: () => {
-    const { entities, claims, historyIndex, entityHistory } = get()
+    const { entities, claims, graph, mindMap, links, historyIndex, entityHistory } = get()
     const trimmed = entityHistory.slice(0, historyIndex + 1)
-    const next = [...trimmed, snapshotCorpus(entities, claims)]
+    const next = [...trimmed, snapshotCorpus(entities, claims, { graph, mindMap, links })]
     if (next.length > MAX_HISTORY) next.shift()
     set({
       entityHistory: next,

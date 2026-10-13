@@ -1,6 +1,6 @@
 # Plans Index
 
-**Updated**: 2026-10-12
+**Updated**: 2026-10-13
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
 Plan records are filed as `plans/NNN-slug.md`, where `NNN` is the plan number used
@@ -8,6 +8,15 @@ below; accepted decision records are in `plans/ADRs/NNN-slug.md`. Work still in
 flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
+
+### Plan 165 — Backlog remediation and PR integrity guards (2026-10-13)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| W1–W4 | Close selected Plan 162 gaps | Done | Commits `e2ee5a6`, `a2dcbea`, `f7d970f`, `cdbd0f3` implement canvas integrity, sync rejoin, URL hashes, and deferred heavy dependencies; see `plans/165-backlog-remediation-2026-10-13.md`. |
+| W5 | Reconcile tooling and README claims | Done | Skills catalogs, agent-surface CLI, script/quality docs, and README storage/search/model-loading claims corrected. Plan 162 S3 remains open. |
+| W6 | Add PR integrity guards | Done | Dependency-range and stale-base deletion CI guards with eight focused BATS cases; ADR 044; no ruleset change. |
+| W7 | Reconcile records and complete delivery | PR #950 | Plan 162/163, the index, and ADRs reconciled; final local gate, browser suites, baseline shadow, and browser canary recorded in Plan 165. Five valid PR review findings fixed; remote checks, thread resolution, and merge status tracked on PR #950. |
 
 ### Plan 164 — Vercel deployment validation, and the doc-lint gate it exposed (2026-10-12)
 
@@ -28,8 +37,15 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 | Roast (main) | 2 defects already on `main` | Done | PR #910 had silently downgraded four dependency ranges (`next`, `react-day-picker`, `@tanstack/react-virtual`, `eslint-plugin-react-refresh`); `.gitignore`'s directory-only `node_modules/` staged worktree symlinks and `speech-coverage.test.ts` used `afterEach` without importing it. |
 | Merges | Land the ready PRs | Done — 7 in `origin/main` | #920 (`6c4b20d`), #931 (`583e820`, #861), #923 (`ab26b78`, #885), #935 (`3919baf`, #865), #933 (`1e519e8`), #934 (`56428ea`), #924 (`d1ccc85`, Dependabot alert #75). |
 | Issues | Implement the issue work | Landed and queued | #861 → #931 and #865 → #935 merged; #938 (#851/#852/#853/#858 touch token + type scale), #936 (#870 container constant + `ViewHeader`), #937 (#886 provider constants), #939 (#863/#856 shared `ConfirmDialog`) armed for auto-merge at session close. |
-| Follow-ups | Merge queue and process guards | Open | Merge order #925 → #926 → #927 → #928 → #929 → #936/#938/#939 → #937; add a no-downgrade dependency-range check; require automated branch writers to rebase onto `main` (the `d415e9b` tree would have reverted `main`); Codacy `--reanalyze` when findings point at lines absent at head. Open issues at close: #855 and #862, in flight as `issue/touch-and-type-scale`. |
+| Follow-ups | Open — partly closed | Plan 165 Step 6 implemented the no-downgrade and stale-base guards (ADR 044). Other follow-ups retain their dated 2026-10-12 status and are not reassessed here. |
 | Verification | Evidence discipline | Done | Every fix reproduced before it was touched; every new regression test re-injected with the defect and observed to fail; per-lane unit suites, root `tsc --noEmit`, and Playwright where the change made it meaningful. |
+
+### Plan 162 — Roadmap progress and next work (2026-10-05)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Source audit | Preserve the 2026-10-05 findings | Historical — reconciled | Original source observations remain dated; Plan 162's 2026-10-13 addendum records later implementations. |
+| Selected backlog | Close the recorded integrity and navigation gaps | Partially closed | Plan 165 resolves items #2–#4 and F2, and reconciles S1/S2/D1–D3. F1, F3, S3, Plan 161 follow-ons, and unscheduled candidates remain open. |
 
 ### Plan 116 — Open-PR / open-issue sweep, roast, and merge order (2026-10-11)
 

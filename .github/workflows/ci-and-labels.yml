@@ -110,6 +110,27 @@ jobs:
             echo "offline=$offline"
           } >> "$GITHUB_OUTPUT"
 
+  stale-base-guard:
+    name: Stale Base Guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          # The default PR checkout is a synthetic merge commit; inspect the actual PR head.
+          ref: refs/pull/${{ github.event.pull_request.number }}/head
+          fetch-depth: 0
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version: '22'
+      - name: Check for missing target-branch additions
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+        run: node scripts/check-stale-base-deletions.mjs "$BASE_REF"
+
   quality-gate:
     name: Quality Gate
     runs-on: ubuntu-latest
@@ -313,6 +334,11 @@ jobs:
       - name: Install dependencies
         if: steps.depdiff.outputs.changed == 'true'
         run: pnpm install --frozen-lockfile
+      - name: Check dependency ranges for downgrades
+        if: steps.depdiff.outputs.changed == 'true' && github.event_name == 'pull_request'
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+        run: node scripts/check-dependency-downgrades.mjs "$BASE_REF"
       - name: Run verify-deps
         if: steps.depdiff.outputs.changed == 'true'
         run: ./scripts/verify-deps.sh

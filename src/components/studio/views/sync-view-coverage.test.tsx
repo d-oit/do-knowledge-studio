@@ -43,29 +43,40 @@ vi.mock('@/lib/studio/use-reduced-motion', () => ({
   useReducedMotion: () => false,
 }))
 
-const callbacks: Record<string, Array<(data: unknown) => void>> = {}
-const mockProvider = {
-  on: vi.fn((event: string, cb: (data: unknown) => void) => {
-    callbacks[event] = callbacks[event] ?? []
-    callbacks[event].push(cb)
-  }),
-  off: vi.fn((event: string, cb: (data: unknown) => void) => {
-    if (!callbacks[event]) return
-    callbacks[event] = callbacks[event].filter((stored) => stored !== cb)
-  }),
+const createMockProvider = () => {
+  const handlers: Record<string, Array<(data: unknown) => void>> = {}
+  return {
+    on: vi.fn((event: string, callback: (data: unknown) => void) => {
+      handlers[event] = handlers[event] ?? []
+      handlers[event].push(callback)
+    }),
+    off: vi.fn((event: string, callback: (data: unknown) => void) => {
+      handlers[event] = (handlers[event] ?? []).filter((stored) => stored !== callback)
+    }),
+    emit: (event: string, data: unknown) => {
+      handlers[event]?.forEach((callback) => { callback(data) })
+    },
+    clear: () => {
+      Object.keys(handlers).forEach((event) => { handlers[event] = [] })
+    },
+  }
 }
 
-const mockEmit = (event: string, data: unknown) => {
-  callbacks[event]?.forEach((cb) => { cb(data) })
-}
+const mockProvider = createMockProvider()
+let mockProviderForJoin = mockProvider
+let mockProviderAtMount: typeof mockProvider | null = mockProvider
+const mockEmit = (event: string, data: unknown) => { mockProvider.emit(event, data) }
 
 vi.mock('@/lib/sync', () => ({
   initSync: vi.fn(() => Promise.resolve()),
-  joinRoom: vi.fn(),
-  getProvider: vi.fn(() => mockProvider),
+  joinRoom: vi.fn(() => {
+    mockProviderAtMount = mockProviderForJoin
+    return mockProviderForJoin
+  }),
+  getProvider: vi.fn(() => mockProviderAtMount),
   getYjsEntities: vi.fn(() => [{ id: 'yjs-ent' }]),
   getYjsClaims: vi.fn(() => [{ id: 'yjs-claim' }]),
-  destroy: vi.fn(),
+  leaveRoom: vi.fn(() => { mockProviderAtMount = null }),
 }))
 
 import { mergeIntoYjs, applyConflictResolution } from '@/lib/sync/bridge'
@@ -147,7 +158,9 @@ describe('SyncView branch coverage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    Object.keys(callbacks).forEach((key) => { callbacks[key] = [] })
+    mockProvider.clear()
+    mockProviderForJoin = mockProvider
+    mockProviderAtMount = mockProvider
     vi.mocked(mergeIntoYjs).mockReturnValue({ merged: { entities: [], claims: [] }, conflicts: [] })
     originalClipboard = globalThis.navigator.clipboard
     vi.stubGlobal('navigator', {
@@ -225,7 +238,7 @@ describe('SyncView branch coverage', () => {
   })
 
   it('leaves room and resets state', async () => {
-    const { destroy } = await import('@/lib/sync')
+    const { leaveRoom } = await import('@/lib/sync')
     const { stopDiscovery } = await import('@/lib/sync/discovery')
     render(<SyncView />)
     fireEvent.change(screen.getByPlaceholderText('Enter room ID or leave empty to create'), {
@@ -238,9 +251,61 @@ describe('SyncView branch coverage', () => {
     fireEvent.click(screen.getByText('Leave'))
     await waitFor(() => {
       expect(stopDiscovery).toHaveBeenCalled()
-      expect(destroy).toHaveBeenCalled()
+      expect(leaveRoom).toHaveBeenCalled()
       expect(screen.getByText('Disconnected')).toBeDefined()
     })
+  })
+
+  it('surfaces join conflicts in the conflict UI', async () => {
+    vi.mocked(mergeIntoYjs).mockReturnValue({
+      merged: { entities: [], claims: [] },
+      conflicts: [{
+        entityId: 'ent-1',
+        entityType: 'entity',
+        field: 'name',
+        localValue: 'Local',
+        remoteValue: 'Remote',
+        winner: 'local',
+        reason: 'local newer',
+      }],
+    })
+    render(<SyncView />)
+    fireEvent.change(screen.getByPlaceholderText('Enter room ID or leave empty to create'), {
+      target: { value: 'room-123' },
+    })
+    fireEvent.click(screen.getByText('Join'))
+    await waitFor(() => {
+      expect(joinRoom).toHaveBeenCalledWith('room-123')
+      expect(screen.getByTestId('conflict-count').textContent).toBe('1')
+    })
+  })
+
+  it('binds provider events after join and rebinds after leaving', async () => {
+    const secondProvider = createMockProvider()
+    mockProviderAtMount = null
+    render(<SyncView />)
+    fireEvent.change(screen.getByPlaceholderText('Enter room ID or leave empty to create'), {
+      target: { value: 'room-123' },
+    })
+    fireEvent.click(screen.getByText('Join'))
+    await waitFor(() => { expect(joinRoom).toHaveBeenCalledTimes(1) })
+    act(() => { mockProvider.emit('status', { connected: true }) })
+    await waitFor(() => { expect(screen.getByText('Connected')).toBeDefined() })
+    act(() => { mockProvider.emit('peers', { webrtcPeers: ['first'], bcPeers: [] }) })
+    await waitFor(() => { expect(screen.getByText('Peers').parentElement?.textContent).toBe('Peers1') })
+    act(() => { mockProvider.emit('synced', {}) })
+    await waitFor(() => { expect(screen.getByTestId('synced-entities').textContent).toBe('1') })
+
+    fireEvent.click(screen.getByText('Leave'))
+    await waitFor(() => { expect(screen.getByText('Disconnected')).toBeDefined() })
+    mockProviderForJoin = secondProvider
+    fireEvent.click(screen.getByText('Join'))
+    await waitFor(() => { expect(joinRoom).toHaveBeenCalledTimes(2) })
+    await waitFor(() => {
+      expect(secondProvider.on).toHaveBeenCalledWith('peers', expect.any(Function))
+    })
+    act(() => { secondProvider.emit('peers', { webrtcPeers: ['second'], bcPeers: [] }) })
+    await waitFor(() => { expect(screen.getByText('Peers').parentElement?.textContent).toBe('Peers1') })
   })
 
   it('copies room ID when connected', async () => {
