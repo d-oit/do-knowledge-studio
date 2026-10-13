@@ -2,6 +2,7 @@
 
 **Date**: 2026-09-30
 **Status**: Implemented
+**Amended**: 2026-10-13 — §2's document rule (Plan 167)
 **Related**: Plan 161, Plan 158, ADR 036, ADR 018
 **Amends (in part)**: ADR 036 (E2E target — production mode becomes an explicit
 opt-in that is *required* for offline assertions, instead of the removed
@@ -50,14 +51,22 @@ not app code — one excluded file alone is larger than the whole chunk set.
 Caching them would inflate mandatory install for every user, including those who
 never open the AI view.
 
-### 2. Fail closed in the generator
+### 2. Fail closed on the inventories; scan the boot document when it exists
 
 A manifest that cannot satisfy a lazy import is worse than no manifest, because
-it looks correct. The run exits nonzero with an actionable message when the
-build HTML is missing (preserved from the previous version), when either static
-directory is absent, or when the chunk inventory holds no JavaScript. An empty
-font/image set remains valid — the app can legitimately ship with no extra
+it looks correct. The run exits nonzero with an actionable message when either
+static directory is absent, or when the chunk inventory holds no JavaScript. An
+empty font/image set remains valid — the app can legitimately ship with no extra
 media.
+
+The boot document is scanned when `.next/server/app/index.html` exists, and the
+run continues without it when it does not (amended 2026-10-13, Plan 167).
+Vercel's build pipeline completed `next build` without leaving that file, so
+requiring it turned a successful build into a failed deployment on every push —
+`main` included — while the inventory already listed every asset the document
+referenced (measured: 22 of 22 covered). The document is a redundancy check on
+the inventory, not the source of it, so its absence cannot make the manifest
+incomplete; the run says so in one line instead of failing.
 
 ### 3. The cache identity changes whenever the manifest scope changes
 
@@ -111,5 +120,6 @@ required only where build output is the subject under test.
 | Attribute chunks to views by parsing minified source | Brittle against every bundler change; a wrong guess is a silent offline failure |
 | Prewarm lazy views at install by navigating them | Requires executing view code and its network calls during install; slow and side-effectful |
 | Rely on runtime cache-first backfill only | Exactly the status quo: it cannot help a *first* offline visit, which is the reported case |
+| Fail the run when the boot document is absent (the pre-2026-10-13 rule) | It rejected builds the platform completes: every deployment failed while the inventories already covered the document's 22 assets (Plan 167) |
 | Descriptor added to a build manifest to name view chunks | Turbopack exposes no stable view→chunk map; maintaining a mapping is the classification problem again |
 | Ship a `sw.js` that always re-fetches the manifest with `cache: 'reload'` in `install` | The fetch already bypasses the cache; the problem was the worker never reinstalling, so install never ran |
