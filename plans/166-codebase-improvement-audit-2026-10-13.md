@@ -60,8 +60,16 @@ Evidence: production build clean, emitted CSS carrying 544 `prose` rules and 126
 build; browser check measuring body-text contrast 9.71:1 (light) and 12.78:1
 (dark), preview `h1` at weight 800, and chat bubbles carrying the same prose
 variables; minimal gate (lint, typecheck, 2,952 tests) green on the pushed head.
-CI had never run on this PR — the push triggered the full suite, so remote
-checks were still settling when this record was written.
+CI had never run on this PR — the push triggered the full suite. Every check is
+now green (`Codacy Static Code Analysis`, `Quality Gate`, `Unit Tests`,
+`E2E Tests`, `Build`, `Dependency Verify`, security scans) except the
+non-required **Vercel** deployment, which fails in the Hobby-limit class recorded
+in [Plan 164](164-vercel-deployment-validation-and-doc-lint-2026-10-12.md) and
+failed the same way before these changes. The offline suite (`pnpm run
+test:e2e:offline`) passes 6/6 against the production build, and every manifest
+URL resolves to an emitted file (0 missing), confirming the regenerated precache
+list matches the served chunks. The pull request is linked to this thread with
+its autofix loop armed; merging is left to the maintainer.
 
 ### N2 — `indexeddb-backup.ts` has no production caller (Medium)
 
