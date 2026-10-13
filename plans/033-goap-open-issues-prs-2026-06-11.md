@@ -75,4 +75,4 @@
 ## PR
 
 - Branch: `feat/goap-closeout-issues-2026-06-11`
-- PR: https://github.com/d-oit/do-knowledge-studio/pull/305
+- PR: <https://github.com/d-oit/do-knowledge-studio/pull/305>

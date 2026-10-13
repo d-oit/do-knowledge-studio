@@ -119,7 +119,6 @@ these tokens — no raw rgba survives in the utilities layer.
 
 Removed (Plan 162 #848): `--chart-1..5` had zero consumers. Reintroduce as semantic `@theme` tokens when a chart actually ships, with the palette defined next to its consumer.
 
-
 ### 2.6 Layout tokens
 
 | Token                | Value                                                                | Usage                                  |

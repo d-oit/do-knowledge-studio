@@ -87,7 +87,7 @@
 - **Before fix:** SC2046 (word splitting risk) + SC2016 (quote style)
   - Word splitting could cause issues with paths containing spaces
   - Single quote preference is mostly stylistic
-- **After fix:** 
+- **After fix:**
   - xargs pattern prevents word splitting entirely
   - More robust for edge cases (spaces, special chars in paths)
 - **Runtime impact:** Slightly slower due to xargs overhead (~10-50ms)

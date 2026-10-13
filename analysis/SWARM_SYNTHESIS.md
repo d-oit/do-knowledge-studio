@@ -84,7 +84,7 @@ This analysis used a **multi-agent swarm pattern** with parallel investigation a
 **Agent 1**: Suggests higher parallelism (5 free, 3 paid)  
 **Agent 2**: Concerned about validation overhead at scale
 
-**Resolution**: 
+**Resolution**:
 - Exploration: 5 parallel free
 - Validation: 3 parallel paid
 - Cross-reference: Sequential to avoid rate limits

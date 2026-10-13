@@ -9,6 +9,15 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 164 — Vercel deployment validation, and the doc-lint gate it exposed (2026-10-12)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Vercel diagnosis | Why every deployment fails | Done | `plans/164-vercel-deployment-validation-and-doc-lint-2026-10-12.md`. The provider's own error — `api-deployments-free-per-day`, Hobby = 100 deployments per 24 h, owner-scoped (official: vercel.com/docs/limits) — explains **300+ consecutive failures since 2026-10-03**, productions included, so the live site has not advanced for nine days. One day produced 104 deployments. |
+| Prevention | Reduce deployments created, in-repo | Done | `vercel.json` gains `ignoreCommand` (`scripts/vercel-ignore-build.sh`: doc/agent/CI-only pushes are skipped, `scripts/` deliberately not skippable, unknown state builds) and `git.deploymentEnabled` for `dependabot/**`. Both validated against Vercel's published schema. |
+| Tests + skill | Make the behaviour regression-proof and reusable | Done | `tests/vercel-ignore-build.bats` (6 cases, incl. the scripts-only guardrail) and the `vercel-deployment` skill — diagnosis commands, the failure taxonomy, the two levers, and the push-discipline rule. `agents-docs/DEPLOYMENT.md` updated. |
+| Doc-lint repair | The gate that could not fail | Done | `markdownlint.toml` was inert (`[tool.markdownlint]` is a Python convention the CLI ignores; rule ids mismatched their comments), so the pre-commit hook would have blocked doc authors while the quality gate skipped the check entirely. Rebuilt it with reasons per disabled rule; the corpus is now **clean**, after reverting a `--fix` pass that had turned 43 prose lines beginning with issue references into real headings (MD018, disabled with that reasoning recorded). |
+
 ### Plan 163 — Open-PR / open-issue sweep, roast, and land (2026-10-12)
 
 | Wave | Goal | Status | Outcome |

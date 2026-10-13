@@ -28,7 +28,6 @@ Build a local-first, structured knowledge engine that empowers users to capture,
 8. **Data Integrity** — Zod validation at all boundaries (Plan 072) ✓
 9. **Honest Product Surface** — Accurate labels, no false-success controls (Plan 072) ✓
 
-
 ## Remaining Work
 
 Refreshed 2026-10-05 by [Plan 162](162-roadmap-progress-and-next-work-2026-10-05.md),

@@ -37,7 +37,7 @@
 
 #### Goal B: Fix PR #356 (Security — key hardening)
 - **Deps**: none (but higher complexity)
-- **Issues**: 
+- **Issues**:
   - 20+ DeepSource warnings (unused vars, `any` types, global function declarations, cyclomatic complexity)
   - Codacy ACTION_REQUIRED
 - **Agent**: code-quality + security-code-auditor + git-github-workflow

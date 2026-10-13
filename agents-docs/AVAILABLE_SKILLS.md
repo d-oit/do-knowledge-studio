@@ -54,6 +54,7 @@
 | `turso-db` | Use this skill for Turso (LibSQL/Limbo) database development, including scaffolding, querying, migrations, and maintenance. Supports vector search, full-text search, CDC, MVCC, encryption, and bidirectional remote sync. Use when working with Turso SDKs for JavaScript, Rust, Python, Go, and React Native. Provides current API guidance to avoid stale "libsql" legacy knowledge. |
 | `ui-ux-optimize` | Swarm-powered UI/UX prompt optimizer with auto-research agents, handoff coordination, confidence-scored autoresearch loops, and backpressure quality gates. Use for web apps, mobile apps, games, dashboards, SaaS, e-commerce, kiosks, and any screen-based product. |
 | `validation-checklist` | Maintain high data quality and schema adherence within the knowledge studio. |
+| `vercel-deployment` | Diagnose and prevent Vercel deployment failures. Use when a deployment shows "Deployment has failed", when Vercel previews or production are red on every PR, when the live site stops updating, when a deployment hits a plan limit (api-deployments-free-per-day, free-per-hour, flood), or before changing vercel.json, build/install commands, or Git deployment settings. |
 | `web-search-researcher` | Research topics using web search to find accurate, current information. Use when you need modern information, official documentation, best practices, or technical solutions beyond training data. |
 
 ## Innovation Problem Solving

@@ -252,6 +252,34 @@
       },
       "priority": "medium",
       "autoActivate": false
+    },
+    {
+      "skill": "vercel-deployment",
+      "triggers": {
+        "keywords": [
+          "vercel",
+          "deployment",
+          "deploy failed",
+          "preview url",
+          "production deploy",
+          "resource is limited",
+          "ignoreCommand",
+          "deploymentEnabled",
+          "quota"
+        ],
+        "patterns": [
+          ".*vercel.*",
+          ".*deploy(ment)? (failed|failing|error).*",
+          ".*resource is limited.*",
+          ".*preview (url|deployment).*"
+        ],
+        "files": [
+          "vercel.json",
+          "scripts/vercel-ignore-build.sh"
+        ]
+      },
+      "priority": "medium",
+      "autoActivate": false
     }
   ],
   "settings": {

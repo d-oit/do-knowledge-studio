@@ -5,7 +5,7 @@
 ## Problem
 
 After merging the Next.js cleanup PR (#399), the production deployment at
-https://do-knowledge-studio.vercel.app/ continued showing the old UI. The Vercel
+<https://do-knowledge-studio.vercel.app/> continued showing the old UI. The Vercel
 deployment was failing silently, leaving the stale version live.
 
 ## Root Cause
@@ -87,5 +87,5 @@ After merging this fix:
 
 1. `pnpm run build` passes locally
 2. Vercel deployment status shows "Ready"
-3. https://do-knowledge-studio.vercel.app/ shows "DO Knowledge Studio"
+3. <https://do-knowledge-studio.vercel.app/> shows "DO Knowledge Studio"
 4. All CI checks pass (Codacy, CodeQL, DeepSource, Vercel)

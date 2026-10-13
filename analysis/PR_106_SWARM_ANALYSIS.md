@@ -1,7 +1,7 @@
 # Swarm Analysis Report: PR #106
 
 **PR:** feat: swarm web research optimization with git worktree workflow  
-**URL:** https://github.com/d-o-hub/github-template-ai-agents/pull/106  
+**URL:** <https://github.com/d-o-hub/github-template-ai-agents/pull/106>  
 **Date:** 2026-04-04  
 **Analysis Type:** Multi-Agent Swarm Review  
 

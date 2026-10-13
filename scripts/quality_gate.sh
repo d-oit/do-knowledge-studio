@@ -727,7 +727,14 @@ if [[ " ${DETECTED_LANGUAGES[*]} " =~ " markdown " ]] && [[ "$SCOPE" == "all" ||
             while IFS= read -r md_file; do
                 [ -n "$md_file" ] || continue
                 # lint_if_changed handles hashing and caching
-                if ! OUTPUT=$(lint_if_changed "$md_file" "markdownlint" "markdownlint.toml" markdownlint "$md_file" 2>&1); then
+                # lint_if_changed's third argument is only hashed into the cache
+                # key (see scripts/lib/lint_cache.sh) — it is NOT appended to the
+                # command. markdownlint does not discover a TOML config, so without
+                # the explicit --config the gate linted with stock rules and failed
+                # correct documents (MD013/MD025) on any machine where markdownlint
+                # is installed (plans/164 §3.1).
+                if ! OUTPUT=$(lint_if_changed "$md_file" "markdownlint" "markdownlint.toml" \
+                    markdownlint --config markdownlint.toml "$md_file" 2>&1); then
                     echo -e "${RED}  ✗ markdownlint failed: $md_file${NC}"
                     echo "$OUTPUT" >&2
                     md_failed=1

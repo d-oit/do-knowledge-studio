@@ -75,5 +75,5 @@ both tests pass with the compiler enabled.
 
 - Issue: #699 — perf: enable React Compiler (completes deferred Task 141)
 - Task: `plans/task-141-rerender-audit.md` (DEFERRED → COMPLETE)
-- Docs: https://nextjs.org/docs/app/api-reference/config/next-config-js/reactCompiler
-- Docs: https://react.dev/learn/react-compiler/installation
+- Docs: <https://nextjs.org/docs/app/api-reference/config/next-config-js/reactCompiler>
+- Docs: <https://react.dev/learn/react-compiler/installation>

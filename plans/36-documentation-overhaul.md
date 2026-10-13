@@ -37,14 +37,14 @@
    ```bash
    pnpm run cli -- init
    ```
-   
+
    ### `sync <path|url>`
    Sync markdown files or URLs into the knowledge base.
    ```bash
    pnpm run cli -- sync ./notes
    pnpm run cli -- sync https://example.com/article
    ```
-   
+
    [etc. for all 17+ commands]
    ```
 
@@ -270,20 +270,20 @@
    pnpm run build
    # Output in dist/
    ```
-   
+
    ## Hosting Platforms
    ### Netlify
    [steps]
-   
+
    ### Vercel
    [steps]
-   
+
    ### GitHub Pages
    [steps]
-   
+
    ## Self-Hosting
    [steps]
-   
+
    ## Browser Requirements
    - HTTPS required for OPFS
    - Chrome 86+, Firefox 111+, Safari 15.2+

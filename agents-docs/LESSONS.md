@@ -785,7 +785,7 @@ jobs:
 **Prevention**:
 - Always check GitHub API permission requirements for operations
 - Use `permissions:` key to explicitly request needed scopes
-- Reference official docs: https://docs.github.com/en/rest/issues/labels
+- Reference official docs: <https://docs.github.com/en/rest/issues/labels>
 - Test workflows in PR before merging to main
 
 **Tags**: #github-api #permissions #token #issues-write #ci
@@ -1263,7 +1263,6 @@ broke three `tests/validate-skills.bats` cases — its Quality Gate check passed
 
 **Tags**: #quality-gate #ci #git #fail-closed #bats #shallow-clone
 
-
 ## LESSON-037: Autosave plus a validating schema silently discards every
 half-typed value
 
@@ -1308,7 +1307,6 @@ the new Jev field too.
 
 **Tags**: #ai #settings #persistence #zod #autosave #ssrf #ui
 
-
 ## LESSON-038: Verify a vendor integration against the vendor's own docs, not the plan that proposed it
 
 **Date**: 2026-09-26
@@ -1344,7 +1342,6 @@ claims to verify. Every field was traceable to the plan, never to the vendor.
 
 **Tags**: #integrations #vendor-api #verification #spec #ai
 
-
 ## LESSON-039: Name the tool from Codacy's own API, not from the `nosemgrep` comment
 
 **Date**: 2026-09-26
@@ -1377,7 +1374,6 @@ reported it.
   per-issue, and only then consider config or an admin merge.
 
 **Tags**: #ci #codacy #opengrep #static-analysis #suppression
-
 
 ---
 

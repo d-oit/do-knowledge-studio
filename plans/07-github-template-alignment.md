@@ -18,5 +18,5 @@ The template validates our current architecture with these key confirmations:
 ## Next Steps
 - Reference the template for any future agent/skill structure changes.
 - Maintain AGENTS.md as the single source of truth; do not modify CLAUDE.md `GEMINI.md` or `QWEN.md` directly.
-- Use the template's conventions for symlinks and skill organization. 
+- Use the template's conventions for symlinks and skill organization.
 - Verify only what has impact for the codebase - do not use anything 1:1 - adapt for the codebase and only use it if it has impact for the codebase - analyze first the codebase
