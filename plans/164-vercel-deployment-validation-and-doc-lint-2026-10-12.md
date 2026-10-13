@@ -76,6 +76,19 @@ One push = one deployment; a force-push counts again. The behavioural half of th
 fix is batching pushes per PR rather than pushing every step — the sweep that
 produced this plan made ~40 pushes in a day, most of them docs.
 
+### The review's finding: the skip decision failed open
+
+The script's own rule is "anything unknown builds", and its implementation broke
+it: `git diff`'s output was captured with `|| true`, so a *failed* diff (a commit
+absent from the shallow clone, an unreadable tree) produced an empty string, which
+the next check read as "nothing changed" and answered with **exit 0 — skip the
+build**. The BATS suite covered an unknown *previous* commit but never an unknown
+*current* one, which is exactly why it passed.
+
+Fixed by capturing the status explicitly (`if ! changed="$(git diff …)"; then echo
+… ; exit 1; fi`), and the missing case is now in the suite — confirmed to fail
+against the old code (`not ok 7 … '[$status' -eq 1]' failed`) and to pass after.
+
 ## 2. The doc-lint gate that could not fail
 
 While adding the skill, markdownlint ran against the new file and reported line
@@ -109,13 +122,21 @@ written into the config.
 Disabled with a stated reason: the style rules the repository does not follow
 (line length, duplicate headings, inline HTML, emphasis-as-heading, code-fence
 language, first-line heading, table pipe spacing), the blank-line placement rules
-that would rewrite ~2,600 lines for no rendering difference, and the
-heading-shape rules that misfire on the prose above (`MD001`, `MD018`, `MD025`,
-`MD026`, `MD028`) plus archive table style (`MD055`/`MD056`).
+that would rewrite ~2,600 lines for no rendering difference, and the heading rules
+`MD018` (which rewrites the prose above into headings), `MD025`/`MD026` (which then
+have a heading to complain about, and legitimately fire on plans restarting
+headings and on `AGENTS.md`'s managed block), plus `MD001`/`MD028` and archive
+table style (`MD055`/`MD056`).
 
 Enforced: heading style, list indentation, trailing spaces, hard tabs, reversed
-links, blank-line runs, blockquote spacing, bare URLs, spaces in
-emphasis/links, empty links, proper names, and the single trailing newline.
+links, blank-line runs, blockquote spacing, bare URLs, spaces inside emphasis,
+code spans and link text, empty links, and the single trailing newline — each
+verified to fire on an injected violation.
+
+Not enforced, recorded rather than implied: **malformed tables** (all of
+`MD055`/`MD056`/`MD058`/`MD060` are off) and list/emphasis marker style
+(`MD004`/`MD029`/`MD030`/`MD050`). `MD044` is inert without a `names` array and is
+not claimed. `MD006` no longer exists in markdownlint.
 
 Result: `markdownlint --config markdownlint.toml '**/*.md'` is **clean** on the
 whole corpus. The normalization pass touched 43 markdown files with mechanical
@@ -128,9 +149,16 @@ re-enable a rule has to read why it was disabled first — `MD018` above all.
 
 ## 3. Follow-ups
 
-1. **Wire markdownlint into the gate.** The step remains skipped unless the binary
-   is on `PATH`; adding `markdownlint-cli` as a devDependency and calling it via
-   `pnpm exec` would make it real offline (and would now pass, given §2).
+1. **Wire markdownlint into the gate.** The step is skipped unless the binary is on
+   `PATH` (in CI it is not), so enforcement lives in the pre-commit hook today.
+   Adding `markdownlint-cli` as a devDependency is necessary but **not sufficient**:
+   `scripts/quality_gate.sh` passed `markdownlint.toml` only as a cache-hash
+   argument (`lint_if_changed` never appends it to the command), so the invocation
+   carried no `--config` and would have linted with stock rules — failing *correct*
+   documents. That half is fixed in this change (the command now passes
+   `--config markdownlint.toml`; reproduced with a `markdownlint` shim on `PATH`:
+   `MD013`/`MD025`, exit 1 before, exit 0 after), so once the dependency is on
+   `PATH` the step will pass rather than lie.
 2. **Repair the malformed tables** that `MD055`/`MD056` flagged before they were
    disabled: `DESIGN-SYSTEM.md` (4 rows with an extra cell),
    `agents-docs/WEB_RESEARCH_OPTIMIZATION.md` (1 row with a missing cell),

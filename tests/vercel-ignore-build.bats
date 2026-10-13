@@ -88,3 +88,11 @@ setup() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"no changed files"* ]]
 }
+
+@test "builds when the current commit is not in the shallow clone" {
+  # git diff exits non-zero here; its output must not be read as "nothing changed".
+  run env VERCEL_GIT_PREVIOUS_SHA="$BASE_SHA" \
+    VERCEL_GIT_COMMIT_SHA="deadbeefdeadbeefdeadbeefdeadbeefdeadbeef" bash "$SCRIPT"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"failed"* ]]
+}

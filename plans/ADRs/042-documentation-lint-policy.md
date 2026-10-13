@@ -55,8 +55,13 @@ prose audit.
 rules, each with its reason recorded next to the rule.**
 
 Enforced: heading style, list indentation, trailing spaces, hard tabs, reversed
-links, blank-line runs, blockquote spacing, bare URLs, spaces in
-emphasis/links, empty links, proper names, and a single trailing newline.
+links, blank-line runs, blockquote spacing, bare URLs, spaces inside emphasis,
+code spans and link text, empty links, and a single trailing newline — each
+verified to fire on a violation.
+
+Not enforced, and recorded as follow-ups rather than implied to work: malformed
+tables (all of `MD055`, `MD056`, `MD058`, `MD060` are off) and list/emphasis
+marker style (`MD004`, `MD029`, `MD030`, `MD050`).
 
 Disabled, with reasons in the file:
 
@@ -64,9 +69,10 @@ Disabled, with reasons in the file:
 | --- | --- |
 | `MD013`, `MD024`, `MD033`, `MD036`, `MD040`, `MD041`, `MD060` | Styles this repository does not follow (prose past 80 columns, `<details>`/`<kbd>` inline HTML, repeated per-wave headings, unlabelled code fences, title comments, spaced table pipes) |
 | `MD022`, `MD031`, `MD032`, `MD058` | Blank-line placement; correct as written for every renderer this repo targets, and enabling them rewrites ~2,600 lines for no reader-visible change |
-| `MD018`, `MD001`, `MD025`, `MD026`, `MD028` | Misfire on the wrapped-prose form above (they read prose as headings), and on archived plans that nest headings freely |
+| `MD018` | The prose hazard itself: it flags a line beginning `#865` as a heading missing a space, and `--fix` inserts one — turning the sentence into a real `<h1>` (verified: `plans/163` lines 12 and 14 today) |
+| `MD001`, `MD025`, `MD026`, `MD028` | Rules that fire on *consequences* and on real structure: `MD018`'s rewrite gave `MD025`/`MD026` headings to complain about, and both still fire on plans that restart headings per section, on the auto-managed `#`-block in `AGENTS.md`, and on heading-level jumps in archived plans |
 | `MD004`, `MD007`, `MD029`, `MD030`, `MD050` | List and emphasis style variance across historical plans |
-| `MD055`, `MD056` | Archived tables that do not parse as written; fixing them is an editorial decision per row (follow-up, not a silent ignore) |
+| `MD055`, `MD056` | Malformed tables — **not caught while these are off**. The affected rows need per-row editorial repair before the rules can be re-enabled (see the follow-up list) |
 
 The corpus was then normalized under exactly these rules — 43 markdown files,
 mechanical edits only. Verified: **zero** heading lines were added by any
@@ -80,11 +86,25 @@ were identical before and after.
   is the check the hook will run, not an approximation of it.
 - A doc author now passes the pre-commit hook instead of being blocked by it, and
   the rules that remain on are ones this corpus can and does satisfy.
-- **Structural damage is still caught**: malformed tables, tabs, trailing
-  whitespace, missing final newlines, and broken links fail the check.
-- **Known gap, recorded as a follow-up**: the gate itself still skips the check
-  until `markdownlint-cli` is a devDependency invoked via `pnpm exec`. Until then
-  enforcement lives in the pre-commit hook only.
+- **What is caught**: a hard tab, trailing whitespace, a missing final newline, a
+  bare URL, a reversed link, an empty link, a code span or emphasis padded with
+  spaces, and a heading that is not ATX style — all verified to fail on an
+  injected violation, and the clean corpus exits 0.
+- **What is NOT caught while the table rules are off**: a table that does not
+  parse (too few or too many cells, missing pipes). This is the largest hole in
+  the policy and it is a recorded follow-up, not an oversight.
+- **The gate's own invocation was wrong too, and is fixed here**:
+  `scripts/quality_gate.sh` ran `markdownlint <file>` while passing
+  `markdownlint.toml` only as a cache-hash argument — `lint_if_changed` in
+  `scripts/lib/lint_cache.sh` never appends the config to the command, and a TOML
+  config is never auto-discovered. On any machine where markdownlint *is*
+  installed, the gate therefore linted with stock rules and failed correct
+  documents. Reproduced with a `markdownlint` shim on `PATH`: `MD013`/`MD025`,
+  exit 1 before; exit 0 after. The command now passes
+  `--config markdownlint.toml`.
+- **Known gap, still a follow-up**: the gate skips the check entirely until
+  `markdownlint-cli` is a devDependency and reaches `PATH` — in CI it is absent, so
+  enforcement lives in the pre-commit hook (which installs it) until then.
 - **Known gap, recorded as a follow-up**: the 16 table rows `MD055`/`MD056` would
   flag (4 in `DESIGN-SYSTEM.md`, 1 in `agents-docs/WEB_RESEARCH_OPTIMIZATION.md`,
   5 in `plans/112`, 3 in `plans/160` — plus rows in `plans/116`, `plans/162`) need

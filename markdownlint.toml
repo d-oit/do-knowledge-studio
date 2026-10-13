@@ -12,10 +12,13 @@
 # This version therefore states, for every disabled rule, *why* — because a rule
 # turned off silently is the same failure in a different costume.
 #
-# The enforced set is deliberately the mechanical/structural core: whitespace,
-# blank-line runs, list markers, table rows, links, a single trailing newline.
-# Everything else is either a style this repo does not follow, or a rule that
-# misfires on prose this repo writes on purpose (see MD018).
+# The enforced set is deliberately the mechanical core — whitespace, blank-line
+# runs, links, a single trailing newline — plus the structural rules that are not
+# listed as disabled below. Two things it does NOT enforce, recorded as
+# follow-ups rather than implied to work: malformed tables and list-marker style
+# (all of MD055/MD056/MD058/MD060 and MD004/MD029/MD030 are off). Everything else
+# is either a style this repo does not follow, or a rule that misfires on prose
+# this repo writes on purpose (see MD018).
 
 # ── Style the repository does not follow ───────────────────────────────────────
 MD013 = false # line length — prose, tables and links run past 80 by design
@@ -64,8 +67,14 @@ MD056 = false # table column count — same archived tables (follow-up below)
 # real `<h1>`, i.e. the linter rewriting meaning into the document. `--fix` did
 # exactly that across 58 files before it was caught; see plans/164.
 #
-# WHY MD025/MD026 ARE OFF: they fire on the same lines (a would-be heading made of
-# prose), and on plans that legitimately restart headings per section.
+# WHY MD025/MD026 ARE OFF — as a consequence of the above, not independently.
+# MD018's `--fix` rewrote `#865, #870, …` into `# 865, # 870, …`, which *is* an ATX
+# heading, and now §"single title" and §"trailing punctuation" had a heading to
+# complain about: in plans/163 those are exactly lines 12 and 14. Both rules also
+# fire on structure this repository keeps on purpose — plans that restart headings
+# per section, and the auto-managed `#`-block in AGENTS.md — so with MD018 off,
+# what is left behind them is real structure, not the prose hazard. They stay off
+# until the archived plans are reworked.
 #
 # Follow-up (recorded, not ignored): MD055/MD056 flag ~16 rows in archived plans
 # (plans/112, plans/160) and 5 rows in live docs (DESIGN-SYSTEM.md,
@@ -74,8 +83,13 @@ MD056 = false # table column count — same archived tables (follow-up below)
 # editorial call rather than a mechanical pass — tracked in plans/164.
 
 # ── Kept on and enforced ───────────────────────────────────────────────────────
-# MD003 heading style, MD005/MD006 list indentation, MD009 trailing spaces,
-# MD010 hard tabs, MD011 reversed links, MD012 multiple blank lines,
-# MD027 blockquote spacing, MD034 bare URLs, MD037/MD038 spaces in
-# emphasis/links, MD039 spaces in link text, MD042 empty links,
-# MD044 proper names, MD047 single trailing newline.
+# Any rule not disabled above stays at its default; notable ones, verified to fire
+# on a violation: MD003 heading style, MD005 list indentation, MD009 trailing
+# spaces, MD010 hard tabs, MD011 reversed links, MD012 multiple blank lines,
+# MD027 blockquote spacing, MD034 bare URLs, MD037 spaces inside emphasis,
+# MD038 spaces inside code spans, MD039 spaces inside link text, MD042 empty
+# links, MD047 single trailing newline.
+#
+# Deliberately absent from that list: MD044 (proper names) is inert without a
+# `names` array, and this repository has none, so it is not "enforced" here in any
+# meaningful sense. MD006 no longer exists in markdownlint (removed).

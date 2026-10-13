@@ -47,7 +47,14 @@ fi
 # `--no-renames` so a move *out of* app code cannot hide: with rename detection a
 # source file renamed into a doc path is reported only by its new (skippable)
 # name, and the removal from src/ would be invisible to this decision.
-changed="$(git diff --no-renames --name-only "$previous" "$current" 2>/dev/null || true)"
+#
+# A failing `git diff` (an unreadable commit, a corrupt tree) must build, not
+# skip: assigning its output directly would turn an error into an empty file list,
+# which the check below would read as "nothing changed".
+if ! changed="$(git diff --no-renames --name-only "$previous" "$current" 2>/dev/null)"; then
+  echo "vercel-ignore-build: git diff $previous..$current failed — building"
+  exit 1
+fi
 if [ -z "$changed" ]; then
   # Same tree, e.g. a force-push back to an already-deployed state.
   echo "vercel-ignore-build: no changed files between $previous and $current — ignoring the build"
