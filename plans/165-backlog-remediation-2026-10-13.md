@@ -19,7 +19,7 @@ historical; this plan records the later implementation and its evidence.
 | 4 — Heavy-leaf deferral | `cdbd0f3` | Sync and document-export dependencies are deferred behind their usage boundaries. The measured first-load JavaScript decreased by 9,333 bytes (about 0.53%); the production build regenerated the precache manifest. |
 | 5 — Documentation reconciliation | `786250d` plus the Step 7 README correction | Reconciled the skills catalogs, agent-surface CLI, script catalog, quality-gate workflow, and stale README claims. The final README distinguishes core Zustand/localStorage state and recovery snapshots from the separate Yjs IndexedDB replica; it also documents browser-local BM25 and first-use model downloads versus later offline inference while cached assets remain. Cursor/Windsurf `directory` strategy semantics remain open (Plan 162 S3). |
 | 6 — PR integrity guards | `1848da9` | Added dependency-range and stale-base deletion checks to PR CI, focused BATS suites, workflow documentation, and [ADR 044](ADRs/044-pr-integrity-guards.md). The repository ruleset was not changed. |
-| 7 — Records, verification, and delivery | Step 7 commit | Reconciles Plan 162/163, INDEX, and ADR 027; records Plan 165 and ADR 044; fixes ChatView focusability; pins Vitest and coverage at 4.1.11. The E2E defect and local evidence are below. Remote CI, review threads, and merge remain in the PR workflow. |
+| 7 — Records, verification, and delivery | `e2f908a` | Reconciles Plan 162/163, INDEX, and ADR 027; records Plan 165 and ADR 044; fixes ChatView focusability; pins Vitest and coverage at 4.1.11. The PR #950 review follow-up fixes five valid P2 findings; local and remote delivery evidence is tracked below and in the PR. |
 
 ## Verification evidence
 
@@ -29,16 +29,17 @@ historical; this plan records the later implementation and its evidence.
 - **Step 5** — `./scripts/quality_gate.sh --scope docs` passed; generated skill
   catalogs passed `--check`; the validator found 58 skill files, 211 references,
   and 0 broken links.
-- **Step 6** — both focused BATS suites passed (7/7); defect-injected guard
+- **Step 6** — both focused BATS suites passed (8/8); defect-injected guard
   failures were observed before restoring the implementation; ShellCheck passed.
   `pnpm install --frozen-lockfile` and
   `./scripts/quality_gate.sh --scope tooling` passed. The workflow YAML suite
   passed 64 tests. A local run against `origin/main` found no dependency
-  downgrades and no target-branch additions missing from the PR tree.
+  downgrades and no target-branch additions missing from the PR tree. The
+  duplicate-package regression also failed before the guard was corrected.
 - **Step 7 all-scope quality gate** — `./scripts/quality_gate.sh` passed after
-  the ChatView fix and reran after the exact Vitest pin: skills validation
+  the ChatView fix, exact Vitest pin, and PR review fixes: skills validation
   (58 files / 211 links / 0 broken), lint, typecheck, Vitest, ShellCheck, and
-  BATS all passed. The final docs-scope rerun after the plan edits also passed
+  BATS all passed. The final docs-scope rerun after the plan updates also passed
   (58 skill files / 211 links / 0 broken).
 - **Vitest typecheck notice** — The commit hook emitted Vitest's experimental
   typecheck banner. `vitest` and `@vitest/coverage-v8` are exact-pinned to
@@ -51,13 +52,35 @@ historical; this plan records the later implementation and its evidence.
   (`e2e/accessibility.spec.ts:142`, `chat-view.tsx:95`). The isolated mobile
   axe test reproduced it before the fix. Adding `tabIndex={0}` made the focused
   test pass (1/1); unsetting `NO_COLOR` removed the conflicting Node warning.
-- **Final browser suites** — `env -u NO_COLOR pnpm run build` passed and
-  generated 70 precache URLs (22 document, 45 chunks, 17 media).
+- **Final browser suites after review fixes** — `env -u NO_COLOR pnpm run build`
+  passed and generated 70 precache URLs (22 document, 45 chunks, 17 media).
   `env -u NO_COLOR pnpm run test:e2e` passed 704 tests, with 4 skipped and none
   failed; `env -u NO_COLOR pnpm run test:e2e:offline` passed 6/6. The dev suite
   logged the still-open Plan 162 search-worker `importScripts` follow-on,
   Playwright service-worker registration-block diagnostics, and the deliberate
   version-99 / oversized-recovery test scenarios; none failed the suite.
+
+## PR review follow-up
+
+The five valid P2 findings on PR #950 were fixed before the follow-up delivery:
+
+- Dependency guard parsing now keeps `dependencies` and `devDependencies`
+  separate when a package occurs in both; the BATS regression passed 4/4 and
+  failed before the fix.
+- Sync leave/join and re-sync now replace pending conflicts with the current
+  merge result, including an empty result. The focused sync-view suite passed
+  19/19, including stale-conflict leave and clean rejoin/re-sync cases.
+- Skill setup derives the symlink target from `canonical_skills` in the
+  manifest. Its BATS suite passed 12/12, including exact `.cursor`, `.windsurf`,
+  and custom canonical-path checks.
+- Import-history coverage again asserts exactly one snapshot. Re-injecting a
+  duplicate snapshot made the test fail; restoring the store implementation
+  made it pass.
+- The deep-link precedence E2E now creates a stored-view/URL mismatch without
+  firing `hashchange`, then reloads. The focused view URL suite passed 16/16;
+  reversing the initial-hash precedence made the regression fail.
+
+The full local gate and final browser suites above passed with these fixes.
 
 ## Shadow and canary evidence
 

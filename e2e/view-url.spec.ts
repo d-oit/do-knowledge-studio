@@ -14,7 +14,10 @@ test.describe('URL-addressable views', () => {
     await navClick(page, /library/i);
     await expect(viewHeading(page, /library/i)).toBeVisible();
 
-    await page.goto('/#/graph');
+    await page.evaluate(() => {
+      window.history.replaceState(null, '', '/#/graph')
+    })
+    await page.reload()
     await waitForAppReady(page);
 
     await expect(viewHeading(page, /graph/i)).toBeVisible();

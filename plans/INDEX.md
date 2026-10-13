@@ -15,8 +15,8 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 | --- | --- | --- | --- |
 | W1–W4 | Close selected Plan 162 gaps | Done | Commits `e2ee5a6`, `a2dcbea`, `f7d970f`, `cdbd0f3` implement canvas integrity, sync rejoin, URL hashes, and deferred heavy dependencies; see `plans/165-backlog-remediation-2026-10-13.md`. |
 | W5 | Reconcile tooling and README claims | Done | Skills catalogs, agent-surface CLI, script/quality docs, and README storage/search/model-loading claims corrected. Plan 162 S3 remains open. |
-| W6 | Add PR integrity guards | Done | Dependency-range and stale-base deletion CI guards with seven BATS cases; ADR 044; no ruleset change. |
-| W7 | Reconcile records and complete delivery | Local done | Plan 162/163, the index, and ADRs reconciled; final gates, baseline shadow, and browser canary recorded in Plan 165. Remote checks, review threads, and merge follow the GitHub PR workflow. |
+| W6 | Add PR integrity guards | Done | Dependency-range and stale-base deletion CI guards with eight focused BATS cases; ADR 044; no ruleset change. |
+| W7 | Reconcile records and complete delivery | PR #950 | Plan 162/163, the index, and ADRs reconciled; final local gate, browser suites, baseline shadow, and browser canary recorded in Plan 165. Five valid PR review findings fixed; remote checks, thread resolution, and merge status tracked on PR #950. |
 
 ### Plan 164 — Vercel deployment validation, and the doc-lint gate it exposed (2026-10-12)
 

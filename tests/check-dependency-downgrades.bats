@@ -56,6 +56,40 @@ JSON
   [[ "$output" == *"Dependency downgrade: typescript ^6.0.0 -> ^5.9.0"* ]]
 }
 
+@test "checks dependency and devDependency ranges independently" {
+  git checkout -q main
+  cat > package.json <<'JSON'
+{
+  "dependencies": {
+    "shared": "^2.0.0"
+  },
+  "devDependencies": {
+    "shared": "^3.0.0"
+  }
+}
+JSON
+  git add package.json
+  git commit -qm "add package in both dependency sections"
+  git checkout -q feature
+
+  cat > package.json <<'JSON'
+{
+  "dependencies": {
+    "shared": "^1.0.0"
+  },
+  "devDependencies": {
+    "shared": "^3.0.0"
+  }
+}
+JSON
+  git add package.json
+  git commit -qm "lower production dependency range"
+
+  run node "$SCRIPT" main
+  [ "$status" -eq "$EXPECTED_GUARD_FAILURE_STATUS" ]
+  [[ "$output" == *"Dependency downgrade: shared ^2.0.0 -> ^1.0.0"* ]]
+}
+
 @test "accepts upgrades and removed dependencies" {
   cat > package.json <<'JSON'
 {

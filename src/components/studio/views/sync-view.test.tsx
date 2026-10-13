@@ -1,7 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { ReactNode } from 'react'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { act, render, screen, fireEvent } from '@testing-library/react'
 import { joinRoom } from '@/lib/sync'
+import { mergeIntoYjs } from '@/lib/sync/bridge'
+
+type ProviderEventListener = (payload: unknown) => void
+const mockSyncListeners = new Map<string, ProviderEventListener>()
+const mockProvider = {
+  on: vi.fn((event: string, listener: ProviderEventListener) => {
+    mockSyncListeners.set(event, listener)
+  }),
+  off: vi.fn((event: string) => {
+    mockSyncListeners.delete(event)
+  }),
+  emit: (event: string, payload: unknown) => mockSyncListeners.get(event)?.(payload),
+}
 
 vi.mock('framer-motion', () => ({
   motion: {
@@ -46,7 +59,7 @@ vi.mock('@/lib/studio/use-reduced-motion', () => ({
 
 vi.mock('@/lib/sync', () => ({
   initSync: vi.fn(() => Promise.resolve()),
-  joinRoom: vi.fn(),
+  joinRoom: vi.fn(() => mockProvider),
   getProvider: vi.fn(() => null),
   getYjsEntities: vi.fn(() => []),
   getYjsClaims: vi.fn(() => []),
@@ -54,7 +67,7 @@ vi.mock('@/lib/sync', () => ({
 }))
 
 vi.mock('@/lib/sync/bridge', () => ({
-  mergeIntoYjs: vi.fn(() => ({ conflicts: [] })),
+  mergeIntoYjs: vi.fn(() => ({ merged: { entities: [], claims: [] }, conflicts: [] })),
 }))
 
 vi.mock('@/lib/sync/discovery', () => ({
@@ -78,9 +91,14 @@ vi.mock('../qr-pairing', () => ({
 }))
 
 vi.mock('../conflict-ui', () => ({
-  ConflictUI: () => <div data-testid="conflict-ui" />,
-}))
+  ConflictUI: ({ conflicts }: { conflicts: unknown[] }) =>
+    conflicts.length > 0 ? (
+      <div data-testid="conflict-ui">
+        <span data-testid="conflict-count">{conflicts.length}</span>
+      </div>
+    ) : null,
 
+}))
 vi.mock('../presence-indicator', () => ({
   PresenceList: () => <div data-testid="presence-list" />,
 }))
@@ -112,6 +130,9 @@ import { SyncView } from './sync-view'
 describe('SyncView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(mergeIntoYjs).mockReset()
+    vi.mocked(mergeIntoYjs).mockReturnValue({ merged: { entities: [], claims: [] }, conflicts: [] })
+    mockSyncListeners.clear()
   })
 
   it('renders sync header with title', () => {
@@ -207,5 +228,58 @@ describe('SyncView', () => {
     fireEvent.change(screen.getByLabelText('Room password'), { target: { value: 'top-secret' } })
     fireEvent.click(screen.getByRole('button', { name: 'Join' }))
     expect(screen.queryByText(/top-secret/)).toBeNull()
+  })
+
+  it('clears conflicts when leaving and joining a room with no conflicts', () => {
+    vi.mocked(mergeIntoYjs)
+      .mockReturnValueOnce({
+        merged: { entities: [], claims: [] },
+        conflicts: [{
+          entityId: 'ent-1',
+          entityType: 'entity',
+          field: 'name',
+          localValue: 'Local',
+          remoteValue: 'Remote',
+          winner: 'local',
+          reason: 'local newer',
+        }],
+      })
+      .mockReturnValueOnce({ merged: { entities: [], claims: [] }, conflicts: [] })
+    render(<SyncView />)
+    fireEvent.change(screen.getByLabelText('Room ID'), { target: { value: 'room-123' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Join' }))
+    expect(screen.getByTestId('conflict-count').textContent).toBe('1')
+    act(() => { mockProvider.emit('status', { connected: true }) })
+    fireEvent.click(screen.getByRole('button', { name: 'Leave' }))
+    expect(screen.queryByTestId('conflict-ui')).toBeNull()
+
+    fireEvent.change(screen.getByLabelText('Room ID'), { target: { value: 'room-456' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Join' }))
+    expect(joinRoom).toHaveBeenNthCalledWith(2, 'room-456')
+    expect(screen.queryByTestId('conflict-ui')).toBeNull()
+  })
+
+  it('clears prior conflicts when re-sync finds none', () => {
+    vi.mocked(mergeIntoYjs)
+      .mockReturnValueOnce({
+        merged: { entities: [], claims: [] },
+        conflicts: [{
+          entityId: 'ent-1',
+          entityType: 'entity',
+          field: 'name',
+          localValue: 'Local',
+          remoteValue: 'Remote',
+          winner: 'local',
+          reason: 'local newer',
+        }],
+      })
+      .mockReturnValueOnce({ merged: { entities: [], claims: [] }, conflicts: [] })
+    render(<SyncView />)
+    fireEvent.change(screen.getByLabelText('Room ID'), { target: { value: 'room-123' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Join' }))
+    expect(screen.getByTestId('conflict-count').textContent).toBe('1')
+    act(() => { mockProvider.emit('status', { connected: true }) })
+    fireEvent.click(screen.getByRole('button', { name: 'Re-sync' }))
+    expect(screen.queryByTestId('conflict-ui')).toBeNull()
   })
 })

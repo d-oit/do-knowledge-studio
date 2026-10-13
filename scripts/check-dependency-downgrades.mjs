@@ -32,18 +32,23 @@ const parseManifest = (content, source) => {
   }
 
   const dependencies = new Map()
-  for (const section of DEPENDENCY_SECTIONS) {
-    const values = manifest[section]
-    if (values === undefined) continue
-    if (values === null || typeof values !== 'object' || Array.isArray(values)) {
-      throw new Error(`${source} field ${section} must be an object`)
-    }
-    for (const [name, range] of Object.entries(values)) {
-      if (typeof range !== 'string') {
-        throw new Error(`${source} dependency ${name} must have a string version range`)
+  for (const [section, values] of [
+    ['dependencies', manifest.dependencies],
+    ['devDependencies', manifest.devDependencies],
+  ]) {
+    const sectionDependencies = new Map()
+    if (values !== undefined) {
+      if (values === null || typeof values !== 'object' || Array.isArray(values)) {
+        throw new Error(`${source} field ${section} must be an object`)
       }
-      dependencies.set(name, range)
+      for (const [name, range] of Object.entries(values)) {
+        if (typeof range !== 'string') {
+          throw new Error(`${source} dependency ${name} must have a string version range`)
+        }
+        sectionDependencies.set(name, range)
+      }
     }
+    dependencies.set(section, sectionDependencies)
   }
   return dependencies
 }
@@ -70,20 +75,23 @@ const main = () => {
     const currentDependencies = parseManifest(readFileSync('package.json', 'utf8'), 'package.json')
     const failures = []
 
-    for (const [name, baseRange] of baseDependencies) {
-      const currentRange = currentDependencies.get(name)
-      if (currentRange === undefined || currentRange === baseRange) continue
+    for (const section of DEPENDENCY_SECTIONS) {
+      const currentSection = currentDependencies.get(section)
+      for (const [name, baseRange] of baseDependencies.get(section)) {
+        const currentRange = currentSection.get(name)
+        if (currentRange === undefined || currentRange === baseRange) continue
 
-      const baseMinimum = minimumVersion(baseRange)
-      const currentMinimum = minimumVersion(currentRange)
-      if (baseMinimum === null || currentMinimum === null) {
-        failures.push(
-          `Cannot compare ${name} range ${JSON.stringify(baseRange)} -> ${JSON.stringify(currentRange)}; manual review required.`,
-        )
-      } else if (semver.lt(currentMinimum, baseMinimum)) {
-        failures.push(
-          `Dependency downgrade: ${name} ${baseRange} -> ${currentRange} (minimum ${baseMinimum.version} -> ${currentMinimum.version}).`,
-        )
+        const baseMinimum = minimumVersion(baseRange)
+        const currentMinimum = minimumVersion(currentRange)
+        if (baseMinimum === null || currentMinimum === null) {
+          failures.push(
+            `Cannot compare ${name} range ${JSON.stringify(baseRange)} -> ${JSON.stringify(currentRange)}; manual review required.`,
+          )
+        } else if (semver.lt(currentMinimum, baseMinimum)) {
+          failures.push(
+            `Dependency downgrade: ${name} ${baseRange} -> ${currentRange} (minimum ${baseMinimum.version} -> ${currentMinimum.version}).`,
+          )
+        }
       }
     }
 

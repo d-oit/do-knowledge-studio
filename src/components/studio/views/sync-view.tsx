@@ -257,6 +257,7 @@ export const SyncView = () => {
 
   const handleJoin = useCallback(() => {
     const id = inputRoomId.trim() || generateRoomId()
+    setPendingConflicts([])
     // A blank password means "no encryption": omit the option entirely so the unencrypted
     // path stays identical instead of passing an empty-string secret to y-webrtc.
     const password = roomPassword.trim()
@@ -276,8 +277,8 @@ export const SyncView = () => {
       setRoomPassword('')
 
       const result = mergeIntoYjs(entities, claims)
+      setPendingConflicts(result.conflicts)
       if (result.conflicts.length > 0) {
-        setPendingConflicts(result.conflicts)
         addEvent('sync', t('sync.event.conflictsFound', String(result.conflicts.length)))
       } else {
         addEvent('sync', t('sync.event.merged', String(entities.length), String(claims.length)))
@@ -294,6 +295,7 @@ export const SyncView = () => {
   const handleLeave = useCallback(() => {
     stopDiscovery()
     leaveRoom()
+    setPendingConflicts([])
     setProvider(null)
     setStatus('disconnected')
     setRoomId('')
@@ -306,10 +308,10 @@ export const SyncView = () => {
 
   const handleResync = useCallback(() => {
     const result = mergeIntoYjs(entities, claims)
+    setPendingConflicts(result.conflicts)
     setSyncedEntities(getYjsEntities().length)
     setSyncedClaims(getYjsClaims().length)
     if (result.conflicts.length > 0) {
-      setPendingConflicts(result.conflicts)
       addEvent('sync', t('sync.event.conflictsFound', String(result.conflicts.length)))
     } else {
       addEvent('sync', t('sync.event.resynced', String(entities.length), String(claims.length)))
