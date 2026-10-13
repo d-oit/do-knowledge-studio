@@ -1625,3 +1625,95 @@ green CI run: a request timeout that silently did nothing on some engines, and a
   newer APIs (`delete AbortSignal.any`) inside the test before driving the path.
 
 **Tags**: #react #browser-api #abort #timeout #types #verification
+
+---
+
+### LESSON-046: A lint config in the wrong format is not a config — and its `--fix` can rewrite prose into headings
+
+**Symptom**: markdownlint reported thousands of findings on a repository that had
+a config file, and the quality gate never reported any of them.
+
+**Cause**: the rules sat under a `[tool.markdownlint]` table — a convention from
+Python tooling that markdownlint-cli does not read — so every rule ran at its
+default and the two the file meant to disable never applied. The comments also
+named the wrong rule ids (`MD041` described as line length, etc.). **Unknown rule
+ids are accepted silently** (verified: a config naming `MD999` exits 0), so a typo
+or a wrong id produces a check that looks installed and enforces something else.
+
+**The hazard worth remembering**: `MD018` reads a wrapped prose line that begins
+with an issue reference (`#865, #870, …`) as a heading missing a space and
+`--fix` "repairs" it to `# 865` — which *is* an ATX heading, so the sentence
+becomes a real `<h1>`. One pass did that to 43 lines across 58 files. Per
+CommonMark the original line was an ordinary paragraph; the linter rewrote a
+document's structure, silently.
+
+**Verify a lint config by execution, not by reading it**: confirm every rule id
+exists in the *pinned* version's own rule list (markdownlint-cli@0.48.0 bundles
+markdownlint 0.40.0), inject one violation per enforced rule and watch it fail,
+and count heading lines before/after any `--fix` pass (621 → 621 here, with zero
+added heading-shaped lines per file).
+
+**Tags**: #lint #docs #tooling #verification
+
+---
+
+### LESSON-047: A wrapper's "config" argument may only be a cache key — verify what the command receives
+
+`scripts/quality_gate.sh` called `lint_if_changed "$file" markdownlint
+markdownlint.toml markdownlint "$file"`. The third argument is hashed into the
+cache key by `scripts/lib/lint_cache.sh` and **never appended to the command**, so
+the gate invoked `markdownlint <file>` with stock rules. On any machine where
+markdownlint is installed, the gate failed *correct* documents (MD013/MD025) —
+and because CI has no markdownlint on `PATH`, the same section was skipped there,
+so neither side ever disagreed out loud.
+
+The general rule: when a wrapper takes `(file, tool, config, cmd…)`, read the
+wrapper to see whether `config` reaches `cmd`. Reproduce the gate's own invocation
+rather than a hand-written one — a `markdownlint --config … <file>` you type
+yourself proves nothing about what the gate runs. A shim on `PATH` (a script that
+`exec`s the real binary) turns this into a one-line before/after test.
+
+**Tags**: #shell #quality-gate #verification
+
+---
+
+### LESSON-048: `|| true` on a command whose empty output means "take the risky path" is fail-open
+
+The Vercel skip script computed its changed-file list with
+`changed="$(git diff … || true)"`. A *failed* diff — a commit absent from Vercel's
+`--depth=10` clone, an unreadable tree — produced an empty string, which the next
+check read as "nothing changed" and answered with **exit 0: skip the build**,
+serving the previous deployment. The script's own comment claimed the opposite
+("anything unknown builds"), and its test suite stayed green because it covered an
+unknown *previous* commit but never an unknown *current* one.
+
+Two habits follow. First, capture the exit status when empty output has meaning:
+`if ! out="$(cmd)"; then echo …; exit 1; fi`. Second, when you document a
+fail-closed boundary, test **both** ends of it — the suite will happily prove the
+half you thought of.
+
+**Tags**: #shell #ci #deployment #verification
+
+---
+
+### LESSON-049: The Vercel Hobby deployment cap is owner-scoped, and production shares it with previews
+
+100 deployments per 24 h (`api-deployments-free-per-day`, verified against
+<https://vercel.com/docs/limits>), scoped to the account owner — not per project.
+Production and previews draw on the same budget, so a day of preview churn takes
+the live site down with it. **One push is one deployment; a force-push is
+another.** Here, every deployment failed from 2026-10-03 to 2026-10-13 — previews
+*and* production — while PRs remained mergeable, because the `Vercel` check is not
+ruleset-required: a ✗ that blocks nothing hides a stale production for nine days.
+
+Free discriminators before asking for account access or guessing: the failure
+history across ~20 commits (`commits/{sha}/status` → `failed` for all of them means
+repo-wide, not this PR); whether a deployment *record* exists (a quota refusal never
+creates one); and a local `pnpm run build` (a pass rules out a code break).
+
+Levers, both in `vercel.json`: `git.deploymentEnabled` (never create the
+deployment) and `ignoreCommand` (**exit 1 builds, exit 0 skips**) — and the skip
+list must never include anything `pnpm run build` consumes or writes, because the
+precache manifest it generates is served to clients.
+
+**Tags**: #deployment #vercel #ci

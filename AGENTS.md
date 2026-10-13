@@ -198,30 +198,32 @@ Full procedure, staleness ladder, and the Codacy false-positive playbook:
 ## Learnings (session-distilled)
 
 Non-obvious toolchain facts; full detail in `agents-docs/LESSONS.md`
-(LESSON-001..045) and `lessons.jsonl`.
+(LESSON-001..049) and `lessons.jsonl`.
 
 - **gitleaks-action v3+ needs a paid licence** (pin v2.x); yamllint enforces
   `line-length` 120 and a trailing newline inside `run: |` blocks.
-- **DeepSource `.deepsource.toml` suppressions do not reliably fail-proof a
-  check** — use `const fn = () => {}` for module-scope helpers, exported
-  complexity under 6.
+- **DeepSource `.deepsource.toml` suppressions do not reliably fail-proof a check**
+  — `const fn = () => {}` for module-scope helpers; exported complexity under 6.
 - **A test you have not seen fail is not evidence** (LESSON-041): re-inject the
   defect, watch it fail, restore it. Codacy/DeepSource re-post stale findings as
-  NEW blocking threads — fix, reply with evidence, resolve, stop pushing
-  (LESSON-034). Vitest typecheck is experimental and misses `*.test.ts` source
-  errors (LESSON-035).
-- **Worktrees/workflow:** `git add -A` stages a symlinked `node_modules` (the
-  ignore rule needs the bare form, not only `node_modules/`) and `HUSKY=0` does
-  not skip `.githooks`; commit before any rebase or `reset --hard` (LESSON-042).
-  Bless a head before merging — `merge-base --is-ancestor origin/main <sha>` plus
-  no unexplained deletions — since stale-base automation branches arrive with
-  `main`-reverting trees (LESSON-043). Dependency ranges can move *backwards* with
-  nothing failing: check `package.json` against `main`, prove direction with
-  `git log -S` (LESSON-044).
-- **Feature-detecting two APIs to implement one behaviour hides a missing
-  feature** — an `AbortSignal.any` fallback silently dropped a timeout; arm
-  timeouts with `setTimeout` + `AbortController`. Destructure callbacks: a bare
-  `stop` binds `window.stop` and still type-checks (LESSON-045).
+  NEW blocking threads — fix, reply, resolve, stop pushing (LESSON-034). Vitest
+  typecheck misses `*.test.ts` source errors (LESSON-035).
+- **A check that cannot fail is worse than none** (LESSON-046, LESSON-047):
+  `markdownlint.toml` was inert (rules under `[tool.markdownlint]`, ignored by the
+  CLI; unknown ids are accepted *silently*) and `quality_gate.sh` passed its config
+  only as `lint_if_changed`'s cache key, so the command ran without `--config`.
+  `MD018`'s `--fix` rewrites wrapped prose beginning `#865` into a real `<h1>`.
+- **Vercel Hobby allows 100 deployments per 24 h, owner-scoped, and production
+  shares previews' budget** (LESSON-048, LESSON-049): every deployment — the live
+  site included — failed 2026-10-03..13 while the non-required `Vercel` check
+  blocked nothing. One push is one deployment; never skip `scripts/` (`pnpm run
+  build` writes the served precache manifest); fail **closed** on unknown state.
+- **Worktrees:** `git add -A` stages a symlinked `node_modules` (`HUSKY=0` does not
+  skip `.githooks`); commit before any rebase or `reset --hard` (LESSON-042). Bless
+  a head before merging — stale-base automation arrives with `main`-reverting trees
+  (LESSON-043); dependency ranges can move backwards silently (LESSON-044).
+- **Feature-detecting two APIs hides a missing feature** — an `AbortSignal.any`
+  fallback dropped a timeout; a bare `stop` binds `window.stop` (LESSON-045).
 
 ## Skills
 
