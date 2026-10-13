@@ -3,7 +3,7 @@
 **Date**: 2026-10-05
 **Status**: Complete — planning records reconciled; implementation backlog remains open
 **Method**: Source inspection against the repository at this date. No test suite, build, browser scenario, deployment, or remote query was executed by this refresh.
-**Related**: [155](155-cpu-first-local-ai-and-settings-persistence.md), [157](157-codebase-gap-and-feature-remediation.md), [158](158-september-2026-best-practice-audit.md), [159](159-rejected-library-recovery-visibility-and-fail-closed.md), [161](161-offline-lazy-view-precache-and-framework-refresh-2026-09-30.md), [131](131-goap-swarm-improvement-audit-2026-08-22.md), [130](130-goap-uiux-testpyramid-errorhandling-2026-08-22.md), [ADR 027](ADRs/027-canonical-state-and-p2p-sync-bridge.md), [ADR 037](ADRs/037-url-addressable-view-state.md)
+**Related**: [155](155-cpu-first-local-ai-and-settings-persistence.md), [157](157-codebase-gap-and-feature-remediation.md), [158](158-september-2026-best-practice-audit.md), [159](159-rejected-library-recovery-visibility-and-fail-closed.md), [161](161-offline-lazy-view-precache-and-framework-refresh-2026-09-30.md), [165](165-backlog-remediation-2026-10-13.md), [131](131-goap-swarm-improvement-audit-2026-08-22.md), [130](130-goap-uiux-testpyramid-errorhandling-2026-08-22.md), [ADR 027](ADRs/027-canonical-state-and-p2p-sync-bridge.md), [ADR 037](ADRs/037-url-addressable-view-state.md), [ADR 043](ADRs/043-canvas-reference-integrity.md)
 
 ## Evidence vocabulary
 
@@ -287,15 +287,15 @@ but appears in **neither** generated catalog (0 matches in each). S1 is its fix.
 
 ---
 
-## Execution order
+## Execution order (as recorded 2026-10-05)
 
 1. **Reconcile records** — this document plus the `plans/` edits made alongside
    it. Complete.
 2. ~~**Recovery reachability + backup outcome**~~ — **implemented and
    browser-verified 2026-10-05** (see #1 above).
-3. **Deletion/export integrity** — now the first open implementation item; it
-   touches data safety, so per the delivery lifecycle it starts at production:
-   reproduce against an imported corpus, then fix.
+3. **Deletion/export integrity** — first open implementation item at the time
+   of this 2026-10-05 audit; it touches data safety, so the delivery lifecycle
+   called for an imported-corpus reproduction before the fix.
 4. **Sync join/rejoin completion**, then the three **Plan 161 recorded
    follow-ons** (dev search worker, first-mount reduced motion, workflow
    warnings).
@@ -305,9 +305,9 @@ but appears in **neither** generated catalog (0 matches in each). S1 is its fix.
 7. **F2 deep links**, then **F3 gestures**.
 8. **Unscheduled** — revision comparison, Synthesis Inbox, Visual Query Builder.
 
-Step 2 is the one item this plan actually implemented. Every other row stays
-open; completing this plan means the records are truthful, not that the backlog
-is empty.
+As of 2026-10-05, Step 2 was the only item this plan had implemented. Every
+other listed item was open at that date. Plan 165 records the later resolutions
+and the backlog items that remain open.
 
 ---
 
@@ -354,3 +354,27 @@ What this refresh did **not** do, and therefore does not claim: any unit test,
 build, E2E run, browser scenario, CI/deployment check, open-issue count, or
 coverage measurement. Where a number appears, it is Plan 161's dated
 2026-09-30 result or a configured threshold from `vitest.config.ts`.
+
+## Reconciliation — 2026-10-13 (Plan 165)
+
+The source observations and statuses above remain dated 2026-10-05. Plan 165
+closes or narrows the following recorded items without rewriting that historical
+evidence:
+
+| Audit item | Reconciliation |
+|---|---|
+| Missing implementation #2 — deletion/export integrity | Implemented in Plan 165 Step 1 (`e2ee5a6`), with reference pruning at delete/import/hydration/recovery/remote-reconcile/export boundaries and canvas-aware undo history. See [ADR 043](ADRs/043-canvas-reference-integrity.md). |
+| Missing implementation #3 — sync join/rejoin | Implemented in Plan 165 Step 2 (`a2dcbea`): leaving a room tears down its WebRTC provider without destroying the shared Yjs document or its IndexedDB persistence; the app-shell bridge remains available for rejoin, and initial-join conflicts are surfaced. |
+| Missing implementation #4 — heavy-leaf deferral | Implemented in Plan 165 Step 4 (`cdbd0f3`): sync and document-export dependencies are deferred. The recorded production build reduced first-load JavaScript by 9,333 bytes (about 0.53%); the offline E2E suite passed. |
+| F2 — URL deep links | Implemented in Plan 165 Step 3 (`f7d970f`); [ADR 037](ADRs/037-url-addressable-view-state.md) is now Implemented. |
+| S1, S2, D1, D2 | Catalog generation and the agent-surface CLI, script catalog, and workflow command documentation were reconciled in Plan 165 Step 5. |
+| D3 — README claims | Corrected in Plan 165: core state and pre-import recovery use Zustand/localStorage; IndexedDB is identified as the separate Yjs sync replica, not a production tiered recovery backup. Node >=22, browser-local BM25, and the optional model's first-use asset download versus later cached offline inference are documented. |
+| S3 — Cursor/Windsurf strategy semantics | Remains unresolved and is not claimed as completed. |
+| Plan 161 recorded follow-ons | Dev search-worker behavior, first-mount reduced-motion behavior, and workflow-linter warnings remain open; Plan 165 did not revalidate or close them. |
+
+Plan 165 also implements Plan 163's dependency-range and stale-base guards
+(Step 6; [ADR 044](ADRs/044-pr-integrity-guards.md)). Other Plan 162 items,
+including F1, F3, and the unscheduled candidates, remain open.
+
+See [Plan 165](165-backlog-remediation-2026-10-13.md) for commit-level scope and
+verification evidence.

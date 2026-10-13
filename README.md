@@ -8,13 +8,13 @@ The visual language follows **Editorial Paper & Saffron**: warm paper background
 
 ## Key Capabilities
 
-- **Local-First & Private**: All notes, entities, and claims persist directly in your browser (`localStorage` + `IndexedDB` tiered backup). No remote backend or database setup needed.
+- **Local-First & Private**: Core notes, entities, and claims persist through Zustand and browser `localStorage`; pre-import recovery snapshots also use localStorage. Yjs also persists a separate collaboration replica in IndexedDB. No remote backend or database setup needed.
 - **Peer-to-Peer Multi-Device Sync**: Decentralized WebRTC peer-to-peer synchronization powered by Yjs CRDTs, featuring QR-code device pairing, live presence indicators, and remote collaborative cursors.
 - **Client-Side Search Engine**: Browser-local BM25 keyword search and embedding-based semantic retrieval. Lexical search uses a Web Worker when available, with an in-browser fallback.
 - **Knowledge Graph & Mind Map**: Interactive SVG graph visualization with Force, Circular, and Hierarchical layouts, alongside expandable mind map tree navigation with depth filtering.
 - **TRIZ Contradiction Matrix**: Full interactive Altshuller 39×39 contradiction matrix with 40 inventive principles to systematically resolve engineering trade-offs without compromise.
 - **Universal Export & OKF Bundles**: Export agent-readable Open Knowledge Format (OKF v0.2) ZIP bundles, password-encrypted standalone HTML readers, Markdown, JSON, HTML, DOCX, or PDF.
-- **AI Assistant Harness**: Connect to [OpenRouter](https://openrouter.ai/), local [Ollama](https://ollama.ai/) instances, or in-browser models for grounded citations and client-side tool-calling.
+- **AI Assistant Harness**: Connect to [OpenRouter](https://openrouter.ai/), local [Ollama](https://ollama.ai/) instances, or optional in-browser models for grounded citations and client-side tool-calling. Browser models download weights on first use; later inference can run offline while the browser retains those cached assets.
 - **Accessible & Responsive**: Semantic, keyboard-accessible controls, the `?` shortcuts palette, mobile drawer layout, and support for `prefers-reduced-motion`.
 
 ---
@@ -24,7 +24,7 @@ The visual language follows **Editorial Paper & Saffron**: warm paper background
 | Layer | Technologies |
 |---|---|
 | **Framework & UI** | [Next.js 16](https://nextjs.org/) (App Router), [React 19](https://react.dev/), [Tailwind CSS 4](https://tailwindcss.com/) (`@theme inline`), [shadcn/ui](https://ui.shadcn.com/) (Radix UI + CVA) |
-| **State & Storage** | [Zustand](https://github.com/pmndrs/zustand) with localStorage persistence, IndexedDB tiered recovery snapshots, Zod schema boundaries |
+| **State & Storage** | [Zustand](https://github.com/pmndrs/zustand) with localStorage persistence and local recovery snapshots; IndexedDB persistence for the Yjs sync replica; Zod schema boundaries |
 | **Sync & CRDT** | [Yjs](https://yjs.dev/), WebRTC peer channels, tombstone tracking, three-way merge resolution |
 | **Search & Retrieval** | BM25 keyword search in a Web Worker and in-browser embedding-based semantic retrieval |
 | **Animations & Icons** | [Framer Motion](https://www.framer.com/motion/), [Lucide React](https://lucide.dev/), [Sonner](https://sonner.emilkowal.ski/) toasts |
@@ -109,7 +109,7 @@ pnpm run test:e2e:offline # Run after `pnpm run build`; first-use offline view t
 │   │   ├── export/          # Password-encrypted HTML export helpers
 │   │   ├── okf/             # Open Knowledge Format bundle serialization and import
 │   │   ├── search/          # Client BM25 retrieval engine & Web Worker client
-│   │   ├── studio/          # Zustand store, schema, hydration, migrations, IndexedDB backup
+│   │   ├── studio/          # Zustand store, schema, hydration, migrations, local recovery helpers
 │   │   └── sync/            # WebRTC sync bridge, Yjs CRDT documents, presence, conflict logic
 │   └── test/                # Test utilities, fixtures, and builder helpers
 ├── plans/                   # GOAP plans, task decomposition, and architecture decision records (ADRs)
@@ -137,7 +137,7 @@ The AI Harness integrates with [OpenRouter](https://openrouter.ai/) for seamless
 
 ## Local-First Philosophy & Design Rules
 
-1. **Zero Required Backend**: Persistence is 100% browser-based via Zustand, `localStorage`, and `IndexedDB`.
+1. **Zero Required Backend**: Core state and recovery snapshots use browser-local Zustand/`localStorage`; Yjs also persists a separate sync replica in browser IndexedDB.
 2. **Strict Quality Gates**: Zero warnings tolerated in quality gates (`pnpm run lint`, `typecheck`, `test`, `build`).
 3. **Max 500 LOC per File**: Source files remain modular, composable, and single-responsibility.
 4. **Privacy & Security**: Cryptographic operations use WebCrypto (`crypto.subtle`, `crypto.randomUUID()`). No app backend receives library data; peer sync sends data to joined peers. AI requests send prompts to the configured provider; matching local snippets are included only when local-context augmentation is enabled.
