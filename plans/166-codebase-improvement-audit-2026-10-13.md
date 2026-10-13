@@ -47,6 +47,22 @@ preview and chat headings/lists/blockquotes styled in both themes with accessibl
 contrast; `pnpm run build` regenerates the precache manifest; PR #951 rebased or
 superseded with a fresh deployment check.
 
+**Outcome (2026-10-13) — resolved on PR #951.** The branch was taken over and
+merged with `main`; the only conflict was the generated precache manifest, which
+the build regenerates (70 URLs). The `@plugin` directive now follows both
+`@import` rules (CSS requires imports to precede other at-rules), and the
+`postcss-selector-parser` override to `^7.1.6` was verified against the plugin's
+API usage (`parser.selector()`, `processSync`). Head `043424d` on
+`jules-13938770014072009790-d8cb4729`; `pnpm install --frozen-lockfile` passes.
+
+Evidence: production build clean, emitted CSS carrying 544 `prose` rules and 126
+`--tw-prose` variables; `e2e/markdown-preview.spec.ts` 8/8 against the production
+build; browser check measuring body-text contrast 9.71:1 (light) and 12.78:1
+(dark), preview `h1` at weight 800, and chat bubbles carrying the same prose
+variables; minimal gate (lint, typecheck, 2,952 tests) green on the pushed head.
+CI had never run on this PR — the push triggered the full suite, so remote
+checks were still settling when this record was written.
+
 ### N2 — `indexeddb-backup.ts` has no production caller (Medium)
 
 `src/lib/studio/indexeddb-backup.ts` (and its test file) is referenced only from a
