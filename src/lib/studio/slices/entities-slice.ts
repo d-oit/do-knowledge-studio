@@ -6,6 +6,7 @@
  * `deleteEntity`'s claim cascade) go through the same path so they never split
  * across two undo steps.
  */
+import { removeCanvasRefs } from '../canvas-refs'
 import type { Entity } from '../types'
 import type { StudioState } from '../store-types'
 import type { StudioSlice } from './slice-types'
@@ -92,16 +93,25 @@ export const createEntitiesSlice: StudioSlice<EntitiesSlice> = (set, get) => ({
   },
 
   deleteEntity: (id) => {
-    set((state) => ({
-      entities: state.entities
-        .filter((x) => x.id !== id)
-        .map((e) => ({
-          ...e,
-          links: e.links.filter((l) => l.targetId !== id),
-        })),
-      claims: state.claims.filter((c) => c.entityId !== id),
-      selectedEntityId: state.selectedEntityId === id ? null : state.selectedEntityId,
-    }))
+    set((state) => {
+      const canvas = removeCanvasRefs(
+        { graph: state.graph, mindMap: state.mindMap, links: state.links },
+        id,
+      )
+      return {
+        entities: state.entities
+          .filter((x) => x.id !== id)
+          .map((e) => ({
+            ...e,
+            links: e.links.filter((l) => l.targetId !== id),
+          })),
+        claims: state.claims.filter((c) => c.entityId !== id),
+        graph: canvas.graph,
+        mindMap: canvas.mindMap,
+        links: canvas.links,
+        selectedEntityId: state.selectedEntityId === id ? null : state.selectedEntityId,
+      }
+    })
     get().pushHistory()
   },
 })

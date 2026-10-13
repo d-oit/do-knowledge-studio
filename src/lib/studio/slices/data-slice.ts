@@ -6,6 +6,8 @@
  * undo target. The rollback path snapshots the pre-import state (including
  * claims and the canvas fields) so a failed swap is fully reversible.
  */
+import { pruneDanglingCanvasRefs } from '../canvas-refs'
+import { snapshotCorpus } from '../history-snapshot'
 import { buildRecoverySnapshot, persistRecoverySnapshot } from '../recovery-helpers'
 import { buildSeedState } from '../seed-state'
 import type { Entity, Claim } from '../types'
@@ -17,19 +19,25 @@ import type { StudioSlice } from './slice-types'
 export type DataSlice = Pick<StudioState, 'importData' | 'importWithRollback' | 'resetStore'>
 
 /** Shared tail of every corpus replacement: new baseline, no selection. */
-const corpusPatch = (entities: Entity[], claims: Claim[], options?: ImportOptions) => ({
-  entities,
-  claims,
-  selectedEntityId: null,
-  editingEntityId: null,
-  currentView: 'library' as const,
-  entityHistory: [{ entities, claims }],
-  historyIndex: 0,
-  graph: options?.graph,
-  mindMap: options?.mindMap,
-  links: options?.links,
-  tags: options?.tags,
-})
+const corpusPatch = (entities: Entity[], claims: Claim[], options?: ImportOptions) => {
+  const canvas = pruneDanglingCanvasRefs(
+    { graph: options?.graph, mindMap: options?.mindMap, links: options?.links },
+    new Set(entities.map((entity) => entity.id)),
+  )
+  return {
+    entities,
+    claims,
+    selectedEntityId: null,
+    editingEntityId: null,
+    currentView: 'library' as const,
+    entityHistory: [snapshotCorpus(entities, claims, { graph: canvas.graph, mindMap: canvas.mindMap, links: canvas.links })],
+    historyIndex: 0,
+    graph: canvas.graph,
+    mindMap: canvas.mindMap,
+    links: canvas.links,
+    tags: options?.tags,
+  }
+}
 
 /** Full state written by `resetStore` and by the last-ditch rollback fallback. */
 const seedPatch = () => {
@@ -38,7 +46,9 @@ const seedPatch = () => {
     ...seed,
     selectedEntityId: null,
     editingEntityId: null,
-    entityHistory: [{ entities: seed.entities, claims: seed.claims }],
+    entityHistory: [
+      snapshotCorpus(seed.entities, seed.claims, { graph: seed.graph, mindMap: seed.mindMap, links: seed.links }),
+    ],
     historyIndex: 0,
   }
 }

@@ -561,7 +561,9 @@ describe('Studio Store branch coverage', () => {
       const state = useStudioStore.getState()
       expect(state.entities).toHaveLength(1)
       expect(state.currentView).toBe('library')
-      expect(state.entityHistory).toEqual([{ entities, claims: [] }])
+      expect(state.entityHistory[0]?.entities).toEqual(entities)
+      expect(state.entityHistory[0]?.claims).toEqual([])
+      expect(state.entityHistory[0]?.canvas).toEqual({ graph: undefined, mindMap: undefined, links: undefined })
       expect(localStorage.getItem(RECOVERY_KEY)).not.toBeNull()
     })
 

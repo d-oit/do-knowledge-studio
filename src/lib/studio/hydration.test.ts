@@ -7,6 +7,8 @@ import {
   HydrationRejectedError,
 } from './hydration'
 import type { Entity, Claim } from './types'
+import type { ValidatedGraph, ValidatedLink, ValidatedMindMap } from './schema'
+import type { HistorySnapshot } from './history-snapshot'
 
 const SAMPLE_ENTITY: Entity = {
   id: 'ent-1',
@@ -259,6 +261,54 @@ describe('mergeHydratedState', () => {
     expect(merged.entityHistory[0].entities).toEqual(merged.entities)
     expect(merged.entityHistory[0].entities).not.toBe(merged.entities[0])
     expect(merged.entityHistory[0].claims).toEqual(merged.claims)
+  })
+
+  it('prunes dangling canvas data when hydrating persisted state', () => {
+    const graph: ValidatedGraph = {
+      nodes: [
+        { id: 'ent-1', label: 'Entity', type: 'note', x: 0, y: 0 },
+        { id: 'standalone', label: 'Standalone', type: 'note', x: 1, y: 1 },
+      ],
+      edges: [
+        { id: 'keep', source: 'ent-1', target: 'ent-1', relation: 'self' },
+        { id: 'drop', source: 'ent-1', target: 'missing', relation: 'dangling' },
+      ],
+    }
+    const mindMap: ValidatedMindMap = {
+      nodes: [
+        { id: 'ent-1', label: 'Entity', type: 'note' },
+        { id: 'standalone', label: 'Standalone', type: 'note' },
+      ],
+      edges: [
+        { id: 'keep', source: 'ent-1', target: 'ent-1', relation: 'self' },
+        { id: 'drop', source: 'missing', target: 'ent-1', relation: 'dangling' },
+      ],
+    }
+    const links: ValidatedLink[] = [
+      { id: 'keep', sourceId: 'ent-1', targetId: 'ent-1', type: 'self', createdAt: '2026-01-01T00:00:00.000Z' },
+      { id: 'drop', sourceId: 'ent-1', targetId: 'missing', type: 'dangling', createdAt: '2026-01-01T00:00:00.000Z' },
+    ]
+    const entityHistory: HistorySnapshot[] = [{ entities: [], claims: [] }]
+    const currentSeedState = {
+      ...createValidPersistedSlice(),
+      entities: [] as Entity[],
+      claims: [] as Claim[],
+      graph: undefined as ValidatedGraph | null | undefined,
+      mindMap: undefined as ValidatedMindMap | null | undefined,
+      links: undefined as ValidatedLink[] | null | undefined,
+      entityHistory,
+      historyIndex: 0,
+    }
+    const persisted = { ...createValidPersistedSlice(), graph, mindMap, links }
+
+    const merged = mergeHydratedState(persisted, currentSeedState)
+
+    expect(merged.graph?.nodes.map((node) => node.id)).toEqual(['ent-1', 'standalone'])
+    expect(merged.graph?.edges.map((edge) => edge.id)).toEqual(['keep'])
+    expect(merged.mindMap?.nodes.map((node) => node.id)).toEqual(['ent-1', 'standalone'])
+    expect(merged.mindMap?.edges.map((edge) => edge.id)).toEqual(['keep'])
+    expect(merged.links?.map((link) => link.id)).toEqual(['keep'])
+    expect(merged.entityHistory[0]?.canvas?.graph).toBe(merged.graph)
   })
 
   it('throws HydrationRejectedError on invalid persisted payload during merge', () => {
