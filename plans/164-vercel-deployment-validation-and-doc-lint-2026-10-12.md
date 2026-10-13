@@ -122,6 +122,10 @@ whole corpus. The normalization pass touched 43 markdown files with mechanical
 edits only — verified by counting heading lines before and after (621 → 621) and
 by confirming no added line in any doc looks like an ATX heading.
 
+The policy itself is recorded as **ADR 042**
+(`plans/ADRs/042-documentation-lint-policy.md`), so a future pass that wants to
+re-enable a rule has to read why it was disabled first — `MD018` above all.
+
 ## 3. Follow-ups
 
 1. **Wire markdownlint into the gate.** The step remains skipped unless the binary
