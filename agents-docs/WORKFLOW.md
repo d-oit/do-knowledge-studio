@@ -74,6 +74,18 @@ This ensures the template self-improves over time as projects evolve. See `agent
 ./scripts/minimal_quality_gate.sh
 ```
 
+## PR Regression Guards
+
+`ci-and-labels.yml` runs the stale-base check on every pull request. Its
+dependency-range check runs when `package.json` or `pnpm-lock.yaml` changes.
+
+- `check-dependency-downgrades.mjs <base-ref>` compares the lowest versions
+  allowed by changed ranges in `dependencies` and `devDependencies`. A lower
+  minimum or a range the SemVer parser cannot compare fails closed for review.
+- `check-stale-base-deletions.mjs <base-ref>` fails when the PR head is missing a
+  file added to the current target branch after the merge base. Update or rebase
+  the branch onto the target branch before retrying.
+
 ## Dependabot PRs
 
 Dependabot and Jules pull requests labeled `automerge` are approved and set to GitHub auto-merge by `.github/workflows/dependabot-auto-merge.yml`. GitHub merges them after required checks pass; do not manually merge or close these opt-in pull requests.

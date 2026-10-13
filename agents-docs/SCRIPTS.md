@@ -27,7 +27,8 @@ the scope from changed paths and requires a resolvable base ref.
 | `validate-git-hooks.sh` | Check git hooks configuration | `./scripts/validate-git-hooks.sh` |
 | `validate-links.sh` | Validate links and reference formatting in `SKILL.md` files | `./scripts/validate-links.sh` |
 | `validate-package-manager.sh` | Validate the correct package manager (pnpm) is used | `./scripts/validate-package-manager.sh` |
-| `validate-github-actions-shas.sh` | Validate GitHub Actions are pinned to full commit SHAs | `./scripts/validate-github-actions-shas.sh` |
+| `check-dependency-downgrades.mjs` | Fail on lower or unparseable changed dependency ranges | `node scripts/check-dependency-downgrades.mjs <base-ref>` |
+| `check-stale-base-deletions.mjs` | Fail when target-branch additions are missing from the PR head | `node scripts/check-stale-base-deletions.mjs <base-ref>` |
 
 ## Automation Scripts
 
@@ -79,5 +80,7 @@ graph TD
     F[setup-skills.sh] --> G[manifest-managed tool links]
     F --> H[generate-skills-docs.py]
     H --> I[AVAILABLE_SKILLS.md and skills README]
+    M[ci-and-labels.yml] --> N[check-dependency-downgrades.mjs]
+    M --> O[check-stale-base-deletions.mjs]
     J[install-hooks.sh] --> K[pre-commit and commit-msg hooks]
     K --> L[minimal_quality_gate.sh]

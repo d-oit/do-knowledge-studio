@@ -4,8 +4,9 @@ This directory contains GitHub Actions workflows for the do-knowledge-studio pro
 
 ## Workflow Overview
 
-- **CI** (`ci-and-labels.yml`) — Push to main/develop, PRs. Main CI
-  pipeline with quality gates, tests, build, and coverage.
+- **CI** (`ci-and-labels.yml`) — pushes to `main`, `develop`, and `release/**`;
+  PRs targeting `main`/`develop`; scheduled nightly and manual runs. The pipeline
+  includes scoped quality gates, tests, builds, and coverage.
 - **Security Scan** (`security-scan.yml`) — Push to main, PRs, weekly
   schedule. Security scanning with ShellCheck and Trivy.
 - **Dependabot Auto-Merge** (`dependabot-auto-merge.yml`) — PRs from
@@ -38,14 +39,20 @@ This directory contains GitHub Actions workflows for the do-knowledge-studio pro
 
 ### CI Pipeline (`ci-and-labels.yml`)
 
-The main CI pipeline runs on every push and pull request:
+The pipeline runs for configured pushes, PRs, nightly sweeps, and manual runs:
 
-1. **Detect Changes** - Uses `dorny/paths-filter` to detect which files changed
-2. **Quality Gate** - Runs linting, type checking, and tests on changed files
-3. **Unit Tests** - Runs full test suite for regression testing
-4. **E2E Tests** - Runs Playwright tests for frontend changes
-5. **Build** - Verifies the project builds successfully
-6. **Coverage** - Generates test coverage reports
+1. **Detect Changes** - Filters paths; defaults to full checks if the path filter
+   fails.
+2. **Stale Base Guard** - Checks each PR head for target-branch files missing
+   since the merge base.
+3. **Quality Gate** - Runs scoped repository checks for changed code paths.
+4. **Unit Tests** - Runs the full Vitest suite for code changes.
+5. **E2E Tests** - Runs for frontend/offline changes, nightly sweeps, or manual
+   runs.
+6. **Build** - Verifies builds for code changes.
+7. **Dependency Verify** - Checks manifest/lock changes; dependency PRs also run
+   the downgrade guard.
+8. **Coverage** - Generates reports for code changes.
 
 **Concurrency**: Uses `cancel-in-progress: true` to avoid redundant runs.
 
