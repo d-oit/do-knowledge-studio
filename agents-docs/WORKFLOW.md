@@ -62,21 +62,21 @@ This ensures the template self-improves over time as projects evolve. See `agent
 ## Quality Gate Usage
 
 ```bash
-# Full quality gate (required before commit)
+# Full quality gate
 ./scripts/quality_gate.sh
 
-# Skip specific checks
-SKIP_TESTS=true ./scripts/quality_gate.sh
-SKIP_LINT=true ./scripts/quality_gate.sh
-SKIP_LINKS=true ./scripts/quality_gate.sh
+# Fast mode skips test runners; scope and changed-file options are available
+./scripts/quality_gate.sh --fast
+./scripts/quality_gate.sh --scope docs
+./scripts/quality_gate.sh --changed
 
-# Minimal quality gate (fast path for CI debugging)
+# Minimal gate: lint, typecheck, and tests
 ./scripts/minimal_quality_gate.sh
 ```
 
 ## Dependabot PRs
 
-Dependabot PRs are auto-merged via CI when all checks pass. Do not manually merge or close Dependabot PRs.
+Dependabot and Jules pull requests labeled `automerge` are approved and set to GitHub auto-merge by `.github/workflows/dependabot-auto-merge.yml`. GitHub merges them after required checks pass; do not manually merge or close these opt-in pull requests.
 
 ## Swarm Web Research Workflow
 
