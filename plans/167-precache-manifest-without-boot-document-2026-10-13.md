@@ -76,3 +76,32 @@ so production has not advanced.
 - The provider's Node engines notice (`>=22.0.0` may auto-upgrade to a future
   major) is non-fatal; the range matches the policy documented in `AGENTS.md`
   and is unchanged.
+
+## PR #951 — Vercel check investigation (2026-10-13, evening)
+
+PR #951's only failing check is Vercel. The branch now carries the fix above
+(merge `d2f6273` on `jules-13938770014072009790-d8cb4729`), and the generator was
+re-verified against the two build layouts a platform can produce:
+
+| Layout | Command | Result |
+|---|---|---|
+| Split build, compile phase (no boot document) | `next build --experimental-build-mode=compile` | `.next/server/app/index.html` absent; 43 JS chunks and 17 media files present; generator exits 0 and writes the same 70-URL manifest |
+| Standalone output | `NEXT_PRIVATE_STANDALONE=1 next build` | Document and inventories present; generator exits 0 |
+
+Evidence gathered while the post-fix deployment still failed:
+
+- Every deployment that **ran a build** has failed since the Next 16.3.8 restore
+  (2026-10-12 10:35Z, `56428ea`); the only success in the window is a docs-only
+  push that `vercel-ignore-build.sh` skipped (`af44c461`, 2026-10-12 19:57Z).
+- Quota refusals carry a distinct status ("Deployment rate limited — retry in
+  24 hours"), so the current failures are build failures, not the Hobby limit.
+  The account created 18 deployments in the last 24 h, well under 100.
+- The provider log is **not readable from this workspace**: no `VERCEL_TOKEN`,
+  no `vercel` CLI, and deployment URLs answer 302 to SSO. `vercel inspect
+  dpl_Ea5ZNdM32GzFzAcsWCegrdSQtZca --logs` (or the dashboard link on PR #951)
+  is the only way to see why the post-fix build failed.
+
+Conclusion: the repository side of the failure is fixed and verified; the
+remaining cause is only visible in the provider log. Followup: read that log and,
+if the failure is outside `generate-precache-manifest.mjs`, treat it as a
+platform/framework issue rather than a manifest one.

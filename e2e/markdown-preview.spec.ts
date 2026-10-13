@@ -69,6 +69,28 @@ test.describe('Markdown preview', () => {
     await expect(pane.locator('hr')).toBeVisible();
   });
 
+  /**
+   * The `prose` classes are inert without @tailwindcss/typography, and an inert
+   * preview still renders every element — so the markup assertions above cannot
+   * tell a styled preview from an unstyled one (plans/166 N1). These assertions
+   * read the computed styles the plugin generates.
+   */
+  test('applies the typography plugin scale, not the browser defaults', async ({ page }) => {
+    const pane = preview(page);
+    // `--tw-prose-*` custom properties only exist when the plugin ran.
+    const proseBody = await pane.evaluate((el) =>
+      getComputedStyle(el).getPropertyValue('--tw-prose-body').trim(),
+    );
+    expect(proseBody).not.toBe('');
+
+    // Blockquotes get a left rule from the plugin; the UA default is none.
+    const quoteBorder = await pane
+      .locator('blockquote')
+      .first()
+      .evaluate((el) => parseFloat(getComputedStyle(el).borderLeftWidth));
+    expect(quoteBorder).toBeGreaterThan(0);
+  });
+
   test('renders links as anchors with the expected href', async ({ page }) => {
     const pane = preview(page);
     const link = pane.getByRole('link', { name: 'external link' });
