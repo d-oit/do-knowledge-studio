@@ -50,6 +50,7 @@ gh api "repos/<owner>/<repo>/deployments?per_page=100&page=$p" --jq '.[] | .crea
 | `api-deployments-free-per-hour` / `api-deployments-flood` | 100 builds/hour; 60 deployments/5 min | Same remedies; also stop rapid re-pushes |
 | `Authorization required to deploy` | A **fork** PR: Vercel doesn't deploy forks unless allowed, and the run can't be resumed from here | Expected for forks; not a defect in the repo |
 | A build-step error (install, `next build`, a script exit code) | Real build failure | Reproduce with `pnpm run build`; check Node ≥ 22 (`engines.node`) and pnpm detection |
+| `Deployment has failed — run the Vercel CLI command npx vercel inspect <id> --logs` with **no quoted cause** | The provider withheld the reason. Note the deployment *was created*, so the quota did not refuse it — a refusal never produces a deployment record | Needs `vercel inspect` (authenticated). Discriminate first, locally and for free: if `pnpm run build` succeeds, the code is not the break; if *every* recent commit on `main` fails (`commits/{sha}/status` → `failure`, sampled over ~20 commits), the cause is platform/account-wide, not this PR |
 
 Official sources: <https://vercel.com/docs/limits> (table rows *Deployments Created
 per Day*, and the `api-deployments-*` rate-limit table),

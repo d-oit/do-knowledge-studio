@@ -31,6 +31,23 @@ which is why this went unread for nine days.
   with previews**, which is why main's deploys died along with the previews.
 - Volume for one day, one repo: **104 deployments on 2026-10-12** — over the cap.
 
+### Verified from GitHub, without account access
+
+Re-checked while landing this change (the earlier session's evidence, extended):
+
+- **Every recent `main` commit fails**: of the last 20 commits on `main`, the
+  `Vercel` commit status is `failure` for 19 and absent for 1 — **zero successes**
+  (sampled via `commits/{sha}/status`, no token needed).
+- **The build is not broken**: `pnpm run build` succeeds locally on this tree
+  (4/4 pages, precache manifest written). A plain build failure is therefore ruled
+  out, which is what makes the quota attribution the surviving explanation.
+- **The newest failures are generic**: the status text is now
+  "Deployment has failed — run this Vercel CLI command: npx vercel inspect …",
+  not the quota string. Reading the real reason for *these* requires an
+  authenticated `vercel inspect` (`VERCEL_TOKEN` or `vercel login`); neither exists
+  in this environment, so the quota error remains the *last readable* cause
+  (captured verbatim above), and nothing further is claimed about the rest.
+
 ### Why it was invisible
 
 The Vercel check is not ruleset-required (`Codacy Static Code Analysis` is the
