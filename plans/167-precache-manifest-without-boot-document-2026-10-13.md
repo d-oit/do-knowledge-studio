@@ -76,3 +76,22 @@ so production has not advanced.
 - The provider's Node engines notice (`>=22.0.0` may auto-upgrade to a future
   major) is non-fatal; the range matches the policy documented in `AGENTS.md`
   and is unchanged.
+
+## PR #952 (2026-10-13, later)
+
+PR #952's only failing check is also Vercel, so its branch now carries this fix
+as well (merge `2cd7169`). Verified on the merged tree: generator suite 4/4,
+production build clean with a byte-identical 70-URL manifest, the provider
+layout simulated by moving the boot document away (generator exit 0, manifest
+unchanged), `validate-links.sh` clean (58 files, 211 links), markdownlint clean,
+lint and typecheck exit 0 with zero warnings.
+
+A fresh deployment of that head (`dpl_DrmM9WDcGkMyyuPfrafNYiQgHiAo`) failed the
+same way, so the remaining cause is unchanged and still outside the repository.
+
+One hypothesis from this session is recorded as **disproven**: a local build
+emitted `@vercel/turbopack-next/internal/font/google/font` URLs and failed with
+"next/font/google queries have exactly one entry". That was an artifact of an
+earlier `VERCEL=1` experiment in this workspace — five consecutive clean builds
+afterwards succeeded, and on the provider that virtual module is supplied by the
+platform. It is not evidence about the provider failure.
