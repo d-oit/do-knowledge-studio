@@ -41,12 +41,26 @@ Re-checked while landing this change (the earlier session's evidence, extended):
 - **The build is not broken**: `pnpm run build` succeeds locally on this tree
   (4/4 pages, precache manifest written). A plain build failure is therefore ruled
   out, which is what makes the quota attribution the surviving explanation.
-- **The newest failures are generic**: the status text is now
-  "Deployment has failed — run this Vercel CLI command: npx vercel inspect …",
-  not the quota string. Reading the real reason for *these* requires an
-  authenticated `vercel inspect` (`VERCEL_TOKEN` or `vercel login`); neither exists
-  in this environment, so the quota error remains the *last readable* cause
-  (captured verbatim above), and nothing further is claimed about the rest.
+- **The newest failures are generic — but their timing identifies them**: the status
+  text is now "Deployment has failed — run this Vercel CLI command: npx vercel
+  inspect …", and the failure status carries **the same timestamp as the deployment
+  record** (`created=07:17:28Z`, `status created=07:17:28Z`). Nothing ever built: a
+  build — even a failing one — takes tens of seconds, and an `ignoreCommand` skip
+  reports `canceled`, not `failure`. An instant failure is the *creation* being
+  refused, which is the quota/account-limit signature; Vercel still records a
+  deployment and a failure status for it.
+- **Consequence for this fix's observability**: while creation is refused, the
+  `ignoreCommand` and `git.deploymentEnabled` levers **cannot be seen working** —
+  the refusal precedes the ignore step, so no "Ignored Build Step" run will appear
+  in the deployment history. Their behaviour is verified locally instead
+  (`tests/vercel-ignore-build.bats`, 7 cases, plus the four decisions by hand), and
+  the config was validated against Vercel's published schema. Confirming them live
+  needs the quota window to reset *and* an authenticated look at the first doc-only
+  push after that.
+- Reading the definitive reason for the instant failures still requires an
+  authenticated `vercel inspect` (`VERCEL_TOKEN` is unset, there is no `~/.vercel`),
+  so the quota error remains the *last readable* cause — captured verbatim above —
+  and nothing further is claimed about the rest.
 
 ### Why it was invisible
 
