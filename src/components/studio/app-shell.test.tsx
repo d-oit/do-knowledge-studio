@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { act, render, screen } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 
 const { mockStopViewHashSync } = vi.hoisted(() => ({
@@ -333,15 +333,19 @@ describe('AppShell', () => {
     expect(startViewHashSync).not.toHaveBeenCalled()
   })
 
-  it('starts sync services on a normal hydration', () => {
+  it('starts sync services on a normal hydration', async () => {
     render(<AppShell />)
 
-    expect(startBidirectionalSync).toHaveBeenCalled()
-    expect(startViewHashSync).toHaveBeenCalled()
+    await waitFor(() => {
+      expect(startBidirectionalSync).toHaveBeenCalled()
+      expect(startViewHashSync).toHaveBeenCalled()
+    })
   })
 
   it('reacts when a refusal arrives after mount', async () => {
     render(<AppShell />)
+    await waitFor(() => { expect(startBidirectionalSync).toHaveBeenCalled() })
+    const stopBridge = vi.mocked(startBidirectionalSync).mock.results[0]?.value
     expect(screen.queryByTestId('quarantine-unpreserved-banner')).toBeNull()
 
     await act(async () => {
@@ -352,6 +356,7 @@ describe('AppShell', () => {
     // A late refusal must not leave either sync service active, and the
     // warning must appear without a reload.
     expect(screen.getByTestId('quarantine-unpreserved-banner')).toBeDefined()
+    expect(stopBridge).toHaveBeenCalled()
     expect(mockStopViewHashSync).toHaveBeenCalled()
   })
 })

@@ -9,11 +9,6 @@ import {
   buildJsonExport, buildMarkdownExport, buildHtmlExport,
   parseImportFile,
 } from './export-helpers'
-import { buildPdfExport, buildDocxExport } from './export-documents'
-import { zipSync, unzipSync, strToU8, strFromU8 } from 'fflate'
-import { buildOkfBundle } from '@/lib/okf/bundle'
-import { parseOkfBundle } from '@/lib/okf/import'
-import { encryptData, buildEncryptedReaderHtml } from '@/lib/export/encrypt'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from '@/lib/studio/schema'
 import { useAnnouncer } from '@/lib/a11y/announcer'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
@@ -26,7 +21,6 @@ const NO_BACKUP_COPY: Record<RecoveryPersistFailure, string> = {
   unserializable: exportT('export.import.noBackupUnserializable'),
   'storage-unavailable': exportT('export.import.noBackupStorageUnavailable'),
 }
-
 
 /**
  * Builds a human-readable summary string of export contents.
@@ -158,8 +152,10 @@ const handleOkfZipImport = (
 ) => {
   /** The reader. */
   const reader = new FileReader()
-  reader.onload = () => {
+  reader.onload = async () => {
     try {
+      /** The unzip helpers. */
+      const { unzipSync, strFromU8 } = await import('fflate')
       /** The buffer. */
       const buffer = reader.result as ArrayBuffer
       /** The entries. */
@@ -178,6 +174,8 @@ const handleOkfZipImport = (
         toast.error('Import failed', { description: 'zip does not contain an OKF bundle (no okf_version in index.md)' })
         return
       }
+      /** The OKF parser. */
+      const { parseOkfBundle } = await import('@/lib/okf/import')
       const { entities: ents, claims: cls, errors } = parseOkfBundle(filesMap)
       if (errors.length > 0 && ents.length === 0) {
         toast.error('Import failed', { description: joinErrorMessages(errors) })
@@ -258,8 +256,10 @@ export const useExportHandlers = ({
   }
 
   /** Downloads a print-ready PDF of all entities and claims. */
-  const handleExportPdf = () => {
+  const handleExportPdf = async () => {
     try {
+      /** The PDF builder. */
+      const { buildPdfExport } = await import('./export-documents')
       /** The blob. */
       const blob = buildPdfExport(entities, claims)
       downloadBlob(`do-knowledge-studio-${stamp}.pdf`, blob)
@@ -270,8 +270,12 @@ export const useExportHandlers = ({
   }
 
   /** Downloads the library as an OKF v0.2 zip bundle (index, log, concept files). */
-  const handleExportOkf = () => {
+  const handleExportOkf = async () => {
     try {
+      const [{ buildOkfBundle }, { zipSync, strToU8 }] = await Promise.all([
+        import('@/lib/okf/bundle'),
+        import('fflate'),
+      ])
       /** The edges. */
       const edges = graph?.edges ?? []
       /** The bundle. */
@@ -298,6 +302,8 @@ export const useExportHandlers = ({
   /** Downloads a Word (.docx) document of all entities and claims. */
   const handleExportDocx = async () => {
     try {
+      /** The DOCX builder. */
+      const { buildDocxExport } = await import('./export-documents')
       /** The blob. */
       const blob = await buildDocxExport(entities, claims)
       downloadBlob(`do-knowledge-studio-${stamp}.docx`, blob)
@@ -314,6 +320,8 @@ export const useExportHandlers = ({
       return
     }
     try {
+      /** The encryption helpers. */
+      const { encryptData, buildEncryptedReaderHtml } = await import('@/lib/export/encrypt')
       /** The json. */
       const json = buildJsonExport(entities, claims, exportOptions)
       /** The encrypted. */
@@ -345,7 +353,7 @@ export const useExportHandlers = ({
         handleExportHtml()
         break
       case 'pdf':
-        handleExportPdf()
+        await handleExportPdf()
         break
       case 'docx':
         await handleExportDocx()
@@ -354,7 +362,7 @@ export const useExportHandlers = ({
         await handleExportEncrypted()
         break
       case 'okf':
-        handleExportOkf()
+        await handleExportOkf()
         break
       /** The default. */
       default:
