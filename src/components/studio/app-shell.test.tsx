@@ -2,6 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, render, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
 
+const { mockStopViewHashSync } = vi.hoisted(() => ({
+  mockStopViewHashSync: vi.fn(),
+}))
+
 vi.mock('./sidebar', () => ({
   Sidebar: () => <div data-testid="sidebar">Sidebar</div>,
 }))
@@ -86,6 +90,10 @@ vi.mock('@/lib/sync/bridge', () => ({
   startBidirectionalSync: vi.fn(() => vi.fn()),
 }))
 
+vi.mock('@/lib/studio/view-hash-sync', () => ({
+  startViewHashSync: vi.fn(() => mockStopViewHashSync),
+}))
+
 vi.mock('@/lib/utils', () => ({
   cn: (...args: (string | undefined | false | null)[]) => args.filter(Boolean).join(' '),
 }))
@@ -133,6 +141,7 @@ vi.mock('@/lib/studio/store', () => ({
 
 import { AppShell } from './app-shell'
 import { startBidirectionalSync } from '@/lib/sync/bridge'
+import { startViewHashSync } from '@/lib/studio/view-hash-sync'
 
 describe('AppShell', () => {
   beforeEach(() => {
@@ -315,18 +324,20 @@ describe('AppShell', () => {
     expect(screen.queryByTestId('sync-view')).toBeNull()
   })
 
-  it('does not start the Yjs bridge while a refusal is live', () => {
+  it('does not start sync services while a refusal is live', () => {
     mockRefusal = { reason: 'no safe migration from version 99', raw: null, preserved: false }
 
     render(<AppShell />)
 
     expect(startBidirectionalSync).not.toHaveBeenCalled()
+    expect(startViewHashSync).not.toHaveBeenCalled()
   })
 
-  it('starts the Yjs bridge on a normal hydration', () => {
+  it('starts sync services on a normal hydration', () => {
     render(<AppShell />)
 
     expect(startBidirectionalSync).toHaveBeenCalled()
+    expect(startViewHashSync).toHaveBeenCalled()
   })
 
   it('reacts when a refusal arrives after mount', async () => {
@@ -338,8 +349,9 @@ describe('AppShell', () => {
       for (const listener of refusalListeners) listener()
     })
 
-    // A late refusal must not leave the bridge publishing seed data, and the
+    // A late refusal must not leave either sync service active, and the
     // warning must appear without a reload.
     expect(screen.getByTestId('quarantine-unpreserved-banner')).toBeDefined()
+    expect(mockStopViewHashSync).toHaveBeenCalled()
   })
 })

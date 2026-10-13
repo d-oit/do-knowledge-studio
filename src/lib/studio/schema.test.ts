@@ -505,6 +505,12 @@ describe('PersistedEnvelopeSchema', () => {
     expect(PersistedEnvelopeSchema.parse(envelope).version).toBe(1)
   })
 
+  it('rejects a currentView outside the shared view identifiers', () => {
+    expect(() =>
+      PersistedEnvelopeSchema.parse({ ...envelope, currentView: 'not-a-view' }),
+    ).toThrow()
+  })
+
   it.each([0, -1, 1.5])('rejects version = %s', (val) => {
     expect(() => PersistedEnvelopeSchema.parse({ ...envelope, version: val })).toThrow()
   })

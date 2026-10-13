@@ -18,6 +18,7 @@ import { ErrorBoundary } from './error-boundary'
 import { ViewErrorBoundary } from './view-error-boundary'
 import { Skeleton } from './ui/skeleton'
 import { startBidirectionalSync } from '@/lib/sync/bridge'
+import { startViewHashSync } from '@/lib/studio/view-hash-sync'
 import { translate as navT } from '@/lib/i18n/messages/nav'
 import { translate as timelineT } from '@/lib/i18n/messages/timeline'
 import { readQuarantine, type QuarantineRecord } from '@/lib/studio/hydration-quarantine'
@@ -250,6 +251,11 @@ export const AppShell = () => {
   const editingEntityId = useStudioStore((s) => s.editingEntityId)
   const [appReady, setAppReady] = useState(false)
   const refusal = useHydrationRefusal()
+
+  useEffect(() => {
+    if (getHydrationRefusal() !== null) return
+    return startViewHashSync()
+  }, [refusal])
 
   // The Yjs bridge must not run on a refused hydrate. It would merge inbound
   // peer updates into a seed workspace and publish that seed corpus outward,
