@@ -2,6 +2,8 @@ import * as Y from 'yjs'
 import { IndexeddbPersistence } from 'y-indexeddb'
 import { WebrtcProvider } from 'y-webrtc'
 import type { SyncDoc } from './types'
+/** WebRTC provider for an active collaboration room. */
+export type RoomProvider = WebrtcProvider
 
 /** IndexedDB database name for Yjs persistence. */
 const DB_NAME = 'dks-sync'
@@ -46,7 +48,7 @@ export const initPersistence = async (): Promise<void> => {
 export const joinRoom = (
   roomId: string,
   opts?: { signaling?: string[]; password?: string },
-): WebrtcProvider => {
+): RoomProvider => {
   if (currentProvider) {
     currentProvider.destroy()
   }
@@ -72,7 +74,15 @@ export const getAwareness = (): WebrtcProvider['awareness'] | null => {
   return currentProvider?.awareness ?? null
 }
 
-/** Destroy the provider, persistence, and Yjs document, cleaning up all resources. */
+/** Leave the room without destroying the shared document or IndexedDB persistence. */
+export const leaveRoom = (): void => {
+  currentProvider?.destroy()
+  currentProvider = null
+}
+/**
+ * Fully destroys the provider, IndexedDB persistence, and document. Product
+ * room exits use `leaveRoom`; tests and refused-hydration/host teardown use this.
+ */
 export const destroy = (): void => {
   currentProvider?.destroy()
   currentProvider = null

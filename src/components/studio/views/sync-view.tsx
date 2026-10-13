@@ -17,8 +17,9 @@ import {
   getProvider,
   getYjsEntities,
   getYjsClaims,
-  destroy,
+  leaveRoom,
 } from '@/lib/sync'
+import type { RoomProvider } from '@/lib/sync'
 import { useStudioStore } from '@/lib/studio/store'
 import { mergeIntoYjs, applyConflictResolution } from '@/lib/sync/bridge'
 import {
@@ -58,17 +59,12 @@ interface SyncProviderEventHandlers {
  * JS-R1005 complexity ceiling; every handler passed in is a stable setter or `useCallback`,
  * so the subscription is established once rather than re-bound on each render.
  */
-const useSyncProviderEvents = ({
-  addEvent,
-  setStatus,
-  setSyncedEntities,
-  setSyncedClaims,
-  setPeerCount,
-}: SyncProviderEventHandlers): void => {
+const useSyncProviderEvents = (
+  provider: RoomProvider | null,
+  { addEvent, setStatus, setSyncedEntities, setSyncedClaims, setPeerCount }: SyncProviderEventHandlers,
+): void => {
   useEffect(() => {
-    const provider = getProvider()
     if (!provider) return
-
     const handleSynced = () => {
       setStatus('connected')
       setSyncedEntities(getYjsEntities().length)
@@ -99,7 +95,7 @@ const useSyncProviderEvents = ({
       provider.off('status', handleStatus)
       provider.off('peers', handlePeers)
     }
-  }, [addEvent, setStatus, setSyncedEntities, setSyncedClaims, setPeerCount])
+  }, [provider, addEvent, setStatus, setSyncedEntities, setSyncedClaims, setPeerCount])
 }
 
 /**
@@ -227,6 +223,7 @@ export const SyncView = () => {
   const { peers: presencePeers } = usePresence()
   const [status, setStatus] = useState<SyncStatus>('disconnected')
   const [roomId, setRoomId] = useState('')
+  const [provider, setProvider] = useState(() => getProvider())
   const [inputRoomId, setInputRoomId] = useState('')
   // Held in component state only — never persisted, logged, or added to the event history.
   const [roomPassword, setRoomPassword] = useState('')
@@ -255,7 +252,7 @@ export const SyncView = () => {
     })
   }, [addEvent])
 
-  useSyncProviderEvents({ addEvent, setStatus, setSyncedEntities, setSyncedClaims, setPeerCount })
+  useSyncProviderEvents(provider, { addEvent, setStatus, setSyncedEntities, setSyncedClaims, setPeerCount })
   useRoomDiscovery(status, roomId, setDiscoveredPeers)
 
   const handleJoin = useCallback(() => {
@@ -270,16 +267,21 @@ export const SyncView = () => {
       // Call through with no second argument when unencrypted, so the existing code path
       // (and its arity) is untouched.
       if (password) {
-        joinRoom(id, { password })
+        setProvider(joinRoom(id, { password }))
       } else {
-        joinRoom(id)
+        setProvider(joinRoom(id))
       }
       setRoomId(id)
       setInputRoomId('')
       setRoomPassword('')
 
-      mergeIntoYjs(entities, claims)
-      addEvent('sync', t('sync.event.merged', String(entities.length), String(claims.length)))
+      const result = mergeIntoYjs(entities, claims)
+      if (result.conflicts.length > 0) {
+        setPendingConflicts(result.conflicts)
+        addEvent('sync', t('sync.event.conflictsFound', String(result.conflicts.length)))
+      } else {
+        addEvent('sync', t('sync.event.merged', String(entities.length), String(claims.length)))
+      }
       toast.success(t('sync.toast.joined', id))
     } catch (err) {
       setStatus('error')
@@ -291,7 +293,8 @@ export const SyncView = () => {
 
   const handleLeave = useCallback(() => {
     stopDiscovery()
-    destroy()
+    leaveRoom()
+    setProvider(null)
     setStatus('disconnected')
     setRoomId('')
     setPeerCount(0)

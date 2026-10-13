@@ -50,7 +50,7 @@ vi.mock('@/lib/sync', () => ({
   getProvider: vi.fn(() => null),
   getYjsEntities: vi.fn(() => []),
   getYjsClaims: vi.fn(() => []),
-  destroy: vi.fn(),
+  leaveRoom: vi.fn(),
 }))
 
 vi.mock('@/lib/sync/bridge', () => ({
