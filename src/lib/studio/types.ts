@@ -12,19 +12,23 @@ export type AnyEntityType = EntityType | (string & {})
 /** Verification lifecycle of a claim. */
 export type VerificationStatus = 'unverified' | 'verified' | 'disputed'
 
+/** All navigable view identifiers, shared with the persisted-envelope schema. */
+export const VIEW_IDS = [
+  'home',
+  'editor',
+  'library',
+  'graph',
+  'mindmap',
+  'timeline',
+  'chat',
+  'ai',
+  'triz',
+  'export',
+  'sync',
+] as const
+
 /** All navigable view identifiers. */
-export type ViewId =
-  | 'home'
-  | 'editor'
-  | 'library'
-  | 'graph'
-  | 'mindmap'
-  | 'timeline'
-  | 'chat'
-  | 'ai'
-  | 'triz'
-  | 'export'
-  | 'sync'
+export type ViewId = (typeof VIEW_IDS)[number]
 
 /** Core knowledge entity representing a note, concept, person, or project. */
 export interface Entity {

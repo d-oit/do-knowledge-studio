@@ -2,12 +2,15 @@
 
 This is the **single canonical location** for all skills in this repository.
 
-Claude Code, Gemini CLI, and Qwen Code use symlinks; OpenCode reads directly from `.agents/skills/`:
+Claude Code, Gemini CLI, and Qwen Code use per-skill links. Cursor and Windsurf use
+directory links; OpenCode reads `.agents/skills/` directly:
 
 ```
-.claude/skills/<name>      -> ../../.agents/skills/<name>
-.gemini/skills/<name>      -> ../../.agents/skills/<name>
-.qwen/skills/<name>        -> ../../.agents/skills/<name>
+  .claude/skills/<name>       -> ../../.agents/skills/<name>
+  .gemini/skills/<name>       -> ../../.agents/skills/<name>
+  .qwen/skills/<name>         -> ../../.agents/skills/<name>
+  .cursor/skills              -> ../.agents/skills
+  .windsurf/skills            -> ../.agents/skills
 ```
 
 ## Setup
@@ -28,8 +31,8 @@ Validate symlinks are intact:
 
 1. Create `.agents/skills/<skill-name>/SKILL.md` (see `agents-docs/AVAILABLE_SKILLS.md`)
 2. Add `reference/` folder for detailed content (optional)
-3. Run `./scripts/setup-skills.sh` to create symlinks for all CLI tools
-4. The skill is now available in Claude Code, OpenCode, Gemini CLI, and Qwen Code
+3. Run `./scripts/setup-skills.sh` to create links for all managed tools
+4. The skill is available in Claude Code, Gemini CLI, Qwen Code, Cursor, Windsurf, and OpenCode
 
 ## Skills in This Repository
 

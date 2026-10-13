@@ -29,10 +29,6 @@ vi.mock('@/lib/export/encrypt', () => ({
   buildEncryptedReaderHtml: vi.fn((enc: string) => `<html>${enc}</html>`),
 }))
 
-vi.mock('@/lib/okf/import', () => ({
-  parseOkfBundle: vi.fn(),
-}))
-
 vi.mock('fflate', () => ({
   unzipSync: vi.fn(),
   zipSync: vi.fn(() => new Uint8Array([1, 2, 3])),
@@ -50,8 +46,6 @@ import {
   parseImportFile,
 } from './export-helpers'
 import { encryptData, buildEncryptedReaderHtml } from '@/lib/export/encrypt'
-import { parseOkfBundle } from '@/lib/okf/import'
-import { unzipSync } from 'fflate'
 
 /** The mock entities. */
 const mockEntities = [
@@ -441,82 +435,6 @@ describe('useExportHandlers', () => {
         /** Entity ids that already exist in the library. */
         duplicateIds: ['ent-1'],
       }))
-    })
-  })
-
-  it('handleFileChange warns on partial OKF import errors', () => {
-    /** Callback that stages the parsed import preview. */
-    const setImportPreview = vi.fn()
-    /** The imported entities. */
-    const importedEntities = [
-      { id: 'new-1', name: 'New', type: 'note' as const, description: '', content: '', tags: [], createdAt: '', updatedAt: '', links: [] },
-    ]
-    vi.mocked(unzipSync).mockReturnValue({
-      'okf-bundle/index.md': new TextEncoder().encode('okf_version: "0.2"\n'),
-      'okf-bundle/concepts/ok.md': new TextEncoder().encode('# OK'),
-    } as unknown as ReturnType<typeof unzipSync>)
-    vi.mocked(parseOkfBundle).mockReturnValue({
-      /** Entities to serialize. */
-      entities: importedEntities,
-      /** The library claims being processed. */
-      claims: [],
-      /** The errors. */
-      errors: ['broken.md: invalid YAML frontmatter'],
-    })
-
-    withStubFileReader(new Uint8Array([1, 2, 3]).buffer as ArrayBuffer, () => {
-      const { result } = renderUseExportHandlers({ setImportPreview })
-      act(() => {
-        result.current.handleFileChange(makeFileChangeEvent('import.zip', 'content'))
-      })
-
-      expect(toast.warning).toHaveBeenCalledWith('Partial import', expect.anything())
-      expect(setImportPreview).toHaveBeenCalledWith(expect.objectContaining({
-        /** Entities to serialize. */
-        entities: importedEntities,
-      }))
-    })
-  })
-
-  it('handleFileChange truncates long partial OKF error lists in the warning toast', () => {
-    /** Callback that stages the parsed import preview. */
-    const setImportPreview = vi.fn()
-    /** The imported entities. */
-    const importedEntities = [
-      { id: 'new-1', name: 'New', type: 'note' as const, description: '', content: '', tags: [], createdAt: '', updatedAt: '', links: [] },
-    ]
-    vi.mocked(unzipSync).mockReturnValue({
-      'okf-bundle/index.md': new TextEncoder().encode('okf_version: "0.2"\n'),
-      'okf-bundle/concepts/ok.md': new TextEncoder().encode('# OK'),
-    } as unknown as ReturnType<typeof unzipSync>)
-    /** The long error list. */
-    const longErrors = Array.from(
-      { length: 40 },
-      (_, i) => `file-${i}.md: invalid YAML frontmatter with a verbose diagnostic message that keeps going on`, // prettier-ignore
-    )
-    vi.mocked(parseOkfBundle).mockReturnValue({
-      /** Entities to serialize. */
-      entities: importedEntities,
-      /** The library claims being processed. */
-      claims: [],
-      /** The errors. */
-      errors: longErrors,
-    })
-
-    withStubFileReader(new Uint8Array([1, 2, 3]).buffer as ArrayBuffer, () => {
-      const { result } = renderUseExportHandlers({ setImportPreview })
-      act(() => {
-        result.current.handleFileChange(makeFileChangeEvent('import.zip', 'content'))
-      })
-
-      expect(toast.warning).toHaveBeenCalledWith(
-        'Partial import',
-        expect.objectContaining({ description: expect.stringMatching(/…$/u) }),
-      )
-      // The truncated message must stay within the character budget.
-      /** The called description. */
-      const description = String(vi.mocked(toast.warning).mock.calls[0][1]?.description ?? '')
-      expect(description.length).toBeLessThanOrEqual(320)
     })
   })
 

@@ -346,3 +346,25 @@ in order:
    twelve PRs needed a sweep after each push — and a branch whose remote head was
    replaced by a stale-base automation commit produced fourteen findings about
    files it did not touch. Both are worth a harness rule; §6 notes the symptoms.
+
+## 8. Follow-up reconciliation — 2026-10-13
+
+Plan 165 Step 6 closes the no-downgrade and stale-base recommendations from
+§4 items 2–3 and §6.4 items 2–3:
+
+- `scripts/check-dependency-downgrades.mjs` compares changed
+  `dependencies`/`devDependencies` ranges in `package.json` with the target
+  branch's minimum semantic versions and fails on downgrades or unparseable
+  changed ranges.
+- `scripts/check-stale-base-deletions.mjs` fails when the target branch gained a
+  file after the merge base and the actual PR head omits it.
+- `tests/check-dependency-downgrades.bats` and
+  `tests/check-stale-base-deletions.bats` cover both guards; all seven focused
+  cases passed, including defect-injection checks. The local comparison against
+  `origin/main` found no dependency downgrades and no target-branch additions
+  missing from this branch.
+
+The two recommendations are closed, not the other Plan 163 follow-ups. Their
+original wording remains the record of the 2026-10-12 state. Plan 165 records
+the tooling gate, frozen-lockfile install, and remaining scope. [ADR 044](ADRs/044-pr-integrity-guards.md)
+records that the repository ruleset was not changed.

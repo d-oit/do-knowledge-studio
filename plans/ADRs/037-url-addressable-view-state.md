@@ -2,12 +2,9 @@
 
 ## Status
 
-Proposed — not implemented; tracked by Plan 130 A23/A24 and
-[Plan 162](../162-roadmap-progress-and-next-work-2026-10-05.md).
-
-Verified 2026-10-05: no `location.hash`, `history.pushState`, `popstate`, or
-`hashchange` integration exists under `src/` or `e2e/`. The decision below is
-unchanged and remains the accepted design whenever this work is scheduled.
+Implemented in Plan 165, Step 3 (2026-10-13). The URL/hash synchronization
+lives in `src/lib/studio/view-hash.ts` and
+`src/lib/studio/view-hash-sync.ts`, wired from `app-shell.tsx`.
 
 ## Context
 
@@ -37,20 +34,20 @@ it would multiply files and hydration complexity for zero user value.
 Synchronize `currentView` with the URL **hash**, not the History API
 router:
 
-- Canonical form: `#/library`, `#/graph`, `#/editor`, etc. derived
-  from the existing `ViewId` union — one constant map, no free-text.
-- On view change (any source: sidebar, drawer, command palette,
-  shortcuts): update `location.hash` via `history.pushState` so each
-  hop becomes a history entry.
-- On `popstate`/`hashchange`: parse and set `currentView` if valid.
-- On load: hash wins over the persisted value; unknown or missing hash
-  falls back to the persisted/default view (backward compatible).
-- Invalid hashes never throw; they resolve to home.
+- Canonical form: `#/library`, `#/graph`, `#/editor`, etc. derived from the
+  shared `VIEW_IDS` tuple and `ViewId` type — no free-text route values.
+- On view change (any source: sidebar, drawer, command palette, shortcuts):
+  update the hash with native `history.pushState` so each hop is a history
+  entry; Next.js integrates native History API calls with its App Router.
+- On `popstate`/`hashchange`: parse the hash and set `currentView` when it
+  names a known view.
+- On load: a recognized view hash wins over persisted state. A missing hash or
+  skip-link anchor leaves the persisted/default view intact. Unknown view
+  hashes resolve to home and are normalized with `replaceState`.
 
-Hash routing is chosen over `history.pushState` path URLs because it
-works under static export/file:// contexts, needs no server rewrites,
-cannot collide with future real routes, and keeps the single-route
-Next.js model intact.
+Hash routing is chosen over path URLs because it needs no server rewrites,
+cannot collide with future real routes, and keeps the single-route Next.js
+model intact.
 
 ## Consequences
 
@@ -61,5 +58,5 @@ Next.js model intact.
 - Implementation is contained: one sync module + wiring in
   `app-shell.tsx`; no changes to store persistence semantics (the
   persisted `currentView` remains the offline default).
-- E2E additions: deep-link load spec and Back/Forward traversal spec
-  across viewports (Plan 130 G6).
+- Browser E2E coverage verifies deep-link load, reload restoration, invalid
+  route fallback, and Back/Forward traversal across all configured viewports.

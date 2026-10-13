@@ -1,3 +1,4 @@
+import { pruneDanglingCanvasRefs } from '@/lib/studio/canvas-refs'
 import type { Entity, Claim } from '@/lib/studio/types'
 import { validateImportPayload } from '@/lib/studio/schema'
 import { escapeHtml, sanitizeUrl } from '@/lib/security'
@@ -26,14 +27,18 @@ export const buildJsonExport = (
   claims: Claim[],
   options?: ExportOptions,
 ): string => {
+  const canvas = pruneDanglingCanvasRefs(
+    { graph: options?.graph, mindMap: options?.mindMap, links: options?.links },
+    new Set(entities.map((entity) => entity.id)),
+  )
   const payload = {
     version: 1,
     exportedAt: new Date().toISOString(),
     entities,
     claims,
-    ...(options?.graph && { graph: options.graph }),
-    ...(options?.mindMap && { mindMap: options.mindMap }),
-    ...(options?.links && { links: options.links }),
+    ...(canvas.graph && { graph: canvas.graph }),
+    ...(canvas.mindMap && { mindMap: canvas.mindMap }),
+    ...(canvas.links && { links: canvas.links }),
     ...(options?.tags && { tags: options.tags }),
   }
   return JSON.stringify(payload, null, 2)

@@ -26,6 +26,7 @@ import { STUDIO_STORAGE_KEY, sanitizeHydration, partializePersistedState } from 
 import { recordDeletions, getDeletions, resetDeletions } from './cross-tab-tombstones'
 import { jsonChanged, mergeCorpus, removedIds, type CorpusMerge } from './cross-tab-merge'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from './schema'
+import { pruneDanglingCanvasRefs } from './canvas-refs'
 import { snapshotCorpus } from './history-snapshot'
 import { isSyncBlocked } from './hydration-guard'
 
@@ -159,16 +160,33 @@ const buildStatePatch = (
   if (merge.claimsChanged) {
     patch.claims = merge.claims
   }
-  if (corpusChanged) {
-    // Rebase the undo baseline so a remote apply can never be undone away.
-    // Claims ride along so the baseline is a complete corpus snapshot.
-    patch.entityHistory = [snapshotCorpus(merge.entities, merge.claims)]
-    patch.historyIndex = 0
-  }
   setGraphIfChanged(patch, current.graph, remote.graph)
   setMindMapIfChanged(patch, current.mindMap, remote.mindMap)
   setLinksIfChanged(patch, current.links, remote.links)
   setTagsIfChanged(patch, current.tags, remote.tags)
+
+  const entities = patch.entities ?? current.entities
+  const graph = 'graph' in patch ? patch.graph : current.graph
+  const mindMap = 'mindMap' in patch ? patch.mindMap : current.mindMap
+  const links = 'links' in patch ? patch.links : current.links
+  const canvas = pruneDanglingCanvasRefs(
+    { graph, mindMap, links },
+    new Set(entities.map((entity) => entity.id)),
+  )
+  if (canvas.graph !== graph) patch.graph = canvas.graph
+  if (canvas.mindMap !== mindMap) patch.mindMap = canvas.mindMap
+  if (canvas.links !== links) patch.links = canvas.links
+
+  const canvasStateChanged =
+    canvas.graph !== current.graph || canvas.mindMap !== current.mindMap || canvas.links !== current.links
+  if (corpusChanged || canvasStateChanged) {
+    // Rebase the undo baseline so a remote apply can never be undone away.
+    // Claims and the reconciled canvas ride along as one complete snapshot.
+    patch.entityHistory = [
+      snapshotCorpus(entities, patch.claims ?? current.claims, canvas),
+    ]
+    patch.historyIndex = 0
+  }
   return patch
 }
 

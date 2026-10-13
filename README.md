@@ -8,14 +8,14 @@ The visual language follows **Editorial Paper & Saffron**: warm paper background
 
 ## Key Capabilities
 
-- **Local-First & Private**: All notes, entities, and claims persist directly in your browser (`localStorage` + `IndexedDB` tiered backup). No remote backend or database setup needed.
+- **Local-First & Private**: Core notes, entities, and claims persist through Zustand and browser `localStorage`; pre-import recovery snapshots also use localStorage. Yjs also persists a separate collaboration replica in IndexedDB. No remote backend or database setup needed.
 - **Peer-to-Peer Multi-Device Sync**: Decentralized WebRTC peer-to-peer synchronization powered by Yjs CRDTs, featuring QR-code device pairing, live presence indicators, and remote collaborative cursors.
-- **Client-Side Search Engine**: High-performance in-browser BM25 and TF-IDF search engine offloaded to dedicated Web Workers for zero main-thread lag during live typing.
+- **Client-Side Search Engine**: Browser-local BM25 keyword search and embedding-based semantic retrieval. Lexical search uses a Web Worker when available, with an in-browser fallback.
 - **Knowledge Graph & Mind Map**: Interactive SVG graph visualization with Force, Circular, and Hierarchical layouts, alongside expandable mind map tree navigation with depth filtering.
 - **TRIZ Contradiction Matrix**: Full interactive Altshuller 39×39 contradiction matrix with 40 inventive principles to systematically resolve engineering trade-offs without compromise.
-- **Universal Export & OKF Bundles**: Export and share your knowledge as Open Knowledge Format (OKF v0.2) agent-readable bundles, AES-GCM password-encrypted `.okf` archives, Markdown, JSON, HTML, Docx, or PDF.
-- **AI Assistant Harness**: Connect to [OpenRouter](https://openrouter.ai/) (with support for both concrete models and smart automated routers) or local [Ollama](https://ollama.ai/) instances for on-device inference, grounded citations, and client-side tool-calling.
-- **Accessible & Responsive**: WCAG 2.2 AA compliant, comprehensive keyboard navigation (`?` for shortcuts palette), mobile drawer layout, and respect for `prefers-reduced-motion`.
+- **Universal Export & OKF Bundles**: Export agent-readable Open Knowledge Format (OKF v0.2) ZIP bundles, password-encrypted standalone HTML readers, Markdown, JSON, HTML, DOCX, or PDF.
+- **AI Assistant Harness**: Connect to [OpenRouter](https://openrouter.ai/), local [Ollama](https://ollama.ai/) instances, or optional in-browser models for grounded citations and client-side tool-calling. Browser models download weights on first use; later inference can run offline while the browser retains those cached assets.
+- **Accessible & Responsive**: Semantic, keyboard-accessible controls, the `?` shortcuts palette, mobile drawer layout, and support for `prefers-reduced-motion`.
 
 ---
 
@@ -24,16 +24,16 @@ The visual language follows **Editorial Paper & Saffron**: warm paper background
 | Layer | Technologies |
 |---|---|
 | **Framework & UI** | [Next.js 16](https://nextjs.org/) (App Router), [React 19](https://react.dev/), [Tailwind CSS 4](https://tailwindcss.com/) (`@theme inline`), [shadcn/ui](https://ui.shadcn.com/) (Radix UI + CVA) |
-| **State & Storage** | [Zustand](https://github.com/pmndrs/zustand) with localStorage persistence, IndexedDB tiered recovery snapshots, Zod schema boundaries |
+| **State & Storage** | [Zustand](https://github.com/pmndrs/zustand) with localStorage persistence and local recovery snapshots; IndexedDB persistence for the Yjs sync replica; Zod schema boundaries |
 | **Sync & CRDT** | [Yjs](https://yjs.dev/), WebRTC peer channels, tombstone tracking, three-way merge resolution |
-| **Search & Retrieval** | In-browser BM25 term-frequency engine, Web Worker async client, fast prefix tokenization |
+| **Search & Retrieval** | BM25 keyword search in a Web Worker and in-browser embedding-based semantic retrieval |
 | **Animations & Icons** | [Framer Motion](https://www.framer.com/motion/), [Lucide React](https://lucide.dev/), [Sonner](https://sonner.emilkowal.ski/) toasts |
 | **Typography & Theme** | Newsreader (serif headings), Geist Sans (body), Geist Mono (code), `next-themes` (Light/Dark) |
-| **Testing & Quality** | [Vitest](https://vitest.dev/) (2,300+ tests), [Playwright](https://playwright.dev/) E2E, [ESLint 9](https://eslint.org/), [Biome](https://biomejs.dev/) |
+| **Testing & Quality** | [Vitest](https://vitest.dev/) (unit/integration), [Playwright](https://playwright.dev/) E2E, [ESLint 10](https://eslint.org/) |
 
 ---
 
-## The Nine Studio Views
+## The Eleven Studio Views
 
 | View | Description |
 |---|---|
@@ -42,10 +42,12 @@ The visual language follows **Editorial Paper & Saffron**: warm paper background
 | **Library** | Grid and list browser with real-time full-text search, type filtering, tag chips, and multiple sorting dimensions. |
 | **Graph** | Interactive knowledge graph supporting Force-directed, Circular, and Hierarchical layout algorithms with focus neighborhood mode. |
 | **Mind Map** | Hierarchical knowledge exploration with expandable root branches, depth slider controls, and subtree zooming. |
+| **Timeline** | Chronological view of entities and claims, grouped by month and day; selecting an item opens its entity in the editor. |
 | **Chat** | Local search chat assistant that answers queries with verifiable, clickable citations linked directly to your entities. |
-| **AI Harness** | Multi-provider playground supporting OpenRouter smart routers, concrete models, Ollama local inference, and live tool calls. |
+| **AI Harness** | Multi-provider playground with OpenRouter routers, Ollama, in-browser models, and client-side tool calls. |
 | **TRIZ Matrix** | 2-step inventive contradiction solver mapping 39 improving vs. 39 worsening engineering parameters to 40 Altshuller principles. |
-| **Export** | Comprehensive backup and sharing suite supporting OKF v0.2 ZIP bundles, encrypted archives, Markdown, JSON, HTML, Docx, and PDF. |
+| **Export** | Backup and sharing suite: OKF v0.2 ZIP bundles, password-encrypted HTML readers, Markdown, JSON, HTML, DOCX, and PDF. |
+| **Sync** | Peer-to-peer WebRTC rooms with QR pairing, presence, and conflict resolution. |
 
 ---
 
@@ -53,8 +55,8 @@ The visual language follows **Editorial Paper & Saffron**: warm paper background
 
 ### Prerequisites
 
-- **Node.js**: $\ge 20$ (enforced via `.nvmrc` and `package.json` `engines`)
-- **pnpm**: $\ge 10$ (this repository uses `pnpm` exclusively)
+- **Node.js**: $\ge 22$ (pinned by `.nvmrc` and permitted by `package.json` `engines`)
+- **pnpm**: `10.30.3` (pinned by `package.json` `packageManager`)
 
 ### Installation & Development
 
@@ -76,13 +78,14 @@ The application is served at `http://localhost:3000`.
 
 ```bash
 pnpm run dev          # Start Next.js development server with hot reloading
-pnpm run build        # Build optimized production bundle
+pnpm run build        # Build the production bundle and regenerate the offline precache manifest
 pnpm run start        # Start Next.js production server
 pnpm run lint         # Run ESLint across all source files (zero-warning policy)
 pnpm run typecheck    # Run TypeScript compiler type-checking without emitting
 pnpm run test         # Run Vitest test suite with type-checking and assertions
-pnpm run test:coverage# Run tests with v8 code coverage reporting
+pnpm run test:coverage # Run tests with v8 code coverage reporting
 pnpm run test:e2e     # Run Playwright end-to-end browser tests
+pnpm run test:e2e:offline # Run after `pnpm run build`; first-use offline view tests (Chromium)
 ./scripts/minimal_quality_gate.sh # Fast-path local validation suite
 ./scripts/quality_gate.sh         # Complete pre-commit quality gate
 ```
@@ -97,15 +100,16 @@ pnpm run test:e2e     # Run Playwright end-to-end browser tests
 │   ├── app/                 # Next.js App Router (layout, page shell, globals.css tokens)
 │   ├── components/
 │   │   ├── studio/          # Studio shell, topbar, sidebar, right panel, dialogs
-│   │   │   ├── views/       # The 9 view implementations (Home, Editor, Graph, Chat, etc.)
+│   │   │   ├── views/       # The 11 view implementations and view-specific handlers
 │   │   │   └── ui/          # Shared studio UI primitives
 │   │   └── ui/              # shadcn/ui accessible components (Radix primitives)
 │   ├── hooks/               # Reusable React hooks (reduced motion, speech, keyboard)
 │   ├── lib/
-│   │   ├── ai/              # AI provider adapters (OpenRouter, Ollama), tools, and context
-│   │   ├── export/          # Export handlers (OKF bundle, JSON, Markdown, HTML, AES encrypt)
+│   │   ├── ai/              # OpenRouter, Ollama, and in-browser model adapters, tools, and context
+│   │   ├── export/          # Password-encrypted HTML export helpers
+│   │   ├── okf/             # Open Knowledge Format bundle serialization and import
 │   │   ├── search/          # Client BM25 retrieval engine & Web Worker client
-│   │   ├── studio/          # Zustand store, schema, hydration, migrations, IndexedDB backup
+│   │   ├── studio/          # Zustand store, schema, hydration, migrations, local recovery helpers
 │   │   └── sync/            # WebRTC sync bridge, Yjs CRDT documents, presence, conflict logic
 │   └── test/                # Test utilities, fixtures, and builder helpers
 ├── plans/                   # GOAP plans, task decomposition, and architecture decision records (ADRs)
@@ -133,10 +137,10 @@ The AI Harness integrates with [OpenRouter](https://openrouter.ai/) for seamless
 
 ## Local-First Philosophy & Design Rules
 
-1. **Zero Required Backend**: Persistence is 100% browser-based via Zustand, `localStorage`, and `IndexedDB`.
+1. **Zero Required Backend**: Core state and recovery snapshots use browser-local Zustand/`localStorage`; Yjs also persists a separate sync replica in browser IndexedDB.
 2. **Strict Quality Gates**: Zero warnings tolerated in quality gates (`pnpm run lint`, `typecheck`, `test`, `build`).
 3. **Max 500 LOC per File**: Source files remain modular, composable, and single-responsibility.
-4. **Privacy & Security**: Cryptographic operations use standard WebCrypto APIs (`crypto.subtle`, `crypto.randomUUID()`). No user data is sent over the network unless the user explicitly configures an AI provider.
+4. **Privacy & Security**: Cryptographic operations use WebCrypto (`crypto.subtle`, `crypto.randomUUID()`). No app backend receives library data; peer sync sends data to joined peers. AI requests send prompts to the configured provider; matching local snippets are included only when local-context augmentation is enabled.
 
 ---
 

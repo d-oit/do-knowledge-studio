@@ -391,6 +391,66 @@ describe('restoreFromRecovery safety', () => {
     expect(result).toEqual({ success: true, snapshotCleared: true })
     expect(localStorage.getItem(RECOVERY_KEY)).toBeNull()
   })
+  it('preserves canvas in undo history through the recovery storage round-trip', () => {
+    const original = smallSnapshot('a', 'A')
+    const canvas = {
+      graph: {
+        nodes: [{ id: 'a', label: 'A', type: 'concept' as const, x: 0, y: 0 }],
+        edges: [{ id: 'g1', source: 'a', target: 'a', relation: 'self' }],
+      },
+      links: [{ id: 'l1', sourceId: 'a', targetId: 'a', type: 'self', createdAt: '2026-01-01T00:00:00.000Z' }],
+    }
+    const snapshot: RecoverySnapshot = {
+      ...original,
+      entityHistory: [{ ...original.entityHistory[0], canvas }],
+    }
+    expect(persistRecoverySnapshot(snapshot)).toEqual({ persisted: true })
+
+    const result = restoreFromRecovery()
+
+    expect(result).toEqual({ success: true, snapshotCleared: true })
+    expect(useStudioStore.getState().entityHistory[0]?.canvas).toEqual(canvas)
+  })
+
+  it('prunes dangling current canvas when restoring a recovery snapshot', () => {
+    const graph = {
+      nodes: [
+        { id: 'a', label: 'A', type: 'concept' as const, x: 0, y: 0 },
+        { id: 'standalone', label: 'Standalone', type: 'concept' as const, x: 1, y: 1 },
+      ],
+      edges: [
+        { id: 'keep', source: 'a', target: 'a', relation: 'self' },
+        { id: 'drop', source: 'a', target: 'missing', relation: 'dangling' },
+      ],
+    } satisfies NonNullable<RecoverySnapshot['graph']>
+    const mindMap = {
+      nodes: [
+        { id: 'a', label: 'A', type: 'concept' as const },
+        { id: 'standalone', label: 'Standalone', type: 'concept' as const },
+      ],
+      edges: [
+        { id: 'keep', source: 'a', target: 'a', relation: 'self' },
+        { id: 'drop', source: 'missing', target: 'a', relation: 'dangling' },
+      ],
+    } satisfies NonNullable<RecoverySnapshot['mindMap']>
+    const links = [
+      { id: 'keep', sourceId: 'a', targetId: 'a', type: 'self', createdAt: '2026-01-01T00:00:00.000Z' },
+      { id: 'drop', sourceId: 'a', targetId: 'missing', type: 'dangling', createdAt: '2026-01-01T00:00:00.000Z' },
+    ] satisfies NonNullable<RecoverySnapshot['links']>
+
+    expect(persistRecoverySnapshot({ ...smallSnapshot('a', 'A'), graph, mindMap, links })).toEqual({
+      persisted: true,
+    })
+    expect(restoreFromRecovery()).toEqual({ success: true, snapshotCleared: true })
+
+    const state = useStudioStore.getState()
+    expect(state.graph?.nodes.map((node) => node.id)).toEqual(['a', 'standalone'])
+    expect(state.graph?.edges.map((edge) => edge.id)).toEqual(['keep'])
+    expect(state.mindMap?.nodes.map((node) => node.id)).toEqual(['a', 'standalone'])
+    expect(state.mindMap?.edges.map((edge) => edge.id)).toEqual(['keep'])
+    expect(state.links?.map((link) => link.id)).toEqual(['keep'])
+  })
+
 
   it('reports an un-cleared snapshot when the removal is refused after the restore lands', () => {
     // The restore applies in memory, then storage refuses the removal. The

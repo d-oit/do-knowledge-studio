@@ -92,7 +92,9 @@ const buildInitialState = () => {
   const seed = buildSeedState()
   return {
     ...seed,
-    entityHistory: [snapshotCorpus(seed.entities, seed.claims)],
+    entityHistory: [
+      snapshotCorpus(seed.entities, seed.claims, { graph: seed.graph, mindMap: seed.mindMap, links: seed.links }),
+    ],
     historyIndex: 0,
   }
 }

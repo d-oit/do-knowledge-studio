@@ -26,13 +26,19 @@ const makeClaim = (overrides: Partial<Claim> = {}): Claim => ({
 })
 
 const makeGraph = (): ValidatedGraph => ({
-  nodes: [{ id: 'n1', label: 'Node 1', type: 'note', x: 0, y: 0 }],
-  edges: [{ id: 'e1', source: 'n1', target: 'n2', relation: 'links' }],
+  nodes: [
+    { id: 'e-1', label: 'Node 1', type: 'note', x: 0, y: 0 },
+    { id: 'e-2', label: 'Node 2', type: 'note', x: 1, y: 1 },
+  ],
+  edges: [{ id: 'edge-1', source: 'e-1', target: 'e-2', relation: 'links' }],
 })
 
 const makeMindMap = (): ValidatedMindMap => ({
-  nodes: [{ id: 'mm1', label: 'MM 1', type: 'note' }],
-  edges: [{ id: 'me1', source: 'mm1', target: 'mm2', relation: 'parent' }],
+  nodes: [
+    { id: 'e-1', label: 'MM 1', type: 'note' },
+    { id: 'e-2', label: 'MM 2', type: 'note' },
+  ],
+  edges: [{ id: 'edge-2', source: 'e-1', target: 'e-2', relation: 'parent' }],
 })
 
 const makeLinks = (): ValidatedLink[] => [
@@ -80,7 +86,7 @@ describe('Studio Store — graph/mindMap/links/tags state', () => {
       const links = makeLinks()
       const tags = makeTags()
 
-      useStudioStore.getState().importData([makeEntity()], [makeClaim()], { graph, mindMap, links, tags })
+      useStudioStore.getState().importData([makeEntity(), makeEntity({ id: 'e-2' })], [makeClaim()], { graph, mindMap, links, tags })
 
       const state = useStudioStore.getState()
       expect(state.graph).toEqual(graph)
@@ -104,7 +110,7 @@ describe('Studio Store — graph/mindMap/links/tags state', () => {
     it('stores graph fields on successful import', () => {
       const graph = makeGraph()
       const result = useStudioStore.getState().importWithRollback(
-        [makeEntity()],
+        [makeEntity(), makeEntity({ id: 'e-2' })],
         [makeClaim()],
         { graph },
       )
@@ -115,7 +121,7 @@ describe('Studio Store — graph/mindMap/links/tags state', () => {
 
     it('restores graph fields on rollback', () => {
       const graph = makeGraph()
-      useStudioStore.getState().importData([makeEntity()], [makeClaim()], { graph })
+      useStudioStore.getState().importData([makeEntity(), makeEntity({ id: 'e-2' })], [makeClaim()], { graph })
 
       // Force a failure by passing invalid data that throws during set
       const result = useStudioStore.getState().importWithRollback(
@@ -137,7 +143,7 @@ describe('Studio Store — graph/mindMap/links/tags state', () => {
 
       // Seed pre-import state with graph fields
       useStudioStore.getState().importData(
-        [makeEntity()],
+        [makeEntity(), makeEntity({ id: 'e-2' })],
         [makeClaim()],
         { graph, mindMap, links, tags },
       )
@@ -171,7 +177,7 @@ describe('Studio Store — graph/mindMap/links/tags state', () => {
   describe('state persistence', () => {
     it('includes graph fields in partialized persisted state', () => {
       const graph = makeGraph()
-      useStudioStore.getState().importData([makeEntity()], [makeClaim()], { graph })
+      useStudioStore.getState().importData([makeEntity(), makeEntity({ id: 'e-2' })], [makeClaim()], { graph })
 
       // The persist middleware writes to localStorage; verify the store holds the values
       expect(useStudioStore.getState().graph).toEqual(graph)

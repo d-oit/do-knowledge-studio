@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { sanitizeUrl } from '../security'
 import { validateOllamaUrl } from '../ai/url-guard'
+import { VIEW_IDS } from './types'
 
 /** Zod enum schema for EntityType (built-in types only). */
 export const EntityTypeSchema = z.enum(['note', 'concept', 'person', 'project'])
@@ -183,7 +184,7 @@ export const PersistedEnvelopeSchema = z.object({
   // Every partialize key must appear here — enforced by a guard test.
   chat: z.array(ChatMessageSchema).optional(),
   currentView: z
-    .enum(['home', 'editor', 'library', 'graph', 'mindmap', 'timeline', 'chat', 'ai', 'triz', 'export', 'sync'])
+    .enum(VIEW_IDS)
     .optional(),
   typeFilter: z.union([AnyEntityTypeSchema, z.literal('all')]).optional(),
   sortBy: z.enum(['name', 'created', 'updated']).optional(),

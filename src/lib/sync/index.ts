@@ -14,8 +14,10 @@ export {
   joinRoom,
   getProvider,
   getAwareness,
+  leaveRoom,
   destroy,
 } from './doc'
+export type { RoomProvider } from './doc'
 
 export {
   getYjsEntities,

@@ -92,7 +92,7 @@ export const ChatView = () => {
   return (
     <div className="flex h-full flex-col">
       {/* Messages */}
-      <div className={cn('flex-1 overflow-y-auto', VIEW_CONTAINER_CLASS)}>
+      <div tabIndex={0} className={cn('flex-1 overflow-y-auto', VIEW_CONTAINER_CLASS)}>
         <div className="mx-auto max-w-3xl space-y-5">
           {chat.length === 0 && !chatLoading ? (
             <WelcomePanel reducedMotion={reducedMotion} onSend={handleSend} />

@@ -18,6 +18,7 @@ import type { Claim, Entity, ChatMessage, ViewId, AnyEntityType } from './types'
 import { validatePersistedState } from './schema'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from './schema'
 import { CURRENT_SCHEMA_VERSION, runMigrations } from './migrations'
+import { pruneDanglingCanvasRefs } from './canvas-refs'
 import { snapshotCorpus, type HistorySnapshot } from './history-snapshot'
 
 /** localStorage key holding the studio persistence envelope. */
@@ -219,14 +220,28 @@ export const hydrateWithOutcome = <S extends HydratableState>(
     return { ok: false, reason: verdict.reason ?? 'invalid payload' }
   }
   const merged: S = { ...current, ...normalizeCanvasNulls(verdict.data) }
+  const canvas = pruneDanglingCanvasRefs(
+    {
+      graph: merged.graph ?? undefined,
+      mindMap: merged.mindMap ?? undefined,
+      links: merged.links ?? undefined,
+    },
+    new Set(merged.entities.map((entity) => entity.id)),
+  )
+  // Older persisted envelopes may contain references the store cannot resolve.
+  // Prune once before writing both runtime state and its undo baseline.
   // The first edit after a reload must undo back to the loaded corpus,
   // never to the in-memory seed snapshot that initialized history. The
-  // baseline carries claims too, so the first undo restores the full corpus.
+  // baseline carries claims and canvas too, so the first undo restores the
+  // full corpus and its view data.
   return {
     ok: true,
     state: {
       ...merged,
-      entityHistory: [snapshotCorpus(merged.entities, merged.claims)],
+      graph: canvas.graph,
+      mindMap: canvas.mindMap,
+      links: canvas.links,
+      entityHistory: [snapshotCorpus(merged.entities, merged.claims, canvas)],
       historyIndex: 0,
     },
   }

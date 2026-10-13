@@ -59,6 +59,10 @@ vi.mock('@/lib/sync/bridge', () => ({
   startBidirectionalSync: () => vi.fn(),
 }))
 
+vi.mock('@/lib/studio/view-hash-sync', () => ({
+  startViewHashSync: () => vi.fn(),
+}))
+
 vi.mock('@/lib/studio/use-reduced-motion', () => ({
   useReducedMotion: () => true,
 }))
