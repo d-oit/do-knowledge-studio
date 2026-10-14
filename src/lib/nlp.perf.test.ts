@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { parseIntent } from './nlp'
 
+// Smoke guard ceiling for throughput test. On quiet machines, 70,000 parses finish
+// in ~200-300ms (~300k ops/sec). The 2,000ms ceiling ensures a massive performance
+// regression is caught while accommodating parallel runner load spikes.
+const PARSE_INTENT_MS_CEILING = 2_000
+
 describe('parseIntent performance', () => {
   it('benchmarks parseIntent throughput', () => {
     const samples = [
@@ -36,5 +41,6 @@ describe('parseIntent performance', () => {
     console.log(`-------------------------`)
 
     expect(duration).toBeGreaterThan(0)
+    expect(duration).toBeLessThan(PARSE_INTENT_MS_CEILING)
   })
 })
