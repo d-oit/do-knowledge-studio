@@ -1,6 +1,6 @@
 # Plans Index
 
-**Updated**: 2026-10-13
+**Updated**: 2026-10-14
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
 Plan records are filed as `plans/NNN-slug.md`, where `NNN` is the plan number used
@@ -8,6 +8,19 @@ below; accepted decision records are in `plans/ADRs/NNN-slug.md`. Work still in
 flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
+
+### Plan 168 — Open PR review, repair, and ordered merge (2026-10-14)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Inventory | Refresh four open PR heads, checks, review threads, main rules, and deployment evidence | In progress | Authenticated logs identify post-Next generator path failures. #953 now builds a 74-URL local manifest and passes offline E2E; adapter deployment remains pending. See [Plan 168](168-open-pr-review-roast-repair-and-ordered-merge-2026-10-14.md). |
+
+
+### Plan 167 — Precache manifest across local and adapter builds (2026-10-13)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Fix | Select build-specific static inventory, require a real chunk, and refresh the served adapter manifest | PR #953 | Generator fixtures 8/8; local manifest exact at 74 URLs; offline E2E 6/6; browser update/offline chunk proof passed. Vercel candidate pending; see [ADR 041](ADRs/041-offline-precache-scope-and-upgrade-identity.md) and `plans/167-precache-manifest-without-boot-document-2026-10-13.md`. |
 
 ### Plan 165 — Backlog remediation and PR integrity guards (2026-10-13)
 
