@@ -1,4 +1,4 @@
-const STATIC_CACHE = "dks-static-v3";
+const STATIC_CACHE = "dks-static-v4";
 const API_CACHE = "dks-api-v2";
 
 /**
@@ -33,10 +33,8 @@ const STATIC_EXTENSIONS = [
 ];
 
 // Fallback shell, used only if the generated manifest cannot be fetched.
-// The manifest (written by scripts/generate-precache-manifest.mjs after
-// `next build`) is the real precache list: it is derived from the emitted
-// HTML plus the emitted chunk/media inventories, so it always matches the
-// code and hashed asset names the app actually requests.
+// The manifest is derived from the selected local or adapter static inventory,
+// with fixed shell URLs added by scripts/generate-precache-manifest.mjs.
 const PRECACHE_MANIFEST_URL = "/precache-manifest.json";
 const FALLBACK_PRECACHE_URLS = [
   "/",
