@@ -15,47 +15,61 @@ const ENTITY_TYPE_KEYWORDS: Record<EntityType, string[]> = {
   note: ['note', 'jot', 'write down', 'record', 'memo'],
 }
 
+const ENTITY_TYPE_ENTRIES = Object.entries(ENTITY_TYPE_KEYWORDS) as Array<[EntityType, string[]]>
+
 /** Keywords indicating a claim intent. */
 const CLAIM_KEYWORDS = ['claim', 'fact', 'statement', 'believe', 'think', 'assert', 'evidence shows']
 /** Keywords indicating a search intent. */
 const SEARCH_KEYWORDS = ['search', 'find', 'look for', 'show me', 'what do i have']
 
-function classifyEntityType(text: string): EntityType {
+const NAME_PATTERNS = [
+  /(?:create|add|new|note|jot)\s+(?:a\s+|an\s+)?(?:note|concept|person|project)?\s*(?:called|named|about|for)?\s*["']?(.+?)["']?\s*$/i,
+  /(?:about|regarding|concerning)\s+["']?(.+?)["']?\s*$/i,
+]
+
+const CREATE_PREFIX_REGEX = /^(?:create|add|new|note|jot|record)\s+(?:a\s+|an\s+)?(?:note|concept|person|project)?\s*(?:called|named|about|for)?\s*/i
+
+const DESC_PATTERNS = [
+  /(?:that|which|about|describing|says?|states?|is)\s+(.+)/i,
+  /:\s*(.+)/,
+]
+
+const TAG_LABEL_REGEX = /(?:tag|tags|label|labels)[:\s]+(.+?)(?:\s*$)/i
+const HASHTAG_REGEX = /#(\w+)/g
+
+const STATEMENT_PATTERNS = [
+  /(?:claim|fact|statement|assert|evidence)\s*(?:that|:)?\s*(.+)/i,
+  /(?:i believe|i think|it seems|apparently)\s+(.+)/i,
+]
+
+const SEARCH_PREFIX_REGEX = /^(?:search|find|look for|show me|what do i have)\s*(?:for|about|all)?\s*/i
+
+const classifyEntityType = (text: string): EntityType => {
   const lower = text.toLowerCase()
-  for (const [type, keywords] of Object.entries(ENTITY_TYPE_KEYWORDS)) {
+  for (const [type, keywords] of ENTITY_TYPE_ENTRIES) {
     if (keywords.some((kw) => lower.includes(kw))) {
-      return type as EntityType
+      return type
     }
   }
   return 'note'
 }
 
-function extractName(text: string): string {
-  const patterns = [
-    /(?:create|add|new|note|jot)\s+(?:a\s+|an\s+)?(?:note|concept|person|project)?\s*(?:called|named|about|for)?\s*["']?(.+?)["']?\s*$/i,
-    /(?:about|regarding|concerning)\s+["']?(.+?)["']?\s*$/i,
-  ]
-
-  for (const pattern of patterns) {
+const extractName = (text: string): string => {
+  for (const pattern of NAME_PATTERNS) {
     const match = text.match(pattern)
     if (match?.[1]) return match[1].trim()
   }
 
   const cleaned = text
-    .replace(/^(?:create|add|new|note|jot|record)\s+(?:a\s+|an\s+)?(?:note|concept|person|project)?\s*(?:called|named|about|for)?\s*/i, '')
+    .replace(CREATE_PREFIX_REGEX, '')
     .replace(/["']/g, '')
     .trim()
 
   return cleaned.slice(0, 100) || text.slice(0, 100)
 }
 
-function extractDescription(text: string): string {
-  const patterns = [
-    /(?:that|which|about|describing|says?|states?|is)\s+(.+)/i,
-    /:\s*(.+)/,
-  ]
-
-  for (const pattern of patterns) {
+const extractDescription = (text: string): string => {
+  for (const pattern of DESC_PATTERNS) {
     const match = text.match(pattern)
     if (match?.[1] && match[1].length > 5) return match[1].trim()
   }
@@ -63,17 +77,17 @@ function extractDescription(text: string): string {
   return text.slice(0, 500)
 }
 
-function extractTags(text: string): string[] {
+const extractTags = (text: string): string[] => {
   const tags: string[] = []
 
-  const labelMatch = text.match(/(?:tag|tags|label|labels)[:\s]+(.+?)(?:\s*$)/i)
+  const labelMatch = text.match(TAG_LABEL_REGEX)
   if (labelMatch?.[1]) {
     tags.push(
       ...labelMatch[1].split(/[,;]+/).map((t) => t.trim().toLowerCase()).filter(Boolean),
     )
   }
 
-  const hashtagMatches = text.matchAll(/#(\w+)/g)
+  const hashtagMatches = text.matchAll(HASHTAG_REGEX)
   for (const match of hashtagMatches) {
     if (match[1]) {
       tags.push(match[1].toLowerCase())
@@ -83,13 +97,8 @@ function extractTags(text: string): string[] {
   return [...new Set(tags)].slice(0, 10)
 }
 
-function extractStatement(text: string): string {
-  const patterns = [
-    /(?:claim|fact|statement|assert|evidence)\s*(?:that|:)?\s*(.+)/i,
-    /(?:i believe|i think|it seems|apparently)\s+(.+)/i,
-  ]
-
-  for (const pattern of patterns) {
+const extractStatement = (text: string): string => {
+  for (const pattern of STATEMENT_PATTERNS) {
     const match = text.match(pattern)
     if (match?.[1]) return match[1].trim()
   }
@@ -97,12 +106,24 @@ function extractStatement(text: string): string {
   return text.trim()
 }
 
+/** Counts vowels in a word efficiently without regex match allocations. */
+const countVowels = (word: string): number => {
+  let count = 0
+  for (let i = 0; i < word.length; i++) {
+    const ch = word.charCodeAt(i) | 0x20
+    if (ch === 97 || ch === 101 || ch === 105 || ch === 111 || ch === 117) {
+      count++
+    }
+  }
+  return count
+}
+
 /** Parse natural language text into a structured user intent. */
 export function parseIntent(text: string): Intent {
   const lower = text.toLowerCase().trim()
 
   if (SEARCH_KEYWORDS.some((kw) => lower.startsWith(kw))) {
-    const query = text.replace(/^(?:search|find|look for|show me|what do i have)\s*(?:for|about|all)?\s*/i, '').trim()
+    const query = text.replace(SEARCH_PREFIX_REGEX, '').trim()
     return { type: 'search', query: query || text }
   }
 
@@ -116,11 +137,18 @@ export function parseIntent(text: string): Intent {
   const description = extractDescription(text)
   const tags = extractTags(text)
 
-  const words = text.split(/\s+/).filter((w) => w.length >= 3)
-  const hasRealWords = words.some((w) => {
-    const vowels = (w.match(/[aeiou]/gi) ?? []).length
-    return vowels >= 2 && vowels / w.length >= 0.3
-  })
+  const words = text.split(/\s+/)
+  let hasRealWords = false
+  for (const w of words) {
+    if (w.length >= 3) {
+      const vowels = countVowels(w)
+      if (vowels >= 2 && vowels / w.length >= 0.3) {
+        hasRealWords = true
+        break
+      }
+    }
+  }
+
   if (name.length > 2 && hasRealWords) {
     return { type: 'create_entity', name, entityType, description, tags }
   }
