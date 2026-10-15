@@ -1,4 +1,4 @@
-const STATIC_CACHE = "dks-static-v4";
+const STATIC_CACHE = "dks-static-v5";
 const API_CACHE = "dks-api-v2";
 
 /**

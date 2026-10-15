@@ -4,12 +4,10 @@ import { navClick, waitForAppReady } from './helpers/navigation';
 /**
  * First-use offline navigation into each lazily imported view.
  *
- * The app shell code-splits Graph, Mind Map, AI Harness, TRIZ, Export and Sync
- * (plans/158). The precache manifest is derived from the emitted HTML, which
- * only references the boot document's own chunks — so before the fix the
- * offline cache held the shell but not the view chunks, and the first
- * navigation to an unvisited view offline rejected its dynamic import instead
- * of rendering the view.
+ * The app shell code-splits six views (plans/158). The generator recursively
+ * inventories supported emitted assets, including chunks for lazy views that
+ * the boot document does not reference. These cases prove an installed worker
+ * serves first-use view chunks during offline navigation.
  *
  * Reproducing that requires a real production build: `next dev` re-chunks on
  * every request, so its asset URLs never match the committed manifest. Run via

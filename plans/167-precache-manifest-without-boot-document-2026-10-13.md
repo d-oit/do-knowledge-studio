@@ -38,9 +38,10 @@ contract mismatch.
   maps, WASM, and model weights.
 - Write the same manifest to `public/precache-manifest.json` and, for adapter
   builds, `.next/output/static/precache-manifest.json`.
-- Change `STATIC_CACHE` in `public/sw.js` with the manifest scope so an installed
-  worker fetches the expanded manifest.
-- Set the Node engine to `22.x` rather than an unbounded `>=22.0.0` range.
+- Bump `STATIC_CACHE` when the manifest scope changes: #953 changed v3→v4 and
+  #951 changed v4→v5 for the plugin-emitted typography CSS.
+- Set the Node engine to `>=22.0.0 <25.0.0`, excluding unsupported future majors while
+  preserving Node 22–24 support.
 - [ADR 041](ADRs/041-offline-precache-scope-and-upgrade-identity.md) records the
   selected inventory and worker-identity requirements.
 
@@ -55,24 +56,23 @@ contract mismatch.
 | Restore the real-chunk guard and rerun the suite | 8/8 pass |
 | Node 22 `fs.cpSync` fixture reproduction | Copy succeeds; missing parent and file are created, so the #951 report is a false positive |
 | #951 dependency check | `@tailwindcss/typography` is declared in `package.json` and lockfile; frozen-lockfile install succeeded |
+| #951 rendered typography and cache v5 | Focused Markdown/chat E2E 40/40 across four projects; production offline E2E 6/6; production-browser preview and assistant prose use different light/dark text colors and retain a 4px quote border; the 74-URL precache manifest includes both emitted CSS assets |
 | Node 22.x and frozen-lockfile install | `pnpm install --frozen-lockfile` succeeds after the engine change |
 | Local production build and emitted-manifest comparison | Warm build writes 74 URLs; exact match for 66 supported `.next/static` assets plus 8 fixed shell URLs |
 | Production offline and worker-upgrade browser proof | Offline E2E 6/6; a temporary no-op byte change triggered `registration.update()`, removed v3, preserved API v2, and populated v4; a separate Playwright context fetched a real chunk offline (200) |
-| Repaired Vercel candidate, served-manifest and asset responses | Pending |
+| Repaired Vercel candidate and production, manifest and asset responses | #953 candidate and production deployments are `READY`; the served manifest is HTTP 200 with 74 unique URLs, and all 74 listed assets return HTTP 200 with expected MIME types |
 
 ## Notes
 
 - The earlier local 70-URL manifest and `VERCEL=1` experiment predate the
   adapter-path repair; neither proves output compatibility or deployment
   recovery.
-- The first clean-worktree build emitted Next's “No build cache found” warning.
-  Next docs describe first CI builds as an exception; the immediate warm local
-  rebuild emitted no warning. Configure persistent CI caching if the warning
-  recurs. The offline E2E runner initially inherited conflicting
-  `NO_COLOR`/`FORCE_COLOR`; rerunning with `env -u NO_COLOR` was clean.
+- The first build in both #953 and #951 worktrees emitted Next's “No build
+  cache found” warning; each immediate warm rebuild emitted none. Configure
+  persistent CI caching as a tracked follow-up. The offline E2E runner initially
+  inherited conflicting `NO_COLOR`/`FORCE_COLOR`; `env -u NO_COLOR` reran clean.
 - Failed Vercel builds emitted the `>=22.0.0` engine-upgrade notice. The source
   now constrains the supported major; frozen-lockfile installation succeeds.
-- Do not call the incident fixed in production until the repaired candidate is
-  `READY`, its served manifest matches the generated manifest, and every listed
-  supported asset responds successfully. Plan 168 tracks that gate and the
-  ordered PR merges.
+- #953 merged at `3025b0d27d36eea53e0e96a02f67453b96cf224f`. Its candidate
+  manifest/assets and merged production manifest/assets are verified: 74 URLs
+  each, all HTTP 200 with expected media types. The incident is production-fixed.

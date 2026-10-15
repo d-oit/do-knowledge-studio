@@ -1,7 +1,7 @@
 # ADR 041: Offline Precache Scope and Upgrade Identity
 
 **Date**: 2026-09-30
-**Status**: Implemented locally; production verification pending
+**Status**: Production deployment verified (2026-10-14)
 **Amended**: 2026-10-14 — adapter inventory, output selection, and served manifest
 **Related**: Plan 161, Plan 158, ADR 036, ADR 018
 **Amends (in part)**: ADR 036 (E2E target — production mode becomes an explicit
