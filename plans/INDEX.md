@@ -13,7 +13,7 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 | Wave | Goal | Status | Outcome |
 | --- | --- | --- | --- |
-| Sweep | Review, repair, verify, and sequentially merge open PRs | In progress | #953 merged at `3025b0d` and production verified (74 URLs); #951 merged at `f0aead5` and production verified (typography in preview/chat, worker v5); #954 merged at `7d62fc4` and production verified (1.32x paired benchmark, worker v6); #952 pending final reconciliation. See [Plan 168](168-open-pr-review-roast-repair-and-ordered-merge-2026-10-14.md). |
+| Sweep | Review, repair, verify, and sequentially merge open PRs | Done | #953 (`3025b0d`), #951 (`f0aead5`), #954 (`7d62fc4`), and #952 (`9ca8a10`) all verified and merged to main; production deployment succeeded. See [Plan 168](168-open-pr-review-roast-repair-and-ordered-merge-2026-10-14.md). |
 
 ### Plan 167 — Precache manifest across local and adapter builds (2026-10-13)
 
