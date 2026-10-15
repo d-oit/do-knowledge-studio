@@ -107,6 +107,10 @@ passed and the binary must reach `PATH`).
 Followup acceptance: the gate runs `markdownlint --config markdownlint.toml` in
 CI, or the skip is explicitly accepted in ADR 042.
 
+**Outcome (2026-10-15) — resolved.** Pinned `markdownlint-cli` to `0.48.0` in `devDependencies`,
+configured `scripts/quality_gate.sh` to resolve `node_modules/.bin/markdownlint`, and updated
+file discovery to lint repository Markdown while ignoring vendor agent/skill definitions.
+`quality_gate.sh` runs markdown checks and exits 0 cleanly.
 ### N6 — Plan/ADR number collisions (Low)
 
 Duplicate plan numbers: 12, 041, 043, 059, 080, 084, 111, 116, 134, 135, 136,

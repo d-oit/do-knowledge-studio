@@ -102,9 +102,10 @@ were identical before and after.
   documents. Reproduced with a `markdownlint` shim on `PATH`: `MD013`/`MD025`,
   exit 1 before; exit 0 after. The command now passes
   `--config markdownlint.toml`.
-- **Known gap, still a follow-up**: the gate skips the check entirely until
-  `markdownlint-cli` is a devDependency and reaches `PATH` — in CI it is absent, so
-  enforcement lives in the pre-commit hook (which installs it) until then.
+- **Resolved gap (2026-10-15)**: `markdownlint-cli` is added to `devDependencies`
+  pinned to `0.48.0` (matching `.pre-commit-config.yaml`), and `scripts/quality_gate.sh`
+  resolves `node_modules/.bin/markdownlint` when global `markdownlint` is absent on `PATH`.
+  Markdown linting now executes reliably in both CI and local developer quality gates.
 - **Known gap, recorded as a follow-up**: the 16 table rows `MD055`/`MD056` would
   flag (4 in `DESIGN-SYSTEM.md`, 1 in `agents-docs/WEB_RESEARCH_OPTIMIZATION.md`,
   5 in `plans/112`, 3 in `plans/160` — plus rows in `plans/116`, `plans/162`) need
