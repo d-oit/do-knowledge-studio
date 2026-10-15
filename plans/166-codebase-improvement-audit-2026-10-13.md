@@ -63,6 +63,10 @@ module as unclaimed dead code.
 Followup acceptance: either wire it as a documented tier (quota/refusal tests and
 truthful UI) or delete module and tests; the tree should not keep a half-state.
 
+**Outcome (2026-10-15) — resolved by deletion.** Removed `src/lib/studio/indexeddb-backup.ts`,
+its test suite `src/lib/studio/indexeddb-backup.test.ts`, and the stale comment in
+`src/lib/search/vector-store.ts`. Cleaned up 269 LOC of uncalled storage code; local truth
+remains strictly Zustand + localStorage per AGENTS.md.
 ### N3 — Pointer/touch interaction (F3) needs its gesture spec (Medium)
 
 Graph: node click/Enter selection, keyboard pan (`Arrow` keys), zoom (`+`/`-`),
