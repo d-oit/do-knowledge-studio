@@ -342,14 +342,14 @@ fi
 # Shell script detection via file existence
 # Unlike compiled languages, shell scripts don't have a manifest file
 # We use find + grep to check if any .sh files exist (excluding .git directory)
-if find . -name "*.sh" -not -path "./.git/*" | grep -q .; then
+if [ -n "$(find . -name "*.sh" -not -path "./.git/*" -print -quit 2>/dev/null)" ]; then
     echo "  ${GREEN}✓${NC} Shell scripts detected"
     DETECTED_LANGUAGES+=("shell")
 fi
 
 # Markdown detection via file existence
 # We always check markdown if .md files exist (for linting with markdownlint)
-if find . -name "*.md" -not -path "./.git/*" | grep -q .; then
+if [ -n "$(find . -name "*.md" -not -path "./.git/*" -print -quit 2>/dev/null)" ]; then
     echo "  ${GREEN}✓${NC} Markdown files detected"
     DETECTED_LANGUAGES+=("markdown")
 fi
@@ -718,10 +718,16 @@ fi
 if [[ " ${DETECTED_LANGUAGES[*]} " =~ " markdown " ]] && [[ "$SCOPE" == "all" || "$SCOPE" == "docs" || "$SCOPE" == "agent" || "${HAS_DOCS:-false}" == "true" || "${HAS_AGENT:-false}" == "true" ]]; then
     echo -e "${BLUE}Running Markdown checks...${NC}"
 
+    MARKDOWNLINT_CMD=""
     if command -v markdownlint &> /dev/null; then
-        # Check all .md files, ignoring dependencies and build artifacts
-        # --ignore patterns prevent linting generated files or node_modules
-        MD_FILES=$(find . -name "*.md" -not -path "./node_modules/*" -not -path "./target/*" -not -path "./.git/*" 2>/dev/null || true)
+        MARKDOWNLINT_CMD="markdownlint"
+    elif [ -x "$REPO_ROOT/node_modules/.bin/markdownlint" ]; then
+        MARKDOWNLINT_CMD="$REPO_ROOT/node_modules/.bin/markdownlint"
+    fi
+
+    if [ -n "$MARKDOWNLINT_CMD" ]; then
+        # Check repository documentation markdown files, excluding vendor agent/skill libraries, build artifacts, and dependencies
+        MD_FILES=$(find . -name "*.md" -not -path "./node_modules/*" -not -path "./target/*" -not -path "./.git/*" -not -path "./.agents/*" -not -path "./.claude/*" -not -path "./.gemini/*" -not -path "./.qwen/*" -not -path "./.opencode/*" 2>/dev/null || true)
         if [ -n "$MD_FILES" ]; then
             md_failed=0
             while IFS= read -r md_file; do
@@ -734,7 +740,7 @@ if [[ " ${DETECTED_LANGUAGES[*]} " =~ " markdown " ]] && [[ "$SCOPE" == "all" ||
                 # correct documents (MD013/MD025) on any machine where markdownlint
                 # is installed (plans/164 §3.1).
                 if ! OUTPUT=$(lint_if_changed "$md_file" "markdownlint" "markdownlint.toml" \
-                    markdownlint --config markdownlint.toml "$md_file" 2>&1); then
+                    "$MARKDOWNLINT_CMD" --config markdownlint.toml "$md_file" 2>&1); then
                     echo -e "${RED}  ✗ markdownlint failed: $md_file${NC}"
                     echo "$OUTPUT" >&2
                     md_failed=1
