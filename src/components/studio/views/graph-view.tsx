@@ -4,6 +4,17 @@ import { useStudioStore } from '@/lib/studio/store'
 import { seedGraph } from '@/lib/studio/seed-data'
 import { placeGraphNodes } from '@/lib/studio/graph-layout'
 import { canvasSize, canvasViewBox } from '@/lib/studio/graph-viewport'
+import {
+  MIN_ZOOM,
+  MAX_ZOOM,
+  MAX_PAN,
+  DRAG_PAN_SLOP_PX,
+  clamp,
+  getClientToViewBoxScale,
+  computeDragPanOffset,
+  computeZoom,
+  computeFocalZoom,
+} from '@/lib/studio/graph-gestures'
 import { getEntityTypeDefs, getEntityTypeMeta } from '@/lib/studio/entity-types'
 import { translate as entityTypesT } from '@/lib/i18n/messages/entity-types'
 import { todayStamp, downloadBlob } from './export-types'
@@ -117,20 +128,10 @@ export const GraphView = () => {
 
   const svgRef = useRef<SVGSVGElement>(null)
   const reducedMotion = useReducedMotion()
-
-  /** Lowest zoom the canvas supports; matches the keyboard step's floor. */
-const MIN_ZOOM = 0.3;
-
-/** Highest zoom the canvas supports; matches the keyboard step's ceiling. */
-const MAX_ZOOM = 3;
-
-/** Largest pan offset accepted on restore, in SVG units (5x the canvas). */
-const MAX_PAN = 4000;
-
-/** Constrains a value to an inclusive range. */
-const clamp = (value: number, min: number, max: number): number =>
-  Math.min(Math.max(value, min), max);
-
+  // Pointer drag-to-pan state tracking
+  const pointerOriginRef = useRef<{ x: number; y: number } | null>(null)
+  const isDraggingRef = useRef(false)
+  const activePointerIdRef = useRef<number | null>(null)
 const handleGraphKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       const PAN_STEP = 30
@@ -227,13 +228,95 @@ const handleGraphKeyDown = useCallback(
     },
     [selectEntity],
   )
-
   const handleNodeClick = useCallback(
     (nodeId: string, isCurrentlySelected: boolean) => {
+      if (isDraggingRef.current) return
       selectEntity(isCurrentlySelected ? null : nodeId)
     },
     [selectEntity],
   )
+
+  const handlePointerDown = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
+    // Only initiate canvas panning with primary mouse button or single touch
+    if (e.button !== 0) return
+    activePointerIdRef.current = e.pointerId
+    pointerOriginRef.current = { x: e.clientX, y: e.clientY }
+    isDraggingRef.current = false
+  }, [])
+
+  const handlePointerMove = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
+    if (activePointerIdRef.current !== e.pointerId || !pointerOriginRef.current) return
+
+    const dx = e.clientX - pointerOriginRef.current.x
+    const dy = e.clientY - pointerOriginRef.current.y
+
+    if (!isDraggingRef.current) {
+      if (Math.hypot(dx, dy) >= DRAG_PAN_SLOP_PX) {
+        isDraggingRef.current = true
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId)
+        } catch {
+          // Pointer capture may fail on simulated / synthetic events
+        }
+      } else {
+        return
+      }
+    }
+    const svg = svgRef.current
+    const rect = svg?.getBoundingClientRect()
+    const clientScale = rect
+      ? getClientToViewBoxScale(canvas, zoom, { width: rect.width, height: rect.height })
+      : 1
+
+    pointerOriginRef.current = { x: e.clientX, y: e.clientY }
+    setPanOffset((prev) => computeDragPanOffset(prev, dx, dy, clientScale, zoom, canvas))
+  }, [canvas, zoom])
+
+  const handlePointerUp = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
+    if (activePointerIdRef.current !== e.pointerId) return
+    try {
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId)
+      }
+    } catch {
+      // Safe ignore
+    }
+    activePointerIdRef.current = null
+    pointerOriginRef.current = null
+    // Allow click event to process before clearing dragging flag
+    setTimeout(() => {
+      isDraggingRef.current = false
+    }, 0)
+  }, [])
+
+  const handleWheel = useCallback((e: React.WheelEvent<SVGSVGElement>) => {
+    e.preventDefault()
+    const svg = svgRef.current
+    if (!svg) return
+
+    const rect = svg.getBoundingClientRect()
+    const focalPoint = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    }
+    const clientRect = { width: rect.width, height: rect.height }
+
+    setZoom((currZoom) => {
+      const nextZoom = computeZoom(currZoom, e.deltaY)
+      setPanOffset((currPan) => {
+        const focalResult = computeFocalZoom(
+          currZoom,
+          nextZoom,
+          currPan,
+          canvas,
+          focalPoint,
+          clientRect,
+        )
+        return focalResult.panOffset
+      })
+      return nextZoom
+    })
+  }, [canvas])
 
   const saveSnapshot = useCallback(() => {
     const saved = saveGraphSnapshot(
@@ -318,10 +401,15 @@ const handleGraphKeyDown = useCallback(
         <svg
           ref={svgRef}
           viewBox={canvasViewBox(canvas, zoom, panOffset)}
-          className="h-full w-full"
+          className="h-full w-full touch-none select-none cursor-grab active:cursor-grabbing"
           preserveAspectRatio="xMidYMid meet"
           role="img"
           aria-label={`Knowledge graph with ${visibleNodes.length} entities and ${visibleEdges.length} connections`}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          onWheel={handleWheel}
         >
           {/* Edges */}
           <g>
