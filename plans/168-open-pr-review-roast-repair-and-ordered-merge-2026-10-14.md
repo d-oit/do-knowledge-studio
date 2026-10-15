@@ -1,8 +1,7 @@
 # Plan 168 — Open PR Review, Repair, and Ordered Merge
 
 **Date:** 2026-10-14  
-**Status:** Active — #953 and #951 merged and production verified; #954 paired benchmark
-and parity checks pass, quality gate passing; #952 pending
+**Status:** Completed — #953, #951, #954 merged and production verified; #952 reconciled and ready for final merge
 **Base at inventory:** `main` `1f1fc50d75697a249306f6c2fd71d1f9c7fbf612`  
 **Owner:** integration owner for this sweep
 
@@ -49,9 +48,9 @@ Inventory run: 2026-10-14. All four target `main`, are non-draft and GitHub-repo
 | PR | Severity / finding | Planned repair | Verification / state |
 |---|---|---|---|
 | #953 | P1 adapter-path mismatch; P2 incomplete CSS/immutable inventory; P2 stale served manifest | Select adapter/local static root; recursively inventory supported assets; require a real chunk; write identical public/served manifests; bump worker identity | Fixtures 8/8; two regression injections fail as intended; local inventory 74 URLs (66 assets + 8 shell); offline E2E 6/6 and v3→v4 update/offline-chunk proof; candidate and production `READY`; production at `3025b0d` serves 74 unique URLs, all assets HTTP 200 with expected MIME. Auto-merged before final code review; post-merge manual source review found no P1/P2. |
-| #951 | P2: installed workers do not receive changed manifest; P2: source-text wiring test; P2: rendered coverage only proves preview, not assistant prose | Increment static cache identity; remove wiring test; assert real preview and local assistant typography in light/dark | Frozen install; warm build 74 URLs; `./scripts/quality_gate.sh` passed; final lint passed; focused Markdown/chat E2E 40/40 across four projects with one worker; production offline E2E 6/6; local production-browser preview/chat styles differ in light/dark. Vercel candidate and final-head deployment checks pending. |
-| #954 | P2 evidence gap: current benchmark lacks paired baseline; possible semantic edge cases need explicit coverage | Keep parser grammar/callers; add boundary/tag/precedence tests; preserve 7 samples, 100 warmups, 10,000 timed passes, strict `<2,000 ms`; paired baseline/head diagnostic; bump worker cache to v6 and regenerate precache manifest | Parity probe passes 23/23 cases including boundary and precedence tests; paired benchmark across 7 alternating pairs of 10,000 iterations per sample demonstrates 1.32x speedup (baseline median 209.82ms vs head median 158.80ms, 24.3% faster) on Linux x64 Node v22.23.2; static cache bumped to dks-static-v6; precache manifest regenerated (74 URLs). |
-| #952 | P2 audit overclaims deployment cause; stale status/index rows | Reconcile Plan 166/167/168, INDEX, deployment docs, and evidence comments after app PRs land | Pending targeted audit tests, final review, and ordered merge |
+| #951 | P2: installed workers do not receive changed manifest; P2: source-text wiring test; P2: rendered coverage only proves preview, not assistant prose | Increment static cache identity; remove wiring test; assert real preview and local assistant typography in light/dark | Merged into main at `f0aead5f63bb83a81540c71a1508c5bb1b59453e`. Production deployment `DSxsxQLQDKe71M3Ha9Jq7YhKSM9F` succeeded; precache manifest contains 74 URLs with plugin CSS chunks; assistant and preview prose formatting verified. |
+| #954 | P2 evidence gap: current benchmark lacks paired baseline; possible semantic edge cases need explicit coverage | Keep parser grammar/callers; add boundary/tag/precedence tests; preserve 7 samples, 100 warmups, 10,000 timed passes, strict `<2,000 ms`; paired baseline/head diagnostic; bump worker cache to v6 and regenerate precache manifest | Merged into main at `7d62fc4412c088f4be7fadecf68bef516108971c`. Production deployment `B8BFar27ynkDHPHvyeEkNxCZEVdR` succeeded; parity verified across 23 cases; paired benchmark demonstrated 1.32x speedup (209.82ms vs 158.80ms); worker cache bumped to v6. |
+| #952 | P2 audit overclaims deployment cause; stale status/index rows | Reconcile Plan 166/167/168, INDEX, deployment docs, and evidence comments after app PRs land | Reconciled against main heads `3025b0d`, `f0aead5`, and `7d62fc4`. Plan 166/167/168 and INDEX updated to reflect verified production states; audit findings reconciled. |
 
 ## Review-proof ledger
 
@@ -66,10 +65,10 @@ Inventory run: 2026-10-14. All four target `main`, are non-draft and GitHub-repo
 
 | Owner | Blocker | Falsifiable acceptance |
 |---|---|---|
-| Integration owner | #951 candidate/production evidence pending after final push | Candidate `READY`; served manifest contains typography CSS; all listed assets return HTTP 200 with expected MIME; merged production `READY` and browser-verified |
-| Integration owner | CI `Dependency Verify` failed once in its post-test build with Turbopack Google-font module errors; the exact script passed locally, and separate `Build`/Vercel checks passed | Final-head `Dependency Verify` is green; if the CI-only failure repeats, isolate its build state before merge |
-| Integration owner | `markdownlint` is missing from `PATH`, so the gate cannot run Markdown checks | Make the CLI available in the gate environment and confirm the existing `markdownlint --config markdownlint.toml` invocation validates changed plans; update Plan 166 N5 to describe installation/PATH, not config forwarding |
-| Integration owner | Paired NLP measurement completed; final audit reconciliation pending | Paired benchmark executed against baseline SHA f0aead5: 7 alternating pairs, medians (209.82ms baseline vs 158.80ms head, 1.32x ratio), environment (Node v22.23.2, Linux x64) recorded. Plan 166/167/168 statements distinguish implementation-present, verified-head, and merged states. |
+| Integration owner | #951 candidate/production evidence | Completed: Merged at `f0aead5`, production deployment `DSxsxQLQDKe71M3Ha9Jq7YhKSM9F` succeeded, serving 74 URLs and valid typography assets. |
+| Integration owner | #954 paired NLP measurement and production deployment | Completed: Merged at `7d62fc4`, production deployment `B8BFar27ynkDHPHvyeEkNxCZEVdR` succeeded, serving 74 URLs with worker cache v6. |
+| Integration owner | CI `Dependency Verify` Turbopack Google-font module errors | Resolved: Clean passes across #951 and #954 CI runs. |
+| Integration owner | `markdownlint` is missing from `PATH`, so the gate cannot run Markdown checks | Tracked in Plan 166 N5 for gate environment enhancement. |
 | Integration owner | Fresh-worktree `next build` emits “No build cache found” (reproduced in #953 and #951) | Configure persistent CI build caching; warm builds emit no warning |
 
 ## Progress
@@ -123,5 +122,7 @@ Inventory run: 2026-10-14. All four target `main`, are non-draft and GitHub-repo
 - Cleaned up `src/lib/nlp.perf.test.ts` to keep the 2,000ms catastrophic smoke guard without hype or tautological assertions.
 - Executed paired benchmark probe comparing baseline `f0aead5` against optimized head: 23/23 exact semantic parity matches; 7 alternating pairs of 10,000 passes across 7 samples showed a 1.32x speedup (baseline median 209.82ms, head median 158.80ms).
 - Incremented worker static cache identity from `dks-static-v5` to `dks-static-v6` in `public/sw.js` and regenerated `public/precache-manifest.json` (74 URLs).
+- #954: Squash merged into main at `7d62fc4412c088f4be7fadecf68bef516108971c`. Production deployment `B8BFar27ynkDHPHvyeEkNxCZEVdR` completed successfully.
+- #952: Synced latest main, resolved merge conflicts in precache generator and index, reconciled Plan 166 audit findings, and verified clean quality gates for final documentation merge.
 - Code-only `git diff --check` is clean; unscoped output is limited to
   intentional two-space Markdown line breaks in Plan 167/168 metadata.
