@@ -15,7 +15,21 @@ const ENTITY_TYPE_KEYWORDS: Record<EntityType, string[]> = {
   note: ['note', 'jot', 'write down', 'record', 'memo'],
 }
 
-const ENTITY_TYPE_ENTRIES = Object.entries(ENTITY_TYPE_KEYWORDS) as Array<[EntityType, string[]]>
+const ENTITY_TYPE_ENTRIES = Object.entries(ENTITY_TYPE_KEYWORDS) as ReadonlyArray<readonly [EntityType, readonly string[]]>
+
+/** ASCII lowercase code points for vowels ('a', 'e', 'i', 'o', 'u'). */
+const ASCII_LOWER_A = 97
+const ASCII_LOWER_E = 101
+const ASCII_LOWER_I = 105
+const ASCII_LOWER_O = 111
+const ASCII_LOWER_U = 117
+const ASCII_CASE_MASK = 0x20
+
+/** Minimum word length and vowel density thresholds for real-word heuristic. */
+const MIN_WORD_LENGTH = 3
+const MIN_WORD_VOWELS = 2
+const MIN_VOWEL_RATIO = 0.3
+const MIN_ENTITY_NAME_LENGTH = 3
 
 /** Keywords indicating a claim intent. */
 const CLAIM_KEYWORDS = ['claim', 'fact', 'statement', 'believe', 'think', 'assert', 'evidence shows']
@@ -110,8 +124,14 @@ const extractStatement = (text: string): string => {
 const countVowels = (word: string): number => {
   let count = 0
   for (let i = 0; i < word.length; i++) {
-    const ch = word.charCodeAt(i) | 0x20
-    if (ch === 97 || ch === 101 || ch === 105 || ch === 111 || ch === 117) {
+    const ch = word.charCodeAt(i) | ASCII_CASE_MASK
+    if (
+      ch === ASCII_LOWER_A ||
+      ch === ASCII_LOWER_E ||
+      ch === ASCII_LOWER_I ||
+      ch === ASCII_LOWER_O ||
+      ch === ASCII_LOWER_U
+    ) {
       count++
     }
   }
@@ -140,16 +160,16 @@ export function parseIntent(text: string): Intent {
   const words = text.split(/\s+/)
   let hasRealWords = false
   for (const w of words) {
-    if (w.length >= 3) {
+    if (w.length >= MIN_WORD_LENGTH) {
       const vowels = countVowels(w)
-      if (vowels >= 2 && vowels / w.length >= 0.3) {
+      if (vowels >= MIN_WORD_VOWELS && vowels / w.length >= MIN_VOWEL_RATIO) {
         hasRealWords = true
         break
       }
     }
   }
 
-  if (name.length > 2 && hasRealWords) {
+  if (name.length >= MIN_ENTITY_NAME_LENGTH && hasRealWords) {
     return { type: 'create_entity', name, entityType, description, tags }
   }
 

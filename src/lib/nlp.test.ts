@@ -107,9 +107,50 @@ describe('parseIntent', () => {
       const result = parseIntent('asdfghjkl')
       expect(result.type).toBe('unknown')
     })
+
+    it('returns unknown for vowel-free or low-vowel words', () => {
+      expect(parseIntent('xyz qwr bcd').type).toBe('unknown')
+    })
+
+    it('returns unknown when entity name is too short', () => {
+      expect(parseIntent('ab').type).toBe('unknown')
+    })
+  })
+
+  describe('intent precedence and boundary parsing', () => {
+    it('prioritizes search prefix over claim keywords in query body', () => {
+      const result = parseIntent('search for fact checking guidelines')
+      expect(result).toEqual({
+        type: 'search',
+        query: 'fact checking guidelines',
+      })
+    })
+
+    it('prioritizes claim keywords over entity creation keywords', () => {
+      const result = parseIntent('I believe note taking improves retention')
+      expect(result.type).toBe('add_claim')
+      if (result.type === 'add_claim') {
+        expect(result.statement).toBe('note taking improves retention')
+      }
+    })
+
+    it('parses multiple tags with mixed separators and case normalization', () => {
+      const result = parseIntent('create note Architecture tags: frontend, Backend; Distributed')
+      expect(result.type).toBe('create_entity')
+      if (result.type === 'create_entity') {
+        expect(result.tags).toEqual(['frontend', 'backend', 'distributed'])
+      }
+    })
+
+    it('parses mixed labels and hashtags without duplicates', () => {
+      const result = parseIntent('create concept #graph #topology tags: graph, math')
+      expect(result.type).toBe('create_entity')
+      if (result.type === 'create_entity') {
+        expect(result.tags).toEqual(['graph', 'math', 'topology'])
+      }
+    })
   })
 })
-
 describe('formatIntentSummary', () => {
   it('formats create_entity', () => {
     const summary = formatIntentSummary({
