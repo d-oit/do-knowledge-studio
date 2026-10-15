@@ -1,6 +1,9 @@
 {
   "urls": [
     "/",
+    "/_next/static/OEDqTYZXTXihH7ZtVc33v/_buildManifest.js",
+    "/_next/static/OEDqTYZXTXihH7ZtVc33v/_clientMiddlewareManifest.js",
+    "/_next/static/OEDqTYZXTXihH7ZtVc33v/_ssgManifest.js",
     "/_next/static/chunks/05jpg78_1wucz.js",
     "/_next/static/chunks/0_c91ipqc8u22.js",
     "/_next/static/chunks/0_m0qytgqf2bq.js",
@@ -20,7 +23,6 @@
     "/_next/static/chunks/1m_g6bqjpauvq.js",
     "/_next/static/chunks/1vykq22q4pkvf.js",
     "/_next/static/chunks/1w5_04jlgljyo.js",
-    "/_next/static/chunks/1y6-e1n16zzc_.js",
     "/_next/static/chunks/1z9wa_774s3q2.js",
     "/_next/static/chunks/298xcdpz89-s9.js",
     "/_next/static/chunks/2gow3y0s_qk1h.js",
@@ -43,6 +45,7 @@
     "/_next/static/chunks/3gqpnx7hf0zbl.js",
     "/_next/static/chunks/3pd7xidqrd82d.js",
     "/_next/static/chunks/3qns4-_hn3g72.js",
+    "/_next/static/chunks/3y-fd4c4jjdsm.js",
     "/_next/static/chunks/turbopack-08kfkpp2u6nt9.js",
     "/_next/static/chunks/turbopack-2pjbd0uz2hzm2.js",
     "/_next/static/chunks/turbopack-worker-2ru9m5gbh1na6.js",
@@ -63,6 +66,7 @@
     "/_next/static/media/caa3a2e1cccd8315-s.p.0wgildi0cnwt9.woff2",
     "/_next/static/media/e62850744c7f266e-s.0n7ulcr4ivksg.woff2",
     "/_next/static/media/fef07dbb0973bf53-s.3p2_lha1f2xer.woff2",
+    "/_next/static/media/ort.webgpu.bundle.min.2gtd6ccrqc86p.mjs",
     "/favicon.svg",
     "/icon-192.png",
     "/icon-512.png",

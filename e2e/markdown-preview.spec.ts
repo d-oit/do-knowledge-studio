@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { createNewEntity, switchEditorMode } from './helpers/editor';
+import { setStudioTheme } from './helpers/theme';
+import { readTypographyStyles } from './helpers/typography';
 
 /**
  * Representative CommonMark sample exercising the baseline syntax the
@@ -37,7 +40,7 @@ test.describe('Markdown preview', () => {
     await switchEditorMode(page, 1);
   });
 
-  const preview = (page: import('@playwright/test').Page) => page.locator('div.prose').first();
+  const preview = (page: Page) => page.getByRole('main');
 
   test('renders headings at the correct levels', async ({ page }) => {
     const pane = preview(page);
@@ -70,25 +73,26 @@ test.describe('Markdown preview', () => {
   });
 
   /**
-   * The `prose` classes are inert without @tailwindcss/typography, and an inert
-   * preview still renders every element — so the markup assertions above cannot
-   * tell a styled preview from an unstyled one (plans/166 N1). These assertions
-   * read the computed styles the plugin generates.
+   * The plugin's utility classes leave prose markup intact when absent, so read
+   * its generated variables and quote rule in each actual theme.
    */
-  test('applies the typography plugin scale, not the browser defaults', async ({ page }) => {
+  test('applies the typography plugin scale in light and dark themes', async ({ page }) => {
     const pane = preview(page);
-    // `--tw-prose-*` custom properties only exist when the plugin ran.
-    const proseBody = await pane.evaluate((el) =>
-      getComputedStyle(el).getPropertyValue('--tw-prose-body').trim(),
-    );
-    expect(proseBody).not.toBe('');
+    const heading = pane.getByRole('heading', { name: 'Heading One', level: 1 });
 
-    // Blockquotes get a left rule from the plugin; the UA default is none.
-    const quoteBorder = await pane
-      .locator('blockquote')
-      .first()
-      .evaluate((el) => parseFloat(getComputedStyle(el).borderLeftWidth));
-    expect(quoteBorder).toBeGreaterThan(0);
+    await setStudioTheme(page, 'light');
+    const light = await readTypographyStyles(heading);
+    expect(light.proseBody).not.toBe('');
+    expect(light.paragraphColor).not.toBe('');
+    expect(light.blockquoteBorderWidth).toBeGreaterThan(0);
+
+    await setStudioTheme(page, 'dark');
+    const dark = await readTypographyStyles(heading);
+    expect(dark.proseBody).not.toBe('');
+    expect(dark.paragraphColor).not.toBe('');
+    expect(dark.blockquoteBorderWidth).toBeGreaterThan(0);
+    expect(dark.proseBody).not.toBe(light.proseBody);
+    expect(dark.paragraphColor).not.toBe(light.paragraphColor);
   });
 
   test('renders links as anchors with the expected href', async ({ page }) => {
