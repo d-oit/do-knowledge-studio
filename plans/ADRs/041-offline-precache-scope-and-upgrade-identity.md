@@ -1,7 +1,8 @@
 # ADR 041: Offline Precache Scope and Upgrade Identity
 
 **Date**: 2026-09-30
-**Status**: Implemented
+**Status**: Production deployment verified (2026-10-14)
+**Amended**: 2026-10-14 — adapter inventory, output selection, and served manifest
 **Related**: Plan 161, Plan 158, ADR 036, ADR 018
 **Amends (in part)**: ADR 036 (E2E target — production mode becomes an explicit
 opt-in that is *required* for offline assertions, instead of the removed
@@ -31,33 +32,42 @@ Two design questions had no recorded answer:
 
 ## Decision
 
-### 1. Precache the emitted code inventory, not a classification of it
+### 1. Precache emitted supported assets, not a classification of them
 
-The generator unions three sources: the boot document's URLs, every
-`.js`/`.mjs`/`.css` under `.next/static/chunks`, and fonts/images under
-`.next/static/media`. Names are read from the build directory; nothing is
-hardcoded, so content-hash renames cannot silently drop an entry.
+The generator selects `.next/output/static/_next/static` when
+`.next/output/config.json` exists; otherwise it selects `.next/static`. It
+recursively inventories supported JavaScript, module, CSS, font, SVG, and raster
+image files and maps their paths to `/_next/static/...`. The extension allowlist
+excludes source maps, WASM, and model weights.
 
-Chunks are **not** attributed to features. The names are content hashes of
+The selected root must exist and contain a real `.js` chunk under `chunks/` or
+`immutable/chunks/`; `_buildManifest.js` alone is not app code. The generator
+does not fall back to the other build root, because that could produce a
+plausible but incomplete manifest from unrelated output.
+
+Chunks are **not** attributed to features. Their names are content hashes of
 minified output, so attribution would mean parsing minified source and guessing
 — and a wrong guess is an offline view that cannot load, which is the defect
-being fixed. Measured cost: the entire chunk set is ~4 MiB, and it is bounded by
-the app's own code.
+being fixed.
 
-Excluded by extension allowlist: `.wasm`, model weights, source maps, raw `.ts`.
-These are media a user opts into (the AI harness downloads models on demand),
-not app code — one excluded file alone is larger than the whole chunk set.
-Caching them would inflate mandatory install for every user, including those who
-never open the AI view.
-
-### 2. Fail closed in the generator
+### 2. Fail closed on the selected inventory; the boot document is not a source
 
 A manifest that cannot satisfy a lazy import is worse than no manifest, because
-it looks correct. The run exits nonzero with an actionable message when the
-build HTML is missing (preserved from the previous version), when either static
-directory is absent, or when the chunk inventory holds no JavaScript. An empty
-font/image set remains valid — the app can legitimately ship with no extra
-media.
+it looks correct. The generator exits nonzero when the selected static root is
+absent or has no real JavaScript chunk. Empty CSS/font/image sets remain valid:
+the app can legitimately ship without a particular optional asset category.
+
+The boot document is not scanned. The inspected production and #954 builds
+failed because `.next/server/app/index.html` was absent; #953, #951, and #952
+failed because `.next/static/chunks` was absent. The successful `next build`
+step does not guarantee those assumed paths exist in adapter output. Plan 167
+records the deployment IDs and exact errors.
+
+For adapter builds, the generated manifest is written both to `public/` and to
+`.next/output/static/precache-manifest.json`. Vercel's builder copies public
+files into its static output only when they are absent; writing only after that
+copy can therefore leave the served copy stale. The two manifests must be
+byte-identical.
 
 ### 3. The cache identity changes whenever the manifest scope changes
 
@@ -84,13 +94,15 @@ required only where build output is the subject under test.
 
 ## Consequences
 
-- The offline contract now covers every view's code. Runtime backfill
-  (`cacheFirst`) remains a bonus path, not the mechanism the contract depends on.
-- Installing the worker moves ~4 MiB on first load. Bounded, measured, and paid
-  once per bundle change.
-- Every future manifest-scope change must bump `STATIC_CACHE`. Discoverable from
-  the worker's own comment and this ADR; a reviewer who changes only the
-  generator has left the upgrade path broken.
+- The offline contract covers every supported emitted code and media asset;
+  runtime backfill (`cacheFirst`) remains a bonus path, not the mechanism the
+  contract depends on.
+- First-install transfer is the fixed shell URLs plus selected emitted assets.
+  Its size depends on the build inventory and must be measured for material
+  scope changes.
+- Every future manifest-scope change must also change `STATIC_CACHE`. The
+  worker comment and this ADR document the rule; changing only the generator
+  leaves existing installs on the old manifest.
 - WASM and model weights stay out. If the AI harness is ever expected to infer
   fully offline with a bundled model, that is a separate, explicitly sized
   decision.
@@ -111,5 +123,6 @@ required only where build output is the subject under test.
 | Attribute chunks to views by parsing minified source | Brittle against every bundler change; a wrong guess is a silent offline failure |
 | Prewarm lazy views at install by navigating them | Requires executing view code and its network calls during install; slow and side-effectful |
 | Rely on runtime cache-first backfill only | Exactly the status quo: it cannot help a *first* offline visit, which is the reported case |
+| Use boot-document URLs as the complete inventory | Excludes lazy chunks and fails on inspected builds where the document is absent |
 | Descriptor added to a build manifest to name view chunks | Turbopack exposes no stable view→chunk map; maintaining a mapping is the classification problem again |
 | Ship a `sw.js` that always re-fetches the manifest with `cache: 'reload'` in `install` | The fetch already bypasses the cache; the problem was the worker never reinstalling, so install never ran |
