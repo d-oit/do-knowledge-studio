@@ -13,14 +13,20 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 | Wave | Goal | Status | Outcome |
 | --- | --- | --- | --- |
-| Inventory | Refresh four open PR heads, checks, review threads, main rules, and deployment evidence | In progress | #953 merged at `3025b0d` and production verified (74-URL manifest, all assets HTTP 200); #951 local build, offline, browser, and focused E2E pass (40/40); Vercel preview pending; #954/#952 pending. See [Plan 168](168-open-pr-review-roast-repair-and-ordered-merge-2026-10-14.md). |
-
+| Sweep | Review, repair, verify, and sequentially merge open PRs | In progress | #953 merged at `3025b0d` and production verified (74 URLs); #951 merged at `f0aead5` and production verified (typography in preview/chat, worker v5); #954 merged at `7d62fc4` and production verified (1.32x paired benchmark, worker v6); #952 pending final reconciliation. See [Plan 168](168-open-pr-review-roast-repair-and-ordered-merge-2026-10-14.md). |
 
 ### Plan 167 — Precache manifest across local and adapter builds (2026-10-13)
 
 | Wave | Goal | Status | Outcome |
 | --- | --- | --- | --- |
 | Fix | Select build-specific static inventory, require a real chunk, and refresh the served adapter manifest | Done — #953 merged at `3025b0d`; candidate and production manifests contain 74 URLs, and all listed assets return HTTP 200 with expected MIME types. See [ADR 041](ADRs/041-offline-precache-scope-and-upgrade-identity.md) and [Plan 167](167-precache-manifest-without-boot-document-2026-10-13.md). |
+
+### Plan 166 — Codebase improvement audit and followups (2026-10-13)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Reconcile | Re-verify recorded open items against source and runtime | Done | F1 (AI request control) is implemented (#923/#926/#927; 54 harness tests pass); Plan 161's dev search-worker error and both workflow-linter warnings no longer reproduce; first-mount reduced motion remains open; Plan 131's eager-chunk and source-error items are closed. |
+| Audit | Find new improvement and missing-implementation candidates | Done | Typography classes inert (no `@tailwindcss/typography`; resolved in #951), unused `indexeddb-backup.ts` (deleted), F3 gesture spec, Cursor/Windsurf manifest semantics, markdownlint gate wiring, plan/ADR number collisions. See [Plan 166](166-codebase-improvement-audit-2026-10-13.md). |
 
 ### Plan 165 — Backlog remediation and PR integrity guards (2026-10-13)
 
@@ -58,7 +64,7 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 | Wave | Goal | Status | Outcome |
 | --- | --- | --- | --- |
 | Source audit | Preserve the 2026-10-05 findings | Historical — reconciled | Original source observations remain dated; Plan 162's 2026-10-13 addendum records later implementations. |
-| Selected backlog | Close the recorded integrity and navigation gaps | Partially closed | Plan 165 resolves items #2–#4 and F2, and reconciles S1/S2/D1–D3. F1, F3, S3, Plan 161 follow-ons, and unscheduled candidates remain open. |
+| Selected backlog | Close the recorded integrity and navigation gaps | Partially closed | Plan 165 resolves items #2–#4 and F2, and reconciles S1/S2/D1–D3. Plan 166 re-verified F1 as implemented (#923/#926/#927) and Plan 161's dev search-worker and workflow-linter follow-ons as resolved; F3, S3, first-mount reduced motion, and unscheduled candidates remain open. |
 
 ### Plan 116 — Open-PR / open-issue sweep, roast, and merge order (2026-10-11)
 
@@ -74,9 +80,9 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 | --- | --- | --- | --- |
 | W1 | G7 gate honesty + G1 persistence contract | Done | `plans/131-goap-swarm-improvement-audit-2026-08-22.md`. `mergeHydratedState` validates on every load (not just version mismatches), rebase-on-hydrate, `HydrationRejectedError` preserves the payload on disk, honest coverage thresholds (75/78/84/85) with test files excluded, `.githooks/` committed + `core.hooksPath` wired via `prepare`. |
 | W2 | G2 undo integrity + G3 dead-code/dep pruning | Partial — closed, nothing left to prune | Undo integrity landed in Plan 157 W3; #838 removed five dead shared primitives (`ui/shared-primitives.tsx` 317 → 131 lines). The ~26-dependency prune was estimated, not measured — of 63 deps only 4 have no import in `src/`, `e2e/`, or `scripts/`, and all four are required. |
-| W3 | G4 bundle/startup + G5 view consolidation | Partial — open | Remaining half: zero `next/dynamic` call sites, so the sync and export chunks still load eagerly. The shared `ToolbarBtn` dead-export problem is closed (#838); `chat-view.tsx` fell to 126 LOC on its own while `graph-view.tsx` (494) and `mindmap-view.tsx` (490) stay just under the ceiling. |
+| W3 | G4 bundle/startup + G5 view consolidation | Closed | Six lazy view boundaries in `app-shell.tsx` plus on-use dynamic imports for sync/export dependencies (Plan 165 `cdbd0f3`); the "zero `next/dynamic` call sites" note is historical — the repo uses `React.lazy` and `await import`. The shared `ToolbarBtn` dead-export problem is closed (#838); `chat-view.tsx` fell to 126 LOC on its own while `graph-view.tsx` (494) and `mindmap-view.tsx` (490) stay just under the ceiling. |
 | W4 | G6 sync bridge completion | Done | `startBidirectionalSync` is called from `app-shell.tsx:130` and returns the unsubscribe; tombstone registry extracted to `cross-tab-tombstones.ts`. |
-| W5 | G8 library hardening + G9 hygiene | Partial — open | DOMPurify wired in `lib/security.ts`, `verify-deps.sh` runs in CI on lockfile changes, markdown link sanitization + `noopener noreferrer`. Not done: vitest typecheck still runs with `ignoreSourceErrors: true` against ~73 legacy `*.test.ts` errors, so source-error gating is inert (D5.3). |
+| W5 | G8 library hardening + G9 hygiene | Closed | DOMPurify wired in `lib/security.ts`, `verify-deps.sh` runs in CI on lockfile changes, markdown link sanitization + `noopener noreferrer`. Source-error gating is active: `vitest.config.ts` sets `ignoreSourceErrors: false` after Plan 159 F7 cleared the legacy `*.test.ts` errors (Plan 166). |
 
 ### Plan 123 — Codacy Merge Gate Playbook (2026-08-14)
 

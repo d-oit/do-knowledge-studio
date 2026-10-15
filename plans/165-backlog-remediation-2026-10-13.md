@@ -110,3 +110,11 @@ interaction), S3 (Cursor/Windsurf strategy semantics), the three Plan 161
 recorded follow-ons, graph revision comparison, Synthesis Inbox, or Visual Query
 Builder. These remain explicitly open in Plan 162; this plan does not claim
 otherwise.
+
+### Reconciliation — Plan 166 (2026-10-13)
+
+[Plan 166](166-codebase-improvement-audit-2026-10-13.md) re-checked this list
+against the merged code: F1 is implemented (#923/#926/#927; 54 AI-harness tests
+pass), and the dev search-worker error and workflow-linter warnings from Plan 161
+no longer reproduce. F3, S3, first-mount reduced motion, graph revision
+comparison, Synthesis Inbox, and Visual Query Builder remain open.
