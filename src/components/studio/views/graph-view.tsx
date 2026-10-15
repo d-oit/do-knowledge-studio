@@ -269,7 +269,7 @@ const handleGraphKeyDown = useCallback(
       : 1
 
     pointerOriginRef.current = { x: e.clientX, y: e.clientY }
-    setPanOffset((prev) => computeDragPanOffset(prev, dx, dy, clientScale))
+    setPanOffset((prev) => computeDragPanOffset(prev, dx, dy, clientScale, zoom, canvas))
   }, [canvas, zoom])
 
   const handlePointerUp = useCallback((e: React.PointerEvent<SVGSVGElement>) => {

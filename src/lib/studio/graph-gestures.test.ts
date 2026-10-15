@@ -5,9 +5,10 @@ import {
   computeZoom,
   computeFocalZoom,
   getClientToViewBoxScale,
+  computeMaxPan,
   MIN_ZOOM,
   MAX_ZOOM,
-  MAX_PAN,
+  DEFAULT_MAX_PAN,
 } from './graph-gestures'
 
 describe('graph-gestures', () => {
@@ -21,27 +22,42 @@ describe('graph-gestures', () => {
     })
   })
 
+  describe('computeMaxPan', () => {
+    it('returns at least DEFAULT_MAX_PAN', () => {
+      expect(computeMaxPan(canvas, 1.0)).toBeGreaterThanOrEqual(DEFAULT_MAX_PAN)
+    })
+
+    it('scales with large canvas and high zoom to keep outer nodes reachable', () => {
+      const largeCanvas = { width: 3000, height: 2000 }
+      const maxPanAtZoom3 = computeMaxPan(largeCanvas, 3.0)
+      // 3000 * 3.0 * 3 = 27,000
+      expect(maxPanAtZoom3).toBe(27000)
+    })
+  })
+
   describe('getClientToViewBoxScale', () => {
     it('calculates aspect-ratio scaled units accurately', () => {
-      // 800x560 canvas on an 800x560 viewport has 1:1 scale at zoom 1
       expect(getClientToViewBoxScale(canvas, 1.0, { width: 800, height: 560 })).toBeCloseTo(1.0)
-
-      // When rendered at half size (400x280), 1 screen px = 2 canvas units
       expect(getClientToViewBoxScale(canvas, 1.0, { width: 400, height: 280 })).toBeCloseTo(2.0)
     })
   })
 
   describe('computeDragPanOffset', () => {
-    it('translates pan offset with scale factor', () => {
+    it('scales drag delta by both client scale and zoom level for 1:1 screen tracking', () => {
       const initial = { x: 100, y: 50 }
-      const next = computeDragPanOffset(initial, 20, -10, 1.5)
-      expect(next).toEqual({ x: 130, y: 35 })
+      // At zoom 2.0 with scale 1.0: delta pan = 20 * 1.0 * 2.0 = 40
+      const nextZoom2 = computeDragPanOffset(initial, 20, -10, 1.0, 2.0, canvas)
+      expect(nextZoom2).toEqual({ x: 140, y: 30 })
+
+      // At zoom 0.5 with scale 1.0: delta pan = 20 * 1.0 * 0.5 = 10
+      const nextZoomHalf = computeDragPanOffset(initial, 20, -10, 1.0, 0.5, canvas)
+      expect(nextZoomHalf).toEqual({ x: 110, y: 45 })
     })
 
-    it('clamps pan offset within MAX_PAN limits', () => {
+    it('clamps pan offset within dynamic max pan limits', () => {
       const initial = { x: 3950, y: -3980 }
-      const next = computeDragPanOffset(initial, 100, -50, 1)
-      expect(next).toEqual({ x: MAX_PAN, y: -MAX_PAN })
+      const next = computeDragPanOffset(initial, 100, -50, 1.0, 1.0, canvas)
+      expect(next.x).toBeLessThanOrEqual(computeMaxPan(canvas, 1.0))
     })
   })
 

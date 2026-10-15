@@ -7,8 +7,9 @@ export const MIN_ZOOM = 0.3
 /** Highest zoom the canvas supports; matches the keyboard step's ceiling. */
 export const MAX_ZOOM = 3
 
-/** Largest pan offset accepted on restore/pan, in SVG units (5x the canvas). */
+/** Largest default pan limit, in SVG units. */
 export const MAX_PAN = 4000
+export const DEFAULT_MAX_PAN = MAX_PAN
 
 /** Pointer movement threshold in pixels before engaging drag pan (prevents tap misidentification). */
 export const DRAG_PAN_SLOP_PX = 4
@@ -20,9 +21,14 @@ export const WHEEL_ZOOM_SENSITIVITY = 0.0015
 export const clamp = (value: number, min: number, max: number): number =>
   Math.min(Math.max(value, min), max)
 
-export interface SvgViewportMetrics {
-  viewBox: { x: number; y: number; width: number; height: number }
-  clientRect: { left: number; top: number; width: number; height: number }
+/**
+ * Calculates dynamic max pan bound based on canvas size and zoom level,
+ * ensuring any node placed within the dynamic canvas band can be panned into view.
+ */
+export const computeMaxPan = (canvas?: CanvasSize, zoom = 1): number => {
+  if (!canvas) return DEFAULT_MAX_PAN
+  const maxDim = Math.max(canvas.width, canvas.height)
+  return Math.max(DEFAULT_MAX_PAN, maxDim * zoom * 3)
 }
 
 /**
@@ -49,21 +55,30 @@ export const getClientToViewBoxScale = (
 }
 
 /**
- * Converts a client-space displacement (screen delta) into canvas pan offset delta.
- * Panning translates panOffset, which moves the viewBox origin in graph space:
- * minX = -panOffset.x / zoom
- * A screen movement of dx (mouse moves right) moves graph content right, so panOffset.x increases.
- * 1 client pixel = clientToCanvasScale canvas units.
+ * Converts a client-space displacement (dxClient, dyClient) into panOffset delta.
+ * `canvasViewBox` computes viewBox origin as `-panOffset / zoom`.
+ * To achieve 1:1 direct tracking under the cursor:
+ * Screen displacement dx moves the viewBox in graph units by `dx * clientToViewBoxScale`.
+ * Since minX = -panOffset.x / zoom, moving graph right means minX decreases,
+ * so -panOffset.x / zoom decreases by (dx * clientToViewBoxScale),
+ * which requires delta(panOffset.x) = dx * clientToViewBoxScale * zoom.
  */
 export const computeDragPanOffset = (
   currentPan: NodePosition,
   dxClient: number,
   dyClient: number,
-  clientToCanvasScale = 1,
-): NodePosition => ({
-  x: clamp(currentPan.x + dxClient * clientToCanvasScale, -MAX_PAN, MAX_PAN),
-  y: clamp(currentPan.y + dyClient * clientToCanvasScale, -MAX_PAN, MAX_PAN),
-})
+  clientToViewBoxScale = 1,
+  zoom = 1,
+  canvas?: CanvasSize,
+): NodePosition => {
+  const maxPan = computeMaxPan(canvas, zoom)
+  const panDeltaX = dxClient * clientToViewBoxScale * zoom
+  const panDeltaY = dyClient * clientToViewBoxScale * zoom
+  return {
+    x: clamp(currentPan.x + panDeltaX, -maxPan, maxPan),
+    y: clamp(currentPan.y + panDeltaY, -maxPan, maxPan),
+  }
+}
 
 /**
  * Computes zoom clamped to supported bounds.
@@ -75,8 +90,8 @@ export const computeZoom = (currentZoom: number, deltaY: number): number => {
 }
 
 /**
- * Computes focal zoom: adjusts zoom and panOffset so that the graph position
- * currently under the cursor (focalPointClient relative to SVG bounding box)
+ * Computes focal zoom: adjusts zoom and panOffset so that the graph coordinate
+ * currently under the cursor (focalClient relative to SVG bounding box)
  * remains stationary under the cursor after zooming.
  */
 export const computeFocalZoom = (
@@ -91,11 +106,9 @@ export const computeFocalZoom = (
     return { zoom: currentZoom, panOffset: currentPan }
   }
 
-  // Active viewBox dimensions
+  // Pre-zoom viewBox dimensions and letterboxing
   const vbW0 = canvas.width / currentZoom
   const vbH0 = canvas.height / currentZoom
-
-  // Uniform scale and letterboxing offsets for xMidYMid meet
   const scale0 = Math.max(vbW0 / clientRect.width, vbH0 / clientRect.height)
   const renderedW0 = vbW0 / scale0
   const renderedH0 = vbH0 / scale0
@@ -106,7 +119,7 @@ export const computeFocalZoom = (
   const graphX = -currentPan.x / currentZoom + (focalClient.x - offsetX0) * scale0
   const graphY = -currentPan.y / currentZoom + (focalClient.y - offsetY0) * scale0
 
-  // Post-zoom viewBox dimensions
+  // Post-zoom viewBox dimensions and letterboxing
   const vbW1 = canvas.width / newZoom
   const vbH1 = canvas.height / newZoom
   const scale1 = Math.max(vbW1 / clientRect.width, vbH1 / clientRect.height)
@@ -117,15 +130,17 @@ export const computeFocalZoom = (
 
   // Solve for panOffset such that graph point remains under focalClient:
   // graphX = -newPan.x / newZoom + (focalClient.x - offsetX1) * scale1
+  // => -newPan.x / newZoom = graphX - (focalClient.x - offsetX1) * scale1
   // => newPan.x = -newZoom * (graphX - (focalClient.x - offsetX1) * scale1)
   const newPanX = -newZoom * (graphX - (focalClient.x - offsetX1) * scale1)
   const newPanY = -newZoom * (graphY - (focalClient.y - offsetY1) * scale1)
 
+  const maxPan = computeMaxPan(canvas, newZoom)
   return {
     zoom: newZoom,
     panOffset: {
-      x: clamp(newPanX, -MAX_PAN, MAX_PAN),
-      y: clamp(newPanY, -MAX_PAN, MAX_PAN),
+      x: clamp(newPanX, -maxPan, maxPan),
+      y: clamp(newPanY, -maxPan, maxPan),
     },
   }
 }
