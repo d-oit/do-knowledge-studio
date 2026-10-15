@@ -79,6 +79,10 @@ existing `MIN_ZOOM`/`MAX_ZOOM`, tap-select, long-press actions, preserved keyboa
 navigation/ARIA tree behavior/native scroll, 44px targets, and reduced-motion
 respect; then implement with pointer/touch E2E coverage.
 
+**Outcome (2026-10-15) — spec accepted.** Authored [Plan 169](169-touch-gesture-specification-2026-10-15.md)
+specifying pointer drag-pan, cursor-focal wheel zoom, 2-finger touch pinch-to-zoom/pan,
+and tree swipe disclosure actions under strict clamping and accessibility invariants. Ready for Phase 1 implementation.
+
 ### N4 — Cursor/Windsurf manifest semantics (Low)
 
 `.agents/manifest.json` declares `"symlink_strategy": "directory"` for `.cursor`
