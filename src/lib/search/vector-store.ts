@@ -11,8 +11,7 @@
  * so the index is a recomputable cache: persisting float vectors would
  * duplicate corpus data, risk stale vectors after edits, and burn quota.
  * `snapshot()`/`restore()` keep the door open for a future persistence
- * layer (follow the tiered patterns in lib/studio/indexeddb-backup.ts if one
- * lands).
+ * layer if one lands.
  */
 
 import type { Entity, Claim } from '@/lib/studio/types'

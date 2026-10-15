@@ -26,7 +26,7 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 | Wave | Goal | Status | Outcome |
 | --- | --- | --- | --- |
 | Reconcile | Re-verify recorded open items against source and runtime | Done | F1 (AI request control) is implemented (#923/#926/#927; 54 harness tests pass); Plan 161's dev search-worker error and both workflow-linter warnings no longer reproduce; first-mount reduced motion remains open; Plan 131's eager-chunk and source-error items are closed. |
-| Audit | Find new improvement and missing-implementation candidates | Done | Typography classes inert (no `@tailwindcss/typography`; resolved in #951), unused `indexeddb-backup.ts`, F3 gesture spec, Cursor/Windsurf manifest semantics, markdownlint gate wiring, plan/ADR number collisions. See [Plan 166](166-codebase-improvement-audit-2026-10-13.md). |
+| Audit | Find new improvement and missing-implementation candidates | Done | Typography classes inert (no `@tailwindcss/typography`; resolved in #951), unused `indexeddb-backup.ts` (deleted), F3 gesture spec, Cursor/Windsurf manifest semantics, markdownlint gate wiring, plan/ADR number collisions. See [Plan 166](166-codebase-improvement-audit-2026-10-13.md). |
 
 ### Plan 165 — Backlog remediation and PR integrity guards (2026-10-13)
 
