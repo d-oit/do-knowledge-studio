@@ -10,6 +10,7 @@ import {
   MAX_PAN,
   DRAG_PAN_SLOP_PX,
   clamp,
+  getClientToViewBoxScale,
   computeDragPanOffset,
   computeZoom,
   computeFocalZoom,
@@ -261,10 +262,15 @@ const handleGraphKeyDown = useCallback(
         return
       }
     }
+    const svg = svgRef.current
+    const rect = svg?.getBoundingClientRect()
+    const clientScale = rect
+      ? getClientToViewBoxScale(canvas, zoom, { width: rect.width, height: rect.height })
+      : 1
 
     pointerOriginRef.current = { x: e.clientX, y: e.clientY }
-    setPanOffset((prev) => computeDragPanOffset(prev, dx, dy))
-  }, [])
+    setPanOffset((prev) => computeDragPanOffset(prev, dx, dy, clientScale))
+  }, [canvas, zoom])
 
   const handlePointerUp = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
     if (activePointerIdRef.current !== e.pointerId) return
@@ -293,16 +299,24 @@ const handleGraphKeyDown = useCallback(
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
     }
+    const clientRect = { width: rect.width, height: rect.height }
 
     setZoom((currZoom) => {
       const nextZoom = computeZoom(currZoom, e.deltaY)
       setPanOffset((currPan) => {
-        const focalResult = computeFocalZoom(currZoom, nextZoom, currPan, focalPoint)
+        const focalResult = computeFocalZoom(
+          currZoom,
+          nextZoom,
+          currPan,
+          canvas,
+          focalPoint,
+          clientRect,
+        )
         return focalResult.panOffset
       })
       return nextZoom
     })
-  }, [])
+  }, [canvas])
 
   const saveSnapshot = useCallback(() => {
     const saved = saveGraphSnapshot(

@@ -4,12 +4,15 @@ import {
   computeDragPanOffset,
   computeZoom,
   computeFocalZoom,
+  getClientToViewBoxScale,
   MIN_ZOOM,
   MAX_ZOOM,
   MAX_PAN,
 } from './graph-gestures'
 
 describe('graph-gestures', () => {
+  const canvas = { width: 800, height: 560 }
+
   describe('clamp', () => {
     it('constrains numbers to inclusive bounds', () => {
       expect(clamp(5, 0, 10)).toBe(5)
@@ -18,16 +21,26 @@ describe('graph-gestures', () => {
     })
   })
 
+  describe('getClientToViewBoxScale', () => {
+    it('calculates aspect-ratio scaled units accurately', () => {
+      // 800x560 canvas on an 800x560 viewport has 1:1 scale at zoom 1
+      expect(getClientToViewBoxScale(canvas, 1.0, { width: 800, height: 560 })).toBeCloseTo(1.0)
+
+      // When rendered at half size (400x280), 1 screen px = 2 canvas units
+      expect(getClientToViewBoxScale(canvas, 1.0, { width: 400, height: 280 })).toBeCloseTo(2.0)
+    })
+  })
+
   describe('computeDragPanOffset', () => {
-    it('translates pan offset by delta', () => {
+    it('translates pan offset with scale factor', () => {
       const initial = { x: 100, y: 50 }
-      const next = computeDragPanOffset(initial, 25, -15)
-      expect(next).toEqual({ x: 125, y: 35 })
+      const next = computeDragPanOffset(initial, 20, -10, 1.5)
+      expect(next).toEqual({ x: 130, y: 35 })
     })
 
     it('clamps pan offset within MAX_PAN limits', () => {
       const initial = { x: 3950, y: -3980 }
-      const next = computeDragPanOffset(initial, 100, -50)
+      const next = computeDragPanOffset(initial, 100, -50, 1)
       expect(next).toEqual({ x: MAX_PAN, y: -MAX_PAN })
     })
   })
@@ -52,33 +65,29 @@ describe('graph-gestures', () => {
   })
 
   describe('computeFocalZoom', () => {
-    it('keeps the focal point fixed in graph space across zoom change', () => {
+    it('preserves graph coordinate under cursor across responsive zoom', () => {
       const currentZoom = 1.0
       const newZoom = 2.0
       const currentPan = { x: 0, y: 0 }
-      const focalPoint = { x: 400, y: 300 }
+      const clientRect = { width: 800, height: 560 }
+      const focalClient = { x: 400, y: 280 }
 
-      const result = computeFocalZoom(currentZoom, newZoom, currentPan, focalPoint)
+      const result = computeFocalZoom(
+        currentZoom,
+        newZoom,
+        currentPan,
+        canvas,
+        focalClient,
+        clientRect,
+      )
       expect(result.zoom).toBe(newZoom)
-
-      // Initial graph coordinate at focalPoint: (400 - 0) / 1.0 = 400
-      // Next graph coordinate at focalPoint: (400 - panOffset.x) / 2.0 must equal 400
-      // => 400 - panOffset.x = 800 => panOffset.x = -400
-      expect(result.panOffset.x).toBe(-400)
-      expect(result.panOffset.y).toBe(-300)
-
-      const graphXInitial = (focalPoint.x - currentPan.x) / currentZoom
-      const graphXNext = (focalPoint.x - result.panOffset.x) / result.zoom
-      expect(graphXNext).toBeCloseTo(graphXInitial)
-
-      const graphYInitial = (focalPoint.y - currentPan.y) / currentZoom
-      const graphYNext = (focalPoint.y - result.panOffset.y) / result.zoom
-      expect(graphYNext).toBeCloseTo(graphYInitial)
+      expect(result.panOffset.x).toBeCloseTo(-400)
+      expect(result.panOffset.y).toBeCloseTo(-280)
     })
 
     it('returns unchanged pan when newZoom equals currentZoom', () => {
       const pan = { x: 120, y: -80 }
-      const result = computeFocalZoom(1.5, 1.5, pan, { x: 200, y: 200 })
+      const result = computeFocalZoom(1.5, 1.5, pan, canvas, { x: 200, y: 200 }, { width: 800, height: 560 })
       expect(result.zoom).toBe(1.5)
       expect(result.panOffset).toEqual(pan)
     })
