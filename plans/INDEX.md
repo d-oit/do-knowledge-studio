@@ -9,6 +9,12 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 169 — F3 Touch and gesture specification (2026-10-15)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Spec | Define pointer/touch gestures, zoom/pan invariants, clamping, and accessibility requirements | Done | Complete specification authored for Graph pointer drag-pan, cursor-focal wheel zoom, 2-finger touch pinch/zoom, and Mind Map swipe disclosure. See [Plan 169](169-touch-gesture-specification-2026-10-15.md). |
+
 ### Plan 168 — Open PR review, repair, and ordered merge (2026-10-14)
 
 | Wave | Goal | Status | Outcome |
