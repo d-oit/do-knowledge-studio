@@ -306,7 +306,7 @@ export const MindMapView = () => {
                 )}
               </button>
             ) : (
-              <span className="mr-1 inline-block w-[18px]" />
+              <span className="mr-1 inline-block min-h-touch min-w-touch" aria-hidden="true" />
             )}
 
             <span className={cn('h-2 w-2 rounded-full', meta.dot)} />
