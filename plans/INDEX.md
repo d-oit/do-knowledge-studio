@@ -1,6 +1,6 @@
 # Plans Index
 
-**Updated**: 2026-10-13
+**Updated**: 2026-10-14
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
 Plan records are filed as `plans/NNN-slug.md`, where `NNN` is the plan number used
@@ -9,18 +9,24 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 168 — Open PR review, repair, and ordered merge (2026-10-14)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Sweep | Review, repair, verify, and sequentially merge open PRs | In progress | #953 merged at `3025b0d` and production verified (74 URLs); #951 merged at `f0aead5` and production verified (typography in preview/chat, worker v5); #954 merged at `7d62fc4` and production verified (1.32x paired benchmark, worker v6); #952 pending final reconciliation. See [Plan 168](168-open-pr-review-roast-repair-and-ordered-merge-2026-10-14.md). |
+
+### Plan 167 — Precache manifest across local and adapter builds (2026-10-13)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Fix | Select build-specific static inventory, require a real chunk, and refresh the served adapter manifest | Done — #953 merged at `3025b0d`; candidate and production manifests contain 74 URLs, and all listed assets return HTTP 200 with expected MIME types. See [ADR 041](ADRs/041-offline-precache-scope-and-upgrade-identity.md) and [Plan 167](167-precache-manifest-without-boot-document-2026-10-13.md). |
+
 ### Plan 166 — Codebase improvement audit and followups (2026-10-13)
 
 | Wave | Goal | Status | Outcome |
 | --- | --- | --- | --- |
 | Reconcile | Re-verify recorded open items against source and runtime | Done | F1 (AI request control) is implemented (#923/#926/#927; 54 harness tests pass); Plan 161's dev search-worker error and both workflow-linter warnings no longer reproduce; first-mount reduced motion remains open; Plan 131's eager-chunk and source-error items are closed. |
-| Audit | Find new improvement and missing-implementation candidates | Done | Typography classes inert (no `@tailwindcss/typography`; PR #951 open and conflicting), unused `indexeddb-backup.ts`, F3 gesture spec, Cursor/Windsurf manifest semantics, markdownlint gate wiring, plan/ADR number collisions. See `plans/166-codebase-improvement-audit-2026-10-13.md`. |
-
-### Plan 167 — Precache manifest without the boot document (2026-10-13)
-
-| Wave | Goal | Status | Outcome |
-| --- | --- | --- | --- |
-| Fix | Stop rejecting builds that complete without `.next/server/app/index.html` | In review | The boot-document scan is best-effort while both static inventories stay mandatory; [ADR 041](ADRs/041-offline-precache-scope-and-upgrade-identity.md) §2 amended. A new suite (4 cases) covers the Vercel layout; the manifest is byte-identical on the real build. `plans/167-precache-manifest-without-boot-document-2026-10-13.md`. |
+| Audit | Find new improvement and missing-implementation candidates | Done | Typography classes inert (no `@tailwindcss/typography`; resolved in #951), unused `indexeddb-backup.ts`, F3 gesture spec, Cursor/Windsurf manifest semantics, markdownlint gate wiring, plan/ADR number collisions. See [Plan 166](166-codebase-improvement-audit-2026-10-13.md). |
 
 ### Plan 165 — Backlog remediation and PR integrity guards (2026-10-13)
 

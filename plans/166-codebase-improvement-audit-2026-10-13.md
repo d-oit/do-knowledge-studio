@@ -47,29 +47,11 @@ preview and chat headings/lists/blockquotes styled in both themes with accessibl
 contrast; `pnpm run build` regenerates the precache manifest; PR #951 rebased or
 superseded with a fresh deployment check.
 
-**Outcome (2026-10-13) — resolved on PR #951.** The branch was taken over and
-merged with `main`; the only conflict was the generated precache manifest, which
-the build regenerates (70 URLs). The `@plugin` directive now follows both
-`@import` rules (CSS requires imports to precede other at-rules), and the
-`postcss-selector-parser` override to `^7.1.6` was verified against the plugin's
-API usage (`parser.selector()`, `processSync`). Head `043424d` on
-`jules-13938770014072009790-d8cb4729`; `pnpm install --frozen-lockfile` passes.
-
-Evidence: production build clean, emitted CSS carrying 544 `prose` rules and 126
-`--tw-prose` variables; `e2e/markdown-preview.spec.ts` 8/8 against the production
-build; browser check measuring body-text contrast 9.71:1 (light) and 12.78:1
-(dark), preview `h1` at weight 800, and chat bubbles carrying the same prose
-variables; minimal gate (lint, typecheck, 2,952 tests) green on the pushed head.
-CI had never run on this PR — the push triggered the full suite. Every check is
-now green (`Codacy Static Code Analysis`, `Quality Gate`, `Unit Tests`,
-`E2E Tests`, `Build`, `Dependency Verify`, security scans) except the
-non-required **Vercel** deployment, which fails in the Hobby-limit class recorded
-in [Plan 164](164-vercel-deployment-validation-and-doc-lint-2026-10-12.md) and
-failed the same way before these changes. The offline suite (`pnpm run
-test:e2e:offline`) passes 6/6 against the production build, and every manifest
-URL resolves to an emitted file (0 missing), confirming the regenerated precache
-list matches the served chunks. The pull request is linked to this thread with
-its autofix loop armed; merging is left to the maintainer.
+**Outcome (2026-10-15) — resolved and merged.** PR #951 was merged into `main`
+at `f0aead5` under standing authorization after full CI, Codacy, and E2E passes.
+The Tailwind v4 `@plugin` directive is active, `@tailwindcss/typography` is locked,
+emitted CSS carries 544 `prose` rules, and production deployment succeeded on Vercel.
+Light/dark theme contrast and assistant chat prose formatting are verified in production.
 
 ### N2 — `indexeddb-backup.ts` has no production caller (Medium)
 
