@@ -24,7 +24,7 @@ The `manifest.json` file describes all AI agent tools supported by this reposito
       "docs": [
         "TOOL.md"
       ],
-      "symlink_strategy": "relative | directory | none"
+      "symlink_strategy": "relative | none"
     }
   }
 }
@@ -39,8 +39,8 @@ The `manifest.json` file describes all AI agent tools supported by this reposito
   - `directory`: The root directory for tool-specific configuration.
   - `skills_directory`: (Optional) Where skills should be symlinked.
   - `docs`: (Optional) Tool-specific documentation files.
-  - `symlink_strategy`: `relative`, `directory`, or `none`. `none` skips the
-    skills link; `sync` creates a relative directory symlink for other values.
+  - `symlink_strategy`: `relative` or `none`. `none` skips the
+    skills link; `relative` creates a relative directory symlink to canonical skills.
 
 ## Management Script
 

@@ -93,6 +93,10 @@ Followup acceptance: manifest values match implemented behavior (or directory
 semantics are implemented), and `setup-skills.sh` plus `agent-surface.py validate`
 stay clean.
 
+**Outcome (2026-10-15) — resolved.** Updated `.agents/manifest.json` and `agents-docs/MANIFEST.md`
+to align `symlink_strategy` to `"relative"` across `.cursor` and `.windsurf`. Both
+`setup-skills.sh` and `agent-surface.py validate` pass cleanly; all 12 BATS tests pass.
+
 ### N5 — markdownlint is not installable by the gate (Low)
 
 `quality_gate.sh` skips markdown checks when the `markdownlint` binary is absent
