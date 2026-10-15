@@ -49,7 +49,7 @@ Inventory run: 2026-10-14. All four target `main`, are non-draft and GitHub-repo
 | PR | Severity / finding | Planned repair | Verification / state |
 |---|---|---|---|
 | #953 | P1 adapter-path mismatch; P2 incomplete CSS/immutable inventory; P2 stale served manifest | Select adapter/local static root; recursively inventory supported assets; require a real chunk; write identical public/served manifests; bump worker identity | Fixtures 8/8; two regression injections fail as intended; local inventory 74 URLs (66 assets + 8 shell); offline E2E 6/6 and v3→v4 update/offline-chunk proof; candidate and production `READY`; production at `3025b0d` serves 74 unique URLs, all assets HTTP 200 with expected MIME. Auto-merged before final code review; post-merge manual source review found no P1/P2. |
-| #951 | P2: installed workers do not receive changed manifest; P2: source-text wiring test; P2: rendered coverage only proves preview, not assistant prose | Increment static cache identity; remove wiring test; assert real preview and local assistant typography in light/dark | Frozen install; warm build 74 URLs; `./scripts/quality_gate.sh` passed (lint/typecheck, 2,960 tests, 1 skipped, shellcheck/BATS, skill/link validations); focused Markdown/chat E2E 40/40 across four projects; production offline E2E 6/6; local production-browser preview/chat styles differ in light/dark. Vercel candidate and deployment checks pending. |
+| #951 | P2: installed workers do not receive changed manifest; P2: source-text wiring test; P2: rendered coverage only proves preview, not assistant prose | Increment static cache identity; remove wiring test; assert real preview and local assistant typography in light/dark | Frozen install; warm build 74 URLs; `./scripts/quality_gate.sh` passed; final lint passed; focused Markdown/chat E2E 40/40 across four projects with one worker; production offline E2E 6/6; local production-browser preview/chat styles differ in light/dark. Vercel candidate and final-head deployment checks pending. |
 | #954 | P2 evidence gap: current benchmark lacks paired baseline; possible semantic edge cases need explicit coverage | Keep parser grammar/callers; add boundary/tag/precedence tests; preserve 7 samples, 100 warmups, 10,000 timed passes, strict `<2,000 ms`; paired baseline/head diagnostic | Pending parity probe, mutation proof, parser tests, benchmark, caller tests, full final gates |
 | #952 | P2 audit overclaims deployment cause; stale status/index rows | Reconcile Plan 166/167/168, INDEX, deployment docs, and evidence comments after app PRs land | Pending targeted audit tests, final review, and ordered merge |
 
@@ -67,6 +67,7 @@ Inventory run: 2026-10-14. All four target `main`, are non-draft and GitHub-repo
 | Owner | Blocker | Falsifiable acceptance |
 |---|---|---|
 | Integration owner | #951 candidate/production evidence pending after final push | Candidate `READY`; served manifest contains typography CSS; all listed assets return HTTP 200 with expected MIME; merged production `READY` and browser-verified |
+| Integration owner | CI `Dependency Verify` failed once in its post-test build with Turbopack Google-font module errors; the exact script passed locally, and separate `Build`/Vercel checks passed | Final-head `Dependency Verify` is green; if the CI-only failure repeats, isolate its build state before merge |
 | Integration owner | `markdownlint` is missing from `PATH`, so the gate cannot run Markdown checks | Make the CLI available in the gate environment and confirm the existing `markdownlint --config markdownlint.toml` invocation validates changed plans; update Plan 166 N5 to describe installation/PATH, not config forwarding |
 | Integration owner | Paired NLP measurement and final audit reconciliation are pending | Baseline/head semantic results match before timing; seven alternating pairs, medians, ratio, environment, and SHAs are recorded; Plan 166/167 statements distinguish implementation-present, verified-head, and merged states |
 | Integration owner | Fresh-worktree `next build` emits “No build cache found” (reproduced in #953 and #951) | Configure persistent CI build caching; warm builds emit no warning |
@@ -102,6 +103,18 @@ Inventory run: 2026-10-14. All four target `main`, are non-draft and GitHub-repo
 - #951 production offline E2E (6/6) and local-browser preview/chat light/dark
   smoke pass; Vercel candidate/production verification, #954 repair, and #952
   final reconciliation remain pending.
+- #951 checks on head `0075522`: Build, Vercel, E2E, Unit Tests, Quality Gate,
+  Coverage Report, and security scans passed; Codacy reported six findings in
+  the theme test helper. The local refactor removes dynamic object lookups and
+  the non-literal RegExp; remote reanalysis is pending.
+- `./scripts/verify-deps.sh` passed locally; the GitHub run failed once in its
+  post-test build with Turbopack Google-font module errors. Separate Build and
+  Vercel checks passed; final-head `Dependency Verify` rerun is pending.
+- After replacing the dynamic accessible-name assertion with a suffix poll,
+  final `pnpm run lint` and focused E2E passed. The 40-case run passed across
+  four projects with one worker.
+- A 7-worker local run had two tablet-only 30s timeouts (theme-switch action and
+  navigation setup); both passed on Playwright retry. The serial run had none.
 - `markdownlint` is absent from `PATH`; no Markdown-lint result is claimed.
   This environment gap is tracked in Followups and Plan 166 N5.
 - Code-only `git diff --check` is clean; unscoped output is limited to

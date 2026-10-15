@@ -1,9 +1,6 @@
 {
   "urls": [
     "/",
-    "/_next/static/OEDqTYZXTXihH7ZtVc33v/_buildManifest.js",
-    "/_next/static/OEDqTYZXTXihH7ZtVc33v/_clientMiddlewareManifest.js",
-    "/_next/static/OEDqTYZXTXihH7ZtVc33v/_ssgManifest.js",
     "/_next/static/chunks/05jpg78_1wucz.js",
     "/_next/static/chunks/0_c91ipqc8u22.js",
     "/_next/static/chunks/0_m0qytgqf2bq.js",
@@ -49,6 +46,9 @@
     "/_next/static/chunks/turbopack-08kfkpp2u6nt9.js",
     "/_next/static/chunks/turbopack-2pjbd0uz2hzm2.js",
     "/_next/static/chunks/turbopack-worker-2ru9m5gbh1na6.js",
+    "/_next/static/m7VtcUptHGqPCYAtJeV5o/_buildManifest.js",
+    "/_next/static/m7VtcUptHGqPCYAtJeV5o/_clientMiddlewareManifest.js",
+    "/_next/static/m7VtcUptHGqPCYAtJeV5o/_ssgManifest.js",
     "/_next/static/media/150f724d70372c02-s.1ljbalzvxyif7.woff2",
     "/_next/static/media/4fa387ec64143e14-s.2tuy5pz7dlieh.woff2",
     "/_next/static/media/53b9e256198e5412-s.390ncx5urfkfu.woff2",
