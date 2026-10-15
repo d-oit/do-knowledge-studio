@@ -1,5 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+/* Markdown typography for the editor preview and chat bubbles. Declared after
+   both @import rules: CSS requires @import to precede other at-rules. */
+@plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
 

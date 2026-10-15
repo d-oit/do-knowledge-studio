@@ -17,6 +17,10 @@
  * The adapter's served manifest is written alongside its packaged assets so
  * it cannot remain stale after Vercel's missing-file-only public sync.
  *
+ * The selected inventory is scanned recursively and must contain a real
+ * emitted JavaScript chunk before the manifest is written. Empty or partial
+ * build output fails rather than producing an incomplete offline shell.
+ *
  * Runs after `next build`. Output: `public/precache-manifest.json`, fetched
  * by the worker at install time.
  */

@@ -378,3 +378,16 @@ including F1, F3, and the unscheduled candidates, remain open.
 
 See [Plan 165](165-backlog-remediation-2026-10-13.md) for commit-level scope and
 verification evidence.
+
+### Reconciliation — Plan 166 (2026-10-13)
+
+[Plan 166](166-codebase-improvement-audit-2026-10-13.md) re-verified the items
+still marked open above:
+
+| Item | Reconciliation |
+|---|---|
+| F1 — AI request control | Implemented: Stop plus request timeout (#923), localized error mapping (#927), completion announcements (#926); 54 AI-harness tests pass, including the Stop-abort case. |
+| Plan 161 — dev search-worker error | Resolved and verified in a live dev pass; the worker bundle loads with no console error and the chat returns cited results. |
+| Plan 161 — workflow-linter warnings | Resolved: yamllint (CI config) and actionlint both report clean. |
+| Plan 161 — first-mount reduced motion | Still open: hydration is safe, but first mount can tween before the preference applies. |
+| F3, S3, candidates | Still open; Plan 166 adds a gesture-spec acceptance for F3 and a manifest-alignment decision for S3. |
