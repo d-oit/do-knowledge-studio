@@ -17,6 +17,12 @@ export const DRAG_PAN_SLOP_PX = 4
 /** Zoom sensitivity factor per mouse wheel delta. */
 export const WHEEL_ZOOM_SENSITIVITY = 0.0015
 
+/** Swipe detection distance threshold for Mind Map node disclosure gestures (in px). */
+export const MINDMAP_SWIPE_THRESHOLD_PX = 64
+
+/** Minimum touch target size for interactive controls in px (WCAG 2.5.5). */
+export const MIN_TOUCH_TARGET_SIZE_PX = 44
+
 /** Constrains a value to an inclusive range. */
 export const clamp = (value: number, min: number, max: number): number =>
   Math.min(Math.max(value, min), max)
@@ -90,6 +96,70 @@ export const computeZoom = (currentZoom: number, deltaY: number): number => {
 }
 
 /**
+ * Computes Euclidean distance between two pointers.
+ */
+export const computePointerDistance = (p1: NodePosition, p2: NodePosition): number =>
+  Math.hypot(p2.x - p1.x, p2.y - p1.y)
+
+/**
+ * Computes midpoint between two pointers.
+ */
+export const computePointerMidpoint = (p1: NodePosition, p2: NodePosition): NodePosition => ({
+  x: (p1.x + p2.x) / 2,
+  y: (p1.y + p2.y) / 2,
+})
+
+/**
+ * Computes pinch zoom and midpoint pan for dual-touch interaction.
+ */
+export const computePinchGesture = (
+  initialDistance: number,
+  currentDistance: number,
+  initialMidpoint: NodePosition,
+  currentMidpoint: NodePosition,
+  initialZoom: number,
+  initialPan: NodePosition,
+  canvas: CanvasSize,
+  clientRect: { width: number; height: number },
+): { zoom: number; panOffset: NodePosition } => {
+  if (initialDistance <= 0 || currentDistance <= 0) {
+    return { zoom: initialZoom, panOffset: initialPan }
+  }
+
+  const scaleRatio = currentDistance / initialDistance
+  const targetZoom = clamp(initialZoom * scaleRatio, MIN_ZOOM, MAX_ZOOM)
+
+  // Zoom around initial midpoint
+  const zoomed = computeFocalZoom(
+    initialZoom,
+    targetZoom,
+    initialPan,
+    canvas,
+    initialMidpoint,
+    clientRect,
+  )
+
+  // Translate pan by midpoint movement
+  const midDeltaX = currentMidpoint.x - initialMidpoint.x
+  const midDeltaY = currentMidpoint.y - initialMidpoint.y
+  const clientScale = getClientToViewBoxScale(canvas, targetZoom, clientRect)
+
+  const panned = computeDragPanOffset(
+    zoomed.panOffset,
+    midDeltaX,
+    midDeltaY,
+    clientScale,
+    targetZoom,
+    canvas,
+  )
+
+  return {
+    zoom: targetZoom,
+    panOffset: panned,
+  }
+}
+
+/**
  * Computes focal zoom: adjusts zoom and panOffset so that the graph coordinate
  * currently under the cursor (focalClient relative to SVG bounding box)
  * remains stationary under the cursor after zooming.
@@ -128,10 +198,7 @@ export const computeFocalZoom = (
   const offsetX1 = (clientRect.width - renderedW1) / 2
   const offsetY1 = (clientRect.height - renderedH1) / 2
 
-  // Solve for panOffset such that graph point remains under focalClient:
-  // graphX = -newPan.x / newZoom + (focalClient.x - offsetX1) * scale1
-  // => -newPan.x / newZoom = graphX - (focalClient.x - offsetX1) * scale1
-  // => newPan.x = -newZoom * (graphX - (focalClient.x - offsetX1) * scale1)
+  // Solve for panOffset such that graph point remains under focalClient
   const newPanX = -newZoom * (graphX - (focalClient.x - offsetX1) * scale1)
   const newPanY = -newZoom * (graphY - (focalClient.y - offsetY1) * scale1)
 

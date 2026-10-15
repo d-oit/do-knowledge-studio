@@ -14,6 +14,9 @@ import {
   computeDragPanOffset,
   computeZoom,
   computeFocalZoom,
+  computePointerDistance,
+  computePointerMidpoint,
+  computePinchGesture,
 } from '@/lib/studio/graph-gestures'
 import { getEntityTypeDefs, getEntityTypeMeta } from '@/lib/studio/entity-types'
 import { translate as entityTypesT } from '@/lib/i18n/messages/entity-types'
@@ -128,10 +131,16 @@ export const GraphView = () => {
 
   const svgRef = useRef<SVGSVGElement>(null)
   const reducedMotion = useReducedMotion()
-  // Pointer drag-to-pan state tracking
+  // Pointer drag-to-pan & dual-pointer pinch state tracking
   const pointerOriginRef = useRef<{ x: number; y: number } | null>(null)
   const isDraggingRef = useRef(false)
-  const activePointerIdRef = useRef<number | null>(null)
+  const activePointersRef = useRef<Map<number, { x: number; y: number }>>(new Map())
+  const pinchStateRef = useRef<{
+    initialDistance: number
+    initialMidpoint: { x: number; y: number }
+    initialZoom: number
+    initialPan: { x: number; y: number }
+  } | null>(null)
 const handleGraphKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       const PAN_STEP = 30
@@ -237,43 +246,88 @@ const handleGraphKeyDown = useCallback(
   )
 
   const handlePointerDown = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
-    // Only initiate canvas panning with primary mouse button or single touch
-    if (e.button !== 0) return
-    activePointerIdRef.current = e.pointerId
-    pointerOriginRef.current = { x: e.clientX, y: e.clientY }
-    isDraggingRef.current = false
-  }, [])
+    // Only primary button or touch pointers
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+
+    activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+    if (activePointersRef.current.size === 1) {
+      pointerOriginRef.current = { x: e.clientX, y: e.clientY }
+      isDraggingRef.current = false
+      pinchStateRef.current = null
+    } else if (activePointersRef.current.size === 2) {
+      // Initiate dual-pointer pinch
+      const [p1, p2] = Array.from(activePointersRef.current.values())
+      pinchStateRef.current = {
+        initialDistance: computePointerDistance(p1, p2),
+        initialMidpoint: computePointerMidpoint(p1, p2),
+        initialZoom: zoom,
+        initialPan: { ...panOffset },
+      }
+      isDraggingRef.current = true
+    }
+  }, [zoom, panOffset])
 
   const handlePointerMove = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
-    if (activePointerIdRef.current !== e.pointerId || !pointerOriginRef.current) return
+    if (!activePointersRef.current.has(e.pointerId)) return
+    activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
 
-    const dx = e.clientX - pointerOriginRef.current.x
-    const dy = e.clientY - pointerOriginRef.current.y
-
-    if (!isDraggingRef.current) {
-      if (Math.hypot(dx, dy) >= DRAG_PAN_SLOP_PX) {
-        isDraggingRef.current = true
-        try {
-          e.currentTarget.setPointerCapture(e.pointerId)
-        } catch {
-          // Pointer capture may fail on simulated / synthetic events
-        }
-      } else {
-        return
-      }
-    }
     const svg = svgRef.current
     const rect = svg?.getBoundingClientRect()
-    const clientScale = rect
-      ? getClientToViewBoxScale(canvas, zoom, { width: rect.width, height: rect.height })
-      : 1
+    if (!rect) return
 
-    pointerOriginRef.current = { x: e.clientX, y: e.clientY }
-    setPanOffset((prev) => computeDragPanOffset(prev, dx, dy, clientScale, zoom, canvas))
+    if (activePointersRef.current.size === 2 && pinchStateRef.current) {
+      const [p1, p2] = Array.from(activePointersRef.current.values())
+      const currentDist = computePointerDistance(p1, p2)
+      const currentMid = computePointerMidpoint(p1, p2)
+
+      // Relativize midpoint to SVG element bounds
+      const focalRelative = {
+        x: pinchStateRef.current.initialMidpoint.x - rect.left,
+        y: pinchStateRef.current.initialMidpoint.y - rect.top,
+      }
+
+      const pinchResult = computePinchGesture(
+        pinchStateRef.current.initialDistance,
+        currentDist,
+        focalRelative,
+        { x: currentMid.x - rect.left, y: currentMid.y - rect.top },
+        pinchStateRef.current.initialZoom,
+        pinchStateRef.current.initialPan,
+        canvas,
+        { width: rect.width, height: rect.height },
+      )
+
+      setZoom(pinchResult.zoom)
+      setPanOffset(pinchResult.panOffset)
+      return
+    }
+
+    if (activePointersRef.current.size === 1 && pointerOriginRef.current) {
+      const dx = e.clientX - pointerOriginRef.current.x
+      const dy = e.clientY - pointerOriginRef.current.y
+
+      if (!isDraggingRef.current) {
+        if (Math.hypot(dx, dy) >= DRAG_PAN_SLOP_PX) {
+          isDraggingRef.current = true
+          try {
+            e.currentTarget.setPointerCapture(e.pointerId)
+          } catch {
+            // Safe ignore
+          }
+        } else {
+          return
+        }
+      }
+
+      const clientScale = getClientToViewBoxScale(canvas, zoom, { width: rect.width, height: rect.height })
+      pointerOriginRef.current = { x: e.clientX, y: e.clientY }
+      setPanOffset((prev) => computeDragPanOffset(prev, dx, dy, clientScale, zoom, canvas))
+    }
   }, [canvas, zoom])
 
   const handlePointerUp = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
-    if (activePointerIdRef.current !== e.pointerId) return
+    activePointersRef.current.delete(e.pointerId)
     try {
       if (e.currentTarget.hasPointerCapture(e.pointerId)) {
         e.currentTarget.releasePointerCapture(e.pointerId)
@@ -281,12 +335,19 @@ const handleGraphKeyDown = useCallback(
     } catch {
       // Safe ignore
     }
-    activePointerIdRef.current = null
-    pointerOriginRef.current = null
-    // Allow click event to process before clearing dragging flag
-    setTimeout(() => {
-      isDraggingRef.current = false
-    }, 0)
+
+    if (activePointersRef.current.size === 1) {
+      // Transition back from pinch to single-pointer pan seamlessly
+      const remaining = Array.from(activePointersRef.current.values())[0]
+      pointerOriginRef.current = { ...remaining }
+      pinchStateRef.current = null
+    } else if (activePointersRef.current.size === 0) {
+      pointerOriginRef.current = null
+      pinchStateRef.current = null
+      setTimeout(() => {
+        isDraggingRef.current = false
+      }, 0)
+    }
   }, [])
 
   const handleWheel = useCallback((e: React.WheelEvent<SVGSVGElement>) => {
