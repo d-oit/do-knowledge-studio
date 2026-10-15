@@ -12,7 +12,6 @@ import {
   MIN_ZOOM,
   MAX_ZOOM,
   DEFAULT_MAX_PAN,
-  MINDMAP_SWIPE_THRESHOLD_PX,
   MIN_TOUCH_TARGET_SIZE_PX,
 } from './graph-gestures'
 
@@ -28,9 +27,8 @@ describe('graph-gestures', () => {
   })
 
   describe('constants', () => {
-    it('defines accessible touch targets and swipe thresholds', () => {
+    it('defines accessible touch targets', () => {
       expect(MIN_TOUCH_TARGET_SIZE_PX).toBeGreaterThanOrEqual(44)
-      expect(MINDMAP_SWIPE_THRESHOLD_PX).toBe(64)
     })
   })
 
@@ -124,7 +122,13 @@ describe('graph-gestures', () => {
       )
 
       expect(result.zoom).toBeCloseTo(1.5)
-      expect(result.panOffset).toBeDefined()
+      // initialMid (400, 280) zoomed by 1.5x gives panOffset (-200, -140)
+      // midpoint translated by (20, 10):
+      // scale at zoom 1.5 = (800 / 1.5) / 800 = 1 / 1.5
+      // panDeltaX = 20 * (1 / 1.5) * 1.5 = 20 => -200 + 20 = -180
+      // panDeltaY = 10 * (1 / 1.5) * 1.5 = 10 => -140 + 10 = -130
+      expect(result.panOffset.x).toBeCloseTo(-180)
+      expect(result.panOffset.y).toBeCloseTo(-130)
     })
   })
 

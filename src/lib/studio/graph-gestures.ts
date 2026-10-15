@@ -16,10 +16,6 @@ export const DRAG_PAN_SLOP_PX = 4
 
 /** Zoom sensitivity factor per mouse wheel delta. */
 export const WHEEL_ZOOM_SENSITIVITY = 0.0015
-
-/** Swipe detection distance threshold for Mind Map node disclosure gestures (in px). */
-export const MINDMAP_SWIPE_THRESHOLD_PX = 64
-
 /** Minimum touch target size for interactive controls in px (WCAG 2.5.5). */
 export const MIN_TOUCH_TARGET_SIZE_PX = 44
 
@@ -122,11 +118,13 @@ export const computePinchGesture = (
   canvas: CanvasSize,
   clientRect: { width: number; height: number },
 ): { zoom: number; panOffset: NodePosition } => {
-  if (initialDistance <= 0 || currentDistance <= 0) {
+  if (initialDistance <= 0) {
     return { zoom: initialZoom, panOffset: initialPan }
   }
 
-  const scaleRatio = currentDistance / initialDistance
+  // Protect against zero-distance pinch division while maintaining continuity
+  const safeCurrentDist = Math.max(currentDistance, 1)
+  const scaleRatio = safeCurrentDist / initialDistance
   const targetZoom = clamp(initialZoom * scaleRatio, MIN_ZOOM, MAX_ZOOM)
 
   // Zoom around initial midpoint

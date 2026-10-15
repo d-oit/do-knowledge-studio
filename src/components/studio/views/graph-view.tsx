@@ -246,8 +246,8 @@ const handleGraphKeyDown = useCallback(
   )
 
   const handlePointerDown = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
-    // Only primary button or touch pointers
-    if (e.pointerType === 'mouse' && e.button !== 0) return
+    // Only primary button or touch pointers (exclude secondary pen/mouse clicks)
+    if (e.pointerType !== 'touch' && e.button !== 0) return
 
     activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
 
