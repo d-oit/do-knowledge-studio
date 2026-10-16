@@ -213,6 +213,26 @@ resolve-every-thread rule.
 | Plan 074 | Plan 076 | Full accessibility audit (axe scanning, screen reader verification, 200% zoom, 400% reflow); coverage target to 50% (incremental, not one-shot). |
 | Plan 073 | Plan 074 | G2: bidirectional Yjs/Zustand sync bridge (requires the G1 validation boundary); full accessibility audit (axe scanning, screen reader verification, 200% zoom). |
 
+Resolution (verified 2026-10-16):
+
+- **Plan 074 → 076, accessibility audit: delivered.** Plan 076 is Done (68-finding
+  swarm audit, 18 ARIA fixes, motion gating; PR #508). `e2e/accessibility.spec.ts`
+  asserts zero unexcused critical/serious axe violations across ten views (home,
+  library, editor, chat, mind map, graph, TRIZ, export, sync, AI harness) plus ARIA
+  structure checks; `e2e/zoom-reflow.spec.ts` covers WCAG 1.4.4 (200% text zoom) and
+  1.4.10 (400% reflow); `e2e/contrast.spec.ts` covers contrast. The coverage target
+  is exceeded — current thresholds in `vitest.config.ts` are branches 75 / functions
+  78 / lines 84 / statements 85. One caveat stands: **no manual NVDA/VoiceOver session
+  is recorded anywhere in the repo**, so "screen reader verification" rests on its
+  automated equivalents (axe, ARIA role/name assertions, live-region announcement
+  tests in `announcer-integration.test.tsx`) — a manual pass remains unrecorded, not
+  unneeded.
+- **Plan 073 → 074, Yjs/Zustand sync bridge: delivered.** Plan 074 is DONE (bridge in
+  PRs #502/#503); ADR 027 is Implemented; `src/lib/sync/` ships bridge, conflict,
+  merge, presence, cursors, and tombstones with dedicated test files, built on the
+  ADR 028 validation boundary (Implemented, §4a). Plan 073's other deferred item (the
+  full accessibility audit) was re-deferred to 076 and closed there.
+
 ## Session summaries
 
 ### Session Summary (2026-08-01 — 5 PRs merged)
