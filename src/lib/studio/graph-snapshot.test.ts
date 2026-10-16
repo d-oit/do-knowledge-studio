@@ -342,6 +342,8 @@ describe('diffGraphSnapshot', () => {
     })
 
     expect(diff.hasTopologyData).toBe(true)
+    expect(diff.hasEntityData).toBe(false)
+    expect(diff.hasEdgeData).toBe(true)
     expect(diff.retainedEdgeCount).toBe(1)
     expect(diff.addedEdges).toEqual([])
     expect(diff.removedEdges).toEqual([])

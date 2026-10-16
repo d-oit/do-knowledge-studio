@@ -19,6 +19,8 @@ describe('GraphComparisonDialog', () => {
     zoomDelta: 0.5,
     panDelta: { x: 30, y: -20 },
     hasTopologyData: true,
+    hasEntityData: true,
+    hasEdgeData: true,
     addedEntities: [
       { id: 'e3', name: 'New Node Alpha' },
       { id: 'e4', name: 'New Node Beta' },
@@ -123,6 +125,8 @@ describe('GraphComparisonDialog', () => {
     const noTopologyDiff: GraphSnapshotDiff = {
       ...baseDiff,
       hasTopologyData: false,
+      hasEntityData: false,
+      hasEdgeData: false,
       addedEntities: [],
       removedEntities: [],
       addedEdges: [],
@@ -136,5 +140,23 @@ describe('GraphComparisonDialog', () => {
     expect(
       screen.getByText(/Saved snapshot predates topology tracking/),
     ).toBeDefined()
+  })
+
+  it('hides the retained-entity tally for an edges-only snapshot', () => {
+    const edgeOnlyDiff: GraphSnapshotDiff = {
+      ...baseDiff,
+      hasEntityData: false,
+      retainedEntityCount: 0,
+      addedEntities: [],
+      removedEntities: [],
+    }
+
+    render(
+      <GraphComparisonDialog open={true} onClose={vi.fn()} diff={edgeOnlyDiff} />,
+    )
+
+    // An unknown entity inventory must not read as a measured zero.
+    expect(screen.queryByText(/retained entities/)).toBeNull()
+    expect(screen.getByText(/Added Connections \(1\)/)).toBeDefined()
   })
 })

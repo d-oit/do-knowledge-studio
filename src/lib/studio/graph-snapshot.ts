@@ -183,6 +183,10 @@ export interface GraphSnapshotDiff {
   zoomDelta: number
   panDelta: { x: number; y: number }
   hasTopologyData: boolean
+  /** Whether the snapshot carried an entity inventory to compare against. */
+  hasEntityData: boolean
+  /** Whether the snapshot carried a connection list to compare against. */
+  hasEdgeData: boolean
   addedEntities: GraphEntityDelta[]
   removedEntities: GraphEntityDelta[]
   retainedEntityCount: number
@@ -336,6 +340,8 @@ export const diffGraphSnapshot = (
     zoomDelta,
     panDelta,
     hasTopologyData,
+    hasEntityData,
+    hasEdgeData,
     addedEntities,
     removedEntities,
     retainedEntityCount,

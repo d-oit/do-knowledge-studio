@@ -174,9 +174,11 @@ export const GraphComparisonDialog = ({
                   <Layers className="h-3.5 w-3.5 text-saffron" aria-hidden="true" />
                   <span>{graphT('graph.comparison.entityChanges')}</span>
                 </span>
-                <span className="text-ink-mute">
-                  {graphT('graph.comparison.retainedEntities', String(diff.retainedEntityCount))}
-                </span>
+                {diff.hasEntityData && (
+                  <span className="text-ink-mute">
+                    {graphT('graph.comparison.retainedEntities', String(diff.retainedEntityCount))}
+                  </span>
+                )}
               </div>
 
               {/* Added entities */}
@@ -258,7 +260,9 @@ export const GraphComparisonDialog = ({
                 </div>
               )}
 
-              {!hasTopologyChanges && (
+              {/* The identical-inventory claim only holds when both sections
+                  were actually compared; edges-only payloads stay silent. */}
+              {!hasTopologyChanges && diff.hasEntityData && diff.hasEdgeData && (
                 <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/10 p-3 text-label text-ink-soft">
                   <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                   <span>{graphT('graph.comparison.noTopologyChanges')}</span>
