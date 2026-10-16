@@ -315,6 +315,33 @@ describe('diffGraphSnapshot', () => {
     expect(diff.viewportChanged).toBe(false)
   })
 
+  it('normalizes an empty-string stored selection to no selection', () => {
+    const emptySelectionSnapshot: GraphSnapshot = {
+      layout: 'force',
+      selectedEntityId: '',
+      focusMode: false,
+      panX: 0,
+      panY: 0,
+      zoom: 1,
+      timestamp: '2026-10-15T00:00:00Z',
+    }
+
+    const diff = diffGraphSnapshot(emptySelectionSnapshot, {
+      layout: 'force',
+      focusMode: false,
+      selectedEntityId: null,
+      zoom: 1,
+      panOffset: { x: 0, y: 0 },
+      entities: [makeEntity('e1', 'Alpha')],
+    })
+
+    // `` and null are the same "no selection" state in both comparison and
+    // display; treating them as a change would show `none -> none`.
+    expect(diff.selectionChanged).toBe(false)
+    expect(diff.previousSelection).toBeNull()
+    expect(diff.currentSelection).toBeNull()
+  })
+
   it('handles backwards-compatible v1 snapshots without topology data gracefully', () => {
     const v1Snapshot: GraphSnapshot = {
       layout: 'force',

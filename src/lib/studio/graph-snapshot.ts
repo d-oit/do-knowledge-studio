@@ -298,12 +298,17 @@ export const diffGraphSnapshot = (
 
   const layoutChanged = snapshot.layout !== current.layout
   const focusModeChanged = snapshot.focusMode !== current.focusMode
-  const selectionChanged = snapshot.selectedEntityId !== current.selectedEntityId
-  const previousSelection = snapshot.selectedEntityId
-    ? { id: snapshot.selectedEntityId, name: nameOf(snapshot.selectedEntityId) }
+  // A schema-valid payload can hold an empty-string selection (the schema
+  // accepts any string); normalize it to null so an empty id compares and
+  // displays as the same "no selection" state on both sides.
+  const previousSelectedId = snapshot.selectedEntityId === '' ? null : snapshot.selectedEntityId
+  const currentSelectedId = current.selectedEntityId === '' ? null : current.selectedEntityId
+  const selectionChanged = previousSelectedId !== currentSelectedId
+  const previousSelection = previousSelectedId
+    ? { id: previousSelectedId, name: nameOf(previousSelectedId) }
     : null
-  const currentSelection = current.selectedEntityId
-    ? { id: current.selectedEntityId, name: nameOf(current.selectedEntityId) }
+  const currentSelection = currentSelectedId
+    ? { id: currentSelectedId, name: nameOf(currentSelectedId) }
     : null
 
   const zoomDelta = current.zoom - snapshot.zoom
