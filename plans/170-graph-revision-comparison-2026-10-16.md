@@ -82,3 +82,4 @@ Also fixed from the P3 list: module-scope `Intl.DateTimeFormat` formatter; per-s
 | Junk stored timestamp could throw `RangeError` from `Intl.DateTimeFormat` and kill the dialog | Unparseable timestamps fall back to the raw string; dialog test asserts no crash |
 | Pan-delta i18n comment example didn't match the rendered `Δx/Δy` form | Comment corrected |
 | Shield test dispatched keys on the canvas, not through the claimed dialog bubbling path | Test now dispatches on the dialog's close control, exercising real React bubbling to the canvas handler |
+| Edges-only snapshot displayed `0 retained entities` — an unknown inventory read as a measured zero | Diff exposes `hasEntityData` / `hasEdgeData`; the tally and the identical-inventory summary render only when the corresponding sections were compared |
