@@ -1,7 +1,7 @@
 # Plan 174 — Pan-clamp consistency across keyboard and restore paths
 
 **Date:** 2026-10-16  
-**Status:** In progress  
+**Status:** Done — merged in PR #982 at `fe0e066`; push run on `main` green (coverage badge step + E2E) and production deployment succeeded  
 **Related:** Plan 169 (F3 gesture spec), Plan 162 addendum, `src/lib/studio/graph-gestures.ts`
 
 ## Discovery
