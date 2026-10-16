@@ -117,9 +117,12 @@ Duplicate plan numbers: 12, 041, 043, 059, 080, 084, 111, 116, 134, 135, 136,
 160, 162. The ADR set has both `006-export-deduplication.md` and
 `06-llm-provider-system.md`. Renaming files would break links; disambiguate in
 `plans/INDEX.md` (or rename with redirects) instead.
-
 Followup acceptance: INDEX distinguishes same-numbered records; no broken links.
 
+**Outcome (2026-10-16) — resolved.** Disambiguated all 13 duplicate plan numbers
+(12, 041, 043, 059, 080, 084, 111, 116, 134, 135, 136, 160, 162) and clarified the
+distinction between `ADR 006` (export core deduplication) and `ADR 06` (retired LLM
+provider plugin system) in `plans/INDEX.md` without renaming files or breaking links.
 ## Unscheduled feature candidates (scope refined)
 
 - **Graph revision comparison:** diff a stored snapshot against the current

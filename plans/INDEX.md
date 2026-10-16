@@ -32,7 +32,7 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 | Wave | Goal | Status | Outcome |
 | --- | --- | --- | --- |
 | Reconcile | Re-verify recorded open items against source and runtime | Done | F1 (AI request control) is implemented (#923/#926/#927; 54 harness tests pass); Plan 161's dev search-worker error and both workflow-linter warnings no longer reproduce; first-mount reduced motion remains open; Plan 131's eager-chunk and source-error items are closed. |
-| Audit | Find new improvement and missing-implementation candidates | Done | Typography classes inert (no `@tailwindcss/typography`; resolved in #951), unused `indexeddb-backup.ts` (deleted in #965), F3 gesture spec (Plan 169), Cursor/Windsurf manifest semantics aligned to relative symlink, markdownlint wired to devDependencies and gate, plan/ADR number collisions. See [Plan 166](166-codebase-improvement-audit-2026-10-13.md). |
+| Audit | Find new improvement and missing-implementation candidates | Done | Typography classes inert (no `@tailwindcss/typography`; resolved in #951), unused `indexeddb-backup.ts` (deleted in #965), F3 gesture spec (Plan 169), Cursor/Windsurf manifest semantics aligned to relative symlink, markdownlint wired to devDependencies and gate, plan/ADR number collisions disambiguated. See [Plan 166](166-codebase-improvement-audit-2026-10-13.md). |
 
 ### Plan 165 — Backlog remediation and PR integrity guards (2026-10-13)
 
@@ -261,6 +261,8 @@ items were completed in later plans (090–096).
 | ADR | New Status | Reason |
 | --- | --- | --- |
 | 002 Security Export | Implemented | XSS prevention via WebCrypto AES-GCM |
+| 006 Export Core Deduplication | Implemented | Shared export core between browser and CLI (PR #220; distinct from ADR 06) |
+| 06 LLM Provider System | Superseded by ADR 019/025 | Retired plugin system (distinct from ADR 006) |
 | 004 DB Migration | Superseded by ADR 028 | localStorage replaces SQLite |
 | 005 Error Handling | Superseded by ADR 028 | Specific patterns replace generic |
 | 010 Export Schema v1 | Implemented | Zod validators in schema.ts |
@@ -274,3 +276,40 @@ items were completed in later plans (090–096).
 | 023 Draft Persistence | Implemented | Versioned localStorage drafts |
 | 024 Feedback Policy | Implemented | Inline status, no routine toasts |
 | 011 CLI Extraction | Superseded by ADR 018 | CLI removed during Next.js migration |
+
+## Disambiguation of Duplicate Plan Numbers
+
+To preserve link stability across external discussions, commits, and PRs, files sharing an identical numeric prefix are distinguished below by their specific slug and delivered scope:
+
+| Number | Specific File | Scope / Purpose |
+|:---|:---|:---|
+| **12** | `plans/12-doc-resolver-implementation-roadmap.md` | Initial doc-resolver architecture and implementation roadmap. |
+| **12** | `plans/12-doc-resolver-integration.md` | Integration specification for doc-resolver runtime. |
+| **041** | `plans/041-ai-harness-implementation.md` | Initial AI harness architecture (superseded by ADR 025). |
+| **041** | `plans/041-goap-ui-ux-modernization-and-feature-gaps-2026-06-18.md` | UI/UX modernization track and feature gap closeout. |
+| **043** | `plans/043-goap-chat-unification-2026-06-22.md` | Chat unification work. |
+| **043** | `plans/043-wave3-search-improvements.md` | Wave 3 search improvements. |
+| **043** | `plans/043-wave3-tags-implementation-2026-06-22.md` | Wave 3 tags implementation. |
+| **059** | `plans/059-goap-p3-perf-disclosure-locale-2026-07-15.md` | P3 performance, progressive disclosure, and locale handling. |
+| **059** | `plans/059-missing-task-remediation-and-docs-2026-07-15.md` | Missing task remediation and documentation polish. |
+| **080** | `plans/080-gap-remediation-goal-harness-branches.md` | GOAL.md and AI harness split remediation (PR #515). |
+| **080** | `plans/080-review-remediation.md` | PR review findings remediation. |
+| **084** | `plans/084-accessibility-audit-report.md` | Comprehensive accessibility audit report. |
+| **084** | `plans/084-goap-remaining-gaps-2026-07-26.md` | Remaining gap resolution track. |
+| **111** | `plans/111-owlwatch-issues-pr624-625-2026-08-09.md` | OwlWatch issues remediation on PRs #624/#625. |
+| **111** | `plans/111-pr-sweep-deepsource-config-owlwatch-2026-08-09.md` | PR sweep across DeepSource config and OwlWatch. |
+| **116** | `plans/116-ci-workflow-learnings-2026-08-11.md` | CI workflow learnings summary. |
+| **116** | `plans/116-pr-issue-sweep-roast-merge-order-2026-10-11.md` | PR & issue sweep, roast, and merge order. |
+| **134** | `plans/134-codebase-improvements-and-best-practices.md` | Codebase improvements and best practice guidelines. |
+| **134** | `plans/134-improvement-and-feature-analysis-2026-09-06.md` | Improvement and feature analysis track. |
+| **135** | `plans/135-n3-editor-mentions-2026-09-08.md` | Editor mentions implementation track. |
+| **135** | `plans/135-n6-offline-llm.md` | Offline LLM capability track. |
+| **135** | `plans/135-n7-entity-types.md` | Entity types schema and UI track. |
+| **135** | `plans/135-open-issues-n1-n7-swarm-2026-09-08.md` | Open issues swarm across N1–N7. |
+| **135** | `plans/135-pr-sweep-recommendations-2026-09-08.md` | PR sweep recommendations. |
+| **136** | `plans/136-open-issues-n1-n7-execution-2026-09-09.md` | Execution track for issues N1–N7. |
+| **136** | `plans/136-sync-room-password.md` | Sync room password protection implementation. |
+| **160** | `plans/160-codacy-open-issues-and-mimocode-cleanup-2026-09-30.md` | Codacy issue resolution and `.mimocode` removal. |
+| **160** | `plans/160-ui-ux-tokens-harness-roast-2026-10-01.md` | UI/UX tokens and harness roast analysis. |
+| **162** | `plans/162-open-items-review-and-roast-2026-10-02.md` | Open items review and roast analysis. |
+| **162** | `plans/162-roadmap-progress-and-next-work-2026-10-05.md` | Roadmap progress and forward work track. |
