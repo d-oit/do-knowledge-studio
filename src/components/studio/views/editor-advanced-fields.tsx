@@ -24,6 +24,7 @@ export const EditorAdvancedFields = ({
   onSourceUrlChange: (value: string) => void
 }) => (
   <div
+    id="editor-advanced-fields"
     className="mb-4 space-y-3 rounded-lg border border-dashed border-border bg-muted/30 p-4"
     role="group"
     aria-labelledby="advanced-fields-heading"

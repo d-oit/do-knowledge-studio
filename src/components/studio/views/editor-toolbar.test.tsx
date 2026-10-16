@@ -189,7 +189,7 @@ describe('EditorToolbar', () => {
     expect(screen.queryByTestId('voice-input')).toBeNull()
   })
 
-  it('sets aria-expanded on Advanced button based on showAdvanced', () => {
+  it('sets aria-expanded and aria-controls on Advanced button based on showAdvanced', () => {
     const { rerender } = render(
       <EditorToolbar
         showAdvanced={false}
@@ -199,6 +199,7 @@ describe('EditorToolbar', () => {
     )
     const advButton = screen.getByRole('button', { name: /Advanced/ })
     expect(advButton.getAttribute('aria-expanded')).toBe('false')
+    expect(advButton.getAttribute('aria-controls')).toBeNull()
     rerender(
       <EditorToolbar
         showAdvanced
@@ -206,6 +207,8 @@ describe('EditorToolbar', () => {
         onFormat={mockOnFormat}
       />,
     )
-    expect(screen.getByRole('button', { name: /Advanced/ }).getAttribute('aria-expanded')).toBe('true')
+    const updatedAdvButton = screen.getByRole('button', { name: /Advanced/ })
+    expect(updatedAdvButton.getAttribute('aria-expanded')).toBe('true')
+    expect(updatedAdvButton.getAttribute('aria-controls')).toBe('editor-advanced-fields')
   })
 })
