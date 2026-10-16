@@ -231,6 +231,24 @@ describe('GraphView', () => {
     expect(afterViewBox).not.toBe(initialViewBox)
   })
 
+  it('clamps arrow-key panning at the pan bound instead of drifting without limit', () => {
+    render(<GraphView />)
+    const container = screen.getByRole('application', { name: /graph canvas/i })
+    const svg = screen.getByRole('img', { name: /knowledge graph/i })
+
+    // 30 units per press; 200 presses push 6000 units, beyond every bound.
+    for (let i = 0; i < 200; i++) {
+      fireEvent.keyDown(container, { key: 'ArrowLeft' })
+    }
+    const boundedViewBox = svg.getAttribute('viewBox')
+
+    // Once the bound is reached, further presses must not move the canvas.
+    for (let i = 0; i < 50; i++) {
+      fireEvent.keyDown(container, { key: 'ArrowLeft' })
+    }
+    expect(svg.getAttribute('viewBox')).toBe(boundedViewBox)
+  })
+
   it('Home key resets pan and zoom', () => {
     render(<GraphView />)
     const container = screen.getByRole('application', { name: /graph canvas/i })

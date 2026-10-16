@@ -10,7 +10,8 @@ import {
   type GraphLayout,
   type GraphSnapshotDiff,
 } from '@/lib/studio/graph-snapshot'
-import { clamp, MAX_PAN, MAX_ZOOM, MIN_ZOOM } from '@/lib/studio/graph-gestures'
+import { clamp, computeMaxPan, MAX_ZOOM, MIN_ZOOM } from '@/lib/studio/graph-gestures'
+import { canvasForLayout } from '@/lib/studio/graph-layout'
 import type { Entity } from '@/lib/studio/types'
 import { useAnnouncer } from '@/lib/a11y/announcer'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
@@ -83,17 +84,23 @@ export const useGraphSnapshotComparison = ({
     announce(announceT('announce.snapshotRestored'))
     setLayout(snapshot.layout)
     setFocusMode(snapshot.focusMode)
-    // A snapshot is user-writable and survives deploys; a pan far outside the
-    // canvas would park the whole graph off-view with no way back except the
-    // Home key. Clamp to a generous multiple of the visible canvas.
+    // Clamp the zoom first; both the pan bound and the applied zoom derive
+    // from the same value, so the bound is never computed from a zoom the
+    // restore does not actually apply. A snapshot is user-writable and
+    // survives deploys, so an out-of-range value would otherwise produce a
+    // degenerate viewBox.
+    const clampedZoom = Math.min(Math.max(snapshot.zoom, MIN_ZOOM), MAX_ZOOM)
+    // A pan far outside the canvas would park the whole graph off-view with no
+    // way back except the Home key. Clamp to the same dynamic bound the drag
+    // path enforces, using the SAVED layout's canvas — the live layout's canvas
+    // can be smaller and would re-clamp a pan that was legal when the snapshot
+    // was taken.
+    const maxPan = computeMaxPan(canvasForLayout(entities, snapshot.layout), clampedZoom)
     setPanOffset({
-      x: clamp(snapshot.panX, -MAX_PAN, MAX_PAN),
-      y: clamp(snapshot.panY, -MAX_PAN, MAX_PAN),
+      x: clamp(snapshot.panX, -maxPan, maxPan),
+      y: clamp(snapshot.panY, -maxPan, maxPan),
     })
-    // Clamp to the same range the keyboard handler uses. A snapshot is
-    // user-writable and survives deploys, so an out-of-range value would
-    // otherwise produce a degenerate viewBox.
-    setZoom(Math.min(Math.max(snapshot.zoom, MIN_ZOOM), MAX_ZOOM))
+    setZoom(clampedZoom)
     const stillPresent = entities.some((e) => e.id === snapshot.selectedEntityId)
     selectEntity(stillPresent ? snapshot.selectedEntityId : null)
   }, [announce, entities, selectEntity, setLayout, setFocusMode, setPanOffset, setZoom])

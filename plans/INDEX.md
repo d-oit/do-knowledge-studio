@@ -9,6 +9,12 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 174 — Pan-clamp consistency across keyboard and restore paths (2026-10-16)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Fix | Enforce the dynamic pan bound on every pan entry point | In progress | Adversarial verification of the F3 gestures found keyboard arrow-pan unbounded and restore clamped to the static floor while drag allows the dynamic bound. Keyboard now clamps per press to `computeMaxPan(canvas, zoom)`; restore clamps with the snapshot's own zoom; both reproduced red-first in jsdom. See [Plan 174](174-pan-clamp-consistency-2026-10-16.md). |
+
 ### Plan 173 — Red CI on main: coverage badge and WebKit gesture failures (2026-10-16)
 
 | Wave | Goal | Status | Outcome |

@@ -2,7 +2,8 @@
 
 import { useCallback } from 'react'
 import type { Dispatch, KeyboardEvent, SetStateAction } from 'react'
-import { MAX_ZOOM, MIN_ZOOM } from '@/lib/studio/graph-gestures'
+import { clamp, computeMaxPan, MAX_ZOOM, MIN_ZOOM } from '@/lib/studio/graph-gestures'
+import type { CanvasSize } from '@/lib/studio/graph-viewport'
 import { useStudioStore } from '@/lib/studio/store'
 import { useAnnouncer } from '@/lib/a11y/announcer'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
@@ -20,6 +21,10 @@ interface GraphKeyboardParams {
   isCompareOpen: boolean
   selectedEntityId: string | null
   entities: Entity[]
+  /** Live canvas size; arrow panning clamps to the same dynamic bound as drag. */
+  canvas: CanvasSize
+  /** Live zoom; the dynamic pan bound scales with it. */
+  zoom: number
   setPanOffset: Dispatch<SetStateAction<{ x: number; y: number }>>
   setZoom: Dispatch<SetStateAction<number>>
 }
@@ -27,6 +32,12 @@ interface GraphKeyboardParams {
 /**
  * Canvas keyboard shortcuts: arrow-key pan, `+`/`-` zoom, Home reset, and
  * Delete/Backspace removal of the selected entity.
+ *
+ * Arrow panning clamps to `computeMaxPan` at the live zoom, the same bound the
+ * pointer-drag, wheel, and pinch paths enforce; without it a held key drifts
+ * the canvas off-view without limit. Every press re-bounds *both* axes, so a
+ * zoom-out that shrinks the bound is corrected on the next arrow press (drag
+ * clamps both axes absolutely too).
  *
  * The comparison dialog renders inside the keydown-owning canvas subtree, so
  * React bubbling would let dialog keystrokes reach this handler; while it is
@@ -36,6 +47,8 @@ export const useGraphKeyboard = ({
   isCompareOpen,
   selectedEntityId,
   entities,
+  canvas,
+  zoom,
   setPanOffset,
   setZoom,
 }: GraphKeyboardParams) => {
@@ -44,22 +57,35 @@ export const useGraphKeyboard = ({
   return useCallback(
     (e: KeyboardEvent) => {
       if (isCompareOpen) return
+      const maxPan = computeMaxPan(canvas, zoom)
       switch (e.key) {
         case 'ArrowLeft':
           e.preventDefault()
-          setPanOffset((p) => ({ x: p.x + KEYBOARD_PAN_STEP, y: p.y }))
+          setPanOffset((p) => ({
+            x: clamp(p.x + KEYBOARD_PAN_STEP, -maxPan, maxPan),
+            y: clamp(p.y, -maxPan, maxPan),
+          }))
           break
         case 'ArrowRight':
           e.preventDefault()
-          setPanOffset((p) => ({ x: p.x - KEYBOARD_PAN_STEP, y: p.y }))
+          setPanOffset((p) => ({
+            x: clamp(p.x - KEYBOARD_PAN_STEP, -maxPan, maxPan),
+            y: clamp(p.y, -maxPan, maxPan),
+          }))
           break
         case 'ArrowUp':
           e.preventDefault()
-          setPanOffset((p) => ({ x: p.x, y: p.y + KEYBOARD_PAN_STEP }))
+          setPanOffset((p) => ({
+            x: clamp(p.x, -maxPan, maxPan),
+            y: clamp(p.y + KEYBOARD_PAN_STEP, -maxPan, maxPan),
+          }))
           break
         case 'ArrowDown':
           e.preventDefault()
-          setPanOffset((p) => ({ x: p.x, y: p.y - KEYBOARD_PAN_STEP }))
+          setPanOffset((p) => ({
+            x: clamp(p.x, -maxPan, maxPan),
+            y: clamp(p.y - KEYBOARD_PAN_STEP, -maxPan, maxPan),
+          }))
           break
         case '+':
         case '=':
@@ -90,6 +116,6 @@ export const useGraphKeyboard = ({
           break
       }
     },
-    [announce, entities, isCompareOpen, selectedEntityId, setPanOffset, setZoom],
+    [announce, canvas, entities, isCompareOpen, selectedEntityId, setPanOffset, setZoom, zoom],
   )
 }

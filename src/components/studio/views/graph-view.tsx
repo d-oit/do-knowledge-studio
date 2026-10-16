@@ -2,7 +2,7 @@
 
 import { useStudioStore } from '@/lib/studio/store'
 import { seedGraph } from '@/lib/studio/seed-data'
-import { placeGraphNodes } from '@/lib/studio/graph-layout'
+import { layoutNodes, placeGraphNodes } from '@/lib/studio/graph-layout'
 import { canvasSize, canvasViewBox } from '@/lib/studio/graph-viewport'
 import {
   DRAG_PAN_SLOP_PX,
@@ -47,6 +47,40 @@ export const GraphView = () => {
   const [showMore, setShowMore] = useState(false)
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
+
+  // Build adjacency index for O(1) focus-mode neighbor lookups
+  const adjacency = useMemo(() => buildAdjacencyIndex(entities), [entities])
+
+  const { nodes, edges } = useMemo(() => {
+    const nodesList = placeGraphNodes(entities, seedGraph.nodes)
+    const nodeIds = new Set(nodesList.map((n) => n.id))
+    const edgesList = entities
+      .flatMap((e) =>
+        e.links
+          .filter((l) => nodeIds.has(l.targetId))
+          .map((l) => ({
+            id: `${e.id}-${l.targetId}`,
+            source: e.id,
+            target: l.targetId,
+            relation: l.relation,
+          })),
+      )
+      .filter((e, i, arr) => arr.findIndex((x) => x.id === e.id) === i)
+    return { nodes: nodesList, edges: edgesList }
+  }, [entities])
+
+  // Apply the layout transform; `layoutNodes` is shared with the snapshot
+  // restore clamp so both derive canvas geometry from the same math.
+  const positioned = useMemo(() => layoutNodes(nodes, layout), [nodes, layout])
+
+  // The canvas grows with the placed nodes so nothing is drawn off-canvas. It is
+  // derived from `positioned` rather than `visibleNodes`: focus mode filters what
+  // is drawn, and the canvas must not shrink under the nodes when it toggles.
+  const canvas = useMemo(() => canvasSize(positioned), [positioned])
+
+  // Snapshot state and canvas shortcuts; the shortcuts clamp panning with the
+  // same dynamic bound the drag path uses, so they need the live canvas (the
+  // snapshot restore derives its bound from the saved layout instead).
   const {
     hasSnapshot,
     comparisonDiff,
@@ -73,56 +107,11 @@ export const GraphView = () => {
     isCompareOpen,
     selectedEntityId,
     entities,
+    canvas,
+    zoom,
     setPanOffset,
     setZoom,
   })
-
-  // Build adjacency index for O(1) focus-mode neighbor lookups
-  const adjacency = useMemo(() => buildAdjacencyIndex(entities), [entities])
-
-  const { nodes, edges } = useMemo(() => {
-    const nodesList = placeGraphNodes(entities, seedGraph.nodes)
-    const nodeIds = new Set(nodesList.map((n) => n.id))
-    const edgesList = entities
-      .flatMap((e) =>
-        e.links
-          .filter((l) => nodeIds.has(l.targetId))
-          .map((l) => ({
-            id: `${e.id}-${l.targetId}`,
-            source: e.id,
-            target: l.targetId,
-            relation: l.relation,
-          })),
-      )
-      .filter((e, i, arr) => arr.findIndex((x) => x.id === e.id) === i)
-    return { nodes: nodesList, edges: edgesList }
-  }, [entities])
-
-  // Apply layout transforms
-  const positioned = useMemo(() => {
-    if (layout === 'circular') {
-      const cx = 400, cy = 280, r = 200
-      return nodes.map((n, i) => ({
-        ...n,
-        x: cx + r * Math.cos((2 * Math.PI * i) / nodes.length),
-        y: cy + r * Math.sin((2 * Math.PI * i) / nodes.length),
-      }))
-    }
-    if (layout === 'hierarchical') {
-      const cols = Math.ceil(Math.sqrt(nodes.length))
-      return nodes.map((n, i) => ({
-        ...n,
-        x: 120 + (i % cols) * 180,
-        y: 100 + Math.floor(i / cols) * 140,
-      }))
-    }
-    return nodes
-  }, [nodes, layout])
-
-  // The canvas grows with the placed nodes so nothing is drawn off-canvas. It is
-  // derived from `positioned` rather than `visibleNodes`: focus mode filters what
-  // is drawn, and the canvas must not shrink under the nodes when it toggles.
-  const canvas = useMemo(() => canvasSize(positioned), [positioned])
 
   const visibleNodes = useMemo(() => {
     if (focusMode && selectedEntityId) {

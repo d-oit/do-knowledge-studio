@@ -1,4 +1,7 @@
 import type { Entity, GraphNode } from './types'
+import { canvasSize, type CanvasSize } from './graph-viewport'
+import { seedGraph } from './seed-data'
+import type { GraphLayout } from './graph-snapshot'
 
 /**
  * Deterministic placement for graph nodes that have no authored position.
@@ -233,3 +236,47 @@ export const placeGraphNodes = (
     return [{ id: entity.id, label: entity.name, type: entity.type, x: position.x, y: position.y }]
   })
 }
+
+/** Centre and radius of the circular layout's ring, in canvas units. */
+const CIRCULAR_CENTER: NodePosition = { x: 400, y: 280 }
+const CIRCULAR_RADIUS = 200
+/** Origin and per-cell step of the hierarchical layout's grid. */
+const HIERARCHICAL_ORIGIN: NodePosition = { x: 120, y: 100 }
+const HIERARCHICAL_STEP: NodePosition = { x: 180, y: 140 }
+
+/**
+ * Applies a layout algorithm's placement transform to already-placed nodes.
+ * Shared by the graph view (which renders the result) and the snapshot restore
+ * clamp (which needs the canvas a layout produces without rendering it).
+ */
+export const layoutNodes = (
+  nodes: readonly GraphNode[],
+  layout: GraphLayout,
+): GraphNode[] => {
+  if (layout === 'circular') {
+    return nodes.map((n, i) => ({
+      ...n,
+      x: CIRCULAR_CENTER.x + CIRCULAR_RADIUS * Math.cos((2 * Math.PI * i) / nodes.length),
+      y: CIRCULAR_CENTER.y + CIRCULAR_RADIUS * Math.sin((2 * Math.PI * i) / nodes.length),
+    }))
+  }
+  if (layout === 'hierarchical') {
+    const cols = Math.ceil(Math.sqrt(nodes.length))
+    return nodes.map((n, i) => ({
+      ...n,
+      x: HIERARCHICAL_ORIGIN.x + (i % cols) * HIERARCHICAL_STEP.x,
+      y: HIERARCHICAL_ORIGIN.y + Math.floor(i / cols) * HIERARCHICAL_STEP.y,
+    }))
+  }
+  return [...nodes]
+}
+
+/**
+ * The canvas a layout produces for the corpus. Restore uses the saved
+ * snapshot's layout so a pan that was legal when saved is not re-clamped
+ * against the currently displayed layout's canvas.
+ */
+export const canvasForLayout = (
+  entities: readonly Entity[],
+  layout: GraphLayout,
+): CanvasSize => canvasSize(layoutNodes(placeGraphNodes(entities, seedGraph.nodes), layout))
