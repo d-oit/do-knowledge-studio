@@ -202,6 +202,28 @@ export const MindMapView = () => {
     treeItemsRef.current = canvasRef.current?.querySelectorAll<HTMLElement>('[role="treeitem"]') ?? null
   }, [tree, expandedNodes, syncKey])
 
+  // Rendered rows mirror the renderer: the root is always expanded, deeper
+  // nodes only when in expandedNodes.
+  const visibleIds = useMemo(() => {
+    const ids = new Set<string>()
+    if (!tree) return ids
+    const walk = (node: TreeNode, level: number) => {
+      ids.add(node.entity.id)
+      const expanded = level === 0 || expandedNodes.has(node.entity.id)
+      if (expanded) for (const child of node.children) walk(child, level + 1)
+    }
+    walk(tree, 0)
+    return ids
+  }, [tree, expandedNodes])
+
+  // Roving tabindex: the tree must be a single tab stop even before any pointer
+  // interaction (APG treeview). The designated row is the focused node when it
+  // is actually rendered, else the root. Deriving it keeps `focusedNodeId` as
+  // the *interaction* target only - seeding that state would let Delete act on a
+  // row the user never focused.
+  const tabStopId =
+    focusedNodeId && visibleIds.has(focusedNodeId) ? focusedNodeId : (tree?.entity.id ?? null)
+
   const renderNode = (
     node: TreeNode,
     level: number = 0,
@@ -224,14 +246,16 @@ export const MindMapView = () => {
           <div
             role="treeitem"
             data-entity-id={node.entity.id}
-            // APG: selection is distinct from focus. `tabIndex` is roving and
-            // follows focusNodeId; `aria-selected` follows the STORE selection,
-            // which can also change from the right panel or search.
-            tabIndex={focusedNodeId === node.entity.id ? 0 : -1}
+            // APG: selection is distinct from focus. `tabIndex` is roving: the
+            // focused node while it is rendered, else the root, so the tree is
+            // always a single tab stop; `aria-selected` follows the STORE
+            // selection, which can also change from the right panel or search.
+            tabIndex={tabStopId === node.entity.id ? 0 : -1}
             aria-selected={selectedEntityId === node.entity.id}
-            // Every node is in the DOM, so aria-level is optional by spec, but
-            // without it a screen reader announces each node at the same depth
-            // and the hierarchy is lost. P2-7.
+            // Collapsed subtrees are not rendered, so treeitem containers alone
+            // cannot convey nesting reliably; without aria-level a screen reader
+            // announces each node at the same depth and the hierarchy is lost.
+            // P2-7.
             aria-level={level + 1}
             aria-posinset={position}
             aria-setsize={siblingCount}
