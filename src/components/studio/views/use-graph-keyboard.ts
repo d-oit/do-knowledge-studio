@@ -35,7 +35,9 @@ interface GraphKeyboardParams {
  *
  * Arrow panning clamps to `computeMaxPan` at the live zoom, the same bound the
  * pointer-drag, wheel, and pinch paths enforce; without it a held key drifts
- * the canvas off-view without limit.
+ * the canvas off-view without limit. Every press re-bounds *both* axes, so a
+ * zoom-out that shrinks the bound is corrected on the next arrow press (drag
+ * clamps both axes absolutely too).
  *
  * The comparison dialog renders inside the keydown-owning canvas subtree, so
  * React bubbling would let dialog keystrokes reach this handler; while it is
@@ -61,27 +63,27 @@ export const useGraphKeyboard = ({
           e.preventDefault()
           setPanOffset((p) => ({
             x: clamp(p.x + KEYBOARD_PAN_STEP, -maxPan, maxPan),
-            y: p.y,
+            y: clamp(p.y, -maxPan, maxPan),
           }))
           break
         case 'ArrowRight':
           e.preventDefault()
           setPanOffset((p) => ({
             x: clamp(p.x - KEYBOARD_PAN_STEP, -maxPan, maxPan),
-            y: p.y,
+            y: clamp(p.y, -maxPan, maxPan),
           }))
           break
         case 'ArrowUp':
           e.preventDefault()
           setPanOffset((p) => ({
-            x: p.x,
+            x: clamp(p.x, -maxPan, maxPan),
             y: clamp(p.y + KEYBOARD_PAN_STEP, -maxPan, maxPan),
           }))
           break
         case 'ArrowDown':
           e.preventDefault()
           setPanOffset((p) => ({
-            x: p.x,
+            x: clamp(p.x, -maxPan, maxPan),
             y: clamp(p.y - KEYBOARD_PAN_STEP, -maxPan, maxPan),
           }))
           break

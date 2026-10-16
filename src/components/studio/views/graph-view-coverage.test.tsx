@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { ReactNode } from 'react'
 import type * as SharedPrimitives from '../ui/shared-primitives'
 import { render, screen, fireEvent, cleanup } from '@testing-library/react'
+import { canvasForLayout } from '@/lib/studio/graph-layout'
+import { computeMaxPan } from '@/lib/studio/graph-gestures'
 
 vi.mock('lucide-react', () => {
   const I = ({ className }: { className?: string }) => (
@@ -307,6 +309,52 @@ describe('GraphView branch coverage', () => {
       const minX = Number((svg.getAttribute('viewBox') ?? '').split(' ')[0])
       // minX = -panOffset.x / zoom = 4500 / 3.
       expect(minX).toBeCloseTo(1500, 1)
+    })
+
+    it('clamps a restored pan against the saved layout, not the live one', () => {
+      // A spread corpus grows the force layout's canvas past the authored
+      // 800x560 while circular keeps it; a pan legal under the saved force
+      // layout must survive a restore performed while circular is displayed.
+      currentEntities = [
+        ...mockEntities,
+        ...Array.from({ length: 40 }, (_, i) => ({
+          id: `spread-${i}`,
+          name: `Spread ${i}`,
+          type: 'concept' as const,
+          description: '',
+          content: '',
+          tags: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          links: [],
+        })),
+      ]
+      const savedBound = computeMaxPan(canvasForLayout(currentEntities, 'force'), 3)
+      expect(savedBound).toBeGreaterThan(
+        computeMaxPan(canvasForLayout(currentEntities, 'circular'), 3),
+      )
+
+      localStorage.setItem(
+        'dks-graph-snapshot',
+        JSON.stringify({
+          layout: 'force',
+          selectedEntityId: null,
+          focusMode: false,
+          panX: -(savedBound - 30),
+          panY: 0,
+          zoom: 3,
+          timestamp: '2026-01-01T00:00:00.000Z',
+        }),
+      )
+
+      render(<GraphView />)
+      // Move the live layout away from the snapshot's before restoring.
+      fireEvent.click(screen.getByText('circular'))
+      fireEvent.click(screen.getByLabelText('Restore snapshot'))
+
+      const svg = screen.getByRole('img', { name: /knowledge graph/i })
+      const minX = Number((svg.getAttribute('viewBox') ?? '').split(' ')[0])
+      expect(minX).toBeCloseTo((savedBound - 30) / 3, 1)
     })
 
     it('clears a stored snapshot and re-disables the restore action', () => {

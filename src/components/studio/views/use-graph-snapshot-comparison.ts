@@ -11,7 +11,7 @@ import {
   type GraphSnapshotDiff,
 } from '@/lib/studio/graph-snapshot'
 import { clamp, computeMaxPan, MAX_ZOOM, MIN_ZOOM } from '@/lib/studio/graph-gestures'
-import type { CanvasSize } from '@/lib/studio/graph-viewport'
+import { canvasForLayout } from '@/lib/studio/graph-layout'
 import type { Entity } from '@/lib/studio/types'
 import { useAnnouncer } from '@/lib/a11y/announcer'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
@@ -23,8 +23,6 @@ interface GraphSnapshotComparisonParams {
   panOffset: { x: number; y: number }
   zoom: number
   entities: Entity[]
-  /** Live canvas size; the restore pan clamp uses the same dynamic bound as drag. */
-  canvas: CanvasSize
   setLayout: (layout: GraphLayout) => void
   setFocusMode: (focus: boolean) => void
   setPanOffset: (offset: { x: number; y: number }) => void
@@ -46,7 +44,6 @@ export const useGraphSnapshotComparison = ({
   panOffset,
   zoom,
   entities,
-  canvas,
   setLayout,
   setFocusMode,
   setPanOffset,
@@ -89,10 +86,10 @@ export const useGraphSnapshotComparison = ({
     setFocusMode(snapshot.focusMode)
     // A snapshot is user-writable and survives deploys; a pan far outside the
     // canvas would park the whole graph off-view with no way back except the
-    // Home key. Clamp to the same dynamic bound the drag path enforces — the
-    // static MAX_PAN floor would silently alter legal deep pans (zoom above 1
-    // on a grown canvas) and break the save/restore round trip.
-    const maxPan = computeMaxPan(canvas, snapshot.zoom)
+    // Home key. Clamp to the same dynamic bound the drag path enforces, using
+    // the SAVED layout's canvas — the live layout's canvas can be smaller and
+    // would re-clamp a pan that was legal when the snapshot was taken.
+    const maxPan = computeMaxPan(canvasForLayout(entities, snapshot.layout), snapshot.zoom)
     setPanOffset({
       x: clamp(snapshot.panX, -maxPan, maxPan),
       y: clamp(snapshot.panY, -maxPan, maxPan),
@@ -103,7 +100,7 @@ export const useGraphSnapshotComparison = ({
     setZoom(Math.min(Math.max(snapshot.zoom, MIN_ZOOM), MAX_ZOOM))
     const stillPresent = entities.some((e) => e.id === snapshot.selectedEntityId)
     selectEntity(stillPresent ? snapshot.selectedEntityId : null)
-  }, [announce, canvas, entities, selectEntity, setLayout, setFocusMode, setPanOffset, setZoom])
+  }, [announce, entities, selectEntity, setLayout, setFocusMode, setPanOffset, setZoom])
 
   /** Discards the saved snapshot and disables the restore action. */
   const clearSnapshot = useCallback(() => {

@@ -2,7 +2,7 @@
 
 import { useStudioStore } from '@/lib/studio/store'
 import { seedGraph } from '@/lib/studio/seed-data'
-import { placeGraphNodes } from '@/lib/studio/graph-layout'
+import { layoutNodes, placeGraphNodes } from '@/lib/studio/graph-layout'
 import { canvasSize, canvasViewBox } from '@/lib/studio/graph-viewport'
 import {
   DRAG_PAN_SLOP_PX,
@@ -69,26 +69,9 @@ export const GraphView = () => {
     return { nodes: nodesList, edges: edgesList }
   }, [entities])
 
-  // Apply layout transforms
-  const positioned = useMemo(() => {
-    if (layout === 'circular') {
-      const cx = 400, cy = 280, r = 200
-      return nodes.map((n, i) => ({
-        ...n,
-        x: cx + r * Math.cos((2 * Math.PI * i) / nodes.length),
-        y: cy + r * Math.sin((2 * Math.PI * i) / nodes.length),
-      }))
-    }
-    if (layout === 'hierarchical') {
-      const cols = Math.ceil(Math.sqrt(nodes.length))
-      return nodes.map((n, i) => ({
-        ...n,
-        x: 120 + (i % cols) * 180,
-        y: 100 + Math.floor(i / cols) * 140,
-      }))
-    }
-    return nodes
-  }, [nodes, layout])
+  // Apply the layout transform; `layoutNodes` is shared with the snapshot
+  // restore clamp so both derive canvas geometry from the same math.
+  const positioned = useMemo(() => layoutNodes(nodes, layout), [nodes, layout])
 
   // The canvas grows with the placed nodes so nothing is drawn off-canvas. It is
   // derived from `positioned` rather than `visibleNodes`: focus mode filters what
@@ -113,7 +96,6 @@ export const GraphView = () => {
     panOffset,
     zoom,
     entities,
-    canvas,
     setLayout,
     setFocusMode,
     setPanOffset,

@@ -37,3 +37,12 @@ Red-first (both tests failed before the fix and pass after):
 - `restores a deep legal pan that lies beyond the static floor exactly` — snapshot `panX: -4500, zoom: 3` restores to `minX 1500` (was 1333.33 under the static clamp).
 
 Suite runs: graph-view (23), graph-view-coverage (29), graph-snapshot (21) — 73/73; lint and typecheck green; full gate via the pre-commit hook; CI on the PR.
+
+## Review round (PR #982, GitNexus)
+
+Two findings against the first fix, both verified and fixed on the same branch:
+
+1. **Restore clamped against the live layout's canvas.** The `canvas` argument derived from the currently displayed layout while restore switches to `snapshot.layout`; a pan legal under the saved (larger) canvas could be re-clamped against the live (smaller) one. Fix: `layoutNodes` extracted into `graph-layout.ts` (now shared by the view and restore, replacing the view's inline transforms) and `canvasForLayout(entities, layout)` computes the canvas a layout produces; restore clamps with the saved layout's canvas. Regression test: `clamps a restored pan against the saved layout, not the live one` (spread corpus; force saved, circular live).
+2. **Arrow keys left the untouched axis outside the bound.** A zoom-out shrinks `computeMaxPan`; the first version clamped only the moved axis, so an existing pan beyond the new bound survived an arrow press. Both axes are now re-bounded on every press — the same absolute-clamp semantics drag uses.
+
+Post-review verification: 89 focused tests green across graph-view, coverage, layout, gestures, and viewport suites; lint and typecheck green.
