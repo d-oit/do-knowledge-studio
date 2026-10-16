@@ -9,6 +9,12 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 175 — Mind Map treeview tab stop (2026-10-16)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Fix | Make the Mind Map tree keyboard-reachable and cover the treeview contract in a browser | In progress | New `e2e/mindmap-keyboard.spec.ts` reproduced a real defect red-first: on first load every treeitem had `tabindex="-1"`, so the tree had no tab stop and keyboard users could not reach it. Fixed by deriving the tab stop (focused node when rendered, else the root) without touching `focusedNodeId`; a seeding draft was rejected by the suite pinning "Delete with no node focused stays silent". See [Plan 175](175-mindmap-treeview-tab-stop-2026-10-16.md). |
+
 ### Plan 174 — Pan-clamp consistency across keyboard and restore paths (2026-10-16)
 
 | Wave | Goal | Status | Outcome |
