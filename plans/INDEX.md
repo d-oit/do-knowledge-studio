@@ -9,6 +9,12 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 172 — Dependabot security alert remediation (2026-10-16)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Fix | Clear the five open Dependabot alerts on the markdownlint transitive chain (smol-toml, markdown-it, katex) | In progress | `markdownlint-cli` 0.48.0 → 0.49.1 plus `pnpm.overrides` for `smol-toml ^1.9.1` / `katex ^0.19.0`; resolved versions clear every first-patched bound, markdownlint output byte-identical. See [Plan 172](172-dependabot-security-alerts-2026-10-16.md). |
+
 ### Plan 171 — Dependabot queue drain (2026-10-16)
 
 | Wave | Goal | Status | Outcome |
