@@ -1,7 +1,7 @@
 # Plan 172 — Dependabot security alert remediation (markdownlint chain)
 
 **Date:** 2026-10-16  
-**Status:** In progress  
+**Status:** Done — merged in PR #977 at `02529fa`; all five alerts auto-closed from the default-branch dependency graph (verified 0 open alerts)  
 **Related:** Plan 171 (queue drain), `plans/156`, `plans/159` (prior lockfile advisories), `.github/workflows/security-scan.yml`, `.github/workflows/dependabot-alert-check.yml`
 
 ## Problem
@@ -46,3 +46,9 @@ The nightly `Dependabot Alert Check` workflow fails while any alert is open, so 
 2. markdownlint output diff against baseline — empty.
 3. CI on the PR: Unit Tests, Build, E2E, Dependency Advisory Audit, Codacy.
 4. After merge: confirm the five alerts auto-close from the default branch dependency graph; the nightly Open Alert Check should pass with zero alerts.
+
+## Verification results (2026-10-16)
+
+- PR #977 checks all green, including `Dependency Advisory Audit`, `Unit Tests`, `E2E Tests`, `Coverage Report`, and `Quality Gate`.
+- Squash-merged at `02529fa`; production deployment succeeded.
+- Post-merge alert poll: **0 open Dependabot alerts** — all five closed from the dependency graph. The nightly Open Alert Check now passes with nothing to fail on.
