@@ -1,7 +1,7 @@
 # Plan 175 — Mind Map treeview tab stop (F3 Phase 3 acceptance)
 
 **Date:** 2026-10-16  
-**Status:** In progress  
+**Status:** Done — merged in PR #984 at `98d9ab0`; push run on `main` green (coverage badge step) and production deployment succeeded  
 **Related:** Plan 169 (F3, Phase 3 acceptance "keyboard roving tabindex and treeview ARIA remain 100% intact"), `src/components/studio/views/mindmap-view.tsx`
 
 ## Discovery
