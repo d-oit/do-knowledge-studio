@@ -58,7 +58,7 @@ const messages = {
   'graph.comparison.removedConnections': (count: string) => `Removed Connections (${count})`,
   /** Directed connection line, e.g. `Alpha -> Beta`. */
   'graph.comparison.connection': (from: string, to: string) => `${from} → ${to}`,
-  /** Pan delta value, e.g. `dx +30.00, dy -20.00`. */
+  /** Pan delta value, e.g. `Δx +30.00, Δy -20.00`. */
   'graph.comparison.panDelta': (x: string, y: string) => `Δx ${x}, Δy ${y}`,
   /** Summary when topology matches exactly. */
   'graph.comparison.noTopologyChanges': 'Graph entities and connections are identical to snapshot.',

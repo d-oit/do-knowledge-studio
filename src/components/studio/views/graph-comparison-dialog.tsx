@@ -36,7 +36,12 @@ export const GraphComparisonDialog = ({
 
   if (!diff) return null
 
-  const formattedDate = SNAPSHOT_DATE_FORMAT.format(new Date(diff.snapshotTimestamp))
+  // `timestamp` is schema-permissive (any string) because localStorage is
+  // user-writable; an unparseable value must not crash the dialog's render.
+  const parsedTimestamp = new Date(diff.snapshotTimestamp)
+  const formattedDate = Number.isNaN(parsedTimestamp.getTime())
+    ? diff.snapshotTimestamp
+    : SNAPSHOT_DATE_FORMAT.format(parsedTimestamp)
   const zoomUnchanged = Math.abs(diff.zoomDelta) <= ZOOM_EPSILON
   const panUnchanged =
     Math.abs(diff.panDelta.x) <= PAN_EPSILON && Math.abs(diff.panDelta.y) <= PAN_EPSILON

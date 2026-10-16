@@ -260,7 +260,7 @@ describe('GraphView', () => {
     expect(mocks.deleteEntity).not.toHaveBeenCalled()
   })
 
-  it('suspends canvas shortcuts while the comparison dialog is open', () => {
+  it('suspends canvas shortcuts when dialog keystrokes bubble to the canvas', () => {
     currentSelectedEntityId = 'ent-1'
     render(<GraphView />)
 
@@ -268,14 +268,15 @@ describe('GraphView', () => {
     fireEvent.click(screen.getByLabelText('Compare revision'))
     expect(screen.getByRole('dialog')).toBeDefined()
 
-    const container = screen.getByRole('application', { name: /graph canvas/i })
+    // Dispatch from inside the dialog (its own close control), which is the
+    // path a real keystroke takes: React bubbles it up to the canvas handler.
+    const dialogClose = screen.getByRole('button', { name: 'Close comparison dialog' })
     const svg = screen.getByRole('img', { name: /knowledge graph/i })
     const beforeViewBox = svg.getAttribute('viewBox')
-    fireEvent.keyDown(container, { key: 'Delete' })
-    fireEvent.keyDown(container, { key: 'ArrowRight' })
+    fireEvent.keyDown(dialogClose, { key: 'Delete' })
+    fireEvent.keyDown(dialogClose, { key: 'ArrowRight' })
 
-    // Dialog keystrokes bubble through the canvas subtree; Delete and pan
-    // must not fire behind the modal.
+    // Delete and pan must not fire behind the modal.
     expect(mocks.deleteEntity).not.toHaveBeenCalled()
     expect(svg.getAttribute('viewBox')).toBe(beforeViewBox)
   })

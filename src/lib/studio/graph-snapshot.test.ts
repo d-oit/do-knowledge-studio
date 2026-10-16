@@ -315,6 +315,38 @@ describe('diffGraphSnapshot', () => {
     expect(diff.viewportChanged).toBe(false)
   })
 
+  it('counts saved edges from a snapshot without an entity inventory by identity only', () => {
+    const e1 = makeEntity('e1', 'Alpha', ['e2'])
+    const e2 = makeEntity('e2', 'Beta')
+
+    // Hand-edited payload: edges but no entity list to validate endpoints
+    // against, so the projection must dedupe rather than drop every edge.
+    const edgeOnlySnapshot: GraphSnapshot = {
+      layout: 'force',
+      selectedEntityId: null,
+      focusMode: false,
+      panX: 0,
+      panY: 0,
+      zoom: 1,
+      timestamp: '2026-10-15T00:00:00Z',
+      edges: [{ from: 'e1', to: 'e2' }],
+    }
+
+    const diff = diffGraphSnapshot(edgeOnlySnapshot, {
+      layout: 'force',
+      focusMode: false,
+      selectedEntityId: null,
+      zoom: 1,
+      panOffset: { x: 0, y: 0 },
+      entities: [e1, e2],
+    })
+
+    expect(diff.hasTopologyData).toBe(true)
+    expect(diff.retainedEdgeCount).toBe(1)
+    expect(diff.addedEdges).toEqual([])
+    expect(diff.removedEdges).toEqual([])
+  })
+
   it('normalizes an empty-string stored selection to no selection', () => {
     const emptySelectionSnapshot: GraphSnapshot = {
       layout: 'force',

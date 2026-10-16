@@ -232,17 +232,19 @@ export const diffGraphSnapshot = (
   const snapshotIds = new Set(snapshotEntities.map((e) => e.id))
 
   /**
-   * Deduplicates connections by canonical identity and drops links whose
-   * endpoints are absent from the same corpus - the canvas never draws a
-   * dangling link, so the comparison must not count one either.
+   * Deduplicates connections by canonical identity. When an entity inventory
+   * is available, links whose endpoints are absent from it are also dropped -
+   * the canvas never draws a dangling link, so the comparison must not count
+   * one. A null inventory (payload has edges but no entity list to check
+   * against) skips the endpoint filter and only deduplicates.
    */
   const projectEdges = (
     edges: readonly SnapshotEdge[],
-    ids: ReadonlySet<string>,
+    ids: ReadonlySet<string> | null,
   ): SnapshotEdge[] => {
     const seen = new Map<string, SnapshotEdge>()
     for (const edge of edges) {
-      if (!ids.has(edge.from) || !ids.has(edge.to)) continue
+      if (ids && (!ids.has(edge.from) || !ids.has(edge.to))) continue
       const key = edgeIdentity(edge)
       if (!seen.has(key)) seen.set(key, edge)
     }
@@ -278,7 +280,7 @@ export const diffGraphSnapshot = (
   let retainedEdgeCount = 0
 
   if (hasEdgeData) {
-    const snapshotEdgeList = projectEdges(snapshotEdges, snapshotIds)
+    const snapshotEdgeList = projectEdges(snapshotEdges, hasEntityData ? snapshotIds : null)
     const snapshotKeys = new Set(snapshotEdgeList.map(edgeIdentity))
     const liveKeys = new Set(liveEdges.map(edgeIdentity))
 

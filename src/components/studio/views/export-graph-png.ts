@@ -10,6 +10,9 @@ export const exportGraphPng = (svg: SVGSVGElement | null): void => {
   const url = URL.createObjectURL(svgBlob)
 
   const img = new Image()
+  const releaseUrl = (): void => {
+    URL.revokeObjectURL(url)
+  }
   img.onload = () => {
     try {
       const canvas = document.createElement('canvas')
@@ -24,8 +27,10 @@ export const exportGraphPng = (svg: SVGSVGElement | null): void => {
         downloadBlob(`knowledge-graph-${todayStamp()}.png`, blob)
       }, 'image/png')
     } finally {
-      URL.revokeObjectURL(url)
+      releaseUrl()
     }
   }
+  // A failed load would otherwise strand the object URL for the page's lifetime.
+  img.onerror = releaseUrl
   img.src = url
 }

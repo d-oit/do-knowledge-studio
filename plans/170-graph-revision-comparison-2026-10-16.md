@@ -72,3 +72,13 @@ A structured review of `af9567b` raised two P1s and three P2s; all fixed before 
 | `graph-view.tsx` grew past its already-oversized 618 lines | Snapshot/comparison state, canvas keyboard, and PNG export extracted into `use-graph-snapshot-comparison.ts`, `use-graph-keyboard.ts`, `export-graph-png.ts`; view is now 483 lines (under the 500 cap) |
 
 Also fixed from the P3 list: module-scope `Intl.DateTimeFormat` formatter; per-section topology gating (`hasEntityData` / `hasEdgeData`); zoom/pan rows report `Unchanged` instead of `+0.00`; `aria-describedby` targets the one-line summary. An invisible NUL-byte defect in the earlier dialog revision (`key={\`${from}\0${to}\`}`) was found in this pass and eliminated by the rewrite.
+
+## Third Review Pass (bot findings on `f75bc5e`)
+
+| Finding | Resolution |
+| --- | --- |
+| Edge-only snapshot payloads lost every saved edge (empty endpoint set filtered all of them) | `projectEdges` takes a nullable inventory: no entity list means dedupe-only; test `counts saved edges from a snapshot without an entity inventory by identity only` |
+| PNG export stranded its blob URL when the SVG image failed to load | `img.onerror` revokes the URL, same as the `onload` path |
+| Junk stored timestamp could throw `RangeError` from `Intl.DateTimeFormat` and kill the dialog | Unparseable timestamps fall back to the raw string; dialog test asserts no crash |
+| Pan-delta i18n comment example didn't match the rendered `Δx/Δy` form | Comment corrected |
+| Shield test dispatched keys on the canvas, not through the claimed dialog bubbling path | Test now dispatches on the dialog's close control, exercising real React bubbling to the canvas handler |

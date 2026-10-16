@@ -104,6 +104,21 @@ describe('GraphComparisonDialog', () => {
     expect(screen.getAllByText('Unchanged').length).toBe(2)
   })
 
+  it('renders an unparseable snapshot timestamp without crashing', () => {
+    const invalidTimestampDiff: GraphSnapshotDiff = {
+      ...baseDiff,
+      snapshotTimestamp: 'not-a-date',
+    }
+
+    // localStorage is user-writable; a junk timestamp must degrade to the raw
+    // value rather than throwing RangeError from Intl.DateTimeFormat.
+    render(
+      <GraphComparisonDialog open={true} onClose={vi.fn()} diff={invalidTimestampDiff} />,
+    )
+
+    expect(screen.getByText(/not-a-date/)).toBeDefined()
+  })
+
   it('handles snapshot diff without topology data gracefully', () => {
     const noTopologyDiff: GraphSnapshotDiff = {
       ...baseDiff,
