@@ -13,7 +13,7 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 | Wave | Goal | Status | Outcome |
 | --- | --- | --- | --- |
-| Fix | Clear the five open Dependabot alerts on the markdownlint transitive chain (smol-toml, markdown-it, katex) | In progress | `markdownlint-cli` 0.48.0 → 0.49.1 plus `pnpm.overrides` for `smol-toml ^1.9.1` / `katex ^0.19.0`; resolved versions clear every first-patched bound, markdownlint output byte-identical. See [Plan 172](172-dependabot-security-alerts-2026-10-16.md). |
+| Fix | Clear the five open Dependabot alerts on the markdownlint transitive chain (smol-toml, markdown-it, katex) | Done | Merged in [PR #977](https://github.com/d-oit/do-knowledge-studio/pull/977) at `02529fa`: `markdownlint-cli` 0.48.0 → 0.49.1 plus `pnpm.overrides` for `smol-toml ^1.9.1` / `katex ^0.19.0`; resolved versions 1.9.1 / 14.3.3 / 0.19.0 clear every first-patched bound, markdownlint output byte-identical, all five alerts closed from the dependency graph. See [Plan 172](172-dependabot-security-alerts-2026-10-16.md). |
 
 ### Plan 171 — Dependabot queue drain (2026-10-16)
 
