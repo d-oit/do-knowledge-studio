@@ -1,7 +1,7 @@
 # Plan 162 — Roadmap Progress and Next Work
 
 **Date**: 2026-10-05
-**Status**: Complete — planning records reconciled; implementation backlog remains open
+**Status**: Complete — planning records reconciled; implementation backlog reconciled 2026-10-16 (see the addendum at the end of this file)
 **Method**: Source inspection against the repository at this date. No test suite, build, browser scenario, deployment, or remote query was executed by this refresh.
 **Related**: [155](155-cpu-first-local-ai-and-settings-persistence.md), [157](157-codebase-gap-and-feature-remediation.md), [158](158-september-2026-best-practice-audit.md), [159](159-rejected-library-recovery-visibility-and-fail-closed.md), [161](161-offline-lazy-view-precache-and-framework-refresh-2026-09-30.md), [165](165-backlog-remediation-2026-10-13.md), [131](131-goap-swarm-improvement-audit-2026-08-22.md), [130](130-goap-uiux-testpyramid-errorhandling-2026-08-22.md), [ADR 027](ADRs/027-canonical-state-and-p2p-sync-bridge.md), [ADR 037](ADRs/037-url-addressable-view-state.md), [ADR 043](ADRs/043-canvas-reference-integrity.md)
 
@@ -391,3 +391,14 @@ still marked open above:
 | Plan 161 — workflow-linter warnings | Resolved: yamllint (CI config) and actionlint both report clean. |
 | Plan 161 — first-mount reduced motion | Still open: hydration is safe, but first mount can tween before the preference applies. |
 | F3, S3, candidates | Still open; Plan 166 adds a gesture-spec acceptance for F3 and a manifest-alignment decision for S3. |
+
+## Addendum (2026-10-16) — implementation-backlog reconciliation
+
+Re-verified against `main` at `a947b04`:
+
+| Item | Current status | Evidence |
+|---|---|---|
+| F3 — touch/gesture implementation | **Implemented** (mandatory scope) | Phases 1–2 in [#968](https://github.com/d-oit/do-knowledge-studio/pull/968)/[#969](https://github.com/d-oit/do-knowledge-studio/pull/969); Phase 4 e2e in `e2e/graph-gestures.spec.ts` + `e2e/mobile-touch-gestures.spec.ts`; the four-project sweep on `main` runs green (run 38914290426). The spec-optional Mind Map swipe actions and the §4 double-tap/long-press remain **unbuilt by design**: Plan 169 marks swipe “optional”, and §4 is absent from its delivery table. |
+| S3 — Cursor/Windsurf strategy semantics | **Resolved** | Plan 166 aligned every tool in `.agents/manifest.json` to `symlink_strategy: "relative"`; `scripts/agent-surface.py` creates relative symlinks for every non-`none` strategy. Verification: `./scripts/validate-skills.sh` passes, `./scripts/setup-skills.sh` is idempotent (clean tree), and the tooling BATS suites are 27/27 green (validate-skills 4, setup-skills 12, generate-skills-docs 11). |
+| Plan 161 — first-mount reduced motion | **Recorded tradeoff, not an open defect** | Plan 161 §Follow-on 1 records the decision: a server-identical first render is required for hydration, so the first paint may tween before the preference applies; `initial={false}` at ~25 sites was deliberately not taken because it visibly changes first paint for no-preference users. The hydration guarantee for reduce users is covered by `e2e/hydration-mismatch.spec.ts` (`reducedMotion: 'reduce'`). |
+| Unscheduled candidates | One delivered, two unprioritized | Graph revision comparison shipped as [Plan 170](170-graph-revision-comparison-2026-10-16.md) (#974); Synthesis Inbox and Visual Query Builder remain unprioritized per Plan 166. |

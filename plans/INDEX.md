@@ -37,7 +37,7 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 | Wave | Goal | Status | Outcome |
 | --- | --- | --- | --- |
-| Spec | Define pointer/touch gestures, zoom/pan invariants, clamping, and accessibility requirements | Done | Complete specification authored for Graph pointer drag-pan, cursor-focal wheel zoom, 2-finger touch pinch/zoom, and Mind Map swipe disclosure. See [Plan 169](169-touch-gesture-specification-2026-10-15.md). |
+| Spec | Define pointer/touch gestures, zoom/pan invariants, clamping, and accessibility requirements | Done | Spec accepted and implemented: Graph pointer drag-pan, cursor-focal wheel zoom, and 2-finger touch pinch/zoom shipped in #968/#969 with four-project e2e (`e2e/graph-gestures.spec.ts`, `e2e/mobile-touch-gestures.spec.ts`); optional Mind Map swipe actions and §4 double-tap/long-press remain unbuilt. See [Plan 169](169-touch-gesture-specification-2026-10-15.md). |
 
 ### Plan 168 — Open PR review, repair, and ordered merge (2026-10-14)
 
@@ -55,7 +55,7 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 | Wave | Goal | Status | Outcome |
 | --- | --- | --- | --- |
-| Reconcile | Re-verify recorded open items against source and runtime | Done | F1 (AI request control) is implemented (#923/#926/#927; 54 harness tests pass); Plan 161's dev search-worker error and both workflow-linter warnings no longer reproduce; first-mount reduced motion remains open; Plan 131's eager-chunk and source-error items are closed. |
+| Reconcile | Re-verify recorded open items against source and runtime | Done | F1 (AI request control) is implemented (#923/#926/#927; 54 harness tests pass); Plan 161's dev search-worker error and both workflow-linter warnings no longer reproduce; first-mount reduced motion is a recorded Plan 161 tradeoff (reconciled 2026-10-16 in the Plan 162 addendum); Plan 131's eager-chunk and source-error items are closed. |
 | Audit | Find new improvement and missing-implementation candidates | Done | Typography classes inert (no `@tailwindcss/typography`; resolved in #951), unused `indexeddb-backup.ts` (deleted in #965), F3 gesture spec (Plan 169), Cursor/Windsurf manifest semantics aligned to relative symlink, markdownlint wired to devDependencies and gate, plan/ADR number collisions disambiguated. See [Plan 166](166-codebase-improvement-audit-2026-10-13.md). |
 
 ### Plan 165 — Backlog remediation and PR integrity guards (2026-10-13)
@@ -94,7 +94,7 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 | Wave | Goal | Status | Outcome |
 | --- | --- | --- | --- |
 | Source audit | Preserve the 2026-10-05 findings | Historical — reconciled | Original source observations remain dated; Plan 162's 2026-10-13 addendum records later implementations. |
-| Selected backlog | Close the recorded integrity and navigation gaps | Partially closed | Plan 165 resolves items #2–#4 and F2, and reconciles S1/S2/D1–D3. Plan 166 re-verified F1 as implemented (#923/#926/#927) and Plan 161's dev search-worker and workflow-linter follow-ons as resolved; F3, S3, first-mount reduced motion, and unscheduled candidates remain open. |
+| Selected backlog | Close the recorded integrity and navigation gaps | Partially closed | Plan 165 resolves items #2–#4 and F2, and reconciles S1/S2/D1–D3. Plan 166 re-verified F1 as implemented (#923/#926/#927) and Plan 161's dev search-worker and workflow-linter follow-ons as resolved. The 2026-10-16 addendum closes the rest: F3 implemented (#968/#969), S3 resolved, first-mount reduced motion is a recorded Plan 161 tradeoff, and the unscheduled candidates remain unprioritized. |
 
 ### Plan 116 — Open-PR / open-issue sweep, roast, and merge order (2026-10-11)
 

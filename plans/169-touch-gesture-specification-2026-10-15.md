@@ -1,7 +1,7 @@
 # Plan 169 — F3 Touch and Gesture Specification (Graph and Mind Map)
 
 **Date:** 2026-10-15  
-**Status:** Accepted (Spec first; ready for implementation)  
+**Status:** Implemented — Phases 1–3 mandatory scope shipped in [#968](https://github.com/d-oit/do-knowledge-studio/pull/968)/[#969](https://github.com/d-oit/do-knowledge-studio/pull/969) and Phase 4 e2e in `e2e/graph-gestures.spec.ts` + `e2e/mobile-touch-gestures.spec.ts`; the optional Mind Map swipe actions and §4 double-tap/long-press remain unbuilt (see the 2026-10-16 addendum in [Plan 162](162-roadmap-progress-and-next-work-2026-10-05.md))  
 **Related:** Plan 166 N3, Plan 162 F3, [ADR 037](ADRs/037-url-addressable-view-state.md), [ADR 018](ADRs/018-vector-search-engine.md).
 
 ## Problem
