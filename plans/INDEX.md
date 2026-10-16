@@ -9,6 +9,12 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 171 — Dependabot queue drain (2026-10-16)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Drain | Review, rebase, verify, and merge the seven open Dependabot PRs left after the Plan 168/170 merges | Done | #963 `3550168`, #962 `086b81e`, #961 `0697310`, #960 `ce9f16f`, #959 `ac39506`, #958 `146adc7`, #957 `0dd90a5` all squash-merged with full CI green; production deployments succeeded for the three app-touching bumps. See [Plan 171](171-dependabot-queue-drain-2026-10-16.md). |
+
 ### Plan 170 — Graph revision comparison overlay (2026-10-16)
 
 | Wave | Goal | Status | Outcome |
