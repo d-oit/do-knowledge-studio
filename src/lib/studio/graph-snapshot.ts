@@ -196,7 +196,8 @@ export interface GraphSnapshotDiff {
  * containing the separator characters of any hand-rolled scheme (e.g. `a-b`
  * vs `a` + `b-c`) can never collapse into the same key.
  */
-const edgeKey = (edge: SnapshotEdge): string => JSON.stringify([edge.from, edge.to])
+export const edgeIdentity = (edge: SnapshotEdge): string =>
+  JSON.stringify([edge.from, edge.to])
 
 /**
  * Pure diff engine: computes added/removed entities, edges, layout, viewport,
@@ -216,25 +217,48 @@ export const diffGraphSnapshot = (
 ): GraphSnapshotDiff => {
   const snapshotEntities = snapshot.entities ?? []
   const snapshotEdges = snapshot.edges ?? []
-  const hasTopologyData = Boolean(snapshot.entities && snapshot.edges)
+  // Gate each section on its own payload so a partially hand-edited entry
+  // cannot silently suppress the deltas the surviving section can support.
+  const hasEntityData = Boolean(snapshot.entities)
+  const hasEdgeData = Boolean(snapshot.edges)
+  const hasTopologyData = hasEntityData || hasEdgeData
 
   const liveNames = new Map(current.entities.map((e) => [e.id, e.name]))
   const snapshotNames = new Map(snapshotEntities.map((e) => [e.id, e.name]))
   /** Display name for an id: live corpus first, snapshot second, id last. */
   const nameOf = (id: string): string => liveNames.get(id) ?? snapshotNames.get(id) ?? id
 
-  const liveEdges: SnapshotEdge[] = current.entities.flatMap((e) =>
-    e.links.map((l) => ({ from: e.id, to: l.targetId })),
+  const liveIds = new Set(current.entities.map((e) => e.id))
+  const snapshotIds = new Set(snapshotEntities.map((e) => e.id))
+
+  /**
+   * Deduplicates connections by canonical identity and drops links whose
+   * endpoints are absent from the same corpus - the canvas never draws a
+   * dangling link, so the comparison must not count one either.
+   */
+  const projectEdges = (
+    edges: readonly SnapshotEdge[],
+    ids: ReadonlySet<string>,
+  ): SnapshotEdge[] => {
+    const seen = new Map<string, SnapshotEdge>()
+    for (const edge of edges) {
+      if (!ids.has(edge.from) || !ids.has(edge.to)) continue
+      const key = edgeIdentity(edge)
+      if (!seen.has(key)) seen.set(key, edge)
+    }
+    return [...seen.values()]
+  }
+
+  const liveEdges = projectEdges(
+    current.entities.flatMap((e) => e.links.map((l) => ({ from: e.id, to: l.targetId }))),
+    liveIds,
   )
 
   const addedEntities: GraphEntityDelta[] = []
   const removedEntities: GraphEntityDelta[] = []
   let retainedEntityCount = 0
 
-  if (hasTopologyData) {
-    const snapshotIds = new Set(snapshotEntities.map((e) => e.id))
-    const liveIds = new Set(current.entities.map((e) => e.id))
-
+  if (hasEntityData) {
     for (const entity of current.entities) {
       if (snapshotIds.has(entity.id)) {
         retainedEntityCount++
@@ -253,19 +277,20 @@ export const diffGraphSnapshot = (
   const removedEdges: GraphEdgeDelta[] = []
   let retainedEdgeCount = 0
 
-  if (hasTopologyData) {
-    const snapshotKeys = new Set(snapshotEdges.map(edgeKey))
-    const liveKeys = new Set(liveEdges.map(edgeKey))
+  if (hasEdgeData) {
+    const snapshotEdgeList = projectEdges(snapshotEdges, snapshotIds)
+    const snapshotKeys = new Set(snapshotEdgeList.map(edgeIdentity))
+    const liveKeys = new Set(liveEdges.map(edgeIdentity))
 
     for (const edge of liveEdges) {
-      if (snapshotKeys.has(edgeKey(edge))) {
+      if (snapshotKeys.has(edgeIdentity(edge))) {
         retainedEdgeCount++
       } else {
         addedEdges.push({ ...edge, fromName: nameOf(edge.from), toName: nameOf(edge.to) })
       }
     }
-    for (const edge of snapshotEdges) {
-      if (!liveKeys.has(edgeKey(edge))) {
+    for (const edge of snapshotEdgeList) {
+      if (!liveKeys.has(edgeIdentity(edge))) {
         removedEdges.push({ ...edge, fromName: nameOf(edge.from), toName: nameOf(edge.to) })
       }
     }

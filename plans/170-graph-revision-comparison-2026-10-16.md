@@ -18,9 +18,11 @@ The knowledge graph view supports saving and restoring canvas snapshots (`src/li
 2. **Pure Diff Engine (`diffGraphSnapshot`)**:
    - Compare snapshot's saved metadata and entities against current library entities.
    - To support entity and topology diffing without breaking backwards compatibility with existing stored snapshots:
-     - `GraphSnapshot` is extended with an optional `entityIds: string[]` and `edgeKeys: string[]` (e.g. `${sourceId}-${targetId}`).
+     - `GraphSnapshot` is extended with an optional topology payload: `entities: {id, name}[]` and `edges: {from, to}[]`.
      - When present in newer snapshots, exact set differences classify added, removed, and retained entities and connections.
+     - Edge identity is canonicalized through `JSON.stringify([from, to])` so ids containing hyphens cannot collapse distinct endpoint pairs (`a-b → c` vs `a → b-c`) into one key.
      - When absent (backwards compatibility with existing v1 snapshots), the comparison presents viewport and layout delta (`layout`, `zoom`, `pan`, `focusMode`, `selectedEntityId`) and current topology context without crashing.
+   - The diff reports focus mode and selection changes (`focusModeChanged`, `selectionChanged` with previous/current display names) alongside layout, zoom, and pan deltas.
 3. **Modal / Overlay UX & Accessibility**:
    - Triggered via a new toolbar button: `Compare with snapshot` (icon: `GitCompare` or `Diff`) with tooltip disclosure.
    - Accessible dialog (`role="dialog"`, `aria-labelledby`, `aria-describedby`, `Escape` to close, focus trap).
@@ -42,3 +44,31 @@ The knowledge graph view supports saving and restoring canvas snapshots (`src/li
    - Save snapshot, add entity/edge, open comparison overlay, assert diff reflects added elements, close dialog.
 5. **Step 5: Verification & Merge**:
    - Run minimal quality gate, commit, push, create PR, and merge after green checks.
+
+## Review Resolution (PR #974)
+
+Initial commit `4718d8c`; review fixes in `af9567b`. All five nexus-check findings verified and fixed, threads replied and resolved:
+
+| Finding | Resolution |
+| --- | --- |
+| Hyphen-joined edge keys ambiguous (`a-b → c` vs `a → b-c`) | Structured `{from,to}` refs + `JSON.stringify([from,to])` identity; regression test asserts 1 added / 1 removed / 0 retained for the colliding pair |
+| Dialog showed only counts for removed entities/edges | Itemized lists: removed entity names, added/removed connections with endpoint display names |
+| `focusMode` / `selectedEntityId` absent from comparison | `compareSnapshot` passes both; diff reports `focusModeChanged` / `selectionChanged` with display names; dialog renders both rows |
+| Pan delta computed but never rendered | Viewport section renders `Δx/Δy` next to zoom; test asserts `Δx +30.00, Δy -20.00` |
+| Test name overstated coverage | Split into header-close and footer-close tests with accurate names |
+
+Verification at `af9567b`: lint + typecheck green locally; 2986 unit tests pass (196 files); `e2e/graph-comparison.spec.ts` green on chromium.
+
+## Second Review Pass (code-review-assistant)
+
+A structured review of `af9567b` raised two P1s and three P2s; all fixed before merge:
+
+| Finding | Resolution |
+| --- | --- |
+| Modal keystrokes bubbled into the canvas keydown handler — Delete destroyed the selected entity and arrows panned the graph behind the dialog | `useGraphKeyboard` early-returns while `isCompareOpen`; jsdom test added, and the Playwright e2e was watched failing with the shield removed |
+| ~20 hardcoded user-facing strings in the new dialog | All strings moved to `graph.comparison.*` keys in `src/lib/i18n/messages/graph.ts` |
+| Edge-list React keys re-introduced the concatenation ambiguity | Dialog keys use the exported `edgeIdentity` |
+| Dangling links and duplicate connections inflated edge deltas | `diffGraphSnapshot` projects both edge sets (endpoint existence + dedupe) exactly like the canvas projection |
+| `graph-view.tsx` grew past its already-oversized 618 lines | Snapshot/comparison state, canvas keyboard, and PNG export extracted into `use-graph-snapshot-comparison.ts`, `use-graph-keyboard.ts`, `export-graph-png.ts`; view is now 483 lines (under the 500 cap) |
+
+Also fixed from the P3 list: module-scope `Intl.DateTimeFormat` formatter; per-section topology gating (`hasEntityData` / `hasEdgeData`); zoom/pan rows report `Unchanged` instead of `+0.00`; `aria-describedby` targets the one-line summary. An invisible NUL-byte defect in the earlier dialog revision (`key={\`${from}\0${to}\`}`) was found in this pass and eliminated by the rewrite.

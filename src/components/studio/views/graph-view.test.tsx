@@ -23,6 +23,11 @@ vi.mock('lucide-react', () => {
     Download: I,
     MoreHorizontal: I,
     HelpCircle: I,
+    X: I,
+    Sliders: I,
+    PlusCircle: I,
+    MinusCircle: I,
+    CheckCircle2: I,
     FileText: I,
     FileJson: I,
     FileCode: I,
@@ -253,6 +258,26 @@ describe('GraphView', () => {
     const container = screen.getByRole('application', { name: /graph canvas/i })
     fireEvent.keyDown(container, { key: 'Delete' })
     expect(mocks.deleteEntity).not.toHaveBeenCalled()
+  })
+
+  it('suspends canvas shortcuts while the comparison dialog is open', () => {
+    currentSelectedEntityId = 'ent-1'
+    render(<GraphView />)
+
+    fireEvent.click(screen.getByLabelText('Save snapshot'))
+    fireEvent.click(screen.getByLabelText('Compare revision'))
+    expect(screen.getByRole('dialog')).toBeDefined()
+
+    const container = screen.getByRole('application', { name: /graph canvas/i })
+    const svg = screen.getByRole('img', { name: /knowledge graph/i })
+    const beforeViewBox = svg.getAttribute('viewBox')
+    fireEvent.keyDown(container, { key: 'Delete' })
+    fireEvent.keyDown(container, { key: 'ArrowRight' })
+
+    // Dialog keystrokes bubble through the canvas subtree; Delete and pan
+    // must not fire behind the modal.
+    expect(mocks.deleteEntity).not.toHaveBeenCalled()
+    expect(svg.getAttribute('viewBox')).toBe(beforeViewBox)
   })
 
   it('renders relation label with perpendicular offset and background stroke when an entity is selected', () => {

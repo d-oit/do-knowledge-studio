@@ -260,6 +260,33 @@ describe('diffGraphSnapshot', () => {
     ])
   })
 
+  it('ignores dangling links and duplicate connections like the canvas does', () => {
+    const e1 = makeEntity('e1', 'Alpha', ['e2', 'ghost', 'e2'])
+    const e2 = makeEntity('e2', 'Beta')
+
+    const snapshot = buildGraphSnapshot(
+      { layout: 'force', selectedEntityId: null, focusMode: false },
+      { panX: 0, panY: 0, zoom: 1 },
+      [e1, e2],
+    )
+
+    // The duplicate e1 -> e2 link collapses to one retained edge and the link
+    // to the missing `ghost` target is projected out on both sides, mirroring
+    // the canvas projection, which never renders dangling or duplicate edges.
+    const diff = diffGraphSnapshot(snapshot, {
+      layout: 'force',
+      focusMode: false,
+      selectedEntityId: null,
+      zoom: 1,
+      panOffset: { x: 0, y: 0 },
+      entities: [e1, e2],
+    })
+
+    expect(diff.retainedEdgeCount).toBe(1)
+    expect(diff.addedEdges).toEqual([])
+    expect(diff.removedEdges).toEqual([])
+  })
+
   it('reports focus mode and selection changes with display names', () => {
     const e1 = makeEntity('e1', 'Alpha')
     const e2 = makeEntity('e2', 'Beta')

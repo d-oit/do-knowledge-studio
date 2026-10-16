@@ -9,10 +9,11 @@ import { createNewEntity } from './helpers/editor';
  * 1. The "Compare revision" button is disabled when no snapshot is saved.
  * 2. Saving a snapshot enables the "Compare revision" button.
  * 3. Adding a new entity/node reflects in the comparison overlay as an added entity.
- * 4. The comparison overlay is accessible (dialog role, title, close action).
+ * 4. The overlay reports canvas deltas (layout/zoom/pan/focus/selection).
+ * 5. Canvas keyboard shortcuts stand down while the modal is open, then resume.
  */
 test.describe('Graph Revision Comparison', () => {
-  test('disables compare button initially, enables on save, and displays added nodes in overlay', async ({
+  test('disables compare button initially, enables on save, shows added nodes, and shields canvas keys', async ({
     page,
   }) => {
     await page.goto('/');
@@ -41,12 +42,24 @@ test.describe('Graph Revision Comparison', () => {
     // Verify modal dialog appearance and content
     const dialog = page.getByRole('dialog', { name: /graph revision comparison/i });
     await expect(dialog).toBeVisible();
+    await expect(dialog.getByText(/canvas changes/i)).toBeVisible();
     await expect(dialog.getByText(/added entities/i)).toBeVisible();
     await expect(dialog.getByText(newEntityName)).toBeVisible();
 
-    // Close dialog
+    // Canvas shortcuts must stand down while the modal owns the keyboard:
+    // without the shield, this key would pan the graph behind the dialog.
+    const canvas = page.getByRole('application', { name: /graph canvas/i });
+    const svg = page.getByRole('img', { name: /knowledge graph/i });
+    const viewBoxBefore = (await svg.getAttribute('viewBox')) ?? '';
+    await page.keyboard.press('ArrowRight');
+    await expect(svg).toHaveAttribute('viewBox', viewBoxBefore);
+
+    // Close dialog, re-focus the canvas, and confirm the shortcut resumes.
     const closeBtn = dialog.getByRole('button', { name: /close/i }).first();
     await closeBtn.click();
     await expect(dialog).toBeHidden();
+    await canvas.focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(svg).not.toHaveAttribute('viewBox', viewBoxBefore);
   });
 });

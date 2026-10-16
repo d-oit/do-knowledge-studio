@@ -100,7 +100,8 @@ describe('GraphComparisonDialog', () => {
     expect(
       screen.getByText(/Graph entities and connections are identical to snapshot/),
     ).toBeDefined()
-    expect(screen.getByText(/Viewport \(zoom and pan\) is unchanged/)).toBeDefined()
+    // Zoom and pan rows both report a plain unchanged value, not `+0.00`.
+    expect(screen.getAllByText('Unchanged').length).toBe(2)
   })
 
   it('handles snapshot diff without topology data gracefully', () => {
