@@ -47,35 +47,6 @@ export const GraphView = () => {
   const [showMore, setShowMore] = useState(false)
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
-  const {
-    hasSnapshot,
-    comparisonDiff,
-    isCompareOpen,
-    saveSnapshot,
-    restoreSnapshot,
-    clearSnapshot,
-    compareSnapshot,
-    closeCompare,
-  } = useGraphSnapshotComparison({
-    layout,
-    focusMode,
-    selectedEntityId,
-    panOffset,
-    zoom,
-    entities,
-    setLayout,
-    setFocusMode,
-    setPanOffset,
-    setZoom,
-    selectEntity,
-  })
-  const handleGraphKeyDown = useGraphKeyboard({
-    isCompareOpen,
-    selectedEntityId,
-    entities,
-    setPanOffset,
-    setZoom,
-  })
 
   // Build adjacency index for O(1) focus-mode neighbor lookups
   const adjacency = useMemo(() => buildAdjacencyIndex(entities), [entities])
@@ -123,6 +94,41 @@ export const GraphView = () => {
   // derived from `positioned` rather than `visibleNodes`: focus mode filters what
   // is drawn, and the canvas must not shrink under the nodes when it toggles.
   const canvas = useMemo(() => canvasSize(positioned), [positioned])
+
+  // Snapshot state and canvas shortcuts; both clamp panning with the same
+  // dynamic bound the drag path uses, so they need the live canvas.
+  const {
+    hasSnapshot,
+    comparisonDiff,
+    isCompareOpen,
+    saveSnapshot,
+    restoreSnapshot,
+    clearSnapshot,
+    compareSnapshot,
+    closeCompare,
+  } = useGraphSnapshotComparison({
+    layout,
+    focusMode,
+    selectedEntityId,
+    panOffset,
+    zoom,
+    entities,
+    canvas,
+    setLayout,
+    setFocusMode,
+    setPanOffset,
+    setZoom,
+    selectEntity,
+  })
+  const handleGraphKeyDown = useGraphKeyboard({
+    isCompareOpen,
+    selectedEntityId,
+    entities,
+    canvas,
+    zoom,
+    setPanOffset,
+    setZoom,
+  })
 
   const visibleNodes = useMemo(() => {
     if (focusMode && selectedEntityId) {

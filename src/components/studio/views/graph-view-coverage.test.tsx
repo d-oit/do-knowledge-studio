@@ -282,6 +282,33 @@ describe('GraphView branch coverage', () => {
       expect((screen.getByLabelText('Clear snapshot') as HTMLButtonElement).disabled).toBe(true)
     })
 
+    it('restores a deep legal pan that lies beyond the static floor exactly', () => {
+      // At zoom 3 the dynamic pan bound is max(4000, canvasMaxDim * 3 * 3);
+      // the authored 800x560 canvas yields 7200, so -4500 is a pan the drag
+      // path can produce. Restoring it must not silently re-clamp it to the
+      // static 4000 floor.
+      localStorage.setItem(
+        'dks-graph-snapshot',
+        JSON.stringify({
+          layout: 'force',
+          selectedEntityId: null,
+          focusMode: false,
+          panX: -4500,
+          panY: 0,
+          zoom: 3,
+          timestamp: '2026-01-01T00:00:00.000Z',
+        }),
+      )
+
+      render(<GraphView />)
+      fireEvent.click(screen.getByLabelText('Restore snapshot'))
+
+      const svg = screen.getByRole('img', { name: /knowledge graph/i })
+      const minX = Number((svg.getAttribute('viewBox') ?? '').split(' ')[0])
+      // minX = -panOffset.x / zoom = 4500 / 3.
+      expect(minX).toBeCloseTo(1500, 1)
+    })
+
     it('clears a stored snapshot and re-disables the restore action', () => {
       localStorage.setItem(
         'dks-graph-snapshot',
