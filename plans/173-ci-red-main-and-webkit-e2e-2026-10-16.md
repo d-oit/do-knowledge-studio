@@ -1,7 +1,7 @@
 # Plan 173 — Red CI on main: coverage badge and WebKit gesture failures
 
 **Date:** 2026-10-16  
-**Status:** In progress  
+**Status:** Done — merged in PR #979 at `f9e2058`; dispatched four-project sweep on `main` fully green (Coverage badge step success, E2E Tests success)  
 **Related:** Plan 169 (gesture spec), Plan 172 (recent main pushes), `.github/workflows/ci-and-labels.yml`, `vitest.config.ts`
 
 ## Discovery
@@ -31,3 +31,10 @@ Two independent red signals on `main`:
 - `pnpm exec playwright test e2e/graph-gestures.spec.ts --project=chromium` → 3 passed (wheel zoom still exercised on desktop).
 - `pnpm test:coverage` locally → `coverage/coverage-summary.json` written (76,814 bytes); `jq '.total.lines.pct'` reads **89** — exactly what the badge step consumes.
 - Post-merge: the push run on `main` must be **green** (badge step finds the file), and a dispatched `ci-and-labels.yml` run must show the four-project E2E sweep green.
+
+## Verification results (2026-10-16)
+
+- PR #979 checks: all green including `Coverage Report` and `E2E Tests`.
+- Merged at `f9e2058`; production deployment succeeded.
+- Dispatched `ci-and-labels.yml` on `main` (`run 38914290426`, commit `f9e2058`): **overall success** — Detect Changes / Unit Tests / Quality Gate / Build / **Coverage Report (badge step: success)** / **E2E Tests (four projects incl. both WebKit): success**. The dispatch and push runs share the same job definitions, so the badge step now passes on the push path as well (the f9e2058 push run itself was cancelled by the same-ref dispatch concurrency).
+- Nightly-class sweep therefore green: the wheel test skips only on `isMobile` projects (Chromium still exercises it), and the mind-map target assertion tolerates sub-pixel noise without accepting a real undersized control.

@@ -13,7 +13,7 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 | Wave | Goal | Status | Outcome |
 | --- | --- | --- | --- |
-| Fix | Restore a green push pipeline on `main` and stabilize the nightly four-project E2E sweep | In progress | Root causes: `json-summary` reporter dropped by a refactor while the main-only badge step still reads `coverage-summary.json` (every push run red since); `page.mouse.wheel` unsupported in mobile WebKit; float-noise 44px assertion in the mind-map target test. Fixes: restore the reporter, skip the wheel test on `isMobile`, sub-pixel tolerance on target-size assertions. See [Plan 173](173-ci-red-main-and-webkit-e2e-2026-10-16.md). |
+| Fix | Restore a green push pipeline on `main` and stabilize the nightly four-project E2E sweep | Done | Merged in [PR #979](https://github.com/d-oit/do-knowledge-studio/pull/979) at `f9e2058`: restored the `json-summary` reporter (every push run had failed the badge step since a refactor dropped it), skipped the wheel test on `isMobile` (mobile WebKit cannot dispatch wheel input), and added sub-pixel tolerance to the mind-map target assertions. Dispatched four-project sweep on `main` fully green. See [Plan 173](173-ci-red-main-and-webkit-e2e-2026-10-16.md). |
 
 ### Plan 172 — Dependabot security alert remediation (2026-10-16)
 
