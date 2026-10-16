@@ -22,9 +22,11 @@ Rejected draft: seeding `focusedNodeId` with the first row on mount also fixed t
 
 - The default seed root's subtree is root + leaves, so no `aria-expanded="false"` node exists; the expand test re-roots at "Knowledge Graph Project" (whose child `e1` has children).
 - Collapsing runs an exit animation, so the row-count assertion must retry (`toHaveCount`) rather than read once.
+- The root is always expanded at level 0, so the only ancestor whose collapse can hide the focused node sits at level ≥ 1; the fallback pin focuses a grandchild and collapses its parent.
 
 ## Verification
 
 - `e2e/mindmap-keyboard.spec.ts`: 4/4 chromium, 8/8 on the mobile + tablet (WebKit) projects.
 - Mind-map unit suites: 46/46; lint and typecheck green; pre-commit gate; CI on the PR.
 - Red-first evidence: the tab-stop assertion failed before the fix (0 tabbable items) and passes after.
+- Follow-up pin (post-merge): `mindmap-view-coverage.test.tsx` now covers the collapsed-ancestor fallback — focus a grandchild, collapse its parent, and the tab stop returns to the root (not the still-visible parent, which stays at `tabindex="-1"`). Re-injection evidence: fails against both the pre-fix expression and a visibility-check-free `tabStopId` (1 failed / 35 passed — only the new test).

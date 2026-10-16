@@ -186,6 +186,26 @@ describe('MindMapView branch coverage', () => {
     expect(node.parentElement).toHaveAttribute('tabIndex', '0')
   })
 
+  it('moves the tab stop back to the root when a collapse hides the focused node', async () => {
+    render(<MindMapView />)
+    // The root is always expanded, so the hideable ancestor is level 1: expand
+    // Child Entity, focus its Grandchild, then collapse Child again.
+    const childLabel = screen.getByText('Child Entity')
+    fireEvent.keyDown(childLabel, { key: 'ArrowRight' })
+    const grandchildLabel = await screen.findByText('Grandchild Entity')
+    fireEvent.focus(grandchildLabel.parentElement as HTMLElement)
+    expect(grandchildLabel.parentElement).toHaveAttribute('tabIndex', '0')
+    fireEvent.keyDown(childLabel, { key: 'ArrowLeft' })
+    await waitFor(() => {
+      expect(screen.queryByText('Grandchild Entity')).toBeNull()
+    })
+    // The focused node unmounted, so the tab stop must fall back to the root
+    // rather than vanish with it; the still-visible parent is not the target.
+    const rootLabel = screen.getByText('Root Entity')
+    expect(rootLabel.parentElement).toHaveAttribute('tabIndex', '0')
+    expect(childLabel.parentElement).toHaveAttribute('tabIndex', '-1')
+  })
+
   it('expands a collapsed node with ArrowRight', async () => {
     render(<MindMapView />)
     const node = screen.getByText('Root Entity')
