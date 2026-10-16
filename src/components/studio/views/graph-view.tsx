@@ -37,8 +37,11 @@ import {
   clearGraphSnapshot,
   readGraphSnapshot,
   saveGraphSnapshot,
+  diffGraphSnapshot,
   type GraphLayout,
+  type GraphSnapshotDiff,
 } from '@/lib/studio/graph-snapshot'
+import { GraphComparisonDialog } from './graph-comparison-dialog'
 import { FOCUS_MODE_FILTER_STYLE, GraphEdgeElement } from './graph-elements'
 
 /** Interactive knowledge graph view with force, circular, and hierarchical layouts. */
@@ -60,6 +63,8 @@ export const GraphView = () => {
   // after every save/restore so the toolbar can disable the restore action
   // without touching storage on every render.
   const [hasSnapshot, setHasSnapshot] = useState<boolean>(() => readGraphSnapshot() !== null)
+  const [comparisonDiff, setComparisonDiff] = useState<GraphSnapshotDiff | null>(null)
+  const [isCompareOpen, setIsCompareOpen] = useState(false)
   const announce = useAnnouncer()
 
   // Build adjacency index for O(1) focus-mode neighbor lookups
@@ -384,12 +389,12 @@ const handleGraphKeyDown = useCallback(
       buildGraphSnapshot(
         { layout, selectedEntityId, focusMode },
         { panX: panOffset.x, panY: panOffset.y, zoom },
+        entities,
       ),
     )
     if (saved) announce(announceT('announce.snapshotSaved'))
     setHasSnapshot(saved)
-  }, [announce, layout, selectedEntityId, focusMode, panOffset, zoom])
-
+  }, [announce, layout, selectedEntityId, focusMode, panOffset, zoom, entities])
   /**
    * Restores the saved canvas state. The selection is only re-applied when it
    * still names an entity in the current corpus — a snapshot taken before an
@@ -424,8 +429,25 @@ const handleGraphKeyDown = useCallback(
     announce(announceT('announce.snapshotCleared'))
     clearGraphSnapshot()
     setHasSnapshot(false)
+    setIsCompareOpen(false)
+    setComparisonDiff(null)
   }, [announce])
 
+  const compareSnapshot = useCallback(() => {
+    const snapshot = readGraphSnapshot()
+    if (!snapshot) {
+      setHasSnapshot(false)
+      return
+    }
+    const diff = diffGraphSnapshot(snapshot, {
+      layout,
+      zoom,
+      panOffset,
+      entities,
+    })
+    setComparisonDiff(diff)
+    setIsCompareOpen(true)
+  }, [layout, zoom, panOffset, entities])
   return (
     <div className={cn('flex h-full flex-col', VIEW_CONTAINER_CLASS)}>
       <ViewHeader icon={GitFork} title={navT('nav.graph.title')} subtitle={graphT('graph.subtitle')} />
@@ -439,6 +461,7 @@ const handleGraphKeyDown = useCallback(
         onSaveSnapshot={saveSnapshot}
         onRestoreSnapshot={restoreSnapshot}
         onClearSnapshot={clearSnapshot}
+        onCompareSnapshot={compareSnapshot}
         hasSnapshot={hasSnapshot}
         showMore={showMore}
         onToggleShowMore={() => { setShowMore(!showMore) }}
@@ -582,6 +605,11 @@ const handleGraphKeyDown = useCallback(
           </div>
         </div>
 
+        <GraphComparisonDialog
+          open={isCompareOpen}
+          onClose={() => { setIsCompareOpen(false) }}
+          diff={comparisonDiff}
+        />
       </div>
     </div>
   )

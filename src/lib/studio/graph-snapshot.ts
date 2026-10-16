@@ -1,17 +1,11 @@
 /**
- * Graph canvas snapshot persistence (Plan 157 Phase 1, closes D4.1).
+ * Graph canvas snapshot persistence and revision comparison (Plan 157 & Plan 170).
  *
- * The graph toolbar wrote a `dks-graph-snapshot` blob that nothing ever read
- * back. This module owns the whole round-trip: a validated read/write pair
- * for the canvas state (layout, selection, focus mode, and viewport), so
- * "Save snapshot" and "Restore snapshot" are one symmetric feature.
- *
- * Every read is validated (AGENTS.md: validate all external input at
- * boundaries) — localStorage is user-writable and survives deploys that
- * change the layout union, so an unvalidated parse would let a stale payload
- * crash the view.
+ * Provides a validated round-trip for graph canvas state, plus a pure diff engine
+ * to compare live graph topologies against a stored snapshot without destructive mutation.
  */
 import { z } from 'zod'
+import type { Entity } from './types'
 
 /** localStorage key holding the saved graph canvas snapshot. */
 export const GRAPH_SNAPSHOT_KEY = 'dks-graph-snapshot'
@@ -38,6 +32,10 @@ export interface GraphSnapshot {
   zoom: number
   /** ISO timestamp of the moment the snapshot was taken. */
   timestamp: string
+  /** Set of entity IDs present when snapshot was taken (Plan 170). */
+  entityIds?: string[]
+  /** Set of edge connection keys ('sourceId-targetId') present when snapshot was taken (Plan 170). */
+  edgeKeys?: string[]
 }
 
 /** Zod schema for the persisted snapshot payload. */
@@ -47,10 +45,10 @@ const GraphSnapshotSchema = z.object({
   focusMode: z.boolean(),
   panX: z.number().finite(),
   panY: z.number().finite(),
-  // `.positive()` still admits a zoom the canvas cannot render, and this
-  // value is restored verbatim. Bound it to the range the view clamps to.
   zoom: z.number().finite().min(0.3).max(3),
   timestamp: z.string(),
+  entityIds: z.array(z.string()).optional(),
+  edgeKeys: z.array(z.string()).optional(),
 })
 
 /** Canvas viewport transform captured alongside the layout state. */
@@ -60,15 +58,25 @@ export interface GraphViewportState {
   zoom: number
 }
 
-/** Builds a snapshot from the live canvas state. */
+/** Builds a snapshot from the live canvas state and current entities. */
 export const buildGraphSnapshot = (
   canvas: { layout: GraphLayout; selectedEntityId: string | null; focusMode: boolean },
   viewport: GraphViewportState,
-): GraphSnapshot => ({
-  ...canvas,
-  ...viewport,
-  timestamp: new Date().toISOString(),
-})
+  entities?: readonly Entity[],
+): GraphSnapshot => {
+  const entityIds = entities ? entities.map((e) => e.id) : undefined
+  const edgeKeys = entities
+    ? entities.flatMap((e) => e.links.map((l) => `${e.id}-${l.targetId}`))
+    : undefined
+
+  return {
+    ...canvas,
+    ...viewport,
+    timestamp: new Date().toISOString(),
+    entityIds,
+    edgeKeys,
+  }
+}
 
 /** Persists a snapshot. Returns false when storage rejects the write. */
 export const saveGraphSnapshot = (snapshot: GraphSnapshot): boolean => {
@@ -100,8 +108,6 @@ export const readGraphSnapshot = (): GraphSnapshot | null => {
   try {
     parsed = JSON.parse(raw)
   } catch {
-    // A hand-edited or truncated entry is unusable — drop it so the next
-    // save starts from a clean slot.
     clearGraphSnapshot()
     return null
   }
@@ -120,5 +126,111 @@ export const clearGraphSnapshot = (): void => {
     localStorage.removeItem(GRAPH_SNAPSHOT_KEY)
   } catch (error) {
     console.error('Failed to clear graph snapshot:', error instanceof Error ? error.message : error)
+  }
+}
+
+/** Revision comparison difference between snapshot and live graph. */
+export interface GraphSnapshotDiff {
+  snapshotTimestamp: string
+  layoutChanged: boolean
+  previousLayout: GraphLayout
+  currentLayout: GraphLayout
+  viewportChanged: boolean
+  zoomDelta: number
+  panDelta: { x: number; y: number }
+  hasTopologyData: boolean
+  addedEntities: string[]
+  removedEntities: string[]
+  retainedEntityCount: number
+  addedEdges: string[]
+  removedEdges: string[]
+  retainedEdgeCount: number
+}
+
+/**
+ * Pure diff engine: computes added/removed entities, edges, layout, and viewport changes
+ * between a saved snapshot and the current live graph state without modifying either.
+ */
+export const diffGraphSnapshot = (
+  snapshot: GraphSnapshot,
+  current: {
+    layout: GraphLayout
+    zoom: number
+    panOffset: { x: number; y: number }
+    entities: readonly Entity[]
+  },
+): GraphSnapshotDiff => {
+  const currentEntityMap = new Map(current.entities.map((e) => [e.id, e.name]))
+  const currentEntityIds = new Set(current.entities.map((e) => e.id))
+  const currentEdgeKeys = new Set(
+    current.entities.flatMap((e) => e.links.map((l) => `${e.id}-${l.targetId}`)),
+  )
+
+  const hasTopologyData = Boolean(snapshot.entityIds && snapshot.edgeKeys)
+  const snapshotEntityIds = new Set(snapshot.entityIds ?? [])
+  const snapshotEdgeKeys = new Set(snapshot.edgeKeys ?? [])
+
+  const addedEntities: string[] = []
+  const removedEntities: string[] = []
+  let retainedEntityCount = 0
+
+  if (hasTopologyData) {
+    for (const id of currentEntityIds) {
+      if (snapshotEntityIds.has(id)) {
+        retainedEntityCount++
+      } else {
+        addedEntities.push(currentEntityMap.get(id) ?? id)
+      }
+    }
+    for (const id of snapshotEntityIds) {
+      if (!currentEntityIds.has(id)) {
+        removedEntities.push(id)
+      }
+    }
+  }
+
+  const addedEdges: string[] = []
+  const removedEdges: string[] = []
+  let retainedEdgeCount = 0
+
+  if (hasTopologyData) {
+    for (const key of currentEdgeKeys) {
+      if (snapshotEdgeKeys.has(key)) {
+        retainedEdgeCount++
+      } else {
+        addedEdges.push(key)
+      }
+    }
+    for (const key of snapshotEdgeKeys) {
+      if (!currentEdgeKeys.has(key)) {
+        removedEdges.push(key)
+      }
+    }
+  }
+
+  const layoutChanged = snapshot.layout !== current.layout
+  const zoomDelta = current.zoom - snapshot.zoom
+  const panDelta = {
+    x: current.panOffset.x - snapshot.panX,
+    y: current.panOffset.y - snapshot.panY,
+  }
+  const viewportChanged =
+    Math.abs(zoomDelta) > 0.001 || Math.abs(panDelta.x) > 0.5 || Math.abs(panDelta.y) > 0.5
+
+  return {
+    snapshotTimestamp: snapshot.timestamp,
+    layoutChanged,
+    previousLayout: snapshot.layout,
+    currentLayout: current.layout,
+    viewportChanged,
+    zoomDelta,
+    panDelta,
+    hasTopologyData,
+    addedEntities,
+    removedEntities,
+    retainedEntityCount,
+    addedEdges,
+    removedEdges,
+    retainedEdgeCount,
   }
 }

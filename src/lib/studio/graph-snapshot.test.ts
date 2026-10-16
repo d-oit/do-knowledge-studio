@@ -5,8 +5,10 @@ import {
   clearGraphSnapshot,
   readGraphSnapshot,
   saveGraphSnapshot,
+  diffGraphSnapshot,
   type GraphSnapshot,
 } from './graph-snapshot'
+import type { Entity } from './types'
 
 const validSnapshot = (): GraphSnapshot =>
   buildGraphSnapshot(
@@ -176,5 +178,78 @@ describe('graph snapshot persistence', () => {
       'Failed to clear graph snapshot:',
       'SecurityError',
     )
+  })
+})
+
+describe('diffGraphSnapshot', () => {
+  const makeEntity = (id: string, name: string, targetIds: string[] = []): Entity => ({
+    id,
+    name,
+    type: 'note',
+    description: '',
+    content: '',
+    tags: [],
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-01-01T00:00:00Z',
+    links: targetIds.map((targetId) => ({ targetId, relation: 'relates_to' })),
+  })
+
+  it('computes added and removed entities and edges when topology is present', () => {
+    const e1 = makeEntity('e1', 'Alpha', ['e2'])
+    const e2 = makeEntity('e2', 'Beta')
+    const e3 = makeEntity('e3', 'Gamma')
+
+    const snapshot = buildGraphSnapshot(
+      { layout: 'force', selectedEntityId: null, focusMode: false },
+      { panX: 0, panY: 0, zoom: 1 },
+      [e1, e2],
+    )
+
+    // Live state has e2 and e3, e1 was removed, e3 was added
+    const liveEntities = [e2, e3]
+    const diff = diffGraphSnapshot(snapshot, {
+      layout: 'circular',
+      zoom: 1.5,
+      panOffset: { x: 50, y: 50 },
+      entities: liveEntities,
+    })
+
+    expect(diff.layoutChanged).toBe(true)
+    expect(diff.previousLayout).toBe('force')
+    expect(diff.currentLayout).toBe('circular')
+    expect(diff.viewportChanged).toBe(true)
+    expect(diff.zoomDelta).toBeCloseTo(0.5)
+    expect(diff.panDelta).toEqual({ x: 50, y: 50 })
+
+    expect(diff.hasTopologyData).toBe(true)
+    expect(diff.addedEntities).toEqual(['Gamma'])
+    expect(diff.removedEntities).toEqual(['e1'])
+    expect(diff.retainedEntityCount).toBe(1) // e2
+    expect(diff.removedEdges).toEqual(['e1-e2'])
+  })
+
+  it('handles backwards-compatible v1 snapshots without topology data gracefully', () => {
+    const v1Snapshot: GraphSnapshot = {
+      layout: 'force',
+      selectedEntityId: 'e1',
+      focusMode: false,
+      panX: 10,
+      panY: 20,
+      zoom: 1.0,
+      timestamp: '2026-10-15T00:00:00Z',
+    }
+
+    const diff = diffGraphSnapshot(v1Snapshot, {
+      layout: 'force',
+      zoom: 1.0,
+      panOffset: { x: 10, y: 20 },
+      entities: [makeEntity('e1', 'Alpha')],
+    })
+
+    expect(diff.layoutChanged).toBe(false)
+    expect(diff.viewportChanged).toBe(false)
+    expect(diff.hasTopologyData).toBe(false)
+    expect(diff.addedEntities).toEqual([])
+    expect(diff.removedEntities).toEqual([])
   })
 })

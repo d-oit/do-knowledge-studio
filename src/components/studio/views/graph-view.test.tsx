@@ -15,6 +15,7 @@ vi.mock('lucide-react', () => {
     Layers: I,
     Focus: I,
     Camera: I,
+    GitCompare: I,
     History: I,
     Trash2: I,
     RotateCcw: I,
