@@ -6,6 +6,7 @@ import {
   Layers,
   Focus,
   Camera,
+  GitCompare,
   History,
   Trash2,
   RotateCcw,
@@ -83,6 +84,7 @@ interface GraphToolbarProps {
   onSaveSnapshot: () => void
   onRestoreSnapshot: () => void
   onClearSnapshot: () => void
+  onCompareSnapshot: () => void
   /** Whether a restorable snapshot is currently stored. */
   hasSnapshot: boolean
   showMore: boolean
@@ -105,6 +107,7 @@ export const GraphToolbar = ({
   onSaveSnapshot,
   onRestoreSnapshot,
   onClearSnapshot,
+  onCompareSnapshot,
   hasSnapshot,
   showMore,
   onToggleShowMore,
@@ -166,6 +169,13 @@ export const GraphToolbar = ({
         help={hasSnapshot ? 'Return the canvas to the last saved snapshot' : 'No snapshot saved yet'}
         disabled={!hasSnapshot}
         onClick={onRestoreSnapshot}
+      />
+      <ToolbarBtn
+        icon={GitCompare}
+        label="Compare revision"
+        help={hasSnapshot ? 'Compare live graph changes against the saved snapshot' : 'No snapshot saved yet'}
+        disabled={!hasSnapshot}
+        onClick={onCompareSnapshot}
       />
       <ToolbarBtn
         icon={Trash2}

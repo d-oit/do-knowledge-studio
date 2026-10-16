@@ -15,6 +15,7 @@ vi.mock('lucide-react', () => {
     Layers: I,
     Focus: I,
     Camera: I,
+    GitCompare: I,
     History: I,
     Trash2: I,
     RotateCcw: I,
@@ -22,6 +23,11 @@ vi.mock('lucide-react', () => {
     Download: I,
     MoreHorizontal: I,
     HelpCircle: I,
+    X: I,
+    Sliders: I,
+    PlusCircle: I,
+    MinusCircle: I,
+    CheckCircle2: I,
     FileText: I,
     FileJson: I,
     FileCode: I,
@@ -252,6 +258,27 @@ describe('GraphView', () => {
     const container = screen.getByRole('application', { name: /graph canvas/i })
     fireEvent.keyDown(container, { key: 'Delete' })
     expect(mocks.deleteEntity).not.toHaveBeenCalled()
+  })
+
+  it('suspends canvas shortcuts when dialog keystrokes bubble to the canvas', () => {
+    currentSelectedEntityId = 'ent-1'
+    render(<GraphView />)
+
+    fireEvent.click(screen.getByLabelText('Save snapshot'))
+    fireEvent.click(screen.getByLabelText('Compare revision'))
+    expect(screen.getByRole('dialog')).toBeDefined()
+
+    // Dispatch from inside the dialog (its own close control), which is the
+    // path a real keystroke takes: React bubbles it up to the canvas handler.
+    const dialogClose = screen.getByRole('button', { name: 'Close comparison dialog' })
+    const svg = screen.getByRole('img', { name: /knowledge graph/i })
+    const beforeViewBox = svg.getAttribute('viewBox')
+    fireEvent.keyDown(dialogClose, { key: 'Delete' })
+    fireEvent.keyDown(dialogClose, { key: 'ArrowRight' })
+
+    // Delete and pan must not fire behind the modal.
+    expect(mocks.deleteEntity).not.toHaveBeenCalled()
+    expect(svg.getAttribute('viewBox')).toBe(beforeViewBox)
   })
 
   it('renders relation label with perpendicular offset and background stroke when an entity is selected', () => {

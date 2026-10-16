@@ -9,6 +9,12 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 170 — Graph revision comparison overlay (2026-10-16)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Feature | Pure diff engine and accessible comparison overlay comparing live graph against saved snapshot | In progress | Pure diff engine for nodes, edges, viewport and layout changes; comparison modal with semantic diff badges. See [Plan 170](170-graph-revision-comparison-2026-10-16.md). |
+
 ### Plan 169 — F3 Touch and gesture specification (2026-10-15)
 
 | Wave | Goal | Status | Outcome |

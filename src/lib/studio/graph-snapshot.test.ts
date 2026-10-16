@@ -5,8 +5,10 @@ import {
   clearGraphSnapshot,
   readGraphSnapshot,
   saveGraphSnapshot,
+  diffGraphSnapshot,
   type GraphSnapshot,
 } from './graph-snapshot'
+import type { Entity } from './types'
 
 const validSnapshot = (): GraphSnapshot =>
   buildGraphSnapshot(
@@ -176,5 +178,230 @@ describe('graph snapshot persistence', () => {
       'Failed to clear graph snapshot:',
       'SecurityError',
     )
+  })
+})
+
+describe('diffGraphSnapshot', () => {
+  const makeEntity = (id: string, name: string, targetIds: string[] = []): Entity => ({
+    id,
+    name,
+    type: 'note',
+    description: '',
+    content: '',
+    tags: [],
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-01-01T00:00:00Z',
+    links: targetIds.map((targetId) => ({ targetId, relation: 'relates_to' })),
+  })
+
+  it('computes added and removed entities and edges when topology is present', () => {
+    const e1 = makeEntity('e1', 'Alpha', ['e2'])
+    const e2 = makeEntity('e2', 'Beta')
+    const e3 = makeEntity('e3', 'Gamma')
+
+    const snapshot = buildGraphSnapshot(
+      { layout: 'force', selectedEntityId: null, focusMode: false },
+      { panX: 0, panY: 0, zoom: 1 },
+      [e1, e2],
+    )
+
+    // Live state has e2 and e3, e1 was removed, e3 was added
+    const liveEntities = [e2, e3]
+    const diff = diffGraphSnapshot(snapshot, {
+      layout: 'circular',
+      focusMode: false,
+      selectedEntityId: null,
+      zoom: 1.5,
+      panOffset: { x: 50, y: 50 },
+      entities: liveEntities,
+    })
+
+    expect(diff.layoutChanged).toBe(true)
+    expect(diff.previousLayout).toBe('force')
+    expect(diff.currentLayout).toBe('circular')
+    expect(diff.viewportChanged).toBe(true)
+    expect(diff.zoomDelta).toBeCloseTo(0.5)
+    expect(diff.panDelta).toEqual({ x: 50, y: 50 })
+
+    expect(diff.hasTopologyData).toBe(true)
+    expect(diff.addedEntities).toEqual([{ id: 'e3', name: 'Gamma' }])
+    expect(diff.removedEntities).toEqual([{ id: 'e1', name: 'Alpha' }])
+    expect(diff.retainedEntityCount).toBe(1) // e2
+    expect(diff.removedEdges).toEqual([
+      { from: 'e1', to: 'e2', fromName: 'Alpha', toName: 'Beta' },
+    ])
+    expect(diff.addedEdges).toEqual([])
+  })
+
+  it('distinguishes endpoint pairs whose hyphenated ids would collide in a joined key', () => {
+    // `a-b -> c` and `a -> b-c` both concatenate to `a-b-c` under the
+    // historical `${from}-${to}` scheme; they must not count as retained.
+    const snapshot = buildGraphSnapshot(
+      { layout: 'force', selectedEntityId: null, focusMode: false },
+      { panX: 0, panY: 0, zoom: 1 },
+      [makeEntity('a-b', 'Alpha Beta', ['c']), makeEntity('c', 'Gamma')],
+    )
+
+    const diff = diffGraphSnapshot(snapshot, {
+      layout: 'force',
+      focusMode: false,
+      selectedEntityId: null,
+      zoom: 1,
+      panOffset: { x: 0, y: 0 },
+      entities: [makeEntity('a', 'Alpha', ['b-c']), makeEntity('b-c', 'Beta Gamma')],
+    })
+
+    expect(diff.retainedEdgeCount).toBe(0)
+    expect(diff.addedEdges).toEqual([
+      { from: 'a', to: 'b-c', fromName: 'Alpha', toName: 'Beta Gamma' },
+    ])
+    expect(diff.removedEdges).toEqual([
+      { from: 'a-b', to: 'c', fromName: 'Alpha Beta', toName: 'Gamma' },
+    ])
+  })
+
+  it('ignores dangling links and duplicate connections like the canvas does', () => {
+    const e1 = makeEntity('e1', 'Alpha', ['e2', 'ghost', 'e2'])
+    const e2 = makeEntity('e2', 'Beta')
+
+    const snapshot = buildGraphSnapshot(
+      { layout: 'force', selectedEntityId: null, focusMode: false },
+      { panX: 0, panY: 0, zoom: 1 },
+      [e1, e2],
+    )
+
+    // The duplicate e1 -> e2 link collapses to one retained edge and the link
+    // to the missing `ghost` target is projected out on both sides, mirroring
+    // the canvas projection, which never renders dangling or duplicate edges.
+    const diff = diffGraphSnapshot(snapshot, {
+      layout: 'force',
+      focusMode: false,
+      selectedEntityId: null,
+      zoom: 1,
+      panOffset: { x: 0, y: 0 },
+      entities: [e1, e2],
+    })
+
+    expect(diff.retainedEdgeCount).toBe(1)
+    expect(diff.addedEdges).toEqual([])
+    expect(diff.removedEdges).toEqual([])
+  })
+
+  it('reports focus mode and selection changes with display names', () => {
+    const e1 = makeEntity('e1', 'Alpha')
+    const e2 = makeEntity('e2', 'Beta')
+
+    const snapshot = buildGraphSnapshot(
+      { layout: 'force', selectedEntityId: 'e1', focusMode: false },
+      { panX: 0, panY: 0, zoom: 1 },
+      [e1, e2],
+    )
+
+    const diff = diffGraphSnapshot(snapshot, {
+      layout: 'force',
+      focusMode: true,
+      selectedEntityId: 'e2',
+      zoom: 1,
+      panOffset: { x: 0, y: 0 },
+      entities: [e1, e2],
+    })
+
+    expect(diff.focusModeChanged).toBe(true)
+    expect(diff.previousFocusMode).toBe(false)
+    expect(diff.currentFocusMode).toBe(true)
+    expect(diff.selectionChanged).toBe(true)
+    expect(diff.previousSelection).toEqual({ id: 'e1', name: 'Alpha' })
+    expect(diff.currentSelection).toEqual({ id: 'e2', name: 'Beta' })
+    expect(diff.viewportChanged).toBe(false)
+  })
+
+  it('counts saved edges from a snapshot without an entity inventory by identity only', () => {
+    const e1 = makeEntity('e1', 'Alpha', ['e2'])
+    const e2 = makeEntity('e2', 'Beta')
+
+    // Hand-edited payload: edges but no entity list to validate endpoints
+    // against, so the projection must dedupe rather than drop every edge.
+    const edgeOnlySnapshot: GraphSnapshot = {
+      layout: 'force',
+      selectedEntityId: null,
+      focusMode: false,
+      panX: 0,
+      panY: 0,
+      zoom: 1,
+      timestamp: '2026-10-15T00:00:00Z',
+      edges: [{ from: 'e1', to: 'e2' }],
+    }
+
+    const diff = diffGraphSnapshot(edgeOnlySnapshot, {
+      layout: 'force',
+      focusMode: false,
+      selectedEntityId: null,
+      zoom: 1,
+      panOffset: { x: 0, y: 0 },
+      entities: [e1, e2],
+    })
+
+    expect(diff.hasTopologyData).toBe(true)
+    expect(diff.hasEntityData).toBe(false)
+    expect(diff.hasEdgeData).toBe(true)
+    expect(diff.retainedEdgeCount).toBe(1)
+    expect(diff.addedEdges).toEqual([])
+    expect(diff.removedEdges).toEqual([])
+  })
+
+  it('normalizes an empty-string stored selection to no selection', () => {
+    const emptySelectionSnapshot: GraphSnapshot = {
+      layout: 'force',
+      selectedEntityId: '',
+      focusMode: false,
+      panX: 0,
+      panY: 0,
+      zoom: 1,
+      timestamp: '2026-10-15T00:00:00Z',
+    }
+
+    const diff = diffGraphSnapshot(emptySelectionSnapshot, {
+      layout: 'force',
+      focusMode: false,
+      selectedEntityId: null,
+      zoom: 1,
+      panOffset: { x: 0, y: 0 },
+      entities: [makeEntity('e1', 'Alpha')],
+    })
+
+    // `` and null are the same "no selection" state in both comparison and
+    // display; treating them as a change would show `none -> none`.
+    expect(diff.selectionChanged).toBe(false)
+    expect(diff.previousSelection).toBeNull()
+    expect(diff.currentSelection).toBeNull()
+  })
+
+  it('handles backwards-compatible v1 snapshots without topology data gracefully', () => {
+    const v1Snapshot: GraphSnapshot = {
+      layout: 'force',
+      selectedEntityId: 'e1',
+      focusMode: false,
+      panX: 10,
+      panY: 20,
+      zoom: 1.0,
+      timestamp: '2026-10-15T00:00:00Z',
+    }
+
+    const diff = diffGraphSnapshot(v1Snapshot, {
+      layout: 'force',
+      focusMode: false,
+      selectedEntityId: 'e1',
+      zoom: 1.0,
+      panOffset: { x: 10, y: 20 },
+      entities: [makeEntity('e1', 'Alpha')],
+    })
+
+    expect(diff.layoutChanged).toBe(false)
+    expect(diff.focusModeChanged).toBe(false)
+    expect(diff.selectionChanged).toBe(false)
+    expect(diff.viewportChanged).toBe(false)
+    expect(diff.hasTopologyData).toBe(false)
+    expect(diff.addedEntities).toEqual([])
+    expect(diff.removedEntities).toEqual([])
   })
 })
