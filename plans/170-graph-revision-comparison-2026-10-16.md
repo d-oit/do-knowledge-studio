@@ -1,7 +1,7 @@
 # Plan 170 — Graph Revision Comparison Overlay
 
 **Date:** 2026-10-16  
-**Status:** In progress  
+**Status:** Done — merged in [PR #974](https://github.com/d-oit/do-knowledge-studio/pull/974) at `1941b2f`  
 **Related:** Plan 166 (Unscheduled feature candidate), Plan 157, Plan 169, [ADR 037](ADRs/037-url-addressable-view-state.md).
 
 ## Problem & Motivation
