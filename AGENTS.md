@@ -224,6 +224,8 @@ Non-obvious toolchain facts; full detail in `agents-docs/LESSONS.md`
   (LESSON-043); dependency ranges can move backwards silently (LESSON-044).
 - **Feature-detecting two APIs hides a missing feature** — an `AbortSignal.any`
   fallback dropped a timeout; a bare `stop` binds `window.stop` (LESSON-045).
+- **A CI dispatch on `main` cancels that ref's in-flight push CI** (and vice
+  versa): the loser reads `cancelled` — `gh run rerun` restores it (LESSON-050/051).
 
 ## Skills
 
