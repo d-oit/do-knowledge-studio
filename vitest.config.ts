@@ -30,7 +30,10 @@ export default defineConfig({
     },
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
+      // `json-summary` writes coverage/coverage-summary.json, which the
+      // "Generate coverage badge" step in .github/workflows/ci-and-labels.yml
+      // reads on every push to main.
+      reporter: ['text', 'json', 'json-summary', 'html'],
       include: ['src/**/*.{ts,tsx}', '!src/**/*.d.ts'],
       exclude: [
         '**/node_modules/**',

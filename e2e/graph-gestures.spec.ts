@@ -52,7 +52,13 @@ test.describe('Graph Pointer & Wheel Gestures', () => {
     expect(h1).toBeCloseTo(h0, 1);
   });
 
-  test('zooms the canvas viewBox on mouse wheel scroll', async ({ page }) => {
+  test('zooms the canvas viewBox on mouse wheel scroll', async ({ page, isMobile }) => {
+    // `page.mouse.wheel` throws in mobile WebKit ("Mouse wheel is not
+    // supported in mobile WebKit"), so wheel zoom is only exercised by the
+    // Chromium desktop projects; touch zoom is covered in
+    // e2e/mobile-touch-gestures.spec.ts.
+    test.skip(isMobile, 'mouse wheel is unsupported in mobile WebKit');
+
     const svg = page.locator('svg[aria-label^="Knowledge graph"]');
     await expect(svg).toBeVisible();
 
