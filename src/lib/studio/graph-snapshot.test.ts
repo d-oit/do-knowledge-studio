@@ -209,6 +209,8 @@ describe('diffGraphSnapshot', () => {
     const liveEntities = [e2, e3]
     const diff = diffGraphSnapshot(snapshot, {
       layout: 'circular',
+      focusMode: false,
+      selectedEntityId: null,
       zoom: 1.5,
       panOffset: { x: 50, y: 50 },
       entities: liveEntities,
@@ -222,10 +224,68 @@ describe('diffGraphSnapshot', () => {
     expect(diff.panDelta).toEqual({ x: 50, y: 50 })
 
     expect(diff.hasTopologyData).toBe(true)
-    expect(diff.addedEntities).toEqual(['Gamma'])
-    expect(diff.removedEntities).toEqual(['e1'])
+    expect(diff.addedEntities).toEqual([{ id: 'e3', name: 'Gamma' }])
+    expect(diff.removedEntities).toEqual([{ id: 'e1', name: 'Alpha' }])
     expect(diff.retainedEntityCount).toBe(1) // e2
-    expect(diff.removedEdges).toEqual(['e1-e2'])
+    expect(diff.removedEdges).toEqual([
+      { from: 'e1', to: 'e2', fromName: 'Alpha', toName: 'Beta' },
+    ])
+    expect(diff.addedEdges).toEqual([])
+  })
+
+  it('distinguishes endpoint pairs whose hyphenated ids would collide in a joined key', () => {
+    // `a-b -> c` and `a -> b-c` both concatenate to `a-b-c` under the
+    // historical `${from}-${to}` scheme; they must not count as retained.
+    const snapshot = buildGraphSnapshot(
+      { layout: 'force', selectedEntityId: null, focusMode: false },
+      { panX: 0, panY: 0, zoom: 1 },
+      [makeEntity('a-b', 'Alpha Beta', ['c']), makeEntity('c', 'Gamma')],
+    )
+
+    const diff = diffGraphSnapshot(snapshot, {
+      layout: 'force',
+      focusMode: false,
+      selectedEntityId: null,
+      zoom: 1,
+      panOffset: { x: 0, y: 0 },
+      entities: [makeEntity('a', 'Alpha', ['b-c']), makeEntity('b-c', 'Beta Gamma')],
+    })
+
+    expect(diff.retainedEdgeCount).toBe(0)
+    expect(diff.addedEdges).toEqual([
+      { from: 'a', to: 'b-c', fromName: 'Alpha', toName: 'Beta Gamma' },
+    ])
+    expect(diff.removedEdges).toEqual([
+      { from: 'a-b', to: 'c', fromName: 'Alpha Beta', toName: 'Gamma' },
+    ])
+  })
+
+  it('reports focus mode and selection changes with display names', () => {
+    const e1 = makeEntity('e1', 'Alpha')
+    const e2 = makeEntity('e2', 'Beta')
+
+    const snapshot = buildGraphSnapshot(
+      { layout: 'force', selectedEntityId: 'e1', focusMode: false },
+      { panX: 0, panY: 0, zoom: 1 },
+      [e1, e2],
+    )
+
+    const diff = diffGraphSnapshot(snapshot, {
+      layout: 'force',
+      focusMode: true,
+      selectedEntityId: 'e2',
+      zoom: 1,
+      panOffset: { x: 0, y: 0 },
+      entities: [e1, e2],
+    })
+
+    expect(diff.focusModeChanged).toBe(true)
+    expect(diff.previousFocusMode).toBe(false)
+    expect(diff.currentFocusMode).toBe(true)
+    expect(diff.selectionChanged).toBe(true)
+    expect(diff.previousSelection).toEqual({ id: 'e1', name: 'Alpha' })
+    expect(diff.currentSelection).toEqual({ id: 'e2', name: 'Beta' })
+    expect(diff.viewportChanged).toBe(false)
   })
 
   it('handles backwards-compatible v1 snapshots without topology data gracefully', () => {
@@ -241,12 +301,16 @@ describe('diffGraphSnapshot', () => {
 
     const diff = diffGraphSnapshot(v1Snapshot, {
       layout: 'force',
+      focusMode: false,
+      selectedEntityId: 'e1',
       zoom: 1.0,
       panOffset: { x: 10, y: 20 },
       entities: [makeEntity('e1', 'Alpha')],
     })
 
     expect(diff.layoutChanged).toBe(false)
+    expect(diff.focusModeChanged).toBe(false)
+    expect(diff.selectionChanged).toBe(false)
     expect(diff.viewportChanged).toBe(false)
     expect(diff.hasTopologyData).toBe(false)
     expect(diff.addedEntities).toEqual([])

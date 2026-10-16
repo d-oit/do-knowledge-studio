@@ -3,6 +3,11 @@
  *
  * Provides a validated round-trip for graph canvas state, plus a pure diff engine
  * to compare live graph topologies against a stored snapshot without destructive mutation.
+ *
+ * Every read is validated (AGENTS.md: validate all external input at
+ * boundaries) - localStorage is user-writable and survives deploys that
+ * change the layout union, so an unvalidated parse would let a stale payload
+ * crash the view.
  */
 import { z } from 'zod'
 import type { Entity } from './types'
@@ -15,6 +20,18 @@ const LAYOUT_VALUES = ['force', 'circular', 'hierarchical'] as const
 
 /** One of the graph layout algorithms. */
 export type GraphLayout = (typeof LAYOUT_VALUES)[number]
+
+/** One entity as captured inside a snapshot's topology payload. */
+export interface SnapshotEntity {
+  id: string
+  name: string
+}
+
+/** One directional connection as captured inside a snapshot's topology payload. */
+export interface SnapshotEdge {
+  from: string
+  to: string
+}
 
 /** Canvas state captured by a snapshot. */
 export interface GraphSnapshot {
@@ -32,10 +49,10 @@ export interface GraphSnapshot {
   zoom: number
   /** ISO timestamp of the moment the snapshot was taken. */
   timestamp: string
-  /** Set of entity IDs present when snapshot was taken (Plan 170). */
-  entityIds?: string[]
-  /** Set of edge connection keys ('sourceId-targetId') present when snapshot was taken (Plan 170). */
-  edgeKeys?: string[]
+  /** Entities present when the snapshot was taken (Plan 170). */
+  entities?: SnapshotEntity[]
+  /** Directional connections present when the snapshot was taken (Plan 170). */
+  edges?: SnapshotEdge[]
 }
 
 /** Zod schema for the persisted snapshot payload. */
@@ -45,10 +62,12 @@ const GraphSnapshotSchema = z.object({
   focusMode: z.boolean(),
   panX: z.number().finite(),
   panY: z.number().finite(),
+  // `.positive()` still admits a zoom the canvas cannot render, and this
+  // value is restored verbatim. Bound it to the range the view clamps to.
   zoom: z.number().finite().min(0.3).max(3),
   timestamp: z.string(),
-  entityIds: z.array(z.string()).optional(),
-  edgeKeys: z.array(z.string()).optional(),
+  entities: z.array(z.object({ id: z.string(), name: z.string() })).optional(),
+  edges: z.array(z.object({ from: z.string(), to: z.string() })).optional(),
 })
 
 /** Canvas viewport transform captured alongside the layout state. */
@@ -64,17 +83,20 @@ export const buildGraphSnapshot = (
   viewport: GraphViewportState,
   entities?: readonly Entity[],
 ): GraphSnapshot => {
-  const entityIds = entities ? entities.map((e) => e.id) : undefined
-  const edgeKeys = entities
-    ? entities.flatMap((e) => e.links.map((l) => `${e.id}-${l.targetId}`))
-    : undefined
+  const topology = entities
+    ? {
+        entities: entities.map((e) => ({ id: e.id, name: e.name })),
+        edges: entities.flatMap((e) =>
+          e.links.map((l) => ({ from: e.id, to: l.targetId })),
+        ),
+      }
+    : { entities: undefined, edges: undefined }
 
   return {
     ...canvas,
     ...viewport,
     timestamp: new Date().toISOString(),
-    entityIds,
-    edgeKeys,
+    ...topology,
   }
 }
 
@@ -108,6 +130,8 @@ export const readGraphSnapshot = (): GraphSnapshot | null => {
   try {
     parsed = JSON.parse(raw)
   } catch {
+    // A hand-edited or truncated entry is unusable - drop it so the next
+    // save starts from a clean slot.
     clearGraphSnapshot()
     return null
   }
@@ -129,86 +153,134 @@ export const clearGraphSnapshot = (): void => {
   }
 }
 
+/** An entity difference entry with a display name for the comparison dialog. */
+export interface GraphEntityDelta {
+  id: string
+  name: string
+}
+
+/** A connection difference entry with both endpoint display names. */
+export interface GraphEdgeDelta {
+  from: string
+  to: string
+  fromName: string
+  toName: string
+}
+
 /** Revision comparison difference between snapshot and live graph. */
 export interface GraphSnapshotDiff {
   snapshotTimestamp: string
   layoutChanged: boolean
   previousLayout: GraphLayout
   currentLayout: GraphLayout
+  focusModeChanged: boolean
+  previousFocusMode: boolean
+  currentFocusMode: boolean
+  selectionChanged: boolean
+  previousSelection: GraphEntityDelta | null
+  currentSelection: GraphEntityDelta | null
   viewportChanged: boolean
   zoomDelta: number
   panDelta: { x: number; y: number }
   hasTopologyData: boolean
-  addedEntities: string[]
-  removedEntities: string[]
+  addedEntities: GraphEntityDelta[]
+  removedEntities: GraphEntityDelta[]
   retainedEntityCount: number
-  addedEdges: string[]
-  removedEdges: string[]
+  addedEdges: GraphEdgeDelta[]
+  removedEdges: GraphEdgeDelta[]
   retainedEdgeCount: number
 }
 
 /**
- * Pure diff engine: computes added/removed entities, edges, layout, and viewport changes
- * between a saved snapshot and the current live graph state without modifying either.
+ * Canonical identity for a connection. JSON-encodes the endpoint pair so ids
+ * containing the separator characters of any hand-rolled scheme (e.g. `a-b`
+ * vs `a` + `b-c`) can never collapse into the same key.
+ */
+const edgeKey = (edge: SnapshotEdge): string => JSON.stringify([edge.from, edge.to])
+
+/**
+ * Pure diff engine: computes added/removed entities, edges, layout, viewport,
+ * focus mode, and selection changes between a saved snapshot and the current
+ * live graph state without modifying either.
  */
 export const diffGraphSnapshot = (
   snapshot: GraphSnapshot,
   current: {
     layout: GraphLayout
+    focusMode: boolean
+    selectedEntityId: string | null
     zoom: number
     panOffset: { x: number; y: number }
     entities: readonly Entity[]
   },
 ): GraphSnapshotDiff => {
-  const currentEntityMap = new Map(current.entities.map((e) => [e.id, e.name]))
-  const currentEntityIds = new Set(current.entities.map((e) => e.id))
-  const currentEdgeKeys = new Set(
-    current.entities.flatMap((e) => e.links.map((l) => `${e.id}-${l.targetId}`)),
+  const snapshotEntities = snapshot.entities ?? []
+  const snapshotEdges = snapshot.edges ?? []
+  const hasTopologyData = Boolean(snapshot.entities && snapshot.edges)
+
+  const liveNames = new Map(current.entities.map((e) => [e.id, e.name]))
+  const snapshotNames = new Map(snapshotEntities.map((e) => [e.id, e.name]))
+  /** Display name for an id: live corpus first, snapshot second, id last. */
+  const nameOf = (id: string): string => liveNames.get(id) ?? snapshotNames.get(id) ?? id
+
+  const liveEdges: SnapshotEdge[] = current.entities.flatMap((e) =>
+    e.links.map((l) => ({ from: e.id, to: l.targetId })),
   )
 
-  const hasTopologyData = Boolean(snapshot.entityIds && snapshot.edgeKeys)
-  const snapshotEntityIds = new Set(snapshot.entityIds ?? [])
-  const snapshotEdgeKeys = new Set(snapshot.edgeKeys ?? [])
-
-  const addedEntities: string[] = []
-  const removedEntities: string[] = []
+  const addedEntities: GraphEntityDelta[] = []
+  const removedEntities: GraphEntityDelta[] = []
   let retainedEntityCount = 0
 
   if (hasTopologyData) {
-    for (const id of currentEntityIds) {
-      if (snapshotEntityIds.has(id)) {
+    const snapshotIds = new Set(snapshotEntities.map((e) => e.id))
+    const liveIds = new Set(current.entities.map((e) => e.id))
+
+    for (const entity of current.entities) {
+      if (snapshotIds.has(entity.id)) {
         retainedEntityCount++
       } else {
-        addedEntities.push(currentEntityMap.get(id) ?? id)
+        addedEntities.push({ id: entity.id, name: entity.name })
       }
     }
-    for (const id of snapshotEntityIds) {
-      if (!currentEntityIds.has(id)) {
-        removedEntities.push(id)
+    for (const entity of snapshotEntities) {
+      if (!liveIds.has(entity.id)) {
+        removedEntities.push({ id: entity.id, name: entity.name })
       }
     }
   }
 
-  const addedEdges: string[] = []
-  const removedEdges: string[] = []
+  const addedEdges: GraphEdgeDelta[] = []
+  const removedEdges: GraphEdgeDelta[] = []
   let retainedEdgeCount = 0
 
   if (hasTopologyData) {
-    for (const key of currentEdgeKeys) {
-      if (snapshotEdgeKeys.has(key)) {
+    const snapshotKeys = new Set(snapshotEdges.map(edgeKey))
+    const liveKeys = new Set(liveEdges.map(edgeKey))
+
+    for (const edge of liveEdges) {
+      if (snapshotKeys.has(edgeKey(edge))) {
         retainedEdgeCount++
       } else {
-        addedEdges.push(key)
+        addedEdges.push({ ...edge, fromName: nameOf(edge.from), toName: nameOf(edge.to) })
       }
     }
-    for (const key of snapshotEdgeKeys) {
-      if (!currentEdgeKeys.has(key)) {
-        removedEdges.push(key)
+    for (const edge of snapshotEdges) {
+      if (!liveKeys.has(edgeKey(edge))) {
+        removedEdges.push({ ...edge, fromName: nameOf(edge.from), toName: nameOf(edge.to) })
       }
     }
   }
 
   const layoutChanged = snapshot.layout !== current.layout
+  const focusModeChanged = snapshot.focusMode !== current.focusMode
+  const selectionChanged = snapshot.selectedEntityId !== current.selectedEntityId
+  const previousSelection = snapshot.selectedEntityId
+    ? { id: snapshot.selectedEntityId, name: nameOf(snapshot.selectedEntityId) }
+    : null
+  const currentSelection = current.selectedEntityId
+    ? { id: current.selectedEntityId, name: nameOf(current.selectedEntityId) }
+    : null
+
   const zoomDelta = current.zoom - snapshot.zoom
   const panDelta = {
     x: current.panOffset.x - snapshot.panX,
@@ -222,6 +294,12 @@ export const diffGraphSnapshot = (
     layoutChanged,
     previousLayout: snapshot.layout,
     currentLayout: current.layout,
+    focusModeChanged,
+    previousFocusMode: snapshot.focusMode,
+    currentFocusMode: current.focusMode,
+    selectionChanged,
+    previousSelection,
+    currentSelection,
     viewportChanged,
     zoomDelta,
     panDelta,

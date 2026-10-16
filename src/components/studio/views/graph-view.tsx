@@ -441,13 +441,15 @@ const handleGraphKeyDown = useCallback(
     }
     const diff = diffGraphSnapshot(snapshot, {
       layout,
+      focusMode,
+      selectedEntityId,
       zoom,
       panOffset,
       entities,
     })
     setComparisonDiff(diff)
     setIsCompareOpen(true)
-  }, [layout, zoom, panOffset, entities])
+  }, [layout, focusMode, selectedEntityId, zoom, panOffset, entities])
   return (
     <div className={cn('flex h-full flex-col', VIEW_CONTAINER_CLASS)}>
       <ViewHeader icon={GitFork} title={navT('nav.graph.title')} subtitle={graphT('graph.subtitle')} />
