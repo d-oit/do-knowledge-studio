@@ -153,6 +153,13 @@ test.describe('Mobile Touch & Gesture Interactions', () => {
     const tree = page.getByRole('tree');
     await expect(tree).toBeVisible();
 
+    // WebKit reports the transformed boxes of scaled containers with float
+    // noise at device scale 3 — a true 44px target can measure 43.99999.
+    // Tolerate sub-pixel error while still failing genuinely undersized
+    // targets (a 43px control stays a violation).
+    const TARGET_SIZE_PX = 44;
+    const SIZE_TOLERANCE_PX = 0.01;
+
     const expanders = page.locator('[role="treeitem"] button[aria-label="Collapse"], [role="treeitem"] button[aria-label="Expand"], [role="treeitem"] span[aria-hidden="true"]');
     const count = await expanders.count();
     expect(count).toBeGreaterThan(0);
@@ -161,8 +168,8 @@ test.describe('Mobile Touch & Gesture Interactions', () => {
       const box = await expanders.nth(i).boundingBox();
       expect(box).not.toBeNull();
       if (box) {
-        expect(box.width).toBeGreaterThanOrEqual(44);
-        expect(box.height).toBeGreaterThanOrEqual(44);
+        expect(box.width + SIZE_TOLERANCE_PX).toBeGreaterThanOrEqual(TARGET_SIZE_PX);
+        expect(box.height + SIZE_TOLERANCE_PX).toBeGreaterThanOrEqual(TARGET_SIZE_PX);
       }
     }
   });

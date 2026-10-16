@@ -9,6 +9,12 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 173 — Red CI on main: coverage badge and WebKit gesture failures (2026-10-16)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Fix | Restore a green push pipeline on `main` and stabilize the nightly four-project E2E sweep | In progress | Root causes: `json-summary` reporter dropped by a refactor while the main-only badge step still reads `coverage-summary.json` (every push run red since); `page.mouse.wheel` unsupported in mobile WebKit; float-noise 44px assertion in the mind-map target test. Fixes: restore the reporter, skip the wheel test on `isMobile`, sub-pixel tolerance on target-size assertions. See [Plan 173](173-ci-red-main-and-webkit-e2e-2026-10-16.md). |
+
 ### Plan 172 — Dependabot security alert remediation (2026-10-16)
 
 | Wave | Goal | Status | Outcome |
