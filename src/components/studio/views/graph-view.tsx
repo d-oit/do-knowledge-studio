@@ -78,8 +78,9 @@ export const GraphView = () => {
   // is drawn, and the canvas must not shrink under the nodes when it toggles.
   const canvas = useMemo(() => canvasSize(positioned), [positioned])
 
-  // Snapshot state and canvas shortcuts; both clamp panning with the same
-  // dynamic bound the drag path uses, so they need the live canvas.
+  // Snapshot state and canvas shortcuts; the shortcuts clamp panning with the
+  // same dynamic bound the drag path uses, so they need the live canvas (the
+  // snapshot restore derives its bound from the saved layout instead).
   const {
     hasSnapshot,
     comparisonDiff,
