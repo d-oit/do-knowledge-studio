@@ -14,7 +14,9 @@ The spec's first assertion failed: on a fresh load, **zero** treeitems carry `ta
 
 ## Fix
 
-An effect designates the **first rendered treeitem** as the roving tab stop whenever the designated node is absent from the rendered rows — first load, root switch, node deletion, or a collapsed ancestor hiding it. DOM focus is untouched; only the tabbable designation moves. This also repairs the tab stop after deleting the focused node, where `focusedNodeId` previously returned to `null`.
+The treeitem `tabIndex` now derives from a `tabStopId`: the focused node while it is actually rendered, else the root. A `visibleIds` memo mirrors the renderer's expansion rules so a node hidden behind a collapsed ancestor (or deleted) correctly falls back. `focusedNodeId` keeps its meaning as the *interaction* target only.
+
+Rejected draft: seeding `focusedNodeId` with the first row on mount also fixed the tab stop, but the pre-commit gate caught the semantic regression — "stays silent when Delete is pressed with no node focused" failed, because the container-level Delete then acted on a row the user never focused. The derived approach satisfies both the APG tab-stop contract and that safety pin.
 
 ## Spec adjustments found while authoring
 
