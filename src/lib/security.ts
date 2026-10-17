@@ -61,6 +61,8 @@ const isAllowedProtocol = (url: string, allowed: string[]): boolean => {
  *
  * Allows relative path URLs (starting with / but not //) and absolute URLs
  * matching allowed protocols (defaulting to http:, https:, mailto:, tel:).
+ * Strips ASCII control characters (0x00-0x1F, 0x7F) to prevent null byte,
+ * CRLF, or obfuscated scheme bypasses.
  */
 export const sanitizeUrl = (
   url: string,
@@ -70,7 +72,12 @@ export const sanitizeUrl = (
     return ''
   }
 
-  const trimmed = url.trim()
+  const sanitized = url.replace(/[\x00-\x1F\x7F]/g, '')
+  if (isInvalidUrlCandidate(sanitized)) {
+    return ''
+  }
+
+  const trimmed = sanitized.trim()
   if (isRelativeUrl(trimmed)) {
     return trimmed
   }

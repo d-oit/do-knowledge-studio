@@ -138,4 +138,18 @@ describe('sanitizeUrl', () => {
     expect(sanitizeUrl('ftp://files.example.com', ['ftp'])).toBe('ftp://files.example.com')
     expect(sanitizeUrl('https://example.com', ['ftp'])).toBe('')
   })
+
+  it('strips ASCII control characters and neutralizes obfuscated scheme payloads', () => {
+    expect(sanitizeUrl('/dashboard\x00path')).toBe('/dashboardpath')
+    expect(sanitizeUrl('/docs\x09setup')).toBe('/docssetup')
+    expect(sanitizeUrl('https://example.com/path\x0D\x0Awith-crlf')).toBe(
+      'https://example.com/pathwith-crlf',
+    )
+    expect(sanitizeUrl('java\x00script:alert(1)')).toBe('')
+    expect(sanitizeUrl('java\x09script:alert(1)')).toBe('')
+    expect(sanitizeUrl('java\x0Ascript:alert(1)')).toBe('')
+    expect(sanitizeUrl('java\x0Dscript:alert(1)')).toBe('')
+    expect(sanitizeUrl('java\x1Fscript:alert(1)')).toBe('')
+    expect(sanitizeUrl('java\x7Fscript:alert(1)')).toBe('')
+  })
 })
