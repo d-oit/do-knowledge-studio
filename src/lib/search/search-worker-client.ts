@@ -12,6 +12,7 @@
  */
 
 import type { Entity, Claim } from '@/lib/studio/types'
+import { logger } from '@/lib/logging/logger'
 import { search, type SearchResult } from './retrieval'
 import {
   semanticSearch as vectorStoreSemanticSearch,
@@ -19,6 +20,9 @@ import {
   type SemanticDocFilter,
 } from './vector-store'
 import type { SearchWorkerRequest, SearchWorkerResponse } from './search-worker'
+
+/** Subsystem tag for search-worker logs. */
+const log = logger.child({ area: 'search' })
 
 export type { SemanticSearchOutcome, SemanticDocFilter } from './vector-store'
 
@@ -73,7 +77,7 @@ export class SearchWorkerClient {
         })
         this.initWorkerListeners()
       } catch (err) {
-        console.error('Failed to initialize search Web Worker, falling back to main-thread search:', err)
+        log.error('Failed to initialize search Web Worker, falling back to main-thread search', { error: err })
         this.worker = null
       }
     }
@@ -129,7 +133,7 @@ export class SearchWorkerClient {
     }
 
     this.worker.onerror = (e: ErrorEvent) => {
-      console.error('Search worker encountered unhandled error:', e.message)
+      log.error('Search worker encountered unhandled error', { message: e.message })
       for (const id of Array.from(this.pendingRequests.keys())) {
         this.settle(id, new Error(`Worker error: ${e.message}`))
       }

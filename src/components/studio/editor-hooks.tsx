@@ -9,6 +9,10 @@ import {
   loadDraft,
   type EditorDraft,
 } from '@/lib/editor'
+import { logger } from '@/lib/logging/logger'
+
+/** Subsystem tag for editor draft-persistence logs. */
+const log = logger.child({ area: 'editor' })
 
 // --- Constants ---
 
@@ -150,7 +154,7 @@ export const useEditorDraft = ({
         saveDraft(draft)
         setDraftStatus('saved')
       } catch (error) {
-        console.error('Failed to save draft:', error instanceof Error ? error.message : error)
+        log.error('Failed to save draft', { error })
         setDraftStatus('error')
       }
     }, DRAFT_DEBOUNCE_MS)
@@ -164,7 +168,7 @@ export const useEditorDraft = ({
     try {
       saveDraft(draft)
     } catch (error) {
-      console.error('Failed to flush draft on unmount:', error instanceof Error ? error.message : error)
+      log.error('Failed to flush draft on unmount', { error })
     }
   }, [name, content, description, type, sourceUrl, tags, editing])
 

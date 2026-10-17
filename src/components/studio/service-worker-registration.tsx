@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
+import { logger } from "@/lib/logging/logger";
+
+/** Subsystem tag for PWA service-worker lifecycle logs. */
+const log = logger.child({ area: "pwa" });
 
 /** Path of the shipped service worker. */
 const SW_URL = "/sw.js";
@@ -51,7 +55,7 @@ export function ServiceWorkerRegistration() {
         .update()
         .then(() => undefined)
         .catch((error) => {
-          console.error("Service worker update check failed:", error);
+          log.error("Service worker update check failed", { error });
         })
         .finally(() => {
           inFlightUpdate = null;
@@ -96,7 +100,7 @@ export function ServiceWorkerRegistration() {
         startUpdateChecks(registration);
       })
       .catch((error) => {
-        console.error("Service worker registration failed:", error);
+        log.error("Service worker registration failed", { error });
       });
 
     document.addEventListener("visibilitychange", onVisibilityChange);

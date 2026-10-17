@@ -167,7 +167,10 @@ describe('VoiceInput', () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     error = 'not-allowed'
     render(<VoiceInput {...defaultProps} />)
-    expect(consoleSpy).toHaveBeenCalledWith('Speech recognition error:', 'not-allowed')
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Speech recognition error'),
+      expect.objectContaining({ error: 'not-allowed' }),
+    )
     consoleSpy.mockRestore()
   })
 

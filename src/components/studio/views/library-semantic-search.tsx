@@ -9,6 +9,10 @@ import {
   type SemanticDocFilter,
 } from '@/lib/search/search-worker-client'
 import type { AnyEntityType, Claim, Entity } from '@/lib/studio/types'
+import { logger } from '@/lib/logging/logger'
+
+/** Subsystem tag for semantic-search logs. */
+const log = logger.child({ area: 'search' })
 
 /**
  * Ranked results returned by a semantic query. Deliberately larger than the
@@ -78,7 +82,7 @@ export const useSemanticSearch = (
             // Only aborts reject; surface anything else as a lexical fallback
             // so the search box never dies silently.
             if (err instanceof DOMException && err.name === 'AbortError') return
-            console.error('Semantic search failed:', err)
+            log.error('Semantic search failed', { error: err })
             // Clear — not `{ source: 'lexical', results: [] }` — so the grid
             // falls back to the lexical `filteredEntities` rather than an
             // empty semantic result list.

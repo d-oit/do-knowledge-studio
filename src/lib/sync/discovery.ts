@@ -1,3 +1,8 @@
+import { logger } from '@/lib/logging/logger'
+
+/** Subsystem tag for local peer-discovery logs. */
+const log = logger.child({ area: 'sync' })
+
 /** BroadcastChannel name used for local peer discovery. */
 const DISCOVERY_CHANNEL = 'dks-discovery'
 /** Interval in ms between discovery heartbeats. */
@@ -98,7 +103,7 @@ export function startDiscovery(roomId: string, callback: DiscoveryCallback): voi
       onPeersChange?.(getLocalPeers())
     }, DISCOVERY_INTERVAL)
   } catch {
-    console.warn('BroadcastChannel not supported — local discovery disabled')
+    log.warn('BroadcastChannel not supported — local discovery disabled')
   }
 }
 

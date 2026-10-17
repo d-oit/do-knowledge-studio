@@ -20,6 +20,10 @@
  * next write cannot touch — then tell the user it exists.
  */
 import type { Claim, Entity } from './types'
+import { logger } from '@/lib/logging/logger'
+
+/** Subsystem tag for hydration-quarantine store logs. */
+const log = logger.child({ area: 'store' })
 
 /** localStorage key holding an envelope the store refused to hydrate. */
 export const QUARANTINE_KEY = 'do-knowledge-studio-quarantine'
@@ -71,7 +75,7 @@ export const readQuarantine = (): QuarantineRecord | null => {
   try {
     raw = localStorage.getItem(QUARANTINE_KEY)
   } catch (error) {
-    console.error('Failed to read quarantined payload:', describe(error))
+    log.error('Failed to read quarantined payload', { error })
     return null
   }
   if (raw === null) return null
@@ -88,7 +92,7 @@ export const readQuarantine = (): QuarantineRecord | null => {
   } catch {
     // Fall through to the shared warning below.
   }
-  console.warn(
+  log.warn(
     `The preserved payload in "${QUARANTINE_KEY}" is not readable as a recovery ` +
       'record. It has been left untouched in case it is your only copy; nothing ' +
       'will overwrite it automatically.',
@@ -103,7 +107,7 @@ const isQuarantineOccupied = (): boolean => {
   } catch (error) {
     // Unreadable storage is treated as occupied: we cannot prove the key is
     // free, and a failed read is never a reason to overwrite someone's data.
-    console.error('Failed to read quarantined payload:', describe(error))
+    log.error('Failed to read quarantined payload', { error })
     return true
   }
 }
@@ -125,7 +129,7 @@ export const quarantinePayload = (reason: string, raw: string | null): boolean =
   }
   const size = utf8Bytes(raw)
   if (size > MAX_QUARANTINE_BYTES) {
-    console.warn(
+    log.warn(
       `Rejected payload is ${size} bytes, over the ${MAX_QUARANTINE_BYTES}-byte quarantine limit; not preserved.`,
     )
     return false
@@ -137,7 +141,7 @@ export const quarantinePayload = (reason: string, raw: string | null): boolean =
   const existing = readQuarantine()
   if (existing?.raw === raw) return true
   if (existing || isQuarantineOccupied()) {
-    console.warn(
+    log.warn(
       'A library payload is already preserved in quarantine; keeping the earlier ' +
         'copy rather than replacing it. The bytes just refused are still intact in ' +
         'the store key, which this page will not overwrite.',
@@ -158,7 +162,7 @@ export const quarantinePayload = (reason: string, raw: string | null): boolean =
     localStorage.setItem(QUARANTINE_KEY, JSON.stringify(record))
     return true
   } catch (error) {
-    console.error('Failed to quarantine rejected payload:', describe(error))
+    log.error('Failed to quarantine rejected payload', { error })
     return false
   }
 }
@@ -168,7 +172,7 @@ export const clearQuarantine = (): void => {
   try {
     localStorage.removeItem(QUARANTINE_KEY)
   } catch (error) {
-    console.error('Failed to clear quarantined payload:', describe(error))
+    log.error('Failed to clear quarantined payload', { error })
   }
 }
 
@@ -193,6 +197,3 @@ export const describeQuarantine = (record: QuarantineRecord): string => {
   }
 }
 
-/** Renders a caught value as a short string for logging. */
-const describe = (error: unknown): string =>
-  error instanceof Error ? error.message : String(error)

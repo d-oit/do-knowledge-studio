@@ -588,7 +588,7 @@ describe('Studio Store branch coverage', () => {
       })
       const result = useStudioStore.getState().importWithRollback([makeEntity({ id: 'x' })], [])
       expect(result.success).toBe(true)
-      expect(warnSpy).toHaveBeenCalledWith('Failed to persist recovery snapshot')
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to persist recovery snapshot'))
     })
 
     it('rolls back state when the primary set fails with an Error', () => {

@@ -323,6 +323,49 @@ describe('BM25 Retrieval Engine', () => {
     expect(second[0].id).toBe('e1')
   })
 
+  it('reuses unchanged tokenizations yet matches a cold rebuild after add/edit/delete', () => {
+    // Populate the per-id tokenization memo from the pristine corpus, so each
+    // corpus below is rebuilt incrementally (only the touched entry re-tokenizes).
+    search(entities, claims, 'react hooks')
+
+    const added = [
+      ...entities,
+      makeEntity({
+        id: 'e4',
+        name: 'Vue Reactivity',
+        description: 'Vue tracks dependencies with proxies',
+        tags: ['vue', 'reactivity'],
+        content: '# Vue\nref, reactive, computed',
+      }),
+    ]
+    const edited = entities.map((e) =>
+      e.id === 'e1' ? { ...e, content: '# React Hooks\nuseMemo, useCallback' } : e,
+    )
+    const deleted = entities.filter((e) => e.id !== 'e2')
+
+    for (const corpus of [added, edited, deleted]) {
+      const incremental = search(corpus, claims, 'react hooks')
+      // Throw the memo away: a cold rebuild must rank identically.
+      resetSearchCache()
+      const cold = search(corpus, claims, 'react hooks')
+      expect(incremental).toEqual(cold)
+    }
+  })
+
+  it('refreshes entry metadata when the tokenized text is unchanged', () => {
+    search(entities, claims, 'react hooks')
+    // The type is not part of the tokenized text, so e1's postings are reused —
+    // but the entry handed to `filter` must still carry the new type.
+    const retyped = entities.map((e) => (e.id === 'e1' ? { ...e, type: 'concept' as const } : e))
+
+    const incremental = search(retyped, claims, 'react hooks', 5, (doc) => doc.entityType === 'concept')
+    resetSearchCache()
+    const cold = search(retyped, claims, 'react hooks', 5, (doc) => doc.entityType === 'concept')
+
+    expect(incremental.map((r) => r.id)).toEqual(cold.map((r) => r.id))
+    expect(incremental.some((r) => r.id === 'e1')).toBe(true)
+  })
+
   it('searches corpora over the cache cap without errors', () => {
     const overCapEntities: Entity[] = Array.from(
       { length: MAX_CACHE_ENTRIES + 10 },

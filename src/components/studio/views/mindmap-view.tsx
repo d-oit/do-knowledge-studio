@@ -28,6 +28,10 @@ import { translate as t } from '@/lib/i18n/messages/mindmap'
 import { translate as navT } from '@/lib/i18n/messages/nav'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
 import { useAnnouncer } from '@/lib/a11y/announcer'
+import { logger } from '@/lib/logging/logger'
+
+/** Subsystem tag for mind-map PNG export logs. */
+const log = logger.child({ area: 'export' })
 
 interface TreeNode {
   entity: { id: string; name: string; type: string }
@@ -148,7 +152,7 @@ export const MindMapView = () => {
     try {
       exportElementAsPng(el, `mindmap-${todayStamp()}.png`)
     } catch (error) {
-      console.error('Failed to export mind map as PNG:', error instanceof Error ? error.message : error)
+      log.error('Failed to export mind map as PNG', { error })
     }
   }, [])
 

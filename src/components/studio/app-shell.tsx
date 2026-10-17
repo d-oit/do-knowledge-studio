@@ -16,6 +16,7 @@ import { TimelineView } from './views/timeline-view'
 import { ChatView } from './views/chat-view'
 import { ErrorBoundary } from './error-boundary'
 import { ViewErrorBoundary } from './view-error-boundary'
+import { GlobalRuntimeHandlers } from './global-runtime-handlers'
 import { Skeleton } from './ui/skeleton'
 import { startViewHashSync } from '@/lib/studio/view-hash-sync'
 import { translate as navT } from '@/lib/i18n/messages/nav'
@@ -33,6 +34,10 @@ import {
   subscribeToRecoveryAvailability,
   type RecoverySnapshotSummary,
 } from '@/lib/studio/recovery-helpers'
+import { logger } from '@/lib/logging/logger'
+
+/** Subsystem tag for app-shell and view-boundary logs. */
+const log = logger.child({ area: 'shell' })
 
 const GraphView = lazy(() => import('./views/graph-view').then((m) => ({ default: m.GraphView })))
 const MindMapView = lazy(() => import('./views/mindmap-view').then((m) => ({ default: m.MindMapView })))
@@ -275,7 +280,7 @@ export const AppShell = () => {
         stopBridge = startBidirectionalSync()
       })
       .catch((error: unknown) => {
-        console.error('[AppShell] Could not load the Yjs bridge:', error)
+        log.error('Could not load the Yjs bridge', { error })
       })
 
     return () => {
@@ -295,7 +300,7 @@ export const AppShell = () => {
 
   const handleViewError = React.useCallback(
     (error: Error, _errorInfo: React.ErrorInfo) => {
-      console.error(`[ViewError] ${currentView}:`, error)
+      log.error('View error', { error, view: currentView })
     },
     [currentView],
   )
@@ -316,6 +321,10 @@ export const AppShell = () => {
       >
         Skip to main content
       </a>
+      {/* Window-level failure listeners, mounted once for the whole app: the
+          shell is the only client root, so one instance covers every view and
+          its cleanup runs with the shell's own unmount. Renders nothing. */}
+      <GlobalRuntimeHandlers />
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />

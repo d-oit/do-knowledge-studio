@@ -11,6 +11,10 @@
  */
 import { z } from 'zod'
 import type { Entity } from './types'
+import { logger } from '@/lib/logging/logger'
+
+/** Subsystem tag for graph-snapshot persistence logs. */
+const log = logger.child({ area: 'store' })
 
 /** localStorage key holding the saved graph canvas snapshot. */
 export const GRAPH_SNAPSHOT_KEY = 'dks-graph-snapshot'
@@ -106,7 +110,7 @@ export const saveGraphSnapshot = (snapshot: GraphSnapshot): boolean => {
     localStorage.setItem(GRAPH_SNAPSHOT_KEY, JSON.stringify(snapshot))
     return true
   } catch (error) {
-    console.error('Failed to save graph snapshot:', error instanceof Error ? error.message : error)
+    log.error('Failed to save graph snapshot', { error })
     return false
   }
 }
@@ -121,7 +125,7 @@ export const readGraphSnapshot = (): GraphSnapshot | null => {
   try {
     raw = localStorage.getItem(GRAPH_SNAPSHOT_KEY)
   } catch (error) {
-    console.error('Failed to read graph snapshot:', error instanceof Error ? error.message : error)
+    log.error('Failed to read graph snapshot', { error })
     return null
   }
   if (raw === null) return null
@@ -149,7 +153,7 @@ export const clearGraphSnapshot = (): void => {
   try {
     localStorage.removeItem(GRAPH_SNAPSHOT_KEY)
   } catch (error) {
-    console.error('Failed to clear graph snapshot:', error instanceof Error ? error.message : error)
+    log.error('Failed to clear graph snapshot', { error })
   }
 }
 

@@ -7,6 +7,10 @@ import { useAnnouncer } from '@/lib/a11y/announcer'
 import { translate as t } from '@/lib/i18n/messages/announce'
 import { describeQuarantine, type QuarantineRecord } from '@/lib/studio/hydration-quarantine'
 import { cn } from '@/lib/utils'
+import { logger } from '@/lib/logging/logger'
+
+/** Subsystem tag for quarantine-banner store logs. */
+const log = logger.child({ area: 'store' })
 
 /** Filename offered for the raw persistence envelope. */
 const RAW_BACKUP_FILENAME = 'do-knowledge-studio-preserved-library.json'
@@ -57,7 +61,7 @@ const useRawBackup = (raw: string) => {
       URL.revokeObjectURL(url)
       announce(t('announce.preservedLibraryDownloaded'))
     } catch (error) {
-      console.error('Failed to download the preserved library:', error)
+      log.error('Failed to download the preserved library', { error })
       toast.error(t('announce.preservedLibraryFailed'))
     }
   }, [announce, raw])

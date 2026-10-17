@@ -13,6 +13,10 @@ import { TrizResultsView } from './triz-results-view'
 import { translate } from '@/lib/i18n/messages/triz'
 import { cn } from '@/lib/utils'
 import { VIEW_CONTAINER_CLASS } from '../ui/shared-primitives'
+import { logger } from '@/lib/logging/logger'
+
+/** Subsystem tag for TRIZ-view logs. */
+const log = logger.child({ area: 'triz' })
 
 /** TRIZ contradiction matrix view for picking parameters and viewing suggested inventive principles. */
 export const TrizView = () => {
@@ -43,7 +47,7 @@ export const TrizView = () => {
       navigator.clipboard.writeText(text).catch(() => undefined)
     } catch (error) {
       // Clipboard API missing entirely (e.g. non-secure context) — non-fatal.
-      console.error('Clipboard API unavailable:', error)
+      log.error('Clipboard API unavailable', { error })
     }
     setCopied(id)
     toast.success(translate('triz.toast.copied'))

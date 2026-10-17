@@ -1,4 +1,8 @@
 import { EditorDraftSchema, type EditorDraft } from './draft-schema'
+import { logger } from '@/lib/logging/logger'
+
+/** Subsystem tag for editor-draft storage logs. */
+const log = logger.child({ area: 'editor' })
 
 /** localStorage key prefix for draft records. */
 const DRAFT_KEY_PREFIX = 'draft:'
@@ -15,7 +19,7 @@ export function saveDraft(draft: EditorDraft): void {
     localStorage.setItem(getDraftKey(parsed.id), JSON.stringify(parsed))
   } catch (error) {
     // Storage quota exceeded or validation failure — caller handles via error return
-    console.error('Failed to save draft:', error instanceof Error ? error.message : 'Unknown error')
+    log.error('Failed to save draft', { error })
     throw error
   }
 }
@@ -33,7 +37,7 @@ export function loadDraft(id: string): EditorDraft | null {
     }
     return result.data
   } catch (error) {
-    console.error('Failed to load draft:', error instanceof Error ? error.message : error)
+    log.error('Failed to load draft', { error })
     removeDraft(id)
     return null
   }
