@@ -50,6 +50,14 @@ describe('RecoveryBanner', () => {
     expect(screen.getByText(/2 entities and 1 claim/)).toBeDefined()
   })
 
+  it('sizes the title with the shared body-lg scale token, not an arbitrary px value', () => {
+    renderBanner()
+
+    const title = screen.getByRole('heading', { level: 2 })
+    expect(title.className).toContain('text-body-lg')
+    expect(title.className).not.toContain('text-[15px]')
+  })
+
   it('reports a clean restore and takes the offer away', async () => {
     mockRestoreFromRecovery.mockReturnValue({ success: true, snapshotCleared: true })
     renderBanner()

@@ -90,7 +90,7 @@ export const RecoveryBanner = ({ summary }: { summary: RecoverySnapshotSummary }
       <div className="flex gap-3">
         <History aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-saffron-deep" />
         <div>
-          <h2 id="recovery-restore-title" className="font-serif text-[15px] font-semibold text-ink">
+          <h2 id="recovery-restore-title" className="font-serif text-body-lg font-semibold text-ink">
             {t('announce.restoreTitle')}
           </h2>
           <p className="mt-1 text-caption text-ink-mute">

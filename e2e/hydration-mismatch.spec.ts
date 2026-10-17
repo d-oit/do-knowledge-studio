@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { waitForAppReady } from './helpers/navigation';
+import { THEME_STORAGE_KEY } from '../src/lib/studio/theme-colors';
 
 /**
  * A view must hydrate cleanly when the OS asks for reduced motion.
@@ -11,8 +12,11 @@ import { waitForAppReady } from './helpers/navigation';
  * a mismatch and re-renders that subtree from scratch — on every animated
  * element, on every load, for exactly the users who asked for less motion.
  *
- * The failure is invisible to a screenshot and invisible to a unit test that
- * mocks the hook, so it is pinned here in a real browser instead.
+ * The second contract is the same failure through a different door: a *stored*
+ * theme choice, which `next-themes` reads during the client's first render.
+ *
+ * Both failures are invisible to a screenshot and to a unit test that mocks the
+ * hook, so they are pinned here in a real browser instead.
  *
  * Runs at every configured viewport, because the media state is per-context
  * rather than per-viewport and a view can be entered by reloading on it.
@@ -29,6 +33,37 @@ const HYDRATION_MISMATCH = /hydrat|server rendered HTML didn't match|Minified Re
  * nothing, and the report is present well within this window.
  */
 const HYDRATION_REPORT_SETTLE_MS = 2000;
+
+test.describe('Hydration with a stored theme preference', () => {
+  test('a stored dark choice does not hydrate a different theme label', async ({ page }) => {
+    const consoleOutput: string[] = [];
+    page.on('console', (message) => {
+      consoleOutput.push(`[${message.type()}] ${message.text()}`);
+    });
+    page.on('pageerror', (error) => consoleOutput.push(`[pageerror] ${error.message}`));
+
+    // `next-themes` initialises its state from `localStorage` inside the client's
+    // FIRST render, so any control that renders the stored *choice* (the sidebar
+    // and drawer theme toggles) disagrees with the server HTML, which rendered
+    // the `system` default. Every user who has ever picked a theme hit the
+    // mismatch on every load. The preference must be in storage before the
+    // document loads, and the console listener before hydration runs.
+    await page.addInitScript(
+      ([key, value]) => localStorage.setItem(key, value),
+      [THEME_STORAGE_KEY, 'dark'] as [string, string],
+    );
+
+    await page.goto('/');
+    await waitForAppReady(page);
+    await page.waitForTimeout(HYDRATION_REPORT_SETTLE_MS);
+
+    // Sanity: the stored choice is real and reached the document.
+    await expect(page.locator('html')).toHaveClass(/dark/);
+
+    const mismatches = consoleOutput.filter((text) => HYDRATION_MISMATCH.test(text));
+    expect(mismatches, `hydration errors:\n${mismatches.join('\n')}`).toEqual([]);
+  });
+});
 
 test.describe('Hydration under prefers-reduced-motion', () => {
   test.use({ reducedMotion: 'reduce' });

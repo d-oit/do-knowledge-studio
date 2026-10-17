@@ -4,6 +4,12 @@
 **Status:** Implemented — Phases 1–3 mandatory scope shipped in [#968](https://github.com/d-oit/do-knowledge-studio/pull/968)/[#969](https://github.com/d-oit/do-knowledge-studio/pull/969) and Phase 4 e2e in `e2e/graph-gestures.spec.ts` + `e2e/mobile-touch-gestures.spec.ts`; the optional Mind Map swipe actions and §4 double-tap/long-press remain unbuilt (see the 2026-10-16 addendum in [Plan 162](162-roadmap-progress-and-next-work-2026-10-05.md))  
 **Related:** Plan 166 N3, Plan 162 F3, [ADR 037](ADRs/037-url-addressable-view-state.md), [ADR 018](ADRs/018-vector-search-engine.md).
 
+**2026-10-17 — reconciled by [Plan 176](176-plans-backlog-drain-2026-10-17.md):**
+Plan 176 audited the two unbuilt items and chose to leave them parked — this plan
+marks the swipe actions "optional" and §4 is absent from the delivery table, so
+they remain spec options rather than open tasks; the decision is recorded so the
+boundary is auditable.
+
 ## Problem
 
 While the Graph view provides full keyboard navigation (`Arrow` keys for pan, `+`/`-` for zoom, `Home` for view reset, `Enter` for selection) and top toolbar controls, and the Mind Map view implements a strict W3C WAI-ARIA Treeview (`role="tree"` with roving tabindex and keyboard expansion/actions), neither view natively supports direct pointer or touch gestures:

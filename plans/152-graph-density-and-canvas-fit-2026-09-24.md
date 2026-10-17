@@ -116,3 +116,13 @@ is inside the canvas, and that clicking a node selects *that* node.
    preferred spacing in a shorter band.
 2. **`semantic-search.spec.ts` load sensitivity** (plans/148 §6.1) — unchanged.
 3. **ESLint 10 workaround** (plans/140 §2) — still blocked upstream.
+
+## 7. Follow-ups closed (2026-10-17 — [Plan 176](176-plans-backlog-drain-2026-10-17.md))
+
+1. Implemented: `placementBand` keeps the tier AREA — so the click-safe capacity
+   derived here is unchanged — and reshapes it to the rendered viewport's aspect,
+   clamped to `BAND_ASPECT_MULTIPLIER_MIN/MAX` (0.5×–2× the authored 1.5). With no
+   measurement (SSR, unit tests, first paint) the authored 600×400 rectangle is
+   returned bit-for-bit. Narrow/wide unit cases and an e2e assertion cover it.
+2. Item 2 stays resolved by the Plan 151 test-code fix.
+3. Item 3 re-verified 2026-10-17: still blocked upstream.

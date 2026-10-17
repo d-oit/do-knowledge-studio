@@ -4,6 +4,7 @@ import { useStudioStore } from '@/lib/studio/store'
 import { seedGraph } from '@/lib/studio/seed-data'
 import { layoutNodes, placeGraphNodes } from '@/lib/studio/graph-layout'
 import { canvasSize, canvasViewBox } from '@/lib/studio/graph-viewport'
+import { useElementSize } from '@/lib/studio/use-element-size'
 import {
   DRAG_PAN_SLOP_PX,
   getClientToViewBoxScale,
@@ -32,6 +33,22 @@ import { useGraphKeyboard } from './use-graph-keyboard'
 import { useGraphSnapshotComparison } from './use-graph-snapshot-comparison'
 import { FOCUS_MODE_FILTER_STYLE, GraphEdgeElement } from './graph-elements'
 
+/**
+ * Keep the first edge per `id`, preserving input order, in one O(E) pass. The
+ * `id` is the `${source}-${target}` string the caller builds — the same key the
+ * previous `findIndex`-per-candidate filter matched on.
+ */
+const dedupeEdgesById = <T extends { id: string }>(edges: T[]): T[] => {
+  const seen = new Set<string>()
+  const unique: T[] = []
+  for (const edge of edges) {
+    if (seen.has(edge.id)) continue
+    seen.add(edge.id)
+    unique.push(edge)
+  }
+  return unique
+}
+
 /** Interactive knowledge graph view with force, circular, and hierarchical layouts. */
 export const GraphView = () => {
   const entities = useStudioStore((s) => s.entities)
@@ -48,14 +65,21 @@ export const GraphView = () => {
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
 
+  // The placement band reshapes itself to the rendered canvas (plans/152 §6.1).
+  // The measured box is the canvas container's own, never a node position the
+  // layout produces, so reshaping the band cannot change what it is measured
+  // from — the measurement is loop-free by construction.
+  const canvasRef = useRef<HTMLDivElement>(null)
+  const viewport = useElementSize(canvasRef)
+
   // Build adjacency index for O(1) focus-mode neighbor lookups
   const adjacency = useMemo(() => buildAdjacencyIndex(entities), [entities])
 
   const { nodes, edges } = useMemo(() => {
-    const nodesList = placeGraphNodes(entities, seedGraph.nodes)
+    const nodesList = placeGraphNodes(entities, seedGraph.nodes, viewport)
     const nodeIds = new Set(nodesList.map((n) => n.id))
-    const edgesList = entities
-      .flatMap((e) =>
+    const edgesList = dedupeEdgesById(
+      entities.flatMap((e) =>
         e.links
           .filter((l) => nodeIds.has(l.targetId))
           .map((l) => ({
@@ -64,10 +88,10 @@ export const GraphView = () => {
             target: l.targetId,
             relation: l.relation,
           })),
-      )
-      .filter((e, i, arr) => arr.findIndex((x) => x.id === e.id) === i)
+      ),
+    )
     return { nodes: nodesList, edges: edgesList }
-  }, [entities])
+  }, [entities, viewport])
 
   // Apply the layout transform; `layoutNodes` is shared with the snapshot
   // restore clamp so both derive canvas geometry from the same math.
@@ -97,6 +121,7 @@ export const GraphView = () => {
     panOffset,
     zoom,
     entities,
+    viewport,
     setLayout,
     setFocusMode,
     setPanOffset,
@@ -333,6 +358,7 @@ export const GraphView = () => {
       {/* Canvas */}
       <div
         className="relative flex-1 canvas-grid overflow-hidden"
+        ref={canvasRef}
         tabIndex={0}
         role="application"
         aria-label="Graph canvas — use arrow keys to pan, +/- to zoom, Home to reset, Delete to remove selected entity"

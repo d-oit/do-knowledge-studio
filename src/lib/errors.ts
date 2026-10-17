@@ -30,6 +30,7 @@ export enum ErrorCode {
   AI_PROVIDER_ERROR = 'AI_PROVIDER_ERROR',
   AI_PROVIDER_TIMEOUT = 'AI_PROVIDER_TIMEOUT',
   AI_PROVIDER_RATE_LIMITED = 'AI_PROVIDER_RATE_LIMITED',
+  AI_PROVIDER_UNREACHABLE = 'AI_PROVIDER_UNREACHABLE',
 
   /** Generic fallback */
   UNKNOWN = 'UNKNOWN',
@@ -56,6 +57,7 @@ const USER_MESSAGES: Record<ErrorCode, string> = {
   [ErrorCode.AI_PROVIDER_ERROR]: 'The AI provider returned an error. Please try again.',
   [ErrorCode.AI_PROVIDER_TIMEOUT]: 'The AI provider timed out. Please try again.',
   [ErrorCode.AI_PROVIDER_RATE_LIMITED]: 'Too many requests. Please wait a moment and try again.',
+  [ErrorCode.AI_PROVIDER_UNREACHABLE]: 'Could not reach the AI provider. Check your connection and try again.',
   [ErrorCode.UNKNOWN]: 'An unexpected error occurred.',
 }
 

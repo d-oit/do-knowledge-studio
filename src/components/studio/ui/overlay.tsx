@@ -130,13 +130,36 @@ const focusOverlay = (
   ;(target ?? container).focus()
 }
 
+/**
+ * Focus target of last resort when the element that opened the overlay is gone.
+ *
+ * A dialog can be opened by a control its own action then unmounts (the
+ * right-panel delete dialog is one). `HTMLElement.focus()` on a disconnected
+ * node is a no-op, so the active element silently falls to the document and a
+ * keyboard user loses their place. `<body>` is always connected and is made
+ * programmatically focusable with `tabindex="-1"` (idempotent, adds no tab
+ * stop) so focus lands there deliberately instead of being lost. The overlay
+ * container is deliberately NOT used: it unmounts with the dialog and is not a
+ * meaningful place to return to.
+ */
+const focusBodyFallback = () => {
+  const { body } = document
+  if (!body.hasAttribute('tabindex')) body.tabIndex = -1
+  body.focus()
+}
+
 const restoreOverlayFocus = (
   previousFocusRef: React.MutableRefObject<HTMLElement | null>,
   focusableCacheRef: React.MutableRefObject<HTMLElement[]>,
 ) => {
   focusableCacheRef.current = []
-  previousFocusRef.current?.focus()
+  const previous = previousFocusRef.current
   previousFocusRef.current = null
+  if (previous?.isConnected) {
+    previous.focus()
+    return
+  }
+  focusBodyFallback()
 }
 
 const useOverlayFocus = (

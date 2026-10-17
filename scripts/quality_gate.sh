@@ -451,6 +451,18 @@ if [[ " ${DETECTED_LANGUAGES[*]} " =~ " typescript " ]] && [[ "$SCOPE" == "all" 
             echo -e "${GREEN}  ✓ pnpm typecheck passed${NC}"
         fi
 
+        # Test-source typecheck: the app project excludes *.test.ts(x) and
+        # tests/, so those types were only checked by Vitest's experimental
+        # typecheck. Run tsc against tsconfig.test.json for a stable gate
+        # (plans/165 "tooling follow-up", plans/176 T4).
+        if ! OUTPUT=$(pnpm typecheck:test 2>&1); then
+            echo -e "${RED}  ✗ pnpm typecheck:test failed${NC}"
+            echo "$OUTPUT" >&2
+            FAILED=1
+        else
+            echo -e "${GREEN}  ✓ pnpm typecheck:test passed${NC}"
+        fi
+
         # Tests via SKIP_TESTS env var (useful for CI without test env)
         if [ "${SKIP_TESTS:-false}" != "true" ]; then
             if ! OUTPUT=$(pnpm test 2>&1); then
@@ -520,6 +532,15 @@ if [[ " ${DETECTED_LANGUAGES[*]} " =~ " typescript " ]] && [[ "$SCOPE" == "all" 
             FAILED=1
         else
             echo -e "${GREEN}  ✓ npm typecheck passed${NC}"
+        fi
+
+        # Test-source typecheck — see the pnpm branch above (plans/165, plans/176 T4)
+        if ! OUTPUT=$(npm run typecheck:test 2>&1); then
+            echo -e "${RED}  ✗ npm typecheck:test failed${NC}"
+            echo "$OUTPUT" >&2
+            FAILED=1
+        else
+            echo -e "${GREEN}  ✓ npm typecheck:test passed${NC}"
         fi
 
         if [ "${SKIP_TESTS:-false}" != "true" ]; then

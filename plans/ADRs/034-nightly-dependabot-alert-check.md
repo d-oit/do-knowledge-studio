@@ -1,6 +1,6 @@
 # ADR 034 — Nightly Dependabot Alert Check + Resolve-Every-Thread Merge Gate (2026-08-16)
 
-**Status**: ACCEPTED (delivered via PRs #694 and #695)
+**Status**: Implemented — delivered via PRs #694 and #695; the nightly check runs as `.github/workflows/dependabot-alert-check.yml`
 
 ## Context
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-Approved — implemented with Plan 125
+Implemented — Plan 125
 (`plans/125-markdown-preview-e2e-2026-08-15.md`); GFM extensions enabled
 via `remark-gfm` (PR #690).
 

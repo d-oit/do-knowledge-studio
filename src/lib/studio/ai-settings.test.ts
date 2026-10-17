@@ -365,7 +365,7 @@ describe('ai-settings encryption and persistence', () => {
     expect(loaded.provider).toBe('openrouter')
     expect(loaded.model).toBe('openrouter/free')
     expect(consoleSpy).toHaveBeenCalledWith(
-      'Failed to validate AI settings schema from IndexedDB:',
+      expect.stringContaining('Failed to validate AI settings schema from IndexedDB'),
       expect.anything()
     )
 
@@ -424,5 +424,38 @@ describe('ai-settings encryption and persistence', () => {
     expect(localStorageMock['dks-ls-migrated-to-idb']).toBe('1')
     // Legacy storage should be removed
     expect(localStorageMock['dks-ai-settings']).toBeUndefined()
+  })
+
+  it('encrypts a legacy plaintext API key during migration', async () => {
+    localStorageMock['dks-ai-settings'] = JSON.stringify({
+      provider: 'openrouter',
+      model: 'openrouter/free',
+      apiKey: 'legacy-plaintext-key',
+    })
+
+    const loaded = await loadAISettings()
+    // The credential still round-trips for the user…
+    expect(loaded.apiKey).toBe('legacy-plaintext-key')
+
+    // …but the migrated IndexedDB record holds only ciphertext.
+    const stored = idbStores.get('settings')?.get('ai-settings') as Record<string, unknown> | undefined
+    expect(stored).toBeDefined()
+    expect(stored!.apiKey).toBeUndefined()
+    expect(typeof stored!.encryptedApiKey).toBe('string')
+    expect(stored!.encryptedApiKey).not.toBe('legacy-plaintext-key')
+  })
+
+  it('still reads a plaintext apiKey record written by an older build', async () => {
+    // Bypass migration: this record was already written to IndexedDB directly.
+    localStorageMock['dks-ls-migrated-to-idb'] = '1'
+    if (!idbStores.has('settings')) idbStores.set('settings', new Map())
+    idbStores.get('settings')!.set('ai-settings', {
+      provider: 'openrouter',
+      model: 'openrouter/free',
+      apiKey: 'plaintext-from-old-build',
+    })
+
+    const loaded = await loadAISettings()
+    expect(loaded.apiKey).toBe('plaintext-from-old-build')
   })
 })

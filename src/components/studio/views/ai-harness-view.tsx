@@ -6,7 +6,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
-import { loadAISettings, saveAISettings, type AIProvider } from '@/lib/studio/ai-settings'
+import { loadAISettings, type AIProvider } from '@/lib/studio/ai-settings'
+import { useDebouncedSettingsSave } from './use-debounced-settings-save'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { fetchOllamaModels, OPENROUTER_DEFAULT_TARGETS } from '@/lib/ai'
 import { OLLAMA_DEFAULT_MODELS, DEFAULT_OLLAMA_BASE_URL, DEFAULT_MODEL } from '@/lib/ai/types'
@@ -18,6 +19,10 @@ import { PROVIDERS } from './ai-harness-settings'
 import { useAiHarnessChat } from './use-ai-harness-chat'
 import { buildContextSuggestions } from './ai-harness-suggestions'
 import { ViewHeader, VIEW_CONTAINER_CLASS } from '../ui/shared-primitives'
+import { logger } from '@/lib/logging/logger'
+
+/** Subsystem tag for AI-harness view logs. */
+const log = logger.child({ area: 'ai' })
 
 /** Accessible label for the AI Harness page heading. */
 const AI_HARNESS_TITLE = 'AI Harness'
@@ -96,9 +101,13 @@ const useAIHarnessViewState = () => {
     })
   }, [])
 
-  useEffect(() => {
-    if (!settingsLoaded) return
-    saveAISettings({
+  const handleSettingsSaveError = useCallback((err: unknown) => {
+    log.error('Failed to save AI settings', { error: err })
+    toast.error('Failed to save settings. Your changes may not persist.')
+  }, [])
+
+  useDebouncedSettingsSave(
+    {
       provider,
       model,
       apiKey,
@@ -107,11 +116,10 @@ const useAIHarnessViewState = () => {
       allowWebResearch,
       ollamaBaseUrl,
       localDevice,
-    }).catch((err) => {
-      console.error('Failed to save AI settings:', err)
-      toast.error('Failed to save settings. Your changes may not persist.')
-    })
-  }, [provider, model, apiKey, augment, ollamaCpuOnly, allowWebResearch, ollamaBaseUrl, localDevice, settingsLoaded])
+    },
+    settingsLoaded,
+    handleSettingsSaveError,
+  )
 
   const handleRefreshOllamaModels = useCallback(async () => {
     try {

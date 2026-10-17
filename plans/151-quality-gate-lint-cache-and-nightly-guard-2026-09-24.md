@@ -141,3 +141,16 @@ output and deleting the `frontend=true` emission each fail the test.
    widths `0px` vs computed percentages). The same warning appears in the
    pre-change manual run `36048842590`; track it separately rather than
    suppressing it in the semantic-search test.
+
+## 6. Follow-ups closed (2026-10-17 — [Plan 176](176-plans-backlog-drain-2026-10-17.md))
+
+- Item 4's upstream block was re-verified: `eslint-plugin-react@7.37.5` still
+  peers `^9.7` and `eslint-plugin-jsx-a11y@6.10.2` still `^9`, so the documented
+  workaround stays.
+- Item 5's graph-density item is implemented: the placement band keeps its area
+  — the click-safe capacity invariant from plans/152 — and takes its shape from
+  the rendered viewport, clamped to a bounded aspect.
+- Item 6's HomeView mismatch is fixed: the progress bar applies its
+  store-derived width after mount. Closing it surfaced a second mismatch —
+  `next-themes` resolving the stored theme inside the client's first render —
+  now fixed centrally and pinned red-first in `e2e/hydration-mismatch.spec.ts`.

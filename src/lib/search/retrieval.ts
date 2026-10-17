@@ -1,4 +1,8 @@
 import type { Entity, Claim } from '@/lib/studio/types'
+import { logger } from '@/lib/logging/logger'
+
+/** Subsystem tag for lexical-retrieval logs. */
+const log = logger.child({ area: 'search' })
 
 /** BM25 tuning constant for term frequency saturation. */
 const K1 = 1.5
@@ -108,7 +112,7 @@ const tokenize = (text: string): string[] => {
     // console on every tokenized entity/claim in the corpus.
     if (!segmenterFallbackLogged) {
       segmenterFallbackLogged = true
-      console.warn('Intl.Segmenter unavailable — falling back to ASCII tokenizer')
+      log.warn('Intl.Segmenter unavailable — falling back to ASCII tokenizer')
     }
     return tokenizeAsciiFallback(text)
   }
@@ -134,7 +138,7 @@ const tokenize = (text: string): string[] => {
     segmenterUnavailable = true
     if (!segmenterFallbackLogged) {
       segmenterFallbackLogged = true
-      console.warn('Intl.Segmenter failed — falling back to ASCII tokenizer')
+      log.warn('Intl.Segmenter failed — falling back to ASCII tokenizer')
     }
     return tokenizeAsciiFallback(text)
   }
@@ -149,42 +153,77 @@ function buildTfMap(tokens: string[]): Map<string, number> {
   return tfMap
 }
 
+/** The token-dependent half of a corpus entry, reusable across rebuilds. */
+interface TokenizedEntry {
+  tokenCount: number
+  tfMap: Map<string, number>
+  fullText: string
+}
+
+// Tokenization (the Intl.Segmenter pass) is the expensive half of an index
+// build. Memoizing it per entry id lets a rebuild forced by one edit reuse the
+// unchanged postings for the rest of the corpus instead of re-tokenizing
+// everything. `fullText` doubles as the content signature: it is exactly the
+// string that was tokenized, so a hit can only return tokens for identical text
+// (no hash collisions to reason about).
+const tokenizedById = new Map<string, TokenizedEntry>()
+
+const tokenizeCached = (id: string, text: string): TokenizedEntry => {
+  const cached = tokenizedById.get(id)
+  if (cached !== undefined && cached.fullText === text) {
+    return cached
+  }
+  const tokens = tokenize(text)
+  const next: TokenizedEntry = {
+    tokenCount: tokens.length,
+    tfMap: buildTfMap(tokens),
+    fullText: text,
+  }
+  tokenizedById.set(id, next)
+  return next
+}
+
+/** Drop memoized tokenizations whose id is no longer in the corpus. */
+const pruneTokenCache = (liveIds: Set<string>): void => {
+  for (const id of tokenizedById.keys()) {
+    if (!liveIds.has(id)) tokenizedById.delete(id)
+  }
+}
+
 function buildIndex(
   entities: Entity[],
   claims: Claim[],
   entityMap: Map<string, Entity>,
 ): IndexEntry[] {
   const entries: IndexEntry[] = []
+  const liveIds = new Set<string>()
 
   for (const e of entities) {
     const text = `${e.name} ${e.description} ${e.content} ${e.tags.join(' ')}`
-    const tokens = tokenize(text)
+    liveIds.add(e.id)
     entries.push({
       id: e.id,
       type: 'entity',
       entityType: e.type,
-      tokenCount: tokens.length,
-      tfMap: buildTfMap(tokens),
-      fullText: text,
+      ...tokenizeCached(e.id, text),
     })
   }
 
   for (const c of claims) {
     const entity = entityMap.get(c.entityId)
     const text = `${c.statement} ${c.evidence ?? ''} ${c.source ?? ''}`
-    const tokens = tokenize(text)
+    liveIds.add(c.id)
     entries.push({
       id: c.id,
       type: 'claim',
       entityId: c.entityId,
       entityName: entity?.name,
       entityType: entity?.type,
-      tokenCount: tokens.length,
-      tfMap: buildTfMap(tokens),
-      fullText: text,
+      ...tokenizeCached(c.id, text),
     })
   }
 
+  pruneTokenCache(liveIds)
   return entries
 }
 
@@ -251,6 +290,7 @@ export const resetSearchCache = (): void => {
   cachedEntityMap = new Map<string, Entity>()
   cachedEntries = []
   cachedAvgDl = 0
+  tokenizedById.clear()
 }
 
 interface SearchIndex {

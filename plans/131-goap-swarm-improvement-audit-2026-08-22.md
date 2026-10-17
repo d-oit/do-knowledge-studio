@@ -632,3 +632,22 @@ Rules this section follows:
 | Plan 04 §4.5 — mobile gestures for graph and mind map | **Not implemented — source-confirmed** | `graph-view.tsx:130-180` is keyboard-only (arrows, `+`/`-`, Home); no `onTouch*`/`onPointerDown` handler in `graph-view.tsx` or `mindmap-view.tsx` | Plan 162 F3 |
 | Plan 161 recorded follow-ons — dev search worker, first-mount reduced motion, workflow lint warnings | **Recorded follow-on — runtime not rechecked** | `search-worker-client.ts:69-77,131-132`; `use-reduced-motion.ts:21,44-45` + `home-view.tsx:169-173,309-314`; `security-scan.yml:114-116`; `ci-and-labels.yml:343` | Plan 162 #5 |
 | Every other D1–D6 finding and G1–G9 proposal not named above | **Not reassessed** | Out of scope for a documentation reconciliation; no evidence gathered either way | — |
+
+## Current-state reconciliation (2026-10-17 — Plan 176)
+
+Added by [Plan 176](176-plans-backlog-drain-2026-10-17.md). The D1–D6 catalog
+above is preserved unchanged.
+
+| Audit item | Status | Evidence |
+|---|---|---|
+| D2.7 — edge dedup | **Closed** | One-pass `Set` pass; `graph-view.tsx` |
+| D2.18 — performance baseline inventory | **Closed** | `plans/perf-baselines.md` refreshed to name only existing subsystems |
+| D3.2 — `apiKey` plaintext at rest during the localStorage→IndexedDB migration | **Closed** | The migration now encrypts a plaintext `apiKey` before the write; plaintext still accepted on read |
+| D3.3 — index-rebuild cost on edit | **Closed** | Measured 2,000 entities × 3 claims: single-edit rebuild ≈ 367 ms before, ≈ 17 ms after memoizing per-entry tokenization; parity tests vs a cold rebuild for add/edit/delete |
+| D3.4 — DOMPurify wired into export/import | **Closed** | The two unused helpers and the direct `dompurify` dependency were removed after verifying there is no `dangerouslySetInnerHTML`, no raw-HTML markdown plugin, escaped HTML export and an escaped encrypted-reader payload; the `pnpm.overrides` entry stays for a transitive consumer |
+| D3.5 — provider failure taxonomy | **Closed** | Provider failures now classify into `ErrorCode.AI_PROVIDER_*` at the adapter boundary, `src/lib/ai/provider-errors.ts` |
+| D3.6 — retry/backoff/timeout | **Closed** | Bounded retries with `Retry-After`, exponential backoff + jitter, no retry on non-retryable 4xx or after abort — initial request only |
+| D3.7 — AI-settings write churn | **Closed** | AI-settings writes are debounced with blur/visibility/unmount flush and signature dedupe |
+
+- The D1.9b row and the D1.x deletion-pruning row were closed by Plan 165.
+- The module-scope search cache is an accepted invariant by ADR 032 (record-only).

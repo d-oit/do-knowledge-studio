@@ -28,6 +28,14 @@ const ENTITY_COUNT = 60;
 /** The entity the click test targets — any node at this scale would do. */
 const TARGET_ENTITY = `Entity ${ENTITY_COUNT - 1}`;
 
+/**
+ * A wide display for the viewport-shape test. Playwright's default viewport is
+ * 1280×720; this one is much wider and only slightly taller, so the graph's own
+ * canvas box clearly changes aspect without the app shell reflowing to a
+ * different layout the way a narrow/mobile viewport would.
+ */
+const WIDE_VIEWPORT = { width: 2560, height: 1000 };
+
 const SEED_ENVELOPE = {
   state: {
     entities: Array.from({ length: ENTITY_COUNT }, (_, i) => ({
@@ -98,5 +106,41 @@ test.describe('Graph density at scale', () => {
     await expect(
       graph.getByRole('button', { name: new RegExp(`^${TARGET_ENTITY} —.*\\(selected\\)`) }),
     ).toBeVisible();
+  });
+
+  test('reshapes the band to the rendered viewport', async ({ page }) => {
+    const graph = page.getByRole('img', { name: /knowledge graph/i });
+    /** Canvas aspect from the live viewBox, at rest (zoom 1, no pan). */
+    const canvasAspect = (): Promise<number> =>
+      graph.evaluate((svg) => {
+        const [, , width, height] = (svg.getAttribute('viewBox') ?? '').split(' ').map(Number);
+        return height > 0 ? width / height : 0;
+      });
+
+    const narrowAspect = await canvasAspect();
+
+    // A wide display of the same library: the band's AREA still comes from the
+    // 60 entities, so it may only spread into a wider, shorter rectangle — the
+    // canvas must therefore get wider relative to its height, not merely larger.
+    // The reshape is driven by the measured canvas box, so the new viewBox lands
+    // a frame after the resize; poll instead of assuming one render.
+    await page.setViewportSize(WIDE_VIEWPORT);
+    await expect.poll(canvasAspect).toBeGreaterThan(narrowAspect);
+
+    // Reshaping must not push any node out of the (still growing) canvas.
+    const outside = await graph.evaluate((svg) => {
+      const canvas = svg.getBoundingClientRect();
+      return Array.from(svg.querySelectorAll('g[role="button"]')).filter((node) => {
+        const box = node.getBoundingClientRect();
+        return (
+          box.left < canvas.left ||
+          box.right > canvas.right ||
+          box.top < canvas.top ||
+          box.bottom > canvas.bottom
+        );
+      }).length;
+    });
+
+    expect(outside).toBe(0);
   });
 });

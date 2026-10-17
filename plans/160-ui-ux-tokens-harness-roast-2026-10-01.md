@@ -20,6 +20,7 @@ are outside the requested scope.
 | 6bdaba7 | #878 | skill-rules.json ".*" pattern removed; advisory _note |
 | e967afc | #881 | Zone.Identifier/.orig/.jules untracked + gitignored |
 | 99b69d2 | #879 | .mimocode/ deleted (foreign config) |
+
 Scope: `src/app/globals.css`, `src/components/studio/**`, `src/lib/**` (visual layer),
 `DESIGN.md`, `DESIGN-SYSTEM.md`, `agents-docs/`, `.agents/`, `.github/`, root agent configs,
 and the in-app AI harness (`src/components/studio/views/ai-harness-*`, `src/lib/ai/`).

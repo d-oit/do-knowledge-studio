@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { navClick, waitForAppReady } from './helpers/navigation';
+import { expectThemeApplied, THEME_PASSES } from './helpers/theme';
 
 const MIN_TOUCH_TARGET = 44;
 
@@ -85,109 +86,128 @@ const assertTouchTargets = async (
   ).toEqual([]);
 }
 
-test.describe('Touch targets — WCAG 2.5.5 (44x44px minimum)', () => {
-  // Desktop viewport (≥lg breakpoint = 1024px) so sidebar navigation buttons are visible.
-  // Mobile nav uses a drawer pattern with different interactive elements.
-  // Reduced motion makes the press-scale micro-interaction inert (transform: none),
-  // so geometry is measured in the static layout rather than mid-transition.
-  test.use({
-    viewport: { width: 1280, height: 900 },
-    contextOptions: { reducedMotion: 'reduce' },
-  });
-
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-  });
-
-  test('home: all interactive elements meet 44x44px', async ({ page }) => {
-    await assertTouchTargets(page, 'Home');
-  });
-
-  test('library: all interactive elements meet 44x44px', async ({ page }) => {
-    await navClick(page, /library/i);
-    await page.waitForLoadState('networkidle');
-    await assertTouchTargets(page, 'Library');
-  });
-
-  test('editor: all interactive elements meet 44x44px', async ({ page }) => {
-    await navClick(page, /editor/i);
-    await page.waitForLoadState('networkidle');
-    await assertTouchTargets(page, 'Editor');
-  });
-
-  test('chat: all interactive elements meet 44x44px', async ({ page }) => {
-    await navClick(page, /chat/i);
-    await page.waitForLoadState('networkidle');
-    await assertTouchTargets(page, 'Chat');
-  });
-
-  test('graph: all interactive elements meet 44x44px', async ({ page }) => {
-    await navClick(page, /graph/i);
-    await page.waitForLoadState('networkidle');
-    await assertTouchTargets(page, 'Graph');
-  });
-
-  test('mind map: all interactive elements meet 44x44px', async ({ page }) => {
-    await navClick(page, /mind map/i);
-    await page.waitForLoadState('networkidle');
-    await assertTouchTargets(page, 'Mind Map');
-  });
-
-  test('export: all interactive elements meet 44x44px', async ({ page }) => {
-    await navClick(page, /export/i);
-    await page.waitForLoadState('networkidle');
-    await assertTouchTargets(page, 'Export');
-  });
-
-  test('sync: all interactive elements meet 44x44px', async ({ page }) => {
-    await navClick(page, /sync/i);
-    await page.waitForLoadState('networkidle');
-    await assertTouchTargets(page, 'Sync');
-  });
-});
-
 /**
- * The mobile drawer and the shortcuts dialog are the two surfaces an earlier
- * pass missed: the drawer exists only below `lg`, so the desktop suite never
- * rendered it, and the dialog's compact controls were never measured. Both are
- * scanned in their own subtrees — the shell is not the subject of these tests.
+ * Both palettes run the full touch contract (ADR 036 §Decision, Plan 130 A19).
+ * The loop is what makes that true by construction: light and dark are the same
+ * suite with one different input, so the dark pass can never drift into a subset.
+ * Geometry is largely palette-independent, so the dark numbers mostly pin that
+ * the palette renders identical boxes — and catch any future theme-scoped style
+ * (a padding token, a per-theme icon) that changes a target's size.
  */
-test.describe('Touch-only surfaces — drawer and shortcuts dialog (44x44px minimum)', () => {
-  // Phone viewport (< lg = 1024px) so the mobile drawer is mounted, plus the
-  // same reduced-motion setting as the desktop suite for stable geometry.
-  test.use({
-    viewport: { width: 390, height: 844 },
-    contextOptions: { reducedMotion: 'reduce' },
+for (const theme of THEME_PASSES) {
+  test.describe(`Touch targets — WCAG 2.5.5 (44x44px minimum) — ${theme} theme`, () => {
+    // Desktop viewport (≥lg breakpoint = 1024px) so sidebar navigation buttons are visible.
+    // Mobile nav uses a drawer pattern with different interactive elements.
+    // Reduced motion makes the press-scale micro-interaction inert (transform: none),
+    // so geometry is measured in the static layout rather than mid-transition.
+    // `colorScheme` gives the whole context this pass's palette, resolved by the
+    // provider (helpers/theme.ts) — the same `.dark` token set a dark-mode user
+    // gets. Nothing is written to storage, so hydration matches the server's.
+    test.use({
+      viewport: { width: 1280, height: 900 },
+      colorScheme: theme,
+      contextOptions: { reducedMotion: 'reduce' },
+    });
+
+    test.beforeEach(async ({ page }) => {
+      await page.goto('/');
+      // Guard: a pass that silently rendered in the other palette would measure
+      // the same geometry and prove nothing about the palette it claims.
+      await expectThemeApplied(page, theme);
+      await page.waitForLoadState('networkidle');
+    });
+
+    test('home: all interactive elements meet 44x44px', async ({ page }) => {
+      await assertTouchTargets(page, 'Home');
+    });
+
+    test('library: all interactive elements meet 44x44px', async ({ page }) => {
+      await navClick(page, /library/i);
+      await page.waitForLoadState('networkidle');
+      await assertTouchTargets(page, 'Library');
+    });
+
+    test('editor: all interactive elements meet 44x44px', async ({ page }) => {
+      await navClick(page, /editor/i);
+      await page.waitForLoadState('networkidle');
+      await assertTouchTargets(page, 'Editor');
+    });
+
+    test('chat: all interactive elements meet 44x44px', async ({ page }) => {
+      await navClick(page, /chat/i);
+      await page.waitForLoadState('networkidle');
+      await assertTouchTargets(page, 'Chat');
+    });
+
+    test('graph: all interactive elements meet 44x44px', async ({ page }) => {
+      await navClick(page, /graph/i);
+      await page.waitForLoadState('networkidle');
+      await assertTouchTargets(page, 'Graph');
+    });
+
+    test('mind map: all interactive elements meet 44x44px', async ({ page }) => {
+      await navClick(page, /mind map/i);
+      await page.waitForLoadState('networkidle');
+      await assertTouchTargets(page, 'Mind Map');
+    });
+
+    test('export: all interactive elements meet 44x44px', async ({ page }) => {
+      await navClick(page, /export/i);
+      await page.waitForLoadState('networkidle');
+      await assertTouchTargets(page, 'Export');
+    });
+
+    test('sync: all interactive elements meet 44x44px', async ({ page }) => {
+      await navClick(page, /sync/i);
+      await page.waitForLoadState('networkidle');
+      await assertTouchTargets(page, 'Sync');
+    });
   });
 
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await waitForAppReady(page);
+  /**
+   * The mobile drawer and the shortcuts dialog are the two surfaces an earlier
+   * pass missed: the drawer exists only below `lg`, so the desktop suite never
+   * rendered it, and the dialog's compact controls were never measured. Both are
+   * scanned in their own subtrees — the shell is not the subject of these tests.
+   */
+  test.describe(`Touch-only surfaces — drawer and shortcuts dialog (44x44px minimum) — ${theme} theme`, () => {
+    // Phone viewport (< lg = 1024px) so the mobile drawer is mounted, plus the
+    // same reduced-motion setting as the desktop suite for stable geometry.
+    test.use({
+      viewport: { width: 390, height: 844 },
+      colorScheme: theme,
+      contextOptions: { reducedMotion: 'reduce' },
+    });
+
+    test.beforeEach(async ({ page }) => {
+      await page.goto('/');
+      await expectThemeApplied(page, theme);
+      await waitForAppReady(page);
+    });
+
+    test('mobile drawer: navigate and search controls meet 44x44px', async ({ page }) => {
+      await page.getByRole('button', { name: /open menu/i }).first().click();
+      const drawer = page.getByRole('dialog', { name: /navigation and search/i });
+      await expect(drawer).toBeVisible();
+
+      // Navigation tab (default): close button, tab switcher, nav items, footer toggle.
+      await assertTouchTargets(page, 'Mobile drawer — navigate', '[role="dialog"]');
+
+      // Search tab: the Keyword/Ranked mode toggle lives in the shared search panel.
+      await drawer.getByRole('button', { name: /^search$/i }).click();
+      await expect(drawer.getByRole('button', { name: /^keyword$/i })).toBeVisible();
+      await assertTouchTargets(page, 'Mobile drawer — search', '[role="dialog"]');
+    });
+
+    test('shortcuts dialog: all controls meet 44x44px', async ({ page }) => {
+      await page.keyboard.press('?');
+      const dialog = page.getByRole('dialog', { name: /keyboard shortcuts/i });
+      await expect(dialog).toBeVisible();
+
+      // Type a query so the clear-filter button is rendered and measured.
+      await dialog.getByRole('searchbox').fill('edit');
+      await expect(dialog.getByRole('button', { name: /clear/i })).toBeVisible();
+      await assertTouchTargets(page, 'Shortcuts dialog', '[role="dialog"]');
+    });
   });
-
-  test('mobile drawer: navigate and search controls meet 44x44px', async ({ page }) => {
-    await page.getByRole('button', { name: /open menu/i }).first().click();
-    const drawer = page.getByRole('dialog', { name: /navigation and search/i });
-    await expect(drawer).toBeVisible();
-
-    // Navigation tab (default): close button, tab switcher, nav items, footer toggle.
-    await assertTouchTargets(page, 'Mobile drawer — navigate', '[role="dialog"]');
-
-    // Search tab: the Keyword/Ranked mode toggle lives in the shared search panel.
-    await drawer.getByRole('button', { name: /^search$/i }).click();
-    await expect(drawer.getByRole('button', { name: /^keyword$/i })).toBeVisible();
-    await assertTouchTargets(page, 'Mobile drawer — search', '[role="dialog"]');
-  });
-
-  test('shortcuts dialog: all controls meet 44x44px', async ({ page }) => {
-    await page.keyboard.press('?');
-    const dialog = page.getByRole('dialog', { name: /keyboard shortcuts/i });
-    await expect(dialog).toBeVisible();
-
-    // Type a query so the clear-filter button is rendered and measured.
-    await dialog.getByRole('searchbox').fill('edit');
-    await expect(dialog.getByRole('button', { name: /clear/i })).toBeVisible();
-    await assertTouchTargets(page, 'Shortcuts dialog', '[role="dialog"]');
-  });
-});
+}

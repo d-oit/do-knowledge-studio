@@ -149,7 +149,7 @@ validation_results = {
 | Level | Checks | Use Case |
 |-------|--------|----------|
 | `basic` | URL format, reachable | Quick sanity |
-| `standard` + content hash | Research |
+| `standard` | + content hash | Research |
 | `strict` | + content hash, citation match | Production |
 | `full` | + all above + cross-reference | Compliance |
 

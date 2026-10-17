@@ -6,6 +6,20 @@ ADRs: `plans/ADRs/035-global-error-handling-and-client-side-logging.md`,
 `plans/ADRs/036-e2e-responsive-test-matrix.md`,
 `plans/ADRs/037-url-addressable-view-state.md`
 
+**Reconciled 2026-10-17 (Plan 176):** per sub-goal, with short evidence:
+
+- **G1 closed** — logger, App Router error files, global runtime handlers, all
+  app-code `console.*` migrated; [ADR 035](ADRs/035-global-error-handling-and-client-side-logging.md)
+  now carries `Implemented`.
+- **G6 closed** earlier — URL-addressable views, Plan 165 Step 3 (ADR 037).
+- **G2/G3/G5 partially delivered** by later plans (nightly four-project E2E sweep
+  + manual dispatch, `.github/workflows/ci-and-labels.yml`; shared
+  `e2e/helpers/store.ts` seed fixture, dark-theme a11y/touch-target passes and the
+  test-source typecheck landed in Plan 176; visual-regression baselines and a
+  production-build E2E default remain unbuilt — see ADR 036's new status).
+- **G4 delivered piecemeal** — tokens/theme/motion work landed across Plans
+  160/163/165/168.
+
 ## Task Analysis (GOAP Phase 1)
 
 **Primary Goal**: Close the structural gaps found in the 2026-08-22

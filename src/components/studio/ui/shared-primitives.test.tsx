@@ -234,6 +234,89 @@ describe('Overlay', () => {
     fireEvent.keyDown(first, { key: 'Tab', shiftKey: true })
     expect(document.activeElement).toBe(last)
   })
+
+  it('returns focus to the trigger when it is still connected', () => {
+    const { rerender } = render(
+      <>
+        <button data-testid="trigger">Open</button>
+        <Overlay open={false} onClose={() => undefined} aria-label="Connected trigger">
+          <button data-testid="inside">Inside</button>
+        </Overlay>
+      </>,
+    )
+    const trigger = screen.getByTestId('trigger')
+    trigger.focus()
+    expect(document.activeElement).toBe(trigger)
+
+    rerender(
+      <>
+        <button data-testid="trigger">Open</button>
+        <Overlay open onClose={() => undefined} aria-label="Connected trigger">
+          <button data-testid="inside">Inside</button>
+        </Overlay>
+      </>,
+    )
+    rerender(
+      <>
+        <button data-testid="trigger">Open</button>
+        <Overlay open={false} onClose={() => undefined} aria-label="Connected trigger">
+          <button data-testid="inside">Inside</button>
+        </Overlay>
+      </>,
+    )
+
+    expect(document.activeElement).toBe(trigger)
+  })
+
+  // A dialog can be opened by a control its own action then unmounts (the
+  // right-panel delete dialog is one). Restoring to a detached node is a no-op,
+  // so focus silently fell to the document; the fallback is the always-connected
+  // body, pinned here deliberately.
+  it('restores focus to a connected fallback when the trigger has unmounted', () => {
+    const { rerender } = render(
+      <>
+        <button data-testid="trigger">Open</button>
+        <Overlay open={false} onClose={() => undefined} aria-label="Detached trigger">
+          <button data-testid="inside">Inside</button>
+        </Overlay>
+      </>,
+    )
+    const trigger = screen.getByTestId('trigger')
+    trigger.focus()
+
+    rerender(
+      <>
+        <button data-testid="trigger">Open</button>
+        <Overlay open onClose={() => undefined} aria-label="Detached trigger">
+          <button data-testid="inside">Inside</button>
+        </Overlay>
+      </>,
+    )
+    // Unmount the trigger while the dialog is still open.
+    rerender(
+      <>
+        <Overlay open onClose={() => undefined} aria-label="Detached trigger">
+          <button data-testid="inside">Inside</button>
+        </Overlay>
+      </>,
+    )
+    expect(trigger.isConnected).toBe(false)
+
+    rerender(
+      <Overlay open={false} onClose={() => undefined} aria-label="Detached trigger">
+        <button data-testid="inside">Inside</button>
+      </Overlay>,
+    )
+
+    // `body` is the deliberate fallback: it is always connected, and the guard
+    // makes it programmatically focusable before focusing it (jsdom drops focus
+    // to body when the focused node is removed anyway, so the tabindex is what
+    // proves the fallback ran rather than the no-op `detachedNode.focus()`).
+    expect(document.body.hasAttribute('tabindex')).toBe(true)
+    expect(document.activeElement).toBe(document.body)
+    expect(document.activeElement?.isConnected).toBe(true)
+    expect(document.activeElement).not.toBe(trigger)
+  })
 })
 
 describe('VIEW_CONTAINER_CLASS', () => {

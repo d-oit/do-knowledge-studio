@@ -9,6 +9,10 @@
  */
 
 import type { Entity, Claim } from './types'
+import { logger } from '@/lib/logging/logger'
+
+/** Subsystem tag for store-migration logs. */
+const log = logger.child({ area: 'store' })
 
 /** Shape of persisted state before migrations. */
 interface PersistedStateV1 {
@@ -125,14 +129,14 @@ export function runMigrations(persistedState: unknown, fromVersion?: number): Pe
     const detectedVersion = fromVersion ?? state.version ?? 1
 
     if (!Number.isInteger(detectedVersion) || detectedVersion < 1) {
-      console.warn(`Invalid persisted schema version: ${String(detectedVersion)}`)
+      log.warn('Invalid persisted schema version', { version: detectedVersion })
       return null
     }
 
     // A newer build wrote this store — migrating "down" would silently strip
     // fields we cannot know about. Refuse and let hydration fall back safely.
     if (detectedVersion > CURRENT_SCHEMA_VERSION) {
-      console.warn(
+      log.warn(
         `Persisted store version ${detectedVersion} is newer than supported version ${CURRENT_SCHEMA_VERSION}; refusing to migrate.`,
       )
       return null
@@ -146,7 +150,7 @@ export function runMigrations(persistedState: unknown, fromVersion?: number): Pe
     // dispatch (Semgrep `unsafe-dynamic-method`).
     const pendingMigrations = MIGRATIONS.slice(currentVersion - 1)
     if (pendingMigrations.length !== CURRENT_SCHEMA_VERSION - currentVersion) {
-      console.warn(`No migration found for version ${currentVersion} → ${currentVersion + 1}`)
+      log.warn(`No migration found for version ${currentVersion} → ${currentVersion + 1}`)
       return null
     }
     for (const migration of pendingMigrations) {
@@ -155,7 +159,7 @@ export function runMigrations(persistedState: unknown, fromVersion?: number): Pe
 
     return state
   } catch (err) {
-    console.error('Migration failed:', err)
+    log.error('Migration failed', { error: err })
     return null
   }
 }

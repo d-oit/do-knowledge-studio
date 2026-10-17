@@ -20,7 +20,7 @@ import {
   Wifi,
   CalendarDays,
 } from 'lucide-react'
-import { useTheme } from 'next-themes'
+import { useHydrationSafeTheme } from './theme-provider'
 import { RELEASES_BASE_URL } from '@/lib/studio/constants'
 import { useIsMacPlatform, formatShortcut } from '@/lib/studio/use-platform-shortcut'
 import { useStudioStore } from '@/lib/studio/store'
@@ -185,7 +185,9 @@ export const Sidebar = () => {
   const setCommandOpen = useStudioStore((s) => s.setCommandOpen)
   const rightPanelOpen = useStudioStore((s) => s.rightPanelOpen)
   const setRightPanelOpen = useStudioStore((s) => s.setRightPanelOpen)
-  const { theme, setTheme } = useTheme()
+  // Hydration-safe: the stored choice arrives after mount, so the first client
+  // render matches the server's `system` default (see the hook's docs).
+  const { theme, setTheme } = useHydrationSafeTheme()
 
   const currentTheme = theme ?? 'system'
 

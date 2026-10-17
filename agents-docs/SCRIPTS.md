@@ -39,7 +39,7 @@ the scope from changed paths and requires a resolvable base ref.
 | `docs-sync.sh` | Check documentation directories and report the skill count | `./scripts/docs-sync.sh` |
 | `audit-vite-env.sh` | Audit environment-variable secret exposure in client bundles | `./scripts/audit-vite-env.sh` |
 | `vercel-ignore-build.sh` | Fail-closed Vercel build-ignore command for docs/plans/agent-only changes | `./scripts/vercel-ignore-build.sh` |
-| `agent-surface.py` | Validate or sync manifest-managed agent surfaces | `python3 scripts/agent-surface.py <sync|validate>` |
+| `agent-surface.py` | Validate or sync manifest-managed agent surfaces | `python3 scripts/agent-surface.py <sync\|validate>` |
 | `generate-skills-docs.py` | Regenerate skill tables (AVAILABLE_SKILLS.md, skills README); `--check` fails on drift | `python3 scripts/generate-skills-docs.py` |
 | `generate-precache-manifest.mjs` | Regenerate the service-worker precache list from production build output | invoked by `pnpm run build` after `next build` |
 | `generate-pwa-icons.py` | Manual: re-raster PWA icons from the logo SVG | `python3 scripts/generate-pwa-icons.py` |

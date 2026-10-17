@@ -197,8 +197,8 @@ describe('ServiceWorkerRegistration', () => {
 
     await waitFor(() => {
       expect(consoleError).toHaveBeenCalledWith(
-        'Service worker update check failed:',
-        expect.any(Error),
+        expect.stringContaining('Service worker update check failed'),
+        expect.objectContaining({ error: expect.objectContaining({ message: 'update failed' }) }),
       )
     })
     expect(sw.register).toHaveBeenCalled()
@@ -270,8 +270,8 @@ describe('ServiceWorkerRegistration', () => {
 
     await waitFor(() => {
       expect(consoleError).toHaveBeenCalledWith(
-        'Service worker registration failed:',
-        expect.any(Error),
+        expect.stringContaining('Service worker registration failed'),
+        expect.objectContaining({ error: expect.objectContaining({ message: 'no scope' }) }),
       )
     })
   })

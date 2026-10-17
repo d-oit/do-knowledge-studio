@@ -103,8 +103,8 @@ describe('hydration quarantine', () => {
       expect(quarantinePayload('bad shape', ENVELOPE)).toBe(false)
     })
     expect(error).toHaveBeenCalledWith(
-      'Failed to quarantine rejected payload:',
-      'SecurityError',
+      expect.stringContaining('Failed to quarantine rejected payload'),
+      expect.objectContaining({ error: expect.objectContaining({ message: 'SecurityError' }) }),
     )
   })
 
@@ -180,8 +180,8 @@ describe('hydration quarantine', () => {
       expect(readQuarantine()).toBeNull()
     })
     expect(error).toHaveBeenCalledWith(
-      'Failed to read quarantined payload:',
-      'SecurityError',
+      expect.stringContaining('Failed to read quarantined payload'),
+      expect.objectContaining({ error: expect.objectContaining({ message: 'SecurityError' }) }),
     )
   })
 })

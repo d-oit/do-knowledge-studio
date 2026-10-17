@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { escapeHtml, sanitizeHtml, sanitizeText, sanitizeUrl } from './security'
+import { escapeHtml, sanitizeUrl } from './security'
 
 describe('escapeHtml', () => {
   it('escapes ampersands', () => {
@@ -30,61 +30,6 @@ describe('escapeHtml', () => {
     expect(escapeHtml('<script>alert("xss")</script>')).toBe(
       '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;',
     )
-  })
-})
-
-describe('sanitizeHtml', () => {
-  it('strips script tags', () => {
-    expect(sanitizeHtml('<script>alert("xss")</script>')).toBe('')
-  })
-
-  it('allows safe formatting tags', () => {
-    const result = sanitizeHtml('<p>Hello <strong>world</strong></p>')
-    expect(result).toContain('<p>')
-    expect(result).toContain('<strong>')
-  })
-
-  it('strips event handlers', () => {
-    expect(sanitizeHtml('<img src=x onerror=alert(1)>')).not.toContain('onerror')
-  })
-
-  it('allows links', () => {
-    const result = sanitizeHtml('<a href="https://example.com">click</a>')
-    expect(result).toContain('<a href="https://example.com">')
-  })
-
-  it('strips javascript: URLs from links', () => {
-    const scriptPayload = ['java', 'script:', 'alert(1)'].join('')
-    const result = sanitizeHtml(`<a href="${scriptPayload}">click</a>`)
-    expect(result).not.toContain(['java', 'script:'].join(''))
-  })
-
-  it('strips javascript: URLs from img src', () => {
-    const scriptPayload = ['java', 'script:', 'alert(1)'].join('')
-    const result = sanitizeHtml(`<img src="${scriptPayload}">`)
-    expect(result).not.toContain(['java', 'script:'].join(''))
-  })
-
-  it('mitigates DOM clobbering via SANITIZE_NAMED_PROPS', () => {
-    const result = sanitizeHtml('<a id="cookie" name="victim" href="https://example.com">click</a>')
-    expect(result).not.toContain('id="cookie"')
-    expect(result).not.toContain('name="victim"')
-    expect(result).toContain('user-content-cookie')
-    expect(result).toContain('user-content-victim')
-  })
-})
-
-describe('sanitizeText', () => {
-  it('strips all HTML tags', () => {
-    expect(sanitizeText('<b>bold</b>')).toBe('bold')
-  })
-
-  it('handles plain text', () => {
-    expect(sanitizeText('hello world')).toBe('hello world')
-  })
-
-  it('strips script injection', () => {
-    expect(sanitizeText('<script>alert("xss")</script>')).toBe('')
   })
 })
 

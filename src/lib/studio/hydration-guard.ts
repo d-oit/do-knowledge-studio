@@ -26,6 +26,10 @@
  */
 import type { StateStorage } from 'zustand/middleware'
 import { STUDIO_STORAGE_KEY } from './hydration'
+import { logger } from '@/lib/logging/logger'
+
+/** Subsystem tag for hydration-guard logs (store persistence boundary). */
+const log = logger.child({ area: 'store' })
 
 /** Why the last hydration attempt refused, and whether a copy is safe. */
 export interface HydrationRefusal {
@@ -103,7 +107,7 @@ const notifyRefusalListeners = (): void => {
     try {
       listener()
     } catch (error) {
-      console.error('Hydration refusal listener failed:', error)
+      log.error('Hydration refusal listener failed', { error })
     }
   }
 }
@@ -130,7 +134,7 @@ export const getGuardedStorage = (): StateStorage => {
     getItem: (name) => localStorage.getItem(name),
     setItem: (name, value) => {
       if (writeBlocked && name === STUDIO_STORAGE_KEY) {
-        console.warn(
+        log.warn(
           'Studio is not saving: your stored library could not be loaded, so the ' +
             'temporary workspace is left in memory only. The refused payload is ' +
             'unchanged on disk.',

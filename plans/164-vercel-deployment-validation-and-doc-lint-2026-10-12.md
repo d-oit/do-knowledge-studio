@@ -199,3 +199,11 @@ re-enable a rule has to read why it was disabled first — `MD018` above all.
 3. **Deployment-quota discipline** is now documented in the `vercel-deployment`
    skill and `agents-docs/DEPLOYMENT.md`; the remaining risk is behavioural —
    a push-heavy day can still exhaust the account's 100.
+
+**2026-10-17 — closed by [Plan 176](176-plans-backlog-drain-2026-10-17.md):** the
+malformed table rows are repaired (MD055/MD056 enumerate clean over the gate's
+Markdown corpus under a strict config kept outside the repo), including rows the
+note above had not counted (`agents-docs/SCRIPTS.md`, `plans/INDEX.md`).
+Re-enabling the two rules in `markdownlint.toml` remains a one-line change
+pending maintainer approval, because repository rules forbid editing lint
+suppressions.

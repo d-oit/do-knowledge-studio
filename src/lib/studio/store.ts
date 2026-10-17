@@ -36,6 +36,10 @@ import { createChatSlice } from './slices/chat-slice'
 import { createDataSlice } from './slices/data-slice'
 import { createUiSlice } from './slices/ui-slice'
 import { snapshotCorpus } from './history-snapshot'
+import { logger } from '@/lib/logging/logger'
+
+/** Subsystem tag for studio store and persistence logs. */
+const log = logger.child({ area: 'store' })
 
 export { restoreFromRecovery } from './recovery-helpers'
 export { readQuarantine, describeQuarantine } from './hydration-quarantine'
@@ -64,7 +68,7 @@ const readRawEnvelope = (): string | null => {
   try {
     return localStorage.getItem(STUDIO_STORAGE_KEY)
   } catch (error) {
-    console.error('Failed to read the stored envelope:', error)
+    log.error('Failed to read the stored envelope', { error })
     return null
   }
 }
@@ -161,7 +165,7 @@ export const useStudioStore = create<StudioState>()(
             // the write, or a different payload already occupies the key).
             // The loss must be loud, and writes are now blocked so the refused
             // bytes stay in the live key rather than being replaced by seed.
-            console.warn(
+            log.warn(
               'Studio could not preserve a rejected library payload; persistence ' +
                 'is blocked for this page so the original bytes survive. Edits in ' +
                 'this session will NOT be saved — download the raw copy instead.',
@@ -183,7 +187,7 @@ export const useStudioStore = create<StudioState>()(
         if (lastRejectionReason !== null) {
           const reason = lastRejectionReason
           lastRejectionReason = null
-          console.warn(`Studio hydration refused: ${reason}`)
+          log.warn('Studio hydration refused', { reason })
           return currentState
         }
         const outcome = hydrateWithOutcome(persistedState, currentState)
@@ -201,7 +205,7 @@ export const useStudioStore = create<StudioState>()(
           const preserved = quarantinePayload(outcome.reason, raw)
           recordHydrationRefusal(outcome.reason, raw, preserved)
           if (!preserved) {
-            console.warn(
+            log.warn(
               'Studio could not preserve a rejected library payload; persistence ' +
                 'is blocked for this page so the original bytes survive. Edits in ' +
                 'this session will NOT be saved — download the raw copy instead.',
@@ -228,7 +232,7 @@ export const useStudioStore = create<StudioState>()(
       // would hide a copy that does exist.
       onRehydrateStorage: () => (_state, error) => {
         if (!error) return
-        console.warn('Studio hydration failed:', error)
+        log.warn('Studio hydration failed', { error })
         if (getHydrationRefusal() === null) {
           recordHydrationRefusal(UNREADABLE_ENVELOPE_REASON, null, false)
         }
@@ -351,7 +355,7 @@ if (typeof window !== 'undefined') {
       // that seed state into it. Cross-tab sync stays off until a page load
       // actually validates an envelope.
       if (getHydrationRefusal() !== null) {
-        console.warn(
+        log.warn(
           'Studio cross-tab sync is disabled: your stored library could not be ' +
             'loaded, so this temporary workspace will not be shared or published.',
         )
@@ -360,6 +364,6 @@ if (typeof window !== 'undefined') {
       return initCrossTabSync()
     })
     .catch((error: unknown) => {
-      console.error('Failed to start cross-tab store coordination:', error)
+      log.error('Failed to start cross-tab store coordination', { error })
     })
 }

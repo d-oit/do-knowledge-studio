@@ -2,7 +2,7 @@
 
 ## Status
 
-Approved — implemented in `src/lib/search/retrieval.ts` (pull requests
+Implemented — `src/lib/search/retrieval.ts` (pull requests
 647, 650, and 651).
 
 ## Context

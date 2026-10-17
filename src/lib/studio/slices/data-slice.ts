@@ -14,6 +14,10 @@ import type { Entity, Claim } from '../types'
 import type { ImportOptions, StudioState } from '../store-types'
 import { abortChatSend, resetSearchCache } from './chat-slice'
 import type { StudioSlice } from './slice-types'
+import { logger } from '@/lib/logging/logger'
+
+/** Subsystem tag for import/rollback/reset slice logs. */
+const log = logger.child({ area: 'store' })
 
 /** Keys owned by the import/reset slice. */
 export type DataSlice = Pick<StudioState, 'importData' | 'importWithRollback' | 'resetStore'>
@@ -110,7 +114,7 @@ export const createDataSlice: StudioSlice<DataSlice> = (set, get) => ({
         try {
           set(seedPatch())
         } catch (seedError) {
-          console.error('Studio could not reset after a failed import:', seedError)
+          log.error('Studio could not reset after a failed import', { error: seedError })
         }
       }
       return {

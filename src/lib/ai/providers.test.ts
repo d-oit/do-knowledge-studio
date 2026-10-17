@@ -7,6 +7,7 @@ import {
   validateOllamaUrl,
 } from './providers'
 import { OPENROUTER_ROUTERS, type ChatMessage } from './types'
+import { ErrorCode } from '@/lib/errors'
 
 // ─── getAdapter ─────────────────────────────────────────────────────────────
 
@@ -64,7 +65,7 @@ describe('OpenRouter API key requirement', () => {
         apiKey: '',
         messages: [{ role: 'user', content: 'hello' }],
       }),
-    ).rejects.toThrow('OpenRouter API key is required')
+    ).rejects.toMatchObject({ code: ErrorCode.AI_PROVIDER_ERROR })
   })
 
   it('throws when API key is empty string on sendStream()', async () => {
@@ -79,7 +80,7 @@ describe('OpenRouter API key requirement', () => {
         },
         vi.fn(),
       ),
-    ).rejects.toThrow('OpenRouter API key is required')
+    ).rejects.toMatchObject({ code: ErrorCode.AI_PROVIDER_ERROR })
   })
 })
 
@@ -662,23 +663,32 @@ describe('OpenRouterAdapter integration', () => {
   })
 
   it('behaves consistently on OpenRouter API failures', async () => {
-    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
-      ok: false,
-      status: 500,
-      text: () => Promise.resolve('Internal Server Error fallback failure'),
-    } as unknown as Response)
+    // A persistent 500 is retried with backoff until the budget is exhausted,
+    // then surfaces as a typed provider error.
+    vi.useFakeTimers()
+    try {
+      vi.mocked(globalThis.fetch).mockResolvedValue({
+        ok: false,
+        status: 500,
+        headers: new Headers(),
+        text: () => Promise.resolve('Internal Server Error fallback failure'),
+      } as unknown as Response)
 
-    const adapter = getAdapter('openrouter')
-    await expect(
-      adapter.send({
+      const adapter = getAdapter('openrouter')
+      const send = adapter.send({
         provider: 'openrouter',
         model: 'openrouter/auto',
         apiKey: 'test-key',
         messages: [{ role: 'user', content: 'hello' }],
-      }),
-    ).rejects.toThrow(
-      'OpenRouter error 500: Internal Server Error fallback failure',
-    )
+      })
+      const rejection = expect(send).rejects.toMatchObject({
+        code: ErrorCode.AI_PROVIDER_ERROR,
+      })
+      await vi.advanceTimersByTimeAsync(60_000)
+      await rejection
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('throws when response has no content', async () => {
@@ -695,7 +705,7 @@ describe('OpenRouterAdapter integration', () => {
         apiKey: 'test-key',
         messages: [{ role: 'user', content: 'hello' }],
       }),
-    ).rejects.toThrow('OpenRouter returned an empty response')
+    ).rejects.toMatchObject({ code: ErrorCode.AI_PROVIDER_ERROR })
   })
 })
 
@@ -804,26 +814,35 @@ describe('OllamaAdapter integration', () => {
         apiKey: '',
         messages: [{ role: 'user', content: 'hello' }],
       }),
-    ).rejects.toThrow('Ollama returned an empty response')
+    ).rejects.toMatchObject({ code: ErrorCode.AI_PROVIDER_ERROR })
   })
 
   it('throws on Ollama API failure', async () => {
-    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
-      ok: false,
-      status: 503,
-      text: () => Promise.resolve('Service Unavailable'),
-    } as unknown as Response)
+    vi.useFakeTimers()
+    try {
+      vi.mocked(globalThis.fetch).mockResolvedValue({
+        ok: false,
+        status: 503,
+        headers: new Headers(),
+        text: () => Promise.resolve('Service Unavailable'),
+      } as unknown as Response)
 
-    const adapter = getAdapter('ollama')
-    await expect(
-      adapter.send({
+      const adapter = getAdapter('ollama')
+      const send = adapter.send({
         provider: 'ollama',
         model: 'llama3',
         // Ollama needs no key, but ChatRequest requires the field.
         apiKey: '',
         messages: [{ role: 'user', content: 'hello' }],
-      }),
-    ).rejects.toThrow('Ollama error 503')
+      })
+      const rejection = expect(send).rejects.toMatchObject({
+        code: ErrorCode.AI_PROVIDER_ERROR,
+      })
+      await vi.advanceTimersByTimeAsync(60_000)
+      await rejection
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('rejects invalid Ollama URL (non-http protocol)', async () => {
@@ -927,7 +946,7 @@ describe('OllamaAdapter sendStream', () => {
         },
         vi.fn(),
       ),
-    ).rejects.toThrow('Ollama returned an empty response')
+    ).rejects.toMatchObject({ code: ErrorCode.AI_PROVIDER_ERROR })
   })
 })
 
@@ -1006,7 +1025,7 @@ describe('OpenRouterAdapter sendStream', () => {
         },
         vi.fn(),
       ),
-    ).rejects.toThrow('OpenRouter returned an empty response')
+    ).rejects.toMatchObject({ code: ErrorCode.AI_PROVIDER_ERROR })
   })
 
   it('throws on stream API failure', async () => {
@@ -1027,7 +1046,7 @@ describe('OpenRouterAdapter sendStream', () => {
         },
         vi.fn(),
       ),
-    ).rejects.toThrow('OpenRouter error 401')
+    ).rejects.toMatchObject({ code: ErrorCode.AI_PROVIDER_ERROR })
   })
 })
 

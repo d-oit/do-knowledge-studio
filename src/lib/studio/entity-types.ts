@@ -1,6 +1,10 @@
 import type { LucideIcon } from 'lucide-react'
 import { z } from 'zod'
 import { ENTITY_TYPE_META, type EntityType } from './types'
+import { logger } from '@/lib/logging/logger'
+
+/** Subsystem tag for entity-type registry logs. */
+const log = logger.child({ area: 'entity-types' })
 
 /** Visual metadata for an entity type (label + Tailwind token classes). */
 export interface EntityTypeMeta {
@@ -99,7 +103,7 @@ const builtinTypeDefs: EntityTypeDef[] = (Object.keys(ENTITY_TYPE_META) as Entit
  * Registers a custom entity type at runtime. Idempotent by id: registering
  * the same id again replaces the previous definition (single entry, no
  * duplicates). Built-in ids cannot be overridden — the call is rejected with
- * a console.error. Throws if the definition fails the {@link EntityTypeDefSchema}
+ * a logger error. Throws if the definition fails the {@link EntityTypeDefSchema}
  * validation (plugin API misuse should fail loudly).
  *
  * @example
@@ -120,7 +124,7 @@ export const registerEntityType = (def: EntityTypeDef): void => {
   }
   const { id } = parsed.data
   if (Object.prototype.hasOwnProperty.call(ENTITY_TYPE_META, id)) {
-    console.error(`entity-types: cannot register built-in entity type "${id}"`)
+    log.error('Cannot register built-in entity type', { id })
     return
   }
   customTypeDefs.set(id, { ...parsed.data })

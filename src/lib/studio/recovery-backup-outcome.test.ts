@@ -250,8 +250,8 @@ describe('persistRecoverySnapshot', () => {
       expect(result).toEqual({ persisted: true })
       expect(localStorage.getItem(RECOVERY_KEY)).not.toBeNull()
       expect(consoleError).toHaveBeenCalledWith(
-        'Recovery availability subscriber threw',
-        expect.any(Error),
+        expect.stringContaining('Recovery availability subscriber threw'),
+        expect.objectContaining({ error: expect.objectContaining({ message: 'listener bug' }) }),
       )
     } finally {
       unsubscribe()

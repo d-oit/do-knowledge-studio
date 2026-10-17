@@ -6,6 +6,10 @@ import { useSpeechRecognition } from '@/lib/use-speech-recognition'
 import { useEffect, useState, useCallback } from 'react'
 import { parseIntent, formatIntentSummary, type Intent } from '@/lib/nlp'
 import { translate } from '@/lib/i18n/messages/voice-input'
+import { logger } from '@/lib/logging/logger'
+
+/** Subsystem tag for speech-recognition logs. */
+const log = logger.child({ area: 'speech' })
 
 interface VoiceInputProps {
   onTranscript: (text: string) => void
@@ -72,7 +76,7 @@ export const VoiceInput = ({
 
   useEffect(() => {
     if (error) {
-      console.error('Speech recognition error:', error)
+      log.error('Speech recognition error', { error })
     }
   }, [error])
 

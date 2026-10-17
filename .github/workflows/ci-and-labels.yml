@@ -185,6 +185,15 @@ jobs:
         run: pnpm install --frozen-lockfile
       # quality-gate runs tests on changed files only (via quality_gate.sh --changed);
       # this job runs the full test suite to catch regressions outside the change set.
+      #
+      # The app typecheck has no dedicated step here — it runs through
+      # quality_gate.sh in the Quality Gate job, which covers `tsconfig.app.json`
+      # via `pnpm typecheck`. Ordinary test files (`src/**/*.test.ts(x)`, `tests/`)
+      # are outside that project, and were previously only type-checked by
+      # Vitest's experimental typecheck. This is the stable replacement, run in
+      # full in the job that owns the test program (plans/165, plans/176 T4).
+      - name: Run test typecheck
+        run: pnpm typecheck:test
       - name: Run Vitest
         run: pnpm test
 
@@ -288,6 +297,23 @@ jobs:
           cache: 'pnpm'
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Read Next.js version
+        id: next-version
+        run: |
+          version=$(node -p "require('next/package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Cache Next.js build cache
+        # Next's incremental build cache; without it a fresh runner emits the
+        # "No build cache found" warning and recompiles from scratch every run
+        # (plans/167, plans/168). Keyed by OS + lockfile + Next version, with a
+        # lockfile-scoped restore-key fallback so a Next bump still warms up.
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-${{ steps.next-version.outputs.version }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-
+            ${{ runner.os }}-nextjs-
       - name: Run build
         run: pnpm run build
 

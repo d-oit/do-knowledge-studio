@@ -29,6 +29,10 @@ import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } fr
 import { pruneDanglingCanvasRefs } from './canvas-refs'
 import { snapshotCorpus } from './history-snapshot'
 import { isSyncBlocked } from './hydration-guard'
+import { logger } from '@/lib/logging/logger'
+
+/** Subsystem tag for cross-tab store synchronization logs. */
+const log = logger.child({ area: 'sync' })
 
 // `initCrossTabSync` is not called under a refusal (see store.ts), but a manual
 // `rehydrate()` can refuse *after* these listeners were attached, so the
@@ -267,7 +271,7 @@ const broadcastLocalStoreChange = (
     }
     broadcastChannel.postMessage(message)
   } catch (error) {
-    console.warn('Failed to broadcast cross-tab store update:', error)
+    log.warn('Failed to broadcast cross-tab store update', { error })
   }
 }
 
@@ -317,7 +321,7 @@ const setupBroadcastChannel = (): void => {
     }
   } catch (error) {
     broadcastChannel = null
-    console.warn('Failed to open cross-tab BroadcastChannel:', error)
+    log.warn('Failed to open cross-tab BroadcastChannel', { error })
   }
 }
 
@@ -344,7 +348,7 @@ const createStorageEventListener = (): ((event: StorageEvent) => void) => {
     } catch (error) {
       // A cross-tab write can be observed mid-flight; the next write (or the
       // BroadcastChannel message for the same change) carries the full state.
-      console.warn('Ignored unreadable cross-tab storage event:', error)
+      log.warn('Ignored unreadable cross-tab storage event', { error })
     }
   }
 }

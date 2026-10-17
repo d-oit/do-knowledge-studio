@@ -15,6 +15,7 @@ vi.mock('@/lib/ai', () => ({
 }))
 
 import { useAiHarnessChat, type UseAiHarnessChatOptions } from './use-ai-harness-chat'
+import { AppError, ErrorCode } from '@/lib/errors'
 
 /** Baseline hook options; individual tests override what they exercise. */
 const baseOptions: UseAiHarnessChatOptions = {
@@ -103,7 +104,14 @@ describe('useAiHarnessChat', () => {
     expect(last?.role).toBe('assistant')
     expect(last?.content).toContain('[Error] Your API key was rejected — check it in settings.')
     expect(last?.content).not.toContain('{"error":')
-    expect(consoleSpy).toHaveBeenCalledWith('AI harness send failed:', err)
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('AI harness send failed'),
+      expect.objectContaining({
+        error: expect.objectContaining({
+          message: 'OpenRouter error 401: {"error":{"message":"Invalid API key","code":401}}',
+        }),
+      }),
+    )
     consoleSpy.mockRestore()
   })
 
@@ -120,6 +128,21 @@ describe('useAiHarnessChat', () => {
     consoleSpy.mockRestore()
   })
 
+  it('maps a typed provider error by code, preferring it over message text', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    // The message text looks like a 401, but the typed code says rate-limited:
+    // the code must win, proving the UI no longer pattern-matches provider text.
+    const err = new AppError(ErrorCode.AI_PROVIDER_RATE_LIMITED, 'OpenRouter error 401: decoy')
+    mockSendChatStream.mockRejectedValue(err)
+
+    const hook = await sendMessage('hi')
+
+    const last = hook.result.current.messages.at(-1)
+    expect(last?.content).toContain('[Error] The provider is rate-limiting requests — wait and retry.')
+    expect(last?.content).not.toContain('API key was rejected')
+    consoleSpy.mockRestore()
+  })
+
   it('maps network errors to friendly copy', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const err = new TypeError('Failed to fetch')
@@ -130,6 +153,21 @@ describe('useAiHarnessChat', () => {
     const last = hook.result.current.messages.at(-1)
     expect(last?.role).toBe('assistant')
     expect(last?.content).toContain('[Error] Cannot reach the provider — check your connection or provider settings.')
+    consoleSpy.mockRestore()
+  })
+
+  it('maps the unreachable-provider code to the same network copy', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    // The provider layer classifies a transport failure by code; the UI must
+    // read that code rather than fall through to the generic copy.
+    const err = new AppError(ErrorCode.AI_PROVIDER_UNREACHABLE, 'OpenRouter network error: Failed to fetch')
+    mockSendChatStream.mockRejectedValue(err)
+
+    const hook = await sendMessage('hi')
+
+    const last = hook.result.current.messages.at(-1)
+    expect(last?.content).toContain('[Error] Cannot reach the provider — check your connection or provider settings.')
+    expect(last?.content).not.toContain('unexpected')
     consoleSpy.mockRestore()
   })
 

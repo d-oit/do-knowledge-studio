@@ -1,7 +1,7 @@
 # ADR 031: Native Open Knowledge Format (OKF) v0.2 Bundle Export/Import Support
 
 ## Status
-Proposed/Approved — Native OKF v0.2 support implemented with bundle export/import pipelines, Zod validator definitions, and trust/staleness utilities.
+Implemented — Native OKF v0.2 support shipped: bundle export/import pipelines, Zod validator definitions, and trust/staleness utilities (`src/lib/okf/types.ts`, `import.ts`, `bundle.ts`).
 
 ## Context
 Google Cloud Platform announced OKF v0.2 (2026-07-24): a vendor-neutral format representing knowledge as structured directory trees of Markdown files with YAML frontmatter.

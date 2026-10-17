@@ -13,6 +13,10 @@ import { pruneDanglingCanvasRefs } from './canvas-refs'
 import { useStudioStore } from './store'
 import { reconcileSnapshot, type HistorySnapshot } from './history-snapshot'
 import { isSyncBlocked } from './hydration-guard'
+import { logger } from '@/lib/logging/logger'
+
+/** Subsystem tag for recovery-snapshot store logs. */
+const log = logger.child({ area: 'store' })
 
 /** localStorage key for the recovery snapshot. */
 const RECOVERY_KEY = 'do-knowledge-studio-recovery'
@@ -79,7 +83,7 @@ const notifyAvailability = (): void => {
       // A misbehaving subscriber must not abort the write path that outlives
       // it, and must never be reported back up as a storage failure (GitNexus
       // on PR #925): the write already happened; this is a listener bug.
-      console.error('Recovery availability subscriber threw', err)
+      log.error('Recovery availability subscriber threw', { error: err })
     }
   }
 }
@@ -136,7 +140,7 @@ export type RecoveryPersistResult =
    `too-large` does: the snapshot left behind describes the corpus the import
    replaces.
  *
- * `console.warn` stays because these paths are hard to reach from a UI test.
+ * `log.warn` stays because these paths are hard to reach from a UI test.
  */
 export const persistRecoverySnapshot = (snapshot: RecoverySnapshot): RecoveryPersistResult => {
   let serialized: string
@@ -148,7 +152,7 @@ export const persistRecoverySnapshot = (snapshot: RecoverySnapshot): RecoveryPer
     // replace, and the import proceeds regardless, so it must not stay
     // restorable — the same reasoning as the oversized branch below, including
     // the refused-clear case (GitNexus on PR #925).
-    console.warn('Failed to serialize recovery snapshot')
+    log.warn('Failed to serialize recovery snapshot')
     return clearRecoverySnapshot()
       ? { persisted: false, reason: 'unserializable' }
       : { persisted: false, reason: 'storage-unavailable' }
@@ -158,7 +162,7 @@ export const persistRecoverySnapshot = (snapshot: RecoverySnapshot): RecoveryPer
   // content can double the byte count relative to `.length`, which would let
   // an oversized snapshot past a code-unit check (GitNexus on PR #925).
   if (new TextEncoder().encode(serialized).length > MAX_RECOVERY_SIZE_BYTES) {
-    console.warn('Recovery snapshot exceeds size limit, skipping persistence')
+    log.warn('Recovery snapshot exceeds size limit, skipping persistence')
     // Clearing the snapshot that is about to be replaced is what keeps a later
     // restore from handing back the previous corpus. If storage refuses the
     // removal the stale copy survives, so the outcome reports a storage refusal
@@ -173,7 +177,7 @@ export const persistRecoverySnapshot = (snapshot: RecoverySnapshot): RecoveryPer
   try {
     localStorage.setItem(RECOVERY_KEY, serialized)
   } catch {
-    console.warn('Failed to persist recovery snapshot')
+    log.warn('Failed to persist recovery snapshot')
     // Deliberately does NOT clear: see the note above.
     return { persisted: false, reason: 'storage-unavailable' }
   }
@@ -229,7 +233,7 @@ const clearRecoverySnapshot = (): boolean => {
   try {
     localStorage.removeItem(RECOVERY_KEY)
   } catch {
-    console.warn('Failed to clear corrupt recovery snapshot')
+    log.warn('Failed to clear corrupt recovery snapshot')
     return false
   }
   notifyAvailability()

@@ -11,7 +11,7 @@ import {
   type GraphSnapshotDiff,
 } from '@/lib/studio/graph-snapshot'
 import { clamp, computeMaxPan, MAX_ZOOM, MIN_ZOOM } from '@/lib/studio/graph-gestures'
-import { canvasForLayout } from '@/lib/studio/graph-layout'
+import { canvasForLayout, type ViewportSize } from '@/lib/studio/graph-layout'
 import type { Entity } from '@/lib/studio/types'
 import { useAnnouncer } from '@/lib/a11y/announcer'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
@@ -23,6 +23,7 @@ interface GraphSnapshotComparisonParams {
   panOffset: { x: number; y: number }
   zoom: number
   entities: Entity[]
+  viewport: ViewportSize | null
   setLayout: (layout: GraphLayout) => void
   setFocusMode: (focus: boolean) => void
   setPanOffset: (offset: { x: number; y: number }) => void
@@ -44,6 +45,7 @@ export const useGraphSnapshotComparison = ({
   panOffset,
   zoom,
   entities,
+  viewport,
   setLayout,
   setFocusMode,
   setPanOffset,
@@ -95,7 +97,7 @@ export const useGraphSnapshotComparison = ({
     // path enforces, using the SAVED layout's canvas — the live layout's canvas
     // can be smaller and would re-clamp a pan that was legal when the snapshot
     // was taken.
-    const maxPan = computeMaxPan(canvasForLayout(entities, snapshot.layout), clampedZoom)
+    const maxPan = computeMaxPan(canvasForLayout(entities, snapshot.layout, viewport), clampedZoom)
     setPanOffset({
       x: clamp(snapshot.panX, -maxPan, maxPan),
       y: clamp(snapshot.panY, -maxPan, maxPan),
@@ -103,7 +105,7 @@ export const useGraphSnapshotComparison = ({
     setZoom(clampedZoom)
     const stillPresent = entities.some((e) => e.id === snapshot.selectedEntityId)
     selectEntity(stillPresent ? snapshot.selectedEntityId : null)
-  }, [announce, entities, selectEntity, setLayout, setFocusMode, setPanOffset, setZoom])
+  }, [announce, entities, viewport, selectEntity, setLayout, setFocusMode, setPanOffset, setZoom])
 
   /** Discards the saved snapshot and disables the restore action. */
   const clearSnapshot = useCallback(() => {

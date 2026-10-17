@@ -151,8 +151,8 @@ describe('graph snapshot persistence', () => {
       expect(saveGraphSnapshot(validSnapshot())).toBe(false)
     })
     expect(consoleError).toHaveBeenCalledWith(
-      'Failed to save graph snapshot:',
-      'SecurityError',
+      expect.stringContaining('Failed to save graph snapshot'),
+      expect.objectContaining({ error: expect.objectContaining({ message: 'SecurityError' }) }),
     )
   })
 
@@ -163,8 +163,8 @@ describe('graph snapshot persistence', () => {
       expect(readGraphSnapshot()).toBeNull()
     })
     expect(consoleError).toHaveBeenCalledWith(
-      'Failed to read graph snapshot:',
-      'SecurityError',
+      expect.stringContaining('Failed to read graph snapshot'),
+      expect.objectContaining({ error: expect.objectContaining({ message: 'SecurityError' }) }),
     )
   })
 
@@ -175,8 +175,8 @@ describe('graph snapshot persistence', () => {
       expect(() => { clearGraphSnapshot() }).not.toThrow()
     })
     expect(consoleError).toHaveBeenCalledWith(
-      'Failed to clear graph snapshot:',
-      'SecurityError',
+      expect.stringContaining('Failed to clear graph snapshot'),
+      expect.objectContaining({ error: expect.objectContaining({ message: 'SecurityError' }) }),
     )
   })
 })

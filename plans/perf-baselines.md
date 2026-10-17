@@ -1,127 +1,122 @@
 # Performance Baselines
 
-This document defines 3 reproducible benchmark flows for measuring application performance.
-Use the in-app Performance Panel (Ctrl+Shift+P / Cmd+Shift+P in dev mode) to collect before/after numbers.
+This document records the reproducible performance checks in the repository and the
+measurement notes behind them. It names only subsystems that exist in the current
+tree; where a figure predates the current implementation it is labelled
+**historical**.
+
+There are two measurement surfaces:
+
+1. **Vitest performance guards** (`*.perf.test.ts(x)` and the benchmark case in
+   `src/lib/search/retrieval.test.ts`) — run with the rest of the suite
+   (`pnpm test`). They assert wide smoke ceilings, not micro-benchmarks: the suite
+   runs in parallel (`maxWorkers: 2`) on shared runners, so absolute wall-clock
+   times swing by an order of magnitude under load.
+2. **Ad-hoc local runs** — for a before/after comparison on one change, time the
+   relevant function directly with `performance.now()` in a throwaway script rather
+   than deciding on a single CI run.
 
 ---
 
-## Benchmark 1: App Bootstrap & First Shell Render
+## 1. Lexical search (BM25) — `src/lib/search/retrieval.ts`
 
-**What it measures:** Time from page load to the app being interactive (DB ready, first view rendered).
+`search()` builds a BM25 index over entities and claims. `getIndex()` caches the
+index and rebuilds whenever either array reference changes; tokenization is now
+memoized per entry id (`tokenizedById`), so a rebuild forced by a single edit
+re-tokenizes only the touched entry instead of the whole corpus.
 
-**Reproduction steps:**
-1. Open Chrome DevTools → Network tab → Disable cache
-2. Set CPU throttling to "4x slowdown" in Performance tab
-3. Reload the page (hard reload: Ctrl+Shift+R)
-4. Wait for "Booting Knowledge Studio..." to disappear
-5. Note the `app-boot-time` measurement in the Performance Panel
-
-**Metrics tracked:**
-- `app-first-render`: Time from bootstrap start to first React render
-- `app-boot-time`: Time from bootstrap start to DB ready + data loaded
+**How to measure:** the guard in `src/lib/search/retrieval.test.ts`
+("performance: cached queries beat cold rebuilds and stay fast as data grows")
+builds a 1,000-entity / 3,000-claim corpus, measures one cold build, then times 30
+cached queries, and also exercises a corpus above `MAX_CACHE_ENTRIES`.
 
 **Acceptance criteria:**
-- First shell renders in < 2s on cold load (no cache, 4x CPU throttling)
-- Performance Panel shows non-null values for both metrics
+- A cold index build stays under the `COLD_BUILD_MS_CEILING` (5,000 ms) smoke bound.
+- A cached query beats the cold rebuild it avoids by at least
+  `MIN_CACHE_SPEEDUP_FACTOR` (2×).
+- Incremental reuse after add/edit/delete ranks identically to a cold rebuild.
+- Corpora above `MAX_CACHE_ENTRIES` (20,000 entries) bypass the cache to bound
+  memory, and searching them does not error.
+- The semantic path (`src/lib/search/vector-store.ts`, run through the worker in
+  `src/lib/search/search-worker.ts`) is the vector complement of the lexical path.
+
+**Historical baselines** (quiet machine, from the guard's comments): cold index
+build ≈ 210 ms; cached query average ≈ 3.4 ms. A local one-off (2026-10-17,
+2,000 entities × 3 claims = 8,000 entries) measured a cold build median of ≈ 384 ms
+and a single-edit rebuild median of ≈ 17 ms after tokenization reuse — down from
+≈ 367 ms before it, i.e. the rebuild is no longer a full re-tokenization.
 
 ---
 
-## Benchmark 2: Search Latency (Keyword & Semantic)
+## 2. Intent parsing — `src/lib/nlp.ts`
 
-**What it measures:** End-to-end time from typing a query to seeing results.
+`parseIntent()` is the natural-language front end for entity/claim/search intents.
 
-**Prerequisites:** At least 100 entities and 500 claims loaded in the database.
+**How to measure:** the guard in `src/lib/nlp.perf.test.ts` runs 100 warm-up passes
+over 7 sample phrases, then 10,000 timed passes over the same samples, and asserts
+the total stays under `PARSE_INTENT_MS_CEILING` (2,000 ms).
 
-**Reproduction steps:**
-1. Navigate to the Editor view
-2. Open the search panel (click search icon or use keyboard shortcut)
-3. Type a query of at least 3 characters (e.g., "knowledge")
-4. Observe the `orama-query-time` measurement in the Performance Panel
-5. Also note `search-first-result` (measured from search start to first results)
-6. Repeat 3 times and take the average
+**Acceptance criteria:** the workload is non-blocking under parallel test-runner
+load; a semantic regression that changes parsed output is caught by
+`src/lib/nlp.test.ts`, not this guard.
 
-**Metrics tracked:**
-- `orama-query-time`: Orama search execution time (includes FTS)
-- `search-first-result`: End-to-end search latency from UI
-
-**Acceptance criteria:**
-- Keyword search returns results in < 100ms for datasets up to 10k documents
-- First result appears before full search completes (progressive rendering)
-- Performance Panel shows measurements for each search
+**Historical baseline** (paired run recorded in `plans/168`): baseline median
+209.82 ms vs optimized head median 158.80 ms over 7 alternating pairs of 10,000
+passes across 7 samples, ≈ 1.32× faster.
 
 ---
 
-## Benchmark 3: Graph & Mind Map Rendering
+## 3. Store selectors — `src/lib/studio/store.ts`
 
-**What it measures:** Time to initialize and render the graph visualization and mind map.
+`useStats` and `useFilteredEntities` must keep referential stability so unrelated
+store writes do not re-render their consumers.
 
-**Prerequisites:** At least 50 entities with interconnecting links.
+**How to measure:** the guards `src/lib/studio/use-stats.perf.test.tsx` and
+`src/lib/studio/use-filtered-entities.perf.test.tsx` change an unrelated slice
+(`setView`) and assert the returned instance is unchanged, then change a related
+slice and assert a new instance is returned.
 
-### Graph View
-
-**Reproduction steps:**
-1. Navigate to the Graph view
-2. Note the `graph-layout-finish` measurement in the Performance Panel
-3. Toggle focus mode on a node with many connections
-4. Observe `react:GraphView` Profiler entries (render durations)
-5. Repeat navigation (Editor → Graph → Editor) and measure mount times
-
-### Mind Map
-
-**Reproduction steps:**
-1. Navigate to the Mind Map view
-2. Note the `mindmap-init` measurement in the Performance Panel
-3. Change depth settings and note re-mount times
-4. Observe `react:MindMapView` Profiler entries
-
-**Metrics tracked:**
-- `graph-layout-finish`: Sigma.js graph initialization time
-- `react:GraphView`: React Profiler render duration for Graph component
-- `mindmap-init`: Mind Elixir initialization time
-- `react:MindMapView`: React Profiler render duration for Mind Map component
-
-**Acceptance criteria:**
-- Graph renders in < 500ms for 50 nodes
-- Mind Map inits in < 300ms for 50 nodes at depth 2
-- React Profiler shows both components as distinct Profiler entries
+**Acceptance criteria:** unrelated state changes return the same object/array
+instance; related state changes return a new one.
 
 ---
 
-## Benchmark 4: Editor Mount & Save Latency
+## 4. Graph and mind map rendering
 
-**What it measures:** Time from navigating to the Editor view to it being interactive, and save operation duration.
+- **Graph** — `src/components/studio/views/graph-view.tsx` renders a custom SVG
+  canvas (no third-party graph library). Node placement and canvas sizing are pure
+  functions in `src/lib/studio/graph-layout.ts` and
+  `src/lib/studio/graph-viewport.ts`; `graph-view.tsx` focuses on drawing and
+  interaction.
+- **Mind map** — `src/components/studio/views/mindmap-view.tsx` renders a custom
+  `role="tree"` structure (no third-party mind-map library).
 
-**Reproduction steps:**
-1. Navigate to the Editor view
-2. Note the `editor-ready` measurement in the Performance Panel
-3. Type an entity name and some content
-4. Click "Save to DB"
-5. Observe job queue metrics (reindex-document enqueue)
-6. Note the Profiler entry for the Editor component (`react:Editor`)
+**How to measure:** there is no automated latency guard for these views; profile
+the running app with the browser Performance panel and the React Profiler. Watch
+that focus mode and layout changes do not rebuild the canvas needlessly, and that
+the graph canvas grows with the placed nodes instead of drawing off-canvas.
 
-**Metrics tracked:**
-- `editor-ready`: Time from editor mount to entity list loaded and editor initialized
-- `react:Editor`: React Profiler render duration for the Editor component
-
-**Acceptance criteria:**
-- Editor is interactive in < 200ms after navigation
-- Editor mount timing is visible in the Performance Panel
-- Profiler shows distinct render times for Editor interactions
+**Acceptance criteria:** the graph canvas covers every placed node; toggling focus
+mode filters what is drawn without rescaling the canvas.
 
 ---
 
-## Data Collection Method
+## 5. Editor preview
 
-## Data Collection Method
+- **Editor** — `src/components/studio/views/editor-view.tsx`, with the markdown
+  preview in `src/components/studio/views/editor-preview.tsx` (`react-markdown` +
+  `remark-gfm`, links and images vetted through `sanitizeUrl`).
 
-All measurements are collected via the `src/lib/perf/index.ts` module which wraps the
-native `performance.mark()` / `performance.measure()` API. In dev mode, measurements
-are viewable in the floating Performance Panel (Ctrl+Shift+P).
+**How to measure:** profile the Editor view with the React Profiler while typing
+and saving; check that the preview re-renders only when the document changes.
 
-To export raw data for analysis:
-```js
-// In DevTools console:
-JSON.stringify(window.__PERF_ENTRIES__ || [])
-```
+---
 
-The entries array is capped at 500 to avoid memory leaks.
+## Data collection
+
+All current automated measurements come from the Vitest guards above and are read
+from the normal test output. There is no in-app performance panel and no
+`performance.mark()`/`performance.measure()` module in the current tree; earlier
+revisions of this document referenced `src/lib/perf/index.ts`, an in-app panel, and
+metrics such as `orama-query-time`/`mindmap-init`. Those are **historical** and are
+not reproducible against the current implementation.

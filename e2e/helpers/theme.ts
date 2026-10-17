@@ -55,3 +55,38 @@ export const setStudioTheme = async (page: Page, target: StudioTheme): Promise<v
 
   throw new Error(`Could not switch the studio to the ${target} theme.`);
 };
+
+/**
+ * Palettes the a11y and touch-target specs are exercised in (ADR 036 §Decision,
+ * Plan 130 A19).
+ */
+export const THEME_PASSES = ['light', 'dark'] as const;
+export type ThemePass = (typeof THEME_PASSES)[number];
+
+/** Class `next-themes` puts on `<html>`; `globals.css` scopes every dark token to it. */
+const DARK_CLASS = 'dark';
+
+/**
+ * Asserts the loaded page resolved to `theme`'s palette.
+ *
+ * Activate the palette with the `colorScheme` test option: one line per themed
+ * describe, resolved by the provider from the context's emulated preference, and
+ * the same `.dark` token set an explicit dark-mode user gets. Seeding
+ * `THEME_STORAGE_KEY` instead would make each pass depend on the theme control's
+ * post-mount state rather than on the palette being measured, and it duplicates
+ * what `colorScheme` already emulates.
+ *
+ * Nothing the test writes is what mounts the palette, so this assertion is what
+ * keeps a `colorScheme` pass honest: if the provider ever stops resolving the
+ * emulated preference (e.g. `defaultTheme` stops being `system`), the pass fails
+ * loudly instead of silently measuring the light palette twice.
+ */
+export const expectThemeApplied = async (page: Page, theme: ThemePass): Promise<void> => {
+  const rootElement = page.locator('html');
+  if (theme === DARK_CLASS) {
+    await expect(rootElement).toHaveClass(/\bdark\b/);
+    return;
+  }
+  await expect(rootElement).toHaveClass(/\blight\b/);
+  await expect(rootElement).not.toHaveClass(/\bdark\b/);
+};

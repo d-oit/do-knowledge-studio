@@ -12,6 +12,10 @@ import type { ChatMessage } from '../types'
 import type { StudioState } from '../store-types'
 import { generateId } from './claims-slice'
 import type { StudioSlice } from './slice-types'
+import { logger } from '@/lib/logging/logger'
+
+/** Subsystem tag for local-chat slice logs. */
+const log = logger.child({ area: 'chat' })
 
 /** Keys owned by the local chat slice. */
 export type ChatSlice = Pick<StudioState, 'chat' | 'chatLoading' | 'sendMessage' | 'clearChat'>
@@ -108,7 +112,7 @@ export const createChatSlice: StudioSlice<ChatSlice> = (set, get) => ({
         try {
           results = search(entities, claims, content, CHAT_RESULT_LIMIT)
         } catch (fallbackErr) {
-          console.error('Local chat synchronous fallback failed:', fallbackErr)
+          log.error('Local chat synchronous fallback failed', { error: fallbackErr })
         }
         const reply = buildLocalChatReply(results)
         set((state) => ({ chat: [...state.chat, reply], chatLoading: false }))
