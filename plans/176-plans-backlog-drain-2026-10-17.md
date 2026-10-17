@@ -1,8 +1,11 @@
 # Plan 176 — plans/ Backlog Drain: the ADR 035 Error/Logging Stack and Recorded Follow-ups
 
 **Date:** 2026-10-17
-**Status:** Implemented — one PR; verification recorded below, and the merge
-evidence is appended after the merge (the repository's usual pattern)
+**Status:** Done — merged in [PR #990](https://github.com/d-oit/do-knowledge-studio/pull/990)
+at `4294126` (squash). Every check on the PR passed, Codacy reported 0 issues,
+and the production deployment succeeded: the live
+`https://do-knowledge-studio.vercel.app/manifest.webmanifest` serves the four
+new shortcuts, which is the merged build's own fingerprint.
 **Method:** GOAP (recon swarm of four scanners → source-verified inventory →
 wave-wise execution with one owner per file set → orchestrator-run gates),
 official docs consulted in-repo (`node_modules/next/dist/docs/`) and on the web
@@ -106,6 +109,44 @@ the fix with the icon/label diff; passes after).
   `*.test.ts` file, then reverted.
 - Migrated `console.*` assertions still assert an emitted warning/error with the
   same essential text plus the structured payload — none deleted, none weakened.
+
+### PR and merge evidence
+
+- Every check on PR #990 passed — `Quality Gate`, `Unit Tests`, `E2E Tests`
+  (Chromium, plus the production offline suite because the precache manifest and
+  the app shell changed), the security scans — and Codacy reported
+  **`Up to standards — 0 issues`**.
+- Merged at `4294126` (squash). The `main` push run and the production
+  deployment succeeded; the live manifest serving the four shortcuts is the
+  deployed build's fingerprint.
+- The `code-review-assistant` pass raised one P1 and one P2, both fixed before
+  merge (see below), and left no unresolved thread.
+
+## Review follow-up
+
+The review found two integration defects that the unit tests had not covered:
+
+1. **P1 — a transport failure showed the generic provider copy.** The provider
+   layer wrapped `fetch` failures in `AI_PROVIDER_ERROR`, whose UI branch says
+   "unexpected error"; the network-specific copy was only reachable for
+   non-`AppError` throws. `toRequestError` now classifies transport failures as
+   `AI_PROVIDER_UNREACHABLE` (with its own user message), and the harness maps
+   that code first.
+2. **P2 — the debounced settings save could drop an edit.** The saved-signature
+   marker was re-assigned when an earlier write resolved late, so a stale value
+   could look persisted and a later edit back to it would be skipped; the marker
+   is now written once. The loaded state is also recorded as persisted, so
+   opening the harness no longer performs a redundant AES-GCM + IndexedDB write
+   and a blur before any edit is a no-op.
+3. The existing `saves settings after load` test asserted exactly that redundant
+   write; it is replaced by one that pins both halves of the contract (opening
+   writes nothing, an edit writes). All four new or changed assertions were
+   observed to fail with the fixes reverted, then pass (111 green across the
+   touched suites, 3,064 in the full suite).
+4. An earlier pass cleared the eight Codacy findings in code — braced void arrow
+   bodies, a static `switch` for the logger's console sink, CSPRNG-sourced retry
+   jitter, and a non-`html` name for the Playwright root locator — with **no new
+   suppressions**.
 
 ## Recorded follow-ups this plan did not close
 
