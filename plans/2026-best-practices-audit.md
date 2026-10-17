@@ -28,3 +28,14 @@
 
 ## Reference
 Full report archived: `.agents/skills/learnings/2026-audit-detailed.md`
+
+## Resolution (2026-10-17 — [Plan 176](176-plans-backlog-drain-2026-10-17.md))
+
+The one open item in this audit is the `PHASES.md` row. It is superseded, not
+deferred: this audit was written against the **Vite 8 / React 18** root layout
+(`index.html`, `docs/`), and neither exists after the Next.js migration (ADR 018).
+The repository root now holds no planning Markdown at all — `PHASES.md` lives in
+`plans/`, which AGENTS.md names as the home for planning and analysis artifacts
+("Do not write planning, audit, or analysis markdown in the repository root"), and
+`plans/INDEX.md` lists it. No move is required, and the historical row above keeps
+its dated wording.
