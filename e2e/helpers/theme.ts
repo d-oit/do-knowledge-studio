@@ -71,14 +71,10 @@ const DARK_CLASS = 'dark';
  *
  * Activate the palette with the `colorScheme` test option: one line per themed
  * describe, resolved by the provider from the context's emulated preference, and
- * the same `.dark` token set an explicit dark-mode user gets. Do NOT seed
- * `THEME_STORAGE_KEY` instead: a *stored* preference is read on the client's
- * first render while the server can only render the provider's default, so the
- * sidebar theme control hydrates with a different label and icon on every load
- * (measured 2026-10-17: server "System — Switch to light theme" + Monitor icon
- * vs client "Dark — Switch to system theme" + Moon icon; derived from
- * `useTheme().theme` in src/components/studio/sidebar.tsx). That is a defect to
- * fix in the component, not a state to bake into every themed a11y run.
+ * the same `.dark` token set an explicit dark-mode user gets. Seeding
+ * `THEME_STORAGE_KEY` instead would make each pass depend on the theme control's
+ * post-mount state rather than on the palette being measured, and it duplicates
+ * what `colorScheme` already emulates.
  *
  * Nothing the test writes is what mounts the palette, so this assertion is what
  * keeps a `colorScheme` pass honest: if the provider ever stops resolving the
@@ -86,11 +82,11 @@ const DARK_CLASS = 'dark';
  * loudly instead of silently measuring the light palette twice.
  */
 export const expectThemeApplied = async (page: Page, theme: ThemePass): Promise<void> => {
-  const html = page.locator('html');
+  const rootElement = page.locator('html');
   if (theme === DARK_CLASS) {
-    await expect(html).toHaveClass(/\bdark\b/);
+    await expect(rootElement).toHaveClass(/\bdark\b/);
     return;
   }
-  await expect(html).toHaveClass(/\blight\b/);
-  await expect(html).not.toHaveClass(/\bdark\b/);
+  await expect(rootElement).toHaveClass(/\blight\b/);
+  await expect(rootElement).not.toHaveClass(/\bdark\b/);
 };

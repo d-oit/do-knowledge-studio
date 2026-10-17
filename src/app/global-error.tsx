@@ -98,7 +98,9 @@ export default function GlobalError({ error, retry }: GlobalErrorProps) {
             )}
             <button
               type="button"
-              onClick={() => retry()}
+              onClick={() => {
+                retry()
+              }}
               className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-body-sm font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 focus-ring"
             >
               {translate('globalError.retry')}

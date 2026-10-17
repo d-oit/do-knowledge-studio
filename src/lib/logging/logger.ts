@@ -244,12 +244,33 @@ export const createRingBufferSink = (maxEntries: number = MAX_BUFFERED_ENTRIES):
   }
 }
 
-/** Formatted console output: `[warn] store: message` plus structured data. */
-const CONSOLE_WRITERS: Record<LogLevel, (line: string, data?: Record<string, unknown>) => void> = {
-  debug: (line, data) => (data === undefined ? console.debug(line) : console.debug(line, data)),
-  info: (line, data) => (data === undefined ? console.info(line) : console.info(line, data)),
-  warn: (line, data) => (data === undefined ? console.warn(line) : console.warn(line, data)),
-  error: (line, data) => (data === undefined ? console.error(line) : console.error(line, data)),
+/**
+ * Writes one entry to the matching console method.
+ *
+ * A `Record<LogLevel, writer>` indexed by the entry's level would be the
+ * compact shape, but a level-keyed function lookup is a dynamic property call
+ * (a static-analysis finding) even though the key set is closed — the switch
+ * keeps every call site static and makes exhaustiveness the compiler's problem.
+ */
+const writeConsoleEntry = (entry: LogEntry): void => {
+  const line = `[${entry.level}] ${entry.area}: ${entry.message}`
+  switch (entry.level) {
+    case 'debug':
+      if (entry.data === undefined) console.debug(line)
+      else console.debug(line, entry.data)
+      return
+    case 'info':
+      if (entry.data === undefined) console.info(line)
+      else console.info(line, entry.data)
+      return
+    case 'warn':
+      if (entry.data === undefined) console.warn(line)
+      else console.warn(line, entry.data)
+      return
+    case 'error':
+      if (entry.data === undefined) console.error(line)
+      else console.error(line, entry.data)
+  }
 }
 
 /**
@@ -257,7 +278,7 @@ const CONSOLE_WRITERS: Record<LogLevel, (line: string, data?: Record<string, unk
  * @returns A sink writing `[level] area: message` plus the structured payload.
  */
 export const createConsoleSink = (): LogSink => ({
-  write: (entry) => CONSOLE_WRITERS[entry.level](`[${entry.level}] ${entry.area}: ${entry.message}`, entry.data),
+  write: writeConsoleEntry,
 })
 
 /** Ring buffer behind `readLogEntries`, so a diagnostics export needs no plumbing. */

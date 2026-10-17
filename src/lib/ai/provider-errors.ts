@@ -35,6 +35,9 @@ export const MILLISECONDS_PER_SECOND = 1000
 /** Number of response-body bytes retained in a provider diagnostic message. */
 export const PROVIDER_ERROR_BODY_LIMIT = 200
 
+/** Exclusive upper bound of a `Uint32Array` element (2^32), for unit scaling. */
+const UINT32_RANGE = 4_294_967_296
+
 /** HTTP status for "Too Many Requests". */
 const HTTP_TOO_MANY_REQUESTS = 429
 
@@ -77,6 +80,13 @@ export const parseRetryAfter = (headerValue: string | null): number | undefined 
   return deltaMs > 0 ? Math.min(deltaMs, PROVIDER_RETRY_AFTER_MAX_MS) : 0
 }
 
+/** One uniformly distributed value in [0, 1) from the platform CSPRNG. */
+const randomUnit = (): number => {
+  const buffer = new Uint32Array(1)
+  crypto.getRandomValues(buffer)
+  return buffer[0] / UINT32_RANGE
+}
+
 /**
  * Delay before the next retry: the server-supplied `Retry-After` when present,
  * otherwise bounded exponential backoff with jitter.
@@ -87,7 +97,7 @@ export const computeRetryDelayMs = (attempt: number, retryAfterMs?: number): num
     PROVIDER_RETRY_BASE_DELAY_MS * PROVIDER_RETRY_BACKOFF_FACTOR ** attempt,
     PROVIDER_RETRY_MAX_DELAY_MS,
   )
-  const jitterMs = Math.random() * PROVIDER_RETRY_BASE_DELAY_MS * PROVIDER_RETRY_JITTER_RATIO
+  const jitterMs = randomUnit() * PROVIDER_RETRY_BASE_DELAY_MS * PROVIDER_RETRY_JITTER_RATIO
   return Math.min(exponentialMs + jitterMs, PROVIDER_RETRY_MAX_DELAY_MS)
 }
 

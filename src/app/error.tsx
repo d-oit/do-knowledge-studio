@@ -59,7 +59,9 @@ export default function RouteError({ error, retry }: RouteErrorProps) {
         )}
         <button
           type="button"
-          onClick={() => retry()}
+          onClick={() => {
+            retry()
+          }}
           className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-body-sm font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
         >
           <RefreshCcw className="h-3.5 w-3.5" aria-hidden="true" />
