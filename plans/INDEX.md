@@ -13,7 +13,7 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 | Wave | Goal | Status | Outcome |
 | --- | --- | --- | --- |
-| W1–W3 | Close every recorded follow-up in plans/ (ADR 035 G1, manifest shortcuts, live-region tests, Home progress-width hydration gate, overlay focus fallback, type token, malformed tables, test-source typecheck, viewport-aware graph density, provider error taxonomy + retry/backoff, debounced settings saves, plaintext-key migration, `Set`-based edge dedup, index-rebuild memoization, `.next/cache` CI cache, `e2e/helpers/store.ts`) | Implemented — in review | One PR; per-item evidence and the verification record in [Plan 176](176-plans-backlog-drain-2026-10-17.md). Merge evidence is appended after the merge. |
+| W1–W3 | Close every recorded follow-up in plans/ (ADR 035 G1, manifest shortcuts, live-region tests, Home progress-width hydration gate, overlay focus fallback, type token, malformed tables, test-source typecheck, viewport-aware graph density, provider error taxonomy + retry/backoff, debounced settings saves, plaintext-key migration, `Set`-based edge dedup, index-rebuild memoization, `.next/cache` CI cache, `e2e/helpers/store.ts`) | Done | Merged in [PR #990](https://github.com/d-oit/do-knowledge-studio/pull/990) at `4294126`: all PR checks green (Codacy 0 issues; Chromium e2e including the production offline suite), production deployment verified live, and the review's P1/P2 (unreachable-provider copy, debounced-save race) fixed in follow-up commits. See [Plan 176](176-plans-backlog-drain-2026-10-17.md). |
 
 ### Plan 175 — Mind Map treeview tab stop (2026-10-16)
 
