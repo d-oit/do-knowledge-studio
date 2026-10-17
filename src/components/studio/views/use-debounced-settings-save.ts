@@ -55,9 +55,6 @@ export const useDebouncedSettingsSave = (
     if (signature === savedSignatureRef.current) return
     savedSignatureRef.current = signature
     saveAISettings(snapshot)
-      .then(() => {
-        savedSignatureRef.current = signature
-      })
       .catch((error: unknown) => {
         // A failed write is not persisted: drop the dedupe marker so the next
         // change (or flush) retries the latest value rather than silently
@@ -71,6 +68,15 @@ export const useDebouncedSettingsSave = (
 
   useEffect(() => {
     if (!enabled) return
+    // The first enabled render is the state that was just loaded from storage,
+    // so record it as persisted: opening the view must not write an identical
+    // record back, and a blur before any edit must stay a no-op. `flush` uses
+    // the same signature string, so both paths agree on what "unchanged" means.
+    if (savedSignatureRef.current === null) {
+      savedSignatureRef.current = settingsSignature
+      return
+    }
+    if (settingsSignature === savedSignatureRef.current) return
     clearPendingTimer()
     timerRef.current = window.setTimeout(() => {
       timerRef.current = undefined

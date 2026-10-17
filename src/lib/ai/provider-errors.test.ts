@@ -142,9 +142,11 @@ describe('fetchProviderWithRetry', () => {
     await expect(request()).rejects.toMatchObject({ code: ErrorCode.AI_PROVIDER_TIMEOUT })
   })
 
-  it('classifies a network failure as AI_PROVIDER_ERROR', async () => {
+  it('classifies a network failure as AI_PROVIDER_UNREACHABLE', async () => {
     globalThis.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch')) as unknown as typeof fetch
 
-    await expect(request()).rejects.toMatchObject({ code: ErrorCode.AI_PROVIDER_ERROR })
+    // Its own code, not the generic provider error: the UI says "check your
+    // connection" for this one (use-ai-harness-chat's friendly copy).
+    await expect(request()).rejects.toMatchObject({ code: ErrorCode.AI_PROVIDER_UNREACHABLE })
   })
 })

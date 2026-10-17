@@ -129,4 +129,57 @@ describe('useDebouncedSettingsSave', () => {
     })
     expect(save).toHaveBeenCalledTimes(1)
   })
+
+  it('does not write the state it was opened with', async () => {
+    const save = vi.mocked(saveAISettings)
+    renderDebounced(settings({ apiKey: 'loaded-from-storage' }))
+
+    // Nothing changed, so neither the debounce timer nor a blur may write.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(AI_SETTINGS_SAVE_DEBOUNCE_MS * 2)
+    })
+    act(() => {
+      document.dispatchEvent(new Event('focusout'))
+    })
+
+    expect(save).not.toHaveBeenCalled()
+  })
+
+  it('keeps the newest signature when an earlier write resolves late', async () => {
+    const save = vi.mocked(saveAISettings)
+    const resolvers: Array<() => void> = []
+    save.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolvers.push(resolve)
+        }),
+    )
+
+    const { rerender } = renderDebounced(settings({ apiKey: 'older' }))
+    rerender({ value: settings({ apiKey: 'older ' }) })
+    act(() => {
+      document.dispatchEvent(new Event('focusout'))
+    })
+    rerender({ value: settings({ apiKey: 'newest' }) })
+    act(() => {
+      document.dispatchEvent(new Event('focusout'))
+    })
+    expect(save).toHaveBeenCalledTimes(2)
+
+    // The first write lands after the second one. Its completion must not
+    // overwrite the marker with its stale signature, or returning to that
+    // value below would be treated as already persisted and silently dropped.
+    await act(async () => {
+      resolvers[1]()
+      resolvers[0]()
+    })
+
+    rerender({ value: settings({ apiKey: 'older ' }) })
+    act(() => {
+      document.dispatchEvent(new Event('focusout'))
+    })
+
+    expect(save).toHaveBeenCalledTimes(3)
+    expect(save.mock.calls[2][0]).toMatchObject({ apiKey: 'older ' })
+  })
 })

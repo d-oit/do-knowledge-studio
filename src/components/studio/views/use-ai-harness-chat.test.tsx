@@ -156,6 +156,21 @@ describe('useAiHarnessChat', () => {
     consoleSpy.mockRestore()
   })
 
+  it('maps the unreachable-provider code to the same network copy', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    // The provider layer classifies a transport failure by code; the UI must
+    // read that code rather than fall through to the generic copy.
+    const err = new AppError(ErrorCode.AI_PROVIDER_UNREACHABLE, 'OpenRouter network error: Failed to fetch')
+    mockSendChatStream.mockRejectedValue(err)
+
+    const hook = await sendMessage('hi')
+
+    const last = hook.result.current.messages.at(-1)
+    expect(last?.content).toContain('[Error] Cannot reach the provider — check your connection or provider settings.')
+    expect(last?.content).not.toContain('unexpected')
+    consoleSpy.mockRestore()
+  })
+
   it('maps unexpected provider errors to friendly copy', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const err = new Error('provider exploded')

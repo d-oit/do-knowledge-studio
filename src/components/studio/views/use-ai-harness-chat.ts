@@ -96,6 +96,7 @@ const friendlyErrorMessage = (error: unknown): string => {
   if (error instanceof AppError) {
     if (error.code === ErrorCode.AI_PROVIDER_RATE_LIMITED) return translate('ai.chat.error.rateLimited')
     if (error.code === ErrorCode.AI_PROVIDER_TIMEOUT) return translate('ai.chat.error.timeout')
+    if (error.code === ErrorCode.AI_PROVIDER_UNREACHABLE) return translate('ai.chat.error.network')
     // The taxonomy has no distinct auth code, so refine the generic provider
     // error by the adapter's structured status prefix (never the raw body).
     if (/error 401|error 403/i.test(error.message)) return translate('ai.chat.error.unauthorized')

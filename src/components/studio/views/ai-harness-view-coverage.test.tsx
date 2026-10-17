@@ -321,10 +321,18 @@ describe('AIHarnessView branch coverage', () => {
     expect(screen.queryByText(/\[Error\]/)).toBeNull()
   })
 
-  it('saves settings after load', async () => {
+  it('does not rewrite the settings it just loaded, and saves an edited one', async () => {
     await act(async () => {
       render(<AIHarnessView />)
     })
+    // Opening the view must not write the record it just read back: that was a
+    // redundant AES-GCM encryption plus IndexedDB write on every visit.
+    expect(aiMocks.mockSaveAISettings).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByText('Show settings'))
+    const keyInput = screen.getByPlaceholderText('sk-or-\u2026')
+    fireEvent.change(keyInput, { target: { value: 'edited-key' } })
+
     await waitFor(() => {
       expect(aiMocks.mockSaveAISettings).toHaveBeenCalled()
     })

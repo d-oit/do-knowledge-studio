@@ -148,8 +148,12 @@ const toRequestError = (label: string, error: unknown): AppError => {
       cause: error,
     })
   }
+  // Everything left is a transport-level failure: `fetch` rejects with a
+  // TypeError when the request never reached the provider (offline, DNS, CORS,
+  // connection reset). It gets its own code so the UI can say "check your
+  // connection" instead of the generic provider-failure copy.
   const detail = error instanceof Error ? error.message : String(error)
-  return new AppError(ErrorCode.AI_PROVIDER_ERROR, `${label} network error: ${detail}`, {
+  return new AppError(ErrorCode.AI_PROVIDER_UNREACHABLE, `${label} network error: ${detail}`, {
     cause: error,
   })
 }
