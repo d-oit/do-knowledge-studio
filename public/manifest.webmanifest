@@ -15,6 +15,60 @@
     "productivity",
     "utilities"
   ],
+  "shortcuts": [
+    {
+      "name": "New entity",
+      "short_name": "Editor",
+      "description": "Start a new note, concept, person, or project.",
+      "url": "/#/editor",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Open library",
+      "short_name": "Library",
+      "description": "Browse every entity in your library.",
+      "url": "/#/library",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Explore graph",
+      "short_name": "Graph",
+      "description": "See how your entities connect.",
+      "url": "/#/graph",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Open mind map",
+      "short_name": "Mind map",
+      "description": "Outline entities as a mind map.",
+      "url": "/#/mindmap",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
   "icons": [
     {
       "src": "/logo.svg",

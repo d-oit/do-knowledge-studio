@@ -7,6 +7,11 @@ import { translate } from '@/lib/i18n/messages/ai'
 import type { ChatMessage } from '@/lib/ai'
 import type { Entity, Claim } from '@/lib/studio/types'
 import type { AIProvider } from '@/lib/studio/ai-settings'
+import { AppError, ErrorCode } from '@/lib/errors'
+import { logger } from '@/lib/logging/logger'
+
+/** Subsystem tag for AI-harness chat-turn logs. */
+const log = logger.child({ area: 'ai' })
 
 const INITIAL_ASSISTANT_MESSAGE: ChatMessage = {
   id: 'init-assistant',
@@ -78,6 +83,29 @@ const withTrailingAssistantMessage = (
   const last = updated[updated.length - 1]
   updated[updated.length - 1] = { ...last, role: 'assistant', content }
   return updated
+}
+
+/**
+ * Maps a send failure to localized copy, preferring the typed provider error
+ * code over message text. The adapter boundary classifies HTTP/network/abort
+ * failures into the `AppError` taxonomy, so the UI no longer has to guess from
+ * raw provider output; the message-text branch remains for errors thrown
+ * outside that boundary (e.g. research or request-building failures).
+ */
+const friendlyErrorMessage = (error: unknown): string => {
+  if (error instanceof AppError) {
+    if (error.code === ErrorCode.AI_PROVIDER_RATE_LIMITED) return translate('ai.chat.error.rateLimited')
+    if (error.code === ErrorCode.AI_PROVIDER_TIMEOUT) return translate('ai.chat.error.timeout')
+    // The taxonomy has no distinct auth code, so refine the generic provider
+    // error by the adapter's structured status prefix (never the raw body).
+    if (/error 401|error 403/i.test(error.message)) return translate('ai.chat.error.unauthorized')
+    return translate('ai.chat.error.unexpected')
+  }
+  const raw = error instanceof Error ? error.message : ''
+  if (/error 401|Unauthorized/i.test(raw)) return translate('ai.chat.error.unauthorized')
+  if (/error 429/i.test(raw)) return translate('ai.chat.error.rateLimited')
+  if (/Failed to fetch|NetworkError/i.test(raw)) return translate('ai.chat.error.network')
+  return translate('ai.chat.error.unexpected')
 }
 
 /**
@@ -260,15 +288,8 @@ export const useAiHarnessChat = ({
       // whatever already streamed and adds nothing: the bubble only exists once
       // content does, so an aborted turn never leaves an empty bubble behind.
       if (err instanceof DOMException && err.name === 'AbortError') return
-      console.error('AI harness send failed:', err)
-      const raw = err instanceof Error ? err.message : ''
-      const friendly = /error 401|Unauthorized/i.test(raw)
-        ? translate('ai.chat.error.unauthorized')
-        : /error 429/i.test(raw)
-          ? translate('ai.chat.error.rateLimited')
-          : /Failed to fetch|NetworkError/i.test(raw)
-            ? translate('ai.chat.error.network')
-            : translate('ai.chat.error.unexpected')
+      log.error('AI harness send failed', { error: err })
+      const friendly = friendlyErrorMessage(err)
       setMessages((m) => [
         ...m,
         { id: crypto.randomUUID(), role: 'assistant', content: `[Error] ${friendly}\n\n${translate('ai.chat.error.hint')}` },

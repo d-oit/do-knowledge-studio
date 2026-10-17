@@ -10,7 +10,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { execSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
-import { render, screen, fireEvent, act, cleanup, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, act, cleanup, waitFor, within } from '@testing-library/react'
 import { Announcer } from '@/lib/a11y/announcer'
 
 vi.mock('lucide-react', () => {
@@ -26,6 +26,9 @@ vi.mock('lucide-react', () => {
     Grid3X3: Icon,
     Sun: Icon,
     Moon: Icon,
+    // The sidebar's theme control renders its pre-mount `system` state with
+    // this icon before the stored choice arrives (theme-provider.tsx).
+    Monitor: Icon,
     Search: Icon,
     CalendarDays: Icon,
     PanelRight: Icon,
@@ -48,7 +51,36 @@ vi.mock('lucide-react', () => {
     ChevronRight: Icon,
     ChevronDown: Icon,
     Sliders: Icon,
+    // Chrome of the views the announcement triggers below render.
+    X: Icon,
+    Tag: Icon,
+    Save: Icon,
+    AtSign: Icon,
+    ExternalLink: Icon,
+    ArrowRight: Icon,
+    Shield: Icon,
+    Sparkles: Icon,
+    Check: Icon,
+    Upload: Icon,
+    Eye: Icon,
+    AlertTriangle: Icon,
+    RotateCcw: Icon,
   }
+})
+
+// jsdom has no matchMedia; the editor reads it to drop split view when narrow.
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: (query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  }),
 })
 
 const mockSetTheme = vi.fn()
@@ -83,6 +115,10 @@ const mockDeleteEntity = vi.fn()
 const mockStartEdit = vi.fn()
 const mockUndo = vi.fn()
 const mockRedo = vi.fn()
+const mockImportWithRollback = vi.fn()
+const mockResetStore = vi.fn()
+const mockFinishEditing = vi.fn()
+const mockNavigateToView = vi.fn()
 
 // One store mock serves both the sidebar (navigation) and the mind map
 // (entity tree): a second `vi.mock` for the same module would shadow this one.
@@ -98,10 +134,27 @@ vi.mock('@/lib/studio/store', async () => {
         rightPanelOpen,
         setRightPanelOpen: mockSetRightPanelOpen,
         entities: [mindMapEntity],
+        claims: [],
+        graph: undefined,
+        mindMap: undefined,
+        links: [],
+        tags: [],
+        chat: [],
+        selectedEntityId,
+        editingEntityId,
         selectEntity: mockSelectEntity,
         commitEntities: mockCommitEntities,
         deleteEntity: mockDeleteEntity,
         startEdit: mockStartEdit,
+        finishEditing: mockFinishEditing,
+        navigateToView: mockNavigateToView,
+        importWithRollback: mockImportWithRollback,
+        resetStore: mockResetStore,
+        startNew: vi.fn(),
+        addClaim: vi.fn(),
+        addClaims: vi.fn(),
+        updateClaim: vi.fn(),
+        deleteClaim: vi.fn(),
         undo: mockUndo,
         redo: mockRedo,
         entityHistory: [[]],
@@ -118,8 +171,18 @@ vi.mock('./shortcuts-dialog', () => ({
 
 let currentView = 'home'
 let rightPanelOpen = false
+let selectedEntityId: string | null = null
+let editingEntityId: string | null = null
 
-
+// The editor's chrome (toolbar, claims panel, type menu, remote cursors) is not
+// on the announcement path, so it is stubbed: these tests assert what the live
+// region says, not how those widgets look.
+vi.mock('./views/editor-toolbar', () => ({ EditorToolbar: () => <div data-testid="editor-toolbar" /> }))
+vi.mock('./views/editor-claims-panel', () => ({ ClaimsPanel: () => <div data-testid="claims-panel" /> }))
+vi.mock('./views/type-selector', () => ({ TypeSelector: () => <div data-testid="type-selector" /> }))
+vi.mock('./remote-cursors', () => ({
+  CursorTracker: ({ children }: { children?: React.ReactNode }) => children,
+}))
 
 vi.mock('@/lib/studio/use-reduced-motion', () => ({ useReducedMotion: () => true }))
 
@@ -130,7 +193,11 @@ vi.mock('./shortcuts-dialog', () => ({
 }))
 
 import { Sidebar } from './sidebar'
+import { RightPanel } from './right-panel'
 import { MindMapView } from './views/mindmap-view'
+import { EditorView } from './views/editor-view'
+import { ExportView } from './views/export-view'
+import { buildJsonExport } from './views/export-helpers'
 
 /**
  * Renders `ui` under a real live region and returns a reader for the text a
@@ -140,7 +207,11 @@ import { MindMapView } from './views/mindmap-view'
  */
 const renderWithAnnouncer = async (ui: React.ReactElement) => {
   const view = render(<Announcer>{ui}</Announcer>)
-  const region = screen.getByRole('status')
+  // The announcer's own region is the render root's first child. Some views
+  // (the editor) mount a `role="status"` region of their own deeper in the
+  // tree, where `screen.getByRole('status')` would be ambiguous.
+  const region = view.container.querySelector<HTMLElement>(':scope > [role="status"]')
+  if (region === null) throw new Error('announcer live region not found')
   const spoken = async () => {
     const { promise, resolve } = Promise.withResolvers<void>()
     setTimeout(resolve, 80)
@@ -150,11 +221,72 @@ const renderWithAnnouncer = async (ui: React.ReactElement) => {
   return { ...view, region, spoken }
 }
 
+/** Entity the import fixture replaces the library with (id must not collide with the store fixture). */
+const importedEntity = {
+  id: 'e-import',
+  name: 'Imported Entity',
+  type: 'note' as const,
+  description: '',
+  content: '',
+  tags: [],
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-01T00:00:00.000Z',
+  links: [],
+}
+
+/** Claim on {@link importedEntity}; the import parser rejects orphaned claims. */
+const importedClaim = {
+  id: 'c-import',
+  entityId: 'e-import',
+  statement: 'Imported claim',
+  confidence: 0.8,
+  verification: 'unverified' as const,
+}
+
+/**
+ * Import file built with the app's own exporter, so the fixture cannot drift
+ * from the schema `parseImportFile` validates.
+ */
+const importFileContent = buildJsonExport([importedEntity], [importedClaim])
+
+/**
+ * Runs `run` with a synchronous `FileReader` installed: the handler reads the
+ * picked file through `readAsText`/`onload`, so a real reader would make the
+ * assertion a race instead of a check.
+ */
+const withStubFileReader = (content: string, run: () => void): void => {
+  const originalFileReader = globalThis.FileReader
+  class StubFileReader {
+    result: string | null = null
+    onload: (() => void) | null = null
+    onerror: (() => void) | null = null
+    readAsText(): void {
+      this.result = content
+      this.onload?.()
+    }
+  }
+  globalThis.FileReader = StubFileReader as unknown as typeof FileReader
+  try {
+    run()
+  } finally {
+    globalThis.FileReader = originalFileReader
+  }
+}
+
+/** Picks `content` in the file input, the way the OS file picker would. */
+const pickImportFile = (input: HTMLInputElement, content: string): void => {
+  const file = new File([content], 'library.json', { type: 'application/json' })
+  Object.defineProperty(input, 'files', { value: [file], configurable: true })
+  withStubFileReader(content, () => { fireEvent.change(input) })
+}
+
 describe('live announcements (Plan 157 Phase 5)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     currentView = 'home'
     rightPanelOpen = false
+    selectedEntityId = null
+    editingEntityId = null
   })
 
   afterEach(() => {
@@ -238,6 +370,82 @@ describe('live announcements (Plan 157 Phase 5)', () => {
 
     expect(mockDeleteEntity).not.toHaveBeenCalled()
     expect(await spoken()).toBe('')
+  })
+
+  it('announces the saved entity name from the editor', async () => {
+    // The save either navigates away (mentions) or stays put, so the write
+    // itself is the only signal a screen reader gets.
+    editingEntityId = 'e-root'
+    const { spoken } = await renderWithAnnouncer(<EditorView />)
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Commit changes' }))
+    })
+
+    expect(mockCommitEntities).toHaveBeenCalledTimes(1)
+    await waitFor(async () => {
+      expect(await spoken()).toBe('Saved Root Entity')
+    })
+  })
+
+  it('announces the deleted entity name from the inspector', async () => {
+    // The mind map's own delete is covered above; this is the right-panel
+    // inspector path, which deletes whichever entity the panel is showing.
+    currentView = 'graph'
+    rightPanelOpen = true
+    selectedEntityId = 'e-root'
+    const { spoken } = await renderWithAnnouncer(<RightPanel />)
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+    })
+    // The panel trigger and the confirmation button share the label "Delete",
+    // so scope the confirming click to the dialog.
+    const dialog = screen.getByRole('dialog')
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }))
+    })
+
+    expect(mockDeleteEntity).toHaveBeenCalledWith('e-root')
+    await waitFor(async () => {
+      expect(await spoken()).toBe('Deleted Root Entity')
+    })
+  })
+
+  it('announces how much the import replaced', async () => {
+    mockImportWithRollback.mockReturnValue({ success: true, backupPersisted: true })
+    const { spoken, container } = await renderWithAnnouncer(<ExportView />)
+    const input = container.querySelector<HTMLInputElement>('input[type="file"]')
+    if (input === null) throw new Error('import file input not found')
+
+    pickImportFile(input, importFileContent)
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Confirm import' }))
+    })
+
+    expect(mockImportWithRollback).toHaveBeenCalledTimes(1)
+    // An import silently replaces the whole library, so the counts are the only
+    // way a screen reader user can confirm the scale of the change.
+    await waitFor(async () => {
+      expect(await spoken()).toBe('Imported 1 entity and 1 claim')
+    })
+  })
+
+  it('announces the demo-library reset', async () => {
+    const { spoken } = await renderWithAnnouncer(<ExportView />)
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Reset to demo data' }))
+    })
+    const dialog = screen.getByRole('dialog')
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Reset everything' }))
+    })
+
+    expect(mockResetStore).toHaveBeenCalledTimes(1)
+    await waitFor(async () => {
+      expect(await spoken()).toBe('Restored the demo library')
+    })
   })
 
   it('announces the new view for each distinct navigation', async () => {

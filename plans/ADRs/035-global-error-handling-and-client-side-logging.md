@@ -2,8 +2,15 @@
 
 ## Status
 
-Proposed — implemented via Plan 130
-(`plans/130-goap-uiux-testpyramid-errorhandling-2026-08-22.md`).
+Implemented — Plan 130 G1 shipped in Plan 176 (2026-10-17):
+`src/lib/logging/logger.ts` (levels, child tags, structured entries,
+console + bounded ring-buffer sinks, `LogSink` seam, redaction-safe
+serialization); `src/app/error.tsx`, `src/app/global-error.tsx`,
+`src/app/not-found.tsx` (the experimental `global-not-found.js` is
+deliberately not used — it needs the `globalNotFound` flag and only
+helps apps with multiple root layouts, and this app has one); the
+global runtime handlers mounted once in the app shell; and every
+app-code `console.*` call site migrated to tagged logger calls.
 
 ## Context
 

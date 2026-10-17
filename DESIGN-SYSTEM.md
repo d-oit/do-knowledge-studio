@@ -98,10 +98,10 @@ unregistered types.
 | `--ring`        | `#9a5c2a`   | `#e5944a`  | Focus ring color (saffron)                         |
 | `--destructive` | `#b91c1c`   | `#ef4444`  | Destructive actions (delete, remove)               |
 | `--warning`         | `#b45309`   | `#e0a04a`  | `text-warning` / `bg-warning` — sync conflicts, deliberately distinct from saffron |
-| `--warning-soft`    | `#fef3e2`   | `#2a2114`  | `bg-warning-soft`           | Warning surface (conflict panels)                   |
-| `--warning-border`  | `#ecd9b8`   | `#4a3a22`  | `border-warning-border`     | Warning dividers                                   |
-| `--warning-foreground` | `#7c3d06` | `#eec27f`  | `text-warning-foreground`   | AA text on `--warning-soft` (≥4.5:1 both)         |
-| `--warning-on`      | `#ffffff`   | `#14110d`  | `text-warning-on`           | Text/icons on `bg-warning` (flips per theme)      |
+| `--warning-soft`    | `#fef3e2`   | `#2a2114`  | `bg-warning-soft` — warning surface (conflict panels) |
+| `--warning-border`  | `#ecd9b8`   | `#4a3a22`  | `border-warning-border` — warning dividers |
+| `--warning-foreground` | `#7c3d06` | `#eec27f`  | `text-warning-foreground` — AA text on `--warning-soft` (≥4.5:1 both) |
+| `--warning-on`      | `#ffffff`   | `#14110d`  | `text-warning-on` — text/icons on `bg-warning` (flips per theme) |
 
 ### 2.5b Elevation tokens (per theme, #850)
 

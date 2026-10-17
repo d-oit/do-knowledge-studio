@@ -234,3 +234,20 @@ Measured in Chromium against the production build:
 - D1.14's original 497-LOC store is now 189 LOC with each concern in its own
   module; the remaining Plan 131 dead primitives (`EmptyState`, `FieldLabel`,
   `ToolbarBtn` in `ui/shared-primitives.tsx`) were left alone as out of scope.
+
+## Findings Closed (2026-10-17 — Plan 176)
+
+Closed by [Plan 176](176-plans-backlog-drain-2026-10-17.md):
+
+- The manifest now ships a `shortcuts` array (4 entries — editor, library,
+  graph, mind map — each with `name`/`short_name`/`description`/`url`/192px
+  icon); the deep-link prerequisite above landed with ADR 037. Pinned by
+  `src/lib/studio/manifest-shortcuts.test.ts`, which asserts every shortcut URL
+  parses, stays in scope and round-trips through the app's own
+  `viewToHash`/`parseViewHash`.
+- `announcer-integration.test.tsx` gained dedicated live-region cases for the
+  four triggers named above (editor save, inspector delete, import, reset), each
+  with a named kill mutation.
+- The dead-primitive item was already closed earlier: `EmptyState`/`FieldLabel`
+  were removed in #838, and `ToolbarBtn` is a live export of
+  `views/graph-toolbar.tsx`.

@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useCallback } from 'react'
+import { useMemo, useCallback, useEffect, useState } from 'react'
 import { useStudioStore, useStats } from '@/lib/studio/store'
 import type { Entity } from '@/lib/studio/types'
 import { getEntityTypeMeta, type EntityTypeMeta } from '@/lib/studio/entity-types'
@@ -65,6 +65,9 @@ const formatRelativeTime = (dateStr: string): string => {
 }
 
 const RECENT_LIMIT = 6
+
+/** Ease-out duration for the type-breakdown progress bars, in seconds. */
+const PROGRESS_ANIMATION_DURATION_S = 0.6
 
 
 /** Type badge + name + description block inside a RecentItem. */
@@ -151,6 +154,17 @@ export const HomeView = () => {
   const entities = useStudioStore((s) => s.entities)
   const stats = useStats()
   const reducedMotion = useReducedMotion()
+
+  // The type-progress bars target a percentage derived from the store, which is
+  // seed data on the server but rehydrated localStorage data on the client. Keep
+  // the hydration pass byte-for-byte equal to the server (bars at width 0) and
+  // apply the store-derived target only after mount, so React never reconciles a
+  // client-only width against the HTML the server sent. The 0.6s ease-out still
+  // runs, from 0 to the real percentage, once the effect has landed.
+  const [progressReady, setProgressReady] = useState(false)
+  useEffect(() => {
+    setProgressReady(true)
+  }, [])
 
   const fadeAnim = reducedMotion
     ? { initial: false as const, animate: { opacity: 1 }, transition: { duration: 0 } }
@@ -300,11 +314,11 @@ export const HomeView = () => {
                     <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                       <motion.div
                         initial={reducedMotion ? false : { width: 0 }}
-                        animate={{ width: `${pct}%` }}
+                        animate={{ width: progressReady ? `${pct}%` : 0 }}
                         transition={
                           reducedMotion
                             ? { duration: 0 }
-                            : { duration: 0.6, ease: 'easeOut' }
+                            : { duration: PROGRESS_ANIMATION_DURATION_S, ease: 'easeOut' }
                         }
                         className={cn('h-full rounded-full', meta.dot)}
                       />

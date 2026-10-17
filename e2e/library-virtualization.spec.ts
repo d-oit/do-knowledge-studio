@@ -1,25 +1,28 @@
 import { test, expect } from '@playwright/test';
+import type { ValidatedEntity } from '../src/lib/studio/schema';
 import { navClick, viewHeading } from './helpers/navigation';
+import { seedStore } from './helpers/store';
 
 /**
  * Library windowed-rendering spec (plans/122 W3).
  *
- * Seeds 120 entities through the Zustand persist envelope so the Library is
- * both over the LIBRARY_INITIAL_LIMIT cap (24) and the VIRTUALIZE_THRESHOLD
- * (64), forcing the windowed path in a real browser (measurable container).
+ * Seeds 120 entities through the shared store fixture (helpers/store.ts), so
+ * the Library is both over the LIBRARY_INITIAL_LIMIT cap (24) and the
+ * VIRTUALIZE_THRESHOLD (64), forcing the windowed path in a real browser
+ * (measurable container).
  *
  * Locators are role-scoped (heading for grid cards, button for table rows)
  * because the right panel renders the same entity names as suggestion buttons.
  */
 
-/** Must match CURRENT_SCHEMA_VERSION in src/lib/studio/migrations.ts. */
-const SCHEMA_VERSION = 5;
-
-/** Persist key used by the Zustand store (name option in store.ts). */
-const STORE_KEY = 'do-knowledge-studio-store';
-
-/** Generates `count` entities with names Entity 0 … Entity N-1. */
-const makeEntities = (count: number): object[] =>
+/**
+ * Generates `count` entities with names Entity 0 … Entity N-1.
+ *
+ * Annotated with the app's own validated entity type, so a schema change that
+ * outlaws these records fails at the seed rather than as a library that
+ * unexpectedly renders the demo corpus instead of the seeded entities.
+ */
+const makeEntities = (count: number): ValidatedEntity[] =>
   Array.from({ length: count }, (_, i) => ({
     id: `seed-${i}`,
     name: `Entity ${i}`,
@@ -32,30 +35,15 @@ const makeEntities = (count: number): object[] =>
     links: [],
   }));
 
-const SEED_ENVELOPE = {
-  state: {
-    entities: makeEntities(120),
-    claims: [],
-    graph: undefined,
-    mindMap: undefined,
-    links: undefined,
-    tags: undefined,
-  },
-  version: SCHEMA_VERSION,
-};
-
 /** The library list/grid scroll container (SCROLL_CONTAINER_CLASS). */
 const scroller = (page: import('@playwright/test').Page) =>
   page.locator('[class*="max-h-[65vh]"]');
 
 test.describe('Library windowed rendering', () => {
   test.beforeEach(async ({ page }) => {
-    await page.addInitScript(
-      ({ storeKey, envelope }) => {
-        localStorage.setItem(storeKey, JSON.stringify(envelope));
-      },
-      { storeKey: STORE_KEY, envelope: SEED_ENVELOPE },
-    );
+    // Entities replace the seed library; claims are emptied so no seed claim
+    // refers to an entity id that the seeded corpus does not contain.
+    await seedStore(page, { entities: makeEntities(120), claims: [] });
     await page.goto('/');
     await navClick(page, /library/i);
     await expect(viewHeading(page, /library/i)).toBeVisible();

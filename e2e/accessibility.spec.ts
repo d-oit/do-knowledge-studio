@@ -6,6 +6,7 @@ import {
   openNavIfHidden,
   waitForAppReady,
 } from './helpers/navigation';
+import { expectThemeApplied, THEME_PASSES } from './helpers/theme';
 
 test.describe('Accessibility', () => {
   test.beforeEach(async ({ page }) => {
@@ -109,91 +110,73 @@ test.describe('Accessibility', () => {
  */
 const GRAPH_SVG_NESTED_INTERACTIVE = 'nested-interactive';
 
-test.describe('axe-core automated accessibility', () => {
-  // Plan 095: color-contrast token fixes applied (globals.css).
-  // All views now use the strict assertion (critical + serious).
-  test.beforeEach(async ({ page }) => {
-    // Disable animations: entrance animations (stagger-fade-in, framer-motion)
-    // leave elements mid-fade (opacity < 1) for a few hundred ms, which blends
-    // colors and trips axe's color-contrast rule nondeterministically.
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-  });
+/** One view of the axe sweep: how to open it, and how strict its assertion is. */
+interface AxeView {
+  /** Test title — states the contract, not the route. */
+  name: string;
+  /** Sidebar entry that reveals the view, or `null` for the default (home) view. */
+  nav: RegExp | null;
+  /** Documented rule exceptions for this view (see `GRAPH_SVG_NESTED_INTERACTIVE`). */
+  allowRules: readonly string[];
+}
 
-  test('home page has no critical or serious axe violations', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    await assertNoAxeViolations(page);
-  });
-
-  test('library page has no critical or serious axe violations', async ({ page }) => {
-    await page.goto('/');
-    await navClick(page, /library/i);
-    await page.waitForLoadState('networkidle');
-    await assertNoAxeViolations(page);
-  });
-
-  test('editor page has no critical or serious axe violations', async ({ page }) => {
-    await page.goto('/');
-    await navClick(page, /editor/i);
-    await page.waitForLoadState('networkidle');
-    await assertNoAxeViolations(page);
-  });
-
-  test('chat page has no critical or serious axe violations', async ({ page }) => {
-    await page.goto('/');
-    await navClick(page, /chat/i);
-    await page.waitForLoadState('networkidle');
-    await assertNoAxeViolations(page);
-  });
-
-  test('mind map page has no critical or serious axe violations', async ({ page }) => {
-    await page.goto('/');
-    await navClick(page, /mind map/i);
-    await page.waitForLoadState('networkidle');
-    await assertNoAxeViolations(page);
-  });
-
+/**
+ * Every view the sweep must clear, in both palettes (ADR 036 §Decision, Plan 130
+ * A19). The views are data rather than ten near-identical test bodies precisely
+ * so the dark pass cannot cover a subset of the light pass: both read this list.
+ */
+const AXE_VIEWS: readonly AxeView[] = [
+  { name: 'home page has no critical or serious axe violations', nav: null, allowRules: [] },
+  { name: 'library page has no critical or serious axe violations', nav: /library/i, allowRules: [] },
+  { name: 'editor page has no critical or serious axe violations', nav: /editor/i, allowRules: [] },
+  { name: 'chat page has no critical or serious axe violations', nav: /chat/i, allowRules: [] },
+  { name: 'mind map page has no critical or serious axe violations', nav: /mind map/i, allowRules: [] },
   // Graph nodes are SVG <g role="button" tabindex="0"> inside an <svg role="img">.
   // axe-core's nested-interactive rule flags the <svg> as nesting focusable controls.
   // Measured 2026-09-30: the reported target is `svg[viewBox]` itself, and there is no
   // equivalent that keeps BOTH the accessible image role and keyboard-operable nodes.
   // This is the ONLY excused rule here — every other critical/serious rule still gates
   // the page, unlike the previous blanket "critical only" assertion.
-  test('graph page has no unexcused critical or serious axe violations', async ({ page }) => {
-    await page.goto('/');
-    await navClick(page, /graph/i);
-    await page.waitForLoadState('networkidle');
-    await assertNoAxeViolations(page, { allowRules: [GRAPH_SVG_NESTED_INTERACTIVE] });
-  });
+  {
+    name: 'graph page has no unexcused critical or serious axe violations',
+    nav: /graph/i,
+    allowRules: [GRAPH_SVG_NESTED_INTERACTIVE],
+  },
+  { name: 'TRIZ page has no critical or serious axe violations', nav: /triz/i, allowRules: [] },
+  { name: 'export page has no critical or serious axe violations', nav: /export/i, allowRules: [] },
+  { name: 'sync page has no critical or serious axe violations', nav: /sync/i, allowRules: [] },
+  { name: 'AI harness page has no critical or serious axe violations', nav: /ai/i, allowRules: [] },
+];
 
-  test('TRIZ page has no critical or serious axe violations', async ({ page }) => {
-    await page.goto('/');
-    await navClick(page, /triz/i);
-    await page.waitForLoadState('networkidle');
-    await assertNoAxeViolations(page);
-  });
+for (const theme of THEME_PASSES) {
+  test.describe(`axe-core automated accessibility — ${theme} theme`, () => {
+    // The palette is the context's emulated preference, resolved by the provider
+    // rather than written by the test (see helpers/theme.ts) — and with no stored
+    // preference for the app to hydrate against.
+    test.use({ colorScheme: theme });
 
-  test('export page has no critical or serious axe violations', async ({ page }) => {
-    await page.goto('/');
-    await navClick(page, /export/i);
-    await page.waitForLoadState('networkidle');
-    await assertNoAxeViolations(page);
-  });
+    // Plan 095: color-contrast token fixes applied (globals.css).
+    // Every view uses the strict assertion (critical + serious) in both palettes.
+    test.beforeEach(async ({ page }) => {
+      // Disable animations: entrance animations (stagger-fade-in, framer-motion)
+      // leave elements mid-fade (opacity < 1) for a few hundred ms, which blends
+      // colors and trips axe's color-contrast rule nondeterministically.
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+    });
 
-  test('sync page has no critical or serious axe violations', async ({ page }) => {
-    await page.goto('/');
-    await navClick(page, /sync/i);
-    await page.waitForLoadState('networkidle');
-    await assertNoAxeViolations(page);
+    for (const view of AXE_VIEWS) {
+      test(view.name, async ({ page }) => {
+        await page.goto('/');
+        // Guard: the palette this pass claims is the one being measured — axe
+        // only clears the dark contract if the dark palette really mounted.
+        await expectThemeApplied(page, theme);
+        if (view.nav !== null) await navClick(page, view.nav);
+        await page.waitForLoadState('networkidle');
+        await assertNoAxeViolations(page, { allowRules: view.allowRules });
+      });
+    }
   });
-
-  test('AI harness page has no critical or serious axe violations', async ({ page }) => {
-    await page.goto('/');
-    await navClick(page, /ai/i);
-    await page.waitForLoadState('networkidle');
-    await assertNoAxeViolations(page);
-  });
-});
+}
 
 /**
  * The offline banner is `fixed top-0` at `z-50` while the topbar is in normal

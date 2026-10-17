@@ -2,8 +2,18 @@
 
 ## Status
 
-Proposed — implemented via Plan 130
-(`plans/130-goap-uiux-testpyramid-errorhandling-2026-08-22.md`).
+Partially implemented — the responsive matrix ships as the nightly
+four-project sweep plus a manual dispatch lever; PRs and pushes to
+`main` stay Chromium-only by an explicit later decision
+(`.github/workflows/ci-and-labels.yml`, plans/148 §6.2, plans/149), and
+the CI HTML report upload exists. Plan 176 (2026-10-17) added the
+shared `e2e/helpers/store.ts` seed fixture and the dark-theme passes in
+the a11y/touch-target specs. Two parts of the decision below are NOT
+adopted and remain recorded in Plan 176: production-build E2E as the
+default (an opt-in production suite exists — `pnpm run test:e2e:offline`;
+changing the daily default is a maintainer workflow decision, plans/153)
+and the visual-regression baselines (they need a CI-matched renderer to
+generate trustworthy baselines).
 
 ## Context
 

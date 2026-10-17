@@ -71,6 +71,11 @@ contract mismatch.
   cache found” warning; each immediate warm rebuild emitted none. Configure
   persistent CI caching as a tracked follow-up. The offline E2E runner initially
   inherited conflicting `NO_COLOR`/`FORCE_COLOR`; `env -u NO_COLOR` reran clean.
+- **2026-10-17 — closed by [Plan 176](176-plans-backlog-drain-2026-10-17.md):**
+  the `build` job in `.github/workflows/ci-and-labels.yml` now caches
+  `.next/cache`, keyed on the runner OS + lockfile hash + the resolved Next
+  version with a restore-key fallback; validated with `yamllint` and
+  `actionlint`.
 - Failed Vercel builds emitted the `>=22.0.0` engine-upgrade notice. The source
   now constrains the supported major; frozen-lockfile installation succeeds.
 - #953 merged at `3025b0d27d36eea53e0e96a02f67453b96cf224f`. Its candidate

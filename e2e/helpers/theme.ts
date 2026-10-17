@@ -55,3 +55,42 @@ export const setStudioTheme = async (page: Page, target: StudioTheme): Promise<v
 
   throw new Error(`Could not switch the studio to the ${target} theme.`);
 };
+
+/**
+ * Palettes the a11y and touch-target specs are exercised in (ADR 036 §Decision,
+ * Plan 130 A19).
+ */
+export const THEME_PASSES = ['light', 'dark'] as const;
+export type ThemePass = (typeof THEME_PASSES)[number];
+
+/** Class `next-themes` puts on `<html>`; `globals.css` scopes every dark token to it. */
+const DARK_CLASS = 'dark';
+
+/**
+ * Asserts the loaded page resolved to `theme`'s palette.
+ *
+ * Activate the palette with the `colorScheme` test option: one line per themed
+ * describe, resolved by the provider from the context's emulated preference, and
+ * the same `.dark` token set an explicit dark-mode user gets. Do NOT seed
+ * `THEME_STORAGE_KEY` instead: a *stored* preference is read on the client's
+ * first render while the server can only render the provider's default, so the
+ * sidebar theme control hydrates with a different label and icon on every load
+ * (measured 2026-10-17: server "System — Switch to light theme" + Monitor icon
+ * vs client "Dark — Switch to system theme" + Moon icon; derived from
+ * `useTheme().theme` in src/components/studio/sidebar.tsx). That is a defect to
+ * fix in the component, not a state to bake into every themed a11y run.
+ *
+ * Nothing the test writes is what mounts the palette, so this assertion is what
+ * keeps a `colorScheme` pass honest: if the provider ever stops resolving the
+ * emulated preference (e.g. `defaultTheme` stops being `system`), the pass fails
+ * loudly instead of silently measuring the light palette twice.
+ */
+export const expectThemeApplied = async (page: Page, theme: ThemePass): Promise<void> => {
+  const html = page.locator('html');
+  if (theme === DARK_CLASS) {
+    await expect(html).toHaveClass(/\bdark\b/);
+    return;
+  }
+  await expect(html).toHaveClass(/\blight\b/);
+  await expect(html).not.toHaveClass(/\bdark\b/);
+};

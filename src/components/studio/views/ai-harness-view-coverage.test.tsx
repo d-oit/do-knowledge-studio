@@ -191,6 +191,7 @@ vi.mock('@/lib/studio/store', () => ({
 }))
 
 import { AIHarnessView } from './ai-harness-view'
+import { AI_SETTINGS_SAVE_DEBOUNCE_MS } from './use-debounced-settings-save'
 
 const sendMessage = async (text: string) => {
   const textarea = screen.getByPlaceholderText(/Ask the AI agent/)
@@ -355,5 +356,40 @@ describe('AIHarnessView branch coverage', () => {
     await waitFor(() => {
       expect(aiMocks.mockFetchOllamaModels).toHaveBeenCalled()
     })
+  })
+
+  it('keeps the Plan 155 guard: an uncommitted base URL is never persisted', async () => {
+    vi.useFakeTimers()
+    try {
+      await act(async () => {
+        render(<AIHarnessView />)
+        await Promise.resolve()
+      })
+      fireEvent.click(screen.getByText('Show settings'))
+      fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: 'ollama' } })
+
+      const baseUrl = screen.getByLabelText('Ollama Base URL')
+      const writesWithBaseUrl = (value: string) =>
+        aiMocks.mockSaveAISettings.mock.calls.filter(
+          ([written]) => written.ollamaBaseUrl === value,
+        )
+
+      // Typing only updates the input's local draft; the autosave must not see
+      // the half-typed host even after the debounce window elapses.
+      fireEvent.change(baseUrl, { target: { value: 'http://loc' } })
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(AI_SETTINGS_SAVE_DEBOUNCE_MS * 2)
+      })
+      expect(writesWithBaseUrl('http://loc')).toEqual([])
+
+      // Committing on blur persists the accepted value: a valid edit is never lost.
+      fireEvent.blur(baseUrl)
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(AI_SETTINGS_SAVE_DEBOUNCE_MS * 2)
+      })
+      expect(writesWithBaseUrl('http://loc')).toHaveLength(1)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

@@ -30,13 +30,13 @@ issues reported: ESLint8_* (never matched by ESLint9_* disable_rules)
 |------|-----|--------|
 | `triz-view.tsx` | Clipboard promise: `void ... .catch()` + try/catch guard | floating-promises, unnecessary-condition |
 | `type-selector.tsx` | `options.item(nextIdx).focus()` (non-null per lib.dom, in-bounds by construction) | unnecessary-condition, object-injection |
-| `command-palette.tsx` | `||=` on `Record` → `Map` grouping | unnecessary-condition |
+| `command-palette.tsx` | `\|\|=` on `Record` → `Map` grouping | unnecessary-condition |
 | `shared-primitives.tsx` | `current[0]` → `current.at(0)` so `?? container` is type-honest | unnecessary-condition |
 | `form.tsx` | Removed dead `if (!fieldContext)` guard (never null; dereferenced above) | unnecessary-condition |
 | `use-mobile.ts` | Braces around void-returning arrow cleanup | confusing-void-expression |
 | `encrypt-export-dialog.tsx` | `void handleExport(...)` | misused-promises |
 | `export-format-grid.tsx` | Braces around void setter | confusing-void-expression |
-| `self-fix-loop.sh` | SC2015: `A && B || C` → grouped braces (×2) | shellcheck SC2015 |
+| `self-fix-loop.sh` | SC2015: `A && B \|\| C` → grouped braces (×2) | shellcheck SC2015 |
 
 ### False positives suppressed (19)
 

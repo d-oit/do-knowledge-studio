@@ -1,11 +1,14 @@
 /**
  * Shared typing for the studio store slices (Plan 157 Phase 3).
  *
- * `StateCreator<S, [], [], S>` forces a slice to declare the *entire* store
- * type, which makes composition a type error by construction. `StudioSlice`
- * instead accepts the subset a slice owns while still typing `get()` as the
- * full store, so a slice can call actions another slice provides without
- * importing it (and without an import cycle back into `store.ts`).
+ * A slice contributes only the fields it owns, but its `set`/`get` must still
+ * be typed against the composed store — `set` because a slice may only write
+ * store-shaped state, `get` so a slice can call actions another slice provides
+ * without importing it. `StudioSlice<S>` captures exactly that pair: the
+ * contributor's subset (`S`) plus full-store access through `get()`. Naming the
+ * pair here means a slice never has to import `store.ts` to refer to the store
+ * it composes into, which would be an import cycle — `store.ts` imports every
+ * slice.
  */
 import type { StateCreator } from 'zustand'
 import type { StudioState } from '../store-types'

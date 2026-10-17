@@ -368,3 +368,22 @@ The two recommendations are closed, not the other Plan 163 follow-ups. Their
 original wording remains the record of the 2026-10-12 state. Plan 165 records
 the tooling gate, frozen-lockfile install, and remaining scope. [ADR 044](ADRs/044-pr-integrity-guards.md)
 records that the repository ruleset was not changed.
+
+## 9. Follow-ups closed (2026-10-17 — [Plan 176](176-plans-backlog-drain-2026-10-17.md))
+
+- The last arbitrary font size is gone: `recovery-banner.tsx` uses the
+  `text-body-lg` token that already carried the 15px value.
+- Overlay focus restoration survives an unmounted trigger: the saved element is
+  only refocused while it is still connected, otherwise focus goes to a defined
+  connected fallback (`document.body`, made programmatically focusable). Pinned
+  by two cases in `shared-primitives.test.tsx`.
+- The Home progress bar no longer derives its width during the hydration pass,
+  so the first client render matches the server's; `home-view-progress.test.tsx`
+  pins both halves. The same audit line led to a second, larger mismatch —
+  `next-themes` resolving the stored theme inside the client's first render —
+  which is fixed centrally by `useHydrationSafeTheme` and pinned red-first in
+  `e2e/hydration-mismatch.spec.ts`.
+- The optional `ChatMessage.id` note is decided, not deferred: the field stays
+  optional because the provider-wire messages built in `src/lib/ai/context.ts`
+  are never rendered (the provider mapper strips `id` by design) and every UI
+  construction site already sets one.

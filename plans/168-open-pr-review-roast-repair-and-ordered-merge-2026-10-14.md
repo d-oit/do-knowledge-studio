@@ -71,6 +71,11 @@ Inventory run: 2026-10-14. All four target `main`, are non-draft and GitHub-repo
 | Integration owner | `markdownlint` is missing from `PATH`, so the gate cannot run Markdown checks | Tracked in Plan 166 N5 for gate environment enhancement. |
 | Integration owner | Fresh-worktree `next build` emits “No build cache found” (reproduced in #953 and #951) | Configure persistent CI build caching; warm builds emit no warning |
 
+**2026-10-17 — closed by [Plan 176](176-plans-backlog-drain-2026-10-17.md):** the
+`build` job in `.github/workflows/ci-and-labels.yml` now caches `.next/cache`,
+keyed on the runner OS + lockfile hash + the resolved Next version with a
+restore-key fallback; validated with `yamllint` and `actionlint`.
+
 ## Progress
 
 - 2026-10-14: refreshed open-PR inventory, exact heads, main SHA, ruleset,

@@ -46,6 +46,11 @@ historical; this plan records the later implementation and its evidence.
   `4.1.11` per its recommendation; the focused `doc-rejoin.test.ts` passed 1/1
   after the pin. The banner remains because typechecking is experimental; a
   stable test-source typecheck is a tooling follow-up.
+- **Test-source typecheck closed (2026-10-17)** — `pnpm run typecheck:test`
+  (`tsc --noEmit -p tsconfig.test.json`) now runs in `scripts/quality_gate.sh`
+  and in the CI `unit-tests` job; proven able to fail by injecting a type error
+  into a `*.test.ts` file and watching the step fail, then reverting. Closed by
+  [Plan 176](176-plans-backlog-drain-2026-10-17.md).
 - **Mobile accessibility regression** — The initial full E2E run ended with 703
   passed, 4 skipped, and 1 failed: the mobile Chat axe check found serious
   `scrollable-region-focusable` on the message scroller

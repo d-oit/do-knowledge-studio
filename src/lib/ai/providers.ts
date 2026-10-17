@@ -10,11 +10,23 @@ import { DEFAULT_OLLAMA_BASE_URL, OPENROUTER_DEFAULT_TARGETS } from './types'
 import { localAdapter } from './local-adapter'
 import { toProviderMessages } from './provider-messages'
 import { validateOllamaUrl } from './url-guard'
+import { fetchProviderWithRetry } from './provider-errors'
+import { AppError, ErrorCode } from '@/lib/errors'
+import { logger } from '@/lib/logging/logger'
+
+/** Subsystem tag for AI-provider streaming logs. */
+const log = logger.child({ area: 'ai' })
 
 export { validateOllamaUrl }
 
 const OPENROUTER_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions'
 const APP_TITLE = 'Do Knowledge Studio'
+
+/** Provider name used in diagnostic messages for OpenRouter failures. */
+const OPENROUTER_LABEL = 'OpenRouter'
+
+/** Provider name used in diagnostic messages for Ollama failures. */
+const OLLAMA_LABEL = 'Ollama'
 
 
 const OpenRouterResponseSchema = z.object({
@@ -38,7 +50,7 @@ async function consumeSSE(
   onChunk: (chunk: string) => void,
 ): Promise<string> {
   const reader = response.body?.getReader()
-  if (!reader) throw new Error('No response body')
+  if (!reader) throw new AppError(ErrorCode.AI_PROVIDER_ERROR, 'Provider returned no response body')
   const decoder = new TextDecoder()
   let buffer = ''
   let fullContent = ''
@@ -65,7 +77,7 @@ async function consumeSSE(
             onChunk(content)
           }
         } catch {
-          console.warn('Skipping malformed SSE frame during streaming')
+          log.warn('Skipping malformed SSE frame during streaming')
         }
       }
     }
@@ -81,7 +93,7 @@ async function consumeNDJSON(
   onChunk: (chunk: string) => void,
 ): Promise<string> {
   const reader = response.body?.getReader()
-  if (!reader) throw new Error('No response body')
+  if (!reader) throw new AppError(ErrorCode.AI_PROVIDER_ERROR, 'Provider returned no response body')
   const decoder = new TextDecoder()
   let buffer = ''
   let fullContent = ''
@@ -106,7 +118,7 @@ async function consumeNDJSON(
             onChunk(content)
           }
         } catch {
-          console.warn('Skipping malformed NDJSON frame during streaming')
+          log.warn('Skipping malformed NDJSON frame during streaming')
         }
       }
     }
@@ -137,7 +149,7 @@ class OpenRouterAdapter implements ProviderAdapter {
 
   async send(request: ChatRequest): Promise<ChatResult> {
     const { model, apiKey, messages, signal } = request
-    if (!apiKey) throw new Error('OpenRouter API key is required')
+    if (!apiKey) throw new AppError(ErrorCode.AI_PROVIDER_ERROR, 'OpenRouter API key is required')
 
     const target = resolveOpenRouterTarget(model)
     const modelSlug = target.slug
@@ -150,26 +162,25 @@ class OpenRouterAdapter implements ProviderAdapter {
       Object.assign(body, target.default_params)
     }
 
-    const res = await fetch(OPENROUTER_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-        'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : '',
-        'X-Title': APP_TITLE,
+    const res = await fetchProviderWithRetry({
+      label: OPENROUTER_LABEL,
+      url: OPENROUTER_ENDPOINT,
+      init: {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+          'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : '',
+          'X-Title': APP_TITLE,
+        },
+        body: JSON.stringify(body),
       },
-      body: JSON.stringify(body),
       signal,
     })
 
-    if (!res.ok) {
-      const body = await res.text().catch(() => '')
-      throw new Error(`OpenRouter error ${res.status}: ${body.slice(0, 200)}`)
-    }
-
     const data = OpenRouterResponseSchema.parse(await res.json())
     const content = data.choices?.[0]?.message?.content
-    if (!content) throw new Error('OpenRouter returned an empty response')
+    if (!content) throw new AppError(ErrorCode.AI_PROVIDER_ERROR, 'OpenRouter returned an empty response')
     return { content, provider: 'openrouter', model: modelSlug }
   }
 
@@ -178,7 +189,7 @@ class OpenRouterAdapter implements ProviderAdapter {
     onChunk: (chunk: string) => void,
   ): Promise<ChatResult> {
     const { model, apiKey, messages, signal } = request
-    if (!apiKey) throw new Error('OpenRouter API key is required')
+    if (!apiKey) throw new AppError(ErrorCode.AI_PROVIDER_ERROR, 'OpenRouter API key is required')
 
     const target = resolveOpenRouterTarget(model)
     const modelSlug = target.slug
@@ -192,25 +203,24 @@ class OpenRouterAdapter implements ProviderAdapter {
       Object.assign(body, target.default_params)
     }
 
-    const res = await fetch(OPENROUTER_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-        'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : '',
-        'X-Title': APP_TITLE,
+    const res = await fetchProviderWithRetry({
+      label: OPENROUTER_LABEL,
+      url: OPENROUTER_ENDPOINT,
+      init: {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+          'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : '',
+          'X-Title': APP_TITLE,
+        },
+        body: JSON.stringify(body),
       },
-      body: JSON.stringify(body),
       signal,
     })
 
-    if (!res.ok) {
-      const body = await res.text().catch(() => '')
-      throw new Error(`OpenRouter error ${res.status}: ${body.slice(0, 200)}`)
-    }
-
     const content = await consumeSSE(res, onChunk)
-    if (!content) throw new Error('OpenRouter returned an empty response')
+    if (!content) throw new AppError(ErrorCode.AI_PROVIDER_ERROR, 'OpenRouter returned an empty response')
     return { content, provider: 'openrouter', model: modelSlug }
   }
 }
@@ -243,22 +253,21 @@ class OllamaAdapter implements ProviderAdapter {
 
     // URL is allowlist-validated above; `redirect: 'error'` stops a permitted
     // host from bouncing the request to a public origin.
-    const res = await fetch(`${validatedUrl}/api/chat`, { // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+    const res = await fetchProviderWithRetry({
+      label: OLLAMA_LABEL,
+      url: `${validatedUrl}/api/chat`, // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
+      init: {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        redirect: 'error',
+      },
       signal,
-      redirect: 'error',
     })
-
-    if (!res.ok) {
-      const text = await res.text().catch(() => '')
-      throw new Error(`Ollama error ${res.status}: ${text.slice(0, 200)}`)
-    }
 
     const data = OllamaResponseSchema.parse(await res.json())
     const content = data.message?.content
-    if (!content) throw new Error('Ollama returned an empty response')
+    if (!content) throw new AppError(ErrorCode.AI_PROVIDER_ERROR, 'Ollama returned an empty response')
     return { content, provider: 'ollama', model: modelSlug }
   }
 
@@ -289,21 +298,20 @@ class OllamaAdapter implements ProviderAdapter {
 
     // URL is allowlist-validated above; `redirect: 'error'` stops a permitted
     // host from bouncing the request to a public origin.
-    const res = await fetch(`${validatedUrl}/api/chat`, { // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+    const res = await fetchProviderWithRetry({
+      label: OLLAMA_LABEL,
+      url: `${validatedUrl}/api/chat`, // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
+      init: {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        redirect: 'error',
+      },
       signal,
-      redirect: 'error',
     })
 
-    if (!res.ok) {
-      const text = await res.text().catch(() => '')
-      throw new Error(`Ollama error ${res.status}: ${text.slice(0, 200)}`)
-    }
-
     const content = await consumeNDJSON(res, onChunk)
-    if (!content) throw new Error('Ollama returned an empty response')
+    if (!content) throw new AppError(ErrorCode.AI_PROVIDER_ERROR, 'Ollama returned an empty response')
     return { content, provider: 'ollama', model: modelSlug }
   }
 }

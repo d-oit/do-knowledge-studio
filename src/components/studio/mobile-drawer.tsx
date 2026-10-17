@@ -4,7 +4,7 @@ import { useEffect, useRef, type RefObject } from 'react'
 import { Overlay } from '@/components/studio/ui/shared-primitives'
 import { X, Sun, Moon, Monitor } from 'lucide-react'
 import packageJson from '../../../package.json'
-import { useTheme } from 'next-themes'
+import { useHydrationSafeTheme } from './theme-provider'
 import { RELEASES_BASE_URL } from '@/lib/studio/constants'
 import { useStudioStore } from '@/lib/studio/store'
 import { NAV_GROUPS } from './sidebar'
@@ -176,7 +176,7 @@ const SearchTab = ({ onSelect }: { onSelect: () => void }) => {
 
 /** Footer of the mobile drawer with theme toggle and entity count. */
 const DrawerFooter = () => {
-  const { theme, setTheme } = useTheme()
+  const { theme, setTheme } = useHydrationSafeTheme()
   const entities = useStudioStore((s) => s.entities)
 
   const currentTheme = theme ?? 'system'

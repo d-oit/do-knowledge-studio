@@ -374,6 +374,12 @@ tree rather than inferred from when each was written.
 | P1-1..P1-4 | Build tsconfig, `outputDirectory`, referrer policy, focus obscuring |
 | P2-1..P2-11 | apple-touch-icon, screenshots, precache, themeColor, poweredByHeader, tree ARIA, engines floor, announce keys, cross-tab ordering, dead `useStoreHydrated` |
 
+- **2026-10-17 — closed by [Plan 176](176-plans-backlog-drain-2026-10-17.md):**
+  the remaining comment-only correction is done —
+  `src/lib/studio/slices/slice-types.ts` now explains the real mechanism (subset
+  typing for composition, full-store `get()`, import-cycle motivation) with the
+  types unchanged.
+
 One finding that turned out not to be a finding: Plan 131 W2 tracked "~26
 prunable dependencies" as an estimate rather than a measurement. A scan of all
 63 found only 4 with no import in `src/`, `e2e/`, or `scripts/` — and all four

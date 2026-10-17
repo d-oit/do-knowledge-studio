@@ -9,6 +9,12 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 176 — plans/ backlog drain (2026-10-17)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| W1–W3 | Close every recorded follow-up in plans/ (ADR 035 G1, manifest shortcuts, live-region tests, Home progress-width hydration gate, overlay focus fallback, type token, malformed tables, test-source typecheck, viewport-aware graph density, provider error taxonomy + retry/backoff, debounced settings saves, plaintext-key migration, `Set`-based edge dedup, index-rebuild memoization, `.next/cache` CI cache, `e2e/helpers/store.ts`) | Implemented — in review | One PR; per-item evidence and the verification record in [Plan 176](176-plans-backlog-drain-2026-10-17.md). Merge evidence is appended after the merge. |
+
 ### Plan 175 — Mind Map treeview tab stop (2026-10-16)
 
 | Wave | Goal | Status | Outcome |
@@ -61,7 +67,7 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 | Wave | Goal | Status | Outcome |
 | --- | --- | --- | --- |
-| Fix | Select build-specific static inventory, require a real chunk, and refresh the served adapter manifest | Done — #953 merged at `3025b0d`; candidate and production manifests contain 74 URLs, and all listed assets return HTTP 200 with expected MIME types. See [ADR 041](ADRs/041-offline-precache-scope-and-upgrade-identity.md) and [Plan 167](167-precache-manifest-without-boot-document-2026-10-13.md). |
+| Fix | Select build-specific static inventory, require a real chunk, and refresh the served adapter manifest | Done | #953 merged at `3025b0d`; candidate and production manifests contain 74 URLs, and all listed assets return HTTP 200 with expected MIME types. See [ADR 041](ADRs/041-offline-precache-scope-and-upgrade-identity.md) and [Plan 167](167-precache-manifest-without-boot-document-2026-10-13.md). |
 
 ### Plan 166 — Codebase improvement audit and followups (2026-10-13)
 
@@ -98,7 +104,7 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 | Roast (main) | 2 defects already on `main` | Done | PR #910 had silently downgraded four dependency ranges (`next`, `react-day-picker`, `@tanstack/react-virtual`, `eslint-plugin-react-refresh`); `.gitignore`'s directory-only `node_modules/` staged worktree symlinks and `speech-coverage.test.ts` used `afterEach` without importing it. |
 | Merges | Land the ready PRs | Done — 7 in `origin/main` | #920 (`6c4b20d`), #931 (`583e820`, #861), #923 (`ab26b78`, #885), #935 (`3919baf`, #865), #933 (`1e519e8`), #934 (`56428ea`), #924 (`d1ccc85`, Dependabot alert #75). |
 | Issues | Implement the issue work | Landed and queued | #861 → #931 and #865 → #935 merged; #938 (#851/#852/#853/#858 touch token + type scale), #936 (#870 container constant + `ViewHeader`), #937 (#886 provider constants), #939 (#863/#856 shared `ConfirmDialog`) armed for auto-merge at session close. |
-| Follow-ups | Open — partly closed | Plan 165 Step 6 implemented the no-downgrade and stale-base guards (ADR 044). Other follow-ups retain their dated 2026-10-12 status and are not reassessed here. |
+| Follow-ups | — | Open — partly closed | Plan 165 Step 6 implemented the no-downgrade and stale-base guards (ADR 044). Other follow-ups retain their dated 2026-10-12 status and are not reassessed here. |
 | Verification | Evidence discipline | Done | Every fix reproduced before it was touched; every new regression test re-injected with the defect and observed to fail; per-lane unit suites, root `tsc --noEmit`, and Playwright where the change made it meaningful. |
 
 ### Plan 162 — Roadmap progress and next work (2026-10-05)

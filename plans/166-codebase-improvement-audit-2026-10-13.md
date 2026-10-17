@@ -134,6 +134,11 @@ provider plugin system) in `plans/INDEX.md` without renaming files or breaking l
 - **Visual Query Builder (Plan 11.6):** retarget from the retired SQLite/Orama
   stack (ADR 018) to current retrieval; compose type/tag/relation/text filters
   with a live result preview; no server.
+- **2026-10-17 — closed by [Plan 176](176-plans-backlog-drain-2026-10-17.md):**
+  Plan 176 audited both remaining candidates against the "Candidates only when
+  prioritized" rule and deliberately did **not** implement them — they stay
+  parked until a product decision schedules them. The record keeps that decision
+  explicit rather than implied.
 
 ## Suggested order
 

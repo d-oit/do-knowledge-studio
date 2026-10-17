@@ -101,3 +101,9 @@ from that run will name the cause.
    no on-demand compilation, and closer to production. Deliberately not done here:
    it changes what every E2E test runs against, which deserves its own change and
    a full four-project validation.
+
+**2026-10-17 — reconciled by [Plan 176](176-plans-backlog-drain-2026-10-17.md):**
+Plan 176 kept that decision with the maintainer (an opt-in production suite
+exists as `pnpm run test:e2e:offline`); the shared seed fixture the same ADR
+asked for did land in Plan 176 as `e2e/helpers/store.ts`, validated against the
+app's own Zod schema.
