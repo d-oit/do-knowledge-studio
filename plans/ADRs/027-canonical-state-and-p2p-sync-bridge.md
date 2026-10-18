@@ -63,15 +63,31 @@ The adapter must:
 
 ### 3. Deletes are versioned operations
 
-Absence is not interpreted as deletion. Entities and claims use tombstones (or
-an equivalent explicit delete operation) containing record ID, deletion time,
-device identity, and logical/version ordering information. Tombstones are
-retained long enough for offline peers to converge and are compacted only under
-a separately tested retention rule.
+Absence is not interpreted as deletion. Every entity and claim has a per-record
+vector clock keyed by stable device ID. The clock is stored alongside the raw
+record in the Yjs entity/claim map as `__syncClock`; it is replication metadata,
+not an application-model field. A mutation merges the prior record clock and
+any observed tombstone clock, then increments its own device component. This
+preserves causal metadata through Yjs/IndexedDB reload and offline mutations
+without changing the canonical entity/claim schema.
 
-Concurrent edit-versus-delete behavior must be deterministic. The default is
-delete-wins when the deletion is causally later; unresolved concurrent changes
-are surfaced as a conflict rather than silently resurrecting data.
+A tombstone is scoped by `(room ID, record kind, record ID)` and contains the
+record ID, deletion time, deleting device, and vector clock. A tombstone hides
+a record only when its clock strictly dominates the record clock. A record
+supersedes a tombstone only when its clock strictly dominates the tombstone;
+concurrent record/delete clocks remain visible as a manual conflict and neither
+operation silently wins. Choosing the record creates a same-ID restore whose
+clock observes the delete; choosing deletion creates a new causally later
+tombstone. Legacy tombstones without clocks retain their prior conservative
+delete-wins behavior until explicitly resolved.
+
+Tombstones are retained indefinitely. No age-based or unacknowledged
+compaction is safe: a disconnected peer may still hold an older record or
+tombstone and rejoin later. Vector clocks provide causality only for mutations
+that pass through the bridge and stable device identity; they do not merge
+field-level CRDT state or establish trust in device clocks/identities. If a
+device identity is reset, its next mutation is a new vector component and
+cannot claim causality over versions it no longer remembers.
 
 ### 4. Conflict resolution is a canonical transaction
 
@@ -93,13 +109,13 @@ document. Transport connection alone is not sufficient.
 - Every feature observes one application state model.
 - Peer data crosses a runtime-validation boundary before persistence.
 - Create, update, delete, reload, and conflict behavior can be integration
-  tested deterministically.
+tested deterministically.
 - The false distinction between two primary stores is removed.
 
 ### Negative
 
 - The adapter must maintain origin metadata and guard against update loops.
-- Tombstones require retention and compaction policy.
+- Tombstones remain durable; age-based or unacknowledged compaction is unsafe.
 - Whole-record Zustand updates cannot expose character-level collaborative
   editing; that would require a future editor-specific ADR.
 - IndexedDB Yjs state is a replica and must be reconciled against the canonical
@@ -121,7 +137,9 @@ document. Transport connection alone is not sufficient.
 - Add a single sync-session bridge at the collaboration boundary.
 - Reuse complete Zod record schemas for inbound peer validation.
 - Add explicit canonical batch actions rather than mutating store internals.
-- Define tombstone schema, ordering, retention, and compaction.
+- Persist per-record vector clocks with edits and tombstones.
+- Compare clocks causally; surface concurrent edit/delete as a manual conflict.
+- Retain tombstones indefinitely absent a peer-acknowledged compaction proof.
 - Apply conflict selections before clearing conflict state.
 - Do not add an offline queue claim until convergence and retry semantics are
   implemented.
@@ -148,3 +166,15 @@ join now surfaces conflicts returned by the canonical merge.
 
 The lifecycle regression is covered by `src/lib/sync/doc-rejoin.test.ts` and
 `src/components/studio/views/sync-view-coverage.test.tsx`.
+
+## Implementation addendum — 2026-10-18
+
+The sync bridge now stores stable-device vector clocks in each Yjs record's
+`__syncClock` metadata and stores typed, room-scoped clocks with tombstones.
+Strict causal dominance suppresses stale records and permits same-ID restores
+only after observing the delete. Concurrent edit/delete is retained as a
+`__delete` conflict for the existing manual resolution UI. These clocks survive
+Y.Doc update reload and rejoin; tombstones are not compacted automatically.
+Join/resync merges are validated and committed to canonical state as one
+history entry with outbound echo suppression. Regression cases live in
+`src/lib/sync/causality.test.ts` and `src/lib/sync/doc-rejoin.test.ts`.

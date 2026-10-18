@@ -102,6 +102,7 @@ const mockNavigateToView = vi.fn()
 const mockAddClaim = vi.fn()
 const mockUpdateClaim = vi.fn()
 const mockDeleteClaim = vi.fn()
+const mockClearPendingEntityName = vi.fn()
 
 const mockEntities: Entity[] = [
   {
@@ -141,12 +142,16 @@ const mockEntities: Entity[] = [
 
 let currentEntities = mockEntities
 let currentEditingEntityId: string | null = null
+/** Title handed over by a create command, as the palette does. */
+let currentPendingEntityName: string | null = null
 
 vi.mock('@/lib/studio/store', () => ({
   useStudioStore: (selector: (s: Record<string, unknown>) => unknown) =>
     selector({
       entities: currentEntities,
       editingEntityId: currentEditingEntityId,
+      pendingEntityName: currentPendingEntityName,
+      clearPendingEntityName: mockClearPendingEntityName,
       commitEntities: mockCommitEntities,
       saveEntity: mockSaveEntity,
       finishEditing: mockFinishEditing,
@@ -165,11 +170,27 @@ describe('EditorView', () => {
     vi.clearAllMocks()
     currentEntities = mockEntities
     currentEditingEntityId = null
+    currentPendingEntityName = null
   })
 
   it('renders editor container with name input', () => {
     render(<EditorView />)
     expect(screen.getByPlaceholderText('Entity name…')).toBeDefined()
+  })
+
+  it('pre-fills the title from a pending name and consumes the handoff', () => {
+    currentPendingEntityName = 'Quantum notes'
+    render(<EditorView />)
+
+    expect(screen.getByPlaceholderText('Entity name…')).toHaveValue('Quantum notes')
+    expect(mockClearPendingEntityName).toHaveBeenCalledTimes(1)
+  })
+
+  it('leaves the title blank when no pending name was handed over', () => {
+    render(<EditorView />)
+
+    expect(screen.getByPlaceholderText('Entity name…')).toHaveValue('')
+    expect(mockClearPendingEntityName).not.toHaveBeenCalled()
   })
 
   it('renders description textarea', () => {

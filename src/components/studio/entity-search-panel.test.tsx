@@ -128,7 +128,7 @@ describe('EntitySearchPanel', () => {
     render(<EntitySearchPanel onSelect={mockOnSelect} />)
     fireEvent.click(screen.getByRole('button', { name: 'Ranked' }))
 
-    expect(screen.getByText('A snippet')).toBeDefined()
+    expect(searchMock).toHaveBeenCalledWith(mockEntities, [], 'Alpha', 20)
     expect(screen.getByText('0.9')).toBeDefined()
 
     const resultRow = screen.getByLabelText(/score 0.95/)

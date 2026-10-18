@@ -56,5 +56,5 @@ Run `./scripts/setup-skills.sh` to create symlinks for Claude Code, Gemini CLI, 
 - One very long session for a multi-day project
 - Using larger context windows as a substitute for context isolation
 - Auto-generating AGENTS.md (hurts performance; always human-written)
-- Loading the entire `LESSONS.md` or `analysis/` directory into context manually (use `memory-context` / `csm query` instead)
+- Loading the entire `LESSONS.md` or `plans/research/scratch/` directory into context manually (use `memory-context` / `csm query` instead)
 - Running `csm index-*` on every session — index once, query many times

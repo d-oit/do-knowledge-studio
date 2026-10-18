@@ -40,6 +40,10 @@ const createValidPersistedSlice = () => ({
   typeFilter: 'all' as const,
   sortBy: 'updated' as const,
   sortDir: 'desc' as const,
+  tagQuery: '',
+  hasDescriptionOnly: false,
+  viewMode: 'grid' as const,
+  showAll: false,
   rightPanelOpen: true,
   graph: null,
   mindMap: null,
@@ -78,6 +82,28 @@ describe('sanitizeHydration', () => {
     expect(verdict.reason).toBeUndefined()
     expect(verdict.data).toEqual(validSlice)
     expect('version' in verdict.data).toBe(false)
+  })
+
+  it('fills defaults for advanced filter keys an older envelope omits', () => {
+    const {
+      tagQuery: _tagQuery,
+      hasDescriptionOnly: _hasDescriptionOnly,
+      viewMode: _viewMode,
+      showAll: _showAll,
+      ...legacySlice
+    } = createValidPersistedSlice()
+
+    const verdict = sanitizeHydration(legacySlice)
+
+    expect(verdict.ok).toBe(true)
+    // Backward compatibility: the keys that already existed still hydrate…
+    expect(verdict.data.typeFilter).toBe('all')
+    // …and the newer ones land on the store's defaults rather than undefined,
+    // so a payload written before they existed is not a half-reset filter UI.
+    expect(verdict.data.tagQuery).toBe('')
+    expect(verdict.data.hasDescriptionOnly).toBe(false)
+    expect(verdict.data.viewMode).toBe('grid')
+    expect(verdict.data.showAll).toBe(false)
   })
 
   it('rejects state with an invalid entity type and formats error reason with path', () => {

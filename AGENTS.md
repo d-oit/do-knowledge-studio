@@ -40,6 +40,7 @@ Local-first knowledge studio built with Next.js 16 / React 19 / Tailwind 4 / sha
 - **Always use named exports.** Never use `export default`. Named exports enable better tree-shaking, safer refactoring (find-all-references works), and consistent import style across the codebase. **Exception**: Next.js App Router files (`src/app/page.tsx`, `src/app/layout.tsx`) require `export default` by framework convention — this is the only acceptable case.
 - **Prefer `const fn = () => {}` over `function fn() {}` for module-scope helper functions (especially in test files).** DeepSource's JS-0067 rule flags top-level `function` declarations as "global scope" (a false positive for ES modules, but it fails the check). Arrow-function expressions avoid this. This applies to test helpers (`makeEntity`, `resetStore`, etc.) and non-exported internal helpers in `src/`. The `.deepsource.toml` `issue_patterns` suppression for JS-0067 is a belt-and-suspenders fallback, not the primary fix.
 - **Never ignore pre-existing issues or warnings.** Every warning, lint error, or failing check must be fixed or documented as a follow-up task in `plans/`. Ignoring issues compounds technical debt and erodes trust in the pipeline.
+- Test filenames should describe the behavior or subsystem under test, not coverage chasing. Rename historical files only when a consumer or naming collision requires it.
 - **Treat warnings as errors in quality gates.** When running `pnpm run lint`, `pnpm run typecheck`, `pnpm run test`, or `pnpm run build`, any output containing `⚠`, `warning`, `Warning`, or non-zero exit code must be addressed immediately — do not proceed to the next task until the warning is fixed or explicitly documented as a follow-up. Build warnings (e.g., deprecation notices, lockfile conflicts) are not informational — they are defects.
 - **Always run code review before merge.** After CI passes and before requesting merge, invoke the `code-review-assistant` skill to perform a structured review of all changed files. Address all P1/P2 findings. No PR merges without a completed review pass.
 - **Never merge with Codacy issues.** If Codacy reports `ACTION_REQUIRED`, `FAILED`, or any new issues on a PR, the PR must not be merged until all issues are resolved or explicitly suppressed with a documented reason. Zero tolerance: no warnings, no failures, no "action required" status.
@@ -224,8 +225,7 @@ Non-obvious toolchain facts; full detail in `agents-docs/LESSONS.md`
   (LESSON-043); dependency ranges can move backwards silently (LESSON-044).
 - **Feature-detecting two APIs hides a missing feature** — an `AbortSignal.any`
   fallback dropped a timeout; a bare `stop` binds `window.stop` (LESSON-045).
-- **A CI dispatch on `main` cancels that ref's in-flight push CI** (and vice
-  versa): the loser reads `cancelled` — `gh run rerun` restores it (LESSON-050/051).
+- **CI dispatch** — push and dispatch runs on `main` cancel each other; rerun the cancelled workflow (LESSON-050/051).
 
 ## Skills
 

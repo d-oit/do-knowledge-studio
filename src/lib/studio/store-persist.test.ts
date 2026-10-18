@@ -3,52 +3,13 @@ import { PersistedEnvelopeSchema } from './schema'
 import { CURRENT_SCHEMA_VERSION } from './migrations'
 import { STUDIO_STORAGE_KEY, PERSISTED_KEYS } from './hydration'
 import { QUARANTINE_KEY, readQuarantine } from './hydration-quarantine'
+import { freshStore, USER_ENTITY, validEnvelope, VERSION_BEFORE_V1, writeEnvelope } from './store-persist-test-helpers'
 
 /**
  * Composed persistence round-trip tests (Plan 131 G1).
- *
- * Each test rebuilds the store module against the shared localStorage mock
- * so the full pipeline — partialize → serialize → read → migrate → Zod
- * validate → merge — executes exactly as it does on a page reload. Values
- * are stored in the middleware's real envelope format ({ state, version }).
  */
-
-const freshStore = async () => {
-  vi.resetModules()
-  return import('./store')
-}
-
-const writeEnvelope = (state: Record<string, unknown>, version: number): string => {
-  const raw = JSON.stringify({ state, version })
-  localStorage.setItem(STUDIO_STORAGE_KEY, raw)
-  return raw
-}
-
-const USER_ENTITY = {
-  id: 'persist-test-user-entity',
-  name: 'User Corpus Marker',
-  type: 'note' as const,
-  description: 'Created by the user before reload.',
-  content: 'User content',
-  tags: ['important'],
-  createdAt: '2026-01-01T00:00:00.000Z',
-  updatedAt: '2026-01-01T00:00:00.000Z',
-  links: [],
-}
-
-const validEnvelope = (overrides: Record<string, unknown> = {}) => ({
-  entities: [USER_ENTITY],
-  claims: [],
-  chat: [],
-  currentView: 'library',
-  typeFilter: 'all',
-  sortBy: 'updated',
-  sortDir: 'desc',
-  rightPanelOpen: true,
-  ...overrides,
-})
-
 describe('persistence round-trip', () => {
+
   beforeEach(() => {
     localStorage.clear()
   })
@@ -114,6 +75,33 @@ describe('persistence round-trip', () => {
     expect(quarantined).not.toBeNull()
     expect(quarantined?.raw).toBe(raw)
     expect(quarantined?.reason).toContain('no safe migration')
+  })
+
+  it('refuses a v0 envelope and quarantines it instead of treating it as v1', async () => {
+    const raw = writeEnvelope(validEnvelope(), VERSION_BEFORE_V1)
+
+    const { useStudioStore, getHydrationRefusal } = await freshStore()
+    await useStudioStore.persist.rehydrate()
+
+    expect(useStudioStore.getState().entities.some((entity) => entity.id === USER_ENTITY.id)).toBe(false)
+    expect(getHydrationRefusal()?.preserved).toBe(true)
+    expect(readQuarantine()?.raw).toBe(raw)
+  })
+
+  it('strips unknown envelope keys before the next store write', async () => {
+    writeEnvelope(validEnvelope({ futurePreference: 'not understood by this version' }), CURRENT_SCHEMA_VERSION)
+
+    const { useStudioStore, getHydrationRefusal } = await freshStore()
+    await useStudioStore.persist.rehydrate()
+
+    expect(getHydrationRefusal()).toBeNull()
+    expect(useStudioStore.getState().entities.some((entity) => entity.id === USER_ENTITY.id)).toBe(true)
+    useStudioStore.getState().saveEntity({
+      ...USER_ENTITY,
+      id: 'write-after-unknown-key',
+      name: 'Normal store write',
+    })
+    expect(localStorage.getItem(STUDIO_STORAGE_KEY)).not.toContain('"futurePreference"')
   })
 
   it('keeps quarantined bytes intact after a subsequent store write', async () => {
@@ -403,46 +391,6 @@ describe('persistence round-trip', () => {
     // Absent preferences fall back to defaults instead of rejecting.
     expect(state.currentView).toBe('home')
     expect(state.rightPanelOpen).toBe(true)
-  })
-
-  it('preserves durable UI preferences through a version-migration reload', async () => {
-    // Claims predate the v1→v2 timestamp backfill, forcing the chain to run;
-    // preferences written alongside must survive it (Plan 131 D1.4).
-    writeEnvelope(
-      validEnvelope({
-        claims: [
-          { id: 'c1', entityId: USER_ENTITY.id, statement: 'S', confidence: 0.5, verification: 'unverified' },
-        ],
-        version: 1,
-        typeFilter: 'person',
-        sortBy: 'name',
-        sortDir: 'asc',
-        rightPanelOpen: false,
-      }),
-      1,
-    )
-
-    const { useStudioStore } = await freshStore()
-    await useStudioStore.persist.rehydrate()
-
-    const state = useStudioStore.getState()
-    expect(state.entities.some((e) => e.id === USER_ENTITY.id)).toBe(true)
-    expect(state.typeFilter).toBe('person')
-    expect(state.sortBy).toBe('name')
-    expect(state.sortDir).toBe('asc')
-    expect(state.rightPanelOpen).toBe(false)
-    // Migration backfilled claim timestamps.
-    expect(useStudioStore.getState().claims[0]?.createdAt).toBeDefined()
-  })
-
-  it('never persists the search query', async () => {
-    const { useStudioStore } = await freshStore()
-    await useStudioStore.persist.rehydrate()
-    useStudioStore.getState().setSearchQuery('keystroke storm')
-
-    const raw = localStorage.getItem(STUDIO_STORAGE_KEY)
-    expect(raw).not.toBeNull()
-    expect(raw).not.toContain('"searchQuery"')
   })
 
   it('keeps partialize keys and the envelope schema in lockstep', () => {

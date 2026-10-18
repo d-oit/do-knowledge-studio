@@ -2,7 +2,16 @@
 
 **Priority**: P2 (Partial)  
 **Estimated Total Effort**: 12-16 hours  
-**Status**: 🟡 PARTIAL (2026-06-25) — CLI + export done, coverage 50% (target 70%)  
+**Status**: Historical — superseded by the Next.js migration (Plan 048 / ADR 018); not a current implementation backlog.  
+
+## Reconciliation — 2026-10-17
+
+This plan records a Vite/SQLite-WASM/OPFS architecture and source paths that
+Plan 048 replaced with Next.js, Zustand, and localStorage. Its historical CLI,
+export, and coverage checkboxes are not actionable against the current app.
+Tiered IndexedDB recovery was explicitly not selected in Plan 162; its unused
+module was later deleted in Plan 166. Current test and coverage policy is
+tracked by Plan 131 G7 and `vitest.config.ts`.
 **Sources**: Swarm analysis - missing implementations
 
 ## Tasks

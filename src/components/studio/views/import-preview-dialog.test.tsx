@@ -28,7 +28,7 @@ vi.mock('@/components/studio/ui/shared-primitives', () => ({
   ),
 }))
 
-import { ImportPreviewDialog } from './import-preview-dialog'
+import { ImportPreviewDialog as ImportPreviewDialogComponent } from './import-preview-dialog'
 import type { ImportPreview } from './export-types'
 
 const basePreview: ImportPreview = {
@@ -40,6 +40,21 @@ const previewWithDuplicates: ImportPreview = {
   duplicateIds: ['ent-1', 'ent-2'],
 }
 
+
+const ImportPreviewDialog = ({
+  importPreview,
+  setImportPreview,
+  handleConfirmImport,
+}: {
+  importPreview: ImportPreview | null
+  setImportPreview: (preview: ImportPreview | null) => void
+  handleConfirmImport: () => void
+}) => (
+  <ImportPreviewDialogComponent
+    state={{ preview: importPreview }}
+    actions={{ close: setImportPreview, confirm: handleConfirmImport }}
+  />
+)
 describe('ImportPreviewDialog', () => {
   const mockSetImportPreview = vi.fn()
   const mockHandleConfirmImport = vi.fn()

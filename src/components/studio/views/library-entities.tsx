@@ -2,13 +2,13 @@ import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import type { VirtualItem } from '@tanstack/react-virtual'
-import { motion } from 'framer-motion'
 import { Clock } from 'lucide-react'
 import type { Entity } from '@/lib/studio/types'
 import { getEntityTypeMeta } from '@/lib/studio/entity-types'
 import { EntityIcon } from '../entity-type-icon'
 import { cn } from '@/lib/utils'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
+import { readBreakpointPx } from '@/lib/studio/breakpoints'
 
 /** Module-scope date formatter for library timestamps (shared by grid and list). */
 const dateFormatter = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' })
@@ -24,6 +24,10 @@ const TABLE_ROW_ESTIMATE_PX = 56
 const GRID_ROW_ESTIMATE_PX = 150
 /** Rows rendered above and below the visible window. */
 const VIRTUAL_OVERSCAN = 8
+/** Entry motion timings for eager entity cards. */
+const GRID_CARD_ANIMATION_DURATION_MS = 250
+const GRID_CARD_STAGGER_DELAY_MS = 30
+const GRID_CARD_MAX_STAGGER_DELAY_MS = 300
 
 /**
  * Whether to use windowed rendering. Requires a measurable container (real
@@ -54,39 +58,6 @@ const useMeasurableHeight = (ref: RefObject<HTMLElement | null>): boolean => {
   return hasHeight
 }
 
-/**
- * Converts a CSS-length raw value (rem or px) into pixels. `rem` resolves
- * against the root font size (default 16px when unset). Returns null for any
- * other unit or a malformed numeric value.
- */
-const resolveLengthPx = (raw: string, root: HTMLElement): number | null => {
-  const value = Number.parseFloat(raw)
-  if (Number.isNaN(value)) return null
-  if (raw.endsWith('rem')) {
-    const rootFontPx = Number.parseFloat(getComputedStyle(root).fontSize) || 16
-    return value * rootFontPx
-  }
-  if (raw.endsWith('px')) return value
-  return null
-}
-
-/**
- * Reads a `--breakpoint-*` theme variable as pixels. The variables are emitted
- * by Tailwind v4 from the @theme block in globals.css (rem is resolved against
- * the root font size), so the virtual grid rows chunk on the same values the
- * `sm:`/`lg:` CSS classes use — one source of truth.
- */
-const readBreakpointPx = (name: string): number | null => {
-  if (typeof window === 'undefined') return null
-  if (typeof document === 'undefined') return null
-  if (typeof getComputedStyle !== 'function') return null
-  // document.documentElement is non-nullable per DOM types; the presence
-  // checks above (window/document) are the environment guard the caller needs.
-  const root = document.documentElement
-  const raw = getComputedStyle(root).getPropertyValue(name).trim()
-  if (!raw) return null
-  return resolveLengthPx(raw, root)
-}
 
 /** Tracks the responsive grid column count (1 / 2 / 3) matching the CSS breakpoints. */
 const useColumnCount = (): number => {
@@ -99,13 +70,15 @@ const useColumnCount = (): number => {
       if (mqThree && mqTwo) setColumns(mqThree.matches ? 3 : mqTwo.matches ? 2 : 1)
     }
     if (typeof window.matchMedia === 'function') {
-      const smPx = readBreakpointPx('--breakpoint-sm') ?? 640
-      const lgPx = readBreakpointPx('--breakpoint-lg') ?? 1024
-      mqTwo = window.matchMedia(`(min-width: ${smPx}px)`)
-      mqThree = window.matchMedia(`(min-width: ${lgPx}px)`)
-      update()
-      mqTwo.addEventListener('change', update)
-      mqThree.addEventListener('change', update)
+      const smPx = readBreakpointPx('--breakpoint-sm')
+      const lgPx = readBreakpointPx('--breakpoint-lg')
+      if (smPx !== null && lgPx !== null) {
+        mqTwo = window.matchMedia(`(min-width: ${smPx}px)`)
+        mqThree = window.matchMedia(`(min-width: ${lgPx}px)`)
+        update()
+        mqTwo.addEventListener('change', update)
+        mqThree.addEventListener('change', update)
+      }
     }
     return () => {
       mqTwo?.removeEventListener('change', update)
@@ -150,7 +123,7 @@ const chunkBy = <T,>(items: T[], size: number): T[][] => {
 const SCROLL_CONTAINER_CLASS = 'max-h-[65vh] overflow-auto'
 
 
-/** Single entity card (entrance animation only in the eager path). */
+/** Single entity card with an optional CSS entrance animation. */
 const GridCard = ({
   entity,
   startEdit,
@@ -164,12 +137,23 @@ const GridCard = ({
 }) => {
   const meta = getEntityTypeMeta(entity.type)
   return (
-    <motion.button
-      initial={animate ? { opacity: 0, y: 6 } : false}
-      animate={{ opacity: 1, y: 0 }}
-      transition={animate ? { duration: 0.25, delay: Math.min(index * 0.03, 0.3) } : { duration: 0 }}
+    <button
       onClick={() => { startEdit(entity.id) }}
-      className="group flex flex-col rounded-lg border border-border bg-card p-4 text-left transition-all hover:border-saffron/30 hover:shadow-md hover-lift focus-ring"
+      style={
+        animate
+          ? {
+              animationDuration: `${GRID_CARD_ANIMATION_DURATION_MS}ms`,
+              animationDelay: `${Math.min(
+                index * GRID_CARD_STAGGER_DELAY_MS,
+                GRID_CARD_MAX_STAGGER_DELAY_MS,
+              )}ms`,
+            }
+          : undefined
+      }
+      className={cn(
+        'group flex flex-col rounded-lg border border-border bg-card p-4 text-left transition-all hover:border-saffron/30 hover:shadow-md hover-lift focus-ring',
+        animate && 'animate-in fade-in slide-in-from-bottom-1 motion-reduce:animate-none',
+      )}
     >
       <div className="mb-3 flex items-center justify-between">
         <div className={cn('flex h-9 w-9 items-center justify-center rounded-md', meta.bg, meta.text)}>
@@ -204,11 +188,11 @@ const GridCard = ({
           {formatDate(entity.updatedAt)}
         </div>
       </div>
-    </motion.button>
+    </button>
   )
 }
 
-/** Grid of entity cards with staggered entrance animation. */
+/** Grid of entity cards with staggered CSS entrance animation. */
 export const EntityGrid = ({
   entities,
   startEdit,
@@ -345,7 +329,6 @@ const TableRow = ({
   const openEntity = () => { startEdit(entity.id) }
   return (
     <tr
-      key={entity.id}
       onClick={openEntity}
       data-index={vi?.index}
       ref={measure}

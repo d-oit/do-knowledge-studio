@@ -17,6 +17,11 @@ export interface FieldConflict {
   reason: string
 }
 
+/** Stable conflict identity shared by the resolver, view, and resolution UI. */
+export const getConflictResolutionKey = (
+  conflict: Pick<FieldConflict, 'entityId' | 'entityType' | 'field'>,
+): string => JSON.stringify([conflict.entityType, conflict.entityId, conflict.field])
+
 /**
  * Canonical sortable instant for an ISO-8601 timestamp string. Lexicographic
  * comparison of raw ISO strings is not chronological when timestamps carry
@@ -35,8 +40,23 @@ const timestampInstant = (value: string): string => {
   return Number.isNaN(parsed) ? value : new Date(parsed).toISOString()
 }
 
-function isNewer(a: string, b: string): boolean {
-  return timestampInstant(a) > timestampInstant(b)
+/** Deterministic timestamp ordering shared by merge and inbound conflict paths. */
+export function compareRecordTimestamps(a: string, b: string): number {
+  const left = timestampInstant(a)
+  const right = timestampInstant(b)
+  return left < right ? -1 : left > right ? 1 : 0
+}
+
+/** Pick the same timestamp representation when two raw strings denote one instant. */
+function earlierTimestamp(a: string, b: string): string {
+  const order = compareRecordTimestamps(a, b)
+  return order < 0 ? a : order > 0 ? b : a <= b ? a : b
+}
+
+/** Pick the same latest timestamp representation when instants compare equally. */
+function laterTimestamp(a: string, b: string): string {
+  const order = compareRecordTimestamps(a, b)
+  return order > 0 ? a : order < 0 ? b : a >= b ? a : b
 }
 
 function arraysEqual(a: unknown[], b: unknown[]): boolean {
@@ -89,8 +109,8 @@ function mergeSingleEntity(
     content: mergeField(local.id, 'entity', 'content', local.content, remote.content, local.updatedAt, remote.updatedAt, conflicts),
     sourceUrl: mergeField(local.id, 'entity', 'sourceUrl', local.sourceUrl, remote.sourceUrl, local.updatedAt, remote.updatedAt, conflicts),
     tags: mergeArrayField(local.id, 'entity', 'tags', local.tags, remote.tags, local.updatedAt, remote.updatedAt, conflicts),
-    createdAt: local.createdAt < remote.createdAt ? local.createdAt : remote.createdAt,
-    updatedAt: local.updatedAt > remote.updatedAt ? local.updatedAt : remote.updatedAt,
+    createdAt: earlierTimestamp(local.createdAt, remote.createdAt),
+    updatedAt: laterTimestamp(local.updatedAt, remote.updatedAt),
     links: mergeLinks(local.id, local.links, remote.links, local.updatedAt, remote.updatedAt, conflicts),
   }
 
@@ -111,7 +131,7 @@ function mergeField<T>(
   if (localValue === undefined || localValue === null) return remoteValue
   if (remoteValue === undefined || remoteValue === null) return localValue
 
-  if (isNewer(localTimestamp, remoteTimestamp)) {
+  if (compareRecordTimestamps(localTimestamp, remoteTimestamp) > 0) {
     conflicts.push({
       entityId,
       entityType,
@@ -119,12 +139,12 @@ function mergeField<T>(
       localValue,
       remoteValue,
       winner: 'local',
-      reason: `local timestamp (${localTimestamp}) > remote (${remoteTimestamp})`,
+      reason: `local timestamp (${timestampInstant(localTimestamp)}) > remote (${timestampInstant(remoteTimestamp)})`,
     })
     return localValue
   }
 
-  if (isNewer(remoteTimestamp, localTimestamp)) {
+  if (compareRecordTimestamps(remoteTimestamp, localTimestamp) > 0) {
     conflicts.push({
       entityId,
       entityType,
@@ -132,21 +152,25 @@ function mergeField<T>(
       localValue,
       remoteValue,
       winner: 'remote',
-      reason: `remote timestamp (${remoteTimestamp}) > local (${localTimestamp})`,
+      reason: `remote timestamp (${timestampInstant(remoteTimestamp)}) > local (${timestampInstant(localTimestamp)})`,
     })
     return remoteValue
   }
 
+  const winner =
+    (JSON.stringify(localValue) ?? '') <= (JSON.stringify(remoteValue) ?? '')
+      ? 'local'
+      : 'remote'
   conflicts.push({
     entityId,
     entityType,
     field,
     localValue,
     remoteValue,
-    winner: 'local',
-    reason: 'timestamps equal, defaulting to local',
+    winner,
+    reason: 'timestamps equal, using stable value ordering',
   })
-  return localValue
+  return winner === 'local' ? localValue : remoteValue
 }
 
 function mergeArrayField<T>(
@@ -211,7 +235,11 @@ function mergeLinks(
     if (!existing) {
       linkMap.set(link.targetId, link)
     } else if (existing.relation !== link.relation) {
-      const winner = isNewer(localTimestamp, remoteTimestamp) ? existing : link
+      const order = compareRecordTimestamps(localTimestamp, remoteTimestamp)
+      const winner =
+        order > 0 ? existing :
+        order < 0 ? link :
+        existing.relation <= link.relation ? existing : link
       conflicts.push({
         entityId,
         entityType: 'entity',
@@ -248,7 +276,11 @@ const mergeEditHistory = (local: Claim, remote: Claim): { statement: string; edi
       merged.push(entry)
     }
   }
-  return merged.sort((a, b) => timestampInstant(a.editedAt).localeCompare(timestampInstant(b.editedAt)))
+  return merged.sort((a, b) => {
+    const timestampOrder = compareRecordTimestamps(a.editedAt, b.editedAt)
+    if (timestampOrder !== 0) return timestampOrder
+    return a.statement < b.statement ? -1 : a.statement > b.statement ? 1 : 0
+  })
 }
 
 /** LWW comparator timestamp for a claim: updatedAt, falling back to createdAt. */
@@ -306,10 +338,10 @@ function mergeSingleClaim(
     // keeps the earliest timestamp, updatedAt the latest, version is monotonic,
     // and editHistory is a chronological union of both trails.
     createdAt: local.createdAt && remote.createdAt
-      ? (timestampInstant(local.createdAt) < timestampInstant(remote.createdAt) ? local.createdAt : remote.createdAt)
+      ? earlierTimestamp(local.createdAt, remote.createdAt)
       : (local.createdAt ?? remote.createdAt),
     updatedAt: local.updatedAt && remote.updatedAt
-      ? (timestampInstant(local.updatedAt) > timestampInstant(remote.updatedAt) ? local.updatedAt : remote.updatedAt)
+      ? laterTimestamp(local.updatedAt, remote.updatedAt)
       : (local.updatedAt ?? remote.updatedAt),
     version: Math.max(local.version ?? 1, remote.version ?? 1),
     editHistory: mergedHistory.length > 0 ? mergedHistory : undefined,

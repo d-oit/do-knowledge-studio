@@ -167,3 +167,23 @@ export, graph) and map cleanly to separate sub-agents.
   "DEMO-GRADE" labeling must stay visible — do not soften it.
 - **Retrieval scope (C1)**: keep it in-browser to preserve local-first; a WASM
   vector index is possible later but BM25/TF-IDF is enough for v1.
+
+## Leftovers implemented (2026-10-17 — [Plan 177](177-older-plan-leftovers-2026-10-17.md))
+
+- **Command palette (§118)**: the typed query now pre-fills a new entity's name
+  (`startNew(name)` hands it to the editor once), and the palette gained a
+  theme-cycle command plus a direct JSON-export command that reuses the export
+  view's own handler — no second export path.
+- **Backlinks panel (§116)**: the right panel now also lists what references the
+  selected entity ("Referenced by (N)"), deduped per source, self-references
+  dropped, absent when empty, and each row selects its source entity.
+- **Saved views/filters (§117)** — narrowed, which the recorded ask allowed:
+  `tagQuery`, `hasDescriptionOnly`, `viewMode` and `showAll` moved from component
+  state into the persisted store (schema defaults keep older envelopes
+  hydrating), so the filter UI survives navigation and reload. No named presets
+  were built: no preset concept (naming, switching, deletion) was ever specified.
+  The basic filters were already persisted.
+- **Search responsiveness (Plan 131 D2.9)**: the ranked list reads its query
+  through `useDeferredValue`, so typing stays responsive while the list converges
+  on the next frame; the desktop panel, the mobile drawer search tab and the
+  library all share that one implementation.

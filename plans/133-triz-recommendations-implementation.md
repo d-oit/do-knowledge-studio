@@ -1,6 +1,6 @@
 # Plan 133: TRIZ Recommendations Implementation (Phase 1)
 
-**Goal**: Implement the high-impact Phase 1 architectural improvements identified in the TRIZ Contradiction Audit (`analysis/triz-system-architecture-2026-09-01.md`).
+**Goal**: Implement the high-impact Phase 1 architectural improvements identified in the TRIZ Contradiction Audit (`plans/research/scratch/analysis/triz-system-architecture-2026-09-01.md`).
 
 ## Objectives
 

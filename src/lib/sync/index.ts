@@ -27,8 +27,13 @@ export {
   setYjsClaim,
   removeYjsClaim,
   mergeIntoYjs,
-  onYjsChange,
-  subscribeToYjs,
   destroyBridge,
   initSync,
 } from './bridge'
+export {
+  addTombstone,
+  isTombstoned,
+  getTombstone,
+  getAllTombstones,
+} from './tombstones'
+export type { Tombstone } from './tombstones'

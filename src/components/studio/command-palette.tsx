@@ -12,10 +12,14 @@ import {
   FlaskConical,
   Grid3X3,
   Download,
+  FileJson,
+  SunMoon,
   Search,
   CornerDownLeft,
 } from 'lucide-react'
 import { useStudioStore } from '@/lib/studio/store'
+import { exportLibraryJson } from '@/components/studio/views/export-library-json'
+import { useHydrationSafeTheme } from '@/components/studio/theme-provider'
 import { Overlay } from '@/components/studio/ui/shared-primitives'
 import type { ViewId } from '@/lib/studio/types'
 import { getEntityTypeMeta } from '@/lib/studio/entity-types'
@@ -30,6 +34,21 @@ interface CmdItem {
   group: string
 }
 
+/**
+ * Next theme in the toggle's cycle: light → dark → system → light.
+ *
+ * Mirrors the sidebar and mobile-drawer toggles (`sidebar.tsx`,
+ * `mobile-drawer.tsx`); `system` is the third stop so a user can hand the
+ * choice back to the OS instead of being stuck on a manual palette.
+ * @param current - The stored theme choice, or `system` when unset.
+ * @returns The theme to apply next.
+ */
+const nextTheme = (current: string): string => {
+  if (current === 'light') return 'dark'
+  if (current === 'dark') return 'system'
+  return 'light'
+}
+
 interface CommandPaletteProps {
   onEntitySelect: (entityId: string) => void
 }
@@ -41,6 +60,16 @@ export const CommandPalette = ({ onEntitySelect }: CommandPaletteProps) => {
   const setView = useStudioStore((s) => s.setView)
   const startNew = useStudioStore((s) => s.startNew)
   const entities = useStudioStore((s) => s.entities)
+  // The JSON export command needs the same payload the export view sends, so it
+  // reads the corpus here and hands it to the shared serializer.
+  const claims = useStudioStore((s) => s.claims)
+  const graph = useStudioStore((s) => s.graph)
+  const mindMap = useStudioStore((s) => s.mindMap)
+  const links = useStudioStore((s) => s.links)
+  const tags = useStudioStore((s) => s.tags)
+  // Hydration-safe: the stored choice only lands after mount, so the label can
+  // never promise a theme the server did not render (see the hook's docs).
+  const { theme, setTheme } = useHydrationSafeTheme()
   const [query, setQuery] = React.useState('')
   const inputRef = React.useRef<HTMLInputElement>(null)
 
@@ -83,16 +112,52 @@ export const CommandPalette = ({ onEntitySelect }: CommandPaletteProps) => {
     { id: 'nav-ai', label: translate('palette.nav.ai'), icon: FlaskConical, onSelect: () => { goTo('ai') }, group: translate('palette.group.navigate') },
     { id: 'nav-triz', label: translate('palette.nav.triz'), icon: Grid3X3, onSelect: () => { goTo('triz') }, group: translate('palette.group.navigate') },
     { id: 'nav-export', label: translate('palette.nav.export'), icon: Download, onSelect: () => { goTo('export') }, group: translate('palette.group.navigate') },
+  ]
+
+  /**
+   * The create command is never filtered out: the typed query is the name it
+   * hands to the editor, so hiding it on a non-matching query would remove the
+   * affordance the query exists for.
+   */
+  const createItem: CmdItem = {
+    id: 'create-entity',
+    label: translate('palette.create.label'),
+    hint: translate('palette.create.hint'),
+    icon: FileText,
+    onSelect: () => {
+      // Whatever the user typed is their intended title; handing the trimmed
+      // query to the editor is what stops the palette throwing it away
+      // (ADR 017's recorded follow-up).
+      startNew(query.trim())
+      close()
+    },
+    group: translate('palette.group.create'),
+  }
+
+  const actionItems: CmdItem[] = [
     {
-      id: 'create-entity',
-      label: translate('palette.create.label'),
-      hint: translate('palette.create.hint'),
-      icon: FileText,
+      id: 'action-export-json',
+      label: translate('palette.export.label'),
+      hint: translate('palette.export.hint'),
+      icon: FileJson,
       onSelect: () => {
-        startNew()
+        // The export view's own JSON handler (same serializer, filename, and
+        // toast) rather than a second copy of the backup logic.
+        exportLibraryJson({ entities, claims, graph, mindMap, links, tags })
         close()
       },
-      group: translate('palette.group.create'),
+      group: translate('palette.group.actions'),
+    },
+    {
+      id: 'action-toggle-theme',
+      label: translate('palette.theme.label'),
+      hint: translate('palette.theme.hint'),
+      icon: SunMoon,
+      onSelect: () => {
+        setTheme(nextTheme(theme ?? 'system'))
+        close()
+      },
+      group: translate('palette.group.actions'),
     },
   ]
 
@@ -116,7 +181,22 @@ export const CommandPalette = ({ onEntitySelect }: CommandPaletteProps) => {
       group: translate('palette.group.library'),
     }))
 
-  const allItems = [...navItems, ...libItems]
+  // cmdk's own filter is off (`shouldFilter={false}`) because the grouping and
+  // order are authored here, which makes this predicate the palette's only
+  // search: every command is matched on its label and hint, except the create
+  // command (above) and the entity results (matched on name/description).
+  const normalizedQuery = query.trim().toLowerCase()
+  const matchesQuery = (item: CmdItem): boolean =>
+    normalizedQuery === '' ||
+    item.label.toLowerCase().includes(normalizedQuery) ||
+    (item.hint?.toLowerCase().includes(normalizedQuery) ?? false)
+
+  const allItems = [
+    ...navItems.filter(matchesQuery),
+    createItem,
+    ...actionItems.filter(matchesQuery),
+    ...libItems,
+  ]
   const grouped = allItems.reduce(
     (acc, item) => {
       const list = acc.get(item.group) ?? []

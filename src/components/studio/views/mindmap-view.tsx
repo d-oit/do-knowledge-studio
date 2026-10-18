@@ -1,16 +1,11 @@
 'use client'
 
+import { getHistoryAvailability } from '@/lib/studio/slices/history-slice'
 import { useStudioStore } from '@/lib/studio/store'
 import { getEntityTypeMeta } from '@/lib/studio/entity-types'
 import {
   BrainCircuit,
   Plus,
-  Trash2,
-  Edit3,
-  Undo2,
-  Redo2,
-  RefreshCw,
-  Download,
   ChevronRight,
   ChevronDown,
   Sliders,
@@ -24,6 +19,7 @@ import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { motion, AnimatePresence } from 'framer-motion'
 import { buildEntityIndex } from '@/lib/studio/graph-index'
 import { getMindMapDensity } from './mindmap-density'
+import { MindMapToolbarActions } from './mindmap-toolbar-actions'
 import { translate as t } from '@/lib/i18n/messages/mindmap'
 import { translate as navT } from '@/lib/i18n/messages/nav'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
@@ -59,9 +55,6 @@ export const MindMapView = () => {
   const entityIndex = useMemo(() => buildEntityIndex(entities), [entities])
   const density = useMemo(() => getMindMapDensity(compact), [compact])
   const announce = useAnnouncer()
-  const compactLabel = compact
-    ? t('mindmap.density.comfortable')
-    : t('mindmap.density.compact')
   const densityLabel = compact
     ? t('mindmap.density.compact')
     : t('mindmap.density.comfortable')
@@ -76,6 +69,7 @@ export const MindMapView = () => {
   const redo = useStudioStore((s) => s.redo)
   const entityHistory = useStudioStore((s) => s.entityHistory)
   const historyIndex = useStudioStore((s) => s.historyIndex)
+  const { canUndo, canRedo } = getHistoryAvailability(historyIndex, entityHistory.length)
 
   const addChildToNode = useCallback((parentId: string) => {
     const nodeEntity = entityIndex.get(parentId)
@@ -146,11 +140,12 @@ export const MindMapView = () => {
     }
   }, [handleKeyDown])
 
-  const exportPng = useCallback(() => {
-    const el = canvasRef.current
-    if (!el) return
+  const exportPng = useCallback(async () => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const element = canvas.querySelector<HTMLElement>('[role="tree"]') ?? canvas
     try {
-      exportElementAsPng(el, `mindmap-${todayStamp()}.png`)
+      await exportElementAsPng(element, `mindmap-${todayStamp()}.png`)
     } catch (error) {
       log.error('Failed to export mind map as PNG', { error })
     }
@@ -425,34 +420,23 @@ export const MindMapView = () => {
           <span className="font-mono text-label text-ink">{depth}</span>
         </div>
 
-        <Divider />
-
-        <ToolbarBtn icon={Plus} label={t('mindmap.toolbar.addChild')} onClick={() => {
-          if (focusedNodeId) addChildToNode(focusedNodeId)
-        }} />
-        <ToolbarBtn icon={Edit3} label={t('mindmap.toolbar.rename')} onClick={() => {
-          if (focusedNodeId) startEdit(focusedNodeId)
-        }} />
-        <ToolbarBtn icon={Trash2} label={t('mindmap.toolbar.delete')} onClick={deleteFocusedNode} />
-        <ToolbarBtn icon={Undo2} label={t('mindmap.toolbar.undo')} disabled={historyIndex <= 0} onClick={undo} />
-        <ToolbarBtn icon={Redo2} label={t('mindmap.toolbar.redo')} disabled={historyIndex >= entityHistory.length - 1} onClick={redo} />
-
-        <div className="flex-1" />
-
-        <button
-          onClick={() => { setCompact(!compact); announce(announceT('announce.densityChanged', compact ? t('mindmap.density.comfortable') : t('mindmap.density.compact'))) }}
-          aria-pressed={compact}
-          aria-label={t('mindmap.density.toggle')}
-          data-testid="mindmap-compact-toggle"
-          className={cn(
-            'rounded-md px-2 py-1.5 text-label font-medium transition-colors min-h-touch focus-ring',
-            compact ? 'bg-saffron-soft text-saffron-deep' : 'text-ink-mute hover:bg-muted hover:text-ink',
-          )}
-        >
-          {compactLabel}
-        </button>
-        <ToolbarBtn icon={RefreshCw} label={t('mindmap.toolbar.sync')} onClick={syncTree} />
-        <ToolbarBtn icon={Download} label={t('mindmap.toolbar.exportPng')} onClick={exportPng} />
+        <MindMapToolbarActions
+          focusedNodeId={focusedNodeId}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          compact={compact}
+          onAddChild={addChildToNode}
+          onRename={startEdit}
+          onDelete={deleteFocusedNode}
+          onUndo={undo}
+          onRedo={redo}
+          onToggleCompact={() => {
+            setCompact(!compact)
+            announce(announceT('announce.densityChanged', compact ? t('mindmap.density.comfortable') : t('mindmap.density.compact')))
+          }}
+          onSync={syncTree}
+          onExportPng={exportPng}
+        />
       </div>
 
       {/* Hint */}
@@ -476,7 +460,7 @@ export const MindMapView = () => {
               body={t('mindmap.empty.body')}
               actionLabel={t('mindmap.empty.action')}
               actionIcon={Plus}
-              onAction={startNew}
+              onAction={() => { startNew() }}
               className="max-w-md"
             />
           </div>
@@ -498,28 +482,3 @@ export const MindMapView = () => {
   )
 }
 
-/** Small icon button for mind map toolbar actions. */
-function ToolbarBtn({
-  icon: Icon,
-  label,
-  onClick,
-  disabled,
-}: {
-  icon: typeof Plus
-  label: string
-  onClick?: () => void
-  disabled?: boolean
-}) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      title={disabled ? t('mindmap.toolbar.disabledHint', label) : label}
-      aria-label={label}
-      className="flex items-center gap-1 rounded-md px-2 py-1.5 text-label font-medium text-ink-mute transition-colors hover:bg-muted hover:text-ink focus-ring disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink-mute min-h-touch"
-    >
-      <Icon className="h-3.5 w-3.5" />
-      <span className="hidden md:inline">{label}</span>
-    </button>
-  )
-}

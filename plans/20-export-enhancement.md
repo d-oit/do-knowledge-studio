@@ -150,3 +150,18 @@
 - [x] DOCX export produces valid Word documents via docx library
 - [ ] Export panel shows progress/error/success states (future work)
 - [x] All quality gates pass: `pnpm test`, `pnpm run typecheck`, `pnpm run lint`
+
+## Reconciliation (2026-10-17 — [Plan 177](177-older-plan-leftovers-2026-10-17.md))
+
+The three unchecked boxes are now satisfied, with the measurement that decides each:
+
+- **1080p PNG** — the graph export renders into an explicit 1920×1080 canvas
+  (`computePngLayout` fits the live graph, letterboxed with the export surface's
+  own background) instead of 2× the live canvas size.
+- **PDF via jspdf** — a real PDF builder ships in `export-documents.ts`; the
+  leaving box predates it.
+- **Export progress/error/success** — every format reports a busy state while it
+  runs (triggering control disabled, `aria-busy` on the region, a status line
+  naming the format, "Encrypting…" in the encrypted dialog), cleared in a
+  `finally` so a failed build cannot leave the grid disabled; success and failure
+  already reported through toasts.

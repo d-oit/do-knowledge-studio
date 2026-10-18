@@ -70,3 +70,11 @@ multi-user sync (Yjs/WebRTC, ADR 026/027) needs it.
   data-loss risk.
 - Envelope format gained nullable canvas fields — backward compatible (optional
   keys), hydration normalizes `null` → `undefined`.
+
+## Durable variant reaffirmed deferred (2026-10-17 — [Plan 177](../177-older-plan-leftovers-2026-10-17.md))
+
+The "durable variant deferred" status is a decision, not a backlog item: no
+reopening evidence has appeared (no resurrection incident, no data-loss report),
+and the documented limitation above is the accepted boundary for a same-origin,
+session-scoped sync. Reopening it would need a threat model that outlives the
+browser session, which cloud sync does not currently provide.

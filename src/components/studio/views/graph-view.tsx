@@ -1,20 +1,11 @@
 'use client'
 
+import { getHistoryAvailability } from '@/lib/studio/slices/history-slice'
 import { useStudioStore } from '@/lib/studio/store'
 import { seedGraph } from '@/lib/studio/seed-data'
 import { layoutNodes, placeGraphNodes } from '@/lib/studio/graph-layout'
 import { canvasSize, canvasViewBox } from '@/lib/studio/graph-viewport'
 import { useElementSize } from '@/lib/studio/use-element-size'
-import {
-  DRAG_PAN_SLOP_PX,
-  getClientToViewBoxScale,
-  computeDragPanOffset,
-  computeZoom,
-  computeFocalZoom,
-  computePointerDistance,
-  computePointerMidpoint,
-  computePinchGesture,
-} from '@/lib/studio/graph-gestures'
 import { getEntityTypeDefs, getEntityTypeMeta } from '@/lib/studio/entity-types'
 import { translate as entityTypesT } from '@/lib/i18n/messages/entity-types'
 import { exportGraphPng } from './export-graph-png'
@@ -32,6 +23,7 @@ import { GraphComparisonDialog } from './graph-comparison-dialog'
 import { useGraphKeyboard } from './use-graph-keyboard'
 import { useGraphSnapshotComparison } from './use-graph-snapshot-comparison'
 import { FOCUS_MODE_FILTER_STYLE, GraphEdgeElement } from './graph-elements'
+import { useGraphCanvasGestures } from './use-graph-canvas-gestures'
 
 /**
  * Keep the first edge per `id`, preserving input order, in one O(E) pass. The
@@ -59,6 +51,7 @@ export const GraphView = () => {
   const redo = useStudioStore((s) => s.redo)
   const entityHistory = useStudioStore((s) => s.entityHistory)
   const historyIndex = useStudioStore((s) => s.historyIndex)
+  const { canUndo, canRedo } = getHistoryAvailability(historyIndex, entityHistory.length)
   const [layout, setLayout] = useState<GraphLayout>('force')
   const [focusMode, setFocusMode] = useState(false)
   const [showMore, setShowMore] = useState(false)
@@ -158,21 +151,12 @@ export const GraphView = () => {
     [visibleNodes],
   )
 
-  const svgRef = useRef<SVGSVGElement>(null)
   const reducedMotion = useReducedMotion()
-  // Pointer drag-to-pan & dual-pointer pinch state tracking
-  const pointerOriginRef = useRef<{ x: number; y: number } | null>(null)
-  const isDraggingRef = useRef(false)
-  const activePointersRef = useRef<Map<number, { x: number; y: number }>>(new Map())
-  const pinchStateRef = useRef<{
-    initialDistance: number
-    initialMidpoint: { x: number; y: number }
-    initialZoom: number
-    initialPan: { x: number; y: number }
-  } | null>(null)
+  const { svgRef, isDraggingRef, handlePointerDown, handlePointerMove, handlePointerUp, handleWheel } =
+    useGraphCanvasGestures({ canvas, zoom, setZoom, panOffset, setPanOffset })
   const handleExportPng = useCallback(() => {
     exportGraphPng(svgRef.current)
-  }, [])
+  }, [svgRef])
 
   // Gate the rotation animation on the selected node indicator
   const animDur = reducedMotion ? '0s' : '8s'
@@ -192,142 +176,9 @@ export const GraphView = () => {
       if (isDraggingRef.current) return
       selectEntity(isCurrentlySelected ? null : nodeId)
     },
-    [selectEntity],
+    [isDraggingRef, selectEntity],
   )
 
-  const handlePointerDown = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
-    // Only primary button or touch pointers (exclude secondary pen/mouse clicks)
-    if (e.pointerType !== 'touch' && e.button !== 0) return
-
-    activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
-
-    if (activePointersRef.current.size === 1) {
-      pointerOriginRef.current = { x: e.clientX, y: e.clientY }
-      isDraggingRef.current = false
-      pinchStateRef.current = null
-    } else if (activePointersRef.current.size === 2) {
-      // Initiate dual-pointer pinch
-      const [p1, p2] = Array.from(activePointersRef.current.values())
-      pinchStateRef.current = {
-        initialDistance: computePointerDistance(p1, p2),
-        initialMidpoint: computePointerMidpoint(p1, p2),
-        initialZoom: zoom,
-        initialPan: { ...panOffset },
-      }
-      isDraggingRef.current = true
-    }
-  }, [zoom, panOffset])
-
-  const handlePointerMove = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
-    if (!activePointersRef.current.has(e.pointerId)) return
-    activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
-
-    const svg = svgRef.current
-    const rect = svg?.getBoundingClientRect()
-    if (!rect) return
-
-    if (activePointersRef.current.size === 2 && pinchStateRef.current) {
-      const [p1, p2] = Array.from(activePointersRef.current.values())
-      const currentDist = computePointerDistance(p1, p2)
-      const currentMid = computePointerMidpoint(p1, p2)
-
-      // Relativize midpoint to SVG element bounds
-      const focalRelative = {
-        x: pinchStateRef.current.initialMidpoint.x - rect.left,
-        y: pinchStateRef.current.initialMidpoint.y - rect.top,
-      }
-
-      const pinchResult = computePinchGesture(
-        pinchStateRef.current.initialDistance,
-        currentDist,
-        focalRelative,
-        { x: currentMid.x - rect.left, y: currentMid.y - rect.top },
-        pinchStateRef.current.initialZoom,
-        pinchStateRef.current.initialPan,
-        canvas,
-        { width: rect.width, height: rect.height },
-      )
-
-      setZoom(pinchResult.zoom)
-      setPanOffset(pinchResult.panOffset)
-      return
-    }
-
-    if (activePointersRef.current.size === 1 && pointerOriginRef.current) {
-      const dx = e.clientX - pointerOriginRef.current.x
-      const dy = e.clientY - pointerOriginRef.current.y
-
-      if (!isDraggingRef.current) {
-        if (Math.hypot(dx, dy) >= DRAG_PAN_SLOP_PX) {
-          isDraggingRef.current = true
-          try {
-            e.currentTarget.setPointerCapture(e.pointerId)
-          } catch {
-            // Safe ignore
-          }
-        } else {
-          return
-        }
-      }
-
-      const clientScale = getClientToViewBoxScale(canvas, zoom, { width: rect.width, height: rect.height })
-      pointerOriginRef.current = { x: e.clientX, y: e.clientY }
-      setPanOffset((prev) => computeDragPanOffset(prev, dx, dy, clientScale, zoom, canvas))
-    }
-  }, [canvas, zoom])
-
-  const handlePointerUp = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
-    activePointersRef.current.delete(e.pointerId)
-    try {
-      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-        e.currentTarget.releasePointerCapture(e.pointerId)
-      }
-    } catch {
-      // Safe ignore
-    }
-
-    if (activePointersRef.current.size === 1) {
-      // Transition back from pinch to single-pointer pan seamlessly
-      const remaining = Array.from(activePointersRef.current.values())[0]
-      pointerOriginRef.current = { ...remaining }
-      pinchStateRef.current = null
-    } else if (activePointersRef.current.size === 0) {
-      pointerOriginRef.current = null
-      pinchStateRef.current = null
-      setTimeout(() => {
-        isDraggingRef.current = false
-      }, 0)
-    }
-  }, [])
-
-  const handleWheel = useCallback((e: React.WheelEvent<SVGSVGElement>) => {
-    e.preventDefault()
-    const svg = svgRef.current
-    if (!svg) return
-
-    const rect = svg.getBoundingClientRect()
-    const focalPoint = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    }
-    const clientRect = { width: rect.width, height: rect.height }
-
-    setZoom((currZoom) => {
-      const nextZoom = computeZoom(currZoom, e.deltaY)
-      setPanOffset((currPan) => {
-        const focalResult = computeFocalZoom(
-          currZoom,
-          nextZoom,
-          currPan,
-          canvas,
-          focalPoint,
-          clientRect,
-        )
-        return focalResult.panOffset
-      })
-      return nextZoom
-    })
-  }, [canvas])
 
   return (
     <div className={cn('flex h-full flex-col', VIEW_CONTAINER_CLASS)}>
@@ -346,8 +197,8 @@ export const GraphView = () => {
         hasSnapshot={hasSnapshot}
         showMore={showMore}
         onToggleShowMore={() => { setShowMore(!showMore) }}
-        canUndo={historyIndex > 0}
-        canRedo={historyIndex < entityHistory.length - 1}
+        canUndo={canUndo}
+        canRedo={canRedo}
         onUndo={undo}
         onRedo={redo}
         onExportPng={handleExportPng}
@@ -462,7 +313,7 @@ export const GraphView = () => {
               body={graphT('graph.empty.body')}
               actionLabel={graphT('graph.empty.action')}
               actionIcon={Plus}
-              onAction={startNew}
+              onAction={() => { startNew() }}
               className="pointer-events-auto max-w-md bg-card/95"
             />
           </div>

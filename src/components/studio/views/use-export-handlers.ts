@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import packageJson from '../../../../package.json'
 import type { Entity, Claim } from '@/lib/studio/types'
@@ -6,10 +6,9 @@ import type { ImportOutcome } from '@/lib/studio/store-types'
 import type { LibraryPayload, ImportPreview, ExportFormatId, ExportOptions } from './export-types'
 import { todayStamp, downloadFile, downloadBlob } from './export-types'
 import {
-  buildJsonExport, buildMarkdownExport, buildHtmlExport,
-  parseImportFile,
+  buildMarkdownExport, buildHtmlExport, parseImportFile, buildJsonExport,
 } from './export-helpers'
-import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from '@/lib/studio/schema'
+import { buildExportSummary, exportLibraryJson } from './export-library-json'
 import { useAnnouncer } from '@/lib/a11y/announcer'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
 import { translate as exportT } from '@/lib/i18n/messages/export'
@@ -22,32 +21,6 @@ const NO_BACKUP_COPY: Record<RecoveryPersistFailure, string> = {
   'storage-unavailable': exportT('export.import.noBackupStorageUnavailable'),
 }
 
-/**
- * Builds a human-readable summary string of export contents.
- * @param entityCount - Number of entities.
- * @param claimCount - Number of claims.
- * @param graph - Optional graph payload (adds node count).
- * @param mindMap - Optional mind map payload (adds node count).
- * @param links - Optional links (adds link count).
- * @param tags - Optional tags (adds tag count).
- * @returns A `·`-joined summary string.
- */
-const buildExportSummary = (
-  entityCount: number,
-  claimCount: number,
-  graph?: ValidatedGraph,
-  mindMap?: ValidatedMindMap,
-  links?: ValidatedLink[],
-  tags?: ValidatedTag[],
-): string => {
-  /** The parts. */
-  const parts = [`${entityCount} entities`, `${claimCount} claims`]
-  if (graph?.nodes?.length) parts.push(`${graph.nodes.length} graph nodes`)
-  if (mindMap?.nodes?.length) parts.push(`${mindMap.nodes.length} mind map nodes`)
-  if (links?.length) parts.push(`${links.length} links`)
-  if (tags?.length) parts.push(`${tags.length} tags`)
-  return parts.join(' · ')
-}
 
 /**
  * Sanitizes a zip entry path to prevent Zip Slip / path traversal vulnerabilities.
@@ -112,6 +85,8 @@ interface UseExportHandlersParams extends LibraryPayload {
 export interface UseExportHandlersReturn {
   /** The handle export. */
   handleExport: (format: ExportFormatId) => Promise<void>
+  /** The format whose export is still running, or null when idle. */
+  exportingFormat: ExportFormatId | null
   /** The handle import click. */
   handleImportClick: () => void
   /** The handle file change. */
@@ -224,6 +199,17 @@ export const useExportHandlers = ({
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [showPass, setShowPass] = useState(false)
+  // ONE slot holding the running format, not a per-format flag set: an export
+  // is a single-shot action, two concurrent downloads of the same library are
+  // never intended, and knowing *which* format runs is what the UI needs to
+  // disable the control that started it and label the busy region. A set would
+  // add states (two formats at once) nothing can act on.
+  const [exportingFormat, setExportingFormat] = useState<ExportFormatId | null>(null)
+  // The state above drives the UI; this ref is the re-entry guard. Two clicks
+  // dispatched in the same task (a double-click, or a submit fired while the
+  // state update is still batched) would both read the pre-update state and
+  // download twice.
+  const exportInFlightRef = useRef(false)
   const announce = useAnnouncer()
 
   /** The export options. */
@@ -233,10 +219,7 @@ export const useExportHandlers = ({
 
   /** Downloads the library as a JSON backup file. */
   const handleExportJson = () => {
-    /** Markdown or text content. */
-    const content = buildJsonExport(entities, claims, exportOptions)
-    downloadFile(`do-knowledge-studio-export-${stamp}.json`, content, 'application/json')
-    toast.success('JSON export downloaded', { description: buildExportSummary(entities.length, claims.length, graph, mindMap, links, tags) })
+    exportLibraryJson({ entities, claims, graph, mindMap, links, tags })
   }
 
   /** Downloads the library as a single Markdown file. */
@@ -260,8 +243,9 @@ export const useExportHandlers = ({
     try {
       /** The PDF builder. */
       const { buildPdfExport } = await import('./export-documents')
-      /** The blob. */
-      const blob = buildPdfExport(entities, claims)
+      /** The blob. Awaited so a builder that performs async work (and the
+       *  export's busy state) covers the whole build, not just its call. */
+      const blob = await buildPdfExport(entities, claims)
       downloadBlob(`do-knowledge-studio-${stamp}.pdf`, blob)
       toast.success('PDF export downloaded', { description: `${entities.length} entities formatted in a print-ready PDF.` })
     } catch (err) {
@@ -340,33 +324,48 @@ export const useExportHandlers = ({
     }
   }
 
-  /** Routes an export-format id to its download handler. */
+  /** Routes an export-format id to its download handler.
+   *
+   * Wraps every path in the busy state so the UI can disable the control that
+   * started the export and mark the region `aria-busy` until the work settles.
+   * The `finally` is what makes it honest: a failed PDF/DOCX/OKF build clears
+   * the flag exactly like a successful one, so the grid can never be left
+   * permanently disabled.
+   */
   const handleExport = async (format: ExportFormatId) => {
-    switch (format) {
-      case 'json':
-        handleExportJson()
-        break
-      case 'markdown':
-        handleExportMarkdown()
-        break
-      case 'html':
-        handleExportHtml()
-        break
-      case 'pdf':
-        await handleExportPdf()
-        break
-      case 'docx':
-        await handleExportDocx()
-        break
-      case 'encrypted':
-        await handleExportEncrypted()
-        break
-      case 'okf':
-        await handleExportOkf()
-        break
-      /** The default. */
-      default:
-        break
+    if (exportInFlightRef.current) return
+    exportInFlightRef.current = true
+    setExportingFormat(format)
+    try {
+      switch (format) {
+        case 'json':
+          handleExportJson()
+          break
+        case 'markdown':
+          handleExportMarkdown()
+          break
+        case 'html':
+          handleExportHtml()
+          break
+        case 'pdf':
+          await handleExportPdf()
+          break
+        case 'docx':
+          await handleExportDocx()
+          break
+        case 'encrypted':
+          await handleExportEncrypted()
+          break
+        case 'okf':
+          await handleExportOkf()
+          break
+        /** The default. */
+        default:
+          break
+      }
+    } finally {
+      exportInFlightRef.current = false
+      setExportingFormat(null)
     }
   }
 
@@ -431,14 +430,14 @@ export const useExportHandlers = ({
         ),
       )
       /** The summary. */
-      const summary = buildExportSummary(
-        importPreview.entityCount,
-        importPreview.claimCount,
-        importPreview.graph,
-        importPreview.mindMap,
-        importPreview.links,
-        importPreview.tags,
-      )
+      const summary = buildExportSummary({
+        entities: importPreview.entities,
+        claims: importPreview.claims,
+        graph: importPreview.graph,
+        mindMap: importPreview.mindMap,
+        links: importPreview.links,
+        tags: importPreview.tags,
+      })
       // The import succeeded either way, but a missing backup changes what that
       // success means: there is no way back to the corpus that was replaced.
       // The same green toast in both cases would be a false claim.
@@ -471,7 +470,7 @@ export const useExportHandlers = ({
   }
 
   return {
-    handleExport, handleImportClick, handleFileChange, handleConfirmImport, handleReset,
+    handleExport, exportingFormat, handleImportClick, handleFileChange, handleConfirmImport, handleReset,
     showPassword, setShowPassword, password, setPassword, confirm, setConfirm, showPass, setShowPass,
   }
 }

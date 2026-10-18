@@ -240,46 +240,46 @@ describe('AppShell', () => {
     expect(screen.getByTestId('timeline-view')).toBeDefined()
   })
 
-  it('renders ChatView when currentView is chat', () => {
+  it('renders ChatView when currentView is chat', async () => {
     currentView = 'chat'
     render(<AppShell />)
-    expect(screen.getByTestId('chat-view')).toBeDefined()
+    expect(await screen.findByText('Chat')).toBeDefined()
   })
 
   it('renders ExportView when currentView is export', async () => {
     currentView = 'export'
-    await act(() => { render(<AppShell />) })
-    expect(screen.getByTestId('export-view')).toBeDefined()
+    render(<AppShell />)
+    expect(await screen.findByTestId('export-view')).toBeDefined()
   })
 
   it('renders SyncView when currentView is sync', async () => {
     currentView = 'sync'
-    await act(() => { render(<AppShell />) })
-    expect(screen.getByTestId('sync-view')).toBeDefined()
+    render(<AppShell />)
+    expect(await screen.findByTestId('sync-view')).toBeDefined()
   })
 
   it('renders GraphView when currentView is graph', async () => {
     currentView = 'graph'
-    await act(() => { render(<AppShell />) })
-    expect(screen.getByTestId('graph-view')).toBeDefined()
+    render(<AppShell />)
+    expect(await screen.findByTestId('graph-view')).toBeDefined()
   })
 
   it('renders MindMapView when currentView is mindmap', async () => {
     currentView = 'mindmap'
-    await act(() => { render(<AppShell />) })
-    expect(screen.getByTestId('mindmap-view')).toBeDefined()
+    render(<AppShell />)
+    expect(await screen.findByTestId('mindmap-view')).toBeDefined()
   })
 
   it('renders AIHarnessView when currentView is ai', async () => {
     currentView = 'ai'
-    await act(() => { render(<AppShell />) })
-    expect(screen.getByTestId('ai-harness-view')).toBeDefined()
+    render(<AppShell />)
+    expect(await screen.findByTestId('ai-harness-view')).toBeDefined()
   })
 
   it('renders TrizView when currentView is triz', async () => {
     currentView = 'triz'
-    await act(() => { render(<AppShell />) })
-    expect(screen.getByTestId('triz-view')).toBeDefined()
+    render(<AppShell />)
+    expect(await screen.findByTestId('triz-view')).toBeDefined()
   })
 
   it('does not render HomeView when on different view', () => {

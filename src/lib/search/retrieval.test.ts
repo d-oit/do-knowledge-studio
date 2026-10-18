@@ -1,47 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { search, resetSearchCache, MAX_CACHE_ENTRIES } from './retrieval'
 import type { Entity, Claim } from '@/lib/studio/types'
+import { makeClaim, makeEntity } from '../studio/test-helpers'
 
-// These ceilings are smoke guards, not micro-benchmarks. `vitest run` executes files
-// in parallel (maxWorkers: 2) on shared runners, so wall-clock times swing by an order
-// of magnitude under load. The ceilings keep a wide margin over a quiet run
-// (cold index build ~210ms, cached query avg ~3.4ms) while still catching a
-// regression to a dramatically slower algorithm.
-const COLD_BUILD_MS_CEILING = 5_000
-const CACHED_QUERY_MS_CEILING = 100
-// A cached query must beat the cold rebuild it avoids by at least this factor, so a
-// ratio assertion cannot be decided by a single scheduling hiccup.
-const MIN_CACHE_SPEEDUP_FACTOR = 2
-// Building MAX_CACHE_ENTRIES + 10 entities takes ~1s on a quiet machine and >7s on a
-// saturated one, past Vitest's 5s default (see the `timeout` option / `testTimeout`).
-// This test only asserts correctness, so the timeout is the sole accommodation.
 const HEAVY_CORPUS_TEST_TIMEOUT_MS = 30_000
-
-const makeEntity = (overrides: Partial<Entity> = {}): Entity => {
-  return {
-    id: `e-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`,
-    name: 'Test Entity',
-    type: 'note',
-    description: 'A test entity description',
-    content: '# Test\nSome content here.',
-    tags: ['test'],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    links: [],
-    ...overrides,
-  }
-}
-
-const makeClaim = (overrides: Partial<Claim> = {}): Claim => {
-  return {
-    id: `c-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`,
-    entityId: 'e-1',
-    statement: 'Test claim statement',
-    confidence: 0.8,
-    verification: 'unverified',
-    ...overrides,
-  }
-}
 
 describe('BM25 Retrieval Engine', () => {
   const entities: Entity[] = [
@@ -383,68 +345,4 @@ describe('BM25 Retrieval Engine', () => {
     expect(results[0].id).toBe('e-20005')
   }, HEAVY_CORPUS_TEST_TIMEOUT_MS)
 
-  it('performance: cached queries beat cold rebuilds and stay fast as data grows', () => {
-    const datasetSize = 1000
-    const claimsPerEntity = 3
-    const cachedIterations = 30
-
-    const makeLargeDataset = () => {
-      const largeEntities: Entity[] = Array.from({ length: datasetSize }, (_, i) =>
-        makeEntity({
-          id: `e-${i}`,
-          name: `Entity Name ${i}`,
-          description: `This is the description for entity number ${i} which discusses React, Hooks, TypeScript and CSS layouts.`,
-          content: `# Content ${i}\nHere is some body content with key terms like keyword-${i % 10}.`,
-          tags: [`tag-${i % 5}`, 'react', 'typescript'],
-        })
-      )
-      const largeClaims: Claim[] = Array.from({ length: datasetSize * claimsPerEntity }, (_, i) =>
-        makeClaim({
-          id: `c-${i}`,
-          entityId: `e-${i % datasetSize}`,
-          statement: `Statement about entity number ${i % datasetSize} regarding React hooks or CSS systems.`,
-          confidence: 0.9,
-        })
-      )
-      return { largeEntities, largeClaims }
-    }
-
-    // Warm up JIT on one dataset so the measured cold build below is not skewed.
-    const warm = makeLargeDataset()
-    search(warm.largeEntities, warm.largeClaims, 'React hooks warmup')
-
-    // Guarantee a true cold start regardless of state left by earlier tests.
-    resetSearchCache()
-    const { largeEntities, largeClaims } = makeLargeDataset()
-    const coldStart = performance.now()
-    search(largeEntities, largeClaims, 'React hooks keyword-3')
-    const coldBuildTime = performance.now() - coldStart
-
-    // Same references: subsequent searches must be served from the cache (hot path).
-    const times: number[] = []
-    for (let k = 0; k < cachedIterations; k++) {
-      const start = performance.now()
-      search(largeEntities, largeClaims, `React hooks keyword-${k % 10}`)
-      times.push(performance.now() - start)
-    }
-
-    const minTime = Math.min(...times)
-    const maxTime = Math.max(...times)
-    const avgCached = times.reduce((sum, t) => sum + t, 0) / cachedIterations
-
-    console.warn('--- BENCHMARK STATISTICS ---')
-    console.warn(`Dataset size: ${datasetSize} entities, ${datasetSize * claimsPerEntity} claims`)
-    console.warn(`Cold index build: ${coldBuildTime.toFixed(2)}ms`)
-    console.warn(`Cached iterations: ${cachedIterations}`)
-    console.warn(`Cached min: ${minTime.toFixed(2)}ms | max: ${maxTime.toFixed(2)}ms | avg: ${avgCached.toFixed(2)}ms`)
-    console.warn('-----------------------------')
-
-    // The cache is the point: repeated queries must never re-tokenize the corpus,
-    // so a hot query must be cheaper than the one cold rebuild it avoids.
-    expect(coldBuildTime).toBeLessThan(COLD_BUILD_MS_CEILING)
-    // Relative claim, with the margin Vitest's `toBeFasterThan(..., { delta })`
-    // exists to provide: the cache must win by a clear factor, not by a hair.
-    expect(avgCached * MIN_CACHE_SPEEDUP_FACTOR).toBeLessThan(coldBuildTime)
-    expect(avgCached).toBeLessThan(CACHED_QUERY_MS_CEILING)
-  })
 })

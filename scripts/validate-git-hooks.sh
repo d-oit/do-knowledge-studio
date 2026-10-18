@@ -7,8 +7,21 @@
 # CI can verify hook contents on a fresh checkout instead of skipping.
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 cd "$REPO_ROOT"
+
+COMMITTED_HOOKS_DIR="$REPO_ROOT/.githooks"
+if [ ! -f "$COMMITTED_HOOKS_DIR/pre-commit" ] ||
+  ! grep -Fq './scripts/minimal_quality_gate.sh' "$COMMITTED_HOOKS_DIR/pre-commit"; then
+  echo "✖ Committed .githooks/pre-commit does not run the minimal quality gate."
+  exit 1
+fi
+if [ ! -f "$COMMITTED_HOOKS_DIR/commit-msg" ] ||
+  ! grep -Fq 'if [ "$HEADER_LEN" -gt 120 ]; then' "$COMMITTED_HOOKS_DIR/commit-msg" ||
+  ! grep -Fq '^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert|ux)' "$COMMITTED_HOOKS_DIR/commit-msg"; then
+  echo "✖ Committed .githooks/commit-msg is missing required commit-message validation."
+  exit 1
+fi
 
 HOOK_DIR=""
 

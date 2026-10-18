@@ -7,7 +7,7 @@ import {
   filterParams,
   TrizHeader,
   TrizPickView,
-} from './triz-subviews'
+} from './triz-pick-view'
 import { TrizMatrixView } from './triz-matrix-view'
 import { TrizResultsView } from './triz-results-view'
 import { translate } from '@/lib/i18n/messages/triz'

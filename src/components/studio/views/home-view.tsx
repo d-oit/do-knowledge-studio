@@ -15,8 +15,6 @@ import {
   LayoutDashboard,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { motion } from 'framer-motion'
-import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { EntityIcon } from '../entity-type-icon'
 import { ViewEmptyState, ViewHeader, VIEW_CONTAINER_CLASS } from '../ui/shared-primitives'
 import { translate as homeT } from '@/lib/i18n/messages/home'
@@ -66,8 +64,6 @@ const formatRelativeTime = (dateStr: string): string => {
 
 const RECENT_LIMIT = 6
 
-/** Ease-out duration for the type-breakdown progress bars, in seconds. */
-const PROGRESS_ANIMATION_DURATION_S = 0.6
 
 
 /** Type badge + name + description block inside a RecentItem. */
@@ -153,7 +149,6 @@ export const HomeView = () => {
   const startEdit = useStudioStore((s) => s.startEdit)
   const entities = useStudioStore((s) => s.entities)
   const stats = useStats()
-  const reducedMotion = useReducedMotion()
 
   // The type-progress bars target a percentage derived from the store, which is
   // seed data on the server but rehydrated localStorage data on the client. Keep
@@ -165,10 +160,6 @@ export const HomeView = () => {
   useEffect(() => {
     setProgressReady(true)
   }, [])
-
-  const fadeAnim = reducedMotion
-    ? { initial: false as const, animate: { opacity: 1 }, transition: { duration: 0 } }
-    : { initial: { opacity: 0 } as const, animate: { opacity: 1 }, transition: { duration: 0.35 } }
 
   const today = useMemo(() => dateFormatter.format(new Date()), [])
 
@@ -203,16 +194,13 @@ export const HomeView = () => {
       <ViewHeader icon={LayoutDashboard} title={navT('nav.home.title')} subtitle={homeT('home.subtitle')} />
 
       {/* 1. Compact greeting row */}
-      <motion.section
-        {...fadeAnim}
-        className="mb-8 flex flex-wrap items-center justify-between gap-3"
-      >
+      <section className="mb-8 flex flex-wrap items-center justify-between gap-3 animate-in fade-in duration-300 motion-reduce:animate-none">
         <p className="text-label-lg font-semibold uppercase tracking-[0.18em] text-saffron-deep">
           {today}
         </p>
         <div className="flex flex-wrap gap-2">
           <button
-            onClick={startNew}
+            onClick={() => { startNew() }}
             className="flex min-h-touch items-center gap-1.5 rounded-md bg-primary px-4 text-body-sm font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
           >
             <FileText className="h-4 w-4" />
@@ -226,10 +214,10 @@ export const HomeView = () => {
             Ask your library
           </button>
         </div>
-      </motion.section>
+      </section>
 
       {/* 2. Recent work */}
-      <motion.section {...fadeAnim} className="mb-8">
+      <section className="mb-8 animate-in fade-in duration-300 motion-reduce:animate-none">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-serif text-lg font-semibold text-ink">Recent work</h2>
           {entities.length > 0 && (
@@ -250,7 +238,7 @@ export const HomeView = () => {
             body={homeT('home.empty.body')}
             actionLabel={homeT('home.empty.action')}
             actionIcon={FileText}
-            onAction={startNew}
+            onAction={() => { startNew() }}
           />
         ) : (
           <ul className="divide-y divide-border rounded-lg border border-border bg-card">
@@ -263,7 +251,7 @@ export const HomeView = () => {
             ))}
           </ul>
         )}
-      </motion.section>
+      </section>
 
       {/* 3. Compact stats row */}
       <section className="mb-8 flex flex-wrap gap-6 rounded-lg border border-border bg-card px-5 py-4">
@@ -312,15 +300,13 @@ export const HomeView = () => {
                       <span className="font-mono text-ink-mute">{count}</span>
                     </div>
                     <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                      <motion.div
-                        initial={reducedMotion ? false : { width: 0 }}
-                        animate={{ width: progressReady ? `${pct}%` : 0 }}
-                        transition={
-                          reducedMotion
-                            ? { duration: 0 }
-                            : { duration: PROGRESS_ANIMATION_DURATION_S, ease: 'easeOut' }
-                        }
-                        className={cn('h-full rounded-full', meta.dot)}
+                      <div
+                        data-testid="type-progress-bar"
+                        style={{ width: progressReady ? `${pct}%` : '0%' }}
+                        className={cn(
+                          'h-full rounded-full transition-[width] duration-500 ease-out motion-reduce:transition-none',
+                          meta.dot,
+                        )}
                       />
                     </div>
                   </div>

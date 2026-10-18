@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useDeferredValue, useState, useMemo } from 'react'
 import { Search, FileText, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useStudioStore, useFilteredEntities } from '@/lib/studio/store'
@@ -9,6 +9,7 @@ import { buildEntityIndex } from '@/lib/studio/graph-index'
 import { getEntityTypeMeta, type EntityTypeMeta } from '@/lib/studio/entity-types'
 import { translate } from '@/lib/i18n/messages/search'
 import type { Entity } from '@/lib/studio/types'
+import { ViewEmptyState } from './ui/shared-primitives'
 
 export interface EntitySearchPanelProps {
   onSelect?: (id: string) => void
@@ -151,22 +152,13 @@ const SearchEmptyState = ({
   query: string
   onCreate?: (name: string) => void
 }) => (
-  <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-    <FileText className="h-8 w-8 text-ink-faint/50" />
-    <p className="text-label-lg text-ink-mute">
-      {query ? translate('search.empty') : translate('search.libraryEmpty')}
-    </p>
-    {query && onCreate && (
-      <button
-        onClick={() => {
-          onCreate(query)
-        }}
-        className="mt-2 flex min-h-touch items-center justify-center rounded-md border border-saffron/30 bg-saffron-soft px-3 py-1.5 text-label-lg font-medium text-saffron-deep transition-colors hover:bg-saffron/10 focus-ring"
-      >
-        {translate('search.createEntity', query)}
-      </button>
-    )}
-  </div>
+  <ViewEmptyState
+    icon={FileText}
+    title={query ? translate('search.empty') : translate('search.libraryEmpty')}
+    actionLabel={query && onCreate ? translate('search.createEntity', query) : undefined}
+    onAction={query && onCreate ? () => onCreate(query) : undefined}
+    className="border-0 bg-transparent px-0 py-12"
+  />
 )
 
 /** Shared entity search panel for desktop right-panel and mobile drawer. */
@@ -183,9 +175,10 @@ export const EntitySearchPanel = ({
   const [mode, setMode] = useState<'keyword' | 'ranked'>('keyword')
   const filtered = useFilteredEntities()
   const entityIndex = useMemo(() => buildEntityIndex(entities), [entities])
+  const deferredQuery = useDeferredValue(searchQuery)
   const rankedResults = useMemo(
-    () => (mode === 'ranked' ? search(entities, claims, searchQuery, 20) : []),
-    [mode, entities, claims, searchQuery],
+    () => (mode === 'ranked' ? search(entities, claims, deferredQuery, 20) : []),
+    [mode, entities, claims, deferredQuery],
   )
 
   const results = mode === 'ranked' ? rankedResults : filtered

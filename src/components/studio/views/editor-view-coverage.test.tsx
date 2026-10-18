@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { act } from 'react'
+import { render, screen, fireEvent, cleanup, within } from '@testing-library/react'
 import type { ReactNode } from 'react'
-import { render, screen, fireEvent, cleanup, waitFor, within } from '@testing-library/react'
 
 vi.mock('framer-motion', () => ({
   motion: {
@@ -158,11 +159,12 @@ describe('EditorView branch coverage', () => {
     vi.clearAllMocks()
     currentEntities = mockEntities
     currentEditingEntityId = null
-    vi.spyOn(crypto, 'randomUUID').mockReturnValue('new-entity-id')
+    vi.spyOn(crypto, 'randomUUID').mockReturnValue('00000000-0000-0000-0000-000000000001')
   })
 
   afterEach(() => {
     cleanup()
+    vi.useRealTimers()
     vi.restoreAllMocks()
   })
 
@@ -245,7 +247,7 @@ describe('EditorView branch coverage', () => {
     fireEvent.click(saveBtn)
     expect(mockCommitEntities).toHaveBeenCalledTimes(1)
     expect(mockCommitEntities).toHaveBeenCalledWith([
-      expect.objectContaining({ id: 'new-entity-id', name: 'New Entity' }),
+      expect.objectContaining({ id: '00000000-0000-0000-0000-000000000001', name: 'New Entity' }),
     ])
   })
 
@@ -322,13 +324,24 @@ describe('EditorView branch coverage', () => {
     expect(screen.getByText('Unsaved changes')).toBeDefined()
   })
 
-  it('shows "Draft saved" indicator when draft is saved and not dirty', async () => {
+  it('shows "Draft saved" indicator only after the debounce window', () => {
     currentEditingEntityId = 'ent-1'
-    render(<EditorView />)
-    // Wait for debounced draft save (500ms timeout)
-    await waitFor(() => {
+    vi.useFakeTimers()
+    try {
+      render(<EditorView />)
+      expect(screen.queryByText('Draft saved')).toBeNull()
+      act(() => {
+        vi.advanceTimersByTime(499)
+      })
+      expect(screen.queryByText('Draft saved')).toBeNull()
+      act(() => {
+        vi.advanceTimersByTime(1)
+      })
       expect(screen.getByText('Draft saved')).toBeDefined()
-    })
+    } finally {
+      cleanup()
+      vi.useRealTimers()
+    }
   })
 
   it('does not show claims panel when creating new entity', () => {

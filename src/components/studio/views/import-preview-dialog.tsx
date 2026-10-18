@@ -9,17 +9,20 @@ import type { ImportPreview } from './export-types'
 import { translate } from '@/lib/i18n/messages/import'
 
 interface ImportPreviewDialogProps {
-  importPreview: ImportPreview | null
-  setImportPreview: (preview: ImportPreview | null) => void
-  handleConfirmImport: () => void
+  state: { preview: ImportPreview | null }
+  actions: {
+    close: (preview: ImportPreview | null) => void
+    confirm: () => void
+  }
 }
 
 /** Dialog showing entity and claim counts before confirming a destructive import. */
 export const ImportPreviewDialog = memo(function ImportPreviewDialog({
-  importPreview,
-  setImportPreview,
-  handleConfirmImport,
+  state,
+  actions,
 }: ImportPreviewDialogProps) {
+  const { preview: importPreview } = state
+  const { close: setImportPreview, confirm: handleConfirmImport } = actions
   const reducedMotion = useReducedMotion()
 
   if (!importPreview) return null

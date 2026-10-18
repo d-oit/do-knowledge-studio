@@ -37,3 +37,14 @@ Wave 2 (Quality gate — depends on Wave 1)
 - Max 500 LOC per file
 - All existing behavior must be preserved
 - All CI must pass
+
+## Consolidation closed (2026-10-17 — [Plan 177](177-older-plan-leftovers-2026-10-17.md))
+
+The remaining candidates from this plan are closed as unnecessary rather than
+deferred. Verified in source: `ui/shared-primitives.tsx` exports the genuinely
+shared set (`ViewHeader`, `ViewEmptyState`, `ConfirmDialog`, `Overlay`, text
+inputs, toggles), `ToolbarBtn` lives in `views/graph-toolbar.tsx` and is reused
+by the mind-map toolbar, and the controls that stay local (the AI-harness
+settings panel's inputs, single-view buttons) have one consumer each or differ
+in shape for a reason — extracting them would add an abstraction with a single
+caller, which this repository's design rules argue against.

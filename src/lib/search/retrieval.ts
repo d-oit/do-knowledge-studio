@@ -336,6 +336,13 @@ const getIndex = (entities: Entity[], claims: Claim[]): SearchIndex => {
   return { entityMap, entries, avgDl }
 }
 
+/**
+ * Get entities by id from the retrieval index. The returned view is read-only
+ * and reuses the cached entity map for unchanged corpus references.
+ */
+export const getEntityMap = (entities: Entity[], claims: Claim[]): ReadonlyMap<string, Entity> =>
+  getIndex(entities, claims).entityMap
+
 /** Mean document length over the entries being ranked. */
 const averageTokenCount = (entries: IndexEntry[]): number => {
   if (entries.length === 0) return 0

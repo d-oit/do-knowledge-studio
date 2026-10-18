@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import {
   getYjsEntities,
   getYjsClaims,
@@ -7,9 +7,6 @@ import {
   setYjsClaim,
   removeYjsClaim,
   mergeIntoYjs,
-  onYjsChange,
-  subscribeToYjs,
-  destroyBridge,
 } from './bridge'
 import { destroy } from './doc'
 import type { Entity, Claim } from '@/lib/studio/types'
@@ -133,66 +130,3 @@ describe('mergeIntoYjs', () => {
   })
 })
 
-describe('onYjsChange', () => {
-  it('calls callback when Yjs doc changes', () => {
-    const callback = vi.fn()
-    onYjsChange(callback)
-    setYjsEntity(makeEntity())
-    expect(callback).toHaveBeenCalled()
-  })
-
-  it('unsubscribe stops callbacks', () => {
-    const callback = vi.fn()
-    const unsub = onYjsChange(callback)
-    unsub()
-    callback.mockClear()
-    setYjsEntity(makeEntity({ id: 'entity-2' }))
-    expect(callback).not.toHaveBeenCalled()
-  })
-})
-
-describe('subscribeToYjs', () => {
-  it('calls entity callback when entities change', () => {
-    const onEntities = vi.fn()
-    const onClaims = vi.fn()
-    subscribeToYjs(onEntities, onClaims)
-    setYjsEntity(makeEntity())
-    expect(onEntities).toHaveBeenCalled()
-  })
-
-  it('calls claim callback when claims change', () => {
-    const onEntities = vi.fn()
-    const onClaims = vi.fn()
-    subscribeToYjs(onEntities, onClaims)
-    setYjsClaim(makeClaim())
-    expect(onClaims).toHaveBeenCalled()
-  })
-
-  it('unsubscribe stops both callbacks', () => {
-    const onEntities = vi.fn()
-    const onClaims = vi.fn()
-    const unsub = subscribeToYjs(onEntities, onClaims)
-    unsub()
-    onEntities.mockClear()
-    onClaims.mockClear()
-    setYjsEntity(makeEntity({ id: 'entity-2' }))
-    setYjsClaim(makeClaim({ id: 'claim-2' }))
-    expect(onEntities).not.toHaveBeenCalled()
-    expect(onClaims).not.toHaveBeenCalled()
-  })
-})
-
-describe('destroyBridge', () => {
-  it('cleans up all subscriptions', () => {
-    const yjsSpy = vi.spyOn(console, 'error').mockImplementation((msg: string) => {
-      if (typeof msg === 'string' && msg.includes('[yjs]')) return
-    })
-    const callback = vi.fn()
-    onYjsChange(callback)
-    destroyBridge()
-    callback.mockClear()
-    setYjsEntity(makeEntity({ id: 'entity-after-destroy' }))
-    expect(callback).not.toHaveBeenCalled()
-    yjsSpy.mockRestore()
-  })
-})

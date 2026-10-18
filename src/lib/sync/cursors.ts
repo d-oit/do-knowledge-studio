@@ -1,4 +1,5 @@
 import { getAwareness } from './doc'
+import type { SyncAwareness } from './doc'
 import { getDeviceId, getDeviceName } from './discovery'
 import { PRESENCE_COLORS } from './presence'
 
@@ -123,28 +124,34 @@ export function getCursorsForView(view: string): RemoteCursor[] {
 
 type CursorCallback = (cursors: RemoteCursor[]) => void
 
-let cursorCallbacks: CursorCallback[] = []
+const cursorCallbacks = new Set<CursorCallback>()
+let boundAwareness: SyncAwareness | null = null
+const dispatchCursorChange = () => {
+  const cursors = getRemoteCursors()
+  for (const callback of cursorCallbacks) callback(cursors)
+}
+
+/** Rebind the singleton dispatcher when the collaboration room changes. */
+export function bindCursorAwareness(): void {
+  const awareness = getAwareness()
+  if (boundAwareness === awareness) return
+  boundAwareness?.off('change', dispatchCursorChange)
+  boundAwareness = awareness
+  boundAwareness?.on('change', dispatchCursorChange)
+}
+
+/** Detach the room listener while retaining subscribers for a later rejoin. */
+export function unbindCursorAwareness(): void {
+  boundAwareness?.off('change', dispatchCursorChange)
+  boundAwareness = null
+}
 
 /** Subscribe to changes in remote cursor positions. */
 export function onCursorChange(callback: CursorCallback): () => void {
-  cursorCallbacks.push(callback)
-
-  const awareness = getAwareness()
-  if (awareness) {
-    const handler = () => {
-      const cursors = getRemoteCursors()
-      for (const cb of cursorCallbacks) {
-        cb(cursors)
-      }
-    }
-    awareness.on('change', handler)
-    return () => {
-      awareness.off('change', handler)
-      cursorCallbacks = cursorCallbacks.filter((cb) => cb !== callback)
-    }
-  }
-
+  cursorCallbacks.add(callback)
+  bindCursorAwareness()
   return () => {
-    cursorCallbacks = cursorCallbacks.filter((cb) => cb !== callback)
+    cursorCallbacks.delete(callback)
+    if (cursorCallbacks.size === 0) unbindCursorAwareness()
   }
 }

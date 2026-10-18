@@ -28,20 +28,52 @@ vi.mock('@/components/studio/ui/shared-primitives', () => ({
   ),
 }))
 
-import { EncryptExportDialog } from './encrypt-export-dialog'
+import { EncryptExportDialog as EncryptExportDialogComponent } from './encrypt-export-dialog'
 
 describe('EncryptExportDialog', () => {
   const defaultProps = {
-    showPassword: true,
-    setShowPassword: vi.fn(),
-    password: '',
-    setPassword: vi.fn(),
-    confirm: '',
-    setConfirm: vi.fn(),
-    showPass: false,
-    setShowPass: vi.fn(),
-    handleExport: vi.fn(() => Promise.resolve()),
+    state: {
+      showPassword: true,
+      password: '',
+      confirm: '',
+      showPass: false,
+    },
+    actions: {
+      setShowPassword: vi.fn(),
+      setPassword: vi.fn(),
+      setConfirm: vi.fn(),
+      setShowPass: vi.fn(),
+      handleExport: vi.fn(() => Promise.resolve()),
+    },
   }
+
+  const EncryptExportDialog = ({
+    state,
+    actions,
+    showPassword,
+    password,
+    confirm,
+    showPass,
+    exporting,
+  }: typeof defaultProps & {
+    showPassword?: boolean
+    password?: string
+    confirm?: string
+    showPass?: boolean
+    exporting?: boolean
+  }) => (
+    <EncryptExportDialogComponent
+      state={{
+        ...state,
+        ...(showPassword === undefined ? {} : { showPassword }),
+        ...(password === undefined ? {} : { password }),
+        ...(confirm === undefined ? {} : { confirm }),
+        ...(showPass === undefined ? {} : { showPass }),
+      }}
+      actions={actions}
+      exporting={exporting}
+    />
+  )
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -80,13 +112,13 @@ describe('EncryptExportDialog', () => {
   it('Cancel calls setShowPassword(false)', () => {
     render(<EncryptExportDialog {...defaultProps} />)
     fireEvent.click(screen.getByText('Cancel'))
-    expect(defaultProps.setShowPassword).toHaveBeenCalledWith(false)
+    expect(defaultProps.actions.setShowPassword).toHaveBeenCalledWith(false)
   })
 
   it('Encrypt & export button calls handleExport encrypted', () => {
     render(<EncryptExportDialog {...defaultProps} password="abc" confirm="abc" />)
     fireEvent.click(screen.getByText('Encrypt & export'))
-    expect(defaultProps.handleExport).toHaveBeenCalledWith('encrypted')
+    expect(defaultProps.actions.handleExport).toHaveBeenCalledWith('encrypted')
   })
 
   it('Encrypt & export button is disabled when passwords empty', () => {
@@ -107,10 +139,19 @@ describe('EncryptExportDialog', () => {
     expect(btn).toHaveProperty('disabled', false)
   })
 
+  it('disables submit, shows the status, and marks the dialog busy while exporting', () => {
+    render(<EncryptExportDialog {...defaultProps} password="abc" confirm="abc" exporting />)
+
+    const btn = screen.getByText('Encrypting…')
+    expect(btn).toHaveProperty('disabled', true)
+    expect(screen.queryByText('Encrypt & export')).toBeNull()
+    expect(screen.getByTestId('overlay').querySelector('[aria-busy="true"]')).not.toBeNull()
+  })
+
   it('Show/Hide toggle calls setShowPass', () => {
     render(<EncryptExportDialog {...defaultProps} />)
     fireEvent.click(screen.getByText('Show'))
-    expect(defaultProps.setShowPass).toHaveBeenCalledWith(true)
+    expect(defaultProps.actions.setShowPass).toHaveBeenCalledWith(true)
   })
 
   it('Hide button shown when showPass is true', () => {

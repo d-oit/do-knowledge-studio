@@ -110,6 +110,107 @@ JSON
   [ "$status" -eq "$EXPECTED_SUCCESS_STATUS" ]
   [[ "$output" == *"No dependency downgrades detected against main."* ]]
 }
+@test "accepts @types/node major alignment with the declared runtime floor" {
+  git checkout -q main
+  cat > package.json <<'JSON'
+{
+  "engines": {
+    "node": ">=22.0.0 <25.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5"
+  }
+}
+JSON
+  git add package.json
+  git commit -qm "set Node runtime baseline"
+  git checkout -q feature
+
+  cat > package.json <<'JSON'
+{
+  "engines": {
+    "node": ">=22.0.0 <25.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0"
+  }
+}
+JSON
+  git add package.json
+  git commit -qm "align Node types with runtime"
+
+  run node "$SCRIPT" main
+  [ "$status" -eq "$EXPECTED_SUCCESS_STATUS" ]
+  [[ "$output" == *"Intentional @types/node runtime alignment: ^26.6.5 -> ^22.0.0"* ]]
+}
+
+@test "rejects Node types that do not match the declared runtime floor" {
+  git checkout -q main
+  cat > package.json <<'JSON'
+{
+  "engines": {
+    "node": ">=22.0.0 <25.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5"
+  }
+}
+JSON
+  git add package.json
+  git commit -qm "set Node runtime baseline"
+  git checkout -q feature
+
+  cat > package.json <<'JSON'
+{
+  "engines": {
+    "node": ">=24.0.0 <25.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0"
+  }
+}
+JSON
+  git add package.json
+  git commit -qm "misalign Node types and runtime"
+
+  run node "$SCRIPT" main
+  [ "$status" -eq "$EXPECTED_GUARD_FAILURE_STATUS" ]
+  [[ "$output" == *"Dependency downgrade: @types/node ^26.6.5 -> ^22.0.0"* ]]
+}
+
+@test "rejects same-major Node typings floor reductions" {
+  git checkout -q main
+  cat > package.json <<'JSON'
+{
+  "engines": {
+    "node": ">=22.0.0 <25.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5"
+  }
+}
+JSON
+  git add package.json
+  git commit -qm "set Node typings baseline"
+  git checkout -q feature
+
+  cat > package.json <<'JSON'
+{
+  "engines": {
+    "node": ">=22.0.0 <25.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0"
+  }
+}
+JSON
+  git add package.json
+  git commit -qm "lower Node typings floor"
+
+  run node "$SCRIPT" main
+  [ "$status" -eq "$EXPECTED_GUARD_FAILURE_STATUS" ]
+  [[ "$output" == *"Dependency downgrade: @types/node ^22.20.5 -> ^22.0.0"* ]]
+}
 
 @test "fails closed when a changed range cannot be parsed as semver" {
   cat > package.json <<'JSON'

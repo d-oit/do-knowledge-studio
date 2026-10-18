@@ -1,43 +1,19 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { useStudioStore } from './store'
-import type { Claim } from './types'
-
-function resetStore() {
-  useStudioStore.setState({
-    entities: [],
-    claims: [],
-    chat: [],
-    chatLoading: false,
-    selectedEntityId: null,
-    editingEntityId: null,
-    currentView: 'home',
-    searchQuery: '',
-    typeFilter: 'all',
-    sortBy: 'updated',
-    sortDir: 'desc',
-    rightPanelOpen: true,
-    commandOpen: false,
-    mobileDrawerOpen: false,
-    mobilePanelView: 'nav',
-    entityHistory: [{ entities: [], claims: [] }],
-    historyIndex: 0,
-  })
-}
-
-function makeClaim(overrides: Partial<Claim> = {}): Claim {
-  return {
-    id: `c-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
-    entityId: 'e-1',
-    statement: 'Test claim',
-    confidence: 0.8,
-    verification: 'unverified',
-    ...overrides,
-  }
-}
+import { makeClaim, resetStore } from './test-helpers'
 
 describe('Claims version history', () => {
   beforeEach(() => {
-    resetStore()
+    resetStore({
+      entities: [],
+      claims: [],
+      chat: [],
+      entityHistory: [{ entities: [], claims: [] }],
+      rightPanelOpen: true,
+      commandOpen: false,
+      mobileDrawerOpen: false,
+      mobilePanelView: 'nav',
+    })
     vi.useFakeTimers()
   })
 

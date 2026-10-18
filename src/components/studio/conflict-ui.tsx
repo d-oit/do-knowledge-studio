@@ -3,7 +3,8 @@
 import { useState, useCallback } from 'react'
 import { AlertTriangle, Check, X, ChevronDown, ChevronUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { FieldConflict } from '@/lib/sync/merge'
+import { getConflictResolutionKey, type FieldConflict } from '@/lib/sync/merge'
+import { translate as t } from '@/lib/i18n/messages/sync'
 
 interface ConflictUIProps {
   conflicts: FieldConflict[]
@@ -14,7 +15,7 @@ interface ConflictUIProps {
 /** Conflict resolution UI for choosing between local and remote field values during sync. */
 export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps) {
   const [resolutions, setResolutions] = useState<Map<string, 'local' | 'remote'>>(
-    () => new Map(conflicts.map((c) => [`${c.entityId}:${c.field}`, c.winner])),
+    () => new Map(conflicts.map((conflict) => [getConflictResolutionKey(conflict), conflict.winner])),
   )
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
@@ -27,7 +28,7 @@ export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps)
   }, [])
 
   const handleResolveAll = useCallback((choice: 'local' | 'remote') => {
-    setResolutions(new Map(conflicts.map((c) => [`${c.entityId}:${c.field}`, choice])))
+    setResolutions(new Map(conflicts.map((conflict) => [getConflictResolutionKey(conflict), choice])))
   }, [conflicts])
 
   const handleConfirm = useCallback(() => {
@@ -35,6 +36,7 @@ export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps)
   }, [resolutions, onResolve])
 
   if (conflicts.length === 0) return null
+  const allDeletionConflicts = conflicts.every((conflict) => conflict.field === '__delete')
 
   return (
     <div className="rounded-lg border border-warning-border bg-warning-soft">
@@ -48,19 +50,20 @@ export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps)
           onClick={() => { handleResolveAll('local') }}
           className="rounded px-2 py-1 text-label font-medium text-warning transition-colors hover:bg-warning/10 min-h-touch focus-ring"
         >
-          Keep all local
+          {allDeletionConflicts ? t('sync.conflict.restoreAllEditedRecords') : 'Keep all local'}
         </button>
         <button
           onClick={() => { handleResolveAll('remote') }}
           className="rounded px-2 py-1 text-label font-medium text-warning transition-colors hover:bg-warning/10 min-h-touch focus-ring"
         >
-          Keep all remote
+          {allDeletionConflicts ? t('sync.conflict.keepAllDeletions') : 'Keep all remote'}
         </button>
       </div>
 
       <div className="max-h-[300px] divide-y divide-warning-border overflow-y-auto">
         {conflicts.map((conflict) => {
-          const key = `${conflict.entityId}:${conflict.field}`
+          const key = getConflictResolutionKey(conflict)
+          const isDeletionConflict = conflict.field === '__delete'
           const resolution = resolutions.get(key) ?? conflict.winner
           const isExpanded = expandedId === key
 
@@ -78,7 +81,7 @@ export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps)
                   )}
                   <span className="font-mono">{conflict.entityType}</span>
                   <span className="text-warning">·</span>
-                  <span>{conflict.field}</span>
+                  <span>{isDeletionConflict ? t('sync.conflict.recordDeletion') : conflict.field}</span>
                 </button>
                 <div className="flex-1" />
                 <div className="flex items-center gap-1">
@@ -91,7 +94,7 @@ export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps)
                         : 'text-warning hover:bg-warning/10',
                     )}
                   >
-                    Local
+                    {isDeletionConflict ? t('sync.conflict.restoreEditedRecord') : 'Local'}
                   </button>
                   <button
                     onClick={() => { handleResolution(key, 'remote') }}
@@ -102,7 +105,7 @@ export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps)
                         : 'text-warning hover:bg-warning/10',
                     )}
                   >
-                    Remote
+                    {isDeletionConflict ? t('sync.conflict.keepDeletion') : 'Remote'}
                   </button>
                 </div>
               </div>
@@ -111,18 +114,18 @@ export function ConflictUI({ conflicts, onResolve, onDismiss }: ConflictUIProps)
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   <div className="rounded border border-border bg-background p-2">
                     <div className="mb-1 text-caption font-medium uppercase tracking-wide text-ink-faint">
-                      Local
+                      {isDeletionConflict ? t('sync.conflict.editedRecord') : 'Local'}
                     </div>
                     <div className="text-label-lg text-ink break-words">
-                      {formatValue(conflict.localValue)}
+                      {formatConflictValue(conflict, 'local')}
                     </div>
                   </div>
                   <div className="rounded border border-border bg-background p-2">
                     <div className="mb-1 text-caption font-medium uppercase tracking-wide text-ink-faint">
-                      Remote
+                      {isDeletionConflict ? t('sync.conflict.deletion') : 'Remote'}
                     </div>
                     <div className="text-label-lg text-ink break-words">
-                      {formatValue(conflict.remoteValue)}
+                      {formatConflictValue(conflict, 'remote')}
                     </div>
                   </div>
                 </div>
@@ -164,4 +167,17 @@ function formatValue(value: unknown): string {
   if (typeof value === 'string') return value || '(empty)'
   if (Array.isArray(value)) return value.length > 0 ? value.join(', ') : '(empty)'
   return String(value)
+}
+
+const formatConflictValue = (conflict: FieldConflict, side: 'local' | 'remote'): string => {
+  if (conflict.field !== '__delete') {
+    return formatValue(side === 'local' ? conflict.localValue : conflict.remoteValue)
+  }
+  if (side === 'remote') return t('sync.conflict.deleted')
+  const value = conflict.localValue
+  if (typeof value === 'object' && value !== null) {
+    if ('name' in value && typeof value.name === 'string') return value.name
+    if ('statement' in value && typeof value.statement === 'string') return value.statement
+  }
+  return t('sync.conflict.editedRecord')
 }

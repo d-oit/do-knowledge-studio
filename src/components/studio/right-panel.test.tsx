@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 
 vi.mock('lucide-react', () => {
   const Icon = ({ className }: { className?: string }) => (
     <span data-testid="icon" className={className} />
   )
-  return { Search: Icon, X: Icon, Sparkles: Icon, FileText: Icon, Quote: Icon, ArrowRight: Icon }
+  return { Search: Icon, X: Icon, Sparkles: Icon, FileText: Icon, Quote: Icon, ArrowRight: Icon, ArrowLeft: Icon }
 })
 
 vi.mock('@/lib/utils', () => ({
@@ -60,6 +60,9 @@ const mockEntities = [
   },
 ]
 
+/** Entities the mocked store exposes; individual tests replace this corpus. */
+let currentEntities = mockEntities
+
 const mockChat: Array<{ role: string; content: string; citations?: Array<{ entityName: string; snippet: string }> }> = []
 
 vi.mock('@/lib/studio/store', () => ({
@@ -70,7 +73,7 @@ vi.mock('@/lib/studio/store', () => ({
         rightPanelOpen,
         chat: mockChat,
         startNew: mockStartNew,
-        entities: mockEntities,
+        entities: currentEntities,
         claims: [],
         startEdit: mockStartEdit,
         deleteEntity: mockDeleteEntity,
@@ -94,6 +97,7 @@ describe('RightPanel', () => {
     rightPanelOpen = false
     searchQuery = ''
     selectedEntityId = null
+    currentEntities = mockEntities
   })
 
   it('renders nothing when panel is closed', () => {
@@ -235,6 +239,58 @@ describe('RightPanel', () => {
     render(<RightPanel />)
     expect(screen.getByText('Connections (1)')).toBeDefined()
     expect(screen.getByText('Related Entity')).toBeDefined()
+  })
+
+  it('lists inbound references for the selected entity and excludes itself', () => {
+    // Three-node graph — a→b, c→b, plus b's own self-reference. Inspecting b
+    // must list a and c (name order) and never b, because the panel's list is
+    // "who points here", not the entity's own outgoing links.
+    const stamp = new Date().toISOString()
+    const node = (id: string, name: string, links: { targetId: string; relation: string }[]) => ({
+      id,
+      name,
+      type: 'concept' as const,
+      description: '',
+      content: '',
+      tags: [],
+      createdAt: stamp,
+      updatedAt: stamp,
+      links,
+    })
+    currentEntities = [
+      node('a', 'Alpha', [{ targetId: 'b', relation: 'supports' }]),
+      node('b', 'Beta', [{ targetId: 'b', relation: 'self' }]),
+      node('c', 'Charlie', [{ targetId: 'b', relation: 'refines' }]),
+    ]
+    rightPanelOpen = true
+    currentView = 'graph'
+    selectedEntityId = 'b'
+    render(<RightPanel />)
+
+    const heading = screen.getByText('Referenced by (2)')
+    const section = heading.parentElement as HTMLElement
+    const rows = within(section).getAllByRole('button')
+    expect(rows).toHaveLength(2)
+    // Deterministic order: sorted by source name, not link insertion order.
+    expect(rows[0]?.textContent).toContain('Alpha')
+    expect(rows[1]?.textContent).toContain('Charlie')
+    // The inspected entity is not its own referrer.
+    expect(section.textContent).not.toContain('Beta')
+
+    fireEvent.click(rows[0] as HTMLElement)
+    expect(mockSelectEntity).toHaveBeenCalledWith('a')
+  })
+
+  it('omits the backlink section when nothing references the entity', () => {
+    // ent-1 is the only entity with outgoing links, so nothing points at it:
+    // the section is absent rather than rendered empty, and the inspector
+    // keeps its layout.
+    rightPanelOpen = true
+    currentView = 'graph'
+    selectedEntityId = 'ent-1'
+    render(<RightPanel />)
+    expect(screen.queryByText(/Referenced by/)).toBeNull()
+    expect(screen.getByText('Connections (1)')).toBeDefined()
   })
 
   it('shows Edit and Delete buttons in inspector', () => {

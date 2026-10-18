@@ -3,7 +3,7 @@
 **GOAP Goal**: G-ARCHITECTURE  
 **Priority**: P1 (Violates explicit 500 LOC hard rule)  
 **Estimated Total Effort**: 16-20 hours  
-**Source**: `analysis/SWARM_ANALYSIS.md` — Architecture perspective  
+**Source**: `plans/research/scratch/analysis/SWARM_ANALYSIS.md` — Architecture perspective
 **Date**: 2026-05-31
 
 ## Issue Summary

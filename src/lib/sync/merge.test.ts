@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mergeEntities, mergeClaims } from './merge'
+import { resolveEntityConflict, resolveClaimConflict } from './conflict'
 import type { Entity, Claim } from '@/lib/studio/types'
 
 function makeEntity(overrides: Partial<Entity> = {}): Entity {
@@ -27,6 +28,24 @@ function makeClaim(overrides: Partial<Claim> = {}): Claim {
     ...overrides,
   }
 }
+
+describe('equal timestamp conflict convergence', () => {
+  it('selects the same entity and claim result in both local/remote orders', () => {
+    const localEntity = makeEntity({ name: 'Alpha', updatedAt: '2026-01-02T00:00:00Z' })
+    const remoteEntity = makeEntity({ name: 'Zulu', updatedAt: '2026-01-02T00:00:00Z' })
+    const localClaim = makeClaim({ statement: 'Alpha', updatedAt: '2026-01-02T00:00:00Z' })
+    const remoteClaim = makeClaim({ statement: 'Zulu', updatedAt: '2026-01-02T00:00:00Z' })
+
+    expect(mergeEntities([localEntity], [remoteEntity]).merged[0]?.name)
+      .toBe(mergeEntities([remoteEntity], [localEntity]).merged[0]?.name)
+    expect(resolveEntityConflict(localEntity, remoteEntity))
+      .toEqual(resolveEntityConflict(remoteEntity, localEntity))
+    expect(mergeClaims([localClaim], [remoteClaim]).merged[0]?.statement)
+      .toBe(mergeClaims([remoteClaim], [localClaim]).merged[0]?.statement)
+    expect(resolveClaimConflict(localClaim, remoteClaim))
+      .toEqual(resolveClaimConflict(remoteClaim, localClaim))
+  })
+})
 
 describe('mergeEntities', () => {
   it('merges disjoint entity sets', () => {
@@ -112,6 +131,34 @@ describe('mergeEntities', () => {
     })
     const result = mergeEntities([local], [remote])
     expect(result.merged[0].links[0].relation).toBe('depends_on')
+  })
+  it('selects entity provenance timestamps by parsed instant and stable equal-instant order', () => {
+    const local = makeEntity({
+      createdAt: '2026-01-01T00:00:00+01:00',
+      updatedAt: '2026-01-01T00:00:00+01:00',
+    })
+    const remote = makeEntity({
+      createdAt: '2025-12-31T23:30:00Z',
+      updatedAt: '2025-12-31T23:30:00Z',
+    })
+    const forward = mergeEntities([local], [remote]).merged[0]
+    const reverse = mergeEntities([remote], [local]).merged[0]
+    expect(forward?.createdAt).toBe(local.createdAt)
+    expect(forward?.updatedAt).toBe(remote.updatedAt)
+    expect(forward?.createdAt).toBe(reverse?.createdAt)
+    expect(forward?.updatedAt).toBe(reverse?.updatedAt)
+    const sameInstantLocal = makeEntity({
+      createdAt: '2026-01-01T00:00:00+01:00',
+      updatedAt: '2026-01-01T00:00:00+01:00',
+    })
+    const sameInstantRemote = makeEntity({
+      createdAt: '2025-12-31T23:00:00Z',
+      updatedAt: '2025-12-31T23:00:00Z',
+    })
+    const sameInstantForward = mergeEntities([sameInstantLocal], [sameInstantRemote]).merged[0]
+    const sameInstantReverse = mergeEntities([sameInstantRemote], [sameInstantLocal]).merged[0]
+    expect(sameInstantForward?.createdAt).toBe(sameInstantReverse?.createdAt)
+    expect(sameInstantForward?.updatedAt).toBe(sameInstantReverse?.updatedAt)
   })
 })
 
@@ -223,5 +270,7 @@ describe('mergeClaims', () => {
     const result = mergeClaims([local], [remote])
     const statements = result.merged[0].editHistory?.map((h) => h.statement)
     expect(statements).toEqual(['wording A', 'wording B'])
+    expect(mergeClaims([remote], [local]).merged[0].editHistory?.map((h) => h.statement))
+      .toEqual(statements)
   })
 })

@@ -13,7 +13,7 @@ vi.mock('@/lib/utils', () => ({
 }))
 
 import { ConflictUI } from './conflict-ui'
-import type { FieldConflict } from '@/lib/sync/merge'
+import { getConflictResolutionKey, type FieldConflict } from '@/lib/sync/merge'
 
 const makeConflict = (overrides: Partial<FieldConflict> = {}): FieldConflict => ({
   entityId: 'ent-1',
@@ -130,7 +130,7 @@ describe('ConflictUI', () => {
     fireEvent.click(screen.getByText('Keep all local'))
     fireEvent.click(screen.getByText('Apply resolutions'))
     const resolutions = onResolve.mock.calls[0][0] as Map<string, string>
-    expect(resolutions.get('ent-1:name')).toBe('local')
+    expect(resolutions.get(getConflictResolutionKey(makeConflict()))).toBe('local')
   })
 
   it('Keep all remote sets all resolutions to remote', () => {
@@ -139,7 +139,7 @@ describe('ConflictUI', () => {
     fireEvent.click(screen.getByText('Keep all remote'))
     fireEvent.click(screen.getByText('Apply resolutions'))
     const resolutions = onResolve.mock.calls[0][0] as Map<string, string>
-    expect(resolutions.get('ent-1:name')).toBe('remote')
+    expect(resolutions.get(getConflictResolutionKey(makeConflict()))).toBe('remote')
   })
 
   it('handles multiple conflicts', () => {
@@ -176,5 +176,48 @@ describe('ConflictUI', () => {
     fireEvent.click(screen.getByText('entity'))
     const empties = screen.getAllByText('(empty)')
     expect(empties.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('keeps entity and claim conflicts with the same ID independently selectable', () => {
+    const conflicts = [
+      makeConflict({ entityId: 'shared-id', entityType: 'entity', field: 'name' }),
+      makeConflict({
+        entityId: 'shared-id',
+        entityType: 'claim',
+        field: 'statement',
+        localValue: 'Local statement',
+        remoteValue: 'Remote statement',
+      }),
+    ]
+    const onResolve = vi.fn()
+    render(<ConflictUI {...defaultProps} conflicts={conflicts} onResolve={onResolve} />)
+    const remoteChoices = screen.getAllByRole('button', { name: 'Remote' })
+    fireEvent.click(remoteChoices[0]!)
+    fireEvent.click(screen.getByText('Apply resolutions'))
+
+    const resolutions = onResolve.mock.calls[0]?.[0] as Map<string, 'local' | 'remote'>
+    expect(resolutions.get(getConflictResolutionKey(conflicts[0]!))).toBe('remote')
+    expect(resolutions.get(getConflictResolutionKey(conflicts[1]!))).toBe('local')
+  })
+
+  it('explains deletion conflicts as a restore or keep-deletion choice', () => {
+    const conflict = makeConflict({
+      field: '__delete',
+      localValue: { name: 'Edited title' },
+      remoteValue: 'deleted',
+    })
+    render(<ConflictUI {...defaultProps} conflicts={[conflict]} />)
+
+    expect(screen.getByText('Record deletion')).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Restore edited record' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Keep deletion' })).toBeDefined()
+    expect(screen.getByText('Restore all edited records')).toBeDefined()
+    expect(screen.getByText('Keep all deletions')).toBeDefined()
+
+    fireEvent.click(screen.getByText('entity'))
+    expect(screen.getByText('Edited record')).toBeDefined()
+    expect(screen.getByText('Edited title')).toBeDefined()
+    expect(screen.getByText('Deletion')).toBeDefined()
+    expect(screen.getByText('Deleted')).toBeDefined()
   })
 })

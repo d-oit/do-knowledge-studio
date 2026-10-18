@@ -64,6 +64,11 @@ vi.mock('lucide-react', () => {
     FlaskConical: Icon,
     Grid3X3: Icon,
     Download: Icon,
+    FileJson: Icon,
+    FileCode: Icon,
+    FileArchive: Icon,
+    FileLock: Icon,
+    SunMoon: Icon,
     Search: Icon,
     CornerDownLeft: Icon,
   }

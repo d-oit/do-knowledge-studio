@@ -168,7 +168,12 @@ export const ChatMessageSchema = z.object({
   timestamp: z.string(),
 })
 
-/** Zod schema validating the localStorage persistence envelope. */
+/**
+ * Zod schema validating the localStorage persistence envelope.
+ *
+ * Unknown keys are deliberately stripped. A format change must bump the
+ * Zustand envelope version so older builds refuse, rather than rewrite, data.
+ */
 export const PersistedEnvelopeSchema = z.object({
   // Middleware metadata: zustand keeps this OUTSIDE the state object
   // (({ state, version })), so it is absent from every normal hydration.
@@ -189,6 +194,14 @@ export const PersistedEnvelopeSchema = z.object({
   typeFilter: z.union([AnyEntityTypeSchema, z.literal('all')]).optional(),
   sortBy: z.enum(['name', 'created', 'updated']).optional(),
   sortDir: z.enum(['asc', 'desc']).optional(),
+  // Advanced filters and layout, persisted alongside the sort controls.
+  // Defaulted (not merely optional) so a payload written before these keys
+  // existed hydrates to the same values the store would have shown anyway:
+  // the parsing step fills them in, so no reader has to guess.
+  tagQuery: z.string().default(''),
+  hasDescriptionOnly: z.boolean().default(false),
+  viewMode: z.enum(['grid', 'list']).default('grid'),
+  showAll: z.boolean().default(false),
   rightPanelOpen: z.boolean().optional(),
 })
 

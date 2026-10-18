@@ -2,11 +2,12 @@
  * Navigation, library controls, and panel visibility (Plan 157 Phase 3).
  *
  * None of this is undoable — history covers the corpus, not the chrome. Some
- * of it IS persisted: `currentView`, `typeFilter`, `sortBy`, `sortDir`, and
+ * of it IS persisted: `currentView`, `typeFilter`, `sortBy`, `sortDir`,
+ * `tagQuery`, `hasDescriptionOnly`, `viewMode`, `showAll`, and
  * `rightPanelOpen` are in PERSISTED_KEYS, so a reload restores the user's
- * filters and panel state. What `partializePersistedState` drops is the
- * genuinely ephemeral set (searchQuery, selection, mobile drawer), so typing
- * a query never serializes the corpus.
+ * filters, layout, and panel state. What `partializePersistedState` drops is
+ * the genuinely ephemeral set (searchQuery, selection, mobile drawer), so
+ * typing a query never serializes the corpus.
  */
 import type { ViewId, AnyEntityType } from '../types'
 import type { StudioState } from '../store-types'
@@ -19,6 +20,8 @@ export type UiSlice = Pick<
   | 'commandOpen'
   | 'setCommandOpen'
   | 'selectedEntityId'
+  | 'shortcutsOpen'
+  | 'setShortcutsOpen'
   | 'editingEntityId'
   | 'searchQuery'
   | 'setSearchQuery'
@@ -30,6 +33,14 @@ export type UiSlice = Pick<
   | 'setSortBy'
   | 'sortDir'
   | 'setSortDir'
+  | 'tagQuery'
+  | 'setTagQuery'
+  | 'hasDescriptionOnly'
+  | 'setHasDescriptionOnly'
+  | 'viewMode'
+  | 'setViewMode'
+  | 'showAll'
+  | 'setShowAll'
   | 'rightPanelOpen'
   | 'setRightPanelOpen'
   | 'mobileDrawerOpen'
@@ -45,10 +56,23 @@ const LIBRARY_CONTROL_DEFAULTS = {
   semanticSearchEnabled: false,
   sortBy: 'updated',
   sortDir: 'desc',
+  tagQuery: '',
+  hasDescriptionOnly: false,
+  viewMode: 'grid',
+  showAll: false,
   rightPanelOpen: true,
 } as const satisfies Pick<
   StudioState,
-  'searchQuery' | 'typeFilter' | 'semanticSearchEnabled' | 'sortBy' | 'sortDir' | 'rightPanelOpen'
+  | 'searchQuery'
+  | 'typeFilter'
+  | 'semanticSearchEnabled'
+  | 'sortBy'
+  | 'sortDir'
+  | 'tagQuery'
+  | 'hasDescriptionOnly'
+  | 'viewMode'
+  | 'showAll'
+  | 'rightPanelOpen'
 >
 
 /** Builds the navigation, controls, and panel slice of the studio store. */
@@ -59,6 +83,8 @@ export const createUiSlice: StudioSlice<UiSlice> = (set) => ({
 
   commandOpen: false,
   setCommandOpen: (o) => set({ commandOpen: o }),
+  shortcutsOpen: false,
+  setShortcutsOpen: (open) => set({ shortcutsOpen: open }),
 
   selectedEntityId: null,
   editingEntityId: null,
@@ -68,6 +94,10 @@ export const createUiSlice: StudioSlice<UiSlice> = (set) => ({
   setSemanticSearchEnabled: (enabled) => set({ semanticSearchEnabled: enabled }),
   setSortBy: (s) => set({ sortBy: s }),
   setSortDir: (d) => set({ sortDir: d }),
+  setTagQuery: (q) => set({ tagQuery: q }),
+  setHasDescriptionOnly: (v) => set({ hasDescriptionOnly: v }),
+  setViewMode: (m) => set({ viewMode: m }),
+  setShowAll: (v) => set({ showAll: v }),
 
   setRightPanelOpen: (o) => set({ rightPanelOpen: o }),
 

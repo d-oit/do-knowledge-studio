@@ -69,6 +69,8 @@ const messages = {
   'graph.comparison.close': 'Close',
   /** Accessible name of the header dismiss control. */
   'graph.comparison.closeAria': 'Close comparison dialog',
+  /** Inbound-link group heading in the right-panel inspector. */
+  'graph.inspector.referencedBy': (count: string) => `Referenced by (${count})`,
 } as const
 
 /** Typed `translate` helper bound to the graph message scope. */

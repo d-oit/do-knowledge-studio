@@ -3,52 +3,46 @@
 **Status**: Implemented
 
 ## Context
-API keys for LLM providers (OpenRouter, Kilo Gateway) are currently read from `import.meta.env.VITE_OPENROUTER_API_KEY` and `import.meta.env.VITE_KILO_API_KEY`. Vite environment variables prefixed with `VITE_` are exposed to the client-side bundle at build time. If the application is deployed (even as a static site), these keys would be visible in the JavaScript bundle.
+This decision addresses the original Vite-era use of `import.meta.env.VITE_OPENROUTER_API_KEY` and `import.meta.env.VITE_KILO_API_KEY` for LLM providers. Vite environment variables prefixed with `VITE_` are exposed to the client-side bundle at build time, so deployed client bundles would expose those values.
 
 ## Decision
-We will remove reliance on `VITE_` environment variables for secret values and instead use **session-only runtime config**:
+We will remove reliance on `VITE_` environment variables for secret values and instead use **runtime user-entered configuration**:
 
-1. **Store API keys in session-only localStorage** via the AI settings system (`src/lib/studio/ai-settings.ts`), which encrypts keys with WebCrypto before storing. Keys never persist across sessions (session-only by design per ADR 028).
+1. **Store API keys locally in IndexedDB**, encrypted with WebCrypto AES-GCM. The encryption key seed is kept in `sessionStorage`; keys can be decrypted during a tab session and must be re-entered when the key is unavailable. See ADR 018 for the persistence exception and threat boundaries.
 2. **Remove `VITE_` env var reading** from LLM provider implementations (`openrouter.ts`, `kilo.ts`).
-3. **Add a settings UI** for users to input their API keys at runtime (already partially planned in issue #188).
+3. **Add a settings UI** for users to input their API keys at runtime.
 4. **Never hardcode, never bundle**: Keys must never appear in source code or the built bundle.
 5. **Audit for compliance**: Scan all source files for `VITE_` references to ensure no accidental exposures remain.
 
 ## Alternatives Considered
-- **Keep `VITE_` with `.env` documentation**: Relies on developers to never deploy the .env file with production builds. Error-prone and violates principle of least surprise.
-- **Proxy server**: Would require a backend, violating the local-first constraint.
-- **Encrypted localStorage (chosen)**: Keys are encrypted with WebCrypto AES-GCM before localStorage storage. Session-only design ensures keys don't persist across browser sessions.
 
-## Implementation Plan
-1. Update `src/lib/studio/ai-settings.ts`:
-   - API keys stored in localStorage, encrypted with WebCrypto AES-GCM
-   - Session-only: keys cleared on browser close (no `localStorage.setItem` with expiry)
-   - Remove `VITE_OPENROUTER_API_KEY` and `VITE_KILO_API_KEY` env var reading
-2. Update provider implementations:
-   - `openrouter.ts`: Remove `fallback to import.meta.env.VITE_OPENROUTER_API_KEY`
-   - `kilo.ts`: Remove `fallback to import.meta.env.VITE_KILO_API_KEY`
-3. Create settings panel (plan 18 or standalone):
-   - API key input fields with show/hide toggle
-   - "Test connection" button
-   - Visual indicator of which provider is configured
-4. Add `scripts/audit-vite-env.sh` to scan for `VITE_` that might indicate exposed secrets
-5. Remove `VITE_*` from `.env.example` so new developers don't adopt the pattern
+- **Keep `VITE_` with `.env` documentation**: Rejected because client-prefixed
+  build variables expose secrets in the bundle.
+- **Proxy server**: Rejected because it would require a backend, contrary to
+  the local-first constraint.
 
 ## Consequences
-- **Positive**: API keys never appear in the built JavaScript bundle
-- **Positive**: Users can enter keys at runtime without `.env` files
-- **Positive**: IndexedDB provides better security boundary than localStorage
-- **Negative**: Settings UI must be implemented (was already planned for LLM provider system)
-- **Negative**: Key must be re-entered if IndexedDB is cleared (acceptable tradeoff)
-- **Negative**: Slightly more complex onboarding (user must enter key in UI)
 
-## Acceptance Criteria
-- [x] No `VITE_` env vars are read in `src/lib/ai/` providers
-- [x] API keys stored in IndexedDB (not localStorage, not env vars)
-- [x] Migration path exists for existing localStorage keys
-- [x] Settings UI allows entering/updating/clearing keys
-- [x] `scripts/audit-vite-env.sh` passes with zero client-prefixed secret references
-- [x] `npm run typecheck` passes
-- [x] E2E test: user enters key → LLM call succeeds → bundle inspection shows no key
+- **Positive**: API keys are entered at runtime and are not bundled from
+  environment variables.
+- **Positive**: New settings writes store the API key encrypted in IndexedDB.
+- **Negative**: If the tab-scoped session key is unavailable, the saved
+  ciphertext cannot be decrypted and the API key must be re-entered.
+- **Security boundary**: This protects persisted ciphertext when its key is
+  absent; it does not protect against same-origin script executing in a session
+  that can access the `sessionStorage` key. See ADR 018.
 
-> **Note**: This criterion is satisfied by the WebCrypto AES-GCM encryption implementation in `src/lib/studio/ai-settings.ts`. API keys are encrypted before any storage operation and are held in session-only storage — the plaintext key never appears in the JavaScript bundle, never persists to disk, and is cleared when the browser session ends.
+## Implementation Status
+
+The runtime settings UI, provider configuration, encrypted IndexedDB writes,
+and localStorage-to-IndexedDB migration are implemented in
+`src/lib/studio/ai-settings.ts`. Migration validates the legacy record, encrypts
+any plaintext API key before writing, validates the IndexedDB read-back, then
+removes the legacy setting. Older IndexedDB plaintext API-key records are still
+accepted on read for backward compatibility. Library state remains in Zustand
++ `localStorage` as specified by ADR 018.
+
+The API-key encryption key seed is stored in `sessionStorage`, not the API key.
+The seed remains accessible to same-origin script during the tab session and
+may be copied to a tab opened with an opener; closing all tabs holding the key
+ends the ability to decrypt the IndexedDB ciphertext.

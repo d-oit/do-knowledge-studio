@@ -33,7 +33,7 @@ fi
 
 - At session start to recall previous work
 - When facing a problem that might have been solved before
-- To retrieve specific findings from `analysis/` or `agents-docs/`
+- To retrieve specific findings from `plans/research/scratch/` or `agents-docs/`
 
 ## Indexing (Run Once)
 
@@ -42,7 +42,7 @@ fi
 csm index-jsonl -F agents-docs/lessons.jsonl --field title --id-field id --tag-field tags
 
 # Index analysis outputs and docs
-csm index-dir --glob "analysis/**/*.md" --glob "agents-docs/*.md" --heading-level 2
+csm index-dir --glob "plans/research/scratch/**/*.md" --glob "agents-docs/*.md" --heading-level 2
 ```
 
 Index stored in `.git/memory-index/csm.db` (per-clone, never committed).

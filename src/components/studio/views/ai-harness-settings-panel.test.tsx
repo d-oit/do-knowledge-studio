@@ -87,10 +87,10 @@ vi.mock('../ui/shared-primitives', () => ({
   ),
 }))
 
-import { AiHarnessSettingsPanel } from './ai-harness-settings-panel'
+import { AiHarnessSettingsPanel as AiHarnessSettingsPanelComponent } from './ai-harness-settings-panel'
 
 const defaultProps = {
-  provider: 'openrouter' as const,
+  provider: 'openrouter' as import('@/lib/studio/ai-settings').AIProvider,
   setProvider: vi.fn(),
   model: 'openrouter/free',
   setModel: vi.fn(),
@@ -114,8 +114,48 @@ const defaultProps = {
   handleRefreshOllamaModels: vi.fn(),
   entityCount: 42,
   effectiveModel: 'openrouter/free',
-  selectedEngineTarget: null,
+  selectedEngineTarget: null as { slug: string; display_name: string; description?: string } | null,
   isLoading: false,
+}
+
+const AiHarnessSettingsPanel = (overrides: Partial<typeof defaultProps>) => {
+  const props = { ...defaultProps, ...overrides }
+  return (
+    <AiHarnessSettingsPanelComponent
+      settings={{
+        provider: props.provider,
+        model: props.model,
+        apiKey: props.apiKey,
+        showKey: props.showKey,
+        augment: props.augment,
+        ollamaCpuOnly: props.ollamaCpuOnly,
+        ollamaBaseUrl: props.ollamaBaseUrl,
+        allowWebResearch: props.allowWebResearch,
+        customModel: props.customModel,
+        ollamaModels: props.ollamaModels,
+        localDevice: props.localDevice,
+      }}
+      actions={{
+        setProvider: props.setProvider,
+        setModel: props.setModel,
+        setApiKey: props.setApiKey,
+        setShowKey: props.setShowKey,
+        setAugment: props.setAugment,
+        setOllamaCpuOnly: props.setOllamaCpuOnly,
+        setOllamaBaseUrl: props.setOllamaBaseUrl,
+        setAllowWebResearch: props.setAllowWebResearch,
+        setCustomModel: props.setCustomModel,
+        handleRefreshOllamaModels: props.handleRefreshOllamaModels,
+        setLocalDevice: props.setLocalDevice,
+      }}
+      status={{
+        entityCount: props.entityCount,
+        effectiveModel: props.effectiveModel,
+        selectedEngineTarget: props.selectedEngineTarget,
+        isLoading: props.isLoading,
+      }}
+    />
+  )
 }
 
 describe('AiHarnessSettingsPanel', () => {

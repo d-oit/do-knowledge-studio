@@ -74,3 +74,12 @@ pnpm run typecheck     # ✅ no errors
 pnpm run test          # ✅ 127 tests pass
 pnpm run build         # ✅ compiles successfully
 ```
+
+## Component consolidation closed (2026-10-17 — [Plan 177](177-older-plan-leftovers-2026-10-17.md))
+
+The shared-primitive consolidation this plan proposed alongside
+[062](062-component-consolidation-2026-07-16.md) is closed as unnecessary: the
+genuinely shared set ships in `ui/shared-primitives.tsx` (plus `ToolbarBtn` in
+`views/graph-toolbar.tsx`, reused by the mind map), and the remaining local
+controls have one consumer each by design. See Plan 062's closure note for the
+evidence.

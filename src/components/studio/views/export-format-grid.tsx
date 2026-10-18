@@ -1,7 +1,7 @@
 'use client'
 
 import { memo } from 'react'
-import { FileText, Download, Shield, ArrowRight } from 'lucide-react'
+import { FileText, Download, Shield, ArrowRight, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
@@ -16,6 +16,8 @@ interface ExportFormatGridProps {
   setView: (view: ViewId) => void
   setShowPassword: (show: boolean) => void
   handleExport: (format: ExportFormatId) => Promise<void>
+  /** The format whose export is still running, or null when idle. */
+  exportingFormat: ExportFormatId | null
 }
 
 /** Grid of export format options with empty state and format cards. */
@@ -24,14 +26,23 @@ export const ExportFormatGrid = memo(({
   setView,
   setShowPassword,
   handleExport,
+  exportingFormat,
 }: ExportFormatGridProps) => {
   const reducedMotion = useReducedMotion()
+  // `Boolean` (not `!== null`): an incomplete caller-supplied hook object can
+  // omit the prop entirely, and a missing value must read as idle, not busy.
+  const isExporting = Boolean(exportingFormat)
+  /** Display name of the running format, for the busy status line. */
+  const exportingName = exportingFormat
+    ? FORMATS.find((f) => f.id === exportingFormat)?.name ?? exportingFormat
+    : ''
 
   return (
     <motion.section
       initial={reducedMotion ? false : { opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={reducedMotion ? { duration: 0 } : undefined}
+      aria-busy={isExporting}
       className="mb-8"
     >
       <ViewHeader
@@ -40,6 +51,16 @@ export const ExportFormatGrid = memo(({
         subtitle={translate('export.grid.subtitle')}
         className="mb-4"
       />
+
+      {isExporting && (
+        <p role="status" className="mb-4 flex items-center gap-2 text-label-lg font-medium text-ink-mute">
+          <Loader2
+            className={cn('h-3.5 w-3.5', !reducedMotion && 'animate-spin')}
+            aria-hidden="true"
+          />
+          {translate('export.grid.exporting', exportingName)}
+        </p>
+      )}
 
       {entities.length === 0 ? (
         <ViewEmptyState
@@ -62,8 +83,8 @@ export const ExportFormatGrid = memo(({
             <button
               key={f.id}
               style={{ '--i': i } as React.CSSProperties}
-              disabled={!isAvailable}
-              aria-disabled={!isAvailable}
+              disabled={!isAvailable || isExporting}
+              aria-disabled={!isAvailable || isExporting}
               onClick={() => {
                 if (!isAvailable) return
                 if (f.id === 'encrypted') setShowPassword(true)
@@ -74,6 +95,9 @@ export const ExportFormatGrid = memo(({
                 isAvailable
                   ? 'border-border hover:border-saffron/30 hover:shadow-md hover-lift'
                   : 'cursor-not-allowed border-dashed border-border/60 bg-muted/40',
+                // A second export while one is running would download the same
+                // library twice; the cards all wait for the first to settle.
+                isExporting && 'cursor-wait opacity-60',
               )}
             >
               <div className="mb-3 flex items-center justify-between">

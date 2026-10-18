@@ -242,6 +242,21 @@ describe('onPresenceChange', () => {
     unsub()
     expect(mockAwareness.on).not.toHaveBeenCalled()
   })
+  it('dispatches each awareness event once to each subscriber', () => {
+    const first = vi.fn()
+    const second = vi.fn()
+    const unsubscribeFirst = onPresenceChange(first)
+    const unsubscribeSecond = onPresenceChange(second)
+    const handler = mockAwareness.on.mock.calls[0]?.[1] as (() => void) | undefined
+
+    expect(mockAwareness.on).toHaveBeenCalledTimes(1)
+    handler?.()
+    expect(first).toHaveBeenCalledTimes(1)
+    expect(second).toHaveBeenCalledTimes(1)
+
+    unsubscribeFirst()
+    unsubscribeSecond()
+  })
 })
 
 // --- broadcastPresence ---

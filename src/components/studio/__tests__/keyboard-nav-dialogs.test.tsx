@@ -130,21 +130,30 @@ vi.mock('@/lib/search/retrieval', () => ({
 // Store mock — mutable shared state, handles both selector and non-selector calls
 // ---------------------------------------------------------------------------
 
-const storeFns = {
-  setCommandOpen: vi.fn(),
-  setView: vi.fn(),
-  startNew: vi.fn(),
-  setMobileDrawerOpen: vi.fn(),
-  setMobilePanelView: vi.fn(),
-  setSearchQuery: vi.fn(),
-  setRightPanelOpen: vi.fn(),
-  startEdit: vi.fn(),
-  finishEditing: vi.fn(),
+const storeListeners = new Set<() => void>()
+let storeState: Record<string, unknown>
+const setStoreValue = (key: string, value: unknown) => {
+  storeState = { ...storeState, [key]: value }
+  for (const listener of storeListeners) listener()
 }
 
-const storeState: Record<string, unknown> = {
+const storeFns = {
+  setCommandOpen: vi.fn((value: boolean) => setStoreValue('commandOpen', value)),
+  setView: vi.fn((value: string) => setStoreValue('currentView', value)),
+  startNew: vi.fn(),
+  setMobileDrawerOpen: vi.fn((value: boolean) => setStoreValue('mobileDrawerOpen', value)),
+  setMobilePanelView: vi.fn((value: string) => setStoreValue('mobilePanelView', value)),
+  setSearchQuery: vi.fn((value: string) => setStoreValue('searchQuery', value)),
+  setRightPanelOpen: vi.fn((value: boolean) => setStoreValue('rightPanelOpen', value)),
+  startEdit: vi.fn(),
+  finishEditing: vi.fn(),
+  setShortcutsOpen: vi.fn((value: boolean) => setStoreValue('shortcutsOpen', value)),
+}
+
+storeState = {
   currentView: 'home',
   commandOpen: false,
+  shortcutsOpen: false,
   entities: [] as Array<{ id: string; name: string; type: string; description: string }>,
   claims: [],
   searchQuery: '',
@@ -158,21 +167,37 @@ const storeState: Record<string, unknown> = {
   ...storeFns,
 }
 
-vi.mock('@/lib/studio/store', () => ({
-  useStudioStore: (selector?: (s: Record<string, unknown>) => unknown) => {
-    if (typeof selector === 'function') return selector(storeState)
-    return storeState
-  },
-  useFilteredEntities: () => [],
-  useStats: () => ({
-    total: 0,
-    claims: 0,
-    verified: 0,
-    byType: {},
-    recent: [],
-  }),
-}))
-
+vi.mock('@/lib/studio/store', async () => {
+  const { useSyncExternalStore } = await import('react')
+  const useStudioStore = Object.assign(
+    (selector?: (s: Record<string, unknown>) => unknown) =>
+      useSyncExternalStore(
+        (listener) => {
+          storeListeners.add(listener)
+          return () => { storeListeners.delete(listener) }
+        },
+        () => selector ? selector(storeState) : storeState,
+      ),
+    {
+      getState: () => storeState,
+      subscribe: (listener: () => void) => {
+        storeListeners.add(listener)
+        return () => { storeListeners.delete(listener) }
+      },
+    },
+  )
+  return {
+    useStudioStore,
+    useFilteredEntities: () => [],
+    useStats: () => ({
+      total: 0,
+      claims: 0,
+      verified: 0,
+      byType: {},
+      recent: [],
+    }),
+  }
+})
 // Import components AFTER mocks
 import { Overlay } from '@/components/studio/ui/shared-primitives'
 import { CommandPalette } from '@/components/studio/command-palette'
@@ -182,6 +207,7 @@ import { CommandPalette } from '@/components/studio/command-palette'
 // ---------------------------------------------------------------------------
 
 beforeEach(() => {
+  storeState.shortcutsOpen = false
   storeState.commandOpen = false
   storeState.mobileDrawerOpen = false
   storeState.mobilePanelView = 'nav'
@@ -407,23 +433,12 @@ describe('ShortcutsDialog keyboard navigation', () => {
   let ShortcutsDialog: React.ComponentType
   let ShortcutsTrigger: React.ComponentType<{ className?: string }>
 
-  // ShortcutsDialog keeps its open flag in module scope, so importing once for the whole
-  // suite left the dialog open for every test after the first one that opened it — which
-  // made the "opens on click" assertion unfalsifiable. Reset the module registry per test
-  // so each one starts from a genuinely closed dialog.
   beforeEach(async () => {
-    vi.resetModules()
     const mod = await import('@/components/studio/shortcuts-dialog')
     ShortcutsDialog = mod.ShortcutsDialog
     ShortcutsTrigger = mod.ShortcutsTrigger
-    vi.clearAllMocks()
   })
 
-  it('ShortcutsTrigger renders a button with aria-label', () => {
-    render(<ShortcutsTrigger />)
-    const btn = screen.getByRole('button', { name: 'Show keyboard shortcuts' })
-    expect(btn).toBeDefined()
-  })
 
   it('ShortcutsTrigger opens dialog on click', () => {
     render(
@@ -432,8 +447,6 @@ describe('ShortcutsDialog keyboard navigation', () => {
         <ShortcutsDialog />
       </>,
     )
-    // Pre-condition: if the module-scope open flag leaked in from an earlier test, the
-    // dialog would already be open and the post-click assertion below could never fail.
     expect(screen.queryByRole('dialog', { name: 'Keyboard shortcuts' })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Show keyboard shortcuts' }))
     const dialog = screen.getByRole('dialog', { name: 'Keyboard shortcuts' })
@@ -447,15 +460,13 @@ describe('ShortcutsDialog keyboard navigation', () => {
         <ShortcutsDialog />
       </>,
     )
-    // This test runs straight after one that opens the dialog and never closes it, so the
-    // pre-condition is what proves the module-scope flag no longer leaks between tests.
     expect(screen.queryByRole('button', { name: 'Close shortcuts dialog' })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Show keyboard shortcuts' }))
     const closeBtn = screen.getByRole('button', { name: 'Close shortcuts dialog' })
     expect(document.activeElement).toBe(closeBtn)
   })
 
-  it('filter input renders and is accessible', () => {
+  it('filters shortcuts by action text and announces the result count', () => {
     render(
       <>
         <ShortcutsTrigger />
@@ -463,8 +474,13 @@ describe('ShortcutsDialog keyboard navigation', () => {
       </>,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Show keyboard shortcuts' }))
-    const filterInput = screen.getByLabelText('Filter shortcuts')
-    expect(filterInput).toBeDefined()
+    fireEvent.change(screen.getByLabelText('Filter shortcuts'), {
+      target: { value: 'open command palette' },
+    })
+
+    expect(screen.getByText('Open command palette')).toBeVisible()
+    expect(screen.queryByText('Bold')).toBeNull()
+    expect(screen.getByRole('status')).toHaveTextContent('1 shortcut found')
   })
 
   it('dialog has proper aria-modal and role', () => {

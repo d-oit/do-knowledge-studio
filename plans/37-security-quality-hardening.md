@@ -3,7 +3,7 @@
 **GOAP Goal**: G-SECURITY-V2  
 **Priority**: P1 (Security concerns from swarm analysis)  
 **Estimated Total Effort**: 8-12 hours  
-**Source**: `analysis/SWARM_ANALYSIS.md` — Security & Quality perspective  
+**Source**: `plans/research/scratch/analysis/SWARM_ANALYSIS.md` — Security & Quality perspective
 **Date**: 2026-05-31
 
 ## Issue Summary

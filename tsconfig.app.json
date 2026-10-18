@@ -1,12 +1,8 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "composite": true,
-    "noEmit": false,
-    "emitDeclarationOnly": true,
-    "outDir": "./dist/types/app",
-    "types": ["vite/client"]
+    "types": ["node"]
   },
-  "include": ["src", "package.json"],
+  "include": ["next-env.d.ts", ".next/types/**/*.ts", ".next/dev/types/**/*.ts", "src", "package.json"],
   "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts", "src/**/__tests__/**", "src/test/setup.ts"]
 }

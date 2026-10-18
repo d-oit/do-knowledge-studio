@@ -27,7 +27,7 @@ the scope from changed paths and requires a resolvable base ref.
 | `validate-git-hooks.sh` | Check git hooks configuration | `./scripts/validate-git-hooks.sh` |
 | `validate-links.sh` | Validate links and reference formatting in `SKILL.md` files | `./scripts/validate-links.sh` |
 | `validate-package-manager.sh` | Validate the correct package manager (pnpm) is used | `./scripts/validate-package-manager.sh` |
-| `check-dependency-downgrades.mjs` | Fail on lower or unparseable changed dependency ranges | `node scripts/check-dependency-downgrades.mjs <base-ref>` |
+| `check-dependency-downgrades.mjs` | Fail on lower/unparseable ranges; allow only the exact `@types/node` range matching the runtime floor | `node scripts/check-dependency-downgrades.mjs <base-ref>` |
 | `check-stale-base-deletions.mjs` | Fail when target-branch additions are missing from the PR head | `node scripts/check-stale-base-deletions.mjs <base-ref>` |
 
 ## Automation Scripts

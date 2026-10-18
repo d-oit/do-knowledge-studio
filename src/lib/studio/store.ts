@@ -9,7 +9,7 @@
  * compose through the same `set`/`get` pair, so cross-slice calls (a claim
  * write pushing history) still work without an import cycle.
  */
-import { useMemo } from 'react'
+import { useDeferredValue, useMemo } from 'react'
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { search } from '@/lib/search/retrieval'
@@ -288,7 +288,12 @@ const sortEntitiesBy = (
  * results are ranked by BM25 relevance score (reversed if sortDir is 'asc'); otherwise,
  * entities are sorted by the active sort criteria (sortBy/sortDir).
  * Uses BM25 retrieval across entities and claims when a search query is present, unifying
- * relevance semantics with Chat/AI and right-panel ranked mode. */
+ * relevance semantics with Chat/AI and right-panel ranked mode.
+ *
+ * The query is read through `useDeferredValue`: ranking is synchronous CPU work, so a
+ * keystroke renders immediately against the previous query and the ranked list catches up
+ * one frame later instead of blocking the input on a large corpus. The mobile drawer
+ * search tab renders the same panel, so both paths converge through this one hook. */
 export const useFilteredEntities = (): Entity[] => {
   const entities = useStudioStore((s) => s.entities)
   const claims = useStudioStore((s) => s.claims)
@@ -296,9 +301,10 @@ export const useFilteredEntities = (): Entity[] => {
   const typeFilter = useStudioStore((s) => s.typeFilter)
   const sortBy = useStudioStore((s) => s.sortBy)
   const sortDir = useStudioStore((s) => s.sortDir)
+  const deferredQuery = useDeferredValue(searchQuery)
 
   return useMemo(() => {
-    const query = searchQuery.trim()
+    const query = deferredQuery.trim()
     let list = query === '' ? entities : rankEntitiesByQuery(entities, claims, query)
 
     if (typeFilter !== 'all') {
@@ -311,7 +317,7 @@ export const useFilteredEntities = (): Entity[] => {
       return sortEntitiesBy(list, sortBy, sortDir)
     }
     return sortDir === 'asc' ? [...list].reverse() : list
-  }, [entities, claims, searchQuery, typeFilter, sortBy, sortDir])
+  }, [entities, claims, deferredQuery, typeFilter, sortBy, sortDir])
 }
 
 /** Computes library statistics: entity counts by type, claim totals, and recent items. */

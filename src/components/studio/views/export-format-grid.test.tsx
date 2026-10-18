@@ -19,7 +19,7 @@ vi.mock('lucide-react', () => {
     <span data-testid="icon" className={className} />
   )
   return {
-    FileText: I, Download: I, Shield: I, ArrowRight: I,
+    FileText: I, Download: I, Shield: I, ArrowRight: I, Loader2: I,
     FileJson: I, FileCode: I, FileArchive: I, FileLock: I,
   }
 })
@@ -72,21 +72,21 @@ describe('ExportFormatGrid', () => {
 
   it('renders export knowledge heading', () => {
     render(
-      <ExportFormatGrid entities={mockEntities} setView={mockSetView} setShowPassword={mockSetShowPassword} handleExport={mockHandleExport} />,
+      <ExportFormatGrid entities={mockEntities} setView={mockSetView} setShowPassword={mockSetShowPassword} handleExport={mockHandleExport} exportingFormat={null} />,
     )
     expect(screen.getByText('Export knowledge')).toBeDefined()
   })
 
   it('shows empty state when entities is empty', () => {
     render(
-      <ExportFormatGrid entities={[]} setView={mockSetView} setShowPassword={mockSetShowPassword} handleExport={mockHandleExport} />,
+      <ExportFormatGrid entities={[]} setView={mockSetView} setShowPassword={mockSetShowPassword} handleExport={mockHandleExport} exportingFormat={null} />,
     )
     expect(screen.getByText(/No entities to export yet/)).toBeDefined()
   })
 
   it('shows format cards when entities are present', () => {
     render(
-      <ExportFormatGrid entities={mockEntities} setView={mockSetView} setShowPassword={mockSetShowPassword} handleExport={mockHandleExport} />,
+      <ExportFormatGrid entities={mockEntities} setView={mockSetView} setShowPassword={mockSetShowPassword} handleExport={mockHandleExport} exportingFormat={null} />,
     )
     expect(screen.getByText('Markdown')).toBeDefined()
     expect(screen.getByText('JSON')).toBeDefined()
@@ -98,7 +98,7 @@ describe('ExportFormatGrid', () => {
 
   it('calls handleExport on format click', () => {
     render(
-      <ExportFormatGrid entities={mockEntities} setView={mockSetView} setShowPassword={mockSetShowPassword} handleExport={mockHandleExport} />,
+      <ExportFormatGrid entities={mockEntities} setView={mockSetView} setShowPassword={mockSetShowPassword} handleExport={mockHandleExport} exportingFormat={null} />,
     )
     fireEvent.click(screen.getByText('JSON'))
     expect(mockHandleExport).toHaveBeenCalledWith('json')
@@ -106,7 +106,7 @@ describe('ExportFormatGrid', () => {
 
   it('calls handleExport for markdown format', () => {
     render(
-      <ExportFormatGrid entities={mockEntities} setView={mockSetView} setShowPassword={mockSetShowPassword} handleExport={mockHandleExport} />,
+      <ExportFormatGrid entities={mockEntities} setView={mockSetView} setShowPassword={mockSetShowPassword} handleExport={mockHandleExport} exportingFormat={null} />,
     )
     fireEvent.click(screen.getByText('Markdown'))
     expect(mockHandleExport).toHaveBeenCalledWith('markdown')
@@ -114,7 +114,7 @@ describe('ExportFormatGrid', () => {
 
   it('calls handleExport for html format', () => {
     render(
-      <ExportFormatGrid entities={mockEntities} setView={mockSetView} setShowPassword={mockSetShowPassword} handleExport={mockHandleExport} />,
+      <ExportFormatGrid entities={mockEntities} setView={mockSetView} setShowPassword={mockSetShowPassword} handleExport={mockHandleExport} exportingFormat={null} />,
     )
     fireEvent.click(screen.getByText('Static HTML'))
     expect(mockHandleExport).toHaveBeenCalledWith('html')
@@ -122,7 +122,7 @@ describe('ExportFormatGrid', () => {
 
   it('calls setShowPassword for encrypted format', () => {
     render(
-      <ExportFormatGrid entities={mockEntities} setView={mockSetView} setShowPassword={mockSetShowPassword} handleExport={mockHandleExport} />,
+      <ExportFormatGrid entities={mockEntities} setView={mockSetView} setShowPassword={mockSetShowPassword} handleExport={mockHandleExport} exportingFormat={null} />,
     )
     fireEvent.click(screen.getByText('Encrypted HTML'))
     expect(mockSetShowPassword).toHaveBeenCalledWith(true)
@@ -131,7 +131,7 @@ describe('ExportFormatGrid', () => {
 
   it('Create entity button calls setView editor', () => {
     render(
-      <ExportFormatGrid entities={[]} setView={mockSetView} setShowPassword={mockSetShowPassword} handleExport={mockHandleExport} />,
+      <ExportFormatGrid entities={[]} setView={mockSetView} setShowPassword={mockSetShowPassword} handleExport={mockHandleExport} exportingFormat={null} />,
     )
     fireEvent.click(screen.getByText('Create entity'))
     expect(mockSetView).toHaveBeenCalledWith('editor')
@@ -139,17 +139,42 @@ describe('ExportFormatGrid', () => {
 
   it('shows Secure badge for encrypted format', () => {
     render(
-      <ExportFormatGrid entities={mockEntities} setView={mockSetView} setShowPassword={mockSetShowPassword} handleExport={mockHandleExport} />,
+      <ExportFormatGrid entities={mockEntities} setView={mockSetView} setShowPassword={mockSetShowPassword} handleExport={mockHandleExport} exportingFormat={null} />,
     )
     expect(screen.getAllByText('Secure').length).toBeGreaterThanOrEqual(1)
   })
 
   it('renders format descriptions', () => {
     render(
-      <ExportFormatGrid entities={mockEntities} setView={mockSetView} setShowPassword={mockSetShowPassword} handleExport={mockHandleExport} />,
+      <ExportFormatGrid entities={mockEntities} setView={mockSetView} setShowPassword={mockSetShowPassword} handleExport={mockHandleExport} exportingFormat={null} />,
     )
     expect(screen.getByText('Single .md file')).toBeDefined()
     expect(screen.getByText('Backup file')).toBeDefined()
     expect(screen.getByText('Password-protected')).toBeDefined()
+  })
+
+  it('marks the region busy and names the running format', () => {
+    render(
+      <ExportFormatGrid entities={mockEntities} setView={mockSetView} setShowPassword={mockSetShowPassword} handleExport={mockHandleExport} exportingFormat="pdf" />,
+    )
+    expect(screen.getByText('Export knowledge').closest('section')).toHaveAttribute('aria-busy', 'true')
+    expect(screen.getByRole('status').textContent).toContain('Exporting PDF document…')
+  })
+
+  it('disables every format card while an export runs', () => {
+    render(
+      <ExportFormatGrid entities={mockEntities} setView={mockSetView} setShowPassword={mockSetShowPassword} handleExport={mockHandleExport} exportingFormat="pdf" />,
+    )
+    expect(screen.getByText('JSON').closest('button')).toBeDisabled()
+    expect(screen.getByText('Markdown').closest('button')).toBeDisabled()
+    expect(screen.getByText('Static HTML').closest('button')).toBeDisabled()
+  })
+
+  it('is neither busy nor showing a status when idle', () => {
+    render(
+      <ExportFormatGrid entities={mockEntities} setView={mockSetView} setShowPassword={mockSetShowPassword} handleExport={mockHandleExport} exportingFormat={null} />,
+    )
+    expect(screen.getByText('Export knowledge').closest('section')).toHaveAttribute('aria-busy', 'false')
+    expect(screen.queryByRole('status')).toBeNull()
   })
 })

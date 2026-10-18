@@ -1,6 +1,7 @@
 import { forwardRef, useId } from 'react'
-import type { LucideIcon } from 'lucide-react'
+import { HelpCircle, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate as confirmT } from '@/lib/i18n/messages/confirm'
 import { Overlay } from './overlay'
 
@@ -48,6 +49,68 @@ export function Divider({ className }: { className?: string }) {
   return <span className={cn('mx-1 h-4 w-px bg-border', className)} aria-hidden="true" />
 }
 
+// ---------------------------------------------------------------------------
+// Toolbar button
+// ---------------------------------------------------------------------------
+
+interface ToolbarBtnProps {
+  icon: LucideIcon
+  label: string
+  /** Contextual help shown on hover. */
+  help?: string
+  active?: boolean
+  onClick?: () => void
+  disabled?: boolean
+  title?: string
+  disabledTitle?: string
+  labelClassName?: string
+}
+
+/** Accessible icon button shared by the graph and mind-map toolbars. */
+export const ToolbarBtn = ({
+  icon: Icon,
+  label,
+  help,
+  active,
+  onClick,
+  disabled,
+  title = label,
+  disabledTitle,
+  labelClassName = 'hidden sm:inline',
+}: ToolbarBtnProps) => {
+  const button = (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={disabled ? disabledTitle ?? title : title}
+      aria-label={label}
+      aria-pressed={active}
+      className={cn(
+        'flex min-h-touch min-w-touch items-center gap-1 rounded-md px-2 py-1.5 text-label font-medium transition-colors focus-ring disabled:cursor-not-allowed disabled:opacity-40',
+        active ? 'bg-saffron-soft text-saffron-deep' : 'text-ink-mute hover:bg-muted hover:text-ink',
+      )}
+    >
+      <Icon className="h-3.5 w-3.5" />
+      <span className={labelClassName}>{label}</span>
+    </button>
+  )
+
+  if (!help) return button
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>{button}</TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-52 text-center">
+          <span className="flex items-center justify-center gap-1">
+            <HelpCircle className="h-3 w-3 shrink-0" aria-hidden="true" />
+            {help}
+          </span>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  )
+}
 // ---------------------------------------------------------------------------
 // ToggleButtonGroup (container)
 // ---------------------------------------------------------------------------
@@ -219,12 +282,12 @@ interface ViewEmptyStateProps {
   /** Headline naming what is missing. */
   title: string
   /** One or two lines explaining how to fill the view. */
-  body: string
-  /** Primary action that leaves the dead end. */
-  actionLabel: string
-  /** Runs when the primary action is activated. */
-  onAction: () => void
-  /** Optional icon for the primary action button. */
+  body?: string
+  /** Optional CTA label; omit to render an informational empty state. */
+  actionLabel?: string
+  /** Runs when the optional CTA is activated. */
+  onAction?: () => void
+  /** Optional icon for the CTA button. */
   actionIcon?: LucideIcon
   /** Extra classes, e.g. a width cap or a frame tuned for a canvas overlay. */
   className?: string
@@ -234,9 +297,8 @@ interface ViewEmptyStateProps {
  * Empty state for a whole view — the single dead-end frame (DESIGN-SYSTEM.md
  * §8.9 empty states).
  *
- * Extracted from the library view's empty state so a view can never render a
- * dead end: every usage passes a real action, typically the store's
- * `startNew`, and therefore always offers the way into the editor.
+ * Callers with a way out pass an action; informational and search-specific
+ * states may omit it while retaining their own copy and context.
  */
 export function ViewEmptyState({
   icon: Icon,
@@ -258,15 +320,17 @@ export function ViewEmptyState({
         <Icon aria-hidden="true" className="h-6 w-6 text-saffron" />
       </div>
       <h3 className="font-serif text-lg font-semibold text-ink">{title}</h3>
-      <p className="mx-auto mt-1 max-w-sm text-body-sm text-ink-mute">{body}</p>
-      <button
-        type="button"
-        onClick={onAction}
-        className="mt-4 flex min-h-touch items-center gap-1.5 rounded-md bg-primary px-4 text-body-sm font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
-      >
-        {ActionIcon ? <ActionIcon aria-hidden="true" className="h-4 w-4" /> : null}
-        {actionLabel}
-      </button>
+      {body ? <p className="mx-auto mt-1 max-w-sm text-body-sm text-ink-mute">{body}</p> : null}
+      {actionLabel && onAction ? (
+        <button
+          type="button"
+          onClick={onAction}
+          className="mt-4 flex min-h-touch items-center gap-1.5 rounded-md bg-primary px-4 text-body-sm font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
+        >
+          {ActionIcon ? <ActionIcon aria-hidden="true" className="h-4 w-4" /> : null}
+          {actionLabel}
+        </button>
+      ) : null}
     </div>
   )
 }

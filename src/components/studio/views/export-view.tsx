@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { RotateCcw } from 'lucide-react'
 import { useStudioStore } from '@/lib/studio/store'
 import type { ImportPreview } from './export-types'
@@ -35,6 +35,7 @@ export const ExportView = () => {
 
   const {
     handleExport,
+    exportingFormat,
     handleImportClick,
     handleFileChange,
     handleConfirmImport,
@@ -61,14 +62,6 @@ export const ExportView = () => {
     fileInputRef,
   })
 
-  useEffect(() => {
-    if (!importPreview) return
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setImportPreview(null)
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => { window.removeEventListener('keydown', handleKeyDown) }
-  }, [importPreview])
 
   return (
     <div className={cn(VIEW_CONTAINER_CLASS, 'max-w-5xl')}>
@@ -77,6 +70,7 @@ export const ExportView = () => {
         setView={setView}
         setShowPassword={setShowPassword}
         handleExport={handleExport}
+        exportingFormat={exportingFormat}
       />
 
       <ImportDropzone
@@ -102,15 +96,9 @@ export const ExportView = () => {
       </div>
 
       <EncryptExportDialog
-        showPassword={showPassword}
-        setShowPassword={setShowPassword}
-        password={password}
-        setPassword={setPassword}
-        confirm={confirm}
-        setConfirm={setConfirm}
-        showPass={showPass}
-        setShowPass={setShowPass}
-        handleExport={handleExport}
+        state={{ showPassword, password, confirm, showPass }}
+        actions={{ setShowPassword, setPassword, setConfirm, setShowPass, handleExport }}
+        exporting={exportingFormat === 'encrypted'}
       />
 
       <ConfirmDialog
@@ -128,9 +116,8 @@ export const ExportView = () => {
       />
 
       <ImportPreviewDialog
-        importPreview={importPreview}
-        setImportPreview={setImportPreview}
-        handleConfirmImport={handleConfirmImport}
+        state={{ preview: importPreview }}
+        actions={{ close: setImportPreview, confirm: handleConfirmImport }}
       />
     </div>
   )

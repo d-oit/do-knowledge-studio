@@ -1,17 +1,14 @@
 import type { Entity, Claim } from '@/lib/studio/types'
+import { compareRecordTimestamps, mergeEntities, mergeClaims } from './merge'
 
-/** Resolve an entity conflict by picking the more recently updated version. */
+/** Resolve an entity conflict with the canonical merge tie-break policy. */
 export function resolveEntityConflict(local: Entity, remote: Entity): Entity {
-  const localTime = local.updatedAt ?? local.createdAt ?? ''
-  const remoteTime = remote.updatedAt ?? remote.createdAt ?? ''
-  return remoteTime >= localTime ? remote : local
+  return mergeEntities([local], [remote]).merged[0] ?? local
 }
 
-/** Resolve a claim conflict by picking the more recently updated version. */
+/** Resolve a claim conflict with the canonical merge tie-break policy. */
 export function resolveClaimConflict(local: Claim, remote: Claim): Claim {
-  const localTime = local.updatedAt ?? local.createdAt ?? ''
-  const remoteTime = remote.updatedAt ?? remote.createdAt ?? ''
-  return remoteTime >= localTime ? remote : local
+  return mergeClaims([local], [remote]).merged[0] ?? local
 }
 
 /** Batch-resolve entity conflicts and return merged results with resolution log. */
@@ -31,7 +28,13 @@ export function resolveEntityConflicts(
     if (local && remote) {
       const resolved = resolveEntityConflict(local, remote)
       merged.push(resolved)
-      conflicts.push({ id, resolution: resolved === remote ? 'remote' : 'local' })
+      const order = compareRecordTimestamps(local.updatedAt, remote.updatedAt)
+      const resolution = order > 0
+        ? 'local'
+        : order < 0
+          ? 'remote'
+          : (JSON.stringify(local) ?? '') <= (JSON.stringify(remote) ?? '') ? 'local' : 'remote'
+      conflicts.push({ id, resolution })
     } else if (local) {
       merged.push(local)
     } else if (remote) {
@@ -59,7 +62,16 @@ export function resolveClaimConflicts(
     if (local && remote) {
       const resolved = resolveClaimConflict(local, remote)
       merged.push(resolved)
-      conflicts.push({ id, resolution: resolved === remote ? 'remote' : 'local' })
+      const order = compareRecordTimestamps(
+        local.updatedAt ?? local.createdAt ?? '',
+        remote.updatedAt ?? remote.createdAt ?? '',
+      )
+      const resolution = order > 0
+        ? 'local'
+        : order < 0
+          ? 'remote'
+          : (JSON.stringify(local) ?? '') <= (JSON.stringify(remote) ?? '') ? 'local' : 'remote'
+      conflicts.push({ id, resolution })
     } else if (local) {
       merged.push(local)
     } else if (remote) {

@@ -1,32 +1,23 @@
 'use client'
 
-import type { MarkdownCommandResult, MarkdownSelection } from '@/lib/editor/markdown-types'
+import { readBreakpointPx } from '@/lib/studio/breakpoints'
+import { applyEditorFormat, restoreEditorSelection } from './editor-formatting'
 import { useStudioStore } from '@/lib/studio/store'
 import {
   type AnyEntityType,
   type Entity,
 } from '@/lib/studio/types'
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { toast } from 'sonner'
 import { useAnnouncer } from '@/lib/a11y/announcer'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
 import { translate as confirmT } from '@/lib/i18n/messages/confirm'
 import { ConfirmDialog } from '@/components/studio/ui/shared-primitives'
 import { EditorToolbar } from './editor-toolbar'
-import { CursorTracker } from '../remote-cursors'
+const CursorTracker = lazy(() => import('../remote-cursors').then((module) => ({ default: module.CursorTracker })))
 import { ClaimsPanel } from './editor-claims-panel'
 import { EditorHeader, EditorTags } from './editor-helpers'
-import {
-  applyBold,
-  applyItalic,
-  applyHeading,
-  applyBulletList,
-  applyOrderedList,
-  applyQuote,
-  applyInlineCode,
-  applyLink,
-  removeDraft,
-} from '@/lib/editor'
+import { removeDraft } from '@/lib/editor'
 import {
   applyMentionBacklinks,
   extractMentionLinks,
@@ -51,16 +42,11 @@ import {
 import { EditorAdvancedFields } from './editor-advanced-fields'
 import { cn } from '@/lib/utils'
 import { VIEW_CONTAINER_CLASS } from '../ui/shared-primitives'
-import { EditorPreview } from './editor-preview'
-
+const EditorPreview = lazy(() => import('./editor-preview').then((module) => ({ default: module.EditorPreview })))
 const SERIF_FONT_STYLE: React.CSSProperties = {
   fontFamily: 'var(--font-newsreader), Georgia, serif',
 } as const
 
-const restoreSelection = (textarea: HTMLTextAreaElement, start: number, end: number) => {
-  textarea.focus()
-  textarea.setSelectionRange(start, end)
-}
 
 /** Builds the draft's Entity record from the current form state.
  * `entityId` is passed in (not generated here) so the saved id always matches
@@ -94,62 +80,13 @@ const buildEditorEntity = (
   }
 }
 
-/** Describes the textarea selection within the current content. */
-const describeSelection = (
-  content: string,
-  textarea: HTMLTextAreaElement,
-): MarkdownSelection => {
-  const start = textarea.selectionStart
-  const end = textarea.selectionEnd
-  const after = content.slice(end)
-  const newline = after.indexOf('\n')
-  return {
-    text: content.slice(start, end),
-    range: { start, end },
-    lineStart: content.slice(0, start).lastIndexOf('\n') + 1,
-    lineEnd: newline === -1 ? content.length : end + newline,
-  }
-}
-
-/** Format commands: command name → editor transform applied to the selection. */
-/** Supported toolbar/keyboard format commands (static allowlist). */
-const FORMAT_COMMANDS = [
-  'bold',
-  'italic',
-  'h1',
-  'h2',
-  'bullet',
-  'ordered',
-  'quote',
-  'code',
-  'link',
-] as const
-
-type FormatCommand = (typeof FORMAT_COMMANDS)[number]
-
-/** Narrows a raw command string to a supported FormatCommand. */
-const isFormatCommand = (command: string): command is FormatCommand =>
-  (FORMAT_COMMANDS as readonly string[]).includes(command)
-
-const FORMAT_HANDLERS: Record<
-  FormatCommand,
-  (content: string, sel: MarkdownSelection) => MarkdownCommandResult
-> = {
-  bold: (c, s) => applyBold(c, s),
-  italic: (c, s) => applyItalic(c, s),
-  h1: (c, s) => applyHeading(c, s, 1),
-  h2: (c, s) => applyHeading(c, s, 2),
-  bullet: (c, s) => applyBulletList(c, s),
-  ordered: (c, s) => applyOrderedList(c, s),
-  quote: (c, s) => applyQuote(c, s),
-  code: (c, s) => applyInlineCode(c, s),
-  link: (c, s) => applyLink(c, s),
-}
 
 /** Rich-text entity editor with markdown preview, claims panel, and draft persistence. */
 export const EditorView = () => {
   const entities = useStudioStore((s) => s.entities)
   const editingEntityId = useStudioStore((s) => s.editingEntityId)
+  const pendingEntityName = useStudioStore((s) => s.pendingEntityName)
+  const clearPendingEntityName = useStudioStore((s) => s.clearPendingEntityName)
   const commitEntities = useStudioStore((s) => s.commitEntities)
   const announce = useAnnouncer()
   const finishEditing = useStudioStore((s) => s.finishEditing)
@@ -171,7 +108,7 @@ export const EditorView = () => {
     [claims, editingEntityId],
   )
 
-  const [name, setName] = useState(editing?.name || '')
+  const [name, setName] = useState(editing?.name || pendingEntityName || '')
   const [type, setType] = useState<AnyEntityType>(editing?.type ?? 'note')
   const [content, setContent] = useState(editing?.content || '')
   const [description, setDescription] = useState(editing?.description || '')
@@ -215,8 +152,22 @@ export const EditorView = () => {
     setTags,
   })
 
+  // A create command (command palette) hands its typed query over as
+  // `pendingEntityName`. Applied in an effect rather than only as the `name`
+  // state's initial value because the editor is often *already* mounted when
+  // the palette creates an entity (palette create while in the editor view) —
+  // the state initializer alone would drop the query there. Clearing it keeps
+  // the handoff one-shot: a later plain `startNew()` starts blank.
   useEffect(() => {
-    const mq = window.matchMedia('(max-width: 768px)')
+    if (!pendingEntityName) return
+    setName(pendingEntityName)
+    clearPendingEntityName()
+  }, [pendingEntityName, clearPendingEntityName])
+
+  useEffect(() => {
+    const mdPx = readBreakpointPx('--breakpoint-md')
+    if (mdPx === null || typeof window.matchMedia !== 'function') return
+    const mq = window.matchMedia(`(max-width: ${mdPx - 0.02}px)`)
     const handleChange = (e: MediaQueryListEvent | MediaQueryList) => {
       if (e.matches) {
         setEditMode((prev) => prev === 'split' ? 'edit' : prev)
@@ -281,7 +232,7 @@ export const EditorView = () => {
     dismissMention(mentionTrigger.start)
     requestAnimationFrame(() => {
       const el = textareaRef.current
-      if (el) restoreSelection(el, result.selection, result.selection)
+      if (el) restoreEditorSelection(el, result.selection, result.selection)
     })
   }, [content, mentionTrigger, dismissMention])
 
@@ -311,15 +262,12 @@ export const EditorView = () => {
   const handleFormat = useCallback((command: string) => {
     const textarea = textareaRef.current
     if (!textarea) return
-    // Allowlist guard narrows the key to the FormatCommand union, so the
-    // lookup below is over a closed literal key space (no dynamic string
-    // indexing) — mirrors the object-injection-safe pattern in `topbar`.
-    if (!isFormatCommand(command)) return
-    const result = FORMAT_HANDLERS[command](content, describeSelection(content, textarea))
+    const result = applyEditorFormat(content, command, textarea)
+    if (!result) return
     setContent(result.text)
     requestAnimationFrame(() => {
       const el = textareaRef.current
-      if (el) restoreSelection(el, result.selection.start, result.selection.end)
+      if (el) restoreEditorSelection(el, result.selection.start, result.selection.end)
     })
   }, [content])
 
@@ -416,6 +364,15 @@ export const EditorView = () => {
 
       <EditorModeSelector editMode={editMode} onEditModeChange={setEditMode} />
 
+      <Suspense fallback={
+        <div
+          className="min-h-[420px] whitespace-pre-wrap rounded-lg border border-border bg-background p-4 font-serif text-base leading-[1.75] text-ink"
+          role="status"
+          aria-label="Editor content loading"
+        >
+          {content || 'Start writing. Use markdown for headings, lists, and emphasis…'}
+        </div>
+      }>
       <CursorTracker view="editor">
         <div className={editMode === 'split' ? 'grid grid-cols-2 gap-4' : ''}>
         {(editMode === 'edit' || editMode === 'split') && (
@@ -461,6 +418,7 @@ export const EditorView = () => {
         {(editMode === 'preview' || editMode === 'split') && <EditorPreview content={content} />}
         </div>
       </CursorTracker>
+      </Suspense>
 
       {editing && (
         <ClaimsPanel

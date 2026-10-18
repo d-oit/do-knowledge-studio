@@ -117,21 +117,34 @@ export const WelcomePanel = ({ reducedMotion, onSend }: WelcomePanelProps) => (
     <p className="mb-2 text-label font-semibold uppercase tracking-wide text-ink-faint">
       {CHAT_SUGGESTION_LABEL}
     </p>
-    <div className="flex flex-wrap justify-center gap-2">
-      {SUGGESTIONS.map((s) => (
-        <button
-          key={s.label}
-          onClick={() => {
-            onSend(s.query)
-          }}
-          className="rounded-full border border-border bg-background px-3 py-1.5 text-label-lg font-medium text-ink-soft transition-all hover:border-saffron/40 hover:text-ink press-scale focus-ring min-h-touch"
-        >
-          {s.label}
-        </button>
-      ))}
-    </div>
+    <SuggestionChips onSend={onSend} buttonClassName="py-1.5" />
   </motion.div>
 )
+
+/** Renders the shared prompt-chip markup, allowing each placement its spacing. */
+const SuggestionChips = ({
+  onSend,
+  buttonClassName,
+}: {
+  onSend: (query: string) => void
+  buttonClassName: string
+}) => (
+  <div className="flex flex-wrap justify-center gap-2">
+    {SUGGESTIONS.map((suggestion) => (
+      <button
+        key={suggestion.label}
+        onClick={() => { onSend(suggestion.query) }}
+        className={cn(
+          'rounded-full border border-border bg-background px-3 text-label-lg font-medium text-ink-soft transition-all hover:border-saffron/40 hover:text-ink press-scale focus-ring min-h-touch',
+          buttonClassName,
+        )}
+      >
+        {suggestion.label}
+      </button>
+    ))}
+  </div>
+)
+
 
 /** A single local source cited by an assistant answer. */
 export type ChatCitation = { entityId: string; entityName: string; snippet: string }
@@ -325,17 +338,7 @@ export const SuggestionsBar = ({ onSend }: SuggestionsBarProps) => (
         <Sparkles className="h-3 w-3" />
         {SUGGESTIONS_LABEL}
       </span>
-      {SUGGESTIONS.map((s) => (
-        <button
-          key={s.label}
-          onClick={() => {
-            onSend(s.query)
-          }}
-          className="rounded-full border border-border bg-background px-3 py-1 text-label-lg font-medium text-ink-soft transition-all hover:border-saffron/40 hover:text-ink press-scale focus-ring min-h-touch"
-        >
-          {s.label}
-        </button>
-      ))}
+      <SuggestionChips onSend={onSend} buttonClassName="py-1" />
     </div>
   </div>
 )

@@ -17,6 +17,8 @@ export type EntitiesSlice = Pick<
   | 'selectEntity'
   | 'startEdit'
   | 'startNew'
+  | 'clearPendingEntityName'
+  | 'pendingEntityName'
   | 'saveEntity'
   | 'commitEntity'
   | 'commitEntities'
@@ -55,12 +57,24 @@ export const createEntitiesSlice: StudioSlice<EntitiesSlice> = (set, get) => ({
     set({ editingEntityId: id, currentView: 'editor' })
   },
 
-  startNew: () => {
+  pendingEntityName: null,
+
+  startNew: (name) => {
+    /** The title pre-fill, or null when the caller supplied none. */
+    const initialName = name?.trim()
     set({
       editingEntityId: null,
       selectedEntityId: null,
       currentView: 'editor',
+      // Always written (never left over): a plain `startNew()` must clear a
+      // pre-fill from an earlier create command, or the editor would open the
+      // next blank draft titled after the previous one.
+      pendingEntityName: initialName ? initialName : null,
     })
+  },
+
+  clearPendingEntityName: () => {
+    set({ pendingEntityName: null })
   },
 
   saveEntity: (e) => {

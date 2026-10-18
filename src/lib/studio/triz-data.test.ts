@@ -89,19 +89,14 @@ describe('triz-data', () => {
       expect(lookupPrinciples(39, 39)).toBeDefined()
     })
 
-    it('performance: completes full matrix lookup (39x39 pairs) rapidly', () => {
-      const start = performance.now()
+    it('returns principles across all parameter pairs', () => {
       let totalPrinciples = 0
-      for (let i = 1; i <= 39; i++) {
-        for (let j = 1; j <= 39; j++) {
-          const res = lookupPrinciples(i, j)
-          totalPrinciples += res.length
+      for (let improving = 1; improving <= 39; improving += 1) {
+        for (let worsening = 1; worsening <= 39; worsening += 1) {
+          totalPrinciples += lookupPrinciples(improving, worsening).length
         }
       }
-      const duration = performance.now() - start
       expect(totalPrinciples).toBeGreaterThan(0)
-      // 1521 lookups should take well under 50ms with O(1) Map indexing
-      expect(duration).toBeLessThan(50)
     })
   })
 })

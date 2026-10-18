@@ -5,8 +5,9 @@ import { getEntityTypeMeta } from '@/lib/studio/entity-types'
 import { buildEntityIndex } from '@/lib/studio/graph-index'
 import { useAnnouncer } from '@/lib/a11y/announcer'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
+import { translate as graphT } from '@/lib/i18n/messages/graph'
 import type { Entity } from '@/lib/studio/types'
-import { ArrowRight } from 'lucide-react'
+import { ArrowLeft, ArrowRight, type LucideIcon } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { ConfirmDialog } from '@/components/studio/ui/shared-primitives'
@@ -58,7 +59,65 @@ const SearchPanel = ({
   )
 }
 
-/** Inspector panel showing details, connections, and actions for the selected graph/mind map node. */
+/** One inbound reference: an entity whose `links` target the inspected one, plus that relation. */
+interface Backlink {
+  entity: Entity
+  relation: string
+}
+
+/**
+ * Indexes inbound references by the id they point at. Sources are deduped (an
+ * entity linking the same target twice is one reference, keeping its first
+ * relation) and self-references are dropped, so the inspector never lists the
+ * inspected entity as its own referrer. Each target's references are ordered by
+ * source name, keeping the rendered list deterministic across reloads.
+ */
+const buildBacklinkIndex = (entities: Entity[]): Map<string, Backlink[]> => {
+  const byTarget = new Map<string, Map<string, Backlink>>()
+  for (const entity of entities) {
+    for (const link of entity.links) {
+      if (link.targetId === entity.id) continue
+      const sources = byTarget.get(link.targetId) ?? new Map<string, Backlink>()
+      if (!sources.has(entity.id)) {
+        sources.set(entity.id, { entity, relation: link.relation })
+      }
+      byTarget.set(link.targetId, sources)
+    }
+  }
+  const index = new Map<string, Backlink[]>()
+  for (const [targetId, sources] of byTarget) {
+    index.set(
+      targetId,
+      [...sources.values()].sort((a, b) => a.entity.name.localeCompare(b.entity.name)),
+    )
+  }
+  return index
+}
+
+/** One row of the panel's connection and backlink lists (same markup, different direction). */
+const EntityRow = ({
+  icon: Icon,
+  name,
+  relation,
+  onSelect,
+}: {
+  icon: LucideIcon
+  name: string
+  relation: string
+  onSelect: () => void
+}) => (
+  <li>
+    <button
+      onClick={onSelect}
+      className="flex w-full min-h-touch items-center gap-2 rounded-md p-1.5 text-left text-label-lg text-ink-soft transition-colors hover:bg-muted focus-ring"
+    >
+      <Icon className="h-3 w-3 shrink-0 text-ink-faint" />
+      <span className="flex-1 truncate">{name}</span>
+      <span className="text-caption italic text-ink-faint">{relation}</span>
+    </button>
+  </li>
+)
+
 /** Connection rows for the inspector (linked entities with their relation). */
 const ConnectionList = ({
   links,
@@ -74,23 +133,40 @@ const ConnectionList = ({
       const target = entityIndex.get(l.targetId)
       if (!target) return null
       return (
-        <li key={JSON.stringify([l.targetId, l.relation])}>
-          <button
-            onClick={() => {
-              onSelect(target.id)
-            }}
-            className="flex w-full min-h-touch items-center gap-2 rounded-md p-1.5 text-left text-label-lg text-ink-soft transition-colors hover:bg-muted focus-ring"
-          >
-            <ArrowRight className="h-3 w-3 shrink-0 text-ink-faint" />
-            <span className="flex-1 truncate">{target.name}</span>
-            <span className="text-caption italic text-ink-faint">{l.relation}</span>
-          </button>
-        </li>
+        <EntityRow
+          key={JSON.stringify([l.targetId, l.relation])}
+          icon={ArrowRight}
+          name={target.name}
+          relation={l.relation}
+          onSelect={() => { onSelect(target.id) }}
+        />
       )
     })}
   </ul>
 )
 
+/** Inbound rows for the inspector: entities that link TO the inspected one. */
+const BacklinkList = ({
+  backlinks,
+  onSelect,
+}: {
+  backlinks: Backlink[]
+  onSelect: (entity: Entity) => void
+}) => (
+  <ul className="space-y-1">
+    {backlinks.map(({ entity, relation }) => (
+      <EntityRow
+        key={entity.id}
+        icon={ArrowLeft}
+        name={entity.name}
+        relation={relation}
+        onSelect={() => { onSelect(entity) }}
+      />
+    ))}
+  </ul>
+)
+
+/** Inspector panel showing details, connections, backlinks, and actions for the selected node. */
 const InspectorPanel = ({ onClose }: { onClose: () => void }) => {
   const entities = useStudioStore((s) => s.entities)
   const selectedEntityId = useStudioStore((s) => s.selectedEntityId)
@@ -100,6 +176,7 @@ const InspectorPanel = ({ onClose }: { onClose: () => void }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const announce = useAnnouncer()
   const entityIndex = useMemo(() => buildEntityIndex(entities), [entities])
+  const backlinkIndex = useMemo(() => buildBacklinkIndex(entities), [entities])
   const entity = (selectedEntityId ? entityIndex.get(selectedEntityId) : undefined) || entities[0]
 
   if (!entity) {
@@ -117,6 +194,7 @@ const InspectorPanel = ({ onClose }: { onClose: () => void }) => {
   }
 
   const meta = getEntityTypeMeta(entity.type)
+  const backlinks = backlinkIndex.get(entity.id) ?? []
 
   const handleDelete = () => {
     // The panel closes over the deleted entity with no visual trace beyond
@@ -172,6 +250,27 @@ const InspectorPanel = ({ onClose }: { onClose: () => void }) => {
                   const target = entityIndex.get(id)
                   selectEntity(id)
                   if (target) announce(announceT('announce.entitySelected', target.name))
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Nothing references this entity: the section is absent rather than
+            empty, so a node with no inbound links does not shift the layout. */}
+        {backlinks.length > 0 && (
+          <div className="mt-5">
+            <h4 className="mb-2 text-caption font-semibold uppercase tracking-[0.14em] text-ink-faint">
+              {graphT('graph.inspector.referencedBy', String(backlinks.length))}
+            </h4>
+            {/* BacklinkList renders its own <ul>; a wrapper <ul> here would nest
+                lists directly (axe `list` violation), so use a plain <div>. */}
+            <div>
+              <BacklinkList
+                backlinks={backlinks}
+                onSelect={(source) => {
+                  selectEntity(source.id)
+                  announce(announceT('announce.entitySelected', source.name))
                 }}
               />
             </div>
