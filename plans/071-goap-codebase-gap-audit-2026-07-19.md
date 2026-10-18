@@ -502,3 +502,12 @@ Additionally:
 - [x] Fresh accessibility evidence covers keyboard, semantics, contrast, zoom, reflow, and target size. *(Completed in Plan 093/PR #539: E2E specs for keyboard-a11y, zoom-reflow, touch-targets, contrast, and upgraded axe-core. Note: 58+ pre-existing serious color-contrast issues surfaced — tracked in Plan 095.)*
 - [x] Product copy and plans describe only behavior verified in current source. *(Plans 072/073: semantic→ranked labels, coming-soon tooltips)*
 - [x] `plans/INDEX.md` is updated with measured, fresh closeout metrics. *(Plan 074: INDEX.md updated with 361 tests, 28/19/20/28% coverage)*
+
+## G5.6 — profiling candidate (2026-10-17 — [Plan 177](177-older-plan-leftovers-2026-10-17.md))
+
+"Profile editor typing and 1,000-node graph interaction | recorded performance
+budgets" has no recorded budget and no baseline in the repository, so it cannot
+be closed as done or open on evidence. It is recorded as a measured-before-change
+candidate: the reproducible measurement surfaces that exist today are the guard in
+`src/lib/search/retrieval.test.ts` and the `*.perf.test.ts` suites. A future pass
+should set the budgets first, then profile against them.

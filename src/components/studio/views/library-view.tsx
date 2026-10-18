@@ -140,17 +140,21 @@ export const LibraryView = () => {
   const setSortBy = useStudioStore((s) => s.setSortBy)
   const sortDir = useStudioStore((s) => s.sortDir)
   const setSortDir = useStudioStore((s) => s.setSortDir)
+  const tagQuery = useStudioStore((s) => s.tagQuery)
+  const setTagQuery = useStudioStore((s) => s.setTagQuery)
+  const hasDescriptionOnly = useStudioStore((s) => s.hasDescriptionOnly)
+  const setHasDescriptionOnly = useStudioStore((s) => s.setHasDescriptionOnly)
+  const viewMode = useStudioStore((s) => s.viewMode)
+  const setViewMode = useStudioStore((s) => s.setViewMode)
+  const showAll = useStudioStore((s) => s.showAll)
+  const setShowAll = useStudioStore((s) => s.setShowAll)
   const startEdit = useStudioStore((s) => s.startEdit)
   const startNew = useStudioStore((s) => s.startNew)
   const searchQuery = useStudioStore((s) => s.searchQuery)
   const setSearchQuery = useStudioStore((s) => s.setSearchQuery)
   const semanticMode = useStudioStore((s) => s.semanticSearchEnabled)
   const setSemanticMode = useStudioStore((s) => s.setSemanticSearchEnabled)
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [advancedOpen, setAdvancedOpen] = useState(false)
-  const [tagQuery, setTagQuery] = useState('')
-  const [hasDescriptionOnly, setHasDescriptionOnly] = useState(false)
-  const [showAll, setShowAll] = useState(false)
   const filteredEntities = useFilteredEntities()
   const { semanticOutcome, semanticBusy } = useSemanticSearch(
     semanticMode,
@@ -214,13 +218,13 @@ export const LibraryView = () => {
     setTypeFilter('all')
     setTagQuery('')
     setHasDescriptionOnly(false)
-  }, [setSearchQuery, setTypeFilter])
+  }, [setSearchQuery, setTypeFilter, setTagQuery, setHasDescriptionOnly])
 
   /** Clears only the advanced filter values (tag query and description toggle). */
   const clearAdvancedFilters = useCallback(() => {
     setTagQuery('')
     setHasDescriptionOnly(false)
-  }, [])
+  }, [setTagQuery, setHasDescriptionOnly])
 
   /** Stable handler for the semantic search toggle (memoized component). */
   const onSemanticToggleChange = useCallback(
@@ -334,7 +338,7 @@ export const LibraryView = () => {
         </select>
 
         <button
-          onClick={startNew}
+          onClick={() => { startNew() }}
           className="flex min-h-touch items-center gap-1 rounded-md bg-primary px-3 text-label-lg font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring"
         >
           <Plus className="h-3.5 w-3.5" />
@@ -430,7 +434,7 @@ export const LibraryView = () => {
       {(allEntities.length === 0 || advancedFilteredEntities.length === 0) && (
         <LibraryEmptyState
           hasEntities={allEntities.length > 0}
-          onStartNew={startNew}
+          onStartNew={() => { startNew() }}
           onClearFilters={clearFilters}
         />
       )}

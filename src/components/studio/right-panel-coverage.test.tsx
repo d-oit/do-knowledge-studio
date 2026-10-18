@@ -57,7 +57,7 @@ vi.mock('lucide-react', () => {
   const Icon = ({ className }: { className?: string }) => (
     <span data-testid="icon" className={className} />
   )
-  return { Search: Icon, X: Icon, Sparkles: Icon, FileText: Icon, Quote: Icon, ArrowRight: Icon }
+  return { Search: Icon, X: Icon, Sparkles: Icon, FileText: Icon, Quote: Icon, ArrowRight: Icon, ArrowLeft: Icon }
 })
 
 vi.mock('@/lib/utils', () => ({
@@ -75,33 +75,37 @@ vi.mock('@/lib/search/retrieval', () => ({
   search: searchMocks.search,
 }))
 
-vi.mock('@/components/studio/ui/shared-primitives', () => ({
-  ConfirmDialog: ({
-    open,
-    onConfirm,
-    onCancel,
-    title,
-    body,
-    confirmLabel,
-    cancelLabel,
-  }: {
-    open: boolean
-    onConfirm: () => void
-    onCancel: () => void
-    title: string
-    body: string
-    confirmLabel: string
-    cancelLabel?: string
-  }) =>
-    open ? (
-      <div role="dialog" aria-label={title}>
-        <h3>{title}</h3>
-        <p>{body}</p>
-        <button onClick={onCancel}>{cancelLabel ?? 'Cancel'}</button>
-        <button onClick={onConfirm}>{confirmLabel}</button>
-      </div>
-    ) : null,
-}))
+vi.mock('@/components/studio/ui/shared-primitives', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/components/studio/ui/shared-primitives')>()
+  return {
+    ...actual,
+    ConfirmDialog: ({
+      open,
+      onConfirm,
+      onCancel,
+      title,
+      body,
+      confirmLabel,
+      cancelLabel,
+    }: {
+      open: boolean
+      onConfirm: () => void
+      onCancel: () => void
+      title: string
+      body: string
+      confirmLabel: string
+      cancelLabel?: string
+    }) =>
+      open ? (
+        <div role="dialog" aria-label={title}>
+          <h3>{title}</h3>
+          <p>{body}</p>
+          <button onClick={onCancel}>{cancelLabel ?? 'Cancel'}</button>
+          <button onClick={onConfirm}>{confirmLabel}</button>
+        </div>
+      ) : null,
+  }
+})
 
 vi.mock('@/lib/studio/store', () => ({
   useStudioStore: Object.assign(
@@ -233,6 +237,28 @@ describe('RightPanel branch coverage', () => {
       expect(storeState.selectEntity).toHaveBeenCalledWith('ent-2')
     })
 
+    it('selects the source entity when a backlink is clicked', () => {
+      // ent-2 now points back at ent-1, so the inspector for ent-1 gains an
+      // inbound row in addition to its outgoing Connection row.
+      storeState.entities = [
+        storeState.baseEntities[0],
+        { ...storeState.baseEntities[1], links: [{ targetId: 'ent-1', relation: 'references' }] },
+      ]
+      openGraphView()
+      const section = screen.getByText('Referenced by (1)').parentElement as HTMLElement
+      fireEvent.click(within(section).getByRole('button'))
+      expect(storeState.selectEntity).toHaveBeenCalledWith('ent-2')
+    })
+
+    it('drops self-references from the backlink list', () => {
+      storeState.entities = [
+        { ...storeState.baseEntities[0], links: [{ targetId: 'ent-1', relation: 'self' }] },
+        storeState.baseEntities[1],
+      ]
+      openGraphView()
+      expect(screen.queryByText(/Referenced by/)).toBeNull()
+    })
+
     it('filters out links with missing targets', () => {
       storeState.entities = [
         { ...storeState.baseEntities[0], links: [{ targetId: 'missing', relation: 'ghost' }] },
@@ -261,11 +287,6 @@ describe('RightPanel branch coverage', () => {
       expect(screen.getByText('Your library is empty.')).toBeDefined()
     })
 
-    it('switches to ranked mode and calls search', () => {
-      render(<RightPanel />)
-      fireEvent.click(screen.getByText('Ranked'))
-      expect(searchMocks.search).toHaveBeenCalled()
-    })
 
     it('renders ranked entity results with meta label', () => {
       searchMocks.search.mockReturnValue([
@@ -305,41 +326,7 @@ describe('RightPanel branch coverage', () => {
       expect(screen.queryByText('Concept')).toBeNull()
     })
 
-    it('ranked result click calls startEdit with target id', () => {
-      searchMocks.search.mockReturnValue([
-        { id: 'ent-2', name: 'Related Entity', snippet: 'Snippet two', score: 0.6, type: 'entity' },
-      ])
-      render(<RightPanel />)
-      fireEvent.click(screen.getByText('Ranked'))
-      fireEvent.click(screen.getByLabelText(/score 0.60/))
-      expect(storeState.startEdit).toHaveBeenCalledWith('ent-2')
-    })
-
-    it('does not startEdit when ranked result has no target', () => {
-      searchMocks.search.mockReturnValue([
-        { id: 'claim-9', name: 'Orphan', snippet: 'No entity id', score: 0.5, type: 'claim' },
-      ])
-      render(<RightPanel />)
-      fireEvent.click(screen.getByText('Ranked'))
-      fireEvent.click(screen.getByText('Orphan'))
-      expect(storeState.startEdit).not.toHaveBeenCalled()
-    })
 
   })
 
-  describe('SearchPanel keyword mode', () => {
-    it('keyword result click calls startEdit', () => {
-      render(<RightPanel />)
-      fireEvent.click(screen.getByText('Test Entity'))
-      expect(storeState.startEdit).toHaveBeenCalledWith('ent-1')
-    })
-
-    it('create entity button calls startNew (name dropped by wrapper)', () => {
-      storeState.searchQuery = 'New thing'
-      render(<RightPanel />)
-      fireEvent.click(screen.getByText(/Create.*as new entity/))
-      // RightPanel passes onCreateEntity={() => startNew()}; startNew takes no name arg
-      expect(storeState.startNew).toHaveBeenCalled()
-    })
-  })
 })

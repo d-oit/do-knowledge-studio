@@ -17,6 +17,12 @@ export type HistorySlice = Pick<StudioState, 'entityHistory' | 'historyIndex' | 
 /** Maximum number of undo history snapshots retained in memory. */
 export const MAX_HISTORY = 50
 
+/** Shares the history bounds used to enable undo and redo controls. */
+export const getHistoryAvailability = (historyIndex: number, historyLength: number) => ({
+  canUndo: historyIndex > 0,
+  canRedo: historyIndex < historyLength - 1,
+})
+
 /**
  * Restores the corpus at `index` and drops selection/edit pointers whose
  * entity the restored state no longer contains (D1.22). Snapshots are

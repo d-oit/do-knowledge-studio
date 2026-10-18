@@ -127,7 +127,7 @@ export const TimelineView = () => {
           body={translate('timeline.empty.body')}
           actionLabel={translate('timeline.empty.action')}
           actionIcon={FileText}
-          onAction={startNew}
+          onAction={() => { startNew() }}
         />
       ) : (
         <ol className="relative space-y-8 border-l border-border pl-5">

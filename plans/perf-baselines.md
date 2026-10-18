@@ -7,11 +7,9 @@ tree; where a figure predates the current implementation it is labelled
 
 There are two measurement surfaces:
 
-1. **Vitest performance guards** (`*.perf.test.ts(x)` and the benchmark case in
-   `src/lib/search/retrieval.test.ts`) — run with the rest of the suite
-   (`pnpm test`). They assert wide smoke ceilings, not micro-benchmarks: the suite
-   runs in parallel (`maxWorkers: 2`) on shared runners, so absolute wall-clock
-   times swing by an order of magnitude under load.
+1. **Dedicated Vitest benchmarks** (`*.bench.test.ts`) — run with
+   `pnpm run test:bench` using `vitest.bench.config.ts`. Wall-clock thresholds
+   are isolated from the regular `pnpm run test` suite.
 2. **Ad-hoc local runs** — for a before/after comparison on one change, time the
    relevant function directly with `performance.now()` in a throwaway script rather
    than deciding on a single CI run.
@@ -25,10 +23,9 @@ index and rebuilds whenever either array reference changes; tokenization is now
 memoized per entry id (`tokenizedById`), so a rebuild forced by a single edit
 re-tokenizes only the touched entry instead of the whole corpus.
 
-**How to measure:** the guard in `src/lib/search/retrieval.test.ts`
-("performance: cached queries beat cold rebuilds and stay fast as data grows")
-builds a 1,000-entity / 3,000-claim corpus, measures one cold build, then times 30
-cached queries, and also exercises a corpus above `MAX_CACHE_ENTRIES`.
+**How to measure:** `src/lib/search/retrieval.bench.test.ts` builds a
+1,000-entity / 3,000-claim corpus, measures one cold build, then times 30 cached
+queries, and also exercises a corpus above `MAX_CACHE_ENTRIES`.
 
 **Acceptance criteria:**
 - A cold index build stays under the `COLD_BUILD_MS_CEILING` (5,000 ms) smoke bound.
@@ -52,9 +49,9 @@ and a single-edit rebuild median of ≈ 17 ms after tokenization reuse — down 
 
 `parseIntent()` is the natural-language front end for entity/claim/search intents.
 
-**How to measure:** the guard in `src/lib/nlp.perf.test.ts` runs 100 warm-up passes
-over 7 sample phrases, then 10,000 timed passes over the same samples, and asserts
-the total stays under `PARSE_INTENT_MS_CEILING` (2,000 ms).
+**How to measure:** `src/lib/nlp.bench.test.ts` runs 100 warm-up passes over 7
+sample phrases, then 10,000 timed passes over the same samples, and asserts the
+total stays under `PARSE_INTENT_MS_CEILING` (2,000 ms).
 
 **Acceptance criteria:** the workload is non-blocking under parallel test-runner
 load; a semantic regression that changes parsed output is caught by
@@ -71,10 +68,10 @@ passes across 7 samples, ≈ 1.32× faster.
 `useStats` and `useFilteredEntities` must keep referential stability so unrelated
 store writes do not re-render their consumers.
 
-**How to measure:** the guards `src/lib/studio/use-stats.perf.test.tsx` and
-`src/lib/studio/use-filtered-entities.perf.test.tsx` change an unrelated slice
-(`setView`) and assert the returned instance is unchanged, then change a related
-slice and assert a new instance is returned.
+**How to verify:** `src/lib/studio/use-stats.test.tsx` and
+`src/lib/studio/use-filtered-entities.test.tsx` are behavioral tests in the
+regular suite. They assert referential identity after related and unrelated state
+changes; neither test contains a timing threshold.
 
 **Acceptance criteria:** unrelated state changes return the same object/array
 instance; related state changes return a new one.
@@ -114,9 +111,21 @@ and saving; check that the preview re-renders only when the document changes.
 
 ## Data collection
 
-All current automated measurements come from the Vitest guards above and are read
-from the normal test output. There is no in-app performance panel and no
-`performance.mark()`/`performance.measure()` module in the current tree; earlier
-revisions of this document referenced `src/lib/perf/index.ts`, an in-app panel, and
-metrics such as `orama-query-time`/`mindmap-init`. Those are **historical** and are
-not reproducible against the current implementation.
+All automated timing assertions live in dedicated `.bench.test.ts` files and are
+run by `pnpm run test:bench`, not the regular test command. The benchmark suite
+covers:
+
+- `src/lib/search/retrieval.bench.test.ts` — cold/cached BM25 queries and a large
+  corpus.
+- `src/lib/nlp.bench.test.ts` — intent parsing throughput.
+- `src/lib/ai/context.bench.test.ts` — indexed entity lookup in a large corpus.
+- `src/lib/studio/claim-parser.bench.test.ts` — repeated plain-text and large
+  document scans.
+- `src/lib/studio/triz-data.bench.test.ts` — the full TRIZ matrix lookup.
+
+Store selector tests check reference stability rather than elapsed time. There is
+no in-app performance panel and no `performance.mark()`/`performance.measure()`
+module in the current tree; earlier revisions of this document referenced
+`src/lib/perf/index.ts`, an in-app panel, and metrics such as `orama-query-time`/
+`mindmap-init`. Those are **historical** and are not reproducible against the
+current implementation.

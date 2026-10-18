@@ -13,21 +13,15 @@ export default defineConfig({
       '**/node_modules/**',
       '**/dist/**',
       'e2e/**',
+      '**/*.bench.test.ts',
     ],
-    // Restore spy implementations between tests by default — suites that
-    // need cross-test mock state must opt in explicitly.
+    // Restore spy implementations and global stubs between tests by default.
     restoreMocks: true,
+    unstubGlobals: true,
     pool: 'threads',
-    maxWorkers: 2,
-    typecheck: {
-      tsconfig: './tsconfig.test.json',
-      enabled: true,
-      include: ['src/**/*.test-d.ts'],
-      // All 94 pre-existing `*.test.ts` type errors were cleared under
-      // plans/159 F7, so source-error gating is back on: a type error anywhere
-      // in the test program now fails the run instead of being swallowed.
-      ignoreSourceErrors: false,
-    },
+    maxWorkers: '50%',
+    // Test-source types are checked separately by `pnpm run typecheck:test`;
+    // Vitest's experimental typecheck feature duplicates that gate and emits a warning.
     coverage: {
       provider: 'v8',
       // `json-summary` writes coverage/coverage-summary.json, which the

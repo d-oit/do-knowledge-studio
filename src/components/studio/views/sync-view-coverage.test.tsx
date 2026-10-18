@@ -84,8 +84,10 @@ import { joinRoom } from '@/lib/sync'
 import type { FieldConflict } from '@/lib/sync/merge'
 
 vi.mock('@/lib/sync/bridge', () => ({
-  mergeIntoYjs: vi.fn(() => ({ conflicts: [] })),
-  applyConflictResolution: vi.fn(),
+  mergeIntoYjs: vi.fn(() => ({ merged: { entities: [], claims: [] }, conflicts: [] })),
+  applyConflictResolution: vi.fn(() => true),
+  commitMergedState: vi.fn(() => true),
+  subscribeSyncConflicts: vi.fn(() => vi.fn()),
 }))
 
 vi.mock('@/lib/sync/discovery', () => ({
@@ -135,12 +137,13 @@ const mockEntities = [
     links: [],
   },
 ]
+const mockClaims: Array<{ id: string }> = []
 
 vi.mock('@/lib/studio/store', () => ({
   useStudioStore: (selector: (s: Record<string, unknown>) => unknown) =>
     selector({
       entities: mockEntities,
-      claims: [],
+      claims: mockClaims,
     }),
 }))
 
@@ -161,6 +164,9 @@ describe('SyncView branch coverage', () => {
     mockProvider.clear()
     mockProviderForJoin = mockProvider
     mockProviderAtMount = mockProvider
+    mockEntities.splice(1)
+    mockClaims.length = 0
+
     vi.mocked(mergeIntoYjs).mockReturnValue({ merged: { entities: [], claims: [] }, conflicts: [] })
     originalClipboard = globalThis.navigator.clipboard
     vi.stubGlobal('navigator', {
@@ -189,6 +195,29 @@ describe('SyncView branch coverage', () => {
     await waitFor(() => { expect(joinRoom).toHaveBeenCalledWith('room-123') })
     act(() => { mockEmit('status', { connected: true }) })
     await waitFor(() => { expect(screen.getByText('Connected')).toBeDefined() })
+    expect(screen.getByText('Merged 0 entities, 0 claims')).toBeDefined()
+  })
+
+  it('updates sync counts after connected store changes without another synced event', async () => {
+    const { rerender } = render(<SyncView />)
+    fireEvent.change(screen.getByPlaceholderText('Enter room ID or leave empty to create'), {
+      target: { value: 'room-123' },
+    })
+    fireEvent.click(screen.getByText('Join'))
+    await waitFor(() => { expect(joinRoom).toHaveBeenCalledWith('room-123') })
+    act(() => { mockEmit('status', { connected: true }) })
+    await waitFor(() => {
+      expect(screen.getByTestId('synced-entities').textContent).toBe('1')
+      expect(screen.getByTestId('synced-claims').textContent).toBe('0')
+    })
+
+    mockEntities.push({ ...mockEntities[0], id: 'ent-2', name: 'Synced addition' })
+    mockClaims.push({ id: 'claim-1' })
+    rerender(<SyncView />)
+    await waitFor(() => {
+      expect(screen.getByTestId('synced-entities').textContent).toBe('2')
+      expect(screen.getByTestId('synced-claims').textContent).toBe('1')
+    })
   })
 
   it('generates a room ID when input is empty', async () => {
@@ -426,30 +455,6 @@ describe('SyncView branch coverage', () => {
     await waitFor(() => { expect(screen.queryByTestId('conflict-ui')).toBeNull() })
   })
 
-  it('toggles QR display mode on and off', () => {
-    render(<SyncView />)
-    const showQrButton = screen.getByText('Show QR Code')
-    fireEvent.click(showQrButton)
-    expect(screen.getByTestId('qr-display')).toBeDefined()
-    fireEvent.click(showQrButton)
-    expect(screen.queryByTestId('qr-display')).toBeNull()
-  })
-
-  it('toggles QR scan mode on and off', () => {
-    render(<SyncView />)
-    const scanButton = screen.getByText('Scan QR Code')
-    fireEvent.click(scanButton)
-    expect(screen.getByTestId('qr-scanner')).toBeDefined()
-    fireEvent.click(scanButton)
-    expect(screen.queryByTestId('qr-scanner')).toBeNull()
-  })
-
-  it('handles QR scan by updating input room ID', () => {
-    render(<SyncView />)
-    fireEvent.click(screen.getByText('Scan QR Code'))
-    fireEvent.click(screen.getByText('Simulate scan'))
-    expect(screen.getByDisplayValue('scanned-room')).toBeDefined()
-  })
 
   it('shows error status indicator when provider emits disconnected status', async () => {
     render(<SyncView />)

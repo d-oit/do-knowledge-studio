@@ -3,7 +3,7 @@
 **GOAP Goal**: G-DOCS  
 **Priority**: P1 (9 high-priority documentation gaps)  
 **Estimated Total Effort**: 12-16 hours  
-**Source**: `analysis/SWARM_ANALYSIS.md` — Documentation perspective  
+**Source**: `plans/research/scratch/analysis/SWARM_ANALYSIS.md` — Documentation perspective
 **Date**: 2026-05-31
 
 ## Issue Summary

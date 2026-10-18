@@ -16,4 +16,4 @@ Steps:
 6. Create PR with all analysis files
 7. Monitor GitHub Actions until checks pass
 
-Save findings to `analysis/SWARM_SYNTHESIS.md`.
+Save findings to `plans/research/scratch/SWARM_SYNTHESIS.md`.

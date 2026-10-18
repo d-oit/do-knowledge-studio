@@ -1,29 +1,25 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, beforeEach } from 'vitest'
 import { useStats, useStudioStore } from './store'
-import type { Entity, Claim } from './types'
+import { makeClaim, makeEntity } from './test-helpers'
 
-const MOCK_ENTITY: Entity = {
+const MOCK_ENTITY = makeEntity({
   id: 'e-1',
   name: 'Test Entity',
-  type: 'note',
   description: 'Desc',
   content: '',
   tags: [],
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-  links: [],
-}
+})
 
-const MOCK_CLAIM: Claim = {
+const MOCK_CLAIM = makeClaim({
   id: 'c-1',
   entityId: 'e-1',
   statement: 'Test Claim',
   confidence: 1.0,
   verification: 'verified',
-}
+})
 
-describe('useStats performance', () => {
+describe('useStats selector stability', () => {
   beforeEach(() => {
     useStudioStore.setState({
       entities: [MOCK_ENTITY],

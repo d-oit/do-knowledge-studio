@@ -58,6 +58,8 @@ vi.mock('lucide-react', () => {
     FlaskConical: Icon,
     Grid3X3: Icon,
     Download: Icon,
+    FileJson: Icon,
+    SunMoon: Icon,
     Search: Icon,
     CornerDownLeft: Icon,
   }
@@ -86,8 +88,12 @@ vi.mock('@/components/studio/ui/shared-primitives', () => ({
 const mockSetCommandOpen = vi.fn()
 const mockSetView = vi.fn()
 const mockStartNew = vi.fn()
+const mockSetTheme = vi.fn()
+const mockExportLibraryJson = vi.fn()
 
 let commandOpen = false
+/** Theme choice the hydration-safe hook reports; toggled per test. */
+let mockTheme: string | undefined = 'system'
 const mockEntities = [
   {
     id: 'ent-1',
@@ -121,7 +127,21 @@ vi.mock('@/lib/studio/store', () => ({
       setView: mockSetView,
       startNew: mockStartNew,
       entities: mockEntities,
+      claims: [],
+      graph: undefined,
+      mindMap: undefined,
+      links: undefined,
+      tags: undefined,
     }),
+}))
+
+vi.mock('@/components/studio/theme-provider', () => ({
+  useHydrationSafeTheme: () => ({ theme: mockTheme, setTheme: mockSetTheme }),
+}))
+
+// The palette delegates JSON creation to the shared export helper.
+vi.mock('@/components/studio/views/export-library-json', () => ({
+  exportLibraryJson: (payload: unknown) => { mockExportLibraryJson(payload) },
 }))
 
 vi.mock('@/lib/studio/types', () => ({
@@ -142,6 +162,7 @@ describe('CommandPalette', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     commandOpen = false
+    mockTheme = 'system'
   })
 
   it('renders nothing when command palette is closed', () => {
@@ -200,8 +221,8 @@ describe('CommandPalette', () => {
   it('shows result count', () => {
     commandOpen = true
     render(<CommandPalette {...defaultProps} />)
-    // 9 nav + 1 create + 2 entities = 12
-    expect(screen.getByText('12 results')).toBeDefined()
+    // 9 nav + 1 create + 2 actions + 2 entities = 14
+    expect(screen.getByText('14 results')).toBeDefined()
   })
 
   it('shows keyboard shortcut hints', () => {
@@ -217,13 +238,14 @@ describe('CommandPalette', () => {
     expect(screen.getByText('No matches.')).toBeDefined()
   })
 
-  it('renders groups (Navigate, Create, Library)', () => {
+  it('renders groups (Navigate, Create, Actions, Library)', () => {
     commandOpen = true
     render(<CommandPalette {...defaultProps} />)
     // Group headings are rendered in presentation divs; 'Library' and 'Navigate'
     // also appear as item labels, so use getAllByText
     expect(screen.getAllByText('Navigate').length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText('Create').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Actions').length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText('Library').length).toBeGreaterThanOrEqual(1)
   })
 
@@ -268,7 +290,110 @@ describe('CommandPalette', () => {
     commandOpen = true
     render(<CommandPalette {...defaultProps} />)
     const icons = screen.getAllByTestId('icon')
-    // Each item has an icon: 9 nav + 1 create + 2 entities + Search in header = 13
+    // Each item has an icon: 9 nav + 1 create + 2 actions + 2 entities + Search = 15
     expect(icons.length).toBeGreaterThanOrEqual(12)
+  })
+
+  it('renders the create, export, and theme commands', () => {
+    commandOpen = true
+    render(<CommandPalette {...defaultProps} />)
+    expect(screen.getByText('Create new entity')).toBeDefined()
+    expect(screen.getByText('Export library as JSON')).toBeDefined()
+    expect(screen.getByText('Toggle theme')).toBeDefined()
+  })
+
+  it('keeps group order: Navigate, Create, Actions, then Library results', () => {
+    commandOpen = true
+    render(<CommandPalette {...defaultProps} />)
+    const headings = screen.getAllByRole('presentation').map((el) => el.textContent)
+    expect(headings).toEqual(['Navigate', 'Create', 'Actions', 'Library'])
+  })
+
+  it('filters commands by label and hint, keeping the create command', () => {
+    commandOpen = true
+    render(<CommandPalette {...defaultProps} />)
+    fireEvent.change(screen.getByPlaceholderText('Search commands and entities…'), {
+      target: { value: 'graph' },
+    })
+
+    // cmdk's own filter is off, so this predicate is the palette's only search.
+    expect(screen.getByText('Graph')).toBeDefined()
+    expect(screen.getByText('Create new entity')).toBeDefined()
+    expect(screen.queryByText('Toggle theme')).toBeNull()
+    expect(screen.queryByText('Export library as JSON')).toBeNull()
+    expect(screen.queryByText('Home')).toBeNull()
+
+    fireEvent.change(screen.getByPlaceholderText('Search commands and entities…'), {
+      target: { value: '' },
+    })
+    expect(screen.getByText('Toggle theme')).toBeDefined()
+    expect(screen.getByText('Home')).toBeDefined()
+  })
+
+  it('passes the trimmed query to startNew when creating', () => {
+    commandOpen = true
+    render(<CommandPalette {...defaultProps} />)
+    fireEvent.change(screen.getByPlaceholderText('Search commands and entities…'), {
+      target: { value: '  Quantum notes  ' },
+    })
+    fireEvent.click(screen.getByText('Create new entity').closest('[role="option"]')!)
+    expect(mockStartNew).toHaveBeenCalledWith('Quantum notes')
+    expect(mockSetCommandOpen).toHaveBeenCalledWith(false)
+  })
+
+  it('passes a blank name to startNew when no query was typed', () => {
+    commandOpen = true
+    render(<CommandPalette {...defaultProps} />)
+    fireEvent.click(screen.getByText('Create new entity').closest('[role="option"]')!)
+    expect(mockStartNew).toHaveBeenCalledWith('')
+  })
+
+  it('runs the export view JSON handler with the library payload', () => {
+    commandOpen = true
+    render(<CommandPalette {...defaultProps} />)
+    fireEvent.click(screen.getByText('Export library as JSON').closest('[role="option"]')!)
+    expect(mockExportLibraryJson).toHaveBeenCalledWith({
+      entities: mockEntities,
+      claims: [],
+      graph: undefined,
+      mindMap: undefined,
+      links: undefined,
+      tags: undefined,
+    })
+    expect(mockSetCommandOpen).toHaveBeenCalledWith(false)
+  })
+
+  it('cycles the theme light → dark from the palette', () => {
+    commandOpen = true
+    mockTheme = 'light'
+    render(<CommandPalette {...defaultProps} />)
+    fireEvent.click(screen.getByText('Toggle theme').closest('[role="option"]')!)
+    expect(mockSetTheme).toHaveBeenCalledWith('dark')
+    expect(mockSetCommandOpen).toHaveBeenCalledWith(false)
+  })
+
+  it('cycles the theme dark → system from the palette', () => {
+    commandOpen = true
+    mockTheme = 'dark'
+    render(<CommandPalette {...defaultProps} />)
+    fireEvent.click(screen.getByText('Toggle theme').closest('[role="option"]')!)
+    expect(mockSetTheme).toHaveBeenCalledWith('system')
+  })
+
+  it('cycles the theme system → light from the palette', () => {
+    commandOpen = true
+    mockTheme = 'system'
+    render(<CommandPalette {...defaultProps} />)
+    fireEvent.click(screen.getByText('Toggle theme').closest('[role="option"]')!)
+    expect(mockSetTheme).toHaveBeenCalledWith('light')
+  })
+
+  it('treats an unmounted theme choice as system when toggling', () => {
+    commandOpen = true
+    // The hydration-safe hook reports `undefined` until mount.
+    mockTheme = undefined
+    render(<CommandPalette {...defaultProps} />)
+    fireEvent.click(screen.getByText('Toggle theme').closest('[role="option"]')!)
+    expect(mockSetTheme).toHaveBeenCalledWith('light')
   })
 })

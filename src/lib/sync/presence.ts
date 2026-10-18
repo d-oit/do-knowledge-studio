@@ -1,4 +1,5 @@
 import { getAwareness } from './doc'
+import type { SyncAwareness } from './doc'
 import { getDeviceId, getDeviceName } from './discovery'
 
 /** Presence state broadcast by a connected peer. */
@@ -108,29 +109,35 @@ export function getPeerCount(): number {
 
 type PresenceCallback = (peers: UserPresence[]) => void
 
-let presenceCallbacks: PresenceCallback[] = []
+const presenceCallbacks = new Set<PresenceCallback>()
+let boundAwareness: SyncAwareness | null = null
+const dispatchPresenceChange = () => {
+  const peers = getRemotePeers()
+  for (const callback of presenceCallbacks) callback(peers)
+}
+
+/** Rebind the singleton dispatcher when the collaboration room changes. */
+export function bindPresenceAwareness(): void {
+  const awareness = getAwareness()
+  if (boundAwareness === awareness) return
+  boundAwareness?.off('change', dispatchPresenceChange)
+  boundAwareness = awareness
+  boundAwareness?.on('change', dispatchPresenceChange)
+}
+
+/** Detach the room listener while retaining subscribers for a later rejoin. */
+export function unbindPresenceAwareness(): void {
+  boundAwareness?.off('change', dispatchPresenceChange)
+  boundAwareness = null
+}
 
 /** Subscribe to changes in remote peer presence. */
 export function onPresenceChange(callback: PresenceCallback): () => void {
-  presenceCallbacks.push(callback)
-
-  const awareness = getAwareness()
-  if (awareness) {
-    const handler = () => {
-      const peers = getRemotePeers()
-      for (const cb of presenceCallbacks) {
-        cb(peers)
-      }
-    }
-    awareness.on('change', handler)
-    return () => {
-      awareness.off('change', handler)
-      presenceCallbacks = presenceCallbacks.filter((cb) => cb !== callback)
-    }
-  }
-
+  presenceCallbacks.add(callback)
+  bindPresenceAwareness()
   return () => {
-    presenceCallbacks = presenceCallbacks.filter((cb) => cb !== callback)
+    presenceCallbacks.delete(callback)
+    if (presenceCallbacks.size === 0) unbindPresenceAwareness()
   }
 }
 

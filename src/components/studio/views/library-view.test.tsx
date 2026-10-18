@@ -1,182 +1,22 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { ReactNode } from 'react'
-import type * as SharedPrimitives from '../ui/shared-primitives'
-import { act, fireEvent, render, screen, within } from '@testing-library/react'
-
-vi.mock('framer-motion', () => ({
-  motion: {
-    button: ({ children, initial: _i, animate: _a, transition: _t, ...props }: { children?: ReactNode; [key: string]: unknown }) => (
-      <button {...(props as React.ButtonHTMLAttributes<HTMLButtonElement>)}>{children}</button>
-    ),
-    div: ({ children, initial: _i, animate: _a, transition: _t, ...props }: { children?: ReactNode; [key: string]: unknown }) => (
-      <div {...(props as React.HTMLAttributes<HTMLDivElement>)}>{children}</div>
-    ),
-  },
-  AnimatePresence: ({ children }: { children?: ReactNode }) => children,
-}))
-
-vi.mock('lucide-react', () => {
-  const Icon = ({ className }: { className?: string }) => (
-    <span data-testid="icon" className={className} />
-  )
-  return {
-    FileText: Icon,
-    Lightbulb: Icon,
-    User: Icon,
-    FolderKanban: Icon,
-    LayoutGrid: Icon,
-    List: Icon,
-    ArrowUpDown: Icon,
-    ArrowUp: Icon,
-    ArrowDown: Icon,
-    Plus: Icon,
-    Clock: Icon,
-    Search: Icon,
-    X: Icon,
-    Wifi: Icon,
-    WifiOff: Icon,
-    Copy: Icon,
-    Check: Icon,
-    RefreshCw: Icon,
-    Trash2: Icon,
-    History: Icon,
-    Loader2: Icon,
-    QrCode: Icon,
-    Camera: Icon,
-    Radio: Icon,
-    Users: Icon,
-    SlidersHorizontal: Icon,
-    Tag: Icon,
-    ChevronDown: Icon,
-    CheckIcon: Icon,
-    Sparkles: Icon,
-  }
-})
-
-vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
-}))
-
-vi.mock('@/lib/utils', () => ({
-  cn: (...args: (string | undefined | false | null)[]) => args.filter(Boolean).join(' '),
-}))
-
-vi.mock('@/lib/studio/use-reduced-motion', () => ({
-  useReducedMotion: () => false,
-}))
-
-vi.mock('../ui/shared-primitives', async () => {
-  // Keep the real view chrome so the library empty states render their actions.
-  const actual = await vi.importActual<typeof SharedPrimitives>('../ui/shared-primitives')
-  return {
-    ...actual,
-    ToggleButtonGroup: ({ children }: { children?: ReactNode; label?: string }) => (
-      <div data-testid="toggle-group">{children}</div>
-    ),
-  }
-})
-
-const mockSetTypeFilter = vi.fn()
-const mockSetSortBy = vi.fn()
-const mockSetSortDir = vi.fn()
-const mockStartEdit = vi.fn()
-const mockStartNew = vi.fn()
-const mockSetSearchQuery = vi.fn()
-const mockSetSemanticSearchEnabled = vi.fn()
-
-const mockEntities = [
-  {
-    id: 'ent-1',
-    name: 'Alpha Concept',
-    type: 'concept' as const,
-    description: 'First concept',
-    content: '',
-    tags: ['alpha'],
-    createdAt: '2025-01-01T00:00:00Z',
-    updatedAt: '2025-06-15T00:00:00Z',
-    links: [],
-  },
-  {
-    id: 'ent-2',
-    name: 'Beta Note',
-    type: 'note' as const,
-    description: 'A note',
-    content: '',
-    tags: ['beta', 'gamma'],
-    createdAt: '2025-02-01T00:00:00Z',
-    updatedAt: '2025-07-01T00:00:00Z',
-    links: [],
-  },
-]
-
-let currentTypeFilter = 'all'
-let currentSortBy = 'updated'
-let currentSortDir = 'asc'
-let currentSearchQuery = ''
-let currentRightPanelOpen = false
-let currentSemanticSearchEnabled = false
-let currentEntities = mockEntities
-let filteredEntities = mockEntities
-
-vi.mock('@/lib/studio/store', () => ({
-  useStudioStore: (selector: (s: Record<string, unknown>) => unknown) =>
-    selector({
-      entities: currentEntities,
-      typeFilter: currentTypeFilter,
-      setTypeFilter: mockSetTypeFilter,
-      sortBy: currentSortBy,
-      setSortBy: mockSetSortBy,
-      sortDir: currentSortDir,
-      setSortDir: mockSetSortDir,
-      startEdit: mockStartEdit,
-      startNew: mockStartNew,
-      searchQuery: currentSearchQuery,
-      setSearchQuery: mockSetSearchQuery,
-      rightPanelOpen: currentRightPanelOpen,
-      semanticSearchEnabled: currentSemanticSearchEnabled,
-      setSemanticSearchEnabled: mockSetSemanticSearchEnabled,
-    }),
-  useFilteredEntities: () => filteredEntities,
-}))
-
-const { mockSearchSemantic } = vi.hoisted(() => ({
-  mockSearchSemantic: vi.fn<
-    (
-      entities: unknown,
-      claims: unknown,
-      query: string,
-      limit?: number,
-      signal?: AbortSignal,
-      filter?: (doc: { id: string; type: 'entity' | 'claim'; entityType?: string }) => boolean,
-    ) => Promise<unknown>
-  >(),
-}))
-
-vi.mock('@/lib/search/search-worker-client', () => ({
-  searchSemantic: mockSearchSemantic,
-}))
-
+import { beforeEach, describe, expect, it } from 'vitest'
+import { fireEvent, render, screen, within } from '@testing-library/react'
+import {
+  libraryViewState,
+  mockEntities,
+  mockSetShowAll,
+  mockSetViewMode,
+  mockStartEdit,
+  mockStartNew,
+  resetLibraryViewMocks,
+} from './library-view.test-helpers'
 import { LibraryView } from './library-view'
 
-/** Advances fake timers past the view's 300ms semantic-search debounce. */
-const SEMANTIC_DEBOUNCE_PROBE_MS = 400
-
 describe('LibraryView', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    currentEntities = mockEntities
-    filteredEntities = mockEntities
-    currentTypeFilter = 'all'
-    currentSortBy = 'updated'
-    currentSortDir = 'asc'
-    currentSearchQuery = ''
-    currentRightPanelOpen = false
-    currentSemanticSearchEnabled = false
-  })
+  beforeEach(resetLibraryViewMocks)
 
   it('renders empty state when no entities', () => {
-    currentEntities = []
-    filteredEntities = []
+    libraryViewState.currentEntities = []
+    libraryViewState.filteredEntities = []
     render(<LibraryView />)
     expect(screen.getByText('No entities yet')).toBeDefined()
     expect(screen.getByText(/Create your first entity/)).toBeDefined()
@@ -188,11 +28,6 @@ describe('LibraryView', () => {
     expect(screen.getByText('Beta Note')).toBeDefined()
     expect(screen.getByText('First concept')).toBeDefined()
     expect(screen.getByText('A note')).toBeDefined()
-  })
-
-  it('search input exists and has correct placeholder', () => {
-    render(<LibraryView />)
-    expect(screen.getByPlaceholderText('Filter by name, description, or tag…')).toBeDefined()
   })
 
   it('type filter buttons exist with correct labels', () => {
@@ -223,7 +58,7 @@ describe('LibraryView', () => {
   })
 
   it('no-matches state shows when filters exclude all', () => {
-    filteredEntities = []
+    libraryViewState.filteredEntities = []
     render(<LibraryView />)
     expect(screen.getByText('No matches found')).toBeDefined()
     expect(screen.getByText(/Try adjusting your search terms or filters/)).toBeDefined()
@@ -235,77 +70,25 @@ describe('LibraryView', () => {
   })
 
   it('shows singular entity count', () => {
-    filteredEntities = [mockEntities[0]]
+    libraryViewState.filteredEntities = [mockEntities[0]]
     render(<LibraryView />)
     expect(screen.getAllByText(/Showing 1 entity/).length).toBeGreaterThanOrEqual(1)
   })
 
-  it('search input has correct aria-label', () => {
-    render(<LibraryView />)
-    const input = screen.getByLabelText('Search library')
-    expect(input).toBeDefined()
-    expect(input.className).toContain('min-h-touch')
-  })
-
-  it('control buttons expose matching tooltips', () => {
-    currentSearchQuery = 'alpha'
-    render(<LibraryView />)
-    expect(screen.getByRole('button', { name: 'Clear search' })).toHaveAttribute('title', 'Clear search')
-    expect(screen.getByRole('button', { name: 'Grid view' })).toHaveAttribute('title', 'Grid view')
-    expect(screen.getByRole('button', { name: 'List view' })).toHaveAttribute('title', 'List view')
-    expect(screen.getByRole('button', { name: 'Sort ascending' })).toHaveAttribute('title', 'Sort ascending')
-  })
-
-  it('updates the search query and clears an active search', () => {
-    currentSearchQuery = 'alpha'
-    render(<LibraryView />)
-    const searchInput = screen.getByLabelText('Search library')
-    fireEvent.change(searchInput, { target: { value: 'beta' } })
-    expect(mockSetSearchQuery).toHaveBeenCalledWith('beta')
-
-    fireEvent.click(screen.getByRole('button', { name: 'Clear search' }))
-    expect(mockSetSearchQuery).toHaveBeenCalledWith('')
-  })
-
-  it('clears all filters from the no-matches state', () => {
-    currentSearchQuery = 'missing'
-    currentTypeFilter = 'concept'
-    filteredEntities = []
-    render(<LibraryView />)
-    fireEvent.click(screen.getByRole('button', { name: 'Clear all filters' }))
-    expect(mockSetSearchQuery).toHaveBeenCalledWith('')
-    expect(mockSetTypeFilter).toHaveBeenCalledWith('all')
-  })
-
-  it('changes type, sort, and sort direction controls', () => {
-    render(<LibraryView />)
-    fireEvent.click(screen.getByRole('button', { name: 'Notes' }))
-    expect(mockSetTypeFilter).toHaveBeenCalledWith('note')
-
-    fireEvent.change(screen.getByRole('combobox', { name: 'Sort by' }), {
-      target: { value: 'name' },
-    })
-    expect(mockSetSortBy).toHaveBeenCalledWith('name')
-
-    fireEvent.click(screen.getByRole('button', { name: 'Sort ascending' }))
-    expect(mockSetSortDir).toHaveBeenCalledWith('desc')
-  })
-
   it('renders list view and opens entities from row buttons (#861)', () => {
-    render(<LibraryView />)
+    const { rerender } = render(<LibraryView />)
     fireEvent.click(screen.getByRole('button', { name: 'List view' }))
+    expect(mockSetViewMode).toHaveBeenCalledWith('list')
 
-    // Native table semantics: rows are rows, the open action is a button.
+    libraryViewState.currentViewMode = 'list'
+    rerender(<LibraryView />)
+
     const table = within(screen.getByRole('table'))
     expect(table.queryByRole('link')).toBeNull()
     const openButtons = table.getAllByRole('button', { name: /Open / })
     expect(openButtons).toHaveLength(2)
 
-    // jsdom never synthesises the click a real browser fires from Enter/Space,
-    // so pin what makes keyboard activation true: a native <button type="button">
-    // that is still in the sequential tab order. Any negative tabindex (-1, -2,
-    // …) takes it out again, so the check is "non-negative", not "not -1".
-    // (Real-browser keyboard activation + tabIndex: e2e/library-virtualization.spec.ts.)
+    // jsdom does not synthesize keyboard activation; native buttons in tab order provide it.
     for (const button of openButtons) {
       expect(button.tagName).toBe('BUTTON')
       expect(button.getAttribute('type')).toBe('button')
@@ -313,74 +96,22 @@ describe('LibraryView', () => {
     }
 
     fireEvent.click(openButtons[1])
-    // stopPropagation on the button keeps the row's mouse affordance from
-    // firing a second startEdit for the same click.
     expect(mockStartEdit).toHaveBeenCalledTimes(1)
     expect(mockStartEdit).toHaveBeenCalledWith('ent-2')
   })
 
   it('renders tag overflow in grid view', () => {
-    currentEntities = [{ ...mockEntities[0], tags: ['one', 'two', 'three'] }]
-    filteredEntities = currentEntities
+    libraryViewState.currentEntities = [{ ...mockEntities[0], tags: ['one', 'two', 'three'] }]
+    libraryViewState.filteredEntities = libraryViewState.currentEntities
     render(<LibraryView />)
     expect(screen.getByText('+1')).toBeDefined()
   })
 
-  it('advanced filters disclosure is collapsed by default', () => {
-    render(<LibraryView />)
-    const toggle = screen.getByRole('button', { name: /Advanced filters/i })
-    expect(toggle).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryByLabelText('Tag contains')).toBeNull()
-  })
-
-  it('opens advanced filters and filters by tag', () => {
-    render(<LibraryView />)
-    fireEvent.click(screen.getByRole('button', { name: /Advanced filters/i }))
-    expect(screen.getByLabelText('Tag contains')).toBeDefined()
-
-    const tagInput = screen.getByLabelText('Tag contains')
-    fireEvent.change(tagInput, { target: { value: 'alpha' } })
-    // Only Alpha Concept has the 'alpha' tag
-    expect(screen.getByText('Alpha Concept')).toBeDefined()
-    expect(screen.queryByText('Beta Note')).toBeNull()
-  })
-
-  it('filters to entities with descriptions when toggled', () => {
-    filteredEntities = [
-      mockEntities[0],
-      { ...mockEntities[1], description: '' },
-    ]
-    render(<LibraryView />)
-    fireEvent.click(screen.getByRole('button', { name: /Advanced filters/i }))
-    const checkbox = screen.getByLabelText('Only show entities with a description')
-    fireEvent.click(checkbox)
-    expect(screen.getByText('Alpha Concept')).toBeDefined()
-    expect(screen.queryByText('Beta Note')).toBeNull()
-  })
-
-  it('shows active-filter badge and clears advanced filters', () => {
-    render(<LibraryView />)
-    fireEvent.click(screen.getByRole('button', { name: /Advanced filters/i }))
-    const tagInput = screen.getByLabelText('Tag contains')
-    fireEvent.change(tagInput, { target: { value: 'alpha' } })
-
-    const badge = screen.getByText('1')
-    expect(badge).toBeDefined()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Clear advanced filters' }))
-    expect(screen.getByLabelText('Tag contains')).toHaveValue('')
-    expect(screen.getByText('Alpha Concept')).toBeDefined()
-    expect(screen.getByText('Beta Note')).toBeDefined()
-  })
-
   it('keeps a stable container width regardless of right-panel state (#868)', () => {
-    // The max-width used to flap between max-w-5xl and max-w-6xl with the
-    // panel, re-wrapping content on every toggle; flex absorbs the panel now.
-    currentRightPanelOpen = false
     const { container, rerender } = render(<LibraryView />)
     expect(container.firstElementChild).toHaveClass('max-w-5xl')
 
-    currentRightPanelOpen = true
+    libraryViewState.currentRightPanelOpen = true
     rerender(<LibraryView />)
     expect(container.firstElementChild).toHaveClass('max-w-5xl')
   })
@@ -391,8 +122,8 @@ describe('LibraryView', () => {
     expect(mockStartNew).toHaveBeenCalledTimes(1)
     unmount()
 
-    currentEntities = []
-    filteredEntities = []
+    libraryViewState.currentEntities = []
+    libraryViewState.filteredEntities = []
     render(<LibraryView />)
     fireEvent.click(screen.getByRole('button', { name: /Create your first entity/ }))
     expect(mockStartNew).toHaveBeenCalledTimes(2)
@@ -404,76 +135,20 @@ describe('LibraryView', () => {
       id: `ent-${i}`,
       name: `Entity ${i}`,
     }))
-    currentEntities = many
-    filteredEntities = many
-    render(<LibraryView />)
+    libraryViewState.currentEntities = many
+    libraryViewState.filteredEntities = many
+    const { rerender } = render(<LibraryView />)
 
-    // Grid view renders only the first LIBRARY_INITIAL_LIMIT (24) cards by default.
     expect(screen.getByText('Entity 0')).toBeDefined()
     expect(screen.queryByText('Entity 29')).toBeNull()
     expect(screen.getAllByText(/Showing 24 of 30 entities/).length).toBeGreaterThanOrEqual(1)
 
     fireEvent.click(screen.getByRole('button', { name: 'Show all 30 entities' }))
+    expect(mockSetShowAll).toHaveBeenCalledWith(true)
+
+    libraryViewState.currentShowAll = true
+    rerender(<LibraryView />)
     expect(screen.getByText('Entity 29')).toBeDefined()
     expect(screen.getAllByText(/Showing 30 of 30 entities/).length).toBeGreaterThanOrEqual(1)
-  })
-
-  it('semantic toggle drives the store action', () => {
-    render(<LibraryView />)
-    fireEvent.click(screen.getByRole('switch', { name: 'Semantic search' }))
-    expect(mockSetSemanticSearchEnabled).toHaveBeenCalledWith(true)
-  })
-
-  it('passes the active type filter into the semantic search', async () => {
-    vi.useFakeTimers()
-    try {
-      currentSemanticSearchEnabled = true
-      currentSearchQuery = 'triz'
-      currentTypeFilter = 'note'
-      mockSearchSemantic.mockResolvedValue({ source: 'semantic', results: [] })
-
-      render(<LibraryView />)
-      await act(async () => {
-        vi.advanceTimersByTime(SEMANTIC_DEBOUNCE_PROBE_MS)
-      })
-
-      expect(mockSearchSemantic).toHaveBeenCalledTimes(1)
-      const filter = mockSearchSemantic.mock.calls[0]?.[5]
-      expect(filter?.({ id: 'e1', type: 'entity', entityType: 'note' })).toBe(true)
-      expect(filter?.({ id: 'e2', type: 'entity', entityType: 'concept' })).toBe(false)
-    } finally {
-      vi.useRealTimers()
-    }
-  })
-
-  it('re-runs the semantic search when the type filter changes', async () => {
-    vi.useFakeTimers()
-    try {
-      currentSemanticSearchEnabled = true
-      currentSearchQuery = 'triz'
-      currentTypeFilter = 'note'
-      mockSearchSemantic.mockResolvedValue({ source: 'semantic', results: [] })
-
-      const { rerender } = render(<LibraryView />)
-      await act(async () => {
-        vi.advanceTimersByTime(SEMANTIC_DEBOUNCE_PROBE_MS)
-      })
-      expect(mockSearchSemantic).toHaveBeenCalledTimes(1)
-
-      currentTypeFilter = 'concept'
-      rerender(<LibraryView />)
-      await act(async () => {
-        vi.advanceTimersByTime(SEMANTIC_DEBOUNCE_PROBE_MS)
-      })
-
-      // Re-ranking must happen within the new filtered set, not by re-filtering
-      // the previous unfiltered ranking.
-      expect(mockSearchSemantic).toHaveBeenCalledTimes(2)
-      const filter = mockSearchSemantic.mock.calls[1]?.[5]
-      expect(filter?.({ id: 'e1', type: 'entity', entityType: 'concept' })).toBe(true)
-      expect(filter?.({ id: 'e2', type: 'entity', entityType: 'note' })).toBe(false)
-    } finally {
-      vi.useRealTimers()
-    }
   })
 })

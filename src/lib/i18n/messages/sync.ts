@@ -45,6 +45,26 @@ const messages = {
   /** Event log entry when conflicts require resolution; count interpolated. */
   'sync.event.conflictsFound': (count: string) =>
     `Found ${count} conflict(s) requiring resolution`,
+
+  /** Label for a conflict between an edit and a record deletion. */
+  'sync.conflict.recordDeletion': 'Record deletion',
+  /** Choice that keeps the edited record after a concurrent deletion. */
+  'sync.conflict.restoreEditedRecord': 'Restore edited record',
+  /** Choice that keeps the deletion after a concurrent edit. */
+  'sync.conflict.keepDeletion': 'Keep deletion',
+  /** Detail panel label for the record side of a deletion conflict. */
+  'sync.conflict.editedRecord': 'Edited record',
+  /** Detail panel label for the deletion side of a deletion conflict. */
+  'sync.conflict.deletion': 'Deletion',
+  /** Value shown for a deletion conflict. */
+  'sync.conflict.deleted': 'Deleted',
+  /** Bulk choice for a list containing only deletion conflicts. */
+  'sync.conflict.restoreAllEditedRecords': 'Restore all edited records',
+  /** Bulk choice for a list containing only deletion conflicts. */
+  'sync.conflict.keepAllDeletions': 'Keep all deletions',
+  /** Explanation for concurrent edits and deletes. */
+  'sync.conflict.concurrentDeleteReason':
+    'An edit and a deletion were made independently. Restore the edited record or keep the deletion.',
   /** Event log entry after a clean re-sync. */
   'sync.event.resynced': (entities: string, claims: string) =>
     `Re-synced ${entities} entities, ${claims} claims`,
@@ -52,6 +72,8 @@ const messages = {
   'sync.toast.resynced': 'Re-synced local data',
   /** Event log entry after conflict resolutions are applied; count interpolated. */
   'sync.event.conflictApplied': (count: string) => `Applied ${count} conflict resolution(s)`,
+  /** Event log entry when a manual conflict choice fails validation. */
+  'sync.event.conflictApplyFailed': 'Conflict choices could not be validated or committed',
   /** Toast after conflict resolutions are applied; count interpolated. */
   'sync.toast.conflictApplied': (count: string) => `Applied ${count} conflict resolution(s)`,
   /** Toast when a room id is scanned from a QR code. */

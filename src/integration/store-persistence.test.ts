@@ -123,10 +123,20 @@ describe('Store persistence integration', () => {
   it('persists filter state but never the search query', () => {
     useStudioStore.getState().setSearchQuery('test query')
     useStudioStore.getState().setTypeFilter('concept')
+    useStudioStore.getState().setTagQuery('research')
+    useStudioStore.getState().setHasDescriptionOnly(true)
+    useStudioStore.getState().setViewMode('list')
+    useStudioStore.getState().setShowAll(true)
 
     const stored = localStorage.getItem(STORE_KEY)
     const parsed = JSON.parse(stored!)
     expect(parsed.state.typeFilter).toBe('concept')
+    // The advanced filters and layout are durable UI preferences too: a reload
+    // must not silently reset half of the filter UI (plan 131 D2.9/N2).
+    expect(parsed.state.tagQuery).toBe('research')
+    expect(parsed.state.hasDescriptionOnly).toBe(true)
+    expect(parsed.state.viewMode).toBe('list')
+    expect(parsed.state.showAll).toBe(true)
     // Ephemeral: persisting it serialized the whole corpus per keystroke.
     expect(parsed.state.searchQuery).toBeUndefined()
   })

@@ -21,7 +21,7 @@ import {
 } from '@/lib/sync'
 import type { RoomProvider } from '@/lib/sync'
 import { useStudioStore } from '@/lib/studio/store'
-import { mergeIntoYjs, applyConflictResolution } from '@/lib/sync/bridge'
+import { mergeIntoYjs, applyConflictResolution, commitMergedState, subscribeSyncConflicts } from '@/lib/sync/bridge'
 import {
   startDiscovery,
   stopDiscovery,
@@ -29,7 +29,7 @@ import {
 } from '@/lib/sync/discovery'
 import { ConflictUI } from '../conflict-ui'
 import { ViewHeader, VIEW_CONTAINER_CLASS } from '../ui/shared-primitives'
-import type { FieldConflict } from '@/lib/sync/merge'
+import { getConflictResolutionKey, type FieldConflict } from '@/lib/sync/merge'
 import { PresenceList } from '../presence-indicator'
 import { usePresence } from '@/lib/sync/use-presence'
 import { translate as t } from '@/lib/i18n/messages/sync'
@@ -253,7 +253,20 @@ export const SyncView = () => {
   }, [addEvent])
 
   useSyncProviderEvents(provider, { addEvent, setStatus, setSyncedEntities, setSyncedClaims, setPeerCount })
+  useEffect(() => {
+    if (status !== 'connected') return
+    setSyncedEntities(entities.length)
+    setSyncedClaims(claims.length)
+  }, [status, entities.length, claims.length])
+
   useRoomDiscovery(status, roomId, setDiscoveredPeers)
+  useEffect(() => subscribeSyncConflicts((conflicts) => {
+    setPendingConflicts((previous) => {
+      const next = new Map(previous.map((conflict) => [getConflictResolutionKey(conflict), conflict]))
+      for (const conflict of conflicts) next.set(getConflictResolutionKey(conflict), conflict)
+      return Array.from(next.values())
+    })
+  }), [])
 
   const handleJoin = useCallback(() => {
     const id = inputRoomId.trim() || generateRoomId()
@@ -277,11 +290,18 @@ export const SyncView = () => {
       setRoomPassword('')
 
       const result = mergeIntoYjs(entities, claims)
+      if (!commitMergedState(result.merged.entities, result.merged.claims)) {
+        throw new Error('The sync merge contained invalid records.')
+      }
       setPendingConflicts(result.conflicts)
       if (result.conflicts.length > 0) {
         addEvent('sync', t('sync.event.conflictsFound', String(result.conflicts.length)))
       } else {
-        addEvent('sync', t('sync.event.merged', String(entities.length), String(claims.length)))
+        addEvent('sync', t(
+          'sync.event.merged',
+          String(result.merged.entities.length),
+          String(result.merged.claims.length),
+        ))
       }
       toast.success(t('sync.toast.joined', id))
     } catch (err) {
@@ -308,20 +328,31 @@ export const SyncView = () => {
 
   const handleResync = useCallback(() => {
     const result = mergeIntoYjs(entities, claims)
+    if (!commitMergedState(result.merged.entities, result.merged.claims)) {
+      addEvent('error', t('sync.event.conflictApplyFailed'))
+      return
+    }
     setPendingConflicts(result.conflicts)
     setSyncedEntities(getYjsEntities().length)
     setSyncedClaims(getYjsClaims().length)
     if (result.conflicts.length > 0) {
       addEvent('sync', t('sync.event.conflictsFound', String(result.conflicts.length)))
     } else {
-      addEvent('sync', t('sync.event.resynced', String(entities.length), String(claims.length)))
+      addEvent('sync', t(
+        'sync.event.resynced',
+        String(result.merged.entities.length),
+        String(result.merged.claims.length),
+      ))
       toast.success(t('sync.toast.resynced'))
     }
   }, [entities, claims, addEvent])
 
   const handleConflictResolve = useCallback((resolutions: Map<string, 'local' | 'remote'>) => {
     const resolvedConflicts = [...pendingConflicts]
-    applyConflictResolution(resolutions, resolvedConflicts, entities, claims)
+    if (!applyConflictResolution(resolutions, resolvedConflicts, entities, claims)) {
+      addEvent('error', t('sync.event.conflictApplyFailed'))
+      return
+    }
     setPendingConflicts([])
     addEvent('sync', t('sync.event.conflictApplied', String(resolutions.size)))
     toast.success(t('sync.toast.conflictApplied', String(resolutions.size)))

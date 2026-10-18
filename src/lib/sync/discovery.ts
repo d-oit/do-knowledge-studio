@@ -150,7 +150,29 @@ export function getAvailableRooms(): { roomId: string; peerCount: number }[] {
 }
 
 /** Default signaling server URLs for WebRTC peer connection. */
-export const SIGNALING_SERVERS = [
-  'wss://signaling.yjs.dev',
-  'wss://y-webrtc-signaling.herokuapp.com',
-]
+const DEFAULT_SIGNALING_SERVERS = ['wss://signaling.yjs.dev']
+
+/** Parse the shared comma-separated public signaling configuration. */
+export function getSignalingServers(configured = process.env.NEXT_PUBLIC_YJS_SIGNALING_SERVERS): string[] {
+  const value = configured?.trim() ? configured : DEFAULT_SIGNALING_SERVERS.join(',')
+  const candidates = value.split(',')
+  const unique = new Set<string>()
+  for (const candidate of candidates) {
+    const endpoint = candidate.trim()
+    if (!endpoint) continue
+    try {
+      const url = new URL(endpoint)
+      if (
+        url.protocol === 'wss:' &&
+        url.hostname &&
+        url.hostname !== 'y-webrtc-signaling.herokuapp.com'
+      ) unique.add(url.toString().replace(/\/$/, ''))
+    } catch {
+      continue
+    }
+  }
+  return Array.from(unique)
+}
+
+/** Validated signaling endpoints shared by room joining and discovery. */
+export const SIGNALING_SERVERS = getSignalingServers()

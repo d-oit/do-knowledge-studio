@@ -1,52 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { useStudioStore } from './store'
-import type { Entity, Claim } from './types'
 import { EntitySchema, ClaimSchema, ExportPayloadSchema, validatePersistedState } from './schema'
-
-function resetStore() {
-  useStudioStore.setState({
-    entities: [],
-    claims: [],
-    chat: [],
-    selectedEntityId: null,
-    editingEntityId: null,
-    currentView: 'home',
-    searchQuery: '',
-    typeFilter: 'all',
-    sortBy: 'updated',
-    sortDir: 'desc',
-  })
-}
-
-function makeEntity(overrides: Partial<Entity> = {}): Entity {
-  return {
-    id: `e-${Date.now().toString(36)}`,
-    name: 'Test Entity',
-    type: 'note',
-    description: 'A test entity',
-    content: '# Hello',
-    tags: ['test'],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    links: [],
-    ...overrides,
-  }
-}
-
-function makeClaim(overrides: Partial<Claim> = {}): Claim {
-  return {
-    id: `c-${Date.now().toString(36)}`,
-    entityId: 'e-1',
-    statement: 'Test claim',
-    confidence: 0.8,
-    verification: 'unverified',
-    ...overrides,
-  }
-}
+import { makeClaim, makeEntity, resetStore } from './test-helpers'
 
 describe('Studio Store', () => {
   beforeEach(() => {
-    resetStore()
+    resetStore({
+      entities: [],
+      claims: [],
+      chat: [],
+      entityHistory: [{ entities: [], claims: [] }],
+    })
     vi.useFakeTimers()
   })
 
@@ -145,6 +109,28 @@ describe('Studio Store', () => {
       const state = useStudioStore.getState()
       expect(state.editingEntityId).toBeNull()
       expect(state.currentView).toBe('editor')
+    })
+
+    it('startNew stores a trimmed name for the editor to pre-fill', () => {
+      useStudioStore.getState().startNew('  Quantum notes  ')
+      expect(useStudioStore.getState().pendingEntityName).toBe('Quantum notes')
+    })
+
+    it('startNew drops a pre-fill from an earlier create when called without one', () => {
+      useStudioStore.getState().startNew('Quantum notes')
+      useStudioStore.getState().startNew()
+      expect(useStudioStore.getState().pendingEntityName).toBeNull()
+    })
+
+    it('startNew treats a blank name as no pre-fill', () => {
+      useStudioStore.getState().startNew('   ')
+      expect(useStudioStore.getState().pendingEntityName).toBeNull()
+    })
+
+    it('clearPendingEntityName drops the pre-fill once the editor consumed it', () => {
+      useStudioStore.getState().startNew('Quantum notes')
+      useStudioStore.getState().clearPendingEntityName()
+      expect(useStudioStore.getState().pendingEntityName).toBeNull()
     })
   })
 

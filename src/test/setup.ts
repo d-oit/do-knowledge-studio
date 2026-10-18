@@ -33,4 +33,7 @@ Object.defineProperty(globalThis, 'localStorage', {
 
 if (typeof window !== 'undefined') {
   window.Element.prototype.scrollIntoView = vi.fn()
+  // jsdom has no layout or page scrolling; Radix calls this while managing
+  // dialog focus. Real scrolling remains covered in Chromium.
+  window.scrollTo = vi.fn()
 }

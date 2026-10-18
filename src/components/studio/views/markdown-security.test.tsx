@@ -169,7 +169,7 @@ describe('Chat MessageList Markdown Link Security', () => {
 })
 
 describe('EditorView Preview Markdown Link Security', () => {
-  it('renders external markdown links with target="_blank" and rel="noopener noreferrer"', () => {
+  it('renders external markdown links with target="_blank" and rel="noopener noreferrer"', async () => {
     currentEditingEntity = {
       id: 'ent-sec-1',
       name: 'Alice',
@@ -183,16 +183,15 @@ describe('EditorView Preview Markdown Link Security', () => {
     }
     render(<EditorView />)
 
-    const previewBtn = screen.getByRole('radio', { name: 'Preview' })
-    fireEvent.click(previewBtn)
+    fireEvent.click(screen.getByRole('radio', { name: 'Preview' }))
 
-    const link = screen.getByRole('link', { name: 'External Link' })
+    const link = await screen.findByRole('link', { name: 'External Link' })
     expect(link).toHaveAttribute('href', 'https://example.com/doc')
     expect(link).toHaveAttribute('target', '_blank')
     expect(link).toHaveAttribute('rel', 'noopener noreferrer')
   })
 
-  it('sanitizes dangerous links in editor preview to non-clickable text', () => {
+  it('sanitizes dangerous links in editor preview to non-clickable text', async () => {
     currentEditingEntity = {
       id: 'ent-sec-2',
       name: 'Bob',
@@ -206,10 +205,9 @@ describe('EditorView Preview Markdown Link Security', () => {
     }
     render(<EditorView />)
 
-    const previewBtn = screen.getByRole('radio', { name: 'Preview' })
-    fireEvent.click(previewBtn)
+    fireEvent.click(screen.getByRole('radio', { name: 'Preview' }))
 
+    expect(await screen.findByText('Exploit')).toBeDefined()
     expect(screen.queryByRole('link')).toBeNull()
-    expect(screen.getByText('Exploit')).toBeDefined()
   })
 })

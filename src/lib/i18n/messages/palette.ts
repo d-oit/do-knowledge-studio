@@ -19,6 +19,8 @@ const messages = {
   'palette.group.create': 'Create',
   /** Library group heading. */
   'palette.group.library': 'Library',
+  /** Actions group heading (theme toggle, immediate export). */
+  'palette.group.actions': 'Actions',
   /** Nav item: home view. */
   'palette.nav.home': 'Home',
   /** Nav item: editor view. */
@@ -41,6 +43,14 @@ const messages = {
   'palette.create.label': 'Create new entity',
   /** Create action hint. */
   'palette.create.hint': 'Opens the Editor',
+  /** Immediate JSON export command label. */
+  'palette.export.label': 'Export library as JSON',
+  /** Immediate JSON export command hint. */
+  'palette.export.hint': 'Downloads a backup file',
+  /** Theme toggle command label. */
+  'palette.theme.label': 'Toggle theme',
+  /** Theme toggle command hint — the cycle the command walks. */
+  'palette.theme.hint': 'Light · dark · system',
   /** Footer keyboard hints line. */
   'palette.footer.hints': '↑↓ navigate · ↵ select · esc close',
   /** Footer result count; count interpolated. */

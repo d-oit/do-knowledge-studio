@@ -25,15 +25,24 @@ export interface StudioState {
   currentView: ViewId
   setView: (v: ViewId) => void
   commandOpen: boolean
-  setCommandOpen: (o: boolean) => void
+  setCommandOpen: (open: boolean) => void
+  shortcutsOpen: boolean
+  setShortcutsOpen: (open: boolean) => void
 
   // Entities
   entities: Entity[]
   selectedEntityId: string | null
   editingEntityId: string | null
+  /** Title draft handed to the editor by a create command, consumed on read.
+   * The command palette's typed query lands here so "create new entity" does
+   * not throw away what the user already typed (ADR 017 follow-up). */
+  pendingEntityName: string | null
   selectEntity: (id: string | null) => void
   startEdit: (id: string) => void
-  startNew: () => void
+  /** Opens a blank draft. `name`, when given and non-blank, pre-fills the
+   * editor's title field via {@link StudioState.pendingEntityName}. */
+  startNew: (name?: string) => void
+  clearPendingEntityName: () => void
   saveEntity: (e: Entity) => void
   commitEntity: (e: Entity) => void
   /** Atomically commit several entities under a single history snapshot.
@@ -71,6 +80,18 @@ export interface StudioState {
   setSortBy: (s: 'name' | 'created' | 'updated') => void
   sortDir: 'asc' | 'desc'
   setSortDir: (d: 'asc' | 'desc') => void
+  /** Advanced-filter substring matched against entity tags (persisted). */
+  tagQuery: string
+  setTagQuery: (q: string) => void
+  /** Advanced filter: hide entities whose description is blank (persisted). */
+  hasDescriptionOnly: boolean
+  setHasDescriptionOnly: (v: boolean) => void
+  /** Library layout: card grid or the entity table (persisted). */
+  viewMode: 'grid' | 'list'
+  setViewMode: (m: 'grid' | 'list') => void
+  /** Whether the large-list cap is lifted (persisted, so it survives a reload). */
+  showAll: boolean
+  setShowAll: (v: boolean) => void
 
   // Chat
   chat: ChatMessage[]

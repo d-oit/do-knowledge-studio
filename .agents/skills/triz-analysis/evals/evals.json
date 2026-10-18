@@ -3,13 +3,13 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "Perform a TRIZ analysis on the problem of 'latency in semantic memory retrieval' and save it to the analysis directory.",
-      "expected_output": "The agent identifies the technical contradiction, maps it to the 40 principles, and saves a report to `analysis/triz-memory-latency-YYYY-MM-DD.md`.",
+      "prompt": "Perform a TRIZ analysis on the problem of 'latency in semantic memory retrieval' and save it under plans/research/scratch/.",
+      "expected_output": "The agent identifies the technical contradiction, maps it to the 40 principles, and saves a report to `plans/research/scratch/triz-memory-latency-YYYY-MM-DD.md`.",
       "files": [],
       "assertions": [
         "The agent identifies a technical contradiction (e.g., Speed vs. Complexity)",
         "The agent proposes at least 2 TRIZ principles as solutions",
-        "A file is created in the `analysis/` directory with the correct naming convention"
+        "A file is created under `plans/research/scratch/` with the correct naming convention"
       ]
     },
     {

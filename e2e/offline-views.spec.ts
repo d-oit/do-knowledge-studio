@@ -4,7 +4,8 @@ import { navClick, waitForAppReady } from './helpers/navigation';
 /**
  * First-use offline navigation into each lazily imported view.
  *
- * The app shell code-splits six views (plans/158). The generator recursively
+ * The app shell code-splits seven feature views; this adds ChatView to the six
+ * feature views that were already lazy-loaded. The generator recursively
  * inventories supported emitted assets, including chunks for lazy views that
  * the boot document does not reference. These cases prove an installed worker
  * serves first-use view chunks during offline navigation.
@@ -92,6 +93,15 @@ const OFFLINE_VIEW_CASES: readonly OfflineViewCase[] = [
     assertSurface: async (page) => {
       await expect(
         page.getByRole('main').getByRole('heading', { name: 'Export knowledge' }),
+      ).toBeVisible();
+    },
+  },
+  {
+    name: 'Chat',
+    nav: /chat/i,
+    assertSurface: async (page) => {
+      await expect(
+        page.getByRole('main').getByRole('textbox', { name: 'Chat message' }),
       ).toBeVisible();
     },
   },

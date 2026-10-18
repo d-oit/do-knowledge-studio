@@ -1,13 +1,11 @@
 'use client'
 
 import * as React from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { X, Keyboard, Search } from 'lucide-react'
 import { useStudioStore } from '@/lib/studio/store'
 import type { ViewId } from '@/lib/studio/types'
 import { Overlay } from '@/components/studio/ui/shared-primitives'
 import { cn } from '@/lib/utils'
-import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { translate } from '@/lib/i18n/messages/shortcuts'
 import { useIsMacPlatform, formatShortcut } from '@/lib/studio/use-platform-shortcut'
 
@@ -75,29 +73,6 @@ const G_SEQ_MAP: Record<string, ViewId> = {
   s: 'sync',
 }
 
-// Open state for the shortcuts dialog lives in module scope so any consumer
-// (the dialog itself, the sidebar link, the keyboard listener) can read or
-// toggle it without prop-drilling.
-let _open = false
-const listeners = new Set<(v: boolean) => void>()
-/** Sets the open state of the shortcuts dialog and notifies all subscribers. */
-const setOpen = (v: boolean): void => {
-  _open = v
-  for (const l of listeners) l(v)
-}
-/** Returns the current open state and a setter for the shortcuts dialog, using module-scope state. */
-const useShortcutsOpen = (): [boolean, (v: boolean) => void] => {
-  const [open, setLocal] = React.useState(_open)
-  React.useEffect(() => {
-    const l = (v: boolean) => { setLocal(v) }
-    listeners.add(l)
-    return () => {
-      listeners.delete(l)
-    }
-  }, [])
-  return [open, setOpen]
-}
-
 /**
  * Narrows an event target to its `HTMLElement` view, or `null` when the target
  * is not a DOM element (e.g. `document` or `window`).
@@ -105,10 +80,13 @@ const useShortcutsOpen = (): [boolean, (v: boolean) => void] => {
 const asHtmlElement = (target: EventTarget | null): HTMLElement | null =>
   target instanceof HTMLElement ? target : null
 
+/**
+
 /** Keyboard shortcuts dialog with filterable grouped list and G-key navigation indicator. */
 // skipcq: JS-0415, JS-R1005 — ShortcutsDialog JSX nesting and medium complexity are intentional for grouped shortcut layout
 export const ShortcutsDialog = (): React.JSX.Element => {
-  const [open, setOpen] = useShortcutsOpen()
+  const open = useStudioStore((s) => s.shortcutsOpen)
+  const setOpen = useStudioStore((s) => s.setShortcutsOpen)
   const isMacPlatform = useIsMacPlatform()
   const currentView = useStudioStore((s) => s.currentView)
   const commandOpen = useStudioStore((s) => s.commandOpen)
@@ -116,7 +94,6 @@ export const ShortcutsDialog = (): React.JSX.Element => {
   const setView = useStudioStore((s) => s.setView)
   const setCommandOpen = useStudioStore((s) => s.setCommandOpen)
   const setMobileDrawerOpen = useStudioStore((s) => s.setMobileDrawerOpen)
-  const reducedMotion = useReducedMotion()
 
   const [filter, setFilter] = React.useState('')
   const filterInputRef = React.useRef<HTMLInputElement | null>(null)
@@ -368,26 +345,20 @@ export const ShortcutsDialog = (): React.JSX.Element => {
       </Overlay>
 
       {/* "g…" indicator pill — bottom-left, dismisses on navigation or timeout */}
-      <AnimatePresence>
-        {gPending && (
-          <motion.div
-            key="g-indicator"
-            initial={reducedMotion ? false : { opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            transition={reducedMotion ? { duration: 0 } : { duration: 0.15 }}
-            className={cn(
-              'fixed bottom-4 left-4 z-[700] flex items-center gap-2 rounded-full border border-saffron/40 bg-popover px-3 py-1.5 shadow-lifted',
-            )}
-            aria-live="polite"
-          >
-            <kbd className="rounded border border-saffron/40 bg-saffron-soft px-1.5 py-0 font-mono text-caption font-semibold text-saffron-deep">
-              g
-            </kbd>
-            <span className="text-label font-medium text-ink-soft">{translate('shortcuts.gIndicator')}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {gPending && (
+        <div
+          className={cn(
+            'fixed bottom-4 left-4 z-[700] flex items-center gap-2 rounded-full border border-saffron/40 bg-popover px-3 py-1.5 shadow-lifted',
+            'animate-in fade-in slide-in-from-bottom-2 duration-150 motion-reduce:animate-none',
+          )}
+          aria-live="polite"
+        >
+          <kbd className="rounded border border-saffron/40 bg-saffron-soft px-1.5 py-0 font-mono text-caption font-semibold text-saffron-deep">
+            g
+          </kbd>
+          <span className="text-label font-medium text-ink-soft">{translate('shortcuts.gIndicator')}</span>
+        </div>
+      )}
     </>
   )
 }
@@ -398,7 +369,7 @@ export const ShortcutsDialog = (): React.JSX.Element => {
  * needing to know about the dialog's internal state.
  */
 export const ShortcutsTrigger = ({ className }: { className?: string }): React.JSX.Element => {
-  const [, setOpen] = useShortcutsOpen()
+  const setOpen = useStudioStore((s) => s.setShortcutsOpen)
   return (
     <button
       type="button"

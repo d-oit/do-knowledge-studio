@@ -87,3 +87,11 @@ again in a few seconds." No network call is made.
 - `onCreateEntity` callback routes to editor via `startNew()` — entity name pre-fill is a follow-up (requires store support for named entity creation)
 - Rate limiter wired into `ai-harness-view.tsx` handleSend with cooldown UI
 - Cooldown countdown displayed in `ai-harness-chat.tsx` with disabled inputs during cooldown
+
+## Follow-up closed (2026-10-17 — [Plan 177](../177-older-plan-leftovers-2026-10-17.md))
+
+The pre-fill follow-up above is implemented: `startNew(name?)` carries the typed
+palette query into a one-shot `pendingEntityName` hand-off that the editor
+consumes (seeding the title and clearing the hand-off), and every existing
+no-argument call site was migrated. The palette also gained the theme-cycle and
+direct JSON-export commands this ADR's palette work left open.

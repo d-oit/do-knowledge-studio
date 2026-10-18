@@ -1,5 +1,5 @@
 /// <reference types="@testing-library/jest-dom" />
-import { render, screen, act, waitFor } from "@testing-library/react";
+import { render, screen, act, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { OfflineIndicator } from "./offline-indicator";
 
@@ -45,7 +45,7 @@ describe("OfflineIndicator", () => {
     ).toBeInTheDocument();
   });
 
-  it("updates when online/offline events fire", async () => {
+  it("updates when online/offline events fire", () => {
     Object.defineProperty(navigator, "onLine", {
       value: true,
       writable: true,
@@ -70,11 +70,22 @@ describe("OfflineIndicator", () => {
       window.dispatchEvent(new Event("online"));
     });
 
-    await waitFor(() => {
-      expect(
-        screen.queryByText(/You are offline/)
-      ).not.toBeInTheDocument();
+    const banner = screen.getByRole("status", { hidden: true });
+    expect(banner).toHaveAttribute("aria-hidden", "true");
+    expect(
+      document.documentElement.style.getPropertyValue("--offline-banner-height"),
+    ).toBe("0px");
+
+    act(() => {
+      fireEvent.transitionEnd(banner, { propertyName: "translate" });
     });
+
+    expect(
+      screen.queryByText(/You are offline/),
+    ).not.toBeInTheDocument();
+    expect(
+      document.documentElement.style.getPropertyValue("--offline-banner-height"),
+    ).toBe("");
   });
 
   it("cleans up event listeners on unmount", () => {

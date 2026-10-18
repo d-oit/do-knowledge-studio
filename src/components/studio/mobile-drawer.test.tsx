@@ -22,11 +22,21 @@ vi.mock('@/components/studio/ui/shared-primitives', () => ({
     ) : null,
 }))
 
-vi.mock('lucide-react', () => {
+vi.mock('lucide-react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('lucide-react')>()
   const Icon = ({ className }: { className?: string }) => (
     <span data-testid="icon" className={className} />
   )
-  return { X: Icon, Search: Icon, Sun: Icon, Moon: Icon, Monitor: Icon, FileText: Icon }
+  return {
+    ...actual,
+    X: Icon,
+    Search: Icon,
+    Sun: Icon,
+    Moon: Icon,
+    Monitor: Icon,
+    FileText: Icon,
+    Home: Icon,
+  }
 })
 
 let mockTheme = 'light'

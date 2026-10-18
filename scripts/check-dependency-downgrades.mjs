@@ -50,7 +50,15 @@ const parseManifest = (content, source) => {
     }
     dependencies.set(section, sectionDependencies)
   }
-  return dependencies
+  const engines = manifest.engines
+  const nodeEngineRange =
+    engines !== null &&
+    typeof engines === 'object' &&
+    !Array.isArray(engines) &&
+    typeof engines.node === 'string'
+      ? engines.node
+      : null
+  return { dependencies, nodeEngineRange }
 }
 const minimumVersion = (range) => {
   try {
@@ -58,6 +66,23 @@ const minimumVersion = (range) => {
   } catch {
     return null
   }
+}
+const isRuntimeAlignedNodeTypesRange = (
+  name,
+  currentRange,
+  baseMinimum,
+  nodeEngineRange,
+) => {
+  if (name !== '@types/node' || nodeEngineRange === null) return false
+  const nodeEngineMinimum = minimumVersion(nodeEngineRange)
+  const currentMinimum = minimumVersion(currentRange)
+  return (
+    nodeEngineMinimum !== null &&
+    currentMinimum !== null &&
+    baseMinimum.major !== nodeEngineMinimum.major &&
+    currentMinimum.major === nodeEngineMinimum.major &&
+    currentRange === `^${nodeEngineMinimum.major}.0.0`
+  )
 }
 
 const main = () => {
@@ -71,9 +96,12 @@ const main = () => {
   try {
     const baseCommit = git(['rev-parse', '--verify', '--end-of-options', `${baseRef}^{commit}`]).trim()
     const baseContent = git(['show', `${baseCommit}:package.json`])
-    const baseDependencies = parseManifest(baseContent, `${baseRef}:package.json`)
-    const currentDependencies = parseManifest(readFileSync('package.json', 'utf8'), 'package.json')
+    const baseManifest = parseManifest(baseContent, `${baseRef}:package.json`)
+    const baseDependencies = baseManifest.dependencies
+    const currentManifest = parseManifest(readFileSync('package.json', 'utf8'), 'package.json')
+    const currentDependencies = currentManifest.dependencies
     const failures = []
+    const runtimeAlignedNodeTypesRanges = []
 
     for (const section of DEPENDENCY_SECTIONS) {
       const currentSection = currentDependencies.get(section)
@@ -87,6 +115,15 @@ const main = () => {
           failures.push(
             `Cannot compare ${name} range ${JSON.stringify(baseRange)} -> ${JSON.stringify(currentRange)}; manual review required.`,
           )
+        } else if (
+          isRuntimeAlignedNodeTypesRange(
+            name,
+            currentRange,
+            baseMinimum,
+            currentManifest.nodeEngineRange,
+          )
+        ) {
+          runtimeAlignedNodeTypesRanges.push(`${baseRange} -> ${currentRange}`)
         } else if (semver.lt(currentMinimum, baseMinimum)) {
           failures.push(
             `Dependency downgrade: ${name} ${baseRange} -> ${currentRange} (minimum ${baseMinimum.version} -> ${currentMinimum.version}).`,
@@ -102,6 +139,11 @@ const main = () => {
     }
 
     console.log(`No dependency downgrades detected against ${baseRef}.`)
+    for (const range of runtimeAlignedNodeTypesRanges) {
+      console.log(
+        `Intentional @types/node runtime alignment: ${range} (matches engines.node ${currentManifest.nodeEngineRange}).`,
+      )
+    }
   } catch (error) {
     console.error(`Unable to compare dependency ranges: ${describeError(error)}`)
     process.exitCode = EXIT_CODE_ERROR

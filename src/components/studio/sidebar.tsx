@@ -2,23 +2,12 @@
 
 import { useCallback } from 'react'
 import {
-  Home,
-  FileText,
-  Library,
-  GitBranch,
-  BrainCircuit,
-  MessageSquare,
-  FlaskConical,
-  Grid3X3,
-  Download,
   Sun,
   Moon,
   Monitor,
   Search,
   PanelRight,
   PanelRightClose,
-  Wifi,
-  CalendarDays,
 } from 'lucide-react'
 import { useHydrationSafeTheme } from './theme-provider'
 import { RELEASES_BASE_URL } from '@/lib/studio/constants'
@@ -27,61 +16,15 @@ import { useStudioStore } from '@/lib/studio/store'
 import type { ViewId } from '@/lib/studio/types'
 import packageJson from '../../../package.json'
 import { cn } from '@/lib/utils'
-import { translate as navT } from '@/lib/i18n/messages/nav'
-import { translate as t } from '@/lib/i18n/messages/timeline'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
 import { translate as themeT } from '@/lib/i18n/messages/theme'
 import { useAnnouncer } from '@/lib/a11y/announcer'
+import { NavGroupList } from './nav-group-list'
+import { NAV_GROUPS, type NavItem } from './nav-groups'
+export { NAV_GROUPS } from './nav-groups'
 import { ShortcutsTrigger } from './shortcuts-dialog'
 
-interface NavItem {
-  id: ViewId
-  label: string
-  icon: typeof Home
-  shortcut?: string
-  experimental?: boolean
-}
 
-/** Navigation groups defining the sidebar menu structure with labels, icons, and keyboard shortcuts. */
-export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
-  {
-    label: navT('nav.group.overview'),
-    items: [
-      { id: 'home', label: navT('nav.home.label'), icon: Home, shortcut: 'G H' },
-      { id: 'timeline', label: t('timeline.nav.label'), icon: CalendarDays },
-    ],
-  },
-  {
-    label: navT('nav.group.capture'),
-    items: [{ id: 'editor', label: navT('nav.editor.label'), icon: FileText, shortcut: 'G E' }],
-  },
-  {
-    label: navT('nav.group.explore'),
-    items: [
-      { id: 'library', label: navT('nav.library.label'), icon: Library, shortcut: 'G L' },
-      { id: 'graph', label: navT('nav.graph.label'), icon: GitBranch, shortcut: 'G G' },
-      { id: 'mindmap', label: navT('nav.mindmap.label'), icon: BrainCircuit, shortcut: 'G M' },
-    ],
-  },
-  {
-    label: navT('nav.group.ask'),
-    items: [{ id: 'chat', label: navT('nav.chat.label'), icon: MessageSquare, shortcut: 'G C' }],
-  },
-  {
-    label: navT('nav.group.lab'),
-    items: [
-      { id: 'ai', label: navT('nav.ai.label'), icon: FlaskConical, shortcut: 'G A', experimental: true },
-      { id: 'triz', label: navT('nav.triz.label'), icon: Grid3X3, shortcut: 'G T', experimental: true },
-    ],
-  },
-  {
-    label: navT('nav.group.data'),
-    items: [
-      { id: 'sync', label: navT('nav.sync.label'), icon: Wifi, shortcut: 'G S' },
-      { id: 'export', label: navT('nav.export.label'), icon: Download, shortcut: 'G X' },
-    ],
-  },
-]
 
 interface SidebarItemBadgeProps {
   experimental?: boolean
@@ -157,24 +100,21 @@ const SidebarNav = () => {
   )
 
   return (
-    <nav className="flex-1 overflow-y-auto px-3 pb-2" aria-label="Main navigation">
-      {NAV_GROUPS.map((group) => (
-        <div key={group.label} className="mb-4">
-          <div className="mb-1.5 px-2 text-caption font-semibold uppercase tracking-[0.14em] text-ink-faint">
-            {group.label}
-          </div>
-          <ul className="space-y-0.5">
-            {group.items.map((item) => (
-              <SidebarNavItem
-                key={item.id}
-                item={item}
-                active={currentView === item.id}
-                onSelect={handleSelect}
-              />
-            ))}
-          </ul>
-        </div>
-      ))}
+    <nav aria-label="Main navigation">
+      <NavGroupList
+        groups={NAV_GROUPS}
+        className="flex-1 overflow-y-auto px-3 pb-2"
+        groupClassName="mb-4"
+      >
+        {(item) => (
+          <SidebarNavItem
+            key={item.id}
+            item={item}
+            active={currentView === item.id}
+            onSelect={handleSelect}
+          />
+        )}
+      </NavGroupList>
     </nav>
   )
 }

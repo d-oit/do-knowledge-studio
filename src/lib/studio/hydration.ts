@@ -33,6 +33,10 @@ export const PERSISTED_KEYS = [
   'typeFilter',
   'sortBy',
   'sortDir',
+  'tagQuery',
+  'hasDescriptionOnly',
+  'viewMode',
+  'showAll',
   'rightPanelOpen',
   'graph',
   'mindMap',
@@ -49,6 +53,10 @@ interface PersistedSlice {
   typeFilter: AnyEntityType | 'all'
   sortBy: 'name' | 'created' | 'updated'
   sortDir: 'asc' | 'desc'
+  tagQuery: string
+  hasDescriptionOnly: boolean
+  viewMode: 'grid' | 'list'
+  showAll: boolean
   rightPanelOpen: boolean
   graph?: ValidatedGraph | null
   mindMap?: ValidatedMindMap | null
@@ -161,6 +169,10 @@ export const partializePersistedState = (state: PersistedSlice): Partial<Persist
   typeFilter: state.typeFilter,
   sortBy: state.sortBy,
   sortDir: state.sortDir,
+  tagQuery: state.tagQuery,
+  hasDescriptionOnly: state.hasDescriptionOnly,
+  viewMode: state.viewMode,
+  showAll: state.showAll,
   rightPanelOpen: state.rightPanelOpen,
   graph: state.graph ?? null,
   mindMap: state.mindMap ?? null,

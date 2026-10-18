@@ -1,17 +1,19 @@
 'use client'
 
 import { useEffect, useRef, type RefObject } from 'react'
+import { readBreakpointPx } from '@/lib/studio/breakpoints'
 import { Overlay } from '@/components/studio/ui/shared-primitives'
 import { X, Sun, Moon, Monitor } from 'lucide-react'
 import packageJson from '../../../package.json'
 import { useHydrationSafeTheme } from './theme-provider'
 import { RELEASES_BASE_URL } from '@/lib/studio/constants'
 import { useStudioStore } from '@/lib/studio/store'
-import { NAV_GROUPS } from './sidebar'
+import { NAV_GROUPS } from './nav-groups'
 import { cn } from '@/lib/utils'
 import { translate } from '@/lib/i18n/messages/mobile-drawer'
 import { EntitySearchPanel } from './entity-search-panel'
 
+import { NavGroupList } from './nav-group-list'
 
 /* ---------------------------------- Header --------------------------------- */
 
@@ -113,54 +115,34 @@ const NavTab = ({ onNavigate }: { onNavigate: () => void }) => {
   }
 
   return (
-    <nav className="px-3 pb-3 pt-3" aria-label={translate('drawer.navAriaLabel')}>
-      {NAV_GROUPS.map((group) => (
-        <div key={group.label} className="mb-3.5">
-          <div className="mb-1.5 px-2 text-caption font-semibold uppercase tracking-[0.14em] text-ink-faint">
-            {group.label}
-          </div>
-          <ul className="space-y-0.5">
-            {group.items.map((item) => {
-              const Icon = item.icon
-              const active = currentView === item.id
-              return (
-                <li key={item.id}>
-                  <button
-                    onClick={() => { handleSelect(item.id) }}
-                    aria-current={active ? 'page' : undefined}
-                    className={cn(
-                      'group flex min-h-touch w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-body font-medium transition-all focus-ring',
-                      active
-                        ? 'bg-saffron-soft text-saffron-deep'
-                        : 'text-ink-soft hover:bg-sidebar-accent hover:text-ink',
-                    )}
-                  >
-                    <Icon
-                      className={cn(
-                        'h-4 w-4 shrink-0 transition-colors',
-                        active
-                          ? 'text-saffron'
-                          : 'text-ink-faint group-hover:text-ink-soft',
-                      )}
-                    />
-                    <span className="flex-1 text-left">{item.label}</span>
-                    {item.experimental && (
-                      <span className="rounded-full border border-dashed border-saffron/40 px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-saffron-deep">
-                        {translate('drawer.lab')}
-                      </span>
-                    )}
-                    {item.shortcut && (
-                      <kbd className="font-mono text-caption text-ink-faint">
-                        {item.shortcut}
-                      </kbd>
-                    )}
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
-        </div>
-      ))}
+    <nav aria-label={translate('drawer.navAriaLabel')}>
+      <NavGroupList
+        groups={NAV_GROUPS}
+        className="px-3 pb-3 pt-3"
+        groupClassName="mb-3.5"
+      >
+        {(item) => {
+          const Icon = item.icon
+          const active = currentView === item.id
+          return (
+            <li key={item.id}>
+              <button
+                onClick={() => { handleSelect(item.id) }}
+                aria-current={active ? 'page' : undefined}
+                className={cn(
+                  'group flex min-h-touch w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-body font-medium transition-all focus-ring',
+                  active ? 'bg-saffron-soft text-saffron-deep' : 'text-ink-soft hover:bg-sidebar-accent hover:text-ink',
+                )}
+              >
+                <Icon className={cn('h-4 w-4 shrink-0 transition-colors', active ? 'text-saffron' : 'text-ink-faint group-hover:text-ink-soft')} />
+                <span className="flex-1 text-left">{item.label}</span>
+                {item.experimental && <span className="rounded-full border border-dashed border-saffron/40 px-1.5 py-0 text-badge font-semibold uppercase tracking-wide text-saffron-deep">{translate('drawer.lab')}</span>}
+                {item.shortcut && <kbd className="font-mono text-caption text-ink-faint">{item.shortcut}</kbd>}
+              </button>
+            </li>
+          )
+        }}
+      </NavGroupList>
     </nav>
   )
 }
@@ -265,7 +247,9 @@ export const MobileDrawer = () => {
   // desktop sidebar.
   useEffect(() => {
     if (!open) return
-    const mql = window.matchMedia('(min-width: 1024px)')
+    const lgPx = readBreakpointPx('--breakpoint-lg')
+    if (lgPx === null || typeof window.matchMedia !== 'function') return
+    const mql = window.matchMedia(`(min-width: ${lgPx}px)`)
     const onChange = (e: MediaQueryListEvent) => {
       if (e.matches) setOpen(false)
     }

@@ -80,8 +80,11 @@ This ensures the template self-improves over time as projects evolve. See `agent
 dependency-range check runs when `package.json` or `pnpm-lock.yaml` changes.
 
 - `check-dependency-downgrades.mjs <base-ref>` compares the lowest versions
-  allowed by changed ranges in `dependencies` and `devDependencies`. A lower
-  minimum or a range the SemVer parser cannot compare fails closed for review.
+  allowed by changed ranges in `dependencies` and `devDependencies`. Lower
+  minima and unparseable ranges fail closed. The sole intentional exception is
+  `@types/node` changing to exactly `^<engines.node minimum major>.0.0` when that
+  major differs from the base, aligning declarations to the declared runtime.
+  This does not permit a lower range within the same major.
 - `check-stale-base-deletions.mjs <base-ref>` fails when the PR head is missing a
   file added to the current target branch after the merge base. Update or rebase
   the branch onto the target branch before retrying.

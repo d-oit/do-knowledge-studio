@@ -73,6 +73,7 @@ beforeEach(async () => {
   vi.setSystemTime(1000)
   postedMessages.length = 0
   messageHandler = null
+  vi.stubGlobal('BroadcastChannel', mockBroadcastChannel)
   vi.resetModules()
   discovery = await import('./discovery')
 })
@@ -253,9 +254,13 @@ describe('getAvailableRooms', () => {
 // --- SIGNALING_SERVERS ---
 
 describe('SIGNALING_SERVERS', () => {
-  it('exports two signaling endpoints', () => {
-    expect(discovery.SIGNALING_SERVERS).toHaveLength(2)
-    expect(discovery.SIGNALING_SERVERS[0]).toContain('yjs.dev')
-    expect(discovery.SIGNALING_SERVERS[1]).toContain('herokuapp.com')
+  it('uses the default endpoint without the defunct service', () => {
+    expect(discovery.getSignalingServers(undefined)).toEqual(['wss://signaling.yjs.dev'])
+  })
+
+  it('validates, rejects the defunct endpoint, and deduplicates secure endpoints', () => {
+    expect(discovery.getSignalingServers(
+      ' wss://signal.example/,wss://signal.example,https://invalid.example,wss://y-webrtc-signaling.herokuapp.com,wss://second.example',
+    )).toEqual(['wss://signal.example', 'wss://second.example'])
   })
 })

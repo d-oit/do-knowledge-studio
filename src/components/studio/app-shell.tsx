@@ -13,7 +13,6 @@ import { HomeView } from './views/home-view'
 import { EditorView } from './views/editor-view'
 import { LibraryView } from './views/library-view'
 import { TimelineView } from './views/timeline-view'
-import { ChatView } from './views/chat-view'
 import { ErrorBoundary } from './error-boundary'
 import { ViewErrorBoundary } from './view-error-boundary'
 import { GlobalRuntimeHandlers } from './global-runtime-handlers'
@@ -45,6 +44,7 @@ const AIHarnessView = lazy(() => import('./views/ai-harness-view').then((m) => (
 const TrizView = lazy(() => import('./views/triz-view').then((m) => ({ default: m.TrizView })))
 const ExportView = lazy(() => import('./views/export-view').then((m) => ({ default: m.ExportView })))
 const SyncView = lazy(() => import('./views/sync-view').then((m) => ({ default: m.SyncView })))
+const ChatView = lazy(() => import('./views/chat-view').then((m) => ({ default: m.ChatView })))
 
 /** Loading skeleton placeholder shown while lazy-loaded views are being fetched. */
 function ViewLoader() {

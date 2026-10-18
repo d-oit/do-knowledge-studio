@@ -651,3 +651,7 @@ above is preserved unchanged.
 
 - The D1.9b row and the D1.x deletion-pruning row were closed by Plan 165.
 - The module-scope search cache is an accepted invariant by ADR 032 (record-only).
+- D2.8 (pan/zoom through React state re-renders the SVG subtree) and D2.19
+  (per-node motion wrappers) stay **measured-before-change candidates**: both asks
+  are conditioned on profiling that shows a material cost, and no baseline exists
+  for either path. Recorded, not silently dropped (Plan 177).

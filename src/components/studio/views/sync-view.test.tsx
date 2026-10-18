@@ -68,6 +68,9 @@ vi.mock('@/lib/sync', () => ({
 
 vi.mock('@/lib/sync/bridge', () => ({
   mergeIntoYjs: vi.fn(() => ({ merged: { entities: [], claims: [] }, conflicts: [] })),
+  applyConflictResolution: vi.fn(() => true),
+  commitMergedState: vi.fn(() => true),
+  subscribeSyncConflicts: vi.fn(() => vi.fn()),
 }))
 
 vi.mock('@/lib/sync/discovery', () => ({
@@ -281,5 +284,30 @@ describe('SyncView', () => {
     act(() => { mockProvider.emit('status', { connected: true }) })
     fireEvent.click(screen.getByRole('button', { name: 'Re-sync' }))
     expect(screen.queryByTestId('conflict-ui')).toBeNull()
+  })
+
+  it('toggles QR display mode on and off', () => {
+    render(<SyncView />)
+    const showQrButton = screen.getByText('Show QR Code')
+    fireEvent.click(showQrButton)
+    expect(screen.getByTestId('qr-display')).toBeDefined()
+    fireEvent.click(showQrButton)
+    expect(screen.queryByTestId('qr-display')).toBeNull()
+  })
+
+  it('toggles QR scan mode on and off', () => {
+    render(<SyncView />)
+    const scanButton = screen.getByText('Scan QR Code')
+    fireEvent.click(scanButton)
+    expect(screen.getByTestId('qr-scanner')).toBeDefined()
+    fireEvent.click(scanButton)
+    expect(screen.queryByTestId('qr-scanner')).toBeNull()
+  })
+
+  it('handles QR scan by updating input room ID', () => {
+    render(<SyncView />)
+    fireEvent.click(screen.getByText('Scan QR Code'))
+    fireEvent.click(screen.getByText('Simulate scan'))
+    expect(screen.getByDisplayValue('scanned-room')).toBeDefined()
   })
 })

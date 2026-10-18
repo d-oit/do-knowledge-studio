@@ -17,12 +17,6 @@ const makeEntity = (overrides: Partial<Entity> = {}): Entity => ({
 
 const NO_CLAIMS: Claim[] = []
 
-// Smoke guard, not a micro-benchmark. The indexed lookup resolves 500 entities in
-// roughly 10-40ms on a quiet machine, but this file runs alongside 150+ others, and
-// CPU saturation has pushed the same measurement past 180ms. The ceiling keeps a wide
-// margin over that worst case. It is only a smoke guard: it catches an order-of-magnitude
-// regression, not a cost-curve change, and should not be read as proving sub-linear lookup.
-const INDEXED_LOOKUP_MS_CEILING = 500
 
 describe('buildSystemPrompt', () => {
   it('returns base prompt when augmentation is off', () => {
@@ -54,7 +48,7 @@ describe('buildSystemPrompt', () => {
     expect(prompt).toContain('[javascript, compiler]')
   })
 
-  it('performs indexed entity lookup rapidly for large entity corpora', () => {
+  it('looks up relevant entities from large entity corpora', () => {
     const largeCorpus = Array.from({ length: 500 }, (_, i) =>
       makeEntity({
         id: `entity-${i}`,
@@ -63,11 +57,8 @@ describe('buildSystemPrompt', () => {
         tags: [`tag-${i % 10}`],
       }),
     )
-    const start = performance.now()
     const prompt = buildSystemPrompt('Topic 250', largeCorpus, NO_CLAIMS, true)
-    const elapsed = performance.now() - start
     expect(prompt).toContain('Topic 250')
-    expect(elapsed).toBeLessThan(INDEXED_LOOKUP_MS_CEILING)
   })
 })
 

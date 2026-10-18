@@ -3,7 +3,7 @@
 **GOAP Goal**: G-FEATURES-V2  
 **Priority**: P0 (Critical gaps from 2026-05-31 swarm analysis)  
 **Estimated Total Effort**: 20-28 hours  
-**Source**: `analysis/SWARM_ANALYSIS.md` — 6-agent parallel analysis  
+**Source**: `plans/research/scratch/analysis/SWARM_ANALYSIS.md` — 6-agent parallel analysis
 **Date**: 2026-05-31
 
 ## Issue Summary

@@ -54,7 +54,6 @@ vi.mock('sonner', () => ({
 
 vi.mock('./export-types', () => ({
   todayStamp: () => '2026-01-01',
-  downloadBlob: vi.fn(),
 }))
 
 const mockSelectEntity = vi.fn()
@@ -132,7 +131,6 @@ vi.mock('@/lib/studio/store', () => ({
 }))
 
 import { MindMapView } from './mindmap-view'
-import { downloadBlob } from './export-types'
 
 describe('MindMapView branch coverage', () => {
   beforeEach(() => {
@@ -140,7 +138,7 @@ describe('MindMapView branch coverage', () => {
     currentEntities = mockEntities
     currentHistoryIndex = 0
     currentEntityHistory = [[]]
-    vi.spyOn(crypto, 'randomUUID').mockReturnValue('new-child-id')
+    vi.spyOn(crypto, 'randomUUID').mockReturnValue('00000000-0000-0000-0000-000000000002')
   })
 
   afterEach(() => {
@@ -342,11 +340,6 @@ describe('MindMapView branch coverage', () => {
     expect(screen.getByText('Root: Root Entity')).toBeDefined()
   })
 
-  it('exports PNG when export button is clicked', () => {
-    render(<MindMapView />)
-    fireEvent.click(screen.getByLabelText('Export PNG'))
-    expect(downloadBlob).not.toHaveBeenCalled()
-  })
 
   it('undoes last action when undo is clicked and history allows', () => {
     currentHistoryIndex = 1

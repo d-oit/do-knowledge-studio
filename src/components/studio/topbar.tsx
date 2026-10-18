@@ -52,10 +52,7 @@ export const Topbar = () => {
   const inputAriaLabel = isLibraryView ? 'Filter library' : 'Search'
 
   const handleSearchKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-      e.preventDefault()
-      setCommandOpen(true)
-    } else if (e.key === 'Escape' && searchQuery) {
+    if (e.key === 'Escape' && searchQuery) {
       e.preventDefault()
       setSearchQuery('')
     }
@@ -138,7 +135,7 @@ export const Topbar = () => {
 
       {/* New entity button — icon-only on mobile, "New" on md–lg, "New entity" on wide (≥ 1100px) */}
       <button
-        onClick={startNew}
+        onClick={() => { startNew() }}
         aria-label="New entity"
         className="flex flex-shrink-0 min-h-touch items-center gap-1.5 rounded-md bg-primary px-2.5 text-label-lg font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 press-scale focus-ring sm:px-3"
       >

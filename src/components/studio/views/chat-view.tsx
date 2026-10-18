@@ -42,7 +42,8 @@ export const ChatView = () => {
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
-  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const debounceTimerRef = useRef<number | undefined>(undefined)
+  const inputRevisionRef = useRef(0)
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -50,18 +51,26 @@ export const ChatView = () => {
 
   useEffect(() => {
     return () => {
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
+      clearTimeout(debounceTimerRef.current)
     }
   }, [])
 
+  const updateInput = useCallback<typeof setInput>((value) => {
+    inputRevisionRef.current += 1
+    setInput(value)
+  }, [])
+
   const sendMessageDebounced = useCallback(
-    (content: string) => {
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
-      debounceTimerRef.current = setTimeout(() => {
+    (content: string, clearDraft: boolean) => {
+      clearTimeout(debounceTimerRef.current)
+      const inputRevision = inputRevisionRef.current
+      debounceTimerRef.current = window.setTimeout(() => {
         sendMessage(content)
-        setInput('')
+        if (clearDraft && inputRevisionRef.current === inputRevision) {
+          setInput('')
+        }
         inputRef.current?.focus()
-        debounceTimerRef.current = null
+        debounceTimerRef.current = undefined
       }, SEND_DEBOUNCE_MS)
     },
     [sendMessage],
@@ -70,7 +79,7 @@ export const ChatView = () => {
   const handleSend = (text?: string) => {
     const content = (text ?? input).trim()
     if (!content || chatLoading) return
-    sendMessageDebounced(content)
+    sendMessageDebounced(content, text === undefined)
   }
 
   const handleCitationClick = (entityId: string) => {
@@ -84,6 +93,8 @@ export const ChatView = () => {
   }
 
   const confirmClear = () => {
+    clearTimeout(debounceTimerRef.current)
+    debounceTimerRef.current = undefined
     clearChat()
     setShowCitations(null)
     setShowClearConfirm(false)
@@ -121,7 +132,7 @@ export const ChatView = () => {
       {/* Input */}
       <InputBar
         input={input}
-        setInput={setInput}
+        setInput={updateInput}
         chatLoading={chatLoading}
         onSend={() => {
           handleSend()
@@ -134,7 +145,9 @@ export const ChatView = () => {
       <ConfirmDialog
         open={showClearConfirm}
         onConfirm={confirmClear}
-        onCancel={() => { setShowClearConfirm(false) }}
+        onCancel={() => {
+          setShowClearConfirm(false)
+        }}
         title={confirmT('confirm.clearChat.title')}
         body={confirmT('confirm.clearChat.body')}
         confirmLabel={confirmT('confirm.clearChat.confirm')}

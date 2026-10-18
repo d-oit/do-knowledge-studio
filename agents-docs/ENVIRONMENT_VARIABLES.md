@@ -51,25 +51,6 @@ SKIP_CLIPPY=true ./scripts/quality_gate.sh
 
 ---
 
-### `SKIP_GLOBAL_HOOKS_CHECK`
-
-**Description**: Skip validation of global git hooks configuration.
-
-**Default**: `false`
-
-**Example Usage**:
-```bash
-SKIP_GLOBAL_HOOKS_CHECK=true git commit -m "feat: add feature"
-./scripts/install-hooks.sh  # During setup
-```
-
-**When to Use**:
-- When global hooks path is intentionally set and you need to commit anyway
-- Installing hooks in environments with custom git configurations
-- Emergency commits when hook validation is blocking
-
----
-
 ### `SKIP_LINT`
 
 **Description**: Skip lint checks in the quality gate.
@@ -229,7 +210,6 @@ FORCE_COLOR=0 ./scripts/quality_gate.sh        # Disable colors in terminal
 | `SKIP_TESTS` | boolean | `false` | Quality gate |
 | `SKIP_LINT` | boolean | `false` | Quality gate |
 | `SKIP_CLIPPY` | boolean | `false` | Quality gate |
-| `SKIP_GLOBAL_HOOKS_CHECK` | boolean | `false` | Git hooks |
 | `ATOMIC_COMMIT_TIMEOUT` | integer | `1800` | Atomic commit |
 | `ATOMIC_COMMIT_NO_ROLLBACK` | boolean | `0` | Atomic commit |
 | `ATOMIC_COMMIT_BASE_BRANCH` | string | `main` | Atomic commit |

@@ -13,10 +13,8 @@ import {
   RotateCw,
   Download,
   MoreHorizontal,
-  HelpCircle,
 } from 'lucide-react'
-import { ToggleButtonGroup, Divider } from '../ui/shared-primitives'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { ToolbarBtn, ToggleButtonGroup, Divider } from '../ui/shared-primitives'
 import { cn } from '@/lib/utils'
 
 import type { GraphLayout } from '@/lib/studio/graph-snapshot'
@@ -24,57 +22,6 @@ import type { GraphLayout } from '@/lib/studio/graph-snapshot'
 /** Re-exported for callers that only need the layout union. */
 export type LayoutType = GraphLayout
 
-interface ToolbarBtnProps {
-  icon: typeof Focus
-  label: string
-  /** Contextual help shown on hover (progressive disclosure). */
-  help?: string
-  active?: boolean
-  onClick?: () => void
-  disabled?: boolean
-}
-
-/** Icon button with optional tooltip for progressive disclosure. */
-export const ToolbarBtn = ({
-  icon: Icon,
-  label,
-  help,
-  active,
-  onClick,
-  disabled,
-}: ToolbarBtnProps) => {
-  const button = (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={label}
-      aria-pressed={active}
-      className={cn(
-        'flex min-h-touch min-w-touch items-center gap-1 rounded-md px-2 py-1.5 text-label font-medium transition-colors focus-ring disabled:cursor-not-allowed disabled:opacity-40',
-        active ? 'bg-saffron-soft text-saffron-deep' : 'text-ink-mute hover:bg-muted hover:text-ink',
-      )}
-    >
-      <Icon className="h-3.5 w-3.5" />
-      <span className="hidden sm:inline">{label}</span>
-    </button>
-  )
-
-  if (!help) return button
-
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>{button}</TooltipTrigger>
-        <TooltipContent side="bottom" className="max-w-52 text-center">
-          <span className="flex items-center justify-center gap-1">
-            <HelpCircle className="h-3 w-3 shrink-0" aria-hidden="true" />
-            {help}
-          </span>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  )
-}
 
 interface GraphToolbarProps {
   layout: LayoutType

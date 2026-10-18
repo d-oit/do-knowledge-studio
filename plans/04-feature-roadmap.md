@@ -137,3 +137,21 @@ and mind map. For what is actually true today, see
 - [ ] Graph snapshots can be saved/compared/reverted — **split by this reconciliation**: save/restore is `Implemented — source-confirmed`; **comparison is not implemented**. Tracked by [162](162-roadmap-progress-and-next-work-2026-10-05.md) as `Candidate — not scheduled`
 - [ ] Mobile gestures work for graph and mind map — **not implemented** (source-confirmed 2026-10-05). Tracked by [162](162-roadmap-progress-and-next-work-2026-10-05.md) as feature F3, pending a gesture spec
 - [x] All quality gates pass — **historical**: this row records the 2026-06-25 `npm test` / `npm run lint` / `npm run typecheck` run. The project now uses `pnpm` and `scripts/quality_gate.sh`, and that gate was **not re-run** by this reconciliation
+
+## Reconciliation (2026-10-17 — [Plan 177](177-older-plan-leftovers-2026-10-17.md))
+
+Both unchecked rows above are stale, and the roadmap's verified-only-filter
+candidate is closed:
+
+- **Graph snapshot comparison is implemented** — shipped as
+  [Plan 170](170-graph-revision-comparison-2026-10-16.md) (PR #974): a read-only
+  diff of the live graph against a stored snapshot, in an accessible comparison
+  overlay. The "not implemented" wording above is the 2026-10-05 state.
+- **Mobile gestures were specified and shipped** — Plan 169's mandatory scope
+  (pointer drag-pan, cursor-focal wheel zoom, two-finger pinch) landed in #968/#969
+  with four-project e2e coverage; only the spec's *optional* Mind Map swipe
+  actions and §4 double-tap/long-press remain unbuilt by that plan's own design.
+- **Verified-only graph filtering — closed as a candidate.** No acceptance
+  criteria, product requirement or ticket ever named it; the graph ships type
+  filtering, focus mode and snapshot comparison instead. Nothing was removed, and
+  the row keeps its dated wording.

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act } from 'react'
-import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, cleanup, waitFor, within } from '@testing-library/react'
 
 // Hoisted so the vi.mock factory (hoisted above imports) can reference these safely.
 const storeState = vi.hoisted(() => ({
@@ -96,6 +96,59 @@ describe('ChatView branch coverage', () => {
     vi.useRealTimers()
   })
 
+  it('sends the scheduled message once without clearing a newer draft', async () => {
+    vi.useFakeTimers()
+    render(<ChatView />)
+    const textarea = setInput('Scheduled message')
+    fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false })
+    setInput('New draft')
+    await act(async () => {
+      vi.advanceTimersByTime(300)
+    })
+    expect(storeState.sendMessage).toHaveBeenCalledTimes(1)
+    expect(storeState.sendMessage).toHaveBeenCalledWith('Scheduled message')
+    expect(textarea).toHaveValue('New draft')
+  })
+
+  it('keeps a scheduled send when the clear confirmation is cancelled', async () => {
+    vi.useFakeTimers()
+    storeState.chat = [{ id: 'msg-1', role: 'user', content: 'Earlier message', timestamp: '2026-10-18T00:00:00.000Z' }]
+    render(<ChatView />)
+    const textarea = setInput('Scheduled message')
+    fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Clear chat history' }))
+    const dialog = screen.getByRole('dialog', { name: 'Clear chat history?' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+    expect(screen.queryByRole('dialog', { name: 'Clear chat history?' })).toBeNull()
+
+    await act(async () => {
+      vi.advanceTimersByTime(300)
+    })
+    expect(storeState.sendMessage).toHaveBeenCalledTimes(1)
+    expect(storeState.sendMessage).toHaveBeenCalledWith('Scheduled message')
+    expect(storeState.clearChat).not.toHaveBeenCalled()
+  })
+
+  it('cancels the scheduled send when chat clear is confirmed', async () => {
+    vi.useFakeTimers()
+    storeState.chat = [{ id: 'msg-1', role: 'user', content: 'Earlier message', timestamp: '2026-10-18T00:00:00.000Z' }]
+    render(<ChatView />)
+    const textarea = setInput('Scheduled message')
+    fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Clear chat history' }))
+    const dialog = screen.getByRole('dialog', { name: 'Clear chat history?' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Clear chat' }))
+    expect(screen.queryByRole('dialog', { name: 'Clear chat history?' })).toBeNull()
+
+    await act(async () => {
+      vi.advanceTimersByTime(300)
+    })
+    expect(storeState.clearChat).toHaveBeenCalledTimes(1)
+    expect(storeState.sendMessage).not.toHaveBeenCalled()
+  })
+
   it('does not send on Shift+Enter and allows newline', () => {
     render(<ChatView />)
     const textarea = setInput('Hello')
@@ -103,12 +156,6 @@ describe('ChatView branch coverage', () => {
     expect(storeState.sendMessage).not.toHaveBeenCalled()
   })
 
-  it('returns early from clear when chat is empty', () => {
-    render(<ChatView />)
-    const clearBtn = screen.getByText('Clear').closest('button')!
-    clearBtn.click()
-    expect(storeState.clearChat).not.toHaveBeenCalled()
-  })
 
   it('renders citation section when message has citations', () => {
     storeState.chat = [

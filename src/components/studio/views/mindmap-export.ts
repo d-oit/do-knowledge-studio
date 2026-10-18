@@ -1,93 +1,123 @@
 import { EXPORT_COLORS } from '@/lib/export/export-theme'
+import html2canvas from 'html2canvas'
 import { downloadBlob } from './export-types'
-
-/** XML namespace for the wrapper SVG the cloned DOM is embedded in. */
-const SVG_NS = 'http://www.w3.org/2000/svg'
 
 /** Raster scale of the exported PNG (2x the CSS pixel box). */
 const EXPORT_SCALE = 2
 
-/**
- * Background painted behind the clone when the element has no computed color.
- *
- * The live value is read from the `--background` token at export time (see
- * {@link resolvePaperBackground}); this constant is the documented SSR /
- * no-DOM fallback, mirroring `--background` in `src/app/globals.css`.
- */
+/** Background used when neither the canvas nor the document paints a colour. */
 const FALLBACK_BACKGROUND = EXPORT_COLORS.paper
 
-/**
- * CSS custom property holding the paper colour (`--background` in
- * `src/app/globals.css`). Read from the live document at export time so a
- * re-themed `<html>` (class swap, user override) is honoured; a standalone
- * SVG/PNG has no access to the app's variables, so the value is inlined into
- * the clone.
- */
-const PAPER_TOKEN = '--background'
+/** What a transparent element reports in a browser. */
+const TRANSPARENT_BACKGROUND = 'rgba(0, 0, 0, 0)'
+/** One-pixel canvas used to convert CSS colours into canvas-supported RGB. */
+const COLOR_SAMPLE_SIZE_PX = 1
+/** Alpha byte value representing an opaque color. */
+const OPAQUE_ALPHA_VALUE = 255
+/** Precision retained when converting an 8-bit alpha channel to CSS. */
+const ALPHA_DECIMAL_PLACES = 3
 
-/** Resolves the paper background, falling back to {@link FALLBACK_BACKGROUND}
- *  in SSR / non-DOM contexts where `document` or the token is unavailable. */
-const resolvePaperBackground = (): string => {
+/** True when a computed background is a colour rather than transparency. */
+const hasPaintedBackground = (backgroundColor: string): boolean =>
+  backgroundColor !== '' &&
+  backgroundColor !== 'transparent' &&
+  backgroundColor !== TRANSPARENT_BACKGROUND
+
+/** CSS colour functions html2canvas 1.4 does not parse. */
+const UNSUPPORTED_COLOR_FUNCTION = /^(?:oklab|oklch|lab|lch|color-mix)\(/i
+
+/** SVG/CSS colour properties that can contain modern theme colours. */
+const COLOR_PROPERTIES = [
+  'accent-color',
+  'background-color',
+  'border-block-end-color',
+  'border-block-start-color',
+  'border-bottom-color',
+  'border-color',
+  'border-inline-end-color',
+  'border-inline-start-color',
+  'border-left-color',
+  'border-right-color',
+  'border-top-color',
+  'caret-color',
+  'color',
+  'fill',
+  'outline-color',
+  'stroke',
+  'text-decoration-color',
+] as const
+
+/** Normalizes a browser-supported CSS colour function to a CSS RGB colour. */
+const normalizeCssColor = (context: CanvasRenderingContext2D, color: string): string => {
+  context.clearRect(0, 0, COLOR_SAMPLE_SIZE_PX, COLOR_SAMPLE_SIZE_PX)
+  context.fillStyle = color
+  context.fillRect(0, 0, COLOR_SAMPLE_SIZE_PX, COLOR_SAMPLE_SIZE_PX)
+  const [red, green, blue, alpha] = context.getImageData(
+    0,
+    0,
+    COLOR_SAMPLE_SIZE_PX,
+    COLOR_SAMPLE_SIZE_PX,
+  ).data
+  if (alpha === OPAQUE_ALPHA_VALUE) return `rgb(${red}, ${green}, ${blue})`
+  return `rgba(${red}, ${green}, ${blue}, ${Number((alpha / OPAQUE_ALPHA_VALUE).toFixed(ALPHA_DECIMAL_PLACES))})`
+}
+
+/** Prepares html2canvas's private clone for modern theme colors and full labels. */
+const prepareCaptureClone = (clonedDocument: Document, clonedRoot: HTMLElement): void => {
+  const clonedWindow = clonedDocument.defaultView
+  if (!clonedWindow) return
+
+  const sampleCanvas = clonedDocument.createElement('canvas')
+  let context: CanvasRenderingContext2D | null = null
+  const elements = [clonedRoot, ...Array.from(clonedRoot.querySelectorAll<HTMLElement | SVGElement>('*'))]
+
+  for (const element of elements) {
+    const styles = clonedWindow.getComputedStyle(element)
+    for (const property of COLOR_PROPERTIES) {
+      const color = styles.getPropertyValue(property).trim()
+      if (!UNSUPPORTED_COLOR_FUNCTION.test(color)) continue
+      context ??= sampleCanvas.getContext('2d')
+      if (!context) throw new Error('Could not prepare PNG colour normalization.')
+      element.style.setProperty(property, normalizeCssColor(context, color))
+    }
+  }
+  // Preserve full labels: html2canvas clips the baseline when `truncate` overflows.
+  for (const label of clonedRoot.querySelectorAll<HTMLElement>('.truncate')) {
+    label.style.overflow = 'visible'
+  }
+}
+/** Resolves an actual CSS colour so the standalone capture preserves both themes. */
+const resolvePaperBackground = (element: HTMLElement): string => {
+  if (typeof getComputedStyle !== 'function') return FALLBACK_BACKGROUND
+
+  const elementBackground = getComputedStyle(element).backgroundColor
+  if (hasPaintedBackground(elementBackground)) return elementBackground
+
   if (typeof document === 'undefined') return FALLBACK_BACKGROUND
-  const styles = getComputedStyle(document.documentElement)
-  const token = typeof styles.getPropertyValue === 'function'
-    ? styles.getPropertyValue(PAPER_TOKEN).trim()
-    : ''
-  return token || FALLBACK_BACKGROUND
+  const documentBackground = getComputedStyle(document.documentElement).backgroundColor
+  return hasPaintedBackground(documentBackground) ? documentBackground : FALLBACK_BACKGROUND
 }
 
 /**
- * Renders an element's subtree to a PNG download.
+ * Captures the rendered mind map as a PNG.
  *
- * The mind map is plain DOM (not an `<svg>` document), so the clone is embedded
- * in a `foreignObject` wrapper before it can be rasterized. Extracted from
- * `mindmap-view.tsx` to keep that module under the repository's 500-LOC limit
- * (Plan 159 follow-on F6); the rendering pipeline is byte-for-byte the same.
- *
- * The caller owns error handling — this throws if serialization or the canvas
- * context fails, so a failure is loud rather than a silent no-op.
+ * The SVG `foreignObject` path taints browser canvases, so use html2canvas to
+ * paint the live DOM tree directly. The caller owns error handling.
  */
-export const exportElementAsPng = (element: HTMLElement, filename: string): void => {
-  const rect = element.getBoundingClientRect()
-  const svg = document.createElementNS(SVG_NS, 'svg')
-  svg.setAttribute('width', String(rect.width))
-  svg.setAttribute('height', String(rect.height))
-  const foreignObject = document.createElementNS(SVG_NS, 'foreignObject')
-  foreignObject.setAttribute('width', '100%')
-  foreignObject.setAttribute('height', '100%')
-  const nodeCopy = element.cloneNode(true) as HTMLElement
-  const computedBackground = getComputedStyle(element).backgroundColor
-  // A transparent element reports the *truthy* string `rgba(0, 0, 0, 0)` in a
-  // real browser (jsdom reports `''`), so a bare `||` would keep that value and
-  // the raster would come out with no background at all — the token fallback
-  // this file documents would never run outside tests (review on #938).
-  const hasOwnBackground =
-    computedBackground !== '' && computedBackground !== 'rgba(0, 0, 0, 0)'
-  nodeCopy.style.width = `${rect.width}px`
-  nodeCopy.style.height = `${rect.height}px`
-  nodeCopy.style.background = hasOwnBackground ? computedBackground : resolvePaperBackground()
-  foreignObject.appendChild(nodeCopy)
-  svg.appendChild(foreignObject)
-  const serializer = new XMLSerializer()
-  const svgString = serializer.serializeToString(svg)
-  const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const img = new Image()
-  img.onload = () => {
-    const canvas = document.createElement('canvas')
-    canvas.width = rect.width * EXPORT_SCALE
-    canvas.height = rect.height * EXPORT_SCALE
-    const ctx = canvas.getContext('2d')
-    if (ctx) {
-      ctx.scale(EXPORT_SCALE, EXPORT_SCALE)
-      ctx.drawImage(img, 0, 0)
-      canvas.toBlob((pngBlob) => {
-        if (pngBlob) {
-          downloadBlob(filename, pngBlob)
-        }
-      })
-    }
-    URL.revokeObjectURL(url)
-  }
-  img.src = url
+export const exportElementAsPng = async (element: HTMLElement, filename: string): Promise<void> => {
+  const canvas = await html2canvas(element, {
+    backgroundColor: resolvePaperBackground(element),
+    scale: EXPORT_SCALE,
+    onclone: prepareCaptureClone,
+  })
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((png) => {
+      if (!png) {
+        reject(new Error('The browser returned no PNG data.'))
+        return
+      }
+      resolve(png)
+    }, 'image/png')
+  })
+  downloadBlob(filename, blob)
 }

@@ -9,29 +9,31 @@ import type { ExportFormatId } from './export-types'
 import { translate } from '@/lib/i18n/messages/export'
 
 interface EncryptExportDialogProps {
-  showPassword: boolean
-  setShowPassword: (show: boolean) => void
-  password: string
-  setPassword: (password: string) => void
-  confirm: string
-  setConfirm: (confirm: string) => void
-  showPass: boolean
-  setShowPass: (show: boolean) => void
-  handleExport: (format: ExportFormatId) => Promise<void>
+  state: {
+    showPassword: boolean
+    password: string
+    confirm: string
+    showPass: boolean
+  }
+  actions: {
+    setShowPassword: (show: boolean) => void
+    setPassword: (password: string) => void
+    setConfirm: (confirm: string) => void
+    setShowPass: (show: boolean) => void
+    handleExport: (format: ExportFormatId) => Promise<void>
+  }
+  /** Whether the encrypted export this dialog submits is still running. */
+  exporting?: boolean
 }
 
 /** Dialog for setting a password to AES-256-GCM encrypt the exported file. */
 export const EncryptExportDialog = memo(function EncryptExportDialog({
-  showPassword,
-  setShowPassword,
-  password,
-  setPassword,
-  confirm,
-  setConfirm,
-  showPass,
-  setShowPass,
-  handleExport,
+  state,
+  actions,
+  exporting = false,
 }: EncryptExportDialogProps) {
+  const { showPassword, password, confirm, showPass } = state
+  const { setShowPassword, setPassword, setConfirm, setShowPass, handleExport } = actions
   const reducedMotion = useReducedMotion()
 
   if (!showPassword) return null
@@ -47,6 +49,7 @@ export const EncryptExportDialog = memo(function EncryptExportDialog({
         animate={{ opacity: 1, scale: 1 }}
         transition={reducedMotion ? { duration: 0 } : undefined}
         onClick={(e) => e.stopPropagation()}
+        aria-busy={exporting}
         className="w-[420px] max-w-[92vw] rounded-xl border border-border bg-popover p-6 shadow-2xl"
       >
         <div className="mb-4 flex items-center gap-2.5">
@@ -115,10 +118,10 @@ export const EncryptExportDialog = memo(function EncryptExportDialog({
           </button>
           <button
             onClick={() => { handleExport('encrypted').catch(() => undefined) }}
-            disabled={!password || password !== confirm}
+            disabled={!password || password !== confirm || exporting}
             className="rounded-md bg-primary px-4 py-1.5 text-label-lg font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:opacity-40 press-scale focus-ring"
           >
-            {translate('export.encrypt.submit')}
+            {exporting ? translate('export.encrypt.exporting') : translate('export.encrypt.submit')}
           </button>
         </div>
       </motion.div>

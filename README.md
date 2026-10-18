@@ -112,8 +112,7 @@ pnpm run test:e2e:offline # Run after `pnpm run build`; first-use offline view t
 │   │   ├── studio/          # Zustand store, schema, hydration, migrations, local recovery helpers
 │   │   └── sync/            # WebRTC sync bridge, Yjs CRDT documents, presence, conflict logic
 │   └── test/                # Test utilities, fixtures, and builder helpers
-├── plans/                   # GOAP plans, task decomposition, and architecture decision records (ADRs)
-├── analysis/                # Systematic architectural audits (e.g. TRIZ Contradiction Audits)
+├── plans/                   # GOAP plans, research, task decomposition, and architecture decision records (ADRs)
 ├── scripts/                 # Reusable validation, quality gates, and automated repair scripts
 ├── agents-docs/             # Multi-agent coordination guides, rules, and hook documentation
 └── public/                  # Static assets and PWA service worker manifest

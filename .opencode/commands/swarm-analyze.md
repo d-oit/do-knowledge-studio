@@ -21,4 +21,4 @@ For each gap found, report:
 
 Also identify quick wins, issues confirmed by multiple perspectives, and dependencies between gaps.
 
-Save findings to `analysis/SWARM_ANALYSIS.md`.
+Save findings to `plans/research/scratch/SWARM_ANALYSIS.md`.

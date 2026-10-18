@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react'
+import { useSyncExternalStore } from 'react'
 import type { ReactNode } from 'react'
 
 // ── Mocks ─────────────────────────────────────────────────────────────────
@@ -28,10 +29,11 @@ let _reducedMotion = false
 vi.mock('@/lib/studio/use-reduced-motion', () => ({
   useReducedMotion: () => _reducedMotion,
 }))
-
-const mockSetView = vi.fn()
-const mockSetCommandOpen = vi.fn()
-const mockSetMobileDrawerOpen = vi.fn()
+const { mockSetView, mockSetCommandOpen, mockSetMobileDrawerOpen } = vi.hoisted(() => ({
+  mockSetView: vi.fn(),
+  mockSetCommandOpen: vi.fn(),
+  mockSetMobileDrawerOpen: vi.fn(),
+}))
 
 // Track the open state setter so tests can inspect it
 let _overlayOpen = false
@@ -57,22 +59,36 @@ vi.mock('@/components/studio/ui/shared-primitives', () => ({
   },
 }))
 
-vi.mock('@/lib/studio/store', () => ({
-  useStudioStore: Object.assign(
-    (selector?: (s: Record<string, unknown>) => unknown) => {
-      const state = {
-        currentView: 'home',
-        setView: mockSetView,
-        commandOpen: false,
-        mobileDrawerOpen: false,
-        setCommandOpen: mockSetCommandOpen,
-        setMobileDrawerOpen: mockSetMobileDrawerOpen,
-      }
-      return selector ? selector(state as unknown as Record<string, unknown>) : state
-    },
-    { getState: () => ({ currentView: 'home', setView: mockSetView }) },
-  ),
-}))
+vi.mock('@/lib/studio/store', () => {
+  let state: Record<string, unknown> = {
+    currentView: 'home',
+    setView: mockSetView,
+    commandOpen: false,
+    mobileDrawerOpen: false,
+    setCommandOpen: mockSetCommandOpen,
+    setMobileDrawerOpen: mockSetMobileDrawerOpen,
+    shortcutsOpen: false,
+  }
+  const listeners = new Set<() => void>()
+  const setShortcutsOpen = (open: boolean) => {
+    state = { ...state, shortcutsOpen: open }
+    _overlayOpen = open
+    listeners.forEach((listener) => listener())
+  }
+  const subscribe = (listener: () => void) => {
+    listeners.add(listener)
+    return () => { listeners.delete(listener) }
+  }
+  const useStudioStore = (selector?: (s: Record<string, unknown>) => unknown) => {
+    const currentState = useSyncExternalStore(subscribe, () => state, () => state)
+    return selector ? selector(currentState) : currentState
+  }
+  state = { ...state, setShortcutsOpen }
+  return {
+    useStudioStore: Object.assign(useStudioStore, { getState: () => state }),
+    setShortcutsOpen,
+  }
+})
 
 // Must import after all mocks are set up
 import { ShortcutsDialog } from './shortcuts-dialog'

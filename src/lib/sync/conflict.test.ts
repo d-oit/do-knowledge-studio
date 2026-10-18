@@ -49,6 +49,12 @@ describe('resolveEntityConflict', () => {
   })
 })
 
+  it('breaks equal-time entity ties deterministically regardless of local peer', () => {
+    const first = makeEntity({ name: 'Alpha', updatedAt: '2026-01-02T00:00:00Z' })
+    const second = makeEntity({ name: 'Zulu', updatedAt: '2026-01-02T00:00:00Z' })
+    expect(resolveEntityConflict(first, second)).toEqual(resolveEntityConflict(second, first))
+  })
+
 describe('resolveClaimConflict', () => {
   it('picks remote when newer', () => {
     const local = makeClaim({ statement: 'Local', updatedAt: '2026-01-01T00:00:00Z' })
@@ -56,6 +62,12 @@ describe('resolveClaimConflict', () => {
     expect(resolveClaimConflict(local, remote).statement).toBe('Remote')
   })
 })
+
+  it('breaks equal-time claim ties deterministically regardless of local peer', () => {
+    const first = makeClaim({ statement: 'Alpha', updatedAt: '2026-01-02T00:00:00Z' })
+    const second = makeClaim({ statement: 'Zulu', updatedAt: '2026-01-02T00:00:00Z' })
+    expect(resolveClaimConflict(first, second)).toEqual(resolveClaimConflict(second, first))
+  })
 
 describe('resolveEntityConflicts', () => {
   it('merges non-overlapping entities', () => {

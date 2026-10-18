@@ -29,11 +29,11 @@
 ---
 
 ### 1.3 Fix Broken Doc References
-**Files**: `AGENTS.md`, `CONTRIBUTING.md`, `CLAUDE.md`, `README.md`, `analysis/PR_106_SWARM_ANALYSIS.md`, `agents-docs/SCRIPTS.md`, `.agents/skills/learn/SKILL.md`  
+**Files**: `AGENTS.md`, `CONTRIBUTING.md`, `CLAUDE.md`, `README.md`, `plans/research/scratch/analysis/PR_106_SWARM_ANALYSIS.md`, `agents-docs/SCRIPTS.md`, `.agents/skills/learn/SKILL.md`  
 **Status**: ✅ COMPLETED  
 **Issue**: Chaotic mix of `SKILLS.md`, `AVAILABLE_SKILLS.md`, and `AVAILABLE_SKILLS.md`.  
 **Action**:
-1. Fixed `AVAILABLE_AVAILABLE_SKILLS.md` typo (double "AVAILABLE") in CONTRIBUTING.md, CLAUDE.md, analysis/PR_106_SWARM_ANALYSIS.md, agents-docs/SCRIPTS.md, .agents/skills/learn/SKILL.md.
+1. Fixed `AVAILABLE_AVAILABLE_SKILLS.md` typo (double "AVAILABLE") in CONTRIBUTING.md, CLAUDE.md, plans/research/scratch/analysis/PR_106_SWARM_ANALYSIS.md, agents-docs/SCRIPTS.md, .agents/skills/learn/SKILL.md.
 2. Removed non-existent `QUICKSTART.md` reference from `README.md`.
 **Effort**: 1h  
 **Validation**: `grep -rE "AVAILABLE_AVAILABLE|QUICKSTART\.md" .` returns no results.

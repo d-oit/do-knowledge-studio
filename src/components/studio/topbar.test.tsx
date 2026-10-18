@@ -114,28 +114,12 @@ describe('Topbar', () => {
     expect(mockSetSearchQuery).toHaveBeenCalledWith('test')
   })
 
-  it('opens command palette on ⌘K in search input', () => {
-    render(<Topbar />)
-    fireEvent.keyDown(screen.getByLabelText('Search'), { key: 'k', metaKey: true })
-    expect(mockSetCommandOpen).toHaveBeenCalledWith(true)
-  })
-
-  it('opens command palette on Ctrl+K in search input', () => {
-    render(<Topbar />)
-    fireEvent.keyDown(screen.getByLabelText('Search'), { key: 'k', ctrlKey: true })
-    expect(mockSetCommandOpen).toHaveBeenCalledWith(true)
-  })
 
   it('renders command palette button', () => {
     render(<Topbar />)
     expect(screen.getByLabelText('Open command palette')).toBeDefined()
   })
 
-  it('opens command palette on button click', () => {
-    render(<Topbar />)
-    fireEvent.click(screen.getByLabelText('Open command palette'))
-    expect(mockSetCommandOpen).toHaveBeenCalledWith(true)
-  })
 
   it('renders mobile menu button', () => {
     render(<Topbar />)

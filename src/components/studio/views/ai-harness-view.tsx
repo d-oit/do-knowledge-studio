@@ -278,32 +278,16 @@ export const AIHarnessView = () => {
             className="lg:col-span-2"
           >
             <AiHarnessSettingsPanel
-              provider={provider}
-              setProvider={setProvider}
-              model={model}
-              setModel={setModel}
-              apiKey={apiKey}
-              setApiKey={setApiKey}
-              showKey={showKey}
-              setShowKey={setShowKey}
-              augment={augment}
-              setAugment={setAugment}
-              ollamaCpuOnly={ollamaCpuOnly}
-              setOllamaCpuOnly={setOllamaCpuOnly}
-              ollamaBaseUrl={ollamaBaseUrl}
-              setOllamaBaseUrl={setOllamaBaseUrl}
-              localDevice={localDevice}
-              setLocalDevice={setLocalDevice}
-              allowWebResearch={allowWebResearch}
-              setAllowWebResearch={setAllowWebResearch}
-              customModel={customModel}
-              setCustomModel={setCustomModel}
-              ollamaModels={ollamaModels}
-              handleRefreshOllamaModels={handleRefreshOllamaModels}
-              entityCount={entityCount}
-              effectiveModel={effectiveModel}
-              selectedEngineTarget={selectedEngineTarget}
-              isLoading={isLoading}
+              settings={{
+                provider, model, apiKey, showKey, augment, ollamaCpuOnly,
+                ollamaBaseUrl, allowWebResearch, customModel, ollamaModels, localDevice,
+              }}
+              actions={{
+                setProvider, setModel, setApiKey, setShowKey, setAugment,
+                setOllamaCpuOnly, setOllamaBaseUrl, setAllowWebResearch,
+                setCustomModel, handleRefreshOllamaModels, setLocalDevice,
+              }}
+              status={{ entityCount, effectiveModel, selectedEngineTarget, isLoading }}
             />
           </motion.div>
         )}

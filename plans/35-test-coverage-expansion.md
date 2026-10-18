@@ -3,7 +3,7 @@
 **GOAP Goal**: G-TESTING  
 **Priority**: P1 (Critical gaps identified in swarm analysis)  
 **Estimated Total Effort**: 20-28 hours  
-**Source**: `analysis/SWARM_ANALYSIS.md` — Test coverage perspective  
+**Source**: `plans/research/scratch/analysis/SWARM_ANALYSIS.md` — Test coverage perspective
 **Date**: 2026-05-31
 
 ## Issue Summary

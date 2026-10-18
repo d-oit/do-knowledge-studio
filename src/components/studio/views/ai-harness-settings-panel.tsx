@@ -24,32 +24,38 @@ import { Field, PROVIDERS } from './ai-harness-settings'
 import { SwitchToggle } from '../ui/shared-primitives'
 
 interface SettingsPanelProps {
-  provider: AIProvider
-  setProvider: (p: AIProvider) => void
-  model: string
-  setModel: (m: string) => void
-  apiKey: string
-  setApiKey: (k: string) => void
-  showKey: boolean
-  setShowKey: (v: boolean) => void
-  augment: boolean
-  setAugment: (v: boolean) => void
-  ollamaCpuOnly: boolean
-  setOllamaCpuOnly: (v: boolean) => void
-  ollamaBaseUrl: string
-  setOllamaBaseUrl: (u: string) => void
-  allowWebResearch: boolean
-  setAllowWebResearch: (v: boolean) => void
-  customModel: string
-  setCustomModel: (m: string) => void
-  ollamaModels: string[]
-  handleRefreshOllamaModels: () => void | Promise<void>
-  entityCount: number
-  effectiveModel: string
-  selectedEngineTarget: { slug: string; display_name: string; description?: string } | null
-  isLoading: boolean
-  localDevice: 'wasm' | 'webgpu'
-  setLocalDevice: (d: 'wasm' | 'webgpu') => void
+  settings: {
+    provider: AIProvider
+    model: string
+    apiKey: string
+    showKey: boolean
+    augment: boolean
+    ollamaCpuOnly: boolean
+    ollamaBaseUrl: string
+    allowWebResearch: boolean
+    customModel: string
+    ollamaModels: string[]
+    localDevice: 'wasm' | 'webgpu'
+  }
+  actions: {
+    setProvider: (p: AIProvider) => void
+    setModel: (m: string) => void
+    setApiKey: (k: string) => void
+    setShowKey: (v: boolean) => void
+    setAugment: (v: boolean) => void
+    setOllamaCpuOnly: (v: boolean) => void
+    setOllamaBaseUrl: (u: string) => void
+    setAllowWebResearch: (v: boolean) => void
+    setCustomModel: (m: string) => void
+    handleRefreshOllamaModels: () => void | Promise<void>
+    setLocalDevice: (d: 'wasm' | 'webgpu') => void
+  }
+  status: {
+    entityCount: number
+    effectiveModel: string
+    selectedEngineTarget: { slug: string; display_name: string; description?: string } | null
+    isLoading: boolean
+  }
 }
 
 /**
@@ -233,35 +239,17 @@ const EngineSelect = ({
 )
 
 /** Settings panel for AI provider configuration, model selection, and augmentation options. */
-export const AiHarnessSettingsPanel = ({
-  provider,
-  setProvider,
-  model,
-  setModel,
-  apiKey,
-  setApiKey,
-  showKey,
-  setShowKey,
-  augment,
-  setAugment,
-  ollamaCpuOnly,
-  setOllamaCpuOnly,
-  ollamaBaseUrl,
-  setOllamaBaseUrl,
-  allowWebResearch,
-  localDevice,
-  setLocalDevice,
-  setAllowWebResearch,
-  customModel,
-  setCustomModel,
-  ollamaModels,
-  handleRefreshOllamaModels,
-  entityCount,
-  effectiveModel,
-  selectedEngineTarget,
-  isLoading,
-}: SettingsPanelProps) => {
-  const activeProvider = PROVIDERS.find((p) => p.id === provider) ?? PROVIDERS[0]
+export const AiHarnessSettingsPanel = ({ settings, actions, status }: SettingsPanelProps) => {
+  const {
+    provider, model, apiKey, showKey, augment, ollamaCpuOnly, ollamaBaseUrl,
+    allowWebResearch, customModel, ollamaModels, localDevice,
+  } = settings
+  const {
+    setProvider, setModel, setApiKey, setShowKey, setAugment, setOllamaCpuOnly,
+    setOllamaBaseUrl, setAllowWebResearch, setCustomModel,
+    handleRefreshOllamaModels, setLocalDevice,
+  } = actions
+  const { entityCount, effectiveModel, selectedEngineTarget, isLoading } = status
 
   return (
     <aside>
@@ -348,7 +336,7 @@ export const AiHarnessSettingsPanel = ({
             </Field>
           )}
 
-          {activeProvider.requiresKey && (
+          {PROVIDERS.find((p) => p.id === provider)?.requiresKey && (
             <Field label="API Key" icon={Key}>
               <div className="relative">
                 <input

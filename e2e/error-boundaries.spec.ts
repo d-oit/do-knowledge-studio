@@ -2,28 +2,17 @@ import { test, expect, type Page } from '@playwright/test';
 import { expectNavigationReachable, waitForAppReady } from './helpers/navigation';
 
 /**
- * Framework-level error surfaces (ADR 035, Plan 130 G1 / A6).
+ * Framework error surfaces (ADR 035).
  *
- * The per-view boundaries are already covered by `offline-views.spec.ts` (a
- * rejected dynamic import renders `ViewErrorBoundary`). What is under test here
- * is the layer above them: `src/app/error.tsx`, which Next wraps around the
- * root segment, and `src/app/not-found.tsx`.
+ * The route-segment UI in `src/app/error.tsx` is covered as a component because
+ * the app has no supported fault-injection route. This browser spec exercises
+ * the root-layout fallback through `OfflineIndicator`, which is mounted by the
+ * real layout and consumes the same reduced-motion hook.
  *
- * A route-level render failure cannot be produced from the test's side of the
- * page without a hook in the component, so the spec injects a deterministically
- * armed fault instead: `window.matchMedia` throws for the reduced-motion query
- * while armed, and `useReducedMotion` reads that query during render.
- *
- * Which re-render is triggered is load-bearing. Most components that read the
- * query live inside a view (`home-view`, `library-entities`, ...), so a
- * navigation would surface the failure inside `ViewErrorBoundary` — one
- * boundary lower than the file under test. Opening the command palette changes
- * only store state that the shell chrome subscribes to (the palette and the
- * shortcuts dialog), so the failure surfaces exactly where `error.tsx` is
- * responsible for it, and the views are untouched.
- *
- * Disarming is what makes `retry()` able to succeed, which is the recovery path
- * being asserted.
+ * The reduced-motion query is armed only after hydration. Dispatching the
+ * browser's real `offline` event re-renders that layout component and surfaces
+ * the failure above the route segment, where `global-error.tsx` is responsible
+ * for recovery.
  */
 
 /** Window flags the injected fault reads and this spec arms. */
@@ -60,25 +49,26 @@ const setRenderFault = async (page: Page, armed: boolean): Promise<void> => {
   }, armed);
 };
 
-test.describe('Route error boundary', () => {
-  test('renders the themed boundary and recovers through the retry action', async ({ page }) => {
+test.describe('Root layout error boundary', () => {
+  test('renders the global fallback and recovers through the retry action', async ({ page }) => {
+    test.skip(
+      process.env.PLAYWRIGHT_PRODUCTION !== '1',
+      'Next.js uses the development error overlay instead of global-error.',
+    );
     await installRenderFault(page);
     await page.goto('/');
     await waitForAppReady(page);
 
-    // Arming alone changes nothing: the re-render caused by the shortcut is
-    // what walks the hook again and surfaces the failure.
     await setRenderFault(page, true);
-    await page.keyboard.press('Control+k');
+    await page.evaluate(() => window.dispatchEvent(new Event('offline')));
 
-    const boundaryHeading = page.getByRole('heading', { name: 'Something went wrong' });
+    const boundaryHeading = page.getByRole('heading', { name: 'The studio could not start' });
+    const retryButton = page.getByRole('button', { name: 'Reload the studio' });
     await expect(boundaryHeading).toBeVisible();
-    await expect(page.getByRole('button', { name: /try again/i })).toBeVisible();
+    await expect(retryButton).toBeVisible();
 
-    // `retry()` re-fetches and re-renders the failed segment, so it can only
-    // succeed once the cause is gone.
     await setRenderFault(page, false);
-    await page.getByRole('button', { name: /try again/i }).click();
+    await retryButton.click();
 
     await waitForAppReady(page);
     await expectNavigationReachable(page);

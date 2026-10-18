@@ -41,4 +41,4 @@
 
 ---
 
-See full report: `analysis/PR_106_SWARM_ANALYSIS.md`
+See full report: `plans/research/scratch/analysis/PR_106_SWARM_ANALYSIS.md`

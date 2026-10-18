@@ -39,8 +39,6 @@ echo -e "${BLUE}Checking ${#STAGED_FILES} staged file(s)...${NC}"
 echo ""
 
 # Run quality gate in fast mode on changed files only
-# Skip global hooks check since we are already running as a hook
-export SKIP_GLOBAL_HOOKS_CHECK=true
 
 if ./scripts/quality_gate.sh --fast --changed; then
     echo ""

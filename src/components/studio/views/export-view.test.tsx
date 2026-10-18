@@ -101,6 +101,7 @@ vi.mock('@/lib/studio/store', () => ({
 vi.mock('./use-export-handlers', () => ({
   useExportHandlers: () => ({
     handleExport: mockHandleExport,
+    exportingFormat: null,
     handleImportClick: mockHandleImportClick,
     handleFileChange: mockHandleFileChange,
     handleConfirmImport: mockHandleConfirmImport,

@@ -89,6 +89,11 @@ db/*.db
 
 # Research screenshots (not source)
 research/
+# Research artifacts are tracked when deliberately archived in plans.
+!plans/research/
+!plans/research/**
+!plans/archive/research/
+!plans/archive/research/**
 
 # Z scripts runtime
 .zscripts/*.pid

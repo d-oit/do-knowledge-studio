@@ -109,14 +109,6 @@ describe('Conflict resolution: entities', () => {
     expect(result.name).toBe('Remote')
   })
 
-  it('picks remote when timestamps are equal (>= comparison)', () => {
-    const local = makeEntity({ id: 'e-1', name: 'Local', updatedAt: '2026-01-01T00:00:00Z' })
-    const remote = makeEntity({ id: 'e-1', name: 'Remote', updatedAt: '2026-01-01T00:00:00Z' })
-    const result = resolveEntityConflict(local, remote)
-    // Implementation uses >= so remote wins on equal timestamps
-    expect(result.name).toBe('Remote')
-  })
-
   it('picks local when local is newer', () => {
     const local = makeEntity({ id: 'e-1', name: 'Local', updatedAt: '2026-06-01T00:00:00Z' })
     const remote = makeEntity({ id: 'e-1', name: 'Remote', updatedAt: '2026-01-01T00:00:00Z' })

@@ -21,10 +21,10 @@ Systematic innovation audit for software systems, architectures, and workflows.
 
 ## Output Convention
 
-All agent-generated analysis must be written to the `analysis/` directory using the following naming convention:
-`analysis/triz-<scope>-YYYY-MM-DD.md`
+All agent-generated analysis must be written to `plans/research/scratch/` using the following naming convention:
+`plans/research/scratch/triz-<scope>-YYYY-MM-DD.md`
 
-Example: `analysis/triz-scripts-2025-05-20.md`
+Example: `plans/research/scratch/triz-scripts-2025-05-20.md`
 
 ## Audit Process
 
@@ -32,7 +32,7 @@ Example: `analysis/triz-scripts-2025-05-20.md`
 2. **CONTRADICTION DISCOVERY**: Identify technical contradictions: "Improving [X] in this scope causes [Y] to worsen".
 3. **PRINCIPLE MAPPING**: Map discovered contradictions to TRIZ inventive principles.
 4. **INNOVATION ROADMAP**: Propose specific architectural or process changes based on TRIZ resolutions.
-5. **REPORT**: Document findings in the `analysis/` directory.
+5. **REPORT**: Document findings in `plans/research/scratch/`.
 
 ## Core Protocol
 
@@ -43,7 +43,7 @@ Example: `analysis/triz-scripts-2025-05-20.md`
 2. IDENTIFY contradiction: "Improving [X] causes [Y] to worsen"
 3. CHECK if contradiction is real or apparent
 4. RESOLVE using separation principles
-5. DOCUMENT findings in analysis/
+5. DOCUMENT findings in plans/research/scratch/
 ```
 
 ### Ideal Final Result (IFR) for Audits
@@ -76,7 +76,7 @@ Example: `analysis/triz-scripts-2025-05-20.md`
 ✓ Target scope clearly defined
 ✓ Discovered contradictions explicitly stated
 ✓ Recommendations mapped to TRIZ inventive principles
-✓ Findings saved to `analysis/triz-<scope>-YYYY-MM-DD.md`
+✓ Findings saved to `plans/research/scratch/triz-<scope>-YYYY-MM-DD.md`
 
 ## Reference Files
 

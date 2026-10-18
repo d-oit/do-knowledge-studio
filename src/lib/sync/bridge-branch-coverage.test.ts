@@ -15,34 +15,31 @@ import {
 import { addTombstone, clearTombstones } from './tombstones'
 import { destroy } from './doc'
 import type { Entity, Claim } from '@/lib/studio/types'
+import { getConflictResolutionKey } from './merge'
 
 // ── Builders ──────────────────────────────────────────────────────────────
 
-function makeEntity(overrides: Partial<Entity> = {}): Entity {
-  return {
-    id: `bridge-e-${Date.now().toString(36)}`,
-    name: 'Test Entity',
-    type: 'concept',
-    description: 'A test entity',
-    content: 'Some content',
-    tags: ['tag1'],
-    createdAt: '2026-01-01T00:00:00Z',
-    updatedAt: '2026-01-02T00:00:00Z',
-    links: [],
-    ...overrides,
-  }
-}
+const makeEntity = (overrides: Partial<Entity> = {}): Entity => ({
+  id: `bridge-e-${crypto.randomUUID()}`,
+  name: 'Test Entity',
+  type: 'concept',
+  description: 'A test entity',
+  content: 'Some content',
+  tags: ['tag1'],
+  createdAt: '2026-01-01T00:00:00Z',
+  updatedAt: '2026-01-02T00:00:00Z',
+  links: [],
+  ...overrides,
+})
 
-function makeClaim(overrides: Partial<Claim> = {}): Claim {
-  return {
-    id: `bridge-c-${Date.now().toString(36)}`,
-    entityId: 'entity-1',
-    statement: 'Test claim',
-    confidence: 0.9,
-    verification: 'verified',
-    ...overrides,
-  }
-}
+const makeClaim = (overrides: Partial<Claim> = {}): Claim => ({
+  id: `bridge-c-${crypto.randomUUID()}`,
+  entityId: 'entity-1',
+  statement: 'Test claim',
+  confidence: 0.9,
+  verification: 'verified',
+  ...overrides,
+})
 
 beforeEach(() => {
   destroy()
@@ -64,7 +61,7 @@ describe('applyConflictResolution — branch coverage', () => {
     // Add the same entity locally so collectUpdates finds it
     // applyConflictResolution uses local state passed in
     const resolutions = new Map<string, 'local' | 'remote'>()
-    resolutions.set('e-resolve:name', 'remote')
+    resolutions.set(getConflictResolutionKey({ entityId: 'e-resolve', entityType: 'entity', field: 'name' }), 'remote')
 
     const conflicts = [{
       entityId: 'e-resolve',
@@ -90,7 +87,7 @@ describe('applyConflictResolution — branch coverage', () => {
     setYjsClaim(claim)
 
     const resolutions = new Map<string, 'local' | 'remote'>()
-    resolutions.set('c-resolve:statement', 'remote')
+    resolutions.set(getConflictResolutionKey({ entityId: 'c-resolve', entityType: 'claim', field: 'statement' }), 'remote')
 
     const conflicts = [{
       entityId: 'c-resolve',
@@ -115,7 +112,7 @@ describe('applyConflictResolution — branch coverage', () => {
     setYjsEntity(entity)
 
     const resolutions = new Map<string, 'local' | 'remote'>()
-    resolutions.set('e-keep-local:name', 'local') // Keep local
+    resolutions.set(getConflictResolutionKey({ entityId: 'e-keep-local', entityType: 'entity', field: 'name' }), 'local') // Keep local
 
     const conflicts = [{
       entityId: 'e-keep-local',
@@ -189,7 +186,7 @@ describe('applyConflictResolution — branch coverage', () => {
     setYjsEntity(entity)
 
     const resolutions = new Map<string, 'local' | 'remote'>()
-    resolutions.set('e-date:name', 'remote')
+    resolutions.set(getConflictResolutionKey({ entityId: 'e-date', entityType: 'entity', field: 'name' }), 'remote')
 
     const conflicts = [{
       entityId: 'e-date',
@@ -281,13 +278,11 @@ describe('edge cases — branch coverage', () => {
     expect(() => removeYjsClaim('c-double-remove')).not.toThrow()
   })
 
-  it('mergeIntoYjs with tombstoned entity still stores it (tombstone checked at read)', () => {
-    const entity = makeEntity({ id: 'e-merge-tombstone', name: 'Should appear' })
+  it('allows a same-ID entity write after observing its tombstone', () => {
+    const entity = makeEntity({ id: 'e-merge-tombstone', name: 'Restored' })
     addTombstone('e-merge-tombstone')
     setYjsEntity(entity)
-    // Entity is in Yjs but tombstoned — should not appear in getYjsEntities
-    const entities = getYjsEntities()
-    expect(entities.find((e) => e.id === 'e-merge-tombstone')).toBeUndefined()
+    expect(getYjsEntities().find((item) => item.id === entity.id)).toEqual(entity)
   })
 
   it('applyRemoteUpdate with empty arrays returns empty', () => {
@@ -303,13 +298,14 @@ describe('edge cases — branch coverage', () => {
     expect(result.entities[0].name).toBe('Local Only')
   })
 
-  it('applyRemoteUpdate with remote entity with no tombstone overrides local when tombstone is false', () => {
+  it('merges concurrent records deterministically when no tombstone exists', () => {
     const local = makeEntity({ id: 'e-no-tombstone', name: 'Local' })
     const remote = makeEntity({ id: 'e-no-tombstone', name: 'Remote' })
-    // Not tombstoned — remote should override
     const result = applyRemoteUpdate([remote], [], [local], [])
+    const reversed = applyRemoteUpdate([local], [], [remote], [])
+
     expect(result.entities).toHaveLength(1)
-    expect(result.entities[0].name).toBe('Remote')
+    expect(result.entities[0]).toEqual(reversed.entities[0])
   })
 
   it('applyRemoteUpdate does not insert a tombstoned remote entity when local is absent', () => {
@@ -323,7 +319,7 @@ describe('edge cases — branch coverage', () => {
 
   it('applyRemoteUpdate does not insert a tombstoned remote claim when local is absent', () => {
     const remote = makeClaim({ id: 'c-resurrect', statement: 'Should stay deleted' })
-    addTombstone('c-resurrect')
+    addTombstone('c-resurrect', undefined, 'claims')
     const result = applyRemoteUpdate([], [remote], [], [])
     expect(result.claims).toHaveLength(0)
   })

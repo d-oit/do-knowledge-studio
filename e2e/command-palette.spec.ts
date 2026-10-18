@@ -43,7 +43,11 @@ test.describe('Command palette', () => {
     const searchInput = dialog.getByRole('combobox');
     if (await searchInput.isVisible()) {
       await searchInput.fill('library');
-      await expect(dialog.getByText(/library/i)).toBeVisible();
+      // Two commands legitimately mention the library now (the navigation item
+      // and the JSON export), so the assertion names the navigation command and
+      // proves filtering by requiring an unrelated command to disappear.
+      await expect(dialog.getByRole('option', { name: 'Library', exact: true })).toBeVisible();
+      await expect(dialog.getByRole('option', { name: 'Toggle theme' })).toBeHidden();
     }
   });
 
@@ -69,6 +73,18 @@ test.describe('Command palette', () => {
       const dialog = page.getByRole('dialog', { name: /command/i });
       await expect(dialog).toBeVisible();
     }
+  });
+
+  test('opens from the topbar command-palette trigger', async ({ page }) => {
+    const topbarTrigger = page
+      .getByRole('banner')
+      .getByRole('button', { name: 'Open command palette' });
+    test.skip(
+      !(await topbarTrigger.isVisible()),
+      'The topbar command-palette shortcut is available only at desktop widths.',
+    );
+    await topbarTrigger.click();
+    await expect(page.getByRole('dialog', { name: /command/i })).toBeVisible();
   });
 
   test('dialog has proper aria attributes', async ({ page }) => {

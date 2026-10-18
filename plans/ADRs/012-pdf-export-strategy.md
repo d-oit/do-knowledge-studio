@@ -109,3 +109,11 @@ See `plans/040-goap-export-pipeline-and-pr-cleanup-2026-06-16.md`, actions B1, B
 - ✅ Open PDF in Preview/Acrobat → text is selectable, layout is correct
 - ✅ Unit test: `buildPdfExport()` resolves with non-empty Blob with correct MIME type
 - ✅ Integration test: `handleExport('pdf')` calls `buildPdfExport` + `downloadBlob`
+
+## Deferred rich features reaffirmed (2026-10-17 — [Plan 177](../177-older-plan-leftovers-2026-10-17.md))
+
+The deferred list (custom fonts, tables, images) is reaffirmed as a candidate
+list, not outstanding work: no subset was ever prioritized, the delivered scope
+above is what the ADR's `IMPLEMENTED` status describes, and the existing
+verification covers it. A future subset should arrive as its own plan with
+acceptance criteria rather than as an implied obligation of this ADR.

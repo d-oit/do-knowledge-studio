@@ -30,6 +30,8 @@ const messages = {
   'export.grid.createEntity': 'Create entity',
   /** Hover action label on an available format card. */
   'export.grid.exportNow': 'Export now',
+  /** Busy status while an export is running; format name interpolated. */
+  'export.grid.exporting': (format: string) => `Exporting ${format}…`,
   /** Label on a format card that is not yet available. */
   'export.grid.notAvailable': 'Not yet available',
 
@@ -75,6 +77,8 @@ const messages = {
   'export.encrypt.cancel': 'Cancel',
   /** Submit action for the encrypted export. */
   'export.encrypt.submit': 'Encrypt & export',
+  /** Submit label while the encrypted export is still running. */
+  'export.encrypt.exporting': 'Encrypting…',
 
   /** Reset confirmation heading. */
   'export.reset.title': 'Reset to demo data?',
