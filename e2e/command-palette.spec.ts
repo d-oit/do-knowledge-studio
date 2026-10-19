@@ -30,9 +30,8 @@ test.describe('Command palette', () => {
     await expect(dialog).toBeVisible();
 
     const searchInput = dialog.getByRole('combobox');
-    if (await searchInput.isVisible()) {
-      await expect(searchInput).toBeFocused();
-    }
+    await expect(searchInput).toBeVisible();
+    await expect(searchInput).toBeFocused();
   });
 
   test('typing filters command results', async ({ page }) => {
@@ -41,14 +40,15 @@ test.describe('Command palette', () => {
     await expect(dialog).toBeVisible();
 
     const searchInput = dialog.getByRole('combobox');
-    if (await searchInput.isVisible()) {
-      await searchInput.fill('library');
-      // Two commands legitimately mention the library now (the navigation item
-      // and the JSON export), so the assertion names the navigation command and
-      // proves filtering by requiring an unrelated command to disappear.
-      await expect(dialog.getByRole('option', { name: 'Library', exact: true })).toBeVisible();
-      await expect(dialog.getByRole('option', { name: 'Toggle theme' })).toBeHidden();
-    }
+    await expect(searchInput).toBeVisible();
+    const unrelatedCommand = dialog.getByRole('option', { name: 'Toggle theme' });
+    await expect(unrelatedCommand).toBeVisible();
+    await searchInput.fill('library');
+    // Two commands legitimately mention the library now (the navigation item
+    // and the JSON export), so the assertion names the navigation command and
+    // proves filtering by requiring an unrelated command to disappear.
+    await expect(dialog.getByRole('option', { name: 'Library', exact: true })).toBeVisible();
+    await expect(unrelatedCommand).toBeHidden();
   });
 
   test('clicking a navigation item navigates', async ({ page }) => {

@@ -8,7 +8,8 @@ import {
   removeYjsClaim,
   mergeIntoYjs,
 } from './bridge'
-import { destroy } from './doc'
+import { destroy, getSyncDoc } from './doc'
+import { clockFromRecord } from './causality'
 import type { Entity, Claim } from '@/lib/studio/types'
 
 function makeEntity(overrides: Partial<Entity> = {}): Entity {
@@ -130,3 +131,20 @@ describe('mergeIntoYjs', () => {
   })
 })
 
+
+describe('mergeIntoYjs causal versions', () => {
+  it('keeps per-record clocks stable when a merge leaves the payload unchanged', () => {
+    const entity = makeEntity({ id: 'existing-entity' })
+    const claim = makeClaim({ id: 'existing-claim' })
+    setYjsEntity(entity)
+    setYjsClaim(claim)
+    const entityClock = clockFromRecord(getSyncDoc().entities.get(entity.id)!)
+    const claimClock = clockFromRecord(getSyncDoc().claims.get(claim.id)!)
+
+    const result = mergeIntoYjs([entity], [claim])
+
+    expect(result.conflicts).toHaveLength(0)
+    expect(clockFromRecord(getSyncDoc().entities.get(entity.id)!)).toEqual(entityClock)
+    expect(clockFromRecord(getSyncDoc().claims.get(claim.id)!)).toEqual(claimClock)
+  })
+})

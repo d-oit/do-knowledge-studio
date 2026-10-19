@@ -196,3 +196,14 @@ that test did not distinguish the transport; it verifies same-origin tab
 propagation, not independent network convergence. G6's independent-peer canary
 remains blocked until an external peer completes WebRTC/ICE. The real-corpus
 and human NVDA/VoiceOver checks also remain pre-merge requirements.
+
+## Implementation addendum — 2026-10-19
+
+Outbound updates advance a record clock only when that record's application
+payload changes. Unchanged records keep their clocks across unrelated
+Zustand updates, no-op join/resync merges, and resolution of another record's
+conflict. Deletes still add tombstones; conflict resolution writes only IDs
+selected by the user. Claim equality treats missing and empty edit history as
+the same schema-default value, preventing no-op clock churn. Regressions are
+covered by `src/lib/sync/bidirectional-bridge.test.ts` and
+`src/lib/sync/bridge.test.ts`.

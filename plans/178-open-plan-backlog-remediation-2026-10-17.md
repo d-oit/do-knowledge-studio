@@ -123,3 +123,28 @@ Removed `lodash`, `lodash-es`, `defu`, `js-cookie`, `effect`, `prismjs`, and `di
   BATS, markdownlint, links, and agent-surface validation. The full link pass checked 58 files and 211 links with no
   broken links (2026-10-18). E2E was skipped only because port 3000 is maintainer-owned; the production suite above
   ran separately on isolated candidate port 3010.
+
+## Review follow-up — 2026-10-19
+
+- Structured review identified two P2 gaps: outbound sync advanced clocks for unchanged
+  records, and the command-palette filtering test could pass without a visible search
+  input. Sync now compares payloads and writes only changed or explicitly touched
+  records; it treats missing and empty claim history as equivalent under the schema
+  default. The E2E spec requires a visible combobox and proves an unrelated command
+  disappears after filtering.
+- The new sync clock regressions failed before the fix on four unchanged-record cases.
+  After the fix, `pnpm exec vitest run src/lib/sync` passed 19 files and 230 tests
+  (1 skipped).
+- A browser defect-injection probe removed the command-palette combobox. The former
+  conditional guard passed; the required visibility assertion failed as expected.
+  The real command-palette E2E spec passed all 8 tests on isolated port 3016.
+- Final `pnpm run test:coverage`: 214 files, 3,100 passed, 1 skipped; 89.06%
+  statements, 80.09% branches, 85.57% functions, and 90.21% lines.
+- Final `pnpm run build` passed without warnings; generated 84 precache URLs with
+  76 supported assets.
+- ADR 027 records that only changed payloads advance clocks and no-op
+  merge/resolution writes preserve untouched versions.
+- Follow-up read-only reviews of the sync causality and command-palette test fixes
+  found no remaining P1/P2 findings.
+- Final production Chromium E2E: 222 tests passed with one worker and zero retries
+  in 5.9 minutes on isolated port 3018 using the current production build.
