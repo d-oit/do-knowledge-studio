@@ -655,3 +655,21 @@ above is preserved unchanged.
   (per-node motion wrappers) stay **measured-before-change candidates**: both asks
   are conditioned on profiling that shows a material cost, and no baseline exists
   for either path. Recorded, not silently dropped (Plan 177).
+
+### Current-state reconciliation — 2026-10-18 (Plan 178)
+
+D2.8 and D2.19 were profiled in isolated Chromium production builds at 4× CPU
+throttling on the same eight-entity, twelve-edge seeded corpus. The browser
+Performance API recorded no long task at or above 50 ms and zero lab TBT in
+either build. RAF p95 was 16.8 ms for both baseline and candidate in both
+workloads. The tab was backgrounded briefly during each capture; the resulting
+~1,000 ms maximum RAF interval is not used as a comparison. The candidate
+profile showed more sampled JavaScript for mind-map branch toggles, recorded in
+`plans/perf-baselines.md`; frame and blocking measurements did not show a
+material user-visible regression at this data size. No optimization was made.
+
+This is a small synthetic/seeded-corpus result, not a substitute for profiling
+the maintainer's real library. React Profiler was not used in this production
+run; the evidence is Chromium CPU profiling plus RAF and long-task observers.
+Reassess D2.8/D2.19 during the real-corpus canary before treating them as closed
+for arbitrary corpus sizes.

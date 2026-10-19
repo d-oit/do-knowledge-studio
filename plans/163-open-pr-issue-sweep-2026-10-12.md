@@ -387,3 +387,19 @@ records that the repository ruleset was not changed.
   optional because the provider-wire messages built in `src/lib/ai/context.ts`
   are never rendered (the provider mapper strips `id` by design) and every UI
   construction site already sets one.
+
+## 10. Reconciliation — Plan 178 (2026-10-18)
+
+- The Home progress-width hydration mismatch was closed in Plan 176 with a
+  server-identical first render and separate pre/post-mount assertions in
+  `e2e/hydration-mismatch.spec.ts`.
+- The dependency-range no-downgrade and stale-base deletion guards now have
+  executable checks in `scripts/check-dependency-downgrades.mjs` and
+  `scripts/check-stale-base-deletions.mjs`, with BATS coverage included in the
+  repository quality gate; see [ADR 044](ADRs/044-pr-integrity-guards.md).
+- The Vercel Hobby deployment quota is an account/provider constraint, not a
+  repository fix. Keep pushes deliberate; a preview may still be blocked by
+  quota. This change does not attempt a deployment-budget workaround.
+- Codacy can still publish an analysis snapshot for an older SHA. Do not
+  suppress stale findings: wait for the PR-head analysis and resolve every
+  current finding under the repository's zero-warning policy.

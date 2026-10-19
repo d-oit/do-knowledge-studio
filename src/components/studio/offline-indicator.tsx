@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import type { TransitionEvent } from "react";
 import { WifiOff } from "lucide-react";
 import { useReducedMotion } from "@/lib/studio/use-reduced-motion";
@@ -74,8 +74,8 @@ export function OfflineIndicator() {
     return () => { observer.disconnect(); };
   }, []);
 
-  // Ends the reservation after the CSS exit transition, or immediately when
-  // reduced motion skips it.
+  // The reservation is cleared only after the banner has been removed from the
+  // DOM. That keeps the shell from moving under a still-visible exit transition.
   const clearReservedHeight = useCallback(() => {
     document.documentElement.style.removeProperty(BANNER_HEIGHT_VARIABLE);
   }, []);
@@ -89,9 +89,8 @@ export function OfflineIndicator() {
         return;
       }
       setShowBanner(false);
-      clearReservedHeight();
     },
-    [clearReservedHeight, isOffline],
+    [isOffline],
   );
 
   useEffect(() => {
@@ -99,16 +98,20 @@ export function OfflineIndicator() {
 
     if (reducedMotion) {
       setShowBanner(false);
-      clearReservedHeight();
       return;
     }
 
     const timeoutId = setTimeout(() => {
       setShowBanner(false);
-      clearReservedHeight();
     }, EXIT_TRANSITION_DURATION_MS);
     return () => { clearTimeout(timeoutId); };
-  }, [clearReservedHeight, isOffline, reducedMotion, showBanner]);
+  }, [isOffline, reducedMotion, showBanner]);
+
+  // Layout effects run after React removes the banner but before the next paint,
+  // so releasing its reservation cannot expose the topbar beneath the banner.
+  useLayoutEffect(() => {
+    if (!isOffline && !showBanner) clearReservedHeight();
+  }, [clearReservedHeight, isOffline, showBanner]);
 
   useEffect(() => {
     return () => { clearReservedHeight(); };

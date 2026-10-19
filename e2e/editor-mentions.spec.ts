@@ -7,7 +7,7 @@ test.describe('Editor @mention entity linking', () => {
     await createNewEntity(page, 'Mentions Note');
 
     // Type a mention query into the content editor.
-    const editor = page.getByLabel('Editor content');
+    const editor = page.getByLabel('Editor content', { exact: true });
     await editor.click();
     await editor.pressSequentially('See @Altshuller', { delay: 30 });
 

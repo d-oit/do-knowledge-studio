@@ -1,7 +1,8 @@
 # Plan 178 — Remaining Active Plan Tasks: Reconcile, Implement, and Verify
 
-**Date:** 2026-10-17  
-**Status:** In progress — one scoped PR from `feat/plan177-leftovers`  
+**Date:** 2026-10-18
+**Status:** Candidate implementation and full production E2E complete; local quality gate passed; PR delivery remains in progress;
+independent-peer canary remains blocked on WebRTC/ICE.
 **Method:** GOAP with parallel audit and implementation waves  
 **Related:** Plans [131](131-goap-swarm-improvement-audit-2026-08-22.md), [162](162-roadmap-progress-and-next-work-2026-10-05.md), [165](165-backlog-remediation-2026-10-13.md), [169](169-touch-gesture-specification-2026-10-15.md), [176](176-plans-backlog-drain-2026-10-17.md), [177](177-older-plan-leftovers-2026-10-17.md), and [ADR 027](ADRs/027-canonical-state-and-p2p-sync-bridge.md).
 
@@ -13,15 +14,15 @@ Close every still-actionable, source-confirmed implementation task in the active
 
 | Area | Current status | Evidence / scope |
 | --- | --- | --- |
-| Plan 177 W1–W2 | Candidate implementation is present on this branch; integrated verification remains pending | Palette, exports, graph PNG, backlinks, library filters, deferred search, and command filtering. Earlier Plan 177 checks are dated evidence for that candidate only. |
+| Plan 177 W1–W2 | Integrated candidate; full production E2E and local quality gate passed; PR/CI review pending | Palette, exports, graph PNG, backlinks, library filters, deferred search, and command filtering. Earlier Plan 177 checks are dated evidence for that candidate only. |
 | Plan 03 | Historical architecture, not actionable backlog | Vite/SQLite-WASM/OPFS CLI was superseded by Plan 048 and ADR 018; tiered IndexedDB backup was not selected and the unused module was removed by Plan 166. |
 | Plan 133 | GraphView target implemented | `src/components/studio/views/graph-view.tsx` is now 349 LOC, below the recorded <350 LOC target. Worker retrieval and bounded AI context already exist; IndexedDB backup was not selected. |
-| Plan 131 G1–G2 | Implemented in source; final integrated verification pending | Persistence matrix and unknown-key policy are represented in `schema.ts` and `store-persist.test.ts`; claim-aware undo/redo, deletion restoration, batched child creation, selection reconciliation, and abortable chat paths are covered. |
-| Plan 131 G3 | Cleanup implemented; dependency verification pending | Root scratch moved under `plans/`; unused wrappers/config removed; `.env.example`, README and references updated; eight redundant/tree-empty override entries removed. Fourteen remaining overrides have active dependency paths; historical alert provenance is recorded below. |
-| Plan 131 G4–G5 + Plan 177 | Implementation integrated; final browser verification pending | Deferred ranked search, lazy Editor leaves and Chat, reduced-motion-aware CSS replacements, shared navigation/empty-state/search/dialog primitives, keyboard ownership, shortcuts state, export busy/PNG behavior, library filter persistence, inbound backlinks, and GraphView decomposition are in source. |
-| Plan 131 G6 | Bridge implementation integrated; peer shadow/canary pending | Canonical Zustand↔Yjs updates, room-scoped durable tombstones, vector clocks, validated conflict resolution, join/resync reconciliation, cursor/presence teardown, and signaling configuration are implemented. Two-peer, reload, and offline rejoin browser evidence remains required. |
-| Plan 131 G7–G9 | Source work integrated; full gates and conditional profiling pending | Hook validation, Vitest cleanup/parallelism, test-source typechecking, shared fixtures, separate benchmarks, retrieval map, grouped props, shared breakpoints, chat/editor timing, citation mutation coverage, TypeScript/Node decisions, app tsconfig, package identity, and historical report cleanup are addressed. D2.8/D2.19 remain measured-before-change candidates. |
-| Plans 162/165/166/169/176 | Reconciled; only explicitly unprioritized/human-only items remain | F3 gestures and S3 manifest strategy are implemented; Plan 162 candidates remain unprioritized, first-mount reduced motion is an accepted tradeoff, and NVDA/VoiceOver requires a human. |
+| Plan 131 G1–G2 | Unit, production E2E, and local quality gates passed; real-corpus persistence validation remains pre-merge | Persistence matrix and unknown-key policy are represented in `schema.ts` and `store-persist.test.ts`; claim-aware undo/redo, deletion restoration, batched child creation, selection reconciliation, and abortable chat paths are covered. |
+| Plan 131 G3 | Source cleanup and dependency override audit complete; local quality gate passed | Root scratch moved under `plans/`; unused wrappers/config removed; `.env.example`, README and references updated; eight redundant/tree-empty override entries removed. Fourteen remaining overrides have active dependency paths; historical alert provenance is recorded below. |
+| Plan 131 G4–G5 + Plan 177 | Integrated implementation; full production E2E and local quality gate passed; PR/CI review pending | Deferred ranked search, lazy Editor leaves and Chat, reduced-motion-aware CSS replacements, shared navigation/empty-state/search/dialog primitives, keyboard ownership, shortcuts state, export busy/PNG behavior, library filter persistence, inbound backlinks, and GraphView decomposition are in source. |
+| Plan 131 G6 | Bridge implementation integrated; same-origin synthetic create/update/delete/rejoin passed, but independent-origin P2P canary is blocked | Canonical Zustand↔Yjs updates, room-scoped durable tombstones, vector clocks, validated conflict resolution, join/resync reconciliation, cursor/presence teardown, and signaling configuration are implemented. Independent origins joined signaling but remained at Peers 0; conflict/offline/reload behavior on an independent peer remains unverified. |
+| Plan 131 G7–G9 | Source work, full production E2E, and local quality gate passed; conditional profiles completed | Hook validation, Vitest cleanup/parallelism, test-source typechecking, shared fixtures, separate benchmarks, retrieval map, grouped props, shared breakpoints, chat/editor timing, citation mutation coverage, TypeScript/Node decisions, app tsconfig, package identity, and historical report cleanup are addressed. D2.8/D2.19 profiles are recorded in `plans/perf-baselines.md`; no material frame or long-task regression at eight entities, but real-corpus evidence remains. |
+| Plans 162/165/166/169/176 | Reconciled; only explicitly unprioritized/human-only items remain | F3 gestures and the S3 Cursor/Windsurf symlink strategy are implemented; first-mount reduced motion is an accepted tradeoff, and NVDA/VoiceOver requires a human. |
 | Plan 158 | Closed | Its dated reconciliation says all audit items are closed; Plan 176 and later records provide closure evidence for the listed P2 follow-ups. |
 
 ### Legacy unchecked-box audit
@@ -91,12 +92,16 @@ Removed `lodash`, `lodash-es`, `defu`, `js-cookie`, `effect`, `prismjs`, and `di
 - Yjs [Document Updates](https://docs.yjs.dev/api/document-updates): transaction origin distinguishes local/provider updates and can suppress redundant propagation.
 - Zustand [`createStore`](https://zustand.docs.pmnd.rs/reference/apis/create-store): vanilla stores expose `subscribe` for external synchronization.
 - Yjs [`y-indexeddb`](https://docs.yjs.dev/ecosystem/database-provider/y-indexeddb): IndexedDB readiness is asynchronous (`synced`); `provider.get/set` stores local document metadata that is not synchronized with peers.
+- Yjs [WebRTC connection provider](https://docs.yjs.dev/ecosystem/connection-provider/y-webrtc): `y-webrtc` is the peer-to-peer transport; the canary reached signaling but did not observe a peer.
 - Vitest [`unstubGlobals`](https://vitest.dev/config/unstubglobals), [`restoreMocks`](https://vitest.dev/config/restoremocks), and [`maxWorkers`](https://vitest.dev/config/maxworkers): cleanup defaults and percentage-based parallelism.
 - Next.js [TypeScript configuration](https://nextjs.org/docs/app/api-reference/config/typescript): app-only CLI checking uses a dedicated config; the installed Next 16 guide was also read at `node_modules/next/dist/docs/01-app/03-api-reference/05-config/02-typescript.md`.
 - TypeScript [7.0 announcement](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/) and typescript-eslint [dependency versions](https://typescript-eslint.io/users/dependency-versions/): TS7’s compiler-API removal and the parser’s supported TypeScript range inform the deferred upgrade decision.
 - Playwright [`webServer`](https://playwright.dev/docs/test-webserver): official server lifecycle/options reference; changing the repository’s E2E server mode remains a maintainer workflow decision.
+- Playwright [`Page.getByLabel`](https://playwright.dev/docs/api/class-page#page-get-by-label): `exact` defaults to `false`; requiring the whole label avoids matching the lazy-editor loading status when the test needs the textarea.
 - pnpm [`package.json` settings](https://pnpm.io/package_json#pnpmoverrides): official override placement and semantics used for the dependency inventory.
 - React [`lazy`](https://react.dev/reference/react/lazy): the load function resolves a module with a `default` component export; the lazy component must render under `Suspense`. This supports module-scope lazy boundaries for heavy views.
+- React [`useLayoutEffect`](https://react.dev/reference/react/useLayoutEffect): runs after DOM mutations and before paint;
+  used to release the banner reservation only after its DOM removal.
 - MDN [`transitionend`](https://developer.mozilla.org/en-US/docs/Web/API/Element/transitionend_event): the event does not fire when no transition runs or when a transition is cancelled; the offline indicator also uses a bounded fallback and cleanup.
 - Next.js [`error.js` and `global-error.js`](https://nextjs.org/docs/app/api-reference/file-conventions/error): route boundaries wrap their segment, not the layout above it; root-layout errors require `global-error`, and `retry()` re-fetches and re-renders the boundary children.
 - web.dev [Total Blocking Time](https://web.dev/articles/tbt): main-thread tasks over 50 ms count as long tasks; lab TBT is a proxy for responsiveness, not a field substitute for INP.
@@ -105,4 +110,16 @@ Removed `lodash`, `lodash-es`, `defu`, `js-cookie`, `effect`, `prismjs`, and `di
 ## Verification record
 
 - Focused persistence and Plan 177 component suites: `pnpm exec vitest run ...` — 7 files, 285 tests passed, no TypeScript errors (2026-10-17).
-- Full local gate, relevant coverage, production build, Chromium E2E, actual-browser interactions, and sync shadow/canary remain pending until implementation is integrated.
+- `pnpm run build` passed without warnings; generated 84 precache URLs with 76 supported assets (2026-10-18).
+- Focused production E2E after correcting ambiguous Playwright selectors (`getByLabel` defaults to substring matching, so “Editor content loading” matched “Editor content”): all 52 tests across four Chromium viewport projects completed; 51 passed first attempt, and the tablet claim-extraction case passed on retry after its page/context closed during a click (2026-10-18).
+- Offline-banner reservation ordering: the exit now hides the banner first; `useLayoutEffect` releases reserved space
+  after DOM removal and before paint. Unit 4/4 and the mobile production E2E regression passed 10/10 repetitions
+  (2026-10-18).
+- Independent-origin sync canary: `localhost:3010` + `127.0.0.1:3012`, then `localhost:3010` + `127.0.0.1:3010`, joined the same synthetic room and each reported signaling connected; peer count stayed 0 after 10 seconds. Earlier baseline/candidate also stayed at 0. Same-origin two-tab synthetic create/update/delete/rejoin passed with `Peers: 1`, but the UI aggregates WebRTC and BroadcastChannel peers, so transport was not distinguished; this is not an independent P2P result. No cross-origin conflict, offline reconnect, or reload-persistence claim is made; an external peer that completes WebRTC/ICE is required.
+- Full production E2E after the exact-label and banner-order fixes: 859 passed, 8 skipped, and 0 failures/flakes (867 total; 25.8
+  minutes) across Chromium, mobile, tablet, and desktop-xl projects on isolated candidate port 3010. The mobile banner-exit
+  regression passed 10 repeated runs; the editor readiness case passed three isolated repeats and the full run (2026-10-18).
+- Final local quality gate: `SKIP_E2E=true ./scripts/quality_gate.sh` passed lint, both typechecks, Vitest, ShellCheck,
+  BATS, markdownlint, links, and agent-surface validation. The full link pass checked 58 files and 211 links with no
+  broken links (2026-10-18). E2E was skipped only because port 3000 is maintainer-owned; the production suite above
+  ran separately on isolated candidate port 3010.

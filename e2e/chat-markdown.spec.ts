@@ -22,7 +22,7 @@ const CHAT_QUERY_PLACEHOLDER = 'Ask about your library, or request a synthesisâ€
 
 test('renders a local assistant Markdown reply with theme-aware typography', async ({ page }) => {
   await createNewEntity(page, ENTITY_NAME);
-  await page.getByLabel('Editor content').fill(MARKDOWN_CONTENT);
+  await page.getByLabel('Editor content', { exact: true }).fill(MARKDOWN_CONTENT);
   await page.getByRole('button', { name: /save|commit/i }).click();
   await navClick(page, /chat/i);
 

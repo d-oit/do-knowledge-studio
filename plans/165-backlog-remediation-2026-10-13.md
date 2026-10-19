@@ -123,3 +123,23 @@ against the merged code: F1 is implemented (#923/#926/#927; 54 AI-harness tests
 pass), and the dev search-worker error and workflow-linter warnings from Plan 161
 no longer reproduce. F3, S3, first-mount reduced motion, graph revision
 comparison, Synthesis Inbox, and Visual Query Builder remain open.
+
+### Reconciliation — Plan 178 (2026-10-18)
+
+The earlier "Remaining scope" table predates later plan closures and is
+preserved as history, not a current open-task list:
+
+- Mandatory graph and Mind Map touch gestures were implemented and exercised in
+  the four-project E2E sweep under Plan 166/169; the optional Mind Map swipes,
+  double-tap, and long-press remain excluded by their own acceptance criteria.
+- Cursor/Windsurf symlink semantics were resolved by Plan 166's manifest
+  alignment and idempotent setup/validation checks.
+- Graph revision comparison shipped in Plan 170. Synthesis Inbox and Visual
+  Query Builder remain unprioritized candidates, not scheduled work.
+- First-mount reduced-motion behavior remains the explicit hydration-safe
+  tradeoff recorded in Plan 161. NVDA/VoiceOver verification remains a human
+  task and is not replaced by the automated axe/ARIA suite.
+
+Plan 178 records current candidate verification. Both independent candidate
+origins connected to signaling but reported zero peers; real-corpus
+persistence/sync and human NVDA/VoiceOver checks remain pre-merge gates.
