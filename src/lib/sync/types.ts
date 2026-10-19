@@ -76,6 +76,70 @@ export function claimToYMap(claim: Claim): Record<string, unknown> {
   return data
 }
 
+const arraysEqual = <T>(
+  left: readonly T[],
+  right: readonly T[],
+  areEqual: (leftValue: T, rightValue: T) => boolean,
+): boolean => {
+  if (left.length !== right.length) return false
+  for (let index = 0; index < left.length; index += 1) {
+    const leftValue = left[index]
+    const rightValue = right[index]
+    if (leftValue === undefined || rightValue === undefined || !areEqual(leftValue, rightValue)) {
+      return false
+    }
+  }
+  return true
+}
+
+const sameString = (left: string, right: string): boolean => left === right
+
+const sameEntityLink = (
+  left: Entity['links'][number],
+  right: Entity['links'][number],
+): boolean => left.targetId === right.targetId && left.relation === right.relation
+
+const sameClaimHistoryEntry = (
+  left: NonNullable<Claim['editHistory']>[number],
+  right: NonNullable<Claim['editHistory']>[number],
+): boolean => left.statement === right.statement && left.editedAt === right.editedAt
+
+const sameClaimHistory = (left: Claim['editHistory'], right: Claim['editHistory']): boolean => {
+  const leftLength = left?.length ?? 0
+  const rightLength = right?.length ?? 0
+  if (leftLength !== rightLength) return false
+  if (leftLength === 0) return true
+  if (!left || !right) return false
+  return arraysEqual(left, right, sameClaimHistoryEntry)
+}
+
+/** Compare the application fields serialized by `entityToYMap`, excluding sync metadata. */
+export const sameEntityPayload = (left: Entity, right: Entity): boolean =>
+  left.id === right.id &&
+  left.name === right.name &&
+  left.type === right.type &&
+  left.description === right.description &&
+  left.content === right.content &&
+  left.sourceUrl === right.sourceUrl &&
+  left.createdAt === right.createdAt &&
+  left.updatedAt === right.updatedAt &&
+  arraysEqual(left.tags, right.tags, sameString) &&
+  arraysEqual(left.links, right.links, sameEntityLink)
+
+/** Compare claim payloads, treating missing and empty edit histories as equivalent. */
+export const sameClaimPayload = (left: Claim, right: Claim): boolean =>
+  left.id === right.id &&
+  left.entityId === right.entityId &&
+  left.statement === right.statement &&
+  left.evidence === right.evidence &&
+  left.confidence === right.confidence &&
+  left.verification === right.verification &&
+  left.source === right.source &&
+  left.createdAt === right.createdAt &&
+  left.updatedAt === right.updatedAt &&
+  left.version === right.version &&
+  sameClaimHistory(left.editHistory, right.editHistory)
+
 /** Deserialize a plain object from a Yjs map back into a Claim. */
 export function ymapToClaim(data: Record<string, unknown>): Claim {
   return {

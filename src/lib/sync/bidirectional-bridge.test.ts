@@ -6,11 +6,12 @@ import {
   destroyBridge,
   getYjsClaims,
   getYjsEntities,
+  setYjsClaim,
   setYjsEntity,
   startBidirectionalSync,
   subscribeSyncConflicts,
 } from './bridge'
-import { destroy, getDoc } from './doc'
+import { destroy, getDoc, getSyncDoc } from './doc'
 import type { Claim, Entity } from '@/lib/studio/types'
 import { clockFromRecord, compareClocks } from './causality'
 import { getConflictResolutionKey, type FieldConflict } from './merge'
@@ -351,5 +352,85 @@ describe('bidirectional canonical sync', () => {
     expect(restored?.version).toBe(5)
     expect(restored?.updatedAt).not.toBe(claim.updatedAt)
     expect(getYjsClaims()).toEqual([restored])
+  })
+})
+
+const claim = (overrides: Partial<Claim> = {}): Claim => ({
+  id: 'sync-claim',
+  entityId: 'parent',
+  statement: 'Local claim',
+  confidence: 0.8,
+  verification: 'unverified',
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-01T00:00:00.000Z',
+  version: 1,
+  editHistory: [],
+  ...overrides,
+})
+
+describe('causal version writes', () => {
+  it('does not advance unchanged entity clocks after an unrelated entity edit', () => {
+    resetCanonical()
+    const unchanged = entity({ id: 'unchanged-entity' })
+    const updated = entity({ id: 'updated-entity' })
+    useStudioStore.setState({ entities: [unchanged, updated], claims: [] })
+    setYjsEntity(unchanged)
+    setYjsEntity(updated)
+    startBidirectionalSync()
+    const initialClock = clockFromRecord(getSyncDoc().entities.get(unchanged.id)!)
+
+    useStudioStore.getState().commitEntity(entity({
+      id: updated.id,
+      name: 'Updated locally',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+    }))
+
+    expect(clockFromRecord(getSyncDoc().entities.get(unchanged.id)!)).toEqual(initialClock)
+  })
+
+  it('does not advance unchanged claim clocks after an unrelated claim edit', () => {
+    resetCanonical()
+    const unchanged = claim({ id: 'unchanged-claim' })
+    const updated = claim({ id: 'updated-claim' })
+    useStudioStore.setState({ entities: [], claims: [unchanged, updated] })
+    setYjsClaim(unchanged)
+    setYjsClaim(updated)
+    startBidirectionalSync()
+    const initialClock = clockFromRecord(getSyncDoc().claims.get(unchanged.id)!)
+
+    useStudioStore.getState().updateClaim(updated.id, { statement: 'Updated claim' })
+
+    expect(clockFromRecord(getSyncDoc().claims.get(unchanged.id)!)).toEqual(initialClock)
+  })
+
+  it('does not advance untouched entity clocks while resolving another record', () => {
+    resetCanonical()
+    const affected = entity({ id: 'affected-entity', name: 'Local choice' })
+    const untouched = entity({ id: 'untouched-entity' })
+    useStudioStore.setState({ entities: [affected, untouched], claims: [] })
+    setYjsEntity(affected)
+    setYjsEntity(untouched)
+    startBidirectionalSync()
+    const untouchedClock = clockFromRecord(getSyncDoc().entities.get(untouched.id)!)
+    const conflict = {
+      entityId: affected.id,
+      entityType: 'entity' as const,
+      field: 'name',
+      localValue: affected.name,
+      remoteValue: 'Remote choice',
+      winner: 'local' as const,
+      reason: 'manual choice',
+    }
+
+    expect(applyConflictResolution(
+      new Map<string, 'local' | 'remote'>([
+        [getConflictResolutionKey(conflict), 'remote'],
+      ]),
+      [conflict],
+      [affected, untouched],
+      [],
+    )).toBe(true)
+
+    expect(clockFromRecord(getSyncDoc().entities.get(untouched.id)!)).toEqual(untouchedClock)
   })
 })

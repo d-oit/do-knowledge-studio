@@ -1,5 +1,5 @@
 import { getSyncDoc, getDoc } from './doc'
-import { entityToYMap, claimToYMap } from './types'
+import { entityToYMap, claimToYMap, sameEntityPayload, sameClaimPayload } from './types'
 import { getConflictResolutionKey, mergeEntities, mergeClaims, type FieldConflict, type MergeResult } from './merge'
 import { isTombstoned, addTombstone, getTombstone } from './tombstones'
 import { clockFromRecord, compareClocks, readRecordClock, setVersionedRecord } from './causality'
@@ -122,13 +122,21 @@ export function mergeIntoYjs(
     })
   }
 
+  const existingEntitiesById = new Map<string, Entity>()
+  for (const entity of existingEntities) existingEntitiesById.set(entity.id, entity)
+  const existingClaimsById = new Map<string, Claim>()
+  for (const claim of existingClaims) existingClaimsById.set(claim.id, claim)
   doc.transact(() => {
     for (const entity of entityResult.merged) {
       if (conflictedEntityIds.has(entity.id)) continue
+      const existing = existingEntitiesById.get(entity.id)
+      if (existing && sameEntityPayload(existing, entity)) continue
       setVersionedRecord(sync.entities, 'entities', entity.id, entityToYMap(entity), getTombstone(entity.id)?.clock)
     }
     for (const claim of claimResult.merged) {
       if (conflictedClaimIds.has(claim.id)) continue
+      const existing = existingClaimsById.get(claim.id)
+      if (existing && sameClaimPayload(existing, claim)) continue
       setVersionedRecord(sync.claims, 'claims', claim.id, claimToYMap(claim), getTombstone(claim.id, 'claims')?.clock)
     }
   }, ORIGIN_OUTBOUND)
@@ -315,9 +323,11 @@ export function applyConflictResolution(
         addTombstone(tombstone.id, undefined, tombstone.kind)
       }
       for (const entity of nextEntities) {
+        if (!touchedEntities.has(entity.id)) continue
         setVersionedRecord(sync.entities, 'entities', entity.id, entityToYMap(entity), getTombstone(entity.id)?.clock)
       }
       for (const claim of nextClaims) {
+        if (!touchedClaims.has(claim.id)) continue
         setVersionedRecord(sync.claims, 'claims', claim.id, claimToYMap(claim), getTombstone(claim.id, 'claims')?.clock)
       }
     }, ORIGIN_OUTBOUND)
@@ -367,26 +377,32 @@ export function startBidirectionalSync(): Unsubscribe {
     const claimsChanged = state.claims !== previousClaims
     if (!entitiesChanged && !claimsChanged) return
 
-    const previousEntityIds = new Set(state.entities.map((entity) => entity.id))
-    const previousClaimIds = new Set(state.claims.map((claim) => claim.id))
     const sync = getSyncDoc()
     const doc = getDoc()
     doc.transact(() => {
       if (entitiesChanged) {
+        const previousEntityById = new Map<string, Entity>()
+        for (const entity of previousEntities) previousEntityById.set(entity.id, entity)
         for (const entity of state.entities) {
-          setVersionedRecord(sync.entities, 'entities', entity.id, entityToYMap(entity), getTombstone(entity.id)?.clock)
+          const previous = previousEntityById.get(entity.id)
+          if (!previous || !sameEntityPayload(previous, entity)) {
+            setVersionedRecord(sync.entities, 'entities', entity.id, entityToYMap(entity), getTombstone(entity.id)?.clock)
+          }
+          previousEntityById.delete(entity.id)
         }
-        for (const entity of previousEntities) {
-          if (!previousEntityIds.has(entity.id)) addTombstone(entity.id)
-        }
+        for (const entity of previousEntityById.values()) addTombstone(entity.id)
       }
       if (claimsChanged) {
+        const previousClaimById = new Map<string, Claim>()
+        for (const claim of previousClaims) previousClaimById.set(claim.id, claim)
         for (const claim of state.claims) {
-          setVersionedRecord(sync.claims, 'claims', claim.id, claimToYMap(claim), getTombstone(claim.id, 'claims')?.clock)
+          const previous = previousClaimById.get(claim.id)
+          if (!previous || !sameClaimPayload(previous, claim)) {
+            setVersionedRecord(sync.claims, 'claims', claim.id, claimToYMap(claim), getTombstone(claim.id, 'claims')?.clock)
+          }
+          previousClaimById.delete(claim.id)
         }
-        for (const claim of previousClaims) {
-          if (!previousClaimIds.has(claim.id)) addTombstone(claim.id, undefined, 'claims')
-        }
+        for (const claim of previousClaimById.values()) addTombstone(claim.id, undefined, 'claims')
       }
     }, ORIGIN_OUTBOUND)
     previousEntities = state.entities
