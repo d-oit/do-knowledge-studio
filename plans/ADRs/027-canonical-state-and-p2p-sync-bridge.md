@@ -178,3 +178,21 @@ Y.Doc update reload and rejoin; tombstones are not compacted automatically.
 Join/resync merges are validated and committed to canonical state as one
 history entry with outbound echo suppression. Regression cases live in
 `src/lib/sync/causality.test.ts` and `src/lib/sync/doc-rejoin.test.ts`.
+
+## Sync canary status — 2026-10-18
+
+Two independent candidate origins joined one unique synthetic room:
+`http://localhost:3010` and `http://127.0.0.1:3012`. Both reported a signaling
+connection, but each retained `Peers: 0` after 10 seconds. Repeating with the
+second origin at `http://127.0.0.1:3010` (same candidate server, separate
+origin/storage) also left the peer count at zero. Earlier baseline/candidate
+cross-build pairing likewise produced no peer. No independent-origin
+create/update/delete, conflict, offline reconnect, or reload-persistence result
+is claimed.
+
+The earlier two-tab same-origin synthetic create/update/delete/rejoin test
+reached `Peers: 1`. The UI aggregates WebRTC and BroadcastChannel peers, and
+that test did not distinguish the transport; it verifies same-origin tab
+propagation, not independent network convergence. G6's independent-peer canary
+remains blocked until an external peer completes WebRTC/ICE. The real-corpus
+and human NVDA/VoiceOver checks also remain pre-merge requirements.

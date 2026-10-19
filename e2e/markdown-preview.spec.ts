@@ -35,7 +35,7 @@ const MARKDOWN_SAMPLE = [
 test.describe('Markdown preview', () => {
   test.beforeEach(async ({ page }) => {
     await createNewEntity(page, 'Markdown Preview Test');
-    await page.getByLabel('Editor content').fill(MARKDOWN_SAMPLE);
+    await page.getByLabel('Editor content', { exact: true }).fill(MARKDOWN_SAMPLE);
     // Preview mode is the second radio in the editor-mode group.
     await switchEditorMode(page, 1);
   });
@@ -105,7 +105,7 @@ test.describe('Markdown preview', () => {
   test('renders GFM tables, task lists, and strikethrough', async ({ page }) => {
     // Switch back to edit mode to refill with GFM-only content.
     await switchEditorMode(page, 0);
-    await page.getByLabel('Editor content').fill([
+    await page.getByLabel('Editor content', { exact: true }).fill([
       '| A | B |',
       '|---|---|',
       '| 1 | 2 |',
@@ -133,7 +133,7 @@ test.describe('Markdown preview', () => {
 
   test('split mode shows the textarea and the preview side by side', async ({ page }) => {
     await switchEditorMode(page, 2);
-    await expect(page.getByLabel('Editor content')).toBeVisible();
+    await expect(page.getByLabel('Editor content', { exact: true })).toBeVisible();
     await expect(preview(page).getByRole('heading', { name: 'Heading One', level: 1 })).toBeVisible();
   });
 

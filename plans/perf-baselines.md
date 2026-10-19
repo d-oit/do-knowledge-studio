@@ -98,6 +98,32 @@ mode filters what is drawn without rescaling the canvas.
 
 ---
 
+### 2026-10-18 browser profiles — Plan 131 D2.8 and D2.19
+
+Candidate (`localhost:3010`) and baseline (`localhost:3011`) production builds ran
+in isolated Chromium tabs at a 1365 × 768 viewport with 4× CPU throttling.
+Both had the same eight seeded entities and twelve graph connections. Chromium
+CPU profiles and `PerformanceObserver` long-task entries were captured while performing the
+interactions below; the measured RAF p95 excludes no samples, but a single
+~1,000 ms tab-background gap makes the maximum RAF interval unsuitable for
+comparison.
+
+| Workload | Build | Interaction | Next-chunk self CPU | RAF p95 | Long tasks ≥50 ms / TBT |
+| --- | --- | --- | ---: | ---: | ---: |
+| Graph, 8 entities / 12 edges | Baseline | 24 ArrowRight pan events, 12 zoom-in events, Home | 48.2 ms | 16.8 ms | 0 / 0 ms |
+| Graph, 8 entities / 12 edges | Candidate | Same 24 pan events, 12 zoom-in events, Home | 59.4 ms | 16.8 ms | 0 / 0 ms |
+| Mind map, project root and three-child branch | Baseline | 12 collapse/expand cycles | 63.2 ms | 16.8 ms | 0 / 0 ms |
+| Mind map, project root and three-child branch | Candidate | Same 12 collapse/expand cycles | 148.9 ms | 16.8 ms | 0 / 0 ms |
+
+The candidate graph added 11.2 ms of sampled JavaScript across the complete
+36-event sequence, with no p95 frame regression. The candidate mind-map profile
+sampled 85.7 ms more JavaScript across 12 cycles (~7.1 ms per cycle); p95 frame
+intervals remained equal and no ≥50 ms task occurred. This is additional CPU
+work, but not a measured user-visible frame or blocking regression at this
+corpus size, so D2.8 and D2.19 remain unchanged. Reassess with a representative
+real corpus before treating this small seeded-corpus profile as a production
+performance guarantee.
+
 ## 5. Editor preview
 
 - **Editor** — `src/components/studio/views/editor-view.tsx`, with the markdown

@@ -1,8 +1,7 @@
 # Plan 177 — Older-Plan Leftovers: Palette, Export, Panel, and Filter Records
 
 **Date:** 2026-10-17
-**Status:** In progress — one PR (Plan 176 drained 150–175 + the Plan 131 G8 set;
-this plan closes what the whole-folder sweep still found open in older plans)
+**Status:** Implementation integrated in the Plan 178 candidate; final verification and delivery are tracked there.
 **Method:** GOAP — the Plan 176 recon reported these as genuinely unmet; each was
 re-verified against source before this plan was written.
 **Related:** [ADR 017](ADRs/017-chat-unification.md) (chat unification, palette

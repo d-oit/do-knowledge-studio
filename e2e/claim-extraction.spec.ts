@@ -10,7 +10,7 @@ test.describe('Claim extraction', () => {
   test('converts an assertion in a note into a structured claim', async ({ page }) => {
     await createNewEntity(page, 'Claim Extraction Test');
 
-    await page.getByLabel('Editor content').fill(
+    await page.getByLabel('Editor content', { exact: true }).fill(
       'A note about capitals.\n\nAssertion: The capital of France is Paris (Source: geography textbook)',
     );
     await page.getByRole('button', { name: /save|commit/i }).click();
@@ -41,7 +41,7 @@ test.describe('Claim extraction', () => {
   test('extracting the same assertion twice does not duplicate the claim', async ({ page }) => {
     await createNewEntity(page, 'Claim Extraction Dedupe');
 
-    await page.getByLabel('Editor content').fill(
+    await page.getByLabel('Editor content', { exact: true }).fill(
       'Assertion: Ostriches cannot fly (Source: zoo guide)',
     );
     await page.getByRole('button', { name: /save|commit/i }).click();

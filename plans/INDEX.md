@@ -1,6 +1,6 @@
 # Plans Index
 
-**Updated**: 2026-10-14
+**Updated**: 2026-10-18
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
 Plan records are filed as `plans/NNN-slug.md`, where `NNN` is the plan number used
@@ -9,11 +9,17 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 178 — Open plan backlog remediation (2026-10-17)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| W0–W5 | Implementation integrated; full production E2E and local quality gate passed; PR delivery in progress; independent-peer canary blocked | GOAP + swarm audit/implementation. Independent origins connected to signaling but Peers stayed 0; same-origin `Peers: 1` did not distinguish WebRTC from BroadcastChannel. Real-corpus and NVDA/VoiceOver checks remain pre-merge gates. See [Plan 178](178-open-plan-backlog-remediation-2026-10-17.md). |
+
 ### Plan 177 — Older-plan leftovers (2026-10-17)
 
 | Wave | Goal | Status | Outcome |
 | --- | --- | --- | --- |
-| W1–W2 | Close what the whole-folder sweep still found open in the older plans: palette query pre-fill, palette theme/direct-export commands, export busy state, 1920×1080 graph PNG, right-panel "Referenced by" list, persisted library filters, deferred ranked search; close the decision items with recorded reasoning | In progress | One PR; per-item evidence and the verification record in [Plan 177](177-older-plan-leftovers-2026-10-17.md). |
+| W1–W2 | Close older-plan items still open in the whole-folder sweep: palette query pre-fill, theme/direct-export commands, export busy state, 1920×1080 graph PNG, inbound backlinks, persisted library filters, deferred ranked search, and command filtering | Implementation integrated; verification and PR delivery tracked in Plan 178 | Per-item source evidence and current verification record in [Plan 177](177-older-plan-leftovers-2026-10-17.md). |
 
 ### Plan 176 — plans/ backlog drain (2026-10-17)
 
