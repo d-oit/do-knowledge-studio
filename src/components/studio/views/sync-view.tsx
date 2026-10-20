@@ -99,7 +99,7 @@ const useSyncProviderEvents = (
 }
 
 /**
- * Starts LAN peer discovery while the room is connected and tears it down on cleanup.
+ * Starts LAN peer discovery while the room is active and tears it down on cleanup.
  * Extracted from `SyncView` for the same JS-R1005 reason as `useSyncProviderEvents`.
  */
 const useRoomDiscovery = (

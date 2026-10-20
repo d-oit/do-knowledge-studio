@@ -186,7 +186,7 @@ describe('SyncView branch coverage', () => {
     })
   })
 
-  it('joins room with a specific ID and transitions to connected via provider status', async () => {
+  it('joins room with a specific ID and exposes its active state via provider status', async () => {
     render(<SyncView />)
     fireEvent.change(screen.getByPlaceholderText('Enter room ID or leave empty to create'), {
       target: { value: 'room-123' },
@@ -194,7 +194,9 @@ describe('SyncView branch coverage', () => {
     fireEvent.click(screen.getByText('Join'))
     await waitFor(() => { expect(joinRoom).toHaveBeenCalledWith('room-123') })
     act(() => { mockEmit('status', { connected: true }) })
-    await waitFor(() => { expect(screen.getByText('Connected')).toBeDefined() })
+    await waitFor(() => { expect(screen.getByRole('button', { name: 'Re-sync' })).toBeDefined() })
+    expect(screen.getByText('Room active')).toBeDefined()
+    expect(screen.getByText('Room is active')).toBeDefined()
     expect(screen.getByText('Merged 0 entities, 0 claims')).toBeDefined()
   })
 
@@ -246,7 +248,7 @@ describe('SyncView branch coverage', () => {
     fireEvent.click(screen.getByText('Join'))
     await waitFor(() => { expect(joinRoom).toHaveBeenCalledWith('room-123') })
     act(() => { mockEmit('status', { connected: true }) })
-    await waitFor(() => { expect(screen.getByText('Connected')).toBeDefined() })
+    await waitFor(() => { expect(screen.getByRole('button', { name: 'Re-sync' })).toBeDefined() })
     act(() => { mockEmit('peers', { webrtcPeers: ['a', 'b'], bcPeers: ['c'] }) })
     await waitFor(() => { expect(screen.getByText('3')).toBeDefined() })
   })
@@ -259,7 +261,7 @@ describe('SyncView branch coverage', () => {
     fireEvent.click(screen.getByText('Join'))
     await waitFor(() => { expect(joinRoom).toHaveBeenCalledWith('room-123') })
     act(() => { mockEmit('status', { connected: true }) })
-    await waitFor(() => { expect(screen.getByText('Connected')).toBeDefined() })
+    await waitFor(() => { expect(screen.getByRole('button', { name: 'Re-sync' })).toBeDefined() })
     act(() => { mockEmit('synced', {}) })
     await waitFor(() => {
       expect(screen.getByTestId('synced-entities').textContent).toBe('1')
@@ -276,7 +278,7 @@ describe('SyncView branch coverage', () => {
     fireEvent.click(screen.getByText('Join'))
     await waitFor(() => { expect(joinRoom).toHaveBeenCalledWith('room-123') })
     act(() => { mockEmit('status', { connected: true }) })
-    await waitFor(() => { expect(screen.getByText('Connected')).toBeDefined() })
+    await waitFor(() => { expect(screen.getByRole('button', { name: 'Re-sync' })).toBeDefined() })
     fireEvent.click(screen.getByText('Leave'))
     await waitFor(() => {
       expect(stopDiscovery).toHaveBeenCalled()
@@ -319,7 +321,7 @@ describe('SyncView branch coverage', () => {
     fireEvent.click(screen.getByText('Join'))
     await waitFor(() => { expect(joinRoom).toHaveBeenCalledTimes(1) })
     act(() => { mockProvider.emit('status', { connected: true }) })
-    await waitFor(() => { expect(screen.getByText('Connected')).toBeDefined() })
+    await waitFor(() => { expect(screen.getByRole('button', { name: 'Re-sync' })).toBeDefined() })
     act(() => { mockProvider.emit('peers', { webrtcPeers: ['first'], bcPeers: [] }) })
     await waitFor(() => { expect(screen.getByText('Peers').parentElement?.textContent).toBe('Peers1') })
     act(() => { mockProvider.emit('synced', {}) })
@@ -345,7 +347,7 @@ describe('SyncView branch coverage', () => {
     fireEvent.click(screen.getByText('Join'))
     await waitFor(() => { expect(joinRoom).toHaveBeenCalledWith('room-123') })
     act(() => { mockEmit('status', { connected: true }) })
-    await waitFor(() => { expect(screen.getByText('Connected')).toBeDefined() })
+    await waitFor(() => { expect(screen.getByRole('button', { name: 'Re-sync' })).toBeDefined() })
     const copyButton = screen.getByLabelText('Copy room ID')
     fireEvent.click(copyButton)
     await waitFor(() => {
@@ -362,7 +364,7 @@ describe('SyncView branch coverage', () => {
     fireEvent.click(screen.getByText('Join'))
     await waitFor(() => { expect(joinRoom).toHaveBeenCalledWith('room-123') })
     act(() => { mockEmit('status', { connected: true }) })
-    await waitFor(() => { expect(screen.getByText('Connected')).toBeDefined() })
+    await waitFor(() => { expect(screen.getByRole('button', { name: 'Re-sync' })).toBeDefined() })
     fireEvent.click(screen.getByText('Re-sync'))
     await waitFor(() => {
       expect(toast.success).toHaveBeenCalledWith('Re-synced local data')
@@ -391,7 +393,7 @@ describe('SyncView branch coverage', () => {
     fireEvent.click(screen.getByText('Join'))
     await waitFor(() => { expect(joinRoom).toHaveBeenCalledWith('room-123') })
     act(() => { mockEmit('status', { connected: true }) })
-    await waitFor(() => { expect(screen.getByText('Connected')).toBeDefined() })
+    await waitFor(() => { expect(screen.getByRole('button', { name: 'Re-sync' })).toBeDefined() })
     fireEvent.click(screen.getByText('Re-sync'))
     await waitFor(() => { expect(screen.getByTestId('conflict-ui')).toBeDefined() })
   })
@@ -418,7 +420,7 @@ describe('SyncView branch coverage', () => {
     fireEvent.click(screen.getByText('Join'))
     await waitFor(() => { expect(joinRoom).toHaveBeenCalledWith('room-123') })
     act(() => { mockEmit('status', { connected: true }) })
-    await waitFor(() => { expect(screen.getByText('Connected')).toBeDefined() })
+    await waitFor(() => { expect(screen.getByRole('button', { name: 'Re-sync' })).toBeDefined() })
     fireEvent.click(screen.getByText('Re-sync'))
     await waitFor(() => { expect(screen.getByTestId('conflict-ui')).toBeDefined() })
     fireEvent.click(screen.getByText('Resolve'))
@@ -448,7 +450,7 @@ describe('SyncView branch coverage', () => {
     fireEvent.click(screen.getByText('Join'))
     await waitFor(() => { expect(joinRoom).toHaveBeenCalledWith('room-123') })
     act(() => { mockEmit('status', { connected: true }) })
-    await waitFor(() => { expect(screen.getByText('Connected')).toBeDefined() })
+    await waitFor(() => { expect(screen.getByRole('button', { name: 'Re-sync' })).toBeDefined() })
     fireEvent.click(screen.getByText('Re-sync'))
     await waitFor(() => { expect(screen.getByTestId('conflict-ui')).toBeDefined() })
     fireEvent.click(screen.getByText('Dismiss'))
@@ -464,7 +466,7 @@ describe('SyncView branch coverage', () => {
     fireEvent.click(screen.getByText('Join'))
     await waitFor(() => { expect(joinRoom).toHaveBeenCalledWith('room-123') })
     act(() => { mockEmit('status', { connected: true }) })
-    await waitFor(() => { expect(screen.getByText('Connected')).toBeDefined() })
+    await waitFor(() => { expect(screen.getByRole('button', { name: 'Re-sync' })).toBeDefined() })
     act(() => { mockEmit('status', { connected: false }) })
     await waitFor(() => { expect(screen.getByText('Disconnected')).toBeDefined() })
   })
@@ -478,7 +480,7 @@ describe('SyncView branch coverage', () => {
     fireEvent.click(screen.getByText('Join'))
     await waitFor(() => { expect(joinRoom).toHaveBeenCalledWith('room-123') })
     act(() => { mockEmit('status', { connected: true }) })
-    await waitFor(() => { expect(screen.getByText('Connected')).toBeDefined() })
+    await waitFor(() => { expect(screen.getByRole('button', { name: 'Re-sync' })).toBeDefined() })
     await waitFor(() => { expect(startDiscovery).toHaveBeenCalled() })
     act(() => {
       const discoveryCb = vi.mocked(startDiscovery).mock.calls[0][1]

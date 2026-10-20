@@ -149,8 +149,8 @@ export function getAvailableRooms(): { roomId: string; peerCount: number }[] {
   }))
 }
 
-/** Default signaling server URLs for WebRTC peer connection. */
-const DEFAULT_SIGNALING_SERVERS = ['wss://signaling.yjs.dev']
+/** Default signaling server URL mirrors the installed y-webrtc provider. */
+const DEFAULT_SIGNALING_SERVERS = ['wss://y-webrtc-eu.fly.dev']
 
 /** Parse the shared comma-separated public signaling configuration. */
 export function getSignalingServers(configured = process.env.NEXT_PUBLIC_YJS_SIGNALING_SERVERS): string[] {

@@ -1,9 +1,8 @@
 /**
  * Sync view i18n messages (N5).
  *
- * User-facing strings for `sync-view.tsx`: headings, the sync event log
- * (rendered in the Sync History panel), and toasts. The `SyncStatusCard`
- * component in `sync-helpers.tsx` has its own strings owned elsewhere.
+ * User-facing strings for `sync-view.tsx` and shared room-status labels used by
+ * `sync-helpers.tsx`.
  */
 import { makeT } from '@/lib/i18n/t'
 
@@ -21,10 +20,20 @@ const messages = {
   'sync.event.initFailed': 'Failed to initialize sync storage',
   /** Event log entry when the shared document finishes syncing. */
   'sync.event.synced': 'Document synchronized',
-  /** Event log entry when the signaling connection is established. */
-  'sync.event.connected': 'Connected to signaling server',
-  /** Event log entry when the signaling connection drops. */
-  'sync.event.disconnected': 'Disconnected from signaling server',
+  /** Status badge when the local room is active without a connected peer. */
+  'sync.status.roomActive': 'Room active',
+  /** Status badge when the provider reports at least one peer. */
+  'sync.status.peersConnected': 'Peers connected',
+  /** Status badge while the provider is joining a room. */
+  'sync.status.connecting': 'Connecting',
+  /** Status badge when the room cannot be joined. */
+  'sync.status.error': 'Error',
+  /** Status badge when no room is active. */
+  'sync.status.disconnected': 'Disconnected',
+  /** Event log entry when the provider marks the local room active. */
+  'sync.event.connected': 'Room is active',
+  /** Event log entry when the provider leaves the active state. */
+  'sync.event.disconnected': 'Room disconnected',
   /** Event log entry while joining a room; room id interpolated. */
   'sync.event.joining': (roomId: string) => `Joining room ${roomId}…`,
   /** Event log entry after locally merging the library into the room document. */
