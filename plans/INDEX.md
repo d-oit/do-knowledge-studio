@@ -1,6 +1,6 @@
 # Plans Index
 
-**Updated**: 2026-10-18
+**Updated**: 2026-10-19
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
 Plan records are filed as `plans/NNN-slug.md`, where `NNN` is the plan number used
@@ -13,7 +13,7 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 | Wave | Goal | Status | Outcome |
 | --- | --- | --- | --- |
-| W0–W5 | Implementation integrated; full production E2E and local quality gate passed; PR delivery in progress; independent-peer canary blocked | GOAP + swarm audit/implementation. Independent origins connected to signaling but Peers stayed 0; same-origin `Peers: 1` did not distinguish WebRTC from BroadcastChannel. Real-corpus and NVDA/VoiceOver checks remain pre-merge gates. See [Plan 178](178-open-plan-backlog-remediation-2026-10-17.md). |
+| W0–W5 | PR #992 merged; follow-up signaling/status PR #1000 opened and held unmerged; independent-peer canary remains open | GOAP + swarm audit/implementation. The previous provider `connected` event did not prove signaling or peers; the stale app default was corrected to installed y-webrtc 10.3.0's endpoint, and the status distinguishes room activity from reported peers. Independent-origin canary, real-corpus persistence, and NVDA/VoiceOver checks remain open. See [Plan 178](178-open-plan-backlog-remediation-2026-10-17.md) and PR #1000. |
 
 ### Plan 177 — Older-plan leftovers (2026-10-17)
 

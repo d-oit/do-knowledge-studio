@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
+import { translate as t } from '@/lib/i18n/messages/sync'
 import { QRDisplay, QRScanner } from '../qr-pairing'
 import type { PeerInfo } from '@/lib/sync/discovery'
 
@@ -28,13 +29,17 @@ export const generateRoomId = (): string => {
   return Array.from(bytes, (b) => b.toString(36).padStart(2, '0')).join('').slice(0, 10)
 }
 
-/** Visual badge indicating the current sync connection status. */
-const StatusBadge = ({ status }: { status: SyncStatus }) => {
+/** Visual badge that distinguishes room activity from connected peers. */
+const StatusBadge = ({ status, peerCount }: { status: SyncStatus; peerCount: number }) => {
   if (status === 'connected') {
+    const hasPeers = peerCount > 0
     return (
-      <span className="flex items-center gap-1.5 text-label-lg font-medium text-emerald-600">
-        <span className="h-2 w-2 rounded-full bg-emerald-500" />
-        Connected
+      <span className={cn(
+        'flex items-center gap-1.5 text-label-lg font-medium',
+        hasPeers ? 'text-emerald-600' : 'text-saffron',
+      )}>
+        <span className={cn('h-2 w-2 rounded-full', hasPeers ? 'bg-emerald-500' : 'bg-saffron')} />
+        {hasPeers ? t('sync.status.peersConnected') : t('sync.status.roomActive')}
       </span>
     )
   }
@@ -42,7 +47,7 @@ const StatusBadge = ({ status }: { status: SyncStatus }) => {
     return (
       <span className="flex items-center gap-1.5 text-label-lg font-medium text-saffron">
         <Loader2 className="h-3 w-3 animate-spin" />
-        Connecting
+        {t('sync.status.connecting')}
       </span>
     )
   }
@@ -50,14 +55,14 @@ const StatusBadge = ({ status }: { status: SyncStatus }) => {
     return (
       <span className="flex items-center gap-1.5 text-label-lg font-medium text-destructive">
         <WifiOff className="h-3 w-3" />
-        Error
+        {t('sync.status.error')}
       </span>
     )
   }
   return (
     <span className="flex items-center gap-1.5 text-label-lg font-medium text-ink-faint">
       <WifiOff className="h-3 w-3" />
-      Disconnected
+      {t('sync.status.disconnected')}
     </span>
   )
 }
@@ -182,7 +187,7 @@ const PeerList = ({ peers }: { peers: PeerInfo[] }) => {
   )
 }
 
-/** Controls shown when connected: room info, QR, re-sync, and leave actions. */
+/** Controls shown while the room is active: room info, QR, re-sync, and leave actions. */
 const ConnectedControls = ({
   roomId,
   pairingMode,
@@ -336,7 +341,7 @@ const DisconnectedPanel = ({
   )
 }
 
-/** Connection status card with room management, QR pairing, and peer list. */
+/** Room status card with room management, QR pairing, and peer list. */
 export const SyncStatusCard = ({
   status,
   roomId,
@@ -387,7 +392,7 @@ export const SyncStatusCard = ({
       <div className="mb-4 flex items-center justify-between">
         <h2 className="font-serif text-body-lg font-semibold text-ink">Connection</h2>
         <div className="flex items-center gap-2" aria-live="polite">
-          <StatusBadge status={status} />
+          <StatusBadge status={status} peerCount={peerCount} />
         </div>
       </div>
 

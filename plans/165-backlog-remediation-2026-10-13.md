@@ -140,6 +140,8 @@ preserved as history, not a current open-task list:
   tradeoff recorded in Plan 161. NVDA/VoiceOver verification remains a human
   task and is not replaced by the automated axe/ARIA suite.
 
-Plan 178 records current candidate verification. Both independent candidate
-origins connected to signaling but reported zero peers; real-corpus
-persistence/sync and human NVDA/VoiceOver checks remain pre-merge gates.
+Plan 178's initial notes interpreted provider `connected` events as signaling
+success; its 2026-10-19 correction explains that y-webrtc 10.3.0's status only
+indicates an active local room. No signaling handshake or remote peer was
+proven. Real-corpus persistence/sync and human NVDA/VoiceOver checks remain
+pre-merge gates; see [Plan 178](178-open-plan-backlog-remediation-2026-10-17.md).
