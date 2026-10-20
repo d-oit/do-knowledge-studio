@@ -12,22 +12,10 @@ vi.mock('framer-motion', () => ({
 }))
 
 vi.mock('lucide-react', () => {
-  const Icon = ({ className }: { className?: string }) => (
-    <span data-testid="icon" className={className} />
-  )
+  const Icon = ({ className }: { className?: string }) => <span data-testid="icon" className={className} />
   return {
-    Wifi: Icon,
-    WifiOff: Icon,
-    Copy: Icon,
-    Check: Icon,
-    RefreshCw: Icon,
-    Trash2: Icon,
-    History: Icon,
-    Loader2: Icon,
-    QrCode: Icon,
-    Camera: Icon,
-    Radio: Icon,
-    Users: Icon,
+    Wifi: Icon, WifiOff: Icon, Copy: Icon, Check: Icon, RefreshCw: Icon, Trash2: Icon,
+    History: Icon, Loader2: Icon, QrCode: Icon, Camera: Icon, Radio: Icon, Users: Icon,
   }
 })
 
