@@ -51,11 +51,18 @@ describe('SyncStatusCard', () => {
     vi.clearAllMocks()
   })
 
-  it('renders Connected status with emerald indicator', () => {
-    render(<SyncStatusCard {...defaultProps} status="connected" peerCount={2} syncedEntities={5} syncedClaims={3} />)
-    expect(screen.getByText('Connected')).toBeInTheDocument()
+  it('distinguishes an active room from peer connections', () => {
+    const activeRoomProps = { ...defaultProps, status: 'connected' as const, peerCount: 0 }
+    const { rerender } = render(
+      <SyncStatusCard {...activeRoomProps} syncedEntities={5} syncedClaims={3} />,
+    )
+    expect(screen.getByText('Room active')).toBeInTheDocument()
+    expect(screen.queryByText('Peers connected')).not.toBeInTheDocument()
     expect(screen.getByTestId('synced-entities').textContent).toBe('5')
     expect(screen.getByTestId('synced-claims').textContent).toBe('3')
+
+    rerender(<SyncStatusCard {...activeRoomProps} peerCount={2} />)
+    expect(screen.getByText('Peers connected')).toBeInTheDocument()
   })
 
   it('renders Connecting status', () => {

@@ -254,8 +254,8 @@ describe('getAvailableRooms', () => {
 // --- SIGNALING_SERVERS ---
 
 describe('SIGNALING_SERVERS', () => {
-  it('uses the default endpoint without the defunct service', () => {
-    expect(discovery.getSignalingServers(undefined)).toEqual(['wss://signaling.yjs.dev'])
+  it('uses the y-webrtc default endpoint when no override is provided', () => {
+    expect(discovery.getSignalingServers(undefined)).toEqual(['wss://y-webrtc-eu.fly.dev'])
   })
 
   it('validates, rejects the defunct endpoint, and deduplicates secure endpoints', () => {
