@@ -9,6 +9,12 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 179 — Dependabot queue drain (2026-10-20)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Drain | Review, rebase, verify, and merge the five open Dependabot PRs (994–998) left after the weekly run | Done | #994 `f25ef40` and #996 `4db17b1` (merged by the maintainer), #997 `7f64fac`, #995 `5c62714`, #998 `3ff2a61` all squash-merged with full CI green. Two findings changed the procedure: the `Dependency Verify` downgrade guard compares against `main`, so sibling PRs bumping the same package family must merge first and the rest must rebase; and `gh pr update-branch` cannot resolve a lockfile conflict (#995 needed a rebuild from `main` with a regenerated lockfile). See [Plan 179](179-dependabot-queue-drain-2026-10-20.md). |
+
 ### Plan 178 — Open plan backlog remediation (2026-10-17)
 
 | Wave | Goal | Status | Outcome |
