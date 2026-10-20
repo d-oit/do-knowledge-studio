@@ -9,6 +9,12 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 180 — The search worker never replies (2026-10-20)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Fix | Make the search Web Worker actually answer, and cover the bundle-level defect with a regression test | Done | The worker's listener was guarded by `typeof window === 'undefined'`, which Turbopack folds to `false` at build time — the whole block, listener included, was dropped from the emitted worker chunk. The worker booted without an error and discarded every message, so each chat reply waited out the 3 s fallback timeout. Guarded on `document` instead; reply latency went from ~3350 ms to ~330 ms in dev and production. `e2e/search-worker.spec.ts` fails on the defective build and passes on the fixed one. The defect predates the Plan 179 merges. See [Plan 180](180-search-worker-never-replies-2026-10-20.md). |
+
 ### Plan 179 — Dependabot queue drain (2026-10-20)
 
 | Wave | Goal | Status | Outcome |
