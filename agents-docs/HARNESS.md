@@ -27,6 +27,30 @@ All skills live in `.agents/skills/`. Claude Code, Gemini CLI, and Qwen Code use
 OpenCode reads skills directly from `.agents/skills/` - no symlinks needed.
 See `agents-docs/AVAILABLE_SKILLS.md`.
 
+## Local Verification Harness (`do-harness.toml`)
+
+The repository uses `do-harness.toml` (`language = "generic"`) as a single local sensor map that maps path changes to fast, canonical verification commands. This allows agents and developers to select relevant local checks and escalate to browser or production build checks only when affected files warrant it.
+
+This is a **convention, not a tool**: no script, hook, or CI job parses `do-harness.toml`. It is a machine-readable map that agents and developers read to decide which verification command to run, alongside `./scripts/minimal_quality_gate.sh` and `./scripts/quality_gate.sh`. The BATS suite keeps the map honest — it checks the TOML against the repository, so the map cannot drift from the scripts it points at.
+
+### Canonical Sensor Map
+
+| Sensor | Purpose | Triggering Paths | Canonical Command |
+|--------|---------|------------------|-------------------|
+| `feedback` | Fast lint and typecheck for UI/component changes | `src/**`, `public/**`, `e2e/**`, `package.json` | `pnpm run lint && pnpm run typecheck` |
+| `verification` | Unit tests, test typecheck, BATS suite, and skill validation | `src/**`, `tests/**`, `scripts/**`, `.agents/**`, `AGENTS.md`, `.github/**`, `package.json`, `pnpm-lock.yaml`, `tsconfig*.json` | `pnpm run typecheck:test && pnpm run test && ./scripts/validate-skills.sh && bats tests/` |
+| `offline` | Production build and Playwright offline E2E suite | `public/sw.js`, `public/precache-manifest.json`, `scripts/generate-precache-manifest.mjs`, `src/app/layout.tsx`, `src/components/studio/app-shell.tsx`, `src/components/studio/offline-indicator.tsx`, `src/components/studio/service-worker-registration.tsx`, `e2e/offline-views.spec.ts`, `playwright.config.ts`, `package.json`, `pnpm-lock.yaml` | `pnpm run build && pnpm run test:e2e:offline` |
+| `schema/data` | Schema, migration, hydration, store, and sync tests | `src/lib/studio/schema.ts`, `src/lib/studio/migrations.ts`, `src/lib/studio/hydration*.ts`, `src/lib/studio/store.ts`, `src/lib/studio/slices/**`, `src/lib/studio/seed-*.ts`, `src/lib/sync/**`, `src/lib/okf/**` | `pnpm test src/lib/studio/schema.test.ts src/lib/studio/migrations.test.ts src/lib/studio/hydration.test.ts src/lib/studio/hydration-quarantine.test.ts src/lib/studio/store.test.ts src/lib/studio/seed-data.test.ts src/lib/studio/seed-state.test.ts src/lib/sync/ src/lib/okf/` |
+| `release` | Release preflight verification (lint, typecheck, tests, build) | `package.json`, `pnpm-lock.yaml`, `src/**`, `public/**`, `scripts/**`, `.github/**`, `VERSION`, `AGENTS.md` | `./scripts/verify.sh` |
+
+### Design & Escalation Rationale
+
+- **Fast Feedback vs. Heavy Suites:** Ordinary UI component edits run fast linting and typechecking via `feedback` without triggering expensive production builds or browser E2E suites.
+- **CI Parity:** The `offline` path list matches `.github/workflows/ci-and-labels.yml`'s `offline` path filter exactly, preserving the CI rationale of keeping production offline tests separate from daily UI edits.
+- **Schema & Data Protection:** Schema, persistence, store, migration, or sync edits run targeted Vitest suites (`schema/data`) rather than relying solely on TypeScript compile checks. The command covers every path the sensor claims, so a change in `src/lib/okf/**` or in the `seed-*` / `hydration-*` modules actually runs their tests.
+- **A Claimed Path Must Be Verified:** A sensor that lists a path but whose command does not run that path's tests verifies nothing for it. The BATS suite asserts this for the `schema/data` and `verification` sensors, so the map cannot drift from the commands it documents.
+- **Independence:** GitHub Actions workflows remain the authoritative merge gate on `main`. `do-harness.toml` provides local sensor mapping for agents and developers.
+
 ## MCP Servers
 
 - Only connect servers you actively use and trust
