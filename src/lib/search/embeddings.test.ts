@@ -14,6 +14,7 @@ import {
   getEmbedderError,
   EMBEDDING_MODEL_ID,
   EMBED_MAX_CHARS,
+  EMBEDDER_LOAD_TIMEOUT_MS,
   normalizeEmbedding,
   serializeEmbedding,
   truncateForEmbedding,
@@ -73,12 +74,45 @@ describe('embedding runtime (mocked transformers)', () => {
     expect(getEmbedderError()).toBeNull()
   })
 
-  it('does not leave a pending embedder promise after an abort', async () => {
-    // An aborted query races the model load with its signal and rejects
-    // immediately, but the underlying load keeps running. The singleton
-    // caches that load, so the NEXT query awaits the very same promise. If
-    // the model never arrives, every later query hangs on it and the UI
-    // stays on "Loading semantic model…" forever.
+  it('fails a model load that never settles instead of caching a pending promise', async () => {
+    // A load that never settles would otherwise be cached forever, and every
+    // later query would wait on that same pending promise — the UI stays on
+    // "Loading semantic model…" with no result and no error.
+    vi.useFakeTimers()
+    try {
+      // The pipeline never resolves.
+      transformersMock.pipeline.mockImplementation(
+        () => Promise.withResolvers<never>().promise,
+      )
+
+      // The rejection handler is attached BEFORE the timer advances: a
+      // rejection that lands with no handler yet is reported as an unhandled
+      // rejection, which fails the whole suite.
+      const pending = embedTexts(['alpha'])
+      const settled = expect(pending).rejects.toThrow(/failed to load/i)
+      await vi.advanceTimersByTimeAsync(EMBEDDER_LOAD_TIMEOUT_MS)
+
+      // The load fails cleanly rather than hanging.
+      await settled
+      expect(getEmbedderStatus()).toBe('error')
+      expect(getEmbedderError()).toMatch(/timeout|exceeded/i)
+
+      // And the next query starts a fresh load instead of inheriting the
+      // settled-as-failed one.
+      transformersMock.pipeline.mockImplementation(() => makeExtractor())
+      const vectors = await embedTexts(['beta'])
+      expect(vectors).toHaveLength(1)
+      expect(transformersMock.pipeline).toHaveBeenCalledTimes(2)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('shares one model load across superseded queries', async () => {
+    // Typing supersedes a query every debounce interval, and each
+    // superseded query aborts. The model is a ~25 MB download, so every
+    // abort must NOT start another one: the load is shared, and the next
+    // query rides on the one already in flight.
     let resolveLoad!: (value: unknown) => void
     transformersMock.pipeline.mockImplementation(
       () =>
@@ -87,20 +121,15 @@ describe('embedding runtime (mocked transformers)', () => {
         }),
     )
 
-    const controller = new AbortController()
-    const aborted = embedTexts(['alpha'], controller.signal)
-    await vi.waitFor(() => {
-      expect(resolveLoad).toBeTypeOf('function')
-    })
-    controller.abort()
-    await expect(aborted).rejects.toThrow(/abort/i)
+    for (let i = 0; i < 5; i++) {
+      const controller = new AbortController()
+      const pending = embedTexts([`query-${i}`], controller.signal)
+      controller.abort()
+      await pending.catch(() => {})
+    }
 
-    // The second query must not inherit a promise that only the model can
-    // settle. It has to get its own load, so a failed or slow model cannot
-    // wedge every later query.
-    transformersMock.pipeline.mockImplementation(() => makeExtractor())
-    const vectors = await embedTexts(['beta'])
-    expect(vectors).toHaveLength(1)
+    expect(transformersMock.pipeline).toHaveBeenCalledTimes(1)
+    resolveLoad(makeExtractor())
   })
 
   it('embeds a batch in one extractor call and L2-normalizes each row', async () => {

@@ -13,7 +13,7 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 | Wave | Goal | Status | Outcome |
 | --- | --- | --- | --- |
-| Fix | Stop an aborted semantic query from wedging every later one | Done | The embedding runtime caches the *promise* of a model load. An aborted query races that promise with its signal and rejects immediately, but the load keeps running and the cached promise stays pending — so the next query inherited it instead of starting its own, and the UI stayed on "Loading semantic model…" forever. `embedTexts` now drops the cached promise when the race is lost to an abort. Reproduced deterministically in a unit test that times out at 5 s before the fix and passes in 53 ms after it. Found while chasing an unrecorded e2e flake. See [Plan 182](182-semantic-embedder-wedged-promise-2026-10-21.md). |
+| Fix | Stop a hung model load from wedging every later semantic query | Done | The embedding runtime caches the *promise* of a model load, and a load that never settles stays cached forever — so every later query inherited that pending promise and the UI stayed on "Loading semantic model…" with no result and no error. The load itself is now bounded by `EMBEDDER_LOAD_TIMEOUT_MS`, so a hung load fails cleanly through the existing failure path and the next query starts a fresh one. Two regression tests: a hung load must fail rather than stay pending, and five superseded queries must share **one** model download. Found while chasing an unrecorded e2e flake. See [Plan 182](182-semantic-embedder-wedged-promise-2026-10-21.md). |
 
 ### Plan 181 — Quality gate Markdown enumeration asks git, not `find` (2026-10-21)
 
