@@ -245,18 +245,21 @@ run_gate() {
 @test "a failing git ls-files falls back instead of returning an empty list" {
   local repo="$BATS_TEST_TMPDIR/repo"
   make_repo "$repo"
+  write_ignored_artifacts "$repo"
 
-  # A stub `git` that succeeds for `rev-parse` and fails for `ls-files`:
-  # the enumeration must not swallow the failure and report "no files",
+  # A stub `git` that fails only `ls-files` — the case the fallback exists
+  # for. The enumeration must not swallow the failure and report "no files",
   # which would make the gate pass without linting anything.
   local fakebin="$BATS_TEST_TMPDIR/fakebin"
   mkdir -p "$fakebin"
   cat >"$fakebin/git" <<'STUB'
 #!/usr/bin/env bash
-if [ "$1" = "rev-parse" ]; then
-  exit 0
+if [ "$1" = "ls-files" ]; then
+  exit 1
 fi
-exit 1
+# Call the real git by absolute path: `exec git "$@"` would resolve back to
+# this stub and recurse forever.
+exec /usr/bin/git "$@"
 STUB
   chmod +x "$fakebin/git"
 
@@ -270,4 +273,36 @@ STUB
   [ "$status" -eq 0 ]
   # The fallback found the repository's Markdown, so the list is not empty.
   [[ "$output" == *"plans/plan.md"* ]]
+  # And it still excludes the ignored build output.
+  [[ "$output" != *"playwright-report"* ]]
+  [[ "$output" != *"test-results"* ]]
+}
+
+@test "skips tracked files deleted from the working tree without failing" {
+  local repo="$BATS_TEST_TMPDIR/repo"
+  local bins="$BATS_TEST_TMPDIR/bin"
+  make_repo "$repo"
+  stub_linter "$bins" markdownlint 0
+  (
+    cd "$repo" || exit 1
+    # A second Markdown file, so the gate still detects the markdown language
+    # and runs the section even after the first one is deleted.
+    printf '# Other\n' >plans/other.md
+    git add -A
+    git commit -qm "docs: add another plan"
+    # Deleted from the working tree but not yet staged as deleted, so git
+    # still lists it. The linter cannot read it, and the gate must not fail.
+    rm plans/plan.md
+  )
+
+  run_gate "$repo" PATH="$bins:$PATH"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"markdownlint passed"* ]]
+  # The missing file must not have been handed to the linter.
+  run grep -q "plans/plan.md" "$bins/markdownlint.seen"
+  [ "$status" -ne 0 ]
+  # The file that is still present must have been linted.
+  run grep -q "plans/other.md" "$bins/markdownlint.seen"
+  [ "$status" -eq 0 ]
 }
