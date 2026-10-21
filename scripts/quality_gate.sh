@@ -30,6 +30,67 @@ else
     }
 fi
 
+# Vendor agent/skill libraries that ship their own Markdown. They are
+# tracked in this repository (`.agents/skills/` is the canonical copy and the
+# other tool directories are symlinks into it), but their prose is not this
+# project's prose: it is vendored content that the skill authors own. The
+# gate has always excluded it, and these pathspecs keep that exclusion while
+# the file *list* comes from git.
+MARKDOWN_VENDOR_PATHSPECS=(
+  ':(exclude).agents/**'
+  ':(exclude).claude/**'
+  ':(exclude).gemini/**'
+  ':(exclude).qwen/**'
+  ':(exclude).opencode/**'
+)
+
+# Lists the Markdown files the gate should lint, one per line.
+#
+# Enumeration is delegated to git rather than to `find`. The reasons:
+#
+#   * Git already knows what this repository ignores. A `find`-based sweep
+#     needs a denylist that is maintained by hand, and every new ignored
+#     output directory is a hole in it. `playwright-report/` and
+#     `test-results/` were exactly such a hole: running the e2e suite left
+#     generated Markdown behind, and the next gate run linted Playwright's
+#     own artifacts and failed on them (plans/180).
+#   * `git ls-files --others --exclude-standard` adds untracked files that are
+#     not ignored, so a newly written Markdown file is still checked before
+#     it is committed — the gate never silently skips work in progress.
+#   * The vendor exclusions become pathspecs on the same command, so the
+#     list and the exclusions cannot drift apart.
+#
+# `--cached` lists files that are tracked, including ones deleted from the
+# working tree but not yet staged as deleted; markdownlint skips a path that
+# does not exist, so those are harmless.
+#
+# Outside a git repository there is no index to ask, so the sweep falls back
+# to `find` with an explicit denylist. That fallback is the behaviour this
+# section had before, and it is only reachable outside a checkout — the same
+# assumption scripts/lib/lint_cache.sh already makes about its cache
+# directory.
+list_markdown_files() {
+  if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    git ls-files --cached --others --exclude-standard -- '*.md' \
+      "${MARKDOWN_VENDOR_PATHSPECS[@]}" 2>/dev/null || true
+    return
+  fi
+
+  find . -name "*.md" \
+    -not -path "./node_modules/*" \
+    -not -path "./target/*" \
+    -not -path "./.git/*" \
+    -not -path "./.agents/*" \
+    -not -path "./.claude/*" \
+    -not -path "./.gemini/*" \
+    -not -path "./.qwen/*" \
+    -not -path "./.opencode/*" \
+    -not -path "./playwright-report/*" \
+    -not -path "./test-results/*" \
+    -not -path "./coverage/*" \
+    2>/dev/null || true
+}
+
 # Colors for output (disabled in CI via TTY check, or via FORCE_COLOR=0)
 # TTY check (-t 1): Determines if stdout is a terminal (not redirected to file/pipe)
 # This prevents ANSI codes from appearing in CI logs while keeping colors for local dev
@@ -747,8 +808,11 @@ if [[ " ${DETECTED_LANGUAGES[*]} " =~ " markdown " ]] && [[ "$SCOPE" == "all" ||
     fi
 
     if [ -n "$MARKDOWNLINT_CMD" ]; then
-        # Check repository documentation markdown files, excluding vendor agent/skill libraries, build artifacts, and dependencies
-        MD_FILES=$(find . -name "*.md" -not -path "./node_modules/*" -not -path "./target/*" -not -path "./.git/*" -not -path "./.agents/*" -not -path "./.claude/*" -not -path "./.gemini/*" -not -path "./.qwen/*" -not -path "./.opencode/*" 2>/dev/null || true)
+        # The file list comes from git, so ignored build output (playwright
+        # reports, test results, coverage) and dependencies are excluded by the
+        # repository's own .gitignore rather than by a hand-maintained
+        # denylist. See list_markdown_files above.
+        MD_FILES=$(list_markdown_files)
         if [ -n "$MD_FILES" ]; then
             md_failed=0
             while IFS= read -r md_file; do

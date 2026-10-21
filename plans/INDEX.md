@@ -9,6 +9,12 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 181 — Quality gate Markdown enumeration asks git, not `find` (2026-10-21)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Fix | Stop the quality gate from linting gitignored build output, without maintaining a denylist by hand | Done | The gate enumerated Markdown with `find` plus a hand-maintained exclusion list, so every ignored output directory added later was a hole — running e2e left `playwright-report/` and `test-results/` behind and the next gate run failed on Playwright's own artifacts. Enumeration now asks git (`git ls-files --cached --others --exclude-standard -- '*.md'` with the vendor directories as pathspecs), so `.gitignore` is the single source of truth, untracked work is still checked, and the list and the exclusions cannot drift. The file list for repository content is byte-identical to the old sweep (312 files). `tests/quality-gate-markdown-files.bats` pins the contract and fails on the old implementation. See [Plan 181](181-quality-gate-markdown-enumeration-2026-10-21.md). |
+
 ### Plan 180 — The search worker never replies (2026-10-20)
 
 | Wave | Goal | Status | Outcome |
