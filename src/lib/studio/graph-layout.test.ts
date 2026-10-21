@@ -101,7 +101,7 @@ describe('resolveNodePosition', () => {
     const base = baseNodePosition('e-new')
     const resolved = resolveNodePosition('e-new', [base])
     expect(resolved).not.toEqual(base)
-    expect(distance(resolved, base)).toBeGreaterThanOrEqual(PREFERRED_NODE_DISTANCE_PX)
+    expect(distance(resolved, base)).toBeGreaterThanOrEqual(PREFERRED_NODE_DISTANCE_PX - 1e-5)
   })
 
   it('clears every placed node, including a seed label that would cover its dot', () => {

@@ -14,6 +14,7 @@ export default defineConfig({
       'src/lib/ai/context.bench.test.ts',
       'src/lib/studio/claim-parser.bench.test.ts',
       'src/lib/studio/triz-data.bench.test.ts',
+      'src/lib/studio/graph-layout.bench.test.ts',
     ],
     pool: 'threads',
     maxWorkers: '50%',
