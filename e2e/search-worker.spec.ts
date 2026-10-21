@@ -34,6 +34,12 @@ const FALLBACK_TIMEOUT_MS = 3000;
  */
 const MAX_REPLY_LATENCY_MS = 2500;
 
+/** How long the assertion waits for a chat reply before giving up. */
+const REPLY_ASSERTION_TIMEOUT_MS = 15_000;
+
+/** How long the probe waits for the worker to reply before declaring silence. */
+const WORKER_PROBE_TIMEOUT_MS = 4000;
+
 test.describe('search worker', () => {
   test('answers a chat query without waiting out the fallback timeout', async ({ page }) => {
     await page.goto('/');
@@ -51,12 +57,12 @@ test.describe('search worker', () => {
     // one-off cold-start cost cannot be mistaken for the worker's behaviour.
     await input.fill('knowledge');
     await input.press('Enter');
-    await expect(replyMarker.first()).toBeVisible({ timeout: 15_000 });
+    await expect(replyMarker.first()).toBeVisible({ timeout: REPLY_ASSERTION_TIMEOUT_MS });
 
     const startedAt = Date.now();
     await input.fill('search');
     await input.press('Enter');
-    await expect(replyMarker.nth(1)).toBeVisible({ timeout: 15_000 });
+    await expect(replyMarker.nth(1)).toBeVisible({ timeout: REPLY_ASSERTION_TIMEOUT_MS });
     const elapsed = Date.now() - startedAt;
 
     expect(
@@ -85,8 +91,12 @@ test.describe('search worker', () => {
 
     await page.goto('/');
     await page.waitForLoadState('networkidle');
-    // Give the client time to construct its worker.
-    await page.waitForTimeout(1500);
+    // Wait for the client to construct its worker instead of sleeping a fixed
+    // amount: a sleep is slow on fast machines and racy on slow ones.
+    await page.waitForFunction(
+      () =>
+        ((window as unknown as { __studioWorkerUrls?: string[] }).__studioWorkerUrls ?? []).length > 0,
+    );
 
     const workerUrls = await page.evaluate(
       () => (window as unknown as { __studioWorkerUrls: string[] }).__studioWorkerUrls,
@@ -97,21 +107,28 @@ test.describe('search worker', () => {
     // rather than a broken worker.
     expect(workerUrls.length, 'the app should construct a search worker').toBeGreaterThan(0);
 
-    const reply = await page.evaluate(async (url) => {
-      const worker = new Worker(url);
-      return await new Promise<string>((resolve) => {
-        const timer = setTimeout(() => resolve('NO_REPLY'), 4000);
-        worker.onmessage = (event: MessageEvent) => {
-          clearTimeout(timer);
-          resolve(`REPLY:${JSON.stringify(event.data)}`);
-        };
-        worker.onerror = (event: ErrorEvent) => {
-          clearTimeout(timer);
-          resolve(`ERROR:${event.message}`);
-        };
-        worker.postMessage({ id: 'probe', type: 'SEARCH', entities: [], claims: [], query: 'x' });
-      });
-    }, workerUrls[0]);
+    // `page.evaluate` serializes the function and accepts a single argument,
+    // so the timeout is passed in as an object property rather than closed
+    // over from the module scope.
+    const reply = await page.evaluate(async (probe: { url: string; timeoutMs: number }) => {
+      const worker = new Worker(probe.url);
+      try {
+        return await new Promise<string>((resolve) => {
+          const timer = setTimeout(() => resolve('NO_REPLY'), probe.timeoutMs);
+          worker.onmessage = (event: MessageEvent) => {
+            clearTimeout(timer);
+            resolve(`REPLY:${JSON.stringify(event.data)}`);
+          };
+          worker.onerror = (event: ErrorEvent) => {
+            clearTimeout(timer);
+            resolve(`ERROR:${event.message}`);
+          };
+          worker.postMessage({ id: 'probe', type: 'SEARCH', entities: [], claims: [], query: 'x' });
+        });
+      } finally {
+        worker.terminate();
+      }
+    }, { url: workerUrls[0], timeoutMs: WORKER_PROBE_TIMEOUT_MS });
 
     expect(reply, 'the search worker must reply to a SEARCH message').toMatch(/^REPLY:/);
   });
