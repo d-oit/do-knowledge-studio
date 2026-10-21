@@ -9,6 +9,12 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 182 — An aborted semantic query wedges every later one (2026-10-21)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Fix | Stop an aborted semantic query from wedging every later one | Done | The embedding runtime caches the *promise* of a model load. An aborted query races that promise with its signal and rejects immediately, but the load keeps running and the cached promise stays pending — so the next query inherited it instead of starting its own, and the UI stayed on "Loading semantic model…" forever. `embedTexts` now drops the cached promise when the race is lost to an abort. Reproduced deterministically in a unit test that times out at 5 s before the fix and passes in 53 ms after it. Found while chasing an unrecorded e2e flake. See [Plan 182](182-semantic-embedder-wedged-promise-2026-10-21.md). |
+
 ### Plan 181 — Quality gate Markdown enumeration asks git, not `find` (2026-10-21)
 
 | Wave | Goal | Status | Outcome |

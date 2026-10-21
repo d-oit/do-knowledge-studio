@@ -81,7 +81,11 @@ export const useSemanticSearch = (
             if (cancelled) return
             // Only aborts reject; surface anything else as a lexical fallback
             // so the search box never dies silently.
-            if (err instanceof DOMException && err.name === 'AbortError') return
+            if (err instanceof DOMException && err.name === 'AbortError') {
+              // An abort means this request was superseded. The replacement
+              // request owns the state from here, so leave it alone.
+              return
+            }
             log.error('Semantic search failed', { error: err })
             // Clear — not `{ source: 'lexical', results: [] }` — so the grid
             // falls back to the lexical `filteredEntities` rather than an

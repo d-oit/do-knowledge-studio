@@ -109,6 +109,20 @@ let embedderFailure: string | null = null
  */
 let embedderGeneration = 0
 
+/**
+ * Drops the cached load promise.
+ *
+ * Called when a load is abandoned rather than completed. The singleton
+ * caches the *promise*, so a promise nobody can settle is a promise the next
+ * caller inherits: an aborted query that raced a slow model load left the
+ * cached promise pending, and every later query then waited on that same
+ * pending promise instead of starting its own. The UI stayed on "Loading
+ * semantic model…" forever.
+ */
+const dropEmbedderPromise = (): void => {
+  embedderPromise = null
+}
+
 /** Loads the transformers.js pipeline; resolves once and caches itself. */
 const loadEmbedder = async (generation: number): Promise<EmbeddingPipeline> => {
   embedderStatus = 'loading'
@@ -128,7 +142,7 @@ const loadEmbedder = async (generation: number): Promise<EmbeddingPipeline> => {
       embedderStatus = 'error'
       embedderFailure = err instanceof Error ? err.message : String(err)
       // Drop the rejected promise so the next call retries the model download.
-      embedderPromise = null
+      dropEmbedderPromise()
     }
     throw new EmbedderError(
       `Semantic embedding model failed to load (${EMBEDDING_MODEL_ID}): ${
@@ -226,7 +240,20 @@ export const embedTexts = async (
   // A model download can take a long time; an abort signal must settle the
   // request instead of waiting for getEmbedder() to finish. Racing the
   // pending load with the signal keeps the cancellation path responsive.
-  const extractor = await raceWithAbort(getEmbedder(), signal)
+  //
+  // Racing does not cancel the load — the underlying promise keeps running.
+  // If it is still the cached one, the next query would inherit a promise
+  // that only the model can settle, and would wait on it forever. Dropping
+  // the cache on abort makes the next query start its own load.
+  let extractor: EmbeddingPipeline
+  try {
+    extractor = await raceWithAbort(getEmbedder(), signal)
+  } catch (err) {
+    if (isAbortError(err)) {
+      dropEmbedderPromise()
+    }
+    throw err
+  }
   const prepared = texts.map((text) => truncateForEmbedding(text).trim())
   if (signal?.aborted) throw abortError()
 

@@ -73,6 +73,36 @@ describe('embedding runtime (mocked transformers)', () => {
     expect(getEmbedderError()).toBeNull()
   })
 
+  it('does not leave a pending embedder promise after an abort', async () => {
+    // An aborted query races the model load with its signal and rejects
+    // immediately, but the underlying load keeps running. The singleton
+    // caches that load, so the NEXT query awaits the very same promise. If
+    // the model never arrives, every later query hangs on it and the UI
+    // stays on "Loading semantic model…" forever.
+    let resolveLoad!: (value: unknown) => void
+    transformersMock.pipeline.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveLoad = resolve
+        }),
+    )
+
+    const controller = new AbortController()
+    const aborted = embedTexts(['alpha'], controller.signal)
+    await vi.waitFor(() => {
+      expect(resolveLoad).toBeTypeOf('function')
+    })
+    controller.abort()
+    await expect(aborted).rejects.toThrow(/abort/i)
+
+    // The second query must not inherit a promise that only the model can
+    // settle. It has to get its own load, so a failed or slow model cannot
+    // wedge every later query.
+    transformersMock.pipeline.mockImplementation(() => makeExtractor())
+    const vectors = await embedTexts(['beta'])
+    expect(vectors).toHaveLength(1)
+  })
+
   it('embeds a batch in one extractor call and L2-normalizes each row', async () => {
     const extractor = makeExtractor() as ReturnType<typeof vi.fn>
     transformersMock.pipeline.mockImplementation(() => extractor)
