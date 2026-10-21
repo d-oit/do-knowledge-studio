@@ -35,6 +35,7 @@ make_repo() {
   mkdir -p "$dir/scripts/lib"
   cp "$SCRIPT" "$dir/scripts/quality_gate.sh"
   cp "$LIB_DIR/lint_cache.sh" "$dir/scripts/lib/lint_cache.sh"
+  cp "$LIB_DIR/markdown-files.sh" "$dir/scripts/lib/markdown-files.sh"
   for stub in validate-git-hooks validate-skills validate-links \
     validate-github-actions-shas validate-package-manager; do
     printf '#!/usr/bin/env bash\nexit 0\n' >"$dir/scripts/$stub.sh"
@@ -146,7 +147,7 @@ run_gate() {
   local repo="$BATS_TEST_TMPDIR/repo"
   local bins="$BATS_TEST_TMPDIR/bin"
   make_repo "$repo"
-  stub_linter "$bins" markdownlint 1
+  stub_linter "$bins" markdownlint 0
   (
     cd "$repo" || exit 1
     mkdir -p .agents/skills/example
@@ -158,7 +159,10 @@ run_gate() {
   run_gate "$repo" PATH="$bins:$PATH"
 
   # The vendored prose is not this project's prose; the gate has always
-  # excluded it and must keep doing so.
+  # excluded it and must keep doing so. With only repository content and
+  # vendored skills present, the gate must pass.
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"markdownlint passed"* ]]
   [ -f "$bins/markdownlint.seen" ]
   run grep -q "\.agents/skills/example/SKILL.md" "$bins/markdownlint.seen"
   [ "$status" -ne 0 ]
@@ -182,4 +186,88 @@ run_gate() {
   [ "$status" -ne 0 ]
   run grep -q "test-results" "$bins/markdownlint.seen"
   [ "$status" -ne 0 ]
+}
+
+@test "the enumeration library is idempotent when sourced twice" {
+  local repo="$BATS_TEST_TMPDIR/repo"
+  make_repo "$repo"
+
+  # The enumeration asks git, so it must run from inside the repository —
+  # the gate cd's to its root before sourcing the library.
+  run bash -c "
+    cd '$repo' || exit 1
+    source '$repo/scripts/lib/markdown-files.sh'
+    source '$repo/scripts/lib/markdown-files.sh'
+    list_markdown_files
+  "
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"plans/plan.md"* ]]
+}
+
+@test "the gate still lints Markdown when the enumeration library is missing" {
+  local repo="$BATS_TEST_TMPDIR/repo"
+  local bins="$BATS_TEST_TMPDIR/bin"
+  make_repo "$repo"
+  rm "$repo/scripts/lib/markdown-files.sh"
+  stub_linter "$bins" markdownlint 1
+
+  run_gate "$repo" PATH="$bins:$PATH"
+
+  # A missing library must not make the gate skip its Markdown checks: the
+  # gate would otherwise report success without checking anything.
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"markdown-files.sh is missing"* ]]
+  [[ "$output" == *"markdownlint failed"* ]]
+  [[ "$output" == *"plans/plan.md"* ]]
+}
+
+@test "the enumeration falls back to a filesystem sweep outside a git repository" {
+  local dir="$BATS_TEST_TMPDIR/plain"
+  mkdir -p "$dir/plans" "$dir/playwright-report" "$dir/node_modules/pkg"
+  printf '# Plan\n' >"$dir/plans/plan.md"
+  printf '# Generated\n' >"$dir/playwright-report/report.md"
+  printf '# Dependency\n' >"$dir/node_modules/pkg/readme.md"
+
+  run bash -c "
+    cd '$dir' || exit 1
+    source '$LIB_DIR/markdown-files.sh'
+    list_markdown_files
+  "
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"plans/plan.md"* ]]
+  # The same build output and dependencies must stay excluded without git.
+  [[ "$output" != *"playwright-report"* ]]
+  [[ "$output" != *"node_modules"* ]]
+}
+
+@test "a failing git ls-files falls back instead of returning an empty list" {
+  local repo="$BATS_TEST_TMPDIR/repo"
+  make_repo "$repo"
+
+  # A stub `git` that succeeds for `rev-parse` and fails for `ls-files`:
+  # the enumeration must not swallow the failure and report "no files",
+  # which would make the gate pass without linting anything.
+  local fakebin="$BATS_TEST_TMPDIR/fakebin"
+  mkdir -p "$fakebin"
+  cat >"$fakebin/git" <<'STUB'
+#!/usr/bin/env bash
+if [ "$1" = "rev-parse" ]; then
+  exit 0
+fi
+exit 1
+STUB
+  chmod +x "$fakebin/git"
+
+  run bash -c "
+    cd '$repo' || exit 1
+    PATH='$fakebin':\$PATH
+    source '$repo/scripts/lib/markdown-files.sh'
+    list_markdown_files
+  "
+
+  [ "$status" -eq 0 ]
+  # The fallback found the repository's Markdown, so the list is not empty.
+  [[ "$output" == *"plans/plan.md"* ]]
 }

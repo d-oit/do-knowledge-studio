@@ -12,6 +12,13 @@ shellcheck-clean — they are linted by both `scripts/verify.sh` and CI.
   0 so `set -e` callers keep running the remaining checks.
 - `lint_cache.sh` — file-hash cache (`lint_if_changed`) so quality gates
   skip unchanged files. Used by `scripts/quality_gate.sh`.
+- `markdown-files.sh` — the Markdown file enumeration (`list_markdown_files`)
+  used by `scripts/quality_gate.sh`. Asks git which Markdown the gate should
+  lint (`git ls-files --cached --others --exclude-standard -- '*.md'` with
+  pathspec exclusions for the vendor agent/skill directories), so the
+  repository's `.gitignore` excludes build output and the gate still checks
+  untracked work in progress. Falls back to a filesystem sweep outside a git
+  repository. See [Plan 181](../../plans/181-quality-gate-markdown-enumeration-2026-10-21.md).
 - `workflow-monitor.sh` — shared `monitor_parse_checks` and
   `monitor_poll_until_terminal` helpers used by the GitHub workflow skill
   scripts to classify and monitor check output consistently.

@@ -81,6 +81,22 @@ falls back to the old `find` sweep, extended with the output directories, so
 the behaviour outside a checkout stays equivalent. The same assumption
 `scripts/lib/lint_cache.sh` already makes about its cache directory.
 
+### Where the rule lives
+
+The enumeration is a library, `scripts/lib/markdown-files.sh`, not a function
+inlined in the gate. `scripts/quality_gate.sh` was already 804 lines — over
+this repository's 500-LOC limit for source files — and AGENTS.md says to
+refactor before extending an oversized file. Putting the rule in
+`scripts/lib/` keeps the gate's own growth to 32 lines instead of 64, gives
+the rule its own BATS coverage, and follows the convention the repository
+already established with `scripts/lib/lint_cache.sh` (see
+`scripts/lib/README.md`).
+
+The gate falls back to a filesystem sweep if the library is missing, with a
+warning. A missing enumeration would otherwise leave `list_markdown_files`
+undefined and the Markdown section would lint nothing — a gate that reports
+success without checking anything. That failure mode is pinned by a test.
+
 ## Verification
 
 ### The reproduction case
@@ -114,9 +130,21 @@ The git enumeration with the vendor pathspecs produces a list **byte-identical**
 to the old `find` sweep for repository content — 312 files, `diff` empty. The
 only difference is the exclusion of gitignored output.
 
+### Failing closed
+
+`git ls-files` is allowed to fail — index lock, corrupt repository, argument
+error. Swallowing that error and returning an empty list would be fail-open:
+the caller sees no files, lints nothing, and reports success. The enumeration
+therefore only returns the git list when the command **succeeds**, and
+otherwise falls through to the filesystem sweep.
+
+The same reasoning applies to the library being missing: without it the gate
+would have no file list at all. It falls back to a filesystem sweep and says
+so on stderr.
+
 ### Regression coverage
 
-`tests/quality-gate-markdown-files.bats` (new, 5 tests) pins the contract
+`tests/quality-gate-markdown-files.bats` (new, 9 tests) pins the contract
 against a stub linter that records the paths it was asked to lint:
 
 | Test | Asserts |
@@ -124,16 +152,42 @@ against a stub linter that records the paths it was asked to lint:
 | does not lint Markdown inside ignored output directories | the generated artifacts never reach the linter |
 | fails on a genuine finding in a tracked Markdown file | a finding still fails the gate |
 | fails on a finding in an untracked Markdown file | work in progress is still checked |
-| ignores vendor agent and skill library Markdown | the vendored prose stays excluded |
+| ignores vendor agent and skill library Markdown | the vendored prose stays excluded, and the gate passes |
 | still reports a finding when an ignored artifact sits beside a broken file | the exclusion may not swallow the whole run |
+| the enumeration library is idempotent when sourced twice | double-sourcing does not break the rule |
+| the gate still lints Markdown when the enumeration library is missing | a missing library cannot make the gate skip its checks |
+| the enumeration falls back to a filesystem sweep outside a git repository | the fallback excludes build output and dependencies too |
+| a failing git ls-files falls back instead of returning an empty list | the enumeration fails closed |
 
-Verified to **fail on the old implementation and pass on the new one**:
+Verified to **fail on the old implementation and pass on the new one** —
+against the `find`-based gate from `main`:
 
-| | Old (`find`) | New (git) |
+| Test | Old (`find`) | New (git) |
 | --- | --- | --- |
-| "does not lint Markdown inside ignored output directories" | **fail** — artifacts reach the linter | pass |
-| "still reports a finding when an ignored artifact sits beside a broken file" | **fail** — artifacts reach the linter | pass |
-| Other three | pass | pass |
+| does not lint Markdown inside ignored output directories | **fail** — artifacts reach the linter | pass |
+| still reports a finding when an ignored artifact sits beside a broken file | **fail** — artifacts reach the linter | pass |
+| the gate still lints Markdown when the enumeration library is missing | **fail** — no fallback existed | pass |
+| fails on a genuine finding in a tracked Markdown file | pass | pass |
+| fails on a finding in an untracked Markdown file | pass | pass |
+| ignores vendor agent and skill library Markdown | pass | pass |
+| the enumeration library is idempotent when sourced twice | pass | pass |
+
+The fail-closed test was checked in the same way: reverting the
+`git ls-files` guard makes it fail (`not ok 9`), and restoring it makes it
+pass.
+
+## Code review outcome
+
+`code-review-assistant` on PR #1007 found no P1. Its findings and how each
+was handled:
+
+| Finding | Severity | Resolution |
+|---|---|---|
+| `git ls-files` failure returned an empty list — the gate would pass without linting anything | P2 | **Fixed.** The enumeration only returns the git list when the command succeeds; otherwise it falls through to the filesystem sweep. Pinned by a new test that was verified to fail against the unguarded version. |
+| `scripts/quality_gate.sh` exceeds the 500-LOC rule and the addition was inline | P2 | **Fixed** by extracting the rule into `scripts/lib/markdown-files.sh`, following the `scripts/lib/lint_cache.sh` precedent. The gate's own growth is 32 lines rather than 66. |
+| A tracked file deleted from the working tree is still listed by git, so the linter was spawned on a path that does not exist | P3 | **Fixed** — the loop now skips paths that are not files. |
+| The vendor-exclusion test did not assert that the gate passes | P3 | **Fixed** — the stub now exits 0 and the test asserts a passing gate. |
+| The non-git fallback path was never exercised | P3 | **Fixed** — a test covers it. |
 
 ### Local gate
 
