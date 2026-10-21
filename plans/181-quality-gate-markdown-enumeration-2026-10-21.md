@@ -1,7 +1,7 @@
 # Plan 181 — Quality gate Markdown enumeration asks git, not `find`
 
 **Date:** 2026-10-21
-**Status:** Done — verified in a real repository with the reproduction case
+**Status:** Done — merged in PRs #1007, #1008, #1009; verified against the reproduction case
 **Owner:** integration owner for this sweep
 **Found during:** post-merge production verification of the Plan 179 Dependabot drain
 **Approved by:** the maintainer, explicitly, as required by AGENTS.md for changes to lint ignore settings
@@ -207,6 +207,14 @@ was handled:
 | A library that exists but fails to source would leave `list_markdown_files` undefined, and the Markdown section would silently lint nothing | P3 | **Fixed** — the gate checks both that the file exists *and* that `source` succeeded and defined the function. |
 | The new library was committed with mode 755 while its siblings are 644 | P3 | **Fixed** — mode is now 644, matching `scripts/lib/`. |
 | The fallback kept a second hand-maintained exclusion list, which would become the next hole | P3 | **Fixed** — the fallback now asks `git check-ignore` per path, so it excludes what the git path excludes. |
+
+## Merged
+
+| PR | Change | Squash on `main` |
+| --- | --- | --- |
+| #1007 | git-based enumeration | `c3ee4d6` |
+| #1008 | fail-closed enumeration, rule moved to `scripts/lib/` | `61e0350` |
+| #1009 | review findings: defensive sourcing, ignore-aware fallback, file mode, deleted-file test | `c97d0e5` |
 
 ### Local gate
 
