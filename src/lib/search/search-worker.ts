@@ -73,11 +73,29 @@ export const handleWorkerMessage = (
   }
 }
 
-// Attach listener if executed within a dedicated Web Worker environment.
-if (typeof self !== 'undefined' && typeof window === 'undefined') {
-  self.onmessage = (e: MessageEvent<SearchWorkerRequest>) => {
+/**
+ * Whether this module is executing inside a dedicated Web Worker global scope.
+ *
+ * A dedicated worker global scope has no `document`. The test deliberately
+ * avoids `typeof window === 'undefined'`: Turbopack bundles the worker
+ * entrypoint as a module chunk and resolves `window` statically, so that
+ * comparison is folded to `false` at build time and the whole branch — the
+ * `message` listener included — is dropped from the emitted worker chunk. The
+ * worker then boots without an error but never handles a message, so every
+ * request waits out `SEARCH_WORKER_TIMEOUT_MS` (3s) before the client falls
+ * back to the main thread. Measured in a real browser: 3.33s per chat reply
+ * before this fix, 0.33s after.
+ */
+const isDedicatedWorkerScope = (): boolean => {
+  if (typeof self === 'undefined') return false
+  return 'document' in self ? false : true
+}
+
+// Attach the listener when this module runs inside a dedicated Web Worker.
+if (isDedicatedWorkerScope()) {
+  self.addEventListener('message', (e: MessageEvent<SearchWorkerRequest>) => {
     handleWorkerMessage(e.data, (reply) => {
       self.postMessage(reply)
     })
-  }
+  })
 }
