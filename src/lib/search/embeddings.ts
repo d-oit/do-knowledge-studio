@@ -109,15 +109,59 @@ let embedderFailure: string | null = null
  */
 let embedderGeneration = 0
 
+/**
+ * How long a model load may take before it is treated as failed.
+ *
+ * The model is a ~25 MB ONNX download plus a WASM runtime. A slow link is
+ * legitimate; a load that never settles is not. Without a bound, the
+ * singleton caches a promise nobody can settle, and every later query waits
+ * on that same pending promise — the UI stays on "Loading semantic model…"
+ * with no result and no error.
+ *
+ * The bound belongs here rather than at the query, because the load is
+ * shared: failing it cleanly releases every waiter and lets the next query
+ * retry, instead of leaving a pending promise cached for good.
+ */
+export const EMBEDDER_LOAD_TIMEOUT_MS = 120_000
+
+/**
+ * Rejects with a timeout error if `awaitable` has not settled in time.
+ *
+ * The underlying work is not cancelled — it may still settle later — but the
+ * waiter is released, which is what matters: the singleton caches a promise
+ * that has already failed, so the next query starts a fresh load.
+ */
+const withLoadTimeout = async <T>(awaitable: PromiseLike<T>): Promise<T> => {
+  const { promise, resolve, reject } = Promise.withResolvers<T>()
+  // The timer rejects `promise` even after the caller has stopped awaiting
+  // it, so the rejection needs a handler of its own — otherwise a load that
+  // times out after its waiter moved on surfaces as an unhandled rejection.
+  promise.catch(() => undefined)
+  const timer = setTimeout(() => {
+    reject(new Error(`Embedding model load exceeded ${EMBEDDER_LOAD_TIMEOUT_MS}ms`))
+  }, EMBEDDER_LOAD_TIMEOUT_MS)
+  try {
+    Promise.resolve(awaitable).then(
+      (value) => resolve(value),
+      (err) => reject(err),
+    )
+    return await promise
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 /** Loads the transformers.js pipeline; resolves once and caches itself. */
 const loadEmbedder = async (generation: number): Promise<EmbeddingPipeline> => {
   embedderStatus = 'loading'
   try {
     const { pipeline } = await import('@huggingface/transformers')
-    const extractor = (await pipeline('feature-extraction', EMBEDDING_MODEL_ID, {
-      dtype: EMBEDDING_DTYPE,
-      device: EMBEDDING_DEVICE,
-    })) as EmbeddingPipeline
+    const extractor = (await withLoadTimeout(
+      pipeline('feature-extraction', EMBEDDING_MODEL_ID, {
+        dtype: EMBEDDING_DTYPE,
+        device: EMBEDDING_DEVICE,
+      }) as Promise<EmbeddingPipeline>,
+    )) as EmbeddingPipeline
     if (generation === embedderGeneration) {
       embedderStatus = 'ready'
       embedderFailure = null
@@ -145,7 +189,13 @@ const loadEmbedder = async (generation: number): Promise<EmbeddingPipeline> => {
  */
 export const getEmbedder = (): Promise<EmbeddingPipeline> => {
   if (embedderPromise === null) {
-    embedderPromise = loadEmbedder(embedderGeneration)
+    const loading = loadEmbedder(embedderGeneration)
+    // The cached promise is handed to callers that may all abandon it (a
+    // superseded query aborts). Attaching a no-op rejection handler keeps a
+    // failed load from surfacing as an unhandled rejection; the rejection
+    // still reaches every caller that awaits the promise.
+    loading.catch(() => undefined)
+    embedderPromise = loading
   }
   return embedderPromise
 }
@@ -226,6 +276,11 @@ export const embedTexts = async (
   // A model download can take a long time; an abort signal must settle the
   // request instead of waiting for getEmbedder() to finish. Racing the
   // pending load with the signal keeps the cancellation path responsive.
+  //
+  // The load itself is shared and must stay shared: dropping the cached
+  // promise on abort would start a second download for every keystroke.
+  // A load that never settles is bounded by EMBEDDER_LOAD_TIMEOUT_MS inside
+  // loadEmbedder, which fails it cleanly and releases every waiter.
   const extractor = await raceWithAbort(getEmbedder(), signal)
   const prepared = texts.map((text) => truncateForEmbedding(text).trim())
   if (signal?.aborted) throw abortError()

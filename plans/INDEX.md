@@ -9,6 +9,12 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 182 — A hung model load wedges every later semantic query (2026-10-21)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Fix | Stop a hung model load from wedging every later semantic query | Done | The embedding runtime caches the *promise* of a model load, and a load that never settles stays cached forever — so every later query inherited that pending promise and the UI stayed on "Loading semantic model…" with no result and no error. The load itself is now bounded by `EMBEDDER_LOAD_TIMEOUT_MS`, so a hung load fails cleanly through the existing failure path and the next query starts a fresh one. Two regression tests: a hung load must fail rather than stay pending, and five superseded queries must share **one** model download. Found while chasing an unrecorded e2e flake. See [Plan 182](182-semantic-embedder-wedged-promise-2026-10-21.md). |
+
 ### Plan 181 — Quality gate Markdown enumeration asks git, not `find` (2026-10-21)
 
 | Wave | Goal | Status | Outcome |
