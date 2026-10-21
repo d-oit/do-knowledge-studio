@@ -88,7 +88,7 @@ export const handleWorkerMessage = (
  */
 const isDedicatedWorkerScope = (): boolean => {
   if (typeof self === 'undefined') return false
-  return 'document' in self ? false : true
+  return !('document' in self)
 }
 
 // Attach the listener when this module runs inside a dedicated Web Worker.
