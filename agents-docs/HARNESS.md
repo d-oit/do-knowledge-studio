@@ -23,9 +23,30 @@ Throw away what does not help - more config is not always better.
 ## Skills (Single Canonical Source)
 
 All skills live in `.agents/skills/`. Claude Code, Gemini CLI, and Qwen Code use symlinks
-(`.claude/skills/`, `.gemini/skills/`, `.qwen/skills/`) created by `./scripts/setup-skills.sh`.
+(`.claude/skills/`, `.gemini/skills/`) created by `./scripts/setup-skills.sh`.
 OpenCode reads skills directly from `.agents/skills/` - no symlinks needed.
 See `agents-docs/AVAILABLE_SKILLS.md`.
+
+## Local Verification Harness (`do-harness.toml`)
+
+The repository uses `do-harness.toml` (`language = "generic"`) as a single local sensor map that maps path changes to fast, canonical verification commands. This allows agents and developers to select relevant local checks and escalate to browser or production build checks only when affected files warrant it.
+
+### Canonical Sensor Map
+
+| Sensor | Purpose | Triggering Paths | Canonical Command |
+|--------|---------|------------------|-------------------|
+| `feedback` | Fast lint and typecheck for UI/component changes | `src/**`, `public/**`, `e2e/**`, `package.json` | `pnpm run lint && pnpm run typecheck` |
+| `verification` | Full unit test suite, test typecheck, and skill validation | `src/**`, `tests/**`, `scripts/**`, `.agents/**`, `AGENTS.md`, `.github/**`, `package.json`, `pnpm-lock.yaml`, `tsconfig*.json` | `pnpm run typecheck:test && pnpm run test && ./scripts/validate-skills.sh` |
+| `offline` | Production build and Playwright offline E2E suite | `public/sw.js`, `public/precache-manifest.json`, `scripts/generate-precache-manifest.mjs`, `src/app/layout.tsx`, `src/components/studio/app-shell.tsx`, `src/components/studio/offline-indicator.tsx`, `src/components/studio/service-worker-registration.tsx`, `e2e/offline-views.spec.ts`, `playwright.config.ts`, `package.json`, `pnpm-lock.yaml` | `pnpm run build && pnpm run test:e2e:offline` |
+| `schema/data` | Schema, migration, hydration, store, and sync tests | `src/lib/studio/schema.ts`, `src/lib/studio/migrations.ts`, `src/lib/studio/hydration*.ts`, `src/lib/studio/store.ts`, `src/lib/studio/slices/**`, `src/lib/studio/seed-*.ts`, `src/lib/sync/**`, `src/lib/okf/**` | `pnpm test src/lib/studio/schema.test.ts src/lib/studio/migrations.test.ts src/lib/studio/hydration.test.ts src/lib/studio/store.test.ts src/lib/sync/` |
+| `release` | Full build and release preflight verification | `package.json`, `pnpm-lock.yaml`, `src/**`, `public/**`, `scripts/**`, `.github/**`, `VERSION`, `AGENTS.md` | `pnpm run build && ./scripts/verify.sh` |
+
+### Design & Escalation Rationale
+
+- **Fast Feedback vs. Heavy Suites:** Ordinary UI component edits run fast linting and typechecking via `feedback` without triggering expensive production builds or browser E2E suites.
+- **CI Parity:** The `offline` path list matches `.github/workflows/ci-and-labels.yml`'s `offline` path filter exactly, preserving the CI rationale of keeping production offline tests separate from daily UI edits.
+- **Schema & Data Protection:** Schema, persistence, store, migration, or sync edits run targeted Vitest suites (`schema/data`) rather than relying solely on TypeScript compile checks.
+- **Independence:** GitHub Actions workflows remain the authoritative merge gate on `main`. `do-harness.toml` provides local sensor mapping for agents and developers.
 
 ## MCP Servers
 

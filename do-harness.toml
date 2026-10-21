@@ -1,0 +1,76 @@
+# do-harness.toml — Sensor mapping for local agent harness verification
+# Maps repository path changes to canonical verification commands.
+# All commands call existing package.json scripts or repository validators.
+
+language = "generic"
+
+[sensors.feedback]
+description = "Fast feedback loop for active TypeScript and React component development"
+paths = [
+  "src/**",
+  "public/**",
+  "e2e/**",
+  "package.json"
+]
+command = "pnpm run lint && pnpm run typecheck"
+
+[sensors.verification]
+description = "Comprehensive unit test suite, test typecheck, skill, and configuration validation"
+paths = [
+  "src/**",
+  "tests/**",
+  "scripts/**",
+  ".agents/**",
+  "AGENTS.md",
+  ".github/**",
+  "package.json",
+  "pnpm-lock.yaml",
+  "tsconfig*.json"
+]
+command = "pnpm run typecheck:test && pnpm run test && ./scripts/validate-skills.sh"
+
+[sensors.offline]
+description = "Production build and offline Playwright suite for offline-critical paths (matches CI offline path classification)"
+paths = [
+  "public/sw.js",
+  "public/precache-manifest.json",
+  "scripts/generate-precache-manifest.mjs",
+  "src/app/layout.tsx",
+  "src/components/studio/app-shell.tsx",
+  "src/components/studio/offline-indicator.tsx",
+  "src/components/studio/service-worker-registration.tsx",
+  "e2e/offline-views.spec.ts",
+  "playwright.config.ts",
+  "package.json",
+  "pnpm-lock.yaml"
+]
+command = "pnpm run build && pnpm run test:e2e:offline"
+
+[sensors."schema/data"]
+description = "Targeted validation and unit tests for schema, migrations, persistence, hydration, and sync modules"
+paths = [
+  "src/lib/studio/schema.ts",
+  "src/lib/studio/migrations.ts",
+  "src/lib/studio/hydration.ts",
+  "src/lib/studio/hydration-*.ts",
+  "src/lib/studio/store.ts",
+  "src/lib/studio/slices/**",
+  "src/lib/studio/seed-*.ts",
+  "src/lib/sync/**",
+  "src/lib/okf/**"
+]
+command = "pnpm test src/lib/studio/schema.test.ts src/lib/studio/migrations.test.ts src/lib/studio/hydration.test.ts src/lib/studio/store.test.ts src/lib/sync/"
+
+[sensors.release]
+description = "Full production build and preflight verification"
+paths = [
+  "package.json",
+  "pnpm-lock.yaml",
+  "src/**",
+  "public/**",
+  "scripts/**",
+  ".github/**",
+  "VERSION",
+  "AGENTS.md"
+]
+command = "pnpm run build && ./scripts/verify.sh"
