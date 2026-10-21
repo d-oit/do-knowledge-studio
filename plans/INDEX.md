@@ -9,7 +9,7 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
-### Plan 182 — An aborted semantic query wedges every later one (2026-10-21)
+### Plan 182 — A hung model load wedges every later semantic query (2026-10-21)
 
 | Wave | Goal | Status | Outcome |
 | --- | --- | --- | --- |
