@@ -128,14 +128,14 @@ built app in a real browser.
   unrelated to this change)
 - `./scripts/quality_gate.sh` — all gates green
 
-## Pre-existing gap found while running the gate (not fixed here)
+## Pre-existing gap found while running the gate (fixed separately)
 
-`scripts/quality_gate.sh` lints every `*.md` under the repository root, and
-its exclusion list covers `node_modules`, `target`, `.git` and the vendor
+`scripts/quality_gate.sh` linted every `*.md` under the repository root, and
+its exclusion list covered `node_modules`, `target`, `.git` and the vendor
 agent directories — but **not** the Playwright output directories
 `playwright-report/` and `test-results/`, which are gitignored build output.
 
-So running the e2e suite and then the gate fails on files Playwright wrote:
+So running the e2e suite and then the gate failed on files Playwright wrote:
 
 ```
 ✗ markdownlint failed: ./test-results/error-boundaries-…/error-context.md
@@ -144,21 +144,15 @@ So running the e2e suite and then the gate fails on files Playwright wrote:
   error MD047/single-trailing-newline Files should end with a single newline character
 ```
 
-Confirmed **pre-existing and independent of this change**: with the working
-tree stashed (pristine `main`) and the artifacts still on disk, the same two
-files fail the same rule.
+Confirmed **pre-existing and independent of the worker fix**: with the
+working tree stashed (pristine `main`) and the artifacts still on disk, the
+same two files fail the same rule.
 
-Not fixed here on purpose: AGENTS.md forbids changing lint suppressions or
-ignore settings without explicit human approval, and the exclusion list in
-`quality_gate.sh` is exactly that. The artifacts this change produced were
-removed instead (`rm -rf playwright-report test-results`), which is the correct
-way to reach a green gate — the directories are regenerated on every e2e run.
-
-**Follow-up for the maintainer:** decide whether `quality_gate.sh` should skip
-gitignored build output. The general fix is to derive the markdown file list
-from `git ls-files '*.md'` (tracked files only) rather than from `find`, which
-also stops the gate from linting any untracked scratch markdown. That is a
-gate-behaviour change and needs the approval AGENTS.md requires.
+This was left unfixed in the worker PR because AGENTS.md forbids changing
+lint suppressions or ignore settings without explicit human approval, and the
+exclusion list in `quality_gate.sh` is exactly that. It was approved
+afterwards and fixed on its own branch — see
+[Plan 181](181-quality-gate-markdown-enumeration-2026-10-21.md).
 
 ## Note on the earlier "console error"
 
