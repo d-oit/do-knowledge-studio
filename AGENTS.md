@@ -103,7 +103,7 @@ pnpm run test
 pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build
 ```
 
-- Fast loop: `./scripts/minimal_quality_gate.sh` (lint + typecheck + test) or `do-harness.toml` sensors (`feedback`, `verification`, `offline`, `schema/data`, `release`; see `agents-docs/HARNESS.md`).
+- Fast loop: `./scripts/minimal_quality_gate.sh` (lint + typecheck + test), or pick a command from the `do-harness.toml` sensor map (`feedback`, `verification`, `offline`, `schema/data`, `release`; see `agents-docs/HARNESS.md`).
 - Also run `pnpm run test:e2e` for UI, editor, graph, mind map, search, export,
   or any critical workflow change — a unit test proves the function, not the app.
 - Before commit: `./scripts/quality_gate.sh`. After CI passes: the

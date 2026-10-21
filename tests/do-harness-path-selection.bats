@@ -7,12 +7,19 @@
 # - Canonical command alignment with package.json and repository scripts
 # - Path selection for normal UI, offline-critical, schema/migration, config, and docs changes
 # - Alignment between do-harness.toml offline paths and CI workflow path filters
+#
+# The path-matching vocabulary lives in tests/helpers/do-harness-paths.py, so
+# the matcher is defined once rather than copied into every test.
 
 bats_require_minimum_version 1.5.0
 
 setup() {
   export REPO_ROOT="$BATS_TEST_DIRNAME/.."
   export HARNESS_TOML="$REPO_ROOT/do-harness.toml"
+  # The inline Python below opens repository files by relative path, so the
+  # suite has to run from the repository root. Without this, `cd tests && bats
+  # do-harness-path-selection.bats` fails with FileNotFoundError.
+  cd "$REPO_ROOT" || return 1
 }
 
 @test "do-harness.toml exists and is valid TOML with generic language" {
@@ -47,15 +54,16 @@ print("OK")
 
 @test "do-harness.toml commands reference valid pnpm scripts or repository scripts" {
   run python3 -c '
-import tomllib, json, re
+import json
+import re
+import tomllib
 from pathlib import Path
-
-with open("package.json", "r") as f:
-    pkg = json.load(f)
-scripts = pkg.get("scripts", {})
 
 with open("do-harness.toml", "rb") as f:
     sensors = tomllib.load(f).get("sensors", {})
+
+with open("package.json", "r") as f:
+    scripts = json.load(f).get("scripts", {})
 
 pnpm_run_pattern = re.compile(r"pnpm run ([a-zA-Z0-9:_-]+)")
 script_file_pattern = re.compile(r"\./(scripts/[a-zA-Z0-9_.-]+\.sh)")
@@ -80,32 +88,74 @@ print("OK")
   [[ "$output" == *"OK"* ]]
 }
 
-@test "path selection classifies normal UI changes correctly" {
+@test "every path a sensor claims also has a test the sensor command runs" {
+  # A sensor that claims a path but whose command does not run that path's
+  # tests verifies nothing for it: the path selection says "run this" and the
+  # command then checks something else.
   run python3 -c '
-import tomllib, fnmatch
-from pathlib import Path
-
-def matches_pattern(file_path: str, pattern: str) -> bool:
-    file_path = file_path.lstrip("./")
-    pattern = pattern.lstrip("./")
-    if pattern.endswith("/**"):
-        base = pattern[:-3]
-        return file_path == base or file_path.startswith(base + "/")
-    elif "/**/" in pattern:
-        prefix, suffix = pattern.split("/**/", 1)
-        return file_path.startswith(prefix + "/") and fnmatch.fnmatch(file_path[len(prefix)+1:], f"*{suffix}")
-    elif pattern.startswith("**"):
-        return fnmatch.fnmatch(file_path, pattern) or fnmatch.fnmatch(Path(file_path).name, pattern[2:].lstrip("/"))
-    elif "*" in pattern:
-        return fnmatch.fnmatch(file_path, pattern) or fnmatch.fnmatch(Path(file_path).name, pattern)
-    else:
-        return file_path == pattern
+import re
+import tomllib
 
 with open("do-harness.toml", "rb") as f:
     sensors = tomllib.load(f).get("sensors", {})
 
-file_path = "src/components/studio/editor-view.tsx"
-matched = [s for s, data in sensors.items() if any(matches_pattern(file_path, p) for p in data.get("paths", []))]
+command = sensors["schema/data"]["command"]
+assert "src/lib/okf/" in command, "schema/data claims src/lib/okf/** but does not run those tests"
+for test_file in [
+    "src/lib/studio/hydration-quarantine.test.ts",
+    "src/lib/studio/seed-data.test.ts",
+    "src/lib/studio/seed-state.test.ts",
+]:
+    assert test_file in command, f"schema/data does not run {test_file}"
+print("OK")
+'
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"OK"* ]]
+}
+
+@test "the verification sensor runs the BATS suite it claims in its paths" {
+  # verification.paths includes tests/** and scripts/**, so its command has to
+  # run the BATS suites: `pnpm run test` is vitest over src/ only.
+  run python3 -c '
+import tomllib
+
+with open("do-harness.toml", "rb") as f:
+    sensors = tomllib.load(f).get("sensors", {})
+
+command = sensors["verification"]["command"]
+assert "bats tests/" in command, "verification does not run the BATS suite it claims"
+print("OK")
+'
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"OK"* ]]
+}
+
+@test "the release sensor does not build twice" {
+  # scripts/verify.sh already runs `pnpm run build`; a separate build in the
+  # sensor command doubles the slowest step for no extra coverage.
+  run python3 -c '
+import tomllib
+
+with open("do-harness.toml", "rb") as f:
+    sensors = tomllib.load(f).get("sensors", {})
+
+command = sensors["release"]["command"]
+assert "pnpm run build" not in command, "release builds twice: verify.sh already runs the build"
+assert "./scripts/verify.sh" in command
+print("OK")
+'
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"OK"* ]]
+}
+
+@test "path selection classifies normal UI changes correctly" {
+  run python3 -c '
+import sys
+sys.path.insert(0, "tests/helpers")
+from do_harness_paths import load_sensors, select_sensors
+
+sensors = load_sensors()
+matched = select_sensors(sensors, "src/components/studio/editor-view.tsx")
 
 assert "feedback" in matched
 assert "verification" in matched
@@ -119,28 +169,11 @@ print("OK")
 
 @test "path selection classifies offline-critical changes correctly" {
   run python3 -c '
-import tomllib, fnmatch
-from pathlib import Path
+import sys
+sys.path.insert(0, "tests/helpers")
+from do_harness_paths import load_sensors, select_sensors
 
-def matches_pattern(file_path: str, pattern: str) -> bool:
-    file_path = file_path.lstrip("./")
-    pattern = pattern.lstrip("./")
-    if pattern.endswith("/**"):
-        base = pattern[:-3]
-        return file_path == base or file_path.startswith(base + "/")
-    elif "/**/" in pattern:
-        prefix, suffix = pattern.split("/**/", 1)
-        return file_path.startswith(prefix + "/") and fnmatch.fnmatch(file_path[len(prefix)+1:], f"*{suffix}")
-    elif pattern.startswith("**"):
-        return fnmatch.fnmatch(file_path, pattern) or fnmatch.fnmatch(Path(file_path).name, pattern[2:].lstrip("/"))
-    elif "*" in pattern:
-        return fnmatch.fnmatch(file_path, pattern) or fnmatch.fnmatch(Path(file_path).name, pattern)
-    else:
-        return file_path == pattern
-
-with open("do-harness.toml", "rb") as f:
-    sensors = tomllib.load(f).get("sensors", {})
-
+sensors = load_sensors()
 offline_files = [
     "public/sw.js",
     "src/components/studio/offline-indicator.tsx",
@@ -148,7 +181,7 @@ offline_files = [
 ]
 
 for file_path in offline_files:
-    matched = [s for s, data in sensors.items() if any(matches_pattern(file_path, p) for p in data.get("paths", []))]
+    matched = select_sensors(sensors, file_path)
     assert "offline" in matched, f"Expected offline sensor for {file_path}"
 
 print("OK")
@@ -159,28 +192,11 @@ print("OK")
 
 @test "path selection classifies schema and migration changes correctly" {
   run python3 -c '
-import tomllib, fnmatch
-from pathlib import Path
+import sys
+sys.path.insert(0, "tests/helpers")
+from do_harness_paths import load_sensors, select_sensors
 
-def matches_pattern(file_path: str, pattern: str) -> bool:
-    file_path = file_path.lstrip("./")
-    pattern = pattern.lstrip("./")
-    if pattern.endswith("/**"):
-        base = pattern[:-3]
-        return file_path == base or file_path.startswith(base + "/")
-    elif "/**/" in pattern:
-        prefix, suffix = pattern.split("/**/", 1)
-        return file_path.startswith(prefix + "/") and fnmatch.fnmatch(file_path[len(prefix)+1:], f"*{suffix}")
-    elif pattern.startswith("**"):
-        return fnmatch.fnmatch(file_path, pattern) or fnmatch.fnmatch(Path(file_path).name, pattern[2:].lstrip("/"))
-    elif "*" in pattern:
-        return fnmatch.fnmatch(file_path, pattern) or fnmatch.fnmatch(Path(file_path).name, pattern)
-    else:
-        return file_path == pattern
-
-with open("do-harness.toml", "rb") as f:
-    sensors = tomllib.load(f).get("sensors", {})
-
+sensors = load_sensors()
 schema_files = [
     "src/lib/studio/schema.ts",
     "src/lib/studio/migrations.ts",
@@ -188,7 +204,7 @@ schema_files = [
 ]
 
 for file_path in schema_files:
-    matched = [s for s, data in sensors.items() if any(matches_pattern(file_path, p) for p in data.get("paths", []))]
+    matched = select_sensors(sensors, file_path)
     assert "schema/data" in matched, f"Expected schema/data sensor for {file_path}"
     assert "offline" not in matched, f"Unexpected offline sensor for {file_path}"
 
@@ -200,30 +216,12 @@ print("OK")
 
 @test "path selection skips code sensors for docs-only changes" {
   run python3 -c '
-import tomllib, fnmatch
-from pathlib import Path
+import sys
+sys.path.insert(0, "tests/helpers")
+from do_harness_paths import load_sensors, select_sensors
 
-def matches_pattern(file_path: str, pattern: str) -> bool:
-    file_path = file_path.lstrip("./")
-    pattern = pattern.lstrip("./")
-    if pattern.endswith("/**"):
-        base = pattern[:-3]
-        return file_path == base or file_path.startswith(base + "/")
-    elif "/**/" in pattern:
-        prefix, suffix = pattern.split("/**/", 1)
-        return file_path.startswith(prefix + "/") and fnmatch.fnmatch(file_path[len(prefix)+1:], f"*{suffix}")
-    elif pattern.startswith("**"):
-        return fnmatch.fnmatch(file_path, pattern) or fnmatch.fnmatch(Path(file_path).name, pattern[2:].lstrip("/"))
-    elif "*" in pattern:
-        return fnmatch.fnmatch(file_path, pattern) or fnmatch.fnmatch(Path(file_path).name, pattern)
-    else:
-        return file_path == pattern
-
-with open("do-harness.toml", "rb") as f:
-    sensors = tomllib.load(f).get("sensors", {})
-
-file_path = "docs/README.md"
-matched = [s for s, data in sensors.items() if any(matches_pattern(file_path, p) for p in data.get("paths", []))]
+sensors = load_sensors()
+matched = select_sensors(sensors, "docs/README.md")
 
 assert "feedback" not in matched
 assert "offline" not in matched
@@ -236,8 +234,8 @@ print("OK")
 
 @test "do-harness.toml offline paths align with CI workflow offline paths" {
   run python3 -c '
-import tomllib, re
-from pathlib import Path
+import re
+import tomllib
 
 with open("do-harness.toml", "rb") as f:
     sensors = tomllib.load(f).get("sensors", {})

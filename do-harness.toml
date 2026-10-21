@@ -27,7 +27,7 @@ paths = [
   "pnpm-lock.yaml",
   "tsconfig*.json"
 ]
-command = "pnpm run typecheck:test && pnpm run test && ./scripts/validate-skills.sh"
+command = "pnpm run typecheck:test && pnpm run test && ./scripts/validate-skills.sh && bats tests/"
 
 [sensors.offline]
 description = "Production build and offline Playwright suite for offline-critical paths (matches CI offline path classification)"
@@ -59,7 +59,7 @@ paths = [
   "src/lib/sync/**",
   "src/lib/okf/**"
 ]
-command = "pnpm test src/lib/studio/schema.test.ts src/lib/studio/migrations.test.ts src/lib/studio/hydration.test.ts src/lib/studio/store.test.ts src/lib/sync/"
+command = "pnpm test src/lib/studio/schema.test.ts src/lib/studio/migrations.test.ts src/lib/studio/hydration.test.ts src/lib/studio/hydration-quarantine.test.ts src/lib/studio/store.test.ts src/lib/studio/seed-data.test.ts src/lib/studio/seed-state.test.ts src/lib/sync/ src/lib/okf/"
 
 [sensors.release]
 description = "Full production build and preflight verification"
@@ -73,4 +73,4 @@ paths = [
   "VERSION",
   "AGENTS.md"
 ]
-command = "pnpm run build && ./scripts/verify.sh"
+command = "./scripts/verify.sh"
