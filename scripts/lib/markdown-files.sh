@@ -52,12 +52,26 @@ if [[ -z "${MARKDOWN_FILES_LOADED:-}" ]]; then
   # empty list would be fail-open: the caller sees no files, lints nothing,
   # and reports success. Falling through to the filesystem sweep keeps the
   # gate checking something.
+  #
+  # The fallback asks git whether each candidate path is ignored, so it
+  # excludes the same directories the git path does. A hand-maintained
+  # exclusion list here would be the hole this change exists to close — it
+  # would miss every ignored output directory added later.
+  #
+  # `git check-ignore` is used rather than `git ls-files --others --ignored`
+  # because it answers per path and still works when the index cannot be
+  # read, which is exactly the case the fallback exists for.
   list_markdown_files() {
     if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
       if git ls-files --cached --others --exclude-standard -- '*.md' \
         "${MARKDOWN_VENDOR_PATHSPECS[@]}" 2>/dev/null; then
         return 0
       fi
+    fi
+
+    local in_repo=false
+    if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+      in_repo=true
     fi
 
     find . -name "*.md" \
@@ -72,6 +86,15 @@ if [[ -z "${MARKDOWN_FILES_LOADED:-}" ]]; then
       -not -path "./playwright-report/*" \
       -not -path "./test-results/*" \
       -not -path "./coverage/*" \
-      2>/dev/null || true
+      2>/dev/null | while IFS= read -r md_path; do
+        [ -n "$md_path" ] || continue
+        if [ "$in_repo" = true ]; then
+          # Skip anything the repository ignores.
+          if git check-ignore -q -- "$md_path" 2>/dev/null; then
+            continue
+          fi
+        fi
+        printf '%s\n' "$md_path"
+      done
   }
 fi

@@ -33,15 +33,18 @@ fi
 # Source the Markdown file-enumeration library. It lives in scripts/lib/ so
 # this script does not grow with every new enumeration rule, and so the rule
 # has its own BATS coverage. The fallback keeps the gate working if the
-# library is missing: a missing enumeration would otherwise leave
-# `list_markdown_files` undefined, and the Markdown section would silently
-# lint nothing — a gate that reports success without checking anything.
+# library is missing or unreadable: a missing enumeration would otherwise
+# leave `list_markdown_files` undefined, and the Markdown section would
+# silently lint nothing — a gate that reports success without checking
+# anything. The `source` result is checked for that reason: the file can
+# exist and still fail to load.
 # shellcheck source=scripts/lib/markdown-files.sh
-if [ -f "$REPO_ROOT/scripts/lib/markdown-files.sh" ]; then
-    # shellcheck source=scripts/lib/markdown-files.sh
-    source "$REPO_ROOT/scripts/lib/markdown-files.sh"
+if [ -f "$REPO_ROOT/scripts/lib/markdown-files.sh" ] &&
+    source "$REPO_ROOT/scripts/lib/markdown-files.sh" &&
+    declare -F list_markdown_files >/dev/null 2>&1; then
+    :
 else
-    echo "Warning: scripts/lib/markdown-files.sh is missing - falling back to a filesystem sweep" >&2
+    echo "Warning: scripts/lib/markdown-files.sh is missing or unreadable - falling back to a filesystem sweep" >&2
     list_markdown_files() {
         find . -name "*.md" \
             -not -path "./node_modules/*" \

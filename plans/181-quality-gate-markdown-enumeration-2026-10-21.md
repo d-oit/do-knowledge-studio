@@ -144,7 +144,7 @@ so on stderr.
 
 ### Regression coverage
 
-`tests/quality-gate-markdown-files.bats` (new, 9 tests) pins the contract
+`tests/quality-gate-markdown-files.bats` (new, 10 tests) pins the contract
 against a stub linter that records the paths it was asked to lint:
 
 | Test | Asserts |
@@ -158,6 +158,7 @@ against a stub linter that records the paths it was asked to lint:
 | the gate still lints Markdown when the enumeration library is missing | a missing library cannot make the gate skip its checks |
 | the enumeration falls back to a filesystem sweep outside a git repository | the fallback excludes build output and dependencies too |
 | a failing git ls-files falls back instead of returning an empty list | the enumeration fails closed |
+| skips tracked files deleted from the working tree without failing | a file git still lists but disk no longer has is not handed to the linter |
 
 Verified to **fail on the old implementation and pass on the new one** —
 against the `find`-based gate from `main`:
@@ -174,7 +175,21 @@ against the `find`-based gate from `main`:
 
 The fail-closed test was checked in the same way: reverting the
 `git ls-files` guard makes it fail (`not ok 9`), and restoring it makes it
-pass.
+pass. The deleted-file test was checked the same way: removing the
+`[ -f "$md_file" ]` guard makes it fail (`not ok 10`), and restoring it makes
+it pass.
+
+### The fallback excludes what the git path excludes
+
+The filesystem fallback cannot ask git for the file list, but it can still
+ask git whether a path is ignored — `git check-ignore` answers per path and
+works even when the index cannot be read, which is exactly the case the
+fallback exists for. The fallback therefore excludes the same directories the
+git path does, instead of keeping a second hand-maintained list that would
+become the next hole.
+
+The explicit output-directory exclusions are kept as well, so the fallback
+still excludes build output when git cannot answer at all.
 
 ## Code review outcome
 
@@ -188,6 +203,10 @@ was handled:
 | A tracked file deleted from the working tree is still listed by git, so the linter was spawned on a path that does not exist | P3 | **Fixed** — the loop now skips paths that are not files. |
 | The vendor-exclusion test did not assert that the gate passes | P3 | **Fixed** — the stub now exits 0 and the test asserts a passing gate. |
 | The non-git fallback path was never exercised | P3 | **Fixed** — a test covers it. |
+| The deleted-file skip had no test | P3 | **Fixed** — a test covers it, and it was verified to fail when the guard is removed. |
+| A library that exists but fails to source would leave `list_markdown_files` undefined, and the Markdown section would silently lint nothing | P3 | **Fixed** — the gate checks both that the file exists *and* that `source` succeeded and defined the function. |
+| The new library was committed with mode 755 while its siblings are 644 | P3 | **Fixed** — mode is now 644, matching `scripts/lib/`. |
+| The fallback kept a second hand-maintained exclusion list, which would become the next hole | P3 | **Fixed** — the fallback now asks `git check-ignore` per path, so it excludes what the git path excludes. |
 
 ### Local gate
 
