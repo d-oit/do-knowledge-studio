@@ -9,6 +9,12 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 183 — Split oversized automation scripts and scope Markdown fixes (2026-10-22)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Fix | Bring both automation entrypoints under the 500-line source limit, and prevent self-fix from rewriting ignored or vendored Markdown | Done | Extracted language checks into `scripts/lib/language-checks.sh` (quality gate 844 → 439 LOC; library 493), and GitHub/CI phases into `scripts/lib/self-fix-github.sh` (self-fix loop 651 → 349 LOC; library 316). The Markdown fix now uses repository-owned enumeration. Two review rounds then closed **seven** false-green / fail-open defects: Codacy `ACTION_REQUIRED` now blocks instead of exiting 0; an unreadable `gh pr checks` payload aborts (exit 5); the failure list no longer corrupts the JSON the fix phase parses (it has never remediated a real failure); a failed `git push` aborts with exit 2 instead of being retried and reported as a green loop; helper fallbacks no longer return the passing value when `python3` is unusable; and the libraries declare their caller-provided inputs, which was failing the PR's ShellCheck security scan (SC2154). Also closes the two behaviours lost with the deleted source-text test (invoking `bats tests/`, a `tests/`-only change selecting the tooling scope). Every new assertion was observed failing with the defect re-injected. Full BATS suite 177/177; workflow tests 63/63; full quality gate passed; PR #1015. See [Plan 183](183-oversized-automation-scripts-2026-10-22.md). |
+
 ### Plan 182 — A hung model load wedges every later semantic query (2026-10-21)
 
 | Wave | Goal | Status | Outcome |

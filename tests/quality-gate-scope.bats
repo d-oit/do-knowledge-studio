@@ -28,6 +28,7 @@ make_repo() {
   mkdir -p "$dir/scripts/lib"
   cp "$SCRIPT" "$dir/scripts/quality_gate.sh"
   cp "$LIB_DIR/lint_cache.sh" "$dir/scripts/lib/lint_cache.sh"
+  cp "$LIB_DIR/language-checks.sh" "$dir/scripts/lib/language-checks.sh"
   for stub in validate-git-hooks validate-skills validate-links \
     validate-github-actions-shas validate-package-manager; do
     printf '#!/usr/bin/env bash\nexit 0\n' >"$dir/scripts/$stub.sh"
@@ -201,4 +202,22 @@ run_gate() {
   run_gate "$repo" QUALITY_GATE_BASE_REF=trunk
   [ "$status" -eq 0 ]
   [[ "$output" == *"No changes detected."* ]]
+}
+
+@test "a tests/ change selects the tooling scope on its own" {
+  # A BATS-only edit must still reach the shell section, which is what runs the
+  # suite. Nothing else in the change set can select it for us.
+  local repo="$BATS_TEST_TMPDIR/repo"
+  make_repo "$repo"
+  (
+    cd "$repo" || exit 1
+    git checkout -q -b feature
+    printf '#!/usr/bin/env bats\n' >tests/added.bats
+    git add -A
+    git commit -qm "test(tooling): add a bats file"
+  )
+
+  run_gate "$repo" QUALITY_GATE_BASE_REF=trunk
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Running Shell script checks"* ]]
 }

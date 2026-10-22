@@ -563,19 +563,6 @@ describe('GitHub Actions Workflows', () => {
       expect(content).toContain('source-path=scripts')
     })
 
-    it('should hard-gate the BATS suite in quality_gate.sh', () => {
-      const gatePath = join(process.cwd(), 'scripts/quality_gate.sh')
-      expect(existsSync(gatePath)).toBe(true)
-      const content = readFileSync(gatePath, 'utf-8')
-      // A missing tests/ directory must fail the gate, never silently skip.
-      expect(content).toContain('tests/ directory missing')
-      expect(content).toContain('bats tests/')
-      // tests/ changes must trigger the tooling scope in --changed mode.
-      expect(content).toMatch(/\^tests\//)
-      // New shell scripts must have BATS coverage in changed-only mode.
-      expect(content).toContain('new shell scripts missing BATS coverage')
-      expect(content).toContain('diff-filter=A')
-    })
 
     it('should install bats on CI quality-gate runners', () => {
       const workflow = loadWorkflow('ci-and-labels.yml')

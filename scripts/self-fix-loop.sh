@@ -7,15 +7,6 @@ set -euo pipefail
 REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 cd "$REPO_ROOT"
 
-# Source the Markdown file-enumeration library so this script and the
-# quality gate agree on which Markdown the repository owns. A repo-wide
-# `find` here also rewrote the vendored skill libraries (271 files) and any
-# generated Playwright artifacts, which the gate deliberately excludes.
-# shellcheck source=scripts/lib/markdown-files.sh
-if [ -f "$REPO_ROOT/scripts/lib/markdown-files.sh" ]; then
-    # shellcheck source=scripts/lib/markdown-files.sh
-    source "$REPO_ROOT/scripts/lib/markdown-files.sh"
-fi
 
 # ---------------------------------------------------------------------------
 # Config
@@ -51,48 +42,30 @@ error(){ echo -e "${RED}[ERROR]${NC} $*" >&2; }
 info() { echo -e "${CYAN}[INFO]${NC} $*" >&2; }
 step() { echo -e "${MAGENTA}[STEP]${NC} $*" >&2; }
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-# Safe JSON parsing with Python (avoids grep fragility)
-# Usage: echo "JSON" | json_get_failed_checks
-# Returns failed checks excluding ACTION_REQUIRED (review requests) and SKIPPED
-json_get_failed_checks() {
-    python3 -c "
-import json, sys
-try:
-    data = json.load(sys.stdin)
-    failures = []
-    for c in data:
-        s = c.get('state', '')
-        n = c.get('name', '')
-        # FAILURE, ERROR, CANCELLED are real failures
-        # ACTION_REQUIRED (Codacy review) is non-blocking
-        # SKIPPED, NEUTRAL are non-blocking
-        if s in ('FAILURE', 'ERROR', 'CANCELLED'):
-            failures.append({'name': n, 'state': s})
-    print(json.dumps(failures))
-except Exception as e:
-    print(json.dumps([{'name': 'parse_error', 'state': str(e)}]))
-" 2>/dev/null || echo '[]'
-}
+# The loop requires the shared repository-file rules and its GitHub phase
+# functions; fail closed instead of running a partial automation flow.
+# shellcheck source=scripts/lib/markdown-files.sh
+if [ -f "$REPO_ROOT/scripts/lib/markdown-files.sh" ] &&
+    source "$REPO_ROOT/scripts/lib/markdown-files.sh" &&
+    declare -F trim_markdown_trailing_whitespace >/dev/null 2>&1; then
+    :
+else
+    error "scripts/lib/markdown-files.sh is missing or unreadable."
+    exit 2
+fi
 
+# shellcheck source=scripts/lib/self-fix-github.sh
+if [ -f "$REPO_ROOT/scripts/lib/self-fix-github.sh" ] &&
+    source "$REPO_ROOT/scripts/lib/self-fix-github.sh" &&
+    declare -F phase_commit_and_push >/dev/null 2>&1; then
+    :
+else
+    error "scripts/lib/self-fix-github.sh is missing or unreadable."
+    exit 2
+fi
+# ShellCheck does not follow the sourced GitHub/CI phase module.
+: "$STRICT_VALIDATION" "$TARGET_PR"
 
-json_has_pending() {
-    python3 -c "
-import json, sys
-try:
-    data = json.load(sys.stdin)
-    for c in data:
-        s = c.get('state', '')
-        if s in ('PENDING', 'QUEUED', 'IN_PROGRESS', 'EXPECTED'):
-            print('true')
-            sys.exit(0)
-    print('false')
-except:
-    print('false')
-" 2>/dev/null || echo 'false'
-}
 
 
 # ---------------------------------------------------------------------------
@@ -133,274 +106,6 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# ---------------------------------------------------------------------------
-# Phase 1: Commit & Push
-# ---------------------------------------------------------------------------
-phase_commit_and_push() {
-    step "Phase 1/6: COMMIT & PUSH"
-
-    # If targeting existing PR, checkout its branch first
-    if [ -n "$TARGET_PR" ]; then
-        local pr_branch
-        pr_branch=$(gh pr view "$TARGET_PR" --json headRefName --jq '.headRefName' 2>/dev/null || echo "")
-        if [ -z "$pr_branch" ]; then
-            error "Could not find branch for PR #${TARGET_PR}."
-            return 2
-        fi
-        local current_branch
-        current_branch=$(git branch --show-current)
-        if [ "$current_branch" != "$pr_branch" ]; then
-            info "Switching to PR #${TARGET_PR} branch: ${pr_branch}..."
-            git fetch origin "$pr_branch" 2>/dev/null || true
-            git checkout "$pr_branch" 2>/dev/null || {
-                error "Failed to checkout branch ${pr_branch}."
-                return 2
-            }
-            # Rebase onto base branch
-            info "Rebasing onto ${BASE_BRANCH}..."
-            if ! git rebase "origin/${BASE_BRANCH}" 2>/dev/null; then
-                warn "Rebase failed — continuing with current state."
-                git rebase --abort 2>/dev/null || true
-            fi
-        fi
-    fi
-
-    # Stage all changes
-    git add -A
-    if git diff --cached --quiet; then
-        warn "No changes to commit."
-        return 0
-    fi
-
-    # Run quality gate before committing (use --changed for speed)
-    info "Running quality gate..."
-    if [ "$STRICT_VALIDATION" = 1 ]; then
-        if ! ./scripts/quality_gate.sh --changed; then
-            error "Quality gate failed. Fix issues before committing."
-            return 1
-        fi
-    else
-        if ! ./scripts/quality_gate.sh --fast; then
-            warn "Fast quality gate flagged issues (non-strict mode, continuing)..."
-        fi
-    fi
-
-    # Build commit message from staged changes
-    local staged_files
-    staged_files=$(git diff --cached --name-only | head -5 | tr '\n' ' ')
-    local message
-    if git log -1 --pretty=%s 2>/dev/null | grep -q .; then
-        message=$(git log -1 --pretty=%s 2>/dev/null || echo "chore(self-fix): automated fix iteration")
-    else
-        message="chore(self-fix): automated updates - ${staged_files}"
-    fi
-
-    if [ "$DRY_RUN" = true ]; then
-        info "DRY RUN: Would commit with message: ${message}"
-        return 0
-    fi
-
-    git commit -m "${message}" --no-verify 2>/dev/null || \
-        git commit -m "${message}"
-
-    # Push to feature branch
-    local branch
-    branch=$(git branch --show-current)
-    info "Pushing to origin/${branch}..."
-    if ! git push -u origin "${branch}" 2>&1; then
-        error "Push failed."
-        return 2
-    fi
-
-    log "Commit and push successful."
-    return 0
-}
-
-
-# ---------------------------------------------------------------------------
-# Phase 2: Create/Update PR
-# ---------------------------------------------------------------------------
-phase_create_or_update_pr() {
-    step "Phase 2/6: CREATE/UPDATE PR"
-
-    local branch
-    branch=$(git branch --show-current)
-
-    if [ "$DRY_RUN" = true ]; then
-        info "DRY RUN: Would create/update PR for branch ${branch}"
-        return 0
-    fi
-
-    # Determine PR number: use TARGET_PR or find by branch
-    local pr_number="$TARGET_PR"
-    if [ -z "$pr_number" ]; then
-        pr_number=$(gh pr list --head "${branch}" --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
-    fi
-
-    if [ -n "$pr_number" ] && [ "$pr_number" != "null" ]; then
-        info "Updating existing PR #${pr_number}..."
-        local change_log
-        change_log=$(git log --oneline "origin/${BASE_BRANCH}..HEAD" 2>/dev/null || echo "No new commits")
-        gh pr edit "${pr_number}" \
-            --body "## 🤖 Self-Fix Loop — Iteration Update
-
-### Changes since last update
-${change_log}
-
-### Status
-⏳ CI checks in progress..." 2>/dev/null || true
-    else
-        info "Creating new PR..."
-        local commit_subject
-        commit_subject=$(git log -1 --pretty=%s)
-        gh pr create \
-            --title "${commit_subject}" \
-            --body "## 🤖 Self-Fix Loop Automation
-
-This PR was automatically created by the self-fix loop.
-
-### Changes
-$(git log --oneline "origin/${BASE_BRANCH}..HEAD" 2>/dev/null || echo "Initial commit")
-
-### Status
-⏳ Waiting for CI checks to pass..." \
-            --base "${BASE_BRANCH}" \
-            --label "automated" 2>&1 || {
-            warn "PR creation failed."
-        }
-    fi
-
-    log "PR phase complete."
-    return 0
-}
-
-# ---------------------------------------------------------------------------
-# Phase 3: Monitor CI
-# ---------------------------------------------------------------------------
-phase_monitor_ci() {
-    step "Phase 3/6: MONITOR CI"
-
-    local branch
-    branch=$(git branch --show-current)
-    local deadline
-    deadline=$(( $(date +%s) + TIMEOUT ))
-
-    if [ "$DRY_RUN" = true ]; then
-        info "DRY RUN: Would monitor CI for branch ${branch}"
-        echo '[]'
-        return 0
-    fi
-
-    # Determine PR number
-    local pr_number="$TARGET_PR"
-    if [ -z "$pr_number" ]; then
-        pr_number=$(gh pr list --head "${branch}" --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
-    fi
-
-    if [ -z "$pr_number" ] || [ "$pr_number" = "null" ]; then
-        error "No open PR found for branch ${branch}."
-        return 1
-    fi
-
-    info "Monitoring PR #${pr_number} checks every ${POLL_INTERVAL}s (timeout: ${TIMEOUT}s)..."
-
-    local poll_count=0
-    while true; do
-        poll_count=$(( poll_count + 1 ))
-
-        if [ "$(date +%s)" -gt "$deadline" ]; then
-            error "Timeout reached (${TIMEOUT}s)."
-            return 4
-        fi
-
-        # Fetch PR checks
-        local checks_json
-        checks_json=$(gh pr checks "${pr_number}" --json name,state 2>/dev/null || echo "[]")
-
-        if [ "$checks_json" = "[]" ] || [ -z "$checks_json" ]; then
-            sleep "$POLL_INTERVAL"
-            continue
-        fi
-
-        # Check for pending/running checks
-        local has_pending
-        has_pending=$(echo "$checks_json" | json_has_pending)
-
-        # Count states for display
-        local total pending failed
-        total=$(echo "$checks_json" | python3 -c "import json,sys; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
-        pending=$(echo "$checks_json" | python3 -c "
-import json,sys
-d=json.load(sys.stdin)
-print(len([c for c in d if c.get('state') in ('PENDING','QUEUED','IN_PROGRESS','EXPECTED')]))
-" 2>/dev/null || echo "0")
-        failed=$(echo "$checks_json" | python3 -c "
-import json,sys
-d=json.load(sys.stdin)
-print(len([c for c in d if c.get('state') in ('FAILURE','ERROR','CANCELLED')]))
-" 2>/dev/null || echo "0")
-
-        if [ "$has_pending" = "true" ]; then
-            if [ $(( poll_count % 5 )) -eq 1 ]; then
-                info "Checks: ${pending} pending, ${failed} failed / ${total} total — waiting..."
-            fi
-            sleep "$POLL_INTERVAL"
-            continue
-        fi
-
-        # All checks completed — output JSON for analysis
-        echo "$checks_json"
-        return 0
-    done
-}
-
-
-# ---------------------------------------------------------------------------
-# Phase 4: Analyze Failures
-# ---------------------------------------------------------------------------
-phase_analyze_failures() {
-    local checks_json="$1"
-    step "Phase 4/6: ANALYZE FAILURES"
-
-    if [ "$DRY_RUN" = true ]; then
-        info "DRY RUN: Would analyze failures from CI output"
-        echo "[]"
-        return 0
-    fi
-
-    # Use the Python helper to extract failed checks
-    local failed_checks
-    failed_checks=$(echo "$checks_json" | json_get_failed_checks)
-
-    # Check if we got parse errors
-    if echo "$failed_checks" | python3 -c "
-import json,sys
-d=json.load(sys.stdin)
-sys.exit(0 if any(c.get('name')=='parse_error' for c in d) else 1)
-" 2>/dev/null; then
-        warn "Failed to parse checks JSON."
-        echo "[]"
-        return 0
-    fi
-
-    if [ "$failed_checks" = "[]" ] || [ -z "$failed_checks" ]; then
-        log "All checks pass!"
-        echo ""  # empty = no failures
-        return 0
-    fi
-
-    # Display failures to stderr
-    info "Failed checks:" >&2
-    echo "$failed_checks" | python3 -c "
-import json,sys
-for c in json.load(sys.stdin):
-    print(f'  ❌ {c[\"name\"]}: {c[\"state\"]}')
-" 2>/dev/null || echo "  (parse error)" >&2
-
-    # Output only the JSON to stdout for the caller
-    echo "$failed_checks"
-    return 1
-}
 
 # ---------------------------------------------------------------------------
 # Phase 5: Fix
@@ -442,9 +147,12 @@ for c in json.load(sys.stdin):
             continue
         fi
 
-        # Handle ACTION_REQUIRED (Codacy, etc.) — usually not blocking
+        # ACTION_REQUIRED (a Codacy finding, a requested review) blocks the merge
+        # and cannot be auto-fixed: triage it with the `codacy` skill. It is
+        # reported as an unresolved failure, so the loop never claims success
+        # while it stands.
         if [ "$failed_state" = "ACTION_REQUIRED" ]; then
-            warn "${failed_name} requires action — skipping auto-fix."
+            warn "${failed_name} requires action — triage with the codacy skill (not auto-fixable)."
             continue
         fi
 
@@ -475,29 +183,7 @@ for c in json.load(sys.stdin):
             fix_applied=true
         elif echo "$logs" | grep -qiE "(markdown|markdownlint)"; then
             info "Markdown issue detected — fixing..."
-            # The same file list the quality gate lints: the repository's own
-            # Markdown, minus the vendored skill libraries and the generated
-            # build output. A repo-wide sweep also rewrote the vendored
-            # skills, which are content the skill authors own.
-            if declare -F trim_markdown_trailing_whitespace >/dev/null 2>&1; then
-                trim_markdown_trailing_whitespace
-            else
-                # The library is missing: fall back to a sweep that still skips
-                # the vendored directories and the build output.
-                find . -name "*.md" \
-                    -not -path "./node_modules/*" \
-                    -not -path "./target/*" \
-                    -not -path "./.git/*" \
-                    -not -path "./.agents/*" \
-                    -not -path "./.claude/*" \
-                    -not -path "./.gemini/*" \
-                    -not -path "./.qwen/*" \
-                    -not -path "./.opencode/*" \
-                    -not -path "./playwright-report/*" \
-                    -not -path "./test-results/*" \
-                    -not -path "./coverage/*" \
-                    -exec sed -i 's/[[:space:]]*$//' {} \; 2>/dev/null || true
-            fi
+            # The scoped trailing-whitespace pass below applies the fix.
             fix_applied=true
         elif echo "$logs" | grep -qiE "(security|gitleaks|secret)"; then
             info "Security warning detected — applying security audit..."
@@ -531,10 +217,12 @@ for c in json.load(sys.stdin):
 
     # Run blanket auto-fix for trailing whitespace
     info "Running blanket auto-fixes..."
+    # The quality-gate Markdown list excludes ignored output and vendored skills.
     find . -type f \( -name "*.sh" -o -name "*.ts" -o -name "*.tsx" -o -name "*.js" \
-        -o -name "*.json" -o -name "*.yml" -o -name "*.yaml" -o -name "*.md" \) \
+        -o -name "*.json" -o -name "*.yml" -o -name "*.yaml" \) \
         -not -path "./node_modules/*" -not -path "./.git/*" -not -path "./pnpm-lock.yaml" \
         -exec sed -i 's/[[:space:]]*$//' {} \; 2>/dev/null || true
+    trim_markdown_trailing_whitespace
 
     if [ "$fix_applied" = true ]; then
         log "Fixes applied. Ready for next iteration."
@@ -590,9 +278,14 @@ main() {
         log "--- Iteration $(( retry_count + 1 ))/${MAX_RETRIES} ---"
 
         # Phase 1: Commit & Push
-        if ! phase_commit_and_push; then
-            local exit_code=$?
-            if [ "$exit_code" -eq 2 ]; then
+        # Capture the status from the command itself: `! cmd` inverts a failure
+        # into 0, so `$?` inside the `then` body was always 0 and the abort
+        # below could never fire — a failed push was retried, then reported as a
+        # successful loop with the work never landed.
+        local phase1_status=0
+        phase_commit_and_push || phase1_status=$?
+        if [ "$phase1_status" -ne 0 ]; then
+            if [ "$phase1_status" -eq 2 ]; then
                 error "Git operations failed. Aborting."
                 exit 2
             fi
@@ -618,10 +311,15 @@ main() {
 
         # Phase 4: Analyze Failures
         local failed_jobs
-        failed_jobs=$(phase_analyze_failures "$checks_json") || {
-            # Non-zero exit means failures found — proceed to fix
-            :
-        }
+        local analysis_status=0
+        failed_jobs=$(phase_analyze_failures "$checks_json") || analysis_status=$?
+
+        # Exit 2 means the CI results could not be read. That is an unknown
+        # state, so abort instead of reporting success for unchecked work.
+        if [ "$analysis_status" -eq 2 ]; then
+            error "CI check results were unreadable. Aborting before any success report."
+            exit 5
+        fi
 
         if [ -z "$failed_jobs" ] || [ "$failed_jobs" = "[]" ] || [ "$failed_jobs" = '""' ]; then
             # No failures — success!
