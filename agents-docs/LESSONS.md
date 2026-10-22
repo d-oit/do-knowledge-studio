@@ -1759,3 +1759,73 @@ from "the spec never ran", and it nearly passed as evidence of exactly that. Use
 question is "did this test actually execute".
 
 **Tags**: #gh #logs #verification
+
+---
+
+### LESSON-052: A fix that makes the failing test pass can still break a shared resource
+
+The failing test is evidence about **one** symptom. It says nothing about the
+mechanism that produced it, so a fix that removes the mechanism also makes it
+pass.
+
+Observed 2026-10-21 on the semantic-search embedder: a query that hung
+because the runtime cached the *promise* of a model load, and a load that
+never settles stayed cached forever. The first fix dropped the cached promise
+when a query was aborted. The test passed. It also:
+
+- evicted an **already-loaded** model, so the next query re-downloaded ~25 MB
+  (measured: the pipeline call count went 1 → 2 across an abort with a warm
+  model);
+- broke the lazy-singleton contract, because the load is not cancellable, so
+  dropping the cache started a **second** concurrent load whose failure path
+  could wipe the first load's state;
+- under debounced typing, turned every superseded keystroke into its own
+  download (5 queries → 1 call was the target; the broken version made it 5).
+
+The review found it; the test did not, because the test only asserted the
+symptom was gone.
+
+The countermeasure is a **measurement the reviewer can check**, not a
+reasoning exercise: *a warm resource survives the operation*, *N superseded
+callers start one load, not N*. A count that goes the wrong way is the
+finding. The second fix — bounding the load instead of evicting the cache —
+passed both.
+
+**Tags**: #verification #testing #regression #shared-state #review
+
+---
+
+### LESSON-053: GitHub's squash message comes from the PR's FIRST commit, not the final state
+
+`gh pr merge --squash` builds the commit message from the **PR title and the
+first commit's message**. A PR whose approach was reworked mid-flight — a fix
+replaced by a different fix after review — lands with a message describing the
+**abandoned** approach while the diff contains the new one.
+
+Observed 2026-10-21 on PR #1012: the squash reads "drop the cached embedder
+promise when a query is aborted" while the merged diff bounds the model load
+instead. It cannot be repaired afterwards: correcting it needs a force-push to
+`main`, which branch protection rejects (`GH013: Changes must be made through
+a pull request`), and a follow-up PR cannot rewrite an existing commit's
+message.
+
+So squash locally **before** merging:
+
+```bash
+git reset --soft origin/main
+git commit -m "fix(scope): the final approach"
+git push --force-with-lease
+gh pr edit <PR> --title "fix(scope): the final approach"
+```
+
+Two details that make or break it. The push must be a **force-push** —
+squashing rewrites the commit SHAs, and without it the remote branch keeps
+its original history, so `gh pr merge --squash` still uses the *remote* first
+commit: the exact message this procedure exists to avoid. `--force-with-lease`
+rather than `--force`, because it refuses if someone else pushed since.
+Force-pushing the **PR branch** is fine; force-pushing `main` is not.
+
+And in `git rebase -i` the **first** commit must stay `pick` — marking it
+`squash` fails with `error: cannot 'squash' without a previous commit`.
+
+**Tags**: #git #squash #history #process
