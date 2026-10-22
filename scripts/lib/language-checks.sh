@@ -4,6 +4,26 @@
 # The caller provides detected languages, scope flags, output colors, and
 # per-language options as shell globals. Each check returns nonzero on failure;
 # run_language_checks aggregates results while still running later checks.
+#
+# Those inputs are declared below rather than assumed. A library that only reads
+# the caller's globals cannot be checked on its own — ShellCheck's
+# check-unassigned-uppercase (enabled by .github/workflows/security-scan.yml)
+# reports every one of them as "referenced but not assigned", which is what
+# broke that scan when these checks moved out of the entrypoint. The defaults
+# are the gate's own behaviour when a setting is absent: no scope restriction,
+# no colour, and zero warnings tolerated.
+
+if [ -z "${DETECTED_LANGUAGES[*]:-}" ]; then
+    DETECTED_LANGUAGES=()
+fi
+SCOPE="${SCOPE:-}"
+MAX_ALLOWED_WARNINGS="${MAX_ALLOWED_WARNINGS:-0}"
+REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+RED="${RED:-}"
+GREEN="${GREEN:-}"
+YELLOW="${YELLOW:-}"
+BLUE="${BLUE:-}"
+NC="${NC:-}"
 
 # --- Run language-specific checks ---
 # Pattern for each language section:

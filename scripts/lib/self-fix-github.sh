@@ -3,6 +3,20 @@
 #
 # The caller provides the loop's configuration and logging functions as shell
 # globals/functions. This library keeps CI orchestration out of the entrypoint.
+#
+# The configuration is declared below rather than assumed: a library that only
+# reads the caller's globals cannot be checked on its own, and ShellCheck's
+# check-unassigned-uppercase (enabled by .github/workflows/security-scan.yml)
+# reports each one as "referenced but not assigned". The defaults match the
+# entrypoint's own, and the entrypoint sets these before sourcing, so they are
+# no-ops in the real call.
+
+TARGET_PR="${TARGET_PR:-}"
+BASE_BRANCH="${BASE_BRANCH:-main}"
+DRY_RUN="${DRY_RUN:-false}"
+STRICT_VALIDATION="${STRICT_VALIDATION:-1}"
+TIMEOUT="${TIMEOUT:-1800}"
+POLL_INTERVAL="${POLL_INTERVAL:-20}"
 # Safe JSON parsing with Python (avoids grep fragility)
 # Usage: echo "JSON" | json_get_failed_checks
 # Prints the blocking failures as JSON and exits 0. Exits non-zero — with a
