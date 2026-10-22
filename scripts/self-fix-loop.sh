@@ -7,6 +7,16 @@ set -euo pipefail
 REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 cd "$REPO_ROOT"
 
+# Source the Markdown file-enumeration library so this script and the
+# quality gate agree on which Markdown the repository owns. A repo-wide
+# `find` here also rewrote the vendored skill libraries (271 files) and any
+# generated Playwright artifacts, which the gate deliberately excludes.
+# shellcheck source=scripts/lib/markdown-files.sh
+if [ -f "$REPO_ROOT/scripts/lib/markdown-files.sh" ]; then
+    # shellcheck source=scripts/lib/markdown-files.sh
+    source "$REPO_ROOT/scripts/lib/markdown-files.sh"
+fi
+
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
@@ -465,8 +475,29 @@ for c in json.load(sys.stdin):
             fix_applied=true
         elif echo "$logs" | grep -qiE "(markdown|markdownlint)"; then
             info "Markdown issue detected — fixing..."
-            find . -name "*.md" -not -path "./node_modules/*" -not -path "./.git/*" \
-                -exec sed -i 's/[[:space:]]*$//' {} \; 2>/dev/null || true
+            # The same file list the quality gate lints: the repository's own
+            # Markdown, minus the vendored skill libraries and the generated
+            # build output. A repo-wide sweep also rewrote the vendored
+            # skills, which are content the skill authors own.
+            if declare -F trim_markdown_trailing_whitespace >/dev/null 2>&1; then
+                trim_markdown_trailing_whitespace
+            else
+                # The library is missing: fall back to a sweep that still skips
+                # the vendored directories and the build output.
+                find . -name "*.md" \
+                    -not -path "./node_modules/*" \
+                    -not -path "./target/*" \
+                    -not -path "./.git/*" \
+                    -not -path "./.agents/*" \
+                    -not -path "./.claude/*" \
+                    -not -path "./.gemini/*" \
+                    -not -path "./.qwen/*" \
+                    -not -path "./.opencode/*" \
+                    -not -path "./playwright-report/*" \
+                    -not -path "./test-results/*" \
+                    -not -path "./coverage/*" \
+                    -exec sed -i 's/[[:space:]]*$//' {} \; 2>/dev/null || true
+            fi
             fix_applied=true
         elif echo "$logs" | grep -qiE "(security|gitleaks|secret)"; then
             info "Security warning detected — applying security audit..."

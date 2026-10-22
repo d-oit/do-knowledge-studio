@@ -1,6 +1,6 @@
 ---
 name: code-review-assistant
-description: Automated code review with PR analysis, change summaries, and quality checks. Use for reviewing pull requests, generating review comments, checking against best practices, and identifying potential issues. Includes style guide compliance, security issue detection, and review automation.
+description: Automated code review with PR analysis, change summaries, quality checks, and required adversarial probing. Use for reviewing pull requests, generating review comments, checking against best practices, and identifying potential issues. Includes style guide compliance, security issue detection, review automation, and the probing patterns that catch defects a read-through misses (unguarded index, swallowed exception, the fix that evicts a shared resource).
 license: MIT
 ---
 
@@ -86,6 +86,43 @@ SECURITY_CHECKS = [
     ('unsafe_eval', r'eval\s*\('),
 ]
 ```
+
+## Adversarial Probing — Required
+
+**The question is not "is this correct?" but "how would I break this?"**
+
+A review that only confirms the diff does what it says misses the failures
+that matter most: the ones nobody thought to look for. Probe for these
+patterns explicitly, by name, on every review:
+
+| Pattern | What to look for |
+| --- | --- |
+| **Unguarded index** | An array access that assumes the element exists. |
+| **Falsy check of a non-nullable** | `!arr[i]` on a value that cannot be null — reads as a bug check, behaves as a silent lie. |
+| **Swallowed exception** | A `catch` that logs and continues, or an error path that returns a plausible value. |
+| **Un-aborted fetch** | A request whose signal is never passed, so a cancelled caller still waits. |
+| **Listener never removed** | A subscription, timer, or observer with no teardown. |
+| **The fix that evicts a shared resource** | A fix that clears a cache, singleton, connection pool, or connection to "reset" it. The symptom goes away and every other consumer of that resource loses it. |
+| **The fix that proves the symptom, not the mechanism** | A test that only asserts the symptom is gone. It passes for a fix that removed what was shared. |
+
+### Probing the shared-resource case
+
+The last two are the same failure wearing different clothes, and they are the
+ones a normal read-through misses. When a diff **removes, clears, resets, or
+replaces** something that more than one caller uses:
+
+1. **List the consumers.** Grep for the symbol, not just its definition. Who
+   else was relying on the value the fix discards?
+2. **Ask what the removal buys.** If the answer is "the failing test passes",
+   the fix may have removed the mechanism rather than repaired it.
+3. **Measure the counterfactual.** Turn the fix into a measurement the
+   reviewer can check: *a warm resource survives the operation*, *N
+   superseded callers start one load, not N*. A count that goes the wrong
+   way is the finding.
+
+A fix that evicts a shared resource is the most common way a change that
+makes the failing test pass still ships a regression — the test proves the
+symptom is gone, not that the mechanism still works.
 
 ## Review Comment Templates
 

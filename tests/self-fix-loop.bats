@@ -156,3 +156,41 @@ print('false')
   [ "$status" -eq 0 ]
   [[ "$output" == *"true"* ]]
 }
+
+@test "the markdown fix rewrites only repository Markdown, not vendored skills" {
+  # The repo-wide `find` this replaced also rewrote the vendored skill
+  # libraries (271 files) and any generated Playwright artifacts, which the
+  # quality gate deliberately excludes. The enumeration library is the same
+  # one the gate uses, so the two cannot drift.
+  #
+  # This test runs the rewrite and asserts the resulting file contents, not
+  # just the file list: a test that only checked the list would still pass
+  # with a broken `while` loop or a wrong `sed` expression.
+  local repo="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$repo/scripts/lib" "$repo/plans" "$repo/.agents/skills/example" "$repo/playwright-report"
+  cp "$BATS_TEST_DIRNAME/../scripts/lib/markdown-files.sh" "$repo/scripts/lib/markdown-files.sh"
+  printf 'playwright-report/\n' >"$repo/.gitignore"
+  printf '# Plan   \n' >"$repo/plans/plan.md"
+  printf '# Vendored skill   \n' >"$repo/.agents/skills/example/SKILL.md"
+  printf '# Generated   \n' >"$repo/playwright-report/report.md"
+
+  (
+    cd "$repo" || exit 1
+    git init -q -b trunk .
+    git config user.email "self-fix-test@example.com"
+    git config user.name "Self Fix Test"
+    git add -A
+    git commit -qm "base"
+  )
+
+  # Run the markdown branch of the fix loop exactly as scripts/self-fix-loop.sh
+  # runs it (tests/helpers/run-markdown-fix.bash mirrors that branch).
+  run bash "$BATS_TEST_DIRNAME/helpers/run-markdown-fix.bash" "$repo"
+  [ "$status" -eq 0 ]
+
+  # The repository's own Markdown was rewritten.
+  [ "$(cat "$repo/plans/plan.md")" = "# Plan" ]
+  # The vendored skill library and the generated artifact were left alone.
+  [ "$(cat "$repo/.agents/skills/example/SKILL.md")" = "# Vendored skill   " ]
+  [ "$(cat "$repo/playwright-report/report.md")" = "# Generated   " ]
+}

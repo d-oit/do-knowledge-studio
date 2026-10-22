@@ -95,6 +95,51 @@ gh pr merge <PR> --auto --squash --delete-branch
 open to watch it — which is what a blocked-merge investigation otherwise costs.
 Squash is mandatory: `required_linear_history` rejects a merge commit.
 
+### If the approach changed after the PR's first commit
+
+GitHub builds the squash message from the **PR title and the first commit's
+message** — not from the final state of the branch. A PR whose approach was
+reworked mid-flight (a fix replaced by a different fix, after review) therefore
+lands with a commit message that describes the *abandoned* approach while the
+diff contains the new one. The history then misleads the next reader, and
+`git log` disagrees with the code.
+
+It cannot be repaired afterwards: correcting it needs a force-push to `main`,
+which branch protection rejects (`GH013: Changes must be made through a pull
+request`), and a follow-up PR cannot rewrite the message of a commit that
+already exists.
+
+So do it **before** merging:
+
+1. **Squash the branch locally** into a single commit whose message describes
+   the final approach:
+   ```bash
+   git reset --soft origin/main
+   git commit -m "fix(scope): the final approach"
+   ```
+   For a branch that is already a single commit, `git commit --amend -m "…"`
+   is enough.
+   (In `git rebase -i`, the **first** commit must stay `pick` and the ones
+   folded into it are marked `squash` — marking the first one `squash` fails
+   with `error: cannot 'squash' without a previous commit`.)
+
+2. **Force-push the rewritten branch** — squashing changes the commit SHAs, so
+   the push must be a force-push:
+   ```bash
+   git push --force-with-lease
+   ```
+   `--force-with-lease` rather than `--force`: it refuses if someone else
+   pushed to the branch in the meantime. Force-pushing the **PR branch** is
+   fine; force-pushing `main` is not (branch protection rejects it).
+   Skipping this step leaves the remote branch with its original history, and
+   `gh pr merge --squash` then uses the *remote* first commit — the very
+   message this procedure exists to avoid.
+
+3. Set the PR title to the final approach:
+   `gh pr edit <PR> --title "fix(scope): the final approach"`.
+
+4. Let CI re-run on the rewritten head, then merge with `--auto --squash`.
+
 ### When to stop and ask
 
 These are deliberate human decisions, not formalities:

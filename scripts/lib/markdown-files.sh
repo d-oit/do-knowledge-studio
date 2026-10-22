@@ -97,4 +97,18 @@ if [[ -z "${MARKDOWN_FILES_LOADED:-}" ]]; then
         printf '%s\n' "$md_path"
       done
   }
+
+  # Trims trailing whitespace from every Markdown file the repository owns.
+  #
+  # Lives here so the auto-fix loop and its test exercise the same code
+  # rather than two copies of it: a fix that rewrote the wrong files would
+  # be invisible to a test that only re-implemented the selection.
+  trim_markdown_trailing_whitespace() {
+    local md_file
+    while IFS= read -r md_file; do
+      [ -n "$md_file" ] || continue
+      [ -f "$md_file" ] || continue
+      sed -i 's/[[:space:]]*$//' "$md_file" 2>/dev/null || true
+    done <<<"$(list_markdown_files)"
+  }
 fi
