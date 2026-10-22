@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# Runs the markdown branch of scripts/self-fix-loop.sh exactly as that script
-# runs it, so the BATS test exercises the real rewrite rather than a copy of
-# it. Sourced with the repository root as the only argument.
+# Exercises the scoped Markdown rewrite called by Phase 5 of self-fix-loop.sh.
+# The fixture proves repository Markdown changes while ignored output and
+# vendored skill files remain untouched.
 set -euo pipefail
 
-REPO_ROOT="${1:?usage: run-markdown-fix.sh <repo-root>}"
+REPO_ROOT="${1:?usage: run-markdown-fix.bash <repo-root>}"
 cd "$REPO_ROOT"
 
 # shellcheck source=scripts/lib/markdown-files.sh
 source "$REPO_ROOT/scripts/lib/markdown-files.sh"
 
-# The same call scripts/self-fix-loop.sh makes.
+# The same repository-owned Markdown rewrite the fix phase uses.
 trim_markdown_trailing_whitespace

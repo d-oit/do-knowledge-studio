@@ -8,28 +8,54 @@ bats_require_minimum_version 1.5.0
 
 setup() {
   export SCRIPT="$BATS_TEST_DIRNAME/../scripts/self-fix-loop.sh"
+  export LIB="$BATS_TEST_DIRNAME/../scripts/lib/self-fix-github.sh"
   export WORK="$BATS_TEST_TMPDIR/workspace"
-  mkdir -p "$WORK"
+  mkdir -p "$WORK/scripts/lib"
+  cp "$BATS_TEST_DIRNAME/../scripts/lib/markdown-files.sh" "$WORK/scripts/lib/markdown-files.sh"
+  cp "$LIB" "$WORK/scripts/lib/self-fix-github.sh"
+  source "$LIB"
 }
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-# Source only the helpers from self-fix-loop.sh (not main)
-source_helpers() {
-  # Extract functions up to Argument parsing section
-  bash -c "
-    set -euo pipefail
-    REPO_ROOT='$WORK'
-    cd '$WORK'
-    # Source just the helper functions
-    $(sed -n '/^json_get_failed_checks/,/^}$/p' "$SCRIPT")
-    $(sed -n '/^json_has_pending/,/^}$/p' "$SCRIPT")
-    # Export for BATS
-    export -f json_get_failed_checks json_has_pending
-  "
+# Build a throwaway repository whose `gh` is stubbed, with a passing quality
+# gate, so the GitHub phases run without network access. `payload` is what
+# `gh pr checks --json name,state` returns.
+make_ci_fixture() {
+  local dir="$1"
+  local payload="$2"
+  mkdir -p "$dir/scripts/lib" "$dir/bin"
+  cp "$BATS_TEST_DIRNAME/../scripts/lib/markdown-files.sh" "$dir/scripts/lib/markdown-files.sh"
+  cp "$LIB" "$dir/scripts/lib/self-fix-github.sh"
+  printf '#!/usr/bin/env bash\nexit 0\n' >"$dir/scripts/quality_gate.sh"
+  chmod +x "$dir/scripts/quality_gate.sh"
+  cat >"$dir/bin/gh" <<GH
+#!/usr/bin/env bash
+case "\$1 \$2" in
+  "pr list") echo "123" ;;
+  "pr checks") printf '%s\n' '$payload' ;;
+  *) : ;;
+esac
+GH
+  chmod +x "$dir/bin/gh"
+  (
+    cd "$dir" || exit 1
+    git init -q -b trunk .
+    git config user.email "self-fix-test@example.com"
+    git config user.name "Self Fix Test"
+    git config commit.gpgsign false
+    printf 'base\n' >base.txt
+    git add -A
+    git commit -qm base
+  )
 }
+
+# Drive the real entrypoint against a fixture with a bounded retry budget.
+run_loop() {
+  local dir="$1"
+  run env REPO_ROOT="$dir" PATH="$dir/bin:$PATH" \
+    SELF_FIX_LOOP_MAX_RETRIES=1 SELF_FIX_LOOP_POLL_INTERVAL=1 \
+    bash "$SCRIPT"
+}
+
 
 # ---------------------------------------------------------------------------
 # Tests: Argument parsing
@@ -89,72 +115,154 @@ source_helpers() {
   [[ "$output" == *"DRY RUN"* ]] || [[ "$output" == *"Self-Fix Loop Started"* ]]
 }
 
-# ---------------------------------------------------------------------------
-# Tests: JSON helpers (via inline sourcing)
-# ---------------------------------------------------------------------------
+@test "json_get_failed_checks includes Codacy ACTION_REQUIRED among blocking failures" {
+  local checks='[{"name":"Build","state":"SUCCESS"},{"name":"Lint","state":"FAILURE"},{"name":"Tests","state":"ERROR"},{"name":"Deploy","state":"CANCELLED"},{"name":"Codacy","state":"ACTION_REQUIRED"},{"name":"Optional","state":"SKIPPED"},{"name":"Neutral","state":"NEUTRAL"}]'
+  local failures
+  failures=$(printf '%s\n' "$checks" | json_get_failed_checks)
 
-@test "json_get_failed_checks parses failures correctly" {
-  # Create a temp script that sources the helpers and tests them
-  local test_script="$WORK/test-json.sh"
-  cat > "$test_script" << 'OUTER'
-#!/usr/bin/env bash
-set -euo pipefail
-
-# Inline the helper function
-json_get_failed_checks() {
-    python3 -c "
+  run python3 -c '
 import json, sys
-try:
-    data = json.load(sys.stdin)
-    failures = []
-    for c in data:
-        s = c.get('state', '')
-        n = c.get('name', '')
-        if s in ('FAILURE', 'ERROR', 'CANCELLED'):
-            failures.append({'name': n, 'state': s})
-    print(json.dumps(failures))
-except Exception as e:
-    print(json.dumps([{'name': 'parse_error', 'state': str(e)}]))
-" 2>/dev/null || echo '[]'
+expected = [
+    {"name": "Lint", "state": "FAILURE"},
+    {"name": "Tests", "state": "ERROR"},
+    {"name": "Deploy", "state": "CANCELLED"},
+    {"name": "Codacy", "state": "ACTION_REQUIRED"},
+]
+assert json.loads(sys.argv[1]) == expected
+' "$failures"
+  [ "$status" -eq 0 ]
 }
 
-# Test 1: No failures
-result=$(echo '[{"name":"Lint","state":"SUCCESS"}]' | json_get_failed_checks)
-echo "Test1: $result"
-[[ "$result" == "[]" ]]
+@test "an unreadable CI result aborts instead of reporting success" {
+  # A malformed `gh pr checks` payload is an unknown state. The loop used to
+  # funnel it into the "no failures" shape and exit 0, so a green report was
+  # possible for checks nobody could read.
+  local repo="$BATS_TEST_TMPDIR/repo"
+  make_ci_fixture "$repo" 'this is not json'
 
-# Test 2: Has failures
-result=$(echo '[{"name":"Lint","state":"FAILURE"},{"name":"Test","state":"SUCCESS"}]' | json_get_failed_checks)
-echo "Test2: $result"
-[[ "$result" == *"FAILURE"* ]]
-[[ "$result" == *"Lint"* ]]
+  run_loop "$repo"
 
-# Test 3: ACTION_REQUIRED is not a failure
-result=$(echo '[{"name":"Codacy","state":"ACTION_REQUIRED"}]' | json_get_failed_checks)
-echo "Test3: $result"
-[[ "$result" == "[]" ]]
-
-echo "ALL PASS"
-OUTER
-  chmod +x "$test_script"
-  run bash "$test_script"
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"ALL PASS"* ]]
+  [ "$status" -eq 5 ]
+  [[ "$output" == *"Could not read the CI check results"* ]]
+  [[ "$output" != *"All checks pass"* ]]
 }
 
-@test "json_has_pending detects pending checks" {
-  # Test via inline Python — avoids heredoc quoting issues
-  run python3 -c "
-import json, sys
-data = json.loads('[{\"name\":\"Lint\",\"state\":\"PENDING\"}]')
-for c in data:
-    if c.get('state') in ('PENDING', 'QUEUED', 'IN_PROGRESS', 'EXPECTED'):
-        print('true')
-        sys.exit(0)
-print('false')
-"
+@test "an unusable python interpreter cannot turn a failing payload green" {
+  # Every helper shells out to python3. A payload full of FAILUREs must not be
+  # reported as passing just because the interpreter is missing.
+  local repo="$BATS_TEST_TMPDIR/repo"
+  make_ci_fixture "$repo" '[{"name":"Lint","state":"FAILURE"}]'
+  printf '#!/usr/bin/env bash\nexit 127\n' >"$repo/bin/python3"
+  chmod +x "$repo/bin/python3"
+  # Commit it so the working tree is clean: an untracked file would take the
+  # commit-and-push path instead and mask what this test is about.
+  git -C "$repo" add -A
+  git -C "$repo" commit -qm "probe: unusable python3"
+
+  run_loop "$repo"
+
+  [ "$status" -eq 5 ]
+  [[ "$output" != *"All checks pass"* ]]
+}
+
+@test "phase_analyze_failures reports an unreadable payload as unknown" {
+  run bash -c '
+    source "$1"
+    step() { :; }
+    info() { :; }
+    warn() { :; }
+    log() { :; }
+    error() { :; }
+    analysis_status=0
+    phase_analyze_failures "not json" || analysis_status=$?
+    printf "analysis status: %s\n" "$analysis_status"
+  ' _ "$LIB"
+
   [ "$status" -eq 0 ]
-  [[ "$output" == *"true"* ]]
+  [[ "$output" == *"analysis status: 2"* ]]
+}
+
+@test "the failure list stays on stderr so the caller receives JSON" {
+  # stdout is the caller's data channel: `main` hands this straight to
+  # `phase_fix`, which parses it. Display text on stdout made every real failure
+  # arrive as unparsable text, and the fix phase reported "No failures to fix.".
+  run --separate-stderr bash -c '
+    source "$1"
+    step() { :; }
+    info() { :; }
+    warn() { :; }
+    log() { :; }
+    error() { :; }
+    DRY_RUN=false
+    phase_analyze_failures "[{\"name\":\"Lint\",\"state\":\"FAILURE\"}]" || true
+  ' _ "$LIB"
+
+  [ "$status" -eq 0 ]
+  # stdout is the JSON the caller parses, and nothing else.
+  [[ "$output" != *"❌"* ]]
+  # The human-readable list is still reported, on stderr.
+  [[ "$stderr" == *"❌ Lint: FAILURE"* ]]
+
+  printf '%s' "$output" | python3 -c '
+import json, sys
+checks = json.load(sys.stdin)
+assert checks == [{"name": "Lint", "state": "FAILURE"}], checks
+'
+}
+
+@test "a real CI failure reaches the fix phase" {
+  local repo="$BATS_TEST_TMPDIR/repo"
+  make_ci_fixture "$repo" '[{"name":"Lint","state":"FAILURE"}]'
+
+  run_loop "$repo"
+
+  [[ "$output" == *"Investigating: Lint (FAILURE)"* ]]
+  [[ "$output" != *"No failures to fix."* ]]
+}
+
+@test "a failed push aborts with exit 2 instead of reporting a green loop" {
+  # `! cmd; then local code=$?` always read 0, so the documented abort was dead
+  # code: a failed push was retried, the next iteration saw a clean tree, and
+  # the loop exited 0 with the commit never landed.
+  local repo="$BATS_TEST_TMPDIR/repo"
+  make_ci_fixture "$repo" '[{"name":"Lint","state":"SUCCESS"}]'
+  printf 'changed\n' >>"$repo/base.txt"
+
+  run_loop "$repo"
+
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"Push failed."* ]]
+  [[ "$output" == *"Git operations failed. Aborting."* ]]
+}
+
+@test "phase_analyze_failures blocks a Codacy-only ACTION_REQUIRED result" {
+  local checks='[{"name":"Codacy Static Code Analysis","state":"ACTION_REQUIRED"}]'
+
+  run bash -c '
+    source "$1"
+    step() { :; }
+    info() { :; }
+    warn() { :; }
+    log() { :; }
+    analysis_status=0
+    phase_analyze_failures "$2" || analysis_status=$?
+    printf "analysis status: %s\n" "$analysis_status"
+  ' _ "$LIB" "$checks"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Codacy Static Code Analysis"* ]]
+  [[ "$output" == *"ACTION_REQUIRED"* ]]
+  [[ "$output" == *"analysis status: 1"* ]]
+}
+
+@test "json_has_pending recognizes every in-flight state and ignores terminal states" {
+  local state
+  for state in PENDING QUEUED IN_PROGRESS EXPECTED; do
+    [ "$(printf '[{"state":"%s"}]' "$state" | json_has_pending)" = "true" ]
+  done
+  for state in SUCCESS FAILURE ERROR CANCELLED ACTION_REQUIRED SKIPPED NEUTRAL; do
+    [ "$(printf '[{"state":"%s"}]' "$state" | json_has_pending)" = "false" ]
+  done
 }
 
 @test "the markdown fix rewrites only repository Markdown, not vendored skills" {
@@ -183,8 +291,7 @@ print('false')
     git commit -qm "base"
   )
 
-  # Run the markdown branch of the fix loop exactly as scripts/self-fix-loop.sh
-  # runs it (tests/helpers/run-markdown-fix.bash mirrors that branch).
+  # The helper exercises the scoped Markdown rewrite used by Phase 5.
   run bash "$BATS_TEST_DIRNAME/helpers/run-markdown-fix.bash" "$repo"
   [ "$status" -eq 0 ]
 
