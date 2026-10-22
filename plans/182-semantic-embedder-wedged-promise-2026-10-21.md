@@ -58,6 +58,23 @@ promise — so the next query starts a fresh load.
 The bound belongs on the load, not on the query, because the load is shared:
 failing it cleanly releases every waiter at once.
 
+## The squash commit message is stale
+
+PR #1012 was squashed, and GitHub takes the PR title and the first commit's
+message — both of which described the *abandoned* first attempt ("drop the
+cached embedder promise when a query is aborted"). The code in `main` is the
+reworked version; only the message is wrong.
+
+Correcting it would need a force-push to `main`, and the branch protection
+rejects that (`GH013: Changes must be made through a pull request`). A
+follow-up PR cannot fix it either: the message belongs to the commit that
+already exists. The commit history therefore reads "drop the cached embedder
+promise", while the diff it contains bounds the load instead.
+
+Worth remembering for the next squash: when a PR's approach changes after
+its first commit, the squash message follows the first commit, not the final
+state.
+
 ## Verification
 
 ### Regression coverage
