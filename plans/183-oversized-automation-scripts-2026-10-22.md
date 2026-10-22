@@ -1,7 +1,7 @@
 # Plan 183 — Split oversized automation scripts and scope Markdown fixes
 
 **Date:** 2026-10-22  
-**Status:** Done — Codacy blocking fix and full repository quality gate passed
+**Status:** Done — merged in [PR #1015](https://github.com/d-oit/do-knowledge-studio/pull/1015) at `29c3b5f`
 
 ## Summary
 
@@ -67,3 +67,18 @@ false-green paths. All three were reproduced end to end before being fixed.
 - `scripts/self-fix-loop.sh --help` exited successfully.
 - `./scripts/quality_gate.sh` passed: lint, both typechecks, Vitest, BATS,
   ShellCheck, Markdownlint, and repository validators.
+
+### CI on PR #1015
+
+Thirty checks green across two cycles, including `Quality Gate`, `Unit Tests`,
+`E2E Tests`, `Coverage Report`, `Codacy Static Code Analysis`, `CodeQL`, and
+the `Security Scan` parent. The first cycle failed `Shell Script Security
+Analysis` — finding F8 above — which the second cycle cleared.
+
+The merge itself rested on an unusual reading and is worth stating precisely:
+the `CI` run concluded `success`, yet its `Detect Changes` job reported
+`in_progress` forty minutes later in both `gh pr checks` and the check-runs API.
+It was not required (`gh api repos/…/rulesets/15161694` lists only
+`Codacy Static Code Analysis`), its log ends with the job's final steps, and
+every job depending on its outputs passed — so no gate was skipped. Recorded as
+[LESSON-054](../agents-docs/LESSONS.md).
