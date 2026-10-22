@@ -1863,4 +1863,20 @@ Establish (1) the run's conclusion, (2) the job log's final steps, and (3)
 whether that check appears in the ruleset's `required_status_checks`, before
 deciding — and record which of the three the decision rested on.
 
+The variant runs the other way too, so (1) is not authority by itself. The same
+day, `main`'s CodeQL run for the merged refactor commit stayed `in_progress`
+with `updatedAt` frozen five seconds after creation, while all three of its
+analyze jobs reported `completed`/`success`:
+
+- `gh api repos/{owner}/{repo}/actions/runs/{run_id}/jobs` → every job
+  `completed`, `conclusion: success`
+- `gh api repos/{owner}/{repo}/deployments`, then
+  `.../deployments/{id}/statuses` → the production deployment for that commit
+  reported `success`
+
+Read the level below whatever looks stale: a stale job means check its run and
+its own log, and a stale run means check its jobs and the deployment statuses.
+The completed results are the evidence; the top-level status field is a cache
+that can miss its own invalidation.
+
 **Tags**: #github-actions #merge-state #staleness #check-runs
