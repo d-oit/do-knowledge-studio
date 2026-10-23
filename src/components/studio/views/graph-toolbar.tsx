@@ -1,5 +1,6 @@
 'use client'
 
+import { useId } from 'react'
 import {
   Circle,
   GitFork,
@@ -66,6 +67,8 @@ export const GraphToolbar = ({
   nodeCount,
   edgeCount,
 }: GraphToolbarProps) => {
+  const moreControlsId = useId()
+
   return (
     <div
       className="flex flex-wrap items-center gap-1.5 border-b border-border bg-card/50 px-5 py-2.5"
@@ -136,10 +139,15 @@ export const GraphToolbar = ({
         icon={MoreHorizontal}
         label="More controls"
         active={showMore}
+        ariaExpanded={showMore}
+        ariaControls={showMore ? moreControlsId : undefined}
         onClick={onToggleShowMore}
       />
       {showMore && (
-        <div className="flex items-center gap-1.5 rounded-md border border-border bg-background p-1">
+        <div
+          id={moreControlsId}
+          className="flex items-center gap-1.5 rounded-md border border-border bg-background p-1"
+        >
           <ToolbarBtn
             icon={RotateCcw}
             label="Undo"
