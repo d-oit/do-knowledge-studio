@@ -283,7 +283,7 @@ export const MessageList = ({
                       )
                     },
                     img: ({ src, alt }) => {
-                      const safeSrc = typeof src === 'string' && src ? sanitizeUrl(src) : ''
+                      const safeSrc = typeof src === 'string' && src ? sanitizeUrl(src, ['http:', 'https:']) : ''
                       if (!safeSrc) return null
                       return <img src={safeSrc} alt={alt ?? ''} />
                     },

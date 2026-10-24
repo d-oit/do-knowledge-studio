@@ -84,6 +84,14 @@ describe('sanitizeUrl', () => {
     expect(sanitizeUrl('https://example.com', ['ftp'])).toBe('')
   })
 
+  it('restricts image source protocols when explicit http/https allowlist is passed', () => {
+    const imageProtocols = ['http:', 'https:']
+    expect(sanitizeUrl('https://example.com/image.png', imageProtocols)).toBe('https://example.com/image.png')
+    expect(sanitizeUrl('http://example.com/image.png', imageProtocols)).toBe('http://example.com/image.png')
+    expect(sanitizeUrl('mailto:user@example.com', imageProtocols)).toBe('')
+    expect(sanitizeUrl('tel:+1234567890', imageProtocols)).toBe('')
+  })
+
   it('strips ASCII control characters and neutralizes obfuscated scheme payloads', () => {
     expect(sanitizeUrl('/dashboard\x00path')).toBe('/dashboardpath')
     expect(sanitizeUrl('/docs\x09setup')).toBe('/docssetup')
