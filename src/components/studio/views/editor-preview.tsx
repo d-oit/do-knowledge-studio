@@ -45,6 +45,11 @@ export const EditorPreview = ({ content }: { content: string }) => (
             </a>
           )
         },
+        img: ({ src, alt }) => {
+          const safeSrc = typeof src === 'string' && src ? sanitizeUrl(src, ['http:', 'https:']) : ''
+          if (!safeSrc) return null
+          return <img src={safeSrc} alt={alt ?? ''} />
+        },
       }}
     >
       {content || '_Nothing to preview._'}
