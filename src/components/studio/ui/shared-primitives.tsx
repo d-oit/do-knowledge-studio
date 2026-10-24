@@ -59,6 +59,8 @@ interface ToolbarBtnProps {
   /** Contextual help shown on hover. */
   help?: string
   active?: boolean
+  ariaExpanded?: boolean
+  ariaControls?: string
   onClick?: () => void
   disabled?: boolean
   title?: string
@@ -72,6 +74,8 @@ export const ToolbarBtn = ({
   label,
   help,
   active,
+  ariaExpanded,
+  ariaControls,
   onClick,
   disabled,
   title = label,
@@ -84,7 +88,9 @@ export const ToolbarBtn = ({
       disabled={disabled}
       title={disabled ? disabledTitle ?? title : title}
       aria-label={label}
-      aria-pressed={active}
+      aria-pressed={ariaExpanded !== undefined ? undefined : active}
+      aria-expanded={ariaExpanded}
+      aria-controls={ariaControls}
       className={cn(
         'flex min-h-touch min-w-touch items-center gap-1 rounded-md px-2 py-1.5 text-label font-medium transition-colors focus-ring disabled:cursor-not-allowed disabled:opacity-40',
         active ? 'bg-saffron-soft text-saffron-deep' : 'text-ink-mute hover:bg-muted hover:text-ink',

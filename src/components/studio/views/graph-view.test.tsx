@@ -204,13 +204,23 @@ describe('GraphView', () => {
     expect(screen.getByLabelText('Save snapshot')).toBeDefined()
   })
 
-  it('toggles More controls disclosure', () => {
+  it('toggles More controls disclosure and updates ARIA attributes', () => {
     render(<GraphView />)
     const more = screen.getByLabelText('More controls')
+    expect(more).toHaveAttribute('aria-expanded', 'false')
+    expect(more).not.toHaveAttribute('aria-controls')
     expect(screen.queryByLabelText('Export PNG')).toBeNull()
+
     fireEvent.click(more)
+    expect(more).toHaveAttribute('aria-expanded', 'true')
+    const controlsId = more.getAttribute('aria-controls')
+    expect(controlsId).toBeTruthy()
+    expect(document.getElementById(controlsId!)).not.toBeNull()
     expect(screen.getByLabelText('Export PNG')).toBeDefined()
+
     fireEvent.click(more)
+    expect(more).toHaveAttribute('aria-expanded', 'false')
+    expect(more).not.toHaveAttribute('aria-controls')
     expect(screen.queryByLabelText('Export PNG')).toBeNull()
   })
 
