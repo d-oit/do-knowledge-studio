@@ -22,29 +22,35 @@ export const getConflictResolutionKey = (
   conflict: Pick<FieldConflict, 'entityId' | 'entityType' | 'field'>,
 ): string => JSON.stringify([conflict.entityType, conflict.entityId, conflict.field])
 
+const ISO_OFFSET_REGEX = /Z$|[+-]\d{2}:?\d{2}$/
+
 /**
- * Canonical sortable instant for an ISO-8601 timestamp string. Lexicographic
- * comparison of raw ISO strings is not chronological when timestamps carry
- * timezone offsets (e.g. `2026-01-01T00:00:00+01:00` is 23:00Z, earlier than
- * `2025-12-31T23:30:00Z`), so LWW and edit-history ordering must compare the
- * parsed instant. Unparseable values fall back to the raw string so ordering
- * stays deterministic.
+ * Parse an ISO-8601 timestamp string into epoch milliseconds for fast numeric comparison.
+ * Zone-less timestamps are treated as UTC for deterministic comparison.
  */
-const timestampInstant = (value: string): string => {
-  // A zone-less ISO timestamp (e.g. `2026-01-01T12:00:00`) would be interpreted
-  // in local time by Date.parse; treat it as UTC so comparisons stay
-  // deterministic across environments. Offset-bearing and Z-suffixed strings
-  // already carry an explicit zone and are parsed as-is.
-  const normalized = /Z$|[+-]\d{2}:?\d{2}$/.test(value) ? value : `${value}Z`
-  const parsed = Date.parse(normalized)
-  return Number.isNaN(parsed) ? value : new Date(parsed).toISOString()
+const parseTimestampInstantMs = (value: string): number => {
+  if (!value) return Number.NaN
+  const normalized = ISO_OFFSET_REGEX.test(value) ? value : `${value}Z`
+  return Date.parse(normalized)
 }
 
-/** Deterministic timestamp ordering shared by merge and inbound conflict paths. */
+/** Formats a timestamp into a canonical ISO string for human-readable conflict reporting. */
+const timestampInstant = (value: string): string => {
+  const ms = parseTimestampInstantMs(value)
+  return Number.isNaN(ms) ? value : new Date(ms).toISOString()
+}
+
+/**
+ * Deterministic timestamp ordering shared by merge and inbound conflict paths.
+ * Compares parsed epoch milliseconds directly to avoid intermediate string/Date allocations.
+ */
 export function compareRecordTimestamps(a: string, b: string): number {
-  const left = timestampInstant(a)
-  const right = timestampInstant(b)
-  return left < right ? -1 : left > right ? 1 : 0
+  const left = parseTimestampInstantMs(a)
+  const right = parseTimestampInstantMs(b)
+  if (!Number.isNaN(left) && !Number.isNaN(right)) {
+    return left < right ? -1 : left > right ? 1 : 0
+  }
+  return a < b ? -1 : a > b ? 1 : 0
 }
 
 /** Pick the same timestamp representation when two raw strings denote one instant. */

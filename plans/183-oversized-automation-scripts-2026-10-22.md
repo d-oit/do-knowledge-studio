@@ -82,3 +82,11 @@ It was not required (`gh api repos/…/rulesets/15161694` lists only
 `Codacy Static Code Analysis`), its log ends with the job's final steps, and
 every job depending on its outputs passed — so no gate was skipped. Recorded as
 [LESSON-054](../agents-docs/LESSONS.md).
+
+Production shipped the merge: the Vercel deployment for `29c3b5f7` reports
+`success` (`gh api repos/…/deployments`, then `…/deployments/{id}/statuses`).
+The CodeQL run for that commit subsequently froze at `in_progress` with all
+three analyze jobs `completed`/`success` — the same staleness one level up, and
+the reason LESSON-054 now states that the completed results, not the top-level
+status field, are the evidence. The docs-only follow-up (`2ba5aa1`) has no
+deployment entry: the build-ignore script skips it by design.
