@@ -32,6 +32,11 @@ const STATIC_EXTENSIONS = [
   ".txt",
 ];
 
+// Explicit allowlisted same-origin API routes eligible for SW network-first caching.
+// Dynamic AI routes (/api/chat, local/remote LLM calls), web research proxies,
+// WebRTC signaling, and user-specific subpaths are strictly excluded.
+const ALLOWED_API_PATHS = new Set(["/api"]);
+
 // Fallback shell, used only if the generated manifest cannot be fetched.
 // The manifest is derived from the selected local or adapter static inventory,
 // with fixed shell URLs added by scripts/generate-precache-manifest.mjs.
@@ -68,8 +73,10 @@ function isStaticAsset(url) {
   return STATIC_EXTENSIONS.some((ext) => url.pathname.endsWith(ext));
 }
 
-function isApiRequest(url) {
-  return url.pathname.startsWith("/api/");
+function isAllowlistedApiRequest(url) {
+  if (url.origin !== self.location.origin) return false;
+  const normalizedPath = url.pathname.replace(/\/$/, "");
+  return ALLOWED_API_PATHS.has(normalizedPath);
 }
 
 function isNavigationRequest(request) {
@@ -80,19 +87,44 @@ function isNavigationRequest(request) {
   );
 }
 
+function isSafeMethod(method) {
+  const m = method.toUpperCase();
+  return m === "GET" || m === "HEAD";
+}
+
+function isUncacheableRequest(request) {
+  if (!isSafeMethod(request.method)) return true;
+  if (request.headers.get("authorization") || request.headers.get("cookie")) {
+    return true;
+  }
+  const cacheControl = request.headers.get("cache-control") || "";
+  const pragma = request.headers.get("pragma") || "";
+  if (
+    cacheControl.includes("no-store") ||
+    cacheControl.includes("no-cache") ||
+    pragma.includes("no-cache")
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function isUncacheableResponse(response) {
+  if (!response.ok) return true;
+  const cacheControl = response.headers.get("cache-control") || "";
+  if (cacheControl.includes("private") || cacheControl.includes("no-store")) {
+    return true;
+  }
+  return false;
+}
+
 // ── Install: pre-cache static app shell ──
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     resolvePrecacheUrls()
-      // Carry `urls` through the chain: an earlier version opened the cache in
-      // the same callback that received them, so the precache step referenced
-      // an out-of-scope `urls` and the install threw before caching anything.
       .then((urls) =>
         caches.open(STATIC_CACHE).then((cache) =>
-          // Each entry is added independently rather than with addAll, which
-          // is atomic: one 404 would reject the whole install and the worker
-          // would never activate, costing the entire precache over one miss.
           Promise.all(
             urls.map((url) =>
               cache.add(new Request(url, { cache: "reload" })).catch((error) => {
@@ -132,7 +164,11 @@ async function cacheFirst(request) {
 
   try {
     const response = await fetch(request);
-    if (response.ok) {
+    if (
+      response.ok &&
+      !isUncacheableRequest(request) &&
+      !isUncacheableResponse(response)
+    ) {
       const cache = await caches.open(STATIC_CACHE);
       await cache.put(request, response.clone());
     }
@@ -148,7 +184,11 @@ async function cacheFirst(request) {
 async function networkFirst(request) {
   try {
     const response = await fetch(request);
-    if (response.ok) {
+    if (
+      response.ok &&
+      !isUncacheableRequest(request) &&
+      !isUncacheableResponse(response)
+    ) {
       const cache = await caches.open(API_CACHE);
       await cache.put(request, response.clone());
     }
@@ -170,7 +210,11 @@ async function networkFirst(request) {
 async function navigationFallback(request) {
   try {
     const response = await fetch(request);
-    if (response.ok) {
+    if (
+      response.ok &&
+      !isUncacheableRequest(request) &&
+      !isUncacheableResponse(response)
+    ) {
       const cache = await caches.open(STATIC_CACHE);
       await cache.put(request, response.clone());
     }
@@ -193,6 +237,12 @@ self.addEventListener("fetch", (event) => {
   // Skip non-HTTP(S) and chrome-extension requests
   if (!url.protocol.startsWith("http")) return;
 
+  // Pass non-GET/HEAD or uncacheable requests straight to network without SW strategy caching
+  if (isUncacheableRequest(request)) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
   // Page navigations: network-first with / fallback
   if (isNavigationRequest(request)) {
     event.respondWith(navigationFallback(request));
@@ -205,8 +255,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // API calls: network-first
-  if (isApiRequest(url)) {
+  // Allowlisted API calls: network-first
+  if (isAllowlistedApiRequest(url)) {
     event.respondWith(networkFirst(request));
     return;
   }
