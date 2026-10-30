@@ -8,6 +8,7 @@ import { useExportHandlers } from './use-export-handlers'
 import { ExportFormatGrid } from './export-format-grid'
 import { ImportDropzone } from './import-dropzone'
 import { BackupTips } from './backup-tips'
+import { RecoveryPanel } from './recovery-panel'
 import { EncryptExportDialog } from './encrypt-export-dialog'
 import {
   ConfirmDialog,
@@ -78,6 +79,8 @@ export const ExportView = () => {
         handleFileChange={handleFileChange}
         fileInputRef={fileInputRef}
       />
+
+      <RecoveryPanel />
 
       <BackupTips />
 

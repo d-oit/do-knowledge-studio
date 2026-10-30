@@ -9,6 +9,7 @@ import {
   restoreFromRecovery,
   type RecoverySnapshotSummary,
 } from '@/lib/studio/recovery-helpers'
+import { ConfirmDialog } from '@/components/studio/ui/shared-primitives'
 import { cn } from '@/lib/utils'
 
 /** Shared action styling: 44px floor and a visible keyboard focus ring. */
@@ -48,9 +49,10 @@ const HideForSessionButton = ({ onHide }: { onHide: () => void }) => (
 export const RecoveryBanner = ({ summary }: { summary: RecoverySnapshotSummary }) => {
   const announce = useAnnouncer()
   const [hidden, setHidden] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
 
-  const handleRestore = useCallback(() => {
-    /** The result. */
+  const handleRestoreConfirm = useCallback(() => {
+    setShowConfirm(false)
     const result = restoreFromRecovery()
     if (result.success) {
       if (result.snapshotCleared) {
@@ -75,35 +77,81 @@ export const RecoveryBanner = ({ summary }: { summary: RecoverySnapshotSummary }
 
   if (hidden) return null
 
+  const timestamp =
+    typeof summary.timestamp === 'number' && Number.isFinite(summary.timestamp) && summary.timestamp > 0
+      ? summary.timestamp
+      : 0
+  const isImmediate = summary.isImmediatePreImport ?? true
+
+  const formattedDate = new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(timestamp))
+
   const summaryText = `${summary.entityCount} ${summary.entityCount === 1 ? 'entity' : 'entities'} and ${summary.claimCount} ${summary.claimCount === 1 ? 'claim' : 'claims'}`
 
+  const bodyCopy = isImmediate
+    ? t('announce.restoreBodyImmediate', formattedDate, summaryText)
+    : t('announce.restoreBodyStale', formattedDate, summaryText)
+
+  const confirmBodyCopy = isImmediate
+    ? t('announce.restoreConfirmBodyImmediate', formattedDate, summaryText)
+    : t('announce.restoreConfirmBodyStale', formattedDate, summaryText)
+
   return (
-    <section
-      role="alert"
-      aria-labelledby="recovery-restore-title"
-      data-testid="recovery-banner"
-      className={cn(
-        'mb-6 rounded-lg border border-saffron/30 bg-saffron-soft/40 p-4',
-        'flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between',
-      )}
-    >
-      <div className="flex gap-3">
-        <History aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-saffron-deep" />
-        <div>
-          <h2 id="recovery-restore-title" className="font-serif text-body-lg font-semibold text-ink">
-            {t('announce.restoreTitle')}
-          </h2>
-          <p className="mt-1 text-caption text-ink-mute">
-            {t('announce.restoreBody', summaryText)}
-          </p>
+    <>
+      <section
+        role="alert"
+        aria-labelledby="recovery-restore-title"
+        data-testid="recovery-banner"
+        className={cn(
+          'mb-6 rounded-lg border border-saffron/30 bg-saffron-soft/40 p-4',
+          'flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between',
+        )}
+      >
+        <div className="flex gap-3">
+          <History aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-saffron-deep" />
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 id="recovery-restore-title" className="font-serif text-body-lg font-semibold text-ink">
+                {t('announce.restoreTitle')}
+              </h2>
+              <span
+                className={cn(
+                  'rounded-full px-2 py-0.5 text-caption font-medium',
+                  isImmediate
+                    ? 'bg-saffron/20 text-saffron-deep'
+                    : 'bg-muted text-ink-mute',
+                )}
+              >
+                {isImmediate ? 'Immediate Backup' : 'Stale Backup'}
+              </span>
+            </div>
+            <p className="mt-1 text-caption text-ink-mute">{bodyCopy}</p>
+          </div>
         </div>
-      </div>
-      <div className="flex shrink-0 flex-wrap items-center gap-2">
-        <button type="button" onClick={handleRestore} className={ACTION_CLASS}>
-          {t('announce.restoreAction')}
-        </button>
-        <HideForSessionButton onHide={() => { setHidden(true) }} />
-      </div>
-    </section>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => { setShowConfirm(true) }}
+            className={ACTION_CLASS}
+          >
+            {t('announce.restoreAction')}
+          </button>
+          <HideForSessionButton onHide={() => { setHidden(true) }} />
+        </div>
+      </section>
+
+      <ConfirmDialog
+        open={showConfirm}
+        onConfirm={handleRestoreConfirm}
+        onCancel={() => { setShowConfirm(false) }}
+        title={t('announce.restoreConfirmTitle')}
+        body={confirmBodyCopy}
+        confirmLabel={t('announce.restoreAction')}
+        cancelLabel={t('announce.restoreDismiss')}
+        destructive
+      />
+    </>
   )
 }
