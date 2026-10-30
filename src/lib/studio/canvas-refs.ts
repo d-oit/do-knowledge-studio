@@ -22,30 +22,38 @@ const filterChanged = <T>(items: T[], keep: (item: T) => boolean): T[] => {
   return filtered ?? items
 }
 
-/** Removes references to one deleted entity while preserving unchanged fields. */
-export const removeCanvasRefs = (canvas: CanvasSnapshot, removedId: string): CanvasSnapshot => {
+/** Removes references to deleted entity ID(s) while preserving unchanged fields. */
+export const removeCanvasRefs = (
+  canvas: CanvasSnapshot,
+  removedId: string | ReadonlySet<string>,
+): CanvasSnapshot => {
+  const isRemoved =
+    typeof removedId === 'string'
+      ? (id: string) => id === removedId
+      : (id: string) => removedId.has(id)
+
   const graphNodes = canvas.graph
-    ? filterChanged(canvas.graph.nodes, (node) => node.id !== removedId)
+    ? filterChanged(canvas.graph.nodes, (node) => !isRemoved(node.id))
     : undefined
   const graphEdges = canvas.graph
     ? filterChanged(
         canvas.graph.edges,
-        (edge) => edge.source !== removedId && edge.target !== removedId,
+        (edge) => !isRemoved(edge.source) && !isRemoved(edge.target),
       )
     : undefined
   const mindMapNodes = canvas.mindMap
-    ? filterChanged(canvas.mindMap.nodes, (node) => node.id !== removedId)
+    ? filterChanged(canvas.mindMap.nodes, (node) => !isRemoved(node.id))
     : undefined
   const mindMapEdges = canvas.mindMap
     ? filterChanged(
         canvas.mindMap.edges,
-        (edge) => edge.source !== removedId && edge.target !== removedId,
+        (edge) => !isRemoved(edge.source) && !isRemoved(edge.target),
       )
     : undefined
   const links = canvas.links
     ? filterChanged(
         canvas.links,
-        (link) => link.sourceId !== removedId && link.targetId !== removedId,
+        (link) => !isRemoved(link.sourceId) && !isRemoved(link.targetId),
       )
     : undefined
   const graphChanged =
@@ -84,13 +92,22 @@ export const pruneDanglingCanvasRefs = (
   entityIds: ReadonlySet<string>,
 ): CanvasSnapshot => {
   const graphEdges = canvas.graph
-    ? filterChanged(canvas.graph.edges, (edge) => entityIds.has(edge.source) && entityIds.has(edge.target))
+    ? filterChanged(
+        canvas.graph.edges,
+        (edge) => entityIds.has(edge.source) && entityIds.has(edge.target),
+      )
     : undefined
   const mindMapEdges = canvas.mindMap
-    ? filterChanged(canvas.mindMap.edges, (edge) => entityIds.has(edge.source) && entityIds.has(edge.target))
+    ? filterChanged(
+        canvas.mindMap.edges,
+        (edge) => entityIds.has(edge.source) && entityIds.has(edge.target),
+      )
     : undefined
   const links = canvas.links
-    ? filterChanged(canvas.links, (link) => entityIds.has(link.sourceId) && entityIds.has(link.targetId))
+    ? filterChanged(
+        canvas.links,
+        (link) => entityIds.has(link.sourceId) && entityIds.has(link.targetId),
+      )
     : undefined
   const graphChanged = graphEdges !== undefined && graphEdges !== canvas.graph?.edges
   const mindMapChanged = mindMapEdges !== undefined && mindMapEdges !== canvas.mindMap?.edges
