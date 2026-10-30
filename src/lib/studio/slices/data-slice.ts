@@ -6,7 +6,7 @@
  * undo target. The rollback path snapshots the pre-import state (including
  * claims and the canvas fields) so a failed swap is fully reversible.
  */
-import { pruneDanglingCanvasRefs } from '../canvas-refs'
+import { reconcileCorpusIntegrity } from '../integrity'
 import { snapshotCorpus } from '../history-snapshot'
 import { buildRecoverySnapshot, persistRecoverySnapshot } from '../recovery-helpers'
 import { buildSeedState } from '../seed-state'
@@ -24,21 +24,32 @@ export type DataSlice = Pick<StudioState, 'importData' | 'importWithRollback' | 
 
 /** Shared tail of every corpus replacement: new baseline, no selection. */
 const corpusPatch = (entities: Entity[], claims: Claim[], options?: ImportOptions) => {
-  const canvas = pruneDanglingCanvasRefs(
-    { graph: options?.graph, mindMap: options?.mindMap, links: options?.links },
-    new Set(entities.map((entity) => entity.id)),
-  )
-  return {
+  const reconciled = reconcileCorpusIntegrity({
     entities,
     claims,
+    graph: options?.graph,
+    mindMap: options?.mindMap,
+    links: options?.links,
+    selectedEntityId: null,
+    editingEntityId: null,
+  })
+  return {
+    entities: reconciled.entities,
+    claims: reconciled.claims,
     selectedEntityId: null,
     editingEntityId: null,
     currentView: 'library' as const,
-    entityHistory: [snapshotCorpus(entities, claims, { graph: canvas.graph, mindMap: canvas.mindMap, links: canvas.links })],
+    entityHistory: [
+      snapshotCorpus(reconciled.entities, reconciled.claims, {
+        graph: reconciled.graph,
+        mindMap: reconciled.mindMap,
+        links: reconciled.links,
+      }),
+    ],
     historyIndex: 0,
-    graph: canvas.graph,
-    mindMap: canvas.mindMap,
-    links: canvas.links,
+    graph: reconciled.graph,
+    mindMap: reconciled.mindMap,
+    links: reconciled.links,
     tags: options?.tags,
   }
 }
