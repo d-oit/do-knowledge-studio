@@ -78,13 +78,20 @@ const messages = {
   'announce.aiResponseComplete': 'Response complete',
   /** Heading when a pre-import snapshot is waiting to be restored. */
   'announce.restoreTitle': 'A previous library is ready to restore',
-  /** Body naming what the snapshot holds. It is the corpus that existed before
-   *  an *earlier* import — not necessarily the most recent one: when an import's
-   *  own backup write is refused, the previous snapshot stays and is offered
-   *  instead (see `persistRecoverySnapshot`) — so restoring replaces whatever is
-   *  loaded now. That is stated rather than implied. */
-  'announce.restoreBody': (summary: string) =>
-    `We kept a copy of ${summary} from an earlier import. Restoring replaces your current library.`,
+  /** Body naming what the snapshot holds for immediate pre-import backup. */
+  'announce.restoreBodyImmediate': (date: string, summary: string) =>
+    `Immediate pre-import backup from ${date} containing ${summary}. Restoring replaces your current library.`,
+  /** Body naming what the snapshot holds for a stale/older backup. */
+  'announce.restoreBodyStale': (date: string, summary: string) =>
+    `Older backup from ${date} containing ${summary} (stale: not from the latest import). Restoring replaces your current library.`,
+  /** Title for the restore confirmation dialog. */
+  'announce.restoreConfirmTitle': 'Restore Pre-Import Snapshot?',
+  /** Body for the restore confirmation dialog (immediate backup). */
+  'announce.restoreConfirmBodyImmediate': (date: string, summary: string) =>
+    `Are you sure you want to restore the immediate pre-import backup from ${date} (${summary})? This will overwrite your current library.`,
+  /** Body for the restore confirmation dialog (stale backup). */
+  'announce.restoreConfirmBodyStale': (date: string, summary: string) =>
+    `Are you sure you want to restore this older backup from ${date} (${summary})? This backup is not from the latest import and will overwrite your current library.`,
   /** Banner action that applies the snapshot. */
   'announce.restoreAction': 'Restore it',
   /** Banner action that hides the offer for this page session. It never

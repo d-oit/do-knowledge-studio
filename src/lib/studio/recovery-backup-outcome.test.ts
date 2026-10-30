@@ -284,7 +284,9 @@ describe('persistRecoverySnapshot', () => {
     // `removeItem` still works when `setItem` is refused by a full quota, so a
     // naive clear here would delete the only copy of corpus A. A stale-but-real
     // backup must survive: the restore path re-validates it on every read.
-    expect(describeRecoverySnapshot()).toEqual({ entityCount: 1, claimCount: 0 })
+    expect(describeRecoverySnapshot()).toEqual(
+      expect.objectContaining({ entityCount: 1, claimCount: 0, isImmediatePreImport: false }),
+    )
     expect(localStorage.getItem(RECOVERY_KEY)).not.toBeNull()
   })
 
@@ -325,9 +327,13 @@ describe('describeRecoverySnapshot', () => {
       entities: [makeEntity('a', 'A'), makeEntity('b', 'B')],
     })
 
-    expect(describeRecoverySnapshot()).toEqual({ entityCount: 2, claimCount: 0 })
+    expect(describeRecoverySnapshot()).toEqual(
+      expect.objectContaining({ entityCount: 2, claimCount: 0, isImmediatePreImport: true }),
+    )
     // Describing must not consume the snapshot.
-    expect(describeRecoverySnapshot()).toEqual({ entityCount: 2, claimCount: 0 })
+    expect(describeRecoverySnapshot()).toEqual(
+      expect.objectContaining({ entityCount: 2, claimCount: 0, isImmediatePreImport: true }),
+    )
   })
 
   it('returns null for an expired snapshot instead of advertising it', () => {
@@ -468,7 +474,9 @@ describe('restoreFromRecovery safety', () => {
     expect(useStudioStore.getState().entities).toHaveLength(1)
     // … and the refusal is what leaves the offer alive for a later load.
     restoreScopedSpies()
-    expect(describeRecoverySnapshot()).toEqual({ entityCount: 1, claimCount: 0 })
+    expect(describeRecoverySnapshot()).toEqual(
+      expect.objectContaining({ entityCount: 1, claimCount: 0, isImmediatePreImport: true }),
+    )
   })
 
   it('keeps the snapshot when applying it fails, so a retry stays possible', () => {

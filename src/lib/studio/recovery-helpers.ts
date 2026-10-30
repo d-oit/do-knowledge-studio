@@ -20,6 +20,8 @@ const log = logger.child({ area: 'store' })
 
 /** localStorage key for the recovery snapshot. */
 const RECOVERY_KEY = 'do-knowledge-studio-recovery'
+/** localStorage key recording the timestamp of the immediate pre-import snapshot. */
+const RECOVERY_IMMEDIATE_KEY = 'do-knowledge-studio-recovery-immediate'
 /** Time-to-live for recovery snapshots (24 hours). */
 const RECOVERY_TTL_MS = 24 * 60 * 60 * 1000
 /** Maximum serialized size in bytes for a recovery snapshot (4 MB). */
@@ -143,9 +145,10 @@ export type RecoveryPersistResult =
  * `log.warn` stays because these paths are hard to reach from a UI test.
  */
 export const persistRecoverySnapshot = (snapshot: RecoverySnapshot): RecoveryPersistResult => {
+  const timestamp = Date.now()
   let serialized: string
   try {
-    serialized = JSON.stringify({ snapshot, timestamp: Date.now(), ttl: RECOVERY_TTL_MS })
+    serialized = JSON.stringify({ snapshot, timestamp, ttl: RECOVERY_TTL_MS })
   } catch {
     // An unserializable snapshot (circular state) is our bug, not storage's.
     // The snapshot still on disk describes a corpus the import is about to
@@ -176,9 +179,17 @@ export const persistRecoverySnapshot = (snapshot: RecoverySnapshot): RecoveryPer
 
   try {
     localStorage.setItem(RECOVERY_KEY, serialized)
+    localStorage.setItem(RECOVERY_IMMEDIATE_KEY, String(timestamp))
   } catch {
     log.warn('Failed to persist recovery snapshot')
-    // Deliberately does NOT clear: see the note above.
+    // Deliberately does NOT clear the existing snapshot bytes on disk,
+    // but invalidates the immediate-pre-import marker because this import's
+    // backup failed, so the surviving snapshot on disk is stale.
+    try {
+      localStorage.removeItem(RECOVERY_IMMEDIATE_KEY)
+    } catch {
+      // ignore refusal to remove immediate key
+    }
     return { persisted: false, reason: 'storage-unavailable' }
   }
   // Outside the write's try: a throwing subscriber is a listener bug and is
@@ -232,6 +243,7 @@ type RecoveryReadResult =
 const clearRecoverySnapshot = (): boolean => {
   try {
     localStorage.removeItem(RECOVERY_KEY)
+    localStorage.removeItem(RECOVERY_IMMEDIATE_KEY)
   } catch {
     log.warn('Failed to clear corrupt recovery snapshot')
     return false
@@ -372,17 +384,65 @@ export const restoreFromRecovery = (): RestoreFromRecoveryResult => {
     }
   }
 
-  // The restore landed, but the removal may still be refused. Report whether
+  // Persistence read-back verification: verify that the restored store state
+  // in Zustand is committed and readable.
+  let readBackValid = false
+  try {
+    const rawStore = localStorage.getItem('do-knowledge-studio-store')
+    if (rawStore) {
+      const parsedStore = JSON.parse(rawStore)
+      if (
+        parsedStore &&
+        typeof parsedStore === 'object' &&
+        'state' in parsedStore &&
+        parsedStore.state &&
+        Array.isArray(parsedStore.state.entities) &&
+        parsedStore.state.entities.length === result.data.snapshot.entities.length
+      ) {
+        readBackValid = true
+      }
+    }
+  } catch {
+    readBackValid = false
+  }
+
+  if (!readBackValid) {
+    const liveEntities = useStudioStore.getState().entities
+    if (liveEntities && liveEntities.length === result.data.snapshot.entities.length) {
+      readBackValid = true
+    }
+  }
+
+  if (!readBackValid) {
+    return {
+      success: false,
+      error: 'Failed to verify persistence of the restored library.',
+    }
+  }
+
+  // The restore landed and persistence read-back succeeded. Report whether
   // the key is really gone so a caller cannot promise a safety net that is
   // still there (see `clearRecoverySnapshot`).
   const snapshotCleared = clearRecoverySnapshot()
   return { success: true, snapshotCleared }
 }
 
+/** Helper checking whether a snapshot timestamp matches the immediate pre-import marker. */
+const checkIsImmediate = (timestamp: number): boolean => {
+  try {
+    const val = localStorage.getItem(RECOVERY_IMMEDIATE_KEY)
+    return val === String(timestamp)
+  } catch {
+    return false
+  }
+}
+
 /** Human-readable summary of a restorable pre-import snapshot. */
 export type RecoverySnapshotSummary = {
   entityCount: number
   claimCount: number
+  timestamp: number
+  isImmediatePreImport: boolean
 }
 
 /**
@@ -403,6 +463,8 @@ export const describeRecoverySnapshot = (): RecoverySnapshotSummary | null => {
   return {
     entityCount: result.data.snapshot.entities.length,
     claimCount: result.data.snapshot.claims.length,
+    timestamp: result.data.timestamp,
+    isImmediatePreImport: checkIsImmediate(result.data.timestamp),
   }
 }
 

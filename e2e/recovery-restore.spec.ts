@@ -156,7 +156,9 @@ test.describe('pre-import backup and restore', () => {
     await navClick(page, /^home/i);
     await expect(banner).toBeVisible();
 
-    await page.getByRole('button', { name: /restore it/i }).click();
+    await banner.getByRole('button', { name: /restore it/i }).click();
+    await expect(page.getByText('Restore Pre-Import Snapshot?')).toBeVisible();
+    await page.getByRole('dialog').getByRole('button', { name: 'Restore it', exact: true }).click();
 
     // The replaced corpus is back, and the snapshot is consumed.
     await expect.poll(() => entityNames(page)).toEqual(before);
@@ -175,7 +177,7 @@ test.describe('pre-import backup and restore', () => {
     const banner = page.getByTestId('recovery-banner');
     await expect(banner).toBeVisible();
 
-    await page.getByRole('button', { name: /hide for this page session/i }).click();
+    await banner.getByRole('button', { name: /hide for this page session/i }).click();
     await expect(banner).toHaveCount(0);
 
     // Hiding is not deleting: the bytes survive, so a reload offers it again.
@@ -185,7 +187,53 @@ test.describe('pre-import backup and restore', () => {
     await expect(page.getByTestId('recovery-banner')).toBeVisible();
 
     // And the snapshot still restores the right corpus.
-    await page.getByRole('button', { name: /restore it/i }).click();
+    await banner.getByRole('button', { name: /restore it/i }).click();
+    await expect(page.getByText('Restore Pre-Import Snapshot?')).toBeVisible();
+    await page.getByRole('dialog').getByRole('button', { name: 'Restore it', exact: true }).click();
+    await expect.poll(() => entityNames(page)).toEqual(before);
+  });
+
+  test('cancelling the restore confirmation dialog leaves current library intact', async ({ page }) => {
+    await page.goto('/');
+    await waitForAppReady(page);
+
+    await seedCorpusA(page);
+    const fixture = await writeFixture('corpus-d', { id: 'corpus-d-1', name: 'Corpus D Alpha' });
+    await importJson(page, fixture);
+
+    const banner = page.getByTestId('recovery-banner');
+    await expect(banner).toBeVisible();
+
+    await banner.getByRole('button', { name: /restore it/i }).click();
+    await expect(page.getByText('Restore Pre-Import Snapshot?')).toBeVisible();
+
+    // Cancel in confirmation dialog
+    await page.getByRole('dialog').getByRole('button', { name: 'Hide for this page session' }).click();
+
+    // Library remains Corpus D Alpha and snapshot persists
+    expect(await entityNames(page)).toEqual(['Corpus D Alpha']);
+    expect(await hasSnapshot(page)).toBe(true);
+  });
+
+  test('Export view displays recovery panel with snapshot details and restore option', async ({ page }) => {
+    await page.goto('/');
+    await waitForAppReady(page);
+
+    const before = await seedCorpusA(page);
+    const fixture = await writeFixture('corpus-e', { id: 'corpus-e-1', name: 'Corpus E Alpha' });
+    await importJson(page, fixture);
+
+    await navClick(page, /^export/i);
+
+    const panel = page.getByTestId('recovery-panel');
+    await expect(panel).toBeVisible();
+    await expect(panel).toContainText('Pre-import Recovery Snapshot');
+    await expect(panel).toContainText('Immediate Pre-Import Backup');
+
+    await panel.getByRole('button', { name: /restore this snapshot/i }).click();
+    await expect(page.getByText('Restore Pre-Import Snapshot?')).toBeVisible();
+    await page.getByRole('dialog').getByRole('button', { name: 'Restore it', exact: true }).click();
+
     await expect.poll(() => entityNames(page)).toEqual(before);
   });
 
