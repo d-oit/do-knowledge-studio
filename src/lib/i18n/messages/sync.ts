@@ -26,6 +26,14 @@ const messages = {
   'sync.status.peersConnected': 'Peers connected',
   /** Status badge while the provider is joining a room. */
   'sync.status.connecting': 'Connecting',
+  /** Status badge while IndexedDB persistence is loading. */
+  'sync.status.persistenceLoading': 'Loading storage…',
+  /** Status badge while sync merge is active. */
+  'sync.status.syncing': 'Syncing…',
+  /** Status badge when conflicts need resolution. */
+  'sync.status.conflict': 'Conflict',
+  /** Status badge while leaving a room. */
+  'sync.status.leaving': 'Leaving…',
   /** Status badge when the room cannot be joined. */
   'sync.status.error': 'Error',
   /** Status badge when no room is active. */

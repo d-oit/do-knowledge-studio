@@ -18,8 +18,9 @@ import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { translate as t } from '@/lib/i18n/messages/sync'
 import { QRDisplay, QRScanner } from '../qr-pairing'
 import type { PeerInfo } from '@/lib/sync/discovery'
+import type { SyncLifecycleState } from '@/lib/sync/types'
 
-type SyncStatus = 'disconnected' | 'connecting' | 'connected' | 'error'
+export type SyncStatus = SyncLifecycleState | 'disconnected' | 'connecting' | 'connected'
 type PairingMode = 'none' | 'display' | 'scan'
 
 /** Generates a short random room ID for peer-to-peer sync pairing. */
@@ -31,8 +32,8 @@ export const generateRoomId = (): string => {
 
 /** Visual badge that distinguishes room activity from connected peers. */
 const StatusBadge = ({ status, peerCount }: { status: SyncStatus; peerCount: number }) => {
-  if (status === 'connected') {
-    const hasPeers = peerCount > 0
+  if (status === 'connected' || status === 'room-active' || status === 'peer-connected') {
+    const hasPeers = peerCount > 0 || status === 'peer-connected'
     return (
       <span className={cn(
         'flex items-center gap-1.5 text-label-lg font-medium',
@@ -43,11 +44,43 @@ const StatusBadge = ({ status, peerCount }: { status: SyncStatus; peerCount: num
       </span>
     )
   }
-  if (status === 'connecting') {
+  if (status === 'connecting' || status === 'joining') {
     return (
       <span className="flex items-center gap-1.5 text-label-lg font-medium text-saffron">
         <Loader2 className="h-3 w-3 animate-spin" />
         {t('sync.status.connecting')}
+      </span>
+    )
+  }
+  if (status === 'persistence-loading') {
+    return (
+      <span className="flex items-center gap-1.5 text-label-lg font-medium text-saffron">
+        <Loader2 className="h-3 w-3 animate-spin" />
+        {t('sync.status.persistenceLoading')}
+      </span>
+    )
+  }
+  if (status === 'syncing') {
+    return (
+      <span className="flex items-center gap-1.5 text-label-lg font-medium text-saffron">
+        <RefreshCw className="h-3 w-3 animate-spin" />
+        {t('sync.status.syncing')}
+      </span>
+    )
+  }
+  if (status === 'conflict') {
+    return (
+      <span className="flex items-center gap-1.5 text-label-lg font-medium text-saffron">
+        <span className="h-2 w-2 rounded-full bg-saffron" />
+        {t('sync.status.conflict')}
+      </span>
+    )
+  }
+  if (status === 'leaving') {
+    return (
+      <span className="flex items-center gap-1.5 text-label-lg font-medium text-ink-faint">
+        <Loader2 className="h-3 w-3 animate-spin" />
+        {t('sync.status.leaving')}
       </span>
     )
   }
@@ -396,7 +429,7 @@ export const SyncStatusCard = ({
         </div>
       </div>
 
-      {status === 'disconnected' ? (
+      {status === 'disconnected' || status === 'idle' || status === 'error' && !roomId ? (
         <DisconnectedPanel
           inputRoomId={inputRoomId}
           onInputChange={onInputChange}

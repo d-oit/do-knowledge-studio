@@ -57,6 +57,8 @@ const mockEmit = (event: string, data: unknown) => { mockProvider.emit(event, da
 
 vi.mock('@/lib/sync', () => ({
   initSync: vi.fn(() => Promise.resolve()),
+  ensurePersistenceReady: vi.fn(() => Promise.resolve()),
+  isPersistenceSynced: vi.fn(() => true),
   joinRoom: vi.fn(() => {
     mockProviderAtMount = mockProviderForJoin
     return mockProviderForJoin

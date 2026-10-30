@@ -59,6 +59,8 @@ vi.mock('@/lib/studio/use-reduced-motion', () => ({
 
 vi.mock('@/lib/sync', () => ({
   initSync: vi.fn(() => Promise.resolve()),
+  ensurePersistenceReady: vi.fn(() => Promise.resolve()),
+  isPersistenceSynced: vi.fn(() => true),
   joinRoom: vi.fn(() => mockProvider),
   getProvider: vi.fn(() => null),
   getYjsEntities: vi.fn(() => []),

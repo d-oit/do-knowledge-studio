@@ -26,6 +26,7 @@ let currentPersistence: IndexeddbPersistence | null = null
 let currentProvider: WebrtcProvider | null = null
 let currentRoomId: string | null = null
 let lastRoomId: string | null = null
+let currentOpts: { signaling?: string[]; password?: string } | undefined
 
 /** Get or create the shared Yjs document. */
 export const getDoc = (): Y.Doc => {
@@ -77,20 +78,58 @@ export const initPersistence = async (): Promise<void> => {
 }
 
 /** Join a WebRTC signaling room for peer-to-peer sync. */
+const areRoomOptsEqual = (
+  a?: { signaling?: string[]; password?: string },
+  b?: { signaling?: string[]; password?: string },
+): boolean => {
+  if (a === b) return true
+  const aSig = a?.signaling?.join(',') ?? ''
+  const bSig = b?.signaling?.join(',') ?? ''
+  const aPass = a?.password ?? ''
+  const bPass = b?.password ?? ''
+  return aSig === bSig && aPass === bPass
+}
+
+/** Check if IndexedDB persistence is initialized and synchronized. */
+export const isPersistenceSynced = (): boolean => {
+  return currentPersistence?.synced ?? false
+}
+
+/** Ensure persistence is initialized and fully synchronized. */
+export const ensurePersistenceReady = async (): Promise<IndexeddbPersistence> => {
+  if (!currentPersistence) {
+    currentPersistence = new IndexeddbPersistence(DB_NAME, getDoc())
+  }
+  await currentPersistence.whenSynced
+  return currentPersistence
+}
+
+/** Join a WebRTC signaling room for peer-to-peer sync. */
 export const joinRoom = (
   roomId: string,
   opts?: { signaling?: string[]; password?: string },
 ): RoomProvider => {
-  if (currentProvider) {
-    currentProvider.destroy()
+  if (currentProvider && currentRoomId === roomId && areRoomOptsEqual(currentOpts, opts)) {
+    return currentProvider
   }
+
+  leaveRoom()
+
   currentRoomId = roomId
   lastRoomId = roomId
+  currentOpts = opts ? { ...opts, signaling: opts.signaling ? [...opts.signaling] : undefined } : undefined
+
   if (currentPersistence) {
     void currentPersistence.set(LAST_ROOM_ID_KEY, roomId).catch((error: unknown) => {
       console.error('Failed to persist local sync room metadata', error)
     })
+  } else {
+    // If persistence wasn't initialized yet, initialize it in the background
+    void initPersistence().catch((error: unknown) => {
+      console.error('Failed to initialize persistence during joinRoom', error)
+    })
   }
+
   const doc = getDoc()
   currentProvider = new WebrtcProvider(`${ROOM_PREFIX}-${roomId}`, doc, {
     signaling: opts?.signaling
@@ -120,9 +159,12 @@ export const getAwareness = (): WebrtcProvider['awareness'] | null => {
 export const leaveRoom = (): void => {
   unbindCursorAwareness()
   unbindPresenceAwareness()
-  currentProvider?.destroy()
-  currentProvider = null
+  if (currentProvider) {
+    currentProvider.destroy()
+    currentProvider = null
+  }
   currentRoomId = null
+  currentOpts = undefined
 }
 /**
  * Fully destroys the provider, IndexedDB persistence, and document. Product

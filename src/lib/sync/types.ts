@@ -1,6 +1,18 @@
 import * as Y from 'yjs'
 import type { Entity, Claim } from '@/lib/studio/types'
 
+/** Explicit lifecycle states for the peer-to-peer sync engine and UI. */
+export type SyncLifecycleState =
+  | 'idle'
+  | 'persistence-loading'
+  | 'joining'
+  | 'room-active'
+  | 'peer-connected'
+  | 'syncing'
+  | 'conflict'
+  | 'error'
+  | 'leaving'
+
 /** Metadata about a synced device. */
 export interface SyncMeta {
   deviceId: string
