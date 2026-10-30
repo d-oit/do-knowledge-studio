@@ -149,9 +149,13 @@ export function mergeIntoYjs(
     ...claimResult.merged.filter((claim) => !conflictedClaimIds.has(claim.id)),
     ...claims.filter((claim) => conflictedClaimIds.has(claim.id)),
   ]
+  const totalConflicts = [...entityResult.conflicts, ...claimResult.conflicts, ...deletionConflicts]
+  if (totalConflicts.length > 0) {
+    for (const listener of syncConflictListeners) listener(totalConflicts)
+  }
   return {
     merged: { entities: mergedEntities, claims: mergedClaims },
-    conflicts: [...entityResult.conflicts, ...claimResult.conflicts, ...deletionConflicts],
+    conflicts: totalConflicts,
   }
 }
 

@@ -5,12 +5,14 @@ export {
   ymapToClaim,
   createSyncDoc,
 } from './types'
-export type { SyncDoc, SyncMeta } from './types'
+export type { SyncDoc, SyncMeta, SyncLifecycleState } from './types'
 
 export {
   getDoc,
   getSyncDoc,
   initPersistence,
+  isPersistenceSynced,
+  ensurePersistenceReady,
   joinRoom,
   getProvider,
   getAwareness,

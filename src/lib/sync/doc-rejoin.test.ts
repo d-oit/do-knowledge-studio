@@ -137,4 +137,29 @@ describe('leaveRoom', () => {
 
     expect(getCurrentRoomId()).toBe('room-a')
   })
+
+  it('makes joinRoom idempotent when called with identical roomId and options', () => {
+    const provider1 = joinRoom('room-idempotent', { password: 'pass', signaling: ['wss://sig1'] })
+    const provider2 = joinRoom('room-idempotent', { password: 'pass', signaling: ['wss://sig1'] })
+    expect(provider1).toBe(provider2)
+    expect(mockProviders).toHaveLength(1)
+
+    // Different options should tear down and recreate provider
+    const provider3 = joinRoom('room-idempotent', { password: 'pass2', signaling: ['wss://sig1'] })
+    expect(provider3).not.toBe(provider1)
+    expect(mockProviders).toHaveLength(2)
+  })
+
+  it('preserves IndexedDB persistence across leave and rejoin', async () => {
+    await initPersistence()
+    joinRoom('room-persist')
+    leaveRoom()
+    expect(getProvider()).toBeNull()
+
+    // Rejoin room
+    const rejoinedProvider = joinRoom('room-persist')
+    expect(rejoinedProvider).toBeDefined()
+    expect(getProvider()).toBe(rejoinedProvider)
+    expect(mockPersistenceMetadata.get('lastJoinedRoomId')).toBe('room-persist')
+  })
 })

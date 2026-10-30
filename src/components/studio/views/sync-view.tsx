@@ -10,7 +10,7 @@ import {
 import { toast } from 'sonner'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { cn } from '@/lib/utils'
-import { SyncStatusCard, generateRoomId } from './sync-helpers'
+import { SyncStatusCard, generateRoomId, type SyncStatus } from './sync-helpers'
 import {
   initSync,
   joinRoom,
@@ -18,6 +18,7 @@ import {
   getYjsEntities,
   getYjsClaims,
   leaveRoom,
+  ensurePersistenceReady,
 } from '@/lib/sync'
 import type { RoomProvider } from '@/lib/sync'
 import { useStudioStore } from '@/lib/studio/store'
@@ -35,7 +36,6 @@ import { usePresence } from '@/lib/sync/use-presence'
 import { translate as t } from '@/lib/i18n/messages/sync'
 import { translate as navT } from '@/lib/i18n/messages/nav'
 
-type SyncStatus = 'disconnected' | 'connecting' | 'connected' | 'error'
 type PairingMode = 'none' | 'display' | 'scan'
 
 interface SyncEvent {
@@ -83,7 +83,13 @@ const useSyncProviderEvents = (
     }
 
     const handlePeers = (data: { webrtcPeers: string[]; bcPeers: string[] }) => {
-      setPeerCount(data.webrtcPeers.length + data.bcPeers.length)
+      const count = data.webrtcPeers.length + data.bcPeers.length
+      setPeerCount(count)
+      if (count > 0) {
+        setStatus('peer-connected')
+      } else if (provider.connected) {
+        setStatus('room-active')
+      }
     }
 
     provider.on('synced', handleSynced)
@@ -274,17 +280,13 @@ export const SyncView = () => {
     // A blank password means "no encryption": omit the option entirely so the unencrypted
     // path stays identical instead of passing an empty-string secret to y-webrtc.
     const password = roomPassword.trim()
-    setStatus('connecting')
+    setStatus('joining')
     addEvent('join', t('sync.event.joining', id))
 
     try {
-      // Call through with no second argument when unencrypted, so the existing code path
-      // (and its arity) is untouched.
-      if (password) {
-        setProvider(joinRoom(id, { password }))
-      } else {
-        setProvider(joinRoom(id))
-      }
+      void ensurePersistenceReady()
+      const newProvider = password ? joinRoom(id, { password }) : joinRoom(id)
+      setProvider(newProvider)
       setRoomId(id)
       setInputRoomId('')
       setRoomPassword('')
@@ -295,13 +297,21 @@ export const SyncView = () => {
       }
       setPendingConflicts(result.conflicts)
       if (result.conflicts.length > 0) {
+        setStatus('conflict')
         addEvent('sync', t('sync.event.conflictsFound', String(result.conflicts.length)))
-      } else {
+        } else if (newProvider.connected) {
+        setStatus('room-active')
         addEvent('sync', t(
           'sync.event.merged',
           String(result.merged.entities.length),
           String(result.merged.claims.length),
         ))
+        } else {
+          addEvent('sync', t(
+            'sync.event.merged',
+            String(result.merged.entities.length),
+            String(result.merged.claims.length),
+          ))
       }
       toast.success(t('sync.toast.joined', id))
     } catch (err) {
@@ -313,11 +323,12 @@ export const SyncView = () => {
   }, [inputRoomId, roomPassword, entities, claims, addEvent])
 
   const handleLeave = useCallback(() => {
+    setStatus('leaving')
     stopDiscovery()
     leaveRoom()
     setPendingConflicts([])
     setProvider(null)
-    setStatus('disconnected')
+    setStatus('idle')
     setRoomId('')
     setPeerCount(0)
     setDiscoveredPeers([])
