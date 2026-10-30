@@ -175,21 +175,36 @@ export function SwitchToggle({
   checked: boolean
   onToggle: () => void
 }) {
+  const labelId = useId()
+  const descriptionId = useId()
+
   return (
-    <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2">
+    <div
+      onClick={onToggle}
+      className="flex cursor-pointer items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2 transition-colors hover:bg-muted/50"
+    >
       <div className="flex items-center gap-2">
-        <Icon className="h-3.5 w-3.5 text-saffron" />
+        <Icon className="h-3.5 w-3.5 shrink-0 text-saffron" aria-hidden="true" />
         <div>
-          <div className="text-label-lg font-medium text-ink">{label}</div>
-          <div className="text-caption text-ink-faint">{description}</div>
+          <div id={labelId} className="text-label-lg font-medium text-ink">
+            {label}
+          </div>
+          <div id={descriptionId} className="text-caption text-ink-faint">
+            {description}
+          </div>
         </div>
       </div>
       <button
-        onClick={onToggle}
-        className="relative flex min-h-touch min-w-touch items-center justify-center rounded-md"
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation()
+          onToggle()
+        }}
+        className="relative flex min-h-touch min-w-touch items-center justify-center rounded-md focus-ring"
         role="switch"
         aria-checked={checked}
-        aria-label={label}
+        aria-labelledby={labelId}
+        aria-describedby={descriptionId}
       >
         <span
           className={cn(
