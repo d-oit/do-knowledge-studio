@@ -52,9 +52,6 @@ export interface StudioState {
   finishEditing: () => void
   navigateToView: (v: ViewId) => void
   deleteEntity: (id: string) => void
-  /** Atomically delete several entities under a single history snapshot,
-   * preserving referential integrity across claims, links, graph, mind map, and selections. */
-  deleteEntities: (ids: string[]) => void
 
   // History (undo/redo). Each entry carries the entity AND claim corpus so a
   // single step restores a complete, consistent state (Plan 157, D1.6).

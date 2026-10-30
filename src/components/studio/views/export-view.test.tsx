@@ -20,6 +20,7 @@ vi.mock('lucide-react', () => {
   )
   return {
     RotateCcw: I,
+    Trash2: I,
     FileText: I,
     Download: I,
     Shield: I,
