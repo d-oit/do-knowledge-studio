@@ -392,3 +392,68 @@ describe('ViewEmptyState', () => {
   })
 })
 
+describe('SwitchToggle', () => {
+  it('renders switch with proper ARIA labelling and description', async () => {
+    const { SwitchToggle } = await import('./shared-primitives')
+    render(
+      <SwitchToggle
+        label="Enable Web Search"
+        description="Search web sources for answers"
+        icon={FileText}
+        checked={true}
+        onToggle={() => undefined}
+      />,
+    )
+
+    const switchBtn = screen.getByRole('switch')
+    expect(switchBtn.getAttribute('aria-checked')).toBe('true')
+
+    const labelId = switchBtn.getAttribute('aria-labelledby')
+    const descId = switchBtn.getAttribute('aria-describedby')
+
+    expect(labelId).toBeTruthy()
+    expect(descId).toBeTruthy()
+
+    const labelEl = document.getElementById(labelId!)
+    const descEl = document.getElementById(descId!)
+
+    expect(labelEl?.textContent?.trim()).toBe('Enable Web Search')
+    expect(descEl?.textContent?.trim()).toBe('Search web sources for answers')
+  })
+
+  it('triggers onToggle when row is clicked', async () => {
+    const { SwitchToggle } = await import('./shared-primitives')
+    const onToggle = vi.fn()
+    render(
+      <SwitchToggle
+        label="Enable Web Search"
+        description="Search web sources for answers"
+        icon={FileText}
+        checked={false}
+        onToggle={onToggle}
+      />,
+    )
+
+    const labelText = screen.getByText('Enable Web Search')
+    fireEvent.click(labelText)
+    expect(onToggle).toHaveBeenCalledOnce()
+  })
+
+  it('triggers onToggle exactly once when switch button is clicked directly', async () => {
+    const { SwitchToggle } = await import('./shared-primitives')
+    const onToggle = vi.fn()
+    render(
+      <SwitchToggle
+        label="Enable Web Search"
+        description="Search web sources for answers"
+        icon={FileText}
+        checked={false}
+        onToggle={onToggle}
+      />,
+    )
+
+    const switchBtn = screen.getByRole('switch')
+    fireEvent.click(switchBtn)
+    expect(onToggle).toHaveBeenCalledOnce()
+  })
+})
