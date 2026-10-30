@@ -25,6 +25,7 @@ export type EntitiesSlice = Pick<
   | 'finishEditing'
   | 'navigateToView'
   | 'deleteEntity'
+  | 'deleteEntities'
 >
 
 /** Applies an upsert to the entity list, inserting new entities at the front. */
@@ -107,23 +108,36 @@ export const createEntitiesSlice: StudioSlice<EntitiesSlice> = (set, get) => ({
   },
 
   deleteEntity: (id) => {
+    get().deleteEntities([id])
+  },
+
+  deleteEntities: (ids) => {
+    if (!ids || ids.length === 0) return
+    const removedSet = new Set(ids)
     set((state) => {
       const canvas = removeCanvasRefs(
         { graph: state.graph, mindMap: state.mindMap, links: state.links },
-        id,
+        removedSet,
       )
       return {
         entities: state.entities
-          .filter((x) => x.id !== id)
+          .filter((x) => !removedSet.has(x.id))
           .map((e) => ({
             ...e,
-            links: e.links.filter((l) => l.targetId !== id),
+            links: e.links.filter((l) => !removedSet.has(l.targetId)),
           })),
-        claims: state.claims.filter((c) => c.entityId !== id),
+        claims: state.claims.filter((c) => !removedSet.has(c.entityId)),
         graph: canvas.graph,
         mindMap: canvas.mindMap,
         links: canvas.links,
-        selectedEntityId: state.selectedEntityId === id ? null : state.selectedEntityId,
+        selectedEntityId:
+          state.selectedEntityId && removedSet.has(state.selectedEntityId)
+            ? null
+            : state.selectedEntityId,
+        editingEntityId:
+          state.editingEntityId && removedSet.has(state.editingEntityId)
+            ? null
+            : state.editingEntityId,
       }
     })
     get().pushHistory()
