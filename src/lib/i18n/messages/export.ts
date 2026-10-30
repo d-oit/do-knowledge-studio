@@ -49,6 +49,17 @@ const messages = {
   'export.backupTips.autoSave':
     'Your library is automatically saved to this browser. Export a JSON backup weekly to be safe.',
 
+  /** Pre-import recovery section title. */
+  'export.recovery.title': 'Pre-import Recovery Snapshot',
+  /** Pre-import recovery section subtitle. */
+  'export.recovery.subtitle': 'Available backup captured before an import.',
+  /** Tag for immediate pre-import snapshot. */
+  'export.recovery.immediateTag': 'Immediate Pre-Import Backup',
+  /** Tag for stale pre-import snapshot. */
+  'export.recovery.staleTag': 'Older Backup (Stale)',
+  /** Action button to restore recovery snapshot. */
+  'export.recovery.restoreBtn': 'Restore this snapshot',
+
   /** Accessible name of the encrypted-export dialog. */
   'export.encrypt.ariaLabel': 'Encrypt export',
   /** Encrypted-export dialog heading. */

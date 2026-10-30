@@ -26,7 +26,7 @@ vi.mock('@/lib/utils', () => ({
 import { RecoveryBanner } from './recovery-banner'
 
 /** The summary the app-shell passes once a restorable snapshot exists. */
-const SUMMARY = { entityCount: 2, claimCount: 1 }
+const SUMMARY = { entityCount: 2, claimCount: 1, timestamp: 1760000000000, isImmediatePreImport: true }
 
 const renderBanner = () =>
   render(<RecoveryBanner summary={SUMMARY} />)
@@ -35,6 +35,12 @@ const clickRestore = async () => {
   await act(async () => {
     fireEvent.click(screen.getByRole('button', { name: 'Restore it' }))
   })
+  const confirmButtons = screen.queryAllByRole('button', { name: 'Restore it' })
+  if (confirmButtons.length > 0) {
+    await act(async () => {
+      fireEvent.click(confirmButtons[confirmButtons.length - 1])
+    })
+  }
 }
 
 describe('RecoveryBanner', () => {
@@ -108,13 +114,59 @@ describe('RecoveryBanner', () => {
   it('hides the offer for the session without touching the snapshot', async () => {
     renderBanner()
 
+    const hideButtons = screen.getAllByRole('button', { name: 'Hide for this page session' })
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Hide for this page session' }))
+      fireEvent.click(hideButtons[hideButtons.length - 1])
     })
 
     // Dismissal is local state only: restoring is the caller's job, and the
     // bytes stay in storage (a reload brings the offer back).
     expect(mockRestoreFromRecovery).not.toHaveBeenCalled()
     expect(screen.queryByTestId('recovery-banner')).toBeNull()
+  })
+
+  it('does not execute restore if confirmation is cancelled', async () => {
+    renderBanner()
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Restore it' }))
+    })
+
+    expect(screen.getByText('Restore Pre-Import Snapshot?')).toBeDefined()
+
+    const hideButtons = screen.getAllByRole('button', { name: 'Hide for this page session' })
+    await act(async () => {
+      fireEvent.click(hideButtons[hideButtons.length - 1])
+    })
+
+    expect(mockRestoreFromRecovery).not.toHaveBeenCalled()
+    expect(screen.getByTestId('recovery-banner')).toBeDefined()
+  })
+
+  it('distinguishes immediate backup vs stale backup in badge and copy', () => {
+    const { unmount } = render(
+      <RecoveryBanner
+        summary={{
+          entityCount: 3,
+          claimCount: 0,
+          timestamp: 1760000000000,
+          isImmediatePreImport: true,
+        }}
+      />,
+    )
+    expect(screen.getByText('Immediate Backup')).toBeDefined()
+    unmount()
+
+    render(
+      <RecoveryBanner
+        summary={{
+          entityCount: 3,
+          claimCount: 0,
+          timestamp: 1760000000000,
+          isImmediatePreImport: false,
+        }}
+      />,
+    )
+    expect(screen.getByText('Stale Backup')).toBeDefined()
   })
 })
