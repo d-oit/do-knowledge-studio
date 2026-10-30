@@ -267,27 +267,15 @@ export const fetchUrls = (
   return Promise.all(urls.map((url) => fetchUrlContent(url, signal)))
 }
 
-/**
- * Sanitize web content for injection into delimited prompt blocks.
- * Prevents delimiter breakout attacks by escaping closing tags.
- */
-const sanitizeWebBlockContent = (text: string): string => {
-  if (!text) return ''
-  return text
-    .replace(/<\/untrusted_web_data>/gi, '&lt;/untrusted_web_data&gt;')
-    .replace(/<\/untrusted_library_data>/gi, '&lt;/untrusted_library_data&gt;')
-}
-
 /** Build a context string from successful research results for AI prompt injection. */
 export const buildResearchContext = (results: ResearchResult[]): string => {
   const successful = results.filter((r) => r.success)
   if (successful.length === 0) return ''
 
   const parts = successful.map((r) => {
-    const snippet = sanitizeWebBlockContent(r.content.slice(0, 3000))
-    const title = sanitizeWebBlockContent(r.title)
-    return `<untrusted_web_data url="${r.url}">\nTitle: ${title}\nSource: ${r.url}\n\n${snippet}\n</untrusted_web_data>`
+    const snippet = r.content.slice(0, 3000)
+    return `### ${r.title}\nSource: ${r.url}\n\n${snippet}`
   })
 
-  return `\n\nFetched web content:\n${parts.join('\n\n')}`
+  return `\n\nFetched web content:\n${parts.join('\n\n---\n\n')}`
 }

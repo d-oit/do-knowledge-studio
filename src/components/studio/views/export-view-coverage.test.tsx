@@ -20,6 +20,7 @@ vi.mock('lucide-react', () => {
   )
   return {
     RotateCcw: I,
+    Trash2: I,
     FileText: I,
     Download: I,
     Shield: I,
@@ -87,7 +88,7 @@ vi.mock('@/components/studio/ui/shared-primitives', async (importOriginal) => ({
     confirmLabel?: string
     cancelLabel?: string
   }) => (
-    <div data-testid="confirm-dialog" data-show={String(open)}>
+    <div data-testid="confirm-dialog" data-title={title} data-show={String(open)}>
       <span>{title}</span>
       <button onClick={() => { onConfirm?.() }}>{confirmLabel}</button>
       <button onClick={() => { onCancel?.() }}>{cancelLabel}</button>
@@ -197,16 +198,21 @@ describe('ExportView branch coverage', () => {
   it('opens reset confirm dialog when reset button is clicked', () => {
     render(<ExportView />)
     fireEvent.click(screen.getByText('Reset to demo data'))
-    expect(screen.getByTestId('confirm-dialog')).toHaveAttribute('data-show', 'true')
+    const dialogs = screen.getAllByTestId('confirm-dialog')
+    const resetDialog = dialogs.find((d) => d.getAttribute('data-title')?.includes('Reset'))
+    expect(resetDialog).toHaveAttribute('data-show', 'true')
   })
 
   it('closes reset confirm dialog when cancelled', async () => {
     render(<ExportView />)
     fireEvent.click(screen.getByText('Reset to demo data'))
-    expect(screen.getByTestId('confirm-dialog')).toHaveAttribute('data-show', 'true')
-    fireEvent.click(screen.getByText('Cancel'))
+    const dialogs = screen.getAllByTestId('confirm-dialog')
+    const resetDialog = dialogs.find((d) => d.getAttribute('data-title')?.includes('Reset'))
+    expect(resetDialog).toHaveAttribute('data-show', 'true')
+    const cancelButtons = screen.getAllByText('Cancel')
+    fireEvent.click(cancelButtons[cancelButtons.length - 1])
     await waitFor(() => {
-      expect(screen.getByTestId('confirm-dialog')).toHaveAttribute('data-show', 'false')
+      expect(resetDialog).toHaveAttribute('data-show', 'false')
     })
   })
 
