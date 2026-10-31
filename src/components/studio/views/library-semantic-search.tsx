@@ -8,6 +8,11 @@ import {
   type SemanticSearchOutcome,
   type SemanticDocFilter,
 } from '@/lib/search/search-worker-client'
+import {
+  getSemanticIndexProgress,
+  subscribeSemanticIndexProgress,
+  type SemanticIndexProgress,
+} from '@/lib/search/semantic-progress'
 import type { AnyEntityType, Claim, Entity } from '@/lib/studio/types'
 import { logger } from '@/lib/logging/logger'
 
@@ -50,7 +55,17 @@ export const useSemanticSearch = (
 ) => {
   const [semanticOutcome, setSemanticOutcome] = useState<SemanticSearchOutcome | null>(null)
   const [semanticBusy, setSemanticBusy] = useState(false)
+  const [semanticProgress, setSemanticProgress] = useState<SemanticIndexProgress>(() =>
+    getSemanticIndexProgress(),
+  )
   const semanticQuery = query.trim()
+
+  useEffect(() => {
+    setSemanticProgress(getSemanticIndexProgress())
+    return subscribeSemanticIndexProgress(() => {
+      setSemanticProgress(getSemanticIndexProgress())
+    })
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -106,7 +121,7 @@ export const useSemanticSearch = (
     }
   }, [semanticMode, semanticQuery, allEntities, claims, typeFilter])
 
-  return { semanticOutcome, semanticBusy }
+  return { semanticOutcome, semanticBusy, semanticProgress }
 }
 
 /** Looks up the entity a semantic result refers to (id, or claim id via its entity). */
@@ -150,19 +165,36 @@ export const SemanticStatusBanner = ({
   active,
   busy,
   outcome,
+  progress,
 }: {
   active: boolean
   busy: boolean
   outcome: SemanticSearchOutcome | null
+  progress?: SemanticIndexProgress | null
 }) => {
   if (!active) return null
+  const indexing =
+    progress !== null &&
+    progress !== undefined &&
+    (progress.status === 'indexing' || progress.status === 'loading-cache')
   return (
     <div
       role="status"
       aria-live="polite"
       className="mb-4 flex items-center gap-2 text-caption text-ink-faint"
     >
-      {busy ? (
+      {indexing ? (
+        <>
+          <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+          {progress.status === 'loading-cache'
+            ? translate('search.semanticLoading')
+            : translate(
+                'search.semanticIndexing',
+                String(progress.completed),
+                String(progress.total),
+              )}
+        </>
+      ) : busy ? (
         <>
           <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
           {translate('search.semanticLoading')}

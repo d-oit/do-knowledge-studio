@@ -152,6 +152,21 @@ export function getAvailableRooms(): { roomId: string; peerCount: number }[] {
 /** Default signaling server URL mirrors the installed y-webrtc provider. */
 const DEFAULT_SIGNALING_SERVERS = ['wss://y-webrtc-eu.fly.dev']
 
+/**
+ * Hosts whose plaintext WebSocket endpoint is an intentional local test
+ * service. A plaintext `ws://` transport is otherwise rejected: signaling
+ * carries room membership and WebRTC session metadata, so production must use
+ * TLS. Local signaling servers used by the peer-to-peer acceptance suite
+ * cannot present a trusted certificate, and loopback traffic never leaves the
+ * machine.
+ */
+const LOOPBACK_HOSTS: Record<string, true> = {
+  localhost: true,
+  '127.0.0.1': true,
+  '[::1]': true,
+  '::1': true,
+}
+
 /** Parse the shared comma-separated public signaling configuration. */
 export function getSignalingServers(configured = process.env.NEXT_PUBLIC_YJS_SIGNALING_SERVERS): string[] {
   const value = configured?.trim() ? configured : DEFAULT_SIGNALING_SERVERS.join(',')
@@ -162,8 +177,10 @@ export function getSignalingServers(configured = process.env.NEXT_PUBLIC_YJS_SIG
     if (!endpoint) continue
     try {
       const url = new URL(endpoint)
+      const secure = url.protocol === 'wss:'
+      const loopbackPlaintext = url.protocol === 'ws:' && LOOPBACK_HOSTS[url.hostname] === true
       if (
-        url.protocol === 'wss:' &&
+        (secure || loopbackPlaintext) &&
         url.hostname &&
         url.hostname !== 'y-webrtc-signaling.herokuapp.com'
       ) unique.add(url.toString().replace(/\/$/, ''))

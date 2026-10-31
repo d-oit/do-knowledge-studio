@@ -16,6 +16,9 @@ const messages = {
     'Match by meaning across languages instead of exact words.',
   /** Status shown while the multilingual embedding model is loading. */
   'search.semanticLoading': 'Loading semantic model…',
+  /** Status shown while changed documents are being embedded. */
+  'search.semanticIndexing': (completed: string, total: string) =>
+    `Indexing ${completed}/${total} documents…`,
   /** Status shown when the semantic model could not be loaded. */
   'search.semanticUnavailable':
     'Semantic search unavailable — showing keyword results instead.',

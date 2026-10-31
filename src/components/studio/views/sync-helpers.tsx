@@ -19,16 +19,31 @@ import { translate as t } from '@/lib/i18n/messages/sync'
 import { QRDisplay, QRScanner } from '../qr-pairing'
 import type { PeerInfo } from '@/lib/sync/discovery'
 import type { SyncLifecycleState } from '@/lib/sync/types'
+import { generateRoomId } from '@/lib/sync/invite'
 
 export type SyncStatus = SyncLifecycleState | 'disconnected' | 'connecting' | 'connected'
 type PairingMode = 'none' | 'display' | 'scan'
 
-/** Generates a short random room ID for peer-to-peer sync pairing. */
-export const generateRoomId = (): string => {
-  const bytes = new Uint8Array(6)
-  crypto.getRandomValues(bytes)
-  return Array.from(bytes, (b) => b.toString(36).padStart(2, '0')).join('').slice(0, 10)
-}
+export { generateRoomId }
+
+/** Protection limits that apply whether or not a password is set. */
+const SecurityDisclosure = ({ fingerprint }: { fingerprint?: string | null }) => (
+  <details className="rounded-md border border-border bg-muted/30 p-3 text-caption text-ink-mute">
+    <summary className="cursor-pointer font-semibold text-ink-soft">{t('sync.security.title')}</summary>
+    <ul className="mt-2 list-disc space-y-1 pl-4">
+      <li>{t('sync.security.protection')}</li>
+      <li>{t('sync.security.identity')}</li>
+      <li>{t('sync.security.invite')}</li>
+      <li>{t('sync.security.revocation')}</li>
+    </ul>
+    {fingerprint !== null && fingerprint !== undefined && (
+      <div className="mt-2 space-y-1">
+        <p className="font-mono text-label text-ink">{t('sync.security.fingerprint', fingerprint)}</p>
+        <p>{t('sync.security.fingerprintHelp')}</p>
+      </div>
+    )}
+  </details>
+)
 
 /** Visual badge that distinguishes room activity from connected peers. */
 const StatusBadge = ({ status, peerCount }: { status: SyncStatus; peerCount: number }) => {
@@ -367,6 +382,7 @@ const DisconnectedPanel = ({
           {ROOM_PASSWORD_STRINGS.help}
         </p>
       </div>
+      <SecurityDisclosure />
       <p className="text-caption text-ink-faint">
         Share the room ID or QR code with another device to start syncing. Both devices must be online simultaneously for initial connection.
       </p>
@@ -392,6 +408,7 @@ export const SyncStatusCard = ({
   onResync,
   onLeave,
   onQrScan,
+  roomKeyFingerprint,
 }: {
   status: SyncStatus
   roomId: string
@@ -409,6 +426,7 @@ export const SyncStatusCard = ({
   onResync: () => void
   onLeave: () => void
   onQrScan: (roomId: string) => void
+  roomKeyFingerprint?: string | null
 }) => {
   const [copied, setCopied] = useState(false)
   const reducedMotion = useReducedMotion()
@@ -429,7 +447,7 @@ export const SyncStatusCard = ({
         </div>
       </div>
 
-      {status === 'disconnected' || status === 'idle' || status === 'error' && !roomId ? (
+      {roomId === '' ? (
         <DisconnectedPanel
           inputRoomId={inputRoomId}
           onInputChange={onInputChange}
@@ -454,6 +472,7 @@ export const SyncStatusCard = ({
           />
           <QrPanel mode={pairingMode === 'display' ? 'display' : 'none'} roomId={roomId} onQrScan={onQrScan} reducedMotion={reducedMotion} />
           <SyncStatsGrid peerCount={peerCount} syncedEntities={syncedEntities} syncedClaims={syncedClaims} />
+          <SecurityDisclosure fingerprint={roomKeyFingerprint} />
           <PeerList peers={discoveredPeers} />
         </div>
       )}

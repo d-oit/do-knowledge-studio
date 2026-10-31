@@ -11,12 +11,16 @@ import { toast } from 'sonner'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { cn } from '@/lib/utils'
 import { SyncStatusCard, generateRoomId, type SyncStatus } from './sync-helpers'
+import { deriveRoomKeyFingerprint } from '@/lib/sync/security'
+import { parseInvite } from '@/lib/sync/invite'
 import {
   initSync,
   joinRoom,
   getProvider,
   getYjsEntities,
   getYjsClaims,
+  getCurrentRoomId,
+  reconnectRoom,
   leaveRoom,
   ensurePersistenceReady,
 } from '@/lib/sync'
@@ -228,11 +232,16 @@ export const SyncView = () => {
   const claims = useStudioStore((s) => s.claims)
   const { peers: presencePeers } = usePresence()
   const [status, setStatus] = useState<SyncStatus>('disconnected')
-  const [roomId, setRoomId] = useState('')
+  // A room survives navigation: the provider lives in the sync module, so the
+  // view must recover its id when remounted or the user loses Re-sync/Leave
+  // controls while the provider is still active.
+  const [roomId, setRoomId] = useState(() => getProvider() === null ? '' : (getCurrentRoomId() ?? ''))
   const [provider, setProvider] = useState(() => getProvider())
   const [inputRoomId, setInputRoomId] = useState('')
   // Held in component state only — never persisted, logged, or added to the event history.
   const [roomPassword, setRoomPassword] = useState('')
+  // Derived proof that both sides used the same password/room; not an identity.
+  const [roomKeyFingerprint, setRoomKeyFingerprint] = useState<string | null>(null)
   const [peerCount, setPeerCount] = useState(0)
   const [events, setEvents] = useState<SyncEvent[]>([])
   const [syncedEntities, setSyncedEntities] = useState(0)
@@ -275,12 +284,23 @@ export const SyncView = () => {
   }), [])
 
   const handleJoin = useCallback(() => {
-    const id = inputRoomId.trim() || generateRoomId()
+    const candidate = inputRoomId.trim()
+    const invite = candidate === '' ? null : parseInvite(candidate)
+    if (invite !== null && !invite.ok) {
+      toast.error(
+        invite.reason === 'expired'
+          ? t('sync.toast.inviteExpired')
+          : t('sync.toast.inviteMalformed'),
+      )
+      return
+    }
+    const id = invite === null ? generateRoomId() : invite.roomId
     setPendingConflicts([])
     // A blank password means "no encryption": omit the option entirely so the unencrypted
     // path stays identical instead of passing an empty-string secret to y-webrtc.
     const password = roomPassword.trim()
     setStatus('joining')
+    setRoomKeyFingerprint(null)
     addEvent('join', t('sync.event.joining', id))
 
     try {
@@ -290,6 +310,14 @@ export const SyncView = () => {
       setRoomId(id)
       setInputRoomId('')
       setRoomPassword('')
+      if (password.length > 0) {
+        void deriveRoomKeyFingerprint(id, password)
+          .then((fingerprint) => { setRoomKeyFingerprint(fingerprint) })
+          .catch((error: unknown) => {
+            // The error may originate from WebCrypto; never log the password.
+            console.error('Failed to derive the sync room fingerprint', error)
+          })
+      }
 
       const result = mergeIntoYjs(entities, claims)
       if (!commitMergedState(result.merged.entities, result.merged.claims)) {
@@ -333,11 +361,21 @@ export const SyncView = () => {
     setPeerCount(0)
     setDiscoveredPeers([])
     setRoomPassword('')
+    setRoomKeyFingerprint(null)
     addEvent('leave', t('sync.event.left'))
     toast.info(t('sync.toast.left'))
   }, [addEvent])
 
   const handleResync = useCallback(() => {
+    // Re-sync doubles as the explicit reconnect control: after a network loss
+    // the provider can be disconnected while the room view is still mounted.
+    // Recreate it so y-webrtc gets a fresh peer id instead of reusing a dead
+    // `webrtcConns` entry.
+    const activeProvider = getProvider()
+    if (activeProvider === null || !activeProvider.connected) {
+      const reconnected = reconnectRoom()
+      if (reconnected !== null) setProvider(reconnected)
+    }
     const result = mergeIntoYjs(entities, claims)
     if (!commitMergedState(result.merged.entities, result.merged.claims)) {
       addEvent('error', t('sync.event.conflictApplyFailed'))
@@ -374,9 +412,18 @@ export const SyncView = () => {
   }, [])
 
   const handleQrScan = useCallback((scannedRoomId: string) => {
-    setInputRoomId(scannedRoomId)
+    const invite = parseInvite(scannedRoomId)
+    if (!invite.ok) {
+      toast.error(
+        invite.reason === 'expired'
+          ? t('sync.toast.inviteExpired')
+          : t('sync.toast.inviteMalformed'),
+      )
+      return
+    }
+    setInputRoomId(invite.roomId)
     setPairingMode('none')
-    toast.info(t('sync.toast.scannedRoom', scannedRoomId))
+    toast.info(t('sync.toast.scannedRoom', invite.roomId))
   }, [])
 
   return (
@@ -400,6 +447,7 @@ export const SyncView = () => {
         onResync={handleResync}
         onLeave={handleLeave}
         onQrScan={handleQrScan}
+        roomKeyFingerprint={roomKeyFingerprint}
       />
 
       <ConflictSection

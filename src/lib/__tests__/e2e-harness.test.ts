@@ -34,17 +34,34 @@ const loadConfig = async (ci: boolean): Promise<PlaywrightConfig> => {
   return loaded.default
 }
 
+interface PlaywrightWebServer {
+  command: string
+  url?: string
+  port?: number
+  timeout?: number
+  reuseExistingServer?: boolean
+  stdout?: string
+  stderr?: string
+}
+
 interface PlaywrightConfig {
   reporter: unknown
-  webServer: {
-    command: string
-    url?: string
-    port?: number
-    timeout?: number
-    reuseExistingServer?: boolean
-    stdout?: string
-    stderr?: string
-  }
+  webServer: PlaywrightWebServer | PlaywrightWebServer[]
+}
+
+/**
+ * The app server entry.
+ *
+ * The config now starts two services (local y-webrtc signaling + the Next app),
+ * so the readiness contract belongs to the entry that serves the app rather than
+ * to `webServer` as a whole. An array with no app URL fails the lookup instead of
+ * silently reading the signaling server.
+ */
+const appWebServer = (config: PlaywrightConfig): PlaywrightWebServer => {
+  const servers = Array.isArray(config.webServer) ? config.webServer : [config.webServer]
+  const app = servers.find((server) => server.url === 'http://localhost:3000')
+  if (app === undefined) throw new Error('Playwright config has no app web server')
+  return app
 }
 
 const loadWorkflow = () => {
@@ -65,9 +82,10 @@ describe('Playwright web server readiness', () => {
       // `port` is satisfied the moment `next dev` binds, while it is still
       // compiling — which is how 149 tests started against a server that could not
       // answer. `url` waits for an actual HTTP response.
-      expect(config.webServer.url).toBe('http://localhost:3000')
-      expect(config.webServer.port).toBeUndefined()
-      expect(config.webServer.timeout).toBeGreaterThan(60000)
+      const server = appWebServer(config)
+      expect(server.url).toBe('http://localhost:3000')
+      expect(server.port).toBeUndefined()
+      expect(server.timeout).toBeGreaterThan(60000)
     },
     CONFIG_IMPORT_TIMEOUT_MS,
   )
@@ -79,8 +97,9 @@ describe('Playwright web server readiness', () => {
 
       // Without this the server is invisible in CI, so a stall cannot be told apart
       // from a broken test.
-      expect(config.webServer.stdout).toBe('pipe')
-      expect(config.webServer.stderr).toBe('pipe')
+      const server = appWebServer(config)
+      expect(server.stdout).toBe('pipe')
+      expect(server.stderr).toBe('pipe')
     },
     CONFIG_IMPORT_TIMEOUT_MS,
   )
@@ -89,7 +108,19 @@ describe('Playwright web server readiness', () => {
     'keeps the local server reuse so a running dev server is not restarted',
     async () => {
       const config = await loadConfig(false)
-      expect(config.webServer.reuseExistingServer).toBe(true)
+      expect(appWebServer(config).reuseExistingServer).toBe(true)
+    },
+    CONFIG_IMPORT_TIMEOUT_MS,
+  )
+
+  it(
+    'starts a loopback signaling server for independent-peer specs',
+    async () => {
+      const config = await loadConfig(false)
+      const servers = Array.isArray(config.webServer) ? config.webServer : [config.webServer]
+      const signaling = servers.find((server) => server.url === 'http://127.0.0.1:4444')
+      expect(signaling?.command).toContain('y-webrtc')
+      expect(signaling?.reuseExistingServer).toBe(true)
     },
     CONFIG_IMPORT_TIMEOUT_MS,
   )

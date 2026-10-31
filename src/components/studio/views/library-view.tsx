@@ -156,7 +156,7 @@ export const LibraryView = () => {
   const setSemanticMode = useStudioStore((s) => s.setSemanticSearchEnabled)
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const filteredEntities = useFilteredEntities()
-  const { semanticOutcome, semanticBusy } = useSemanticSearch(
+  const { semanticOutcome, semanticBusy, semanticProgress } = useSemanticSearch(
     semanticMode,
     searchQuery,
     allEntities,
@@ -351,6 +351,7 @@ export const LibraryView = () => {
         active={semanticActive}
         busy={semanticBusy}
         outcome={semanticOutcome}
+        progress={semanticProgress}
       />
 
       {/* Advanced filters disclosure */}

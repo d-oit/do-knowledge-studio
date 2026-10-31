@@ -36,6 +36,8 @@ vi.mock('lucide-react', () => {
     FileCode: I,
     FileArchive: I,
     AlertTriangle: I,
+    ShieldCheck: I,
+    Loader2: I,
   }
 })
 

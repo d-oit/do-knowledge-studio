@@ -28,6 +28,7 @@ run_check() {
 }
 
 run_check "Lint" pnpm run lint
+run_check "Docs consistency" pnpm run docs:check
 run_check "Typecheck" pnpm run typecheck
 run_check "Tests" pnpm run test
 

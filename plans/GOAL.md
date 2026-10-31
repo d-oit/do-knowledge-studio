@@ -3,7 +3,7 @@
 Build a local-first, structured knowledge engine that empowers users to capture, connect, and synthesize information without relying on cloud-based LLMs.
 
 ## Core Values
-- **Local Sovereignty**: the core product is local-first — user data is stored in Zustand + localStorage and never leaves the device **unless the user opts into a remote feature**. Selecting a remote AI provider (OpenRouter), enabling web research, or joining a P2P sync room does transmit data off-device. "Never leaves the device" is therefore not an unconditional guarantee; it is the default posture for core functionality.
+- **Local Sovereignty**: the core product is local-first — the canonical corpus is stored in Zustand + IndexedDB, with metadata/recovery envelopes in localStorage, and never leaves the device **unless the user opts into a remote feature**. Selecting a remote AI provider (OpenRouter), enabling web research, or joining a P2P sync room does transmit data off-device. Local Ollama and in-browser models stay local. "Never leaves the device" is therefore not an unconditional guarantee; it is the default posture for core functionality.
 - **Structural Depth**: Moving beyond flat text to Entities, Claims, and relational Links.
 - **Visual Intelligence**: Multiple perspectives on the same data (Graph, Mind Map, Chat).
 - **Offline First**: Zero latency, zero dependency on external APIs for core functionality.
@@ -11,11 +11,11 @@ Build a local-first, structured knowledge engine that empowers users to capture,
 
 ## Current Architecture (refreshed 2026-10-05)
 - Next.js 16 / React 19 / Tailwind 4 / shadcn / Zustand
-- Persistence: Zustand + localStorage (validated with Zod schemas), fail-closed on a refused hydration (ADR 028, Plan 159)
+- Persistence: Zustand + IndexedDB canonical corpus, localStorage metadata/recovery envelope (validated with Zod schemas), fail-closed on a refused hydration (ADR 028, Plan 159, ADR 046)
 - Search: **BM25 keyword ranking plus a real semantic mode** (`src/lib/search/vector-store.ts`) that falls back to lexical on embedding failure
 - AI: OpenRouter and Ollama providers via AI Harness, plus a **CPU-first in-browser local provider** (transformers.js/ONNX WASM, WebGPU opt-in — ADR 040, Plan 155)
 - Sync: Yjs/WebRTC infrastructure (opt-in, bidirectional sync bridge per ADR 027)
-- Export: JSON, Markdown, HTML, PDF, DOCX, encrypted self-contained HTML reader, and the **`okf` bundle format** (ADR 031)
+- Export: JSON, Markdown, HTML, PDF, DOCX, encrypted self-contained HTML reader, the **`okf` bundle format** (ADR 031), and a **verified `.dksb` backup** with checksums and optional encryption (ADR 047)
 
 ## 2026 Goals (from GitHub Issue Analysis)
 1. **Zero Security Vulnerabilities** — XSS fixes in export paths, session-only API keys ✓

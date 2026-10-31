@@ -59,11 +59,13 @@ vi.mock('@/lib/sync', () => ({
   initSync: vi.fn(() => Promise.resolve()),
   ensurePersistenceReady: vi.fn(() => Promise.resolve()),
   isPersistenceSynced: vi.fn(() => true),
+  reconnectRoom: vi.fn(() => mockProviderForJoin),
   joinRoom: vi.fn(() => {
     mockProviderAtMount = mockProviderForJoin
     return mockProviderForJoin
   }),
   getProvider: vi.fn(() => mockProviderAtMount),
+  getCurrentRoomId: vi.fn(() => null),
   getYjsEntities: vi.fn(() => [{ id: 'yjs-ent' }]),
   getYjsClaims: vi.fn(() => [{ id: 'yjs-claim' }]),
   leaveRoom: vi.fn(() => { mockProviderAtMount = null }),

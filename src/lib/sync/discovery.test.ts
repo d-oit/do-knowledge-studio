@@ -263,4 +263,14 @@ describe('SIGNALING_SERVERS', () => {
       ' wss://signal.example/,wss://signal.example,https://invalid.example,wss://y-webrtc-signaling.herokuapp.com,wss://second.example',
     )).toEqual(['wss://signal.example', 'wss://second.example'])
   })
+
+  it('allows plaintext signaling only on loopback hosts', () => {
+    expect(discovery.getSignalingServers(
+      'ws://127.0.0.1:4444,ws://localhost:4445,ws://[::1]:4446,ws://signal.example:4444',
+    )).toEqual([
+      'ws://127.0.0.1:4444',
+      'ws://localhost:4445',
+      'ws://[::1]:4446',
+    ])
+  })
 })

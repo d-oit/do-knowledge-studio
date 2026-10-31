@@ -1,5 +1,10 @@
 import type { Page } from '@playwright/test';
 import { CURRENT_SCHEMA_VERSION, STUDIO_STORAGE_KEY } from '../../src/lib/studio/hydration';
+import {
+  CANONICAL_DB_NAME,
+  CANONICAL_OBJECT_STORE,
+  CANONICAL_RECORD_KEY,
+} from '../../src/lib/studio/canonical-storage';
 import { validatePersistedState, type ValidatedPersistedEnvelope } from '../../src/lib/studio/schema';
 import { buildSeedState } from '../../src/lib/studio/seed-state';
 
@@ -67,3 +72,58 @@ export const seedStore = async (
     { storageKey: STUDIO_STORAGE_KEY, serialized: JSON.stringify(envelope) },
   );
 };
+
+/**
+ * Read the persisted studio state after hydration.
+ *
+ * Since Issue #1036 the canonical corpus lives in IndexedDB. The legacy
+ * localStorage envelope is still read as a fallback because a refused
+ * future-version fixture is deliberately never migrated.
+ */
+export const readStoredState = async (
+  page: Page,
+): Promise<PersistedStudioState | null> =>
+  page.evaluate(
+    async ({ storageKey, dbName, objectStore, recordKey }) => {
+      const fromIdb = async (): Promise<unknown> => {
+        if (typeof indexedDB === 'undefined') return null
+        const db = await new Promise<IDBDatabase | null>((resolve) => {
+          const request = indexedDB.open(dbName, 1)
+          request.onupgradeneeded = () => {
+            const database = request.result
+            if (!database.objectStoreNames.contains(objectStore)) {
+              database.createObjectStore(objectStore)
+            }
+          }
+          request.onsuccess = () => { resolve(request.result) }
+          request.onerror = () => { resolve(null) }
+          request.onblocked = () => { resolve(null) }
+        })
+        if (db === null) return null
+        const value = await new Promise<unknown>((resolve) => {
+          const transaction = db.transaction(objectStore, 'readonly')
+          const request = transaction.objectStore(objectStore).get(recordKey)
+          request.onsuccess = () => { resolve(request.result) }
+          request.onerror = () => { resolve(null) }
+        })
+        db.close()
+        return value
+      }
+      const idbValue = (await fromIdb()) as { state?: unknown } | null
+      if (idbValue?.state) return idbValue.state
+      const raw = localStorage.getItem(storageKey)
+      if (raw === null) return null
+      try {
+        const parsed = JSON.parse(raw) as { state?: unknown }
+        return parsed.state ?? null
+      } catch {
+        return null
+      }
+    },
+    {
+      storageKey: STUDIO_STORAGE_KEY,
+      dbName: CANONICAL_DB_NAME,
+      objectStore: CANONICAL_OBJECT_STORE,
+      recordKey: CANONICAL_RECORD_KEY,
+    },
+  ) as Promise<PersistedStudioState | null>;

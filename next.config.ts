@@ -6,6 +6,9 @@ import path from "path";
 // loopback addresses, or `.local` hostnames (see src/lib/ai/providers.ts). Without
 // these sources the default `http://localhost:11434` is rejected by CSP before the
 // request ever reaches Ollama, silently breaking the built-in local provider.
+// Plaintext `ws://` is permitted only for loopback: the independent-peer E2E
+// suite runs the y-webrtc signaling server there, while production signaling
+// remains `wss://`.
 const cspHeader = `
   default-src 'self';
   script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval';
@@ -17,11 +20,18 @@ const cspHeader = `
   form-action 'self';
   frame-ancestors 'none';
   worker-src 'self' blob:;
-  connect-src 'self' https: wss: http://localhost:* http://127.0.0.1:* http://[::1]:* http://*.local:*;
+  connect-src 'self' https: wss: ws://localhost:* ws://127.0.0.1:* http://localhost:* http://127.0.0.1:* http://[::1]:* http://*.local:*;
 `.replace(/\s{2,}/g, ' ').trim();
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // The independent-peer E2E suite serves the same dev app on 127.0.0.1 as
+  // well as localhost so the two contexts have distinct origins (and therefore
+  // distinct storage/BroadcastChannel partitions). Next blocks HMR/dev
+  // resources from unlisted origins, which prevents hydration on the second
+  // origin. This only widens dev-server origin checks; production builds are
+  // unaffected, and the address is loopback.
+  allowedDevOrigins: ["127.0.0.1"],
   // P2-5: do not advertise the framework. This config already curates CSP,
   // nosniff, and frame-ancestors; the default x-powered-by header was the one
   // unhardened piece of the response.
