@@ -3,42 +3,21 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, test, type Page } from '@playwright/test'
 import { navClick, waitForAppReady } from './helpers/navigation'
+import { readStoredState } from './helpers/store'
 
-const STORE_KEY = 'do-knowledge-studio-store'
 const fixtureDirs: string[] = []
 
-
-const readPersistedCanvas = async (page: Page) =>
-  page.evaluate((key) => {
-    const raw = localStorage.getItem(key)
-    if (raw === null) return null
-    const parsed: unknown = JSON.parse(raw)
-    if (typeof parsed !== 'object' || parsed === null || !('state' in parsed)) return null
-    const state: unknown = parsed.state
-    if (typeof state !== 'object' || state === null) return null
-    const graph = 'graph' in state ? state.graph : undefined
-    const mindMap = 'mindMap' in state ? state.mindMap : undefined
-    const ids = (value: unknown): string[] =>
-      Array.isArray(value)
-        ? value.flatMap((entry: unknown): string[] =>
-            typeof entry === 'object' && entry !== null && 'id' in entry && typeof entry.id === 'string'
-              ? [entry.id]
-              : [],
-          )
-        : []
-    return {
-      entityIds: 'entities' in state ? ids(state.entities) : [],
-      graphNodeIds:
-        typeof graph === 'object' && graph !== null && 'nodes' in graph ? ids(graph.nodes) : [],
-      graphEdgeCount:
-        typeof graph === 'object' && graph !== null && 'edges' in graph && Array.isArray(graph.edges)
-          ? graph.edges.length
-          : 0,
-      mindMapNodeIds:
-        typeof mindMap === 'object' && mindMap !== null && 'nodes' in mindMap ? ids(mindMap.nodes) : [],
-      links: 'links' in state && Array.isArray(state.links) ? state.links.length : 0,
-    }
-  }, STORE_KEY)
+const readPersistedCanvas = async (page: Page) => {
+  const state = await readStoredState(page)
+  if (state === null) return null
+  return {
+    entityIds: state.entities.map((entity) => entity.id),
+    graphNodeIds: state.graph?.nodes.map((node) => node.id) ?? [],
+    graphEdgeCount: state.graph?.edges.length ?? 0,
+    mindMapNodeIds: state.mindMap?.nodes.map((node) => node.id) ?? [],
+    links: state.links?.length ?? 0,
+  }
+}
 
 const writeFixture = async (name: string): Promise<string> => {
   const dir = await mkdtemp(join(tmpdir(), 'dks-canvas-'))
@@ -86,7 +65,7 @@ const writeFixture = async (name: string): Promise<string> => {
 
 const importJson = async (page: Page, fixture: string): Promise<void> => {
   await navClick(page, /^export/i)
-  await page.locator('input[type=file]').setInputFiles(fixture)
+  await page.locator('input[type=file][accept=".json,application/json"]').setInputFiles(fixture)
   await page.getByRole('button', { name: 'Confirm import', exact: true }).click()
 }
 

@@ -406,6 +406,17 @@ if [ ${#DETECTED_LANGUAGES[@]} -eq 0 ]; then
 fi
 echo ""
 
+# --- Public documentation consistency (Issue #1042) ---
+# Runs even for docs-only changes: stale script names, view counts, storage
+# claims, and export inventories are exactly the drift this check exists for.
+if [ -f scripts/check-doc-consistency.mjs ] && [ -f package.json ]; then
+    echo -e "${BLUE}Checking public documentation consistency...${NC}"
+    if ! node scripts/check-doc-consistency.mjs; then
+        FAILED=1
+    fi
+    echo ""
+fi
+
 # --- Run language-specific checks ---
  # ShellCheck checks this script without following sourced functions; keep the
  # cross-file configuration inputs visible here as well.

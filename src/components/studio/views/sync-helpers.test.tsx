@@ -34,10 +34,10 @@ const defaultProps = {
 }
 
 describe('generateRoomId', () => {
-  it('generates a 10-character alphanumeric id', () => {
+  it('generates a 128-bit URL-safe id', () => {
     const id = generateRoomId()
-    expect(id).toHaveLength(10)
-    expect(id).toMatch(/^[0-9a-z]{10}$/)
+    expect(id).toHaveLength(22)
+    expect(id).toMatch(/^[A-Za-z0-9_-]{22}$/)
   })
 
   it('generates unique ids across calls', () => {
@@ -50,6 +50,9 @@ describe('SyncStatusCard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
+
+  /** No active room: the disconnected panel owns join/QR controls. */
+  const disconnectedProps = { ...defaultProps, roomId: '' }
 
   it('distinguishes an active room from peer connections', () => {
     const activeRoomProps = { ...defaultProps, status: 'connected' as const, peerCount: 0 }
@@ -76,14 +79,14 @@ describe('SyncStatusCard', () => {
   })
 
   it('renders Disconnected status with manual join controls', () => {
-    render(<SyncStatusCard {...defaultProps} />)
+    render(<SyncStatusCard {...disconnectedProps} />)
     expect(screen.getByText('Disconnected')).toBeInTheDocument()
     expect(screen.getByLabelText('Room ID')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Join' })).toBeInTheDocument()
   })
 
   it('calls onJoin when entering text and pressing Enter', () => {
-    render(<SyncStatusCard {...defaultProps} />)
+    render(<SyncStatusCard {...disconnectedProps} />)
     const input = screen.getByLabelText('Room ID')
     fireEvent.change(input, { target: { value: 'abc123' } })
     expect(defaultProps.onInputChange).toHaveBeenCalledWith('abc123')
@@ -92,18 +95,18 @@ describe('SyncStatusCard', () => {
   })
 
   it('renders the room password input masked and labelled', () => {
-    render(<SyncStatusCard {...defaultProps} />)
+    render(<SyncStatusCard {...disconnectedProps} />)
     expect(screen.getByLabelText('Room password')).toHaveAttribute('type', 'password')
   })
 
   it('forwards room password changes', () => {
-    render(<SyncStatusCard {...defaultProps} />)
+    render(<SyncStatusCard {...disconnectedProps} />)
     fireEvent.change(screen.getByLabelText('Room password'), { target: { value: 's3cret' } })
     expect(defaultProps.onPasswordChange).toHaveBeenCalledWith('s3cret')
   })
 
   it('joins on Enter from the password field and links its help text', () => {
-    render(<SyncStatusCard {...defaultProps} />)
+    render(<SyncStatusCard {...disconnectedProps} />)
     const password = screen.getByLabelText('Room password')
     expect(password).toHaveAttribute('aria-describedby', 'sync-room-password-help')
     fireEvent.keyDown(password, { key: 'Enter' })
@@ -111,24 +114,24 @@ describe('SyncStatusCard', () => {
   })
 
   it('toggles QR display mode', () => {
-    render(<SyncStatusCard {...defaultProps} />)
+    render(<SyncStatusCard {...disconnectedProps} />)
     fireEvent.click(screen.getByRole('button', { name: 'Show QR Code' }))
     expect(defaultProps.onPairingModeChange).toHaveBeenCalledWith('display')
   })
 
   it('toggles QR scan mode', () => {
-    render(<SyncStatusCard {...defaultProps} />)
+    render(<SyncStatusCard {...disconnectedProps} />)
     fireEvent.click(screen.getByRole('button', { name: 'Scan QR Code' }))
     expect(defaultProps.onPairingModeChange).toHaveBeenCalledWith('scan')
   })
 
   it('shows QR display when pairingMode is display', () => {
-    render(<SyncStatusCard {...defaultProps} pairingMode="display" />)
+    render(<SyncStatusCard {...disconnectedProps} pairingMode="display" />)
     expect(screen.getByTestId('qr-display')).toBeInTheDocument()
   })
 
   it('shows QR scanner when pairingMode is scan and forwards scanned room id', () => {
-    render(<SyncStatusCard {...defaultProps} pairingMode="scan" />)
+    render(<SyncStatusCard {...disconnectedProps} pairingMode="scan" />)
     fireEvent.click(screen.getByTestId('qr-scanner'))
     expect(defaultProps.onQrScan).toHaveBeenCalledWith('scanned-room')
   })

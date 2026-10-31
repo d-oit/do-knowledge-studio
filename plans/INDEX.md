@@ -1,6 +1,6 @@
 # Plans Index
 
-**Updated**: 2026-10-19
+**Updated**: 2026-10-31
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
 Plan records are filed as `plans/NNN-slug.md`, where `NNN` is the plan number used
@@ -8,6 +8,12 @@ below; accepted decision records are in `plans/ADRs/NNN-slug.md`. Work still in
 flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
+
+### Plan 184 — Open issue remediation (2026-10-31)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| 184 | Implement all open issues (#1035, #1036, #1037, #1040, #1041, #1042) in one PR | In review | Storage moves to IndexedDB with atomic legacy migration (186), semantic indexing becomes incremental and cache-backed (187), sync gets a threat model/fingerprint/invite contract (185), a verifiable `.dksb` backup and previewed restore lands (188), independent-origin peer acceptance is covered (189), and public docs are reconciled with a source-derived consistency check (190). ADRs 045–047. |
 
 ### Plan 183 — Split oversized automation scripts and scope Markdown fixes (2026-10-22)
 

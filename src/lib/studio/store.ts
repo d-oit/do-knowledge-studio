@@ -11,7 +11,7 @@
  */
 import { useDeferredValue, useMemo } from 'react'
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
+import { persist } from 'zustand/middleware'
 import { search } from '@/lib/search/retrieval'
 import type { Entity, Claim } from './types'
 import {
@@ -22,11 +22,12 @@ import {
   partializePersistedState,
 } from './hydration'
 import { quarantinePayload } from './hydration-quarantine'
+import { getHydrationRefusal, recordHydrationRefusal } from './hydration-guard'
 import {
-  getGuardedStorage,
-  getHydrationRefusal,
-  recordHydrationRefusal,
-} from './hydration-guard'
+  canonicalStudioStorage,
+  getCanonicalRawEnvelope,
+  hasCanonicalStoredEnvelope,
+} from './canonical-storage'
 import { buildSeedState } from './seed-state'
 import type { StudioState } from './store-types'
 import { createEntitiesSlice } from './slices/entities-slice'
@@ -65,6 +66,11 @@ const UNREADABLE_ENVELOPE_REASON = 'the stored library could not be read from br
  * original bytes have to be fetched separately.
  */
 const readRawEnvelope = (): string | null => {
+  const canonical = getCanonicalRawEnvelope()
+  if (canonical !== null) {
+    return canonical
+  }
+  if (typeof localStorage === 'undefined') return null
   try {
     return localStorage.getItem(STUDIO_STORAGE_KEY)
   } catch (error) {
@@ -84,6 +90,8 @@ const readRawEnvelope = (): string | null => {
  * library, and an unreadable store is exactly the case that must fail closed.
  */
 const hasStoredEnvelope = (): boolean => {
+  if (hasCanonicalStoredEnvelope()) return true
+  if (typeof localStorage === 'undefined') return false
   try {
     return localStorage.getItem(STUDIO_STORAGE_KEY) !== null
   } catch {
@@ -123,7 +131,7 @@ export const useStudioStore = create<StudioState>()(
     {
       name: STUDIO_STORAGE_KEY,
       version: CURRENT_SCHEMA_VERSION,
-      storage: createJSONStorage(getGuardedStorage),
+      storage: canonicalStudioStorage,
       // Hydration pipeline lives in ./hydration — validation runs on EVERY
       // load (not just version mismatches), corrupt payloads are discarded
       // in favor of current state, and undo history is rebased onto the

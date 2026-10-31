@@ -15,6 +15,8 @@ export default defineConfig({
       'src/lib/studio/claim-parser.bench.test.ts',
       'src/lib/studio/triz-data.bench.test.ts',
       'src/lib/studio/graph-layout.bench.test.ts',
+      'src/lib/studio/canonical-storage.bench.test.ts',
+      'src/lib/search/vector-store.bench.test.ts',
     ],
     pool: 'threads',
     maxWorkers: '50%',

@@ -25,6 +25,18 @@ const isProductionRun = process.env.PLAYWRIGHT_PRODUCTION === '1';
  */
 const PRODUCTION_ONLY_SPECS = ['**/offline-views.spec.ts'];
 
+/**
+ * Local y-webrtc signaling service for the independent-peer sync specs.
+ *
+ * The public signaling endpoints are shared infrastructure and make the suite
+ * depend on network reachability and unrelated room traffic. The installed
+ * y-webrtc package ships its own signaling server; serving it on loopback keeps
+ * peer discovery deterministic. `getSignalingServers` deliberately accepts
+ * plaintext `ws://` only for loopback hosts.
+ */
+const SIGNALING_PORT = 4444;
+const SIGNALING_URL = `ws://127.0.0.1:${SIGNALING_PORT}`;
+
 export default defineConfig({
   testDir: './e2e',
   testIgnore: isProductionRun ? [] : PRODUCTION_ONLY_SPECS,
@@ -62,21 +74,39 @@ export default defineConfig({
       testIgnore: PRODUCTION_ONLY_SPECS,
     },
   ],
-  webServer: {
-    command: isProductionRun ? 'pnpm run start' : 'pnpm run dev',
-    // Readiness is a real HTTP response, not a bound port: `port` is satisfied as
-    // soon as `next dev` binds, while it is still compiling. On 2026-09-24 a PR run
-    // started 149 tests against a server that could not serve yet and 140 failed on
-    // their readiness waits (plans/153). `url` also turns a server that never
-    // becomes healthy into one clear timeout instead of a wall of test failures.
-    url: 'http://localhost:3000',
-    timeout: 120000,
-    // Production runs must never adopt a stray server on the port: a dev server
-    // there serves different chunks than the ones the precache manifest lists.
-    reuseExistingServer: !isProductionRun && !process.env.CI,
-    // Pipe the dev server's own output into the job log: with the default the
-    // server is invisible, which is what made that failure undiagnosable.
-    stdout: 'pipe',
-    stderr: 'pipe',
-  },
+  webServer: [
+    {
+      command: 'node node_modules/y-webrtc/bin/server.js',
+      url: `http://127.0.0.1:${SIGNALING_PORT}`,
+      env: { PORT: String(SIGNALING_PORT) },
+      timeout: 15000,
+      reuseExistingServer: !process.env.CI,
+      stdout: 'pipe',
+      stderr: 'pipe',
+    },
+    {
+      command: isProductionRun ? 'pnpm run start' : 'pnpm run dev',
+      // Readiness is a real HTTP response, not a bound port: `port` is satisfied as
+      // soon as `next dev` binds, while it is still compiling. On 2026-09-24 a PR run
+      // started 149 tests against a server that could not serve yet and 140 failed on
+      // their readiness waits (plans/153). `url` also turns a server that never
+      // becomes healthy into one clear timeout instead of a wall of test failures.
+      url: 'http://localhost:3000',
+      timeout: 120000,
+      // Production runs must never adopt a stray server on the port: a dev server
+      // there serves different chunks than the ones the precache manifest lists.
+      reuseExistingServer: !isProductionRun && !process.env.CI,
+      // Point the browser bundle at the local signaling service. Development
+      // reads this at server start; the production offline suite does not join
+      // a sync room, so its build-time fallback is irrelevant there.
+      env: {
+        ...process.env,
+        NEXT_PUBLIC_YJS_SIGNALING_SERVERS: SIGNALING_URL,
+      },
+      // Pipe the dev server's own output into the job log: with the default the
+      // server is invisible, which is what made that failure undiagnosable.
+      stdout: 'pipe',
+      stderr: 'pipe',
+    },
+  ],
 });

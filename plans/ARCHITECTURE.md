@@ -8,12 +8,14 @@
 | Layer | Technology |
 |-------|-----------|
 | Framework | Next.js 16 / React 19 / Tailwind 4 / shadcn |
-| State & Persistence | Zustand 5 + localStorage (Zod-validated) |
+| State & Persistence | Zustand 5 + IndexedDB canonical corpus, localStorage metadata/recovery envelope (Zod-validated) |
 | Sync (opt-in) | Yjs + y-webrtc (WebRTC P2P) |
 | Deployment | Vercel (Node >= 22, pnpm) — `package.json` `engines.node: ">=22.0.0"` |
 
 No SQLite, no OPFS, no required server. ADR 018 establishes the baseline;
-ADR 028 defines validated persistence boundaries.
+ADR 028 defines validated persistence boundaries; ADR 046 moves the canonical
+corpus to IndexedDB. Historical Vite/SQLite-era records remain in `plans/PHASES.md`
+and are labelled historical, not current architecture.
 
 ---
 
@@ -43,22 +45,34 @@ from the canonical persistence blob (ADR 023).
 
 ## Persistence & Validation
 
-- Single namespaced localStorage blob (`do-knowledge-studio-store`).
+- Canonical corpus: one validated Zustand envelope in IndexedDB
+  (`dks-canonical`), written through an async adapter and structured clone.
+- Small localStorage metadata envelope (`do-knowledge-studio-store-meta`):
+  schema version, record counts, update timestamp. Recovery snapshots and
+  quarantine copies are separate localStorage records.
+- Legacy migration: read the old `do-knowledge-studio-store` envelope, write it
+  to IndexedDB, read it back, verify equality, and only then remove the live
+  legacy key. Any failure leaves the legacy copy untouched and uses it for the
+  session. Future-version envelopes are never migrated eagerly; the store's
+  refusal path decides first.
 - Hydration: read envelope -> validate version -> apply migrations ->
-  validate current schema -> atomic commit (ADR 028).
-- All external boundaries (localStorage, import, sync, AI responses) are
-  Zod-parsed before mutation.
+  validate current schema -> atomic commit (ADR 028). Refused or unreadable
+  payloads block writes for the page session, stay on disk, and are surfaced.
+- All external boundaries (IndexedDB, legacy localStorage, import, backup,
+  sync, AI responses) are Zod-parsed before mutation.
 - Imports are atomic and fail-closed: complete valid candidate or structured
   error list. No silent record dropping.
-- Pre-import snapshot enables atomic replacement with undo. **Known gap**: the
-  snapshot's `restoreFromRecovery` has no production UI caller and an oversized
-  or refused write is not reported ([Plan 162](162-roadmap-progress-and-next-work-2026-10-05.md) #1).
-- **Fail-closed hydration** (ADR 028, Plan 159): if rehydration is refused, a
-  page-scoped refusal status stops the persist writer, cross-tab traffic, and
-  the Yjs/Sync gates for the rest of the page session; the refused payload is
-  preserved under a key the store never writes and surfaced as a dismissible
-  banner. The refusal status — not the presence of a quarantine record — is the
-  single source of truth for "this workspace is temporary".
+- Pre-import snapshots enable atomic replacement with undo. Recovery snapshots
+  are localStorage-backed, expire after 24 hours, and are not a durable backup.
+- **Fail-closed hydration** (ADR 028, Plan 159): a page-scoped refusal status
+  stops the persist writer, cross-tab traffic, and the Yjs/Sync gates for the
+  rest of the page session; the refused payload is preserved under a key the
+  store never writes and surfaced as a dismissible banner. The refusal status —
+  not the presence of a quarantine record — is the single source of truth for
+  "this workspace is temporary".
+- **Backup** (Issue #1040): a `.dksb` archive with a versioned manifest,
+  per-file SHA-256 hashes, optional PBKDF2/AES-256-GCM encryption, preview
+  validation, and replace/merge restore through the atomic import action.
 
 ---
 
@@ -94,6 +108,13 @@ Yjs is a replication transport.
 - **Conflicts**: manual resolution produces validated canonical transactions.
   Dismissal does not mutate data.
 - **Presence + cursors**: Yjs awareness protocol.
+- **Encryption** (ADR 045): y-webrtc derives an AES-256-GCM key from
+  PBKDF2-HMAC-SHA256(password, room name, 100000 iterations) and encrypts
+  signaling payloads and BroadcastChannel messages. WebRTC data channels use
+  DTLS; the password does not add a second application-layer cipher there.
+  Signaling still sees the room topic, timing, sizes, and peer IPs. A password
+  is room membership, **not** peer identity. Invitations carry only the room id;
+  rotate access by leaving and creating a new random room id.
 
 ---
 
@@ -104,10 +125,17 @@ Client-side retrieval with two modes, both fully offline-capable
 
 - **Lexical** — BM25/TF-IDF ranking over entities and claims.
 - **Semantic** — embedding-backed vector store (`src/lib/search/vector-store.ts`)
-  with batched embedding, a partial index cleared on failure, and an explicit
-  fallback to the lexical path when the embedder is unavailable.
+  with bounded cooperative embedding batches, progress/cancellation, and an
+  explicit fallback to the lexical path when the embedder is unavailable or the
+  corpus exceeds the 64 MiB index budget.
 - Indexes entity names, descriptions, content, tags, claim statements.
-- Rebuilt from store on data change. Returns scored results with snippets.
+- Incremental: a document fingerprint identifies added/changed/deleted records;
+  unchanged vectors are reused, deleted ids disappear immediately, and changed
+  vectors commit only after every batch succeeds. A cancelled or failed build
+  keeps the previous valid index.
+- Derived vectors persist in IndexedDB (`dks-semantic-cache`) only with the
+  model id, dtype/device/preprocessing fingerprint, dimensions, and SHA-256
+  corpus digest; a mismatch deletes and rebuilds.
 - Powers Library search and Chat citations. Fully offline.
 
 ---
@@ -122,9 +150,10 @@ Client-side retrieval with two modes, both fully offline-capable
 | PDF | jspdf | Client-side generation |
 | DOCX | docx | **Static import** inside the lazy Export subtree — `use-export-handlers.ts:11` → `export-documents.ts:2-11`. The Export *view* is lazy (`app-shell.tsx:34`); the DOCX/PDF builders it pulls in are not ([Plan 162](162-roadmap-progress-and-next-work-2026-10-05.md) #4) |
 | Encrypted | WebCrypto AES-256-GCM | PBKDF2 derivation, self-contained HTML reader |
-| OKF | Custom | Knowledge-bundle format, `ExportFormatId` member (`export-types.ts:12`, ADR 031) |
+| OKF | Custom | Knowledge-bundle format, `ExportFormatId` member (`export-types.ts`, ADR 031) |
+| Verified backup | WebCrypto + SHA-256 | `.dksb` JSON archive: versioned manifest, per-file checksums, optional PBKDF2/AES-256-GCM passphrase, previewed replace/merge restore (ADR 047) |
 
-ADR 010 (schema), ADR 021 (encryption), ADR 012 (PDF).
+ADR 010 (schema), ADR 021 (encryption), ADR 012 (PDF), ADR 047 (backup).
 
 ---
 
@@ -146,14 +175,16 @@ Markdown-source-first with progressive enhancement (ADR 020).
 
 | View | Purpose |
 |------|---------|
+| Home | Overview dashboard, metrics, recent activity |
 | Editor | Entity/claim authoring |
+| Library | Entity list, filtering, search |
 | Graph | Interactive knowledge graph |
 | Mind Map | Hierarchical organization |
+| Timeline | Chronological entity/claim view |
 | Chat | Retrieval-augmented synthesis |
-| TRIZ | Contradiction analysis |
 | AI Harness | Provider config + augmented chat |
-| Library | Entity list, filtering, search |
-| Export | Multi-format export and import |
+| TRIZ | Contradiction analysis |
+| Export | Multi-format export, verified backup, import |
 | Sync | P2P pairing, presence, conflicts |
 
 ---
@@ -188,3 +219,6 @@ CI runs on push/PR via GitHub Actions.
 | 027 | Canonical State and Sync Bridge | Accepted |
 | 028 | Validated Local Data Boundaries | Accepted |
 | 029 | Manifest-Driven Agent Harness | Accepted |
+| 045 | Sync Threat Model and Room Membership | Implemented |
+| 046 | IndexedDB Canonical Persistence | Implemented |
+| 047 | Verifiable Backup Archive | Implemented |

@@ -53,7 +53,7 @@
 - [x] Claim provenance and verification tracking
 - [x] Entity-aware AI tools (list, query, link)
 - [x] Agentic tool-calling loop (search, create, link)
-- [x] Chat history persistence [localStorage, not IndexedDB]
+- [x] Chat history persistence [superseded: chat is part of the validated Zustand envelope, now stored in IndexedDB (Issue #1036)]
 - [x] Rate limiting and API key encryption [session-only, per ADR 028]
 - [x] Advanced TRIZ analysis features
 

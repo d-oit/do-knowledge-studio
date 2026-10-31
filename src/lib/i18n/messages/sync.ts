@@ -95,6 +95,29 @@ const messages = {
   'sync.toast.conflictApplied': (count: string) => `Applied ${count} conflict resolution(s)`,
   /** Toast when a room id is scanned from a QR code. */
   'sync.toast.scannedRoom': (roomId: string) => `Scanned room: ${roomId}`,
+  /** Summary of the sync protection-limits disclosure. */
+  'sync.security.title': 'What room encryption protects',
+  /** Signaling metadata visible to the relay. */
+  'sync.security.protection':
+    'The password encrypts signaling messages and the payloads exchanged between peers. The signaling service still sees the room name, connection timing, message sizes, and your IP address.',
+  /** Peer identity limitation. */
+  'sync.security.identity':
+    'A room password is not peer identity verification. Anyone with the room ID and password can join and edit the shared document.',
+  /** Invitation hygiene. */
+  'sync.security.invite':
+    'Share the room ID over a private channel and send the password separately. QR codes contain only the room ID, never the password.',
+  /** Revocation guidance. */
+  'sync.security.revocation':
+    'To revoke access, leave the room and create a new random room ID. There is no server-side room deletion.',
+  /** Room-key fingerprint line; fingerprint interpolated. */
+  'sync.security.fingerprint': (fingerprint: string) => `Room key fingerprint: ${fingerprint}`,
+  /** Explanation of the fingerprint's limited guarantee. */
+  'sync.security.fingerprintHelp':
+    'Compare this over a separate channel to catch a password typo. It proves both sides derived the same key, not who the peer is.',
+  /** Toast when an invitation token has expired. */
+  'sync.toast.inviteExpired': 'That invitation has expired. Ask for a fresh room ID.',
+  /** Toast when an invitation token is malformed. */
+  'sync.toast.inviteMalformed': 'That invitation is not valid.',
 } as const
 
 /** Typed `translate` helper bound to the sync view message scope. */

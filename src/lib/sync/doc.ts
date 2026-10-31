@@ -27,6 +27,40 @@ let currentProvider: WebrtcProvider | null = null
 let currentRoomId: string | null = null
 let lastRoomId: string | null = null
 let currentOpts: { signaling?: string[]; password?: string } | undefined
+let connectivityListenersAttached = false
+
+/**
+ * Drop broken WebRTC peers when the browser goes offline and reconnect the
+ * provider when it returns. Without this, y-webrtc keeps a dead `webrtcConns`
+ * entry and ignores new announce messages, so edits made offline never reach
+ * the peer after the network returns.
+ */
+const handleBrowserOffline = (): void => {
+  currentProvider?.disconnect()
+}
+
+const handleBrowserOnline = (): void => {
+  // A fresh provider gets a new peer id. Older y-webrtc peers can keep a dead
+  // `webrtcConns` entry for the previous id, so merely calling connect() can
+  // leave the room without a working data channel.
+  if (currentRoomId !== null) {
+    reconnectRoom()
+  }
+}
+
+const attachConnectivityListeners = (): void => {
+  if (connectivityListenersAttached || typeof window === 'undefined') return
+  window.addEventListener('offline', handleBrowserOffline)
+  window.addEventListener('online', handleBrowserOnline)
+  connectivityListenersAttached = true
+}
+
+const detachConnectivityListeners = (): void => {
+  if (!connectivityListenersAttached || typeof window === 'undefined') return
+  window.removeEventListener('offline', handleBrowserOffline)
+  window.removeEventListener('online', handleBrowserOnline)
+  connectivityListenersAttached = false
+}
 
 /** Get or create the shared Yjs document. */
 export const getDoc = (): Y.Doc => {
@@ -139,7 +173,23 @@ export const joinRoom = (
   })
   bindCursorAwareness()
   bindPresenceAwareness()
+  attachConnectivityListeners()
   return currentProvider
+}
+
+/**
+ * Recreate the provider for the current room with a fresh peer id.
+ *
+ * Used after browser connectivity returns and by the explicit Re-sync control
+ * when the old provider is disconnected. The room id and password stay in
+ * module memory only; neither is persisted or logged.
+ */
+export const reconnectRoom = (): RoomProvider | null => {
+  const roomId = currentRoomId ?? lastRoomId
+  if (roomId === null) return null
+  const opts = currentOpts
+  leaveRoom()
+  return joinRoom(roomId, opts)
 }
 
 /** Get the active WebRTC provider or null. */
@@ -159,6 +209,7 @@ export const getAwareness = (): WebrtcProvider['awareness'] | null => {
 export const leaveRoom = (): void => {
   unbindCursorAwareness()
   unbindPresenceAwareness()
+  detachConnectivityListeners()
   if (currentProvider) {
     currentProvider.destroy()
     currentProvider = null

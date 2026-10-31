@@ -12,6 +12,8 @@ vi.mock('y-webrtc', () => {
   class MockWebrtcProvider {
     awareness = { on: vi.fn(), off: vi.fn() }
     destroy = vi.fn()
+    connect = vi.fn()
+    disconnect = vi.fn()
 
     constructor(..._args: unknown[]) {
       mockProviders.push(this)
@@ -161,5 +163,27 @@ describe('leaveRoom', () => {
     expect(rejoinedProvider).toBeDefined()
     expect(getProvider()).toBe(rejoinedProvider)
     expect(mockPersistenceMetadata.get('lastJoinedRoomId')).toBe('room-persist')
+  })
+
+  it('disconnects on browser offline and recreates the provider on online', () => {
+    joinRoom('room-connectivity')
+    const firstProvider = getProvider() as unknown as {
+      destroy: ReturnType<typeof vi.fn>
+      disconnect: ReturnType<typeof vi.fn>
+    }
+
+    window.dispatchEvent(new Event('offline'))
+    expect(firstProvider.disconnect).toHaveBeenCalledTimes(1)
+    window.dispatchEvent(new Event('online'))
+    const reconnected = getProvider()
+    expect(reconnected).not.toBe(firstProvider)
+    expect(firstProvider.destroy).toHaveBeenCalledTimes(1)
+    expect(mockProviders).toHaveLength(2)
+
+    leaveRoom()
+    if (reconnected) {
+      window.dispatchEvent(new Event('offline'))
+      expect(firstProvider.disconnect).toHaveBeenCalledTimes(1)
+    }
   })
 })

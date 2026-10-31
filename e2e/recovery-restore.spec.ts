@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test, expect, type Page } from '@playwright/test';
 import { waitForAppReady, navClick } from './helpers/navigation';
+import { readStoredState } from './helpers/store';
 
 /**
  * Pre-import backup and restore (Plan 162 #1).
@@ -17,25 +18,12 @@ import { waitForAppReady, navClick } from './helpers/navigation';
  *  - an import too large to snapshot says so instead of claiming a clean swap
  */
 
-const STORE_KEY = 'do-knowledge-studio-store';
 const RECOVERY_KEY = 'do-knowledge-studio-recovery';
 
-const entityNames = (page: Page): Promise<string[]> =>
-  page.evaluate((key) => {
-    const raw = localStorage.getItem(key);
-    if (!raw) return [];
-    const parsed: unknown = JSON.parse(raw);
-    if (typeof parsed !== 'object' || parsed === null || !('state' in parsed)) return [];
-    const state: unknown = parsed.state;
-    if (typeof state !== 'object' || state === null || !('entities' in state)) return [];
-    const entities: unknown = state.entities;
-    if (!Array.isArray(entities)) return [];
-    return entities
-      .filter((e): e is { name: string } =>
-        typeof e === 'object' && e !== null && 'name' in e && typeof e.name === 'string',
-      )
-      .map((e) => e.name);
-  }, STORE_KEY);
+const entityNames = async (page: Page): Promise<string[]> => {
+  const state = await readStoredState(page);
+  return (state?.entities ?? []).map((entity) => entity.name);
+};
 
 const hasSnapshot = (page: Page): Promise<boolean> =>
   page.evaluate((key) => localStorage.getItem(key) !== null, RECOVERY_KEY);
@@ -43,7 +31,9 @@ const hasSnapshot = (page: Page): Promise<boolean> =>
 /** Drives the Export view's file → preview → confirm import flow. */
 const importJson = async (page: Page, fixture: string): Promise<void> => {
   await navClick(page, /^export/i);
-  await page.locator('input[type=file]').setInputFiles(fixture);
+  // The Export view now also has a hidden backup-restore input. Target the
+  // JSON import dropzone explicitly.
+  await page.locator('input[type=file][accept=".json,application/json"]').setInputFiles(fixture);
   // Exact label: a loose `/import/` match also hits the "Import knowledge"
   // heading region, so the click lands on nothing and the test times out
   // believing the app did nothing.
