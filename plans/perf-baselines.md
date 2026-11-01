@@ -138,8 +138,9 @@ and saving; check that the preview re-renders only when the document changes.
 ## Data collection
 
 All automated timing assertions live in dedicated `.bench.test.ts` files and are
-run by `pnpm run test:bench`, not the regular test command. The benchmark suite
-covers:
+run by `pnpm run test:bench`, not the regular test command. `bench()`
+measurements live in `*.bench.ts` and run with `pnpm run bench:measure`. The
+benchmark suite covers:
 
 - `src/lib/search/retrieval.bench.test.ts` — cold/cached BM25 queries and a large
   corpus.
@@ -155,3 +156,40 @@ module in the current tree; earlier revisions of this document referenced
 `src/lib/perf/index.ts`, an in-app panel, and metrics such as `orama-query-time`/
 `mindmap-init`. Those are **historical** and are not reproducible against the
 current implementation.
+
+## 6. Baseline comparison, and the inert `bench()` blocks
+
+`scripts/check-bench-baseline.mjs` compares the durations in a Vitest JSON report
+with `plans/bench-baselines.json` and warns when a guard is `MAX_REGRESSION_FACTOR`
+(10x) slower than its recorded value. The threshold is deliberately coarse:
+wall-clock on shared runners cannot support a tighter bound, and the goal is to
+catch an order-of-magnitude regression, not normal variance. `--update` rewrites
+the baseline; `--enforce` turns warnings into a non-zero exit. The CI job is
+advisory. Refresh the baseline from the runner class that compares against it,
+otherwise a slow local machine becomes the reference for a fast CI runner.
+
+**Correction (2026-10-31):** an earlier revision of this section claimed the
+`bench()` blocks in the `*.bench.test.ts` files never execute. That was wrong on
+the facts: `grep -c "bench("` over all eight files returns **0**. There are no
+`bench()` blocks in this repository — those files contain only `it()` guards
+with hard thresholds, which is why nothing was missing from the baseline.
+
+The underlying mechanism is real, though: Vitest's bench mode collects
+`*.bench.ts` / `*.benchmark.ts` and would have reported "No benchmark files
+found" had those blocks existed.
+
+The measurement gap is now closed properly rather than by correcting the prose:
+`src/lib/search/fusion.bench.ts` holds genuine `bench()` blocks for reciprocal
+rank fusion, and `pnpm run bench:measure`
+(`vitest bench --run --config vitest.bench.config.ts`) runs them. The bench
+config scopes collection with `benchmark.include`, so `vitest run` (the guards)
+and `vitest bench` (the measurements) never pick up each other's files.
+
+`bench.yml` runs both and uploads the measurement output as an artifact. First
+measured run on the development machine (Vitest 4.1.11, jsdom): 53,574 hz fusing
+two disjoint 100-item rankings and 66,119 hz for the half-overlapping case —
+mean 0.0187 ms and 0.0151 ms per fusion. The
+measurement is **not** compared against a baseline: shared runners vary too much
+for a percentage gate, and a single sample cannot separate a regression from
+runner noise. Cite the guards for regressions and the measurement for
+before/after on one machine.

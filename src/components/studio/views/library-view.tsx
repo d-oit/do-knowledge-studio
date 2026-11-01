@@ -8,9 +8,11 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { SemanticSearchToggle } from './semantic-search-toggle'
 import {
   SemanticStatusBanner,
+  buildMatchSignals,
   resolveSemanticEntities,
   useSemanticSearch,
 } from './library-semantic-search'
+import type { MatchSignals } from './library-entities'
 import {
   FileText,
   LayoutGrid,
@@ -57,6 +59,8 @@ const LIBRARY_INITIAL_LIMIT = 24
 const showAllLabel = (total: number): string => `Show all ${total} entities`
 /** Label for the button that collapses the expanded entity list. */
 const SHOW_FEWER_LABEL = 'Show fewer'
+/** Shared empty signal map so the lexical path passes a stable reference. */
+const NO_MATCH_SIGNALS: MatchSignals = new Map()
 
 /** Empty/error placeholder when the library has no entities or no matches. */
 const LibraryEmptyState = ({
@@ -185,6 +189,16 @@ export const LibraryView = () => {
       return sortDir === 'asc' ? [...resolved].reverse() : resolved
     },
     [semanticOutcome, entityById, typeFilter, sortDir],
+  )
+
+  // Per-entity retriever signals ("Keyword" / "Meaning" / both) for the
+  // hybrid outcome, keyed the same way the grid resolves entities.
+  const matchSignals = useMemo(
+    () =>
+      semanticOutcome === null
+        ? NO_MATCH_SIGNALS
+        : buildMatchSignals(semanticOutcome, entityById, typeFilter),
+    [semanticOutcome, entityById, typeFilter],
   )
 
   // While the first semantic result is pending (e.g. model download), fall
@@ -442,12 +456,20 @@ export const LibraryView = () => {
 
       {/* Grid view */}
       {visibleEntities.length > 0 && viewMode === 'grid' && (
-        <EntityGrid entities={visibleEntities} startEdit={startEdit} />
+        <EntityGrid
+          entities={visibleEntities}
+          startEdit={startEdit}
+          matchSignals={matchSignals}
+        />
       )}
 
       {/* List view */}
       {visibleEntities.length > 0 && viewMode === 'list' && (
-        <EntityTable entities={visibleEntities} startEdit={startEdit} />
+        <EntityTable
+          entities={visibleEntities}
+          startEdit={startEdit}
+          matchSignals={matchSignals}
+        />
       )}
 
       <LibraryFooter

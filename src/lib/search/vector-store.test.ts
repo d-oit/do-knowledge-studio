@@ -166,7 +166,7 @@ describe('semanticSearch (mocked embedder)', () => {
     const entities = [trizEntity, genericsEntity]
     const claims: Claim[] = []
     const outcome = await semanticSearch(entities, claims, 'triz contradiction resolution', 5)
-    expect(outcome.source).toBe('semantic')
+    expect(outcome.source).toBe('hybrid')
     expect(outcome.results[0].id).toBe('e1')
     expect(outcome.results[0].type).toBe('entity')
     expect(outcome.results[0].name).toBe('TRIZ Inventive Principles')
@@ -183,13 +183,13 @@ describe('semanticSearch (mocked embedder)', () => {
       }),
     ]
     const outcome = await semanticSearch(entities, claims, 'segmentation', 5)
-    expect(outcome.source).toBe('semantic')
+    expect(outcome.source).toBe('hybrid')
     expect(outcome.results.some((r) => r.id === 'c1' && r.entityId === 'e1')).toBe(true)
   })
 
   it('returns an empty semantic result for an empty query without embedding', async () => {
     const outcome = await semanticSearch([trizEntity], [], '   ', 5)
-    expect(outcome).toEqual({ source: 'semantic', results: [] })
+    expect(outcome).toEqual({ source: 'hybrid', results: [] })
   })
 
   it('reuses the built index across calls with the same corpus reference', async () => {
@@ -200,6 +200,41 @@ describe('semanticSearch (mocked embedder)', () => {
     await semanticSearch(entities, claims, 'triz', 5)
     // Second call re-embeds only the query, not the two documents.
     expect(extractor.mock.calls.length).toBe(callsAfterBuild + 1)
+  })
+
+  it('fuses BM25 and semantic rankings so a lexical-only match still surfaces', async () => {
+    // Every doc embeds to the same vector (the fake extractor keys on "triz"),
+    // so the semantic ranking is insertion order. BM25 ranks by term frequency,
+    // which puts the last-inserted doc first — a doc the semantic top-2 omits.
+    // `triz-a` and `triz-b` are semantically identical; `triz-c` matches the
+    // query lexically (high term frequency) but its extra "segmentation" token
+    // pushes its embedding away from the query, so BM25 ranks it first while
+    // cosine similarity ranks it last.
+    const first = makeEntity({ id: 'triz-a', name: 'TRIZ', type: 'concept', description: '', content: '' })
+    const second = makeEntity({ id: 'triz-b', name: 'TRIZ', type: 'concept', description: '', content: '' })
+    const lexicalTop = makeEntity({
+      id: 'triz-c',
+      name: 'TRIZ TRIZ TRIZ',
+      type: 'concept',
+      description: 'segmentation',
+      content: '',
+    })
+
+    const outcome = await semanticSearch([first, second, lexicalTop], [], 'triz', 2)
+
+    expect(outcome.source).toBe('hybrid')
+    // A semantic-only ranking would return triz-a and triz-b; fusion lifts the
+    // lexical-only top hit into the cut because it is first in BM25.
+    expect(outcome.results.map((entry) => entry.id)).toEqual(['triz-a', 'triz-c'])
+    expect(outcome.results.some((entry) => entry.id === 'triz-c')).toBe(true)
+    // Each hit reports which engine ranked it, for the per-hit UI badge:
+    // triz-a is in both top-2 lists, triz-c only in the BM25 one.
+    if (outcome.source !== 'hybrid') {
+      throw new Error(`expected hybrid results, got ${outcome.source}`)
+    }
+    const signalsById = new Map(outcome.results.map((entry) => [entry.id, entry.signals]))
+    expect(signalsById.get('triz-a')).toEqual(['semantic', 'lexical'])
+    expect(signalsById.get('triz-c')).toEqual(['lexical'])
   })
 
   it('reuses the built index when only the filter changes', async () => {
@@ -268,7 +303,7 @@ describe('semanticSearch (mocked embedder)', () => {
       undefined,
       (doc) => doc.entityType === 'note',
     )
-    if (outcome.source !== 'semantic') {
+    if (outcome.source !== 'hybrid') {
       throw new Error(`expected semantic results, got ${outcome.source}`)
     }
     expect(outcome.results.map((r) => r.id).sort()).toEqual(['cl-note', 'n1'])

@@ -9,6 +9,22 @@ import { EntityIcon } from '../entity-type-icon'
 import { cn } from '@/lib/utils'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { readBreakpointPx } from '@/lib/studio/breakpoints'
+import type { RankSignal } from '@/lib/search/fusion'
+import { matchSignalLabel } from './library-semantic-search'
+
+/** Retriever signals per entity id, shown as a text badge on each hybrid hit. */
+export type MatchSignals = ReadonlyMap<string, readonly RankSignal[]>
+
+/** Text badge naming the retrievers that ranked a hybrid result. */
+const MatchSignalBadge = ({ signals }: { signals: readonly RankSignal[] }) => {
+  const label = matchSignalLabel(signals)
+  if (label === null) return null
+  return (
+    <span className="shrink-0 rounded-full border border-border bg-muted px-1.5 py-0 text-badge font-medium text-ink-soft">
+      {label}
+    </span>
+  )
+}
 
 /** Module-scope date formatter for library timestamps (shared by grid and list). */
 const dateFormatter = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' })
@@ -129,13 +145,16 @@ const GridCard = ({
   startEdit,
   index,
   animate,
+  matchSignals,
 }: {
   entity: Entity
   startEdit: (id: string) => void
   index: number
   animate: boolean
+  matchSignals?: MatchSignals
 }) => {
   const meta = getEntityTypeMeta(entity.type)
+  const signals = matchSignals?.get(entity.id)
   return (
     <button
       onClick={() => { startEdit(entity.id) }}
@@ -155,13 +174,16 @@ const GridCard = ({
         animate && 'animate-in fade-in slide-in-from-bottom-1 motion-reduce:animate-none',
       )}
     >
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between gap-1">
         <div className={cn('flex h-9 w-9 items-center justify-center rounded-md', meta.bg, meta.text)}>
           <EntityIcon type={entity.type} className="h-4 w-4" />
         </div>
-        <span className="text-caption font-semibold uppercase tracking-wide text-ink-faint">
-          {meta.label}
-        </span>
+        <div className="flex items-center gap-1.5">
+          {signals !== undefined && <MatchSignalBadge signals={signals} />}
+          <span className="text-caption font-semibold uppercase tracking-wide text-ink-faint">
+            {meta.label}
+          </span>
+        </div>
       </div>
       <h3 className="mb-1.5 font-serif text-body-lg font-semibold leading-snug text-ink group-hover:text-saffron-deep">
         {entity.name}
@@ -196,9 +218,11 @@ const GridCard = ({
 export const EntityGrid = ({
   entities,
   startEdit,
+  matchSignals,
 }: {
   entities: Entity[]
   startEdit: (id: string) => void
+  matchSignals?: MatchSignals
 }) => {
   // The virtualizer drives re-renders from DOM measurements (scroll/resize),
   // which the React Compiler's auto-memoization does not track — opt out so
@@ -231,7 +255,14 @@ export const EntityGrid = ({
       <div ref={containerRef} className={SCROLL_CONTAINER_CLASS}>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {entities.map((e, i) => (
-            <GridCard key={e.id} entity={e} startEdit={startEdit} index={i} animate={animate} />
+            <GridCard
+              key={e.id}
+              entity={e}
+              startEdit={startEdit}
+              index={i}
+              animate={animate}
+              matchSignals={matchSignals}
+            />
           ))}
         </div>
       </div>
@@ -261,7 +292,14 @@ export const EntityGrid = ({
             className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
             >
               {rowEntities.map((e) => (
-                <GridCard key={e.id} entity={e} startEdit={startEdit} index={0} animate={false} />
+                <GridCard
+                  key={e.id}
+                  entity={e}
+                  startEdit={startEdit}
+                  index={0}
+                  animate={false}
+                  matchSignals={matchSignals}
+                />
               ))}
             </div>
           )
@@ -286,7 +324,15 @@ const EntityTableHeader = () => (
 )
 
 /** Name cell for an entity table row (icon + truncated name/description). */
-const EntityNameCell = ({ entity, onOpen }: { entity: Entity; onOpen: () => void }) => {
+const EntityNameCell = ({
+  entity,
+  onOpen,
+  signals,
+}: {
+  entity: Entity
+  onOpen: () => void
+  signals?: readonly RankSignal[]
+}) => {
   const meta = getEntityTypeMeta(entity.type)
   return (
     <td className="px-4 py-3">
@@ -303,8 +349,11 @@ const EntityNameCell = ({ entity, onOpen }: { entity: Entity; onOpen: () => void
           <EntityIcon type={entity.type} className="h-3.5 w-3.5" />
         </div>
         <div className="min-w-0">
-          <div className="truncate text-body-sm font-semibold text-ink group-hover:text-saffron-deep">
-            {entity.name}
+          <div className="flex items-center gap-1.5">
+            <span className="truncate text-body-sm font-semibold text-ink group-hover:text-saffron-deep">
+              {entity.name}
+            </span>
+            {signals !== undefined && <MatchSignalBadge signals={signals} />}
           </div>
           <div className="truncate text-label text-ink-mute">{entity.description}</div>
         </div>
@@ -319,13 +368,16 @@ const TableRow = ({
   startEdit,
   vi,
   measure,
+  matchSignals,
 }: {
   entity: Entity
   startEdit: (id: string) => void
   vi: VirtualItem | null
   measure?: (node: HTMLTableRowElement | null) => void
+  matchSignals?: MatchSignals
 }) => {
   const meta = getEntityTypeMeta(entity.type)
+  const signals = matchSignals?.get(entity.id)
   const openEntity = () => { startEdit(entity.id) }
   return (
     <tr
@@ -345,7 +397,7 @@ const TableRow = ({
       }
       className="group cursor-pointer border-b border-border last:border-0 transition-colors hover:bg-muted/30"
     >
-      <EntityNameCell entity={entity} onOpen={openEntity} />
+      <EntityNameCell entity={entity} onOpen={openEntity} signals={signals} />
       <td className="hidden px-4 py-3 sm:table-cell">
         <span className={cn('rounded-full px-2 py-0.5 text-caption font-medium', meta.bg, meta.text)}>
           {meta.label}
@@ -374,9 +426,11 @@ const TableRow = ({
 export const EntityTable = ({
   entities,
   startEdit,
+  matchSignals,
 }: {
   entities: Entity[]
   startEdit: (id: string) => void
+  matchSignals?: MatchSignals
 }) => {
   // See EntityGrid — windowed rows must re-render on scroll, so opt out of the
   // React Compiler's memoization here too (plans/128, issue #699).
@@ -420,11 +474,18 @@ export const EntityTable = ({
                     startEdit={startEdit}
                     vi={vi}
                     measure={measureRow}
+                    matchSignals={matchSignals}
                   />
                 )
               })
             : entities.map((e) => (
-                <TableRow key={e.id} entity={e} startEdit={startEdit} vi={null} />
+                <TableRow
+                  key={e.id}
+                  entity={e}
+                  startEdit={startEdit}
+                  vi={null}
+                  matchSignals={matchSignals}
+                />
               ))}
         </tbody>
       </table>

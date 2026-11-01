@@ -248,7 +248,7 @@ describe('SearchWorkerClient', () => {
   it('searchSemantic runs the in-process semantic path without a Worker', async () => {
 
     const outcome = await SearchWorkerClient.searchSemantic(testEntities, testClaims, 'triz', 5)
-    expect(outcome.source).toBe('semantic')
+    expect(outcome.source).toBe('hybrid')
     expect(outcome.results.length).toBeGreaterThan(0)
     expect(outcome.results[0].id).toBe('e1')
     expect(embeddingsMock.embedTexts).toHaveBeenCalled()
@@ -256,7 +256,7 @@ describe('SearchWorkerClient', () => {
 
   it('works via standalone searchSemantic helper', async () => {
     const outcome = await searchSemantic(testEntities, testClaims, 'triz', 5)
-    expect(outcome.source).toBe('semantic')
+    expect(outcome.source).toBe('hybrid')
     expect(outcome.results.length).toBeGreaterThan(0)
   })
 
@@ -280,7 +280,7 @@ describe('SearchWorkerClient', () => {
 
     const client = new SearchWorkerClient(mockWorker)
     const outcome = await SearchWorkerClient.searchSemantic(testEntities, testClaims, 'triz', 5)
-    expect(outcome.source).toBe('semantic')
+    expect(outcome.source).toBe('hybrid')
     expect(outcome.results.length).toBeGreaterThan(0)
     // No worker round-trip happens for semantic search.
     expect(mockWorker.postMessage).not.toHaveBeenCalled()

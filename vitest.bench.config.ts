@@ -18,6 +18,11 @@ export default defineConfig({
       'src/lib/studio/canonical-storage.bench.test.ts',
       'src/lib/search/vector-store.bench.test.ts',
     ],
+    // `bench()` blocks live in `*.bench.ts` (Vitest's bench include pattern);
+    // the `*.bench.test.ts` entries above are threshold guards for `vitest run`.
+    benchmark: {
+      include: ['src/lib/search/fusion.bench.ts'],
+    },
     pool: 'threads',
     maxWorkers: '50%',
     restoreMocks: true,

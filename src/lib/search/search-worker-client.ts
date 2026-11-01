@@ -191,7 +191,7 @@ export class SearchWorkerClient {
    * Semantic (multilingual embedding) search over entities and claims.
    * Runs in-process on the main thread (see the module doc for why the
    * worker is not used). Resolves with an outcome carrying
-   * `source: 'semantic'` or a lexical fallback with the surfaced reason —
+   * `source: 'hybrid'` or a lexical fallback with the surfaced reason —
    * rejection only on abort.
    *
    * @param signal - Optional abort signal; the pending search is cancelled

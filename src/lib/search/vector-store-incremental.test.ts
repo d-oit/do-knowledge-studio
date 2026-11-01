@@ -71,7 +71,7 @@ describe('incremental semantic indexing', () => {
     const updated = { ...beta, description: 'beta updated content' }
     const outcome = await semanticSearch([alpha, updated], [], 'alpha', 5)
 
-    expect(outcome.source).toBe('semantic')
+    expect(outcome.source).toBe('hybrid')
     const texts = embeddedTexts()
     expect(texts.some((text) => text.includes('updated content'))).toBe(true)
     expect(texts.some((text) => text.includes('Alpha topic'))).toBe(false)
@@ -81,7 +81,7 @@ describe('incremental semantic indexing', () => {
     await semanticSearch([alpha, beta], [], 'beta', 5)
     const outcome = await semanticSearch([alpha], [], 'beta', 5)
 
-    expect(outcome.source).toBe('semantic')
+    expect(outcome.source).toBe('hybrid')
     expect(outcome.results.some((result) => result.id === 'beta')).toBe(false)
     expect(outcome.results.every((result) => result.id !== 'beta')).toBe(true)
   })
@@ -96,7 +96,7 @@ describe('incremental semantic indexing', () => {
     ).rejects.toMatchObject({ name: 'AbortError' })
 
     const recovered = await semanticSearch([alpha, { ...beta, description: 'beta updated' }], [], 'alpha', 5)
-    expect(recovered.source).toBe('semantic')
+    expect(recovered.source).toBe('hybrid')
     expect(getSemanticIndexProgress().status).toBe('ready')
   })
 
