@@ -382,3 +382,81 @@ load depends on. That is the failed-write-masks-a-fetch bug, moved up a level.
 Fixed at the class, not the line: eviction is wrapped and logged, and `caches.open`
 goes through an `openCache()` helper that returns null when storage is blocked so
 every caller falls through to the network. Five call sites now share it.
+
+## Round 5 — the three follow-ups (2026-11-01)
+
+### 1. `public/sw.js` now runs in a test
+
+The service worker had no test that executed it. `pwa-cache-policy.test.ts` asserts
+that the file *mentions* the same cache names and hosts as `pwa-cache.ts` — that
+catches drift, not behaviour, and it was green throughout the round in which the
+worker was reporting every cache-write rejection as a 503.
+
+`src/lib/studio/pwa-service-worker.test.ts` evaluates the real file against a fake
+service-worker scope: a `self` that captures the handlers it registers, a
+controllable `caches`, and an injected `fetch`. Thirteen tests drive the actual
+routing and error handling:
+
+- **a rejected `cache.put` returns the fetched 200**, for a model asset and for a
+  shell asset — the exact defect that hid semantic search;
+- **a rejected eviction or unmeasurable entry does not break the response**;
+- **a `caches.open` rejection falls through to the network**;
+- **a 503 still means the fetch failed**, and the error is not cached;
+- **model hosts route to `dks-model-v1`**, same-origin assets to `dks-static-v6`,
+  and non-GET requests bypass caching entirely;
+- **install precaches the manifest URLs** and falls back to the four shell URLs
+  when the manifest is unavailable.
+
+One harness detail worth keeping: the precache manifest lists relative paths, and a
+real worker resolves those against its script URL while Node's `Request` throws
+`ERR_INVALID_URL`. The harness injects a `Request` subclass that resolves against
+the fake scope origin — a harness that fails on correct code proves nothing.
+
+### 2. Measured in the browser, not only in Node
+
+`e2e/semantic-search-eval.spec.ts` drives the shipped pipeline — production build,
+worker, WASM backend, fusion in the editor — over all 16 seed labels, reading the
+ranked entity order off the grid and sampling until it settles (the semantic path
+renders lexical results first and swaps when the worker answers).
+
+| Corpus / backend | recall@5 | MRR | lexical fallbacks |
+| --- | ---: | ---: | ---: |
+| seed, Node `cpu` (round 4) | 1.000 | 0.859 | n/a |
+| **seed, browser WASM (shipped)** | **1.000** | **0.849** | **0 / 16** |
+
+Zero fallbacks is the load-bearing number: it says every one of the sixteen queries
+ran through the real embedding model in a real browser, which is what the Node
+harness could never establish. The 0.010 MRR difference against the Node run is
+within what a different backend can contribute; recall is identical.
+
+The per-query lines are printed by the spec and were recorded from this run. The
+four non-first hits are the authored paraphrase block, exactly where a lexical
+retriever also struggles.
+
+It is a measurement, not a gate: it needs the model CDN and takes ~35 s warm, so
+it runs only on request (`PLAYWRIGHT_PRODUCTION=1 … semantic-search-eval.spec.ts`).
+
+### 3. `vector-store.ts` back under the file limit
+
+At 506 lines it was the repository's only source file over the 500-line rule. Split
+by responsibility, not by line count:
+
+- `semantic-docs.ts` — what text an entity or claim contributes, snippet shaping,
+snapshot validation, and hit→`SearchResult` mapping. All pure.
+- `semantic-budget.ts` — the memory budget, its test override, and the size
+estimator.
+- `vector-store.ts` — the stateful orchestration that remains: incremental
+staging, cache restore, progress, and the public search entry point.
+
+Public API unchanged; `SEMANTIC_INDEX_MAX_BYTES` and
+`setSemanticIndexBudgetForTests` are re-exported so existing consumers and tests
+are untouched.
+
+### Round 5 verification
+
+- `pwa-service-worker.test.ts` — 13 passed.
+- `pnpm run build` — exit 0 (86 precache URLs written).
+- In-browser eval — 1 passed in 32.8 s; table above; 0 lexical fallbacks.
+- `pnpm typecheck` — exit 0; earlier run of the vector-store, worker and eval
+suites — 70 passed, 3 skipped.
+- ESLint on every touched file — exit 0.
