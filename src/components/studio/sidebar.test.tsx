@@ -15,6 +15,7 @@ vi.mock('lucide-react', () => {
     FlaskConical: Icon,
     Grid3X3: Icon,
     Download: Icon,
+    Settings: Icon,
     Sun: Icon,
     Moon: Icon,
     Monitor: Icon,

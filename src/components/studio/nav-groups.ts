@@ -1,6 +1,6 @@
 import {
   Home, FileText, Library, GitBranch, BrainCircuit, MessageSquare,
-  FlaskConical, Grid3X3, Download, Wifi, CalendarDays,
+  FlaskConical, Grid3X3, Download, Wifi, CalendarDays, Settings,
 } from 'lucide-react'
 import type { ViewId } from '@/lib/studio/types'
 import { translate as navT } from '@/lib/i18n/messages/nav'
@@ -34,5 +34,6 @@ export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   { label: navT('nav.group.data'), items: [
     { id: 'sync', label: navT('nav.sync.label'), icon: Wifi, shortcut: 'G S' },
     { id: 'export', label: navT('nav.export.label'), icon: Download, shortcut: 'G X' },
+    { id: 'settings', label: navT('nav.settings.label'), icon: Settings },
   ] },
 ]

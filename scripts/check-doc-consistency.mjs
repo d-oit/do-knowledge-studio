@@ -80,6 +80,7 @@ if (!viewBlock) {
     ['triz', 'TRIZ'],
     ['export', 'Export'],
     ['sync', 'Sync'],
+    ['settings', 'Settings'],
   ])
   for (const view of views) {
     const label = labels.get(view) ?? view

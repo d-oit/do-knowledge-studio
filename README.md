@@ -33,7 +33,7 @@ The visual language follows **Editorial Paper & Saffron**: warm paper background
 
 ---
 
-## The 11 Studio Views
+## The 12 Studio Views
 
 | View | Description |
 |---|---|
@@ -48,6 +48,7 @@ The visual language follows **Editorial Paper & Saffron**: warm paper background
 | **TRIZ Matrix** | 2-step inventive contradiction solver mapping 39 improving vs. 39 worsening engineering parameters to 40 Altshuller principles. |
 | **Export** | Backup and sharing suite: verified `.dksb` backups, OKF v0.2 ZIP bundles, password-encrypted HTML readers, Markdown, JSON, HTML, DOCX, and PDF. |
 | **Sync** | Peer-to-peer WebRTC rooms with QR pairing, presence, and conflict resolution. |
+| **Settings** | What the derived stores cost — semantic index documents, memory and budget, model cache files and bytes — with rebuild and clear actions. |
 
 ---
 

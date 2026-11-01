@@ -26,6 +26,7 @@ const VIEW_TITLES: ReadonlyMap<ViewId, { title: string; subtitle: string }> = ne
   ['triz', { title: navT('nav.triz.title'), subtitle: navT('nav.triz.subtitle') }],
   ['export', { title: navT('nav.export.title'), subtitle: navT('nav.export.subtitle') }],
   ['sync', { title: navT('nav.sync.title'), subtitle: navT('nav.sync.subtitle') }],
+  ['settings', { title: navT('nav.settings.title'), subtitle: navT('nav.settings.subtitle') }],
   ['timeline', { title: timelineT('timeline.title'), subtitle: timelineT('timeline.subtitle') }],
 ])
 

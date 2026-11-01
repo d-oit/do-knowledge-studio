@@ -460,3 +460,85 @@ are untouched.
 - `pnpm typecheck` — exit 0; earlier run of the vector-store, worker and eval
 suites — 70 passed, 3 skipped.
 - ESLint on every touched file — exit 0.
+
+## Round 6 — what the derived stores cost, and what identifier labels say (2026-11-01)
+
+### A Settings view for storage the user did not ask for
+
+Both growing stores are derived: the semantic index can be rebuilt from the
+library, the model cache re-downloaded. Neither was visible anywhere, so the
+only signal was a browser running out of quota.
+
+A new `settings` view (`VIEW_IDS`, nav group "Data", topbar title, lazy route)
+reports the semantic index (documents, in-memory bytes, budget, build status) and
+the model cache (cached files, bytes on disk, budget), each with one action:
+rebuild the index (`resetSemanticCache`) or delete the model cache
+(`caches.delete('dks-model-v1')`).
+
+Measurement lives in `storage-report.ts` rather than the component:
+`readModelCacheUsage` sums `content-length` across cached responses — reading
+the bodies would download 25 MB to report their size — and every failure path
+returns `available: false` instead of throwing, because a settings page that
+crashes when `caches` is blocked is worse than one that says it cannot measure.
+String constants live in a `settings` i18n scope, not in JSX.
+
+Tests: 10 for the helpers (scaling, missing `content-length`, absent Cache API,
+refused open, refused delete) and 5 for the view (values rendered, both actions
+wired, refresh after reset, and the unavailable notice instead of a false zero).
+
+### Identifier labels, and a correction to round 4
+
+The corpus gained three documents whose names carry an identifier (`RFC 7231`,
+`ADR 048`, `TRIZ-42`) and three labels that query the identifier alone. This is
+the shape round 4 used to justify declining the fusion weight, but only
+indirectly: the evidence was a two-result cut in `vector-store.test.ts`, not a
+labelled query.
+
+Large corpus is now 19 labels over 27 documents:
+
+| Strategy | recall@5 | MRR |
+| --- | ---: | ---: |
+| lexical (BM25) | 0.895 | 0.820 |
+| embedding | 1.000 | 0.905 |
+| hybrid (fused) | 1.000 | **0.947** |
+
+Weight sweep, now printing the identifier subset:
+
+| lexical weight | large MRR | identifier recall@5 |
+| --- | ---: | ---: |
+| **1.00 (shipped)** | **0.947** | **1.000** |
+| 0.75 | 0.947 | 1.000 |
+| 0.50 | 0.921 | 1.000 |
+| 0.25 | 0.921 | 1.000 |
+
+**The identifier labels do not reproduce the round-4 claim at this cut.** Recall
+stays 1.000 at every weight; the identifier document still makes the top five
+even when its lexical contribution is quartered. What discounting lexical costs
+is ranking, not coverage: MRR falls from 0.947 to 0.921. The round-4 evidence
+was a two-result cut, where the lexical-only hit genuinely fell to third — both
+statements are true, and the plan now says which cut each belongs to instead of
+generalising from one.
+
+Still not adopted, and the reason is now measured rather than asserted: 0.75
+changes nothing at all, and 0.5/0.25 buy no recall while losing MRR. There is no
+weight that helps.
+
+`packages`-level note: the sweep asserts only the shipped weight (and identifier
+recall = 1 there); asserting every weight would encode the sweep's answer as a
+precondition, and asserting a score on authored labels is the mistake round 2
+corrected.
+
+### Independent label authoring
+
+`plans/retrieval-label-authoring-guide.md` documents what a label is, the one
+rule that matters (write the query before reading the ranking), the three shapes
+a set needs, a worked example, a pre-PR checklist, how to run all three harnesses,
+and the limits — authored labels are a regression signal, not ground truth.
+
+### Round 6 verification
+
+- `storage-report.test.ts` — 10 passed; `settings-view.test.tsx` — 5 passed.
+- `large-corpus.test.ts` — 6 passed (19 labels, 27 documents; identifier labels
+  rank their document first under BM25).
+- `RUN_MODEL_EVAL=1` — 3 passed, tables above.
+- `pnpm typecheck`, ESLint on every touched file — exit 0.

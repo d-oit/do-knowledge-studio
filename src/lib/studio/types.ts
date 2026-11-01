@@ -25,6 +25,7 @@ export const VIEW_IDS = [
   'triz',
   'export',
   'sync',
+  'settings',
 ] as const
 
 /** All navigable view identifiers. */

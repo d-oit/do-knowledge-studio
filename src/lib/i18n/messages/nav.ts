@@ -48,6 +48,12 @@ const messages = {
   'nav.chat.title': 'Chat',
   /** Topbar subtitle for the Chat view. */
   'nav.chat.subtitle': 'Ask your library',
+  /** Sidebar and mobile drawer label for the Settings view. */
+  'nav.settings.label': 'Settings',
+  /** Topbar title for the Settings view. */
+  'nav.settings.title': 'Settings',
+  /** Topbar subtitle for the Settings view. */
+  'nav.settings.subtitle': 'Local storage and derived data',
   /** Sidebar and mobile drawer label for the AI Harness view. */
   'nav.ai.label': 'AI Harness',
   /** Topbar title for the AI Harness view. */
