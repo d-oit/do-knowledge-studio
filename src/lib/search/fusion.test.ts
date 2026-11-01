@@ -94,6 +94,45 @@ describe('reciprocalRankFusion', () => {
     expect(fused.map((entry) => entry.id)).toEqual(['a', 'b'])
   })
 
+  it('treats an omitted weight as 1', () => {
+    const unweighted = reciprocalRankFusion([semantic('a'), lexical('a')], 5)
+    const explicit = reciprocalRankFusion(
+      [{ signal: 'semantic', results: [result('a')], weight: 1 }, { signal: 'lexical', results: [result('a')], weight: 1 }],
+      5,
+    )
+    expect(explicit[0].score).toBeCloseTo(unweighted[0].score)
+  })
+
+  it('scales a list contribution by its weight', () => {
+    const fused = reciprocalRankFusion(
+      [
+        { signal: 'semantic', results: [result('shared')], weight: 1 },
+        { signal: 'lexical', results: [result('shared')], weight: 0.25 },
+      ],
+      1,
+    )
+    expect(fused[0].score).toBeCloseTo(1.25 / (RRF_DAMPING + 1))
+    // Weighting changes influence, never which retrievers are reported.
+    expect(fused[0].signals).toEqual(['semantic', 'lexical'])
+  })
+
+  it('lets a discounted list be outvoted by the other retriever', () => {
+    // Lexical ranks `lex-favoured` first and `tie` second; semantic ranks `tie`
+    // first. At equal weight the shared hit wins. Discount lexical enough and
+    // its agreement no longer beats a first place — the behaviour the weighted
+    // fusion exists to make expressible.
+    const lists = (lexicalWeight: number) => [
+      { signal: 'semantic' as const, results: [result('tie'), result('sem-only')] },
+      {
+        signal: 'lexical' as const,
+        results: [result('lex-favoured'), result('tie')],
+        weight: lexicalWeight,
+      },
+    ]
+    expect(reciprocalRankFusion(lists(1), 3)[0].id).toBe('tie')
+    expect(reciprocalRankFusion(lists(0.05), 3)[0].id).toBe('tie')
+  })
+
   it('respects the limit', () => {
     const fused = reciprocalRankFusion([semantic('a', 'b', 'c')], 2)
 

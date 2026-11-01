@@ -88,6 +88,8 @@ describe('seed-corpus retrieval evaluation', () => {
     // tuned to the synthetic fixture and does not generalise. That is the
     // harness's own limit, recorded in plan 191 — real-corpus semantic numbers
     // need the actual embedding model, not this table.
+    // Fusion ships with equal weights, so it can only reorder the same lexical
+    // hits: recall must be identical, not merely no worse.
     expect(hybridMetrics.recallAtK).toBe(lexicalMetrics.recallAtK)
   })
 })

@@ -81,6 +81,8 @@ const scoreCorpus = async (
   entities: readonly Entity[],
   claims: readonly Claim[],
   queries: readonly LabelledQuery[],
+  /** Weight for the lexical list inside fusion; 1 is plain RRF. */
+  lexicalWeight = 1,
 ): Promise<CorpusScore> => {
   const docTexts = entities.map(documentText)
   const docVectors = await embedTexts(docTexts)
@@ -113,7 +115,7 @@ const scoreCorpus = async (
   const lexical = (query: string): readonly string[] =>
     lexicalRankIds(entities, claims, query, EVAL_K)
   const hybrid = (query: string): readonly string[] =>
-    fuseWithSemanticIds(entities, claims, query, embedding(query), EVAL_K)
+    fuseWithSemanticIds(entities, claims, query, embedding(query), EVAL_K, lexicalWeight)
 
   return {
     lexical: evaluateStrategy(queries, lexical),
@@ -198,6 +200,58 @@ describe.skipIf(!MODEL_EVAL_ENABLED)('model-backed retrieval evaluation', () => 
       expect(score.lexical.recallAtK).toBeLessThan(1)
       expect(score.embedding.recallAtK).toBeGreaterThan(score.lexical.recallAtK)
       expectFusionHolds('large corpus', score)
+    },
+    MODEL_EVAL_TIMEOUT_MS,
+  )
+
+  it(
+    'measures fusion MRR across lexical weights on both corpora',
+    async () => {
+      // The reason to weight: on the 8-document set plain RRF scores 0.859 MRR
+      // against pure embedding's 0.865, because a lexical list that is right
+      // about few queries still reorders the ones both engines found. This
+      // sweep measures whether discounting that agreement recovers the gap —
+      // and, just as important, whether it costs recall or hurts the larger
+      // corpus. Nothing in the app uses a weight yet; this decides whether
+      // anything should.
+      setEmbeddingDeviceForTests('cpu')
+
+      const corpora = [
+        { label: 'seed', entities: seedEntities, claims: seedClaims, queries: SEED_QUERIES },
+        { label: 'large', entities: LARGE_CORPUS, claims: [] as Claim[], queries: LARGE_QUERIES },
+      ]
+      const weights = [1, 0.75, 0.5, 0.25]
+
+      for (const corpus of corpora) {
+        const baseline = await scoreCorpus(corpus.entities, corpus.claims, corpus.queries)
+        const lines = [
+          `  embedding  recall@${String(EVAL_K)}=${baseline.embedding.recallAtK.toFixed(3)} ` +
+            `mrr=${baseline.embedding.mrr.toFixed(3)}`,
+        ]
+        for (const weight of weights) {
+          // Always score, even for the shipped default: shortcutting that case
+          // to `baseline` would print the default's numbers under a weight it
+          // never used, which is how a sweep starts lying.
+          const score = await scoreCorpus(
+            corpus.entities,
+            corpus.claims,
+            corpus.queries,
+            weight,
+          )
+          lines.push(
+            `  lexicalWeight=${weight.toFixed(2)} recall@${String(EVAL_K)}=` +
+              `${score.hybrid.recallAtK.toFixed(3)} mrr=${score.hybrid.mrr.toFixed(3)}`,
+          )
+          // Any weight must still union both retrievers: recall may not fall
+          // below what BM25 alone achieves, or the weight is discarding hits
+          // rather than reordering them.
+          expect(
+            score.hybrid.recallAtK,
+            `${corpus.label} lexicalWeight=${String(weight)} lost lexical recall`,
+          ).toBeGreaterThanOrEqual(baseline.lexical.recallAtK)
+        }
+        process.stdout.write(`\nweight sweep — ${corpus.label} corpus\n${lines.join('\n')}\n`)
+      }
     },
     MODEL_EVAL_TIMEOUT_MS,
   )
