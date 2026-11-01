@@ -9,9 +9,25 @@ import path from "path";
 // Plaintext `ws://` is permitted only for loopback: the independent-peer E2E
 // suite runs the y-webrtc signaling server there, while production signaling
 // remains `wss://`.
+//
+// IPv6 loopback is deliberately absent: a port wildcard on a bracketed IPv6
+// host (`http://[::1]:*`) is rejected by the CSP parser as an invalid source
+// and logged as an error on every page load, while matching nothing. Loopback
+// Ollama is covered by the named-host sources below. Found by driving a
+// production build in Chromium (plan 191).
+// `'unsafe-eval'` exists for the development compiler only; a production build
+// does not need it. `'wasm-unsafe-eval'` stays in both: it permits WebAssembly
+// compilation (the semantic embedding runtime) without permitting `eval` or
+// `new Function`. Issue #1051 tracks removing the remaining `'unsafe-inline'`
+// from `script-src`, which needs a nonce pipeline Next does not emit today.
+const isDevelopment = process.env.NODE_ENV === 'development'
+const scriptSrc = isDevelopment
+  ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval';"
+  : "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval';"
+
 const cspHeader = `
   default-src 'self';
-  script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval';
+  ${scriptSrc}
   style-src 'self' 'unsafe-inline';
   img-src 'self' blob: data: https:;
   font-src 'self' data:;
@@ -20,7 +36,7 @@ const cspHeader = `
   form-action 'self';
   frame-ancestors 'none';
   worker-src 'self' blob:;
-  connect-src 'self' https: wss: ws://localhost:* ws://127.0.0.1:* http://localhost:* http://127.0.0.1:* http://[::1]:* http://*.local:*;
+  connect-src 'self' https: wss: ws://localhost:* ws://127.0.0.1:* http://localhost:* http://127.0.0.1:* http://*.local:*;
 `.replace(/\s{2,}/g, ' ').trim();
 
 const nextConfig: NextConfig = {

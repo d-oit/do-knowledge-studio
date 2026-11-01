@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { seedClaims, seedEntities } from '@/lib/studio/seed-data'
-import { EVAL_K, evaluateStrategy, type LabelledQuery } from './metrics'
+import { EVAL_K, evaluateStrategy } from './metrics'
+import { SEED_QUERIES as QUERIES } from './seed-queries'
 import { conceptRankIds, hybridRankIds, lexicalRankIds } from './strategies'
 
 /**
@@ -20,18 +21,6 @@ import { conceptRankIds, hybridRankIds, lexicalRankIds } from './strategies'
  * absolute value, because a threshold on eight authored queries would be a
  * number with no meaning behind it.
  */
-
-/** One labelled query against the shipped seed library. */
-const QUERIES: readonly LabelledQuery[] = [
-  { query: 'who invented TRIZ', relevantIds: ['e2'] },
-  { query: 'table of engineering trade offs', relevantIds: ['e1'] },
-  { query: 'offline first data ownership', relevantIds: ['e5'] },
-  { query: 'note taking second brain', relevantIds: ['e6'] },
-  { query: 'nodes and edges diagram', relevantIds: ['e4'] },
-  { query: 'group ideation session', relevantIds: ['e7'] },
-  { query: 'segmentation principle', relevantIds: ['e3'] },
-  { query: 'finding related notes by meaning', relevantIds: ['e8'] },
-]
 
 const lexical = (query: string): readonly string[] =>
   lexicalRankIds(seedEntities, seedClaims, query, EVAL_K)

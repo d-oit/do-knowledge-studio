@@ -28,16 +28,22 @@ export const conceptRankIds = (
   limit: number,
 ): string[] => rankByConcept(entities, query, limit)
 
-/** Ranked ids after fusing the concept and BM25 rankings with RRF. */
-export const hybridRankIds = (
+/**
+ * Fuses a BM25 ranking with an already-ranked list of semantic ids.
+ *
+ * Takes ids rather than a ranker so the same fusion step serves the concept
+ * stand-in and the real embedding model; a strategy difference can then only
+ * come from the semantic ranking itself.
+ */
+export const fuseWithSemanticIds = (
   entities: readonly Entity[],
   claims: readonly Claim[],
   query: string,
+  semanticIds: readonly string[],
   limit: number,
 ): string[] => {
   const lexical = search([...entities], [...claims], query, limit)
-  const conceptIds = rankByConcept(entities, query, limit)
-  const concept: SearchResult[] = conceptIds.map((id) => {
+  const semantic: SearchResult[] = semanticIds.map((id) => {
     const entity = entities.find((candidate) => candidate.id === id)
     return {
       id,
@@ -49,9 +55,24 @@ export const hybridRankIds = (
   })
   return reciprocalRankFusion(
     [
-      { signal: 'semantic', results: concept },
+      { signal: 'semantic', results: semantic },
       { signal: 'lexical', results: lexical },
     ],
     limit,
   ).map((result) => result.id)
 }
+
+/** Ranked ids after fusing the concept and BM25 rankings with RRF. */
+export const hybridRankIds = (
+  entities: readonly Entity[],
+  claims: readonly Claim[],
+  query: string,
+  limit: number,
+): string[] =>
+  fuseWithSemanticIds(
+    entities,
+    claims,
+    query,
+    rankByConcept(entities, query, limit),
+    limit,
+  )

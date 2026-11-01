@@ -48,6 +48,27 @@ export const EMBEDDING_DTYPE = 'q8' as const
 /** CPU execution via WASM — no WebGPU required, works in every modern browser. */
 export const EMBEDDING_DEVICE = 'wasm' as const
 
+/** Execution backends transformers.js accepts for this app's ONNX weights. */
+export type EmbeddingDevice = 'wasm' | 'cpu'
+
+/**
+ * Device the pipeline is currently configured to use.
+ *
+ * The browser only ever has `wasm`; Node has no WASM backend and rejects it
+ * outright (`Unsupported device: "wasm". Should be one of: cuda, webgpu, cpu`).
+ * The model-backed evaluation harness runs in Node, so it selects `cpu`
+ * explicitly. Mirrors `setSemanticIndexBudgetForTests` in `vector-store.ts`:
+ * an override for tests and tooling, never toggled by application code.
+ */
+let embeddingDevice: EmbeddingDevice = EMBEDDING_DEVICE
+
+/** Selects the execution backend and drops the loaded pipeline so it reloads. */
+export const setEmbeddingDeviceForTests = (device: EmbeddingDevice): void => {
+  if (device === embeddingDevice) return
+  embeddingDevice = device
+  disposeEmbedder()
+}
+
 /**
  * Character cap applied to each document before embedding. Bounds tokenizer
  * cost for very long notes while staying at or near the model's native 512
@@ -159,7 +180,7 @@ const loadEmbedder = async (generation: number): Promise<EmbeddingPipeline> => {
     const extractor = (await withLoadTimeout(
       pipeline('feature-extraction', EMBEDDING_MODEL_ID, {
         dtype: EMBEDDING_DTYPE,
-        device: EMBEDDING_DEVICE,
+        device: embeddingDevice,
       }) as Promise<EmbeddingPipeline>,
     )) as EmbeddingPipeline
     if (generation === embedderGeneration) {
