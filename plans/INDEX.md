@@ -9,6 +9,14 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 192 — Real-model retrieval evaluation and CSP hardening (2026-11-01)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| 1 | Score the shipped corpus with the real embedding model (#1065) | Done | The model-backed arm runs in Node on the app's own weights and saturates at recall@5 1.000 / MRR 1.000, identical to BM25 — a ceiling of eight authored labels, not a gain, so the test asserts that fusion never loses a hit instead of a score. Labels moved to `seed-queries.ts` and shared with the concept harness so the two semantic arms differ only in the retriever. |
+| 2 | Make the embedder loadable outside the browser | Done | Node rejects `device: 'wasm'`; a test-only `setEmbeddingDeviceForTests('cpu')` override mirrors the existing vector-store budget override, and the harness runs under `@vitest-environment node` because onnxruntime's cross-realm `Float32Array` check fails under jsdom. |
+| 3 | Remove `'unsafe-eval'` from the production CSP (#1051) | Done, partially verified | Policy is now per environment: production serves `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'`, development keeps eval for Fast Refresh. The invalid `http://[::1]:*` source was also dropped. The model itself did not load in the browser because huggingface.co returned HTTP 503 on both attempts, so sufficiency of `wasm-unsafe-eval` for `onnxruntime-web` stays open, and the in-page eval probe that appeared to contradict the header was invalid (CDP bypasses CSP, LESSON-057). See [Plan 192](192-real-model-eval-and-csp-hardening-2026-11-01.md). |
+
 ### Plan 191 — External proposal triage (2026-10-31)
 
 | Wave | Goal | Status | Outcome |
