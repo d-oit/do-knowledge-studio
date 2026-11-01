@@ -244,6 +244,40 @@ and cannot produce a false red build.
   artifact, not a gate: one shared-runner sample cannot distinguish a regression
   from noise.
 
+## Third follow-up round (2026-11-01)
+
+- **Real-corpus evaluation, and what it found.** `eval/seed-corpus.test.ts`
+  scores the shipped seed library with the same metrics and the same strategy
+  code as the fixture (`eval/strategies.ts` is now shared by both, so the two
+  harnesses cannot diverge). Measured: **lexical 1.000 / 1.000, concept
+  stand-in 0.000 / 0.000, hybrid 1.000 / 1.000** (recall@5 / MRR, 8 authored
+  labels over 8 entities).
+
+  Two findings, both useful:
+
+  1. BM25 already answers every labelled query on this corpus, so a real-corpus
+     semantic gain cannot be demonstrated with this label set. The test asserts
+     the regression property that *does* hold rather than inventing a number:
+     fusion must not lose a hit BM25 found (a fusion that discarded the lexical
+     ranking would drop hybrid to 0.000 here).
+  2. The concept stand-in scores 0.000 on real prose — its vocabulary is tuned
+     to the synthetic fixture and does not generalise. That is the harness's own
+     limit surfacing, and it is recorded rather than patched by widening the
+     table until the number improves. Real-corpus semantic numbers need the
+     actual embedding model; that stays open under #1065.
+- **Hybrid retrieval reaches the assistant.** `chat-slice.ts` uses
+  `searchSemantic` when the semantic search toggle is on and the worker-backed
+  BM25 path otherwise, so the fused ranking only pays a model download for users
+  who asked for it. `context.ts` gained a `retrieval: 'lexical' | 'hybrid'`
+  option (default `lexical`) on the async builder, and the AI harness passes
+  `hybrid` when the same toggle is on — dashed through `use-ai-harness-chat` and
+  `ai-harness-view`. Every failure path is unchanged: `semanticSearch` falls back
+  to BM25 internally with a surfaced reason, and the chat slice's synchronous
+  fallback still answers if the async path rejects.
+- **Lessons recorded.** `agents-docs/LESSONS.md` LESSON-055 (a documented
+  finding is a hypothesis until a command proves it — the `bench()` case) and
+  LESSON-056 (Codacy reads `<placeholder>` in CLI usage text as an HTML tag).
+
 ## Excluded by this triage
 
 SQLCipher and Argon2id at rest, `sqlite-vec`, `y-websocket` relay transport, FTS5

@@ -66,6 +66,8 @@ export interface UseAiHarnessChatOptions {
   entities: Entity[]
   claims: Claim[]
   requiresKey: boolean
+  /** Opt in to fused lexical + semantic retrieval for the local context. */
+  semanticSearchEnabled?: boolean
 }
 
 /**
@@ -127,6 +129,7 @@ export const useAiHarnessChat = ({
   entities,
   claims,
   requiresKey,
+  semanticSearchEnabled = false,
 }: UseAiHarnessChatOptions) => {
   const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_ASSISTANT_MESSAGE])
   const [input, setInput] = useState('')
@@ -213,7 +216,7 @@ export const useAiHarnessChat = ({
         claims,
         augment,
         researchResults,
-        undefined,
+        { retrieval: semanticSearchEnabled ? 'hybrid' : 'lexical' },
         controller.signal,
       )
 
@@ -303,6 +306,7 @@ export const useAiHarnessChat = ({
   }, [
     input,
     requiresKey,
+    semanticSearchEnabled,
     apiKey,
     canRequest,
     provider,

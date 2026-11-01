@@ -5,17 +5,56 @@ import type { Entity } from './types'
 
 vi.mock('@/lib/search/search-worker-client', () => ({
   searchAsync: vi.fn(),
+  searchSemantic: vi.fn(),
 }))
 
-import { searchAsync } from '@/lib/search/search-worker-client'
+import { searchAsync, searchSemantic } from '@/lib/search/search-worker-client'
 
 const mockedSearchAsync = vi.mocked(searchAsync)
+const mockedSearchSemantic = vi.mocked(searchSemantic)
 
 describe('sendMessage synchronous fallback', () => {
   beforeEach(() => {
     useStudioStore.getState().resetStore()
     useStudioStore.getState().clearChat()
     mockedSearchAsync.mockReset()
+    mockedSearchSemantic.mockReset()
+  })
+
+  it('uses fused retrieval only when semantic search is enabled', async () => {
+    useStudioStore.setState({ semanticSearchEnabled: true })
+    mockedSearchSemantic.mockResolvedValue({
+      source: 'hybrid',
+      results: [
+        {
+          id: 'e1',
+          type: 'entity',
+          name: 'TRIZ Contradiction Matrix',
+          snippet: 'lookup table',
+          score: 1,
+          signals: ['semantic', 'lexical'],
+        },
+      ],
+    })
+
+    await useStudioStore.getState().sendMessage('engineering trade-offs')
+
+    // The toggle is the switch: with it off the worker-backed lexical path
+    // stays in charge, so this asserts the branch rather than the default.
+    expect(mockedSearchSemantic).toHaveBeenCalledTimes(1)
+    expect(mockedSearchAsync).not.toHaveBeenCalled()
+    const { chat } = useStudioStore.getState()
+    expect(chat[1].citations?.[0]?.entityName).toBe('TRIZ Contradiction Matrix')
+  })
+
+  it('keeps the lexical worker path when semantic search is off', async () => {
+    useStudioStore.setState({ semanticSearchEnabled: false })
+    mockedSearchAsync.mockResolvedValue([])
+
+    await useStudioStore.getState().sendMessage('engineering trade-offs')
+
+    expect(mockedSearchAsync).toHaveBeenCalledTimes(1)
+    expect(mockedSearchSemantic).not.toHaveBeenCalled()
   })
 
   it('appends an assistant reply when the worker-backed search rejects', async () => {

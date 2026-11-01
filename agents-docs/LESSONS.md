@@ -1880,3 +1880,95 @@ The completed results are the evidence; the top-level status field is a cache
 that can miss its own invalidation.
 
 **Tags**: #github-actions #merge-state #staleness #check-runs
+
+---
+
+### LESSON-055: A documented "finding" is a hypothesis until a command proves it
+
+**Date**: 2026-11-01
+**Component**: Benchmarks / Documentation / Agent discipline
+**Severity**: Medium
+
+**Issue**: `plans/perf-baselines.md` recorded, as a finding, that the repository's
+`bench()` blocks "never execute". The mechanism it described was real, but the
+premise was not: the files contained no `bench()` calls at all.
+
+**Symptoms**:
+- A plan and a baseline document both asserted eight inert benchmark files.
+- `vitest bench` reported no files, which looked like confirmation of the claim.
+- Nobody could point at a `bench()` call, because there was none.
+
+**Root Cause**:
+`vitest bench` matching nothing was taken as evidence that `bench()` blocks
+existed and were being skipped. That inference is invalid in both directions:
+an empty collection result is consistent with "the blocks are invisible" *and*
+with "there are no blocks". The claim was never tied to a command whose output
+could distinguish the two, and the file name (`*.bench.test.ts`) was treated as
+proof of contents.
+
+**Solution**:
+```bash
+# What the claim needed, and did not have:
+grep -c "bench(" src/lib/search/*.bench.test.ts src/lib/**/*.bench.test.ts
+# -> 0 for every file
+```
+The correction went into `plans/perf-baselines.md` as a *Correction* section
+that states what was wrong, not a silent edit, and the real gap (nothing ran
+under bench mode) was closed with an actual `*.bench.ts` file.
+
+**Prevention**:
+- Every "X never happens" claim must name the command that shows it happening
+  when it does. If no such command exists, the claim is not a finding.
+- Distinguish *absence of evidence* from *evidence of absence* when a tool
+  reports an empty collection.
+- When correcting a recorded finding, leave the correction visible. A silently
+  rewritten document teaches nobody, and the original error recurs.
+
+**Files Modified**:
+- `plans/perf-baselines.md` - Correction section replacing the false finding
+- `src/lib/search/fusion.bench.ts` - real `bench()` blocks
+- `plans/191-proposal-triage-2026-10-31.md` - records the corrected premise
+
+---
+
+### LESSON-056: Codacy reads angle brackets in CLI usage text as HTML
+
+**Date**: 2026-11-01
+**Component**: CI / Codacy / ESLint security rules
+**Severity**: Low
+
+**Issue**: A new Node CLI script failed the Codacy gate with a security issue:
+"HTML passed in to function 'console.error'" (`ESLint8_xss_no-mixed-html`).
+
+**Symptoms**:
+- Codacy reported `ACTION_REQUIRED` on a PR whose only new script had no DOM,
+  no HTML, and no user-controlled markup.
+- The flagged line was a `console.error` usage string.
+
+**Root Cause**:
+The usage text used a conventional placeholder, `<report.json>`. The
+`xss/no-mixed-html` rule scans strings passed to sink-like functions for HTML
+and parsed `<report.json>` as an unclosed tag. The rule's heuristic is correct
+in a browser and wrong in a CLI.
+
+**Solution**:
+```js
+// Before — reads as an HTML tag to the rule:
+console.error('usage: node scripts/x.mjs <report.json> [--update]')
+// After — same meaning, no markup:
+console.error('usage: node scripts/x.mjs report.json [--update]')
+```
+
+**Prevention**:
+- Prefer bracketed or bare placeholders (`report.json`, `[--flag]`) over
+  `<placeholder>` in strings a linter may treat as markup.
+- Read `toolInfo.name` from the Codacy API before deciding a finding is a false
+  positive: `ESLint8_*` is the engine identifier, and the rule id names the
+  actual heuristic.
+- A finding you can satisfy by rewording is not a false positive — fix it.
+  Reserve suppression for patterns that are structurally unavoidable (for
+  example `readFileSync` on a caller-supplied path in a CLI), and record the
+  reason on the PR.
+
+**Files Modified**:
+- `scripts/check-bench-baseline.mjs` - usage string no longer looks like a tag

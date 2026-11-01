@@ -7,7 +7,7 @@
  * in-flight request is owned across action boundaries, not per-caller.
  */
 import { search, resetSearchCache, type SearchResult } from '@/lib/search/retrieval'
-import { searchAsync } from '@/lib/search/search-worker-client'
+import { searchAsync, searchSemantic } from '@/lib/search/search-worker-client'
 import type { ChatMessage } from '../types'
 import type { StudioState } from '../store-types'
 import { generateId } from './claims-slice'
@@ -91,8 +91,17 @@ export const createChatSlice: StudioSlice<ChatSlice> = (set, get) => ({
     const controller = new AbortController()
     chatSendAbort = controller
 
-    const { entities, claims } = get()
-    return searchAsync(entities, claims, content, CHAT_RESULT_LIMIT, controller.signal)
+    const { entities, claims, semanticSearchEnabled } = get()
+    // Hybrid retrieval only when semantic search is on: it runs on the main
+    // thread and may pay a one-off model download, so the default chat path
+    // stays the worker-backed lexical one. `searchSemantic` falls back to
+    // lexical internally, so a failed embedder still answers from BM25.
+    const retrieval: Promise<SearchResult[]> = semanticSearchEnabled
+      ? searchSemantic(entities, claims, content, CHAT_RESULT_LIMIT, controller.signal).then(
+          (outcome) => outcome.results,
+        )
+      : searchAsync(entities, claims, content, CHAT_RESULT_LIMIT, controller.signal)
+    return retrieval
       .then((results) => {
         if (controller.signal.aborted) return
         const reply = buildLocalChatReply(results)
