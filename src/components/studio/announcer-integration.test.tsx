@@ -48,6 +48,7 @@ vi.mock('lucide-react', () => {
     Redo2: Icon,
     RefreshCw: Icon,
     Download: Icon,
+    Settings: Icon,
     ChevronRight: Icon,
     ChevronDown: Icon,
     Sliders: Icon,

@@ -3,9 +3,15 @@
  *
  * The seed library is eight documents. Every harness that scores it is one
  * paraphrase label away from saturation, and eight documents cannot show
- * whether a retriever's advantage survives scale. This corpus is 24 documents
+ * whether a retriever's advantage survives scale. This corpus is 27 documents
  * across the studio's own subsystems, which gives each query several plausible
  * distractors instead of one obvious target.
+ *
+ * Three of the documents carry an identifier in their name (`RFC 7231`,
+ * `ADR 048`, `TRIZ-42`) and three labels query that identifier alone. They are
+ * the counterweight to the paraphrase half: for these queries BM25 is the only
+ * engine with anything to say, so they are where a discounted lexical list is
+ * measured rather than argued about.
  *
  * How the labels were written, because it bounds what they prove: each label
  * was written from its target document's text alone, before running any
@@ -52,9 +58,12 @@ const ROWS: readonly CorpusRow[] = [
   ['lc-22', 'Service worker shell', 'Offline app cache', 'pwa'],
   ['lc-23', 'At rest encryption', 'Protects stored data with a passphrase', 'security'],
   ['lc-24', 'Precache manifest', 'Lists assets the shell needs offline', 'pwa build'],
+  ['lc-25', 'RFC 7231 caching semantics', 'HTTP cache directives and freshness rules', 'web spec'],
+  ['lc-26', 'ADR 048 at-rest encryption', 'Decision record for passphrase-protected storage', 'security adr'],
+  ['lc-27', 'TRIZ-42 segmentation', 'Splitting an object into independent parts', 'triz principle'],
 ]
 
-/** 24 documents across the studio's subsystems, used as a retrieval fixture. */
+/** 27 documents across the studio's subsystems, used as a retrieval fixture. */
 export const LARGE_CORPUS: readonly Entity[] = ROWS.map(
   ([id, name, description, tags]): Entity => ({
     id,
@@ -94,4 +103,10 @@ export const LARGE_QUERIES: readonly LabelledQuery[] = [
   { query: 'browsers talking directly to each other', relevantIds: ['lc-08'] },
   { query: 'locking an export with a passphrase', relevantIds: ['lc-11'] },
   { query: 'a status channel for assistive technology', relevantIds: ['lc-20'] },
+  // Identifier queries. No paraphrase, no shared vocabulary beyond the
+  // identifier itself: this is the shape (issue keys, spec numbers, part codes)
+  // where BM25 is the only engine that answers and a semantic hit is noise.
+  { query: 'RFC 7231', relevantIds: ['lc-25'] },
+  { query: 'ADR 048', relevantIds: ['lc-26'] },
+  { query: 'TRIZ-42', relevantIds: ['lc-27'] },
 ]

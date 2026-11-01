@@ -50,6 +50,24 @@ describe('large-corpus retrieval fixture', () => {
     }
   })
 
+  it('includes identifier labels that only lexical retrieval can answer', () => {
+    // Identifier queries ("TRIZ-42", "ADR 048") are the counterweight to the
+    // paraphrase half: BM25 answers them and an embedding arm has nothing to
+    // match. Without them the corpus could not tell a ranking regression from a
+    // semantic-arm preference, and the fusion weight sweep would have no case
+    // where discounting lexical measurably costs a hit.
+    const identifiers = LARGE_QUERIES.filter((entry) =>
+      /[A-Z]{2,}[-\s]?\d{2,}/.test(entry.query),
+    )
+    expect(identifiers.length).toBeGreaterThanOrEqual(3)
+    for (const entry of identifiers) {
+      expect(
+        lexical(entry.query)[0],
+        `identifier query "${entry.query}" did not rank its document first`,
+      ).toBe(entry.relevantIds[0])
+    }
+  })
+
   it('covers both keyword and paraphrase labels', () => {
     // Half the labels share tokens with their document and half avoid them.
     // A set of only paraphrases would make BM25 look broken rather than weak;

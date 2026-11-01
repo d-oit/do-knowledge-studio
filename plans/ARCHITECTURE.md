@@ -186,6 +186,7 @@ Markdown-source-first with progressive enhancement (ADR 020).
 | TRIZ | Contradiction analysis |
 | Export | Multi-format export, verified backup, import |
 | Sync | P2P pairing, presence, conflicts |
+| Settings | Derived-storage usage, rebuild/clear actions |
 
 ---
 

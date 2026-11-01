@@ -44,6 +44,7 @@ const AIHarnessView = lazy(() => import('./views/ai-harness-view').then((m) => (
 const TrizView = lazy(() => import('./views/triz-view').then((m) => ({ default: m.TrizView })))
 const ExportView = lazy(() => import('./views/export-view').then((m) => ({ default: m.ExportView })))
 const SyncView = lazy(() => import('./views/sync-view').then((m) => ({ default: m.SyncView })))
+const SettingsView = lazy(() => import('./views/settings-view').then((m) => ({ default: m.SettingsView })))
 const ChatView = lazy(() => import('./views/chat-view').then((m) => ({ default: m.ChatView })))
 
 /** Loading skeleton placeholder shown while lazy-loaded views are being fetched. */
@@ -82,6 +83,7 @@ const VIEW_NAMES = new Map<ViewId, string>([
   ['triz', navT('nav.triz.label')],
   ['export', navT('nav.export.label')],
   ['sync', navT('nav.sync.label')],
+  ['settings', navT('nav.settings.label')],
 ])
 
 /** Returns a human-readable display name for a given view ID. */
@@ -112,6 +114,7 @@ const VIEW_ELEMENTS = new Map<ViewId, React.ReactNode>([
   viewEntry('triz', <TrizView />),
   viewEntry('export', <ExportView />),
   viewEntry('sync', <SyncView />),
+  viewEntry('settings', <SettingsView />),
 ])
 
 /**

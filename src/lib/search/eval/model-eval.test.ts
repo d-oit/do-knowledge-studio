@@ -17,6 +17,7 @@ import {
   type LabelledQuery,
   type StrategyMetrics,
 } from './metrics'
+import { FUSION_LEXICAL_WEIGHT } from '../fusion'
 import { SEED_QUERIES } from './seed-queries'
 import { LARGE_CORPUS, LARGE_QUERIES } from './large-corpus'
 import { fuseWithSemanticIds, lexicalRankIds } from './strategies'
@@ -65,7 +66,18 @@ interface CorpusScore {
   lexical: StrategyMetrics
   embedding: StrategyMetrics
   hybrid: StrategyMetrics
+  /** Hybrid metrics over identifier-shaped labels only, or null when none. */
+  identifiers: StrategyMetrics | null
 }
+
+/**
+ * Identifier-shaped query: a code plus a number, e.g. `TRIZ-42` or `ADR 048`.
+ *
+ * Kept as a pattern rather than a flag on the label because the point of the
+ * subset is that it is recognisable from the query alone — anyone adding an
+ * identifier label gets it counted without ceremony.
+ */
+const IDENTIFIER_QUERY_PATTERN = /[A-Z]{2,}[-\s]?\d{2,}/
 
 const format = (label: string, metrics: StrategyMetrics): string =>
   `  ${label.padEnd(10)} recall@${String(EVAL_K)}=${metrics.recallAtK.toFixed(3)} ` +
@@ -117,10 +129,16 @@ const scoreCorpus = async (
   const hybrid = (query: string): readonly string[] =>
     fuseWithSemanticIds(entities, claims, query, embedding(query), EVAL_K, lexicalWeight)
 
+  const identifiers = queries.filter((entry) => IDENTIFIER_QUERY_PATTERN.test(entry.query))
+
   return {
     lexical: evaluateStrategy(queries, lexical),
     embedding: evaluateStrategy(queries, embedding),
     hybrid: evaluateStrategy(queries, hybrid),
+    // Scored separately, not averaged in: the weighting question is precisely
+    // whether a discounted lexical list still surfaces an identifier that the
+    // embedding arm cannot match, and an average hides that.
+    identifiers: identifiers.length === 0 ? null : evaluateStrategy(identifiers, hybrid),
   }
 }
 
@@ -238,17 +256,31 @@ describe.skipIf(!MODEL_EVAL_ENABLED)('model-backed retrieval evaluation', () => 
             corpus.queries,
             weight,
           )
+          const identifierRecall =
+            score.identifiers === null ? 'n/a' : score.identifiers.recallAtK.toFixed(3)
           lines.push(
             `  lexicalWeight=${weight.toFixed(2)} recall@${String(EVAL_K)}=` +
-              `${score.hybrid.recallAtK.toFixed(3)} mrr=${score.hybrid.mrr.toFixed(3)}`,
+              `${score.hybrid.recallAtK.toFixed(3)} mrr=${score.hybrid.mrr.toFixed(3)} ` +
+              `identifierRecall=${identifierRecall}`,
           )
-          // Any weight must still union both retrievers: recall may not fall
-          // below what BM25 alone achieves, or the weight is discarding hits
-          // rather than reordering them.
-          expect(
-            score.hybrid.recallAtK,
-            `${corpus.label} lexicalWeight=${String(weight)} lost lexical recall`,
-          ).toBeGreaterThanOrEqual(baseline.lexical.recallAtK)
+          // Only the shipped weight is asserted. The sweep exists to measure
+          // what discounting lexical costs, and requiring every weight to keep
+          // lexical recall would encode the answer as a precondition — the same
+          // mistake as asserting a score on authored labels.
+          if (weight === FUSION_LEXICAL_WEIGHT) {
+            expect(
+              score.hybrid.recallAtK,
+              `${corpus.label} shipped weight lost lexical recall`,
+            ).toBeGreaterThanOrEqual(baseline.lexical.recallAtK)
+            // An identifier query must still be answered at the shipped weight:
+            // if this fails, fusion is discarding a hit BM25 found.
+            if (score.identifiers !== null) {
+              expect(
+                score.identifiers.recallAtK,
+                `${corpus.label} shipped weight lost identifier recall`,
+              ).toBe(1)
+            }
+          }
         }
         process.stdout.write(`\nweight sweep — ${corpus.label} corpus\n${lines.join('\n')}\n`)
       }
