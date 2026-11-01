@@ -1,6 +1,9 @@
 {
   "urls": [
     "/",
+    "/_next/static/QbhQpjvJAkJ7cbEEEwwjh/_buildManifest.js",
+    "/_next/static/QbhQpjvJAkJ7cbEEEwwjh/_clientMiddlewareManifest.js",
+    "/_next/static/QbhQpjvJAkJ7cbEEEwwjh/_ssgManifest.js",
     "/_next/static/chunks/0-mykl5yzotm5.js",
     "/_next/static/chunks/06hm86sz-ppy8.js",
     "/_next/static/chunks/0_a4i77w70lf0.js",
@@ -76,9 +79,6 @@
     "/_next/static/media/e62850744c7f266e-s.0n7ulcr4ivksg.woff2",
     "/_next/static/media/fef07dbb0973bf53-s.3p2_lha1f2xer.woff2",
     "/_next/static/media/ort.webgpu.bundle.min.2gtd6ccrqc86p.mjs",
-    "/_next/static/zg287_t2waHmXDI1KqfqS/_buildManifest.js",
-    "/_next/static/zg287_t2waHmXDI1KqfqS/_clientMiddlewareManifest.js",
-    "/_next/static/zg287_t2waHmXDI1KqfqS/_ssgManifest.js",
     "/favicon.svg",
     "/icon-192.png",
     "/icon-512.png",

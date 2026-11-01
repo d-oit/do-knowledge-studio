@@ -39,6 +39,35 @@ export async function getAppCacheNames(): Promise<string[]> {
 /** Explicit same-origin allowlisted API paths eligible for SW caching. */
 export const ALLOWED_API_PATHS = new Set(['/api'])
 
+/**
+ * Cache Storage name holding the embedding model, kept separate from the shell.
+ *
+ * Mirrors `MODEL_CACHE` in `public/sw.js`. The shell cache is wiped by every
+ * deploy; the model is ~25 MB and should survive that, so clearing the app does
+ * not force a re-download.
+ */
+export const MODEL_CACHE_NAME = 'dks-model-v1'
+
+/**
+ * Hosts that serve the embedding model to transformers.js.
+ *
+ * Mirrors `MODEL_HOSTS` in `public/sw.js`, which is plain JS in `public/` and
+ * cannot import this module. The two lists are asserted equal by
+ * `pwa-cache-policy.test.ts` so a drift shows up as a failing test rather than
+ * as an offline-only surprise.
+ */
+export const MODEL_ASSET_HOSTS: ReadonlySet<string> = new Set([
+  'huggingface.co',
+  'www.huggingface.co',
+  'cdn-lfs.huggingface.co',
+  'cdn-lfs.hf.co',
+])
+
+/** Whether a URL serves an embedding model asset served from `MODEL_CACHE_NAME`. */
+export function isModelAssetUrl(url: URL): boolean {
+  return MODEL_ASSET_HOSTS.has(url.hostname)
+}
+
 /** Checks if an HTTP method is safe (GET or HEAD). */
 export function isSafeMethod(method: string): boolean {
   const m = method.toUpperCase()

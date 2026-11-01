@@ -25,10 +25,12 @@ import path from "path";
 // ship a permanently lexical fallback behind a working-looking toggle. Issue
 // #1051 keeps the remaining `'unsafe-inline'`
 // from `script-src`, which needs a nonce pipeline Next does not emit today.
-const isDevelopment = process.env.NODE_ENV === 'development'
-const scriptSrc = isDevelopment
-  ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval';"
-  : "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval';"
+// One constant for both environments, deliberately. The branches were
+// identical, and a per-environment shape invites the exact mistake this file
+// already made once: "tightening" production by removing eval, which the
+// semantic runtime needs. If a future Next build stops using eval, prove it
+// with a drive that reaches the semantic runtime, not with the shell.
+const scriptSrc = "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval';";
 
 const cspHeader = `
   default-src 'self';

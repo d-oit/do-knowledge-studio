@@ -220,3 +220,75 @@ says so instead of implying the app is broken.
   are directional, not a benchmark.
 - **Upstream**: the browser fetch of the model gets 503 while `curl` gets 200;
   worth a separate look if semantic search is meant to work on a cold cache.
+
+## Round 3 — the follow-ups themselves (2026-11-01)
+
+### CSP: one constant instead of two identical branches
+
+The per-environment shape outlived its purpose once both branches allowed
+`eval`. Keeping it would keep advertising a production/dev difference that no
+longer exists — and an invitation to "tighten" production into the exact defect
+measured in round 2. It is now a single `scriptSrc` constant with the reason
+beside it. Header and app behaviour unchanged.
+
+### Service worker: the model survives a cold cache
+
+The browser's 503 was not fixable here, but the *dependency* was: once the model
+is on disk, a reload should never need the CDN. `public/sw.js` gained a
+`dks-model-v1` cache with a cache-first strategy for the hosts transformers.js
+downloads from (`huggingface.co`, `cdn-lfs.huggingface.co`, `cdn-lfs.hf.co`).
+
+Routing is by **host, before the static-asset branch**, and that ordering is the
+whole fix. `.json` is in `STATIC_EXTENSIONS`, so the tokenizer would otherwise be
+filed under the shell cache that every deploy wipes; `.onnx` is not in that list
+at all, so weights would never be cached. The model cache is also excluded from
+nothing on activate — it is added to `validCaches` — so a new build does not
+force a 25 MB re-download.
+
+Failed fetches (the 503 included) are **not** cached, so the next attempt still
+retries the network rather than pinning an error for the cache's lifetime.
+
+`pwa-cache.ts` mirrors the host list and cache name for the app and the tests,
+and `pwa-cache-policy.test.ts` reads `public/sw.js` and asserts both match — a
+drift between the two would only surface offline, on the one path nobody
+exercises.
+
+### A larger corpus, and a stronger result
+
+`large-corpus.ts` adds 24 documents across the studio's subsystems and 16 labels:
+8 that share vocabulary with their document, 8 paraphrases that avoid it. Both
+halves are deliberate — only-paraphrase labels would make BM25 look broken rather
+than weak, and only-keyword labels reproduce the saturation the corpus exists to
+escape.
+
+| Corpus | Mode | recall@5 | MRR |
+| --- | --- | ---: | ---: |
+| seed (8 docs) | lexical | 0.813 | 0.708 |
+| seed (8 docs) | embedding | 1.000 | 0.865 |
+| seed (8 docs) | hybrid | 1.000 | 0.859 |
+| large (24 docs) | lexical | 0.875 | 0.755 |
+| large (24 docs) | embedding | 1.000 | 0.919 |
+| large (24 docs) | hybrid | 1.000 | **0.938** |
+
+At 24 documents with real distractors the fusion gain is unambiguous: hybrid MRR
+*exceeds* both single modes (0.938 vs 0.919 and 0.755), rather than trailing pure
+embedding as it does on the 8-document set where every query has one obvious
+target. Both corpora go through the same `scoreCorpus` helper and the same fusion
+step, so the difference is the corpus, not the code.
+
+The model-backed test asserts the *property* that matters at scale — BM25 is not
+already saturated (`recall < 1`) and embeddings beat it — instead of a threshold,
+and `FUSION_MRR_TOLERANCE` still bounds fusion's cost where it exists.
+
+Honest limit: these labels were written by the person who wrote the retrievers.
+They were written from the documents, before running anything, and the paraphrase
+half is structurally harder — but they are not independent and 24 authored
+documents are not a benchmark.
+
+### Round 3 verification
+
+- `node --check public/sw.js` — exit 0.
+- 27 deterministic tests pass across the large-corpus fixture, the PWA cache
+  policy (including the SW parity assertions) and the seed corpus.
+- `RUN_MODEL_EVAL=1` — 2 passed, printing both tables above.
+- `pnpm typecheck`, ESLint on every touched file — exit 0.
