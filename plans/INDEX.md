@@ -9,6 +9,12 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 191 — External proposal triage (2026-10-31)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Triage | Check eight external architecture proposals against the shipped code before acting on any of them | Done | Six of the eight target subsystems this build does not have (SQLite, FTS5, an HTTP API, a Node plugin host) or are already shipped (Yjs collaboration, local semantic search). The two survivors landed: reciprocal rank fusion now merges BM25 and semantic results and labels each hit with the retrievers that matched it (`Keyword` / `Meaning` / `Keyword + meaning` as text, never colour), an evaluation harness scores recall@k and MRR for lexical, semantic and fused ranking on one fixture corpus and asserts hybrid beats the better single mode, and `bench.yml` runs the guard suite as an advisory PR job plus real `bench()` measurements now that `fusion.bench.ts` exists. At-rest encryption is recorded as Proposed in ADR 048. See [Plan 191](191-proposal-triage-2026-10-31.md). |
+
 ### Plan 184 — Open issue remediation (2026-10-31)
 
 | Wave | Goal | Status | Outcome |

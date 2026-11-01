@@ -1,0 +1,39 @@
+{
+  "formatVersion": 1,
+  "capturedAt": "2026-10-31T20:15:07.824Z",
+  "note": "Wall-clock durations of the exported benchmark guards. Shared-runner and cross-machine timings vary; the comparator warns only at an 10x factor. Refresh with --update on the runner class that compares against it.",
+  "entries": {
+    "parseIntent performance benchmarks parseIntent throughput": {
+      "ms": 185.70043199999986,
+      "file": "src/lib/nlp.bench.test.ts"
+    },
+    "buildSystemPrompt benchmark keeps indexed entity lookup within its smoke ceiling for large corpora": {
+      "ms": 18.661229000000276,
+      "file": "src/lib/ai/context.bench.test.ts"
+    },
+    "BM25 retrieval benchmark keeps cached queries faster than cold index rebuilds": {
+      "ms": 386.10750099999996,
+      "file": "src/lib/search/retrieval.bench.test.ts"
+    },
+    "semantic index benchmark measures cold, warm, and single-edit updates at 1k/5k/10k documents": {
+      "ms": 1235.703975,
+      "file": "src/lib/search/vector-store.bench.test.ts"
+    },
+    "canonical storage benchmark measures legacy JSON and IndexedDB structured writes at 1k/5k/10k records": {
+      "ms": 461.52195299999994,
+      "file": "src/lib/studio/canonical-storage.bench.test.ts"
+    },
+    "hasExtractableClaims benchmark keeps plain-text and large-document scans within the smoke ceiling": {
+      "ms": 54.780903999999964,
+      "file": "src/lib/studio/claim-parser.bench.test.ts"
+    },
+    "graph layout benchmark places 150 nodes efficiently within the time ceiling": {
+      "ms": 44.133434999999736,
+      "file": "src/lib/studio/graph-layout.bench.test.ts"
+    },
+    "TRIZ matrix lookup benchmark completes a full matrix lookup within its smoke ceiling": {
+      "ms": 4.383997999999792,
+      "file": "src/lib/studio/triz-data.bench.test.ts"
+    }
+  }
+}

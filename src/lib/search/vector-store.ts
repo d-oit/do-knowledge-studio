@@ -26,6 +26,7 @@ import {
   SEMANTIC_MODEL_FINGERPRINT,
 } from './semantic-digest'
 import { search, type SearchResult, type SearchFilter } from './retrieval'
+import { reciprocalRankFusion, type FusedSearchResult } from './fusion'
 import {
   VectorStore,
   type SemanticDoc,
@@ -48,16 +49,19 @@ export {
 } from './semantic-progress'
 export { cosineSimilarity, VectorStore } from './vector-index'
 
-/** Where a semantic result came from — the worker response carries this. */
-export type SearchSource = 'semantic' | 'lexical'
+/** Where a search result came from — the worker response carries this. */
+export type SearchSource = 'hybrid' | 'lexical'
 
 /**
- * Discriminated outcome of a semantic search: either ranked vector results
- * or a graceful lexical fallback with the reason surfaced to the UI.
+ * Discriminated outcome of a semantic search: either a fused semantic + BM25
+ * ranking, or a graceful lexical fallback with the reason surfaced to the UI.
  */
 export type SemanticSearchOutcome =
-  | { source: 'semantic'; results: SearchResult[] }
+  | { source: 'hybrid'; results: FusedSearchResult[] }
   | { source: 'lexical'; results: SearchResult[]; reason: string }
+
+/** Re-exported so callers can type the per-hit retriever signals. */
+export type { FusedSearchResult, RankSignal } from './fusion'
 
 export type { SemanticDoc, SemanticDocFilter, VectorStoreSnapshot }
 
@@ -439,9 +443,11 @@ const toSearchResults = (hits: { id: string; score: number; doc: SemanticDoc }[]
 
 /**
  * Runs a semantic search: incrementally builds (or reuses) the vector index,
- * embeds the query, and ranks by cosine similarity. When the embedder is
- * unavailable, the corpus exceeds the memory budget, or the build fails,
- * degrades to lexical BM25 with the reason marked on the outcome.
+ * embeds the query, and ranks by cosine similarity. When the vector path is
+ * available it is fused with a BM25 ranking via reciprocal rank fusion, so a
+ * document that one engine ranks strongly is not lost to the other; when the
+ * embedder is unavailable, the corpus exceeds the memory budget, or the build
+ * fails, it degrades to lexical BM25 with the reason marked on the outcome.
  *
  * @throws {DOMException} `AbortError` when `signal` fires before completion.
  */
@@ -454,7 +460,7 @@ export const semanticSearch = async (
   filter?: SearchFilter,
 ): Promise<SemanticSearchOutcome> => {
   const trimmed = query.trim()
-  if (trimmed === '') return { source: 'semantic', results: [] }
+  if (trimmed === '') return { source: 'hybrid', results: [] }
 
   const buildResult = await buildVectorIndex(entities, claims, signal)
   if (!buildResult.ok) {
@@ -477,5 +483,18 @@ export const semanticSearch = async (
   }
 
   const hits = defaultVectorStore.search(queryVector, limit, filter)
-  return { source: 'semantic', results: toSearchResults(hits) }
+  // Both engines honor the same filter and limit, so fusion ranks within the
+  // same narrowed candidate set the UI asked for.
+  const semanticResults = toSearchResults(hits)
+  const lexicalResults = search(entities, claims, trimmed, limit, filter)
+  return {
+    source: 'hybrid',
+    results: reciprocalRankFusion(
+      [
+        { signal: 'semantic', results: semanticResults },
+        { signal: 'lexical', results: lexicalResults },
+      ],
+      limit,
+    ),
+  }
 }

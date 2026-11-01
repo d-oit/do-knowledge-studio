@@ -28,6 +28,14 @@ const messages = {
   /** Accessible text describing the semantic toggle when it is turned off. */
   'search.semanticOffDescription':
     'Search by meaning is disabled. Results use exact keyword matching.',
+  /** Per-hit badge: the result was ranked by the lexical (BM25) engine. */
+  'search.matchKeyword': 'Keyword',
+  /** Per-hit badge: the result was ranked by the semantic engine. */
+  'search.matchMeaning': 'Meaning',
+  /** Per-hit badge: both engines ranked the result. */
+  'search.matchBoth': 'Keyword + meaning',
+  /** Accessible description of a result's match badges (text, never colour-only). */
+  'search.matchSignalsAria': (label: string) => `Matched by ${label}`,
   /** Label for keyword search mode toggle. */
   'search.keywordMode': 'Keyword',
   /** Label for ranked search mode toggle. */

@@ -20,6 +20,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:bench": "vitest run --config vitest.bench.config.ts",
+    "bench:measure": "vitest bench --run --config vitest.bench.config.ts",
     "test:e2e": "playwright test",
     "test:e2e:offline": "PLAYWRIGHT_PRODUCTION=1 playwright test e2e/offline-views.spec.ts --project=chromium"
   },

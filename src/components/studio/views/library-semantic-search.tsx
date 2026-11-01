@@ -13,6 +13,7 @@ import {
   subscribeSemanticIndexProgress,
   type SemanticIndexProgress,
 } from '@/lib/search/semantic-progress'
+import type { RankSignal } from '@/lib/search/fusion'
 import type { AnyEntityType, Claim, Entity } from '@/lib/studio/types'
 import { logger } from '@/lib/logging/logger'
 
@@ -160,6 +161,46 @@ export const resolveSemanticEntities = (
   return resolved
 }
 
+/**
+ * Human-readable label for a hit's contributing retrievers, or null when the
+ * hit carries no signal (the lexical-fallback path). The badge is text, not a
+ * colour, so the meaning survives greyscale and does not depend on hue.
+ */
+export const matchSignalLabel = (signals: readonly RankSignal[]): string | null => {
+  const lexical = signals.includes('lexical')
+  const semantic = signals.includes('semantic')
+  if (lexical && semantic) return translate('search.matchBoth')
+  if (semantic) return translate('search.matchMeaning')
+  if (lexical) return translate('search.matchKeyword')
+  return null
+}
+
+/**
+ * Maps each entity to the retrievers that ranked it, for the current hybrid
+ * outcome. Claims resolve to their owning entity and type-filtered entities
+ * are skipped, so the badge map lines up exactly with the rendered grid.
+ */
+export const buildMatchSignals = (
+  outcome: SemanticSearchOutcome,
+  entityById: Map<string, Entity>,
+  typeFilter: AnyEntityType | 'all',
+): Map<string, readonly RankSignal[]> => {
+  const signalsByEntity = new Map<string, RankSignal[]>()
+  // A lexical fallback has no fusion step, so there is nothing to label.
+  if (outcome.source !== 'hybrid') return signalsByEntity
+
+  for (const result of outcome.results) {
+    const entity = entityForResult(result, entityById)
+    if (entity === undefined || !passesTypeFilter(entity, typeFilter)) continue
+    const existing = signalsByEntity.get(entity.id) ?? []
+    for (const signal of result.signals) {
+      if (!existing.includes(signal)) existing.push(signal)
+    }
+    signalsByEntity.set(entity.id, existing)
+  }
+  return signalsByEntity
+}
+
 /** Surfaces semantic-search loading and lexical-fallback states under the controls. */
 export const SemanticStatusBanner = ({
   active,
@@ -199,7 +240,7 @@ export const SemanticStatusBanner = ({
           <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
           {translate('search.semanticLoading')}
         </>
-      ) : outcome?.source === 'semantic' ? (
+      ) : outcome?.source === 'hybrid' ? (
         <>
           <Sparkles className="h-3 w-3" aria-hidden="true" />
           {translate('search.semanticOnDescription')}

@@ -25,7 +25,7 @@ describe('LibraryView semantic search', () => {
       libraryViewState.currentSemanticSearchEnabled = true
       libraryViewState.currentSearchQuery = 'triz'
       libraryViewState.currentTypeFilter = 'note'
-      mockSearchSemantic.mockResolvedValue({ source: 'semantic', results: [] })
+      mockSearchSemantic.mockResolvedValue({ source: 'hybrid', results: [] })
 
       render(<LibraryView />)
       await act(async () => {
@@ -41,13 +41,53 @@ describe('LibraryView semantic search', () => {
     }
   })
 
+  it('labels each hybrid hit with the retrievers that matched it', async () => {
+    vi.useFakeTimers()
+    try {
+      libraryViewState.currentSemanticSearchEnabled = true
+      libraryViewState.currentSearchQuery = 'alpha'
+      mockSearchSemantic.mockResolvedValue({
+        source: 'hybrid',
+        results: [
+          {
+            id: 'ent-1',
+            type: 'entity',
+            name: 'Alpha Concept',
+            snippet: 'First concept',
+            score: 1,
+            signals: ['semantic', 'lexical'],
+          },
+          {
+            id: 'ent-2',
+            type: 'entity',
+            name: 'Beta Note',
+            snippet: 'A note',
+            score: 0.5,
+            signals: ['semantic'],
+          },
+        ],
+      })
+
+      render(<LibraryView />)
+      await act(async () => {
+        vi.advanceTimersByTime(SEMANTIC_DEBOUNCE_PROBE_MS)
+      })
+
+      // The badge is text, not colour, so the signal survives greyscale.
+      expect(screen.getByText('Keyword + meaning')).toBeInTheDocument()
+      expect(screen.getByText('Meaning')).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('re-runs the semantic search when the type filter changes', async () => {
     vi.useFakeTimers()
     try {
       libraryViewState.currentSemanticSearchEnabled = true
       libraryViewState.currentSearchQuery = 'triz'
       libraryViewState.currentTypeFilter = 'note'
-      mockSearchSemantic.mockResolvedValue({ source: 'semantic', results: [] })
+      mockSearchSemantic.mockResolvedValue({ source: 'hybrid', results: [] })
 
       const { rerender } = render(<LibraryView />)
       await act(async () => {
