@@ -117,12 +117,106 @@ to BM25 with a visible status message — degraded, not silent.
 - `pnpm typecheck`, `pnpm typecheck:test`, ESLint on touched files, `markdownlint`,
   `pnpm run docs:check` — exit 0.
 
+## Round 2 — the open questions answered (2026-11-01)
+
+### #1051 settled: `'unsafe-eval'` cannot be removed
+
+A second drive against the production build, this time with a
+`securitypolicyviolation` listener attached **before** hydration, captured a
+real violation while the semantic path initialised:
+
+```text
+script-src -> eval
+```
+
+`onnxruntime-web` (loaded through transformers.js) compiles code with `eval`.
+`'wasm-unsafe-eval'` permits WebAssembly *compilation* and does not cover that,
+so it is an addition to `'unsafe-eval'`, never a substitute. Removing the
+directive would have shipped a permanently lexical search behind a toggle that
+looks enabled — degraded, and until now silent.
+
+Decision: production restored to
+`script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'`, keeping the
+per-environment constant and the IPv6 fix. Re-drive with the directive back:
+**zero** violations. #1051 keeps only the `'unsafe-inline'` half (needs a nonce
+pipeline Next does not emit).
+
+Note the asymmetry with LESSON-057: `page.evaluate` could not test the policy,
+but a `securitypolicyviolation` listener registered via `addInitScript` can, and
+did — it caught what booting the app never would.
+
+### #1065 de-saturated: the labels, not the model, were the problem
+
+Eight paraphrase labels were added, chosen for lexical *mismatch* rather than
+for what the model is known to get right (authoring labels the retriever already
+answers measures the label). 16 labels, 8 entities:
+
+| Strategy | recall@5 | MRR |
+| --- | ---: | ---: |
+| lexical (BM25) | 0.813 | 0.708 |
+| embedding | 1.000 | 0.865 |
+| hybrid (fused) | 1.000 | 0.859 |
+
+This is the first measurement in this repository that shows a semantic gain:
+BM25 misses 3 of 16, embeddings miss none. The concept stand-in still scores
+0.000 — its vocabulary was the issue all along.
+
+**A finding fell out of it.** Fusion's MRR (0.859) is *below* pure embedding
+(0.865): reciprocal rank fusion promotes a hit the weaker lexical list also
+matched, costing a fraction of a rank. Asserting `hybrid >= max(lexical,
+semantic)` on MRR therefore encoded a claim the data refutes, so that assertion
+was replaced with two that can fail — fusion must not trail the weak arm it is
+built from, and must stay within `FUSION_MRR_TOLERANCE` (0.05, ~10x the measured
+0.005 gap) of the strong one. Recall keeps the `>= max` claim, where it holds.
+
+The reachability guard in `seed-corpus.test.ts` was also corrected rather than
+weakened: it asserted the *concept arm* reached every label, which was only true
+while labels were tuned to it. It now asserts every label names a document the
+corpus still contains (a deleted document or typo'd id still fails), and "a
+retriever reaches it" lives in the model harness, which can.
+
+Recorded limits: the labels are authored, so this is a regression signal, not
+ground truth; 8 documents is a small corpus; and the model still could not be
+loaded from the CDN in the browser (HTTP 503, see below), so the browser-side
+numbers remain unmeasured — the Node run uses the same weights on the `cpu`
+backend.
+
+### Fallback made visible
+
+`SemanticStatusBanner` rendered "Semantic search unavailable — showing keyword
+results instead" whenever the outcome was still `null` — that is the *idle*
+state, so with the toggle on and an empty box the UI claimed the feature was
+broken before any search had run. It now renders that notice only when an
+outcome actually came back as `source: 'lexical'`, in a bordered callout, with
+the fallback's own `reason` underneath. Observed live during the re-drive:
+
+```text
+Semantic search unavailable — showing keyword results instead.
+Semantic embedding model failed to load (…MiniLM-L12-v2): Service unavailable
+while trying to load …/tokenizer_config.json
+```
+
+Still upstream: `curl` reaches that file (200 after redirect) while the browser
+receives 503, so the CDN is refusing the browser's fetch specifically. The UI now
+says so instead of implying the app is broken.
+
+### Round 2 verification
+
+- `RUN_MODEL_EVAL=1` passes with the corrected assertions; prints the table above.
+- `seed-corpus.test.ts` (concept arm) passes: lexical 0.813/0.708, concept 0.000,
+  hybrid 0.813/0.708 — no longer saturated, and fusion loses no lexical recall.
+- Focused suite: 19 tests across the eval harnesses and the library semantic view.
+- `pnpm run build` clean; served header re-read from the build.
+- Production drive: **0** CSP violations; fallback reason rendered in the banner.
+- `pnpm typecheck`, ESLint on every touched file — exit 0.
+
 ## Follow-ups
 
-- **#1051 stays open** until a browser run with a reachable model CDN loads the
-  embedder under the tightened policy. Re-run the drive; if it fails with a
-  `wasm-unsafe-eval` violation rather than a network error, restore
-  `'unsafe-eval'` and record that the runtime needs it.
-- **#1065** needs a larger labelled set than eight authored queries before any
-  claim about semantic retrieval quality can be made. The current corpus is
-  saturated for BM25.
+- **#1051** keeps only its `'unsafe-inline'` half. Removing that needs a nonce
+  pipeline Next does not emit today; until then the directive stays documented
+  as required rather than aspirational.
+- **#1065** would benefit from a corpus larger than 8 documents and labels from
+  someone other than the person who wrote the retrievers. The current numbers
+  are directional, not a benchmark.
+- **Upstream**: the browser fetch of the model gets 503 while `curl` gets 200;
+  worth a separate look if semantic search is meant to work on a cold cache.
