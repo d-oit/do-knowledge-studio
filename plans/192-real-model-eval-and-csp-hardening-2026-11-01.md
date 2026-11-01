@@ -292,3 +292,93 @@ documents are not a benchmark.
   policy (including the SW parity assertions) and the seed corpus.
 - `RUN_MODEL_EVAL=1` — 2 passed, printing both tables above.
 - `pnpm typecheck`, ESLint on every touched file — exit 0.
+
+## Round 4 — semantic search actually runs in the browser (2026-11-01)
+
+The 503 was never Hugging Face. Instrumenting `window.fetch` and reading the
+response body settled it in one run:
+
+```json
+{ "file": "tokenizer_config.json", "status": 503,
+  "type": "basic", "body": "Offline — model not cached" }
+```
+
+That body is **this repository's own service worker**. `cache.put` rejects
+responses the Cache API refuses to store, and every strategy had the write inside
+the same `try` as the fetch — so a storage rejection was caught and reported as a
+network failure. transformers.js surfaced it as "Service unavailable" and the
+model never loaded, while the bytes had arrived fine. The same shape existed in
+`cacheFirst` (where `.json` model files went before the host routing),
+`networkFirst` and `navigationFallback`.
+
+Fix: `cacheWrite()` in `public/sw.js` swallows and logs the write failure and the
+response is returned regardless. A 503 now means only that the fetch failed.
+
+Then the next layer appeared, which is the point of driving iteratively:
+
+```text
+script-src-elem -> blob
+no available backend found … Failed to fetch dynamically imported module: blob:…
+```
+
+`onnxruntime-web` imports its WASM loader as a **blob module**, which CSP
+classifies as a script element; `worker-src` already allowed `blob:`, and the
+import needed it in `script-src` too. With that, in a production build:
+
+```text
+outcome: "hybrid", violations: [], badResponses: [],
+caches: ["dks-static-v6", "transformers-cache", "dks-model-v1"]
+badges: 1 × "Keyword + meaning", 7 × "Meaning"
+```
+
+First verified end-to-end semantic search in this repository: the model
+downloads, the vector index builds, both retrievers contribute, and the badges
+say which.
+
+### Fusion weighting: measured, then declined
+
+With the semantic path real, the weighting question became measurable. Sweep over
+lexical weight (recall stayed 1.000 throughout):
+
+| lexical weight | seed MRR | large MRR |
+| --- | ---: | ---: |
+| **1.00 (plain RRF, shipped)** | **0.859** | **0.938** |
+| 0.75 | 0.865 | 0.938 |
+| 0.50 | 0.865 | 0.938 |
+| 0.25 | 0.896 | 0.938 |
+
+Discounting lexical does close the seed-corpus gap against pure embeddings
+(0.865), and 0.25 beats even that. It is nevertheless **not shipped**, because
+the gain is 0.006 MRR on eight authored documents and the cost is a guarantee:
+with lexical at 0.5, a document only BM25 found drops below semantic-only hits,
+and out of a tight result cut. `vector-store.test.ts` caught exactly that — its
+lexical-only hit fell from second place to third — and that is the
+identifier-query shape ("TRIZ-42"), where BM25 is the only engine with anything
+to say.
+
+The capability stays (`RankedList.weight`, plus a `lexicalWeight` parameter on
+the harness fusion and a printed sweep), so this is revisitable with identifier
+labels and a wider cut than two results. `FUSION_LEXICAL_WEIGHT` is 1 and
+carries the whole measurement, including why it is not 0.5.
+
+### Round 4 verification
+
+- `node --check public/sw.js` — exit 0.
+- Production drive: `hybrid`, 0 CSP violations, 0 failed model responses, model
+  cache populated, both badge kinds rendered.
+- `RUN_MODEL_EVAL=1` — 3 passed; the sweep prints both tables above.
+- Focused suites for fusion, both eval corpora, the PWA policy and the seed
+  corpus — all green. ESLint — exit 0.
+
+### Codacy found the same defect one layer up
+
+The first push of this round failed Codacy on `public/sw.js:237`
+(`detect-unhandled-async-errors`) — and it was right, not a false positive.
+`evictModelCacheOverBudget` awaits `cache.keys()`, `cache.match()` and
+`cache.delete()`, all of which can reject, and it runs inside
+`event.respondWith`: an unhandled rejection there breaks the response the model
+load depends on. That is the failed-write-masks-a-fetch bug, moved up a level.
+
+Fixed at the class, not the line: eviction is wrapped and logged, and `caches.open`
+goes through an `openCache()` helper that returns null when storage is blocked so
+every caller falls through to the network. Five call sites now share it.

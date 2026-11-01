@@ -10,6 +10,15 @@ const API_CACHE = "dks-api-v2";
 const MODEL_CACHE = "dks-model-v1";
 
 /**
+ * Total bytes the model cache may hold before the oldest entries are dropped.
+ *
+ * The model is ~25 MB; the budget leaves room for a second model plus chunked
+ * variants without letting a misconfigured host fill the origin's storage
+ * quota. Mirrors `MODEL_CACHE_MAX_BYTES` in src/lib/studio/pwa-cache.ts.
+ */
+const MODEL_CACHE_MAX_BYTES = 120 * 1024 * 1024;
+
+/**
  * Extensions served cache-first.
  *
  * Must cover every extension `scripts/generate-precache-manifest.mjs` can put in
@@ -190,27 +199,95 @@ self.addEventListener("activate", (event) => {
 
 // ── Strategies ──
 
+/**
+ * Stores a response without letting the write decide the outcome.
+ *
+ * `cache.put` rejects for responses the Cache API refuses to store — a
+ * redirected response, a `Vary: *` header, a full quota. When the write shared a
+ * try block with the fetch, that rejection was caught and reported as a 503:
+ * transformers.js surfaced "Service unavailable", the embedding model never
+ * loaded, and every render of the semantic path fell back to BM25 — while the
+ * bytes had actually arrived. A cache is an optimisation. A failed write is
+ * logged, and the response is returned either way.
+ */
+async function cacheWrite(cache, request, response) {
+  try {
+    await cache.put(request, response.clone());
+  } catch (error) {
+    console.warn("[sw] cache write failed", request.url, error);
+  }
+}
+
+/**
+ * Drops the oldest model entries until the cache fits its budget.
+ *
+ * `cache.keys()` returns insertion order, so the first entries are the least
+ * recently added. Bytes are read from `content-length`; an entry that does not
+ * report one counts as zero, which can only make eviction more conservative.
+ */
+async function evictModelCacheOverBudget(cache) {
+  // Every Cache API call here can reject (quota, invalidated cache, private
+  // mode). This runs inside `respondWith`, so an unhandled rejection would
+  // break the response the model loading depends on — the same defect as a
+  // failed write masking a good fetch, one layer up. Eviction is maintenance:
+  // log it and let the caller proceed.
+  try {
+    let total = 0;
+    const entries = [];
+    for (const request of await cache.keys()) {
+      const response = await cache.match(request);
+      const bytes = Number(response?.headers.get("content-length") ?? 0) || 0;
+      entries.push({ request, bytes });
+      total += bytes;
+    }
+    for (const entry of entries) {
+      if (total <= MODEL_CACHE_MAX_BYTES) break;
+      await cache.delete(entry.request);
+      total -= entry.bytes;
+    }
+  } catch (error) {
+    console.warn("[sw] model cache eviction failed", error);
+  }
+}
+
+/**
+ * Opens a named cache, or returns null when the Cache API is unavailable.
+ *
+ * `caches.open` rejects when storage is blocked or the origin is out of quota.
+ * Returning null lets every caller fall through to the network instead of
+ * rejecting a response it already had.
+ */
+async function openCache(name) {
+  try {
+    return await caches.open(name);
+  } catch (error) {
+    console.warn("[sw] cache unavailable", name, error);
+    return null;
+  }
+}
+
 async function cacheFirst(request) {
-  const cached = await caches.match(request);
+  const cached = await caches.match(request).catch(() => undefined);
   if (cached) return cached;
 
+  let response;
   try {
-    const response = await fetch(request);
-    if (
-      response.ok &&
-      !isUncacheableRequest(request) &&
-      !isUncacheableResponse(response)
-    ) {
-      const cache = await caches.open(STATIC_CACHE);
-      await cache.put(request, response.clone());
-    }
-    return response;
+    response = await fetch(request);
   } catch {
     return new Response("Offline — resource not cached", {
       status: 503,
       statusText: "Service Unavailable",
     });
   }
+  if (
+    response.ok &&
+    !isUncacheableRequest(request) &&
+    !isUncacheableResponse(response)
+  ) {
+    const cache = await openCache(STATIC_CACHE);
+    if (cache !== null) await cacheWrite(cache, request, response);
+  }
+  return response;
 }
 
 /**
@@ -220,38 +297,34 @@ async function cacheFirst(request) {
  * pinning an error response for the life of the cache.
  */
 async function modelFirst(request) {
-  const cache = await caches.open(MODEL_CACHE);
-  const cached = await cache.match(request);
+  const cache = await openCache(MODEL_CACHE);
+  const cached = cache ? await cache.match(request).catch(() => undefined) : undefined;
   if (cached) return cached;
 
+  let response;
   try {
-    const response = await fetch(request);
-    if (!isUncacheableResponse(response)) {
-      await cache.put(request, response.clone());
-    }
-    return response;
+    response = await fetch(request);
   } catch {
+    // A real network failure, not a cache write failure: the distinction is the
+    // whole point of separating them.
     return new Response("Offline — model not cached", {
       status: 503,
       statusText: "Service Unavailable",
     });
   }
+  if (cache !== null && !isUncacheableResponse(response)) {
+    await cacheWrite(cache, request, response);
+    await evictModelCacheOverBudget(cache);
+  }
+  return response;
 }
 
 async function networkFirst(request) {
+  let response;
   try {
-    const response = await fetch(request);
-    if (
-      response.ok &&
-      !isUncacheableRequest(request) &&
-      !isUncacheableResponse(response)
-    ) {
-      const cache = await caches.open(API_CACHE);
-      await cache.put(request, response.clone());
-    }
-    return response;
+    response = await fetch(request);
   } catch {
-    const cached = await caches.match(request);
+    const cached = await caches.match(request).catch(() => undefined);
     if (cached) return cached;
     return new Response(
       JSON.stringify({ error: "offline", message: "No cached response available" }),
@@ -262,27 +335,37 @@ async function networkFirst(request) {
       }
     );
   }
+  if (
+    response.ok &&
+    !isUncacheableRequest(request) &&
+    !isUncacheableResponse(response)
+  ) {
+    const cache = await openCache(API_CACHE);
+    if (cache !== null) await cacheWrite(cache, request, response);
+  }
+  return response;
 }
 
 async function navigationFallback(request) {
+  let response;
   try {
-    const response = await fetch(request);
-    if (
-      response.ok &&
-      !isUncacheableRequest(request) &&
-      !isUncacheableResponse(response)
-    ) {
-      const cache = await caches.open(STATIC_CACHE);
-      await cache.put(request, response.clone());
-    }
-    return response;
+    response = await fetch(request);
   } catch {
-    const cached = await caches.match("/");
+    const cached = await caches.match("/").catch(() => undefined);
     return cached || new Response("Offline — page not available", {
       status: 503,
       statusText: "Service Unavailable",
     });
   }
+  if (
+    response.ok &&
+    !isUncacheableRequest(request) &&
+    !isUncacheableResponse(response)
+  ) {
+    const cache = await openCache(STATIC_CACHE);
+    if (cache !== null) await cacheWrite(cache, request, response);
+  }
+  return response;
 }
 
 // ── Fetch handler ──

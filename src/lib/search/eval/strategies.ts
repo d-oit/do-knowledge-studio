@@ -10,7 +10,7 @@
 
 import type { Entity, Claim } from '@/lib/studio/types'
 import { search, type SearchResult } from '../retrieval'
-import { reciprocalRankFusion } from '../fusion'
+import { FUSION_LEXICAL_WEIGHT, reciprocalRankFusion } from '../fusion'
 import { rankByConcept } from './concept-ranker'
 
 /** Ranked ids from the BM25 engine. */
@@ -41,6 +41,12 @@ export const fuseWithSemanticIds = (
   query: string,
   semanticIds: readonly string[],
   limit: number,
+  /**
+   * Weight applied to the BM25 list. Defaults to the weight the app uses, so
+   * the harness scores what ships; passing 1 restores plain RRF for the sweep.
+   * See `FUSION_LEXICAL_WEIGHT` for the measurements behind the value.
+   */
+  lexicalWeight = FUSION_LEXICAL_WEIGHT,
 ): string[] => {
   const lexical = search([...entities], [...claims], query, limit)
   const semantic: SearchResult[] = semanticIds.map((id) => {
@@ -56,7 +62,7 @@ export const fuseWithSemanticIds = (
   return reciprocalRankFusion(
     [
       { signal: 'semantic', results: semantic },
-      { signal: 'lexical', results: lexical },
+      { signal: 'lexical', results: lexical, weight: lexicalWeight },
     ],
     limit,
   ).map((result) => result.id)

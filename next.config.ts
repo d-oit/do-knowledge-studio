@@ -30,7 +30,14 @@ import path from "path";
 // already made once: "tightening" production by removing eval, which the
 // semantic runtime needs. If a future Next build stops using eval, prove it
 // with a drive that reaches the semantic runtime, not with the shell.
-const scriptSrc = "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval';";
+// `blob:` is required by the same runtime, for a different reason: with the
+// model finally loading, the drive recorded `script-src-elem -> blob` and
+// onnxruntime reported "no available backend found … Failed to fetch
+// dynamically imported module: blob:…". It imports its WASM loader as a blob
+// module, which CSP classifies as a script element. `worker-src` already
+// allowed blob: for the worker itself; the import needed it here too.
+const scriptSrc =
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob:;";
 
 const cspHeader = `
   default-src 'self';

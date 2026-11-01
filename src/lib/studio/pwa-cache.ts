@@ -49,6 +49,44 @@ export const ALLOWED_API_PATHS = new Set(['/api'])
 export const MODEL_CACHE_NAME = 'dks-model-v1'
 
 /**
+ * Bytes the model cache may hold before the oldest entries are dropped.
+ *
+ * Mirrors `MODEL_CACHE_MAX_BYTES` in `public/sw.js` and asserted equal by the
+ * policy test. The budget is roughly two full models: enough for a model plus
+ * its chunked variants, short of letting a misconfigured host exhaust the
+ * origin's storage quota.
+ */
+export const MODEL_CACHE_MAX_BYTES = 120 * 1024 * 1024
+
+/** One cached model entry, as the eviction policy sees it. */
+export interface ModelCacheEntry {
+  url: string
+  bytes: number
+}
+
+/**
+ * URLs to drop, oldest first, until the cache fits `maxBytes`.
+ *
+ * `entries` must be in insertion order (what `Cache.keys()` returns), because
+ * that is what "oldest" means here. Pure and total: a negative or zero budget
+ * evicts everything, and an unmeasurable entry counts as zero bytes, which can
+ * only make eviction more conservative than intended.
+ */
+export const entriesToEvict = (
+  entries: readonly ModelCacheEntry[],
+  maxBytes: number = MODEL_CACHE_MAX_BYTES,
+): string[] => {
+  let total = entries.reduce((sum, entry) => sum + Math.max(0, entry.bytes), 0)
+  const evicted: string[] = []
+  for (const entry of entries) {
+    if (total <= maxBytes) break
+    evicted.push(entry.url)
+    total -= Math.max(0, entry.bytes)
+  }
+  return evicted
+}
+
+/**
  * Hosts that serve the embedding model to transformers.js.
  *
  * Mirrors `MODEL_HOSTS` in `public/sw.js`, which is plain JS in `public/` and

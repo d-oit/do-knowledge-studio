@@ -5,7 +5,9 @@ import {
   isUncacheableRequest,
   isUncacheableResponse,
   isModelAssetUrl,
+  entriesToEvict,
   MODEL_ASSET_HOSTS,
+  MODEL_CACHE_MAX_BYTES,
   MODEL_CACHE_NAME,
   clearAppCaches,
   getAppCacheNames,
@@ -123,6 +125,41 @@ describe('pwa-cache policy predicates', () => {
         expect(sw, `public/sw.js is missing ${host}`).toContain(`"${host}"`)
       }
       expect(sw).toContain(`const MODEL_CACHE = "${MODEL_CACHE_NAME}"`)
+      // The byte budget is duplicated for the same reason; a drift here would
+      // let the cache grow past what the app believes it caps at. The service
+      // worker writes it as an expression for readability, so pin the value and
+      // the expression separately rather than re-deriving one from the other.
+      expect(MODEL_CACHE_MAX_BYTES).toBe(120 * 1024 * 1024)
+      expect(sw).toContain('const MODEL_CACHE_MAX_BYTES = 120 * 1024 * 1024;')
+    })
+  })
+
+  describe('model cache eviction', () => {
+    const entry = (url: string, bytes: number) => ({ url, bytes })
+
+    it('keeps everything when the total fits', () => {
+      expect(entriesToEvict([entry('a', 10), entry('b', 10)], 100)).toEqual([])
+    })
+
+    it('drops oldest entries until the total fits', () => {
+      const entries = [entry('a', 40), entry('b', 40), entry('c', 40)]
+      expect(entriesToEvict(entries, 100)).toEqual(['a'])
+      expect(entriesToEvict(entries, 80)).toEqual(['a'])
+      expect(entriesToEvict(entries, 40)).toEqual(['a', 'b'])
+    })
+
+    it('evicts everything for a zero or negative budget', () => {
+      expect(entriesToEvict([entry('a', 1)], 0)).toEqual(['a'])
+      expect(entriesToEvict([entry('a', 1)], -5)).toEqual(['a'])
+    })
+
+    it('treats an unmeasurable entry as zero bytes rather than dropping the wrong things', () => {
+      // A missing content-length counts as zero, so an entry that reports
+      // nothing cannot push a measurable sibling out of the budget.
+      expect(entriesToEvict([entry('unknown', 0), entry('small', 10)], 10)).toEqual([])
+      // And when eviction really is needed, the measurable entry is the one
+      // that frees space.
+      expect(entriesToEvict([entry('big', 60), entry('unknown', 0)], 50)).toEqual(['big'])
     })
   })
 

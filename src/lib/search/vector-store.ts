@@ -26,7 +26,11 @@ import {
   SEMANTIC_MODEL_FINGERPRINT,
 } from './semantic-digest'
 import { search, type SearchResult, type SearchFilter } from './retrieval'
-import { reciprocalRankFusion, type FusedSearchResult } from './fusion'
+import {
+  FUSION_LEXICAL_WEIGHT,
+  reciprocalRankFusion,
+  type FusedSearchResult,
+} from './fusion'
 import {
   VectorStore,
   type SemanticDoc,
@@ -492,7 +496,9 @@ export const semanticSearch = async (
     results: reciprocalRankFusion(
       [
         { signal: 'semantic', results: semanticResults },
-        { signal: 'lexical', results: lexicalResults },
+        // Weighted, not equal: plain RRF let lexical agreement demote correct
+        // semantic hits (see FUSION_LEXICAL_WEIGHT for the measurements).
+        { signal: 'lexical', results: lexicalResults, weight: FUSION_LEXICAL_WEIGHT },
       ],
       limit,
     ),
