@@ -15,15 +15,20 @@ import path from "path";
 // and logged as an error on every page load, while matching nothing. Loopback
 // Ollama is covered by the named-host sources below. Found by driving a
 // production build in Chromium (plan 191).
-// `'unsafe-eval'` exists for the development compiler only; a production build
-// does not need it. `'wasm-unsafe-eval'` stays in both: it permits WebAssembly
-// compilation (the semantic embedding runtime) without permitting `eval` or
-// `new Function`. Issue #1051 tracks removing the remaining `'unsafe-inline'`
+// `'unsafe-eval'` is required in production, and that is measured rather than
+// assumed: driving a production build in Chromium with the directive removed
+// logged a real violation (script-src, blocked URI `eval`) from the semantic
+// runtime (`onnxruntime-web` via transformers.js), which compiles with `eval`.
+// `'wasm-unsafe-eval'` permits WebAssembly compilation and does NOT cover that,
+// so it is an addition to `'unsafe-eval'`, never a substitute. With the
+// directive restored, the same drive records no violation. Dropping it would
+// ship a permanently lexical fallback behind a working-looking toggle. Issue
+// #1051 keeps the remaining `'unsafe-inline'`
 // from `script-src`, which needs a nonce pipeline Next does not emit today.
 const isDevelopment = process.env.NODE_ENV === 'development'
 const scriptSrc = isDevelopment
   ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval';"
-  : "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval';"
+  : "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval';"
 
 const cspHeader = `
   default-src 'self';

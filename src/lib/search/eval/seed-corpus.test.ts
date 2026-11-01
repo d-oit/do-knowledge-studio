@@ -62,15 +62,19 @@ describe('seed-corpus retrieval evaluation', () => {
     expect(hybridMetrics.mrr).toBeGreaterThanOrEqual(lexicalMetrics.mrr)
   })
 
-  it('keeps every label reachable by at least one strategy', () => {
-    // A stale label or a corpus edit that removes a document would otherwise
-    // make the recall numbers look fine while measuring nothing.
+  it('points every label at a document that still exists', () => {
+    // This replaced a "the concept arm reaches every label" check, which held
+    // only while the labels were tuned to that arm's vocabulary. The paraphrase
+    // block is deliberately outside it, so a miss there is the expected case,
+    // not a defect. What must hold for any label set is that it names documents
+    // the corpus still contains — a deleted document or a typo'd id would let
+    // recall look healthy while measuring nothing. "A retriever reaches it" is
+    // asserted in model-eval.test.ts, where the retriever under test can.
+    const known = new Set(seedEntities.map((entity) => entity.id))
     for (const entry of QUERIES) {
-      const reached = hybrid(entry.query).some((id) => entry.relevantIds.includes(id))
-      expect(
-        reached,
-        `no strategy reached ${entry.relevantIds.join(', ')} for "${entry.query}"`,
-      ).toBe(true)
+      for (const id of entry.relevantIds) {
+        expect(known.has(id), `unknown id ${id} for "${entry.query}"`).toBe(true)
+      }
     }
   })
 

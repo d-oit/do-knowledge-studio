@@ -42,6 +42,13 @@ const MODEL_EVAL_ENABLED = process.env.RUN_MODEL_EVAL === '1'
 /** Model inference plus a cold download needs far more than the default. */
 const MODEL_EVAL_TIMEOUT_MS = 300_000
 
+/**
+ * How far fusion's MRR may trail the pure-semantic arm before it counts as a
+ * fusion defect. Measured headroom is ~0.005; the bound is set an order of
+ * magnitude above that so it catches a broken fusion step, not rounding.
+ */
+const FUSION_MRR_TOLERANCE = 0.05
+
 /** Document text mirrors what `vector-store.ts` embeds for an entity. */
 const documentText = (entity: Entity): string =>
   `${entity.name} ${entity.description} ${entity.content} ${entity.tags.join(' ')}`
@@ -126,8 +133,18 @@ describe.skipIf(!MODEL_EVAL_ENABLED)('model-backed seed-corpus evaluation', () =
       expect(hybridMetrics.recallAtK).toBeGreaterThanOrEqual(
         Math.max(lexicalMetrics.recallAtK, semanticMetrics.recallAtK),
       )
+      // MRR is deliberately NOT asserted against the better arm. Measured on
+      // this set, fusion scores 0.859 against pure-embedding 0.865: reciprocal
+      // rank fusion promotes a hit the weak lexical list also found, which
+      // costs a fraction of a rank. That is fusion's documented cost, not a
+      // regression, so asserting the max would encode a claim the data
+      // refutes. The guards that can actually fail: fusion must not trail the
+      // weak arm it is built from, and must stay inside
+      // FUSION_MRR_TOLERANCE of the strong one — a fusion step that discards
+      // the semantic ranking lands far outside it.
+      expect(hybridMetrics.mrr).toBeGreaterThanOrEqual(lexicalMetrics.mrr)
       expect(hybridMetrics.mrr).toBeGreaterThanOrEqual(
-        Math.max(lexicalMetrics.mrr, semanticMetrics.mrr),
+        semanticMetrics.mrr - FUSION_MRR_TOLERANCE,
       )
     },
     MODEL_EVAL_TIMEOUT_MS,

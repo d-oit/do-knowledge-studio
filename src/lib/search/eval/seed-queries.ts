@@ -22,4 +22,20 @@ export const SEED_QUERIES: readonly LabelledQuery[] = [
   { query: 'group ideation session', relevantIds: ['e7'] },
   { query: 'segmentation principle', relevantIds: ['e3'] },
   { query: 'finding related notes by meaning', relevantIds: ['e8'] },
+  // Second block: paraphrases of the same eight documents, added because the
+  // original eight saturated at recall 1.000 for BM25 and therefore could not
+  // show whether a semantic arm helps. Each one asks for a document without
+  // reusing its distinctive vocabulary ("trade-offs" for contradiction,
+  // "diagram" for graph, "network connection" for offline). They were written
+  // for lexical *mismatch*, not for what the model is known to get right — a
+  // label chosen because the retriever already succeeds measures the label.
+  // Authored, so still not ground truth: the numbers are a regression signal.
+  { query: 'method for resolving competing design requirements', relevantIds: ['e1'] },
+  { query: 'the person behind the invention framework', relevantIds: ['e2'] },
+  { query: 'splitting one large part into several smaller ones', relevantIds: ['e3'] },
+  { query: 'working without a network connection', relevantIds: ['e5'] },
+  { query: 'collecting material without ever revisiting it', relevantIds: ['e6'] },
+  { query: 'generating ideas with no guiding method', relevantIds: ['e7'] },
+  { query: 'finding passages that mean the same but share no words', relevantIds: ['e8'] },
+  { query: 'a diagram of how concepts connect', relevantIds: ['e4'] },
 ]

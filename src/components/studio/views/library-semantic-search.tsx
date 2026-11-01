@@ -245,9 +245,18 @@ export const SemanticStatusBanner = ({
           <Sparkles className="h-3 w-3" aria-hidden="true" />
           {translate('search.semanticOnDescription')}
         </>
-      ) : (
-        <span>{translate('search.semanticUnavailable')}</span>
-      )}
+      ) : outcome?.source === 'lexical' ? (
+        // Only claim the feature is unavailable when a query actually fell
+        // back. The previous `else` branch rendered "unavailable" whenever the
+        // outcome was still null — which is the idle state with the toggle on
+        // and an empty box — so the banner cried wolf before a single search
+        // had run. The reason comes from the fallback outcome itself, so the
+        // user sees why instead of a generic apology.
+        <div className="flex flex-col gap-0.5 rounded-md border border-saffron/40 bg-saffron-soft/40 px-2.5 py-1.5 text-label-lg text-saffron-deep">
+          <span className="font-medium">{translate('search.semanticUnavailable')}</span>
+          <span className="text-caption opacity-80">{outcome.reason}</span>
+        </div>
+      ) : null}
     </div>
   )
 }
