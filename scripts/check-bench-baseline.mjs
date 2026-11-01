@@ -98,7 +98,11 @@ const buildBaseline = (guards) => ({
 const main = (argv) => {
   const reportPath = argv[0]
   if (reportPath === undefined) {
-    console.error('usage: node scripts/check-bench-baseline.mjs <report.json> [--update] [--enforce]')
+    // No angle brackets here: `<report.json>` is parsed as an unclosed HTML tag
+    // by the xss/no-mixed-html rule, and this is not markup.
+    console.error(
+      'usage: node scripts/check-bench-baseline.mjs report.json [--update] [--enforce]',
+    )
     return 2
   }
   const update = argv.includes('--update')
