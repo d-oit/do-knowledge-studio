@@ -4,9 +4,13 @@ import {
   isAllowlistedApiRequest,
   isUncacheableRequest,
   isUncacheableResponse,
+  isModelAssetUrl,
+  MODEL_ASSET_HOSTS,
+  MODEL_CACHE_NAME,
   clearAppCaches,
   getAppCacheNames,
 } from './pwa-cache'
+import { readFileSync } from 'node:fs'
 
 describe('pwa-cache policy predicates', () => {
   describe('isSafeMethod', () => {
@@ -93,6 +97,32 @@ describe('pwa-cache policy predicates', () => {
       const headers = new Headers()
       headers.set('Cache-Control', 'private')
       expect(isUncacheableResponse(200, headers)).toBe(true)
+    })
+  })
+
+  describe('model asset caching', () => {
+    it('recognises the hosts that serve the embedding model', () => {
+      expect(isModelAssetUrl(new URL('https://huggingface.co/Xenova/m/resolve/main/x.onnx'))).toBe(true)
+      expect(isModelAssetUrl(new URL('https://cdn-lfs.hf.co/repo/x.onnx'))).toBe(true)
+      // Same-origin assets and unrelated CDNs stay in their own strategies.
+      expect(isModelAssetUrl(new URL('https://app.example.com/model.onnx'))).toBe(false)
+      expect(isModelAssetUrl(new URL('https://cdn.jsdelivr.net/npm/x.onnx'))).toBe(false)
+    })
+
+    it('names a model cache distinct from the shell cache', () => {
+      expect(MODEL_CACHE_NAME).toBe('dks-model-v1')
+      expect(MODEL_CACHE_NAME).not.toBe('dks-static-v6')
+    })
+
+    it('keeps the service worker host list in step with this module', () => {
+      // The SW cannot import TypeScript, so the lists are duplicated by
+      // necessity. A drift here would only surface offline, on the one path
+      // nobody exercises — assert equality instead of trusting the comment.
+      const sw = readFileSync('public/sw.js', 'utf8')
+      for (const host of MODEL_ASSET_HOSTS) {
+        expect(sw, `public/sw.js is missing ${host}`).toContain(`"${host}"`)
+      }
+      expect(sw).toContain(`const MODEL_CACHE = "${MODEL_CACHE_NAME}"`)
     })
   })
 

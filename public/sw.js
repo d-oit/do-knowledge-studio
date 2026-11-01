@@ -1,5 +1,13 @@
 const STATIC_CACHE = "dks-static-v6";
 const API_CACHE = "dks-api-v2";
+/**
+ * Model weights and tokenizer files, cached apart from the app shell.
+ *
+ * The semantic runtime pulls ~25 MB from a CDN on first use. Keeping it in its
+ * own cache means clearing the shell (a new build) does not force a re-download,
+ * and clearing the model does not evict the app.
+ */
+const MODEL_CACHE = "dks-model-v1";
 
 /**
  * Extensions served cache-first.
@@ -73,6 +81,30 @@ function isStaticAsset(url) {
   return STATIC_EXTENSIONS.some((ext) => url.pathname.endsWith(ext));
 }
 
+/**
+ * Hosts that serve the embedding model to transformers.js.
+ *
+ * Mirrors `MODEL_ASSET_HOSTS` in src/lib/studio/pwa-cache.ts, which the unit
+ * tests exercise; this file is plain JS served from public/ and cannot import
+ * it. Keep the two lists identical.
+ */
+const MODEL_HOSTS = new Set([
+  "huggingface.co",
+  "www.huggingface.co",
+  "cdn-lfs.huggingface.co",
+  "cdn-lfs.hf.co",
+]);
+
+/**
+ * Model assets are recognised by host, not extension. Matching on `.json`
+ * (a static extension) would route the tokenizer into the shell cache, and
+ * `.onnx` is not in that list at all — so the download only survives a reload
+ * if it is handled before the static-asset branch.
+ */
+function isModelAsset(url) {
+  return MODEL_HOSTS.has(url.hostname);
+}
+
 function isAllowlistedApiRequest(url) {
   if (url.origin !== self.location.origin) return false;
   const normalizedPath = url.pathname.replace(/\/$/, "");
@@ -141,7 +173,7 @@ self.addEventListener("install", (event) => {
 // ── Activate: purge old caches ──
 
 self.addEventListener("activate", (event) => {
-  const validCaches = [STATIC_CACHE, API_CACHE];
+  const validCaches = [STATIC_CACHE, API_CACHE, MODEL_CACHE];
   event.waitUntil(
     caches
       .keys()
@@ -175,6 +207,31 @@ async function cacheFirst(request) {
     return response;
   } catch {
     return new Response("Offline — resource not cached", {
+      status: 503,
+      statusText: "Service Unavailable",
+    });
+  }
+}
+
+/**
+ * Cache-first for model weights: the bytes are immutable per revision, so a
+ * network round trip would only cost latency. A failed fetch returns 503 and
+ * (deliberately) caches nothing, so the next attempt retries instead of
+ * pinning an error response for the life of the cache.
+ */
+async function modelFirst(request) {
+  const cache = await caches.open(MODEL_CACHE);
+  const cached = await cache.match(request);
+  if (cached) return cached;
+
+  try {
+    const response = await fetch(request);
+    if (!isUncacheableResponse(response)) {
+      await cache.put(request, response.clone());
+    }
+    return response;
+  } catch {
+    return new Response("Offline — model not cached", {
       status: 503,
       statusText: "Service Unavailable",
     });
@@ -240,6 +297,12 @@ self.addEventListener("fetch", (event) => {
   // Pass non-GET/HEAD or uncacheable requests straight to network without SW strategy caching
   if (isUncacheableRequest(request)) {
     event.respondWith(fetch(request));
+    return;
+  }
+
+  // Embedding model assets: cache-first, so a warm cache needs no CDN.
+  if (isModelAsset(url)) {
+    event.respondWith(modelFirst(request));
     return;
   }
 
