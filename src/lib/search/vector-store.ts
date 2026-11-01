@@ -11,6 +11,12 @@
  * successful build, and persists the result in IndexedDB behind a model +
  * preprocessing + corpus-digest fingerprint. A cancelled or failed build keeps
  * the previous valid vectors, so it cannot poison later queries.
+ *
+ * Split from its pure helpers (Plan 192): document construction and snapshot
+ * validation live in `semantic-docs.ts`, the memory budget in
+ * `semantic-budget.ts`. What remains here is the stateful orchestration —
+ * incremental staging, cache restore, progress and the public search entry
+ * point.
  */
 
 import type { Entity, Claim } from '@/lib/studio/types'
@@ -44,6 +50,12 @@ import {
   type CachedSemanticDoc,
 } from './semantic-cache'
 import { setSemanticIndexProgress } from './semantic-progress'
+import { buildDocs, isValidSnapshot, toSearchResults } from './semantic-docs'
+import {
+  ASSUMED_EMBEDDING_DIMENSIONS,
+  estimateIndexBytes,
+  getSemanticIndexBudget,
+} from './semantic-budget'
 
 export {
   getSemanticIndexProgress,
@@ -52,6 +64,7 @@ export {
   type SemanticIndexStatus,
 } from './semantic-progress'
 export { cosineSimilarity, VectorStore } from './vector-index'
+export { SEMANTIC_INDEX_MAX_BYTES, setSemanticIndexBudgetForTests } from './semantic-budget'
 
 /** Where a search result came from — the worker response carries this. */
 export type SearchSource = 'hybrid' | 'lexical'
@@ -69,62 +82,7 @@ export type { FusedSearchResult, RankSignal } from './fusion'
 
 export type { SemanticDoc, SemanticDocFilter, VectorStoreSnapshot }
 
-/** Snippet length matched to the BM25 result snippet. */
-const SNIPPET_MAX_LENGTH = 140
-
-/** Upper bound on approximate semantic-index memory (documents + float vectors). */
-export const SEMANTIC_INDEX_MAX_BYTES = 64 * 1024 * 1024
-
-/** Assumed vector width for the pre-embedding budget check when the model is not loaded yet. */
-const ASSUMED_EMBEDDING_DIMENSIONS = 384
-
-let semanticIndexBudgetBytes = SEMANTIC_INDEX_MAX_BYTES
-
-/** Override the memory budget for tests (never used by production code). */
-export const setSemanticIndexBudgetForTests = (bytes: number): void => {
-  semanticIndexBudgetBytes = bytes
-}
-
 export { SEMANTIC_MODEL_FINGERPRINT }
-
-const makeSnippet = (text: string): string => {
-  const trimmed = text.trim()
-  if (trimmed.length <= SNIPPET_MAX_LENGTH) return trimmed
-  return `${trimmed.slice(0, SNIPPET_MAX_LENGTH)}…`
-}
-
-const entityDocText = (entity: Entity): string =>
-  `${entity.name} ${entity.description} ${entity.content} ${entity.tags.join(' ')}`
-
-const claimDocText = (claim: Claim): string =>
-  `${claim.statement} ${claim.evidence ?? ''} ${claim.source ?? ''}`
-
-const buildDocs = (entities: Entity[], claims: Claim[]): SemanticDoc[] => {
-  const entityMap = new Map(entities.map((e) => [e.id, e]))
-  const docs: SemanticDoc[] = []
-  for (const entity of entities) {
-    docs.push({
-      id: entity.id,
-      type: 'entity',
-      name: entity.name,
-      fullText: entityDocText(entity),
-      entityType: entity.type,
-    })
-  }
-  for (const claim of claims) {
-    const entity = entityMap.get(claim.entityId)
-    docs.push({
-      id: claim.id,
-      type: 'claim',
-      name: entity?.name ?? claim.statement,
-      fullText: claimDocText(claim),
-      entityId: claim.entityId,
-      entityName: entity?.name,
-      entityType: entity?.type,
-    })
-  }
-  return docs
-}
 
 /** Shared index instance backing semantic search. */
 export const defaultVectorStore = new VectorStore()
@@ -165,33 +123,6 @@ const yieldToMainThread = (): Promise<void> => {
   return promise
 }
 
-/** Validate a cached snapshot before trusting its vectors. */
-const isValidSnapshot = (snapshot: { docs: CachedSemanticDoc[]; vectors: { id: string; vector: number[] }[] }): boolean => {
-  if (snapshot.docs.length === 0 || snapshot.docs.length !== snapshot.vectors.length) {
-    return snapshot.docs.length === 0 && snapshot.vectors.length === 0
-  }
-  const ids = new Set(snapshot.docs.map((doc) => doc.id))
-  if (ids.size !== snapshot.docs.length) return false
-  for (const doc of snapshot.docs) {
-    if (
-      typeof doc.id !== 'string' ||
-      (doc.type !== 'entity' && doc.type !== 'claim') ||
-      typeof doc.name !== 'string' ||
-      typeof doc.fullText !== 'string'
-    ) {
-      return false
-    }
-  }
-  const dimensions = snapshot.vectors[0]?.vector.length ?? 0
-  if (dimensions === 0) return false
-  return snapshot.vectors.every(
-    (entry) =>
-      ids.has(entry.id) &&
-      entry.vector.length === dimensions &&
-      entry.vector.every((value) => Number.isFinite(value)),
-  )
-}
-
 /** Restore a verified cache snapshot into the live index. */
 const restoreSnapshot = (
   snapshot: { docs: CachedSemanticDoc[]; vectors: { id: string; vector: number[] }[] },
@@ -200,12 +131,6 @@ const restoreSnapshot = (
   defaultVectorStore.restore({ docs, vectors: snapshot.vectors })
   indexedFingerprints = new Map(docs.map((doc) => [doc.id, fingerprintOf(doc)]))
   indexedDimensions = snapshot.vectors[0]?.vector.length ?? null
-}
-
-/** Approximate memory for a corpus at the supplied dimensions. */
-const estimateIndexBytes = (docs: SemanticDoc[], dimensions: number): number => {
-  const textBytes = docs.reduce((sum, doc) => sum + doc.fullText.length * 2, 0)
-  return textBytes + docs.length * dimensions * 4
 }
 
 /** Stage embeddings for changed docs, committing only after every batch succeeds. */
@@ -292,7 +217,7 @@ const doBuildIndex = async (
   }
 
   const dimensions = indexedDimensions ?? ASSUMED_EMBEDDING_DIMENSIONS
-  if (estimateIndexBytes(docs, dimensions) > semanticIndexBudgetBytes) {
+  if (estimateIndexBytes(docs, dimensions) > getSemanticIndexBudget()) {
     const error = 'semantic index exceeds the configured memory budget'
     setSemanticIndexProgress({ status: 'error', completed: 0, total: docs.length, reason: error })
     return { ok: false, error }
@@ -335,7 +260,7 @@ const doBuildIndex = async (
     return staged
   }
 
-  if (estimateIndexBytes(docs, staged.dimensions) > semanticIndexBudgetBytes) {
+  if (estimateIndexBytes(docs, staged.dimensions) > getSemanticIndexBudget()) {
     const error = 'semantic index exceeds the configured memory budget'
     setSemanticIndexProgress({ status: 'error', completed: 0, total: docs.length, reason: error })
     return { ok: false, error }
@@ -432,18 +357,6 @@ const lexicalFallback = (
   results: search(entities, claims, query, limit, filter),
   reason,
 })
-
-/** Maps ranked hits to the search result shape the UI consumes. */
-const toSearchResults = (hits: { id: string; score: number; doc: SemanticDoc }[]): SearchResult[] =>
-  hits.map((hit) => ({
-    id: hit.doc.id,
-    type: hit.doc.type,
-    name: hit.doc.type === 'entity' ? hit.doc.name : (hit.doc.entityName ?? hit.doc.name),
-    snippet: makeSnippet(hit.doc.fullText),
-    score: hit.score,
-    entityId: hit.doc.entityId,
-    entityName: hit.doc.entityName,
-  }))
 
 /**
  * Runs a semantic search: incrementally builds (or reuses) the vector index,
