@@ -1,7 +1,7 @@
 import type { Entity, Claim } from '@/lib/studio/types'
 import type { ChatMessage } from './types'
 import { search } from '@/lib/search/retrieval'
-import { searchAsync } from '@/lib/search/search-worker-client'
+import { searchAsync, searchSemantic } from '@/lib/search/search-worker-client'
 import { buildEntityIndex } from '@/lib/studio/graph-index'
 import type { ResearchResult } from './research'
 import { buildResearchContext } from './research'
@@ -15,12 +15,24 @@ const throwIfAborted = (signal?: AbortSignal): void => {
   if (signal?.aborted) throw new DOMException('Build aborted', 'AbortError')
 }
 
+/**
+ * Which retriever builds the local context.
+ *
+ * `lexical` is the BM25 path the chat has always used. `hybrid` fuses BM25 with
+ * the semantic ranking (Issue #1065) and falls back to lexical inside
+ * `semanticSearch` when the embedder or index is unavailable, so a caller never
+ * has to handle "no results because the model did not load".
+ */
+export type RetrievalMode = 'lexical' | 'hybrid'
+
 /** Options controlling context injection budgets and formatting. */
 export interface ContextBudgetOptions {
   /** Maximum number of relevant search results to include (default: 5). */
   maxResults?: number
   /** Maximum snippet character length per item (default: 200). */
   maxSnippetLength?: number
+  /** Retriever behind the local context (default: `lexical`). */
+  retrieval?: RetrievalMode
 }
 
 /** Formats a set of search results into prompt context parts. */
@@ -56,16 +68,26 @@ const formatLocalContext = (
   return formatLocalContextFromResults(entities, results, maxSnippetLength)
 }
 
-/** Formats matching local entities into prompt context parts, offloading BM25 to a worker. */
+/**
+ * Formats matching local entities into prompt context parts.
+ *
+ * `lexical` offloads BM25 to the search worker. `hybrid` runs the fused
+ * BM25 + semantic retrieval, which executes on the main thread and may pay a
+ * one-off model download, so it is opt-in rather than the default.
+ */
 const formatLocalContextAsync = async (
   entities: Entity[],
   claims: Claim[],
   query: string,
   maxResults: number,
   maxSnippetLength: number,
-  signal?: AbortSignal,
+  signal: AbortSignal | undefined,
+  retrieval: RetrievalMode,
 ): Promise<string> => {
-  const results = await searchAsync(entities, claims, query, maxResults, signal)
+  const results =
+    retrieval === 'hybrid'
+      ? (await searchSemantic(entities, claims, query, maxResults, signal)).results
+      : await searchAsync(entities, claims, query, maxResults, signal)
   return formatLocalContextFromResults(entities, results, maxSnippetLength)
 }
 
@@ -123,7 +145,15 @@ export const buildSystemPromptAsync = async (
   throwIfAborted(signal)
 
   if (augmentWithLocal && entities.length > 0) {
-    prompt += await formatLocalContextAsync(entities, claims, query, maxResults, maxSnippetLength, signal)
+    prompt += await formatLocalContextAsync(
+      entities,
+      claims,
+      query,
+      maxResults,
+      maxSnippetLength,
+      signal,
+      options?.retrieval ?? 'lexical',
+    )
     throwIfAborted(signal)
   }
 

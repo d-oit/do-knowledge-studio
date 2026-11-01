@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Entity } from '@/lib/studio/types'
-import { search } from '../retrieval'
-import { reciprocalRankFusion } from '../fusion'
-import { rankByConcept } from './concept-ranker'
+import { conceptRankIds, hybridRankIds, lexicalRankIds } from './strategies'
 import {
   EVAL_K,
   evaluateStrategy,
@@ -88,32 +86,13 @@ const QUERIES: readonly LabelledQuery[] = [
 ]
 
 const lexicalRank = (query: string): readonly string[] =>
-  search([...CORPUS], [], query, EVAL_K).map((result) => result.id)
+  lexicalRankIds(CORPUS, [], query, EVAL_K)
 
 const semanticRank = (query: string): readonly string[] =>
-  rankByConcept(CORPUS, query, EVAL_K)
+  conceptRankIds(CORPUS, query, EVAL_K)
 
-const hybridRank = (query: string): readonly string[] => {
-  const lexical = search([...CORPUS], [], query, EVAL_K)
-  const semanticIds = rankByConcept(CORPUS, query, EVAL_K)
-  const semantic = semanticIds.map((id) => {
-    const entity = CORPUS.find((candidate) => candidate.id === id)
-    return {
-      id,
-      type: 'entity' as const,
-      name: entity?.name ?? id,
-      snippet: entity?.description ?? '',
-      score: 0,
-    }
-  })
-  return reciprocalRankFusion(
-    [
-      { signal: 'semantic', results: semantic },
-      { signal: 'lexical', results: lexical },
-    ],
-    EVAL_K,
-  ).map((result) => result.id)
-}
+const hybridRank = (query: string): readonly string[] =>
+  hybridRankIds(CORPUS, [], query, EVAL_K)
 
 const format = (metrics: StrategyMetrics): string =>
   `recall@${String(EVAL_K)}=${metrics.recallAtK.toFixed(3)} mrr=${metrics.mrr.toFixed(3)}`

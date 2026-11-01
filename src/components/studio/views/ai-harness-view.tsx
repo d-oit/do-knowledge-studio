@@ -39,6 +39,7 @@ const HIDE_SETTINGS_LABEL = 'Hide settings'
 const useAIHarnessViewState = () => {
   const entities = useStudioStore((s) => s.entities)
   const claims = useStudioStore((s) => s.claims)
+  const semanticSearchEnabled = useStudioStore((s) => s.semanticSearchEnabled)
   const selectedEntityId = useStudioStore((s) => s.selectedEntityId)
   const reducedMotion = useReducedMotion()
   const [provider, setProvider] = useState<AIProvider>('openrouter')
@@ -84,6 +85,7 @@ const useAIHarnessViewState = () => {
     localDevice,
     entities,
     claims,
+    semanticSearchEnabled,
     requiresKey: activeProvider.requiresKey,
   })
 
