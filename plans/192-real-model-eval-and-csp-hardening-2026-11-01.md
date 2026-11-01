@@ -369,3 +369,16 @@ carries the whole measurement, including why it is not 0.5.
 - `RUN_MODEL_EVAL=1` — 3 passed; the sweep prints both tables above.
 - Focused suites for fusion, both eval corpora, the PWA policy and the seed
   corpus — all green. ESLint — exit 0.
+
+### Codacy found the same defect one layer up
+
+The first push of this round failed Codacy on `public/sw.js:237`
+(`detect-unhandled-async-errors`) — and it was right, not a false positive.
+`evictModelCacheOverBudget` awaits `cache.keys()`, `cache.match()` and
+`cache.delete()`, all of which can reject, and it runs inside
+`event.respondWith`: an unhandled rejection there breaks the response the model
+load depends on. That is the failed-write-masks-a-fetch bug, moved up a level.
+
+Fixed at the class, not the line: eviction is wrapped and logged, and `caches.open`
+goes through an `openCache()` helper that returns null when storage is blocked so
+every caller falls through to the network. Five call sites now share it.

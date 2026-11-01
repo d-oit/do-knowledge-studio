@@ -226,18 +226,43 @@ async function cacheWrite(cache, request, response) {
  * report one counts as zero, which can only make eviction more conservative.
  */
 async function evictModelCacheOverBudget(cache) {
-  let total = 0;
-  const entries = [];
-  for (const request of await cache.keys()) {
-    const response = await cache.match(request);
-    const bytes = Number(response?.headers.get("content-length") ?? 0) || 0;
-    entries.push({ request, bytes });
-    total += bytes;
+  // Every Cache API call here can reject (quota, invalidated cache, private
+  // mode). This runs inside `respondWith`, so an unhandled rejection would
+  // break the response the model loading depends on — the same defect as a
+  // failed write masking a good fetch, one layer up. Eviction is maintenance:
+  // log it and let the caller proceed.
+  try {
+    let total = 0;
+    const entries = [];
+    for (const request of await cache.keys()) {
+      const response = await cache.match(request);
+      const bytes = Number(response?.headers.get("content-length") ?? 0) || 0;
+      entries.push({ request, bytes });
+      total += bytes;
+    }
+    for (const entry of entries) {
+      if (total <= MODEL_CACHE_MAX_BYTES) break;
+      await cache.delete(entry.request);
+      total -= entry.bytes;
+    }
+  } catch (error) {
+    console.warn("[sw] model cache eviction failed", error);
   }
-  for (const entry of entries) {
-    if (total <= MODEL_CACHE_MAX_BYTES) break;
-    await cache.delete(entry.request);
-    total -= entry.bytes;
+}
+
+/**
+ * Opens a named cache, or returns null when the Cache API is unavailable.
+ *
+ * `caches.open` rejects when storage is blocked or the origin is out of quota.
+ * Returning null lets every caller fall through to the network instead of
+ * rejecting a response it already had.
+ */
+async function openCache(name) {
+  try {
+    return await caches.open(name);
+  } catch (error) {
+    console.warn("[sw] cache unavailable", name, error);
+    return null;
   }
 }
 
@@ -259,8 +284,8 @@ async function cacheFirst(request) {
     !isUncacheableRequest(request) &&
     !isUncacheableResponse(response)
   ) {
-    const cache = await caches.open(STATIC_CACHE);
-    await cacheWrite(cache, request, response);
+    const cache = await openCache(STATIC_CACHE);
+    if (cache !== null) await cacheWrite(cache, request, response);
   }
   return response;
 }
@@ -272,8 +297,8 @@ async function cacheFirst(request) {
  * pinning an error response for the life of the cache.
  */
 async function modelFirst(request) {
-  const cache = await caches.open(MODEL_CACHE);
-  const cached = await cache.match(request).catch(() => undefined);
+  const cache = await openCache(MODEL_CACHE);
+  const cached = cache ? await cache.match(request).catch(() => undefined) : undefined;
   if (cached) return cached;
 
   let response;
@@ -287,7 +312,7 @@ async function modelFirst(request) {
       statusText: "Service Unavailable",
     });
   }
-  if (!isUncacheableResponse(response)) {
+  if (cache !== null && !isUncacheableResponse(response)) {
     await cacheWrite(cache, request, response);
     await evictModelCacheOverBudget(cache);
   }
@@ -315,8 +340,8 @@ async function networkFirst(request) {
     !isUncacheableRequest(request) &&
     !isUncacheableResponse(response)
   ) {
-    const cache = await caches.open(API_CACHE);
-    await cacheWrite(cache, request, response);
+    const cache = await openCache(API_CACHE);
+    if (cache !== null) await cacheWrite(cache, request, response);
   }
   return response;
 }
@@ -337,8 +362,8 @@ async function navigationFallback(request) {
     !isUncacheableRequest(request) &&
     !isUncacheableResponse(response)
   ) {
-    const cache = await caches.open(STATIC_CACHE);
-    await cacheWrite(cache, request, response);
+    const cache = await openCache(STATIC_CACHE);
+    if (cache !== null) await cacheWrite(cache, request, response);
   }
   return response;
 }
