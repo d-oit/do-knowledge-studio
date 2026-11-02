@@ -4,12 +4,12 @@
 
 ## Project
 
-Local-first knowledge studio built with Next.js 16 / React 19 / Tailwind 4 / shadcn / Zustand. Rich text editing, knowledge graph, mind maps, client-side search, export, and an AI agent harness. Persistence via Zustand + localStorage. No required backend.
+Local-first knowledge studio built with Next.js 16 / React 19 / Tailwind 4 / shadcn / Zustand. Rich text editing, knowledge graph, mind maps, client-side search, export, and an AI agent harness. Persistence via Zustand + IndexedDB, with a small localStorage metadata/recovery envelope. No required backend.
 
 ## Hard Rules
 
 - Local-first only. Do not introduce a required backend.
-- Zustand + localStorage is the persistence layer.
+- Zustand + IndexedDB is the persistence layer: the canonical corpus lives in IndexedDB, and localStorage carries only schema metadata, recovery snapshots and quarantine copies. Do not grow the localStorage envelope into a second corpus.
 - Markdown is import/export, not canonical truth.
 - Use strict TypeScript. Do not use `any`.
 - No magic numbers; extract descriptive named constants.

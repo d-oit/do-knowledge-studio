@@ -63,3 +63,23 @@ GitHub repository topics (`local-first`, `crdt`, `pwa`, `nextjs`) need a
 maintainer action: the brokered GitHub App token cannot update repository
 metadata (`PATCH /repos` returns 403). The About description already no longer
 mentions SQLite FTS5.
+
+## Follow-up — `AGENTS.md` storage drift (2026-11-02)
+
+Reviewing the merged change surfaced one gap the original pass could not see:
+`check-doc-consistency.mjs` only inspected `README.md`,
+`plans/ARCHITECTURE.md`, `plans/GOAL.md` and `plans/PHASES.md`, so `AGENTS.md`
+kept two pre-#1036 claims — "Persistence via Zustand + localStorage" and
+"Zustand + localStorage is the persistence layer" — while the canonical corpus
+had moved to IndexedDB (`src/lib/studio/canonical-storage.ts`). That is the
+file every coding agent reads first, which makes it the most expensive place to
+be wrong.
+
+Both lines now match the shipped design, and `AGENTS.md` joined the
+storage-truth loop. A new rule fails any maintained doc whose line claims
+persistence and names `localStorage` without naming `IndexedDB`, so the exact
+regression cannot return.
+
+Verified by re-injecting the original lines: the check exits 1 with three
+distinct failures (missing IndexedDB, plus both stale claims), and exits 0 once
+restored.

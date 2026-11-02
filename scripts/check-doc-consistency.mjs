@@ -9,6 +9,9 @@
  * - the architecture view table lists every view;
  * - canonical storage claims mention IndexedDB and do not imply SQLite/FTS5
  *   is the active store;
+ * - no maintained doc presents localStorage as the persistence layer without
+ *   naming IndexedDB as the canonical store (AGENTS.md drifted for months
+ *   because only plan docs were checked);
  * - every export format in `export-types.ts` is named in the README;
  * - optional data-egress capabilities are labelled;
  * - PHASES history lines that mention SQLite are marked historical;
@@ -34,6 +37,7 @@ const packageJson = JSON.parse(readFileSync('package.json', 'utf8'))
 const scripts = new Set(Object.keys(packageJson.scripts ?? {}))
 const scriptFiles = new Set(readdirSync('scripts'))
 const readme = readFileSync('README.md', 'utf8')
+const agents = readFileSync('AGENTS.md', 'utf8')
 const architecture = readFileSync('plans/ARCHITECTURE.md', 'utf8')
 const goal = readFileSync('plans/GOAL.md', 'utf8')
 const phases = readFileSync('plans/PHASES.md', 'utf8')
@@ -99,6 +103,7 @@ if (!viewBlock) {
 // --- Storage truth ---------------------------------------------------------
 for (const [name, text] of [
   ['README.md', readme],
+  ['AGENTS.md', agents],
   ['plans/ARCHITECTURE.md', architecture],
   ['plans/GOAL.md', goal],
 ]) {
@@ -108,6 +113,13 @@ for (const [name, text] of [
   for (const line of text.split('\n')) {
     if (/SQLite|FTS5/i.test(line) && !/no\s+SQLite|historical|not\s+SQLite/i.test(line)) {
       fail(`${name} implies SQLite/FTS5 is current: ${line.trim()}`)
+    }
+    // A persistence claim naming localStorage but not IndexedDB describes the
+    // pre-#1036 world: the corpus moved to IndexedDB, leaving localStorage a
+    // small metadata envelope. `AGENTS.md` is the first file a coding agent
+    // reads, so a stale claim there is the most expensive kind of drift.
+    if (/persist/i.test(line) && /localStorage/i.test(line) && !/IndexedDB/i.test(line)) {
+      fail(`${name} presents localStorage as the persistence layer: ${line.trim()}`)
     }
   }
 }
