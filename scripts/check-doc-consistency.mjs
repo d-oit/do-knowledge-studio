@@ -11,7 +11,10 @@
  *   is the active store;
  * - every export format in `export-types.ts` is named in the README;
  * - optional data-egress capabilities are labelled;
- * - PHASES history lines that mention SQLite are marked historical.
+ * - PHASES history lines that mention SQLite are marked historical;
+ * - `VERSION` matches the `package.json` version;
+ * - README, `LICENSE` and `NOTICE` agree on the MIT license and name the
+ *   project owner rather than the template's placeholder holder.
  *
  * Exit 0 when consistent; non-zero with one line per drift.
  */
@@ -36,6 +39,9 @@ const goal = readFileSync('plans/GOAL.md', 'utf8')
 const phases = readFileSync('plans/PHASES.md', 'utf8')
 const types = readFileSync('src/lib/studio/types.ts', 'utf8')
 const exportTypes = readFileSync('src/components/studio/views/export-types.ts', 'utf8')
+const versionFile = readFileSync('VERSION', 'utf8').trim()
+const license = readFileSync('LICENSE', 'utf8')
+const notice = readFileSync('NOTICE', 'utf8')
 
 // --- Script references -----------------------------------------------------
 for (const match of readme.matchAll(/pnpm run ([a-zA-Z0-9:_-]+)/g)) {
@@ -149,6 +155,41 @@ for (const capability of ['OpenRouter', 'Ollama', 'web research', 'P2P']) {
 }
 if (!/data (?:leaves|egress)|off-device|transmit/i.test(readme)) {
   fail('README does not explain when data leaves the device')
+}
+
+// --- License and version metadata -----------------------------------------
+if (versionFile !== packageJson.version) {
+  fail(
+    `VERSION (${versionFile}) does not match package.json version (${packageJson.version})`,
+  )
+}
+
+const licenseSectionStart = readme.indexOf('## License')
+if (licenseSectionStart === -1) {
+  fail('README is missing a "## License" section')
+} else {
+  const licenseSection = readme.slice(licenseSectionStart)
+  if (!/MIT/.test(licenseSection)) {
+    fail('README license section does not state the MIT license')
+  }
+  if (/Internal project/i.test(licenseSection)) {
+    fail('README license section contradicts the MIT LICENSE')
+  }
+}
+
+if (!/^MIT License/m.test(license)) {
+  fail('LICENSE is not the MIT license text')
+}
+if (!/MIT License/.test(notice)) {
+  fail('NOTICE does not state the MIT license')
+}
+for (const [name, text] of [
+  ['LICENSE', license],
+  ['NOTICE', notice],
+]) {
+  if (/AI Agent Template Contributors/.test(text)) {
+    fail(`${name} still names the template copyright holder`)
+  }
 }
 
 if (process.exitCode !== 1) {

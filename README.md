@@ -179,4 +179,4 @@ See `plans/ADRs/045-sync-threat-model.md`.
 
 ## License
 
-Internal project. See [LICENSE](./LICENSE) and [NOTICE](./NOTICE) for details.
+MIT License. See [LICENSE](./LICENSE) and [NOTICE](./NOTICE) for details.

@@ -1,7 +1,7 @@
 # PWA Cache Storage Inventory & Policy
 
 ## Overview
-DO Knowledge Studio uses a Progressive Web App (PWA) Service Worker (`public/sw.js`) to provide offline support for the static application shell and selected safe same-origin API endpoints.
+DO Knowledge Studio uses a Progressive Web App (PWA) Service Worker (`public/sw.js`) to provide offline support for the static application shell and embedding-model assets.
 
 As a privacy-first, local-first knowledge workspace, the application strictly prevents authenticated, personalized, AI provider, or non-idempotent network responses from being stored in shared `CacheStorage`.
 
@@ -12,7 +12,7 @@ As a privacy-first, local-first knowledge workspace, the application strictly pr
 | Cache Key | Scope & Strategy | Contents | Lifecycle / Purge Trigger |
 | :--- | :--- | :--- | :--- |
 | `dks-static-v6` | App Shell (Cache-First) | JS/CSS bundles, HTML entry point, fonts, static icons, precached manifest assets (`/precache-manifest.json`) | Retained across active sessions. Purged during service worker `activate` when cache key version is incremented. |
-| `dks-api-v2` | Same-Origin Safe APIs (Network-First) | Explicit same-origin allowlisted GET/HEAD responses (`/api`) | Retained across active sessions. Purged during service worker `activate` when cache key version is incremented or on user cache clear. |
+| `dks-model-v1` | Embedding Model Assets (Cache-First) | Model weights and tokenizer files from the Hugging Face CDN | Retained across shell deploys; evicted oldest-first when it exceeds its byte budget, or on user cache clear. |
 
 ---
 
@@ -35,13 +35,12 @@ A response is rejected and **never written to CacheStorage** if:
 - HTTP status is not successful (`200-299`)
 - `Cache-Control` header contains `private` or `no-store`
 
-### 4. Same-Origin API Allowlist
-- **Allowlisted Path**: `/api` (exact root match or normalized)
-- **Excluded Endpoints & Services**:
-  - AI Provider calls (`/api/chat`, OpenRouter, Ollama, local models)
-  - Web research proxy requests
-  - WebRTC room / signaling traffic (`y-webrtc`)
-  - External origins and cross-origin endpoints
+### 4. Same-Origin API Requests
+The app ships no same-origin API routes, so no API responses are cached. Any
+same-origin request that is not a navigation or static asset is passed straight
+to the network without caching. AI provider calls (OpenRouter, Ollama, local
+models), web research proxies, and WebRTC signaling traffic are therefore never
+stored in `CacheStorage`.
 
 ---
 

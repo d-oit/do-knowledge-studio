@@ -36,9 +36,6 @@ export async function getAppCacheNames(): Promise<string[]> {
   return window.caches.keys()
 }
 
-/** Explicit same-origin allowlisted API paths eligible for SW caching. */
-export const ALLOWED_API_PATHS = new Set(['/api'])
-
 /**
  * Cache Storage name holding the embedding model, kept separate from the shell.
  *
@@ -110,13 +107,6 @@ export function isModelAssetUrl(url: URL): boolean {
 export function isSafeMethod(method: string): boolean {
   const m = method.toUpperCase()
   return m === 'GET' || m === 'HEAD'
-}
-
-/** Checks if a request is an allowlisted same-origin API endpoint. */
-export function isAllowlistedApiRequest(url: URL, origin: string): boolean {
-  if (url.origin !== origin) return false
-  const pathname = url.pathname.replace(/\/$/, '')
-  return ALLOWED_API_PATHS.has(pathname)
 }
 
 /** Checks if a request has sensitive credentials or cache-bypassing headers. */

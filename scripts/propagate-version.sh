@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# scripts/propagate-version.sh — sync the VERSION file to derived version strings.
+# scripts/propagate-version.sh — sync derived version strings from package.json.
 #
-# The `VERSION` file at the repo root is the single source of truth. This
-# script propagates it to the derived references documented in
-# agents-docs/VERSION.md:
+# `package.json` is the single source of truth for the project version. This
+# script writes the root `VERSION` file from it and propagates the value to the
+# derived references documented in agents-docs/VERSION.md:
 #
+#   - VERSION                  (generated from package.json)
 #   - agents-docs/VERSION.md   ("the current version is X.Y.Z" + table row)
 #   - agents-docs/MIGRATION.md (badge + "Template version: X.Y.Z")
 #   - README.md                (badge, if present)
@@ -15,19 +16,31 @@
 set -euo pipefail
 
 REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+PACKAGE_JSON="$REPO_ROOT/package.json"
 VERSION_FILE="$REPO_ROOT/VERSION"
 
-if [[ ! -f "$VERSION_FILE" ]]; then
-  echo "error: VERSION file not found at $VERSION_FILE" >&2
+if [[ ! -f "$PACKAGE_JSON" ]]; then
+  echo "error: package.json not found at $PACKAGE_JSON" >&2
   exit 1
 fi
 
-version="$(tr -d '[:space:]' < "$VERSION_FILE")"
+if ! version="$(node -e '
+  const fs = require("node:fs");
+  const pkg = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+  process.stdout.write(String(pkg.version ?? ""));
+' "$PACKAGE_JSON" 2>/dev/null)"; then
+  echo "error: could not read version from $PACKAGE_JSON" >&2
+  exit 1
+fi
 
 if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  echo "error: invalid version '$version' in $VERSION_FILE (expected X.Y.Z)" >&2
+  echo "error: invalid version '$version' in $PACKAGE_JSON (expected X.Y.Z)" >&2
   exit 1
 fi
+
+# VERSION is a generated mirror of package.json, kept for tooling that reads a
+# plain-text version file.
+printf '%s\n' "$version" > "$VERSION_FILE"
 
 # Portable in-place sed: BSD sed (macOS) requires -i with a backup suffix.
 # GNU sed (Linux) accepts both forms.
@@ -42,8 +55,8 @@ sed_inplace() {
 
 # Escape a value for safe use inside a sed s/// replacement expression:
 # backslash, ampersand, and the delimiter (/) are the only metacharacters
-# there. Defense in depth — the version regex below already restricts
-# VERSION to digits and dots, so this guards against future loosening.
+# there. Defense in depth — the version regex above already restricts the
+# value to digits and dots, so this guards against future loosening.
 sed_escape_replacement() {
   local value="$1" escaped
   escaped="${value//\\/\\\\}"
