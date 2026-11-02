@@ -48,7 +48,7 @@ test.describe('PWA CacheStorage Policy & Verification', () => {
         headers: { 'Cache-Control': 'no-store' },
       }).catch(() => null);
 
-      // 5. Non-allowlisted / excluded endpoint (e.g. AI provider chat or user credentials)
+      // 5. Excluded endpoint (e.g. AI provider chat or user credentials)
       await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -56,26 +56,20 @@ test.describe('PWA CacheStorage Policy & Verification', () => {
       }).catch(() => null);
     });
 
-    // Inspect CacheStorage keys and match entries
-    const cacheInspection = await page.evaluate(async () => {
-      if (!('caches' in window)) return { apiKeys: [], matchCount: 0 };
-      try {
-        const apiCache = await caches.open('dks-api-v2');
-        const keys = await apiCache.keys();
-        const urls = keys.map((k) => k.url);
-        return {
-          apiKeys: urls,
-          matchCount: keys.length,
-        };
-      } catch {
-        return { apiKeys: [], matchCount: 0 };
+    // Inspect every CacheStorage container: the app ships no same-origin API
+    // routes, so no API response may be stored anywhere.
+    const cachedUrls = await page.evaluate(async () => {
+      if (!('caches' in window)) return [];
+      const urls: string[] = [];
+      for (const name of await caches.keys()) {
+        const cache = await caches.open(name);
+        for (const request of await cache.keys()) urls.push(request.url);
       }
+      return urls;
     });
 
-    // Ensure non-idempotent, auth, no-store, or excluded endpoints were never added
-    for (const url of cacheInspection.apiKeys) {
-      expect(url).not.toContain('/api/chat');
-      expect(url).not.toContain('/api/user');
+    for (const url of cachedUrls) {
+      expect(new URL(url).pathname.startsWith('/api')).toBe(false);
     }
   });
 

@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
   isSafeMethod,
-  isAllowlistedApiRequest,
   isUncacheableRequest,
   isUncacheableResponse,
   isModelAssetUrl,
@@ -29,26 +28,6 @@ describe('pwa-cache policy predicates', () => {
       expect(isSafeMethod('PATCH')).toBe(false)
       expect(isSafeMethod('DELETE')).toBe(false)
       expect(isSafeMethod('OPTIONS')).toBe(false)
-    })
-  })
-
-  describe('isAllowlistedApiRequest', () => {
-    const origin = 'https://app.example.com'
-
-    it('accepts allowlisted same-origin API routes', () => {
-      expect(isAllowlistedApiRequest(new URL('https://app.example.com/api'), origin)).toBe(true)
-      expect(isAllowlistedApiRequest(new URL('https://app.example.com/api/'), origin)).toBe(true)
-    })
-
-    it('rejects cross-origin requests', () => {
-      expect(isAllowlistedApiRequest(new URL('https://evil.com/api'), origin)).toBe(false)
-      expect(isAllowlistedApiRequest(new URL('https://openrouter.ai/api/v1/chat'), origin)).toBe(false)
-    })
-
-    it('rejects non-allowlisted API routes (AI chat, signaling, user subpaths)', () => {
-      expect(isAllowlistedApiRequest(new URL('https://app.example.com/api/chat'), origin)).toBe(false)
-      expect(isAllowlistedApiRequest(new URL('https://app.example.com/api/user/credentials'), origin)).toBe(false)
-      expect(isAllowlistedApiRequest(new URL('https://app.example.com/api/signaling'), origin)).toBe(false)
     })
   })
 
@@ -167,7 +146,7 @@ describe('pwa-cache policy predicates', () => {
     beforeEach(() => {
       const keysMap = new Map<string, unknown>()
       keysMap.set('dks-static-v6', {})
-      keysMap.set('dks-api-v2', {})
+      keysMap.set('dks-model-v1', {})
 
       const mockCaches = {
         keys: vi.fn(async () => Array.from(keysMap.keys())),
@@ -187,12 +166,12 @@ describe('pwa-cache policy predicates', () => {
 
     it('lists current cache names', async () => {
       const names = await getAppCacheNames()
-      expect(names).toEqual(['dks-static-v6', 'dks-api-v2'])
+      expect(names).toEqual(['dks-static-v6', 'dks-model-v1'])
     })
 
     it('purges all cache storage containers and returns deleted names', async () => {
       const deleted = await clearAppCaches()
-      expect(deleted).toEqual(['dks-static-v6', 'dks-api-v2'])
+      expect(deleted).toEqual(['dks-static-v6', 'dks-model-v1'])
 
       const remaining = await getAppCacheNames()
       expect(remaining).toEqual([])

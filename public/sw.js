@@ -1,5 +1,4 @@
 const STATIC_CACHE = "dks-static-v6";
-const API_CACHE = "dks-api-v2";
 /**
  * Model weights and tokenizer files, cached apart from the app shell.
  *
@@ -48,11 +47,6 @@ const STATIC_EXTENSIONS = [
   ".webmanifest",
   ".txt",
 ];
-
-// Explicit allowlisted same-origin API routes eligible for SW network-first caching.
-// Dynamic AI routes (/api/chat, local/remote LLM calls), web research proxies,
-// WebRTC signaling, and user-specific subpaths are strictly excluded.
-const ALLOWED_API_PATHS = new Set(["/api"]);
 
 // Fallback shell, used only if the generated manifest cannot be fetched.
 // The manifest is derived from the selected local or adapter static inventory,
@@ -112,12 +106,6 @@ const MODEL_HOSTS = new Set([
  */
 function isModelAsset(url) {
   return MODEL_HOSTS.has(url.hostname);
-}
-
-function isAllowlistedApiRequest(url) {
-  if (url.origin !== self.location.origin) return false;
-  const normalizedPath = url.pathname.replace(/\/$/, "");
-  return ALLOWED_API_PATHS.has(normalizedPath);
 }
 
 function isNavigationRequest(request) {
@@ -182,7 +170,7 @@ self.addEventListener("install", (event) => {
 // ── Activate: purge old caches ──
 
 self.addEventListener("activate", (event) => {
-  const validCaches = [STATIC_CACHE, API_CACHE, MODEL_CACHE];
+  const validCaches = [STATIC_CACHE, MODEL_CACHE];
   event.waitUntil(
     caches
       .keys()
@@ -319,33 +307,6 @@ async function modelFirst(request) {
   return response;
 }
 
-async function networkFirst(request) {
-  let response;
-  try {
-    response = await fetch(request);
-  } catch {
-    const cached = await caches.match(request).catch(() => undefined);
-    if (cached) return cached;
-    return new Response(
-      JSON.stringify({ error: "offline", message: "No cached response available" }),
-      {
-        status: 503,
-        statusText: "Service Unavailable",
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-  }
-  if (
-    response.ok &&
-    !isUncacheableRequest(request) &&
-    !isUncacheableResponse(response)
-  ) {
-    const cache = await openCache(API_CACHE);
-    if (cache !== null) await cacheWrite(cache, request, response);
-  }
-  return response;
-}
-
 async function navigationFallback(request) {
   let response;
   try {
@@ -398,12 +359,6 @@ self.addEventListener("fetch", (event) => {
   // Static assets: cache-first
   if (isStaticAsset(url)) {
     event.respondWith(cacheFirst(request));
-    return;
-  }
-
-  // Allowlisted API calls: network-first
-  if (isAllowlistedApiRequest(url)) {
-    event.respondWith(networkFirst(request));
     return;
   }
 

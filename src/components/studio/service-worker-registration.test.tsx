@@ -215,7 +215,7 @@ describe('ServiceWorkerRegistration', () => {
     // jsdom ships no CacheStorage; install a spy-able one so the assertions
     // are about whether the page touches the cache at all.
     const cacheStorage = {
-      keys: vi.fn(() => Promise.resolve(['dks-static-v2', 'dks-api-v2'])),
+      keys: vi.fn(() => Promise.resolve(['dks-static-v2', 'dks-model-v1'])),
       delete: vi.fn((name: string | Request) => {
         deleted.push(String(name))
         return Promise.resolve(true)

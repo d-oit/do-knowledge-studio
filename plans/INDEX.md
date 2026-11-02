@@ -9,6 +9,17 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 193 — Reconcile license, version and repo-description metadata (2026-11-02)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| 1 | Make README, `LICENSE` and `NOTICE` agree on MIT and the real owner | Done | README says MIT; `LICENSE`/`NOTICE` name Dominik Oswald (2026) |
+| 2 | Pick one version source of truth | Done | `package.json` is canonical; `propagate-version.sh` writes `VERSION` and the derived docs |
+| 3 | Remove the leftover `/api` route and its dead cache policy | Done | Route deleted; the service worker no longer keeps an API cache |
+| 4 | Make the invariants fail CI | Done | `docs:check` fails on `VERSION` drift, a non-MIT README/LICENSE/NOTICE, or the template holder |
+
+See [Plan 193](193-metadata-reconciliation-2026-11-02.md).
+
 ### Plan 192 — Real-model retrieval evaluation and CSP hardening (2026-11-01)
 
 | Wave | Goal | Status | Outcome |
