@@ -117,8 +117,15 @@ for (const [name, text] of [
     // A persistence claim naming localStorage but not IndexedDB describes the
     // pre-#1036 world: the corpus moved to IndexedDB, leaving localStorage a
     // small metadata envelope. `AGENTS.md` is the first file a coding agent
-    // reads, so a stale claim there is the most expensive kind of drift.
-    if (/persist/i.test(line) && /localStorage/i.test(line) && !/IndexedDB/i.test(line)) {
+    // reads, so a stale claim there is the most expensive kind of drift. A
+    // line that says it is describing history may name the old store freely —
+    // same escape hatch as the SQLite rule above.
+    if (
+      /persist/i.test(line) &&
+      /localStorage/i.test(line) &&
+      !/IndexedDB/i.test(line) &&
+      !/historical|legacy|pre-#|formerly/i.test(line)
+    ) {
       fail(`${name} presents localStorage as the persistence layer: ${line.trim()}`)
     }
   }
