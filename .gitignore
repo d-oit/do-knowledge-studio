@@ -65,7 +65,11 @@ test.db
 
 # Agent scratch / taste
 .commandcode/
-.claude/
+# Keep Claude-local state ignored, but track manifest-managed skill links.
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/*
 .mimocode/plans/
 
 # === Next.js redesign additions ===

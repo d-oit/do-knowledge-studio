@@ -9,16 +9,17 @@ Implements ADR 029 validation requirements:
 - Malformed eval JSON or unsupported eval schema
 - Broken repository-relative links in skill content
 - Duplicate canonical names
-- Unmanaged drift in generated surfaces
+- Generated instruction and labeler surfaces
 """
 
 import importlib.util
 import json
+import os
 import re
 import sys
 from pathlib import Path
 
-import yaml
+from agent_surface_generated import _repo_path, sync_generated_surfaces, validate_generated_surfaces
 
 
 def load_manifest(repo_root: Path) -> dict:
@@ -62,6 +63,8 @@ def validate_canonical_skills(repo_root: Path, manifest: dict) -> list[str]:
 
 def validate_skill_frontmatter(repo_root: Path) -> list[str]:
     """Validate SKILL.md files have required YAML frontmatter."""
+    import yaml
+
     errors = []
     skills_dir = repo_root / ".agents" / "skills"
     if not skills_dir.exists():
@@ -102,6 +105,7 @@ def validate_skill_frontmatter(repo_root: Path) -> list[str]:
 
 def validate_skill_name_mismatch(repo_root: Path) -> list[str]:
     """Check that skill name matches its directory name."""
+    import yaml
     errors = []
     skills_dir = repo_root / ".agents" / "skills"
     if not skills_dir.exists():
@@ -155,6 +159,8 @@ def validate_eval_json(repo_root: Path) -> list[str]:
 
 def validate_duplicate_names(repo_root: Path) -> list[str]:
     """Check for duplicate canonical skill names."""
+    import yaml
+
     errors = []
     skills_dir = repo_root / ".agents" / "skills"
     if not skills_dir.exists():
@@ -194,7 +200,6 @@ def validate_duplicate_names(repo_root: Path) -> list[str]:
 
 def validate_broken_links(repo_root: Path) -> list[str]:
     """Check for broken repository-relative links in skill content."""
-    import re
     errors = []
     skills_dir = repo_root / ".agents" / "skills"
     if not skills_dir.exists():
@@ -205,7 +210,6 @@ def validate_broken_links(repo_root: Path) -> list[str]:
 
     # Common placeholder patterns to skip
     placeholder_patterns = ['image-url', 'your-', 'example', 'path/to/', '<', '>', 'architecture.svg']
-
     for skill_md in skills_dir.rglob("SKILL.md"):
         content = skill_md.read_text()
         skill_dir = skill_md.parent
@@ -293,50 +297,111 @@ def read_agents_md_line_limit(repo_root: Path) -> int | None:
     return None
 
 
-
-
-def sync_managed_surfaces(repo_root: Path, manifest: dict) -> list[str]:
-    """Create or repair managed skill symlinks for all declared tools."""
+def check_managed_skill_links(
+    repo_root: Path, manifest: dict, *, repair: bool
+) -> list[str]:
+    """Check or repair manifest-declared relative skill links."""
     errors = []
     canonical_skills = manifest.get("canonical_skills", ".agents/skills")
-    tools = manifest.get("tools", {})
+    canonical_path, error = _repo_path(repo_root, canonical_skills, "canonical_skills")
+    if error:
+        return [error]
+    if canonical_path is None or not canonical_path.is_dir():
+        return [f"Canonical skills directory not found: {canonical_skills}"]
 
+    tools = manifest.get("tools", {})
+    if not isinstance(tools, dict):
+        return ["Manifest tools must be an object"]
     for tool_name, config in tools.items():
+        if not isinstance(config, dict):
+            errors.append(f"Manifest tool {tool_name!r} must be an object")
+            continue
         strategy = config.get("symlink_strategy", "none")
         if strategy == "none":
             continue
-
-        tool_dir = config.get("directory", "")
-        skills_dir = config.get("skills_directory", "")
-        if not tool_dir or not skills_dir:
+        if (
+            not isinstance(strategy, str)
+            or strategy not in {"relative-directory", "relative-entries"}
+        ):
+            errors.append(
+                f"Unsupported symlink_strategy for {tool_name!r}: {strategy!r}"
+            )
             continue
 
-        full_tool_dir = repo_root / tool_dir
-        full_skills_dir = repo_root / skills_dir
-        canonical_path = repo_root / canonical_skills
-
-        if not canonical_path.exists():
-            errors.append(f"Canonical skills directory not found: {canonical_skills}")
+        tool_dir = config.get("directory")
+        skills_dir = config.get("skills_directory")
+        full_tool_dir, error = _repo_path(
+            repo_root, tool_dir, f"Tool directory for {tool_name!r}"
+        )
+        if error or full_tool_dir is None:
+            errors.append(error or f"Manifest directory missing for {tool_name!r}")
             continue
-
-        full_tool_dir.mkdir(parents=True, exist_ok=True)
+        full_skills_dir, error = _repo_path(
+            repo_root, skills_dir, f"Skill directory for {tool_name!r}"
+        )
+        if error or full_skills_dir is None:
+            errors.append(error or f"Manifest skills_directory missing for {tool_name!r}")
+            continue
+        if full_tool_dir.is_symlink() and not full_tool_dir.exists():
+            errors.append(f"Tool directory is a broken symlink: {tool_dir}")
+            continue
+        if full_tool_dir.exists() and not full_tool_dir.is_dir():
+            errors.append(f"Tool directory exists and is not a directory: {tool_dir}")
+            continue
+        if strategy == "relative-directory":
+            if full_skills_dir.is_symlink():
+                target = full_skills_dir.resolve()
+                if not target.exists():
+                    errors.append(f"Broken symlink: {skills_dir} -> {full_skills_dir.readlink()}")
+                elif target != canonical_path.resolve():
+                    errors.append(f"Symlink mismatch: {skills_dir} -> {full_skills_dir.readlink()}")
+            elif full_skills_dir.exists():
+                errors.append(f"{skills_dir} exists and is not a directory symlink")
+            elif repair:
+                full_tool_dir.mkdir(parents=True, exist_ok=True)
+                relative_target = os.path.relpath(
+                    canonical_path.resolve(), full_skills_dir.parent.resolve()
+                )
+                full_skills_dir.symlink_to(relative_target)
+            else:
+                errors.append(f"Missing skill directory symlink: {skills_dir}")
+            continue
 
         if full_skills_dir.is_symlink():
-            target = full_skills_dir.resolve()
-            if not target.exists():
-                errors.append(f"Broken symlink: {skills_dir} -> {full_skills_dir.readlink()}")
-            elif target != canonical_path.resolve():
-                errors.append(
-                    f"Symlink mismatch: {skills_dir} -> {full_skills_dir.readlink()}"
-                )
-        elif full_skills_dir.exists():
-            errors.append(f"Warning: {skills_dir} exists and is not a symlink")
-        else:
-            import os
-            relative_target = os.path.relpath(str(canonical_path), str(full_tool_dir))
-            full_skills_dir.symlink_to(relative_target)
-            print(f"Created symlink: {skills_dir} -> {relative_target}")
+            errors.append(f"{skills_dir} must be a directory containing skill symlinks")
+            continue
+        if full_skills_dir.exists() and not full_skills_dir.is_dir():
+            errors.append(f"{skills_dir} exists and is not a directory")
+            continue
+        if not full_skills_dir.exists():
+            if not repair:
+                errors.append(f"Missing skill link directory: {skills_dir}")
+                continue
+            full_skills_dir.mkdir(parents=True, exist_ok=True)
 
+        for skill in canonical_path.iterdir():
+            if not skill.is_dir():
+                continue
+            link = full_skills_dir / skill.name
+            if link.is_symlink():
+                if not link.exists():
+                    errors.append(f"Broken symlink: {skills_dir}/{skill.name}")
+                elif link.resolve() != skill.resolve():
+                    errors.append(f"Symlink mismatch: {skills_dir}/{skill.name}")
+            elif link.exists():
+                errors.append(f"Skill link path exists and is not a symlink: {skills_dir}/{skill.name}")
+            elif repair:
+                relative_target = os.path.relpath(skill.resolve(), full_skills_dir.resolve())
+                link.symlink_to(relative_target)
+            else:
+                errors.append(f"Missing skill symlink: {skills_dir}/{skill.name}")
+    return errors
+
+
+def sync_managed_surfaces(repo_root: Path, manifest: dict) -> list[str]:
+    """Create or repair manifest-managed skill links and generated surfaces."""
+    errors = check_managed_skill_links(repo_root, manifest, repair=True)
+    errors.extend(sync_generated_surfaces(repo_root, manifest))
     return errors
 
 
@@ -390,19 +455,21 @@ def main() -> int:
         return 1
 
     command = sys.argv[1]
-    repo_root = Path(__file__).resolve().parent.parent
+    repo_root = Path(os.environ.get("REPO_ROOT", Path(__file__).resolve().parent.parent)).resolve()
     manifest = load_manifest(repo_root)
 
     if command == "validate":
         errors = []
         errors.extend(validate_broken_symlinks(repo_root))
+        errors.extend(validate_broken_links(repo_root))
+        errors.extend(validate_agents_md(repo_root))
         errors.extend(validate_canonical_skills(repo_root, manifest))
         errors.extend(validate_skill_frontmatter(repo_root))
         errors.extend(validate_skill_name_mismatch(repo_root))
         errors.extend(validate_eval_json(repo_root))
         errors.extend(validate_duplicate_names(repo_root))
-        errors.extend(validate_broken_links(repo_root))
-        errors.extend(validate_agents_md(repo_root))
+        errors.extend(check_managed_skill_links(repo_root, manifest, repair=False))
+        errors.extend(validate_generated_surfaces(repo_root, manifest))
         errors.extend(validate_skills_catalog_freshness(repo_root))
 
         if errors:

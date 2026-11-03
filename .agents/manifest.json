@@ -1,6 +1,8 @@
 {
   "version": "1.0.0",
+  "canonical_instructions": "AGENTS.md",
   "canonical_skills": ".agents/skills",
+  "skill_labeler": ".github/labeler.yml",
   "global_docs": [
     "AGENTS.md",
     "README.md"
@@ -12,7 +14,8 @@
       "docs": [
         "CLAUDE.md"
       ],
-      "symlink_strategy": "relative"
+      "instruction_addendum": ".agents/instructions/claude.md",
+      "symlink_strategy": "relative-entries"
     },
     "gemini": {
       "directory": ".gemini",
@@ -20,7 +23,7 @@
       "docs": [
         "GEMINI.md"
       ],
-      "symlink_strategy": "relative"
+      "symlink_strategy": "relative-entries"
     },
     "qwen": {
       "directory": ".qwen",
@@ -28,17 +31,17 @@
       "docs": [
         "QWEN.md"
       ],
-      "symlink_strategy": "relative"
+      "symlink_strategy": "relative-entries"
     },
     "cursor": {
       "directory": ".cursor",
       "skills_directory": ".cursor/skills",
-      "symlink_strategy": "relative"
+      "symlink_strategy": "relative-directory"
     },
     "windsurf": {
       "directory": ".windsurf",
       "skills_directory": ".windsurf/skills",
-      "symlink_strategy": "relative"
+      "symlink_strategy": "relative-directory"
     },
     "opencode": {
       "directory": ".opencode",

@@ -9,6 +9,13 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 194 — Ordered implementation of open issues #1050–#1065 (2026-11-03)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Audit | Inspect all 16 open issues and map dependencies | Done | Plan 194 records current gaps, prerequisite order and per-PR merge gates; implementation remains active. |
+| Delivery | Complete each issue and merge in dependency order | Active | See [Plan 194](194-open-issues-1050-1065-ordered-implementation-2026-11-03.md). |
+
 ### Plan 193 — Reconcile license, version and repo-description metadata (2026-11-02)
 
 | Wave | Goal | Status | Outcome |
