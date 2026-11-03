@@ -11,15 +11,17 @@ documentation:
           - 'docs/**/*'
 
 # Skill changes
+# BEGIN GENERATED SKILLS LABELS
 skills:
   - changed-files:
       - any-glob-to-any-file:
           - '.agents/skills/**/*'
           - '.claude/skills/**/*'
+          - '.cursor/skills/**/*'
           - '.gemini/skills/**/*'
           - '.qwen/skills/**/*'
-          - '.cursor/skills/**/*'
           - '.windsurf/skills/**/*'
+# END GENERATED SKILLS LABELS
 
 # Script changes
 scripts:

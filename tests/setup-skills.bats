@@ -30,12 +30,12 @@ write_manifest() {
         "cursor": {
           "directory": ".cursor",
           "skills_directory": ".cursor/skills",
-          "symlink_strategy": "relative"
+          "symlink_strategy": "relative-directory"
         },
         "windsurf": {
           "directory": ".windsurf",
           "skills_directory": ".windsurf/skills",
-          "symlink_strategy": "relative"
+          "symlink_strategy": "relative-directory"
         }
       }
     }'
@@ -80,7 +80,7 @@ run_setup() {
       "cursor": {
         "directory": ".cursor",
         "skills_directory": ".cursor/skills",
-        "symlink_strategy": "directory"
+        "symlink_strategy": "relative-directory"
       }
     }
   }'
@@ -90,6 +90,33 @@ run_setup() {
   [ "$(readlink "$WORK/.cursor/skills")" = "../shared/skills" ]
 }
 
+
+@test "creates relative per-skill links when declared" {
+  mkdir -p "$WORK/.agents/skills/example"
+  cat > "$WORK/.agents/skills/example/SKILL.md" <<'EOF'
+---
+name: example
+description: Fixture skill used to verify per-skill link synchronization.
+---
+# Example
+EOF
+  local manifest='{
+    "version": "1.0.0",
+    "canonical_skills": ".agents/skills",
+    "tools": {
+      "claude": {
+        "directory": ".claude",
+        "skills_directory": ".claude/skills",
+        "symlink_strategy": "relative-entries"
+      }
+    }
+  }'
+  write_manifest "$WORK" "$manifest"
+  run_setup "$WORK"
+  [ "$status" -eq 0 ]
+  [ -L "$WORK/.claude/skills/example" ]
+  [ "$(readlink "$WORK/.claude/skills/example")" = "../../.agents/skills/example" ]
+}
 @test "creates parent directories for tool directories" {
   write_manifest "$WORK"
   run_setup "$WORK"
@@ -110,32 +137,31 @@ run_setup() {
   [ -f "$WORK/.agents/skills/README.md" ]
 }
 
-@test "skips generator gracefully when python3 is missing" {
+@test "fails clearly when python is unavailable" {
   write_manifest "$WORK"
-  # `command -v` requires executability when searching PATH, so a shadow file
-  # is insufficient. Build a restricted PATH with the external tools the
-  # script needs (node + coreutils) but no python3.
   local restricted="$BATS_TEST_TMPDIR/restricted"
   mkdir -p "$restricted"
-  for bin in node mkdir ln dirname; do
-    ln -s "$(command -v "$bin")" "$restricted/$bin"
-  done
+  ln -s "$(command -v dirname)" "$restricted/dirname"
   run env REPO_ROOT="$WORK" PATH="$restricted" "$(command -v bash)" "$SCRIPT"
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"python3 not found"* ]]
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"Python is required to sync agent surfaces"* ]]
 }
 
-@test "continues when the generator fails" {
-  write_manifest "$WORK"
-  # A failing python3 stub exercises the generator-failure warning path.
-  mkdir -p "$BATS_TEST_TMPDIR/bin"
-  printf '#!/usr/bin/env bash\nexit 1\n' > "$BATS_TEST_TMPDIR/bin/python3"
-  chmod +x "$BATS_TEST_TMPDIR/bin/python3"
-  run env REPO_ROOT="$WORK" PATH="$BATS_TEST_TMPDIR/bin:$PATH" bash "$SCRIPT"
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"failed to regenerate skill docs"* ]]
-  # The warning must surface the generator's exit code for debuggability.
-  [[ "$output" == *"generator exit code 1"* ]]
+@test "fails closed for unsupported symlink strategies" {
+  local manifest='{
+    "version": "1.0.0",
+    "tools": {
+      "cursor": {
+        "directory": ".cursor",
+        "skills_directory": ".cursor/skills",
+        "symlink_strategy": "directory"
+      }
+    }
+  }'
+  write_manifest "$WORK" "$manifest"
+  run_setup "$WORK"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"Unsupported symlink_strategy"* ]]
 }
 
 @test "is idempotent — re-running does not fail or change symlinks" {

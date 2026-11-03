@@ -22,8 +22,10 @@ Throw away what does not help - more config is not always better.
 
 ## Skills (Single Canonical Source)
 
-All skills live in `.agents/skills/`. Claude Code, Gemini CLI, and Qwen Code use symlinks
-(`.claude/skills/`, `.gemini/skills/`, `.qwen/skills/`) created by `./scripts/setup-skills.sh`.
+All skills live in `.agents/skills/`. Claude Code, Gemini CLI, and Qwen Code use
+relative symlinks for each skill inside their skills directories. Cursor and
+Windsurf use relative directory symlinks to the canonical skills directory.
+`./scripts/setup-skills.sh` synchronizes both declared strategies.
 OpenCode reads skills directly from `.agents/skills/` - no symlinks needed.
 See `agents-docs/AVAILABLE_SKILLS.md`.
 
@@ -63,12 +65,12 @@ This is a **convention, not a tool**: no script, hook, or CI job parses `do-harn
 
 | Agent | Skills Location | Sub-agents |
 |-------|-----------------|------------|
-| Claude Code | `.claude/skills/` (symlinks) | `.claude/agents/` |
-| Gemini CLI | `.gemini/skills/` (symlinks) | - |
+| Claude Code | `.claude/skills/` (relative per-skill symlinks) | `.claude/agents/` |
+| Gemini CLI | `.gemini/skills/` (relative per-skill symlinks) | - |
 | OpenCode | `.agents/skills/` (direct) | `.opencode/agents/` |
-| Qwen Code | `.qwen/skills/` (symlinks) | - |
-| Cursor | `.cursor/skills/` (symlink) | - |
-| Windsurf | `.windsurf/skills/` (symlink) | - |
+| Qwen Code | `.qwen/skills/` (relative per-skill symlinks) | - |
+| Cursor | `.cursor/skills/` (relative directory symlink) | - |
+| Windsurf | `.windsurf/skills/` (relative directory symlink) | - |
 | Jules | managed via manifest (`symlink_strategy: none`) | - |
 
 > Machine-readable source of truth: `.agents/manifest.json` — update both when adding a tool.
