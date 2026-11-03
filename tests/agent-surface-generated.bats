@@ -9,6 +9,7 @@ setup() {
   mkdir -p "$WORK/.agents/skills" "$WORK/.agents/instructions" "$WORK/.github" "$WORK/scripts"
   cp "$SCRIPT_DIR/agent-surface.py" "$WORK/scripts/agent-surface.py"
   cp "$SCRIPT_DIR/agent_surface_generated.py" "$WORK/scripts/agent_surface_generated.py"
+  cp "$SCRIPT_DIR/generate-skills-docs.py" "$WORK/scripts/generate-skills-docs.py"
 }
 
 write_fixture() {
@@ -68,6 +69,25 @@ scripts:
       - any-glob-to-any-file:
           - 'scripts/**/*'
 EOF
+}
+
+prepare_validation_fixture() {
+  write_fixture
+  cat > "$WORK/.agents/skills/fixture-skill/SKILL.md" <<'EOF'
+---
+name: fixture-skill
+description: Temporary skill for exercising validation in an isolated workspace.
+---
+# Fixture skill
+
+This body keeps the fixture complete for the command-line validator.
+[Missing target](missing.md)
+EOF
+  mkdir -p "$WORK/agents-docs"
+  run python3 "$WORK/scripts/generate-skills-docs.py" --root "$WORK"
+  [ "$status" -eq 0 ]
+  run python3 "$WORK/scripts/agent-surface.py" sync
+  [ "$status" -eq 0 ]
 }
 
 @test "sync generates root instructions and manifest-derived labeler globs idempotently" {
@@ -136,6 +156,45 @@ labeler = root / ".github/labeler.yml"
 labeler.write_text(labeler.read_text(encoding="utf-8").replace(".cursor/skills/**/*", ".cursor/other/**/*"), encoding="utf-8")
 errors = validate_generated_surfaces(root, manifest)
 assert any("labeler.yml" in error for error in errors), errors
+PY
+  [ "$status" -eq 0 ]
+}
+
+@test "validate preserves broken skill-link and canonical-instruction checks" {
+  prepare_validation_fixture
+  run python3 "$WORK/scripts/agent-surface.py" validate
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"broken link 'missing.md'"* ]]
+  [[ "$output" == *"AGENTS.md missing section: ## Project"* ]]
+}
+
+@test "skill-link sync rejects paths outside the repository" {
+  run python3 - "$SCRIPT_DIR" "$WORK" <<'PY'
+import importlib.util
+import sys
+from pathlib import Path
+
+scripts = Path(sys.argv[1])
+sys.path.insert(0, str(scripts))
+spec = importlib.util.spec_from_file_location("agent_surface", scripts / "agent-surface.py")
+assert spec is not None and spec.loader is not None
+agent_surface = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(agent_surface)
+
+root = Path(sys.argv[2])
+manifest = {
+    "canonical_skills": ".agents/skills",
+    "tools": {
+        "fixture": {
+            "directory": ".fixture",
+            "skills_directory": "../outside",
+            "symlink_strategy": "relative-directory",
+        }
+    },
+}
+errors = agent_surface.check_managed_skill_links(root, manifest, repair=True)
+assert not (root.parent / "outside").exists()
+assert any("must stay inside the repository" in error for error in errors), errors
 PY
   [ "$status" -eq 0 ]
 }

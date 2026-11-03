@@ -93,13 +93,20 @@ Each numbered step is a separate main-target PR and is merged before the next de
 
 - [x] Enumerate all 16 open issues and inspect existing code/plans.
 - [x] Record dependency order and delivery gates.
-- [x] #1050 local implementation: 31 targeted BATS tests, agent-surface
-  validation, and full local quality gate pass. Mutation probes made generated
-  drift, missing globs/docs, wrong per-skill link targets, and legacy strategy
-  rejection fail as expected.
-- [ ] PR #1084 first GitHub Quality Gate found that four new `.claude/skills/`
-  symlinks were ignored by `.gitignore` and absent from a clean checkout. The
-  local ignored links had hidden this; force-add the manifest-generated links
-  and rerun GitHub checks before review/merge.
+- [x] #1050 S1–S3 and implementation: generated instructions, manifest-derived
+  labels, explicit per-tool link strategies, and Claude skill-link tracking.
+- [x] Targeted smoke: 33 BATS tests, `setup-skills.sh`, and
+  `validate-skills.sh`. Mutation probes caught drift and link-target defects;
+  re-injected validator/path-boundary defects made their regressions fail.
+- [x] First PR #1084 Quality Gate failure diagnosed: `.claude/` ignored new
+  links in a clean checkout. `.gitignore` now keeps local Claude state ignored
+  while exposing manifest-managed skill links.
+- [x] Code review found dropped `validate_broken_links`/`validate_agents_md`
+  calls and unbounded manifest paths. The calls were restored; path resolution
+  now rejects escapes.
+- [x] Final `./scripts/quality_gate.sh` after the review fixes: all local gates
+  passed.
+- [ ] Commit/push review fixes, await all CI, complete final review, and merge
+  #1084 before starting #1062.
 - [ ] Create, review, and merge each issue PR in sequence; continue to #1062
   only after #1050 merges.
