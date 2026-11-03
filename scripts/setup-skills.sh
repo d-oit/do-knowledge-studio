@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
-# Setup skill symlinks for agent discovery.
-# Reads manifest.json and creates symlinks for all declared tools.
+# Setup manifest-managed skill links and generated agent surfaces.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="${REPO_ROOT:-$(dirname "$SCRIPT_DIR")}"
-
 MANIFEST="$REPO_ROOT/.agents/manifest.json"
 AGENTS_DIR="$REPO_ROOT/.agents/skills"
+PYTHON_BIN="${PYTHON_BIN:-python3}"
 
 if [ ! -d "$AGENTS_DIR" ]; then
   echo "No .agents/skills directory found — skipping."
@@ -19,55 +18,12 @@ if [ ! -f "$MANIFEST" ]; then
   exit 0
 fi
 
-# Parse manifest with node (available in Node.js projects)
-TOOLS=$(node -e "
-const fs = require('fs');
-const path = require('path');
-const repoRoot = process.argv[1];
-const manifestPath = process.argv[2];
-const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-const canonicalSkills = manifest.canonical_skills || '.agents/skills';
-const tools = manifest.tools || {};
-for (const [name, config] of Object.entries(tools)) {
-  if (config.symlink_strategy === 'none') continue;
-  const toolDir = config.directory || '';
-  const skillsDir = config.skills_directory || '';
-  if (!toolDir || !skillsDir) continue;
-  const linkParent = path.dirname(path.resolve(repoRoot, skillsDir));
-  const target = path.relative(linkParent, path.resolve(repoRoot, canonicalSkills));
-  console.log([name, toolDir, skillsDir, target].join('|'));
-}
-" -- "$REPO_ROOT" "$MANIFEST")
-
-while IFS='|' read -r tool_name tool_dir skills_dir skills_target; do
-  if [ -z "$tool_name" ] || [ -z "$tool_dir" ] || [ -z "$skills_dir" ] || [ -z "$skills_target" ]; then
-    continue
-  fi
-
-  FULL_TOOL_DIR="$REPO_ROOT/$tool_dir"
-  FULL_SKILLS_DIR="$REPO_ROOT/$skills_dir"
-
-  # Create tool directory if it doesn't exist
-  mkdir -p "$FULL_TOOL_DIR"
-
-  # Create symlink for skills
-  if [ -L "$FULL_SKILLS_DIR" ]; then
-    echo "Symlink already exists: $FULL_SKILLS_DIR"
-  elif [ -e "$FULL_SKILLS_DIR" ]; then
-    echo "Warning: $FULL_SKILLS_DIR exists and is not a symlink. Skipping."
-  else
-    ln -s "$skills_target" "$FULL_SKILLS_DIR"
-    echo "Created symlink: $FULL_SKILLS_DIR -> $skills_target"
-  fi
-done <<< "$TOOLS"
-
-# Refresh the skill reference tables (agents-docs/AVAILABLE_SKILLS.md and
-# .agents/skills/README.md) so they never drift from SKILL.md frontmatter.
-if command -v python3 >/dev/null 2>&1; then
-  python3 "$SCRIPT_DIR/generate-skills-docs.py" --root "$REPO_ROOT" \
-    || echo "Warning: failed to regenerate skill docs (generator exit code $?)" >&2
-else
-  echo "Warning: python3 not found — skipping skill docs regeneration" >&2
+if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
+  echo "ERROR: Python is required to sync agent surfaces." >&2
+  exit 1
 fi
+
+REPO_ROOT="$REPO_ROOT" "$PYTHON_BIN" "$SCRIPT_DIR/agent-surface.py" sync
+"$PYTHON_BIN" "$SCRIPT_DIR/generate-skills-docs.py" --root "$REPO_ROOT"
 
 echo "Skills setup complete."

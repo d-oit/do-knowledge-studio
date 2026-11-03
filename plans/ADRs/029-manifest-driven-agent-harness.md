@@ -39,12 +39,11 @@ surfaces absent from the manifest are not claimed as supported.
 
 ### 2. Setup is idempotent and non-destructive
 
-The setup command creates or repairs only managed artifacts declared in the
-manifest. It does not overwrite unrelated user-managed files. Re-running setup
-on a valid checkout produces no diff.
-
-Broken or stale managed links are repaired deliberately. Unexpected conflicting
-files cause an actionable failure rather than silent replacement.
+The setup command regenerates only declared outputs and creates missing managed
+links. Re-running setup on a valid checkout produces no diff. Existing matching
+links are left intact; broken or mismatched links and conflicting files produce
+an actionable failure rather than silently replacing paths that may contain
+user-managed content.
 
 ### 3. Validation proves usability, not file presence
 
@@ -64,16 +63,21 @@ Validation fails on:
 The validator returns non-zero on every error and provides stable, concise
 diagnostics suitable for CI.
 
-### 4. One implementation owns setup, validate, and docs generation
+### 4. The manifest owns generated surfaces; focused generators own output formats
 
 The agent-surface tool exposes only commands it implements:
 
-- `sync` for managed surface creation/repair;
-- `validate` for canonical and target conformance;
-- `generate-docs` for derived skill catalogs, if the repository keeps them.
+- `sync` creates or repairs manifest-managed skill links, generated root
+  instruction files, and the generated skill-labeler block;
+- `validate` checks canonical and target conformance, including generated-surface
+  drift.
 
-Shell wrappers remain thin entry points. Documentation is generated from the
-manifest and validator output rather than independently maintained inventories.
+`scripts/generate-skills-docs.py` renders the skill catalogs and is invoked by
+`scripts/setup-skills.sh`; it is not an `agent-surface.py` subcommand.
+Documentation must not advertise nonexistent commands such as `generate-docs`.
+Root tool instructions contain the canonical `AGENTS.md` text plus only their
+declared tool-specific addendum, so supported clients receive the same shared
+constraints without depending on client-specific import syntax.
 
 ### 5. Skill routing boundaries are explicit
 
@@ -81,6 +85,15 @@ Overlapping workflow skills must state precedence and non-goals in their
 descriptions. Project-specific skills inherit root architecture constraints and
 must not prescribe SQLite, a backend, or undefined logging/error abstractions
 unless an accepted project ADR introduces them.
+
+### 6. Client-specific skill-link scopes are explicit
+
+Claude Code, Gemini CLI, and Qwen Code use relative symlinks for each canonical
+skill inside their existing skills directories. Cursor and Windsurf use a
+relative directory symlink to `.agents/skills`. The manifest names these scopes
+as `relative-entries` and `relative-directory`; sync and validation implement
+both explicitly. Copy synchronization is rejected because it creates a second
+mutable skill tree.
 
 ## Consequences
 
@@ -121,6 +134,8 @@ unless an accepted project ADR introduces them.
   `.jules` claims with actual manifest support.
 - Validate eval files where present and define which skills may omit them.
 - Generate or verify repository-relative command references in agent docs.
+- Generate and validate root tool instructions from `AGENTS.md` and declared
+  addenda; generate skill-labeler globs from the manifest.
 - Keep root `AGENTS.md` focused on universal constraints and link to generated
   detail.
 
