@@ -97,5 +97,9 @@ Each numbered step is a separate main-target PR and is merged before the next de
   validation, and full local quality gate pass. Mutation probes made generated
   drift, missing globs/docs, wrong per-skill link targets, and legacy strategy
   rejection fail as expected.
+- [ ] PR #1084 first GitHub Quality Gate found that four new `.claude/skills/`
+  symlinks were ignored by `.gitignore` and absent from a clean checkout. The
+  local ignored links had hidden this; force-add the manifest-generated links
+  and rerun GitHub checks before review/merge.
 - [ ] Create, review, and merge each issue PR in sequence; continue to #1062
   only after #1050 merges.
