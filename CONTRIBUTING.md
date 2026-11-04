@@ -275,3 +275,51 @@ Every contribution makes AI agent workflows better. Whether it's a typo fix or a
 ---
 
 **Ready to contribute?** Check out [good first issues](../../issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) to get started!
+
+## Property and Mutation Testing
+
+The default `pnpm test` profile runs 100 cases per property for sync,
+cross-tab, migration, and hydration behavior. It uses a fixed default seed;
+failed properties print the seed and shrink path.
+
+Run the expanded property profile:
+
+```bash
+pnpm run test:properties:nightly
+```
+
+Replay a failure with the seed and shrink path reported by fast-check:
+
+```bash
+FAST_CHECK_SEED='<reported-seed>' \
+  FAST_CHECK_PATH='<reported-path>' \
+  pnpm exec vitest run '<test-file>'
+```
+
+Set only the seed to explore a different counterexample path for the same
+generated input sequence. `FAST_CHECK_PROFILE=nightly` selects the 2,000-case
+profile; the normal test profile stays bounded.
+
+Run the configured Stryker scope and aggregate score check locally:
+
+```bash
+pnpm run test:mutation
+```
+
+The **Property and Mutation Tests** workflow runs nightly and on demand through
+GitHub Actions `workflow_dispatch`. It tests 13 source modules in separate
+mutation shards, then enforces the 60% aggregate score floor. The
+`property-mutation-results` artifact contains the reports and run logs. Review
+every surviving tombstone or causality mutant; add a regression test or record
+an evidence-based explanation in
+`plans/194-open-issues-1050-1065-ordered-implementation-2026-11-03.md`.
+
+Further reading: [fast-check Vitest guide], [fast-check configuration guide],
+[Stryker Vitest runner], and [GitHub Actions workflow syntax].
+
+[fast-check Vitest guide]:
+  https://fast-check.dev/docs/tutorials/setting-up-your-test-environment/property-based-testing-with-vitest/
+[fast-check configuration guide]: https://fast-check.dev/docs/configuration/
+[Stryker Vitest runner]: https://stryker-mutator.io/docs/stryker-js/vitest-runner/
+[GitHub Actions workflow syntax]:
+  https://docs.github.com/actions/using-workflows/workflow-syntax-for-github-actions

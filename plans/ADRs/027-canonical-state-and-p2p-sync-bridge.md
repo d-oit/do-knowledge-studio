@@ -64,12 +64,15 @@ The adapter must:
 ### 3. Deletes are versioned operations
 
 Absence is not interpreted as deletion. Every entity and claim has a per-record
-vector clock keyed by stable device ID. The clock is stored alongside the raw
-record in the Yjs entity/claim map as `__syncClock`; it is replication metadata,
-not an application-model field. A mutation merges the prior record clock and
-any observed tombstone clock, then increments its own device component. This
-preserves causal metadata through Yjs/IndexedDB reload and offline mutations
-without changing the canonical entity/claim schema.
+vector clock keyed by stable device ID. Clock keys are arbitrary non-empty
+strings, including names inherited by ordinary JavaScript objects; comparisons
+must use own-property reads and merged clocks use null-prototype objects. The
+clock is stored alongside the raw record in the Yjs entity/claim map as
+`__syncClock`; it is replication metadata, not an application-model field. A
+mutation merges the prior record clock and any observed tombstone clock, then
+increments its own device component. This preserves causal metadata through
+Yjs/IndexedDB reload and offline mutations without changing the canonical
+entity/claim schema.
 
 A tombstone is scoped by `(room ID, record kind, record ID)` and contains the
 record ID, deletion time, deleting device, and vector clock. A tombstone hides
@@ -207,3 +210,13 @@ selected by the user. Claim equality treats missing and empty edit history as
 the same schema-default value, preventing no-op clock churn. Regressions are
 covered by `src/lib/sync/bidirectional-bridge.test.ts` and
 `src/lib/sync/bridge.test.ts`.
+
+## Implementation addendum — 2026-11-03
+
+Inbound field merges now reconcile the deterministic entity and claim winners
+back into Yjs even when canonical Zustand already contains the winner and no
+store update is required. These writes use the outbound transaction origin,
+so the bridge does not reprocess its own reconciliation; unresolved causal
+delete conflicts remain excluded and available to manual resolution. The
+regression is covered by `src/lib/sync/bidirectional-bridge.test.ts` and the
+concurrent-edit scenario in `e2e/multi-device-sync.spec.ts`.

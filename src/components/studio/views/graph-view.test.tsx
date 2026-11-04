@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { ReactNode } from 'react'
 import type * as SharedPrimitives from '../ui/shared-primitives'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { act, render, screen, fireEvent } from '@testing-library/react'
 
 vi.mock('lucide-react', () => {
   const I = ({ className }: { className?: string }) => (
@@ -247,15 +247,19 @@ describe('GraphView', () => {
     const svg = screen.getByRole('img', { name: /knowledge graph/i })
 
     // 30 units per press; 200 presses push 6000 units, beyond every bound.
-    for (let i = 0; i < 200; i++) {
-      fireEvent.keyDown(container, { key: 'ArrowLeft' })
-    }
+    act(() => {
+      for (let i = 0; i < 200; i++) {
+        fireEvent.keyDown(container, { key: 'ArrowLeft' })
+      }
+    })
     const boundedViewBox = svg.getAttribute('viewBox')
 
     // Once the bound is reached, further presses must not move the canvas.
-    for (let i = 0; i < 50; i++) {
-      fireEvent.keyDown(container, { key: 'ArrowLeft' })
-    }
+    act(() => {
+      for (let i = 0; i < 50; i++) {
+        fireEvent.keyDown(container, { key: 'ArrowLeft' })
+      }
+    })
     expect(svg.getAttribute('viewBox')).toBe(boundedViewBox)
   })
 

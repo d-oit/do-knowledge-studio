@@ -353,6 +353,39 @@ describe('bidirectional canonical sync', () => {
     expect(restored?.updatedAt).not.toBe(claim.updatedAt)
     expect(getYjsClaims()).toEqual([restored])
   })
+  it('replicates the timestamp winner when the local canonical record already matches the merge', () => {
+    resetCanonical()
+    startBidirectionalSync()
+    const winner = entity({
+      content: 'later edit',
+      updatedAt: '2026-01-03T00:00:00.000Z',
+    })
+    useStudioStore.getState().commitEntity(winner)
+    const localDoc = getDoc()
+    const peer = new Y.Doc()
+    const peerEntities = peer.getMap<Record<string, unknown>>('entities')
+    Y.applyUpdate(peer, Y.encodeStateAsUpdate(localDoc))
+    const baseRecord = peerEntities.get(winner.id)
+    if (!baseRecord) throw new Error('Expected the canonical record in the peer document')
+    peerEntities.set(winner.id, {
+      ...baseRecord,
+      content: 'earlier edit',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+    })
+    const replicateUpdate = (update: Uint8Array) => Y.applyUpdate(peer, update)
+    localDoc.on('update', replicateUpdate)
+
+    try {
+      Y.applyUpdate(localDoc, Y.encodeStateAsUpdate(peer, Y.encodeStateVector(localDoc)))
+
+      expect(useStudioStore.getState().entities[0]?.content).toBe('later edit')
+      expect(peerEntities.get(winner.id)?.content).toBe('later edit')
+    } finally {
+      localDoc.off('update', replicateUpdate)
+      peer.destroy()
+    }
+  })
+
 })
 
 const claim = (overrides: Partial<Claim> = {}): Claim => ({

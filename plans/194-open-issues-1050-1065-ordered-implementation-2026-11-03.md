@@ -1,16 +1,17 @@
 # Plan 194 — Ordered implementation of open issues #1050–#1065 (2026-11-03)
 
-**Status**: Active — acceptance audit complete; implementation underway.
+**Status**: Active — #1050 merged via PR #1084; #1062 implementation in progress on `test/1062-property-mutation`.
 **Goal**: Complete every currently open issue #1050–#1065 in a dependency-safe sequence, with one focused PR per implementation unit and squash merges only after local gates, all CI, and code review pass.
 **Constraints**: Preserve local-first operation, fail-closed persistence/import, strict TypeScript, current PWA/offline behavior, and no required backend. Do not close an issue on historical plan text alone; verify current code and attach the merge/verification evidence.
 
 ## Audit snapshot
 
 The issue descriptions were checked against current source, plans, and open PRs. The six audits were read-only; no tests or builds were run. Existing partial work is reused rather than duplicated.
+The sequence now starts from post-merge `main` at `c4af33b`; 15 open issues remain. #1062’s baseline has no `fast-check` or Stryker dependencies/property suite.
 
 | Issue | Current status | Material remaining acceptance work |
 |---|---|---|
-| #1050 | Local implementation complete; PR/CI pending | S1–S3 rechecked; generated instruction/labeler surfaces and explicit skill-link strategies are implemented. |
+| #1050 | Merged via PR #1084 | S1–S3 complete; final local quality gate, BATS suite, manual review, and required GitHub checks passed. |
 | #1051 | Partial, security constraints unresolved | Narrow `connect-src`, remove script `unsafe-inline`, add all-view/offline CSP E2E and update ADR 045. Current ONNX runtime demonstrably executes JavaScript `eval`, so dropping `unsafe-eval` without replacing that runtime would break semantic search. Preserve that behavior while evaluating safe alternatives; do not weaken offline support. |
 | #1052 | Partial | ICE/TURN settings and encrypted credentials, connection/candidate diagnostics, Sync-integrated file fallback, TURN validation, docs and tests. Existing signaling URL configuration is not ICE configuration. |
 | #1053 | Partial | 500/2k/5k/10k measurements and documented budgets; large-corpus renderer/culling and accessible fallback with evidence for the 5k target. |
@@ -22,7 +23,7 @@ The issue descriptions were checked against current source, plans, and open PRs.
 | #1059 | Open | Incremental duplicate/contradiction candidate detection, dismissals persisted and synced, user-confirmed actions, labeled fixtures and metrics. |
 | #1060 | Open | Separate durable per-entity revision store, quota/retention, restore UI, merge/import revision tags, optional backup inclusion, latency evidence. |
 | #1061 | Open | PWA share-target intake and offline queue, safe transient capture/confirmation, URL clipper/bookmarklet and support documentation. |
-| #1062 | Open | Bounded `fast-check` properties in normal tests, scheduled/on-demand Stryker with reproducible seeds and score/artifact, survivor triage and contributor guidance. |
+| #1062 | In progress | Add bounded `fast-check` properties, scheduled/on-demand Stryker with reproducible seeds and reports, survivor triage, and contributor guidance. |
 | #1063 | Partial | Current dynamic PDF/DOCX imports are already lazy. Still need current before/after route/chunk evidence, `sharp` production-dependency decision, unused-code advisory CI and final precache verification. |
 | #1064 | Open | Generated README visuals, new-profile choice, accessible/reduced-motion/i18n tour, persisted completion/replay, privacy panel and E2E. |
 | #1065 | Partial | RRF, text signal badges, fallback, evaluation and chat/context integration exist. Complete the requested worker-backed/non-blocking semantic path and explicit Hybrid/default-when-ready mode, with evidence that evaluation remains honest and regressions are bounded. |
@@ -86,8 +87,154 @@ Each numbered step is a separate main-target PR and is merged before the next de
   service worker fetch event.
 - fast-check [Vitest integration guide](https://fast-check.dev/docs/tutorials/setting-up-your-test-environment/property-based-testing-with-vitest/):
   property generators integrate with Vitest and support seed-based replay.
+- fast-check [configuration reference](https://fast-check.dev/docs/configuration/):
+  set a seed and shrink path per property to replay a failing case exactly.
 - StrykerJS [Vitest runner guide](https://stryker-mutator.io/docs/stryker-js/vitest-runner/):
   configure the dedicated runner plugin and mutation-score thresholds.
+- StrykerJS [configuration reference](https://stryker-mutator.io/docs/stryker-js/configuration/):
+  `ignorePatterns` omits test-irrelevant files from the sandbox and
+  `appendPlugins` adds a runner without replacing defaults.
+- StrykerJS [troubleshooting guide](https://stryker-mutator.io/docs/stryker-js/troubleshooting/):
+  pnpm plugin auto-discovery can require explicit plugin configuration.
+- MDN [Using Web Workers](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers):
+  workers execute outside the window global, communicate by messages, and use
+  copied or transferred data; bundlers resolve worker URLs relative to
+  `import.meta.url`.
+- Hugging Face [Transformers.js Next.js tutorial](https://huggingface.co/docs/transformers.js/tutorials/next):
+  load the model pipeline and run inference inside a worker, reporting progress
+  to the main thread through messages.
+- StrykerJS [mutant states and metrics](https://stryker-mutator.io/docs/mutation-testing-elements/mutant-states-and-metrics/):
+  detected mutants are killed or timed out; valid mutants also include
+  survivors and no-coverage results.
+- GitHub Actions [workflow syntax](https://docs.github.com/actions/using-workflows/workflow-syntax-for-github-actions):
+  job timeouts are capped at 360 minutes, so the full mutation scope is split
+  across 240-minute source-file shards.
+- GitHub [manually running a workflow](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow):
+  `workflow_dispatch` must exist on the default branch before it can be
+  dispatched against a selected ref.
+- [`actions/download-artifact` v8.0.2 README](https://raw.githubusercontent.com/actions/download-artifact/v8.0.2/README.md):
+  artifact pattern downloads retain per-artifact directories for aggregation.
+- Zod [basic usage](https://zod.dev/basics): `safeParse` returns
+  `success: false` for invalid input rather than throwing.
+- StrykerJS [static mutants](https://stryker-mutator.io/docs/mutation-testing-elements/static-mutants/):
+  static mutants require startup-time test runs; `ignoreStatic` removes them
+  from mutation-score accounting.
+- Yjs [document updates](https://docs.yjs.dev/api/document-updates): updates
+  converge across peers when delivered and can carry transaction origins for
+  filtering provider echoes.
+
+## #1062 Property design
+
+- Snapshot merge tests cover idempotence and pairwise commutativity after
+  canonicalizing unordered fields. They do not assert arbitrary field-merge
+  associativity: ADR 027 states that vector clocks provide causality but do
+  not merge field-level CRDT state.
+- Yjs update properties cover all arrival orders for two or three replicas,
+  duplicate application, and both groupings of a three-update merge.
+
+### Causal clock device-key regression
+
+The first 2,000-run nightly profile found a failure after 465 cases:
+seed `10622026`, path `464:0`, counterexample `[[],"constructor"]`.
+`CausalClock` accepts every non-empty string key, and `getDeviceId()` returns a
+persisted `dks-device-id` value verbatim, so prototype-property names are
+within the current input contract. Plain-object inheritance caused clock
+advancement and comparisons to read inherited functions instead of absent
+counters.
+
+`nextRecordClock` now accumulates into a null-prototype object; clock comparison
+uses own-property reads. Deterministic cases cover `__proto__`, `constructor`,
+and `toString`. A test-only pre-fix shadow oracle compares clock advancement,
+dominance, and ordering on the same generated UUID-keyed inputs. The targeted
+causality property suite passed 12/12; the reserved-key Yjs round-trip passed.
+
+The causal suite also rejects arrays, primitives, empty device IDs, and
+negative, fractional, or unsafe counters; explicit examples distinguish equal,
+strictly ordered, and concurrent clocks.
+
+Local browser canary: with `dks-device-id=constructor`, the seeded studio
+created and edited an entity in a temporary sync room. The UI merged 9 entities
+and 5 claims; the `dks-sync` IndexedDB update store contained 3 updates after
+the second edit, with no browser errors. Peer count remained 0, so this
+verifies the local bridge/persistence path, not independent-peer convergence.
+The corpus was the synthetic app seed; no user corpus was available or touched.
+
+### Deterministic concurrent record propagation
+
+The Chromium regression reproduced a real bridge defect: when inbound data
+resolved to the value already in canonical Zustand, the bridge returned early
+and never propagated that winner back to the peer. The new
+`reconcileMergedRecords` writes merged entity and claim values to Yjs with the
+outbound origin, while excluding unresolved causal delete conflicts so the
+manual resolution path remains authoritative. The new bidirectional-bridge
+regression failed before the fix and passed after it (14/14 bridge tests).
+The isolated multi-device Chromium scenario then passed (1/1). Yjs document
+updates are commutative/idempotent and support origin-tagged update filtering
+([Yjs document update docs](https://docs.yjs.dev/api/document-updates)).
+
+### Stryker sandbox setup
+
+Initial runs found generated skill-directory symlinks that Stryker could not
+copy. After excluding those test-irrelevant surfaces, pnpm plugin discovery
+still missed the Vitest runner and treated `vitest` as an unknown option.
+`stryker.config.json` now excludes only skill surfaces and appends
+`@stryker-mutator/vitest-runner`; the configured scope also includes the new
+bridge reconciliation module.
+The expanded nightly property profile took 122.38s. The original 12-module
+local Stryker baseline took 524m08s (8h44) and produced 1,907 mutants:
+1,201 killed, 85 timed out, 423 survived, 198 with no coverage, and zero
+errors (67.44% under Stryker's valid-mutant denominator). The baseline full
+report predates the final tombstone and causality regression tests. Replacing
+only those two module reports with their focused reruns yields a local
+composite of 1,907 mutants: 1,209 killed, 86 timed out, 414 survived, 198 with
+no coverage, and zero errors (1,295/1,907 detected; 67.91%). The complete
+matrix remains required for final CI evidence.
+
+The final focused tombstone rerun had 125 mutants: 123 killed, one timed out,
+one survived, and no no-coverage or error results (99.20%). The survivor is
+the line-105 missing-data guard: when the map lookup yields `undefined`,
+`safeParse(undefined)` returns `success: false`, so the later condition returns
+`null` without the explicit guard. The line-49 timeout is recorded as a timeout,
+not a kill; Stryker counts it as detected. This run warned that 12 static
+mutants accounted for an estimated 79% of test runtime. They remain in scope:
+`ignoreStatic` would exclude them from the score. The focused shard completed
+in 2m09s.
+
+The focused causality rerun had 81 mutants: 76 killed and five survived, with
+no timeout, no-coverage, or error results (93.83%). All five survivors are
+equivalent for clocks accepted by `isCausalClock`, which requires non-negative
+safe-integer counters. The two line-31 `clockDominates` mutants remove the
+first-loop `advanced` assignment; the second loop revisits each left-clock
+entry and sets the flag whenever that component exceeds the corresponding
+right counter. The three `compareClocks` mutants alter the final equality
+predicates at lines 43–44.
+Prior strict-dominance checks return for any positive component difference;
+absent counters read as zero, so after those checks the two equality predicates
+are either both true (equal values, including explicit zero keys) or both
+false (concurrent clocks). Replacing `&&` with `||`, or either predicate with
+`true`, does not change the reachable result.
+
+The final reconciliation shard mutated 22 cases: 21 killed and one surviving
+static string-literal mutant at `ORIGIN_OUTBOUND`. Replacing the origin string
+with `""` remains equivalent because the bridge filters against the same
+shared constant. The shard passed both claim-scoped tombstone-clock and
+unresolved-delete exclusion invariants; it completed in 68 seconds.
+
+Combining the updated 12-module composite with this focused shard, then running
+the repository aggregator against all 13 configured files, yields 1,929 mutants:
+1,230 killed, 86 timed out, 415 survived, and 198 with no coverage (68.22%;
+1,316/1,929 detected). This is a local composite, not a full 13-module run; CI
+must provide the complete matrix.
+
+The full baseline also has one surviving mutation in
+`cross-tab-tombstones.ts:33`: `timestamp > existing` changed to `>=`. Equal
+timestamps write the same number to the same `Map` key, preserving its value
+and insertion order; the mutation has no observable effect.
+Because GitHub job timeouts cap at 360 minutes, the workflow runs one source
+file per 240-minute shard, with at most four shards in parallel. Expanded
+properties use a separate 30-minute job. The aggregator requires every shard
+to succeed, validates all 13 module reports exactly once, applies the 60%
+global score floor, and retains shard and aggregate artifacts for 14 days.
 
 ## Progress
 
@@ -106,7 +253,31 @@ Each numbered step is a separate main-target PR and is merged before the next de
   now rejects escapes.
 - [x] Final `./scripts/quality_gate.sh` after the review fixes: all local gates
   passed.
-- [ ] Commit/push review fixes, await all CI, complete final review, and merge
-  #1084 before starting #1062.
-- [ ] Create, review, and merge each issue PR in sequence; continue to #1062
-  only after #1050 merges.
+- [x] PR #1084 merged as `c4af33b`; all required GitHub checks passed, `./scripts/quality_gate.sh` passed, and manual review found no P1/P2 issues.
+- [ ] #1062: Bounded properties, scoped nightly/on-demand Stryker, and
+  CONTRIBUTING replay guidance implemented. The causal property suite passed
+  12/12; doc-rejoin passed 12/12; mutation-score aggregation passed 6/6; and
+  seed `10622026`/path `464:0` replay passed. The expanded nightly profile passed
+  237 files with one skipped, 3,289 tests passed and four skipped in 127.99s.
+  Full local Stryker baseline and the focused updated composite are recorded
+  above; tombstone, causality, and cross-tab tombstone survivors are triaged.
+  Full coverage then passed 237 files with one skipped and 3,289 tests passed
+  with four skipped; aggregate coverage was 88.63% statements, 79.55% branches,
+  85.25% functions, and 89.94% lines. Coverage initially exposed a 5-second
+  timeout in the graph pan stress test; batching its 250 key events inside
+  `act` preserved the clamp assertions and the focused coverage test passed.
+  Full `pnpm test` passed 237 files with one skipped and 3,289 tests passed
+  with four skipped in 123.70s. The four default-profile property files passed
+  23 tests in 4.65s.
+  The concurrent-edit Chromium case reproduced peer divergence before the fix.
+  The unit regression failed before and passed after; the isolated Chromium
+  case passed 1/1, and the combined bridge/reconciliation unit run passed 16/16.
+  Final `pnpm run test:coverage` passed 238 files with one skipped and 3,292
+  tests passed with four skipped; coverage was 88.63% statements, 79.68%
+  branches, 85.25% functions, and 89.95% lines.
+  Final `FORCE_E2E=true ./scripts/quality_gate.sh` passed: lint, both
+  typechecks, full Vitest, full E2E, shellcheck, BATS, and markdownlint. The
+  first run found a bare Yjs docs URL here; it was linked and the full gate
+  passed on rerun.
+  PR review/checks, default-branch mutation workflow, and merge remain.
+- [ ] Create, review, and merge each remaining issue PR in the recorded dependency order.

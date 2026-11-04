@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { navClick } from './helpers/navigation';
 
 /**
  * The search worker must answer, not time out.
@@ -45,7 +46,7 @@ test.describe('search worker', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    await page.getByRole('button', { name: /^Chat/ }).click();
+    await navClick(page, /^Chat/);
 
     const input = page.getByPlaceholder(CHAT_INPUT_PLACEHOLDER);
     await expect(input).toBeVisible();
