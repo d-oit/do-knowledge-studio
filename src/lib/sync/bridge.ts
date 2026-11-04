@@ -5,14 +5,12 @@ import { isTombstoned, addTombstone, getTombstone } from './tombstones'
 import { clockFromRecord, compareClocks, readRecordClock, setVersionedRecord } from './causality'
 import { validateInboundEntity, validateInboundClaim } from './inbound'
 import { resolveEntityConflict, resolveClaimConflict } from './conflict'
+import { ORIGIN_OUTBOUND, reconcileMergedRecords } from './merge-reconciliation'
 import type { Entity, Claim } from '@/lib/studio/types'
 import { useStudioStore } from '@/lib/studio/store'
 import { translate as t } from '@/lib/i18n/messages/sync'
 
 type Unsubscribe = () => void
-
-/** Origin tag for outbound Yjs transactions to prevent echo loops. */
-const ORIGIN_OUTBOUND = 'zustand-outbound'
 
 let unsubscribeFns: Unsubscribe[] = []
 let outboundSubscribed = false
@@ -82,7 +80,6 @@ export function mergeIntoYjs(
   claims: Claim[],
 ): MergeResult<{ entities: Entity[]; claims: Claim[] }> {
   const sync = getSyncDoc()
-  const doc = getDoc()
   const existingEntities = getYjsEntities()
   const existingClaims = getYjsClaims()
   const entityResult = mergeEntities(
@@ -122,24 +119,11 @@ export function mergeIntoYjs(
     })
   }
 
-  const existingEntitiesById = new Map<string, Entity>()
-  for (const entity of existingEntities) existingEntitiesById.set(entity.id, entity)
-  const existingClaimsById = new Map<string, Claim>()
-  for (const claim of existingClaims) existingClaimsById.set(claim.id, claim)
-  doc.transact(() => {
-    for (const entity of entityResult.merged) {
-      if (conflictedEntityIds.has(entity.id)) continue
-      const existing = existingEntitiesById.get(entity.id)
-      if (existing && sameEntityPayload(existing, entity)) continue
-      setVersionedRecord(sync.entities, 'entities', entity.id, entityToYMap(entity), getTombstone(entity.id)?.clock)
-    }
-    for (const claim of claimResult.merged) {
-      if (conflictedClaimIds.has(claim.id)) continue
-      const existing = existingClaimsById.get(claim.id)
-      if (existing && sameClaimPayload(existing, claim)) continue
-      setVersionedRecord(sync.claims, 'claims', claim.id, claimToYMap(claim), getTombstone(claim.id, 'claims')?.clock)
-    }
-  }, ORIGIN_OUTBOUND)
+  reconcileMergedRecords(
+    { entities: entityResult.merged, claims: claimResult.merged },
+    { entities: existingEntities, claims: existingClaims },
+    { entities: conflictedEntityIds, claims: conflictedClaimIds },
+  )
 
   const mergedEntities = [
     ...entityResult.merged.filter((entity) => !conflictedEntityIds.has(entity.id)),
@@ -444,9 +428,11 @@ export function startBidirectionalSync(): Unsubscribe {
     if (causalConflicts.length > 0) {
       for (const listener of syncConflictListeners) listener(causalConflicts)
     }
+    const remoteEntities = getYjsEntities()
+    const remoteClaims = getYjsClaims()
     const result = applyRemoteUpdate(
-      getYjsEntities(),
-      getYjsClaims(),
+      remoteEntities,
+      remoteClaims,
       state.entities,
       state.claims,
     )
@@ -465,16 +451,22 @@ export function startBidirectionalSync(): Unsubscribe {
     const changed =
       JSON.stringify(result.entities) !== JSON.stringify(state.entities) ||
       JSON.stringify(result.claims) !== JSON.stringify(state.claims)
-    if (!changed) return
-    applyingInbound = true
-    try {
-      store.setState({ entities: result.entities, claims: result.claims })
-      store.getState().pushHistory()
-      previousEntities = result.entities
-      previousClaims = result.claims
-    } finally {
-      applyingInbound = false
+    if (changed) {
+      applyingInbound = true
+      try {
+        store.setState({ entities: result.entities, claims: result.claims })
+        store.getState().pushHistory()
+        previousEntities = result.entities
+        previousClaims = result.claims
+      } finally {
+        applyingInbound = false
+      }
     }
+    reconcileMergedRecords(
+      { entities: result.entities, claims: result.claims },
+      { entities: remoteEntities, claims: remoteClaims },
+      { entities: conflictedEntities, claims: conflictedClaims },
+    )
   }
   doc.on('update', onUpdate)
   const unsubscribeDoc = () => doc.off('update', onUpdate)

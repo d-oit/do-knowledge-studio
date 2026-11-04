@@ -104,12 +104,27 @@ const arraysEqual = <T>(
   return true
 }
 
-const sameString = (left: string, right: string): boolean => left === right
+const stringKey = (value: string): string => value
 
-const sameEntityLink = (
-  left: Entity['links'][number],
-  right: Entity['links'][number],
-): boolean => left.targetId === right.targetId && left.relation === right.relation
+const entityLinkKey = (link: Entity['links'][number]): string =>
+  JSON.stringify([link.targetId, link.relation])
+
+/** Compare array-backed set fields without treating order or duplicate values as meaningful. */
+const sameUnorderedSet = <T>(
+  left: readonly T[],
+  right: readonly T[],
+  getKey: (value: T) => string,
+): boolean => {
+  const leftKeys = new Set<string>()
+  const rightKeys = new Set<string>()
+  for (const value of left) leftKeys.add(getKey(value))
+  for (const value of right) rightKeys.add(getKey(value))
+  if (leftKeys.size !== rightKeys.size) return false
+  for (const key of leftKeys) {
+    if (!rightKeys.has(key)) return false
+  }
+  return true
+}
 
 const sameClaimHistoryEntry = (
   left: NonNullable<Claim['editHistory']>[number],
@@ -125,7 +140,7 @@ const sameClaimHistory = (left: Claim['editHistory'], right: Claim['editHistory'
   return arraysEqual(left, right, sameClaimHistoryEntry)
 }
 
-/** Compare the application fields serialized by `entityToYMap`, excluding sync metadata. */
+/** Compare entity payload fields; tags and links are set-valued rather than ordered. */
 export const sameEntityPayload = (left: Entity, right: Entity): boolean =>
   left.id === right.id &&
   left.name === right.name &&
@@ -135,8 +150,8 @@ export const sameEntityPayload = (left: Entity, right: Entity): boolean =>
   left.sourceUrl === right.sourceUrl &&
   left.createdAt === right.createdAt &&
   left.updatedAt === right.updatedAt &&
-  arraysEqual(left.tags, right.tags, sameString) &&
-  arraysEqual(left.links, right.links, sameEntityLink)
+  sameUnorderedSet(left.tags, right.tags, stringKey) &&
+  sameUnorderedSet(left.links, right.links, entityLinkKey)
 
 /** Compare claim payloads, treating missing and empty edit histories as equivalent. */
 export const sameClaimPayload = (left: Claim, right: Claim): boolean =>

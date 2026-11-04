@@ -38,11 +38,7 @@ const findTombstoneMap = (): Y.Map<Record<string, unknown>> | null => {
  * is available (for example, during IndexedDB restore before a room is joined).
  * Room-scoped lookups remain isolated once a session selects its room.
  */
-const getMatchingTombstones = (
-  id: string,
-  kind: RecordKind,
-  roomId: string | null,
-): Tombstone[] => {
+const getMatchingTombstones = (id: string, kind: RecordKind): Tombstone[] => {
   const map = findTombstoneMap()
   if (!map) return []
   const matches: Tombstone[] = []
@@ -50,9 +46,7 @@ const getMatchingTombstones = (
     const result = TombstoneSchema.safeParse(data)
     if (!result.success) return
     const tombstone = result.data
-    if (tombstone.id !== id ||
-        (roomId !== null && tombstone.roomId !== roomId) ||
-        (tombstone.kind && tombstone.kind !== kind)) return
+    if (tombstone.id !== id || (tombstone.kind && tombstone.kind !== kind)) return
     matches.push(tombstone)
   })
   return matches
@@ -94,7 +88,7 @@ export function addTombstone(
 export function isTombstoned(id: string, kind: RecordKind = 'entities', recordClock?: CausalClock): boolean {
   const roomId = getCurrentRoomId()
   const tombstones = roomId === null
-    ? getMatchingTombstones(id, kind, null)
+    ? getMatchingTombstones(id, kind)
     : [getTombstone(id, kind)].filter((tombstone): tombstone is Tombstone => tombstone !== null)
   return tombstones.some((tombstone) =>
     !tombstone.clock || compareClocks(tombstone.clock, recordClock ?? {}) === 1,
@@ -104,7 +98,7 @@ export function isTombstoned(id: string, kind: RecordKind = 'entities', recordCl
 /** Retrieve a single validated active-room tombstone by record ID. */
 export function getTombstone(id: string, kind: RecordKind = 'entities'): Tombstone | null {
   const roomId = getCurrentRoomId()
-  if (roomId === null) return getMatchingTombstones(id, kind, null)[0] ?? null
+  if (roomId === null) return getMatchingTombstones(id, kind)[0] ?? null
   const map = findTombstoneMap()
   if (!map) return null
   const data = map.get(tombstoneKey(roomId, id, kind)) ?? map.get(JSON.stringify([roomId, id]))

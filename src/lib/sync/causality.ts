@@ -19,16 +19,19 @@ export function isCausalClock(value: unknown): value is CausalClock {
       Number.isSafeInteger(counter) && counter >= 0)
 }
 
+const getClockCounter = (clock: CausalClock, device: string): number =>
+  Object.prototype.hasOwnProperty.call(clock, device) ? clock[device] : 0
+
 /** Returns true only when left has observed a strictly later causal version than right. */
 export function clockDominates(left: CausalClock, right: CausalClock): boolean {
   let advanced = false
   for (const [device, counter] of Object.entries(right)) {
-    const leftCounter = left[device] ?? 0
+    const leftCounter = getClockCounter(left, device)
     if (leftCounter < counter) return false
     if (leftCounter > counter) advanced = true
   }
   for (const [device, counter] of Object.entries(left)) {
-    if (counter > (right[device] ?? 0)) advanced = true
+    if (counter > getClockCounter(right, device)) advanced = true
   }
   return advanced
 }
@@ -37,8 +40,8 @@ export function clockDominates(left: CausalClock, right: CausalClock): boolean {
 export function compareClocks(left: CausalClock, right: CausalClock): -1 | 0 | 1 | null {
   if (clockDominates(left, right)) return 1
   if (clockDominates(right, left)) return -1
-  return Object.entries(left).every(([device, counter]) => counter === (right[device] ?? 0)) &&
-    Object.entries(right).every(([device, counter]) => counter === (left[device] ?? 0)) ? 0 : null
+  return Object.entries(left).every(([device, counter]) => counter === getClockCounter(right, device)) &&
+    Object.entries(right).every(([device, counter]) => counter === getClockCounter(left, device)) ? 0 : null
 }
 
 export function readRecordClock(kind: RecordKind, id: string): CausalClock {
@@ -47,7 +50,7 @@ export function readRecordClock(kind: RecordKind, id: string): CausalClock {
 
 /** Advance a local record version after incorporating the record and any observed delete. */
 export function nextRecordClock(observed: CausalClock[], device = getDeviceId()): CausalClock {
-  const merged: CausalClock = {}
+  const merged = Object.create(null) as CausalClock
   for (const clock of observed) {
     for (const [deviceId, counter] of Object.entries(clock)) {
       merged[deviceId] = Math.max(merged[deviceId] ?? 0, counter)

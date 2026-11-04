@@ -1,7 +1,7 @@
 import * as Y from 'yjs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStudioStore } from '@/lib/studio/store'
-import { addTombstone, isTombstoned } from './tombstones'
+import { addTombstone, clearTombstones, getAllTombstones, getTombstone, getTombstoneMap, isTombstoned } from './tombstones'
 import { destroy, getCurrentRoomId, getDoc, getProvider, initPersistence, joinRoom, leaveRoom } from './doc'
 import { destroyBridge, getYjsEntities, setYjsEntity, startBidirectionalSync } from './bridge'
 import type { Entity } from '@/lib/studio/types'
@@ -112,6 +112,145 @@ describe('leaveRoom', () => {
     expect(isTombstoned('offline-delete')).toBe(true)
     vi.useRealTimers()
   })
+  it('lists only tombstones whose validated payload belongs to the active room', () => {
+    const firstRoom = 'room-a'
+    const activeRoom = 'room-b'
+    const mismatchedId = 'payload-room-mismatch'
+
+    joinRoom(firstRoom)
+    addTombstone('first-room-record')
+    joinRoom(activeRoom)
+    addTombstone('active-room-record')
+    addTombstone(mismatchedId)
+    expect(getTombstone(mismatchedId)).not.toBeNull()
+    getTombstoneMap().forEach((data, key) => {
+      if (data.id === mismatchedId) {
+        getTombstoneMap().set(key, { ...data, roomId: firstRoom })
+      }
+    })
+
+    expect(getAllTombstones().map(({ id, roomId }) => [roomId, id])).toEqual([
+      [activeRoom, 'active-room-record'],
+    ])
+    expect(getTombstone(mismatchedId)).toBeNull()
+  })
+
+  it('reads a legacy tombstone from its room-scoped key when its kind is absent', () => {
+    const roomId = 'legacy-room'
+    const id = 'legacy-key-record'
+    joinRoom(roomId)
+    getTombstoneMap().set(JSON.stringify([roomId, id]), {
+      id,
+      roomId,
+      deletedAt: '2026-01-01T00:00:00.000Z',
+      deletedBy: 'legacy-device',
+    })
+
+    expect(getTombstone(id)).toMatchObject({ id, roomId })
+
+    const mismatchedId = 'legacy-payload-room-mismatch'
+    getTombstoneMap().set(JSON.stringify([roomId, mismatchedId]), {
+      id: mismatchedId,
+      roomId: 'other-room',
+      deletedAt: '2026-01-01T00:00:00.000Z',
+      deletedBy: 'legacy-device',
+    })
+    const malformedId = 'legacy-malformed-record'
+    getTombstoneMap().set(JSON.stringify([roomId, malformedId]), {
+      id: malformedId,
+      roomId,
+      deletedAt: '2026-01-01T00:00:00.000Z',
+    })
+    expect(getTombstone(mismatchedId)).toBeNull()
+    expect(getTombstone(malformedId)).toBeNull()
+
+    const mismatchedPayloadId = 'legacy-payload-id-mismatch'
+    getTombstoneMap().set(JSON.stringify([roomId, mismatchedPayloadId]), {
+      id: 'different-payload-id',
+      roomId,
+      deletedAt: '2026-01-01T00:00:00.000Z',
+      deletedBy: 'legacy-device',
+      kind: 'entities',
+    })
+    const mismatchedKindId = 'legacy-kind-mismatch'
+    getTombstoneMap().set(JSON.stringify([roomId, mismatchedKindId]), {
+      id: mismatchedKindId,
+      roomId,
+      deletedAt: '2026-01-01T00:00:00.000Z',
+      deletedBy: 'legacy-device',
+      kind: 'claims',
+    })
+    expect(getTombstone(mismatchedPayloadId)).toBeNull()
+    expect(getTombstone(mismatchedKindId)).toBeNull()
+  })
+
+  it('ignores malformed tombstones in room-scoped and identity-less lookups', () => {
+    const roomId = 'malformed-room'
+    const id = 'malformed-record'
+    joinRoom(roomId)
+    addTombstone(id)
+    expect(getTombstone(id)).not.toBeNull()
+    getTombstoneMap().forEach((data, key) => {
+      if (data.id === id) {
+        getTombstoneMap().set(key, {
+          id,
+          roomId,
+          deletedAt: '2026-01-01T00:00:00.000Z',
+          kind: 'entities',
+        })
+      }
+    })
+
+    expect(getTombstone(id)).toBeNull()
+    expect(getAllTombstones()).toEqual([])
+
+    const persistedDocUpdate = Y.encodeStateAsUpdate(getDoc())
+    destroy()
+    Y.applyUpdate(getDoc(), persistedDocUpdate)
+
+    expect(getTombstone(id)).toBeNull()
+    expect(isTombstoned(id)).toBe(false)
+  })
+
+  it('clears tombstones only from the active room', () => {
+    joinRoom('room-a')
+    addTombstone('room-a-delete')
+    leaveRoom()
+    joinRoom('room-b')
+    addTombstone('room-b-delete')
+
+    clearTombstones()
+
+    expect(getTombstone('room-b-delete')).toBeNull()
+    leaveRoom()
+    joinRoom('room-a')
+    expect(getTombstone('room-a-delete')).not.toBeNull()
+  })
+
+  it('checks every room tombstone after the active room identity is lost', () => {
+    const id = 'multi-room-tombstone'
+    const deviceId = 'clock-device'
+    joinRoom('room-a')
+    addTombstone(id)
+    leaveRoom()
+    joinRoom('room-b')
+    addTombstone(id)
+    getTombstoneMap().forEach((data, key) => {
+      if (data.id === id) {
+        getTombstoneMap().set(key, {
+          ...data,
+          clock: { [deviceId]: data.roomId === 'room-a' ? 1 : 3 },
+        })
+      }
+    })
+
+    const persistedDocUpdate = Y.encodeStateAsUpdate(getDoc())
+    destroy()
+    Y.applyUpdate(getDoc(), persistedDocUpdate)
+
+    expect(isTombstoned(id, 'entities', { [deviceId]: 2 })).toBe(true)
+  })
+
 
   it('keeps a room deletion hidden while the restored document has no room identity', () => {
     const deletedEntity = makeEntity('persisted-room-delete')

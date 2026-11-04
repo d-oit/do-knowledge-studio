@@ -1,0 +1,47 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "packageManager": "pnpm",
+  "appendPlugins": ["@stryker-mutator/vitest-runner"],
+  "ignorePatterns": [
+    "/.agents/skills",
+    "/.claude/skills",
+    "/.cursor/skills",
+    "/.gemini/skills",
+    "/.qwen/skills",
+    "/.windsurf/skills"
+  ],
+  "testRunner": "vitest",
+  "vitest": {
+    "configFile": "vitest.config.ts",
+    "related": true
+  },
+  "mutate": [
+    "src/lib/sync/merge.ts",
+    "src/lib/sync/causality.ts",
+    "src/lib/sync/tombstones.ts",
+    "src/lib/sync/conflict.ts",
+    "src/lib/sync/bridge.ts",
+    "src/lib/sync/merge-reconciliation.ts",
+    "src/lib/studio/migrations.ts",
+    "src/lib/studio/hydration.ts",
+    "src/lib/studio/hydration-guard.ts",
+    "src/lib/studio/hydration-quarantine.ts",
+    "src/lib/studio/cross-tab.ts",
+    "src/lib/studio/cross-tab-merge.ts",
+    "src/lib/studio/cross-tab-tombstones.ts"
+  ],
+  "reporters": ["clear-text", "html", "json"],
+  "htmlReporter": {
+    "fileName": "reports/mutation.html"
+  },
+  "jsonReporter": {
+    "fileName": "reports/mutation.json"
+  },
+  "concurrency": "50%",
+  "cleanTempDir": "always",
+  "thresholds": {
+    "high": 0,
+    "low": 0,
+    "break": 0
+  }
+}
