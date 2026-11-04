@@ -58,7 +58,9 @@ export const readYjsUpdateSequence = async (page: Page): Promise<number> =>
   page.evaluate(async ({ databaseName, updatesStoreName }) => {
     const databaseRequest = indexedDB.open(databaseName, 1)
     const databaseResult = Promise.withResolvers<IDBDatabase>()
-    databaseRequest.onsuccess = () => databaseResult.resolve(databaseRequest.result)
+    databaseRequest.onsuccess = () => {
+      databaseResult.resolve(databaseRequest.result)
+    }
     databaseRequest.onerror = () => {
       databaseResult.reject(databaseRequest.error ?? new Error('Failed to open Yjs persistence database'))
     }
@@ -69,7 +71,9 @@ export const readYjsUpdateSequence = async (page: Page): Promise<number> =>
         .objectStore(updatesStoreName)
         .getAllKeys()
       const updatesResult = Promise.withResolvers<IDBValidKey[]>()
-      updatesRequest.onsuccess = () => updatesResult.resolve(updatesRequest.result)
+      updatesRequest.onsuccess = () => {
+        updatesResult.resolve(updatesRequest.result)
+      }
       updatesRequest.onerror = () => {
         updatesResult.reject(updatesRequest.error ?? new Error('Failed to read Yjs update keys'))
       }
