@@ -1,52 +1,29 @@
-import { readFile, readdir, stat } from 'node:fs/promises'
-import { resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import strykerConfig from '../stryker.config.json' with { type: 'json' }
 import process from 'node:process'
 
-const DEFAULT_REPORT_SOURCE = 'reports/mutation.json'
 const MUTATION_SCORE_FLOOR = 60
 const PERCENT_SCALE = 100
 const RECOGNIZED_STATUSES = new Set(['Killed', 'Timeout', 'Survived', 'NoCoverage'])
 
 const isRecord = (value) => typeof value === 'object' && value !== null && !Array.isArray(value)
 
-const readJson = async (path) => JSON.parse(await readFile(path, 'utf8'))
-
-const findMutationReports = async (directory) => {
-  const reports = []
-  const visit = async (currentDirectory) => {
-    const entries = await readdir(currentDirectory, { withFileTypes: true })
-    for (const entry of entries) {
-      const entryPath = resolve(currentDirectory, entry.name)
-      if (entry.isDirectory()) {
-        await visit(entryPath)
-      } else if (entry.isFile() && entry.name === 'mutation.json') {
-        reports.push(entryPath)
-      }
-    }
-  }
-  await visit(directory)
-  return reports
-}
-
-const loadReportPaths = async (sourcePath) => {
-  const sourceInfo = await stat(sourcePath)
-  if (sourceInfo.isFile()) return [sourcePath]
-  if (!sourceInfo.isDirectory()) {
-    throw new Error(`Mutation report source is neither a file nor a directory: ${sourcePath}`)
-  }
-  const reports = await findMutationReports(sourcePath)
-  if (reports.length === 0) throw new Error(`No reports/mutation.json files found under ${sourcePath}`)
+const readReports = async () => {
+  process.stdin.setEncoding('utf8')
+  let input = ''
+  for await (const chunk of process.stdin) input += chunk
+  if (input.trim().length === 0) throw new Error('No mutation report JSON provided on stdin')
+  const parsed = JSON.parse(input)
+  const reports = Array.isArray(parsed) ? parsed : [parsed]
+  if (reports.length === 0) throw new Error('Mutation report input contains no reports')
   return reports
 }
 
 const main = async () => {
-  const args = process.argv.slice(2)
-  if (args.length > 1) throw new Error('Usage: node scripts/check-mutation-score.mjs [report-file-or-directory]')
+  if (process.argv.length > 2) {
+    throw new Error('Usage: node scripts/check-mutation-score.mjs < mutation-report.json')
+  }
 
-  const projectRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
-  const sourcePath = resolve(projectRoot, args[0] ?? DEFAULT_REPORT_SOURCE)
-  const config = await readJson(new URL('../stryker.config.json', import.meta.url))
+  const config = strykerConfig
   if (!isRecord(config) || !Array.isArray(config.mutate) || config.mutate.some((file) => typeof file !== 'string')) {
     throw new Error('stryker.config.json must define a string-array mutate scope')
   }
@@ -56,19 +33,19 @@ const main = async () => {
     throw new Error('stryker.config.json mutate scope must contain unique source files')
   }
 
-  const reportPaths = await loadReportPaths(sourcePath)
+  const reports = await readReports()
   const seenFiles = new Set()
   const counts = { Killed: 0, Timeout: 0, Survived: 0, NoCoverage: 0 }
   let invalidMutants = 0
 
-  for (const reportPath of reportPaths) {
-    const report = await readJson(reportPath)
+  for (const [reportIndex, report] of reports.entries()) {
+    const reportLabel = `mutation report ${reportIndex + 1}`
     if (!isRecord(report) || !isRecord(report.files)) {
-      throw new Error(`Invalid Stryker report structure: ${reportPath}`)
+      throw new Error(`Invalid Stryker report structure (${reportLabel})`)
     }
 
     for (const [file, fileReport] of Object.entries(report.files)) {
-      if (!expectedFiles.has(file)) throw new Error(`Unexpected mutation scope entry '${file}' in ${reportPath}`)
+      if (!expectedFiles.has(file)) throw new Error(`Unexpected mutation scope entry '${file}' in ${reportLabel}`)
       if (seenFiles.has(file)) throw new Error(`Duplicate mutation report for '${file}'`)
       if (!isRecord(fileReport) || !Array.isArray(fileReport.mutants) || fileReport.mutants.length === 0) {
         throw new Error(`Mutation report for '${file}' has no mutant results`)
@@ -77,7 +54,7 @@ const main = async () => {
 
       for (const mutant of fileReport.mutants) {
         if (!isRecord(mutant) || typeof mutant.status !== 'string') {
-          throw new Error(`Malformed mutant result for '${file}' in ${reportPath}`)
+          throw new Error(`Malformed mutant result for '${file}' in ${reportLabel}`)
         }
         if (!RECOGNIZED_STATUSES.has(mutant.status)) {
           invalidMutants += 1

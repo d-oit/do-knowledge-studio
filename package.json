@@ -18,7 +18,7 @@
     "typecheck:test": "tsc --noEmit -p tsconfig.test.json",
     "propagate:version": "bash scripts/propagate-version.sh",
     "test": "vitest run",
-    "test:mutation": "stryker run && node scripts/check-mutation-score.mjs reports/mutation.json",
+    "test:mutation": "stryker run && node scripts/check-mutation-score.mjs < reports/mutation.json",
     "test:properties:nightly": "FAST_CHECK_PROFILE=nightly vitest run",
     "test:coverage": "vitest run --coverage",
     "test:bench": "vitest run --config vitest.bench.config.ts",

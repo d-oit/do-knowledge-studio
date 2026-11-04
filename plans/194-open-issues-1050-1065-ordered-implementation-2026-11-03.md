@@ -280,4 +280,8 @@ global score floor, and retains shard and aggregate artifacts for 14 days.
   first run found a bare Yjs docs URL here; it was linked and the full gate
   passed on rerun.
   PR review/checks, default-branch mutation workflow, and merge remain.
+  Codacy flagged three non-literal file-access calls in the report checker; it
+  now consumes report JSON on stdin and statically imports the configured
+  scope instead of opening caller-selected paths. Checker tests and the
+  68.22% local composite pass; PR Codacy reanalysis remains pending.
 - [ ] Create, review, and merge each remaining issue PR in the recorded dependency order.
