@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import type { Claim, Entity } from '@/lib/studio/types'
 import { clockFromRecord } from './causality'
-import { destroy, getSyncDoc } from './doc'
+import { destroy, getDoc, getSyncDoc } from './doc'
 import { reconcileMergedRecords } from './merge-reconciliation'
 import { addTombstone } from './tombstones'
 import { destroyBridge, setYjsClaim, setYjsEntity } from './bridge'
@@ -55,6 +55,48 @@ describe('merged record reconciliation', () => {
     const clock = clockFromRecord(record)
     expect(clock['claim-delete-device']).toBe(1)
     expect(clock).not.toHaveProperty('entity-delete-device')
+  })
+
+  it('does not emit a Yjs update for an order-only tag and link difference', () => {
+    const id = 'unordered-entity'
+    const current = {
+      ...makeEntity(id),
+      tags: ['alpha', 'beta'],
+      links: [
+        { targetId: 'target-a', relation: 'references' },
+        { targetId: 'target-b', relation: 'mentions' },
+      ],
+    }
+    const merged = {
+      ...current,
+      tags: [...current.tags].reverse(),
+      links: [...current.links].reverse(),
+    }
+    setYjsEntity(current)
+    const doc = getDoc()
+    const existingRecord = getSyncDoc().entities.get(id)
+    if (!existingRecord) throw new Error('Expected the current entity in the Yjs document')
+    const initialClock = clockFromRecord(existingRecord)
+    let updateCount = 0
+    const countUpdates = () => {
+      updateCount += 1
+    }
+    doc.on('update', countUpdates)
+
+    try {
+      reconcileMergedRecords(
+        { entities: [merged], claims: [] },
+        { entities: [current], claims: [] },
+        { entities: new Set(), claims: new Set() },
+      )
+    } finally {
+      doc.off('update', countUpdates)
+    }
+
+    const finalRecord = getSyncDoc().entities.get(id)
+    if (!finalRecord) throw new Error('Expected the current entity to remain in the Yjs document')
+    expect(updateCount).toBe(0)
+    expect(clockFromRecord(finalRecord)).toEqual(initialClock)
   })
 
   it('does not overwrite a record excluded for unresolved deletion', () => {

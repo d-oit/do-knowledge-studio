@@ -13,6 +13,7 @@ import {
   joinSyncRoom,
   openEntity,
   readCanonicalEnvelope,
+  readYjsUpdateSequence,
   SYNC_ORIGIN_A,
   SYNC_ORIGIN_B,
   waitForPeer,
@@ -35,6 +36,8 @@ import { createInvite } from '../src/lib/sync/invite'
 const CONTEXT_OPTIONS = { viewport: { width: 1600, height: 1000 } } as const
 const ROOM_TIMEOUT_MS = 45_000
 const PROPAGATION_TIMEOUT_MS = 60_000
+
+const YJS_UPDATE_QUIET_PERIOD_MS = 2_000
 
 interface Device {
   context: BrowserContext
@@ -73,6 +76,19 @@ const roomId = (): string => `sync-e2e-${randomUUID()}`
 const canonicalContent = async (device: Device, name: string): Promise<string | undefined> => {
   const envelope = await readCanonicalEnvelope(device.page)
   return envelope?.state?.entities?.find((entity) => entity.name === name)?.content
+}
+
+const canonicalCollections = async (device: Device, entityId: string) => {
+  const envelope = await readCanonicalEnvelope(device.page)
+  const entity = envelope?.state?.entities?.find((candidate) => candidate.id === entityId)
+  if (!entity) return null
+  return {
+    tags: [...(entity.tags ?? [])].sort(),
+    links: [...(entity.links ?? [])].sort((left, right) => {
+      const targetOrder = left.targetId.localeCompare(right.targetId)
+      return targetOrder || left.relation.localeCompare(right.relation)
+    }),
+  }
 }
 
 test.describe.configure({ mode: 'serial' })
@@ -166,15 +182,23 @@ test.describe('independent-peer multi-device sync', () => {
       expect(afterReload).not.toContain(nameB)
   })
 
-  test('concurrent edits converge to one deterministic value without phantom records', async ({ browser }) => {
+  test('concurrent edits converge without phantom records or Yjs update loops', async ({ browser }) => {
     const shared = `Concurrent ${randomUUID().slice(0, 8)}`
     const room = roomId()
     const deviceA = await openDevice(browser, SYNC_ORIGIN_A, {
-      entities: [makeEntity('sync-shared', shared, 'shared initial')],
+      entities: [{
+        ...makeEntity('sync-shared', shared, 'shared initial'),
+        tags: ['sync-e2e', 'from-a'],
+        links: [{ targetId: 'target-a', relation: 'references' }],
+      }],
       claims: [],
     })
     const deviceB = await openDevice(browser, SYNC_ORIGIN_B, {
-      entities: [makeEntity('sync-shared', shared, 'shared initial')],
+      entities: [{
+        ...makeEntity('sync-shared', shared, 'shared initial'),
+        tags: ['sync-e2e', 'from-b'],
+        links: [{ targetId: 'target-b', relation: 'references' }],
+      }],
       claims: [],
     })
 
@@ -202,6 +226,44 @@ test.describe('independent-peer multi-device sync', () => {
         },
         { timeout: PROPAGATION_TIMEOUT_MS },
       ).toMatch(/^(concurrent edit from A|concurrent edit from B)$/)
+
+      const expectedCollections = {
+        tags: ['from-a', 'from-b', 'sync-e2e'],
+        links: [
+          { targetId: 'target-a', relation: 'references' },
+          { targetId: 'target-b', relation: 'references' },
+        ],
+      }
+      await expect.poll(
+        async () => {
+          const [a, b] = await Promise.all([
+            canonicalCollections(deviceA, 'sync-shared'),
+            canonicalCollections(deviceB, 'sync-shared'),
+          ])
+          return { a, b }
+        },
+        { timeout: PROPAGATION_TIMEOUT_MS },
+      ).toEqual({ a: expectedCollections, b: expectedCollections })
+
+      // The Yjs update store uses monotonic auto-increment keys. A stable
+      // sequence across this quiet period rules out a reconciliation echo loop.
+      await Promise.all([
+        deviceA.page.waitForTimeout(YJS_UPDATE_QUIET_PERIOD_MS),
+        deviceB.page.waitForTimeout(YJS_UPDATE_QUIET_PERIOD_MS),
+      ])
+      const sequenceBeforeQuietPeriod = await Promise.all([
+        readYjsUpdateSequence(deviceA.page),
+        readYjsUpdateSequence(deviceB.page),
+      ])
+      await Promise.all([
+        deviceA.page.waitForTimeout(YJS_UPDATE_QUIET_PERIOD_MS),
+        deviceB.page.waitForTimeout(YJS_UPDATE_QUIET_PERIOD_MS),
+      ])
+      const sequenceAfterQuietPeriod = await Promise.all([
+        readYjsUpdateSequence(deviceA.page),
+        readYjsUpdateSequence(deviceB.page),
+      ])
+      expect(sequenceAfterQuietPeriod).toEqual(sequenceBeforeQuietPeriod)
 
       // The conflict path must not duplicate the record.
       await expect.poll(async () => {

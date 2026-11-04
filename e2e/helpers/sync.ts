@@ -1,6 +1,9 @@
 import { expect, type Page } from '@playwright/test'
 import { navClick, waitForAppReady } from './navigation'
 
+const SYNC_DATABASE_NAME = 'dks-sync'
+const SYNC_UPDATES_STORE_NAME = 'updates'
+
 /** Two distinct origins; separate origins guarantee no BroadcastChannel path. */
 export const SYNC_ORIGIN_A = 'http://localhost:3000'
 export const SYNC_ORIGIN_B = 'http://127.0.0.1:3000'
@@ -8,7 +11,13 @@ export const SYNC_ORIGIN_B = 'http://127.0.0.1:3000'
 /** Persisted Zustand envelope as read from the canonical IndexedDB store. */
 export interface CanonicalEnvelope {
   state?: {
-    entities?: { id: string; name: string; content?: string }[]
+    entities?: {
+      id: string
+      name: string
+      content?: string
+      tags?: string[]
+      links?: { targetId: string; relation: string }[]
+    }[]
     claims?: { id: string; entityId: string; statement: string }[]
   }
   version?: number
@@ -42,6 +51,40 @@ export const readCanonicalEnvelope = async (page: Page): Promise<CanonicalEnvelo
     })
     db.close()
     return value as CanonicalEnvelope | null
+  })
+
+/** Read the highest Yjs update key so tests can detect continuing update loops. */
+export const readYjsUpdateSequence = async (page: Page): Promise<number> =>
+  page.evaluate(async ({ databaseName, updatesStoreName }) => {
+    const databaseRequest = indexedDB.open(databaseName, 1)
+    const databaseResult = Promise.withResolvers<IDBDatabase>()
+    databaseRequest.onsuccess = () => databaseResult.resolve(databaseRequest.result)
+    databaseRequest.onerror = () => {
+      databaseResult.reject(databaseRequest.error ?? new Error('Failed to open Yjs persistence database'))
+    }
+    const db = await databaseResult.promise
+
+    try {
+      const updatesRequest = db.transaction(updatesStoreName, 'readonly')
+        .objectStore(updatesStoreName)
+        .getAllKeys()
+      const updatesResult = Promise.withResolvers<IDBValidKey[]>()
+      updatesRequest.onsuccess = () => updatesResult.resolve(updatesRequest.result)
+      updatesRequest.onerror = () => {
+        updatesResult.reject(updatesRequest.error ?? new Error('Failed to read Yjs update keys'))
+      }
+      const keys = await updatesResult.promise
+      let largestKey = 0
+      for (const key of keys) {
+        if (typeof key === 'number' && key > largestKey) largestKey = key
+      }
+      return largestKey
+    } finally {
+      db.close()
+    }
+  }, {
+    databaseName: SYNC_DATABASE_NAME,
+    updatesStoreName: SYNC_UPDATES_STORE_NAME,
   })
 
 /** Navigate to the Sync view and join a room, optionally with a password. */

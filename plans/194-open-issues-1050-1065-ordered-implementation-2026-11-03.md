@@ -132,6 +132,23 @@ Each numbered step is a separate main-target PR and is merged before the next de
 - Yjs update properties cover all arrival orders for two or three replicas,
   duplicate application, and both groupings of a three-update merge.
 
+### Unordered-array reconciliation feedback
+
+Review found a potential peer-update feedback loop: tag and link merges preserve
+local-first array order, while payload equality treated order-only differences
+as changes. The pre-fix reconciliation regression observed one unnecessary Yjs
+update (`expected 0, received 1`) for equal tag/link sets in reverse order.
+`sameEntityPayload` now compares these set-valued fields by stable keys, so the
+bridge does not publish an order-only rewrite. A connected-peer regression
+seeds distinct concurrent tags and links, checks both canonical stores contain
+the union, and verifies the persisted Yjs update sequence stays stable during
+the quiet period. The focused unit test passed 3/3; the targeted Chromium E2E
+passed 1/1. Full quality-gate and PR verification remain pending.
+
+The test reads the highest key in `y-indexeddb`’s auto-incrementing `updates`
+store; MDN confirms deleting or clearing records does not decrement the key
+generator ([Using IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API/Using_IndexedDB)).
+
 ### Causal clock device-key regression
 
 The first 2,000-run nightly profile found a failure after 465 cases:
