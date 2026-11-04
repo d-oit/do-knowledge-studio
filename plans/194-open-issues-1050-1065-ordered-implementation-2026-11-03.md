@@ -143,7 +143,11 @@ bridge does not publish an order-only rewrite. A connected-peer regression
 seeds distinct concurrent tags and links, checks both canonical stores contain
 the union, and verifies the persisted Yjs update sequence stays stable during
 the quiet period. The focused unit test passed 3/3; the targeted Chromium E2E
-passed 1/1. Full quality-gate and PR verification remain pending.
+passed 1/1; the strict E2E TypeScript check also passed. After rebasing,
+`pnpm install --frozen-lockfile` and
+`env -u NO_COLOR FORCE_E2E=true ./scripts/quality_gate.sh` passed: lint, both
+typechecks, full Vitest and Playwright E2E, ShellCheck, BATS, and markdownlint.
+PR CI, code review, the main-branch mutation matrix, and merge remain pending.
 
 The test reads the highest key in `y-indexeddb`’s auto-incrementing `updates`
 store; MDN confirms deleting or clearing records does not decrement the key
