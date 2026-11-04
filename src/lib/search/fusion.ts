@@ -76,8 +76,20 @@ export interface FusedSearchResult extends SearchResult {
   signals: RankSignal[]
 }
 
+/**
+ * Precomputed table of rank contributions for standard ranked list depths.
+ * Pre-allocating 256 ranks covers virtually all practical retrieval limits
+ * while eliminating repeated floating-point divisions in the inner loop.
+ */
+const PRECOMPUTED_RANK_LIMIT = 256
+const RANK_CONTRIBUTIONS = new Float64Array(PRECOMPUTED_RANK_LIMIT)
+for (let rank = 0; rank < PRECOMPUTED_RANK_LIMIT; rank++) {
+  RANK_CONTRIBUTIONS[rank] = 1 / (RRF_DAMPING + rank + 1)
+}
+
 /** One entry's contribution to the fused score at a zero-based rank. */
-const rankContribution = (rank: number): number => 1 / (RRF_DAMPING + rank + 1)
+const rankContribution = (rank: number): number =>
+  rank < PRECOMPUTED_RANK_LIMIT ? RANK_CONTRIBUTIONS[rank]! : 1 / (RRF_DAMPING + rank + 1)
 
 /**
  * Merges labelled ranked lists into a single ranking.
@@ -104,30 +116,43 @@ export const reciprocalRankFusion = (
     { result: SearchResult; score: number; signals: RankSignal[] }
   >()
 
-  for (const list of rankedLists) {
+  for (let i = 0; i < rankedLists.length; i++) {
+    const list = rankedLists[i]!
     const weight = list.weight ?? DEFAULT_RANK_WEIGHT
-    list.results.forEach((result, rank) => {
+    const results = list.results
+    for (let rank = 0; rank < results.length; rank++) {
+      const result = results[rank]!
       const contribution = rankContribution(rank) * weight
       const existing = fused.get(result.id)
       if (existing === undefined) {
+        // Store result reference directly; clone only the final top-K items to avoid GC thrashing.
         fused.set(result.id, {
-          result: { ...result },
+          result,
           score: contribution,
           signals: [list.signal],
         })
-        return
+      } else {
+        existing.score += contribution
+        if (!existing.signals.includes(list.signal)) {
+          existing.signals.push(list.signal)
+        }
       }
-      existing.score += contribution
-      if (!existing.signals.includes(list.signal)) existing.signals.push(list.signal)
-    })
+    }
   }
 
-  return Array.from(fused.values())
-    .sort((left, right) =>
-      left.score === right.score
-        ? left.result.id.localeCompare(right.result.id)
-        : right.score - left.score,
-    )
-    .slice(0, limit)
-    .map(({ result, score, signals }) => ({ ...result, score, signals }))
+  const entries = Array.from(fused.values())
+  entries.sort((left, right) => {
+    const diff = right.score - left.score
+    if (diff !== 0) return diff
+    return left.result.id < right.result.id ? -1 : left.result.id > right.result.id ? 1 : 0
+  })
+
+  const sliceLimit = Math.min(entries.length, limit)
+  const output: FusedSearchResult[] = new Array(sliceLimit)
+  for (let i = 0; i < sliceLimit; i++) {
+    const item = entries[i]!
+    output[i] = { ...item.result, score: item.score, signals: item.signals }
+  }
+
+  return output
 }
