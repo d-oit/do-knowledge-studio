@@ -24,16 +24,37 @@ vi.mock('./export-helpers', () => ({
 
 vi.mock('@/lib/okf/import', () => ({ parseOkfBundle: vi.fn() }))
 
+/** Feeds archive entries through the streaming Unzip interface the reader uses. */
+type OnData = (error: Error | null, data: Uint8Array, final: boolean) => void
+interface FakeEntry {
+  name: string
+  ondata: OnData | null
+  start: () => void
+}
+let archiveFiles: Record<string, Uint8Array> = {}
 vi.mock('fflate', () => ({
-  unzipSync: vi.fn(),
-  zipSync: vi.fn(),
-  strToU8: vi.fn(),
-  strFromU8: vi.fn((data: Uint8Array) => new TextDecoder().decode(data)),
+  UnzipInflate: class {},
+  strFromU8: (data: Uint8Array) => new TextDecoder().decode(data),
+  Unzip: class {
+    onfile: ((entry: FakeEntry) => void) | null = null
+    register(): void {}
+    push(): void {
+      for (const [name, bytes] of Object.entries(archiveFiles)) {
+        const entry: FakeEntry = {
+          name,
+          ondata: null,
+          start: () => {
+            entry.ondata?.(null, bytes, true)
+          },
+        }
+        this.onfile?.(entry)
+      }
+    }
+  },
 }))
 
 import { toast } from 'sonner'
 import { parseOkfBundle } from '@/lib/okf/import'
-import { unzipSync } from 'fflate'
 import { useExportHandlers } from './use-export-handlers'
 
 const importedEntities: Entity[] = [
@@ -50,34 +71,16 @@ const importedEntities: Entity[] = [
   },
 ]
 
-const archiveFiles = {
+const okfArchive = {
   'okf-bundle/index.md': new TextEncoder().encode('okf_version: "0.2"\n'),
   'okf-bundle/concepts/ok.md': new TextEncoder().encode('# OK'),
 }
 
-const fileInputRef: RefObject<HTMLInputElement | null> = { current: null }
-
-const withStubFileReader = (content: ArrayBuffer, run: () => void): void => {
-  const originalFileReader = global.FileReader
-
-  class StubFileReader {
-    result: string | ArrayBuffer | null = null
-    onload: (() => void | Promise<void>) | null = null
-    onerror: (() => void) | null = null
-
-    readAsArrayBuffer(): void {
-      this.result = content
-      void this.onload?.()
-    }
-  }
-
-  global.FileReader = StubFileReader as unknown as typeof FileReader
-  try {
-    run()
-  } finally {
-    global.FileReader = originalFileReader
-  }
+const vaultArchive = {
+  'notes/solo.md': new TextEncoder().encode('Lone note linking [[Ghost]].\n'),
 }
+
+const fileInputRef: RefObject<HTMLInputElement | null> = { current: null }
 
 const makeZipChangeEvent = (): ChangeEvent<HTMLInputElement> => {
   const input = document.createElement('input')
@@ -102,7 +105,7 @@ const renderUseExportHandlers = (setImportPreview: (preview: ImportPreview | nul
 
 beforeEach(() => {
   vi.clearAllMocks()
-  vi.mocked(unzipSync).mockReturnValue(archiveFiles)
+  archiveFiles = { ...okfArchive }
   vi.mocked(parseOkfBundle).mockReturnValue({
     entities: importedEntities,
     claims: [],
@@ -119,10 +122,8 @@ describe('OKF ZIP import handlers', () => {
       errors: ['broken.md: invalid YAML frontmatter'],
     })
 
-    withStubFileReader(new Uint8Array([1, 2, 3]).buffer as ArrayBuffer, () => {
-      const { result } = renderUseExportHandlers(setImportPreview)
-      act(() => { result.current.handleFileChange(makeZipChangeEvent()) })
-    })
+    const { result } = renderUseExportHandlers(setImportPreview)
+    await act(async () => { await result.current.handleFileChange(makeZipChangeEvent()) })
 
     await waitFor(() => {
       expect(toast.warning).toHaveBeenCalledWith('Partial import', expect.anything())
@@ -145,10 +146,8 @@ describe('OKF ZIP import handlers', () => {
       errors: longErrors,
     })
 
-    withStubFileReader(new Uint8Array([1, 2, 3]).buffer as ArrayBuffer, () => {
-      const { result } = renderUseExportHandlers(setImportPreview)
-      act(() => { result.current.handleFileChange(makeZipChangeEvent()) })
-    })
+    const { result } = renderUseExportHandlers(setImportPreview)
+    await act(async () => { await result.current.handleFileChange(makeZipChangeEvent()) })
 
     await waitFor(() => {
       expect(toast.warning).toHaveBeenCalledWith(
@@ -157,6 +156,20 @@ describe('OKF ZIP import handlers', () => {
       )
       const description = String(vi.mocked(toast.warning).mock.calls[0][1]?.description ?? '')
       expect(description.length).toBeLessThanOrEqual(320)
+    })
+  })
+
+  it('imports a non-OKF zip as a vault with stubs in the preview', async () => {
+    archiveFiles = { ...vaultArchive }
+    const setImportPreview = vi.fn()
+    const { result } = renderUseExportHandlers(setImportPreview)
+    await act(async () => { await result.current.handleFileChange(makeZipChangeEvent()) })
+
+    await waitFor(() => {
+      expect(setImportPreview).toHaveBeenCalledWith(expect.objectContaining({
+        entityCount: 2,
+        stubNames: ['Ghost'],
+      }))
     })
   })
 })

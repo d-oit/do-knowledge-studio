@@ -33,7 +33,7 @@ const importJson = async (page: Page, fixture: string): Promise<void> => {
   await navClick(page, /^export/i);
   // The Export view now also has a hidden backup-restore input. Target the
   // JSON import dropzone explicitly.
-  await page.locator('input[type=file][accept=".json,application/json"]').setInputFiles(fixture);
+  await page.locator('input[type=file][accept=".json,application/json,.md,.markdown,text/markdown,.zip,application/zip"]').setInputFiles(fixture);
   // Exact label: a loose `/import/` match also hits the "Import knowledge"
   // heading region, so the click lands on nothing and the test times out
   // believing the app did nothing.

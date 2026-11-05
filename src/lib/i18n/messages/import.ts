@@ -34,11 +34,22 @@ const messages = {
   'import.dropzone.subtitle':
     'Replace your current library with the contents of a JSON export. This action cannot be undone.',
   /** Dropzone call-to-action heading. */
-  'import.dropzone.chooseHeading': 'Choose a JSON file',
+  'import.dropzone.chooseHeading': 'Choose files or a folder',
   /** Dropzone hint describing the accepted export shape. */
-  'import.dropzone.acceptsHint': 'Accepts exports from this view ({ entities: [], claims: [] })',
+  'import.dropzone.acceptsHint':
+    'Accepts JSON exports, Markdown exports, .md notes, vault folders, and .zip vaults',
   /** Dropzone file picker button. */
-  'import.dropzone.chooseButton': 'Choose file',
+  'import.dropzone.chooseButton': 'Choose files',
+  /** Dropzone folder picker button. */
+  'import.dropzone.chooseFolderButton': 'Choose folder',
+  /** Preview row for stub entities minted for unresolvable vault links. */
+  'import.stubs': (count: string) =>
+    `${count} new stub ${count === '1' ? 'entity' : 'entities'} will be created for links with no match:`,
+  /** Preview row for vault names shared by several notes. */
+  'import.conflicts': (count: string) =>
+    `${count} duplicate ${count === '1' ? 'name' : 'names'} imported as separate entities:`,
+  /** Suffix capping long stub/conflict name lists. */
+  'import.moreNames': (count: string) => `…and ${count} more`,
 } as const
 
 /** Typed `translate` helper bound to the import message scope. */
