@@ -7,6 +7,7 @@ import packageJson from '../../../../package.json'
 import type { Entity, Claim } from '@/lib/studio/types'
 import type { ValidatedGraph, ValidatedLink, ValidatedMindMap, ValidatedTag } from '@/lib/studio/schema'
 import type { ImportOutcome } from '@/lib/studio/store-types'
+import type { SavedGraphView } from '@/lib/studio/graph-views'
 import { Overlay } from '@/components/studio/ui/shared-primitives'
 import { downloadBlob, todayStamp } from './export-types'
 import { translate } from '@/lib/i18n/messages/backup'
@@ -19,11 +20,13 @@ interface BackupPanelProps {
   mindMap?: ValidatedMindMap
   links?: ValidatedLink[]
   tags?: ValidatedTag[]
+  graphViews?: SavedGraphView[]
   importWithRollback: (entities: Entity[], claims: Claim[], options?: {
     graph?: ValidatedGraph
     mindMap?: ValidatedMindMap
     links?: ValidatedLink[]
     tags?: ValidatedTag[]
+    graphViews?: SavedGraphView[]
   }) => ImportOutcome
 }
 
@@ -35,6 +38,7 @@ export const BackupPanel = ({
   mindMap,
   links,
   tags,
+  graphViews,
   importWithRollback,
 }: BackupPanelProps) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
@@ -53,7 +57,7 @@ export const BackupPanel = ({
     try {
       const { buildBackupArchive } = await import('@/lib/backup/archive')
       const raw = await buildBackupArchive(
-        { entities, claims, graph, mindMap, links, tags, appVersion: packageJson.version },
+        { entities, claims, graph, mindMap, links, tags, graphViews, appVersion: packageJson.version },
         passphrase.trim() || undefined,
       )
       downloadBlob(
@@ -89,7 +93,9 @@ export const BackupPanel = ({
         }
         return
       }
-      setPreview(buildRestorePreview(result.backup, { entities, claims, graph, mindMap, links, tags }))
+      setPreview(
+        buildRestorePreview(result.backup, { entities, claims, graph, mindMap, links, tags, graphViews }),
+      )
       setRestorePassphrase('')
     } catch (error) {
       setErrors([error instanceof Error ? error.message : String(error)])
@@ -116,7 +122,7 @@ export const BackupPanel = ({
     const { composeRestore } = await import('@/lib/backup/restore')
     const composed = composeRestore(
       preview,
-      { entities, claims, graph, mindMap, links, tags },
+      { entities, claims, graph, mindMap, links, tags, graphViews },
       { mode, duplicatePolicy },
     )
     const result = importWithRollback(composed.entities, composed.claims, {
@@ -124,6 +130,7 @@ export const BackupPanel = ({
       mindMap: composed.mindMap,
       links: composed.links,
       tags: composed.tags,
+      graphViews: composed.graphViews,
     })
     if (!result.success) {
       toast.error(translate('backup.applyFailed'), { description: result.error })

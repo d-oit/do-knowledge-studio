@@ -49,6 +49,7 @@ const createValidPersistedSlice = () => ({
   mindMap: null,
   links: null,
   tags: null,
+  graphViews: [],
 })
 
 describe('sanitizeHydration', () => {
@@ -171,6 +172,13 @@ describe('sanitizeHydration', () => {
     expect(verdict.ok).toBe(false)
     expect(verdict.data).toEqual({})
     expect(verdict.reason).toContain('currentView')
+  })
+
+  it('defaults saved graph views to an empty list for older envelopes', () => {
+    const { graphViews: _graphViews, ...legacySlice } = createValidPersistedSlice()
+    const verdict = sanitizeHydration(legacySlice)
+    expect(verdict.ok).toBe(true)
+    expect(verdict.data.graphViews).toEqual([])
   })
 
   it('accepts valid optional fields such as graph, mindMap, links, and tags', () => {

@@ -19,11 +19,11 @@ const log = logger.child({ area: 'store' })
 /** localStorage key holding the saved graph canvas snapshot. */
 export const GRAPH_SNAPSHOT_KEY = 'dks-graph-snapshot'
 
-/** Layout algorithms the graph view can render. */
-const LAYOUT_VALUES = ['force', 'circular', 'hierarchical'] as const
+/** Layout algorithms the graph view can render (shared with saved views). */
+export const GRAPH_LAYOUTS = ['force', 'circular', 'hierarchical'] as const
 
 /** One of the graph layout algorithms. */
-export type GraphLayout = (typeof LAYOUT_VALUES)[number]
+export type GraphLayout = (typeof GRAPH_LAYOUTS)[number]
 
 /** One entity as captured inside a snapshot's topology payload. */
 export interface SnapshotEntity {
@@ -61,7 +61,7 @@ export interface GraphSnapshot {
 
 /** Zod schema for the persisted snapshot payload. */
 const GraphSnapshotSchema = z.object({
-  layout: z.enum(LAYOUT_VALUES),
+  layout: z.enum(GRAPH_LAYOUTS),
   selectedEntityId: z.string().nullable(),
   focusMode: z.boolean(),
   panX: z.number().finite(),

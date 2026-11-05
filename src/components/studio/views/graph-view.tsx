@@ -24,6 +24,17 @@ import { useGraphKeyboard } from './use-graph-keyboard'
 import { useGraphSnapshotComparison } from './use-graph-snapshot-comparison'
 import { FOCUS_MODE_FILTER_STYLE, GraphEdgeElement } from './graph-elements'
 import { useGraphCanvasGestures } from './use-graph-canvas-gestures'
+import { GraphQueryPanel } from './graph-query-panel'
+import {
+  EMPTY_GRAPH_FILTER,
+  countActiveFilterFacets,
+  filterGraph,
+  pathEdgeKeys,
+  undirectedEdgeKey,
+  type GraphFilter,
+  type GraphPathResult,
+} from '@/lib/studio/graph-query'
+import type { SavedGraphView } from '@/lib/studio/graph-views'
 
 /**
  * Keep the first edge per `id`, preserving input order, in one O(E) pass. The
@@ -44,6 +55,10 @@ const dedupeEdgesById = <T extends { id: string }>(edges: T[]): T[] => {
 /** Interactive knowledge graph view with force, circular, and hierarchical layouts. */
 export const GraphView = () => {
   const entities = useStudioStore((s) => s.entities)
+  const claims = useStudioStore((s) => s.claims)
+  const graphViews = useStudioStore((s) => s.graphViews)
+  const saveGraphView = useStudioStore((s) => s.saveGraphView)
+  const deleteGraphView = useStudioStore((s) => s.deleteGraphView)
   const selectedEntityId = useStudioStore((s) => s.selectedEntityId)
   const selectEntity = useStudioStore((s) => s.selectEntity)
   const startNew = useStudioStore((s) => s.startNew)
@@ -57,6 +72,11 @@ export const GraphView = () => {
   const [showMore, setShowMore] = useState(false)
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
+  // Structural queries are canvas chrome, not corpus data: they stay in view
+  // state so a reload starts from the full graph rather than a hidden filter.
+  const [filter, setFilter] = useState<GraphFilter>(EMPTY_GRAPH_FILTER)
+  const [pathResult, setPathResult] = useState<GraphPathResult | null>(null)
+  const [queriesOpen, setQueriesOpen] = useState(false)
 
   // The placement band reshapes itself to the rendered canvas (plans/152 §6.1).
   // The measured box is the canvas container's own, never a node position the
@@ -68,23 +88,21 @@ export const GraphView = () => {
   // Build adjacency index for O(1) focus-mode neighbor lookups
   const adjacency = useMemo(() => buildAdjacencyIndex(entities), [entities])
 
+  // Filtering happens before placement so hidden nodes cannot stretch the
+  // canvas band or leave dangling edges behind.
+  const filtered = useMemo(
+    () => filterGraph(entities, claims, filter),
+    [entities, claims, filter],
+  )
+
   const { nodes, edges } = useMemo(() => {
-    const nodesList = placeGraphNodes(entities, seedGraph.nodes, viewport)
+    const nodesList = placeGraphNodes(filtered.entities, seedGraph.nodes, viewport)
     const nodeIds = new Set(nodesList.map((n) => n.id))
     const edgesList = dedupeEdgesById(
-      entities.flatMap((e) =>
-        e.links
-          .filter((l) => nodeIds.has(l.targetId))
-          .map((l) => ({
-            id: `${e.id}-${l.targetId}`,
-            source: e.id,
-            target: l.targetId,
-            relation: l.relation,
-          })),
-      ),
+      filtered.edges.filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target)),
     )
     return { nodes: nodesList, edges: edgesList }
-  }, [entities, viewport])
+  }, [filtered, viewport])
 
   // Apply the layout transform; `layoutNodes` is shared with the snapshot
   // restore clamp so both derive canvas geometry from the same math.
@@ -151,6 +169,40 @@ export const GraphView = () => {
     [visibleNodes],
   )
 
+  // Path highlight: canonical undirected keys, because a traversal may walk a
+  // stored link in either direction.
+  const pathEdgeKeySet = useMemo(
+    () => (pathResult?.found ? pathEdgeKeys(pathResult.edges) : new Set<string>()),
+    [pathResult],
+  )
+  const pathNodeIdSet = useMemo(
+    () => new Set(pathResult?.found ? pathResult.nodeIds : []),
+    [pathResult],
+  )
+  const activeFilterCount = countActiveFilterFacets(filter)
+  const currentViewInput = useMemo(
+    () => ({
+      name: '',
+      filter,
+      layout,
+      focusMode,
+      viewport: { panX: panOffset.x, panY: panOffset.y, zoom },
+    }),
+    [filter, layout, focusMode, panOffset, zoom],
+  )
+
+  const handleApplyView = useCallback(
+    (view: SavedGraphView) => {
+      setFilter(view.filter)
+      setLayout(view.layout)
+      setFocusMode(view.focusMode)
+      setPanOffset({ x: view.viewport.panX, y: view.viewport.panY })
+      setZoom(view.viewport.zoom)
+      setPathResult(null)
+    },
+    [],
+  )
+
   const reducedMotion = useReducedMotion()
   const { svgRef, isDraggingRef, handlePointerDown, handlePointerMove, handlePointerUp, handleWheel } =
     useGraphCanvasGestures({ canvas, zoom, setZoom, panOffset, setPanOffset })
@@ -204,7 +256,26 @@ export const GraphView = () => {
         onExportPng={handleExportPng}
         nodeCount={visibleNodes.length}
         edgeCount={visibleEdges.length}
+        queriesOpen={queriesOpen}
+        onToggleQueries={() => { setQueriesOpen(!queriesOpen) }}
+        activeFilterCount={activeFilterCount}
       />
+
+      {queriesOpen && (
+        <GraphQueryPanel
+          entities={entities}
+          claims={claims}
+          filter={filter}
+          onFilterChange={setFilter}
+          pathResult={pathResult}
+          onPathResult={setPathResult}
+          views={graphViews}
+          onSaveView={saveGraphView}
+          onApplyView={handleApplyView}
+          onDeleteView={deleteGraphView}
+          currentView={currentViewInput}
+        />
+      )}
 
       {/* Canvas */}
       <div
@@ -241,6 +312,7 @@ export const GraphView = () => {
                   sourceNode={sourceNode}
                   targetNode={targetNode}
                   selectedEntityId={selectedEntityId}
+                  pathHighlighted={pathEdgeKeySet.has(undirectedEdgeKey(edge.source, edge.target))}
                 />
               )
             })}
@@ -264,7 +336,7 @@ export const GraphView = () => {
                   onBlur={() => { setFocusedNodeId(null) }}
                   tabIndex={0}
                   role="button"
-                  aria-label={`${n.label} — ${meta.label}${isSelected ? ' (selected)' : ''}`}
+                  aria-label={`${n.label} — ${meta.label}${isSelected ? ' (selected)' : ''}${pathNodeIdSet.has(n.id) ? ' (on path)' : ''}`}
                   className={cn(
                     'cursor-pointer outline-none',
                     (focusedNodeId === n.id || isSelected) && 'focus-visible:ring-2 focus-visible:ring-saffron/60',
@@ -283,8 +355,8 @@ export const GraphView = () => {
                         'transition-all',
                         isSelected ? 'fill-saffron' : meta.dot.replace('bg-', 'fill-'),
                       )}
-                      stroke="var(--background)"
-                      strokeWidth={2}
+                      stroke={pathNodeIdSet.has(n.id) ? 'var(--saffron)' : 'var(--background)'}
+                      strokeWidth={pathNodeIdSet.has(n.id) ? 3 : 2}
                     />
                     <circle r={r * 0.4} fill="var(--background)" opacity={0.3} />
                     <text

@@ -68,13 +68,16 @@ export const GraphEdgeElement = ({
   sourceNode,
   targetNode,
   selectedEntityId,
+  pathHighlighted = false,
 }: {
   edge: GraphEdge
   sourceNode: GraphNode
   targetNode: GraphNode
   selectedEntityId: string | null
+  /** Whether this edge lies on the recovered shortest path (#1058). */
+  pathHighlighted?: boolean
 }) => {
-  const isHighlighted = isEdgeHighlighted(edge, selectedEntityId)
+  const isHighlighted = isEdgeHighlighted(edge, selectedEntityId) || pathHighlighted
   const stroke = EDGE_STROKE[isHighlighted ? 'highlighted' : 'default']
 
   return (

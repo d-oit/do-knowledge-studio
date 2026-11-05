@@ -10,6 +10,7 @@
 import type { Entity, Claim } from '@/lib/studio/types'
 import type { ValidatedGraph, ValidatedLink, ValidatedMindMap, ValidatedTag } from '@/lib/studio/schema'
 import { CURRENT_SCHEMA_VERSION } from '@/lib/studio/migrations'
+import type { SavedGraphView } from '@/lib/studio/graph-views'
 import type { VerifiedBackup } from './archive'
 
 /** How an archive is applied to the current corpus. */
@@ -31,6 +32,7 @@ export interface RestoreTarget {
   mindMap?: ValidatedMindMap
   links?: ValidatedLink[]
   tags?: ValidatedTag[]
+  graphViews?: SavedGraphView[]
 }
 
 /** Side-effect-free description of a pending restore. */
@@ -42,6 +44,7 @@ export interface RestorePreview {
   mindMap?: ValidatedMindMap
   links?: ValidatedLink[]
   tags?: ValidatedTag[]
+  graphViews?: SavedGraphView[]
   duplicateEntityIds: string[]
   duplicateClaimIds: string[]
   warnings: string[]
@@ -55,6 +58,7 @@ export interface ComposedRestore {
   mindMap?: ValidatedMindMap
   links?: ValidatedLink[]
   tags?: ValidatedTag[]
+  graphViews?: SavedGraphView[]
   warnings: string[]
 }
 
@@ -91,6 +95,7 @@ export const buildRestorePreview = (
     mindMap: backup.mindMap ?? undefined,
     links: backup.links ?? undefined,
     tags: backup.tags ?? undefined,
+    graphViews: backup.graphViews ?? undefined,
     duplicateEntityIds,
     duplicateClaimIds,
     warnings,
@@ -172,6 +177,7 @@ export const composeRestore = (
       mindMap: preview.backup.mindMap ?? undefined,
       links: preview.backup.links ?? undefined,
       tags: preview.backup.tags ?? undefined,
+      graphViews: preview.backup.graphViews ?? undefined,
       warnings,
     }
   }
@@ -189,6 +195,11 @@ export const composeRestore = (
     mindMap: mergeMindMap(current.mindMap, preview.backup.mindMap ?? undefined, options.duplicatePolicy),
     links: mergeOptionalRecords(current.links, preview.backup.links ?? undefined, options.duplicatePolicy),
     tags: mergeOptionalRecords(current.tags, preview.backup.tags ?? undefined, options.duplicatePolicy),
+    graphViews: mergeOptionalRecords(
+      current.graphViews,
+      preview.backup.graphViews ?? undefined,
+      options.duplicatePolicy,
+    ),
     warnings,
   }
 }

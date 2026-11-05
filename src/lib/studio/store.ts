@@ -35,6 +35,7 @@ import { createClaimsSlice } from './slices/claims-slice'
 import { createHistorySlice } from './slices/history-slice'
 import { createChatSlice } from './slices/chat-slice'
 import { createDataSlice } from './slices/data-slice'
+import { createGraphViewsSlice } from './slices/graph-views-slice'
 import { createUiSlice } from './slices/ui-slice'
 import { snapshotCorpus } from './history-snapshot'
 import { logger } from '@/lib/logging/logger'
@@ -126,6 +127,7 @@ export const useStudioStore = create<StudioState>()(
       ...createHistorySlice(set, get),
       ...createChatSlice(set, get),
       ...createDataSlice(set, get),
+      ...createGraphViewsSlice(set, get),
       ...buildInitialState(),
     }),
     {

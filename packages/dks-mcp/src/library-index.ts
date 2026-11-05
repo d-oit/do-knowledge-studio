@@ -159,6 +159,71 @@ export class LibraryIndex {
   }
 
   /**
+   * Undirected adjacency over `# Related` links, sorted by display name so a
+   * path query over the same bundle always returns the same route.
+   */
+  private adjacency(): Map<string, string[]> {
+    const edges = new Map<string, Set<string>>()
+    const link = (a: string, b: string): void => {
+      const bucket = edges.get(a)
+      if (bucket) bucket.add(b)
+      else edges.set(a, new Set([b]))
+    }
+    for (const concept of this.concepts) {
+      for (const target of concept.relatedIds) {
+        if (!this.byId.has(target)) continue
+        link(concept.id, target)
+        link(target, concept.id)
+      }
+    }
+    const nameOf = (id: string): string => this.byId.get(id)?.name ?? id
+    const sorted = new Map<string, string[]>()
+    for (const [id, neighbors] of edges) {
+      sorted.set(id, [...neighbors].sort((a, b) => nameOf(a).localeCompare(nameOf(b))))
+    }
+    return sorted
+  }
+
+  /**
+   * Breadth-first shortest path between two concepts over `# Related` links.
+   * Connections are undirected (the way the studio canvas draws them).
+   * @param fromId - Start concept id.
+   * @param toId - Target concept id.
+   * @returns Ordered ids, or `no-path` when nothing connects the pair.
+   */
+  shortestPath(
+    fromId: string,
+    toId: string,
+  ): { found: true; ids: string[] } | { found: false; reason: 'no-path' } {
+    if (fromId === toId) return { found: true, ids: [fromId] }
+    const adjacency = this.adjacency()
+    const cameFrom = new Map<string, string>()
+    const visited = new Set<string>([fromId])
+    const queue: string[] = [fromId]
+    for (let head = 0; head < queue.length; head += 1) {
+      const current = queue[head]
+      if (current === undefined) continue
+      for (const next of adjacency.get(current) ?? []) {
+        if (visited.has(next)) continue
+        visited.add(next)
+        cameFrom.set(next, current)
+        queue.push(next)
+      }
+    }
+    if (!cameFrom.has(toId)) return { found: false, reason: 'no-path' }
+    const ids = [toId]
+    let cursor = toId
+    while (cursor !== fromId) {
+      const previous = cameFrom.get(cursor)
+      if (previous === undefined) return { found: false, reason: 'no-path' }
+      cursor = previous
+      ids.push(cursor)
+    }
+    ids.reverse()
+    return { found: true, ids }
+  }
+
+  /**
    * One-hop neighborhood: concepts this concept links to plus concepts
    * linking back, with dangling targets dropped.
    * @param id - Concept id.

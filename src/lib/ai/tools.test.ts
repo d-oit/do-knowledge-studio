@@ -41,11 +41,12 @@ const sampleClaims: Claim[] = [
 
 describe('AI Tools Module', () => {
   it('exposes defined STUDIO_AI_TOOLS schemas', () => {
-    expect(STUDIO_AI_TOOLS.length).toBe(3)
+    expect(STUDIO_AI_TOOLS.length).toBe(4)
     const toolNames = STUDIO_AI_TOOLS.map((t) => t.function.name)
     expect(toolNames).toContain('search_library')
     expect(toolNames).toContain('get_entity_claims')
     expect(toolNames).toContain('get_graph_neighborhood')
+    expect(toolNames).toContain('find_path')
   })
 
   it('executes search_library tool successfully', () => {
@@ -85,6 +86,46 @@ describe('AI Tools Module', () => {
     const data = res.data as { id: string; name: string }[]
     expect(data).toHaveLength(1)
     expect(data[0].id).toBe('ent-b')
+  })
+
+  it('executes find_path with hop relations and names', () => {
+    const res = executeStudioTool(
+      'find_path',
+      { fromId: 'ent-a', toId: 'ent-b' },
+      sampleEntities,
+      sampleClaims,
+    )
+    expect(res.success).toBe(true)
+    const data = res.data as {
+      found: boolean
+      nodeIds: string[]
+      names: string[]
+      edges: { relation: string }[]
+    }
+    expect(data.found).toBe(true)
+    expect(data.nodeIds).toEqual(['ent-a', 'ent-b'])
+    expect(data.names).toEqual(['TRIZ Inventive Method', 'Altshuller Matrix'])
+    expect(data.edges[0]?.relation).toBe('relates to')
+  })
+
+  it('reports no path between disconnected entities', () => {
+    const isolated: Entity[] = [
+      ...sampleEntities,
+      {
+        id: 'ent-c',
+        name: 'Standalone Note',
+        type: 'note',
+        description: '',
+        content: '',
+        tags: [],
+        createdAt: '2026-09-01T00:00:00.000Z',
+        updatedAt: '2026-09-01T00:00:00.000Z',
+        links: [],
+      },
+    ]
+    const res = executeStudioTool('find_path', { fromId: 'ent-a', toId: 'ent-c' }, isolated, sampleClaims)
+    expect(res.success).toBe(true)
+    expect(res.data).toEqual({ found: false, reason: 'no-path' })
   })
 
   it('handles unknown tools gracefully', () => {

@@ -14,11 +14,13 @@ import {
   RotateCw,
   Download,
   MoreHorizontal,
+  Sliders,
 } from 'lucide-react'
 import { ToolbarBtn, ToggleButtonGroup, Divider } from '../ui/shared-primitives'
 import { cn } from '@/lib/utils'
 
 import type { GraphLayout } from '@/lib/studio/graph-snapshot'
+import { translate as graphT } from '@/lib/i18n/messages/graph'
 
 /** Re-exported for callers that only need the layout union. */
 export type LayoutType = GraphLayout
@@ -44,6 +46,11 @@ interface GraphToolbarProps {
   onExportPng: () => void
   nodeCount: number
   edgeCount: number
+  /** Whether the query/filter/saved-view panel is open. */
+  queriesOpen: boolean
+  onToggleQueries: () => void
+  /** Number of filter facets currently narrowing the canvas. */
+  activeFilterCount: number
 }
 
 /** Toolbar for the knowledge graph view with layout switching, focus mode, and history actions. */
@@ -66,6 +73,9 @@ export const GraphToolbar = ({
   onExportPng,
   nodeCount,
   edgeCount,
+  queriesOpen,
+  onToggleQueries,
+  activeFilterCount,
 }: GraphToolbarProps) => {
   const moreControlsId = useId()
 
@@ -100,6 +110,14 @@ export const GraphToolbar = ({
 
       <Divider />
 
+      <ToolbarBtn
+        icon={Sliders}
+        label={graphT('graph.queries.toggle')}
+        help={graphT('graph.queries.toggleHelp')}
+        active={queriesOpen || activeFilterCount > 0}
+        ariaExpanded={queriesOpen}
+        onClick={onToggleQueries}
+      />
       <ToolbarBtn
         icon={Focus}
         label="Focus neighborhood"

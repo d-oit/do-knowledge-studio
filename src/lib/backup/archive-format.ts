@@ -3,6 +3,7 @@
  */
 import { z } from 'zod'
 import type { Entity, Claim } from '@/lib/studio/types'
+import type { SavedGraphView } from '@/lib/studio/graph-views'
 import type {
   ValidatedGraph,
   ValidatedLink,
@@ -100,6 +101,8 @@ export interface BackupCanvas {
   mindMap?: ValidatedMindMap | null
   links?: ValidatedLink[] | null
   tags?: ValidatedTag[] | null
+  /** Named graph views (#1058); absent in archives written before they existed. */
+  graphViews?: SavedGraphView[] | null
 }
 
 /** Inputs accepted by the archive builder. */

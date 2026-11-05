@@ -19,7 +19,7 @@ The sequence now starts from post-merge `main` at `c4af33b`; 15 open issues rema
 | #1055 | Done (PR #1089) | `[[...]]` editor tokens/export/import, name+tag alias resolution (no schema migration), unlinked-mention indexing, rename behavior, keyboard/SR tests. ID-based `@` mentions remain the canonical storage link. |
 | #1056 | Done (ADR 050 + Plan 196) | ADR compares bundle CLI / local bridge / browser registration and selects the offline CLI; `packages/dks-mcp` serves read-only tools over stdio, Zod-validates arguments, mirrors OKF trust derivation, and ships an SDK contract test plus client docs. `find_path` is deferred to #1058. |
 | #1057 | Open | Provider-backed extraction into an isolated proposal inbox, bounded Zod validation, provenance/privacy disclosure, explicit accept/edit/reject, evaluation and undo. |
-| #1058 | Open | Pure shortest-path/filter API, accessible results, named views persisted through reload/backup/sync, and AI `find_path` integration. |
+| #1058 | Done (Plan 197 + ADR 051) | Pure BFS path/filter API with accessible list results, Zod-validated named views in the store envelope and backup `data/canvas.json`, AI `find_path` tool, and the MCP `find_path` deferral from #1056 closed. |
 | #1059 | Open | Incremental duplicate/contradiction candidate detection, dismissals persisted and synced, user-confirmed actions, labeled fixtures and metrics. |
 | #1060 | Open | Separate durable per-entity revision store, quota/retention, restore UI, merge/import revision tags, optional backup inclusion, latency evidence. |
 | #1061 | Open | PWA share-target intake and offline queue, safe transient capture/confirmation, URL clipper/bookmarklet and support documentation. |
