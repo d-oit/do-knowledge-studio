@@ -99,27 +99,15 @@ export interface LoadedBundle {
  */
 export const deriveTrustTier = (verified: unknown): TrustTier => {
   if (!verified) return 'unverified'
-  const list = (Array.isArray(verified) ? verified : [verified]) as Array<{ by?: unknown }>
+  const raw: unknown[] = Array.isArray(verified) ? verified : [verified]
   // Non-object entries are schema-invalid; they verify nothing and must not
   // crash the `by` access or masquerade as machine confirmation.
-  const events = list.filter((v) => typeof v === 'object' && v !== null)
+  const events = raw.filter((v): v is { by?: unknown } => typeof v === 'object' && v !== null)
   if (events.length === 0) return 'unverified'
   if (events.some((v) => typeof v.by === 'string' && v.by.startsWith('human:'))) {
     return 'human-reviewed'
   }
   return 'machine-confirmed'
-}
-
-/**
- * Reads a regex capture group, treating an absent group as empty text.
- * Centralized so callers never index a match array directly.
- * @param groups - Match array (group 0 plus captures).
- * @param index - Capture index to read.
- * @returns The group text, or `''` when the group did not participate.
- */
-const groupAt = (groups: Array<string | undefined>, index: number): string => {
-  const value = groups[index]
-  return typeof value === 'string' ? value : ''
 }
 
 /**
@@ -131,15 +119,17 @@ const groupAt = (groups: Array<string | undefined>, index: number): string => {
 const splitFrontmatter = (text: string): { fm: Record<string, unknown>; body: string } | null => {
   const match = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/.exec(text)
   if (!match) return null
-  const groups = [...match]
+  // Destructured with defaults: no computed index, and a non-participating
+  // group reads as empty text.
+  const [, frontmatterText = '', bodyText = ''] = match
   let fm: unknown
   try {
-    fm = yaml.parse(groupAt(groups, 1))
+    fm = yaml.parse(frontmatterText)
   } catch {
     return null
   }
   if (typeof fm !== 'object' || fm === null) return null
-  return { fm: fm as Record<string, unknown>, body: groupAt(groups, 2) }
+  return { fm: fm as Record<string, unknown>, body: bodyText }
 }
 
 /** Reads a string field, falling back to `fallback` for any other shape. */
@@ -180,7 +170,8 @@ const parseClaimLine = (line: string): { text: string; footnoteId?: string } | n
   let footnoteId: string | undefined
   const tail = /\[\^([\w-]+)\]$/.exec(text)
   if (tail) {
-    footnoteId = groupAt([...tail], 1)
+    const [, label = ''] = tail
+    footnoteId = label
     text = text.slice(0, tail.index).trim()
   }
   return footnoteId ? { text, footnoteId } : { text }
@@ -230,10 +221,11 @@ const parseClaims = (
  */
 const parseRelatedIds = (body: string): string[] => {
   const section = /# Related\n([\s\S]*?)(?:\n# |$)/.exec(body)
-  const block = section ? groupAt([...section], 1) : ''
+  const [, block = ''] = section ?? []
   const ids: string[] = []
   for (const m of block.matchAll(/\[[^\]]*\]\(([^)\s]+)\)/g)) {
-    const target = groupAt([...m], 1).replace(/^\/+/, '').replace(/\.md$/, '')
+    const [, linked = ''] = m
+    const target = linked.replace(/^\/+/, '').replace(/\.md$/, '')
     if (target && !ids.includes(target)) ids.push(target)
   }
   return ids
