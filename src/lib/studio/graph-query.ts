@@ -221,20 +221,16 @@ export const findShortestPath = (
   const adjacency = buildQueryAdjacency(entities)
   const cameFrom = new Map<string, GraphQueryEdge>()
   const visited = new Set<string>([fromId])
+  // `for…of` over an array it grows is the queue: the iterator visits
+  // appended entries, so no index arithmetic (and no unguarded index read).
   const queue: string[] = [fromId]
 
-  for (let head = 0; head < queue.length; head += 1) {
-    const current = queue[head]
-    if (current === undefined || current === toId) break
+  for (const current of queue) {
     for (const edge of adjacency.get(current) ?? []) {
       const next = otherEnd(edge, current)
       if (visited.has(next)) continue
       visited.add(next)
       cameFrom.set(next, edge)
-      if (next === toId) {
-        head = queue.length
-        break
-      }
       queue.push(next)
     }
   }

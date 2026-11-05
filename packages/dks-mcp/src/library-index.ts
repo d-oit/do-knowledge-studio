@@ -199,10 +199,10 @@ export class LibraryIndex {
     const adjacency = this.adjacency()
     const cameFrom = new Map<string, string>()
     const visited = new Set<string>([fromId])
+    // `for…of` over an array it grows is the queue: the iterator visits
+    // appended entries, so no index arithmetic (and no unguarded index read).
     const queue: string[] = [fromId]
-    for (let head = 0; head < queue.length; head += 1) {
-      const current = queue[head]
-      if (current === undefined) continue
+    for (const current of queue) {
       for (const next of adjacency.get(current) ?? []) {
         if (visited.has(next)) continue
         visited.add(next)
