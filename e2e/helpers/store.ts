@@ -87,27 +87,30 @@ export const readStoredState = async (
     async ({ storageKey, dbName, objectStore, recordKey }) => {
       const fromIdb = async (): Promise<unknown> => {
         if (typeof indexedDB === 'undefined') return null
+        // No explicit version: opening at the schema version the app already
+        // created avoids a VersionError when the app upgrades the database
+        // (#1060 raised it to 2 for the revisions store).
         const db = await new Promise<IDBDatabase | null>((resolve) => {
-          const request = indexedDB.open(dbName, 1)
-          request.onupgradeneeded = () => {
-            const database = request.result
-            if (!database.objectStoreNames.contains(objectStore)) {
-              database.createObjectStore(objectStore)
-            }
-          }
+          const request = indexedDB.open(dbName)
           request.onsuccess = () => { resolve(request.result) }
           request.onerror = () => { resolve(null) }
           request.onblocked = () => { resolve(null) }
         })
         if (db === null) return null
-        const value = await new Promise<unknown>((resolve) => {
-          const transaction = db.transaction(objectStore, 'readonly')
-          const request = transaction.objectStore(objectStore).get(recordKey)
-          request.onsuccess = () => { resolve(request.result) }
-          request.onerror = () => { resolve(null) }
-        })
-        db.close()
-        return value
+        try {
+          return await new Promise<unknown>((resolve) => {
+            const transaction = db.transaction(objectStore, 'readonly')
+            const request = transaction.objectStore(objectStore).get(recordKey)
+            request.onsuccess = () => { resolve(request.result) }
+            request.onerror = () => { resolve(null) }
+          })
+        } catch (error) {
+          // The database exists but has no envelope store yet (nothing written).
+          console.warn('readStoredState: canonical store is not readable yet', error)
+          return null
+        } finally {
+          db.close()
+        }
       }
       const idbValue = (await fromIdb()) as { state?: unknown } | null
       if (idbValue?.state) return idbValue.state
