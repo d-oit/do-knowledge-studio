@@ -13,6 +13,9 @@ export default defineConfig({
       '**/node_modules/**',
       '**/dist/**',
       'e2e/**',
+      // Workspace packages run their own suite via `pnpm --filter <pkg> test`
+      // (own env/deps); running them here too would double-execute them.
+      'packages/**',
       '**/*.bench.test.ts',
     ],
     // Restore spy implementations and global stubs between tests by default.

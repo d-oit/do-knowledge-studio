@@ -14,17 +14,18 @@
     "start": "next start",
     "lint": "eslint .",
     "docs:check": "node scripts/check-doc-consistency.mjs",
-    "typecheck": "next typegen && tsc --noEmit -p tsconfig.app.json",
+    "typecheck": "next typegen && tsc --noEmit -p tsconfig.app.json && pnpm --filter dks-mcp typecheck",
     "typecheck:test": "tsc --noEmit -p tsconfig.test.json",
     "propagate:version": "bash scripts/propagate-version.sh",
-    "test": "vitest run",
+    "test": "vitest run && pnpm --filter dks-mcp test",
     "test:mutation": "stryker run && node scripts/check-mutation-score.mjs < reports/mutation.json",
     "test:properties:nightly": "FAST_CHECK_PROFILE=nightly vitest run",
     "test:coverage": "vitest run --coverage",
     "test:bench": "vitest run --config vitest.bench.config.ts",
     "bench:measure": "vitest bench --run --config vitest.bench.config.ts",
     "test:e2e": "playwright test",
-    "test:e2e:offline": "PLAYWRIGHT_PRODUCTION=1 playwright test e2e/offline-views.spec.ts --project=chromium"
+    "test:e2e:offline": "PLAYWRIGHT_PRODUCTION=1 playwright test e2e/offline-views.spec.ts --project=chromium",
+    "build:mcp": "pnpm --filter dks-mcp build"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.3.1",
