@@ -3,6 +3,9 @@
  * with Zod first (the SDK does not enforce `inputSchema` server-side), is
  * read-only, and returns text payloads with provenance attached. Bundle text
  * is untrusted library data: results are transported, never executed.
+ *
+ * Dispatch is an explicit switch rather than a name→function object lookup:
+ * a bundle cannot steer which handler runs through a dynamic key.
  */
 
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
@@ -58,12 +61,12 @@ const SearchArgsSchema = z.object({
 
 /** Zod schema for single-reference tools (`get_entity`, `neighborhood`). */
 const RefArgsSchema = z.object({
-  ref: z.string().min(1).max(500).describe('Concept id or name'),
+  ref: z.string().min(1).max(500),
 })
 
 /** Zod schema for the `get_claims` tool. */
 const ClaimsArgsSchema = z.object({
-  ref: z.string().min(1).max(500).describe('Concept id or name'),
+  ref: z.string().min(1).max(500),
   verifiedOnly: z.boolean().optional(),
 })
 
@@ -91,63 +94,89 @@ const validated = <T>(
   }
 }
 
-/** All tool handlers keyed by tool name. */
-export const toolHandlers: Record<string, ToolHandler> = {
-  search: (args, index) =>
-    validated(SearchArgsSchema, args, index, (parsed, idx) => {
-      const hits = idx.search(parsed.query, parsed.limit ?? DEFAULT_LIMIT)
-      return ok({
-        query: parsed.query,
-        hits: hits.map((h) => ({ ...conceptView(h.concept), score: h.score })),
-      })
-    }),
+/** `search`: BM25-lite ranking over names, descriptions, content, and claims. */
+const searchTool: ToolHandler = (args, index) =>
+  validated(SearchArgsSchema, args, index, (parsed, idx) => {
+    const hits = idx.search(parsed.query, parsed.limit ?? DEFAULT_LIMIT)
+    return ok({
+      query: parsed.query,
+      hits: hits.map((h) => ({ ...conceptView(h.concept), score: h.score })),
+    })
+  })
 
-  get_entity: (args, index) =>
-    validated(RefArgsSchema, args, index, (parsed, idx) => {
-      const resolved = idx.resolve(parsed.ref)
-      if ('error' in resolved) return fail(resolved.error)
-      const concept = resolved.concept
-      return ok({
-        ...conceptView(concept),
-        content: concept.content,
-        sources: concept.sources,
-        relatedIds: concept.relatedIds,
-      })
-    }),
+/** `get_entity`: one concept with content, sources, and related ids. */
+const getEntityTool: ToolHandler = (args, index) =>
+  validated(RefArgsSchema, args, index, (parsed, idx) => {
+    const resolved = idx.resolve(parsed.ref)
+    if ('error' in resolved) return fail(resolved.error)
+    const concept = resolved.concept
+    return ok({
+      ...conceptView(concept),
+      content: concept.content,
+      sources: concept.sources,
+      relatedIds: concept.relatedIds,
+    })
+  })
 
-  get_claims: (args, index) =>
-    validated(ClaimsArgsSchema, args, index, (parsed, idx) => {
-      const resolved = idx.resolve(parsed.ref)
-      if ('error' in resolved) return fail(resolved.error)
-      const claims = resolved.concept.claims.filter(
-        (c) => !parsed.verifiedOnly || c.verification === 'verified',
-      )
-      return ok({
-        ref: resolved.concept.id,
-        name: resolved.concept.name,
-        trustTier: resolved.concept.trustTier,
-        claims: claims.map(claimView),
-      })
-    }),
+/** `get_claims`: claims with verification and source provenance. */
+const getClaimsTool: ToolHandler = (args, index) =>
+  validated(ClaimsArgsSchema, args, index, (parsed, idx) => {
+    const resolved = idx.resolve(parsed.ref)
+    if ('error' in resolved) return fail(resolved.error)
+    const claims = resolved.concept.claims.filter(
+      (c) => !parsed.verifiedOnly || c.verification === 'verified',
+    )
+    return ok({
+      ref: resolved.concept.id,
+      name: resolved.concept.name,
+      trustTier: resolved.concept.trustTier,
+      claims: claims.map(claimView),
+    })
+  })
 
-  neighborhood: (args, index) =>
-    validated(RefArgsSchema, args, index, (parsed, idx) => {
-      const resolved = idx.resolve(parsed.ref)
-      if ('error' in resolved) return fail(resolved.error)
-      const { outgoing, incoming } = idx.neighborhood(resolved.concept.id)
-      return ok({
-        ref: resolved.concept.id,
-        name: resolved.concept.name,
-        outgoing: outgoing.map(conceptView),
-        incoming: incoming.map(conceptView),
-      })
-    }),
+/** `neighborhood`: one-hop outgoing and incoming related concepts. */
+const neighborhoodTool: ToolHandler = (args, index) =>
+  validated(RefArgsSchema, args, index, (parsed, idx) => {
+    const resolved = idx.resolve(parsed.ref)
+    if ('error' in resolved) return fail(resolved.error)
+    const { outgoing, incoming } = idx.neighborhood(resolved.concept.id)
+    return ok({
+      ref: resolved.concept.id,
+      name: resolved.concept.name,
+      outgoing: outgoing.map(conceptView),
+      incoming: incoming.map(conceptView),
+    })
+  })
 
-  list_tags: (args, index) =>
-    validated(z.object({}), args, index, (_parsed, idx) => ok({ tags: idx.tags() })),
+/** `list_tags`: tag census by usage count. */
+const listTagsTool: ToolHandler = (args, index) =>
+  validated(z.object({}), args, index, (_parsed, idx) => ok({ tags: idx.tags() }))
+
+/**
+ * Dispatches a tool call by name with an explicit, static switch.
+ * @param name - Requested tool name.
+ * @param args - Raw arguments (validated per tool).
+ * @param index - Loaded library index.
+ * @returns The tool result, or an error result for unknown names.
+ */
+export const callTool = (name: string, args: unknown, index: LibraryIndex): ToolResult => {
+  switch (name) {
+    case 'search':
+      return searchTool(args, index)
+    case 'get_entity':
+      return getEntityTool(args, index)
+    case 'get_claims':
+      return getClaimsTool(args, index)
+    case 'neighborhood':
+      return neighborhoodTool(args, index)
+    case 'list_tags':
+      return listTagsTool(args, index)
+    default:
+      return fail(`Unknown tool "${name}".`)
+  }
 }
 
-/** MCP `tools/list` definitions (ranked as bundle-scale BM25-lite). */
+/** MCP `tools/list` definitions (search is bundle-scale BM25-lite). */
 export const toolDefinitions = [
   {
     name: 'search',

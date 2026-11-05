@@ -8,7 +8,7 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import type { LibraryIndex } from './library-index.js'
-import { toolDefinitions, toolHandlers } from './tool-definitions.js'
+import { callTool, toolDefinitions } from './tool-definitions.js'
 
 /** Server name advertised during MCP initialization. */
 const SERVER_NAME = 'dks-mcp'
@@ -26,16 +26,9 @@ export const createServer = (index: LibraryIndex): Server => {
     { capabilities: { tools: {} } },
   )
   server.setRequestHandler(ListToolsRequestSchema, () => ({ tools: toolDefinitions }))
-  server.setRequestHandler(CallToolRequestSchema, (request) => {
-    const handler = toolHandlers[request.params.name]
-    if (!handler) {
-      return {
-        content: [{ type: 'text', text: `Unknown tool "${request.params.name}".` }],
-        isError: true,
-      }
-    }
-    return handler(request.params.arguments, index)
-  })
+  server.setRequestHandler(CallToolRequestSchema, (request) =>
+    callTool(request.params.name, request.params.arguments, index),
+  )
   return server
 }
 

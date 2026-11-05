@@ -10,14 +10,14 @@ import { loadBundle } from './bundle-reader.js'
 import { LibraryIndex } from './library-index.js'
 import { createServer, serveStdio } from './server.js'
 
-/** CLI usage text. */
-const USAGE = 'Usage: dks-mcp serve <bundle.zip|directory>'
+/** CLI usage text (placeholders are not HTML, so no angle brackets). */
+const USAGE_TEXT = 'Usage: dks-mcp serve BUNDLE (a .zip export or a directory of .md files)'
 
 /** Runs the CLI; returns the process exit code. */
 const main = async (): Promise<number> => {
   const [command, target] = process.argv.slice(2)
   if (command !== 'serve' || !target) {
-    console.error(USAGE)
+    console.error(USAGE_TEXT)
     return 2
   }
   let loaded

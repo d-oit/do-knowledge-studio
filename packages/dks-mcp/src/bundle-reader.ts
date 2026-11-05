@@ -111,6 +111,18 @@ export const deriveTrustTier = (verified: unknown): TrustTier => {
 }
 
 /**
+ * Reads a regex capture group, treating an absent group as empty text.
+ * Centralized so callers never index a match array directly.
+ * @param groups - Match array (group 0 plus captures).
+ * @param index - Capture index to read.
+ * @returns The group text, or `''` when the group did not participate.
+ */
+const groupAt = (groups: Array<string | undefined>, index: number): string => {
+  const value = groups[index]
+  return typeof value === 'string' ? value : ''
+}
+
+/**
  * Parses frontmatter into a loose record; unknown keys are preserved and
  * ignored rather than failing the concept (OKF §4.1 extension tolerance).
  * @param text - Full concept file content.
@@ -119,14 +131,15 @@ export const deriveTrustTier = (verified: unknown): TrustTier => {
 const splitFrontmatter = (text: string): { fm: Record<string, unknown>; body: string } | null => {
   const match = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/.exec(text)
   if (!match) return null
+  const groups = [...match]
   let fm: unknown
   try {
-    fm = yaml.parse(match[1] ?? '')
+    fm = yaml.parse(groupAt(groups, 1))
   } catch {
     return null
   }
   if (typeof fm !== 'object' || fm === null) return null
-  return { fm: fm as Record<string, unknown>, body: match[2] ?? '' }
+  return { fm: fm as Record<string, unknown>, body: groupAt(groups, 2) }
 }
 
 /** Reads a string field, falling back to `fallback` for any other shape. */
@@ -155,6 +168,25 @@ const asSources = (value: unknown): BundleSource[] => {
 }
 
 /**
+ * Parses one `- statement[^id]` claim line. Phrased as a slice + anchored
+ * footnote match rather than one backtracking pattern, so a long line of
+ * `-`/`[^` characters cannot drive exponential matching.
+ * @param line - A single body line.
+ * @returns The statement and footnote label, or null when not a claim line.
+ */
+const parseClaimLine = (line: string): { text: string; footnoteId?: string } | null => {
+  if (!line.startsWith('- ')) return null
+  let text = line.slice(2).trim()
+  let footnoteId: string | undefined
+  const tail = /\[\^([\w-]+)\]$/.exec(text)
+  if (tail) {
+    footnoteId = groupAt([...tail], 1)
+    text = text.slice(0, tail.index).trim()
+  }
+  return footnoteId ? { text, footnoteId } : { text }
+}
+
+/**
  * Extracts claims from a concept body (mirrors `parseClaims` in app code).
  * @param body - Concept markdown body.
  * @param sources - Frontmatter sources for the footnote join.
@@ -171,12 +203,14 @@ const parseClaims = (
     if (s.id) sourceById.set(s.id, s)
   }
   const claims: BundleClaim[] = []
-  for (const m of body.matchAll(/^- ([^\n]+?)(?:\[\^([\w-]+)\])?$/gm)) {
-    const text = (m[1] ?? '').trim()
+  for (const line of body.split('\n')) {
+    const parsed = parseClaimLine(line)
+    if (!parsed) continue
+    const text = parsed.text
     if (text.startsWith('[^') || text.includes('Related') || text.includes('# Claims')) {
       continue
     }
-    const source = m[2] ? sourceById.get(m[2]) : undefined
+    const source = parsed.footnoteId ? sourceById.get(parsed.footnoteId) : undefined
     const claim: BundleClaim = {
       statement: text,
       verification: verified ? 'verified' : 'unverified',
@@ -196,10 +230,10 @@ const parseClaims = (
  */
 const parseRelatedIds = (body: string): string[] => {
   const section = /# Related\n([\s\S]*?)(?:\n# |$)/.exec(body)
-  const block = section?.[1] ?? ''
+  const block = section ? groupAt([...section], 1) : ''
   const ids: string[] = []
-  for (const m of block.matchAll(/\[[^\]]*\]\(\/([^)]+?)(?:\.md)?\)/g)) {
-    const target = (m[1] ?? '').replace(/\.md$/, '')
+  for (const m of block.matchAll(/\[[^\]]*\]\(([^)\s]+)\)/g)) {
+    const target = groupAt([...m], 1).replace(/^\/+/, '').replace(/\.md$/, '')
     if (target && !ids.includes(target)) ids.push(target)
   }
   return ids
