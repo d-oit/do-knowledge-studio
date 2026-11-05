@@ -38,4 +38,24 @@ test.describe('Editor @mention entity linking', () => {
     await expect(graph.getByText('mentions', { exact: true })).toBeVisible();
     await expect(graph.getByText('mentioned-in', { exact: true })).toBeVisible();
   });
+
+  test('[[ opens the same picker and keyboard selection inserts the token', async ({ page }) => {
+    await createNewEntity(page, 'Wikilink Note');
+
+    const editor = page.getByLabel('Editor content', { exact: true });
+    await editor.click();
+    await editor.pressSequentially('See [[Altshuller', { delay: 30 });
+
+    const listbox = page.getByRole('listbox', { name: /mention/i });
+    await expect(listbox).toBeVisible();
+    // Keyboard-only flow: the first candidate starts highlighted, so Enter
+    // inserts it without pointer input.
+    await editor.press('Enter');
+    await expect(editor).toHaveValue(/\[@Genrich Altshuller\]\(dks:\/\/entity\/e2\)/);
+
+    await page.getByRole('button', { name: /save to library/i }).click();
+    await expect(
+      page.getByRole('heading', { name: 'Wikilink Note', exact: true }),
+    ).toBeVisible();
+  });
 });

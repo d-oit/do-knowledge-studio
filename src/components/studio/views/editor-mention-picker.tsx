@@ -1,7 +1,7 @@
 'use client'
 
 import { memo, useLayoutEffect, useState, type RefObject } from 'react'
-import { AtSign } from 'lucide-react'
+import { AtSign, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Entity } from '@/lib/studio/types'
 import { getEntityTypeMeta } from '@/lib/studio/entity-types'
@@ -90,13 +90,13 @@ const estimatePopoverHeight = (rowCount: number): number =>
 interface EditorMentionPickerProps {
   /** Whether the popover should be shown (trigger active + not dismissed). */
   open: boolean
-  /** Current query text after the '@' (filtering lives in the caller). */
+  /** Current query text after the opener (filtering lives in the caller). */
   query: string
   /** Suggestion rows — already filtered, capped at MENTION_MAX_RESULTS. */
   candidates: Entity[]
   /** Index of the highlighted option (aria-activedescendant + styles). */
   highlightedIndex: number
-  /** Index in `content` of the '@' that started the trigger (caret anchor). */
+  /** Index in `content` of the opener that started the trigger (caret anchor). */
   triggerStart: number
   /** Full editor content (for caret measurement). */
   content: string
@@ -106,6 +106,18 @@ interface EditorMentionPickerProps {
   onHighlight: (index: number) => void
   /** Called with the entity when an option is activated (click/Enter). */
   onSelect: (entity: Entity) => void
+  /** Whether to offer creating a stub entity for the query. */
+  showCreate: boolean
+  /** Label for the create row (already localized by the caller). */
+  createLabel: string
+  /** Accessible label for the create row. */
+  createAriaLabel: string
+  /** Whether the create row (not a candidate) is highlighted. */
+  createHighlighted: boolean
+  /** Called when the create row is activated (click/Enter). */
+  onCreate: () => void
+  /** Called when the pointer hovers the create row. */
+  onHighlightCreate: () => void
 }
 
 /** Popover listing mentionable entities, anchored near the caret. */
@@ -119,6 +131,12 @@ export const EditorMentionPicker = memo(function EditorMentionPicker({
   textarea,
   onHighlight,
   onSelect,
+  showCreate,
+  createLabel,
+  createAriaLabel,
+  createHighlighted,
+  onCreate,
+  onHighlightCreate,
 }: EditorMentionPickerProps) {
   const [position, setPosition] = useState<PickerPosition>({ top: PICKER_MIN_INSET, left: PICKER_MIN_INSET })
   const caret = triggerStart + 1 + query.length
@@ -175,7 +193,7 @@ export const EditorMentionPicker = memo(function EditorMentionPicker({
         <AtSign className="h-3.5 w-3.5 text-ink-faint" />
         <span className="text-label text-ink-faint">{mentionsT('mentions.picker.hint')}</span>
       </div>
-      {candidates.length === 0 ? (
+      {candidates.length === 0 && !showCreate ? (
         <div className="px-3 py-4 text-center text-body-sm text-ink-mute">
           {mentionsT('mentions.picker.empty')}
         </div>
@@ -183,7 +201,7 @@ export const EditorMentionPicker = memo(function EditorMentionPicker({
         <ul className="max-h-64 overflow-y-auto p-1">
           {candidates.map((entity, index) => {
             const meta = getEntityTypeMeta(entity.type)
-            const highlighted = index === highlightedIndex
+            const highlighted = index === highlightedIndex && !createHighlighted
             return (
               <li
                 key={entity.id}
@@ -204,6 +222,24 @@ export const EditorMentionPicker = memo(function EditorMentionPicker({
               </li>
             )
           })}
+          {showCreate && (
+            <li
+              id={mentionOptionId(candidates.length)}
+              role="option"
+              aria-selected={createHighlighted}
+              aria-label={createAriaLabel}
+              onMouseDown={(e) => { e.preventDefault() }}
+              onMouseEnter={onHighlightCreate}
+              onClick={onCreate}
+              className={cn(
+                'flex min-h-touch cursor-pointer items-center gap-2 rounded-md px-3 text-body-sm transition-colors',
+                createHighlighted ? 'bg-saffron-soft text-saffron-deep' : 'text-ink-soft',
+              )}
+            >
+              <Plus className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">{createLabel}</span>
+            </li>
+          )}
         </ul>
       )}
     </div>
