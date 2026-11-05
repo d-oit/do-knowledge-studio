@@ -18,7 +18,12 @@ export interface CanonicalEnvelope {
       tags?: string[]
       links?: { targetId: string; relation: string }[]
     }[]
-    claims?: { id: string; entityId: string; statement: string }[]
+    claims?: {
+      id: string
+      entityId: string
+      statement: string
+      editHistory?: { statement: string; editedAt: string }[]
+    }[]
   }
   version?: number
 }

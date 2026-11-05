@@ -273,4 +273,24 @@ describe('mergeClaims', () => {
     expect(mergeClaims([remote], [local]).merged[0].editHistory?.map((h) => h.statement))
       .toEqual(statements)
   })
+  it('orders same-instant edit history deterministically across merge direction', () => {
+    const utcClaim = makeClaim({
+      updatedAt: '2026-01-02T00:00:00Z',
+      editHistory: [{ statement: 'Historical wording', editedAt: '2026-01-01T00:00:00.000Z' }],
+    })
+    const offsetClaim = makeClaim({
+      updatedAt: '2026-01-02T00:00:00Z',
+      editHistory: [{ statement: 'Historical wording', editedAt: '2025-12-31T19:00:00.000-05:00' }],
+    })
+
+    const forward = mergeClaims([utcClaim], [offsetClaim]).merged[0]?.editHistory
+    const reverse = mergeClaims([offsetClaim], [utcClaim]).merged[0]?.editHistory
+    const expected = [
+      { statement: 'Historical wording', editedAt: '2025-12-31T19:00:00.000-05:00' },
+      { statement: 'Historical wording', editedAt: '2026-01-01T00:00:00.000Z' },
+    ]
+
+    expect(forward).toEqual(expected)
+    expect(reverse).toEqual(expected)
+  })
 })
